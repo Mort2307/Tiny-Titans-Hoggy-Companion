@@ -1,10 +1,26 @@
+import { Link } from "react-router-dom";
+
 import logo from "../../assets/TinyTitans-Logo.JPG.jpg";
 
 function Header() {
   return (
     <header className="app-header">
-      <img src={logo} alt="Tiny Titans logo" />
-      <h1>Tiny Titans Hoggy Companion</h1>
+
+      <Link 
+        to="/"
+        className="logo-link"
+      >
+        <img
+          src={logo}
+          alt="Tiny Titans"
+          className="tiny-titans-logo"
+        />
+      </Link>
+
+      <h1>
+        Tiny Titans
+      </h1>
+
     </header>
   );
 }
