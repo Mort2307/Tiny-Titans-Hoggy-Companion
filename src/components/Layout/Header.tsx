@@ -1,8 +1,10 @@
+import logo from "../../assets/TinyTitans-Logo.JPG.jpg";
+
 function Header() {
   return (
-    <header>
-      <h1>Tiny Titans</h1>
-      <p>Hoggy Companion</p>
+    <header className="app-header">
+      <img src={logo} alt="Tiny Titans logo" />
+      <h1>Tiny Titans Hoggy Companion</h1>
     </header>
   );
 }

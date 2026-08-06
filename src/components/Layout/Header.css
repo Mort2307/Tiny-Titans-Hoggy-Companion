@@ -1,0 +1,34 @@
+header {
+  background: var(--primary);
+  color: white;
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header img {
+  width: 150px;
+  height: auto;
+  display: block;
+  margin: 0 auto 10px;
+}
+
+header h1 {
+  margin: 10px 0 0;
+}
+
+header p {
+  margin: 5px 0 0;
+}
+
+.app-header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}

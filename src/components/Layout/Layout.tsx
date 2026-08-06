@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Header from "./Header";
+import Navigation from "./Navigation";
 
 type LayoutProps = {
   children: ReactNode;
@@ -9,7 +10,10 @@ function Layout({ children }: LayoutProps) {
   return (
     <>
       <Header />
-      <main>{children}</main>
+      <Navigation />
+      <main className="main-content">
+        {children}
+      </main>
     </>
   );
 }
