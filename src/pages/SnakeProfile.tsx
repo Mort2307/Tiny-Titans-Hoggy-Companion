@@ -3,32 +3,27 @@ import { useEffect, useState } from "react";
 
 import type { Snake } from "../types/Snake";
 
+import { migrateSnake } from "../utils/snakeMigration";
+
 import BackHomeButton from "../components/BackHomeButton";
 
 
-
 function SnakeProfile() {
-
 
   const { id } = useParams();
 
   const navigate = useNavigate();
 
-
   const [snake, setSnake] = useState<Snake | null>(null);
-
-
 
 
 
   useEffect(() => {
 
-
     const saved =
       localStorage.getItem(
         "tinyTitansSnakes"
       );
-
 
 
     if (!saved) {
@@ -43,9 +38,12 @@ function SnakeProfile() {
 
     try {
 
-
       const snakes: Snake[] =
-        JSON.parse(saved);
+        JSON.parse(saved)
+          .map(
+            (item: Partial<Snake>) =>
+              migrateSnake(item)
+          );
 
 
 
@@ -57,22 +55,9 @@ function SnakeProfile() {
 
 
 
-      if(found){
+      if (found) {
 
-        setSnake({
-
-          ...found,
-
-          morphs:
-            found.morphs ?? [],
-
-          hets:
-            found.hets ?? [],
-
-          weightHistory:
-            found.weightHistory ?? []
-
-        });
+        setSnake(found);
 
       }
 
@@ -83,11 +68,9 @@ function SnakeProfile() {
       }
 
 
-
     }
 
-    catch(error){
-
+    catch(error) {
 
       console.error(
         "Unable to load snake profile",
@@ -97,9 +80,7 @@ function SnakeProfile() {
 
       setSnake(null);
 
-
     }
-
 
 
   }, [id]);
@@ -107,13 +88,7 @@ function SnakeProfile() {
 
 
 
-
-
-
-
-
-  function calculateAge(date:string){
-
+  function calculateAge(date:string) {
 
     if(!date)
 
@@ -152,45 +127,32 @@ function SnakeProfile() {
 
 
 
-
-    if(days < 0){
-
+    if(days < 0) {
 
       months--;
 
 
       const previousMonth =
         new Date(
-
           now.getFullYear(),
-
           now.getMonth(),
-
           0
-
         );
 
 
       days += previousMonth.getDate();
 
-
     }
 
 
 
-
-
-
-    if(months < 0){
-
+    if(months < 0) {
 
       years--;
 
       months += 12;
 
-
     }
-
 
 
 
@@ -225,19 +187,13 @@ function SnakeProfile() {
 
     return result.join(", ");
 
-
-
   }
 
 
 
 
 
-
-
-
-
-  function deleteSnake(){
+  function deleteSnake() {
 
 
     if(!snake)
@@ -259,8 +215,6 @@ function SnakeProfile() {
 
 
 
-
-
     const saved =
       localStorage.getItem(
         "tinyTitansSnakes"
@@ -274,32 +228,26 @@ function SnakeProfile() {
 
 
 
-    const snakes:Snake[] =
-      JSON.parse(saved);
-
-
+    const snakes: Snake[] =
+      JSON.parse(saved)
+        .map(
+          (item: Partial<Snake>) =>
+            migrateSnake(item)
+        );
 
 
 
     const updated =
       snakes.filter(
-
         item =>
-
           item.id !== snake.id
-
       );
 
 
 
-
-
     localStorage.setItem(
-
       "tinyTitansSnakes",
-
       JSON.stringify(updated)
-
     );
 
 
@@ -313,32 +261,22 @@ function SnakeProfile() {
 
 
 
-
-
-
-
-  if(!snake){
-
+  if(!snake) {
 
     return (
 
       <div className="page-container">
 
-
         <BackHomeButton />
 
 
         <h2>
-
           🐍 Snake not found
-
         </h2>
 
 
         <p>
-
           The snake profile could not be loaded.
-
         </p>
 
 
@@ -352,12 +290,7 @@ function SnakeProfile() {
 
 
 
-
-
-
-
   return (
-
 
     <div className="page-container">
 
@@ -367,11 +300,8 @@ function SnakeProfile() {
 
 
       <h1>
-
         🐍 {snake.name}
-
       </h1>
-
 
 
 
@@ -402,7 +332,9 @@ function SnakeProfile() {
 
           />
 
+
           :
+
 
           <div
 
@@ -429,51 +361,31 @@ function SnakeProfile() {
 
 
 
-
-
-
       <div className="tracker-card">
 
-
         <h2>
-
           📋 Basic Information
-
         </h2>
 
 
-
         <p>
-
           Species:
-
-          <br/>
+          <br />
 
           <strong>
-
             {snake.species}
-
           </strong>
-
         </p>
-
-
 
 
         <p>
-
           Sex:
-
-          <br/>
+          <br />
 
           <strong>
-
             {snake.sex}
-
           </strong>
-
         </p>
-
 
       </div>
 
@@ -481,80 +393,67 @@ function SnakeProfile() {
 
 
 
-
-
-
       <div className="tracker-card">
 
-
         <h2>
-
           🧬 Genetics
-
         </h2>
 
 
-
         <p>
-
           Morphs:
-
-          <br/>
+          <br />
 
           <strong>
 
-          {
+            {
+              snake.morphs.length
 
-            snake.morphs?.length
+              ?
 
-            ?
+              snake.morphs.join(", ")
 
-            snake.morphs.join(", ")
+              :
 
-            :
-
-            "None listed"
-
-          }
+              "None listed"
+            }
 
           </strong>
 
         </p>
-
 
 
 
         <p>
 
           Hets:
-
-          <br/>
+          <br />
 
           <strong>
 
-          {
+            {
 
-            snake.hets?.length
+              snake.hets.length
 
-            ?
+              ?
 
-            snake.hets.map(
+              snake.hets.map(
 
-              het =>
+                het =>
 
-              `${het.percentage} ${
-                het.percentage === "100%"
-                ? "Het"
-                : "Possible Het"
-              } ${het.gene}`
+                `${het.percentage} ${
+                  het.percentage === "100%"
+                  ? "Het"
+                  : "Possible Het"
+                } ${het.gene}`
 
-            ).join(", ")
+              ).join(", ")
 
-            :
+              :
 
-            "None listed"
+              "None listed"
 
-          }
+            }
 
           </strong>
 
@@ -567,75 +466,47 @@ function SnakeProfile() {
 
 
 
-
-
-
       <div className="tracker-card">
 
-
         <h2>
-
           ⚖️ Weight
-
         </h2>
-
 
 
         <p>
 
           Current Weight:
-
-          <br/>
+          <br />
 
           <strong>
-
-            {snake.weight ?? "-"}
-
-            g
-
+            {snake.weight ?? "-"} g
           </strong>
 
         </p>
-
-
-
 
 
         <p>
 
           Starting Weight:
-
-          <br/>
+          <br />
 
           <strong>
-
-            {snake.startingWeight ?? "-"}
-
-            g
-
+            {snake.startingWeight ?? "-"} g
           </strong>
 
         </p>
-
-
-
 
 
         <p>
 
           Starting Weight Date:
-
-          <br/>
+          <br />
 
           <strong>
-
             {snake.startingWeightDate || "-"}
-
           </strong>
 
         </p>
-
-
 
 
 
@@ -660,36 +531,24 @@ function SnakeProfile() {
 
 
 
-
-
-
-
       <div className="tracker-card">
 
-
         <h2>
-
           📅 Timeline
-
         </h2>
-
 
 
         <p>
 
           🥚 Hatch Date:
 
-          <br/>
+          <br />
 
           <strong>
-
             {snake.hatchDate || "-"}
-
           </strong>
 
         </p>
-
-
 
 
 
@@ -701,12 +560,10 @@ function SnakeProfile() {
 
             🎂 Age:
 
-            <br/>
+            <br />
 
             <strong>
-
               {calculateAge(snake.hatchDate)}
-
             </strong>
 
           </p>
@@ -715,18 +572,14 @@ function SnakeProfile() {
 
 
 
-
-
         <p>
 
           🏠 Arrival Date:
 
-          <br/>
+          <br />
 
           <strong>
-
             {snake.arrivalDate || "-"}
-
           </strong>
 
         </p>
@@ -738,18 +591,11 @@ function SnakeProfile() {
 
 
 
-
-
-
       <div className="tracker-card">
 
-
         <h2>
-
           📝 Notes
-
         </h2>
-
 
 
         <p>
@@ -760,10 +606,6 @@ function SnakeProfile() {
 
 
       </div>
-
-
-
-
 
 
 
@@ -788,8 +630,6 @@ function SnakeProfile() {
 
 
 
-
-
         <button
 
           onClick={deleteSnake}
@@ -799,8 +639,6 @@ function SnakeProfile() {
           🗑️ Delete Snake
 
         </button>
-
-
 
 
 
@@ -817,8 +655,6 @@ function SnakeProfile() {
           🍽 Log Feeding
 
         </button>
-
-
 
 
 
@@ -840,17 +676,11 @@ function SnakeProfile() {
       </div>
 
 
-
-
-
     </div>
-
 
   );
 
-
 }
-
 
 
 export default SnakeProfile;

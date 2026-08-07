@@ -8,83 +8,58 @@ import type { Snake } from "../types/Snake";
 import type { WeightRecord } from "../types/Weight";
 
 
-function sortWeightHistory(history:WeightRecord[]){
+function sortWeightHistory(history: WeightRecord[]) {
 
   return [...history].sort(
-
-    (a,b)=>
-
+    (a, b) =>
       new Date(a.date).getTime()
-
       -
-
       new Date(b.date).getTime()
-
   );
 
 }
 
 
 
-
-
-function WeightRecords(){
-
+function WeightRecords() {
 
   const { id } = useParams();
 
 
 
+  const [snakes, setSnakes] = useState<Snake[]>(() => {
 
-  const [snakes,setSnakes] =
-
-    useState<Snake[]>(()=>{
-
-
-      const saved =
-
-        localStorage.getItem(
-
-          "tinyTitansSnakes"
-
-        );
-
-
-
-      if(!saved)
-
-        return [];
-
-
-
-
-      return JSON.parse(saved).map(
-
-        (snake:Snake)=>({
-
-
-          ...snake,
-
-
-          weightHistory:
-
-            sortWeightHistory(
-
-              snake.weightHistory ?? []
-
-            )
-
-
-        })
-
+    const saved =
+      localStorage.getItem(
+        "tinyTitansSnakes"
       );
 
 
-    });
+    if (!saved)
+
+      return [];
 
 
 
+    return JSON.parse(saved).map(
 
+      (snake: Snake) => ({
+
+        ...snake,
+
+        weightHistory:
+
+          sortWeightHistory(
+
+            snake.weightHistory ?? []
+
+          )
+
+      })
+
+    );
+
+  });
 
 
 
@@ -96,28 +71,16 @@ function WeightRecords(){
 
 
 
+  const [weight, setWeight] = useState("");
 
 
 
-
-  const [weight,setWeight] =
-
-    useState("");
+  function addWeight() {
 
 
-
-
-
-
-
-
-  function addWeight(){
-
-
-    if(!snake)
+    if (!snake)
 
       return;
-
 
 
 
@@ -125,11 +88,9 @@ function WeightRecords(){
 
 
 
-    if(value <= 0)
+    if (value <= 0)
 
       return;
-
-
 
 
 
@@ -137,27 +98,38 @@ function WeightRecords(){
 
       new Date()
 
-      .toISOString()
+        .toISOString()
 
-      .split("T")[0];
-
-
+        .split("T")[0];
 
 
 
-    const newRecord = {
 
 
-      id:crypto.randomUUID(),
+    const newRecord: WeightRecord = {
 
 
-      snakeId:snake.id,
+      id:
+
+        crypto.randomUUID(),
 
 
-      weight:value,
+
+      weight:
+
+        value,
 
 
-      date:today
+
+      date:
+
+        today,
+
+
+
+      unit:
+
+        "g"
 
 
     };
@@ -166,12 +138,10 @@ function WeightRecords(){
 
 
 
+    const updated = snakes.map(item => {
 
 
-    const updated = snakes.map(item=>{
-
-
-      if(item.id !== snake.id)
+      if (item.id !== snake.id)
 
         return item;
 
@@ -185,19 +155,30 @@ function WeightRecords(){
         ...item,
 
 
-        weight:value,
+
+        weight:
+
+          value,
 
 
-        lastWeighedDate:today,
+
+        lastWeighedDate:
+
+          today,
+
 
 
         weightHistory:
 
+
           sortWeightHistory([
+
 
             ...(item.weightHistory ?? []),
 
+
             newRecord
+
 
           ])
 
@@ -206,7 +187,6 @@ function WeightRecords(){
 
 
     });
-
 
 
 
@@ -232,31 +212,29 @@ function WeightRecords(){
 
     setWeight("");
 
-
-
   }
 
 
 
 
 
-
-
-
-  if(!snake){
+  if (!snake) {
 
 
     return (
 
       <div className="page-container">
 
+
         <BackHomeButton />
+
 
         <h2>
 
           🐍 Snake not found
 
         </h2>
+
 
       </div>
 
@@ -268,14 +246,14 @@ function WeightRecords(){
 
 
 
-
-
   return (
 
     <div className="page-container">
 
 
+
       <BackHomeButton />
+
 
 
 
@@ -284,6 +262,8 @@ function WeightRecords(){
         ⚖️ {snake.name} Weight Records
 
       </h2>
+
+
 
 
 
@@ -299,6 +279,7 @@ function WeightRecords(){
         </h3>
 
 
+
         <strong>
 
           {snake.weight ?? "-"}g
@@ -306,7 +287,9 @@ function WeightRecords(){
         </strong>
 
 
+
       </div>
+
 
 
 
@@ -325,6 +308,8 @@ function WeightRecords(){
 
 
 
+
+
         <input
 
           type="number"
@@ -333,13 +318,19 @@ function WeightRecords(){
 
           value={weight}
 
-          onChange={(e)=>
+          onChange={(e) =>
 
-            setWeight(e.target.value)
+            setWeight(
+
+              e.target.value
+
+            )
 
           }
 
         />
+
+
 
 
 
@@ -354,7 +345,10 @@ function WeightRecords(){
         </button>
 
 
+
       </div>
+
+
 
 
 
@@ -373,13 +367,19 @@ function WeightRecords(){
 
 
 
+
+
+
         {
+
 
           snake.weightHistory?.length
 
+
           ?
 
-          snake.weightHistory.map(record=>(
+
+          snake.weightHistory.map(record => (
 
 
             <p key={record.id}>
@@ -389,7 +389,10 @@ function WeightRecords(){
 
               {" - "}
 
-              {record.weight}g
+              {record.weight}
+
+              {record.unit}
+
 
 
             </p>
@@ -397,7 +400,10 @@ function WeightRecords(){
 
           ))
 
+
+
           :
+
 
           <p>
 
@@ -409,7 +415,11 @@ function WeightRecords(){
         }
 
 
+
+
+
       </div>
+
 
 
 
@@ -429,6 +439,8 @@ function WeightRecords(){
 
 
 
+
+
         <WeightChart
 
           history={snake.weightHistory ?? []}
@@ -436,14 +448,18 @@ function WeightRecords(){
         />
 
 
+
       </div>
+
+
+
+
 
 
 
     </div>
 
   );
-
 
 }
 

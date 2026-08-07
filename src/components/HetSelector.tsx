@@ -1,136 +1,95 @@
 import { useState } from "react";
-import type { Het } from "../types/genetics";
-
+import type { Het, HetPercentage } from "../types/genetics";
 
 type HetSelectorProps = {
-
   options: {
-
-    name:string;
-
-    hetPossible:boolean;
-
+    name: string;
+    hetPossible: boolean;
   }[];
 
   selected: Het[];
 
-  setSelected:(hets:Het[])=>void;
-
+  setSelected: (hets: Het[]) => void;
 };
 
 
-
-
-
 function HetSelector({
-
   options,
-
   selected,
-
   setSelected,
-
-}:HetSelectorProps){
-
+}: HetSelectorProps) {
 
 
-  const [open,setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const [search,setSearch] = useState("");
+  const [search, setSearch] = useState("");
 
 
 
-
-
-
-  const percentages = [
+  const percentages: HetPercentage[] = [
 
     "100%",
-
     "66%",
-
     "50%",
-
     "33%",
-
     "25%"
 
   ];
 
 
 
-
-
-
-
-
-
   function toggleHet(
-
-    gene:string,
-
-    percentage:string
-
-  ){
-
+    gene: string,
+    percentage: HetPercentage
+  ) {
 
 
     const exists = selected.some(
 
       het =>
-
         het.gene === gene &&
-
         het.percentage === percentage
 
     );
 
 
 
-
-
     if(exists){
-
 
 
       setSelected(
 
         selected.filter(
 
-          het => !(
-
-            het.gene === gene &&
-
-            het.percentage === percentage
-
-          )
+          het =>
+            !(
+              het.gene === gene &&
+              het.percentage === percentage
+            )
 
         )
 
       );
 
 
-
     }
-
     else {
 
+
+      const newHet: Het = {
+
+        gene,
+        percentage
+
+      };
 
 
       setSelected([
 
         ...selected,
-
-        {
-
-          gene,
-
-          percentage
-
-        }
+        newHet
 
       ]);
-
 
 
     }
@@ -141,42 +100,26 @@ function HetSelector({
 
 
 
-
-
-
-
-
   function removeHet(
-
     gene:string,
-
-    percentage:string
-
+    percentage:HetPercentage
   ){
-
 
     setSelected(
 
       selected.filter(
 
-        het => !(
-
-          het.gene === gene &&
-
-          het.percentage === percentage
-
-        )
+        het =>
+          !(
+            het.gene === gene &&
+            het.percentage === percentage
+          )
 
       )
 
     );
 
-
   }
-
-
-
-
 
 
 
@@ -186,30 +129,27 @@ function HetSelector({
 
     .filter(
 
-      item => item.hetPossible
+      item =>
+        item.hetPossible
 
     )
 
     .sort(
 
       (a,b)=>
-
-        a.name.localeCompare(b.name)
+        a.name.localeCompare(
+          b.name
+        )
 
     )
 
     .filter(
 
       item =>
-
         item.name
-
           .toLowerCase()
-
           .includes(
-
             search.toLowerCase()
-
           )
 
     );
@@ -218,17 +158,9 @@ function HetSelector({
 
 
 
-
-
-
-
   return (
 
-
-
     <div className="multi-select">
-
-
 
 
 
@@ -240,7 +172,9 @@ function HetSelector({
 
         className="multi-select-button"
 
-        onClick={()=>setOpen(!open)}
+        onClick={()=>
+          setOpen(!open)
+        }
 
       >
 
@@ -254,36 +188,25 @@ function HetSelector({
 
 
 
-
-
       {selected.length > 0 && (
-
 
 
         <div className="selected-tags">
 
 
-
           {selected.map(het => (
-
 
 
             <span
 
               key={
-
                 het.gene +
-
                 het.percentage
-
               }
 
             >
 
-
-
               🧬 {het.percentage}
-
 
 
               {het.percentage === "100%"
@@ -295,8 +218,8 @@ function HetSelector({
               }
 
 
-
               {het.gene}
+
 
 
 
@@ -304,13 +227,12 @@ function HetSelector({
 
                 type="button"
 
-                onClick={()=>removeHet(
-
-                  het.gene,
-
-                  het.percentage
-
-                )}
+                onClick={()=>
+                  removeHet(
+                    het.gene,
+                    het.percentage
+                  )
+                }
 
               >
 
@@ -319,17 +241,13 @@ function HetSelector({
               </button>
 
 
-
             </span>
-
 
 
           ))}
 
 
-
         </div>
-
 
 
       )}
@@ -341,9 +259,7 @@ function HetSelector({
 
 
 
-
       {open && (
-
 
 
         <div className="multi-select-menu">
@@ -359,13 +275,9 @@ function HetSelector({
             value={search}
 
             onChange={(e)=>
-
               setSearch(
-
                 e.target.value
-
               )
-
             }
 
           />
@@ -387,7 +299,9 @@ function HetSelector({
 
               <div
 
-                key={gene.name}
+                key={
+                  gene.name
+                }
 
               >
 
@@ -411,7 +325,9 @@ function HetSelector({
 
                   <label
 
-                    key={percent}
+                    key={
+                      percent
+                    }
 
                   >
 
@@ -435,13 +351,18 @@ function HetSelector({
 
                       }
 
-                      onChange={()=>toggleHet(
 
-                        gene.name,
+                      onChange={()=>
 
-                        percent
+                        toggleHet(
 
-                      )}
+                          gene.name,
+
+                          percent
+
+                        )
+
+                      }
 
                     />
 
@@ -481,6 +402,8 @@ function HetSelector({
 
 
 
+
+
         </div>
 
 
@@ -491,13 +414,9 @@ function HetSelector({
 
     </div>
 
-
-
   );
 
-
 }
-
 
 
 export default HetSelector;
