@@ -1,580 +1,2930 @@
+/* =========================================================
+   TINY TITANS HOGGY COMPANION
+   GLOBAL APPLICATION STYLES
+========================================================= */
+
+/* =========================================================
+   DESIGN TOKENS
+========================================================= */
+
 :root {
-  --primary: #6F24B8;
-  --secondary: #F5B642;
+  /* Brand */
+  --primary: #6f24b8;
+  --secondary: #f5b642;
+  --accent: #00aeff;
+
+  /* Surfaces */
   --background: #140022;
-  --surface: #26083D;
-  --text: #F8F2FF;
-  --muted: #C8B8D8;
-  --accent: #35D0BA;
+  --surface: #26083d;
+
+  /* Text */
+  --text: #f5b642;
+  --muted: #d6a94a;
+
+  /* State */
+  --danger: #ff4d4d;
+  --success: #4ade80;
+  --warning: #f5b642;
+
+  /* Borders */
+  --border: rgba(0, 174, 255, 0.45);
+  --border-strong: rgba(0, 174, 255, 0.7);
+
+  /* Effects */
+  --glow-soft: 0 0 15px rgba(0, 174, 255, 0.22);
+  --glow-medium: 0 0 25px rgba(0, 174, 255, 0.45);
+
+  /* Radius */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  /* Layout */
+  --content-max-width: 1400px;
+  --page-padding: 20px;
+
+  /* Interaction */
+  --touch-target: 44px;
+
+  /* Typography */
+  --font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
 }
 
-* {
+/* =========================================================
+   GLOBAL RESET
+========================================================= */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  width: 100%;
+
+  overflow-x: hidden;
+
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+
+  min-width: 320px;
+  min-height: 100vh;
+
+  width: 100%;
+
+  font-family: var(--font-family);
+
   background: var(--background);
   color: var(--text);
+
+  overflow-x: hidden;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+
+  overscroll-behavior-x: none;
 }
 
 #root {
   min-height: 100vh;
+  width: 100%;
+
+  min-width: 0;
 }
 
+/* Prevent accidental horizontal overflow from media/content */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
 
-/* General page layout */
+img {
+  height: auto;
+}
 
-.page-container {
-  min-height: 80vh;
+iframe {
+  max-width: 100%;
+}
+
+/* =========================================================
+   GLOBAL TYPOGRAPHY
+========================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text);
+
+  overflow-wrap: anywhere;
+}
+
+p,
+span,
+strong,
+label {
+  color: var(--text);
+
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: var(--text);
+  text-decoration: none;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+::placeholder {
+  color: rgba(245, 182, 66, 0.55);
+}
+
+/* =========================================================
+   GLOBAL FORM ELEMENTS
+========================================================= */
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+
+  background: var(--background);
+  color: var(--text);
+
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  min-height: var(--touch-target);
+
+  cursor: pointer;
+
+  touch-action: manipulation;
+
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+
+  box-shadow:
+    0 0 12px rgba(0, 174, 255, 0.25);
+}
+
+/* Prevent iOS Safari from zooming focused form controls */
+@media (max-width: 700px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* =========================================================
+   APPLICATION SHELL
+========================================================= */
+
+.app-shell {
   width: 100%;
+  min-height: 100vh;
+
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+
+  background: var(--background);
+  color: var(--text);
+
+  overflow-x: hidden;
+
+  min-width: 0;
 }
 
+/* =========================================================
+   APPLICATION MAIN
+========================================================= */
 
-/* Main content */
+.app-main {
+  width: 100%;
+  flex: 1;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  min-width: 0;
+
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   APPLICATION CONTENT
+========================================================= */
+
+.app-content {
+  width: min(
+    var(--content-max-width),
+    100%
+  );
+
+  min-width: 0;
+
+  margin: 0 auto;
+
+  padding:
+    var(--page-padding)
+    var(--page-padding)
+    calc(50px + env(safe-area-inset-bottom));
+
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   LEGACY PAGE CONTAINER
+========================================================= */
+
+.page-container {
+  width: 100%;
+  min-height: 80vh;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+
+  min-width: 0;
+}
+
+/* =========================================================
+   LEGACY MAIN CONTENT
+========================================================= */
 
 .main-content {
   width: 100%;
   min-height: calc(100vh - 120px);
+
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+
+  min-width: 0;
+
+  overflow-x: hidden;
 }
 
+/* =========================================================
+   GLOBAL CONTENT SAFETY
+========================================================= */
 
-/* Header */
+.dashboard-card,
+.tracker-card,
+.snake-card,
+.snake-tile,
+.morph-card,
+.weight-reminder-card,
+.nav-card,
+.welcome-card,
+.weight-records-card,
+.snake-profile-card,
+.snake-form,
+.form-section {
+  min-width: 0;
+
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
 
 .app-header {
   width: 100%;
+
   display: flex;
   flex-direction: column;
   align-items: center;
+
   text-align: center;
+
+  padding:
+    10px 16px
+    5px;
+
+  min-width: 0;
+
+  overflow-x: hidden;
+}
+
+.app-header img {
+  display: block;
+
+  width: auto;
+
+  max-width: min(250px, 70vw);
+
+  height: auto;
+
+  object-fit: contain;
 }
 
 .app-header h1 {
   margin: 10px 0;
-  display: flex;
-  gap: 10px;
-  align-items: center;
+
+  color: var(--text);
+
+  text-shadow:
+    0 0 10px rgba(245, 182, 66, 0.2);
+
+  overflow-wrap: anywhere;
 }
 
-.app-header h1 span {
-  font-size: 0.6em;
-  font-weight: normal;
+/* =========================================================
+   UNIVERSAL TITAN CARDS
+========================================================= */
+
+.dashboard-card,
+.tracker-card,
+.snake-card,
+.snake-tile,
+.morph-card,
+.weight-reminder-card,
+.nav-card,
+.welcome-card,
+.weight-records-card,
+.snake-profile-card {
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(0, 174, 255, 0.14),
+      transparent 60%
+    ),
+    var(--surface);
+
+  border:
+    2px solid var(--border);
+
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--glow-soft);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+
+  min-width: 0;
 }
 
-.app-header img {
-  max-width: 250px;
-  height: auto;
+/* =========================================================
+   UNIVERSAL CARD HOVER
+========================================================= */
+
+.dashboard-card:hover,
+.tracker-card:hover,
+.snake-card:hover,
+.snake-tile:hover,
+.morph-card:hover,
+.weight-reminder-card:hover,
+.nav-card:hover,
+.welcome-card:hover,
+.weight-records-card:hover,
+.snake-profile-card:hover {
+  transform: translateY(-4px);
+
+  border-color: var(--accent);
+
+  box-shadow: var(--glow-medium);
 }
 
+/* =========================================================
+   WELCOME CARD
+========================================================= */
 
-/* Dashboard */
+.welcome-card {
+  width: 100%;
+
+  padding: 30px;
+
+  margin-bottom: 25px;
+
+  text-align: center;
+
+  overflow: hidden;
+}
+
+.welcome-card h1,
+.welcome-card h2,
+.welcome-card h3 {
+  margin-top: 0;
+
+  color: var(--text);
+}
+
+.welcome-card p {
+  margin-bottom: 0;
+
+  color: var(--text);
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
 
 .dashboard {
   width: 100%;
-  padding: 30px;
+
+  padding:
+    30px
+    0;
+
+  min-width: 0;
 }
-
-.welcome-card {
-  background: var(--surface);
-  padding: 25px;
-  border-radius: 18px;
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-
-/* Dashboard grid */
 
 .dashboard-grid {
   width: 100%;
+
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
   gap: 25px;
+
+  min-width: 0;
 }
 
-
-/* Dashboard cards */
-
 .dashboard-card {
-  background:
-    radial-gradient(
-      ellipse at center,
-      rgba(255,255,255,0.12) 0%,
-      rgba(255,255,255,0.05) 45%,
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at center,
-      rgba(0,0,0,0.25) 0%,
-      transparent 60%
-    ),
-    var(--surface);
-
-  background-size:
-    28px 18px,
-    28px 18px,
-    auto;
-
-  background-position:
-    0 0,
-    14px 9px,
-    0 0;
-
-  padding: 30px;
   min-height: 220px;
 
-  border-radius: 18px;
-  text-decoration: none;
-  color: var(--text);
-  text-align: center;
-
-  border: 2px solid transparent;
+  padding: 30px;
 
   display: flex;
   flex-direction: column;
+
   justify-content: center;
   align-items: center;
 
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  text-align: center;
+
+  color: var(--text);
+
+  overflow: hidden;
 }
 
-
-.dashboard-card:hover {
-  border-color: var(--secondary);
-  transform: translateY(-5px);
-}
-
-
-.dashboard-card h3 {
-  margin: 10px 0;
-  font-size: 1.4rem;
-}
-
-
+.dashboard-card h2,
+.dashboard-card h3,
 .dashboard-card p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.5;
+  color: var(--text);
 }
-
 
 .dashboard-icon {
   font-size: 55px;
+
   margin-bottom: 20px;
+
+  line-height: 1;
 }
 
+/* =========================================================
+   NAVIGATION TILES
+========================================================= */
 
-/* My Snakes */
+.nav-grid {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(250px, 1fr)
+    );
+
+  gap: 25px;
+
+  padding:
+    30px
+    0;
+
+  min-width: 0;
+}
+
+.nav-card {
+  min-height: 180px;
+
+  padding: 30px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+
+  color: var(--text);
+
+  overflow: hidden;
+}
+
+.nav-card-icon {
+  font-size: 55px;
+
+  margin-bottom: 15px;
+
+  line-height: 1;
+}
+
+.nav-card h3 {
+  margin: 10px;
+
+  color: var(--text);
+}
+
+.nav-card p {
+  color: var(--text);
+}
+
+/* =========================================================
+   SNAKE GRID
+========================================================= */
 
 .snake-grid {
   width: 100%;
+
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 25px;
-  padding: 30px;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(160px, 1fr)
+    );
+
+  gap: 20px;
+
+  padding:
+    30px
+    0;
+
+  min-width: 0;
 }
 
+.snake-tile {
+  padding: 15px;
 
-.snake-card {
-  background:
-    radial-gradient(
-      ellipse at center,
-      rgba(255,255,255,0.08),
-      transparent 60%
-    ),
-    var(--surface);
+  cursor: pointer;
 
-  padding: 25px;
-  border-radius: 18px;
-  text-align: center;
-
-  border: 2px solid transparent;
-
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  overflow: hidden;
 }
 
+.snake-tile img {
+  display: block;
 
-.snake-card:hover {
-  border-color: var(--secondary);
-  transform: translateY(-5px);
-}
-
-
-.snake-card h3 {
-  margin-top: 0;
-}
-
-
-.snake-card p {
-  color: var(--muted);
-}
-
-
-/* Back home button */
-
-.back-home-button {
-  color: var(--secondary);
-  text-decoration: none;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
-
-.back-home-button:hover {
-  color: var(--accent);
-}
-
-
-/* Mobile layout */
-
-@media (max-width: 700px) {
-
-  .dashboard-grid,
-  .snake-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard {
-    padding: 15px;
-  }
-
-  .dashboard-card,
-  .snake-card {
-    min-height: 180px;
-  }
-
-}
-
-.morph-grid {
   width: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 25px;
-  padding: 30px;
+
+  aspect-ratio: 1;
+
+  object-fit: cover;
+
+  border-radius: 12px;
 }
 
+.snake-placeholder {
+  width: 100%;
 
-.morph-card {
-
-  background: var(--surface);
-
-  padding: 25px;
-
-  border-radius: 18px;
-
-  border: 2px solid transparent;
-
-}
-
-
-.morph-card:hover {
-
-  border-color: var(--secondary);
-
-}
-
-
-.morph-card h3 {
-
-  color: var(--secondary);
-
-}
-
-
-.morph-card p {
-
-  color: var(--muted);
-
-}
-
-.tracker-card {
-
-  background: var(--surface);
-
-  padding: 30px;
-
-  border-radius: 18px;
-
-  width: min(500px, 90%);
+  aspect-ratio: 1;
 
   display: flex;
 
+  justify-content: center;
+  align-items: center;
+
+  font-size: 50px;
+
+  color: var(--text);
+
+  background: var(--background);
+
+  border-radius: 12px;
+}
+
+/* =========================================================
+   TRACKER CARD
+========================================================= */
+
+.tracker-card {
+  width: min(500px, 100%);
+
+  padding: 30px;
+
+  display: flex;
   flex-direction: column;
 
   gap: 12px;
 
+  overflow: hidden;
 }
 
+.tracker-card h1,
+.tracker-card h2,
+.tracker-card h3,
+.tracker-card p,
+.tracker-card label {
+  color: var(--text);
+}
 
 .tracker-card input,
-.tracker-card select {
+.tracker-card select,
+.tracker-card textarea {
+  width: 100%;
+
+  max-width: 100%;
 
   padding: 12px;
 
-  border-radius: 10px;
+  border:
+    1px solid var(--border);
 
-  border: none;
+  border-radius: var(--radius-sm);
 
   background: var(--background);
 
   color: var(--text);
 
-  font-size: 1rem;
-
+  min-width: 0;
 }
 
-
 .tracker-card button {
-
   padding: 12px;
 
-  border-radius: 10px;
+  border:
+    2px solid var(--secondary);
 
-  border: none;
+  border-radius: var(--radius-sm);
 
   background: var(--secondary);
 
   color: var(--background);
 
-  font-weight: bold;
-
-  cursor: pointer;
-
+  font-weight: 800;
 }
 
-
 .tracker-card button:hover {
+  background: var(--accent);
+
+  border-color: var(--accent);
+}
+
+/* =========================================================
+   ADD SNAKE BUTTON
+========================================================= */
+
+.add-snake-button {
+  width: min(400px, 90%);
+
+  min-height: 50px;
+
+  padding: 15px;
+
+  margin: 15px auto;
+
+  display: block;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 15px;
 
   background: var(--accent);
 
+  color: var(--background);
+
+  font-size: 1.1rem;
+  font-weight: 800;
+
+  box-shadow:
+    0 0 15px rgba(0, 174, 255, 0.35);
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 }
 
-.multi-select {
+.add-snake-button:hover {
+  background: var(--secondary);
+
+  border-color: var(--secondary);
+
+  box-shadow:
+    0 0 20px rgba(245, 182, 66, 0.35);
+}
+
+.add-snake-button:active {
+  transform: scale(0.98);
+}
+
+/* =========================================================
+   SNAKE FORM
+========================================================= */
+
+.snake-form {
+  width:
+    min(
+      650px,
+      100%
+    );
+
+  margin:
+    20px auto;
+
+  padding: 25px;
+
+  min-width: 0;
+}
+
+.snake-form-card {
+  width: 100%;
+
+  min-width: 0;
+
+  overflow: visible;
+}
+
+.snake-form h2,
+.snake-form h3 {
+  color: var(--text);
+}
+
+.snake-form h2 {
+  margin-top: 0;
+}
+
+.snake-form h3 {
+  margin-top: 25px;
+  margin-bottom: 10px;
+}
+
+.snake-form label {
+  display: block;
 
   width: 100%;
 
-  position: relative;
+  margin-top: 12px;
+  margin-bottom: 6px;
 
+  text-align: left;
+
+  font-weight: 700;
+
+  color: var(--text);
 }
 
-
-.multi-select-button {
-
+.snake-form input,
+.snake-form select,
+.snake-form textarea {
   width: 100%;
 
-  padding: 12px;
+  min-height: 48px;
+
+  padding: 14px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 12px;
 
   background: var(--background);
 
   color: var(--text);
 
-  border: 1px solid var(--secondary);
+  font-size: 16px;
 
-  border-radius: 10px;
+  min-width: 0;
+}
+
+.snake-form textarea {
+  min-height: 120px;
+
+  resize: vertical;
+}
+
+/* =========================================================
+   FORM SECTIONS
+========================================================= */
+
+.form-section {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  margin-bottom: 25px;
+
+  text-align: left;
+
+  min-width: 0;
+
+  overflow: visible;
+}
+
+.form-section h3 {
+  margin:
+    5px
+    0
+    10px;
+
+  text-align: center;
+}
+
+.form-section label {
+  margin-top: 5px;
+
+  font-weight: 700;
+}
+
+.form-section input,
+.form-section select,
+.form-section textarea {
+  width: 100%;
+
+  min-height: 48px;
+
+  padding: 14px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 12px;
+
+  background: var(--background);
+
+  color: var(--text);
+
+  font-size: 16px;
+
+  min-width: 0;
+}
+
+.form-section textarea {
+  min-height: 110px;
+
+  resize: vertical;
+}
+
+/* =========================================================
+   SNAKE PHOTO
+========================================================= */
+
+.snake-photo-preview {
+  width: 100%;
+
+  display: flex;
+
+  justify-content: center;
+
+  margin-top: 10px;
+
+  min-width: 0;
+}
+
+.snake-photo-preview img {
+  width: min(220px, 100%);
+
+  max-height: 220px;
+
+  object-fit: cover;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 16px;
+
+  box-shadow:
+    0 0 15px rgba(0, 174, 255, 0.3);
+}
+
+.snake-form-photo {
+  display: block;
+
+  width: 140px;
+  height: 140px;
+
+  object-fit: cover;
+
+  margin: 15px auto;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 15px;
+
+  box-shadow:
+    0 0 15px rgba(0, 174, 255, 0.3);
+}
+
+/* =========================================================
+   SAVE SNAKE BUTTON
+========================================================= */
+
+.save-snake-button {
+  width: 100%;
+
+  min-height: 56px;
+
+  padding: 14px 20px;
+
+  margin-top: 25px;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 14px;
+
+  background: var(--accent);
+
+  color: var(--background);
+
+  font-size: 18px;
+  font-weight: 800;
+
+  box-shadow:
+    0 0 15px rgba(0, 174, 255, 0.3);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.save-snake-button:hover {
+  transform: translateY(-2px);
+
+  background: var(--secondary);
+
+  border-color: var(--secondary);
+
+  box-shadow:
+    0 0 22px rgba(245, 182, 66, 0.45);
+}
+
+.save-snake-button:active {
+  transform: scale(0.98);
+}
+
+.save-snake-button:disabled {
+  opacity: 0.65;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+/* =========================================================
+   SECONDARY BUTTON
+========================================================= */
+
+.secondary-button {
+  margin-top: 15px;
+
+  background: var(--surface);
+
+  color: var(--text);
+
+  border:
+    2px solid var(--accent);
+}
+
+/* =========================================================
+   BACK BUTTON — TINY TITANS THEMED
+   ========================================================= */
+
+.back-button {
+  width: fit-content;
+  min-width: 120px;
+  min-height: var(--touch-target);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  margin: 20px auto;
+  padding: 10px 22px;
+
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(111, 36, 184, 0.95),
+      rgba(38, 8, 61, 0.98)
+    ) !important;
+
+  color: var(--text) !important;
+
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  font-weight: 800;
+
+  text-align: center;
+  text-decoration: none;
+
+  box-shadow:
+    0 0 10px rgba(0, 174, 255, 0.18),
+    inset 0 0 10px rgba(0, 174, 255, 0.05);
+
+  cursor: pointer;
+  touch-action: manipulation;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.back-button:hover {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(0, 174, 255, 0.95),
+      rgba(111, 36, 184, 0.95)
+    ) !important;
+
+  border-color: var(--accent) !important;
+
+  color: var(--background) !important;
+
+  box-shadow:
+    0 0 16px rgba(0, 174, 255, 0.45),
+    inset 0 0 10px rgba(255, 255, 255, 0.08);
+
+  transform: translateY(-2px);
+}
+
+.back-button:active {
+  transform: scale(0.97);
+}
+
+.back-button:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 3px;
+
+  box-shadow:
+    0 0 0 4px rgba(245, 182, 66, 0.15),
+    0 0 18px rgba(0, 174, 255, 0.35);
+}
+
+/* =========================================================
+   MOBILE BACK BUTTON
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .back-button {
+    width: 100%;
+    max-width: 320px;
+
+    min-height: 48px;
+
+    margin: 18px auto;
+    padding: 12px 20px;
+
+    font-size: 1rem;
+  }
+}
+
+/* =========================================================
+   MORPH CHIPS
+========================================================= */
+
+.morph-chip {
+  display: inline-flex;
+
+  align-items: center;
+
+  max-width: 100%;
+
+  padding: 6px 12px;
+
+  margin: 3px;
+
+  border:
+    1px solid var(--accent);
+
+  border-radius: 20px;
+
+  background: var(--primary);
+
+  color: var(--text);
+
+  font-size: 0.85rem;
+
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   MULTI SELECT
+========================================================= */
+
+.multi-select {
+  width: 100%;
+
+  position: relative;
+
+  min-width: 0;
+}
+
+/* =========================================================
+   MULTI SELECT BUTTON
+========================================================= */
+
+.multi-select-button {
+  width: 100%;
+
+  min-height: 50px;
+
+  padding: 12px 16px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 12px;
+
+  background: var(--background);
+
+  color: var(--text);
+
+  font-size: 16px;
+  font-weight: 700;
 
   cursor: pointer;
 
   text-align: left;
 
+  min-width: 0;
 }
 
+.multi-select-button span {
+  color: inherit;
 
+  min-width: 0;
 
-.multi-select-menu {
-
-  position: absolute;
-
-  width: 100%;
-
-  background: var(--surface);
-
-  border-radius: 10px;
-
-  padding: 15px;
-
-  z-index: 10;
-
-  border: 1px solid var(--secondary);
-
+  overflow-wrap: anywhere;
 }
 
+.multi-select-button:hover {
+  border-color: var(--accent);
 
-
-.multi-select-menu input[type="text"],
-.multi-select-menu input {
-
-  width: 100%;
-
-  padding: 10px;
-
-  margin-bottom: 10px;
-
+  box-shadow:
+    0 0 10px rgba(0, 174, 255, 0.2);
 }
 
+.multi-select-arrow {
+  color: inherit;
 
+  font-size: 12px;
 
-.multi-select-options {
+  flex-shrink: 0;
 
-  max-height: 220px;
-
-  overflow-y: auto;
-
+  transition:
+    transform 0.2s ease;
 }
 
-
-
-.multi-select-options label {
-
-  display: block;
-
-  padding: 8px;
-
-  cursor: pointer;
-
+.multi-select-arrow.open {
+  transform: rotate(180deg);
 }
 
-
-
-.multi-select-options label:hover {
-
-  background: var(--background);
-
-}
-
-
+/* =========================================================
+   SELECTED TAGS
+========================================================= */
 
 .selected-tags {
-
   display: flex;
 
   flex-wrap: wrap;
 
-  gap: 8px;
+  gap: 6px;
 
   margin-top: 10px;
 
+  min-width: 0;
 }
 
+.selected-tag {
+  display: inline-flex;
 
+  align-items: center;
 
-.selected-tags span {
+  max-width: 100%;
 
-  background: var(--secondary);
+  padding: 6px 10px;
 
-  color: var(--background);
-
-  padding: 5px 10px;
+  border:
+    1px solid var(--accent);
 
   border-radius: 20px;
 
-  font-size: 0.85rem;
+  background: var(--primary);
 
+  color: var(--text);
+
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  overflow-wrap: anywhere;
 }
 
-.snake-grid {
+/* =========================================================
+   MULTI SELECT MENU
+========================================================= */
 
-  display:grid;
+.multi-select-menu {
+  width: 100%;
+
+  max-width: 100%;
+
+  margin-top: 8px;
+
+  padding: 12px;
+
+  background: var(--surface);
+
+  border:
+    2px solid var(--border);
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.35);
+
+  position: relative;
+
+  z-index: 100;
+
+  min-width: 0;
+
+  overflow: visible;
+}
+
+.multi-select-search {
+  width: 100%;
+
+  min-width: 0;
+
+  padding: 12px;
+
+  margin-bottom: 10px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 10px;
+
+  background: var(--background);
+
+  color: var(--text);
+
+  font-size: 16px;
+}
+
+.multi-select-options {
+  width: 100%;
+
+  max-height: 280px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  -webkit-overflow-scrolling: touch;
+
+  overscroll-behavior: contain;
+}
+
+.multi-select-option {
+  width: 100%;
+
+  min-height: 42px;
+
+  padding: 8px 10px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  color: var(--text);
+
+  text-align: left;
+
+  transition:
+    background 0.15s ease;
+
+  min-width: 0;
+}
+
+.multi-select-option:hover {
+  background:
+    rgba(0, 174, 255, 0.12);
+}
+
+.multi-select-option.selected {
+  background:
+    rgba(0, 174, 255, 0.18);
+}
+
+.multi-select-option input {
+  position: absolute;
+
+  opacity: 0;
+
+  width: 1px;
+  height: 1px;
+}
+
+.multi-select-check {
+  width: 20px;
+  height: 20px;
+
+  min-width: 20px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border:
+    2px solid rgba(0, 174, 255, 0.65);
+
+  border-radius: 5px;
+
+  background: var(--background);
+
+  color: var(--text);
+
+  font-size: 14px;
+  font-weight: 900;
+
+  line-height: 1;
+
+  flex-shrink: 0;
+}
+
+.multi-select-option.selected
+.multi-select-check {
+  background: var(--accent);
+
+  border-color: var(--accent);
+
+  color: var(--background);
+
+  box-shadow:
+    0 0 8px rgba(0, 174, 255, 0.35);
+}
+
+.multi-select-label {
+  flex: 1;
+
+  min-width: 0;
+
+  color: var(--text);
+
+  font-size: 16px;
+
+  line-height: 1.2;
+
+  overflow-wrap: anywhere;
+}
+
+.multi-select-empty {
+  padding: 20px;
+
+  text-align: center;
+
+  color: var(--muted);
+
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   WEIGHT PAGES
+========================================================= */
+
+.weight-page {
+  width: 100%;
+
+  max-width: 1400px;
+
+  margin: 0 auto;
+
+  padding:
+    0
+    0
+    40px;
+
+  min-width: 0;
+}
+
+.weight-records-panel {
+  width: 100%;
+
+  margin-top: 10px;
+
+  min-width: 0;
+}
+
+.weight-records-panel h2 {
+  margin-bottom: 20px;
+}
+
+/* =========================================================
+   WEIGHT REMINDER GRID
+========================================================= */
+
+.weight-reminder-grid {
+  width: 100%;
+
+  display: grid;
 
   grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
 
-  repeat(auto-fill, minmax(160px, 1fr));
+  gap: 25px;
 
-  gap:20px;
+  align-items: stretch;
 
+  min-width: 0;
 }
 
+.weight-reminder-card {
+  width: 100%;
 
+  min-width: 0;
 
-.snake-tile {
+  padding: 25px;
 
-  background:var(--surface);
+  display: flex;
+  flex-direction: column;
 
-  border-radius:16px;
+  gap: 15px;
 
-  padding:15px;
-
-  text-align:center;
-
-  cursor:pointer;
-
-  transition:transform 0.2s ease;
-
+  overflow: hidden;
 }
 
+.weight-reminder-click-area {
+  width: 100%;
 
+  cursor: pointer;
 
-.snake-tile:hover {
-
-  transform:translateY(-5px);
-
+  min-width: 0;
 }
 
+/* =========================================================
+   WEIGHT REMINDER HEADER
+========================================================= */
 
+.weight-reminder-header {
+  width: 100%;
 
-.snake-tile img {
+  display: flex;
 
-  width:100%;
+  align-items: center;
 
-  aspect-ratio:1/1;
+  gap: 20px;
 
-  object-fit:cover;
+  margin-bottom: 15px;
 
-  border-radius:12px;
-
+  min-width: 0;
 }
 
+.weight-reminder-photo,
+.weight-reminder-placeholder {
+  width: 80px;
+  height: 80px;
 
+  min-width: 80px;
 
-.snake-placeholder {
+  border-radius: 50%;
 
-  width:100%;
-
-  aspect-ratio:1/1;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  font-size:50px;
-
+  flex-shrink: 0;
 }
 
+.weight-reminder-photo {
+  object-fit: cover;
+}
 
+.weight-reminder-placeholder {
+  display: flex;
 
-.snake-tile h3 {
+  align-items: center;
+  justify-content: center;
 
-  margin-top:12px;
+  font-size: 45px;
 
+  background: var(--background);
+
+  border:
+    2px solid var(--border);
+}
+
+/* =========================================================
+   WEIGHT REMINDER CHART
+========================================================= */
+
+.weight-reminder-chart {
+  width: 100%;
+
+  min-width: 0;
+
+  padding: 15px;
+
+  margin-top: 15px;
+
+  background: var(--background);
+
+  border-radius: 15px;
+
+  overflow: hidden;
+}
+
+.weight-reminder-chart h4 {
+  margin:
+    0
+    0
+    10px;
+
+  text-align: center;
+}
+
+/* =========================================================
+   WEIGHT STATUS
+========================================================= */
+
+.weight-reminder-card.overdue {
+  border-color: var(--danger);
+}
+
+.weight-reminder-card.due {
+  border-color: var(--secondary);
+}
+
+.weight-reminder-card.upcoming {
+  border-color: var(--accent);
+}
+
+/* =========================================================
+   WEIGHT RECORDS GRID
+========================================================= */
+
+.weight-records-grid {
+  width: min(1200px, 100%);
+
+  margin:
+    25px auto
+    40px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(280px, 1fr)
+    );
+
+  gap: 25px;
+
+  align-items: stretch;
+
+  min-width: 0;
+}
+
+/* =========================================================
+   WEIGHT RECORDS CARD
+========================================================= */
+
+.weight-records-card {
+  width: 100%;
+
+  min-width: 0;
+
+  padding: 22px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 15px;
+
+  overflow: hidden;
+}
+
+.weight-records-header {
+  display: flex;
+
+  align-items: center;
+
+  gap: 15px;
+
+  min-width: 0;
+}
+
+.weight-records-header h2 {
+  margin:
+    0
+    0
+    5px;
+
+  color: var(--text);
+
+  overflow-wrap: anywhere;
+}
+
+.weight-records-header p {
+  margin: 0;
+
+  color: var(--text);
+
+  overflow-wrap: anywhere;
+}
+
+.weight-records-photo,
+.weight-records-placeholder {
+  width: 70px;
+  height: 70px;
+
+  min-width: 70px;
+
+  border-radius: 50%;
+
+  border:
+    2px solid var(--accent);
+
+  flex-shrink: 0;
+}
+
+.weight-records-photo {
+  object-fit: cover;
+}
+
+.weight-records-placeholder {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background: var(--background);
+
+  font-size: 38px;
+}
+
+.weight-records-chart {
+  width: 100%;
+
+  min-width: 0;
+
+  padding: 8px;
+
+  background: var(--background);
+
+  border-radius: 14px;
+
+  overflow: hidden;
+}
+
+.weight-records-summary {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+.weight-records-summary p {
+  margin: 0;
+
+  padding: 10px;
+
+  background:
+    rgba(0, 174, 255, 0.08);
+
+  border-radius: 10px;
+
+  font-size: 0.9rem;
+
+  color: var(--text);
+
+  min-width: 0;
+}
+
+.weight-records-button {
+  width: 100%;
+
+  min-height: 48px;
+
+  padding: 12px;
+
+  margin-top: auto;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 12px;
+
+  background: var(--accent);
+
+  color: var(--background);
+
+  font-weight: 800;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.weight-records-button:hover {
+  background: var(--secondary);
+
+  border-color: var(--secondary);
+}
+
+.weight-records-button:active {
+  transform: scale(0.98);
+}
+
+/* =========================================================
+   SNAKE PROFILE
+========================================================= */
+
+.snake-profile-photo {
+  width: min(320px, 100%);
+
+  margin:
+    10px auto
+    30px;
+
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  min-width: 0;
+}
+
+.snake-profile-photo img {
+  width: 100%;
+
+  aspect-ratio: 1;
+
+  object-fit: cover;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 20px;
+
+  box-shadow:
+    0 0 20px rgba(0, 174, 255, 0.3);
+}
+
+.snake-profile-placeholder {
+  width: 100%;
+
+  aspect-ratio: 1;
+
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  font-size: 100px;
+
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(0, 174, 255, 0.14),
+      transparent 60%
+    ),
+    var(--surface);
+
+  border:
+    2px solid var(--border);
+
+  border-radius: 20px;
+
+  box-shadow: var(--glow-soft);
+}
+
+/* =========================================================
+   PROFILE GRID
+========================================================= */
+
+.snake-profile-grid {
+  width: min(1000px, 100%);
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 25px;
+
+  margin:
+    0
+    auto
+    30px;
+
+  min-width: 0;
+}
+
+.snake-profile-card {
+  width: 100%;
+
+  min-height: 230px;
+
+  padding: 25px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+
+  color: var(--text);
+
+  cursor: pointer;
+
+  overflow: hidden;
+}
+
+.snake-profile-card-icon {
+  font-size: 45px;
+
+  margin-bottom: 10px;
+
+  line-height: 1;
+}
+
+.snake-profile-card h2 {
+  margin:
+    5px
+    0
+    15px;
+
+  color: var(--text);
+}
+
+.snake-profile-card p {
+  margin:
+    5px
+    0;
+
+  color: var(--text);
+}
+
+.snake-profile-big-value {
+  font-size: 2rem;
+
+  font-weight: 800;
+}
+
+.snake-profile-mini-chart {
+  width: 100%;
+
+  max-width: 280px;
+
+  margin-top: 8px;
+
+  pointer-events: none;
 }
 
 .snake-profile-actions {
+  width: min(1000px, 100%);
 
-display:flex;
+  margin:
+    0
+    auto
+    30px;
 
-flex-direction:column;
+  display: grid;
 
-gap:12px;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
 
+  gap: 12px;
+
+  min-width: 0;
 }
 
+/* =========================================================
+   RESPONSIVE SYSTEM
+========================================================= */
 
-.snake-profile-actions button {
+/* ---------------------------------------------------------
+   TABLET
+--------------------------------------------------------- */
 
-padding:14px;
+@media (max-width: 1000px) {
+  :root {
+    --page-padding: 16px;
+  }
 
-border-radius:12px;
+  .app-content {
+    padding-bottom:
+      calc(45px + env(safe-area-inset-bottom));
+  }
 
-font-size:16px;
+  .weight-reminder-grid,
+  .weight-records-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
 
+    gap: 20px;
+  }
+
+  .weight-reminder-card,
+  .weight-records-card {
+    padding: 20px;
+  }
+}
+
+/* ---------------------------------------------------------
+   MOBILE
+--------------------------------------------------------- */
+
+@media (max-width: 700px) {
+  :root {
+    --page-padding: 12px;
+  }
+
+  html,
+  body {
+    width: 100%;
+
+    min-width: 320px;
+
+    overflow-x: hidden;
+  }
+
+  .app-shell,
+  .app-main,
+  .app-content,
+  .main-content,
+  .page-container {
+    width: 100%;
+
+    min-width: 0;
+
+    max-width: 100%;
+
+    overflow-x: hidden;
+  }
+
+  .app-content {
+    width: 100%;
+
+    padding:
+      15px
+      max(12px, env(safe-area-inset-left))
+      calc(40px + env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-right));
+  }
+
+  .app-header {
+    padding:
+      8px
+      max(12px, env(safe-area-inset-left))
+      4px
+      max(12px, env(safe-area-inset-right));
+  }
+
+  .app-header img {
+    max-width:
+      min(
+        220px,
+        65vw
+      );
+  }
+
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  /* =======================================================
+     DASHBOARD
+  ======================================================= */
+
+  .dashboard {
+    padding:
+      20px
+      0
+      45px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+
+    gap: 18px;
+  }
+
+  .dashboard-card {
+    min-height: 190px;
+
+    padding: 20px;
+  }
+
+  /* =======================================================
+     NAVIGATION TILES
+  ======================================================= */
+
+  .nav-grid {
+    grid-template-columns: 1fr;
+
+    gap: 18px;
+
+    padding:
+      20px
+      0;
+  }
+
+  .nav-card {
+    min-height: 160px;
+
+    padding: 22px;
+  }
+
+  /* =======================================================
+     SNAKE GRID
+  ======================================================= */
+
+  .snake-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 12px;
+
+    padding:
+      15px
+      0;
+  }
+
+  /* =======================================================
+     CARDS
+  ======================================================= */
+
+  .dashboard-card,
+  .nav-card,
+  .tracker-card,
+  .snake-card,
+  .snake-tile,
+  .morph-card,
+  .weight-reminder-card,
+  .welcome-card,
+  .weight-records-card {
+    border-radius: 16px;
+  }
+
+  /* Disable desktop lift effect on touch devices */
+  .dashboard-card:hover,
+  .tracker-card:hover,
+  .snake-card:hover,
+  .snake-tile:hover,
+  .morph-card:hover,
+  .weight-reminder-card:hover,
+  .nav-card:hover,
+  .welcome-card:hover,
+  .weight-records-card:hover,
+  .snake-profile-card:hover {
+    transform: none;
+  }
+
+  /* =======================================================
+     WELCOME
+  ======================================================= */
+
+  .welcome-card {
+    padding: 20px;
+  }
+
+  /* =======================================================
+     TRACKER
+  ======================================================= */
+
+  .tracker-card {
+    width: 100%;
+
+    padding: 20px;
+  }
+
+  /* =======================================================
+     FORMS
+  ======================================================= */
+
+  .snake-form {
+    width: 100%;
+
+    margin:
+      10px
+      auto;
+
+    padding: 18px;
+  }
+
+  .snake-form-card {
+    width: 100%;
+
+    padding: 18px;
+
+    overflow: visible;
+  }
+
+  .snake-form h2 {
+    font-size: 1.4rem;
+  }
+
+  .snake-form h3 {
+    font-size: 1.1rem;
+  }
+
+  .snake-form input,
+  .snake-form select,
+  .snake-form textarea,
+  .form-section input,
+  .form-section select,
+  .form-section textarea {
+    min-height: 50px;
+
+    font-size: 16px;
+  }
+
+  .form-section {
+    margin-bottom: 22px;
+
+    overflow: visible;
+  }
+
+  /* =======================================================
+     BUTTONS
+  ======================================================= */
+
+  .save-snake-button {
+    min-height: 58px;
+
+    margin-top: 20px;
+
+    font-size: 18px;
+  }
+
+  .add-snake-button {
+    width: 90%;
+  }
+
+  /* =======================================================
+     PHOTO
+  ======================================================= */
+
+  .snake-photo-preview img {
+    width: min(220px, 80vw);
+
+    max-height: 220px;
+  }
+
+  .snake-form-photo {
+    width: 130px;
+    height: 130px;
+  }
+
+  /* =======================================================
+     WEIGHT
+  ======================================================= */
+
+  .weight-page {
+    width: 100%;
+  }
+
+  .weight-reminder-grid,
+  .weight-records-grid {
+    grid-template-columns: 1fr;
+
+    gap: 18px;
+
+    width: 100%;
+  }
+
+  .weight-reminder-card,
+  .weight-records-card {
+    padding: 18px;
+  }
+
+  .weight-reminder-header {
+    gap: 15px;
+  }
+
+  .weight-reminder-photo,
+  .weight-reminder-placeholder {
+    width: 70px;
+    height: 70px;
+
+    min-width: 70px;
+  }
+
+  .weight-records-summary {
+    grid-template-columns: 1fr;
+  }
+
+  /* =======================================================
+     PROFILE
+  ======================================================= */
+
+  .snake-profile-grid {
+    width: 100%;
+
+    grid-template-columns: 1fr;
+
+    gap: 18px;
+  }
+
+  .snake-profile-card {
+    min-height: 210px;
+
+    padding: 22px;
+  }
+
+  .snake-profile-actions {
+    width: 100%;
+
+    grid-template-columns: 1fr;
+  }
+
+  /* =======================================================
+     MULTI SELECT
+  ======================================================= */
+
+  .multi-select {
+    width: 100%;
+  }
+
+  .multi-select-button {
+    min-height: 52px;
+
+    padding:
+      13px
+      14px;
+  }
+
+  .multi-select-option {
+    min-height: 46px;
+
+    padding: 10px;
+  }
+
+  .multi-select-options {
+    max-height: 300px;
+  }
+
+  .multi-select-menu {
+    padding: 10px;
+
+    z-index: 100;
+  }
+
+  .multi-select-search {
+    min-height: 48px;
+  }
+
+  /* =======================================================
+     BACK BUTTON
+  ======================================================= */
+
+  .back-button {
+    min-height: 46px;
+
+    padding:
+      11px
+      20px;
+  }
+}
+
+/* ---------------------------------------------------------
+   SMALL PHONES
+--------------------------------------------------------- */
+
+@media (max-width: 400px) {
+  .app-content {
+    padding:
+      12px
+      max(10px, env(safe-area-inset-left))
+      calc(35px + env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-right));
+  }
+
+  .app-header img {
+    max-width: 200px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+  }
+
+  .snake-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tracker-card {
+    padding: 16px;
+  }
+
+  .snake-form,
+  .snake-form-card {
+    padding: 15px;
+  }
+
+  .weight-reminder-card,
+  .weight-records-card {
+    padding: 15px;
+  }
+
+  .dashboard-card {
+    padding: 18px;
+  }
+
+  .nav-card {
+    padding: 18px;
+  }
+
+  .multi-select-menu {
+    padding: 8px;
+  }
+
+  .multi-select-option {
+    min-height: 48px;
+  }
+}
+
+/* ---------------------------------------------------------
+   VERY SMALL / NARROW PHONES
+--------------------------------------------------------- */
+
+@media (max-width: 350px) {
+  :root {
+    --page-padding: 8px;
+  }
+
+  .app-content {
+    padding-left:
+      max(8px, env(safe-area-inset-left));
+
+    padding-right:
+      max(8px, env(safe-area-inset-right));
+  }
+
+  .dashboard-card,
+  .nav-card,
+  .tracker-card,
+  .snake-form-card,
+  .weight-reminder-card,
+  .weight-records-card {
+    padding: 14px;
+  }
+
+  .snake-grid {
+    gap: 8px;
+  }
+
+  .snake-tile {
+    padding: 10px;
+  }
+
+  .dashboard-icon,
+  .nav-card-icon {
+    font-size: 45px;
+  }
+}
+
+/* =========================================================
+   LANDSCAPE MOBILE
+========================================================= */
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .app-content {
+    padding-bottom:
+      calc(30px + env(safe-area-inset-bottom));
+  }
+
+  .app-header {
+    padding-top: 6px;
+  }
+
+  .app-header img {
+    max-width: 180px;
+  }
+
+  .dashboard-card {
+    min-height: 160px;
+  }
+
+  .nav-card {
+    min-height: 140px;
+  }
+}
+
+/* =========================================================
+   TOUCH DEVICE SAFETY
+========================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  .snake-tile,
+  .nav-card,
+  .dashboard-card,
+  .weight-reminder-click-area,
+  .multi-select-option {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  .multi-select-button,
+  .multi-select-option {
+    touch-action: manipulation;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION ACCESSIBILITY
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+
+    transition-duration:
+      0.01ms !important;
+
+    animation-duration:
+      0.01ms !important;
+
+    animation-iteration-count:
+      1 !important;
+  }
+}
+
+/* =========================================================
+   MOBILE-SAFE PHOTO PICKER
+   ========================================================= */
+
+.snake-photo-picker {
+  width: 100%;
+  min-height: 52px;
+
+  margin: 10px 0 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 14px 18px;
+
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+
+  background: var(--surface);
+  color: var(--text);
+
+  font-size: 16px;
+  font-weight: 800;
+
+  text-align: center;
+
+  cursor: pointer;
+
+  touch-action: manipulation;
+
+  -webkit-tap-highlight-color: transparent;
+
+  box-shadow:
+    0 0 12px rgba(0, 174, 255, 0.18);
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.snake-photo-picker:hover {
+  background: var(--primary);
+
+  border-color: var(--secondary);
+
+  box-shadow:
+    0 0 18px rgba(245, 182, 66, 0.25);
+}
+
+.snake-photo-picker:active {
+  transform: scale(0.98);
+}
+
+.snake-photo-input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   DATE DURATION
+   ========================================================= */
+
+.date-duration-display {
+  width: 100%;
+
+  margin:
+    -2px 0
+    8px;
+
+  padding: 10px 12px;
+
+  border-left:
+    3px solid var(--accent);
+
+  border-radius: 8px;
+
+  background:
+    rgba(0, 174, 255, 0.08);
+
+  color: var(--text);
+
+  font-size: 0.95rem;
+
+  text-align: left;
+}
+
+.date-duration-display strong {
+  color: var(--secondary);
+}
+
+/* =========================================================
+   SAVE BUTTON — MOBILE SAFE
+   ========================================================= */
+
+.save-snake-button {
+  position: relative;
+
+  z-index: 5;
+
+  width: 100%;
+
+  min-height: 58px;
+
+  margin-top: 28px;
+
+  padding:
+    14px
+    20px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 14px;
+
+  background: var(--accent);
+
+  color: var(--background);
+
+  font-size: 18px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  touch-action: manipulation;
+
+  -webkit-tap-highlight-color: transparent;
+
+  box-shadow:
+    0 0 15px rgba(0, 174, 255, 0.3);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.save-snake-button:hover {
+  transform: translateY(-2px);
+
+  background: var(--secondary);
+
+  border-color: var(--secondary);
+
+  box-shadow:
+    0 0 22px rgba(245, 182, 66, 0.45);
+}
+
+.save-snake-button:active {
+  transform: scale(0.98);
+}
+
+.save-snake-button:disabled {
+  opacity: 0.6;
+
+  cursor: wait;
+
+  transform: none;
+}
+
+/* =========================================================
+   MOBILE FORM SAFETY
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .snake-form {
+    width: 100%;
+
+    max-width: 100%;
+
+    margin:
+      10px
+      auto;
+
+    padding:
+      18px
+      14px;
+  }
+
+  .snake-form input,
+  .snake-form select,
+  .snake-form textarea,
+  .snake-photo-picker,
+  .save-snake-button {
+    width: 100%;
+
+    max-width: 100%;
+  }
+
+  .snake-photo-picker {
+    min-height: 54px;
+
+    font-size: 16px;
+  }
+
+  .save-snake-button {
+    min-height: 60px;
+
+    margin-top: 24px;
+
+    font-size: 18px;
+  }
+}
+
+/* =========================================================
+   TINY TITANS BACK BUTTON
+   ========================================================= */
+
+button.back-button {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: fit-content;
+  min-width: 110px;
+  min-height: 44px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  margin: 20px 0;
+  padding: 10px 18px;
+
+  background: var(--surface) !important;
+  color: var(--text) !important;
+
+  border: 2px solid var(--accent) !important;
+  border-radius: 12px;
+
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  font-weight: 800;
+
+  line-height: 1;
+
+  box-shadow:
+    0 0 10px rgba(0, 174, 255, 0.18);
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button.back-button,
+button.back-button * {
+  color: var(--text) !important;
+}
+
+button.back-button:hover {
+  background: var(--primary) !important;
+  color: var(--text) !important;
+
+  border-color: var(--accent) !important;
+
+  box-shadow:
+    0 0 18px rgba(0, 174, 255, 0.4);
+
+  transform: translateY(-2px);
+}
+
+button.back-button:active {
+  background: var(--primary) !important;
+
+  transform: scale(0.97);
+}
+
+button.back-button:focus,
+button.back-button:focus-visible {
+  outline: none;
+
+  background: var(--surface) !important;
+  color: var(--text) !important;
+
+  border-color: var(--accent) !important;
+
+  box-shadow:
+    0 0 0 3px rgba(0, 174, 255, 0.18),
+    0 0 18px rgba(0, 174, 255, 0.35);
+}
+
+.back-button-icon {
+  color: var(--accent) !important;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.back-button-text {
+  color: var(--text) !important;
+  line-height: 1;
+}
+
+/* =========================================================
+   MOBILE BACK BUTTON
+   ========================================================= */
+
+@media (max-width: 700px) {
+  button.back-button {
+    min-width: 105px;
+    min-height: 44px;
+
+    margin: 12px 0 16px;
+    padding: 10px 16px;
+
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 400px) {
+  button.back-button {
+    min-width: 100px;
+
+    margin: 10px 0 14px;
+    padding: 9px 14px;
+  }
+}
+
+/* =========================================================
+   SNAKE SAVE — MOBILE TOUCH SAFETY
+   ========================================================= */
+
+.snake-form {
+  position: relative;
+  z-index: 1;
+}
+
+.snake-form .save-snake-button {
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.snake-form .save-snake-button:disabled {
+  pointer-events: none;
+}
+
+/* Make sure hidden photo input cannot intercept touches */
+.snake-photo-input {
+  pointer-events: none !important;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .snake-form .save-snake-button {
+    position: relative;
+    z-index: 50;
+    pointer-events: auto;
+    touch-action: manipulation;
+  }
 }

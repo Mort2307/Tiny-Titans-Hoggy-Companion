@@ -5,10 +5,10 @@ import logo from "../../assets/TinyTitans-Logo.JPG.jpg";
 function Header() {
   return (
     <header className="app-header">
-
-      <Link 
+      <Link
         to="/"
         className="logo-link"
+        aria-label="Tiny Titans home"
       >
         <img
           src={logo}
@@ -17,10 +17,7 @@ function Header() {
         />
       </Link>
 
-      <h1>
-        Tiny Titans
-      </h1>
-
+      <h1>Tiny Titans</h1>
     </header>
   );
 }

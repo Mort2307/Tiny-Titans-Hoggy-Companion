@@ -1,0 +1,252 @@
+/* =========================================
+   TINY TITANS HOME / DASHBOARD
+   ========================================= */
+
+.dashboard {
+  width: 100%;
+  padding: 30px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* =========================================
+   WELCOME CARD
+   ========================================= */
+
+.welcome-card {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto 30px;
+
+  padding: 30px;
+
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(0, 174, 255, 0.18),
+      transparent 65%
+    ),
+    var(--surface);
+
+  border-radius: 20px;
+
+  border: 2px solid rgba(0, 174, 255, 0.45);
+
+  box-shadow:
+    0 0 15px rgba(0, 174, 255, 0.25);
+
+  text-align: center;
+
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.welcome-card:hover {
+  transform: translateY(-4px);
+
+  border-color: var(--accent);
+
+  box-shadow:
+    0 0 25px rgba(0, 174, 255, 0.55);
+}
+
+/* =========================================
+   WELCOME TEXT
+   ========================================= */
+
+/*
+   Explicitly set these here so component-level
+   styling cannot turn them white.
+*/
+
+.welcome-card h1,
+.welcome-card h2,
+.welcome-card h3,
+.welcome-card h4,
+.welcome-card h5,
+.welcome-card h6 {
+  color: #F5B642 !important;
+
+  margin-top: 0;
+
+  text-align: center;
+
+  text-shadow:
+    0 0 10px rgba(245, 182, 66, 0.18);
+}
+
+.welcome-card p {
+  color: #F5B642 !important;
+
+  margin-bottom: 0;
+
+  text-align: center;
+
+  line-height: 1.6;
+}
+
+/* =========================================
+   DASHBOARD GRID
+   ========================================= */
+
+.dashboard-grid {
+  width: 100%;
+  max-width: 1000px;
+
+  margin: 0 auto;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 25px;
+}
+
+/* =========================================
+   DASHBOARD CARDS
+   ========================================= */
+
+.dashboard-card {
+  min-height: 220px;
+
+  padding: 30px;
+
+  box-sizing: border-box;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  align-items: center;
+
+  text-align: center;
+
+  text-decoration: none;
+
+  color: #F5B642 !important;
+
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(0, 174, 255, 0.14),
+      transparent 60%
+    ),
+    var(--surface);
+
+  border-radius: 20px;
+
+  border:
+    2px solid rgba(0, 174, 255, 0.45);
+
+  box-shadow:
+    0 0 15px rgba(0, 174, 255, 0.22);
+
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* =========================================
+   DASHBOARD CARD HOVER
+   ========================================= */
+
+.dashboard-card:hover {
+  transform: translateY(-6px);
+
+  border-color: var(--accent);
+
+  box-shadow:
+    0 0 25px rgba(0, 174, 255, 0.55);
+}
+
+/* =========================================
+   DASHBOARD CARD TEXT
+   ========================================= */
+
+.dashboard-card h1,
+.dashboard-card h2,
+.dashboard-card h3,
+.dashboard-card h4,
+.dashboard-card h5,
+.dashboard-card h6 {
+  color: #F5B642 !important;
+
+  margin: 10px 0;
+}
+
+.dashboard-card p {
+  color: #F5B642 !important;
+
+  margin: 5px 0;
+
+  line-height: 1.5;
+}
+
+/* =========================================
+   DASHBOARD ICON
+   ========================================= */
+
+.dashboard-icon {
+  font-size: 55px;
+
+  margin-bottom: 20px;
+}
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 700px) {
+
+  .dashboard {
+    padding: 20px 15px 45px;
+  }
+
+  .welcome-card {
+    padding: 22px 18px;
+
+    margin-bottom: 20px;
+  }
+
+  .welcome-card h2 {
+    font-size: 1.5rem;
+  }
+
+  .welcome-card p {
+    font-size: 0.95rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+
+    gap: 18px;
+  }
+
+  .dashboard-card {
+    min-height: 180px;
+
+    padding: 22px 18px;
+  }
+
+  .dashboard-card h3 {
+    font-size: 1.2rem;
+  }
+
+  .dashboard-card p {
+    font-size: 0.95rem;
+  }
+
+  .dashboard-icon {
+    font-size: 48px;
+
+    margin-bottom: 12px;
+  }
+}

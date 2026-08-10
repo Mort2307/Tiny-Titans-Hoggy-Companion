@@ -1,136 +1,277 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import {
+  useParams,
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import type { Snake } from "../types/Snake";
 
-import { migrateSnake } from "../utils/snakeMigration";
+import {
+  migrateSnake,
+} from "../utils/snakeMigration";
 
+import {
+  getWeightReminder,
+} from "../utils/weightReminder";
+
+import {
+  getUserSnake,
+  deleteUserSnake,
+} from "../services/snakeService";
+
+import {
+  useAuth,
+} from "../context/AuthContext";
+
+import WeightMiniChart from "../components/WeightMiniChart";
 import BackHomeButton from "../components/BackHomeButton";
 
-
 function SnakeProfile() {
-
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
 
   const navigate = useNavigate();
 
-  const [snake, setSnake] = useState<Snake | null>(null);
+  const {
+    user,
+    loading,
+    profileLoading,
+  } = useAuth();
 
+  const [
+    snake,
+    setSnake,
+  ] = useState<Snake | null>(null);
 
+  const [
+    loadingSnake,
+    setLoadingSnake,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(null);
+
+  // =========================================
+  // LOAD SNAKE
+  // =========================================
 
   useEffect(() => {
+    let cancelled = false;
 
-    const saved =
-      localStorage.getItem(
-        "tinyTitansSnakes"
-      );
-
-
-    if (!saved) {
-
-      setSnake(null);
-
-      return;
-
-    }
-
-
-
-    try {
-
-      const snakes: Snake[] =
-        JSON.parse(saved)
-          .map(
-            (item: Partial<Snake>) =>
-              migrateSnake(item)
-          );
-
-
-
-      const found =
-        snakes.find(
-          item =>
-            item.id === id
-        );
-
-
-
-      if (found) {
-
-        setSnake(found);
-
+    async function loadSnake() {
+      /*
+       * Wait for authentication/profile
+       * state to finish resolving.
+       */
+      if (
+        loading ||
+        profileLoading
+      ) {
+        return;
       }
 
-      else {
+      if (!user) {
+        if (!cancelled) {
+          setSnake(null);
+
+          setError(
+            "You must be logged in to view this snake."
+          );
+
+          setLoadingSnake(false);
+        }
+
+        return;
+      }
+
+      if (!id) {
+        if (!cancelled) {
+          setSnake(null);
+
+          setError(
+            "No snake ID was supplied."
+          );
+
+          setLoadingSnake(false);
+        }
+
+        return;
+      }
+
+      try {
+        console.log(
+          "========================================="
+        );
+
+        console.log(
+          "Tiny Titans: PROFILE LOAD"
+        );
+
+        console.log(
+          "Route snake ID:",
+          id
+        );
+
+        console.log(
+          "Authenticated user:",
+          user.uid
+        );
+
+        console.log(
+          "Firestore path:",
+          `users/${user.uid}/snakes/${id}`
+        );
+
+        console.log(
+          "========================================="
+        );
+
+        const loadedSnake =
+          await getUserSnake(
+            user.uid,
+            id
+          );
+
+        if (
+          cancelled
+        ) {
+          return;
+        }
+
+        if (!loadedSnake) {
+          console.error(
+            "Tiny Titans: Firestore returned no snake",
+            {
+              requestedId: id,
+              userId: user.uid,
+            }
+          );
+
+          setSnake(null);
+
+          setError(
+            "This snake could not be found in your Tiny Titans account."
+          );
+
+          setLoadingSnake(false);
+
+          return;
+        }
+
+        /*
+         * Firestore document ID is authoritative.
+         *
+         * getUserSnake() already returns document.id,
+         * but we explicitly preserve it here.
+         */
+        const migratedSnake =
+          migrateSnake({
+            ...loadedSnake,
+
+            id:
+              loadedSnake.id || id,
+          });
+
+        console.log(
+          "Tiny Titans: snake profile loaded",
+          {
+            requestedId: id,
+            firestoreId:
+              migratedSnake.id,
+            name:
+              migratedSnake.name,
+          }
+        );
+
+        setSnake(
+          migratedSnake
+        );
+
+        setError(null);
+        setLoadingSnake(false);
+
+      } catch (loadError) {
+        if (
+          cancelled
+        ) {
+          return;
+        }
+
+        console.error(
+          "Tiny Titans: unable to load snake profile",
+          loadError
+        );
 
         setSnake(null);
 
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load this snake. Please try again."
+        );
+
+        setLoadingSnake(false);
       }
-
-
     }
 
-    catch(error) {
+    void loadSnake();
 
-      console.error(
-        "Unable to load snake profile",
-        error
-      );
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    id,
+    user,
+    loading,
+    profileLoading,
+  ]);
 
+  // =========================================
+  // CALCULATE AGE
+  // =========================================
 
-      setSnake(null);
-
-    }
-
-
-  }, [id]);
-
-
-
-
-  function calculateAge(date:string) {
-
-    if(!date)
-
+  function calculateAge(
+    date: string
+  ) {
+    if (!date) {
       return "-";
-
-
+    }
 
     const start =
       new Date(date);
 
-
     const now =
       new Date();
 
-
+    if (
+      Number.isNaN(
+        start.getTime()
+      )
+    ) {
+      return "-";
+    }
 
     let years =
-      now.getFullYear()
-      -
+      now.getFullYear() -
       start.getFullYear();
 
-
-
     let months =
-      now.getMonth()
-      -
+      now.getMonth() -
       start.getMonth();
 
-
-
     let days =
-      now.getDate()
-      -
+      now.getDate() -
       start.getDate();
 
-
-
-
-    if(days < 0) {
-
+    if (
+      days < 0
+    ) {
       months--;
-
 
       const previousMonth =
         new Date(
@@ -139,548 +280,637 @@ function SnakeProfile() {
           0
         );
 
-
-      days += previousMonth.getDate();
-
+      days +=
+        previousMonth.getDate();
     }
 
-
-
-    if(months < 0) {
-
+    if (
+      months < 0
+    ) {
       years--;
 
       months += 12;
-
     }
 
+    if (
+      years < 0
+    ) {
+      return "Not yet hatched";
+    }
 
+    const result: string[] = [];
 
-
-    const result:string[] = [];
-
-
-
-    if(years)
-
+    if (years) {
       result.push(
-        `${years} year${years !== 1 ? "s" : ""}`
+        `${years} year${
+          years !== 1
+            ? "s"
+            : ""
+        }`
       );
+    }
 
-
-
-    if(months)
-
+    if (months) {
       result.push(
-        `${months} month${months !== 1 ? "s" : ""}`
+        `${months} month${
+          months !== 1
+            ? "s"
+            : ""
+        }`
       );
+    }
 
-
-
-    if(days)
-
+    if (days) {
       result.push(
-        `${days} day${days !== 1 ? "s" : ""}`
+        `${days} day${
+          days !== 1
+            ? "s"
+            : ""
+        }`
       );
+    }
 
-
-
-    return result.join(", ");
-
+    return (
+      result.join(", ") ||
+      "0 days"
+    );
   }
 
+  // =========================================
+  // DELETE
+  // =========================================
 
+  async function deleteSnake() {
+    if (
+      !snake ||
+      !user
+    ) {
+      return;
+    }
 
-
-
-  function deleteSnake() {
-
-
-    if(!snake)
+    if (!snake.id) {
+      alert(
+        "This snake does not have a valid Firestore ID."
+      );
 
       return;
-
-
+    }
 
     const confirmed =
       window.confirm(
         `Delete ${snake.name}? This cannot be undone.`
       );
 
-
-
-    if(!confirmed)
-
+    if (!confirmed) {
       return;
+    }
 
+    try {
+      console.log(
+        "Tiny Titans: deleting snake",
+        {
+          userId:
+            user.uid,
 
-
-    const saved =
-      localStorage.getItem(
-        "tinyTitansSnakes"
+          snakeId:
+            snake.id,
+        }
       );
 
-
-
-    if(!saved)
-
-      return;
-
-
-
-    const snakes: Snake[] =
-      JSON.parse(saved)
-        .map(
-          (item: Partial<Snake>) =>
-            migrateSnake(item)
-        );
-
-
-
-    const updated =
-      snakes.filter(
-        item =>
-          item.id !== snake.id
+      await deleteUserSnake(
+        user.uid,
+        snake.id
       );
 
+      console.log(
+        "Tiny Titans: snake deleted successfully",
+        snake.id
+      );
 
+      navigate(
+        "/snakes",
+        {
+          replace: true,
+        }
+      );
 
-    localStorage.setItem(
-      "tinyTitansSnakes",
-      JSON.stringify(updated)
-    );
+    } catch (deleteError) {
+      console.error(
+        "Tiny Titans: unable to delete snake",
+        deleteError
+      );
 
-
-
-    navigate("/snakes");
-
-
+      alert(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Unable to delete this snake. Please try again."
+      );
+    }
   }
 
+  // =========================================
+  // EDIT
+  // =========================================
 
+  function openSnakeEditor() {
+    if (
+      !snake?.id
+    ) {
+      return;
+    }
 
+    navigate(
+      `/snakes/${snake.id}/edit`
+    );
+  }
 
+  // =========================================
+  // LOADING
+  // =========================================
 
-  if(!snake) {
-
+  if (
+    loading ||
+    profileLoading ||
+    loadingSnake
+  ) {
     return (
-
       <div className="page-container">
 
         <BackHomeButton />
 
+        <h1>
+          🐍 Loading Snake...
+        </h1>
 
-        <h2>
-          🐍 Snake not found
-        </h2>
+        <div className="tracker-card">
 
+          <h3>
+            Loading your Tiny Titan...
+          </h3>
 
-        <p>
-          The snake profile could not be loaded.
-        </p>
+          <p>
+            Fetching the snake profile
+            from Firebase.
+          </p>
 
+        </div>
 
       </div>
-
     );
-
   }
 
+  // =========================================
+  // ERROR
+  // =========================================
 
+  if (
+    error ||
+    !snake
+  ) {
+    return (
+      <div className="page-container">
 
+        <BackHomeButton />
 
+        <h1>
+          🐍 Snake Not Found
+        </h1>
+
+        <div className="tracker-card">
+
+          <h3>
+            {error ??
+              "This snake could not be found."}
+          </h3>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                "/snakes"
+              )
+            }
+          >
+            ← Back to My Hoggies
+          </button>
+
+        </div>
+
+      </div>
+    );
+  }
+
+  // =========================================
+  // REMINDER
+  // =========================================
+
+  const reminder =
+    getWeightReminder(
+      snake
+    );
+
+  // =========================================
+  // WEIGHT HISTORY
+  // =========================================
+
+  const weightHistory =
+    snake.weightHistory ?? [];
+
+  // =========================================
+  // PAGE
+  // =========================================
 
   return (
-
     <div className="page-container">
 
-
       <BackHomeButton />
-
-
 
       <h1>
         🐍 {snake.name}
       </h1>
 
+      {/* ================================= */}
+      {/* PHOTO */}
+      {/* ================================= */}
 
+      <div className="snake-profile-photo">
 
-
-
-      <div className="tracker-card">
-
-
-        {
-
-          snake.photo
-
-          ?
-
+        {snake.photo ? (
           <img
-
             src={snake.photo}
-
             alt={snake.name}
-
-            style={{
-
-              width:"100%",
-
-              borderRadius:"15px"
-
-            }}
-
           />
-
-
-          :
-
-
-          <div
-
-            style={{
-
-              fontSize:"80px",
-
-              textAlign:"center"
-
-            }}
-
-          >
-
+        ) : (
+          <div className="snake-profile-placeholder">
             🐍
-
           </div>
-
-        }
-
+        )}
 
       </div>
 
-
-
-
-
-      <div className="tracker-card">
-
-        <h2>
-          📋 Basic Information
-        </h2>
-
-
-        <p>
-          Species:
-          <br />
-
-          <strong>
-            {snake.species}
-          </strong>
-        </p>
-
-
-        <p>
-          Sex:
-          <br />
-
-          <strong>
-            {snake.sex}
-          </strong>
-        </p>
-
-      </div>
-
-
-
-
-
-      <div className="tracker-card">
-
-        <h2>
-          🧬 Genetics
-        </h2>
-
-
-        <p>
-          Morphs:
-          <br />
-
-          <strong>
-
-            {
-              snake.morphs.length
-
-              ?
-
-              snake.morphs.join(", ")
-
-              :
-
-              "None listed"
-            }
-
-          </strong>
-
-        </p>
-
-
-
-        <p>
-
-          Hets:
-          <br />
-
-          <strong>
-
-            {
-
-              snake.hets.length
-
-              ?
-
-              snake.hets.map(
-
-                het =>
-
-                `${het.percentage} ${
-                  het.percentage === "100%"
-                  ? "Het"
-                  : "Possible Het"
-                } ${het.gene}`
-
-              ).join(", ")
-
-              :
-
-              "None listed"
-
-            }
-
-          </strong>
-
-        </p>
-
-
-      </div>
-
-
-
-
-
-      <div className="tracker-card">
-
-        <h2>
-          ⚖️ Weight
-        </h2>
-
-
-        <p>
-
-          Current Weight:
-          <br />
-
-          <strong>
-            {snake.weight ?? "-"} g
-          </strong>
-
-        </p>
-
-
-        <p>
-
-          Starting Weight:
-          <br />
-
-          <strong>
-            {snake.startingWeight ?? "-"} g
-          </strong>
-
-        </p>
-
-
-        <p>
-
-          Starting Weight Date:
-          <br />
-
-          <strong>
-            {snake.startingWeightDate || "-"}
-          </strong>
-
-        </p>
-
-
+      {/* ================================= */}
+      {/* PROFILE DASHBOARD */}
+      {/* ================================= */}
+
+      <div className="snake-profile-grid">
+
+        {/* ================================= */}
+        {/* BASIC INFORMATION */}
+        {/* ================================= */}
 
         <button
+          type="button"
+          className="snake-profile-card"
+          onClick={
+            openSnakeEditor
+          }
+        >
 
+          <div className="snake-profile-card-icon">
+            📋
+          </div>
+
+          <h2>
+            Basic Information
+          </h2>
+
+          <p>
+            <strong>
+              {snake.species}
+            </strong>
+          </p>
+
+          <p>
+            {snake.sex}
+          </p>
+
+          {snake.nickname && (
+            <p>
+              "{snake.nickname}"
+            </p>
+          )}
+
+        </button>
+
+        {/* ================================= */}
+        {/* GENETICS */}
+        {/* ================================= */}
+
+        <button
+          type="button"
+          className="snake-profile-card"
+          onClick={
+            openSnakeEditor
+          }
+        >
+
+          <div className="snake-profile-card-icon">
+            🧬
+          </div>
+
+          <h2>
+            Genetics
+          </h2>
+
+          <p>
+            <strong>
+              {snake.morphs?.length
+                ? snake.morphs.join(
+                    ", "
+                  )
+                : "No morphs listed"}
+            </strong>
+          </p>
+
+          {snake.hets?.length > 0 && (
+            <p>
+              {snake.hets.length} het
+              {snake.hets.length !==
+              1
+                ? "s"
+                : ""}
+            </p>
+          )}
+
+          {snake.customMorph && (
+            <p>
+              {snake.customMorph}
+            </p>
+          )}
+
+        </button>
+
+        {/* ================================= */}
+        {/* WEIGHT */}
+        {/* ================================= */}
+
+        <button
+          type="button"
+          className="snake-profile-card"
           onClick={() =>
             navigate(
               `/weights/${snake.id}`
             )
           }
-
         >
 
-          📈 View Weight Records
+          <div className="snake-profile-card-icon">
+            ⚖️
+          </div>
 
-        </button>
+          <h2>
+            Weight
+          </h2>
 
-
-      </div>
-
-
-
-
-
-      <div className="tracker-card">
-
-        <h2>
-          📅 Timeline
-        </h2>
-
-
-        <p>
-
-          🥚 Hatch Date:
-
-          <br />
-
-          <strong>
-            {snake.hatchDate || "-"}
-          </strong>
-
-        </p>
-
-
-
-        {
-
-          snake.hatchDate &&
-
-          <p>
-
-            🎂 Age:
-
-            <br />
-
-            <strong>
-              {calculateAge(snake.hatchDate)}
-            </strong>
-
+          <p className="snake-profile-big-value">
+            {snake.weight ??
+              "-"}g
           </p>
 
-        }
+          <p>
+            {snake.lastWeighedDate
+              ? `Last weighed ${snake.lastWeighedDate}`
+              : "No weight recorded"}
+          </p>
 
+          <div className="snake-profile-mini-chart">
 
+            <WeightMiniChart
+              history={
+                weightHistory
+              }
+            />
 
-        <p>
+          </div>
 
-          🏠 Arrival Date:
+        </button>
 
-          <br />
-
-          <strong>
-            {snake.arrivalDate || "-"}
-          </strong>
-
-        </p>
-
-
-      </div>
-
-
-
-
-
-      <div className="tracker-card">
-
-        <h2>
-          📝 Notes
-        </h2>
-
-
-        <p>
-
-          {snake.notes || "No notes added"}
-
-        </p>
-
-
-      </div>
-
-
-
-
-
-      <div className="tracker-card snake-profile-actions">
-
+        {/* ================================= */}
+        {/* WEIGHT REMINDERS */}
+        {/* ================================= */}
 
         <button
-
-          onClick={() =>
-            navigate(
-              `/snakes/${snake.id}/edit`
-            )
+          type="button"
+          className="snake-profile-card"
+          onClick={
+            openSnakeEditor
           }
-
         >
 
-          ✏️ Edit Snake
+          <div className="snake-profile-card-icon">
+            ⏰
+          </div>
+
+          <h2>
+            Weight Reminders
+          </h2>
+
+          <p>
+            {snake.weightTracking?.enabled
+              ? "Enabled"
+              : "Disabled"}
+          </p>
+
+          {snake.weightTracking?.enabled && (
+            <p>
+              {
+                snake.weightTracking
+                  .frequency
+              }
+            </p>
+          )}
+
+          {reminder.status !==
+            "disabled" && (
+            <p>
+              {reminder.status ===
+              "overdue"
+                ? "🔴 Weight overdue"
+                : reminder.status ===
+                  "due"
+                ? "🟡 Due today"
+                : `🟢 Due in ${reminder.daysRemaining} days`}
+            </p>
+          )}
 
         </button>
 
-
+        {/* ================================= */}
+        {/* TIMELINE */}
+        {/* ================================= */}
 
         <button
-
-          onClick={deleteSnake}
-
+          type="button"
+          className="snake-profile-card"
+          onClick={
+            openSnakeEditor
+          }
         >
 
-          🗑️ Delete Snake
+          <div className="snake-profile-card-icon">
+            📅
+          </div>
+
+          <h2>
+            Timeline
+          </h2>
+
+          {snake.hatchDate ? (
+            <>
+              <p>
+                🥚{" "}
+                {snake.hatchDate}
+              </p>
+
+              <p>
+                🎂{" "}
+                {calculateAge(
+                  snake.hatchDate
+                )}
+              </p>
+            </>
+          ) : (
+            <p>
+              No hatch date recorded
+            </p>
+          )}
+
+          {snake.arrivalDate && (
+            <p>
+              🏠{" "}
+              {snake.arrivalDate}
+            </p>
+          )}
 
         </button>
 
-
+        {/* ================================= */}
+        {/* RECORDS */}
+        {/* ================================= */}
 
         <button
-
+          type="button"
+          className="snake-profile-card"
           onClick={() =>
             navigate(
               `/feeding/${snake.id}`
             )
           }
-
         >
 
-          🍽 Log Feeding
+          <div className="snake-profile-card-icon">
+            📚
+          </div>
+
+          <h2>
+            Records
+          </h2>
+
+          <p>
+            🍽 Feeding:{" "}
+            <strong>
+              {snake.feedingHistory
+                ?.length ?? 0}
+            </strong>
+          </p>
+
+          <p>
+            🐍 Sheds:{" "}
+            <strong>
+              {snake.shedHistory
+                ?.length ?? 0}
+            </strong>
+          </p>
+
+          <p>
+            ❤️ Health:{" "}
+            <strong>
+              {snake.healthHistory
+                ?.length ?? 0}
+            </strong>
+          </p>
 
         </button>
 
-
+        {/* ================================= */}
+        {/* NOTES */}
+        {/* ================================= */}
 
         <button
+          type="button"
+          className="snake-profile-card snake-profile-card-notes"
+          onClick={
+            openSnakeEditor
+          }
+        >
 
+          <div className="snake-profile-card-icon">
+            📝
+          </div>
+
+          <h2>
+            Notes
+          </h2>
+
+          <p>
+            {snake.notes ||
+              "No notes added"}
+          </p>
+
+        </button>
+
+      </div>
+
+      {/* ================================= */}
+      {/* ACTIONS */}
+      {/* ================================= */}
+
+      <div className="tracker-card snake-profile-actions">
+
+        <button
+          type="button"
+          onClick={
+            openSnakeEditor
+          }
+        >
+          ✏️ Edit Snake
+        </button>
+
+        <button
+          type="button"
+          onClick={
+            deleteSnake
+          }
+        >
+          🗑️ Delete Snake
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate(
+              `/feeding/${snake.id}`
+            )
+          }
+        >
+          🍽 Log Feeding
+        </button>
+
+        <button
+          type="button"
           onClick={() =>
             navigate(
               `/shedding/${snake.id}`
             )
           }
-
         >
-
           🐍 Log Shed
-
         </button>
-
 
       </div>
 
-
     </div>
-
   );
-
 }
-
 
 export default SnakeProfile;

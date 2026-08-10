@@ -3,29 +3,16 @@ export type WeightUnit =
   | "kg";
 
 
-
 export type WeightRecord = {
 
   id: string;
 
-  date: string;
+  snakeId: string;
 
   weight: number;
 
+  date: string;
+
   unit: WeightUnit;
-
-
-  // Optional notes for unusual events
-  notes?: string;
-
-
-  // Context of weighing
-  reason?:
-    | "Routine"
-    | "Post Feed"
-    | "Pre Brumation"
-    | "Post Brumation"
-    | "Health Check"
-    | "Other";
 
 };

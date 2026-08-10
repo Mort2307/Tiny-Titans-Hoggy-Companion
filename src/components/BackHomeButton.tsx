@@ -1,33 +1,35 @@
-import { useNavigate } from "react-router-dom";
+import {
+  useNavigate,
+} from "react-router-dom";
 
 function BackHomeButton() {
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
   function goBack() {
 
     navigate(-1);
-
   }
 
-
   return (
-
     <button
-
+      type="button"
       className="back-button"
-
       onClick={goBack}
-
     >
+      <span
+        className="back-button-arrow"
+        aria-hidden="true"
+      >
+        ←
+      </span>
 
-      ← Back
-
+      <span>
+        Back
+      </span>
     </button>
-
   );
-
 }
-
 
 export default BackHomeButton;

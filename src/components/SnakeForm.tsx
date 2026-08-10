@@ -1,778 +1,576 @@
-import type { Snake } from "../types/Snake";
-import type { Het } from "../types/genetics";
-import type { WeightRecord } from "../types/Weight";
+import type {
+  Snake,
+} from "../types/Snake";
+
+import type {
+  Het,
+} from "../types/genetics";
+
+import type {
+  WeightRecord,
+} from "../types/Weight";
 
 import MultiSelectDropdown from "./MultiSelectDropdown";
 import HetSelector from "./HetSelector";
 
-import { morphs } from "../data/morphs";
+import {
+  morphs,
+} from "../data/morphs";
 
+import {
+  getDateDuration,
+} from "../utils/dateDuration";
 
 type SnakeFormProps = {
-
   form: {
-
     name: string;
-
     species: string;
-
     photo: string;
-
     sex: Snake["sex"];
 
     morphs: string[];
-
     customMorph: string;
 
     hets: Het[];
-
     customHets: string;
 
     startingWeight: number | null;
-
     startingWeightDate: string;
 
     weight: number | null;
-
     lastWeighedDate: string;
 
     weightHistory: WeightRecord[];
 
     hatchDate: string;
-
     arrivalDate: string;
 
     notes: string;
-
   };
 
-
   updateField: (
-
     field: string,
-
-    value: any
-
+    value: unknown
   ) => void;
-
 
   onSave: () => void;
 
-
   editing: boolean;
 
+  saving?: boolean;
 };
 
-
-
-
-
 function SnakeForm({
-
   form,
-
   updateField,
-
   onSave,
-
-  editing
-
+  editing,
+  saving = false,
 }: SnakeFormProps) {
 
+  const sortedMorphs =
+    morphs
+      .map(
+        (morph) =>
+          morph.name
+      )
+      .sort(
+        (a, b) =>
+          a.localeCompare(b)
+      );
 
+  // =========================================
+  // SUBMIT
+  // =========================================
 
+  function handleSubmit(
+    event:
+      React.FormEvent<HTMLFormElement>
+  ) {
 
+    event.preventDefault();
 
-  const sortedMorphs = morphs
+    if (
+      saving
+    ) {
+      return;
+    }
 
-    .map(morph => morph.name)
+    onSave();
+  }
 
-    .sort((a,b)=>
+  // =========================================
+  // PHOTO
+  // =========================================
 
-      a.localeCompare(b)
+  function handlePhotoChange(
+    event:
+      React.ChangeEvent<HTMLInputElement>
+  ) {
 
+    const file =
+      event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader =
+      new FileReader();
+
+    reader.onloadend =
+      () => {
+
+        if (
+          typeof reader.result !==
+          "string"
+        ) {
+          return;
+        }
+
+        updateField(
+          "photo",
+          reader.result
+        );
+      };
+
+    reader.readAsDataURL(
+      file
     );
+  }
 
-
-
-
-
+  // =========================================
+  // RENDER
+  // =========================================
 
   return (
-
-    <div className="tracker-card">
-
-
+    <form
+      className="snake-form"
+      onSubmit={handleSubmit}
+      noValidate
+    >
 
       <h2>
-
         {editing
-
           ? "✏️ Edit Snake"
-
-          : "🐍 Add Snake"
-
-        }
-
+          : "🐍 Add Snake"}
       </h2>
 
+      {/* ========================= */}
+      {/* BASIC INFORMATION */}
+      {/* ========================= */}
 
+      <h3>
+        🐍 Basic Information
+      </h3>
 
-
-
-      <label>
-
+      <label htmlFor="snake-name">
         Snake Name
-
       </label>
 
-
       <input
-
+        id="snake-name"
+        type="text"
         value={form.name}
-
-        onChange={(e)=>
-
+        onChange={(event) =>
           updateField(
-
             "name",
-
-            e.target.value
-
+            event.target.value
           )
-
         }
-
+        autoComplete="off"
+        required
       />
 
-
-
-
-
-
-      <label>
-
+      <label htmlFor="snake-species">
         Species
-
       </label>
 
-
       <input
-
+        id="snake-species"
+        type="text"
         value={form.species}
-
-        onChange={(e)=>
-
+        onChange={(event) =>
           updateField(
-
             "species",
-
-            e.target.value
-
+            event.target.value
           )
-
         }
-
       />
 
-
-
-
-
+      {/* ========================= */}
+      {/* PHOTO */}
+      {/* ========================= */}
 
       <label>
-
         Photo
-
       </label>
 
+      <label
+        htmlFor="snake-photo"
+        className="snake-photo-picker"
+      >
+        📷 Add Photo
+      </label>
 
       <input
-
+        id="snake-photo"
         type="file"
-
         accept="image/*"
-
-        onChange={(e)=>{
-
-
-          const file =
-
-            e.target.files?.[0];
-
-
-          if(!file)
-
-            return;
-
-
-
-          const reader =
-
-            new FileReader();
-
-
-
-          reader.onloadend = ()=>{
-
-
-            updateField(
-
-              "photo",
-
-              reader.result as string
-
-            );
-
-
-          };
-
-
-
-          reader.readAsDataURL(file);
-
-
+        onChange={
+          handlePhotoChange
+        }
+        style={{
+          display: "none",
         }}
-
       />
-
-
-
-
 
       {form.photo && (
-
         <img
-
           src={form.photo}
-
-          alt={form.name}
-
-          style={{
-
-            width:"120px",
-
-            borderRadius:"10px",
-
-            margin:"10px"
-
-          }}
-
+          alt={
+            form.name ||
+            "Snake preview"
+          }
+          className="snake-form-photo"
         />
-
       )}
 
+      {/* ========================= */}
+      {/* SEX */}
+      {/* ========================= */}
 
-
-
-
-
-      <label>
-
+      <label htmlFor="snake-sex">
         Sex
-
       </label>
 
-
       <select
-
+        id="snake-sex"
         value={form.sex}
-
-        onChange={(e)=>
-
+        onChange={(event) =>
           updateField(
-
             "sex",
-
-            e.target.value
-
+            event.target.value
           )
-
         }
-
       >
 
-
         <option value="Unknown">
-
           Unknown
-
         </option>
-
 
         <option value="Male">
-
           Male
-
         </option>
-
 
         <option value="Female">
-
           Female
-
         </option>
-
 
       </select>
 
-
-
-
-
-
-
-
+      {/* ========================= */}
+      {/* DATES */}
+      {/* ========================= */}
 
       <h3>
-
-        ⚖️ Weight Tracking
-
+        📅 Dates & Timeline
       </h3>
 
-
-
-
-
-      <label>
-
-        Starting Weight (g)
-
+      <label htmlFor="hatch-date">
+        Hatch Date
       </label>
 
+      <input
+        id="hatch-date"
+        type="date"
+        value={
+          form.hatchDate
+        }
+        onChange={(event) =>
+          updateField(
+            "hatchDate",
+            event.target.value
+          )
+        }
+      />
+
+      {form.hatchDate && (
+        <div className="date-duration-display">
+
+          🎂 Age:{" "}
+
+          <strong>
+            {getDateDuration(
+              form.hatchDate
+            )}
+          </strong>
+
+        </div>
+      )}
+
+      <label htmlFor="arrival-date">
+        Arrival Date
+      </label>
 
       <input
+        id="arrival-date"
+        type="date"
+        value={
+          form.arrivalDate
+        }
+        onChange={(event) =>
+          updateField(
+            "arrivalDate",
+            event.target.value
+          )
+        }
+      />
 
+      {form.arrivalDate && (
+        <div className="date-duration-display">
+
+          🏠 Time with you:{" "}
+
+          <strong>
+            {getDateDuration(
+              form.arrivalDate
+            )}
+          </strong>
+
+        </div>
+      )}
+
+      {/* ========================= */}
+      {/* WEIGHT */}
+      {/* ========================= */}
+
+      <h3>
+        ⚖️ Weight Tracking
+      </h3>
+
+      <label htmlFor="starting-weight">
+        Starting Weight (g)
+      </label>
+
+      <input
+        id="starting-weight"
         type="number"
-
-        value={form.startingWeight ?? ""}
-
-        onChange={(e)=>{
-
+        inputMode="decimal"
+        min="0"
+        step="any"
+        placeholder="e.g. 50.74"
+        value={
+          form.startingWeight ??
+          ""
+        }
+        onChange={(event) => {
 
           const value =
-
-            e.target.value
-
-              ? Number(e.target.value)
-
+            event.target.value
+              ? Number(
+                  event.target.value
+                )
               : null;
 
-
-
           updateField(
-
             "startingWeight",
-
             value
-
           );
 
-
-
-          if(
-
+          if (
             value !== null &&
-
             !form.startingWeightDate
-
-          ){
+          ) {
 
             updateField(
-
               "startingWeightDate",
-
               new Date()
-
                 .toISOString()
-
                 .split("T")[0]
-
             );
-
           }
-
-
         }}
-
       />
 
-
-
-
-
-      <label>
-
+      <label htmlFor="starting-weight-date">
         Starting Weight Date
-
       </label>
 
-
       <input
-
+        id="starting-weight-date"
         type="date"
-
-        value={form.startingWeightDate}
-
-        onChange={(e)=>
-
+        value={
+          form.startingWeightDate
+        }
+        onChange={(event) =>
           updateField(
-
             "startingWeightDate",
-
-            e.target.value
-
+            event.target.value
           )
-
         }
-
       />
 
-
-
-
-
-
-      <label>
-
+      <label htmlFor="current-weight">
         Current Weight (g)
-
       </label>
 
-
       <input
-
+        id="current-weight"
         type="number"
-
-        value={form.weight ?? ""}
-
-        onChange={(e)=>
-
-          updateField(
-
-            "weight",
-
-            e.target.value
-
-              ? Number(e.target.value)
-
-              : null
-
-          )
-
+        inputMode="decimal"
+        min="0"
+        step="any"
+        placeholder="e.g. 90.25"
+        value={
+          form.weight ??
+          ""
         }
-
+        onChange={(event) =>
+          updateField(
+            "weight",
+            event.target.value
+              ? Number(
+                  event.target.value
+                )
+              : null
+          )
+        }
       />
 
-
-
-
-
-
-      <label>
-
+      <label htmlFor="last-weighed-date">
         Last Weighed Date
-
       </label>
 
-
       <input
-
+        id="last-weighed-date"
         type="date"
-
-        value={form.lastWeighedDate}
-
-        onChange={(e)=>
-
-          updateField(
-
-            "lastWeighedDate",
-
-            e.target.value
-
-          )
-
+        value={
+          form.lastWeighedDate
         }
-
+        onChange={(event) =>
+          updateField(
+            "lastWeighedDate",
+            event.target.value
+          )
+        }
       />
 
-
-
-
-
-
-
-
+      {/* ========================= */}
+      {/* MORPHS */}
+      {/* ========================= */}
 
       <h3>
-
         🧬 Visual Morphs
-
       </h3>
-
-
-
-
 
       <MultiSelectDropdown
-
-
         title="Select Morphs"
-
-
         options={sortedMorphs}
-
-
-        selected={form.morphs}
-
-
-        setSelected={(value)=>
-
-          updateField(
-
-            "morphs",
-
-            value
-
-          )
-
+        selected={
+          form.morphs
         }
-
-
+        setSelected={(value) =>
+          updateField(
+            "morphs",
+            value
+          )
+        }
       />
 
-
-
-
-
-
-      <label>
-
+      <label htmlFor="custom-morph">
         Custom Morph
-
       </label>
 
-
       <input
-
-        value={form.customMorph}
-
-        onChange={(e)=>
-
-          updateField(
-
-            "customMorph",
-
-            e.target.value
-
-          )
-
+        id="custom-morph"
+        type="text"
+        value={
+          form.customMorph
         }
-
+        onChange={(event) =>
+          updateField(
+            "customMorph",
+            event.target.value
+          )
+        }
       />
 
-
-
-
-
-
-
+      {/* ========================= */}
+      {/* HETS */}
+      {/* ========================= */}
 
       <h3>
-
         🧬 Hets
-
       </h3>
-
-
-
-
 
       <HetSelector
-
-
         options={morphs}
-
-
-        selected={form.hets}
-
-
-        setSelected={(value)=>
-
+        selected={
+          form.hets
+        }
+        setSelected={(value) =>
           updateField(
-
             "hets",
-
             value
-
           )
-
         }
-
-
       />
 
-
-
-
-
-
-      <label>
-
+      <label htmlFor="custom-hets">
         Additional Genetics Notes
-
       </label>
 
-
       <textarea
-
-        value={form.customHets}
-
-        onChange={(e)=>
-
+        id="custom-hets"
+        value={
+          form.customHets
+        }
+        onChange={(event) =>
           updateField(
-
             "customHets",
-
-            e.target.value
-
+            event.target.value
           )
-
         }
-
       />
 
+      {/* ========================= */}
+      {/* NOTES */}
+      {/* ========================= */}
 
-
-
-
-
-
-
-
-      <h3>
-
-        📅 Dates
-
-      </h3>
-
-
-
-
-
-      <label>
-
-        Hatch Date
-
-      </label>
-
-
-      <input
-
-        type="date"
-
-        value={form.hatchDate}
-
-        onChange={(e)=>
-
-          updateField(
-
-            "hatchDate",
-
-            e.target.value
-
-          )
-
-        }
-
-      />
-
-
-
-
-
-
-      <label>
-
-        Arrival Date
-
-      </label>
-
-
-      <input
-
-        type="date"
-
-        value={form.arrivalDate}
-
-        onChange={(e)=>
-
-          updateField(
-
-            "arrivalDate",
-
-            e.target.value
-
-          )
-
-        }
-
-      />
-
-
-
-
-
-
-
-      <label>
-
+      <label htmlFor="snake-notes">
         Notes
-
       </label>
-
 
       <textarea
-
-        value={form.notes}
-
-        onChange={(e)=>
-
-          updateField(
-
-            "notes",
-
-            e.target.value
-
-          )
-
+        id="snake-notes"
+        value={
+          form.notes
         }
-
+        onChange={(event) =>
+          updateField(
+            "notes",
+            event.target.value
+          )
+        }
       />
 
-
-
-
-
+      {/* ========================= */}
+      {/* SAVE */}
+      {/* ========================= */}
 
       <button
-
-        onClick={onSave}
-
+        type="submit"
+        className="save-snake-button"
+        disabled={saving}
       >
-
-        💾 Save Snake
-
+        {saving
+          ? "💾 Saving..."
+          : "💾 Save Snake"}
       </button>
 
-
-
-    </div>
-
+    </form>
   );
-
 }
-
-
 
 export default SnakeForm;

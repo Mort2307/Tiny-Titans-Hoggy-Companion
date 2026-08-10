@@ -1,0 +1,404 @@
+.account-setup-page {
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px 16px;
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(111, 36, 184, 0.22),
+      transparent 45%
+    ),
+    #140022;
+}
+
+
+.account-setup-card {
+  width: 100%;
+  max-width: 680px;
+
+  box-sizing: border-box;
+
+  padding: 28px;
+
+  border-radius: 24px;
+
+  background: #26083D;
+
+  border: 1px solid
+    rgba(245, 182, 66, 0.2);
+
+  box-shadow:
+    0 20px 60px
+    rgba(0, 0, 0, 0.35);
+}
+
+
+.account-setup-logo {
+  display: flex;
+  justify-content: center;
+
+  margin-bottom: 18px;
+}
+
+
+.account-setup-logo img {
+  width: min(220px, 70vw);
+  height: auto;
+
+  border-radius: 16px;
+
+  object-fit: contain;
+}
+
+
+.account-setup-header {
+  text-align: center;
+
+  margin-bottom: 30px;
+}
+
+
+.account-setup-icon {
+  display: block;
+
+  font-size: 42px;
+
+  margin-bottom: 8px;
+}
+
+
+.account-setup-header h1 {
+  margin: 0 0 8px;
+
+  color: #F8F2FF;
+
+  font-size: clamp(
+    28px,
+    7vw,
+    38px
+  );
+}
+
+
+.account-setup-header p {
+  margin: 0;
+
+  color: #C8B8D8;
+
+  font-size: 16px;
+}
+
+
+.account-setup-form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 28px;
+}
+
+
+.setup-section {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+
+.setup-section label,
+.setup-section h2 {
+  margin: 0;
+
+  color: #F8F2FF;
+
+  font-size: 19px;
+}
+
+
+.setup-section input {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 15px 16px;
+
+  border-radius: 12px;
+
+  border: 1px solid
+    rgba(200, 184, 216, 0.25);
+
+  background: #140022;
+
+  color: #F8F2FF;
+
+  font-size: 16px;
+
+  outline: none;
+}
+
+
+.setup-section input:focus {
+  border-color: #35D0BA;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(53, 208, 186, 0.12);
+}
+
+
+.setup-help {
+  margin: -4px 0 2px;
+
+  color: #C8B8D8;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+
+.setup-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+}
+
+
+.setup-option {
+  width: 100%;
+
+  min-height: 92px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  padding: 15px;
+
+  border-radius: 16px;
+
+  border: 1px solid
+    rgba(200, 184, 216, 0.2);
+
+  background: #140022;
+
+  color: #F8F2FF;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+
+.setup-option:hover {
+  transform: translateY(-2px);
+
+  border-color:
+    rgba(53, 208, 186, 0.65);
+}
+
+
+.setup-option.selected {
+  border-color: #35D0BA;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(111, 36, 184, 0.4),
+      rgba(53, 208, 186, 0.12)
+    );
+
+  box-shadow:
+    0 0 0 2px
+    rgba(53, 208, 186, 0.12);
+}
+
+
+.option-icon {
+  flex: 0 0 auto;
+
+  font-size: 30px;
+}
+
+
+.setup-option strong {
+  display: block;
+
+  margin-bottom: 4px;
+
+  font-size: 16px;
+}
+
+
+.setup-option small {
+  display: block;
+
+  color: #C8B8D8;
+
+  font-size: 12px;
+
+  line-height: 1.4;
+}
+
+
+.setup-error {
+  padding: 13px 15px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(190, 50, 80, 0.15);
+
+  border: 1px solid
+    rgba(255, 100, 130, 0.35);
+
+  color: #ffd5df;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+
+.setup-submit {
+  width: 100%;
+
+  min-height: 56px;
+
+  border: 0;
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #6F24B8,
+      #35D0BA
+    );
+
+  color: white;
+
+  font-size: 17px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 24px
+    rgba(53, 208, 186, 0.18);
+
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+
+.setup-submit:hover {
+  transform: translateY(-2px);
+}
+
+
+.setup-submit:disabled {
+  opacity: 0.55;
+
+  cursor: wait;
+
+  transform: none;
+}
+
+
+@media (max-width: 560px) {
+
+  .account-setup-page {
+    align-items: flex-start;
+
+    padding:
+      16px 12px 32px;
+  }
+
+
+  .account-setup-card {
+    padding: 20px 16px;
+
+    border-radius: 20px;
+  }
+
+
+  .setup-options {
+    grid-template-columns: 1fr;
+  }
+
+
+  .setup-option {
+    min-height: 78px;
+  }
+
+
+  .account-setup-logo img {
+    width: min(190px, 65vw);
+  }
+
+}
+
+.selection-tick {
+  flex: 0 0 auto;
+
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #35D0BA;
+
+  color: #140022;
+
+  font-size: 18px;
+  font-weight: 900;
+}
+
+
+.setup-submit:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+@media (max-width: 560px) {
+
+  .selection-tick {
+    width: 26px;
+    height: 26px;
+
+    font-size: 16px;
+  }
+
+}

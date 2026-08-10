@@ -1,111 +1,186 @@
 import DashboardCard from "../components/DashboardCard";
+import { useAuth } from "../context/AuthContext";
+
+import "./Home.css";
 
 
 function Home() {
 
-return (
-
-<div className="dashboard">
-
-
-<section className="welcome-card">
-
-<h2>
-Welcome to Tiny Titans
-</h2>
+  const {
+    user,
+    profile,
+  } = useAuth();
 
 
-<p>
-Your Western Hognose companion app.
-Explore genetics, husbandry, and your snakes.
-</p>
+  const displayName =
+    profile?.displayName ||
+    user?.displayName ||
+    "Tiny Titan";
 
 
-</section>
+  return (
+
+    <div className="dashboard">
 
 
+      {/* Welcome */}
+
+      <section className="welcome-card">
+
+        <div className="welcome-content">
+
+          <p className="welcome-eyebrow">
+            🐍 Tiny Titans
+          </p>
+
+          <h2>
+            Welcome back, {displayName}!
+          </h2>
+
+          <p>
+            Your Western Hognose companion
+            for husbandry, genetics,
+            learning and breeding.
+          </p>
+
+        </div>
 
 
-<section className="dashboard-grid">
+        <div className="profile-summary">
+
+          <div className="profile-level">
+
+            <span>
+              Experience
+            </span>
+
+            <strong>
+              {profile?.experienceLevel === "pro"
+                ? "Pro"
+                : profile?.experienceLevel === "intermediate"
+                  ? "Intermediate"
+                  : "Beginner"}
+            </strong>
+
+          </div>
 
 
-<DashboardCard
+          <div className="profile-category">
 
-icon="🐍"
+            <span>
+              Profile
+            </span>
 
-title="My Hoggies"
+            <strong>
+              {profile?.category === "child"
+                ? "Young Keeper"
+                : "Adult Keeper"}
+            </strong>
 
-description="Manage your snakes, genetics, weights and personal records"
+          </div>
 
-link="/snakes"
+        </div>
 
-/>
-
-
-
-<DashboardCard
-
-icon="🍽️"
-
-title="Feeding Tracker"
-
-description="Track meals, feeding dates and history"
-
-link="/feeding"
-
-/>
-
-
-
-<DashboardCard
-
-icon="💧"
-
-title="Shed Tracker"
-
-description="Monitor blue phase and shed records"
-
-link="/shedding"
-
-/>
-
-
-
-<DashboardCard
-
-icon="⚖️"
-
-title="Weight Records"
-
-description="Track growth and health progress"
-
-link="/weights"
-
-/>
+      </section>
 
 
 
-<DashboardCard
+      {/* Tools */}
 
-icon="🥚"
+      <section className="dashboard-section">
 
-title="Breeding Planner"
+        <div className="section-heading">
 
-description="Manage pairings and breeding projects"
+          <div>
 
-link="/breeding"
+            <p className="section-eyebrow">
+              TINY TITANS
+            </p>
 
-/>
+            <h3>
+              Your tools
+            </h3>
+
+          </div>
+
+        </div>
 
 
+        <section className="dashboard-grid">
 
-</section>
+
+          <DashboardCard
+            icon="🐍"
+            title="My Hoggies"
+            description="Manage your snakes, genetics, weights and personal records"
+            link="/snakes"
+          />
 
 
-</div>
+          <DashboardCard
+            icon="🍽️"
+            title="Feeding Tracker"
+            description="Track meals, feeding dates and history"
+            link="/feeding"
+          />
 
-);
 
+          <DashboardCard
+            icon="💧"
+            title="Shed Tracker"
+            description="Monitor blue phase and shed records"
+            link="/shedding"
+          />
+
+
+          <DashboardCard
+            icon="⚖️"
+            title="Weight Records"
+            description="Track growth and health progress"
+            link="/weights"
+          />
+
+
+          <DashboardCard
+            icon="🥚"
+            title="Breeding Planner"
+            description="Manage pairings and breeding projects"
+            link="/breeding"
+          />
+
+
+          <DashboardCard
+            icon="🧬"
+            title="Morph Library"
+            description="Explore Western Hognose morphs and genetics"
+            link="/morph-library"
+          />
+
+
+          <DashboardCard
+            icon="📚"
+            title="Knowledge Base"
+            description="Learn about Western Hognose husbandry and behaviour"
+            link="/knowledge-base"
+          />
+
+
+          <DashboardCard
+            icon="🧬"
+            title="Genetics Calculator"
+            description="Explore inheritance and breeding outcomes"
+            link="/calculator"
+          />
+
+
+        </section>
+
+      </section>
+
+
+    </div>
+
+  );
 }
 
 

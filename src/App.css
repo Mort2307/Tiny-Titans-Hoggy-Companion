@@ -25,3 +25,452 @@ header p {
   margin: 0;
   opacity: 0.95;
 }
+
+/* =========================================
+   WEIGHT RECORDS GRID
+   ========================================= */
+
+.weight-reminder-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+  align-items: stretch;
+}
+
+
+/* Individual snake weight card */
+
+.weight-reminder-card {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+
+/* Tablet */
+
+@media (max-width: 900px) {
+  .weight-reminder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* Mobile */
+
+@media (max-width: 600px) {
+  .weight-reminder-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.date-duration-display {
+  margin-top: -8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.date-duration-display strong {
+  font-weight: 600;
+}
+
+.het-option {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.het-option:last-child {
+  border-bottom: none;
+}
+
+.het-gene-name {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.het-percentage-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.multi-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.multi-select-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* =========================================
+   TINY TITANS LOADING SCREEN
+   ========================================= */
+
+.loading-screen {
+  width: 100%;
+
+  min-height: 240px;
+
+  box-sizing: border-box;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 30px;
+
+  text-align: center;
+}
+
+
+/* =========================================
+   FULL SCREEN LOADING
+   ========================================= */
+
+.loading-screen-full {
+  min-height: 100vh;
+
+  min-height: 100dvh;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(0, 174, 255, 0.08),
+      transparent 60%
+    ),
+    var(--background);
+}
+
+
+/* =========================================
+   LOADING CARD
+   ========================================= */
+
+.loading-card {
+  width: min(
+    360px,
+    100%
+  );
+
+  box-sizing: border-box;
+
+  padding: 30px 25px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 16px;
+
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(0, 174, 255, 0.14),
+      transparent 65%
+    ),
+    var(--surface);
+
+  border:
+    2px solid
+    rgba(0, 174, 255, 0.45);
+
+  border-radius: 20px;
+
+  box-shadow:
+    0 0 20px
+    rgba(0, 174, 255, 0.2);
+}
+
+
+/* =========================================
+   SNAKE
+   ========================================= */
+
+.loading-snake {
+  font-size: 55px;
+
+  line-height: 1;
+
+  animation:
+    loading-snake-bob
+    1.5s ease-in-out
+    infinite;
+}
+
+
+/* =========================================
+   SPINNER
+   ========================================= */
+
+.loading-spinner {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+}
+
+
+.loading-spinner span {
+  width: 9px;
+
+  height: 9px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  background:
+    var(--accent);
+
+  animation:
+    loading-dot
+    1.2s ease-in-out
+    infinite;
+}
+
+
+.loading-spinner span:nth-child(2) {
+  animation-delay:
+    0.15s;
+}
+
+
+.loading-spinner span:nth-child(3) {
+  animation-delay:
+    0.3s;
+}
+
+
+/* =========================================
+   MESSAGE
+   ========================================= */
+
+.loading-message {
+  margin: 0;
+
+  color: var(--text);
+
+  font-size: 1rem;
+
+  font-weight: 700;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================
+   ANIMATIONS
+   ========================================= */
+
+@keyframes loading-snake-bob {
+
+  0%,
+  100% {
+    transform:
+      translateY(0)
+      rotate(0deg);
+  }
+
+  50% {
+    transform:
+      translateY(-7px)
+      rotate(-3deg);
+  }
+
+}
+
+
+@keyframes loading-dot {
+
+  0%,
+  100% {
+    opacity: 0.35;
+
+    transform:
+      translateY(0)
+      scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+
+    transform:
+      translateY(-4px)
+      scale(1);
+  }
+
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 700px) {
+
+  .loading-screen {
+    padding: 20px 15px;
+  }
+
+  .loading-card {
+    width: 100%;
+
+    max-width: 340px;
+
+    padding: 26px 20px;
+
+    border-radius: 18px;
+  }
+
+  .loading-snake {
+    font-size: 48px;
+  }
+
+  .loading-message {
+    font-size: 0.95rem;
+  }
+
+}
+
+
+/* =========================================
+   REDUCED MOTION
+   ========================================= */
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+
+  .loading-snake,
+  .loading-spinner span {
+    animation: none;
+  }
+
+}
+
+/* ============================= */
+/* HEADER                        */
+/* ============================= */
+
+.app-header {
+  width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 15px 15px 10px;
+
+  text-align: center;
+}
+
+.logo-link {
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  width: fit-content;
+
+  border-radius: 18px;
+
+  text-decoration: none;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tiny-titans-logo {
+  display: block;
+
+  width: min(250px, 70vw);
+  height: auto;
+
+  max-height: 180px;
+
+  object-fit: contain;
+
+  border-radius: 18px;
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.logo-link:hover .tiny-titans-logo {
+  transform: scale(1.02);
+
+  filter:
+    drop-shadow(
+      0 0 12px
+      rgba(0, 174, 255, 0.35)
+    );
+}
+
+.app-header h1 {
+  margin: 10px 0 5px;
+
+  color: var(--text);
+
+  font-size: clamp(
+    1.5rem,
+    4vw,
+    2.2rem
+  );
+
+  line-height: 1.1;
+
+  text-shadow:
+    0 0 10px
+    rgba(245, 182, 66, 0.2);
+}
+
+/* ============================= */
+/* HEADER - MOBILE              */
+/* ============================= */
+
+@media (max-width: 700px) {
+
+  .app-header {
+    padding:
+      10px
+      10px
+      8px;
+  }
+
+  .tiny-titans-logo {
+    width: min(210px, 65vw);
+
+    max-height: 150px;
+
+    border-radius: 15px;
+  }
+
+  .app-header h1 {
+    margin-top: 8px;
+
+    font-size: 1.5rem;
+  }
+}

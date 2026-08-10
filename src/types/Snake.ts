@@ -28,128 +28,156 @@ export type SnakeStatus =
   | "Archived";
 
 
+
 export type Snake = {
 
-  id: string;
 
+id: string;
 
-  // Identity
 
-  name: string;
 
-  species: string;
+// Identity
 
-  photo: string;
+name: string;
 
-  sex: SnakeSex;
+species: string;
 
+photo: string;
 
-  nickname?: string;
+sex: SnakeSex;
 
-  breeder?: string;
 
-  origin?: string;
+nickname?: string;
 
-  acquisitionDate?: string;
+breeder?: string;
 
+origin?: string;
 
+acquisitionDate?: string;
 
-  // Genetics
 
-  morphs: string[];
 
-  customMorph: string;
+// Genetics
 
-  hets: Het[];
+morphs: string[];
 
-  customHets: string;
+customMorph: string;
 
+hets: Het[];
 
+customHets: string;
 
-  // Weight
 
-  startingWeight: number | null;
 
-  startingWeightDate: string;
+// Weight
 
-  weight: number | null;
+startingWeight: number | null;
 
-  lastWeighedDate: string;
+startingWeightDate: string;
 
-  weightHistory: WeightRecord[];
+weight: number | null;
 
+lastWeighedDate: string;
 
+weightHistory: WeightRecord[];
 
-  weightTracking: {
 
-    enabled: boolean;
 
-    frequency: WeightTrackingFrequency;
+weightTracking: {
 
-  };
+enabled: boolean;
 
+frequency: WeightTrackingFrequency;
 
+};
 
-  // Feeding
 
-  feedingHistory?: FeedingRecord[];
 
+// Feeding
 
+feedingHistory?: FeedingRecord[];
 
-  // Shedding
 
-  shedHistory?: ShedRecord[];
 
+// Shedding
 
+shedHistory?: ShedRecord[];
 
-  // Health
 
-  healthHistory?: HealthRecord[];
 
+// Health
 
+healthHistory?: HealthRecord[];
 
-  // Enclosure
 
-  enclosure?: Enclosure;
 
+// Enclosure
 
+enclosure?: Enclosure;
 
-  // Breeding
 
-  breedingHistory?: BreedingPairing[];
 
+// Breeding
 
+breedingHistory?: BreedingPairing[];
 
-  // Timeline
 
-  timeline?: TimelineEvent[];
 
+// Timeline
 
+timeline?: TimelineEvent[];
 
-  // Husbandry Notes
 
-  temperatureNotes?: string;
 
-  humidityNotes?: string;
+// Timeline Dates
 
+hatchDate: string;
 
+arrivalDate: string;
 
-  // Dates
 
-  hatchDate: string;
 
-  arrivalDate: string;
+// Husbandry notes
 
+temperatureNotes?: string;
 
+humidityNotes?: string;
 
-  // General Notes
 
-  notes: string;
 
+// Feeding notes
 
+lastMealDate?: string;
 
-  // Status
+feedingNotes?: string;
 
-  status?: SnakeStatus;
+
+
+// Health notes
+
+healthNotes?: string;
+
+medicationNotes?: string;
+
+
+
+// Breeding notes
+
+breedingEligible?: boolean;
+
+breedingNotes?: string;
+
+
+
+// General Notes
+
+notes: string;
+
+
+
+// Status
+
+status?: SnakeStatus;
+
 
 };

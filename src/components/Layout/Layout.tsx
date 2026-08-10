@@ -1,20 +1,21 @@
-import type { ReactNode } from "react";
+import { Outlet } from "react-router-dom";
+
 import Header from "./Header";
 import Navigation from "./Navigation";
 
-type LayoutProps = {
-  children: ReactNode;
-};
-
-function Layout({ children }: LayoutProps) {
+function Layout() {
   return (
-    <>
+    <div className="app-shell">
       <Header />
+
       <Navigation />
-      <main className="main-content">
-        {children}
+
+      <main className="app-main">
+        <div className="app-content">
+          <Outlet />
+        </div>
       </main>
-    </>
+    </div>
   );
 }
 

@@ -12,411 +12,264 @@ type HetSelectorProps = {
   setSelected: (hets: Het[]) => void;
 };
 
-
 function HetSelector({
   options,
   selected,
   setSelected,
 }: HetSelectorProps) {
 
-
   const [open, setOpen] = useState(false);
-
   const [search, setSearch] = useState("");
 
-
-
   const percentages: HetPercentage[] = [
-
     "100%",
     "66%",
     "50%",
     "33%",
-    "25%"
-
+    "25%",
   ];
-
-
 
   function toggleHet(
     gene: string,
     percentage: HetPercentage
   ) {
 
-
     const exists = selected.some(
-
-      het =>
+      (het) =>
         het.gene === gene &&
         het.percentage === percentage
-
     );
 
-
-
-    if(exists){
-
+    if (exists) {
 
       setSelected(
-
         selected.filter(
-
-          het =>
+          (het) =>
             !(
               het.gene === gene &&
               het.percentage === percentage
             )
-
         )
-
       );
 
-
-    }
-    else {
-
+    } else {
 
       const newHet: Het = {
-
         gene,
-        percentage
-
+        percentage,
       };
 
-
       setSelected([
-
         ...selected,
-        newHet
-
+        newHet,
       ]);
-
-
     }
-
-
   }
 
-
-
-
   function removeHet(
-    gene:string,
-    percentage:HetPercentage
-  ){
+    gene: string,
+    percentage: HetPercentage
+  ) {
 
     setSelected(
-
       selected.filter(
-
-        het =>
+        (het) =>
           !(
             het.gene === gene &&
             het.percentage === percentage
           )
-
       )
-
     );
-
   }
 
-
-
-
-
   const available = options
-
     .filter(
-
-      item =>
+      (item) =>
         item.hetPossible
-
     )
-
     .sort(
-
-      (a,b)=>
+      (a, b) =>
         a.name.localeCompare(
           b.name
         )
-
     )
-
     .filter(
-
-      item =>
+      (item) =>
         item.name
           .toLowerCase()
           .includes(
             search.toLowerCase()
           )
-
     );
 
-
-
-
-
   return (
-
     <div className="multi-select">
 
-
-
-
+      {/* ========================= */}
+      {/* SELECT HETS BUTTON */}
+      {/* ========================= */}
 
       <button
-
         type="button"
-
         className="multi-select-button"
-
-        onClick={()=>
+        onClick={() =>
           setOpen(!open)
         }
-
       >
-
         Select Hets ▼
-
       </button>
 
 
-
-
-
-
+      {/* ========================= */}
+      {/* SELECTED HETS */}
+      {/* ========================= */}
 
       {selected.length > 0 && (
 
-
         <div className="selected-tags">
 
-
-          {selected.map(het => (
-
+          {selected.map((het) => (
 
             <span
-
               key={
                 het.gene +
                 het.percentage
               }
-
             >
 
-              🧬 {het.percentage}
-
+              🧬{" "}
+              {het.percentage}
 
               {het.percentage === "100%"
-
                 ? " Het "
-
                 : " Possible Het "
-
               }
-
 
               {het.gene}
 
-
-
-
               <button
-
                 type="button"
-
-                onClick={()=>
+                onClick={() =>
                   removeHet(
                     het.gene,
                     het.percentage
                   )
                 }
-
               >
-
                 ❌
-
               </button>
-
 
             </span>
 
-
           ))}
 
-
         </div>
-
 
       )}
 
 
-
-
-
-
-
+      {/* ========================= */}
+      {/* DROPDOWN */}
+      {/* ========================= */}
 
       {open && (
 
-
         <div className="multi-select-menu">
 
-
-
-
+          {/* SEARCH */}
 
           <input
-
+            type="text"
             placeholder="Search Het genes..."
-
             value={search}
-
-            onChange={(e)=>
+            onChange={(event) =>
               setSearch(
-                e.target.value
+                event.target.value
               )
             }
-
           />
 
 
-
-
-
-
-
+          {/* ========================= */}
+          {/* OPTIONS */}
+          {/* ========================= */}
 
           <div className="multi-select-options">
 
-
-
-            {available.map(gene => (
-
-
+            {available.map((gene) => (
 
               <div
-
-                key={
-                  gene.name
-                }
-
+                key={gene.name}
+                className="het-option"
               >
 
-
-
-                <strong>
-
+                <div className="het-gene-name">
                   {gene.name}
-
-                </strong>
-
+                </div>
 
 
+                <div className="het-percentage-options">
 
+                  {percentages.map(
+                    (percentage) => {
 
-
-
-                {percentages.map(percent => (
-
-
-
-                  <label
-
-                    key={
-                      percent
-                    }
-
-                  >
-
-
-
-                    <input
-
-                      type="checkbox"
-
-                      checked={
-
+                      const checked =
                         selected.some(
+                          (het) =>
+                            het.gene ===
+                              gene.name &&
+                            het.percentage ===
+                              percentage
+                        );
 
-                          het =>
+                      return (
 
-                            het.gene === gene.name &&
+                        <label
+                          key={percentage}
+                          className="multi-select-option"
+                        >
 
-                            het.percentage === percent
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              toggleHet(
+                                gene.name,
+                                percentage
+                              )
+                            }
+                          />
 
-                        )
+                          <span>
+                            {percentage}
 
-                      }
+                            {percentage ===
+                            "100%"
+                              ? " Het"
+                              : " Possible Het"}
+                          </span>
 
+                        </label>
 
-                      onChange={()=>
-
-                        toggleHet(
-
-                          gene.name,
-
-                          percent
-
-                        )
-
-                      }
-
-                    />
-
-
-
-                    {percent}
-
-
-
-                    {percent === "100%"
-
-                      ? " Het"
-
-                      : " Possible Het"
+                      );
 
                     }
+                  )}
 
-
-
-                  </label>
-
-
-
-                ))}
-
-
+                </div>
 
               </div>
 
-
-
             ))}
-
-
 
           </div>
 
-
-
-
-
         </div>
-
-
 
       )}
 
-
-
     </div>
-
   );
-
 }
-
 
 export default HetSelector;
