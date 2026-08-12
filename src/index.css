@@ -2928,3 +2928,447 @@ button.back-button:focus-visible {
     touch-action: manipulation;
   }
 }
+
+/* =========================================================
+   TINY TITANS SAVE PROGRESS
+   ========================================================= */
+
+.save-progress {
+  width: 100%;
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  box-sizing: border-box;
+}
+
+.save-progress-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.save-progress-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 1.35rem;
+}
+
+.save-progress-heading {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.save-progress-heading strong {
+  font-size: 1rem;
+}
+
+.save-progress-heading span {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.save-progress-percentage {
+  font-size: 0.9rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.save-progress-bar {
+  width: 100%;
+  height: 8px;
+  margin-top: 1rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.save-progress-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #55c878,
+    #8ee89e
+  );
+  transition:
+    width 400ms ease;
+}
+
+.save-progress-description {
+  margin-top: 0.85rem;
+}
+
+.save-progress-description strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.save-progress-description p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.72;
+}
+
+.save-progress-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  opacity: 0.55;
+}
+
+.save-progress-complete {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.save-progress-complete .save-progress-content {
+  min-width: 0;
+}
+
+.save-progress-complete p {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.save-progress-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.save-progress-error p {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+@media (max-width: 480px) {
+  .save-progress-footer {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .save-progress-percentage {
+    font-size: 0.8rem;
+  }
+}
+
+/* =========================================================
+   SNAKE PROFILE — QUICK ACTIONS
+   ========================================================= */
+
+.snake-profile-actions {
+  width: min(1000px, 100%);
+
+  margin:
+    0
+    auto
+    30px;
+
+  padding: 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 12px;
+
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(0, 174, 255, 0.12),
+      transparent 65%
+    ),
+    var(--surface);
+
+  border:
+    2px solid var(--border);
+
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--glow-soft);
+
+  min-width: 0;
+}
+
+/* Quick action buttons */
+
+.snake-profile-actions button {
+  width: 100%;
+
+  min-height: 54px;
+
+  padding:
+    12px
+    14px;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 12px;
+
+  background:
+    rgba(0, 174, 255, 0.08);
+
+  color: var(--text);
+
+  font-size: 0.95rem;
+
+  font-weight: 800;
+
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.snake-profile-actions button:hover {
+  background: var(--primary);
+
+  border-color: var(--secondary);
+
+  box-shadow:
+    0 0 16px rgba(0, 174, 255, 0.3);
+
+  transform: translateY(-2px);
+}
+
+.snake-profile-actions button:active {
+  transform: scale(0.97);
+}
+
+/* Delete action */
+
+.snake-profile-actions button:last-child {
+  border-color: var(--danger);
+}
+
+/* =========================================================
+   SNAKE PROFILE — MOBILE QUICK ACTIONS
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .snake-profile-actions {
+    width: 100%;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    padding: 14px;
+
+    margin-bottom: 22px;
+  }
+
+  .snake-profile-actions button {
+    min-height: 56px;
+
+    padding:
+      10px
+      8px;
+
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .snake-profile-actions {
+    grid-template-columns: 1fr;
+
+    padding: 12px;
+  }
+
+  .snake-profile-actions button {
+    min-height: 52px;
+  }
+}
+
+/* =========================================================
+   SNAKE PROFILE — QUICK ACTIONS
+   ========================================================= */
+
+.snake-profile-actions {
+  width: min(1000px, 100%);
+
+  margin:
+    0
+    auto
+    30px;
+
+  padding: 18px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+
+  gap: 12px;
+
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(0, 174, 255, 0.12),
+      transparent 65%
+    ),
+    var(--surface);
+
+  border:
+    2px solid var(--border);
+
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--glow-soft);
+
+  min-width: 0;
+}
+
+
+/* =========================================================
+   QUICK ACTION BUTTONS
+   ========================================================= */
+
+.snake-profile-actions button {
+  width: 100%;
+
+  min-height: 54px;
+
+  padding:
+    12px
+    10px;
+
+  border:
+    2px solid var(--accent);
+
+  border-radius: 12px;
+
+  background:
+    rgba(0, 174, 255, 0.08);
+
+  color: var(--text);
+
+  font-size: 0.9rem;
+
+  font-weight: 800;
+
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+
+.snake-profile-actions button:hover {
+  background: var(--primary);
+
+  border-color: var(--secondary);
+
+  box-shadow:
+    0 0 16px rgba(0, 174, 255, 0.3);
+
+  transform: translateY(-2px);
+}
+
+
+.snake-profile-actions button:active {
+  transform: scale(0.97);
+}
+
+
+/* =========================================================
+   DELETE ACTION
+   ========================================================= */
+
+.snake-profile-actions button:last-child {
+  border-color: var(--danger);
+}
+
+
+.snake-profile-actions button:last-child:hover {
+  background:
+    rgba(255, 77, 77, 0.15);
+
+  border-color: var(--danger);
+
+  box-shadow:
+    0 0 16px rgba(255, 77, 77, 0.3);
+}
+
+
+/* =========================================================
+   MOBILE QUICK ACTIONS
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .snake-profile-actions {
+    width: 100%;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    padding: 14px;
+
+    margin-bottom: 22px;
+  }
+
+
+  .snake-profile-actions button {
+    min-height: 56px;
+
+    padding:
+      10px
+      8px;
+
+    font-size: 0.9rem;
+  }
+
+}
+
+
+@media (max-width: 400px) {
+
+  .snake-profile-actions {
+    grid-template-columns: 1fr;
+
+    padding: 12px;
+  }
+
+
+  .snake-profile-actions button {
+    min-height: 52px;
+  }
+
+}

@@ -5,23 +5,46 @@ export type ShedQuality =
   | "Difficult"
   | "Unknown";
 
+export type ShedStatus =
+  | "Complete"
+  | "Partial";
+
+export type RetainedShedArea =
+  | "None"
+  | "Eye Cap"
+  | "Tail Tip"
+  | "Body"
+  | "Multiple Areas";
+
+export type ShedAssistance =
+  | "None"
+  | "Monitoring Only"
+  | "Humidity Adjustment"
+  | "Keeper Intervention"
+  | "Veterinary Assistance";
 
 export type ShedRecord = {
-
   id: string;
-
   snakeId: string;
-
   date: string;
 
-  quality: ShedQuality;
+  // Shed cycle
+  bluePhaseStarted: boolean;
+  eyesSkinCleared: boolean;
+  shedCompleted: boolean;
 
-  complete: boolean;
-
+  // Inspection
+  retainedShedArea: RetainedShedArea;
   retainedEyeCaps: boolean;
-
   retainedTailTip: boolean;
 
-  notes: string;
+  // Overall assessment
+  quality: ShedQuality;
+  assistance: ShedAssistance;
 
+  // Measurements
+  shedLength?: number;
+  snakeWeight?: number;
+
+  notes: string;
 };

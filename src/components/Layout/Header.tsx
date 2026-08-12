@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import logo from "../../assets/TinyTitans-Logo.JPG.jpg";
+import logo from "../../assets/TinyTitans-Logo.jpg";
 
 function Header() {
   return (

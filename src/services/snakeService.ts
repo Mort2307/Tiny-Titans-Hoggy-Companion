@@ -12,15 +12,22 @@ import {
 
 import type { Snake } from "../types/Snake";
 
-import { db } from "../firebase/config";
+import {
+  db,
+} from "../firebase/config";
 
-import { migrateSnake } from "../utils/snakeMigration";
+import {
+  migrateSnake,
+} from "../utils/snakeMigration";
+
 
 // =========================================================
 // USER SNAKES COLLECTION
 // =========================================================
 
-function snakesCollection(uid: string) {
+function snakesCollection(
+  uid: string
+) {
   return collection(
     db,
     "users",
@@ -29,25 +36,31 @@ function snakesCollection(uid: string) {
   );
 }
 
+
 // =========================================================
-// FIRESTORE ERROR HELPER
+// FIREBASE ERROR HELPER
 // =========================================================
 
 function getFirestoreErrorMessage(
   error: unknown
 ): string {
+
   if (
     error &&
     typeof error === "object" &&
     "code" in error
   ) {
+
     const firebaseError =
       error as {
         code?: string;
         message?: string;
       };
 
-    switch (firebaseError.code) {
+    switch (
+      firebaseError.code
+    ) {
+
       case "permission-denied":
         return (
           "Firebase permission denied. " +
@@ -84,24 +97,112 @@ function getFirestoreErrorMessage(
           "Please check your connection and try again."
         );
 
+      case "resource-exhausted":
+        return (
+          "The snake record is too large for Firestore. " +
+          "Please choose a smaller photo."
+        );
+
       case "not-found":
         return (
           "The requested Firestore snake document could not be found."
         );
 
       default:
-        if (firebaseError.message) {
+
+        if (
+          firebaseError.message
+        ) {
           return firebaseError.message;
         }
     }
   }
 
-  if (error instanceof Error) {
+  if (
+    error instanceof Error
+  ) {
     return error.message;
   }
 
-  return "Unable to save this snake.";
+  return (
+    "Unable to save this snake."
+  );
 }
+
+
+// =========================================================
+// PHOTO SIZE SAFETY
+// =========================================================
+//
+// Firebase Firestore has a roughly 1 MiB document limit.
+//
+// We already compress photos before they reach this service.
+// This additional check prevents a huge image from being
+// accidentally stored inside the snake document.
+//
+// We deliberately use a conservative limit so the rest of the
+// snake profile still has plenty of room.
+//
+// =========================================================
+
+const MAX_PHOTO_DATA_URL_SIZE =
+  700_000;
+
+
+// =========================================================
+// PREPARE PHOTO FOR FIRESTORE
+// =========================================================
+//
+// IMPORTANT:
+//
+// Firebase Storage is currently NOT being used.
+//
+// This is intentional because Firebase Storage has not yet
+// been activated on the Tiny Titans Firebase project.
+//
+// Compressed photos are temporarily stored directly inside
+// the Firestore snake document.
+//
+// Once Firebase Storage is upgraded/activated, this function
+// can be replaced with Storage upload logic without changing
+// the SnakeForm.
+//
+// =========================================================
+
+function prepareSnakePhoto(
+  photo: string
+): string {
+
+  if (
+    !photo
+  ) {
+    return "";
+  }
+
+  // Existing normal URL.
+  if (
+    !photo.startsWith(
+      "data:"
+    )
+  ) {
+    return photo;
+  }
+
+  // Safety check.
+  if (
+    photo.length >
+    MAX_PHOTO_DATA_URL_SIZE
+  ) {
+
+    throw new Error(
+      "This photo is still too large after compression. " +
+      "Please choose a smaller photo or try a different image."
+    );
+  }
+
+  return photo;
+}
+
 
 // =========================================================
 // REMOVE ONLY UNDEFINED VALUES
@@ -110,6 +211,7 @@ function getFirestoreErrorMessage(
 // IMPORTANT:
 //
 // Do NOT recursively destroy Firebase special objects.
+//
 // Firestore FieldValue objects such as serverTimestamp()
 // must be passed to Firestore untouched.
 //
@@ -118,31 +220,38 @@ function getFirestoreErrorMessage(
 function removeUndefined(
   value: unknown
 ): unknown {
-  if (value === undefined) {
+
+  if (
+    value === undefined
+  ) {
     return undefined;
   }
 
-  if (value === null) {
+  if (
+    value === null
+  ) {
     return null;
   }
 
-  if (Array.isArray(value)) {
+  if (
+    Array.isArray(
+      value
+    )
+  ) {
+
     return value
-      .map(removeUndefined)
+      .map(
+        removeUndefined
+      )
       .filter(
         (item) =>
           item !== undefined
       );
   }
 
-  if (typeof value === "object") {
-    /*
-     * Firestore data passed into this function should
-     * primarily consist of plain objects.
-     *
-     * We only recurse into objects that are ordinary
-     * JavaScript objects.
-     */
+  if (
+    typeof value === "object"
+  ) {
 
     const prototype =
       Object.getPrototypeOf(
@@ -150,16 +259,18 @@ function removeUndefined(
       );
 
     if (
-      prototype !== Object.prototype &&
+      prototype !==
+        Object.prototype &&
       prototype !== null
     ) {
       return value;
     }
 
-    const cleaned: Record<
-      string,
-      unknown
-    > = {};
+    const cleaned:
+      Record<
+        string,
+        unknown
+      > = {};
 
     for (
       const [
@@ -172,6 +283,7 @@ function removeUndefined(
         >
       )
     ) {
+
       if (
         child === undefined
       ) {
@@ -199,6 +311,7 @@ function removeUndefined(
   return value;
 }
 
+
 // =========================================================
 // PREPARE SNAKE FOR FIRESTORE
 // =========================================================
@@ -207,7 +320,11 @@ function prepareSnakeForFirestore(
   snake: Snake,
   firestoreId: string,
   uid: string
-): Record<string, unknown> {
+): Record<
+  string,
+  unknown
+> {
+
   const migrated =
     migrateSnake({
       ...snake,
@@ -216,7 +333,17 @@ function prepareSnakeForFirestore(
         firestoreId,
     });
 
+  // -------------------------------------------------------
+  // Prepare compressed photo.
+  // -------------------------------------------------------
+
+  const preparedPhoto =
+    prepareSnakePhoto(
+      migrated.photo || ""
+    );
+
   const prepared = {
+
     ...migrated,
 
     id:
@@ -224,6 +351,9 @@ function prepareSnakeForFirestore(
 
     ownerId:
       uid,
+
+    photo:
+      preparedPhoto,
   };
 
   const cleaned =
@@ -233,8 +363,10 @@ function prepareSnakeForFirestore(
 
   if (
     !cleaned ||
-    typeof cleaned !== "object"
+    typeof cleaned !==
+      "object"
   ) {
+
     throw new Error(
       "Tiny Titans produced invalid snake data before saving."
     );
@@ -246,6 +378,7 @@ function prepareSnakeForFirestore(
   >;
 }
 
+
 // =========================================================
 // GET ALL USER SNAKES
 // =========================================================
@@ -253,13 +386,18 @@ function prepareSnakeForFirestore(
 export async function getUserSnakes(
   uid: string
 ): Promise<Snake[]> {
-  if (!uid) {
+
+  if (
+    !uid
+  ) {
+
     throw new Error(
       "Cannot load snakes without a user ID."
     );
   }
 
   try {
+
     const snakesRef =
       snakesCollection(
         uid
@@ -282,7 +420,9 @@ export async function getUserSnakes(
       (
         document
       ) => {
+
         return migrateSnake({
+
           ...(document.data() as Partial<Snake>),
 
           id:
@@ -290,9 +430,11 @@ export async function getUserSnakes(
         });
       }
     );
+
   } catch (
     error
   ) {
+
     console.error(
       "Tiny Titans: unable to get user snakes",
       error
@@ -306,6 +448,7 @@ export async function getUserSnakes(
   }
 }
 
+
 // =========================================================
 // GET ONE USER SNAKE
 // =========================================================
@@ -314,13 +457,20 @@ export async function getUserSnake(
   uid: string,
   snakeId: string
 ): Promise<Snake | null> {
-  if (!uid) {
+
+  if (
+    !uid
+  ) {
+
     throw new Error(
       "Cannot load snake without a user ID."
     );
   }
 
-  if (!snakeId) {
+  if (
+    !snakeId
+  ) {
+
     throw new Error(
       "Cannot load snake without a snake ID."
     );
@@ -346,25 +496,14 @@ export async function getUserSnake(
   );
 
   try {
+
     const snapshot =
       await getDoc(
         snakeRef
       );
 
-    // =====================================================
-    // TEMPORARY PHONE DIAGNOSTIC
-    // =====================================================
-    //
-    // This tells us EXACTLY what Firestore returned on the
-    // device attempting to load the snake.
-    //
-    // DO NOT REMOVE THIS YET.
-    // We need this output to diagnose the phone problem.
-    //
-    // =====================================================
-
     console.log(
-      "Tiny Titans: PHONE SNAKE LOOKUP RESULT",
+      "Tiny Titans: SNAKE LOOKUP RESULT",
       {
         uid,
         snakeId,
@@ -374,56 +513,30 @@ export async function getUserSnake(
           snapshot.exists(),
         documentId:
           snapshot.id,
-        data:
-          snapshot.exists()
-            ? snapshot.data()
-            : null,
       }
     );
-
-    // =====================================================
-    // SNAKE DOES NOT EXIST
-    // =====================================================
 
     if (
       !snapshot.exists()
     ) {
+
       console.warn(
         "Tiny Titans: snake does not exist",
         {
           uid,
           snakeId,
-          path:
-            `users/${uid}/snakes/${snakeId}`,
         }
       );
 
       return null;
     }
 
-    // =====================================================
-    // SNAKE FOUND
-    // =====================================================
-
     const firestoreData =
       snapshot.data();
 
-    console.log(
-      "Tiny Titans: snake document found",
-      {
-        uid,
-        snakeId,
-        documentId:
-          snapshot.id,
-        name:
-          firestoreData?.name,
-        ownerId:
-          firestoreData?.ownerId,
-      }
-    );
-
     const migratedSnake =
       migrateSnake({
+
         ...(firestoreData as Partial<Snake>),
 
         id:
@@ -431,53 +544,34 @@ export async function getUserSnake(
       });
 
     console.log(
-      "Tiny Titans: snake migrated successfully",
+      "Tiny Titans: snake document found",
       {
         uid,
         snakeId:
           snapshot.id,
         name:
           migratedSnake.name,
+        hasPhoto:
+          Boolean(
+            migratedSnake.photo
+          ),
         weight:
           migratedSnake.weight,
         weightHistoryCount:
-          migratedSnake.weightHistory?.length ?? 0,
+          migratedSnake.weightHistory?.length ??
+          0,
       }
     );
 
     return migratedSnake;
+
   } catch (
     error
   ) {
+
     console.error(
       "Tiny Titans: unable to get snake",
       error
-    );
-
-    console.error(
-      "Tiny Titans: getUserSnake diagnostic",
-      {
-        uid,
-        snakeId,
-        path:
-          `users/${uid}/snakes/${snakeId}`,
-        errorCode:
-          (
-            error &&
-            typeof error === "object" &&
-            "code" in error
-          )
-            ? (
-                error as {
-                  code?: string;
-                }
-              ).code
-            : undefined,
-        errorMessage:
-          error instanceof Error
-            ? error.message
-            : String(error),
-      }
     );
 
     throw new Error(
@@ -488,6 +582,7 @@ export async function getUserSnake(
   }
 }
 
+
 // =========================================================
 // CREATE USER SNAKE
 // =========================================================
@@ -496,7 +591,11 @@ export async function createUserSnake(
   uid: string,
   snake: Snake
 ): Promise<Snake> {
-  if (!uid) {
+
+  if (
+    !uid
+  ) {
+
     throw new Error(
       "Cannot create snake without a user ID."
     );
@@ -509,13 +608,6 @@ export async function createUserSnake(
       )
     );
 
-  const snakeToSave =
-    prepareSnakeForFirestore(
-      snake,
-      snakeRef.id,
-      uid
-    );
-
   console.log(
     "Tiny Titans: CREATE START",
     {
@@ -523,13 +615,35 @@ export async function createUserSnake(
       snakeId:
         snakeRef.id,
       name:
-        snakeToSave.name,
+        snake.name,
+      hasPhoto:
+        Boolean(
+          snake.photo
+        ),
+      photoStoredInFirestore:
+        Boolean(
+          snake.photo?.startsWith(
+            "data:"
+          )
+        ),
       path:
         `users/${uid}/snakes/${snakeRef.id}`,
     }
   );
 
+  const snakeToSave =
+    prepareSnakeForFirestore(
+      snake,
+      snakeRef.id,
+      uid
+    );
+
   try {
+
+    console.log(
+      "Tiny Titans: writing snake document to Firestore"
+    );
+
     await setDoc(
       snakeRef,
       {
@@ -542,9 +656,11 @@ export async function createUserSnake(
           serverTimestamp(),
       }
     );
+
   } catch (
     error
   ) {
+
     console.error(
       "========================================="
     );
@@ -581,12 +697,14 @@ export async function createUserSnake(
   );
 
   return migrateSnake({
+
     ...(snakeToSave as Partial<Snake>),
 
     id:
       snakeRef.id,
   });
 }
+
 
 // =========================================================
 // UPDATE USER SNAKE
@@ -596,13 +714,20 @@ export async function updateUserSnake(
   uid: string,
   snake: Snake
 ): Promise<Snake> {
-  if (!uid) {
+
+  if (
+    !uid
+  ) {
+
     throw new Error(
       "Cannot update snake without a user ID."
     );
   }
 
-  if (!snake.id) {
+  if (
+    !snake.id
+  ) {
+
     throw new Error(
       "Cannot update snake without a snake ID."
     );
@@ -620,6 +745,28 @@ export async function updateUserSnake(
       snakeId
     );
 
+  console.log(
+    "Tiny Titans: UPDATE START",
+    {
+      uid,
+      snakeId,
+      name:
+        snake.name,
+      hasPhoto:
+        Boolean(
+          snake.photo
+        ),
+      photoStoredInFirestore:
+        Boolean(
+          snake.photo?.startsWith(
+            "data:"
+          )
+        ),
+      path:
+        `users/${uid}/snakes/${snakeId}`,
+    }
+  );
+
   const snakeToSave =
     prepareSnakeForFirestore(
       snake,
@@ -627,25 +774,11 @@ export async function updateUserSnake(
       uid
     );
 
-  console.log(
-    "Tiny Titans: UPDATE START",
-    {
-      uid,
-      snakeId,
-      name:
-        snakeToSave.name,
-      path:
-        `users/${uid}/snakes/${snakeId}`,
-    }
-  );
-
   try {
-    /*
-     * We deliberately use setDoc with merge here.
-     *
-     * This means the document can be updated without
-     * first performing another Firestore read.
-     */
+
+    console.log(
+      "Tiny Titans: writing updated snake document to Firestore"
+    );
 
     await setDoc(
       snakeRef,
@@ -660,9 +793,11 @@ export async function updateUserSnake(
           true,
       }
     );
+
   } catch (
     error
   ) {
+
     console.error(
       "========================================="
     );
@@ -698,12 +833,14 @@ export async function updateUserSnake(
   );
 
   return migrateSnake({
+
     ...(snakeToSave as Partial<Snake>),
 
     id:
       snakeId,
   });
 }
+
 
 // =========================================================
 // CREATE OR UPDATE
@@ -713,13 +850,20 @@ export async function saveUserSnake(
   uid: string,
   snake: Snake
 ): Promise<Snake> {
-  if (!uid) {
+
+  if (
+    !uid
+  ) {
+
     throw new Error(
       "Cannot save snake without a user ID."
     );
   }
 
-  if (!snake) {
+  if (
+    !snake
+  ) {
+
     throw new Error(
       "Cannot save an empty snake record."
     );
@@ -734,10 +878,17 @@ export async function saveUserSnake(
         "(new)",
       name:
         snake.name,
+      hasPhoto:
+        Boolean(
+          snake.photo
+        ),
     }
   );
 
-  if (snake.id) {
+  if (
+    snake.id
+  ) {
+
     return updateUserSnake(
       uid,
       snake
@@ -750,21 +901,38 @@ export async function saveUserSnake(
   );
 }
 
+
 // =========================================================
 // DELETE SNAKE
+// =========================================================
+//
+// Firebase Storage is intentionally NOT used here.
+//
+// Storage is not currently activated on the project.
+//
+// When Storage is eventually enabled, photo cleanup can be
+// added back here.
+//
 // =========================================================
 
 export async function deleteUserSnake(
   uid: string,
   snakeId: string
 ): Promise<void> {
-  if (!uid) {
+
+  if (
+    !uid
+  ) {
+
     throw new Error(
       "Cannot delete snake without a user ID."
     );
   }
 
-  if (!snakeId) {
+  if (
+    !snakeId
+  ) {
+
     throw new Error(
       "Cannot delete snake without a snake ID."
     );
@@ -780,6 +948,7 @@ export async function deleteUserSnake(
     );
 
   try {
+
     await deleteDoc(
       snakeRef
     );
@@ -788,9 +957,11 @@ export async function deleteUserSnake(
       "Tiny Titans: snake deleted",
       snakeId
     );
+
   } catch (
     error
   ) {
+
     console.error(
       "Tiny Titans: unable to delete snake",
       error
@@ -804,6 +975,7 @@ export async function deleteUserSnake(
   }
 }
 
+
 // =========================================================
 // MIGRATE OLD LOCAL STORAGE SNAKES
 // =========================================================
@@ -811,7 +983,10 @@ export async function deleteUserSnake(
 export async function migrateLocalSnakesToFirestore(
   uid: string
 ): Promise<number> {
-  if (!uid) {
+
+  if (
+    !uid
+  ) {
     return 0;
   }
 
@@ -820,13 +995,16 @@ export async function migrateLocalSnakesToFirestore(
     null;
 
   try {
+
     saved =
       localStorage.getItem(
         "tinyTitansSnakes"
       );
+
   } catch (
     error
   ) {
+
     console.warn(
       "Tiny Titans: localStorage unavailable during migration",
       error
@@ -835,7 +1013,10 @@ export async function migrateLocalSnakesToFirestore(
     return 0;
   }
 
-  if (!saved) {
+  if (
+    !saved
+  ) {
+
     console.log(
       "Tiny Titans: no old local snakes found."
     );
@@ -846,13 +1027,16 @@ export async function migrateLocalSnakesToFirestore(
   let parsed: unknown;
 
   try {
+
     parsed =
       JSON.parse(
         saved
       );
+
   } catch (
     error
   ) {
+
     console.error(
       "Tiny Titans: old snake data could not be parsed.",
       error
@@ -868,6 +1052,7 @@ export async function migrateLocalSnakesToFirestore(
       parsed
     )
   ) {
+
     throw new Error(
       "The old snake data is invalid."
     );
@@ -879,6 +1064,7 @@ export async function migrateLocalSnakesToFirestore(
   for (
     const item of parsed
   ) {
+
     const oldSnake =
       migrateSnake(
         item as Partial<Snake>
@@ -887,7 +1073,10 @@ export async function migrateLocalSnakesToFirestore(
     const snakeId =
       oldSnake.id;
 
-    if (!snakeId) {
+    if (
+      !snakeId
+    ) {
+
       console.warn(
         "Tiny Titans: old snake has no ID, skipping migration",
         oldSnake.name
@@ -906,6 +1095,7 @@ export async function migrateLocalSnakesToFirestore(
       );
 
     try {
+
       const existing =
         await getDoc(
           snakeRef
@@ -914,6 +1104,7 @@ export async function migrateLocalSnakesToFirestore(
       if (
         existing.exists()
       ) {
+
         console.log(
           "Tiny Titans: snake already exists in Firestore, skipping",
           snakeId
@@ -955,11 +1146,18 @@ export async function migrateLocalSnakesToFirestore(
 
           snakeId:
             snakeRef.id,
+
+          hasPhoto:
+            Boolean(
+              oldSnake.photo
+            ),
         }
       );
+
     } catch (
       error
     ) {
+
       console.error(
         "Tiny Titans: failed migrating snake",
         {

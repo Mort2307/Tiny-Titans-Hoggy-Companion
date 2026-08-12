@@ -1,0 +1,357 @@
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+} from "firebase/firestore";
+
+import type { FeedingRecord } from "../types/Feeding";
+
+import { db } from "../firebase/config";
+
+
+// ============================================================
+// USER SNAKE FEEDINGS COLLECTION
+// ============================================================
+
+function feedingsCollection(
+  uid: string,
+  snakeId: string
+) {
+  return collection(
+    db,
+    "users",
+    uid,
+    "snakes",
+    snakeId,
+    "feedings"
+  );
+}
+
+
+// ============================================================
+// FIREBASE ERROR HELPER
+// ============================================================
+
+function getFirestoreErrorMessage(
+  error: unknown
+): string {
+
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error
+  ) {
+
+    const firebaseError =
+      error as {
+        code?: string;
+        message?: string;
+      };
+
+    switch (
+      firebaseError.code
+    ) {
+
+      case "permission-denied":
+        return (
+          "Firebase permission denied. " +
+          "Your Firestore security rules are blocking this feeding record."
+        );
+
+      case "unauthenticated":
+        return (
+          "Firebase says you are not authenticated. " +
+          "Please log out and log back in."
+        );
+
+      case "unavailable":
+        return (
+          "Firebase is temporarily unavailable. " +
+          "Please check your internet connection."
+        );
+
+      case "failed-precondition":
+        return (
+          "Firebase could not complete the request because " +
+          "a required database configuration is missing."
+        );
+
+      case "invalid-argument":
+        return (
+          "Firebase rejected the feeding data because one or more values are invalid."
+        );
+
+      case "not-found":
+        return (
+          "The requested feeding record could not be found."
+        );
+
+      default:
+        if (firebaseError.message) {
+          return firebaseError.message;
+        }
+    }
+  }
+
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return "Unable to save the feeding record.";
+}
+
+
+// ============================================================
+// GET FEEDING HISTORY
+// ============================================================
+
+export async function getSnakeFeedings(
+  uid: string,
+  snakeId: string
+): Promise<FeedingRecord[]> {
+
+  if (!uid) {
+    throw new Error(
+      "Cannot load feedings without a user ID."
+    );
+  }
+
+  if (!snakeId) {
+    throw new Error(
+      "Cannot load feedings without a snake ID."
+    );
+  }
+
+  try {
+
+    const feedingsRef =
+      feedingsCollection(
+        uid,
+        snakeId
+      );
+
+    const feedingsQuery =
+      query(
+        feedingsRef,
+        orderBy("date", "desc")
+      );
+
+    const snapshot =
+      await getDocs(
+        feedingsQuery
+      );
+
+    return snapshot.docs.map(
+      (document) => {
+
+        const data =
+          document.data();
+
+        return {
+          id:
+            document.id,
+
+          snakeId,
+
+          date:
+            typeof data.date === "string"
+              ? data.date
+              : "",
+
+          foodType:
+            data.foodType,
+
+          customFood:
+            data.customFood,
+
+          size:
+            data.size,
+
+          weight:
+            typeof data.weight === "number"
+              ? data.weight
+              : undefined,
+
+          feedingMethod:
+            data.feedingMethod,
+
+          response:
+            data.response,
+
+          notes:
+            data.notes,
+        } as FeedingRecord;
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Tiny Titans: unable to load feeding history",
+      error
+    );
+
+    throw new Error(
+      getFirestoreErrorMessage(
+        error
+      )
+    );
+  }
+}
+
+
+// ============================================================
+// CREATE / UPDATE FEEDING
+// ============================================================
+
+export async function saveSnakeFeeding(
+  uid: string,
+  feeding: FeedingRecord
+): Promise<FeedingRecord> {
+
+  if (!uid) {
+    throw new Error(
+      "Cannot save feeding without a user ID."
+    );
+  }
+
+  if (!feeding.snakeId) {
+    throw new Error(
+      "Cannot save feeding without a snake ID."
+    );
+  }
+
+  if (!feeding.id) {
+    throw new Error(
+      "Cannot save feeding without a feeding ID."
+    );
+  }
+
+  const feedingRef =
+    doc(
+      db,
+      "users",
+      uid,
+      "snakes",
+      feeding.snakeId,
+      "feedings",
+      feeding.id
+    );
+
+  try {
+
+    await setDoc(
+      feedingRef,
+      {
+        ...feeding,
+      },
+      {
+        merge: true,
+      }
+    );
+
+    console.log(
+      "Tiny Titans: feeding saved",
+      {
+        snakeId:
+          feeding.snakeId,
+
+        feedingId:
+          feeding.id,
+
+        date:
+          feeding.date,
+
+        response:
+          feeding.response,
+      }
+    );
+
+    return feeding;
+
+  } catch (error) {
+
+    console.error(
+      "Tiny Titans: unable to save feeding",
+      error
+    );
+
+    throw new Error(
+      `Unable to save this feeding: ${getFirestoreErrorMessage(
+        error
+      )}`
+    );
+  }
+}
+
+
+// ============================================================
+// DELETE FEEDING
+// ============================================================
+
+export async function deleteSnakeFeeding(
+  uid: string,
+  snakeId: string,
+  feedingId: string
+): Promise<void> {
+
+  if (!uid) {
+    throw new Error(
+      "Cannot delete feeding without a user ID."
+    );
+  }
+
+  if (!snakeId) {
+    throw new Error(
+      "Cannot delete feeding without a snake ID."
+    );
+  }
+
+  if (!feedingId) {
+    throw new Error(
+      "Cannot delete feeding without a feeding ID."
+    );
+  }
+
+  const feedingRef =
+    doc(
+      db,
+      "users",
+      uid,
+      "snakes",
+      snakeId,
+      "feedings",
+      feedingId
+    );
+
+  try {
+
+    await deleteDoc(
+      feedingRef
+    );
+
+    console.log(
+      "Tiny Titans: feeding deleted",
+      feedingId
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Tiny Titans: unable to delete feeding",
+      error
+    );
+
+    throw new Error(
+      `Unable to delete this feeding: ${getFirestoreErrorMessage(
+        error
+      )}`
+    );
+  }
+}

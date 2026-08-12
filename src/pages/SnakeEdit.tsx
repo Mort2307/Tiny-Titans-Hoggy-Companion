@@ -27,6 +27,10 @@ import type {
 
 import SnakeForm from "../components/SnakeForm";
 
+import SaveProgress, {
+  type SaveStage,
+} from "../components/SaveProgress";
+
 import BackHomeButton from "../components/BackHomeButton";
 
 import {
@@ -37,6 +41,7 @@ import {
 import {
   migrateSnake,
 } from "../utils/snakeMigration";
+
 
 // =========================================
 // EMPTY FORM
@@ -90,6 +95,7 @@ const emptyForm = {
     "",
 };
 
+
 // =========================================
 // SORT WEIGHT HISTORY
 // =========================================
@@ -119,6 +125,7 @@ function sortWeightHistory(
   );
 }
 
+
 // =========================================
 // BUILD WEIGHT HISTORY
 // =========================================
@@ -135,6 +142,7 @@ function buildWeightHistory(
   const records: WeightRecord[] = [
     ...(existingHistory ?? []),
   ];
+
 
   // =======================================
   // STARTING WEIGHT
@@ -194,6 +202,7 @@ function buildWeightHistory(
     }
   }
 
+
   // =======================================
   // CURRENT WEIGHT
   // =======================================
@@ -252,6 +261,7 @@ function buildWeightHistory(
     }
   }
 
+
   // =======================================
   // REMOVE DUPLICATES
   // =======================================
@@ -290,6 +300,7 @@ function buildWeightHistory(
     )
   );
 }
+
 
 // =========================================
 // FIREBASE ERROR HELPER
@@ -353,6 +364,7 @@ function getFirebaseErrorDetails(
   };
 }
 
+
 // =========================================
 // SNAKE EDIT
 // =========================================
@@ -375,6 +387,7 @@ function SnakeEdit() {
   const isNew =
     id === "new";
 
+
   const [
     form,
     setForm,
@@ -383,11 +396,13 @@ function SnakeEdit() {
       emptyForm
     );
 
+
   const [
     loaded,
     setLoaded,
   ] =
     useState(false);
+
 
   const [
     saving,
@@ -395,12 +410,34 @@ function SnakeEdit() {
   ] =
     useState(false);
 
+
+  // =======================================
+  // SAVE PROGRESS
+  // =======================================
+
+  const [
+    saveStage,
+    setSaveStage,
+  ] =
+    useState<SaveStage>(
+      "idle"
+    );
+
+
+  const [
+    saveError,
+    setSaveError,
+  ] =
+    useState("");
+
+
   // =======================================
   // MOBILE SAVE LOCK
   // =======================================
 
   const saveLock =
     useRef(false);
+
 
   // =======================================
   // LOAD SNAKE
@@ -411,6 +448,7 @@ function SnakeEdit() {
     let cancelled =
       false;
 
+
     async function loadSnake() {
 
       if (
@@ -419,6 +457,7 @@ function SnakeEdit() {
       ) {
         return;
       }
+
 
       if (!user) {
 
@@ -437,6 +476,7 @@ function SnakeEdit() {
 
         return;
       }
+
 
       // =====================================
       // NEW SNAKE
@@ -468,6 +508,7 @@ function SnakeEdit() {
         return;
       }
 
+
       // =====================================
       // EXISTING SNAKE
       // =====================================
@@ -490,6 +531,7 @@ function SnakeEdit() {
         return;
       }
 
+
       try {
 
         console.log(
@@ -503,11 +545,13 @@ function SnakeEdit() {
           }
         );
 
+
         const snake =
           await getUserSnake(
             user.uid,
             id
           );
+
 
         if (
           !snake
@@ -544,10 +588,12 @@ function SnakeEdit() {
           return;
         }
 
+
         const migratedSnake =
           migrateSnake(
             snake
           );
+
 
         const weightHistory =
           sortWeightHistory(
@@ -555,11 +601,13 @@ function SnakeEdit() {
               []
           );
 
+
         if (
           cancelled
         ) {
           return;
         }
+
 
         setForm({
 
@@ -626,6 +674,7 @@ function SnakeEdit() {
             "",
         });
 
+
         console.log(
           "Tiny Titans: snake loaded successfully",
           {
@@ -636,6 +685,7 @@ function SnakeEdit() {
               migratedSnake.name,
           }
         );
+
 
         setLoaded(
           true
@@ -650,20 +700,26 @@ function SnakeEdit() {
             error
           );
 
+
         console.error(
           "Tiny Titans: unable to load snake",
           {
             error,
+
             code:
               details.code,
+
             message:
               details.message,
+
             uid:
               user.uid,
+
             snakeId:
               id,
           }
         );
+
 
         if (
           !cancelled
@@ -680,7 +736,9 @@ function SnakeEdit() {
       }
     }
 
+
     void loadSnake();
+
 
     return () => {
 
@@ -696,6 +754,7 @@ function SnakeEdit() {
     loading,
     profileLoading,
   ]);
+
 
   // =========================================
   // UPDATE FORM
@@ -716,6 +775,7 @@ function SnakeEdit() {
       })
     );
   }
+
 
   // =========================================
   // SAVE
@@ -738,18 +798,24 @@ function SnakeEdit() {
       return;
     }
 
+
     // ---------------------------------------
     // AUTH CHECK
     // ---------------------------------------
 
     if (!user) {
 
-      alert(
+      setSaveStage(
+        "error"
+      );
+
+      setSaveError(
         "You must be logged in to save a snake."
       );
 
       return;
     }
+
 
     // ---------------------------------------
     // BASIC VALIDATION
@@ -759,12 +825,17 @@ function SnakeEdit() {
       !form.name.trim()
     ) {
 
-      alert(
+      setSaveStage(
+        "error"
+      );
+
+      setSaveError(
         "Please enter a name for your snake."
       );
 
       return;
     }
+
 
     // ---------------------------------------
     // LOCK
@@ -776,6 +847,15 @@ function SnakeEdit() {
     setSaving(
       true
     );
+
+    setSaveError(
+      ""
+    );
+
+    setSaveStage(
+      "preparing"
+    );
+
 
     console.log(
       "========================================="
@@ -803,6 +883,7 @@ function SnakeEdit() {
       }
     );
 
+
     // =======================================
     // SAVE
     // =======================================
@@ -817,14 +898,14 @@ function SnakeEdit() {
         isNew
       ) {
 
-        /*
-         * Firestore does not know the new
-         * document ID until snakeService
-         * creates the document reference.
-         *
-         * We therefore use a temporary
-         * namespace for local weight IDs.
-         */
+        // -----------------------------------
+        // PREPARING DATA
+        // -----------------------------------
+
+        setSaveStage(
+          "preparing"
+        );
+
 
         const weightHistory =
           buildWeightHistory(
@@ -836,12 +917,14 @@ function SnakeEdit() {
             form.lastWeighedDate
           );
 
+
         const newestWeight =
           weightHistory.length > 0
             ? weightHistory[
                 weightHistory.length - 1
               ]
             : null;
+
 
         const newSnake =
           migrateSnake({
@@ -861,6 +944,7 @@ function SnakeEdit() {
               "",
 
             weightTracking: {
+
               enabled:
                 true,
 
@@ -869,14 +953,11 @@ function SnakeEdit() {
             },
           });
 
-        /*
-         * New snakes must not supply an
-         * existing Firestore document ID.
-         */
 
         delete (
           newSnake as Partial<Snake>
         ).id;
+
 
         console.log(
           "Tiny Titans: new snake payload prepared",
@@ -896,15 +977,27 @@ function SnakeEdit() {
           }
         );
 
+
+        // -----------------------------------
+        // SAVE PROFILE
+        // -----------------------------------
+
+        setSaveStage(
+          "saving-profile"
+        );
+
+
         console.log(
           "Tiny Titans: calling saveUserSnake CREATE"
         );
+
 
         const savedSnake =
           await saveUserSnake(
             user.uid,
             newSnake
           );
+
 
         console.log(
           "Tiny Titans: NEW SNAKE SAVED",
@@ -917,19 +1010,67 @@ function SnakeEdit() {
           }
         );
 
+
         if (
           !savedSnake?.id
         ) {
 
           throw new Error(
-            "Firestore saved the snake but did not return a valid snake ID."
+            "Firebase saved the snake but did not return a valid snake ID."
           );
         }
+
+
+        // -----------------------------------
+        // SYNC
+        // -----------------------------------
+
+        setSaveStage(
+          "syncing"
+        );
+
+
+        /*
+         * Give the user a clear indication that
+         * Firebase has accepted the record and
+         * Tiny Titans is finishing the operation.
+         *
+         * This is intentionally a short pause
+         * so the 85% state is actually visible.
+         */
+
+        await new Promise(
+          (resolve) =>
+            setTimeout(
+              resolve,
+              350
+            )
+        );
+
+
+        // -----------------------------------
+        // COMPLETE
+        // -----------------------------------
+
+        setSaveStage(
+          "complete"
+        );
+
+
+        await new Promise(
+          (resolve) =>
+            setTimeout(
+              resolve,
+              700
+            )
+        );
+
 
         console.log(
           "Tiny Titans: navigating to new snake",
           savedSnake.id
         );
+
 
         navigate(
           `/snakes/${savedSnake.id}`,
@@ -939,8 +1080,10 @@ function SnakeEdit() {
           }
         );
 
+
         return;
       }
+
 
       // =====================================
       // EXISTING SNAKE
@@ -953,6 +1096,16 @@ function SnakeEdit() {
         );
       }
 
+
+      // -------------------------------------
+      // PREPARING
+      // -------------------------------------
+
+      setSaveStage(
+        "preparing"
+      );
+
+
       console.log(
         "Tiny Titans: loading existing snake before update",
         {
@@ -964,11 +1117,13 @@ function SnakeEdit() {
         }
       );
 
+
       const existingSnake =
         await getUserSnake(
           user.uid,
           id
         );
+
 
       if (
         !existingSnake
@@ -979,12 +1134,16 @@ function SnakeEdit() {
         );
       }
 
+
       const combinedHistory =
         [
+
           ...(existingSnake.weightHistory ?? []),
 
           ...(form.weightHistory ?? []),
+
         ];
+
 
       const weightHistory =
         buildWeightHistory(
@@ -996,6 +1155,7 @@ function SnakeEdit() {
           form.lastWeighedDate
         );
 
+
       const newestWeight =
         weightHistory.length > 0
           ? weightHistory[
@@ -1003,17 +1163,13 @@ function SnakeEdit() {
             ]
           : null;
 
+
       const updatedSnake =
         migrateSnake({
 
           ...existingSnake,
 
           ...form,
-
-          /*
-           * Firestore document ID is
-           * authoritative.
-           */
 
           id,
 
@@ -1035,6 +1191,7 @@ function SnakeEdit() {
             existingSnake.weightTracking,
         });
 
+
       console.log(
         "Tiny Titans: updated snake payload prepared",
         {
@@ -1053,15 +1210,27 @@ function SnakeEdit() {
         }
       );
 
+
+      // -------------------------------------
+      // SAVE PROFILE
+      // -------------------------------------
+
+      setSaveStage(
+        "saving-profile"
+      );
+
+
       console.log(
         "Tiny Titans: calling saveUserSnake UPDATE"
       );
+
 
       const savedSnake =
         await saveUserSnake(
           user.uid,
           updatedSnake
         );
+
 
       console.log(
         "Tiny Titans: EXISTING SNAKE UPDATED",
@@ -1074,19 +1243,58 @@ function SnakeEdit() {
         }
       );
 
+
       if (
         !savedSnake?.id
       ) {
 
         throw new Error(
-          "Firestore updated the snake but did not return a valid snake ID."
+          "Firebase updated the snake but did not return a valid snake ID."
         );
       }
+
+
+      // -------------------------------------
+      // SYNC
+      // -------------------------------------
+
+      setSaveStage(
+        "syncing"
+      );
+
+
+      await new Promise(
+        (resolve) =>
+          setTimeout(
+            resolve,
+            350
+          )
+      );
+
+
+      // -------------------------------------
+      // COMPLETE
+      // -------------------------------------
+
+      setSaveStage(
+        "complete"
+      );
+
+
+      await new Promise(
+        (resolve) =>
+          setTimeout(
+            resolve,
+            700
+          )
+      );
+
 
       console.log(
         "Tiny Titans: navigating to updated snake",
         savedSnake.id
       );
+
 
       navigate(
         `/snakes/${savedSnake.id}`,
@@ -1104,6 +1312,7 @@ function SnakeEdit() {
         getFirebaseErrorDetails(
           error
         );
+
 
       console.error(
         "========================================="
@@ -1151,32 +1360,24 @@ function SnakeEdit() {
         "========================================="
       );
 
-      // -------------------------------------
-      // USER-FACING ERROR
-      // -------------------------------------
 
-      let message =
-        "Unable to save this snake.";
-
-      if (
+      setSaveError(
         details.code !==
         "unknown"
-      ) {
-
-        message =
-          `${details.code}: ${details.message}`;
-
-      } else if (
-        details.message
-      ) {
-
-        message =
-          details.message;
-      }
-
-      alert(
-        `🐍 Tiny Titans could not save this snake.\n\n${message}`
+          ? `${details.code}: ${details.message}`
+          : details.message
       );
+
+
+      setSaveStage(
+        "error"
+      );
+
+
+      /*
+       * Keep the error visible instead of
+       * immediately resetting the progress UI.
+       */
 
     } finally {
 
@@ -1192,6 +1393,7 @@ function SnakeEdit() {
       );
     }
   }
+
 
   // =========================================
   // LOADING
@@ -1229,6 +1431,7 @@ function SnakeEdit() {
     );
   }
 
+
   // =========================================
   // PAGE
   // =========================================
@@ -1244,18 +1447,49 @@ function SnakeEdit() {
           : "✏️ Edit Snake"}
       </h1>
 
-      <SnakeForm
-        form={form}
-        updateField={updateField}
-        onSave={saveSnake}
-        editing={!isNew}
-        saving={saving}
+
+      {/* ===================================== */}
+      {/* SAVE PROGRESS */}
+      {/* ===================================== */}
+
+      <SaveProgress
+        stage={
+          saveStage
+        }
+        snakeName={
+          form.name
+        }
+        errorMessage={
+          saveError
+        }
       />
+
+
+      <SnakeForm
+        form={
+          form
+        }
+        updateField={
+          updateField
+        }
+        onSave={
+          saveSnake
+        }
+        editing={
+          !isNew
+        }
+        saving={
+          saving
+        }
+      />
+
 
       <button
         type="button"
         className="cancel-snake-button"
-        disabled={saving}
+        disabled={
+          saving
+        }
         onClick={() => {
 
           if (
@@ -1277,5 +1511,6 @@ function SnakeEdit() {
     </div>
   );
 }
+
 
 export default SnakeEdit;

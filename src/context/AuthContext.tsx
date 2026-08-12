@@ -84,6 +84,8 @@ type AuthContextType = {
   profileLoading: boolean;
 
   isAuthenticated: boolean;
+
+  refreshProfile: () => Promise<UserProfile | null>;
 };
 
 const AuthContext =
@@ -121,6 +123,109 @@ function isValidInterest(
 }
 
 /* =========================================
+   PROFILE LOADER
+========================================= */
+
+async function loadUserProfile(
+  firebaseUser: User
+): Promise<UserProfile | null> {
+  const profileRef = doc(
+    db,
+    "users",
+    firebaseUser.uid
+  );
+
+  const profileSnapshot =
+    await getDoc(profileRef);
+
+  /*
+   * No Firestore profile yet.
+   *
+   * This is expected for a newly registered
+   * Firebase account before Account Setup.
+   */
+
+  if (!profileSnapshot.exists()) {
+    return null;
+  }
+
+  const profileData =
+    profileSnapshot.data();
+
+  /* =======================================
+     INTERESTS
+  ======================================= */
+
+  const rawInterests =
+    Array.isArray(profileData.interests)
+      ? profileData.interests
+      : [];
+
+  const interests =
+    rawInterests.filter(
+      isValidInterest
+    );
+
+  /* =======================================
+     PROFILE
+  ======================================= */
+
+  const loadedProfile: UserProfile = {
+    uid: String(
+      profileData.uid ??
+        firebaseUser.uid
+    ),
+
+    displayName: String(
+      profileData.displayName ??
+        firebaseUser.displayName ??
+        ""
+    ),
+
+    email: String(
+      profileData.email ??
+        firebaseUser.email ??
+        ""
+    ),
+
+    category:
+      profileData.category === "child"
+        ? "child"
+        : "adult",
+
+    experienceLevel:
+      profileData.experienceLevel ===
+      "intermediate"
+        ? "intermediate"
+        : profileData.experienceLevel ===
+            "pro"
+          ? "pro"
+          : "beginner",
+
+    interests,
+
+    role:
+      profileData.role === "admin"
+        ? "admin"
+        : profileData.role ===
+            "moderator"
+          ? "moderator"
+          : "user",
+
+    setupComplete:
+      profileData.setupComplete === true,
+
+    createdAt:
+      profileData.createdAt,
+
+    updatedAt:
+      profileData.updatedAt,
+  };
+
+  return loadedProfile;
+}
+
+/* =========================================
    AUTH PROVIDER
 ========================================= */
 
@@ -139,6 +244,59 @@ export function AuthProvider({
   const [profileLoading, setProfileLoading] =
     useState(false);
 
+  /* =======================================
+     REFRESH PROFILE
+  ======================================= */
+
+  async function refreshProfile(): Promise<UserProfile | null> {
+    const auth = getAuth(app);
+
+    const currentUser =
+      auth.currentUser;
+
+    /*
+     * There is no authenticated Firebase user.
+     */
+
+    if (!currentUser) {
+      setProfile(null);
+
+      return null;
+    }
+
+    setProfileLoading(true);
+
+    try {
+      const loadedProfile =
+        await loadUserProfile(
+          currentUser
+        );
+
+      setProfile(
+        loadedProfile
+      );
+
+      return loadedProfile;
+
+    } catch (error) {
+      console.error(
+        "Tiny Titans: unable to refresh user profile",
+        error
+      );
+
+      setProfile(null);
+
+      return null;
+
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+
+  /* =======================================
+     AUTH STATE
+  ======================================= */
+
   useEffect(() => {
     const auth = getAuth(app);
 
@@ -146,7 +304,20 @@ export function AuthProvider({
       onAuthStateChanged(
         auth,
         async (firebaseUser) => {
+          /*
+           * Update Firebase user immediately.
+           */
+
           setUser(firebaseUser);
+
+          /*
+           * Always clear the previous profile
+           * before loading the new one.
+           *
+           * This prevents one user's profile
+           * from temporarily appearing while
+           * another authentication state loads.
+           */
 
           setProfile(null);
 
@@ -157,6 +328,7 @@ export function AuthProvider({
           if (!firebaseUser) {
             setProfileLoading(false);
             setLoading(false);
+
             return;
           }
 
@@ -167,102 +339,15 @@ export function AuthProvider({
           setProfileLoading(true);
 
           try {
-            const profileRef = doc(
-              db,
-              "users",
-              firebaseUser.uid
+            const loadedProfile =
+              await loadUserProfile(
+                firebaseUser
+              );
+
+            setProfile(
+              loadedProfile
             );
 
-            const profileSnapshot =
-              await getDoc(profileRef);
-
-            if (
-              profileSnapshot.exists()
-            ) {
-              const profileData =
-                profileSnapshot.data();
-
-              /* ============================
-                 INTERESTS
-              ============================ */
-
-              const rawInterests =
-                Array.isArray(
-                  profileData.interests
-                )
-                  ? profileData.interests
-                  : [];
-
-              const interests =
-                rawInterests.filter(
-                  isValidInterest
-                );
-
-              /* ============================
-                 PROFILE
-              ============================ */
-
-              const loadedProfile:
-                UserProfile = {
-                uid: String(
-                  profileData.uid ??
-                    firebaseUser.uid
-                ),
-
-                displayName: String(
-                  profileData.displayName ??
-                    ""
-                ),
-
-                email: String(
-                  profileData.email ??
-                    firebaseUser.email ??
-                    ""
-                ),
-
-                category:
-                  profileData.category ===
-                  "child"
-                    ? "child"
-                    : "adult",
-
-                experienceLevel:
-                  profileData.experienceLevel ===
-                  "intermediate"
-                    ? "intermediate"
-                    : profileData.experienceLevel ===
-                        "pro"
-                      ? "pro"
-                      : "beginner",
-
-                interests,
-
-                role:
-                  profileData.role ===
-                  "admin"
-                    ? "admin"
-                    : profileData.role ===
-                        "moderator"
-                      ? "moderator"
-                      : "user",
-
-                setupComplete:
-                  profileData.setupComplete ===
-                  true,
-
-                createdAt:
-                  profileData.createdAt,
-
-                updatedAt:
-                  profileData.updatedAt,
-              };
-
-              setProfile(
-                loadedProfile
-              );
-            } else {
-              setProfile(null);
-            }
           } catch (error) {
             console.error(
               "Tiny Titans: unable to load user profile",
@@ -270,9 +355,9 @@ export function AuthProvider({
             );
 
             setProfile(null);
+
           } finally {
             setProfileLoading(false);
-
             setLoading(false);
           }
         }
@@ -281,9 +366,9 @@ export function AuthProvider({
     return unsubscribe;
   }, []);
 
-  /* =========================================
+  /* =======================================
      CONTEXT VALUE
-  ========================================= */
+  ======================================= */
 
   const value: AuthContextType = {
     user,
@@ -296,7 +381,13 @@ export function AuthProvider({
 
     isAuthenticated:
       user !== null,
+
+    refreshProfile,
   };
+
+  /* =======================================
+     PROVIDER
+  ======================================= */
 
   return (
     <AuthContext.Provider

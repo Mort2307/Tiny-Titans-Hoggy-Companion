@@ -8,6 +8,7 @@ import {
 
 import {
   doc,
+  getDoc,
   getFirestore,
   serverTimestamp,
   setDoc,
@@ -23,10 +24,18 @@ import app from "../firebase/config";
 
 import "../styles/AccountSetup.css";
 
+import logo from "../assets/TinyTitans-Logo.jpg";
+
+/* =========================================
+   FIRESTORE
+========================================= */
 
 const db =
   getFirestore(app);
 
+/* =========================================
+   INTEREST TYPE
+========================================= */
 
 type Interest =
   | "keeper"
@@ -34,165 +43,147 @@ type Interest =
   | "breeder-seller"
   | "learner";
 
+/* =========================================
+   ACCOUNT SETUP
+========================================= */
 
 function AccountSetup() {
-
   const navigate =
     useNavigate();
 
   const {
     user,
+    refreshProfile,
   } = useAuth();
 
+  /* =======================================
+     FORM STATE
+  ======================================= */
 
   const [displayName, setDisplayName] =
     useState(
       user?.displayName ?? ""
     );
 
-
   const [category, setCategory] =
     useState<UserCategory | "">(
       ""
     );
-
 
   const [experienceLevel, setExperienceLevel] =
     useState<ExperienceLevel | "">(
       ""
     );
 
-
   const [interests, setInterests] =
     useState<Interest[]>([]);
 
+  /* =======================================
+     UI STATE
+  ======================================= */
 
   const [saving, setSaving] =
     useState(false);
 
-
   const [error, setError] =
     useState("");
 
+  /* =======================================
+     TOGGLE INTEREST
+  ======================================= */
 
   function toggleInterest(
     interest: Interest
   ) {
+    setInterests(
+      current => {
+        if (
+          current.includes(
+            interest
+          )
+        ) {
+          return current.filter(
+            item =>
+              item !== interest
+          );
+        }
 
-    setInterests((current) => {
-
-      if (current.includes(interest)) {
-
-        return current.filter(
-          (item) => item !== interest
-        );
-
+        return [
+          ...current,
+          interest,
+        ];
       }
-
-
-      return [
-        ...current,
-        interest,
-      ];
-
-    });
-
+    );
   }
 
+  /* =======================================
+     SUBMIT
+  ======================================= */
 
   async function handleSubmit(
-    event: React.FormEvent
+    event: React.FormEvent<HTMLFormElement>
   ) {
-
     event.preventDefault();
-
-
-    console.log(
-      "Tiny Titans: account setup submitted"
-    );
-
 
     setError("");
 
+    /* =====================================
+       AUTH CHECK
+    ===================================== */
 
     if (!user) {
-
-      console.error(
-        "Tiny Titans: no authenticated Firebase user"
-      );
-
-
       setError(
-        "We couldn't find your Firebase account."
+        "We couldn't find your Tiny Titans account."
       );
 
       return;
-
     }
 
+    /* =====================================
+       VALIDATION
+    ===================================== */
 
     if (!displayName.trim()) {
-
       setError(
         "Please enter your name."
       );
 
       return;
-
     }
 
-
     if (!category) {
-
       setError(
         "Please choose whether you're an adult or child."
       );
 
       return;
-
     }
 
-
     if (!experienceLevel) {
-
       setError(
         "Please choose your experience level."
       );
 
       return;
-
     }
 
-
-    if (interests.length === 0) {
-
+    if (
+      interests.length === 0
+    ) {
       setError(
         "Please select at least one reason for using Tiny Titans."
       );
 
       return;
-
     }
 
+    /* =====================================
+       START SAVE
+    ===================================== */
 
     setSaving(true);
 
-
-    console.log(
-      "Tiny Titans: preparing Firestore profile write",
-      {
-        uid: user.uid,
-        email: user.email,
-        displayName: displayName.trim(),
-        category,
-        experienceLevel,
-        interests,
-      }
-    );
-
-
     try {
-
       const userRef =
         doc(
           db,
@@ -200,58 +191,108 @@ function AccountSetup() {
           user.uid
         );
 
+      /*
+       * Check whether the profile already
+       * exists.
+       *
+       * This lets us preserve createdAt when
+       * updating an existing document.
+       */
+
+      const existingSnapshot =
+        await getDoc(userRef);
+
+      /*
+       * Base profile data.
+       */
+
+      const profileData = {
+        uid:
+          user.uid,
+
+        displayName:
+          displayName.trim(),
+
+        email:
+          user.email ?? "",
+
+        category,
+
+        experienceLevel,
+
+        interests,
+
+        role:
+          "user" as const,
+
+        setupComplete:
+          true,
+
+        updatedAt:
+          serverTimestamp(),
+      };
+
+      /*
+       * Only create createdAt when this is
+       * genuinely a new Firestore profile.
+       *
+       * This prevents createdAt from changing
+       * every time the user edits their profile.
+       */
+
+      if (
+        !existingSnapshot.exists()
+      ) {
+        await setDoc(
+          userRef,
+          {
+            ...profileData,
+
+            createdAt:
+              serverTimestamp(),
+          }
+        );
+
+      } else {
+        await setDoc(
+          userRef,
+          profileData,
+          {
+            merge: true,
+          }
+        );
+      }
 
       console.log(
-        "Tiny Titans: Firestore document reference created",
+        "Tiny Titans: account profile saved",
         user.uid
       );
 
+      /* =====================================
+         REFRESH AUTH CONTEXT
+      ===================================== */
 
-      await setDoc(
-        userRef,
-        {
+      const updatedProfile =
+        await refreshProfile();
 
-          uid:
-            user.uid,
+      /*
+       * Do not allow the user into the main
+       * application until AuthContext has
+       * confirmed the profile is complete.
+       */
 
-          displayName:
-            displayName.trim(),
+      if (
+        !updatedProfile ||
+        !updatedProfile.setupComplete
+      ) {
+        throw new Error(
+          "Your profile was saved, but Tiny Titans could not confirm that setup is complete. Please try again."
+        );
+      }
 
-          email:
-            user.email ?? "",
-
-          category,
-
-          experienceLevel,
-
-          interests,
-
-          role:
-            "user",
-
-          setupComplete:
-            true,
-
-          createdAt:
-            serverTimestamp(),
-
-          updatedAt:
-            serverTimestamp(),
-
-        },
-        {
-          merge: true,
-        }
-      );
-
-
-      console.log(
-        "Tiny Titans: Firestore profile write successful"
-      );
-
-
-      setSaving(false);
-
+      /* =====================================
+         ENTER APPLICATION
+      ===================================== */
 
       navigate(
         "/",
@@ -260,17 +301,11 @@ function AccountSetup() {
         }
       );
 
-
     } catch (saveError) {
-
       console.error(
-        "Tiny Titans: Firestore profile write FAILED",
+        "Tiny Titans: account setup failed",
         saveError
       );
-
-
-      setSaving(false);
-
 
       setError(
         saveError instanceof Error
@@ -278,26 +313,36 @@ function AccountSetup() {
           : "Unable to save your profile. Please try again."
       );
 
+    } finally {
+      setSaving(false);
     }
-
   }
 
+  /* =========================================
+     RENDER
+  ========================================= */
 
   return (
-
     <main className="account-setup-page">
 
       <section className="account-setup-card">
 
+        {/* ===================================
+            LOGO
+        =================================== */}
+
         <div className="account-setup-logo">
 
           <img
-            src="/src/assets/TinyTitans-Logo.JPG.jpg"
+            src={logo}
             alt="Tiny Titans"
           />
 
         </div>
 
+        {/* ===================================
+            HEADER
+        =================================== */}
 
         <div className="account-setup-header">
 
@@ -315,11 +360,18 @@ function AccountSetup() {
 
         </div>
 
+        {/* ===================================
+            FORM
+        =================================== */}
 
         <form
           onSubmit={handleSubmit}
           className="account-setup-form"
         >
+
+          {/* =================================
+              NAME
+          ================================= */}
 
           <div className="setup-section">
 
@@ -338,10 +390,14 @@ function AccountSetup() {
               }
               placeholder="Your name"
               autoComplete="name"
+              disabled={saving}
             />
 
           </div>
 
+          {/* =================================
+              CATEGORY
+          ================================= */}
 
           <div className="setup-section">
 
@@ -350,25 +406,22 @@ function AccountSetup() {
             </h2>
 
             <p className="setup-help">
-              This helps us tailor Tiny Titans
-              appropriately.
+              This helps us tailor Tiny Titans appropriately.
             </p>
-
 
             <div className="setup-options">
 
               <button
                 type="button"
-                className={
-                  `setup-option ${
-                    category === "adult"
-                      ? "selected"
-                      : ""
-                  }`
-                }
+                className={`setup-option ${
+                  category === "adult"
+                    ? "selected"
+                    : ""
+                }`}
                 onClick={() =>
                   setCategory("adult")
                 }
+                disabled={saving}
               >
 
                 <span className="option-icon">
@@ -389,19 +442,17 @@ function AccountSetup() {
 
               </button>
 
-
               <button
                 type="button"
-                className={
-                  `setup-option ${
-                    category === "child"
-                      ? "selected"
-                      : ""
-                  }`
-                }
+                className={`setup-option ${
+                  category === "child"
+                    ? "selected"
+                    : ""
+                }`}
                 onClick={() =>
                   setCategory("child")
                 }
+                disabled={saving}
               >
 
                 <span className="option-icon">
@@ -426,6 +477,9 @@ function AccountSetup() {
 
           </div>
 
+          {/* =================================
+              EXPERIENCE
+          ================================= */}
 
           <div className="setup-section">
 
@@ -434,27 +488,24 @@ function AccountSetup() {
             </h2>
 
             <p className="setup-help">
-              Children can progress through all
-              three levels too.
+              Children can progress through all three levels too.
             </p>
-
 
             <div className="setup-options">
 
               <button
                 type="button"
-                className={
-                  `setup-option ${
-                    experienceLevel === "beginner"
-                      ? "selected"
-                      : ""
-                  }`
-                }
+                className={`setup-option ${
+                  experienceLevel === "beginner"
+                    ? "selected"
+                    : ""
+                }`}
                 onClick={() =>
                   setExperienceLevel(
                     "beginner"
                   )
                 }
+                disabled={saving}
               >
 
                 <span className="option-icon">
@@ -475,21 +526,19 @@ function AccountSetup() {
 
               </button>
 
-
               <button
                 type="button"
-                className={
-                  `setup-option ${
-                    experienceLevel === "intermediate"
-                      ? "selected"
-                      : ""
-                  }`
-                }
+                className={`setup-option ${
+                  experienceLevel === "intermediate"
+                    ? "selected"
+                    : ""
+                }`}
                 onClick={() =>
                   setExperienceLevel(
                     "intermediate"
                   )
                 }
+                disabled={saving}
               >
 
                 <span className="option-icon">
@@ -510,21 +559,19 @@ function AccountSetup() {
 
               </button>
 
-
               <button
                 type="button"
-                className={
-                  `setup-option ${
-                    experienceLevel === "pro"
-                      ? "selected"
-                      : ""
-                  }`
-                }
+                className={`setup-option ${
+                  experienceLevel === "pro"
+                    ? "selected"
+                    : ""
+                }`}
                 onClick={() =>
                   setExperienceLevel(
                     "pro"
                   )
                 }
+                disabled={saving}
               >
 
                 <span className="option-icon">
@@ -549,6 +596,9 @@ function AccountSetup() {
 
           </div>
 
+          {/* =================================
+              INTERESTS
+          ================================= */}
 
           <div className="setup-section">
 
@@ -560,189 +610,142 @@ function AccountSetup() {
               Select all that apply.
             </p>
 
-
             <div className="setup-options">
 
-              <button
-                type="button"
-                className={
-                  `setup-option ${
-                    interests.includes("keeper")
-                      ? "selected"
-                      : ""
-                  }`
+              {[
+                {
+                  id:
+                    "keeper" as Interest,
+
+                  icon:
+                    "🐍",
+
+                  title:
+                    "Keeper",
+
+                  description:
+                    "I keep and care for reptiles.",
+                },
+
+                {
+                  id:
+                    "breeder" as Interest,
+
+                  icon:
+                    "🧬",
+
+                  title:
+                    "Breeder",
+
+                  description:
+                    "I breed reptiles and work with genetics.",
+                },
+
+                {
+                  id:
+                    "breeder-seller" as Interest,
+
+                  icon:
+                    "🏪",
+
+                  title:
+                    "Breeder & Seller",
+
+                  description:
+                    "I breed and sell reptiles.",
+                },
+
+                {
+                  id:
+                    "learner" as Interest,
+
+                  icon:
+                    "📚",
+
+                  title:
+                    "Learner",
+
+                  description:
+                    "I'm here to learn.",
+                },
+              ].map(
+                option => {
+                  const selected =
+                    interests.includes(
+                      option.id
+                    );
+
+                  return (
+                    <button
+                      key={
+                        option.id
+                      }
+                      type="button"
+                      className={`setup-option ${
+                        selected
+                          ? "selected"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        toggleInterest(
+                          option.id
+                        )
+                      }
+                      disabled={
+                        saving
+                      }
+                    >
+
+                      <span className="option-icon">
+                        {
+                          option.icon
+                        }
+                      </span>
+
+                      <span>
+
+                        <strong>
+                          {
+                            option.title
+                          }
+                        </strong>
+
+                        <small>
+                          {
+                            option.description
+                          }
+                        </small>
+
+                      </span>
+
+                      {selected && (
+                        <span className="selection-tick">
+                          ✓
+                        </span>
+                      )}
+
+                    </button>
+                  );
                 }
-                onClick={() =>
-                  toggleInterest("keeper")
-                }
-              >
-
-                <span className="option-icon">
-                  🐍
-                </span>
-
-                <span>
-
-                  <strong>
-                    Keeper
-                  </strong>
-
-                  <small>
-                    I keep and care for reptiles.
-                  </small>
-
-                </span>
-
-                {interests.includes("keeper") && (
-
-                  <span className="selection-tick">
-                    ✓
-                  </span>
-
-                )}
-
-              </button>
-
-
-              <button
-                type="button"
-                className={
-                  `setup-option ${
-                    interests.includes("breeder")
-                      ? "selected"
-                      : ""
-                  }`
-                }
-                onClick={() =>
-                  toggleInterest("breeder")
-                }
-              >
-
-                <span className="option-icon">
-                  🧬
-                </span>
-
-                <span>
-
-                  <strong>
-                    Breeder
-                  </strong>
-
-                  <small>
-                    I breed reptiles and work with genetics.
-                  </small>
-
-                </span>
-
-                {interests.includes("breeder") && (
-
-                  <span className="selection-tick">
-                    ✓
-                  </span>
-
-                )}
-
-              </button>
-
-
-              <button
-                type="button"
-                className={
-                  `setup-option ${
-                    interests.includes("breeder-seller")
-                      ? "selected"
-                      : ""
-                  }`
-                }
-                onClick={() =>
-                  toggleInterest(
-                    "breeder-seller"
-                  )
-                }
-              >
-
-                <span className="option-icon">
-                  🏪
-                </span>
-
-                <span>
-
-                  <strong>
-                    Breeder & Seller
-                  </strong>
-
-                  <small>
-                    I breed and sell reptiles.
-                  </small>
-
-                </span>
-
-                {interests.includes(
-                  "breeder-seller"
-                ) && (
-
-                  <span className="selection-tick">
-                    ✓
-                  </span>
-
-                )}
-
-              </button>
-
-
-              <button
-                type="button"
-                className={
-                  `setup-option ${
-                    interests.includes("learner")
-                      ? "selected"
-                      : ""
-                  }`
-                }
-                onClick={() =>
-                  toggleInterest("learner")
-                }
-              >
-
-                <span className="option-icon">
-                  📚
-                </span>
-
-                <span>
-
-                  <strong>
-                    Learner
-                  </strong>
-
-                  <small>
-                    I'm here to learn.
-                  </small>
-
-                </span>
-
-                {interests.includes("learner") && (
-
-                  <span className="selection-tick">
-                    ✓
-                  </span>
-
-                )}
-
-              </button>
+              )}
 
             </div>
 
           </div>
 
+          {/* =================================
+              ERROR
+          ================================= */}
 
           {error && (
-
             <div className="setup-error">
               {error}
             </div>
-
           )}
 
+          {/* =================================
+              SUBMIT
+          ================================= */}
 
           <button
             type="submit"
@@ -752,12 +755,9 @@ function AccountSetup() {
               interests.length === 0
             }
           >
-
             {saving
               ? "Saving..."
-              : "🐍 Enter Tiny Titans"
-            }
-
+              : "🐍 Enter Tiny Titans"}
           </button>
 
         </form>
@@ -765,10 +765,7 @@ function AccountSetup() {
       </section>
 
     </main>
-
   );
-
 }
-
 
 export default AccountSetup;

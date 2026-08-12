@@ -30,6 +30,7 @@ import {
 import WeightMiniChart from "../components/WeightMiniChart";
 import BackHomeButton from "../components/BackHomeButton";
 
+
 function SnakeProfile() {
   const { id } = useParams<{ id: string }>();
 
@@ -55,6 +56,7 @@ function SnakeProfile() {
     error,
     setError,
   ] = useState<string | null>(null);
+
 
   // =========================================
   // LOAD SNAKE
@@ -231,6 +233,7 @@ function SnakeProfile() {
     profileLoading,
   ]);
 
+
   // =========================================
   // CALCULATE AGE
   // =========================================
@@ -336,6 +339,7 @@ function SnakeProfile() {
     );
   }
 
+
   // =========================================
   // DELETE
   // =========================================
@@ -408,6 +412,7 @@ function SnakeProfile() {
     }
   }
 
+
   // =========================================
   // EDIT
   // =========================================
@@ -423,6 +428,7 @@ function SnakeProfile() {
       `/snakes/${snake.id}/edit`
     );
   }
+
 
   // =========================================
   // LOADING
@@ -458,6 +464,7 @@ function SnakeProfile() {
       </div>
     );
   }
+
 
   // =========================================
   // ERROR
@@ -500,6 +507,7 @@ function SnakeProfile() {
     );
   }
 
+
   // =========================================
   // REMINDER
   // =========================================
@@ -509,12 +517,14 @@ function SnakeProfile() {
       snake
     );
 
+
   // =========================================
   // WEIGHT HISTORY
   // =========================================
 
   const weightHistory =
     snake.weightHistory ?? [];
+
 
   // =========================================
   // PAGE
@@ -525,9 +535,14 @@ function SnakeProfile() {
 
       <BackHomeButton />
 
+      {/* ================================= */}
+      {/* PROFILE HEADER */}
+      {/* ================================= */}
+
       <h1>
         🐍 {snake.name}
       </h1>
+
 
       {/* ================================= */}
       {/* PHOTO */}
@@ -548,11 +563,77 @@ function SnakeProfile() {
 
       </div>
 
+
+      {/* ================================= */}
+      {/* QUICK ACTIONS */}
+      {/* ================================= */}
+
+      <div className="tracker-card snake-profile-actions">
+
+        <button
+          type="button"
+          onClick={
+            openSnakeEditor
+          }
+        >
+          ✏️ Edit Snake
+        </button>
+
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate(
+              `/feeding/${snake.id}`
+            )
+          }
+        >
+          🍽 Log Feeding
+        </button>
+
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate(
+              `/shedding/${snake.id}`
+            )
+          }
+        >
+          🐍 Log Shed
+        </button>
+
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate(
+              `/weights/${snake.id}`
+            )
+          }
+        >
+          ⚖️ Weight
+        </button>
+
+
+        <button
+          type="button"
+          onClick={
+            deleteSnake
+          }
+        >
+          🗑️ Delete Snake
+        </button>
+
+      </div>
+
+
       {/* ================================= */}
       {/* PROFILE DASHBOARD */}
       {/* ================================= */}
 
       <div className="snake-profile-grid">
+
 
         {/* ================================= */}
         {/* BASIC INFORMATION */}
@@ -591,6 +672,7 @@ function SnakeProfile() {
           )}
 
         </button>
+
 
         {/* ================================= */}
         {/* GENETICS */}
@@ -640,6 +722,7 @@ function SnakeProfile() {
 
         </button>
 
+
         {/* ================================= */}
         {/* WEIGHT */}
         {/* ================================= */}
@@ -684,6 +767,7 @@ function SnakeProfile() {
           </div>
 
         </button>
+
 
         {/* ================================= */}
         {/* WEIGHT REMINDERS */}
@@ -735,6 +819,7 @@ function SnakeProfile() {
 
         </button>
 
+
         {/* ================================= */}
         {/* TIMELINE */}
         {/* ================================= */}
@@ -784,6 +869,7 @@ function SnakeProfile() {
 
         </button>
 
+
         {/* ================================= */}
         {/* RECORDS */}
         {/* ================================= */}
@@ -832,6 +918,7 @@ function SnakeProfile() {
 
         </button>
 
+
         {/* ================================= */}
         {/* NOTES */}
         {/* ================================= */}
@@ -859,58 +946,12 @@ function SnakeProfile() {
 
         </button>
 
-      </div>
-
-      {/* ================================= */}
-      {/* ACTIONS */}
-      {/* ================================= */}
-
-      <div className="tracker-card snake-profile-actions">
-
-        <button
-          type="button"
-          onClick={
-            openSnakeEditor
-          }
-        >
-          ✏️ Edit Snake
-        </button>
-
-        <button
-          type="button"
-          onClick={
-            deleteSnake
-          }
-        >
-          🗑️ Delete Snake
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            navigate(
-              `/feeding/${snake.id}`
-            )
-          }
-        >
-          🍽 Log Feeding
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            navigate(
-              `/shedding/${snake.id}`
-            )
-          }
-        >
-          🐍 Log Shed
-        </button>
 
       </div>
 
     </div>
   );
 }
+
 
 export default SnakeProfile;

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import {
   loginWithEmail,
@@ -9,13 +8,23 @@ import {
 
 import "../styles/Auth.css";
 
-import logo from "../assets/TinyTitans-Logo.JPG.jpg";
+import logo from "../assets/TinyTitans-Logo.jpg";
+
+/* =========================================
+   LOGIN / REGISTER
+========================================= */
 
 function Login() {
-  const navigate = useNavigate();
+  /* =======================================
+     FORM MODE
+  ======================================= */
 
   const [isRegistering, setIsRegistering] =
     useState(false);
+
+  /* =======================================
+     FORM STATE
+  ======================================= */
 
   const [displayName, setDisplayName] =
     useState("");
@@ -29,23 +38,37 @@ function Login() {
   const [showPassword, setShowPassword] =
     useState(false);
 
+  /* =======================================
+     UI STATE
+  ======================================= */
+
   const [loading, setLoading] =
     useState(false);
 
   const [error, setError] =
     useState("");
 
-  function getFirebaseError(error: unknown): string {
+  /* =======================================
+     FIREBASE ERROR MESSAGES
+  ======================================= */
+
+  function getFirebaseError(
+    firebaseError: unknown
+  ): string {
     if (
-      typeof error !== "object" ||
-      error === null ||
-      !("code" in error)
+      typeof firebaseError !== "object" ||
+      firebaseError === null ||
+      !("code" in firebaseError)
     ) {
       return "Something went wrong. Please try again.";
     }
 
     const code =
-      (error as { code: string }).code;
+      (
+        firebaseError as {
+          code: string;
+        }
+      ).code;
 
     switch (code) {
       case "auth/invalid-email":
@@ -73,10 +96,20 @@ function Login() {
       case "auth/network-request-failed":
         return "Network error. Please check your internet connection.";
 
+      case "auth/too-many-requests":
+        return "Too many attempts were made. Please wait a moment and try again.";
+
+      case "auth/user-disabled":
+        return "This Tiny Titans account has been disabled.";
+
       default:
         return "Unable to complete that request. Please try again.";
     }
   }
+
+  /* =========================================
+     EMAIL LOGIN / REGISTRATION
+  ========================================= */
 
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
@@ -85,13 +118,23 @@ function Login() {
 
     setError("");
 
+    /* =====================================
+       VALIDATION
+    ===================================== */
+
     if (!email.trim()) {
-      setError("Please enter your email address.");
+      setError(
+        "Please enter your email address."
+      );
+
       return;
     }
 
     if (!password) {
-      setError("Please enter your password.");
+      setError(
+        "Please enter your password."
+      );
+
       return;
     }
 
@@ -99,9 +142,16 @@ function Login() {
       isRegistering &&
       !displayName.trim()
     ) {
-      setError("Please enter your name.");
+      setError(
+        "Please enter your name."
+      );
+
       return;
     }
+
+    /* =====================================
+       START REQUEST
+    ===================================== */
 
     setLoading(true);
 
@@ -119,7 +169,17 @@ function Login() {
         );
       }
 
-      navigate("/");
+      /*
+       * IMPORTANT:
+       *
+       * Do not navigate manually here.
+       *
+       * Firebase updates AuthContext.
+       * AuthContext loads the Firestore profile.
+       * AppRouter then decides whether the user
+       * needs Account Setup or can enter the app.
+       */
+
     } catch (firebaseError) {
       console.error(
         "Tiny Titans authentication error:",
@@ -127,21 +187,32 @@ function Login() {
       );
 
       setError(
-        getFirebaseError(firebaseError)
+        getFirebaseError(
+          firebaseError
+        )
       );
-    } finally {
+
       setLoading(false);
     }
   }
 
+  /* =========================================
+     GOOGLE LOGIN
+  ========================================= */
+
   async function handleGoogleLogin() {
     setError("");
+
     setLoading(true);
 
     try {
       await loginWithGoogle();
 
-      navigate("/");
+      /*
+       * Firebase/AuthContext/AppRouter handle
+       * the transition from here.
+       */
+
     } catch (firebaseError) {
       console.error(
         "Tiny Titans Google authentication error:",
@@ -149,21 +220,33 @@ function Login() {
       );
 
       setError(
-        getFirebaseError(firebaseError)
+        getFirebaseError(
+          firebaseError
+        )
       );
-    } finally {
+
       setLoading(false);
     }
   }
 
+  /* =========================================
+     SWITCH LOGIN / REGISTER
+  ========================================= */
+
   function switchMode() {
     setIsRegistering(
-      previous => !previous
+      previous =>
+        !previous
     );
 
     setError("");
+
     setPassword("");
   }
+
+  /* =========================================
+     RENDER
+  ========================================= */
 
   return (
     <main className="auth-page">
@@ -171,6 +254,10 @@ function Login() {
       <div className="auth-background-glow" />
 
       <section className="auth-container">
+
+        {/* ===================================
+            BRAND
+        =================================== */}
 
         <div className="auth-brand">
 
@@ -190,6 +277,9 @@ function Login() {
 
         </div>
 
+        {/* ===================================
+            AUTH CARD
+        =================================== */}
 
         <div className="auth-card">
 
@@ -209,6 +299,9 @@ function Login() {
 
           </div>
 
+          {/* =================================
+              ERROR
+          ================================= */}
 
           {error && (
             <div
@@ -219,11 +312,20 @@ function Login() {
             </div>
           )}
 
+          {/* =================================
+              FORM
+          ================================= */}
 
           <form
             className="auth-form"
-            onSubmit={handleSubmit}
+            onSubmit={
+              handleSubmit
+            }
           >
+
+            {/* ===============================
+                DISPLAY NAME
+            =============================== */}
 
             {isRegistering && (
               <div className="auth-field">
@@ -235,20 +337,29 @@ function Login() {
                 <input
                   id="displayName"
                   type="text"
-                  value={displayName}
-                  onChange={(event) =>
+                  value={
+                    displayName
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setDisplayName(
                       event.target.value
                     )
                   }
                   placeholder="What should we call you?"
                   autoComplete="name"
-                  disabled={loading}
+                  disabled={
+                    loading
+                  }
                 />
 
               </div>
             )}
 
+            {/* ===============================
+                EMAIL
+            =============================== */}
 
             <div className="auth-field">
 
@@ -259,8 +370,12 @@ function Login() {
               <input
                 id="email"
                 type="email"
-                value={email}
-                onChange={(event) =>
+                value={
+                  email
+                }
+                onChange={(
+                  event
+                ) =>
                   setEmail(
                     event.target.value
                   )
@@ -268,11 +383,16 @@ function Login() {
                 placeholder="you@example.com"
                 autoComplete="email"
                 inputMode="email"
-                disabled={loading}
+                disabled={
+                  loading
+                }
               />
 
             </div>
 
+            {/* ===============================
+                PASSWORD
+            =============================== */}
 
             <div className="auth-field">
 
@@ -289,8 +409,12 @@ function Login() {
                       ? "text"
                       : "password"
                   }
-                  value={password}
-                  onChange={(event) =>
+                  value={
+                    password
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setPassword(
                       event.target.value
                     )
@@ -301,7 +425,9 @@ function Login() {
                       ? "new-password"
                       : "current-password"
                   }
-                  disabled={loading}
+                  disabled={
+                    loading
+                  }
                 />
 
                 <button
@@ -309,7 +435,8 @@ function Login() {
                   className="password-toggle"
                   onClick={() =>
                     setShowPassword(
-                      previous => !previous
+                      previous =>
+                        !previous
                     )
                   }
                   aria-label={
@@ -317,7 +444,9 @@ function Login() {
                       ? "Hide password"
                       : "Show password"
                   }
-                  disabled={loading}
+                  disabled={
+                    loading
+                  }
                 >
                   {showPassword
                     ? "🙈"
@@ -328,11 +457,16 @@ function Login() {
 
             </div>
 
+            {/* ===============================
+                SUBMIT
+            =============================== */}
 
             <button
               type="submit"
               className="auth-primary-button"
-              disabled={loading}
+              disabled={
+                loading
+              }
             >
               {loading
                 ? "Please wait..."
@@ -343,6 +477,9 @@ function Login() {
 
           </form>
 
+          {/* =================================
+              DIVIDER
+          ================================= */}
 
           <div className="auth-divider">
 
@@ -356,12 +493,19 @@ function Login() {
 
           </div>
 
+          {/* =================================
+              GOOGLE
+          ================================= */}
 
           <button
             type="button"
             className="auth-google-button"
-            onClick={handleGoogleLogin}
-            disabled={loading}
+            onClick={
+              handleGoogleLogin
+            }
+            disabled={
+              loading
+            }
           >
 
             <span className="google-icon">
@@ -372,6 +516,9 @@ function Login() {
 
           </button>
 
+          {/* =================================
+              SWITCH MODE
+          ================================= */}
 
           <div className="auth-switch">
 
@@ -383,8 +530,12 @@ function Login() {
 
             <button
               type="button"
-              onClick={switchMode}
-              disabled={loading}
+              onClick={
+                switchMode
+              }
+              disabled={
+                loading
+              }
             >
               {isRegistering
                 ? "Sign In"
@@ -395,6 +546,9 @@ function Login() {
 
         </div>
 
+        {/* ===================================
+            FOOTER
+        =================================== */}
 
         <footer className="auth-footer">
 
@@ -407,7 +561,9 @@ function Login() {
           </span>
 
           <small>
-            © {new Date().getFullYear()} Tiny Titans
+            ©{" "}
+            {new Date().getFullYear()}{" "}
+            Tiny Titans
           </small>
 
         </footer>
