@@ -1,0 +1,34 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isCreator() { return signedIn() && request.auth.token.admin == true; }
+
+    match /users/{userId} {
+      allow read, create, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+    match /users/{userId}/{document=**} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+    match /adminAuditLogs/{logId} {
+      allow read, create: if isCreator();
+      allow update, delete: if false;
+    }
+    match /adminTelemetry/{document=**} {
+      allow read, write: if isCreator();
+    }
+    match /content/{document=**} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCreator();
+    }
+    match /genetics/{document=**} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCreator();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
