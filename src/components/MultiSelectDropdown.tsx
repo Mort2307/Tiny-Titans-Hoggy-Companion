@@ -7,6 +7,10 @@ import type {
   MorphDefinition,
 } from "../data/morphs";
 
+import {
+  sortMorphsByGeneticFamily,
+} from "../utils/morphSorting";
+
 
 type MultiSelectDropdownProps = {
   title: string;
@@ -28,13 +32,9 @@ function MultiSelectDropdown({
   const [search, setSearch] = useState("");
 
   const morphOptions = useMemo(() => {
-    return [...options]
-      .filter((morph) => Boolean(morph.geneId))
-      .sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, {
-          sensitivity: "base",
-        })
-      );
+    return sortMorphsByGeneticFamily(
+      options.filter((morph) => Boolean(morph.geneId))
+    );
   }, [options]);
 
   const morphByCanonicalValue = useMemo(() => {
@@ -123,16 +123,16 @@ function MultiSelectDropdown({
   }
 
   const sortedSelected = useMemo(() => {
-    return [...selected].sort((a, b) => {
-      const morphA = resolveStoredMorph(a);
-      const morphB = resolveStoredMorph(b);
+    const resolved = selected.map((value) => resolveStoredMorph(value));
+    const known = resolved.filter(
+      (morph): morph is MorphDefinition => Boolean(morph)
+    );
+    const unknown = selected.filter((value) => !resolveStoredMorph(value));
 
-      return (morphA?.name ?? a).localeCompare(
-        morphB?.name ?? b,
-        undefined,
-        { sensitivity: "base" }
-      );
-    });
+    return [
+      ...sortMorphsByGeneticFamily(known).map((morph) => morph.name),
+      ...unknown,
+    ];
   }, [selected, morphByCanonicalValue]);
 
   return (
