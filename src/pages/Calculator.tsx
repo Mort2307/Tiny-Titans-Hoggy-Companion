@@ -1,624 +1,88 @@
-import { useMemo, useState } from "react";
-import {
-  getGenes,
-  getHetPossibleGenes,
-  getSuperForms,
-  type MorphDefinition,
-} from "../data/morphs";
-
-import ParentSelector, {
-  type ParentSelection,
-} from "../components/ParentSelector";
-
-import ResultCard, {
-  type GeneticsResult,
-} from "../components/ResultCard";
-
-
-// ============================================================
-// EMPTY PARENT
-// ============================================================
-
-const EMPTY_PARENT: ParentSelection = {
-  morphs: [],
-  hets: [],
-};
-
-
-// ============================================================
-// MORPH LOOKUP
-// ============================================================
-
-function getMorphById(
-  morphs: MorphDefinition[],
-  geneId: string
-): MorphDefinition | undefined {
-  return morphs.find(
-    (morph) =>
-      morph.geneId === geneId
-  );
-}
-
-
-// ============================================================
-// SUPER FORM LOOKUP
-// ============================================================
-//
-// The rebuilt MorphDefinition no longer has:
-//
-//   superFormId
-//
-// Instead supers are proper database records.
-//
-// Example:
-//
-// Super Conda
-//   kind: "Super"
-//   components:
-//     conda × 2
-//
-// This helper finds the correct Super entry from
-// the database rather than relying on a property
-// attached to the base gene.
-// ============================================================
-
-function getSuperFormForGene(
-  geneId: string,
-  superForms: MorphDefinition[]
-): MorphDefinition | undefined {
-  return superForms.find(
-    (superForm) =>
-      superForm.components?.some(
-        (component) =>
-          component.morphId === geneId &&
-          (component.copies ?? 1) === 2
-      )
-  );
-}
-
-
-// ============================================================
-// SIMPLE GENETIC CALCULATOR
-// ============================================================
-//
-// This is intentionally conservative.
-//
-// It currently handles:
-//
-//   Recessive
-//   Incomplete Dominant
-//
-// Supers are resolved through the morph database.
-//
-// The larger multi-gene resolver/calculator can then replace
-// this function once the database and selector are fully wired.
-// ============================================================
-
-function calculateSimpleResults(
-  mother: ParentSelection,
-  father: ParentSelection,
-  genes: MorphDefinition[],
-  superForms: MorphDefinition[]
-): GeneticsResult[] {
-  const results: GeneticsResult[] = [];
-
-
-  // ----------------------------------------------------------
-  // Collect every gene involved in either parent.
-  // ----------------------------------------------------------
-
-  const allGenes = new Set([
-    ...mother.morphs,
-    ...mother.hets,
-    ...father.morphs,
-    ...father.hets,
-  ]);
-
-
-  // ----------------------------------------------------------
-  // Calculate each gene independently.
-  // ----------------------------------------------------------
-
-  for (const geneId of allGenes) {
-    const morph =
-      getMorphById(
-        genes,
-        geneId
-      );
-
-
-    if (!morph) {
-      continue;
-    }
-
-
-    // ========================================================
-    // RECESSIVE
-    // ========================================================
-
-    if (
-      morph.inheritance ===
-      "Recessive"
-    ) {
-      const motherVisual =
-        mother.morphs.includes(
-          geneId
-        );
-
-      const fatherVisual =
-        father.morphs.includes(
-          geneId
-        );
-
-      const motherHet =
-        mother.hets.includes(
-          geneId
-        );
-
-      const fatherHet =
-        father.hets.includes(
-          geneId
-        );
-
-
-      let visualProbability = 0;
-
-
-      // Visual × Visual
-      //
-      // aa × aa
-      //
-      // 100% visual.
-
-      if (
-        motherVisual &&
-        fatherVisual
-      ) {
-        visualProbability = 100;
-      }
-
-
-      // Visual × Het
-      //
-      // aa × Aa
-      //
-      // 50% visual.
-
-      else if (
-        (
-          motherVisual &&
-          fatherHet
-        ) ||
-        (
-          fatherVisual &&
-          motherHet
-        )
-      ) {
-        visualProbability = 50;
-      }
-
-
-      // Het × Het
-      //
-      // Aa × Aa
-      //
-      // 25% visual.
-
-      else if (
-        motherHet &&
-        fatherHet
-      ) {
-        visualProbability = 25;
-      }
-
-
-      if (
-        visualProbability > 0
-      ) {
-        results.push({
-          name:
-            morph.name,
-
-          percentage:
-            visualProbability,
-
-          visualMorphs: [
-            geneId,
-          ],
-
-          hets: [],
-        });
-      }
-
-
-      // ------------------------------------------------------
-      // Het × Clear
-      //
-      // 50% het offspring.
-      // ------------------------------------------------------
-
-      if (
-        visualProbability === 0 &&
-        (
-          (
-            motherHet &&
-            !fatherHet &&
-            !fatherVisual &&
-            !motherVisual
-          ) ||
-          (
-            fatherHet &&
-            !motherHet &&
-            !motherVisual &&
-            !fatherVisual
-          )
-        )
-      ) {
-        results.push({
-          name:
-            `50% Het ${morph.name}`,
-
-          percentage: 50,
-
-          visualMorphs: [],
-
-          hets: [
-            geneId,
-          ],
-        });
-      }
-
-
-      continue;
-    }
-
-
-    // ========================================================
-    // INCOMPLETE DOMINANT
-    // ========================================================
-
-    if (
-      morph.inheritance ===
-      "Incomplete Dominant"
-    ) {
-      const motherHas =
-        mother.morphs.includes(
-          geneId
-        );
-
-      const fatherHas =
-        father.morphs.includes(
-          geneId
-        );
-
-
-      // ------------------------------------------------------
-      // Visual × Visual
-      //
-      // Aa × Aa
-      //
-      // 25% AA
-      // 50% Aa
-      // 25% aa
-      // ------------------------------------------------------
-
-      if (
-        motherHas &&
-        fatherHas
-      ) {
-        const superForm =
-          getSuperFormForGene(
-            geneId,
-            superForms
-          );
-
-
-        // ----------------------------------------------------
-        // Super result
-        // ----------------------------------------------------
-
-        if (superForm) {
-          results.push({
-            name:
-              superForm.name,
-
-            percentage: 25,
-
-            visualMorphs: [
-              superForm.geneId,
-            ],
-
-            hets: [],
-          });
-        } else {
-          // --------------------------------------------------
-          // Fallback.
-          //
-          // If the database does not contain a confirmed
-          // Super entry, do NOT invent one.
-          // --------------------------------------------------
-
-          results.push({
-            name:
-              `Two copies ${morph.name}`,
-
-            percentage: 25,
-
-            visualMorphs: [
-              geneId,
-            ],
-
-            hets: [],
-          });
-        }
-
-
-        // ----------------------------------------------------
-        // Single copy
-        // ----------------------------------------------------
-
-        results.push({
-          name:
-            morph.name,
-
-          percentage: 50,
-
-          visualMorphs: [
-            geneId,
-          ],
-
-          hets: [],
-        });
-
-
-        // ----------------------------------------------------
-        // No copy
-        // ----------------------------------------------------
-
-        results.push({
-          name:
-            "No visual copy",
-
-          percentage: 25,
-
-          visualMorphs: [],
-
-          hets: [],
-        });
-
-
-        continue;
-      }
-
-
-      // ------------------------------------------------------
-      // Visual × Clear
-      //
-      // Aa × aa
-      //
-      // 50% visual
-      // 50% clear
-      // ------------------------------------------------------
-
-      if (
-        motherHas ||
-        fatherHas
-      ) {
-        results.push({
-          name:
-            morph.name,
-
-          percentage: 50,
-
-          visualMorphs: [
-            geneId,
-          ],
-
-          hets: [],
-        });
-
-
-        results.push({
-          name:
-            "No visual copy",
-
-          percentage: 50,
-
-          visualMorphs: [],
-
-          hets: [],
-        });
-      }
-    }
-  }
-
-
-  return results;
-}
-
-
-// ============================================================
-// DUPLICATE RESULT COMBINER
-// ============================================================
-//
-// Several independent genetic calculations can produce the
-// same visible result.
-//
-// Combine those entries rather than displaying duplicates.
-// ============================================================
-
-function combineDuplicateResults(
-  results: GeneticsResult[]
-): GeneticsResult[] {
-  const map =
-    new Map<
-      string,
-      GeneticsResult
-    >();
-
-
-  for (const result of results) {
-    const key = [
-      result.name,
-
-      result.visualMorphs
-        .slice()
-        .sort()
-        .join(","),
-
-      result.hets
-        .slice()
-        .sort()
-        .join(","),
-    ].join("|");
-
-
-    const existing =
-      map.get(key);
-
-
-    if (!existing) {
-      map.set(
-        key,
-        {
-          ...result,
-
-          visualMorphs: [
-            ...result.visualMorphs,
-          ],
-
-          hets: [
-            ...result.hets,
-          ],
-        }
-      );
-
-      continue;
-    }
-
-
-    existing.percentage +=
-      result.percentage;
-  }
-
-
-  return Array.from(
-    map.values()
-  ).sort(
-    (a, b) =>
-      b.percentage -
-      a.percentage
-  );
-}
-
-
-// ============================================================
-// CALCULATOR PAGE
-// ============================================================
+import { useEffect, useMemo, useState } from "react";
+import { getGenes, getMorphs, type MorphDefinition } from "../data/morphs";
+import ParentSelector, { type ParentSelection } from "../components/ParentSelector";
+import ResultCard from "../components/ResultCard";
+import type { Snake } from "../types/Snake";
+import type { GeneticsCalculatorResult } from "../types/genetics";
+import { calculateGenetics } from "../utils/geneticsCalculator";
+import { getUserSnakes } from "../services/snakeService";
+import { useAuth } from "../context/AuthContext";
+import "../styles/calculator.css";
+
+const EMPTY_PARENT: ParentSelection = { morphs: [], hets: [] };
 
 export default function Calculator() {
-  const [mother, setMother] =
-    useState<ParentSelection>(
-      EMPTY_PARENT
-    );
+  const { user, loading, profileLoading } = useAuth();
+  const [snakes, setSnakes] = useState<Snake[]>([]);
+  const [snakesLoading, setSnakesLoading] = useState(true);
+  const [snakesError, setSnakesError] = useState<string | null>(null);
+  const [mother, setMother] = useState<ParentSelection>(EMPTY_PARENT);
+  const [father, setFather] = useState<ParentSelection>(EMPTY_PARENT);
 
+  useEffect(() => {
+    if (loading || profileLoading) return;
+    if (!user) {
+      setSnakes([]);
+      setSnakesLoading(false);
+      return;
+    }
 
-  const [father, setFather] =
-    useState<ParentSelection>(
-      EMPTY_PARENT
-    );
+    let cancelled = false;
+    setSnakesLoading(true);
+    setSnakesError(null);
 
+    void getUserSnakes(user.uid)
+      .then((loaded) => {
+        if (!cancelled) setSnakes(loaded);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setSnakesError(error instanceof Error ? error.message : "Unable to load your snakes.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSnakesLoading(false);
+      });
 
-  // ----------------------------------------------------------
-  // Genuine genetic loci only.
-  // ----------------------------------------------------------
+    return () => {
+      cancelled = true;
+    };
+  }, [user, loading, profileLoading]);
 
-  const genes = useMemo(
+  const allMorphs = useMemo(() => getMorphs(), []);
+  const confirmedVisualOptions = useMemo(
     () =>
-      getGenes(),
+      allMorphs.filter(
+        (morph) =>
+          morph.verification === "Confirmed" &&
+          (morph.kind === "Gene" || morph.kind === "Super" || morph.kind === "Combination")
+      ),
+    [allMorphs]
+  );
+  const confirmedHetOptions = useMemo(
+    () =>
+      getGenes().filter(
+        (morph) =>
+          morph.verification === "Confirmed" &&
+          morph.hetPossible === true
+      ),
     []
   );
 
-
-  // ----------------------------------------------------------
-  // Genes that can legitimately be entered as hets.
-  // ----------------------------------------------------------
-
-  const hetGenes = useMemo(
+  const result: GeneticsCalculatorResult = useMemo(
     () =>
-      getHetPossibleGenes(),
-    []
+      calculateGenetics({
+        female: {
+          morphs: mother.morphs,
+          hets: mother.hets,
+        },
+        male: {
+          morphs: father.morphs,
+          hets: father.hets,
+        },
+      }),
+    [mother, father]
   );
-
-
-  // ----------------------------------------------------------
-  // Confirmed Super entries.
-  // ----------------------------------------------------------
-
-  const superForms = useMemo(
-    () =>
-      getSuperForms(),
-    []
-  );
-
-
-  // ----------------------------------------------------------
-  // Raw calculation.
-  // ----------------------------------------------------------
-
-  const rawResults =
-    useMemo(
-      () =>
-        calculateSimpleResults(
-          mother,
-          father,
-          genes,
-          superForms
-        ),
-      [
-        mother,
-        father,
-        genes,
-        superForms,
-      ]
-    );
-
-
-  // ----------------------------------------------------------
-  // Combined results.
-  // ----------------------------------------------------------
-
-  const results =
-    useMemo(
-      () =>
-        combineDuplicateResults(
-          rawResults
-        ),
-      [rawResults]
-    );
-
-
-  // ----------------------------------------------------------
-  // Clear calculator.
-  // ----------------------------------------------------------
-
-  function clearCalculator() {
-    setMother({
-      morphs: [],
-      hets: [],
-    });
-
-
-    setFather({
-      morphs: [],
-      hets: [],
-    });
-  }
-
-
-  // ----------------------------------------------------------
-  // Determine whether anything has been selected.
-  // ----------------------------------------------------------
 
   const hasSelection =
     mother.morphs.length > 0 ||
@@ -626,167 +90,107 @@ export default function Calculator() {
     father.morphs.length > 0 ||
     father.hets.length > 0;
 
-
-  // ==========================================================
-  // RENDER
-  // ==========================================================
+  function clearCalculator() {
+    setMother({ ...EMPTY_PARENT });
+    setFather({ ...EMPTY_PARENT });
+  }
 
   return (
     <main className="calculator-page">
-
-      {/* ======================================================
-          HEADER
-          ====================================================== */}
-
       <header className="calculator-header">
-
         <div>
-          <h1>
-            Genetics Calculator
-          </h1>
-
-          <p>
-            Predict possible offspring
-            genetics from two Western
-            Hognose parents.
-          </p>
+          <span className="calculator-kicker">TINY TITANS · BREEDING LAB</span>
+          <h1>Genetics Calculator</h1>
+          <p>Choose your actual hoggies or build a pairing manually from the confirmed genetics database.</p>
         </div>
-
-
         {hasSelection && (
-          <button
-            type="button"
-            onClick={
-              clearCalculator
-            }
-            className="calculator-clear-button"
-          >
-            Clear
+          <button type="button" onClick={clearCalculator} className="calculator-clear-button">
+            Clear pairing
           </button>
         )}
-
       </header>
 
+      <div className="calculator-info-strip">
+        <span>🧬 Confirmed genetics only</span>
+        <span>🐍 Saved snakes loaded from your account</span>
+        <span>📊 Multi-gene outcomes calculated by the genetics engine</span>
+      </div>
 
-      {/* ======================================================
-          PARENT SELECTORS
-          ====================================================== */}
+      {snakesError && <div className="calculator-error">{snakesError}</div>}
+
+      {snakesLoading && (
+        <div className="calculator-loading">Loading your logged snakes and their genetics…</div>
+      )}
+
+      {!snakesLoading && snakes.length === 0 && (
+        <div className="calculator-note">
+          No saved snakes were found. You can still build both parents manually from the confirmed database.
+        </div>
+      )}
 
       <div className="calculator-parents">
-
         <ParentSelector
           title="Female / Mother"
           parent={mother}
-          morphOptions={genes}
-          hetOptions={hetGenes}
+          snakes={snakes}
+          morphOptions={confirmedVisualOptions}
+          hetOptions={confirmedHetOptions}
           onChange={setMother}
         />
-
 
         <ParentSelector
           title="Male / Father"
           parent={father}
-          morphOptions={genes}
-          hetOptions={hetGenes}
+          snakes={snakes}
+          morphOptions={confirmedVisualOptions}
+          hetOptions={confirmedHetOptions}
           onChange={setFather}
         />
-
       </div>
 
-
-      {/* ======================================================
-          RESULTS
-          ====================================================== */}
-
       <section className="calculator-results">
-
         <div className="calculator-results-header">
-
           <div>
-            <h2>
-              Possible Offspring
-            </h2>
-
+            <span className="calculator-kicker">OFFSPRING PREDICTION</span>
+            <h2>Possible Offspring</h2>
             <p>
-              Results are calculated
-              from the selected
-              parental genetics.
+              {hasSelection
+                ? `${result.offspring.length} genetic outcome${result.offspring.length === 1 ? "" : "s"} calculated.`
+                : "Select both parents to calculate the pairing."}
             </p>
           </div>
-
+          {hasSelection && <strong className="calculator-probability-total">100%</strong>}
         </div>
-
-
-        {/* ----------------------------------------------------
-            EMPTY STATE
-            ---------------------------------------------------- */}
 
         {!hasSelection && (
           <div className="calculator-empty">
-
-            <h3>
-              Select both parents
-            </h3>
-
-            <p>
-              Choose visual morphs and
-              known hets above to begin
-              the calculation.
-            </p>
-
+            <div className="calculator-empty-icon">🧬</div>
+            <h3>Build your pairing</h3>
+            <p>Pick one of your snakes, then fine-tune its genetics with the dropdowns, or create both parents entirely manually.</p>
           </div>
         )}
 
+        {hasSelection && result.offspring.length === 0 && (
+          <div className="calculator-empty">
+            <h3>No calculable confirmed outcome</h3>
+            <p>The selected data does not currently resolve into a confirmed calculation.</p>
+          </div>
+        )}
 
-        {/* ----------------------------------------------------
-            NO RESULT STATE
-            ---------------------------------------------------- */}
-
-        {hasSelection &&
-          results.length === 0 && (
-            <div className="calculator-empty">
-
-              <h3>
-                No confirmed visual
-                outcomes yet
-              </h3>
-
-              <p>
-                The selected genetics do
-                not currently produce a
-                confirmed visual result
-                in this calculation.
-              </p>
-
-            </div>
-          )}
-
-
-        {/* ----------------------------------------------------
-            RESULTS GRID
-            ---------------------------------------------------- */}
-
-        {results.length > 0 && (
+        {result.offspring.length > 0 && (
           <div className="calculator-result-grid">
-
-            {results.map(
-              (
-                result,
-                index
-              ) => (
-                <ResultCard
-                  key={`${result.name}-${index}`}
-                  result={result}
-                  morphs={genes}
-                />
-              )
-            )}
-
+            {result.offspring.map((offspring) => (
+              <ResultCard key={offspring.id} result={offspring} morphs={allMorphs} />
+            ))}
           </div>
         )}
 
+        {result.hasUnresolvedGenetics && (
+          <div className="calculator-note calculator-note-warning">
+            Some recorded genetics could not be resolved confidently and were not silently treated as confirmed.
+          </div>
+        )}
       </section>
-
     </main>
   );
 }
