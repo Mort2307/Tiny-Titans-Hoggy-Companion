@@ -1,6 +1,8 @@
 // ============================================================
 // TINY TITANS — GENETICS ENGINE
 // ============================================================
+// Single source of truth for inheritance calculations.
+// ============================================================
 
 import { getCombinations, getMorphByGeneId, resolveUnderlyingGenes, type MorphDefinition } from "../data/morphs";
 import { resolveStrictMorph, type HetPercentage } from "./geneticsIdentity";
@@ -17,7 +19,10 @@ const roundProbability = (value: number) => Math.round(value * 1000000) / 100000
 const clampProbability = (value: number) => Math.max(0, Math.min(1, value));
 
 function hetPercentageToProbability(percentage: HetPercentage): number {
-  return percentage === "100%" ? 1 : percentage === "66%" ? 0.66 : percentage === "50%" ? 0.5 : 0;
+  if (percentage === "100%") return 1;
+  if (percentage === "66%") return 2 / 3;
+  if (percentage === "50%") return 0.5;
+  return 0;
 }
 
 function resolveGeneId(value: string): string | undefined { return resolveStrictMorph(value)?.geneId; }
@@ -45,7 +50,9 @@ export function buildParentGeneStates(parent: ParentGenetics): ParentGeneState[]
   return [...states.values()];
 }
 
-export function getParentGeneState(parent: ParentGenetics, geneId: string): ParentGeneState { return buildParentGeneStates(parent).find((state) => state.geneId === geneId) ?? { geneId, copies: 0, visual: false, probability: 1 }; }
+export function getParentGeneState(parent: ParentGenetics, geneId: string): ParentGeneState {
+  return buildParentGeneStates(parent).find((state) => state.geneId === geneId) ?? { geneId, copies: 0, visual: false, probability: 1 };
+}
 
 export function generateGametes(state: ParentGeneState): Gamete[] {
   if (state.copies <= 0) return [{ copies: 0, probability: 1 }];
@@ -65,7 +72,9 @@ export function calculateGeneCross(motherState: ParentGeneState, fatherState: Pa
       outcomes.set(copies, (outcomes.get(copies) ?? 0) + motherGamete.probability * fatherGamete.probability);
     }
   }
-  return [...outcomes.entries()].map(([copies, probability]) => ({ copies, probability: roundProbability(probability) })).sort((a, b) => a.copies - b.copies);
+  return [...outcomes.entries()]
+    .map(([copies, probability]) => ({ copies, probability: roundProbability(probability) }))
+    .sort((a, b) => a.copies - b.copies);
 }
 
 function resolveGenePhenotype(geneId: string, copies: number): string | undefined {
@@ -121,13 +130,25 @@ function resolveRecognisedCombination(geneStates: OffspringGeneState[]): string 
 }
 
 function getOutcomeKey(outcome: GeneticsOutcome): string {
-  return `${[...outcome.visualMorphs].sort().join(",")}|${outcome.hets.map((het) => `${het.geneId}:${het.percentage}`).sort().join(",")}`;
+  const genes = outcome.geneStates.map((state) => `${state.geneId}:${state.copies}`).sort().join(",");
+  return `${genes}|${[...outcome.visualMorphs].sort().join(",")}|${outcome.hets.map((het) => `${het.geneId}:${het.percentage}`).sort().join(",")}`;
 }
 
 function mergeOutcomes(outcomes: GeneticsOutcome[]): GeneticsOutcome[] {
   const map = new Map<string, GeneticsOutcome>();
   for (const outcome of outcomes) {
     const key = getOutcomeKey(outcome);
+    const existing = map.get(key);
+    if (!existing) map.set(key, { ...outcome, visualMorphs: [...outcome.visualMorphs], hets: [...outcome.hets], geneStates: [...outcome.geneStates] });
+    else existing.probability += outcome.probability;
+  }
+  return [...map.values()].map((outcome) => ({ ...outcome, probability: roundProbability(outcome.probability) })).sort((a, b) => b.probability - a.probability);
+}
+
+function mergeDisplayOutcomes(outcomes: GeneticsOutcome[]): GeneticsOutcome[] {
+  const map = new Map<string, GeneticsOutcome>();
+  for (const outcome of outcomes) {
+    const key = `${[...outcome.visualMorphs].sort().join(",")}|${outcome.hets.map((het) => `${het.geneId}:${het.percentage}`).sort().join(",")}`;
     const existing = map.get(key);
     if (!existing) map.set(key, { ...outcome, visualMorphs: [...outcome.visualMorphs], hets: [...outcome.hets], geneStates: [...outcome.geneStates] });
     else existing.probability += outcome.probability;
@@ -153,15 +174,29 @@ export function calculateGenetics(mother: ParentGenetics, father: ParentGenetics
     const next: GeneticsOutcome[] = [];
     for (const existing of outcomes) for (const geneOutcome of geneCross) {
       const geneResult = resolveSingleGeneOutcome(geneId, geneOutcome.copies);
-      next.push({ probability: existing.probability * geneOutcome.probability, visualMorphs: [...existing.visualMorphs, ...(geneResult.visual ? [geneResult.visual] : [])], hets: [...existing.hets, ...(geneResult.het ? [{ geneId, name: getMorph(geneId)?.name ?? geneId, percentage: geneResult.het }] : [])], geneStates: [...existing.geneStates, { geneId, copies: geneOutcome.copies, probability: geneOutcome.probability }] });
+      next.push({
+        probability: existing.probability * geneOutcome.probability,
+        visualMorphs: [...existing.visualMorphs, ...(geneResult.visual ? [geneResult.visual] : [])],
+        hets: [...existing.hets, ...(geneResult.het ? [{ geneId, name: getMorph(geneId)?.name ?? geneId, percentage: geneResult.het }] : [])],
+        geneStates: [...existing.geneStates, { geneId, copies: geneOutcome.copies, probability: geneOutcome.probability }],
+      });
     }
     outcomes = mergeOutcomes(next);
   }
-  outcomes = mergeOutcomes(outcomes.map((outcome) => { const combination = resolveRecognisedCombination(outcome.geneStates); return combination ? { ...outcome, visualMorphs: [combination] } : outcome; }));
+  outcomes = outcomes.map((outcome) => {
+    const combination = resolveRecognisedCombination(outcome.geneStates);
+    return combination ? { ...outcome, visualMorphs: [combination] } : outcome;
+  });
+  outcomes = mergeDisplayOutcomes(outcomes);
   return { outcomes, totalProbability: roundProbability(outcomes.reduce((total, outcome) => total + outcome.probability, 0)) };
 }
 
 export type CalculatorResult = { name: string; percentage: number; visualMorphs: string[]; hets: string[] };
 export function calculateOffspring(mother: ParentGenetics, father: ParentGenetics, _genes?: MorphDefinition[]): CalculatorResult[] {
-  return calculateGenetics(mother, father).outcomes.map((outcome) => ({ name: outcome.visualMorphs.length ? outcome.visualMorphs.map((id) => getMorph(id)?.name ?? id).join(" + ") : "Normal", percentage: outcome.probability * 100, visualMorphs: outcome.visualMorphs, hets: outcome.hets.map((het) => het.geneId) }));
+  return calculateGenetics(mother, father).outcomes.map((outcome) => ({
+    name: outcome.visualMorphs.length ? outcome.visualMorphs.map((id) => getMorph(id)?.name ?? id).join(" + ") : "Normal",
+    percentage: outcome.probability * 100,
+    visualMorphs: outcome.visualMorphs,
+    hets: outcome.hets.map((het) => het.geneId),
+  }));
 }
