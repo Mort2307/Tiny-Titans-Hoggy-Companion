@@ -8,30 +8,13 @@ import type {
 } from "../data/morphs";
 
 
-// ============================================================
-// TYPES
-// ============================================================
-
 type MultiSelectDropdownProps = {
   title: string;
-
   options: MorphDefinition[];
-
   selected: string[];
-
-  setSelected: (
-    values: string[]
-  ) => void;
-
-  onMorphResolved?: (
-    morph: MorphDefinition
-  ) => void;
+  setSelected: (values: string[]) => void;
+  onMorphResolved?: (morph: MorphDefinition) => void;
 };
-
-
-// ============================================================
-// COMPONENT
-// ============================================================
 
 function MultiSelectDropdown({
   title,
@@ -40,513 +23,158 @@ function MultiSelectDropdown({
   setSelected,
   onMorphResolved,
 }: MultiSelectDropdownProps) {
-  const [
-    open,
-    setOpen,
-  ] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
-  const [
-    search,
-    setSearch,
-  ] = useState("");
+  // The My Snakes visual selector receives the complete canonical
+  // database, but only confirmed/recognised keeper-facing morph
+  // records belong in the visual genetics picker. Projects and
+  // disputed/unverified records must not masquerade as established
+  // morphs.
+  const morphOptions = useMemo(() => {
+    return [...options]
+      .filter((morph) => {
+        if (!morph.geneId) return false;
+        if (morph.verification !== "Confirmed" && morph.verification !== "Recognised") {
+          return false;
+        }
+        return !morph.isProject && morph.kind !== "Project";
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [options]);
 
+  const morphByCanonicalValue = useMemo(() => {
+    const map = new Map<string, MorphDefinition>();
 
-  // ==========================================================
-  // MORPH DATABASE
-  // ==========================================================
+    for (const morph of morphOptions) {
+      map.set(morph.geneId.trim().toLowerCase(), morph);
+      map.set(morph.name.trim().toLowerCase(), morph);
+    }
 
-  const morphOptions =
-    useMemo(() => {
-      return [...options]
-        .filter(
-          (morph) =>
-            Boolean(
-              morph.geneId
-            )
-        )
-        .sort(
-          (a, b) =>
-            a.name.localeCompare(
-              b.name
-            )
-        );
-    }, [options]);
+    return map;
+  }, [morphOptions]);
 
-
-  // ==========================================================
-  // CANONICAL LOOKUP MAP
-  // ==========================================================
-  //
-  // IMPORTANT:
-  //
-  // UI identity is always geneId.
-  //
-  // Stored values may historically contain either:
-  //
-  // • geneId
-  // • canonical morph name
-  //
-  // Aliases are deliberately NOT used for identity.
-  //
-  // Aliases remain available for SEARCH only.
-  //
-  // ==========================================================
-
-  const morphByCanonicalValue =
-    useMemo(() => {
-      const map =
-        new Map<
-          string,
-          MorphDefinition
-        >();
-
-      for (
-        const morph of morphOptions
-      ) {
-        const geneId =
-          morph.geneId
-            .trim()
-            .toLowerCase();
-
-        const canonicalName =
-          morph.name
-            .trim()
-            .toLowerCase();
-
-        map.set(
-          geneId,
-          morph
-        );
-
-        map.set(
-          canonicalName,
-          morph
-        );
-      }
-
-      return map;
-    }, [morphOptions]);
-
-
-  // ==========================================================
-  // RESOLVE STORED VALUE
-  // ==========================================================
-  //
-  // ONLY geneId and canonical name.
-  //
-  // NEVER aliases.
-  //
-  // ==========================================================
-
-  function resolveStoredMorph(
-    value: string
-  ): MorphDefinition | undefined {
-    return morphByCanonicalValue.get(
-      value
-        .trim()
-        .toLowerCase()
-    );
+  function resolveStoredMorph(value: string): MorphDefinition | undefined {
+    return morphByCanonicalValue.get(value.trim().toLowerCase());
   }
 
+  const filteredOptions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return morphOptions;
 
-  // ==========================================================
-  // SEARCH
-  // ==========================================================
+    return morphOptions.filter((morph) => {
+      const nameMatches = morph.name.toLowerCase().includes(query);
+      const aliasMatches = morph.aliases?.some((alias) => alias.toLowerCase().includes(query)) ?? false;
+      return nameMatches || aliasMatches;
+    });
+  }, [morphOptions, search]);
 
-  const filteredOptions =
-    useMemo(() => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
+  const selectedGeneIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const value of selected) {
+      const morph = resolveStoredMorph(value);
+      if (morph) ids.add(morph.geneId);
+    }
+    return ids;
+  }, [selected, morphByCanonicalValue]);
 
-      if (!query) {
-        return morphOptions;
-      }
-
-      return morphOptions.filter(
-        (morph) => {
-          const nameMatches =
-            morph.name
-              .toLowerCase()
-              .includes(query);
-
-          const aliasMatches =
-            morph.aliases?.some(
-              (alias) =>
-                alias
-                  .toLowerCase()
-                  .includes(query)
-            ) ?? false;
-
-          return (
-            nameMatches ||
-            aliasMatches
-          );
-        }
-      );
-    }, [
-      morphOptions,
-      search,
-    ]);
-
-
-  // ==========================================================
-  // SELECTED GENE IDS
-  // ==========================================================
-  //
-  // Convert whatever is currently stored in the form into
-  // canonical gene IDs for comparison.
-  //
-  // Unknown/custom legacy values are deliberately preserved
-  // in the actual selected array.
-  //
-  // ==========================================================
-
-  const selectedGeneIds =
-    useMemo(() => {
-      const ids =
-        new Set<string>();
-
-      for (
-        const value of selected
-      ) {
-        const morph =
-          resolveStoredMorph(
-            value
-          );
-
-        if (morph) {
-          ids.add(
-            morph.geneId
-          );
-        }
-      }
-
-      return ids;
-    }, [
-      selected,
-      morphByCanonicalValue,
-    ]);
-
-
-  // ==========================================================
-  // CHECK SELECTED
-  // ==========================================================
-
-  function isOptionSelected(
-    morph: MorphDefinition
-  ): boolean {
-    return selectedGeneIds.has(
-      morph.geneId
-    );
+  function isOptionSelected(morph: MorphDefinition): boolean {
+    return selectedGeneIds.has(morph.geneId);
   }
 
-
-  // ==========================================================
-  // TOGGLE OPTION
-  // ==========================================================
-
-  function toggleOption(
-    morph: MorphDefinition
-  ) {
-    const alreadySelected =
-      isOptionSelected(
-        morph
-      );
-
-
-    // ========================================================
-    // REMOVE
-    // ========================================================
-
-    if (
-      alreadySelected
-    ) {
-      const updated =
-        selected.filter(
-          (value) => {
-            const selectedMorph =
-              resolveStoredMorph(
-                value
-              );
-
-            // Preserve unknown/custom values.
-            if (
-              !selectedMorph
-            ) {
-              return true;
-            }
-
-            // Remove ONLY this exact gene.
-            return (
-              selectedMorph.geneId !==
-              morph.geneId
-            );
-          }
-        );
-
+  function toggleOption(morph: MorphDefinition) {
+    if (isOptionSelected(morph)) {
       setSelected(
-        updated
+        selected.filter((value) => {
+          const selectedMorph = resolveStoredMorph(value);
+          if (!selectedMorph) return true;
+          return selectedMorph.geneId !== morph.geneId;
+        })
       );
-
       return;
     }
 
-
-    // ========================================================
-    // ADD
-    // ========================================================
-    //
-    // Store ONLY the canonical morph name.
-    //
-    // This prevents aliases such as:
-    //
-    // Arctic SuperConda
-    //
-    // from being stored as separate identities from:
-    //
-    // Platinum
-    //
-    // ========================================================
-
-    const canonicalName =
-      morph.name;
-
-
-    // ========================================================
-    // ABSOLUTE DUPLICATE PROTECTION
-    // ========================================================
-
-    const duplicate =
-      selected.some(
-        (value) => {
-          const existing =
-            resolveStoredMorph(
-              value
-            );
-
-          return (
-            existing?.geneId ===
-            morph.geneId
-          );
-        }
-      );
-
-
-    if (
-      duplicate
-    ) {
+    if (selected.some((value) => resolveStoredMorph(value)?.geneId === morph.geneId)) {
       return;
     }
 
-
-    // ========================================================
-    // STORE CANONICAL NAME
-    // ========================================================
-
-    setSelected([
-      ...selected,
-      canonicalName,
-    ]);
-
-
-    // ========================================================
-    // PASS DATABASE OBJECT
-    // ========================================================
-
-    onMorphResolved?.(
-      morph
-    );
+    setSelected([...selected, morph.name]);
+    onMorphResolved?.(morph);
   }
-
-
-  // ==========================================================
-  // RENDER
-  // ==========================================================
 
   return (
     <div className="multi-select">
-
-
-      {/* ==================================================== */}
-      {/* SELECTOR BUTTON */}
-      {/* ==================================================== */}
-
       <button
         type="button"
         className="multi-select-button"
-        onClick={() =>
-          setOpen(
-            (current) =>
-              !current
-          )
-        }
-        aria-expanded={
-          open
-        }
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span>
-          {title}
-        </span>
-
+        <span>{title}</span>
         <span
-          className={`multi-select-arrow ${
-            open
-              ? "open"
-              : ""
-          }`}
+          className={`multi-select-arrow ${open ? "open" : ""}`}
           aria-hidden="true"
         >
           ▼
         </span>
       </button>
 
-
-      {/* ==================================================== */}
-      {/* SELECTED TAGS */}
-      {/* ==================================================== */}
-
-      {selected.length >
-        0 && (
+      {selected.length > 0 && (
         <div className="selected-tags">
-
-          {selected.map(
-            (item) => {
-              const morph =
-                resolveStoredMorph(
-                  item
-                );
-
-              return (
-                <span
-                  key={
-                    morph?.geneId ??
-                    item
-                  }
-                  className="selected-tag"
-                >
-                  {morph?.name ??
-                    item}
-                </span>
-              );
-            }
-          )}
-
+          {selected.map((item) => {
+            const morph = resolveStoredMorph(item);
+            return (
+              <span key={morph?.geneId ?? item} className="selected-tag">
+                {morph?.name ?? item}
+              </span>
+            );
+          })}
         </div>
       )}
 
-
-      {/* ==================================================== */}
-      {/* DROPDOWN */}
-      {/* ==================================================== */}
-
       {open && (
-        <div
-          className="multi-select-menu"
-          role="listbox"
-          aria-multiselectable="true"
-        >
-
-
-          {/* ================================================= */}
-          {/* SEARCH */}
-          {/* ================================================= */}
-
+        <div className="multi-select-menu" role="listbox" aria-multiselectable="true">
           <input
             type="text"
             className="multi-select-search"
             placeholder="Search morphs..."
-            value={
-              search
-            }
-            onChange={(
-              event
-            ) =>
-              setSearch(
-                event.target.value
-              )
-            }
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             aria-label="Search morphs"
             autoComplete="off"
           />
 
-
-          {/* ================================================= */}
-          {/* OPTIONS */}
-          {/* ================================================= */}
-
           <div className="multi-select-options">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((morph) => {
+                const isSelected = isOptionSelected(morph);
 
-            {filteredOptions.length >
-            0 ? (
-
-              filteredOptions.map(
-                (morph) => {
-                  const isSelected =
-                    isOptionSelected(
-                      morph
-                    );
-
-                  return (
-                    <label
-                      key={
-                        morph.geneId
-                      }
-                      className={`multi-select-option ${
-                        isSelected
-                          ? "selected"
-                          : ""
-                      }`}
-                    >
-
-                      <input
-                        type="checkbox"
-                        checked={
-                          isSelected
-                        }
-                        onChange={() =>
-                          toggleOption(
-                            morph
-                          )
-                        }
-                      />
-
-                      <span
-                        className="multi-select-check"
-                        aria-hidden="true"
-                      >
-                        {isSelected
-                          ? "✓"
-                          : ""}
-                      </span>
-
-                      <span className="multi-select-label">
-                        {morph.name}
-                      </span>
-
-                    </label>
-                  );
-                }
-              )
-
+                return (
+                  <label
+                    key={morph.geneId}
+                    className={`multi-select-option ${isSelected ? "selected" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleOption(morph)}
+                    />
+                    <span className="multi-select-check" aria-hidden="true">
+                      {isSelected ? "✓" : ""}
+                    </span>
+                    <span className="multi-select-label">{morph.name}</span>
+                  </label>
+                );
+              })
             ) : (
-
-              <div className="multi-select-empty">
-                No morphs found.
-              </div>
-
+              <div className="multi-select-empty">No morphs found.</div>
             )}
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }
-
 
 export default MultiSelectDropdown;
