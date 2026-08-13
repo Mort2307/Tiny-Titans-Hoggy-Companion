@@ -8,7 +8,7 @@ describe("morph database integrity", () => {
     expect(issues).toEqual([]);
   });
 
-  it("requires a real gene behind every Super relationship", () => {
+  it("rejects a Super form whose base gene does not exist", () => {
     const issues = validateMorphDatabase([
       {
         geneId: "fake-super",
@@ -21,8 +21,31 @@ describe("morph database integrity", () => {
       },
     ]);
 
-    expect(issues.some((issue) => issue.message.includes("genuine Gene"))).toBe(false);
-    expect(issues.some((issue) => issue.message.includes("Super form"))).toBe(false);
+    expect(issues.some((issue) => issue.message.includes("unknown gene"))).toBe(true);
+  });
+
+  it("rejects a Super form pointing at a non-gene", () => {
+    const issues = validateMorphDatabase([
+      {
+        geneId: "lavender",
+        name: "Lavender",
+        kind: "Line-bred",
+        isGene: false,
+        inheritance: "Line-bred",
+        verification: "Recognised",
+      },
+      {
+        geneId: "fake-super",
+        name: "Super Lavender",
+        kind: "Super",
+        isGene: false,
+        superFormId: "lavender",
+        inheritance: "Recessive",
+        verification: "Unverified",
+      },
+    ]);
+
+    expect(issues.some((issue) => issue.message.includes("genuine Gene"))).toBe(true);
   });
 
   it("rejects duplicate gene IDs", () => {
