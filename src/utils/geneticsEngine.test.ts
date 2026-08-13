@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculateGeneCross, generateGametes } from "./geneticsEngine";
 
 describe("genetics engine cross validation", () => {
-  it("normal x normal produces two zero-copy gametes", () => {
+  it("normal x normal produces 100% zero-copy offspring", () => {
     expect(calculateGeneCross({ geneId: "gene", copies: 0, visual: false, probability: 1 }, { geneId: "gene", copies: 0, visual: false, probability: 1 })).toEqual([{ copies: 0, probability: 1 }]);
   });
 
@@ -29,10 +29,10 @@ describe("genetics engine cross validation", () => {
     ]);
   });
 
-  it("66% possible het transmits the allele at one third probability", () => {
-    expect(generateGametes({ geneId: "gene", copies: 1, visual: false, probability: 0.66 })).toEqual([
-      { copies: 1, probability: 0.33 },
-      { copies: 0, probability: 0.67 },
+  it("66% possible het uses the Mendelian two-thirds carrier probability", () => {
+    expect(generateGametes({ geneId: "gene", copies: 1, visual: false, probability: 2 / 3 })).toEqual([
+      { copies: 1, probability: 1 / 3 },
+      { copies: 0, probability: 2 / 3 },
     ]);
   });
 
@@ -47,11 +47,31 @@ describe("genetics engine cross validation", () => {
     expect(generateGametes({ geneId: "gene", copies: 2, visual: true, probability: 1 })).toEqual([{ copies: 1, probability: 1 }]);
   });
 
-  it("all generated gamete probabilities total exactly one", () => {
-    for (const state of [0, 1, 2]) {
-      const probability = state === 0 ? 1 : state === 1 ? 0.66 : 1;
-      const gametes = generateGametes({ geneId: "gene", copies: state, visual: state === 2, probability });
-      expect(gametes.reduce((sum, item) => sum + item.probability, 0)).toBe(1);
+  it("generated gamete probabilities always total one", () => {
+    const states = [
+      { copies: 0, probability: 1 },
+      { copies: 1, probability: 0.5 },
+      { copies: 1, probability: 2 / 3 },
+      { copies: 1, probability: 1 },
+      { copies: 2, probability: 1 },
+    ];
+    for (const state of states) {
+      const gametes = generateGametes({ geneId: "gene", copies: state.copies, visual: state.copies === 2, probability: state.probability });
+      expect(gametes.reduce((sum, item) => sum + item.probability, 0)).toBeCloseTo(1, 10);
+    }
+  });
+
+  it("gene-cross probabilities always total one", () => {
+    const states = [
+      { copies: 0, probability: 1 },
+      { copies: 1, probability: 0.5 },
+      { copies: 1, probability: 2 / 3 },
+      { copies: 1, probability: 1 },
+      { copies: 2, probability: 1 },
+    ];
+    for (const mother of states) for (const father of states) {
+      const outcomes = calculateGeneCross({ geneId: "gene", copies: mother.copies, visual: mother.copies === 2, probability: mother.probability }, { geneId: "gene", copies: father.copies, visual: father.copies === 2, probability: father.probability });
+      expect(outcomes.reduce((sum, item) => sum + item.probability, 0)).toBeCloseTo(1, 10);
     }
   });
 });
