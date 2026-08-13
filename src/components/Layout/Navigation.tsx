@@ -1,108 +1,17 @@
 import { NavLink } from "react-router-dom";
-
+import { useAuth } from "../../context/AuthContext";
 import "./Navigation.css";
 
 function Navigation() {
-  return (
-    <nav
-      className="app-navigation"
-      aria-label="Main navigation"
-    >
-      <ul className="app-navigation-list">
-
-        <li className="app-navigation-item">
-          <NavLink
-            to="/"
-            className="app-navigation-link"
-          >
-            <span className="app-navigation-icon">
-              🏠
-            </span>
-
-            <span className="app-navigation-label">
-              Home
-            </span>
-          </NavLink>
-        </li>
-
-        <li className="app-navigation-item">
-          <NavLink
-            to="/snakes"
-            className="app-navigation-link"
-          >
-            <span className="app-navigation-icon">
-              🐍
-            </span>
-
-            <span className="app-navigation-label">
-              My Snakes
-            </span>
-          </NavLink>
-        </li>
-
-        <li className="app-navigation-item">
-          <NavLink
-            to="/morph-library"
-            className="app-navigation-link"
-          >
-            <span className="app-navigation-icon">
-              🧬
-            </span>
-
-            <span className="app-navigation-label">
-              Morph Library
-            </span>
-          </NavLink>
-        </li>
-
-        <li className="app-navigation-item">
-          <NavLink
-            to="/calculator"
-            className="app-navigation-link"
-          >
-            <span className="app-navigation-icon">
-              🧮
-            </span>
-
-            <span className="app-navigation-label">
-              Genetics Calculator
-            </span>
-          </NavLink>
-        </li>
-
-        <li className="app-navigation-item">
-          <NavLink
-            to="/knowledge-base"
-            className="app-navigation-link"
-          >
-            <span className="app-navigation-icon">
-              📚
-            </span>
-
-            <span className="app-navigation-label">
-              Knowledge Base
-            </span>
-          </NavLink>
-        </li>
-
-        <li className="app-navigation-item">
-          <NavLink
-            to="/account"
-            className="app-navigation-link"
-          >
-            <span className="app-navigation-icon">
-              🧑
-            </span>
-
-            <span className="app-navigation-label">
-              My Account
-            </span>
-          </NavLink>
-        </li>
-
-      </ul>
-    </nav>
-  );
+  const { profile } = useAuth();
+  const links = [
+    ["/", "🏠", "Home"], ["/snakes", "🐍", "My Snakes"], ["/morph-library", "🧬", "Morph Library"],
+    ["/calculator", "🧮", "Genetics Calculator"], ["/knowledge-base", "📚", "Knowledge Base"], ["/account", "🧑", "My Account"],
+    ["/report-issue", "🐛", "Report an Issue"], ["/founder", "👑", "Become a Founder"],
+  ];
+  if (profile?.role === "admin") links.push(["/creator", "🛠️", "Creator Centre"]);
+  return <nav className="app-navigation" aria-label="Main navigation"><ul className="app-navigation-list">
+    {links.map(([to, icon, label]) => <li className="app-navigation-item" key={to}><NavLink to={to} className="app-navigation-link"><span className="app-navigation-icon">{icon}</span><span className="app-navigation-label">{label}</span></NavLink></li>)}
+  </ul></nav>;
 }
-
 export default Navigation;
