@@ -11,16 +11,16 @@
 @media (hover:hover){.app-navigation-link.active:hover{color:var(--background);background:var(--secondary);border-color:var(--secondary);box-shadow:0 0 18px rgba(245,182,66,.35)}.app-navigation-link.active:hover .app-navigation-label,.app-navigation-link.active:hover .app-navigation-icon{color:var(--background)}}
 .app-navigation-link:focus-visible{outline:2px solid var(--secondary);outline-offset:3px;}
 
-/* Tablet/mobile navigation is an isolated horizontal scroller. It must never capture vertical page scrolling. */
+/* Tablet/mobile: keep the top navigation horizontally scrollable without stealing taps from links or vertical page scrolling. */
 @media (max-width:1000px){
  .app-navigation{overflow:hidden;}
  .app-navigation-inner{overflow:hidden;}
- .app-navigation-list{justify-content:flex-start;padding:9px 12px;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:rgba(0,174,255,.7) rgba(0,174,255,.1);-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;overscroll-behavior-y:none;touch-action:pan-x;scroll-snap-type:x proximity;}
+ .app-navigation-list{justify-content:flex-start;padding:9px 12px;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:rgba(0,174,255,.7) rgba(0,174,255,.1);-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;overscroll-behavior-y:none;scroll-snap-type:x proximity;}
  .app-navigation-list::-webkit-scrollbar{height:6px;}
  .app-navigation-list::-webkit-scrollbar-track{background:rgba(0,174,255,.1);}
  .app-navigation-list::-webkit-scrollbar-thumb{background:rgba(0,174,255,.65);border-radius:999px;}
  .app-navigation-item{scroll-snap-align:start;}
- .app-navigation-link{min-height:48px;padding:8px 12px;font-size:.88rem;}
+ .app-navigation-link{min-height:48px;padding:8px 12px;font-size:.88rem;touch-action:manipulation;}
 }
 @media (max-width:700px){.app-navigation-list{gap:6px;padding:8px 10px}.app-navigation-link{min-height:50px;padding:8px 13px;border-radius:11px;font-size:.84rem}.app-navigation-icon{font-size:1.1rem}}
 @media (max-width:400px){.app-navigation-list{gap:5px;padding:7px 8px}.app-navigation-link{min-height:48px;padding:8px 11px;font-size:.8rem}.app-navigation-icon{font-size:1rem}}
