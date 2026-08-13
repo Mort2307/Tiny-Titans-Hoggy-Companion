@@ -21,16 +21,46 @@ type ParentSelectorProps = {
   onChange: (parent: ParentSelection) => void;
 };
 
-function canonicalMorph(value: string): MorphDefinition | undefined {
+function canonicalMorph(value: unknown): MorphDefinition | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
   return resolveStrictMorph(value);
 }
 
-function snakeToSelection(snake: Snake): ParentSelection {
-  const morphs = snake.morphs
-    .map((value) => canonicalMorph(value)?.geneId ?? value)
-    .filter(Boolean);
+function normaliseSnakeHets(value: unknown): Het[] {
+  if (!Array.isArray(value)) return [];
 
-  const hets = snake.hets.map((het) => ({
+  return value
+    .map((entry): Het | null => {
+      if (typeof entry === "string" && entry.trim()) {
+        return { gene: entry.trim(), percentage: 100 } as Het;
+      }
+
+      if (!entry || typeof entry !== "object") return null;
+
+      const record = entry as Record<string, unknown>;
+      const rawGene = record.gene ?? record.name ?? record.morph;
+      if (typeof rawGene !== "string" || !rawGene.trim()) return null;
+
+      const rawPercentage = Number(record.percentage ?? 100);
+      const percentage = Number.isFinite(rawPercentage)
+        ? Math.min(100, Math.max(0, rawPercentage))
+        : 100;
+
+      return {
+        gene: rawGene.trim(),
+        percentage,
+      } as Het;
+    })
+    .filter((het): het is Het => het !== null);
+}
+
+function snakeToSelection(snake: Snake): ParentSelection {
+  const rawMorphs = Array.isArray(snake.morphs) ? snake.morphs : [];
+  const morphs = rawMorphs
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .map((value) => canonicalMorph(value)?.geneId ?? value.trim());
+
+  const hets = normaliseSnakeHets(snake.hets).map((het) => ({
     gene: canonicalMorph(het.gene)?.geneId ?? het.gene,
     percentage: het.percentage,
   }));
@@ -55,7 +85,6 @@ function MultiSelectDropdown({
   options,
   selected,
   onToggle,
-  selectedLabel,
   searchPlaceholder,
   hetMode = false,
 }: {
@@ -63,7 +92,7 @@ function MultiSelectDropdown({
   options: MorphDefinition[];
   selected: string[];
   onToggle: (geneId: string) => void;
-  selectedLabel: (geneId: string) => string;
+  selectedLabel?: (geneId: string) => string;
   searchPlaceholder: string;
   hetMode?: boolean;
 }) {
@@ -139,8 +168,8 @@ export default function ParentSelector({
   );
 
   const selectedHetIds = parent.hets.map((het) =>
-    canonicalMorph(het.gene)?.geneId ?? het.gene
-  );
+    canonicalMorph(het?.gene)?.geneId ?? het?.gene
+  ).filter((value): value is string => Boolean(value));
 
   function toggleMorph(geneId: string) {
     onChange({
@@ -153,7 +182,7 @@ export default function ParentSelector({
   function toggleHet(geneId: string) {
     const exists = selectedHetIds.includes(geneId);
     const next = exists
-      ? parent.hets.filter((het) => (canonicalMorph(het.gene)?.geneId ?? het.gene) !== geneId)
+      ? parent.hets.filter((het) => (canonicalMorph(het?.gene)?.geneId ?? het?.gene) !== geneId)
       : [...parent.hets, { gene: geneId, percentage: 100 } as Het];
 
     onChange({
@@ -165,10 +194,7 @@ export default function ParentSelector({
 
   function handleSnakeChange(snakeId: string) {
     if (!snakeId) {
-      onChange({
-        morphs: [],
-        hets: [],
-      });
+      onChange({ morphs: [], hets: [] });
       return;
     }
 
@@ -209,7 +235,7 @@ export default function ParentSelector({
           <span>{selectedSnake.morphs.length ? selectedSnake.morphs.join(" · ") : "Normal"}</span>
           {selectedSnake.hets.length > 0 && (
             <span>
-              {selectedSnake.hets.map((het) => `${het.percentage} Het ${het.gene}`).join(" · ")}
+              {normaliseSnakeHets(selectedSnake.hets).map((het) => `${het.percentage} Het ${het.gene}`).join(" · ")}
             </span>
           )}
         </div>
@@ -222,7 +248,6 @@ export default function ParentSelector({
           options={morphOptions}
           selected={parent.morphs}
           onToggle={toggleMorph}
-          selectedLabel={(geneId) => geneId}
           searchPlaceholder="Search confirmed morphs..."
         />
         {selectedMorphNames.length > 0 && (
@@ -243,7 +268,6 @@ export default function ParentSelector({
           options={hetOptions}
           selected={selectedHetIds}
           onToggle={toggleHet}
-          selectedLabel={(geneId) => geneId}
           searchPlaceholder="Search confirmed het-capable genes..."
           hetMode
         />
