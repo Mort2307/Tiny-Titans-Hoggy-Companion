@@ -41,8 +41,9 @@ export function getFeedingAdvisor(
   const meals = [...feedings].sort((a, b) => b.date.localeCompare(a.date));
   const successful = successfulMeals(meals);
   const guardrails = [
-    "Prey should not be selected from weight alone.",
-    "For Western hognoses, prey should be approximately no wider than the snake's head; when uncertain, choose smaller rather than larger.",
+    "Prey should not be selected from body weight alone.",
+    "For Western hognoses, prey dimensions matter: the prey should not be wider than the snake can safely accommodate; when uncertain, choose smaller.",
+    "A prey-weight recommendation is only a historical comparison, not a universal target percentage.",
     "The advisor is husbandry guidance, not a veterinary diagnosis.",
   ];
 
@@ -66,12 +67,6 @@ export function getFeedingAdvisor(
   const minimumMeal = Math.min(...mealWeights);
   const maximumMeal = Math.max(...mealWeights);
 
-  // Use the individual's demonstrated successful meal history as the primary signal.
-  // A 10% body-weight reference is deliberately only a ceiling-style cross-check, not a target.
-  const referenceCeiling = weight * 0.10;
-  const maxSuggested = Math.min(maximumMeal, referenceCeiling);
-  const minSuggested = Math.max(0.1, Math.min(minimumMeal, maxSuggested));
-
   const acceptedDates = recentSuccessful.map((meal) => meal.date);
   const intervals: number[] = [];
   for (let index = 0; index < acceptedDates.length - 1; index += 1) {
@@ -83,6 +78,13 @@ export function getFeedingAdvisor(
     ? intervals.reduce((sum, value) => sum + value, 0) / intervals.length
     : null;
 
+  const dimensionedMeals = recentSuccessful.filter(
+    (meal) => typeof meal.preyWidthMm === "number" && meal.preyWidthMm > 0,
+  );
+  const averagePreyWidth = dimensionedMeals.length
+    ? dimensionedMeals.reduce((sum, meal) => sum + (meal.preyWidthMm as number), 0) / dimensionedMeals.length
+    : null;
+
   const ageDays = ageInDays(snake.hatchDate);
   const reasons = [
     `Based primarily on ${recentSuccessful.length} recent successful weighed meals (${minimumMeal.toFixed(1)}–${maximumMeal.toFixed(1)} g).`,
@@ -90,19 +92,21 @@ export function getFeedingAdvisor(
   ];
   const warnings: string[] = [];
 
+  if (averagePreyWidth !== null) {
+    reasons.push(`Recent successful prey averaged ${averagePreyWidth.toFixed(1)} mm in recorded width; keep prey-width fit as the physical guardrail.`);
+  } else {
+    warnings.push("Prey width has not been recorded for recent meals. Record prey dimensions before relying heavily on the size recommendation.");
+  }
+
   const recentRefusals = meals.slice(0, 4).filter((meal) => meal.response === "Refused").length;
   const recentRegurgitations = meals.slice(0, 4).filter((meal) => meal.response === "Regurgitated").length;
 
   if (recentRegurgitations > 0) {
-    warnings.push("A recent regurgitation is recorded. Do not increase prey size; consider husbandry review and veterinary advice if repeated or concerning.");
+    warnings.push("A recent regurgitation is recorded. Do not increase prey size; review husbandry and seek veterinary advice if repeated or concerning.");
   }
 
   if (recentRefusals >= 2) {
     warnings.push("Two or more of the four most recent recorded meals were refused. Do not compensate by automatically increasing prey size.");
-  }
-
-  if (averageMeal > referenceCeiling) {
-    warnings.push("Recent successful meal weights are above the conservative 10% body-weight reference used as a cross-check. Review prey dimensions and body condition before repeating the larger meal.");
   }
 
   if (ageDays !== null && ageDays < 180) {
@@ -115,15 +119,23 @@ export function getFeedingAdvisor(
     reasons.push(`Recent successful meals averaged ${averageInterval.toFixed(0)} days apart.`);
   }
 
-  const status: FeedingAdvisorStatus = warnings.length ? "Review" : "Recommended";
-  const confidence: FeedingAdvisorConfidence = successful.length >= 4 && intervals.length >= 2 ? "High" : "Moderate";
+  const status: FeedingAdvisorStatus = warnings.some((warning) => warning.includes("regurgitation"))
+    ? "Caution"
+    : warnings.length
+      ? "Review"
+      : "Recommended";
+  const confidence: FeedingAdvisorConfidence = successful.length >= 4 && intervals.length >= 2 && dimensionedMeals.length >= 2
+    ? "High"
+    : successful.length >= 2
+      ? "Moderate"
+      : "Low";
 
   return {
     status,
     confidence,
     suggestedPreyRangeGrams: {
-      min: Number(minSuggested.toFixed(1)),
-      max: Number(maxSuggested.toFixed(1)),
+      min: Number(minimumMeal.toFixed(1)),
+      max: Number(maximumMeal.toFixed(1)),
     },
     suggestedIntervalDays: averageInterval
       ? {
