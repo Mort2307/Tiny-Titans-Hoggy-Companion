@@ -1,0 +1,14 @@
+/* Tiny Titans — universal selector scrolling */
+.multi-select{position:relative;min-width:0;width:100%;}
+.multi-select-menu{position:relative;z-index:1000;width:100%;max-width:100%;min-width:0;overflow:hidden;overscroll-behavior:contain;}
+.multi-select-search{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;font-size:16px;touch-action:manipulation;}
+.multi-select-options{width:100%;max-width:100%;min-width:0;max-height:min(45vh,320px);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overscroll-behavior-x:contain;touch-action:pan-y;scrollbar-width:auto;scrollbar-color:rgba(0,174,255,.85) rgba(0,174,255,.12);scrollbar-gutter:stable;scroll-behavior:auto;}
+.multi-select-options::-webkit-scrollbar{width:10px;}
+.multi-select-options::-webkit-scrollbar-track{background:rgba(0,174,255,.12);border-radius:999px;}
+.multi-select-options::-webkit-scrollbar-thumb{background:rgba(0,174,255,.85);border-radius:999px;border:2px solid transparent;background-clip:padding-box;}
+.multi-select-options::-webkit-scrollbar-thumb:hover{background:rgba(0,174,255,1);background-clip:padding-box;}
+.multi-select-option,.het-option,.het-percentage-options{min-width:0;touch-action:manipulation;}
+.multi-select-option{min-height:44px;}
+@media (pointer:coarse){.multi-select-options{max-height:min(50vh,360px);min-height:80px;overscroll-behavior:contain;}.multi-select-option{min-height:46px;}}
+@media (max-width:700px){.multi-select-menu{max-height:min(60vh,430px);}.multi-select-options{max-height:min(48vh,330px);}}
+@media (prefers-reduced-motion:reduce){.multi-select-options{scroll-behavior:auto;}}
