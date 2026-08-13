@@ -1,22 +1,14 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { isCreatorAdmin } from "../utils/adminAccess";
+import { useCreatorAdminAccess } from "../hooks/useCreatorAdminAccess";
 
 export default function CreatorAdminRoute() {
-  const { user, profile, loading, profileLoading } = useAuth();
+  const { user, loading: authLoading, profileLoading } = useAuth();
+  const { loading: adminLoading, allowed } = useCreatorAdminAccess(user);
   const location = useLocation();
 
-  if (loading || profileLoading) {
-    return <main aria-live="polite"><p>Loading Creator Centre…</p></main>;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  }
-
-  if (!isCreatorAdmin(user, profile)) {
-    return <Navigate to="/" replace />;
-  }
-
+  if (authLoading || profileLoading || adminLoading) return <main aria-live="polite"><p>Loading Creator Centre…</p></main>;
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (!allowed) return <Navigate to="/" replace />;
   return <Outlet />;
 }
