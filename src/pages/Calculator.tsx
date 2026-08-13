@@ -71,8 +71,14 @@ export default function Calculator() {
 
   const result: GeneticsCalculatorResult = useMemo(
     () => calculateGenetics({
-      female: { morphs: mother.morphs, hets: mother.hets },
-      male: { morphs: father.morphs, hets: father.hets },
+      female: {
+        morphs: mother.morphs,
+        hets: mother.hets.map((het) => het.gene),
+      },
+      male: {
+        morphs: father.morphs,
+        hets: father.hets.map((het) => het.gene),
+      },
     }),
     [mother, father]
   );
