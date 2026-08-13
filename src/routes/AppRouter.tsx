@@ -24,9 +24,9 @@ import WeightIndex from "../pages/WeightIndex";
 import WeightRecords from "../pages/WeightRecords";
 import BreedingPlanner from "../pages/BreedingPlanner";
 import MorphLibrary from "../pages/MorphLibrary";
+import Calculator from "../pages/Calculator";
 import { useAuth } from "../context/AuthContext";
 
-function GeneticsCalculator() { return <div className="page-container"><div className="welcome-card"><h1>Genetics Calculator</h1><p>Coming Soon</p></div></div>; }
 function KnowledgeBase() { return <div className="page-container"><div className="welcome-card"><h1>Knowledge Base</h1><p>Coming Soon</p></div></div>; }
 
 function AppRouterGate() {
@@ -39,7 +39,7 @@ function AppRouterGate() {
     <Route element={<Layout />}>
       <Route path="/" element={<Home />} /><Route path="/account" element={<MyAccount />} />
       <Route path="/snakes" element={<MySnakes />} /><Route path="/snakes/:id" element={<SnakeProfile />} /><Route path="/snakes/:id/edit" element={<SnakeEdit />} />
-      <Route path="/morph-library" element={<MorphLibrary />} /><Route path="/calculator" element={<GeneticsCalculator />} /><Route path="/knowledge-base" element={<KnowledgeBase />} />
+      <Route path="/morph-library" element={<MorphLibrary />} /><Route path="/calculator" element={<Calculator />} /><Route path="/knowledge-base" element={<KnowledgeBase />} />
       <Route path="/feeding" element={<FeedingTracker />} /><Route path="/feeding/:id" element={<FeedingTracker />} /><Route path="/feeding/:id/advisor" element={<FeedingAdvisor />} />
       <Route path="/shedding" element={<ShedTracker />} /><Route path="/shedding/:id" element={<ShedTracker />} />
       <Route path="/weights" element={<WeightIndex />} /><Route path="/weights/:id" element={<WeightRecords />} /><Route path="/breeding" element={<BreedingPlanner />} />
