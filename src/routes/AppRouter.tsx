@@ -18,6 +18,7 @@ import MySnakes from "../pages/MySnakes";
 import SnakeProfile from "../pages/SnakeProfile";
 import SnakeEdit from "../pages/SnakeEdit";
 import FeedingTracker from "../pages/FeedingTracker";
+import FeedingAdvisor from "../pages/FeedingAdvisor";
 import ShedTracker from "../pages/ShedTracker";
 import WeightIndex from "../pages/WeightIndex";
 import WeightRecords from "../pages/WeightRecords";
@@ -39,7 +40,8 @@ function AppRouterGate() {
       <Route path="/" element={<Home />} /><Route path="/account" element={<MyAccount />} />
       <Route path="/snakes" element={<MySnakes />} /><Route path="/snakes/:id" element={<SnakeProfile />} /><Route path="/snakes/:id/edit" element={<SnakeEdit />} />
       <Route path="/morph-library" element={<MorphLibrary />} /><Route path="/calculator" element={<GeneticsCalculator />} /><Route path="/knowledge-base" element={<KnowledgeBase />} />
-      <Route path="/feeding" element={<FeedingTracker />} /><Route path="/feeding/:id" element={<FeedingTracker />} /><Route path="/shedding" element={<ShedTracker />} /><Route path="/shedding/:id" element={<ShedTracker />} />
+      <Route path="/feeding" element={<FeedingTracker />} /><Route path="/feeding/:id" element={<FeedingTracker />} /><Route path="/feeding/:id/advisor" element={<FeedingAdvisor />} />
+      <Route path="/shedding" element={<ShedTracker />} /><Route path="/shedding/:id" element={<ShedTracker />} />
       <Route path="/weights" element={<WeightIndex />} /><Route path="/weights/:id" element={<WeightRecords />} /><Route path="/breeding" element={<BreedingPlanner />} />
       <Route path="/login" element={<Navigate to="/" replace />} /><Route path="/account-setup" element={<Navigate to="/" replace />} /><Route path="*" element={<Navigate to="/" replace />} />
     </Route>
