@@ -61,7 +61,9 @@ export function validateMorphDatabase(
         issues.push({ geneId: morph.geneId, message: "Super form is missing superFormId." });
       } else {
         const base = byId.get(morph.superFormId.trim().toLowerCase());
-        if (base && (base.kind !== "Gene" || !base.isGene)) {
+        if (!base) {
+          issues.push({ geneId: morph.geneId, message: `Super form references unknown gene: ${morph.superFormId}.` });
+        } else if (base.kind !== "Gene" || !base.isGene) {
           issues.push({ geneId: morph.geneId, message: "Super form must reference a genuine Gene." });
         }
       }
