@@ -1,9 +1,6 @@
 // ============================================================
 // TINY TITANS — GENETICS ENGINE
 // ============================================================
-// CORE INHERITANCE CALCULATION ENGINE
-// UI components MUST NOT contain inheritance rules.
-// ============================================================
 
 import { getCombinations, getMorphByGeneId, resolveUnderlyingGenes, type MorphDefinition } from "../data/morphs";
 import { resolveStrictMorph, type HetPercentage } from "./geneticsIdentity";
@@ -79,6 +76,7 @@ function resolveGenePhenotype(geneId: string, copies: number): string | undefine
     if (copies === 1) return morph.geneId;
     if (copies >= 2 && morph.superFormId) return getMorphByGeneId(morph.superFormId)?.geneId;
   }
+  if (morph.inheritance === "Dominant") return copies >= 1 ? morph.geneId : undefined;
   return undefined;
 }
 
@@ -91,24 +89,39 @@ function resolveSingleGeneOutcome(geneId: string, copies: number): { visual?: st
   return {};
 }
 
-function combinationMatches(visualGeneIds: string[], components: NonNullable<MorphDefinition["components"]>): boolean {
-  const counts = new Map<string, number>();
-  for (const id of visualGeneIds) counts.set(id, (counts.get(id) ?? 0) + 1);
+function requiredCopies(component: NonNullable<MorphDefinition["components"]>[number]): number {
+  const definition = getMorphByGeneId(component.morphId);
+  if (!definition) return Number.POSITIVE_INFINITY;
+  if (definition.kind === "Super") return 2;
+  return Math.max(1, component.copies ?? 1);
+}
+
+function combinationMatches(geneStates: OffspringGeneState[], components: NonNullable<MorphDefinition["components"]>): boolean {
   return components.every((component) => {
     const definition = getMorphByGeneId(component.morphId);
-    if (!definition || definition.kind !== "Gene") return false;
-    return (counts.get(component.morphId) ?? 0) >= (component.copies ?? 1);
+    if (!definition) return false;
+    if (definition.kind === "Gene") {
+      const state = geneStates.find((candidate) => candidate.geneId === definition.geneId);
+      return Boolean(state && state.copies >= requiredCopies(component));
+    }
+    if (definition.kind === "Super") {
+      return resolveUnderlyingGenes(definition.geneId).every((underlying) => {
+        const state = geneStates.find((candidate) => candidate.geneId === underlying.morphId);
+        return Boolean(state && state.copies >= (underlying.copies ?? 2));
+      });
+    }
+    return false;
   });
 }
 
-function resolveRecognisedCombination(visualGeneIds: string[]): string | undefined {
+function resolveRecognisedCombination(geneStates: OffspringGeneState[]): string | undefined {
   const combinations = getCombinations().filter((morph) => morph.verification === "Confirmed" || morph.verification === "Recognised");
-  const matches = combinations.filter((morph) => morph.components?.length && combinationMatches(visualGeneIds, morph.components));
+  const matches = combinations.filter((morph) => morph.components?.length && combinationMatches(geneStates, morph.components));
   return matches.sort((a, b) => (b.components?.length ?? 0) - (a.components?.length ?? 0))[0]?.geneId;
 }
 
 function getOutcomeKey(outcome: GeneticsOutcome): string {
-  return `${[...outcome.visualMorphs].sort().join(",")}|${outcome.hets.map((het) => `${het.geneId}:${het.percentage}`).sort().join(",`)}`;
+  return `${[...outcome.visualMorphs].sort().join(",")}|${outcome.hets.map((het) => `${het.geneId}:${het.percentage}`).sort().join(",")}`;
 }
 
 function mergeOutcomes(outcomes: GeneticsOutcome[]): GeneticsOutcome[] {
@@ -144,7 +157,7 @@ export function calculateGenetics(mother: ParentGenetics, father: ParentGenetics
     }
     outcomes = mergeOutcomes(next);
   }
-  outcomes = mergeOutcomes(outcomes.map((outcome) => { const combination = resolveRecognisedCombination(outcome.visualMorphs); return combination ? { ...outcome, visualMorphs: [combination] } : outcome; }));
+  outcomes = mergeOutcomes(outcomes.map((outcome) => { const combination = resolveRecognisedCombination(outcome.geneStates); return combination ? { ...outcome, visualMorphs: [combination] } : outcome; }));
   return { outcomes, totalProbability: roundProbability(outcomes.reduce((total, outcome) => total + outcome.probability, 0)) };
 }
 
