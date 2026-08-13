@@ -1,13 +1,6 @@
 import { morphs as canonicalMorphs, type MorphDefinition } from "./morphs";
 import { hognoseMorphCatalog, type MorphReferenceEntry } from "./hognoseMorphCatalog";
 
-/**
- * Tiny Titans master keeper-facing morph catalogue.
- *
- * Canonical genetics records always win. Hognose-Morphs reference records
- * fill catalogue gaps without pretending an unverified/reference-only trait
- * is a Mendelian locus in the canonical database.
- */
 export type MasterMorphDefinition = MorphDefinition & {
   sourceUrl?: string;
   sourceLabel?: string;
@@ -16,6 +9,73 @@ export type MasterMorphDefinition = MorphDefinition & {
 
 const normalise = (value: string) =>
   value.trim().toLowerCase().replace(/\s+/g, " ");
+
+const referenceTrait = (
+  name: string,
+  inheritance: MorphDefinition["inheritance"] = "Unknown",
+  hetPossible = false,
+): MorphReferenceEntry => ({
+  geneId: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+  name,
+  kind: "Gene",
+  isGene: true,
+  category: "MorphMarket Trait",
+  inheritance,
+  hetPossible,
+  verification: "Recognised",
+  description: `Reference trait listed in the Western Hognose MorphMarket catalogue: ${name}.`,
+  educationalNotes: "Reference entry. Confirm lineage/genetic status before treating it as a confirmed breeding locus.",
+  sourceUrl: "https://www.morphmarket.com/all/c/reptiles/colubrids/hognose-snakes/traits",
+  sourceLabel: "MorphMarket",
+});
+
+const morphMarketTraits: MorphReferenceEntry[] = [
+  referenceTrait("Albino", "Recessive", true),
+  referenceTrait("Arctic", "Incomplete Dominant"),
+  referenceTrait("Axanthic", "Recessive", true),
+  referenceTrait("Banded"),
+  referenceTrait("Blond"),
+  referenceTrait("Caramel", "Recessive", true),
+  referenceTrait("Chocolate"),
+  referenceTrait("Cinnamon", "Dominant"),
+  referenceTrait("Citrus", "Polygenic"),
+  referenceTrait("Conda", "Incomplete Dominant"),
+  referenceTrait("Diablo", "Polygenic"),
+  referenceTrait("Dinker"),
+  referenceTrait("Dutch Hypo", "Recessive", true),
+  referenceTrait("Evans Hypo", "Recessive", true),
+  referenceTrait("Extreme Red", "Polygenic"),
+  referenceTrait("Green Hypo"),
+  referenceTrait("Green Phase", "Polygenic"),
+  referenceTrait("Import"),
+  referenceTrait("Jaguar"),
+  referenceTrait("Jungle"),
+  referenceTrait("Lavender", "Recessive", true),
+  referenceTrait("Lemon Ghost", "Polygenic"),
+  referenceTrait("Lemon Hypo"),
+  referenceTrait("Leucistic", "Recessive", true),
+  referenceTrait("Mocha", "Polygenic"),
+  referenceTrait("Motley"),
+  referenceTrait("Normal"),
+  referenceTrait("Orange Albino", "Polygenic"),
+  referenceTrait("Other Trait"),
+  referenceTrait("Paradox"),
+  referenceTrait("Pink Pastel Albino", "Recessive", true),
+  referenceTrait("Pistachio", "Recessive", true),
+  referenceTrait("Purple Line", "Line-bred"),
+  referenceTrait("RBE Pastel", "Polygenic"),
+  referenceTrait("Reverse Stripe"),
+  referenceTrait("Sable", "Recessive", true),
+  referenceTrait("Shadow", "Polygenic"),
+  referenceTrait("Skullface"),
+  referenceTrait("Smoke Hypo"),
+  referenceTrait("Spider", "Polygenic"),
+  referenceTrait("Swiss Chocolate", "Recessive", true),
+  referenceTrait("Tiger", "Polygenic"),
+  referenceTrait("Toffee Belly", "Recessive", true),
+  referenceTrait("True Hypo", "Recessive", true),
+  referenceTrait("Yellow Glow"),
+];
 
 function mergeMorphs(
   canonical: MorphDefinition[],
@@ -28,10 +88,7 @@ function mergeMorphs(
   for (const entry of reference) {
     const id = normalise(entry.geneId);
     const name = normalise(entry.name);
-
-    // Canonical records take precedence over reference aliases/duplicates.
     if (ids.has(id) || names.has(name)) continue;
-
     result.push(entry);
     ids.add(id);
     names.add(name);
@@ -42,32 +99,22 @@ function mergeMorphs(
 
 export const masterMorphs: MasterMorphDefinition[] = mergeMorphs(
   canonicalMorphs,
-  hognoseMorphCatalog,
+  [...hognoseMorphCatalog, ...morphMarketTraits],
 );
 
 export function resolveMasterMorph(value: string): MasterMorphDefinition | undefined {
   const query = normalise(value);
-
-  const byId = masterMorphs.find(
-    (morph) => normalise(morph.geneId) === query,
-  );
+  const byId = masterMorphs.find((morph) => normalise(morph.geneId) === query);
   if (byId) return byId;
-
-  const byName = masterMorphs.find(
-    (morph) => normalise(morph.name) === query,
-  );
+  const byName = masterMorphs.find((morph) => normalise(morph.name) === query);
   if (byName) return byName;
-
-  const byAlias = masterMorphs.find(
-    (morph) => morph.aliases?.some((alias) => normalise(alias) === query),
+  return masterMorphs.find((morph) =>
+    morph.aliases?.some((alias) => normalise(alias) === query),
   );
-  return byAlias;
 }
 
 export function getMasterMorphByGeneId(geneId: string): MasterMorphDefinition | undefined {
-  return masterMorphs.find(
-    (morph) => normalise(morph.geneId) === normalise(geneId),
-  );
+  return masterMorphs.find((morph) => normalise(morph.geneId) === normalise(geneId));
 }
 
 export function getMasterMorphByName(name: string): MasterMorphDefinition | undefined {
@@ -91,7 +138,5 @@ export function getMasterVisualMorphs(): MasterMorphDefinition[] {
 }
 
 export function getMasterCalculatorMorphs(): MasterMorphDefinition[] {
-  // Reference entries are selectable too, but only records marked as genes,
-  // supers or combinations participate in the genetics engine.
   return getMasterVisualMorphs();
 }
