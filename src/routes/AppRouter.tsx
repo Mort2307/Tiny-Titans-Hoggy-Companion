@@ -27,13 +27,14 @@ import AdaptiveLearningHub from "../pages/AdaptiveLearningHub";
 import KnowledgeBase from "../pages/KnowledgeBase";
 import Personalisation from "../pages/Personalisation";
 import { useAuth } from "../context/AuthContext";
+import { UnitProvider } from "../context/UnitContext";
 
 function AppRouterGate() {
   const { user, profile, loading, profileLoading } = useAuth();
   if (loading || profileLoading) return <div className="page-container"><div className="welcome-card"><h1>🐍 Loading Tiny Titans...</h1></div></div>;
   if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="*" element={<Navigate to="/login" replace />} /></Routes>;
   if (!profile || !profile.setupComplete) return <Routes><Route path="/account-setup" element={<AccountSetup />} /><Route path="*" element={<Navigate to="/account-setup" replace />} /></Routes>;
-  return <Routes><Route element={<Layout />}>
+  return <UnitProvider><Routes><Route element={<Layout />}>
     <Route path="/" element={<Home />} /><Route path="/account" element={<MyAccount />} /><Route path="/account/profile" element={<EditProfile />} /><Route path="/account/security" element={<Security />} /><Route path="/account/settings" element={<Settings />} /><Route path="/account/personalise" element={<Personalisation />} />
     <Route path="/snakes" element={<MySnakes />} /><Route path="/snakes/:id" element={<SnakeProfile />} /><Route path="/snakes/:id/master-record" element={<SnakeMasterRecord />} /><Route path="/snakes/:id/edit" element={<SnakeEdit />} />
     <Route path="/morph-library" element={<MorphLibrary />} /><Route path="/calculator" element={<Calculator />} /><Route path="/knowledge-base" element={<KnowledgeBase />} /><Route path="/learn" element={<AdaptiveLearningHub />} />
@@ -42,6 +43,6 @@ function AppRouterGate() {
     <Route path="/report-issue" element={<ReportIssue />} /><Route path="/founder" element={<Founder />} /><Route path="/become-a-titan" element={<BecomeATitan />} />
     <Route path="/creator" element={<CreatorAdmin />} /><Route path="/educator" element={<EducatorDashboard />} />
     <Route path="/login" element={<Navigate to="/" replace />} /><Route path="/account-setup" element={<Navigate to="/" replace />} /><Route path="*" element={<Navigate to="/" replace />} />
-  </Route></Routes>;
+  </Route></Routes></UnitProvider>;
 }
 export default function AppRouter() { return <BrowserRouter><AppRouterGate /></BrowserRouter>; }
