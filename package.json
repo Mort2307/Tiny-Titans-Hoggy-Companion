@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "validate:morphs": "node scripts/validate-morph-database.mjs",
+    "build": "npm run validate:morphs && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
