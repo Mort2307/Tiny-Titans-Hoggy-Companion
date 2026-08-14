@@ -1,5 +1,13 @@
 export type LearningDifficulty = 1 | 2 | 3 | 4 | 5;
+export type LearningBank = 1 | 2 | 3 | 4 | 5;
+export type LanguageLevel = "young" | "teen" | "keeper" | "advanced";
 export type LearningSectionKey = "who" | "what" | "why" | "when" | "how" | "examples";
+
+export type LearnerProfile = {
+  languageLevel: LanguageLevel;
+  showScientificTerms: boolean;
+  profileSet: boolean;
+};
 
 export type QuizQuestion = {
   id: string;
@@ -8,6 +16,10 @@ export type QuizQuestion = {
   correctIndex: number;
   explanation: string;
   difficulty: LearningDifficulty;
+  bank?: LearningBank;
+  promptByLanguage?: Partial<Record<LanguageLevel, string>>;
+  explanationByLanguage?: Partial<Record<LanguageLevel, string>>;
+  terminology?: Array<{ term: string; simple: string; definition: string }>;
 };
 
 export type LearningTopic = {
@@ -28,6 +40,11 @@ export type TopicProgress = {
   bestScore: number;
   completed: boolean;
   lastAttemptAt: string | null;
+  currentBank: LearningBank;
+  masteredBanks: LearningBank[];
+  seenQuestionIds: string[];
+  missedQuestionIds: string[];
+  recentQuestionIds: string[];
 };
 
 export type LearningProgress = {
@@ -41,4 +58,5 @@ export type LearningProgress = {
   currentStreak: number;
   longestStreak: number;
   lastTestAt: string | null;
+  learnerProfile: LearnerProfile;
 };
