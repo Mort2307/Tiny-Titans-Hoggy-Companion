@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getLearningTopic } from "../data/learningTopics";
+import { getChallengeTopic } from "../data/challengeTopics";
 import { getCurrentBank, getDifficulty, getLearningProgress, knowledgeLevel, knowledgeScore, presentQuestion, recordTest, selectQuestions } from "../services/learningEngine";
 import type { LearningBank, QuizQuestion } from "../types/Learning";
 import ChallengeActivity from "../components/learning/ChallengeActivity";
@@ -11,7 +11,7 @@ export default function ChallengeSession() {
   const { id = "" } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const topic = getLearningTopic(id);
+  const topic = getChallengeTopic(id);
   const progress = useMemo(() => getLearningProgress(user?.uid), [user?.uid]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [index, setIndex] = useState(0);
