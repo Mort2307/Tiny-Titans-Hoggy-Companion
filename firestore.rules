@@ -11,12 +11,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
+    // Every signed-in user may read their own profile. Admins may read/list
+    // the user collection. Keeping the personal get rule independent of
+    // isAdmin() avoids an unnecessary recursive permission dependency.
     match /users/{userId} {
       allow create: if signedIn()
         && request.auth.uid == userId
         && request.resource.data.role == "user";
 
-      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow get: if signedIn() && request.auth.uid == userId;
       allow list: if isAdmin();
 
       allow update: if signedIn() && (
@@ -28,8 +31,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Admins can access user-owned subcollections for global Creator Centre
+    // statistics; owners retain access to their own data.
     match /users/{userId}/{document=**} {
-      allow read, write: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow read, write: if signedIn()
+        && (request.auth.uid == userId || isAdmin());
     }
 
     match /supporters/{userId} {
@@ -39,8 +45,7 @@ service cloud.firestore {
     }
 
     match /supporterStats/{statId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
     match /issueReports/{reportId} {
