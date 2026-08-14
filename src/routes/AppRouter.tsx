@@ -26,6 +26,7 @@ import EducatorDashboard from "../pages/EducatorDashboard";
 import AdaptiveLearningHub from "../pages/AdaptiveLearningHub";
 import TitansChallenge from "../pages/TitansChallenge";
 import LearnTopic from "../pages/LearnTopic";
+import ChallengeSession from "../pages/ChallengeSession";
 import LearnAchievements from "../pages/LearnAchievements";
 import KnowledgeBase from "../pages/KnowledgeBase";
 import Personalisation from "../pages/Personalisation";
@@ -42,7 +43,7 @@ function AppRouterGate() {
     <Route path="/snakes" element={<MySnakes />} /><Route path="/snakes/:id" element={<SnakeProfile />} /><Route path="/snakes/:id/master-record" element={<SnakeMasterRecord />} /><Route path="/snakes/:id/edit" element={<SnakeEdit />} />
     <Route path="/morph-library" element={<MorphLibrary />} /><Route path="/calculator" element={<Calculator />} /><Route path="/knowledge-base" element={<KnowledgeBase />} />
     <Route path="/learn" element={<TitansChallenge />} /><Route path="/learn/topics" element={<AdaptiveLearningHub />} /><Route path="/learn/topic/:id" element={<LearnTopic />} /><Route path="/learn/achievements" element={<LearnAchievements />} />
-    <Route path="/challenge" element={<TitansChallenge />} /><Route path="/challenge/topic/:id" element={<LearnTopic />} />
+    <Route path="/challenge" element={<TitansChallenge />} /><Route path="/challenge/topic/:id" element={<ChallengeSession />} />
     <Route path="/feeding" element={<FeedingTracker />} /><Route path="/feeding/:id" element={<FeedingTracker />} /><Route path="/shedding" element={<ShedTracker />} /><Route path="/shedding/:id" element={<ShedTracker />} />
     <Route path="/weights" element={<WeightIndex />} /><Route path="/weights/:id" element={<WeightRecords />} /><Route path="/breeding" element={<BreedingPlanner />} />
     <Route path="/report-issue" element={<ReportIssue />} /><Route path="/founder" element={<Founder />} /><Route path="/become-a-titan" element={<BecomeATitan />} />
