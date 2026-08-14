@@ -1,6 +1,7 @@
 import type { LearningTopic } from "../types/Learning";
 import { additionalLearningQuestions } from "./learningQuestionBanks";
 import { specialChallengeQuestions } from "./specialChallengeQuestions";
+import { husbandryChallengeQuestions } from "./husbandryChallengeQuestions";
 
 const baseTopics: LearningTopic[] = [
   {
@@ -31,6 +32,17 @@ const baseTopics: LearningTopic[] = [
       { id: "het-2", prompt: "Can every morph have a conventional het state?", options: ["Yes", "No", "Only Super morphs", "Only line-bred traits"], correctIndex: 1, explanation: "A conventional het state depends on the inheritance model. Incomplete-dominant traits do not work like simple recessives.", difficulty: 2, bank: 2 },
       { id: "het-3", prompt: "What does a 50% possible het mean?", options: ["The snake is definitely het", "There is a calculated 50% probability the snake carries the allele", "The snake is visual", "The snake has two copies"], correctIndex: 1, explanation: "A possible het percentage expresses probability, not certainty.", difficulty: 3, bank: 3 }
     ]
+  },
+  {
+    id: "hognose-husbandry-foundations", title: "Hognose Husbandry Foundations", icon: "🏠", category: "Husbandry", summary: "Refresh the fundamentals of enclosure design, thermal choice, hides, hydration and evidence-based keeper observation.",
+    sections: { what: "Husbandry is the collection of environmental conditions, resources and routines provided to support a snake's normal behaviour and welfare.", why: "Strong foundations help keepers recognise normal variation, identify patterns and avoid jumping from one observation to an unsupported diagnosis.", who: "Every keeper benefits from a husbandry refresher, whether they are new to hognoses or have kept them for years.", when: "Review husbandry whenever routines change, a pattern develops, or you need to check that long-held assumptions still match current evidence.", how: "Use appropriate environmental choices, observe the snake over time, record useful data and change variables thoughtfully rather than changing everything at once.", examples: "A useful setup gives access to a suitable thermal gradient, secure hides and clean water while allowing the keeper to observe feeding, shedding, weight and behaviour over time." },
+    questions: [
+      { id: "hus-foundation-1", prompt: "What is the main purpose of a thermal gradient?", options: ["To let the snake choose between warmer and cooler areas", "To keep the whole enclosure at one identical temperature", "To make the enclosure look natural", "To prevent all movement"], correctIndex: 0, explanation: "A thermal gradient gives the snake access to different temperatures so it can make behavioural choices.", difficulty: 1, bank: 1 },
+      { id: "hus-foundation-2", prompt: "What does a secure hide provide?", options: ["A concealed place where the snake can rest and feel secure", "A replacement for heating", "A way to remove the need for water", "A guarantee that the snake is healthy"], correctIndex: 0, explanation: "A hide supports security and normal resting behaviour; it does not replace other husbandry requirements.", difficulty: 1, bank: 1 },
+      { id: "hus-foundation-3", prompt: "Why should clean drinking water normally be available?", options: ["To provide access to hydration", "To force bathing", "To keep humidity at 100%", "To replace feeding"], correctIndex: 0, explanation: "Accessible clean water supports normal hydration. It is one part of complete husbandry.", difficulty: 1, bank: 1 },
+      { id: "hus-foundation-4", prompt: "What is a good first response when you see a behaviour you do not understand?", options: ["Observe the wider context before deciding it is a problem", "Immediately diagnose illness", "Change every enclosure setting", "Ignore it permanently"], correctIndex: 0, explanation: "Context matters. Look at feeding, shedding, environmental readings and overall condition before deciding what an observation means.", difficulty: 1, bank: 1 },
+      { id: "hus-foundation-5", prompt: "Which statement best describes good husbandry?", options: ["It provides appropriate conditions and choices rather than relying on one magic number", "Every snake needs exactly the same conditions", "One humidity number determines health", "All behaviour should be identical"], correctIndex: 0, explanation: "Good husbandry is a system of appropriate conditions, resources and observation rather than one universal number.", difficulty: 1, bank: 1 },
+    ]
   }
 ];
 
@@ -40,6 +52,7 @@ export const learningTopics: LearningTopic[] = baseTopics.map((topic) => ({
     ...topic.questions,
     ...(additionalLearningQuestions[topic.id] ?? []),
     ...(specialChallengeQuestions[topic.id] ?? []),
+    ...(husbandryChallengeQuestions[topic.id] ?? []),
   ],
 }));
 
