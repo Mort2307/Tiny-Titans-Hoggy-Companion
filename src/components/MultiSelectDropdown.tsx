@@ -1,11 +1,6 @@
-import {
-  useMemo,
-  useState,
-} from "react";
+import { useMemo, useState } from "react";
 
-import type {
-  MorphDefinition,
-} from "../data/morphs";
+import type { MorphDefinition } from "../data/morphs";
 import { useGrabScroll } from "../hooks/useGrabScroll";
 
 type MultiSelectDropdownProps = {
@@ -16,55 +11,60 @@ type MultiSelectDropdownProps = {
   onMorphResolved?: (morph: MorphDefinition) => void;
 };
 
-function MultiSelectDropdown({
-  title,
-  options,
-  selected,
-  setSelected,
-  onMorphResolved,
-}: MultiSelectDropdownProps) {
+function canonicalKey(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function MultiSelectDropdown({ title, options, selected, setSelected, onMorphResolved }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const grabScroll = useGrabScroll();
 
   const morphOptions = useMemo(() => {
-    return [...options]
-      .filter((morph) => {
-        if (!morph.geneId) return false;
-        if (morph.verification !== "Confirmed" && morph.verification !== "Recognised") return false;
-        return !morph.isProject && morph.kind !== "Project";
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const byGeneId = new Map<string, MorphDefinition>();
+    for (const morph of options) {
+      if (!morph.geneId) continue;
+      if (morph.verification !== "Confirmed" && morph.verification !== "Recognised") continue;
+      if (morph.isProject || morph.kind === "Project") continue;
+
+      const key = canonicalKey(morph.geneId);
+      if (!key || byGeneId.has(key)) continue;
+      byGeneId.set(key, morph);
+    }
+
+    return [...byGeneId.values()].sort((a, b) => a.name.localeCompare(b.name));
   }, [options]);
 
   const morphByCanonicalValue = useMemo(() => {
     const map = new Map<string, MorphDefinition>();
     for (const morph of morphOptions) {
-      map.set(morph.geneId.trim().toLowerCase(), morph);
-      map.set(morph.name.trim().toLowerCase(), morph);
+      map.set(canonicalKey(morph.geneId), morph);
+      map.set(canonicalKey(morph.name), morph);
+      for (const alias of morph.aliases ?? []) map.set(canonicalKey(alias), morph);
     }
     return map;
   }, [morphOptions]);
 
-  function resolveStoredMorph(value: string): MorphDefinition | undefined {
-    return morphByCanonicalValue.get(value.trim().toLowerCase());
+  function resolveStoredMorph(value: unknown): MorphDefinition | undefined {
+    const key = canonicalKey(value);
+    return key ? morphByCanonicalValue.get(key) : undefined;
   }
 
   const filteredOptions = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = canonicalKey(search);
     if (!query) return morphOptions;
-    return morphOptions.filter((morph) => {
-      const nameMatches = morph.name.toLowerCase().includes(query);
-      const aliasMatches = morph.aliases?.some((alias) => alias.toLowerCase().includes(query)) ?? false;
-      return nameMatches || aliasMatches;
-    });
+
+    return morphOptions.filter((morph) =>
+      [morph.name, morph.geneId, ...(morph.aliases ?? [])]
+        .some((value) => canonicalKey(value).includes(query)),
+    );
   }, [morphOptions, search]);
 
   const selectedGeneIds = useMemo(() => {
     const ids = new Set<string>();
     for (const value of selected) {
       const morph = resolveStoredMorph(value);
-      if (morph) ids.add(morph.geneId);
+      if (morph?.geneId) ids.add(morph.geneId);
     }
     return ids;
   }, [selected, morphByCanonicalValue]);
@@ -74,17 +74,18 @@ function MultiSelectDropdown({
   }
 
   function toggleOption(morph: MorphDefinition) {
+    const canonicalId = morph.geneId;
+    if (!canonicalId) return;
+
     if (isOptionSelected(morph)) {
-      setSelected(selected.filter((value) => {
-        const selectedMorph = resolveStoredMorph(value);
-        if (!selectedMorph) return true;
-        return selectedMorph.geneId !== morph.geneId;
-      }));
+      const next = selected.filter((value) => resolveStoredMorph(value)?.geneId !== canonicalId);
+      setSelected(next);
       return;
     }
 
-    if (selected.some((value) => resolveStoredMorph(value)?.geneId === morph.geneId)) return;
-    setSelected([...selected, morph.name]);
+    // Store the stable gene ID, never the display name. Display names and
+    // aliases are presentation/search concerns and must not become state.
+    setSelected([...selected.filter((value) => resolveStoredMorph(value)?.geneId !== canonicalId), canonicalId]);
     onMorphResolved?.(morph);
   }
 
@@ -102,10 +103,14 @@ function MultiSelectDropdown({
       </button>
 
       {selected.length > 0 && (
-        <div className="selected-tags">
+        <div className="selected-tags" aria-label="Selected morphs">
           {selected.map((item) => {
             const morph = resolveStoredMorph(item);
-            return <span key={morph?.geneId ?? item} className="selected-tag">{morph?.name ?? item}</span>;
+            return (
+              <span key={morph?.geneId ?? item} className="selected-tag">
+                {morph?.name ?? item}
+              </span>
+            );
           })}
         </div>
       )}
@@ -118,7 +123,7 @@ function MultiSelectDropdown({
             placeholder="Search morphs..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            aria-label="Search morphs"
+            aria-label="Search morphs by name, alias, or gene ID"
             autoComplete="off"
           />
 
@@ -133,9 +138,16 @@ function MultiSelectDropdown({
           >
             {filteredOptions.length > 0 ? filteredOptions.map((morph) => {
               const isSelected = isOptionSelected(morph);
+              const optionId = `morph-${canonicalKey(morph.geneId).replace(/[^a-z0-9_-]/g, "-")}`;
+
               return (
-                <label key={morph.geneId} className={`multi-select-option ${isSelected ? "selected" : ""}`}>
-                  <input type="checkbox" checked={isSelected} onChange={() => toggleOption(morph)} />
+                <label key={morph.geneId} htmlFor={optionId} className={`multi-select-option ${isSelected ? "selected" : ""}`}>
+                  <input
+                    id={optionId}
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleOption(morph)}
+                  />
                   <span className="multi-select-check" aria-hidden="true">{isSelected ? "✓" : ""}</span>
                   <span className="multi-select-label">{morph.name}</span>
                 </label>
