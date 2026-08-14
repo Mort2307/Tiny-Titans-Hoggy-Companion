@@ -32,6 +32,17 @@ service cloud.firestore {
       allow read, write: if signedIn() && (request.auth.uid == userId || isAdmin());
     }
 
+    match /supporters/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /supporterStats/{statId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     match /issueReports/{reportId} {
       allow create: if signedIn()
         && request.resource.data.userId == request.auth.uid;
