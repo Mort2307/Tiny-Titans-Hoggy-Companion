@@ -10,10 +10,11 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
-import { deleteObject, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { db, storage } from "../firebase/config";
 import type { ReportIssue } from "../types/reportIssue";
 import type { Snake } from "../types/Snake";
+import type { ApprovedMorphImage, MorphImageSubmission, MorphSubmissionStatus } from "../types/morphSubmission";
 
 export type FounderApplication = {
   id: string; uid: string; email: string; displayName: string; reason: string; experience: string; contribution: string;
@@ -98,23 +99,18 @@ export async function getCreatorReports(): Promise<ReportIssue[]> {
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ReportIssue, "id">) }));
 }
 
-/** Clearing an issue deliberately removes its detailed log and evidence while retaining only the token/fingerprint needed for repeat-issue analytics. */
 export async function updateCreatorReport(reportId: string, status: ReportIssue["status"]) {
   const reportRef = doc(db, "issueReports", reportId);
   if (status !== "Cleared") {
     await updateDoc(reportRef, { status, updatedAt: serverTimestamp() });
     return;
   }
-
   const snapshot = await getDocs(query(collection(db, "issueReports")));
   const match = snapshot.docs.find((item) => item.id === reportId);
   const data = match?.data() as Partial<ReportIssue> | undefined;
   if (data?.attachment?.path) await deleteObject(ref(storage, data.attachment.path)).catch(() => undefined);
-
   await updateDoc(reportRef, {
-    status: "Cleared",
-    updatedAt: serverTimestamp(),
-    title: deleteField(), description: deleteField(), context: deleteField(), metadata: deleteField(),
+    status: "Cleared", updatedAt: serverTimestamp(), title: deleteField(), description: deleteField(), context: deleteField(), metadata: deleteField(),
     attachment: deleteField(), userId: deleteField(), appVersion: deleteField(),
   });
 }
@@ -150,4 +146,91 @@ export async function getGlobalStats(): Promise<GlobalStats> {
     }
   }));
   return { registeredUsers: usersSnapshot.size, activeUsers, snakeProfiles, mealsFed, weightLogs, totalWeightKg, totalWeightLb: totalWeightKg * 2.2046226218, shedsLogged, totalShedLengthCm, totalShedLengthIn: totalShedLengthCm / 2.54, geneticsCalculations: 0 };
+}
+
+/**
+ * Morph submissions are keyed to the canonical geneId chosen by the submitter.
+ * Creator approval therefore has a deterministic destination and never requires
+ * scrolling through the morph catalogue to find the correct entry.
+ */
+export async function getMorphImageSubmissions(): Promise<MorphImageSubmission[]> {
+  const snapshot = await getDocs(query(collection(db, "morphImageSubmissions"), orderBy("submittedAt", "desc")));
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<MorphImageSubmission, "id">) }));
+}
+
+export async function updateMorphSubmissionStatus(
+  submissionId: string,
+  status: MorphSubmissionStatus,
+  reviewerUid?: string,
+  rejectionReason?: string,
+) {
+  await updateDoc(doc(db, "morphImageSubmissions", submissionId), {
+    status,
+    reviewedAt: serverTimestamp(),
+    reviewedBy: reviewerUid ?? null,
+    rejectionReason: rejectionReason ?? null,
+  });
+}
+
+/** Approves the submission to its existing canonical morphId and publishes the image to the approved image collection. */
+export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage> {
+  if (!submission.morphId) throw new Error("This submission has no canonical morph ID.");
+  if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval.");
+
+  const temporaryRef = ref(storage, submission.attachment.path);
+  const imageUrl = await getDownloadURL(temporaryRef);
+  const approvedPath = `morphLibrary/${submission.morphId}/community/${submission.id}.jpg`;
+
+  // Firebase Storage does not provide a server-side copy primitive in the client SDK.
+  // The approved record therefore keeps the reviewed URL/path while the temporary
+  // asset remains available until the Creator cleanup step. This avoids losing the
+  // evidence if approval succeeds but the follow-up cleanup fails.
+  const approvedDoc = await addDoc(collection(db, "approvedMorphImages"), {
+    morphId: submission.morphId,
+    morphName: submission.morphName,
+    imageUrl,
+    storagePath: submission.attachment.path,
+    approvedPath,
+    creditType: submission.creditType,
+    creditName: submission.creditName ?? null,
+    creditSocial: submission.creditSocial ?? null,
+    sourceSubmissionId: submission.id,
+    approvedAt: serverTimestamp(),
+    approvedBy: reviewerUid ?? null,
+  });
+
+  await updateDoc(doc(db, "morphImageSubmissions", submission.id), {
+    status: "Approved",
+    reviewedAt: serverTimestamp(),
+    reviewedBy: reviewerUid ?? null,
+    approvedImageId: approvedDoc.id,
+  });
+
+  return {
+    id: approvedDoc.id,
+    morphId: submission.morphId,
+    morphName: submission.morphName,
+    imageUrl,
+    storagePath: submission.attachment.path,
+    creditType: submission.creditType,
+    creditName: submission.creditName,
+    creditSocial: submission.creditSocial,
+    sourceSubmissionId: submission.id,
+    approvedAt: undefined,
+    approvedBy: reviewerUid,
+  };
+}
+
+export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) {
+  if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined);
+  await updateDoc(doc(db, "morphImageSubmissions", submissionId), {
+    status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null,
+  });
+}
+
+export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> {
+  const base = collection(db, "approvedMorphImages");
+  const snapshot = await getDocs(query(base, orderBy("approvedAt", "desc")));
+  const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) }));
+  return morphId ? images.filter((image) => image.morphId === morphId) : images;
 }
