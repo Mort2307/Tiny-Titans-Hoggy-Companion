@@ -35,23 +35,15 @@ export default function Calculator() {
 
     void getUserSnakes(user.uid)
       .then((loaded) => {
-        if (!cancelled) {
-          setSnakes(loaded);
-        }
+        if (!cancelled) setSnakes(loaded);
       })
       .catch((error: unknown) => {
         if (!cancelled) {
-          setSnakesError(
-            error instanceof Error
-              ? error.message
-              : "Unable to load your snakes."
-          );
+          setSnakesError(error instanceof Error ? error.message : "Unable to load your snakes.");
         }
       })
       .finally(() => {
-        if (!cancelled) {
-          setSnakesLoading(false);
-        }
+        if (!cancelled) setSnakesLoading(false);
       });
 
     return () => {
@@ -61,11 +53,15 @@ export default function Calculator() {
 
   const allMorphs = useMemo(() => morphDatabase, []);
 
-  const confirmedVisualOptions = useMemo(
+  // The selector should show the complete recognised visual registry.
+  // Unverified/disputed reference entries are deliberately excluded from
+  // breeding calculations, but recognised Mendelian genes are available.
+  const recognisedVisualOptions = useMemo(
     () =>
       allMorphs.filter(
         (morph) =>
-          morph.verification === "Confirmed" &&
+          morph.verification !== "Unverified" &&
+          morph.verification !== "Disputed" &&
           (morph.kind === "Gene" ||
             morph.kind === "Super" ||
             morph.kind === "Combination")
@@ -73,12 +69,16 @@ export default function Calculator() {
     [allMorphs]
   );
 
-  const confirmedHetOptions = useMemo(
+  // A het is offered ONLY when the database explicitly says that the gene is
+  // het-capable. This prevents incomplete-dominant traits such as Conda and
+  // Arctic from ever appearing as fake "hets".
+  const hetOptions = useMemo(
     () =>
       getGenes().filter(
         (morph) =>
-          morph.verification === "Confirmed" &&
-          morph.hetPossible === true
+          morph.hetPossible === true &&
+          morph.verification !== "Unverified" &&
+          morph.verification !== "Disputed"
       ),
     []
   );
@@ -113,51 +113,36 @@ export default function Calculator() {
     <main className="calculator-page">
       <header className="calculator-header">
         <div>
-          <span className="calculator-kicker">
-            TINY TITANS · BREEDING LAB
-          </span>
-
+          <span className="calculator-kicker">TINY TITANS · BREEDING LAB</span>
           <h1>Genetics Calculator</h1>
-
           <p>
             Choose your actual hoggies or build a pairing manually from the
-            confirmed genetics database.
+            recognised genetics database.
           </p>
         </div>
 
         {hasSelection && (
-          <button
-            type="button"
-            onClick={clearCalculator}
-            className="calculator-clear-button"
-          >
+          <button type="button" onClick={clearCalculator} className="calculator-clear-button">
             Clear pairing
           </button>
         )}
       </header>
 
       <div className="calculator-info-strip">
-        <span>🧬 Confirmed genetics only</span>
+        <span>🧬 Recognised genetics only</span>
         <span>🐍 Saved snakes loaded from your account</span>
         <span>📊 Multi-gene outcomes calculated by the genetics engine</span>
       </div>
 
-      {snakesError && (
-        <div className="calculator-error">
-          {snakesError}
-        </div>
-      )}
+      {snakesError && <div className="calculator-error">{snakesError}</div>}
 
       {snakesLoading && (
-        <div className="calculator-loading">
-          Loading your logged snakes and their genetics…
-        </div>
+        <div className="calculator-loading">Loading your logged snakes and their genetics…</div>
       )}
 
       {!snakesLoading && snakes.length === 0 && (
         <div className="calculator-note">
-          No saved snakes were found. You can still build both parents
-          manually from the confirmed database.
+          No saved snakes were found. You can still build both parents manually from the recognised database.
         </div>
       )}
 
@@ -166,17 +151,16 @@ export default function Calculator() {
           title="Female / Mother"
           parent={mother}
           snakes={snakes}
-          morphOptions={confirmedVisualOptions}
-          hetOptions={confirmedHetOptions}
+          morphOptions={recognisedVisualOptions}
+          hetOptions={hetOptions}
           onChange={setMother}
         />
-
         <ParentSelector
           title="Male / Father"
           parent={father}
           snakes={snakes}
-          morphOptions={confirmedVisualOptions}
-          hetOptions={confirmedHetOptions}
+          morphOptions={recognisedVisualOptions}
+          hetOptions={hetOptions}
           onChange={setFather}
         />
       </div>
@@ -184,68 +168,46 @@ export default function Calculator() {
       <section className="calculator-results">
         <div className="calculator-results-header">
           <div>
-            <span className="calculator-kicker">
-              OFFSPRING PREDICTION
-            </span>
-
+            <span className="calculator-kicker">OFFSPRING PREDICTION</span>
             <h2>Possible Offspring</h2>
-
             <p>
               {hasSelection
-                ? `${result.offspring.length} genetic outcome${
-                    result.offspring.length === 1 ? "" : "s"
-                  } calculated.`
+                ? `${result.offspring.length} genetic outcome${result.offspring.length === 1 ? "" : "s"} calculated.`
                 : "Select both parents to calculate the pairing."}
             </p>
           </div>
-
-          {hasSelection && (
-            <strong className="calculator-probability-total">
-              100%
-            </strong>
-          )}
+          {hasSelection && <strong className="calculator-probability-total">100%</strong>}
         </div>
 
         {!hasSelection && (
           <div className="calculator-empty">
             <div className="calculator-empty-icon">🧬</div>
-
             <h3>Build your pairing</h3>
-
             <p>
-              Pick one of your snakes, then fine-tune its genetics with the
-              dropdowns, or create both parents entirely manually.
+              Pick one of your snakes, then fine-tune its genetics with the dropdowns,
+              or create both parents entirely manually.
             </p>
           </div>
         )}
 
         {hasSelection && result.offspring.length === 0 && (
           <div className="calculator-empty">
-            <h3>No calculable confirmed outcome</h3>
-
-            <p>
-              The selected data does not currently resolve into a confirmed
-              calculation.
-            </p>
+            <h3>No calculable recognised outcome</h3>
+            <p>The selected data does not currently resolve into a breeding calculation.</p>
           </div>
         )}
 
         {result.offspring.length > 0 && (
           <div className="calculator-result-grid">
             {result.offspring.map((offspring) => (
-              <ResultCard
-                key={offspring.id}
-                result={offspring}
-                morphs={allMorphs}
-              />
+              <ResultCard key={offspring.id} result={offspring} morphs={allMorphs} />
             ))}
           </div>
         )}
 
         {result.hasUnresolvedGenetics && (
           <div className="calculator-note calculator-note-warning">
-            Some recorded genetics could not be resolved confidently and were
-            not silently treated as confirmed.
+            Some recorded genetics could not be resolved confidently and were not silently treated as confirmed.
           </div>
         )}
       </section>
