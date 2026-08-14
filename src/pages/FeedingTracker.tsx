@@ -32,3 +32,71 @@ export default function FeedingTracker() {
   const [weight, setWeight] = useState("");
   const [feedingMethod, setFeedingMethod] = useState<FeedingMethod>("Tongs");
   const [response, setResponse] = useState<FeedingResponse>("Accepted");
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (loading || profileLoading) return;
+    if (!user) { setSnakes([]); setLoadingSnakes(false); return; }
+    void getUserSnakes(user.uid).then((loaded) => { const valid = loaded.filter((snake) => Boolean(snake?.id)); setSnakes(valid); setSelectedSnakeId((current) => valid.some((snake) => snake.id === current) ? current : valid[0]?.id ?? ""); }).catch((err) => setError(err instanceof Error ? err.message : "Unable to load your snakes.")).finally(() => setLoadingSnakes(false));
+  }, [user, loading, profileLoading]);
+
+  useEffect(() => {
+    if (!user || !selectedSnakeId) { setFeedings([]); return; }
+    setLoadingFeedings(true);
+    void getSnakeFeedings(user.uid, selectedSnakeId).then(setFeedings).catch((err) => setError(err instanceof Error ? err.message : "Unable to load feeding history.")).finally(() => setLoadingFeedings(false));
+  }, [user, selectedSnakeId]);
+
+  const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]);
+  const counts = useMemo(() => ({ Accepted: feedings.filter((f) => f.response === "Accepted").length, Refused: feedings.filter((f) => f.response === "Refused").length, Partial: feedings.filter((f) => f.response === "Partial").length, Regurgitated: feedings.filter((f) => f.response === "Regurgitated").length }), [feedings]);
+  const acceptanceRate = feedings.length ? Math.round((counts.Accepted / feedings.length) * 100) : 0;
+  const lastFeeding = feedings[0] ?? null;
+
+  function resetForm() {
+    setEditingId(null); setDate(new Date().toISOString().split("T")[0]); setFoodType("Pinkie Mouse"); setCustomFood(""); setSize(""); setWeight(""); setFeedingMethod("Tongs"); setResponse("Accepted"); setNotes("");
+  }
+  function editFeeding(feeding: FeedingRecord) {
+    setEditingId(feeding.id); setDate(feeding.date); setFoodType(feeding.foodType); setCustomFood(feeding.customFood ?? ""); setSize(feeding.size ?? ""); setWeight(feeding.weight == null ? "" : String(isImperial ? feeding.weight / 28.349523125 : feeding.weight)); setFeedingMethod(feeding.feedingMethod ?? "Tongs"); setResponse(feeding.response); setNotes(feeding.notes ?? ""); window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setError(""); setSuccess("");
+    if (!user || !selectedSnakeId) { setError("Please select a snake and make sure you are logged in."); return; }
+    if (foodType === "Other" && !customFood.trim()) { setError("Please enter the food type."); return; }
+    if (weight !== "" && (!Number.isFinite(Number(weight)) || Number(weight) < 0)) { setError(`Please enter a valid prey weight in ${weightUnit}.`); return; }
+    setSaving(true);
+    try {
+      const preyWeightG = weight === "" ? undefined : isImperial ? Number(weight) * 28.349523125 : Number(weight);
+      const record: FeedingRecord = { id: editingId ?? generateId(), snakeId: selectedSnakeId, date, foodType, ...(foodType === "Other" ? { customFood: customFood.trim() } : {}), ...(size ? { size } : {}), ...(preyWeightG !== undefined ? { weight: preyWeightG } : {}), ...(feedingMethod ? { feedingMethod } : {}), response, ...(notes.trim() ? { notes: notes.trim() } : {}) };
+      const saved = await saveSnakeFeeding(user.uid, record);
+      setFeedings((current) => [saved, ...current.filter((item) => item.id !== saved.id)].sort((a, b) => b.date.localeCompare(a.date)));
+      setSuccess(editingId ? "Feeding record updated successfully." : "Feeding recorded successfully."); resetForm();
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to save this feeding."); } finally { setSaving(false); }
+  }
+  async function handleDelete(feeding: FeedingRecord) {
+    if (!user || !window.confirm(`Delete the feeding recorded on ${feeding.date}?`)) return;
+    setSaving(true); setError("");
+    try { await deleteSnakeFeeding(user.uid, feeding.snakeId, feeding.id); setFeedings((current) => current.filter((item) => item.id !== feeding.id)); setSuccess("Feeding record deleted."); if (editingId === feeding.id) resetForm(); } catch (err) { setError(err instanceof Error ? err.message : "Unable to delete this feeding."); } finally { setSaving(false); }
+  }
+  function daysSince(value: string) { const d = new Date(`${value}T00:00:00`); return Math.max(0, Math.floor((new Date().setHours(0, 0, 0, 0) - d.getTime()) / 86400000)); }
+
+  if (loading || profileLoading || loadingSnakes) return <div className="page-container"><BackHomeButton /><h1>🍽 Feeding Tracker</h1><div className="tracker-card"><p>Loading Tiny Titans...</p></div></div>;
+
+  return <div className="page-container"><BackHomeButton /><h1>🍽 Feeding Tracker</h1><p>Record meals, monitor feeding responses and keep a complete feeding history.</p>
+    {error && <div className="tracker-card" role="alert">⚠️ {error}</div>}{success && <div className="tracker-card" role="status">✅ {success}</div>}
+    {snakes.length === 0 ? <div className="tracker-card"><h3>No snakes found 🐍</h3><p>Add a snake before recording a feeding.</p></div> : <>
+      <div className="tracker-card"><h3>🐍 Snake</h3><label htmlFor="feeding-snake">Record feeding for</label><select id="feeding-snake" value={selectedSnakeId} onChange={(e) => { setSelectedSnakeId(e.target.value); resetForm(); }} disabled={saving}>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select>{selectedSnake && <p>🧬 {selectedSnake.morphs?.join(", ") || "Morph not recorded"}</p>}</div>
+      <div className="tracker-card"><h3>{editingId ? "✏️ Edit Feeding" : "🍽️ Record Feeding"}</h3><form onSubmit={(e) => void handleSubmit(e)}>
+        <label htmlFor="feeding-date">Feeding Date</label><input id="feeding-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} disabled={saving} required />
+        <label htmlFor="feeding-food">Food Type</label><select id="feeding-food" value={foodType} onChange={(e) => setFoodType(e.target.value as FoodType)} disabled={saving}>{foodTypes.map((food) => <option key={food}>{food}</option>)}</select>
+        {foodType === "Other" && <><label htmlFor="custom-food">Food Description</label><input id="custom-food" value={customFood} onChange={(e) => setCustomFood(e.target.value)} placeholder="e.g. quail chick" disabled={saving} required /></>}
+        <label htmlFor="feeding-size">Prey Size</label><select id="feeding-size" value={size} onChange={(e) => setSize(e.target.value)} disabled={saving}><option value="">Select prey size...</option>{["Extra Small", "Small", "Medium", "Large", "Extra Large"].map((item) => <option key={item}>{item}</option>)}</select>
+        <label htmlFor="feeding-weight">Prey Weight ({weightUnit})</label><input id="feeding-weight" type="number" inputMode="decimal" min="0" step="any" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder={isImperial ? "e.g. 0.2" : "e.g. 5.2"} disabled={saving} />
+        <label htmlFor="feeding-method">Feeding Method</label><select id="feeding-method" value={feedingMethod} onChange={(e) => setFeedingMethod(e.target.value as FeedingMethod)} disabled={saving}>{feedingMethods.map((method) => <option key={method}>{method}</option>)}</select>
+        <label htmlFor="feeding-response">Feeding Response</label><select id="feeding-response" value={response} onChange={(e) => setResponse(e.target.value as FeedingResponse)} disabled={saving}>{feedingResponses.map((item) => <option key={item}>{item}</option>)}</select>
+        <label htmlFor="feeding-notes">Notes</label><textarea id="feeding-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything worth recording about this meal..." rows={4} disabled={saving} />
+        <button type="submit" disabled={saving}>{saving ? "💾 Saving..." : editingId ? "💾 Update Feeding" : "🍽️ Record Feeding"}</button>{editingId && <button type="button" onClick={resetForm} disabled={saving}>Cancel Edit</button>}
+      </form></div>
+      <div className="tracker-card"><h3>📊 Feeding Summary</h3><p><strong>Last meal:</strong> {lastFeeding?.date ?? "No meals recorded"}</p>{lastFeeding && <p><strong>Days since last meal:</strong> {daysSince(lastFeeding.date)}</p>}<p><strong>Total recorded feeds:</strong> {feedings.length}</p><p><strong>Acceptance rate:</strong> {acceptanceRate}%</p></div>
+      <div className="tracker-card"><h3>📋 Feeding History</h3>{loadingFeedings ? <p>Loading feeding history...</p> : feedings.length === 0 ? <p>No feeding records yet.</p> : feedings.map((feeding) => <div key={feeding.id} className="tracker-card"><h3>{responseEmoji[feeding.response]} {feeding.date}</h3><p>🐁 <strong>{feeding.foodType === "Other" ? feeding.customFood || "Other" : feeding.foodType}</strong></p>{feeding.size && <p>📏 Prey size: {feeding.size}</p>}{feeding.weight !== undefined && <p>⚖️ Prey weight: {formatWeight(feeding.weight)}</p>} {feeding.feedingMethod && <p>🍴 Method: {feeding.feedingMethod}</p>}<p>📊 Response: <strong>{feeding.response}</strong></p>{feeding.notes && <p>📝 {feeding.notes}</p>}<div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "18px" }}><button type="button" onClick={() => editFeeding(feeding)} disabled={saving}>✏️ Edit</button><button type="button" onClick={() => void handleDelete(feeding)} disabled={saving}>🗑️ Delete</button></div></div>)}</div>
+    </>}
+  </div>;
+}
