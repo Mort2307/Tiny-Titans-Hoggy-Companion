@@ -3,6 +3,18 @@ export type LearningBank = 1 | 2 | 3 | 4 | 5;
 export type LanguageLevel = "young" | "teen" | "keeper" | "advanced";
 export type LearningSectionKey = "who" | "what" | "why" | "when" | "how" | "examples";
 
+/** The activity format used to demonstrate mastery. */
+export type ChallengeType =
+  | "knowledge"
+  | "genetics-builder"
+  | "feeding-scenario"
+  | "husbandry-detective"
+  | "normal-monitor-investigate"
+  | "shed-scenario"
+  | "sequence"
+  | "keeper-scenario"
+  | "reasoning";
+
 export type LearnerProfile = {
   languageLevel: LanguageLevel;
   showScientificTerms: boolean;
@@ -17,6 +29,7 @@ export type QuizQuestion = {
   explanation: string;
   difficulty: LearningDifficulty;
   bank?: LearningBank;
+  challengeType?: ChallengeType;
   promptByLanguage?: Partial<Record<LanguageLevel, string>>;
   explanationByLanguage?: Partial<Record<LanguageLevel, string>>;
   terminology?: Array<{ term: string; simple: string; definition: string }>;
