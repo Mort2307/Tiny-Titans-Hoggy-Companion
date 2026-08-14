@@ -20,21 +20,20 @@ import Founder from "../pages/Founder";
 import CreatorAdmin from "../pages/CreatorAdmin";
 import EducatorDashboard from "../pages/EducatorDashboard";
 import AdaptiveLearningHub from "../pages/AdaptiveLearningHub";
+import Personalisation from "../pages/Personalisation";
 import { useAuth } from "../context/AuthContext";
 
-function KnowledgeBase() {
-  return <div className="page-container"><div className="welcome-card"><h1>Knowledge Base</h1><p>Coming Soon</p></div></div>;
-}
+function KnowledgeBase() { return <div className="page-container"><div className="welcome-card"><h1>Knowledge Base</h1><p>Coming Soon</p></div></div>; }
 
 function AppRouterGate() {
   const { user, profile, loading, profileLoading } = useAuth();
   if (loading || profileLoading) return <div className="page-container"><div className="welcome-card"><h1>🐍 Loading Tiny Titans...</h1></div></div>;
   if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="*" element={<Navigate to="/login" replace />} /></Routes>;
   if (!profile || !profile.setupComplete) return <Routes><Route path="/account-setup" element={<AccountSetup />} /><Route path="*" element={<Navigate to="/account-setup" replace />} /></Routes>;
-
   return <Routes><Route element={<Layout />}>
     <Route path="/" element={<Home />} />
     <Route path="/account" element={<MyAccount />} />
+    <Route path="/account/personalise" element={<Personalisation />} />
     <Route path="/snakes" element={<MySnakes />} />
     <Route path="/snakes/:id" element={<SnakeProfile />} />
     <Route path="/snakes/:id/master-record" element={<SnakeMasterRecord />} />
