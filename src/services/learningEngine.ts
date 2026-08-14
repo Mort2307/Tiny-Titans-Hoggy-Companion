@@ -1,4 +1,4 @@
-import type { LearningBank, LearningDifficulty, LearningProgress, LearningTopic, TopicProgress, QuizQuestion, LearnerProfile, LanguageLevel } from "../types/Learning";
+import type { ChallengeType, LearningBank, LearningDifficulty, LearningProgress, LearningTopic, TopicProgress, QuizQuestion, LearnerProfile, LanguageLevel } from "../types/Learning";
 
 const STORAGE_PREFIX = "tinytitans.learning.v4";
 const MAX_RECENT = 8;
@@ -17,7 +17,7 @@ export function getLearningProgress(uid?: string | null): LearningProgress {
 }
 function saveProgress(uid: string | null | undefined, progress: LearningProgress): void { if (uid && typeof window !== "undefined") window.localStorage.setItem(`${STORAGE_PREFIX}.${uid}`, JSON.stringify(progress)); }
 
-// Experience is earned from results; it is never selected by the learner.
+// Knowledge level is earned from demonstrated results; it is never selected by the learner.
 export function setLearnerProfile(uid: string | null | undefined, profile: Partial<LearnerProfile>): LearningProgress { const progress = getLearningProgress(uid); progress.learnerProfile = { ...progress.learnerProfile, ...profile, profileSet: true }; saveProgress(uid, progress); return progress; }
 export function getLanguageLevel(progress: LearningProgress): LanguageLevel { return progress.learnerProfile.languageLevel || "keeper"; }
 function topicProgress(progress: LearningProgress, topicId: string): TopicProgress { return progress.topics[topicId] ?? defaultTopic(); }
@@ -27,13 +27,44 @@ export function getDifficulty(progress: LearningProgress, topic: LearningTopic):
 export function isBankMastered(progress: LearningProgress, topic: LearningTopic, bank: LearningBank): boolean { return topicProgress(progress, topic.id).masteredBanks.includes(bank); }
 function shuffle<T>(items: T[]): T[] { const result = [...items]; for (let i = result.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; } return result; }
 
+/**
+ * Selects a small challenge batch from the learner's current bank.
+ * Missed concepts are reinforced first, then unseen questions, then older questions.
+ * A bank can only be mastered once every question in that bank has been demonstrated
+ * correctly; scoring 100% on a partial batch therefore never skips unseen content.
+ */
 export function selectQuestions(topic: LearningTopic, progress: LearningProgress, count = 5): QuizQuestion[] {
-  const current = topicProgress(progress, topic.id); const pool = topic.questions.filter((question) => bankForQuestion(question) === current.currentBank); if (!pool.length) return [];
-  const missed = shuffle(pool.filter((q) => current.missedQuestionIds.includes(q.id))); if (missed.length) return missed.slice(0, Math.min(count, missed.length));
-  const unseen = shuffle(pool.filter((q) => !current.seenQuestionIds.includes(q.id))); if (unseen.length) return unseen.slice(0, Math.min(count, unseen.length));
+  const current = topicProgress(progress, topic.id);
+  const pool = topic.questions.filter((question) => bankForQuestion(question) === current.currentBank);
+  if (!pool.length) return [];
+  const missed = shuffle(pool.filter((q) => current.missedQuestionIds.includes(q.id)));
+  if (missed.length) return missed.slice(0, Math.min(count, missed.length));
+  const unseen = shuffle(pool.filter((q) => !current.seenQuestionIds.includes(q.id)));
+  if (unseen.length) return unseen.slice(0, Math.min(count, unseen.length));
   return shuffle(pool.filter((q) => !current.recentQuestionIds.includes(q.id))).slice(0, Math.min(count, pool.length));
 }
-export function presentQuestion(question: QuizQuestion, profile: LearnerProfile) { return { prompt: question.promptByLanguage?.[profile.languageLevel] ?? question.prompt, explanation: question.explanationByLanguage?.[profile.languageLevel] ?? question.explanation, terminology: profile.showScientificTerms ? (question.terminology ?? []) : [] }; }
+
+export function presentQuestion(question: QuizQuestion, profile: LearnerProfile) {
+  return {
+    prompt: question.promptByLanguage?.[profile.languageLevel] ?? question.prompt,
+    explanation: question.explanationByLanguage?.[profile.languageLevel] ?? question.explanation,
+    terminology: profile.showScientificTerms ? (question.terminology ?? []) : [],
+    challengeType: question.challengeType ?? "knowledge" as ChallengeType,
+  };
+}
+
+export const challengeTypeLabels: Record<ChallengeType, { label: string; icon: string }> = {
+  knowledge: { label: "Knowledge Check", icon: "🧠" },
+  "genetics-builder": { label: "Genetics Builder", icon: "🧬" },
+  "feeding-scenario": { label: "Feeding Scenario", icon: "🍽️" },
+  "husbandry-detective": { label: "Husbandry Detective", icon: "🌡️" },
+  "normal-monitor-investigate": { label: "Normal / Monitor / Investigate", icon: "🐍" },
+  "shed-scenario": { label: "Shed Challenge", icon: "💧" },
+  sequence: { label: "Put It In Order", icon: "↕️" },
+  "keeper-scenario": { label: "Keeper Scenario", icon: "🎯" },
+  reasoning: { label: "Reasoning Challenge", icon: "🔬" },
+};
+
 function updateStreak(progress: LearningProgress, now: Date): void { if (!progress.lastTestAt) progress.currentStreak = 1; else { const previous = new Date(progress.lastTestAt); const day = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); const days = Math.round((day(now) - day(previous)) / 86400000); if (days === 1) progress.currentStreak += 1; else if (days > 1) progress.currentStreak = 1; } progress.longestStreak = Math.max(progress.longestStreak, progress.currentStreak); progress.lastTestAt = now.toISOString(); }
 
 export function recordTest(uid: string | null | undefined, topic: LearningTopic, score: number, questionCount: number, questionIds: string[] = [], missedQuestionIds: string[] = []): LearningProgress {
