@@ -47,7 +47,7 @@ function AppRouterGate() {
     <Route path="/weights" element={<WeightIndex />} /><Route path="/weights/:id" element={<WeightRecords />} /><Route path="/breeding" element={<BreedingPlanner />} />
     <Route path="/report-issue" element={<ReportIssue />} /><Route path="/founder" element={<Founder />} /><Route path="/become-a-titan" element={<BecomeATitan />} />
     <Route path="/creator" element={<CreatorAdmin />} /><Route path="/educator" element={<EducatorDashboard />} />
-    <Route path="/login" element={<Navigate to="/" replace />} /><Route path="/account-setup" element={<Navigate to="/" replace />} /><Route path="*" element={<Navigate to="/" replace" />} />
+    <Route path="/login" element={<Navigate to="/" replace />} /><Route path="/account-setup" element={<Navigate to="/" replace />} /><Route path="*" element={<Navigate to="/" replace />} />
   </Route></Routes></UnitProvider>;
 }
 export default function AppRouter() { return <BrowserRouter><AppRouterGate /></BrowserRouter>; }
