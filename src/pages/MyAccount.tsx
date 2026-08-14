@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
 import app from "../firebase/config";
-import { KOFI_SUPPORT_URL, SUPPORT_PLATFORM_NAME } from "../config/support";
+import { KOFI_SUPPORT_URL, SUPPORT_PLATFORM_NAME, isSupportConfigured } from "../config/support";
 import "../styles/MyAccount.css";
 
 function MyAccount() {
@@ -15,12 +15,9 @@ function MyAccount() {
   const profileType = profile?.profileType === "educator" ? "Educator" : profile?.profileType === "learner" ? "Learner" : profile?.profileType === "professional" ? "Professional" : profile?.profileType === "creator" ? "Creator" : "Keeper";
   const learningLevel = profile?.learningLevel === "explorer" ? "Explorer" : profile?.learningLevel === "learner" ? "Learner" : profile?.learningLevel === "student" ? "Student" : "Adult";
   const experience = profile?.experienceLevel === "pro" ? "Advanced" : profile?.experienceLevel === "intermediate" ? "Intermediate" : "Beginner";
-  const supportConfigured = !KOFI_SUPPORT_URL.includes("REPLACE_WITH_TINY_TITANS");
+  const supportConfigured = isSupportConfigured();
   function handleSupport() {
-    if (!supportConfigured) {
-      console.info("Tiny Titans: Ko-fi support URL has not been configured yet.");
-      return;
-    }
+    if (!supportConfigured) return;
     window.open(KOFI_SUPPORT_URL, "_blank", "noopener,noreferrer");
   }
   return <section className="my-account-page"><div className="my-account-card">
