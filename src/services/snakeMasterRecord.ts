@@ -1,144 +1,54 @@
-import type { FeedingRecord } from "../types/Feeding";
-import type { ShedRecord } from "../types/Shed";
 import type { Snake } from "../types/Snake";
-import type { TimelineEvent } from "../types/Timeline";
-import type { WeightRecord } from "../types/Weight";
-import { getSnakeFeedings } from "./feedingService";
-import { getSnakeSheds } from "./shedService";
-import { getUserSnake } from "./snakeService";
 
-export type DataConfidence = "High" | "Moderate" | "Low" | "Insufficient";
+export type DataConfidence = "Insufficient" | "Low" | "Moderate" | "High";
 
-export type SnakeMasterRecord = {
-  snake: Snake;
-  weights: WeightRecord[];
-  feedings: FeedingRecord[];
-  sheds: ShedRecord[];
-  timeline: TimelineEvent[];
-  overview: {
-    currentWeightG: number | null;
-    weightChangeG: number | null;
-    weightChangePercent: number | null;
-    totalWeightLogs: number;
-    totalMeals: number;
-    acceptedMeals: number;
-    acceptanceRate: number | null;
-    lastMealDate: string | null;
-    daysSinceMeal: number | null;
-    totalSheds: number;
-    totalShedLengthCm: number | null;
-    averageShedLengthCm: number | null;
-    lastShedDate: string | null;
-    daysSinceShed: number | null;
-    confidence: {
-      weight: DataConfidence;
-      feeding: DataConfidence;
-      shedding: DataConfidence;
-      overall: DataConfidence;
-    };
-  };
-};
-
-function dateValue(value?: string): string {
-  return typeof value === "string" ? value : "";
+function dateValue(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) return value;
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate().toISOString();
+  }
+  return null;
 }
 
-function daysSince(date?: string, today = new Date()): number | null {
-  if (!date) return null;
-  const parsed = new Date(`${date}T00:00:00`).getTime();
-  if (!Number.isFinite(parsed)) return null;
-  return Math.max(0, Math.round((today.getTime() - parsed) / 86_400_000));
+function daysSince(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.max(0, Math.floor((Date.now() - timestamp) / 86400000));
 }
 
-function confidence(count: number, strongAt: number): DataConfidence {
+function confidence(count: number, target: number): DataConfidence {
   if (count <= 0) return "Insufficient";
-  if (count >= strongAt) return "High";
-  if (count >= 2) return "Moderate";
-  return "Low";
+  if (count < Math.ceil(target / 3)) return "Low";
+  if (count < target) return "Moderate";
+  return "High";
 }
 
-function buildTimeline(
-  snake: Snake,
-  weights: WeightRecord[],
-  feedings: FeedingRecord[],
-  sheds: ShedRecord[],
-): TimelineEvent[] {
-  const events: TimelineEvent[] = [];
-
-  if (snake.hatchDate) {
-    events.push({ id: `hatch-${snake.id}`, snakeId: snake.id, date: snake.hatchDate, type: "Hatch", title: "Hatched" });
-  }
-  if (snake.arrivalDate) {
-    events.push({ id: `arrival-${snake.id}`, snakeId: snake.id, date: snake.arrivalDate, type: "Arrival", title: "Arrived" });
-  }
-
-  weights.forEach((record) => {
-    events.push({
-      id: `weight-${record.id}`,
-      snakeId: snake.id,
-      date: record.date,
-      type: "Weight",
-      title: `Weight: ${record.weight}${record.unit}`,
-      relatedRecordId: record.id,
-    });
-  });
-
-  feedings.forEach((record) => {
-    events.push({
-      id: `feeding-${record.id}`,
-      snakeId: snake.id,
-      date: record.date,
-      type: "Feeding",
-      title: `${record.foodType} — ${record.response}`,
-      description: record.weight ? `${record.weight}g prey` : undefined,
-      relatedRecordId: record.id,
-    });
-  });
-
-  sheds.forEach((record) => {
-    const date = dateValue(record.date);
-    if (!date) return;
-    events.push({
-      id: `shed-${record.id}`,
-      snakeId: snake.id,
-      date,
-      type: "Shed",
-      title: record.shedLength ? `Shed — ${record.shedLength}cm` : "Shed recorded",
-      description: record.quality,
-      relatedRecordId: record.id,
-    });
-  });
-
-  return events.sort((a, b) => b.date.localeCompare(a.date));
+function buildTimeline(snake: Snake, weights: any[], feedings: any[], sheds: any[]) {
+  return [
+    ...weights.map((item) => ({ type: "weight", date: dateValue(item.date), item })),
+    ...feedings.map((item) => ({ type: "feeding", date: dateValue(item.date), item })),
+    ...sheds.map((item) => ({ type: "shed", date: dateValue(item.date), item })),
+    { type: "snake", date: dateValue(snake.createdAt), item: snake },
+  ].sort((a, b) => (Date.parse(b.date ?? "") || 0) - (Date.parse(a.date ?? "") || 0));
 }
 
-export async function getSnakeMasterRecord(uid: string, snakeId: string): Promise<SnakeMasterRecord | null> {
-  const snake = await getUserSnake(uid, snakeId);
-  if (!snake) return null;
+export function buildSnakeMasterRecord(snake: Snake) {
+  const weights = Array.isArray(snake.weightHistory) ? snake.weightHistory : [];
+  const sortedFeedings = Array.isArray(snake.feedingHistory) ? snake.feedingHistory : [];
+  const sortedSheds = Array.isArray(snake.shedHistory) ? snake.shedHistory : [];
 
-  const [feedings, sheds] = await Promise.all([
-    getSnakeFeedings(uid, snakeId),
-    getSnakeSheds(uid, snakeId).catch(() => [] as ShedRecord[]),
-  ]);
+  const sortedWeights = [...weights].sort((a: any, b: any) => (Date.parse(dateValue(b.date) ?? "") || 0) - (Date.parse(dateValue(a.date) ?? "") || 0));
+  const currentWeightG = sortedWeights.length ? Number(sortedWeights[0]?.weight ?? snake.weight ?? 0) : Number(snake.weight ?? 0);
+  const previousWeightG = sortedWeights.length > 1 ? Number(sortedWeights[1]?.weight ?? 0) : null;
+  const weightChangeG = previousWeightG === null ? null : currentWeightG - previousWeightG;
+  const weightChangePercent = previousWeightG && previousWeightG !== 0 ? (weightChangeG! / previousWeightG) * 100 : null;
 
-  const weights = [...(snake.weightHistory ?? [])].sort((a, b) => b.date.localeCompare(a.date));
-  const currentWeightG = typeof snake.weight === "number" ? snake.weight : weights[0]?.weight ?? null;
-  const firstWeight = weights.length ? weights[weights.length - 1].weight : snake.startingWeight;
-  const weightChangeG = currentWeightG !== null && firstWeight !== null && firstWeight !== undefined
-    ? currentWeightG - firstWeight
-    : null;
-  const weightChangePercent = weightChangeG !== null && firstWeight
-    ? (weightChangeG / firstWeight) * 100
-    : null;
-
-  const sortedFeedings = [...feedings].sort((a, b) => b.date.localeCompare(a.date));
-  const acceptedMeals = sortedFeedings.filter((record) => record.response === "Accepted").length;
-  const lastMealDate = sortedFeedings[0]?.date ?? null;
-
-  const sortedSheds = [...sheds].sort((a, b) => dateValue(b.date).localeCompare(dateValue(a.date)));
-  const measuredSheds = sortedSheds.filter((record) => typeof record.shedLength === "number" && record.shedLength > 0);
+  const acceptedMeals = sortedFeedings.filter((item: any) => item.accepted !== false).length;
+  const lastMealDate = dateValue(sortedFeedings[0]?.date) || null;
+  const measuredSheds = sortedSheds.filter((record: any) => Number.isFinite(Number(record.shedLength)));
   const totalShedLengthCm = measuredSheds.length
-    ? measuredSheds.reduce((sum, record) => sum + (record.shedLength ?? 0), 0)
+    ? measuredSheds.reduce((sum: number, record: any) => sum + (Number(record.shedLength) || 0), 0)
     : null;
   const averageShedLengthCm = measuredSheds.length ? (totalShedLengthCm ?? 0) / measuredSheds.length : null;
   const lastShedDate = dateValue(sortedSheds[0]?.date) || null;
