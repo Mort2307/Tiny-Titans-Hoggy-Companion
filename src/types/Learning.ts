@@ -74,6 +74,9 @@ export type LearningProgress = {
   totalCorrect: number;
   topics: Record<string, TopicProgress>;
   unlockedBadges: string[];
+  /** Completed perfect-bank mastery events. */
+  perfectBanks: number;
+  /** Legacy/display metric: number of submitted perfect tests. */
   perfectTests: number;
   completedLessons: number;
   currentStreak: number;
