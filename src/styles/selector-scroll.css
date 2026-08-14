@@ -35,11 +35,6 @@
   touch-action: manipulation;
 }
 
-/*
-   THIS is the actual scroll viewport.
-   Keep the list constrained so opening a large genetics list
-   can never expand the entire page vertically.
-*/
 .multi-select-options {
   display: block;
   width: 100%;
@@ -48,37 +43,28 @@
   min-height: 0;
   max-height: min(48vh, 360px);
   box-sizing: border-box;
-
   overflow-y: auto;
   overflow-x: hidden;
-
-  /* iOS Safari momentum scrolling */
   -webkit-overflow-scrolling: touch;
-
-  /* Keep the gesture inside the selector at its boundaries. */
   overscroll-behavior: contain;
   overscroll-behavior-y: contain;
   overscroll-behavior-x: none;
-
-  /* Vertical finger movement belongs to this list. */
   touch-action: pan-y;
-
-  /* Desktop mouse-wheel / trackpad behaviour. */
   scroll-behavior: auto;
-
-  /* Make the scrollbar usable on desktop/Android/Firefox. */
   scrollbar-width: auto;
-  scrollbar-color:
-    rgba(0, 174, 255, 0.9)
-    rgba(0, 174, 255, 0.14);
+  scrollbar-color: rgba(0, 174, 255, 0.9) rgba(0, 174, 255, 0.14);
   scrollbar-gutter: stable;
-
-  /* Avoid text selection while dragging the list. */
   user-select: none;
   -webkit-user-select: none;
+
+  /* The list can be physically grabbed and dragged. */
+  cursor: grab;
 }
 
-/* Chromium / Safari / WebKit scrollbar */
+.multi-select-options:active {
+  cursor: grabbing;
+}
+
 .multi-select-options::-webkit-scrollbar {
   width: 11px;
 }
@@ -119,7 +105,6 @@
   touch-action: manipulation;
 }
 
-/* Touch devices: give fingers more room and keep lists compact. */
 @media (pointer: coarse) {
   .multi-select-options {
     min-height: 80px;
@@ -131,7 +116,6 @@
   }
 }
 
-/* Phones and narrow tablets. */
 @media (max-width: 700px) {
   .multi-select-menu {
     width: 100%;
@@ -144,7 +128,6 @@
   }
 }
 
-/* iPhone/iPad Safari-specific touch handling. */
 @supports (-webkit-touch-callout: none) {
   .multi-select-options {
     -webkit-overflow-scrolling: touch;
