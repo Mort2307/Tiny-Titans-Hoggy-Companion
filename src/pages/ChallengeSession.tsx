@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getLearningTopic } from "../data/learningTopics";
 import { getCurrentBank, getDifficulty, getLearningProgress, knowledgeLevel, knowledgeScore, presentQuestion, recordTest, selectQuestions } from "../services/learningEngine";
-import type { QuizQuestion } from "../types/Learning";
+import type { LearningBank, QuizQuestion } from "../types/Learning";
 import ChallengeActivity from "../components/learning/ChallengeActivity";
 import "../styles/LearnTopic.css";
 
@@ -34,8 +34,9 @@ export default function ChallengeSession() {
     if (index === questions.length - 1) {
       const correct = questions.reduce((sum, q, i) => sum + (nextAnswers[i] === q.correctIndex ? 1 : 0), 0);
       const missed = questions.filter((q, i) => nextAnswers[i] !== q.correctIndex).map(q => q.id);
+      const bankBefore = getCurrentBank(getLearningProgress(user?.uid), topic) as LearningBank;
       const updated = recordTest(user?.uid, topic, questions.length ? correct / questions.length : 0, questions.length, questions.map(q => q.id), missed);
-      setAnswers(nextAnswers); setBankMasteredThisRound(updated.topics[topic.id]?.masteredBanks.includes(getCurrentBank(updated, topic) - 1 as never) ?? false); setFinished(true); return;
+      setAnswers(nextAnswers); setBankMasteredThisRound(updated.topics[topic.id]?.masteredBanks.includes(bankBefore) ?? false); setFinished(true); return;
     }
     setAnswers(nextAnswers); setIndex(index + 1); setSelected(null);
   };
@@ -47,10 +48,10 @@ export default function ChallengeSession() {
     const score = questions.length ? Math.round(correct / questions.length * 100) : 0;
     const updated = getLearningProgress(user?.uid);
     const tp = updated.topics[topic.id];
-    const masteredBank = tp?.masteredBanks.includes(Math.max(1, (tp.currentBank - 1) as number) as never) || bankMasteredThisRound;
+    const masteredBank = bankMasteredThisRound;
     const missed = questions.filter((q, i) => answers[i] !== q.correctIndex);
     const roundPerfect = score === 100;
-    return <main className="page-container learn-topic-page"><section className="learn-topic-shell"><Link className="learn-back" to="/challenge">← Titans Challenge</Link><div className="test-result"><span className="test-result__icon">{masteredBank ? "🏆" : roundPerfect ? "💯" : "🧠"}</span><h1>{masteredBank ? "Bank mastered!" : roundPerfect ? "Perfect round!" : "Keep building."}</h1><p className="test-result__score">{score}%</p><p>{correct} of {questions.length} correct.</p><p>Topic mastery: <strong>{tp?.mastery ?? 0}%</strong> · Current bank: <strong>{tp?.currentBank ?? 1}</strong></p><p>Overall knowledge: <strong>{knowledgeScore(updated)}%</strong> · {knowledgeLevel(updated)} · <strong>{updated.xp} XP</strong></p><p className="test-result__mastery-note">{masteredBank ? "Excellent. The next bank is unlocked." : roundPerfect ? "100% this round — but there are still unseen questions in this bank. Keep going until the whole bank is mastered." : "You need 100% on the complete bank before the next stage can unlock."}</p>{missed.length > 0 && <section className="test-review"><h2>🧠 Targeted reinforcement</h2>{missed.map(q => { const copy = presentQuestion(q, updated.learnerProfile); return <article key={q.id} className="test-review__item"><h3>{copy.prompt}</h3><p><strong>Correct answer:</strong> {q.options[q.correctIndex]}</p><p>{copy.explanation}</p></article>; })}</section>}<div className="test-result__actions"><button type="button" onClick={start}>{masteredBank ? "Practice Again" : "Continue This Bank"}</button><button type="button" onClick={() => navigate("/challenge")}>Back to Challenge Centre</button></div></div></section></main>;
+    return <main className="page-container learn-topic-page"><section className="learn-topic-shell"><Link className="learn-back" to="/challenge">← Titans Challenge</Link><div className="test-result"><span className="test-result__icon">{masteredBank ? "🏆" : roundPerfect ? "💯" : "🧠"}</span><h1>{masteredBank ? "Bank mastered!" : roundPerfect ? "Perfect round!" : "Keep building."}</h1><p className="test-result__score">{score}%</p><p>{correct} of {questions.length} correct.</p><p>Topic mastery: <strong>{tp?.mastery ?? 0}%</strong> · Current bank: <strong>{tp?.currentBank ?? 1}</strong></p><p>Overall knowledge: <strong>{knowledgeScore(updated)}%</strong> · {knowledgeLevel(updated)} · <strong>{updated.xp} XP</strong></p><p className="test-result__mastery-note">{masteredBank ? "Excellent. The next bank is unlocked." : roundPerfect ? "100% this round — but there are still unseen questions in this bank. Keep going until the whole bank is mastered." : "You need 100% across the complete bank before the next stage can unlock."}</p>{missed.length > 0 && <section className="test-review"><h2>🧠 Targeted reinforcement</h2>{missed.map(q => { const copy = presentQuestion(q, updated.learnerProfile); return <article key={q.id} className="test-review__item"><h3>{copy.prompt}</h3><p><strong>Correct answer:</strong> {q.options[q.correctIndex]}</p><p>{copy.explanation}</p></article>; })}</section>}<div className="test-result__actions"><button type="button" onClick={start}>{masteredBank ? "Practice Again" : "Continue This Bank"}</button><button type="button" onClick={() => navigate("/challenge")}>Back to Challenge Centre</button></div></div></section></main>;
   }
 
   const q = questions[index];
