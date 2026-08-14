@@ -1,5 +1,6 @@
 import type { LearningTopic } from "../types/Learning";
 import { additionalLearningQuestions } from "./learningQuestionBanks";
+import { specialChallengeQuestions } from "./specialChallengeQuestions";
 
 const baseTopics: LearningTopic[] = [
   {
@@ -9,7 +10,7 @@ const baseTopics: LearningTopic[] = [
       { id: "shed-1", prompt: "Why does a snake shed?", options: ["Its old outer skin cannot grow with it", "It needs to clean its stomach", "It loses all of its scales", "It is trying to cool down"], correctIndex: 0, explanation: "The outer skin must be replaced as the snake grows.", difficulty: 1, bank: 1 },
       { id: "shed-2", prompt: "What is ecdysis?", options: ["Feeding", "Shedding", "Brumation", "Breathing"], correctIndex: 1, explanation: "Ecdysis is the biological term for shedding the old outer skin.", difficulty: 1, bank: 1, terminology: [{ term: "ecdysis", simple: "shedding the old outer skin", definition: "The biological process of shedding the old outer skin." }] },
       { id: "shed-3", prompt: "Which can be a normal sign that a snake is approaching a shed?", options: ["Cloudier-looking eyes", "A broken jaw", "Permanent loss of scales", "Blue tongue"], correctIndex: 0, explanation: "Cloudy or bluish-looking eyes can occur during the pre-shed phase.", difficulty: 2, bank: 2 },
-      { id: "shed-4", prompt: "Where does the new skin form?", options: ["Under the old skin", "Inside the stomach", "Only on the head", "Only after the old skin falls off"], correctIndex: 0, explanation: "The new outer layer forms underneath the old layer before the shed occurs.", difficulty: 2, bank: 2 },
+      { id: "shed-4", prompt: "Where does the new skin form?", options: ["Under the old skin", "Inside the stomach", "Only on the head", "Only after the old skin falls off"], correctIndex: 0, explanation: "The new skin layer forms underneath the old outer layer before the old skin is shed.", difficulty: 2, bank: 2 },
       { id: "shed-5", prompt: "Which statement is most accurate?", options: ["Every snake must shed exactly once per month", "Young snakes often shed more frequently because they grow faster", "Adults never shed", "A shed in pieces always means a serious disease"], correctIndex: 1, explanation: "Shedding frequency varies, and growing young snakes often shed more frequently.", difficulty: 3, bank: 3 }
     ]
   },
@@ -33,6 +34,13 @@ const baseTopics: LearningTopic[] = [
   }
 ];
 
-export const learningTopics: LearningTopic[] = baseTopics.map((topic) => ({ ...topic, questions: [...topic.questions, ...(additionalLearningQuestions[topic.id] ?? [])] }));
+export const learningTopics: LearningTopic[] = baseTopics.map((topic) => ({
+  ...topic,
+  questions: [
+    ...topic.questions,
+    ...(additionalLearningQuestions[topic.id] ?? []),
+    ...(specialChallengeQuestions[topic.id] ?? []),
+  ],
+}));
 
 export function getLearningTopic(id: string): LearningTopic | undefined { return learningTopics.find((topic) => topic.id === id); }
