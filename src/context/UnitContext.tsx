@@ -9,7 +9,7 @@ type UnitContextValue = {
   formatWeight: (grams: number | null | undefined, decimals?: number) => string;
   formatLength: (cm: number | null | undefined, decimals?: number) => string;
   formatTemperature: (celsius: number | null | undefined, decimals?: number) => string;
-  weightUnit: "g" | "oz";
+  weightUnit: "g" | "kg" | "oz" | "lb";
   lengthUnit: "cm" | "in";
   temperatureUnit: "°C" | "°F";
 };
@@ -26,7 +26,14 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     weightUnit: system === "imperial" ? "oz" : "g",
     lengthUnit: system === "imperial" ? "in" : "cm",
     temperatureUnit: system === "imperial" ? "°F" : "°C",
-    formatWeight: (grams, decimals = 1) => grams == null || Number.isNaN(grams) ? "—" : `${round(system === "imperial" ? grams / 28.349523125 : grams, decimals)} ${system === "imperial" ? "oz" : "g"}`,
+    formatWeight: (grams, decimals = 1) => {
+      if (grams == null || Number.isNaN(grams)) return "—";
+      if (system === "imperial") {
+        const ounces = grams / 28.349523125;
+        return ounces >= 16 ? `${round(ounces / 16, decimals)} lb` : `${round(ounces, decimals)} oz`;
+      }
+      return grams >= 1000 ? `${round(grams / 1000, decimals)} kg` : `${round(grams, decimals)} g`;
+    },
     formatLength: (cm, decimals = 1) => cm == null || Number.isNaN(cm) ? "—" : `${round(system === "imperial" ? cm / 2.54 : cm, decimals)} ${system === "imperial" ? "in" : "cm"}`,
     formatTemperature: (celsius, decimals = 1) => celsius == null || Number.isNaN(celsius) ? "—" : `${round(system === "imperial" ? (celsius * 9) / 5 + 32 : celsius, decimals)} ${system === "imperial" ? "°F" : "°C"}`,
   }), [system]);
