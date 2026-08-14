@@ -25,7 +25,9 @@ export type TopicProgress = {
   correct: number;
   mastery: number;
   lastScore: number | null;
+  bestScore: number;
   completed: boolean;
+  lastAttemptAt: string | null;
 };
 
 export type LearningProgress = {
@@ -36,4 +38,7 @@ export type LearningProgress = {
   unlockedBadges: string[];
   perfectTests: number;
   completedLessons: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastTestAt: string | null;
 };
