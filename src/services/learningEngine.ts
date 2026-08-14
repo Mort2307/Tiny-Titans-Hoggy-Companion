@@ -1,8 +1,8 @@
 import type { LearningBank, LearningDifficulty, LearningProgress, LearningTopic, TopicProgress, QuizQuestion, LearnerProfile, LanguageLevel } from "../types/Learning";
 
-const STORAGE_PREFIX = "tinytitans.learning.v3";
+const STORAGE_PREFIX = "tinytitans.learning.v4";
 const MAX_RECENT = 8;
-const defaultProfile = (): LearnerProfile => ({ languageLevel: "keeper", showScientificTerms: true, profileSet: false });
+const defaultProfile = (): LearnerProfile => ({ languageLevel: "keeper", showScientificTerms: true, profileSet: true });
 const defaultTopic = (): TopicProgress => ({ attempts: 0, correct: 0, mastery: 0, lastScore: null, bestScore: 0, completed: false, lastAttemptAt: null, currentBank: 1, masteredBanks: [], seenQuestionIds: [], missedQuestionIds: [], recentQuestionIds: [] });
 const defaultProgress = (): LearningProgress => ({ xp: 0, totalQuestions: 0, totalCorrect: 0, topics: {}, unlockedBadges: [], perfectTests: 0, completedLessons: 0, currentStreak: 0, longestStreak: 0, lastTestAt: null, learnerProfile: defaultProfile() });
 
@@ -16,8 +16,10 @@ export function getLearningProgress(uid?: string | null): LearningProgress {
   } catch { return defaultProgress(); }
 }
 function saveProgress(uid: string | null | undefined, progress: LearningProgress): void { if (uid && typeof window !== "undefined") window.localStorage.setItem(`${STORAGE_PREFIX}.${uid}`, JSON.stringify(progress)); }
+
+// Experience is earned from results; it is never selected by the learner.
 export function setLearnerProfile(uid: string | null | undefined, profile: Partial<LearnerProfile>): LearningProgress { const progress = getLearningProgress(uid); progress.learnerProfile = { ...progress.learnerProfile, ...profile, profileSet: true }; saveProgress(uid, progress); return progress; }
-export function getLanguageLevel(progress: LearningProgress): LanguageLevel { return progress.learnerProfile.languageLevel; }
+export function getLanguageLevel(progress: LearningProgress): LanguageLevel { return progress.learnerProfile.languageLevel || "keeper"; }
 function topicProgress(progress: LearningProgress, topicId: string): TopicProgress { return progress.topics[topicId] ?? defaultTopic(); }
 function bankForQuestion(question: QuizQuestion): LearningBank { return question.bank ?? question.difficulty; }
 export function getCurrentBank(progress: LearningProgress, topic: LearningTopic): LearningBank { return topicProgress(progress, topic.id).currentBank; }
@@ -26,13 +28,9 @@ export function isBankMastered(progress: LearningProgress, topic: LearningTopic,
 function shuffle<T>(items: T[]): T[] { const result = [...items]; for (let i = result.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; } return result; }
 
 export function selectQuestions(topic: LearningTopic, progress: LearningProgress, count = 5): QuizQuestion[] {
-  const current = topicProgress(progress, topic.id);
-  const pool = topic.questions.filter((question) => bankForQuestion(question) === current.currentBank);
-  if (!pool.length) return [];
-  const missed = shuffle(pool.filter((q) => current.missedQuestionIds.includes(q.id)));
-  if (missed.length) return missed.slice(0, Math.min(count, missed.length));
-  const unseen = shuffle(pool.filter((q) => !current.seenQuestionIds.includes(q.id)));
-  if (unseen.length) return unseen.slice(0, Math.min(count, unseen.length));
+  const current = topicProgress(progress, topic.id); const pool = topic.questions.filter((question) => bankForQuestion(question) === current.currentBank); if (!pool.length) return [];
+  const missed = shuffle(pool.filter((q) => current.missedQuestionIds.includes(q.id))); if (missed.length) return missed.slice(0, Math.min(count, missed.length));
+  const unseen = shuffle(pool.filter((q) => !current.seenQuestionIds.includes(q.id))); if (unseen.length) return unseen.slice(0, Math.min(count, unseen.length));
   return shuffle(pool.filter((q) => !current.recentQuestionIds.includes(q.id))).slice(0, Math.min(count, pool.length));
 }
 export function presentQuestion(question: QuizQuestion, profile: LearnerProfile) { return { prompt: question.promptByLanguage?.[profile.languageLevel] ?? question.prompt, explanation: question.explanationByLanguage?.[profile.languageLevel] ?? question.explanation, terminology: profile.showScientificTerms ? (question.terminology ?? []) : [] }; }
