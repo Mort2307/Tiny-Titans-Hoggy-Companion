@@ -1,0 +1,71 @@
+import type { LearningTopic } from "../types/Learning";
+
+export const learningTopics: LearningTopic[] = [
+  {
+    id: "why-snakes-shed",
+    title: "Why Do Snakes Shed?",
+    icon: "🐍",
+    category: "Husbandry",
+    summary: "Understand what shedding is, why it happens, when to expect it and what a healthy shed can look like.",
+    sections: {
+      what: "Shedding, or ecdysis, is the process where a snake removes its old outer skin and reveals a new layer underneath. The new skin has already formed before the old layer comes away.",
+      why: "A snake's outer skin cannot simply stretch forever as the animal grows. Replacing it allows the snake to maintain a functional protective outer layer while its body gets larger.",
+      who: "All snakes shed. Younger snakes usually shed more often because they are growing faster, while adults may shed less frequently. Individual patterns vary.",
+      when: "A shed can happen whenever growth and skin replacement require it. Before shedding, a snake may become duller and its eyes can look cloudy or bluish. These signs are part of the normal pre-shed process.",
+      how: "New skin forms beneath the old layer. Fluid helps separate the layers, then the snake uses movement and contact with surfaces to work the old skin loose and away from the body.",
+      examples: "A complete shed can come away in one piece, but a shed in several pieces is not automatically an emergency. Look at the individual snake, enclosure conditions and whether retained skin remains around areas such as the eyes or tail tip."
+    },
+    questions: [
+      { id: "shed-1", prompt: "Why does a snake shed?", options: ["Its old outer skin cannot grow with it", "It needs to clean its stomach", "It loses all of its scales", "It is trying to cool down"], correctIndex: 0, explanation: "The outer skin must be replaced as the snake grows.", difficulty: 1 },
+      { id: "shed-2", prompt: "What is ecdysis?", options: ["Feeding", "Shedding", "Brumation", "Breathing"], correctIndex: 1, explanation: "Ecdysis is the biological term for shedding the old outer skin.", difficulty: 1 },
+      { id: "shed-3", prompt: "Which can be a normal sign that a snake is approaching a shed?", options: ["Cloudier-looking eyes", "A broken jaw", "Permanent loss of scales", "Blue tongue"], correctIndex: 0, explanation: "Cloudy or bluish-looking eyes can occur during the pre-shed phase.", difficulty: 2 },
+      { id: "shed-4", prompt: "Where does the new skin form?", options: ["Under the old skin", "Inside the stomach", "Only on the head", "Only after the old skin falls off"], correctIndex: 0, explanation: "The new outer layer forms underneath the old layer before the shed occurs.", difficulty: 2 },
+      { id: "shed-5", prompt: "Which statement is most accurate?", options: ["Every snake must shed exactly once per month", "Young snakes often shed more frequently because they grow faster", "Adults never shed", "A shed in pieces always means a serious disease"], correctIndex: 1, explanation: "Shedding frequency varies, and growing young snakes often shed more frequently.", difficulty: 3 }
+    ]
+  },
+  {
+    id: "what-is-polygenic",
+    title: "What Does Polygenic Mean?",
+    icon: "🧬",
+    category: "Genetics",
+    summary: "Learn why some traits involve contributions from multiple genes instead of a simple one-gene inheritance pattern.",
+    sections: {
+      what: "Polygenic means a trait is influenced by multiple genes or genetic factors rather than being controlled by one single gene with a simple inheritance pattern.",
+      why: "Multiple genetic factors can combine to influence how a trait appears. This is why some characteristics do not behave like a straightforward dominant or recessive morph.",
+      who: "Polygenic inheritance is a genetic concept that applies across many organisms. In reptile breeding, it is particularly useful when discussing traits or line-bred characteristics that do not fit a simple Mendelian box.",
+      when: "Use the term when multiple genetic factors contribute to the phenotype. Do not use it simply because a trait is difficult to predict.",
+      how: "Each contributing genetic factor can influence the final phenotype. The combined effects can make outcomes more variable than a single-gene visual/het model.",
+      examples: "A line-bred trait can show variation across offspring because multiple factors contribute to the appearance. That is different from claiming a simple recessive gene where two copies produce a predictable visual."
+    },
+    questions: [
+      { id: "poly-1", prompt: "What does polygenic mean?", options: ["Influenced by multiple genes", "Caused by no genes", "Always a recessive gene", "A synonym for visual"], correctIndex: 0, explanation: "Polygenic describes traits influenced by multiple genes or genetic factors.", difficulty: 1 },
+      { id: "poly-2", prompt: "Is polygenic inheritance automatically the same as a simple recessive morph?", options: ["Yes", "No", "Only in hatchlings", "Only in Super morphs"], correctIndex: 1, explanation: "Polygenic traits do not follow the same simple one-gene recessive model.", difficulty: 2 },
+      { id: "poly-3", prompt: "Why can polygenic traits be harder to predict?", options: ["Several contributing factors can combine", "Snakes choose their genes", "The genes disappear during incubation", "Polygenic means random with no genetics involved"], correctIndex: 0, explanation: "Multiple contributing factors can produce more variable outcomes.", difficulty: 3 }
+    ]
+  },
+  {
+    id: "what-is-a-het",
+    title: "What Is a Het?",
+    icon: "🧬",
+    category: "Genetics",
+    summary: "Understand heterozygous, visual and carrier terminology without confusing incomplete-dominant traits with recessive hets.",
+    sections: {
+      what: "Het is short for heterozygous. In a simple recessive model, an animal carrying one copy of a recessive allele may look normal but can pass that allele to offspring.",
+      why: "Knowing whether a snake carries a recessive allele changes breeding predictions. It is especially important to distinguish a true recessive carrier from traits that do not produce a conventional het state.",
+      who: "Breeders, keepers and anyone using a genetics calculator will encounter het terminology when discussing recessive inheritance.",
+      when: "A het label is meaningful only when the underlying genetic model supports it. You cannot simply add 'het' to every morph name.",
+      how: "For a simple recessive gene, a heterozygous animal has one copy of the allele. Two copies can produce the visual phenotype in that model, while a single copy is the carrier state.",
+      examples: "A snake can be 100% het for a simple recessive trait when its genotype is known, while a 50% or 66% possible het describes probability rather than certainty. An incomplete-dominant trait such as Conda does not have a conventional het Conda state."
+    },
+    questions: [
+      { id: "het-1", prompt: "What does 'het' usually mean?", options: ["Heterozygous", "Healthy", "Hatchling", "Heat tolerant"], correctIndex: 0, explanation: "Het is shorthand for heterozygous.", difficulty: 1 },
+      { id: "het-2", prompt: "Can every morph have a conventional het state?", options: ["Yes", "No", "Only Super morphs", "Only line-bred traits"], correctIndex: 1, explanation: "A conventional het state depends on the inheritance model. Incomplete-dominant traits do not work like simple recessives.", difficulty: 2 },
+      { id: "het-3", prompt: "What does a 50% possible het mean?", options: ["The snake is definitely het", "There is a calculated 50% probability the snake carries the allele", "The snake is visual", "The snake has two copies"], correctIndex: 1, explanation: "A possible het percentage expresses probability, not certainty."
+        , difficulty: 3 }
+    ]
+  }
+];
+
+export function getLearningTopic(id: string): LearningTopic | undefined {
+  return learningTopics.find((topic) => topic.id === id);
+}
