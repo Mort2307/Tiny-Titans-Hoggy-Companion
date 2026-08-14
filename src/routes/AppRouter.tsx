@@ -19,6 +19,7 @@ import ReportIssue from "../pages/ReportIssue";
 import Founder from "../pages/Founder";
 import CreatorAdmin from "../pages/CreatorAdmin";
 import EducatorDashboard from "../pages/EducatorDashboard";
+import AdaptiveLearningHub from "../pages/AdaptiveLearningHub";
 import { useAuth } from "../context/AuthContext";
 
 function KnowledgeBase() {
@@ -41,6 +42,7 @@ function AppRouterGate() {
     <Route path="/morph-library" element={<MorphLibrary />} />
     <Route path="/calculator" element={<Calculator />} />
     <Route path="/knowledge-base" element={<KnowledgeBase />} />
+    <Route path="/learn" element={<AdaptiveLearningHub />} />
     <Route path="/feeding" element={<FeedingTracker />} />
     <Route path="/feeding/:id" element={<FeedingTracker />} />
     <Route path="/shedding" element={<ShedTracker />} />
