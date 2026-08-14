@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import BackHomeButton from "../components/BackHomeButton";
 import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
 import { reptifitMorphCatalog } from "../data/reptifitMorphCatalog";
 import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
+import { submitMorphImage, type MorphCreditMode } from "../services/morphSubmissionService";
 import "../styles/morphLibrary.css";
 
 function MorphDetail({ morph, onClose }: { morph: MorphReferenceEntry; onClose: () => void }) {
@@ -64,53 +65,121 @@ function asReferenceEntry(entry: MasterMorphDefinition): MorphReferenceEntry {
   return entry as MorphReferenceEntry;
 }
 
+function MorphSubmissionDialog({ onClose }: { onClose: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [morphName, setMorphName] = useState("");
+  const [description, setDescription] = useState("");
+  const [observedTraits, setObservedTraits] = useState("");
+  const [creditMode, setCreditMode] = useState<MorphCreditMode>("anonymous");
+  const [creditName, setCreditName] = useState("");
+  const [creditSocial, setCreditSocial] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    if (!image) {
+      setError("Please add a clear photo for review.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await submitMorphImage({ morphName, description, observedTraits, creditMode, creditName, creditSocial, image });
+      setSent(true);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "We couldn't submit the morph image. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}>
+      <article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="morph-submit-title" onMouseDown={(event) => event.stopPropagation()}>
+        <button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close morph submission">×</button>
+        {sent ? (
+          <>
+            <div className="morph-detail__eyebrow">🐍 TINY TITANS · SUBMISSION RECEIVED</div>
+            <h2>Thanks — it is in review.</h2>
+            <p className="morph-detail__description">Your photo has been submitted for Creator review. If it is accepted, it can help improve the Tiny Titans morph database. Nothing is added as a confirmed morph automatically.</p>
+            <button className="morph-detail__close" type="button" onClick={onClose}>Done</button>
+          </>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div className="morph-detail__eyebrow">🐍 TINY TITANS · MORPH SUBMISSION</div>
+            <h2 id="morph-submit-title">Submit a morph image</h2>
+            <p className="morph-detail__description">Help build the database. Every submission is reviewed before it can become part of the confirmed library.</p>
+
+            <label>Morph name or description<input value={morphName} onChange={(event) => setMorphName(event.target.value)} placeholder="e.g. Lavender, Super Arctic, unusual combination…" required /></label>
+            <label>What are we looking at?<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the animal, visual traits and why you believe this is the morph." rows={4} required /></label>
+            <label>Known genetic information <span>(optional)</span><textarea value={observedTraits} onChange={(event) => setObservedTraits(event.target.value)} placeholder="Parent genetics, hets, pairing, breeder information, etc." rows={3} /></label>
+
+            <div className="morph-detail__section">
+              <h3>Photo</h3>
+              <p>Use a clear image showing the snake's overall appearance. The image is compressed before upload.</p>
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={(event) => setImage(event.target.files?.[0] ?? null)} required />
+              {image && <small>Selected: {image.name}</small>}
+            </div>
+
+            <div className="morph-detail__section">
+              <h3>Credit</h3>
+              <p>Credit is completely optional. Choose how, if at all, you'd like to be credited if the submission is accepted.</p>
+              <div className="morph-detail__badges">
+                {(["name", "social", "anonymous"] as MorphCreditMode[]).map((mode) => (
+                  <button key={mode} type="button" className={creditMode === mode ? "is-active" : ""} onClick={() => setCreditMode(mode)}>
+                    {mode === "name" ? "My name" : mode === "social" ? "Social media" : "Anonymous"}
+                  </button>
+                ))}
+              </div>
+              {creditMode === "name" && <input value={creditName} onChange={(event) => setCreditName(event.target.value)} placeholder="Name to display" required />}
+              {creditMode === "social" && <input value={creditSocial} onChange={(event) => setCreditSocial(event.target.value)} placeholder="@handle or social link" required />}
+            </div>
+
+            {error && <p role="alert">{error}</p>}
+            <button type="submit" disabled={busy}>{busy ? "Submitting for review…" : "Submit for review"}</button>
+            <button type="button" onClick={onClose} disabled={busy}>Cancel</button>
+          </form>
+        )}
+      </article>
+    </div>
+  );
+}
+
 export default function MorphLibrary() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "gene" | "combination" | "polygenic" | "line-bred">("all");
   const [selected, setSelected] = useState<MorphReferenceEntry | null>(null);
+  const [showSubmission, setShowSubmission] = useState(false);
 
   const entries = useMemo<MorphReferenceEntry[]>(() => {
     const byName = new Map<string, MorphReferenceEntry>();
-
     [...masterMorphs, ...reptifitMorphCatalog].forEach((entry) => {
       const key = normalise(entry.name);
       if (!byName.has(key)) byName.set(key, asReferenceEntry(entry));
     });
-
     return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, []);
 
   const filtered = useMemo(() => {
     const needle = normalise(query);
-
-    // Exact-first search: if the user types "conda", show Conda/its exact
-    // alias match rather than making them scroll through every Anaconda combo.
     const exactMatches = needle
-      ? entries.filter((entry) =>
-          normalise(entry.name) === needle ||
-          (entry.aliases ?? []).some((alias) => normalise(alias) === needle),
-        )
+      ? entries.filter((entry) => normalise(entry.name) === needle || (entry.aliases ?? []).some((alias) => normalise(alias) === needle))
       : [];
-
     const searchPool = exactMatches.length > 0
       ? exactMatches
       : entries.filter((entry) => {
           if (!needle) return true;
-          const searchable = [
-            entry.name,
-            ...(entry.aliases ?? []),
-            ...(entry.contains ?? []),
-          ].map(normalise);
+          const searchable = [entry.name, ...(entry.aliases ?? []), ...(entry.contains ?? [])].map(normalise);
           return searchable.some((value) => value.includes(needle));
         });
-
-    return searchPool.filter((entry) => {
-      return filter === "all"
-        || (filter === "gene" && (entry.kind === "Gene" || entry.kind === "Super"))
-        || (filter === "combination" && entry.kind === "Combination")
-        || (filter === "polygenic" && entry.inheritance === "Polygenic")
-        || (filter === "line-bred" && entry.inheritance === "Line-bred");
-    });
+    return searchPool.filter((entry) => filter === "all"
+      || (filter === "gene" && (entry.kind === "Gene" || entry.kind === "Super"))
+      || (filter === "combination" && entry.kind === "Combination")
+      || (filter === "polygenic" && entry.inheritance === "Polygenic")
+      || (filter === "line-bred" && entry.inheritance === "Line-bred"));
   }, [entries, filter, query]);
 
   return (
@@ -120,6 +189,8 @@ export default function MorphLibrary() {
         <div className="morph-library__eyebrow">🐍 TINY TITANS · WESTERN HOGNOSE</div>
         <h1>Morph Library</h1>
         <p>Explore genes, super forms and recognised combinations. Tap any entry to open its full genetics record.</p>
+        <button type="button" onClick={() => setShowSubmission(true)}>📷 Submit a morph image</button>
+        <small>Help expand the database. Submissions are reviewed before anything becomes a confirmed library entry.</small>
       </header>
 
       <div className="morph-library__controls">
@@ -132,7 +203,6 @@ export default function MorphLibrary() {
       </div>
 
       <div className="morph-library__count">Showing <strong>{filtered.length}</strong> of <strong>{entries.length}</strong> records</div>
-
       <div className="morph-grid morph-library__grid">
         {filtered.map((morph) => (
           <button className="morph-card morph-card--interactive" key={morph.geneId} type="button" onClick={() => setSelected(morph)}>
@@ -147,6 +217,7 @@ export default function MorphLibrary() {
 
       {filtered.length === 0 && <div className="welcome-card"><h2>No matching morphs</h2><p>Try a different name, alias or category.</p></div>}
       {selected && <MorphDetail morph={selected} onClose={() => setSelected(null)} />}
+      {showSubmission && <MorphSubmissionDialog onClose={() => setShowSubmission(false)} />}
     </main>
   );
 }
