@@ -5,22 +5,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-
-import {
-  getAuth,
-  onAuthStateChanged,
-  type User,
-} from "firebase/auth";
-
-import {
-  doc,
-  getDoc,
-  getFirestore,
-  serverTimestamp,
-  updateDoc,
-} from "firebase/firestore";
-
+import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
+import { doc, getDoc, getFirestore, serverTimestamp, updateDoc } from "firebase/firestore";
 import app from "../firebase/config";
+import type { AgeBand, EducatorProfile, LearningLevel, ProfileType } from "../types/Profile";
 
 export type UserRole = "user" | "admin" | "moderator";
 export type UserCategory = "adult" | "child";
@@ -32,10 +20,14 @@ export type UserProfile = {
   displayName: string;
   email: string;
   category: UserCategory;
+  ageBand?: AgeBand;
+  learningLevel?: LearningLevel;
+  profileType: ProfileType;
   experienceLevel: ExperienceLevel;
   interests: UserInterest[];
   role: UserRole;
   setupComplete: boolean;
+  educatorProfile?: EducatorProfile;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -57,35 +49,61 @@ function isValidInterest(value: unknown): value is UserInterest {
   return value === "keeper" || value === "breeder" || value === "breeder-seller" || value === "learner";
 }
 
+function isProfileType(value: unknown): value is ProfileType {
+  return value === "keeper" || value === "learner" || value === "educator" || value === "professional" || value === "creator";
+}
+
+function isAgeBand(value: unknown): value is AgeBand {
+  return value === "7-10" || value === "11-14" || value === "15-18" || value === "adult";
+}
+
+function isLearningLevel(value: unknown): value is LearningLevel {
+  return value === "explorer" || value === "learner" || value === "student" || value === "adult";
+}
+
+function loadEducatorProfile(value: unknown): EducatorProfile | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const data = value as Record<string, unknown>;
+  const teachingLevel = ["primary", "secondary", "college", "university", "homeschool", "club", "other"].includes(String(data.teachingLevel))
+    ? data.teachingLevel as EducatorProfile["teachingLevel"]
+    : "other";
+  const subjects = Array.isArray(data.subjects) ? data.subjects.filter((item): item is string => typeof item === "string") : [];
+  const studentAgeBands = Array.isArray(data.studentAgeBands) ? data.studentAgeBands.filter(isAgeBand) : [];
+  const reptileExperience = data.reptileExperience === "advanced" ? "advanced" : data.reptileExperience === "intermediate" ? "intermediate" : "beginner";
+  return {
+    teachingLevel,
+    subjects,
+    studentAgeBands,
+    reptileExperience,
+    organisationName: typeof data.organisationName === "string" ? data.organisationName : undefined,
+    country: typeof data.country === "string" ? data.country : undefined,
+    verified: data.verified === true,
+  };
+}
+
 async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> {
   const profileRef = doc(db, "users", firebaseUser.uid);
   const profileSnapshot = await getDoc(profileRef);
-
   if (!profileSnapshot.exists()) return null;
-
   const profileData = profileSnapshot.data();
   const rawInterests = Array.isArray(profileData.interests) ? profileData.interests : [];
   const interests = rawInterests.filter(isValidInterest);
-
+  const profileType: ProfileType = isProfileType(profileData.profileType)
+    ? profileData.profileType
+    : interests.includes("learner") && interests.length === 1 ? "learner" : "keeper";
   return {
     uid: String(profileData.uid ?? firebaseUser.uid),
     displayName: String(profileData.displayName ?? firebaseUser.displayName ?? ""),
     email: String(profileData.email ?? firebaseUser.email ?? ""),
     category: profileData.category === "child" ? "child" : "adult",
-    experienceLevel:
-      profileData.experienceLevel === "intermediate"
-        ? "intermediate"
-        : profileData.experienceLevel === "pro"
-          ? "pro"
-          : "beginner",
+    ageBand: isAgeBand(profileData.ageBand) ? profileData.ageBand : undefined,
+    learningLevel: isLearningLevel(profileData.learningLevel) ? profileData.learningLevel : undefined,
+    profileType,
+    experienceLevel: profileData.experienceLevel === "intermediate" ? "intermediate" : profileData.experienceLevel === "pro" ? "pro" : "beginner",
     interests,
-    role:
-      profileData.role === "admin"
-        ? "admin"
-        : profileData.role === "moderator"
-          ? "moderator"
-          : "user",
+    role: profileData.role === "admin" ? "admin" : profileData.role === "moderator" ? "moderator" : "user",
     setupComplete: profileData.setupComplete === true,
+    educatorProfile: loadEducatorProfile(profileData.educatorProfile),
     createdAt: profileData.createdAt,
     updatedAt: profileData.updatedAt,
   };
@@ -93,11 +111,8 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> 
 
 async function recordActivity(firebaseUser: User): Promise<void> {
   try {
-    await updateDoc(doc(db, "users", firebaseUser.uid), {
-      lastActiveAt: serverTimestamp(),
-    });
+    await updateDoc(doc(db, "users", firebaseUser.uid), { lastActiveAt: serverTimestamp() });
   } catch (error) {
-    // Activity tracking must never prevent a user from entering the app.
     console.warn("Tiny Titans: unable to update activity timestamp", error);
   }
 }
@@ -111,12 +126,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   async function refreshProfile(): Promise<UserProfile | null> {
     const auth = getAuth(app);
     const currentUser = auth.currentUser;
-
-    if (!currentUser) {
-      setProfile(null);
-      return null;
-    }
-
+    if (!currentUser) { setProfile(null); return null; }
     setProfileLoading(true);
     try {
       const loadedProfile = await loadUserProfile(currentUser);
@@ -127,26 +137,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error("Tiny Titans: unable to refresh user profile", error);
       setProfile(null);
       return null;
-    } finally {
-      setProfileLoading(false);
-    }
+    } finally { setProfileLoading(false); }
   }
 
   useEffect(() => {
     const auth = getAuth(app);
-
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       setProfile(null);
-
-      if (!firebaseUser) {
-        setProfileLoading(false);
-        setLoading(false);
-        return;
-      }
-
+      if (!firebaseUser) { setProfileLoading(false); setLoading(false); return; }
       setProfileLoading(true);
-
       try {
         const loadedProfile = await loadUserProfile(firebaseUser);
         setProfile(loadedProfile);
@@ -159,24 +159,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(false);
       }
     });
-
     return unsubscribe;
   }, []);
 
-  const value: AuthContextType = {
-    user,
-    profile,
-    loading,
-    profileLoading,
-    isAuthenticated: user !== null,
-    refreshProfile,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, profile, loading, profileLoading, isAuthenticated: user !== null, refreshProfile }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used inside an AuthProvider");
+  if (!context) throw new Error("useAuth must be used inside AuthProvider");
   return context;
 }
