@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "validate:morphs": "node scripts/validate-morph-database.mjs",
-    "build": "npm run validate:morphs && tsc -b && vite build",
+    "validate:learning": "node scripts/validate-learning-content.mjs",
+    "build": "npm run validate:morphs && npm run validate:learning && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
