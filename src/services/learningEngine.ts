@@ -37,11 +37,20 @@ export function selectQuestions(topic: LearningTopic, progress: LearningProgress
   const current = topicProgress(progress, topic.id);
   const pool = topic.questions.filter((question) => bankForQuestion(question) === current.currentBank);
   if (!pool.length) return [];
-  const missed = shuffle(pool.filter((q) => current.missedQuestionIds.includes(q.id)));
-  if (missed.length) return missed.slice(0, Math.min(count, missed.length));
-  const unseen = shuffle(pool.filter((q) => !current.seenQuestionIds.includes(q.id)));
-  if (unseen.length) return unseen.slice(0, Math.min(count, unseen.length));
-  return shuffle(pool.filter((q) => !current.recentQuestionIds.includes(q.id))).slice(0, Math.min(count, pool.length));
+
+  const take = (items: QuizQuestion[]) => shuffle(items).slice(0, Math.min(count, items.length));
+  const missed = pool.filter((q) => current.missedQuestionIds.includes(q.id));
+  if (missed.length) return take(missed);
+
+  const unseen = pool.filter((q) => !current.seenQuestionIds.includes(q.id));
+  if (unseen.length) return take(unseen);
+
+  const fresh = pool.filter((q) => !current.recentQuestionIds.includes(q.id));
+  if (fresh.length) return take(fresh);
+
+  // Every question in a small bank can eventually enter the recent window.
+  // Never strand the learner with an empty challenge: recycle the oldest eligible bank questions.
+  return take(pool);
 }
 
 export function presentQuestion(question: QuizQuestion, profile: LearnerProfile) {
@@ -50,6 +59,7 @@ export function presentQuestion(question: QuizQuestion, profile: LearnerProfile)
     explanation: question.explanationByLanguage?.[profile.languageLevel] ?? question.explanation,
     terminology: profile.showScientificTerms ? (question.terminology ?? []) : [],
     challengeType: question.challengeType ?? "knowledge" as ChallengeType,
+    challengeData: question.challengeData,
   };
 }
 
