@@ -41,9 +41,12 @@ for (const file of files) {
 
     if (!bankMatch && !difficultyMatch) errors.push(`${location} has neither a bank nor a difficulty.`);
     if (correctMatch && optionsMatch) {
-      const optionCount = optionsMatch[1].split(/,(?=\s*["])/).length;
+      const rawOptions = optionsMatch[1];
+      const optionValues = [...rawOptions.matchAll(/"((?:\\.|[^"\\])*)"/g)].map((match) => match[1].trim().toLowerCase());
       const correctIndex = Number(correctMatch[1]);
-      if (correctIndex < 0 || correctIndex >= optionCount) errors.push(`${location} has correctIndex ${correctIndex} but appears to have ${optionCount} options.`);
+      if (optionValues.length < 2) errors.push(`${location} has fewer than two detectable answer options.`);
+      if (correctIndex < 0 || correctIndex >= optionValues.length) errors.push(`${location} has correctIndex ${correctIndex} but appears to have ${optionValues.length} options.`);
+      if (new Set(optionValues).size !== optionValues.length) errors.push(`${location} contains duplicate answer options.`);
     }
     if (!explanationMatch?.[1]?.trim()) errors.push(`${location} has no usable explanation.`);
   }
