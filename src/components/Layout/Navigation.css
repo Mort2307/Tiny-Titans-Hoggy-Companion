@@ -1,27 +1,311 @@
-.app-navigation{width:100%;box-sizing:border-box;background:var(--surface);border-bottom:2px solid rgba(0,174,255,.45);box-shadow:0 4px 15px rgba(0,0,0,.2);position:relative;z-index:100;}
-.app-navigation-inner{width:100%;max-width:1400px;margin:0 auto;box-sizing:border-box;min-width:0;}
-.app-navigation-list{width:100%;margin:0;padding:10px 15px;box-sizing:border-box;list-style:none;display:flex;align-items:stretch;justify-content:center;gap:8px;min-width:max-content;}
-.app-navigation-item{flex:0 0 auto;margin:0;padding:0;}
-.app-navigation-link{min-height:48px;padding:8px 14px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--text);text-decoration:none;font-size:.92rem;font-weight:700;white-space:nowrap;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
-.app-navigation-icon{display:inline-flex;align-items:center;justify-content:center;font-size:1.15rem;line-height:1;flex-shrink:0;}
-.app-navigation-label{color:inherit;line-height:1.1;}
-@media (hover:hover){.app-navigation-link{transition:background .2s ease,border-color .2s ease,color .2s ease,transform .15s ease,box-shadow .2s ease}.app-navigation-link:hover{color:var(--text);background:rgba(0,174,255,.12);border-color:rgba(0,174,255,.45);box-shadow:0 0 12px rgba(0,174,255,.15);transform:translateY(-1px)}}
-.app-navigation-link.active{color:var(--background);background:var(--accent);border-color:var(--accent);box-shadow:0 0 15px rgba(0,174,255,.35);}
-.app-navigation-link.active .app-navigation-label,.app-navigation-link.active .app-navigation-icon{color:var(--background);}
-@media (hover:hover){.app-navigation-link.active:hover{color:var(--background);background:var(--secondary);border-color:var(--secondary);box-shadow:0 0 18px rgba(245,182,66,.35)}.app-navigation-link.active:hover .app-navigation-label,.app-navigation-link.active:hover .app-navigation-icon{color:var(--background)}}
-.app-navigation-link:focus-visible{outline:2px solid var(--secondary);outline-offset:3px;}
-
-/* Tablet/mobile: keep the top navigation horizontally scrollable without stealing taps from links or vertical page scrolling. */
-@media (max-width:1000px){
- .app-navigation{overflow:hidden;}
- .app-navigation-inner{overflow:hidden;}
- .app-navigation-list{justify-content:flex-start;padding:9px 12px;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:rgba(0,174,255,.7) rgba(0,174,255,.1);-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;overscroll-behavior-y:none;scroll-snap-type:x proximity;}
- .app-navigation-list::-webkit-scrollbar{height:6px;}
- .app-navigation-list::-webkit-scrollbar-track{background:rgba(0,174,255,.1);}
- .app-navigation-list::-webkit-scrollbar-thumb{background:rgba(0,174,255,.65);border-radius:999px;}
- .app-navigation-item{scroll-snap-align:start;}
- .app-navigation-link{min-height:48px;padding:8px 12px;font-size:.88rem;touch-action:manipulation;}
+.app-navigation {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border-bottom: 2px solid rgba(0, 174, 255, 0.45);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 100;
 }
-@media (max-width:700px){.app-navigation-list{gap:6px;padding:8px 10px}.app-navigation-link{min-height:50px;padding:8px 13px;border-radius:11px;font-size:.84rem}.app-navigation-icon{font-size:1.1rem}}
-@media (max-width:400px){.app-navigation-list{gap:5px;padding:7px 8px}.app-navigation-link{min-height:48px;padding:8px 11px;font-size:.8rem}.app-navigation-icon{font-size:1rem}}
-@media (prefers-reduced-motion:reduce){.app-navigation-link{transition:none}.app-navigation-list{scroll-behavior:auto}}
+
+.app-navigation-inner {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.app-navigation-list {
+  width: 100%;
+  margin: 0;
+  padding: 10px 15px;
+  box-sizing: border-box;
+  list-style: none;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.app-navigation-item {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+}
+
+.app-navigation-link {
+  min-height: 48px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-navigation-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.app-navigation-label {
+  color: inherit;
+  line-height: 1.1;
+}
+
+@media (hover: hover) {
+  .app-navigation-link {
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.15s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .app-navigation-link:hover {
+    color: var(--text);
+    background: rgba(0, 174, 255, 0.12);
+    border-color: rgba(0, 174, 255, 0.45);
+    box-shadow: 0 0 12px rgba(0, 174, 255, 0.15);
+    transform: translateY(-1px);
+  }
+}
+
+.app-navigation-link.active {
+  color: var(--background);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 15px rgba(0, 174, 255, 0.35);
+}
+
+.app-navigation-link.active .app-navigation-label,
+.app-navigation-link.active .app-navigation-icon {
+  color: var(--background);
+}
+
+@media (hover: hover) {
+  .app-navigation-link.active:hover {
+    color: var(--background);
+    background: var(--secondary);
+    border-color: var(--secondary);
+    box-shadow: 0 0 18px rgba(245, 182, 66, 0.35);
+  }
+
+  .app-navigation-link.active:hover .app-navigation-label,
+  .app-navigation-link.active:hover .app-navigation-icon {
+    color: var(--background);
+  }
+}
+
+.app-navigation-link:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   MOBILE / TABLET NAVIGATION
+   ========================================================= */
+
+@media (max-width: 1000px) {
+  .app-navigation {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .app-navigation-inner {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .app-navigation-list {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+
+    display: flex;
+    justify-content: flex-start;
+    align-items: stretch;
+
+    gap: 6px;
+    padding: 9px 12px;
+
+    box-sizing: border-box;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    min-width: 0;
+
+    /*
+     * Keep horizontal navigation inside its own scroll area.
+     */
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+
+    /*
+     * Native iOS momentum scrolling.
+     */
+    -webkit-overflow-scrolling: touch;
+
+    /*
+     * Let Safari/Android determine the gesture naturally.
+     * Do NOT force pan-x here.
+     */
+    touch-action: auto;
+
+    /*
+     * Avoid aggressive snapping which can fight
+     * short finger swipes.
+     */
+    scroll-snap-type: none;
+
+    /*
+     * Firefox.
+     */
+    scrollbar-width: thin;
+    scrollbar-color:
+      rgba(0, 174, 255, 0.7)
+      rgba(0, 174, 255, 0.1);
+
+    /*
+     * Keep the row continuous.
+     */
+    white-space: nowrap;
+
+    /*
+     * Prevent accidental text selection while dragging.
+     */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Safari / iOS / Chrome scrollbar */
+  .app-navigation-list::-webkit-scrollbar {
+    height: 7px;
+  }
+
+  .app-navigation-list::-webkit-scrollbar-track {
+    background: rgba(0, 174, 255, 0.1);
+    border-radius: 999px;
+  }
+
+  .app-navigation-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 174, 255, 0.65);
+    border-radius: 999px;
+  }
+
+  .app-navigation-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 174, 255, 0.9);
+  }
+
+  .app-navigation-item {
+    flex: 0 0 auto;
+    scroll-snap-align: none;
+  }
+
+  .app-navigation-link {
+    min-height: 48px;
+    padding: 8px 12px;
+
+    flex: 0 0 auto;
+
+    font-size: 0.88rem;
+
+    touch-action: manipulation;
+
+    cursor: pointer;
+
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+/* =========================================================
+   SMALLER PHONES
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .app-navigation-list {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .app-navigation-link {
+    min-height: 50px;
+    padding: 8px 13px;
+    border-radius: 11px;
+    font-size: 0.84rem;
+  }
+
+  .app-navigation-icon {
+    font-size: 1.1rem;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 400px) {
+  .app-navigation-list {
+    gap: 5px;
+    padding: 7px 8px;
+  }
+
+  .app-navigation-link {
+    min-height: 48px;
+    padding: 8px 11px;
+    font-size: 0.8rem;
+  }
+
+  .app-navigation-icon {
+    font-size: 1rem;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .app-navigation-link {
+    transition: none;
+  }
+
+  .app-navigation-list {
+    scroll-behavior: auto;
+  }
+}
+
+/* =========================================================
+   LANDSCAPE PHONES
+   ========================================================= */
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .app-navigation-list {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .app-navigation-link {
+    min-height: 44px;
+  }
+}
