@@ -1,20 +1,54 @@
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { useAuth } from "../context/AuthContext";
+import { app } from "../firebase/config";
 import "../styles/CreatorTools.css";
 
 const supportOptions = [
-  { amount: 2, label: "Little Titan", icon: "🐍" },
-  { amount: 5, label: "Growing Titan", icon: "🐍" },
-  { amount: 10, label: "Titan Champion", icon: "👑" },
-];
+  { key: "little", amount: 5, label: "Little Titan", icon: "🐍" },
+  { key: "growing", amount: 10, label: "Growing Titan", icon: "🐍" },
+  { key: "champion", amount: 20, label: "Champion Titan", icon: "👑" },
+  { key: "legendary", amount: 40, label: "Legendary Titan", icon: "🏆" },
+  { key: "broken", amount: 100, label: "You Just Broke Me", icon: "💀" },
+] as const;
+
+const functions = getFunctions(app, "europe-west2");
+const createTitanCheckout = httpsCallable<
+  { tier: string },
+  { url: string }
+>(functions, "createTitanCheckout");
 
 export default function BecomeATitan() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [selectedAmount, setSelectedAmount] = useState(5);
+  const [selectedTier, setSelectedTier] = useState("growing");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const selected = useMemo(
+    () => supportOptions.find((option) => option.key === selectedTier) ?? supportOptions[1],
+    [selectedTier]
+  );
 
   if (!user) return null;
+
+  const paymentState = searchParams.get("payment");
+
+  const handleCheckout = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const result = await createTitanCheckout({ tier: selected.key });
+      window.location.assign(result.data.url);
+    } catch (checkoutError) {
+      console.error("Titan checkout failed", checkoutError);
+      setError("We couldn't open Stripe Checkout. Please try again in a moment.");
+      setLoading(false);
+    }
+  };
 
   return (
     <section className="creator-tools-page">
@@ -26,6 +60,23 @@ export default function BecomeATitan() {
             <p>Help Tiny Titans grow.</p>
           </div>
         </div>
+
+        {paymentState === "success" && (
+          <div className="creator-success" role="status">
+            <strong>Thank you for becoming a Titan! 🐍💚</strong>
+            <span>
+              Stripe has confirmed your checkout. Your supporter status will be
+              added to your account when the payment confirmation reaches Tiny Titans.
+            </span>
+          </div>
+        )}
+
+        {paymentState === "cancelled" && (
+          <div className="creator-founder-callout" role="status">
+            <strong>Checkout cancelled.</strong>
+            <span>No payment was taken. You can choose a tier and try again whenever you like.</span>
+          </div>
+        )}
 
         <div className="creator-founder-grid">
           <div>
@@ -58,10 +109,11 @@ export default function BecomeATitan() {
           <div className="creator-actions" style={{ flexWrap: "wrap" }}>
             {supportOptions.map((option) => (
               <button
-                key={option.amount}
+                key={option.key}
                 type="button"
-                className={selectedAmount === option.amount ? "creator-primary" : ""}
-                onClick={() => setSelectedAmount(option.amount)}
+                className={selectedTier === option.key ? "creator-primary" : ""}
+                onClick={() => setSelectedTier(option.key)}
+                disabled={loading}
               >
                 {option.icon} {option.label} · £{option.amount}
               </button>
@@ -69,17 +121,26 @@ export default function BecomeATitan() {
           </div>
 
           <div className="creator-founder-callout">
-            <strong>Selected support: £{selectedAmount}</strong>
+            <strong>Selected support: £{selected.amount} · {selected.label}</strong>
             <span>
-              Payment checkout will be connected to this supporter flow before
-              it is enabled for live financial contributions.
+              You'll be taken to Stripe's secure hosted checkout. Tiny Titans
+              never handles or stores your card details.
             </span>
           </div>
 
+          {error && <div className="creator-error" role="alert">{error}</div>}
+
           <div className="creator-actions">
-            <button type="button" onClick={() => navigate(-1)}>Back</button>
-            <button type="button" className="creator-primary" disabled>
-              🐍 Support Tiny Titans
+            <button type="button" onClick={() => navigate(-1)} disabled={loading}>
+              Back
+            </button>
+            <button
+              type="button"
+              className="creator-primary"
+              onClick={handleCheckout}
+              disabled={loading}
+            >
+              {loading ? "Opening Stripe…" : `🐍 Support Tiny Titans · £${selected.amount}`}
             </button>
           </div>
         </div>
