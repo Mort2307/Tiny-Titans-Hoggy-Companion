@@ -1,9 +1,5 @@
 /* =========================================================
-   TINY TITANS — UNIVERSAL SELECTOR SCROLLING
-
-   Shared by MultiSelectDropdown and HetSelector.
-   The selector owns its scroll area so long genetics lists do
-   not drag the page underneath on iPhone/iPad/Android.
+   TINY TITANS — UNIVERSAL MORPH / HET SELECTOR SCROLLING
 ========================================================= */
 
 .multi-select {
@@ -35,15 +31,20 @@
   touch-action: manipulation;
 }
 
+/*
+ * The actual selector viewport.
+ * Native scrolling remains available, but the scrollbar is deliberately
+ * large enough to grab easily on both desktop and touch devices.
+ */
 .multi-select-options {
   display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 0;
-  max-height: min(48vh, 360px);
+  min-height: 120px;
+  max-height: min(55vh, 440px);
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -52,12 +53,10 @@
   touch-action: pan-y;
   scroll-behavior: auto;
   scrollbar-width: auto;
-  scrollbar-color: rgba(0, 174, 255, 0.9) rgba(0, 174, 255, 0.14);
+  scrollbar-color: rgba(0, 174, 255, 0.95) rgba(0, 174, 255, 0.18);
   scrollbar-gutter: stable;
   user-select: none;
   -webkit-user-select: none;
-
-  /* The list can be physically grabbed and dragged. */
   cursor: grab;
 }
 
@@ -65,26 +64,28 @@
   cursor: grabbing;
 }
 
+/* Large, obvious native scrollbar. */
 .multi-select-options::-webkit-scrollbar {
-  width: 11px;
+  width: 18px;
 }
 
 .multi-select-options::-webkit-scrollbar-track {
   background: rgba(0, 174, 255, 0.12);
   border-radius: 999px;
+  margin: 4px 0;
 }
 
 .multi-select-options::-webkit-scrollbar-thumb {
-  background: rgba(0, 174, 255, 0.85);
+  background: rgba(0, 174, 255, 0.9);
   border-radius: 999px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background-clip: padding-box;
-  min-height: 36px;
+  min-height: 64px;
 }
 
 .multi-select-options::-webkit-scrollbar-thumb:hover,
 .multi-select-options::-webkit-scrollbar-thumb:active {
-  background: rgba(0, 174, 255, 1);
+  background: var(--accent, rgba(0, 174, 255, 1));
   background-clip: padding-box;
 }
 
@@ -95,7 +96,7 @@
 }
 
 .multi-select-option {
-  min-height: 44px;
+  min-height: 48px;
   box-sizing: border-box;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -107,12 +108,13 @@
 
 @media (pointer: coarse) {
   .multi-select-options {
-    min-height: 80px;
-    max-height: min(52vh, 400px);
+    min-height: 150px;
+    max-height: min(58vh, 500px);
+    scrollbar-width: auto;
   }
 
   .multi-select-option {
-    min-height: 46px;
+    min-height: 50px;
   }
 }
 
@@ -120,11 +122,21 @@
   .multi-select-menu {
     width: 100%;
     max-width: 100%;
-    max-height: min(64vh, 480px);
+    max-height: min(68vh, 520px);
   }
 
   .multi-select-options {
-    max-height: min(50vh, 360px);
+    min-height: 150px;
+    max-height: min(58vh, 420px);
+  }
+
+  .multi-select-options::-webkit-scrollbar {
+    width: 20px;
+  }
+
+  .multi-select-options::-webkit-scrollbar-thumb {
+    min-height: 72px;
+    border-width: 3px;
   }
 }
 
