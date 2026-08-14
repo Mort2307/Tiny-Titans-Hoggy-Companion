@@ -1,0 +1,205 @@
+.snake-circle-grid {
+  grid-template-columns: repeat(auto-fill, minmax(92px, 110px));
+  justify-content: center;
+  gap: 22px 18px;
+  padding-top: 24px;
+}
+
+.snake-tile-circle {
+  appearance: none;
+  width: 100%;
+  min-height: 120px;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  transform: none;
+}
+
+.snake-tile-circle:hover,
+.snake-tile-circle:focus-visible {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.snake-tile-avatar {
+  width: 78px;
+  height: 78px;
+  flex: 0 0 78px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--glow-soft);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.snake-tile-circle:hover .snake-tile-avatar,
+.snake-tile-circle:focus-visible .snake-tile-avatar {
+  transform: scale(1.07);
+  border-color: var(--secondary);
+  box-shadow: var(--glow-medium);
+}
+
+.snake-tile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.snake-tile-avatar > span {
+  font-size: 34px;
+}
+
+.snake-tile-name {
+  width: 100%;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.snake-tile-sex {
+  min-height: 18px;
+  font-size: .85rem;
+  opacity: .85;
+}
+
+.page-subtitle {
+  max-width: 620px;
+  margin: 0 20px 8px;
+}
+
+.snake-tracker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, .58);
+  backdrop-filter: blur(3px);
+}
+
+.snake-tracker-panel {
+  position: relative;
+  width: min(430px, 94vw);
+  height: 100%;
+  overflow-y: auto;
+  padding: 28px 22px calc(28px + env(safe-area-inset-bottom));
+  background: var(--background);
+  border-left: 2px solid var(--accent);
+  box-shadow: -12px 0 35px rgba(0, 0, 0, .35);
+  animation: snake-panel-slide-in .22s ease-out;
+}
+
+@keyframes snake-panel-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.snake-panel-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.snake-panel-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 52px 24px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.snake-panel-avatar {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.snake-panel-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.snake-panel-avatar > span { font-size: 32px; }
+.snake-panel-identity h2 { margin: 0 0 4px; }
+.snake-panel-identity p { margin: 0; opacity: .8; }
+
+.snake-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 22px;
+}
+
+.snake-panel-actions button {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 800;
+  text-align: left;
+}
+
+.snake-panel-actions button:hover,
+.snake-panel-actions button:focus-visible {
+  border-color: var(--accent);
+  box-shadow: var(--glow-soft);
+}
+
+.snake-panel-actions button span {
+  min-width: 28px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--background);
+  text-align: center;
+  font-size: .85rem;
+}
+
+@media (max-width: 520px) {
+  .snake-circle-grid {
+    grid-template-columns: repeat(4, minmax(68px, 1fr));
+    gap: 18px 8px;
+  }
+
+  .snake-tile-circle { min-height: 104px; }
+  .snake-tile-avatar { width: 68px; height: 68px; flex-basis: 68px; }
+  .snake-tile-avatar > span { font-size: 30px; }
+  .snake-tracker-panel { width: 100%; border-left: 0; border-top: 2px solid var(--accent); }
+}
