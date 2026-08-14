@@ -1,14 +1,18 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { learningTopics } from "../data/learningTopics";
-import { getLearningProgress, knowledgeLevel, knowledgeScore } from "../services/learningEngine";
+import { challengeTypeLabels, getLearningProgress, knowledgeLevel, knowledgeScore } from "../services/learningEngine";
 import "../styles/TitansChallenge.css";
+
+const challengeFormats = Object.entries(challengeTypeLabels) as Array<[keyof typeof challengeTypeLabels, { label: string; icon: string }]>;
 
 export default function TitansChallenge() {
   const { user } = useAuth();
   const progress = getLearningProgress(user?.uid);
   const score = knowledgeScore(progress);
   const completed = learningTopics.filter((topic) => progress.topics[topic.id]?.completed).length;
+  const masteredBanks = learningTopics.reduce((sum, topic) => sum + (progress.topics[topic.id]?.masteredBanks.length ?? 0), 0);
+  const totalBanks = learningTopics.reduce((sum, topic) => sum + new Set(topic.questions.map((q) => q.bank ?? q.difficulty)).size, 0);
 
   return (
     <main className="page-container titans-challenge-page">
@@ -38,12 +42,22 @@ export default function TitansChallenge() {
             {learningTopics.map((topic) => {
               const topicProgress = progress.topics[topic.id];
               const mastery = topicProgress?.mastery ?? 0;
+              const banks = topicProgress?.masteredBanks.length ?? 0;
+              const topicBankCount = new Set(topic.questions.map((q) => q.bank ?? q.difficulty)).size;
               return <Link className="challenge-topic-row" key={topic.id} to={`/learn/topic/${topic.id}`}>
                 <span className="challenge-topic-icon">{topic.icon}</span>
-                <span className="challenge-topic-copy"><strong>{topic.title}</strong><small>{topic.category} · {topicProgress?.completed ? "Mastered" : mastery ? `${mastery}% demonstrated` : "Start at Foundation"}</small></span>
+                <span className="challenge-topic-copy"><strong>{topic.title}</strong><small>{topic.category} · {topicProgress?.completed ? "Mastered" : mastery ? `${mastery}% demonstrated` : "Start at Foundation"} · {banks}/{topicBankCount} banks</small></span>
                 <span className="challenge-topic-bar"><i style={{ width: `${mastery}%` }} /></span><b>{mastery}%</b><span aria-hidden="true">→</span>
               </Link>;
             })}
+          </div>
+          <div className="challenge-bank-summary"><span><strong>{masteredBanks}</strong> banks mastered</span><span><strong>{totalBanks}</strong> total banks</span><span><strong>{totalBanks ? Math.round(masteredBanks / totalBanks * 100) : 0}%</strong> bank completion</span></div>
+        </section>
+
+        <section className="challenge-progress-card">
+          <div className="challenge-section-heading"><div><p className="adaptive-eyebrow">Challenge formats</p><h2>How you'll prove what you know</h2></div></div>
+          <div className="challenge-format-grid">
+            {challengeFormats.map(([id, format]) => <div className="challenge-format-card" key={id}><span>{format.icon}</span><strong>{format.label}</strong><small>{id === "knowledge" ? "Core concept checks." : "Coming into the challenge bank as this format is introduced."}</small></div>)}
           </div>
         </section>
 
