@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import BackHomeButton from "../components/BackHomeButton";
-import { morphs } from "../data/morphs";
-import { hognoseMorphCatalog, type MorphReferenceEntry } from "../data/hognoseMorphCatalog";
+import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
+import { reptifitMorphCatalog } from "../data/reptifitMorphCatalog";
+import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
 import "../styles/morphLibrary.css";
 
 function MorphDetail({ morph, onClose }: { morph: MorphReferenceEntry; onClose: () => void }) {
@@ -57,6 +58,12 @@ function MorphDetail({ morph, onClose }: { morph: MorphReferenceEntry; onClose: 
   );
 }
 
+const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
+
+function asReferenceEntry(entry: MasterMorphDefinition): MorphReferenceEntry {
+  return entry as MorphReferenceEntry;
+}
+
 export default function MorphLibrary() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "gene" | "combination" | "polygenic" | "line-bred">("all");
@@ -64,20 +71,45 @@ export default function MorphLibrary() {
 
   const entries = useMemo<MorphReferenceEntry[]>(() => {
     const byName = new Map<string, MorphReferenceEntry>();
-    [...hognoseMorphCatalog, ...morphs].forEach((entry) => byName.set(entry.name.toLowerCase(), entry as MorphReferenceEntry));
+
+    [...masterMorphs, ...reptifitMorphCatalog].forEach((entry) => {
+      const key = normalise(entry.name);
+      if (!byName.has(key)) byName.set(key, asReferenceEntry(entry));
+    });
+
     return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, []);
 
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return entries.filter((entry) => {
-      const matchesQuery = !needle || [entry.name, ...(entry.aliases ?? []), entry.description ?? "", ...(entry.contains ?? [])].join(" ").toLowerCase().includes(needle);
-      const matchesFilter = filter === "all"
+    const needle = normalise(query);
+
+    // Exact-first search: if the user types "conda", show Conda/its exact
+    // alias match rather than making them scroll through every Anaconda combo.
+    const exactMatches = needle
+      ? entries.filter((entry) =>
+          normalise(entry.name) === needle ||
+          (entry.aliases ?? []).some((alias) => normalise(alias) === needle),
+        )
+      : [];
+
+    const searchPool = exactMatches.length > 0
+      ? exactMatches
+      : entries.filter((entry) => {
+          if (!needle) return true;
+          const searchable = [
+            entry.name,
+            ...(entry.aliases ?? []),
+            ...(entry.contains ?? []),
+          ].map(normalise);
+          return searchable.some((value) => value.includes(needle));
+        });
+
+    return searchPool.filter((entry) => {
+      return filter === "all"
         || (filter === "gene" && (entry.kind === "Gene" || entry.kind === "Super"))
         || (filter === "combination" && entry.kind === "Combination")
         || (filter === "polygenic" && entry.inheritance === "Polygenic")
         || (filter === "line-bred" && entry.inheritance === "Line-bred");
-      return matchesQuery && matchesFilter;
     });
   }, [entries, filter, query]);
 
