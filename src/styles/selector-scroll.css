@@ -1,14 +1,160 @@
-/* Tiny Titans — universal selector scrolling */
-.multi-select{position:relative;min-width:0;width:100%;}
-.multi-select-menu{position:relative;z-index:1000;width:100%;max-width:100%;min-width:0;overflow:hidden;overscroll-behavior:contain;}
-.multi-select-search{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;font-size:16px;touch-action:manipulation;}
-.multi-select-options{width:100%;max-width:100%;min-width:0;max-height:min(45vh,320px);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;overscroll-behavior-x:contain;touch-action:pan-y;scrollbar-width:auto;scrollbar-color:rgba(0,174,255,.85) rgba(0,174,255,.12);scrollbar-gutter:stable;scroll-behavior:auto;}
-.multi-select-options::-webkit-scrollbar{width:10px;}
-.multi-select-options::-webkit-scrollbar-track{background:rgba(0,174,255,.12);border-radius:999px;}
-.multi-select-options::-webkit-scrollbar-thumb{background:rgba(0,174,255,.85);border-radius:999px;border:2px solid transparent;background-clip:padding-box;}
-.multi-select-options::-webkit-scrollbar-thumb:hover{background:rgba(0,174,255,1);background-clip:padding-box;}
-.multi-select-option,.het-option,.het-percentage-options{min-width:0;touch-action:manipulation;}
-.multi-select-option{min-height:44px;}
-@media (pointer:coarse){.multi-select-options{max-height:min(50vh,360px);min-height:80px;overscroll-behavior:contain;}.multi-select-option{min-height:46px;}}
-@media (max-width:700px){.multi-select-menu{max-height:min(60vh,430px);}.multi-select-options{max-height:min(48vh,330px);}}
-@media (prefers-reduced-motion:reduce){.multi-select-options{scroll-behavior:auto;}}
+/* =========================================================
+   TINY TITANS — UNIVERSAL SELECTOR SCROLLING
+
+   Shared by MultiSelectDropdown and HetSelector.
+   The selector owns its scroll area so long genetics lists do
+   not drag the page underneath on iPhone/iPad/Android.
+========================================================= */
+
+.multi-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.multi-select-menu {
+  position: relative;
+  z-index: 1000;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.multi-select-search {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+  font-size: 16px;
+  touch-action: manipulation;
+}
+
+/*
+   THIS is the actual scroll viewport.
+   Keep the list constrained so opening a large genetics list
+   can never expand the entire page vertically.
+*/
+.multi-select-options {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: min(48vh, 360px);
+  box-sizing: border-box;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* iOS Safari momentum scrolling */
+  -webkit-overflow-scrolling: touch;
+
+  /* Keep the gesture inside the selector at its boundaries. */
+  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
+
+  /* Vertical finger movement belongs to this list. */
+  touch-action: pan-y;
+
+  /* Desktop mouse-wheel / trackpad behaviour. */
+  scroll-behavior: auto;
+
+  /* Make the scrollbar usable on desktop/Android/Firefox. */
+  scrollbar-width: auto;
+  scrollbar-color:
+    rgba(0, 174, 255, 0.9)
+    rgba(0, 174, 255, 0.14);
+  scrollbar-gutter: stable;
+
+  /* Avoid text selection while dragging the list. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Chromium / Safari / WebKit scrollbar */
+.multi-select-options::-webkit-scrollbar {
+  width: 11px;
+}
+
+.multi-select-options::-webkit-scrollbar-track {
+  background: rgba(0, 174, 255, 0.12);
+  border-radius: 999px;
+}
+
+.multi-select-options::-webkit-scrollbar-thumb {
+  background: rgba(0, 174, 255, 0.85);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  min-height: 36px;
+}
+
+.multi-select-options::-webkit-scrollbar-thumb:hover,
+.multi-select-options::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 174, 255, 1);
+  background-clip: padding-box;
+}
+
+.multi-select-option,
+.het-option,
+.het-percentage-options {
+  min-width: 0;
+}
+
+.multi-select-option {
+  min-height: 44px;
+  box-sizing: border-box;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.multi-select-option input[type="checkbox"] {
+  touch-action: manipulation;
+}
+
+/* Touch devices: give fingers more room and keep lists compact. */
+@media (pointer: coarse) {
+  .multi-select-options {
+    min-height: 80px;
+    max-height: min(52vh, 400px);
+  }
+
+  .multi-select-option {
+    min-height: 46px;
+  }
+}
+
+/* Phones and narrow tablets. */
+@media (max-width: 700px) {
+  .multi-select-menu {
+    width: 100%;
+    max-width: 100%;
+    max-height: min(64vh, 480px);
+  }
+
+  .multi-select-options {
+    max-height: min(50vh, 360px);
+  }
+}
+
+/* iPhone/iPad Safari-specific touch handling. */
+@supports (-webkit-touch-callout: none) {
+  .multi-select-options {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .multi-select-options {
+    scroll-behavior: auto;
+  }
+}
