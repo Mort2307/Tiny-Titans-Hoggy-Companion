@@ -2,7 +2,6 @@ import type { LearningBank, LearningDifficulty, LearningProgress, LearningTopic,
 
 const STORAGE_PREFIX = "tinytitans.learning.v3";
 const MAX_RECENT = 8;
-
 const defaultProfile = (): LearnerProfile => ({ languageLevel: "keeper", showScientificTerms: true, profileSet: false });
 const defaultTopic = (): TopicProgress => ({ attempts: 0, correct: 0, mastery: 0, lastScore: null, bestScore: 0, completed: false, lastAttemptAt: null, currentBank: 1, masteredBanks: [], seenQuestionIds: [], missedQuestionIds: [], recentQuestionIds: [] });
 const defaultProgress = (): LearningProgress => ({ xp: 0, totalQuestions: 0, totalCorrect: 0, topics: {}, unlockedBadges: [], perfectTests: 0, completedLessons: 0, currentStreak: 0, longestStreak: 0, lastTestAt: null, learnerProfile: defaultProfile() });
@@ -16,7 +15,6 @@ export function getLearningProgress(uid?: string | null): LearningProgress {
     return { ...defaultProgress(), ...parsed, topics, learnerProfile: { ...defaultProfile(), ...(parsed.learnerProfile ?? {}) }, unlockedBadges: parsed.unlockedBadges ?? [] };
   } catch { return defaultProgress(); }
 }
-
 function saveProgress(uid: string | null | undefined, progress: LearningProgress): void { if (uid && typeof window !== "undefined") window.localStorage.setItem(`${STORAGE_PREFIX}.${uid}`, JSON.stringify(progress)); }
 export function setLearnerProfile(uid: string | null | undefined, profile: Partial<LearnerProfile>): LearningProgress { const progress = getLearningProgress(uid); progress.learnerProfile = { ...progress.learnerProfile, ...profile, profileSet: true }; saveProgress(uid, progress); return progress; }
 export function getLanguageLevel(progress: LearningProgress): LanguageLevel { return progress.learnerProfile.languageLevel; }
@@ -31,26 +29,23 @@ export function selectQuestions(topic: LearningTopic, progress: LearningProgress
   const current = topicProgress(progress, topic.id);
   const pool = topic.questions.filter((question) => bankForQuestion(question) === current.currentBank);
   if (!pool.length) return [];
-  const target = Math.min(Math.max(1, count), pool.length);
-  const preferred = [...shuffle(pool.filter((q) => !current.seenQuestionIds.includes(q.id))), ...shuffle(pool.filter((q) => current.missedQuestionIds.includes(q.id))), ...shuffle(pool.filter((q) => !current.recentQuestionIds.includes(q.id))), ...shuffle(pool)];
-  const unique: QuizQuestion[] = [];
-  for (const question of preferred) if (!unique.some((q) => q.id === question.id)) unique.push(question);
-  return unique.slice(0, target);
+  const missed = shuffle(pool.filter((q) => current.missedQuestionIds.includes(q.id)));
+  if (missed.length) return missed.slice(0, Math.min(count, missed.length));
+  const unseen = shuffle(pool.filter((q) => !current.seenQuestionIds.includes(q.id)));
+  if (unseen.length) return unseen.slice(0, Math.min(count, unseen.length));
+  return shuffle(pool.filter((q) => !current.recentQuestionIds.includes(q.id))).slice(0, Math.min(count, pool.length));
 }
-
 export function presentQuestion(question: QuizQuestion, profile: LearnerProfile) { return { prompt: question.promptByLanguage?.[profile.languageLevel] ?? question.prompt, explanation: question.explanationByLanguage?.[profile.languageLevel] ?? question.explanation, terminology: profile.showScientificTerms ? (question.terminology ?? []) : [] }; }
-
 function updateStreak(progress: LearningProgress, now: Date): void { if (!progress.lastTestAt) progress.currentStreak = 1; else { const previous = new Date(progress.lastTestAt); const day = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); const days = Math.round((day(now) - day(previous)) / 86400000); if (days === 1) progress.currentStreak += 1; else if (days > 1) progress.currentStreak = 1; } progress.longestStreak = Math.max(progress.longestStreak, progress.currentStreak); progress.lastTestAt = now.toISOString(); }
 
-export function recordTest(uid: string | null | undefined, topic: LearningTopic, score: number, questionCount: number, questionIds: string[] = []): LearningProgress {
+export function recordTest(uid: string | null | undefined, topic: LearningTopic, score: number, questionCount: number, questionIds: string[] = [], missedQuestionIds: string[] = []): LearningProgress {
   const progress = getLearningProgress(uid); const previous = topicProgress(progress, topic.id); const safeCount = Math.max(0, Math.floor(questionCount)); const safeScore = Math.max(0, Math.min(1, Number.isFinite(score) ? score : 0)); const correct = Math.max(0, Math.min(safeCount, Math.round(safeScore * safeCount))); const now = new Date(); const bank = previous.currentBank; const bankQuestions = topic.questions.filter((q) => bankForQuestion(q) === bank); const bankSeen = new Set([...previous.seenQuestionIds, ...questionIds].filter((id) => bankQuestions.some((q) => q.id === id))); const bankMastered = safeScore === 1 && bankSeen.size >= bankQuestions.length; const masteredBanks = new Set(previous.masteredBanks); if (bankMastered) masteredBanks.add(bank); const nextBank = bankMastered && bank < 5 && topic.questions.some((q) => bankForQuestion(q) === bank + 1) ? (bank + 1) as LearningBank : bank; const availableBanks = [...new Set(topic.questions.map(bankForQuestion))]; const completed = availableBanks.length > 0 && availableBanks.every((b) => masteredBanks.has(b));
-  progress.topics[topic.id] = { ...previous, attempts: previous.attempts + safeCount, correct: previous.correct + correct, mastery: availableBanks.length ? Math.round((masteredBanks.size / availableBanks.length) * 100) : 0, lastScore: safeScore, bestScore: Math.max(previous.bestScore, safeScore), completed, lastAttemptAt: now.toISOString(), currentBank: nextBank, masteredBanks: [...masteredBanks].sort((a, b) => a - b), seenQuestionIds: [...new Set([...previous.seenQuestionIds, ...questionIds])], missedQuestionIds: safeScore < 1 ? [...new Set([...previous.missedQuestionIds, ...questionIds])] : previous.missedQuestionIds.filter((id) => !questionIds.includes(id)), recentQuestionIds: [...new Set([...previous.recentQuestionIds, ...questionIds])].slice(-MAX_RECENT) };
+  progress.topics[topic.id] = { ...previous, attempts: previous.attempts + safeCount, correct: previous.correct + correct, mastery: availableBanks.length ? Math.round((masteredBanks.size / availableBanks.length) * 100) : 0, lastScore: safeScore, bestScore: Math.max(previous.bestScore, safeScore), completed, lastAttemptAt: now.toISOString(), currentBank: nextBank, masteredBanks: [...masteredBanks].sort((a, b) => a - b), seenQuestionIds: [...new Set([...previous.seenQuestionIds, ...questionIds])], missedQuestionIds: safeScore < 1 ? [...new Set([...previous.missedQuestionIds, ...missedQuestionIds])] : previous.missedQuestionIds.filter((id) => !questionIds.includes(id)), recentQuestionIds: [...new Set([...previous.recentQuestionIds, ...questionIds])].slice(-MAX_RECENT) };
   progress.totalQuestions += safeCount; progress.totalCorrect += correct; progress.xp += safeCount + correct * 5 + (safeScore === 1 ? 15 : safeScore >= 0.8 ? 5 : 0) + (bankMastered ? 25 : 0) + (completed && !previous.completed ? 100 : 0); if (safeScore === 1) progress.perfectTests += 1; if (!previous.completed && completed) progress.completedLessons += 1; updateStreak(progress, now); progress.unlockedBadges = unlockBadges(progress); saveProgress(uid, progress); return progress;
 }
 
 export function knowledgeScore(progress: LearningProgress): number { return progress.totalQuestions ? Math.round((progress.totalCorrect / progress.totalQuestions) * 100) : 0; }
 export function knowledgeLevel(progress: LearningProgress): string { const score = knowledgeScore(progress); if (score >= 95) return "Legendary Titan"; if (score >= 85) return "Titan"; if (score >= 75) return "Hognose Expert"; if (score >= 60) return "Hognose Specialist"; if (score >= 45) return "Experienced Keeper"; if (score >= 30) return "Keeper"; if (score >= 15) return "Youngling"; return "Hatchling"; }
-
 export type Badge = { id: string; name: string; icon: string; description: string; requirement: (progress: LearningProgress) => boolean; target?: number; progress?: (progress: LearningProgress) => number };
 export const badges: Badge[] = [
   { id: "first-test", name: "First Challenge", icon: "🧠", description: "Complete your first mini test.", requirement: (p) => p.totalQuestions > 0, target: 1, progress: (p) => p.totalQuestions > 0 ? 1 : 0 },
