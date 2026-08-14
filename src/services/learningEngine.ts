@@ -4,7 +4,7 @@ const STORAGE_PREFIX = "tinytitans.learning.v4";
 const MAX_RECENT = 8;
 const defaultProfile = (): LearnerProfile => ({ languageLevel: "keeper", showScientificTerms: true, profileSet: true });
 const defaultTopic = (): TopicProgress => ({ attempts: 0, correct: 0, mastery: 0, lastScore: null, bestScore: 0, completed: false, lastAttemptAt: null, currentBank: 1, masteredBanks: [], seenQuestionIds: [], missedQuestionIds: [], recentQuestionIds: [] });
-const defaultProgress = (): LearningProgress => ({ xp: 0, totalQuestions: 0, totalCorrect: 0, topics: {}, unlockedBadges: [], perfectTests: 0, completedLessons: 0, currentStreak: 0, longestStreak: 0, lastTestAt: null, learnerProfile: defaultProfile() });
+const defaultProgress = (): LearningProgress => ({ xp: 0, totalQuestions: 0, totalCorrect: 0, topics: {}, unlockedBadges: [], perfectBanks: 0, perfectTests: 0, completedLessons: 0, currentStreak: 0, longestStreak: 0, lastTestAt: null, learnerProfile: defaultProfile() });
 
 export function getLearningProgress(uid?: string | null): LearningProgress {
   if (!uid || typeof window === "undefined") return defaultProgress();
@@ -12,7 +12,7 @@ export function getLearningProgress(uid?: string | null): LearningProgress {
     const parsed = JSON.parse(window.localStorage.getItem(`${STORAGE_PREFIX}.${uid}`) ?? "null") as Partial<LearningProgress> | null;
     if (!parsed) return defaultProgress();
     const topics = Object.fromEntries(Object.entries(parsed.topics ?? {}).map(([id, topic]) => [id, { ...defaultTopic(), ...topic, mastery: Math.max(0, Math.min(100, topic?.mastery ?? 0)), currentBank: Math.max(1, Math.min(5, topic?.currentBank ?? 1)) as LearningBank, masteredBanks: (topic?.masteredBanks ?? []).filter((bank): bank is LearningBank => bank >= 1 && bank <= 5), seenQuestionIds: topic?.seenQuestionIds ?? [], missedQuestionIds: topic?.missedQuestionIds ?? [], recentQuestionIds: (topic?.recentQuestionIds ?? []).slice(-MAX_RECENT) }]));
-    return { ...defaultProgress(), ...parsed, topics, learnerProfile: { ...defaultProfile(), ...(parsed.learnerProfile ?? {}) }, unlockedBadges: parsed.unlockedBadges ?? [] };
+    return { ...defaultProgress(), ...parsed, perfectBanks: parsed.perfectBanks ?? 0, topics, learnerProfile: { ...defaultProfile(), ...(parsed.learnerProfile ?? {}) }, unlockedBadges: parsed.unlockedBadges ?? [] };
   } catch { return defaultProgress(); }
 }
 function saveProgress(uid: string | null | undefined, progress: LearningProgress): void { if (uid && typeof window !== "undefined") window.localStorage.setItem(`${STORAGE_PREFIX}.${uid}`, JSON.stringify(progress)); }
@@ -73,8 +73,9 @@ export function recordTest(uid: string | null | undefined, topic: LearningTopic,
   const validQuestionIds = questionIds.filter((id) => bankIds.has(id));
   const validMissedIds = missedQuestionIds.filter((id) => bankIds.has(id));
   const bankSeen = new Set([...previous.seenQuestionIds, ...validQuestionIds]);
-  const bankMastered = safeScore === 1 && bankSeen.size >= bankQuestions.length;
+  const bankMastered = safeScore === 1 && bankQuestions.length > 0 && bankSeen.size >= bankQuestions.length;
   const masteredBanks = new Set(previous.masteredBanks);
+  const wasBankAlreadyMastered = masteredBanks.has(bank);
   if (bankMastered) masteredBanks.add(bank);
   const nextBank = bankMastered && bank < 5 && topic.questions.some((q) => bankForQuestion(q) === bank + 1) ? (bank + 1) as LearningBank : bank;
   const availableBanks = [...new Set(topic.questions.map(bankForQuestion))].sort((a, b) => a - b);
@@ -101,8 +102,9 @@ export function recordTest(uid: string | null | undefined, topic: LearningTopic,
 
   progress.totalQuestions += safeCount;
   progress.totalCorrect += correct;
-  progress.xp += safeCount + correct * 5 + (safeScore === 1 ? 15 : safeScore >= 0.8 ? 5 : 0) + (bankMastered ? 25 : 0) + (completed && !previous.completed ? 100 : 0);
-  if (safeScore === 1) progress.perfectTests += 1;
+  progress.perfectTests += safeScore === 1 ? 1 : 0;
+  if (bankMastered && !wasBankAlreadyMastered) progress.perfectBanks += 1;
+  progress.xp += safeCount + correct * 5 + (safeScore === 1 ? 15 : safeScore >= 0.8 ? 5 : 0) + (bankMastered && !wasBankAlreadyMastered ? 25 : 0) + (completed && !previous.completed ? 100 : 0);
   if (!previous.completed && completed) progress.completedLessons += 1;
   updateStreak(progress, now);
   progress.unlockedBadges = unlockBadges(progress);
@@ -116,11 +118,11 @@ export type Badge = { id: string; name: string; icon: string; description: strin
 export const badges: Badge[] = [
   { id: "first-test", name: "First Challenge", icon: "🧠", description: "Complete your first mini test.", requirement: (p) => p.totalQuestions > 0, target: 1, progress: (p) => p.totalQuestions > 0 ? 1 : 0 },
   { id: "first-lesson", name: "First Lesson", icon: "📖", description: "Master your first complete topic.", requirement: (p) => p.completedLessons >= 1, target: 1, progress: (p) => Math.min(1, p.completedLessons) },
-  { id: "perfect", name: "Perfect Score", icon: "💯", description: "Get your first 100% bank score.", requirement: (p) => p.perfectTests >= 1, target: 1, progress: (p) => Math.min(1, p.perfectTests) },
+  { id: "perfect", name: "Perfect Score", icon: "💯", description: "Master your first complete question bank with 100%.", requirement: (p) => p.perfectBanks >= 1, target: 1, progress: (p) => Math.min(1, p.perfectBanks) },
   { id: "curious", name: "Curious Titan", icon: "🔎", description: "Master 5 topics.", requirement: (p) => p.completedLessons >= 5, target: 5, progress: (p) => Math.min(5, p.completedLessons) },
   { id: "knowledge-seeker", name: "Knowledge Seeker", icon: "📚", description: "Master 25 topics.", requirement: (p) => p.completedLessons >= 25, target: 25, progress: (p) => Math.min(25, p.completedLessons) },
   { id: "genetics", name: "Genetics Apprentice", icon: "🧬", description: "Master a genetics topic.", requirement: (p) => Object.entries(p.topics).some(([id, value]) => /genetic|poly|het|morph/i.test(id) && value.completed), target: 1, progress: (p) => Object.entries(p.topics).some(([id, value]) => /genetic|poly|het|morph/i.test(id) && value.completed) ? 1 : 0 },
-  { id: "brainy", name: "Brainy Titan", icon: "🏆", description: "Earn 10 perfect bank scores.", requirement: (p) => p.perfectTests >= 10, target: 10, progress: (p) => Math.min(10, p.perfectTests) },
+  { id: "brainy", name: "Brainy Titan", icon: "🏆", description: "Master 10 complete question banks with 100%.", requirement: (p) => p.perfectBanks >= 10, target: 10, progress: (p) => Math.min(10, p.perfectBanks) },
   { id: "titan", name: "Titan", icon: "🐍", description: "Reach 75% overall knowledge.", requirement: (p) => knowledgeScore(p) >= 75, target: 75, progress: knowledgeScore },
   { id: "streak-3", name: "Three-Day Titan", icon: "🔥", description: "Learn on three consecutive days.", requirement: (p) => p.longestStreak >= 3, target: 3, progress: (p) => Math.min(3, p.longestStreak) },
   { id: "streak-7", name: "Week of Wisdom", icon: "🌟", description: "Learn on seven consecutive days.", requirement: (p) => p.longestStreak >= 7, target: 7, progress: (p) => Math.min(7, p.longestStreak) },
