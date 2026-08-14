@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Layout from "../components/layout/Layout";
+import Layout from "../components/Layout/Layout";
 import Calculator from "../pages/Calculator";
 import Login from "../pages/Login";
 import AccountSetup from "../pages/AccountSetup";
@@ -17,6 +17,7 @@ import BreedingPlanner from "../pages/BreedingPlanner";
 import MorphLibrary from "../pages/MorphLibrary";
 import ReportIssue from "../pages/ReportIssue";
 import Founder from "../pages/Founder";
+import BecomeATitan from "../pages/BecomeATitan";
 import CreatorAdmin from "../pages/CreatorAdmin";
 import EducatorDashboard from "../pages/EducatorDashboard";
 import AdaptiveLearningHub from "../pages/AdaptiveLearningHub";
@@ -51,6 +52,7 @@ function AppRouterGate() {
     <Route path="/breeding" element={<BreedingPlanner />} />
     <Route path="/report-issue" element={<ReportIssue />} />
     <Route path="/founder" element={<Founder />} />
+    <Route path="/become-a-titan" element={<BecomeATitan />} />
     <Route path="/creator" element={<CreatorAdmin />} />
     <Route path="/educator" element={<EducatorDashboard />} />
     <Route path="/login" element={<Navigate to="/" replace />} />
