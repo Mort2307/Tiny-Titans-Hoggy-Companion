@@ -1,0 +1,159 @@
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const Stripe = require("stripe");
+
+initializeApp();
+const db = getFirestore();
+
+const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
+
+const PRICE_TIERS = Object.freeze({
+  little: {
+    priceId: "price_1U4E9q3zyS86a3ry2Lrikcjq",
+    amount: 5,
+    label: "Little Titan",
+  },
+  growing: {
+    priceId: "price_1U4EBp3zyS86a3ryn3HfNU0R",
+    amount: 10,
+    label: "Growing Titan",
+  },
+  champion: {
+    priceId: "price_1U4EDE3zyS86a3ryKXVPLEhd",
+    amount: 20,
+    label: "Champion Titan",
+  },
+  legendary: {
+    priceId: "price_1U4EDx3zyS86a3ryxlW1Scz8",
+    amount: 40,
+    label: "Legendary Titan",
+  },
+  broken: {
+    priceId: "price_1U4EEf3zyS86a3ryLupeschV",
+    amount: 100,
+    label: "You Just Broke Me",
+  },
+});
+
+const ALLOWED_ORIGINS = new Set([
+  "https://tinytitans-hoggy-companion.web.app",
+  "https://tinytitans-hoggy-companion.firebaseapp.com",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
+
+function getAllowedOrigin(request) {
+  const origin = request.rawRequest?.headers?.origin || "";
+  return ALLOWED_ORIGINS.has(origin)
+    ? origin
+    : "https://tinytitans-hoggy-companion.web.app";
+}
+
+exports.createTitanCheckout = onCall(
+  { region: "europe-west2", secrets: [STRIPE_SECRET_KEY] },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "You must be signed in to become a Titan.");
+    }
+
+    const tierKey = String(request.data?.tier || "");
+    const tier = PRICE_TIERS[tierKey];
+
+    if (!tier) {
+      throw new HttpsError("invalid-argument", "Invalid Titan support tier.");
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+    const origin = getAllowedOrigin(request);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [{ price: tier.priceId, quantity: 1 }],
+      customer_email: request.auth.token.email || undefined,
+      client_reference_id: request.auth.uid,
+      metadata: {
+        uid: request.auth.uid,
+        tier: tierKey,
+        label: tier.label,
+        amount_gbp: String(tier.amount),
+      },
+      success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/become-a-titan?payment=cancelled`,
+      billing_address_collection: "auto",
+    });
+
+    if (!session.url) {
+      throw new HttpsError("internal", "Stripe did not return a checkout URL.");
+    }
+
+    return { url: session.url };
+  }
+);
+
+exports.stripeWebhook = onRequest(
+  { region: "europe-west2", secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET] },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const signature = req.headers["stripe-signature"];
+    if (!signature) {
+      res.status(400).send("Missing Stripe signature");
+      return;
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        signature,
+        STRIPE_WEBHOOK_SECRET.value()
+      );
+    } catch (error) {
+      console.error("Stripe webhook signature verification failed", error);
+      res.status(400).send("Invalid webhook signature");
+      return;
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const uid = session.metadata?.uid || session.client_reference_id;
+      const tier = PRICE_TIERS[session.metadata?.tier];
+
+      if (uid && tier && session.payment_status === "paid") {
+        await db.collection("supporters").doc(uid).set(
+          {
+            uid,
+            status: "active",
+            tier: session.metadata.tier,
+            tierLabel: tier.label,
+            amountGbp: tier.amount,
+            stripeCustomerId: session.customer || null,
+            stripeCheckoutSessionId: session.id,
+            lastPaymentAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        await db.collection("supporterStats").doc("global").set(
+          {
+            totalSupporters: FieldValue.increment(1),
+            totalReceivedGbp: FieldValue.increment(tier.amount),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
+    }
+
+    res.status(200).json({ received: true });
+  }
+);
