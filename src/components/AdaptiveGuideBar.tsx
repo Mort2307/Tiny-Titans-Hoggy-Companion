@@ -1,44 +1,15 @@
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import type { AgeBand, LearningLevel } from "../types/Profile";
+import type { LearningLevel } from "../types/Profile";
 import "./AdaptiveGuideBar.css";
 
 type Layer = { title: string; body: string; tip: string };
-
 const layers: Record<LearningLevel, Layer> = {
   explorer: { title: "Explorer mode", body: "We keep the words simple, explain new ideas as we go, and use real-world examples.", tip: "Look for the Why? boxes — they turn reptile care into easy science." },
   learner: { title: "Learner mode", body: "We explain the important science clearly, introduce useful terminology, and show how ideas connect.", tip: "Try the genetics and timeline tools to see patterns rather than memorising facts." },
   student: { title: "Student mode", body: "We use more scientific vocabulary, cause-and-effect reasoning and evidence-focused explanations.", tip: "Use the data in your snake records as evidence when you make husbandry decisions." },
   adult: { title: "Adult mode", body: "You get the full technical explanation, practical context and data-quality caveats.", tip: "Where enough individual data exists, Tiny Titans prioritises your snake's own history over generic rules." },
 };
-
-const routeTopics: Array<[string, string, string]> = [
-  ["/morph-library", "Genetics", "Morph descriptions explain inheritance without treating appearance as proof of genotype."],
-  ["/calculator", "Genetics", "Probabilities describe possible outcomes; they do not predict which individual hatchlings will appear."],
-  ["/feeding", "Feeding", "Recorded meals become individual evidence. Tiny Titans avoids turning one generic percentage into a universal rule."],
-  ["/shedding", "Shedding", "Shed records become part of an individual timeline so changes can be compared over time."],
-  ["/weights", "Growth", "Weight is interpreted as a trend and individual baseline, not a single pass/fail number."],
-  ["/snakes", "Individual records", "Each snake has its own history. Feeding, shedding and weight data can be read together."],
-  ["/knowledge-base", "Knowledge", "Information is presented at your selected learning level while keeping the underlying science consistent."],
-  ["/learn", "Learning", "Choose a lesson depth that matches the learner rather than forcing everyone through the same explanation."],
-  ["/educator", "Teaching", "Teacher mode adds classroom context, discussion prompts and age-appropriate explanation layers."],
-];
-
-function getTopic(pathname: string): [string, string] {
-  const match = routeTopics.find(([route]) => pathname === route || pathname.startsWith(`${route}/`));
-  return match ? [match[1], match[2]] : ["Tiny Titans", "Your selected learning level changes the presentation without changing the scientific facts."];
-}
-
-export default function AdaptiveGuideBar() {
-  const { profile } = useAuth();
-  const { pathname } = useLocation();
-  const learningLevel = profile?.learningLevel ?? (profile?.ageBand as AgeBand | undefined) === "7-10" ? "explorer" : "adult";
-  const layer = layers[learningLevel as LearningLevel] ?? layers.adult;
-  const [topic, topicBody] = getTopic(pathname);
-  const isEducator = profile?.profileType === "educator";
-
-  return <aside className={`adaptive-guide adaptive-guide--${learningLevel}`} aria-label="Adaptive learning guidance">
-    <div className="adaptive-guide__icon">{isEducator ? "🧑‍🏫" : learningLevel === "explorer" ? "🌱" : learningLevel === "learner" ? "🔎" : learningLevel === "student" ? "🔬" : "🧠"}</div>
-    <div className="adaptive-guide__copy"><div className="adaptive-guide__topline"><strong>{layer.title}</strong><span>{topic}</span></div><p>{topicBody} {layer.body}</p><small>💡 {layer.tip}</small></div>
-  </aside>;
-}
+const routeTopics: Array<[string, string, string]> = [["/morph-library", "Genetics", "Morph descriptions explain inheritance without treating appearance as proof of genotype."], ["/calculator", "Genetics", "Probabilities describe possible outcomes; they do not predict which individual hatchlings will appear."], ["/feeding", "Feeding", "Recorded meals become individual evidence. Tiny Titans avoids turning one generic percentage into a universal rule."], ["/shedding", "Shedding", "Shed records become part of an individual timeline so changes can be compared over time."], ["/weights", "Growth", "Weight is interpreted as a trend and individual baseline, not a single pass/fail number."], ["/snakes", "Individual records", "Each snake has its own history. Feeding, shedding and weight data can be read together."], ["/knowledge-base", "Knowledge", "Information is presented at your selected learning level while keeping the underlying science consistent."], ["/learn", "Learning", "Choose a lesson depth that matches the learner rather than forcing everyone through the same explanation."], ["/educator", "Teaching", "Teacher mode adds classroom context, discussion prompts and age-appropriate explanation layers."]];
+function getTopic(pathname: string): [string, string] { const match = routeTopics.find(([route]) => pathname === route || pathname.startsWith(`${route}/`)); return match ? [match[1], match[2]] : ["Tiny Titans", "Your selected learning level changes the presentation without changing the scientific facts."]; }
+export default function AdaptiveGuideBar() { const { profile } = useAuth(); const { pathname } = useLocation(); const learningLevel: LearningLevel = profile?.learningLevel ?? (profile?.ageBand === "7-10" ? "explorer" : "adult"); const layer = layers[learningLevel]; const [topic, topicBody] = getTopic(pathname); const isEducator = profile?.profileType === "educator"; return <aside className={`adaptive-guide adaptive-guide--${learningLevel}`} aria-label="Adaptive learning guidance"><div className="adaptive-guide__icon">{isEducator ? "🧑‍🏫" : learningLevel === "explorer" ? "🌱" : learningLevel === "learner" ? "🔎" : learningLevel === "student" ? "🔬" : "🧠"}</div><div className="adaptive-guide__copy"><div className="adaptive-guide__topline"><strong>{layer.title}</strong><span>{topic}</span></div><p>{topicBody} {layer.body}</p><small>💡 {layer.tip}</small></div></aside>; }
