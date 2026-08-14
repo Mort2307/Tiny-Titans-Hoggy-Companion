@@ -21,6 +21,13 @@ export type LearnerProfile = {
   profileSet: boolean;
 };
 
+export type ChallengeData = {
+  instruction?: string;
+  labels?: string[];
+  sequenceItems?: string[];
+  scenario?: string;
+};
+
 export type QuizQuestion = {
   id: string;
   prompt: string;
@@ -30,6 +37,7 @@ export type QuizQuestion = {
   difficulty: LearningDifficulty;
   bank?: LearningBank;
   challengeType?: ChallengeType;
+  challengeData?: ChallengeData;
   promptByLanguage?: Partial<Record<LanguageLevel, string>>;
   explanationByLanguage?: Partial<Record<LanguageLevel, string>>;
   terminology?: Array<{ term: string; simple: string; definition: string }>;
