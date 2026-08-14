@@ -1,5 +1,7 @@
 /* =========================================================
    TINY TITANS — UNIVERSAL MORPH / HET SELECTOR SCROLLING
+   The selector owns the vertical gesture completely. Dragging or
+   scrolling inside the list must never move the page underneath it.
 ========================================================= */
 
 .multi-select {
@@ -18,6 +20,8 @@
   box-sizing: border-box;
   overflow: hidden;
   overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+  touch-action: manipulation;
 }
 
 .multi-select-search {
@@ -32,9 +36,10 @@
 }
 
 /*
- * The actual selector viewport.
- * Native scrolling remains available, but the scrollbar is deliberately
- * large enough to grab easily on both desktop and touch devices.
+ * IMPORTANT:
+ * useGrabScroll() owns the vertical gesture for this element.
+ * touch-action:none prevents the browser from handing the gesture
+ * to the document/page and pulling the entire page along with it.
  */
 .multi-select-options {
   display: block;
@@ -44,13 +49,13 @@
   min-height: 120px;
   max-height: min(55vh, 440px);
   box-sizing: border-box;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   overscroll-behavior-y: contain;
   overscroll-behavior-x: none;
-  touch-action: pan-y;
+  touch-action: none;
   scroll-behavior: auto;
   scrollbar-width: auto;
   scrollbar-color: rgba(0, 174, 255, 0.95) rgba(0, 174, 255, 0.18);
@@ -58,6 +63,7 @@
   user-select: none;
   -webkit-user-select: none;
   cursor: grab;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .multi-select-options:active {
@@ -110,7 +116,6 @@
   .multi-select-options {
     min-height: 150px;
     max-height: min(58vh, 500px);
-    scrollbar-width: auto;
   }
 
   .multi-select-option {
@@ -143,7 +148,7 @@
 @supports (-webkit-touch-callout: none) {
   .multi-select-options {
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
+    touch-action: none;
     overscroll-behavior: contain;
   }
 }
