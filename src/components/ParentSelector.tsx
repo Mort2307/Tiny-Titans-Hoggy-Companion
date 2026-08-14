@@ -4,11 +4,261 @@ import { resolveStrictMorph } from "../utils/geneticsIdentity";
 import type { Het } from "../types/genetics";
 import type { Snake } from "../types/Snake";
 
-export type ParentSelection = { snakeId?: string; morphs: string[]; hets: Het[]; customMorph?: string; customHets?: string };
-type ParentSelectorProps = { title:string; parent:ParentSelection; snakes:Snake[]; morphOptions:MorphDefinition[]; hetOptions:MorphDefinition[]; onChange:(parent:ParentSelection)=>void };
-function canonicalMorph(value:unknown):MorphDefinition|undefined{return typeof value!=="string"||!value.trim()?undefined:resolveStrictMorph(value)}
-function normaliseSnakeHets(value:unknown):Het[]{if(!Array.isArray(value))return[];return value.map((entry):Het|null=>{if(typeof entry==="string"&&entry.trim())return{gene:entry.trim(),percentage:100}as Het;if(!entry||typeof entry!=="object")return null;const r=entry as Record<string,unknown>,g=r.gene??r.name??r.morph;if(typeof g!=="string"||!g.trim())return null;const n=Number(r.percentage??100);return{gene:g.trim(),percentage:Number.isFinite(n)?Math.min(100,Math.max(0,n)):100}as Het}).filter((h):h is Het=>h!==null)}
-function snakeToSelection(snake:Snake):ParentSelection{const morphs=(Array.isArray(snake.morphs)?snake.morphs:[]).filter((v):v is string=>typeof v==="string"&&!!v.trim()).map(v=>canonicalMorph(v)?.geneId??v.trim());const hets=normaliseSnakeHets(snake.hets).map(h=>({gene:canonicalMorph(h.gene)?.geneId??h.gene,percentage:h.percentage}));return{snakeId:snake.id,morphs,hets,customMorph:snake.customMorph||undefined,customHets:snake.customHets||undefined}}
-function toggleValue(values:string[],value:string){return values.includes(value)?values.filter(v=>v!==value):[...values,value]}
-function MultiSelectDropdown({label,options,selected,onToggle,searchPlaceholder,hetMode=false}:{label:string;options:MorphDefinition[];selected:string[];onToggle:(geneId:string)=>void;searchPlaceholder:string;hetMode?:boolean}){const[query,setQuery]=useState("");const[open,setOpen]=useState(false);const filtered=useMemo(()=>{const q=query.trim().toLowerCase();return q?options.filter(o=>[o.name,...(o.aliases??[])].join(" ").toLowerCase().includes(q)):options},[options,query]);return <div className="genetics-dropdown"><button type="button" className="genetics-dropdown-trigger" aria-expanded={open} onClick={()=>setOpen(v=>!v)}><span>{label}</span><span className="genetics-dropdown-count">{selected.length?`${selected.length} selected`:"Select"}</span><span aria-hidden="true">{open?"▴":"▾"}</span></button>{open&&<div className="genetics-dropdown-panel" role="region" aria-label={label}><input className="genetics-dropdown-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={searchPlaceholder} type="search" aria-label={searchPlaceholder}/><div className="genetics-dropdown-options" role="group" aria-label={`${label} options`}>{filtered.map(option=><label key={option.geneId} className="genetics-dropdown-option"><input type="checkbox" checked={selected.includes(option.geneId)} onChange={()=>onToggle(option.geneId)}/><span><strong>{option.name}</strong><small>{hetMode?`Het ${option.inheritance}`:`${option.kind}${option.inheritance?` · ${option.inheritance}`:""}`}</small></span></label>)}{!filtered.length&&<p className="genetics-dropdown-empty">No matching genetics.</p>}</div><button type="button" className="genetics-dropdown-done" onClick={()=>setOpen(false)}>Done</button></div>}</div>}
-export default function ParentSelector({title,parent,snakes,morphOptions,hetOptions,onChange}:ParentSelectorProps){const selectedSnake=snakes.find(s=>s.id===parent.snakeId);const selectedMorphNames=parent.morphs.map(id=>morphOptions.find(m=>m.geneId===id)?.name??id);const selectedHetIds=parent.hets.map(h=>canonicalMorph(h?.gene)?.geneId??h?.gene).filter((v):v is string=>Boolean(v));function toggleMorph(geneId:string){onChange({...parent,snakeId:undefined,morphs:toggleValue(parent.morphs,geneId)})}function toggleHet(geneId:string){const next=selectedHetIds.includes(geneId)?parent.hets.filter(h=>(canonicalMorph(h?.gene)?.geneId??h?.gene)!==geneId):[...parent.hets,{gene:geneId,percentage:100}as Het];onChange({...parent,snakeId:undefined,hets:next})}function handleSnakeChange(id:string){if(!id){onChange({morphs:[],hets:[]});return}const snake=snakes.find(s=>s.id===id);if(snake)onChange(snakeToSelection(snake))}return <section className="genetics-parent-selector"><div className="genetics-parent-heading"><div><h3>{title}</h3><p>Choose one of your snakes or build the genetics manually.</p></div></div><div className="genetics-snake-select-wrap"><label htmlFor={`${title}-snake-select`}>Saved Snake</label><select id={`${title}-snake-select`} className="genetics-snake-select" value={parent.snakeId??""} onChange={e=>handleSnakeChange(e.target.value)}><option value="">Manual genetics</option>{snakes.map(s=><option key={s.id} value={s.id}>{s.name} · {s.sex} · {s.morphs.length?s.morphs.join(", "):"Normal"}</option>)}</select></div>{selectedSnake&&<div className="genetics-snake-summary"><strong>{selectedSnake.name}</strong><span>{selectedSnake.sex}</span><span>{selectedSnake.morphs.length?selectedSnake.morphs.join(" · "):"Normal"}</span>{selectedSnake.hets.length>0&&<span>{normaliseSnakeHets(selectedSnake.hets).map(h=>`${h.percentage} Het ${h.gene}`).join(" · ")}</span>}</div>}<div className="genetics-selector-group"><h4>Visual Morphs & Confirmed Phenotypes</h4><MultiSelectDropdown label="Select visual morphs" options={morphOptions} selected={parent.morphs} onToggle={toggleMorph} searchPlaceholder="Search confirmed morphs..."/>{selectedMorphNames.length>0&&<div className="genetics-selected-tags">{selectedMorphNames.map(name=><span key={name} className="genetics-selection-chip genetics-selection-chip-visual">{name}</span>)}</div>}</div><div className="genetics-selector-group"><h4>Known Hets</h4><MultiSelectDropdown label="Select het genetics" options={hetOptions} selected={selectedHetIds} onToggle={toggleHet} searchPlaceholder="Search confirmed het-capable genes..." hetMode/>{parent.hets.length>0&&<div className="genetics-selected-tags">{parent.hets.map(h=><span key={`${h.gene}-${h.percentage}`} className="genetics-selection-chip genetics-selection-chip-het">{h.percentage} Het {canonicalMorph(h.gene)?.name??h.gene}</span>)}</div>}</div>{(parent.customMorph||parent.customHets)&&<div className="genetics-custom-warning"><strong>Unresolved recorded genetics</strong><span>{parent.customMorph?`Custom morph: ${parent.customMorph}. `:""}{parent.customHets?`Custom hets: ${parent.customHets}.`:""} These are shown for reference but are not silently treated as confirmed calculator genetics.</span></div>}</section>}
+export type ParentSelection = {
+  snakeId?: string;
+  morphs: string[];
+  hets: Het[];
+  customMorph?: string;
+  customHets?: string;
+};
+
+type ParentSelectorProps = {
+  title: string;
+  parent: ParentSelection;
+  snakes: Snake[];
+  morphOptions: MorphDefinition[];
+  hetOptions: MorphDefinition[];
+  onChange: (parent: ParentSelection) => void;
+};
+
+function canonicalMorph(value: unknown): MorphDefinition | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  return resolveStrictMorph(value);
+}
+
+function canonicalGeneId(value: unknown): string | undefined {
+  return canonicalMorph(value)?.geneId ?? (typeof value === "string" && value.trim() ? value.trim() : undefined);
+}
+
+function normaliseSnakeHets(value: unknown): Het[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry): Het | null => {
+      if (typeof entry === "string" && entry.trim()) {
+        return { gene: canonicalGeneId(entry) ?? entry.trim(), percentage: 100 } as Het;
+      }
+
+      if (!entry || typeof entry !== "object") return null;
+      const record = entry as Record<string, unknown>;
+      const gene = record.gene ?? record.name ?? record.morph;
+      if (typeof gene !== "string" || !gene.trim()) return null;
+
+      const percentage = Number(record.percentage ?? 100);
+      return {
+        gene: canonicalGeneId(gene) ?? gene.trim(),
+        percentage: Number.isFinite(percentage) ? Math.min(100, Math.max(0, percentage)) : 100,
+      } as Het;
+    })
+    .filter((het): het is Het => het !== null);
+}
+
+function snakeToSelection(snake: Snake): ParentSelection {
+  const morphs = (Array.isArray(snake.morphs) ? snake.morphs : [])
+    .filter((value): value is string => typeof value === "string" && !!value.trim())
+    .map((value) => canonicalGeneId(value) ?? value.trim());
+
+  const uniqueMorphs = [...new Set(morphs)];
+  const hets = normaliseSnakeHets(snake.hets);
+  const uniqueHets = hets.filter((het, index, list) => list.findIndex((candidate) => candidate.gene === het.gene) === index);
+
+  return {
+    snakeId: snake.id,
+    morphs: uniqueMorphs,
+    hets: uniqueHets,
+    customMorph: snake.customMorph || undefined,
+    customHets: snake.customHets || undefined,
+  };
+}
+
+function toggleValue(values: string[], value: string): string[] {
+  const canonical = canonicalGeneId(value) ?? value;
+  return values.includes(canonical)
+    ? values.filter((entry) => entry !== canonical)
+    : [...values, canonical];
+}
+
+function MultiSelectDropdown({
+  label,
+  options,
+  selected,
+  onToggle,
+  searchPlaceholder,
+  hetMode = false,
+}: {
+  label: string;
+  options: MorphDefinition[];
+  selected: string[];
+  onToggle: (geneId: string) => void;
+  searchPlaceholder: string;
+  hetMode?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q
+      ? options.filter((option) => [option.name, ...(option.aliases ?? []), option.geneId].join(" ").toLowerCase().includes(q))
+      : options;
+  }, [options, query]);
+
+  return (
+    <div className="genetics-dropdown">
+      <button type="button" className="genetics-dropdown-trigger" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+        <span>{label}</span>
+        <span className="genetics-dropdown-count">{selected.length ? `${selected.length} selected` : "Select"}</span>
+        <span aria-hidden="true">{open ? "▴" : "▾"}</span>
+      </button>
+
+      {open && (
+        <div className="genetics-dropdown-panel" role="region" aria-label={label}>
+          <input
+            className="genetics-dropdown-search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={searchPlaceholder}
+            type="search"
+            aria-label={searchPlaceholder}
+          />
+
+          <div className="genetics-dropdown-options" role="group" aria-label={`${label} options`}>
+            {filtered.map((option) => {
+              const geneId = option.geneId;
+              const checked = selected.includes(geneId);
+
+              return (
+                <label key={geneId} className="genetics-dropdown-option">
+                  <input type="checkbox" checked={checked} onChange={() => onToggle(geneId)} />
+                  <span>
+                    <strong>{option.name}</strong>
+                    <small>{hetMode ? `Het ${option.inheritance}` : `${option.kind}${option.inheritance ? ` · ${option.inheritance}` : ""}`}</small>
+                  </span>
+                </label>
+              );
+            })}
+
+            {!filtered.length && <p className="genetics-dropdown-empty">No matching genetics.</p>}
+          </div>
+
+          <button type="button" className="genetics-dropdown-done" onClick={() => setOpen(false)}>Done</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ParentSelector({ title, parent, snakes, morphOptions, hetOptions, onChange }: ParentSelectorProps) {
+  const selectedSnake = snakes.find((snake) => snake.id === parent.snakeId);
+  const selectedMorphNames = parent.morphs.map((id) => morphOptions.find((morph) => morph.geneId === id)?.name ?? id);
+  const selectedHetIds = parent.hets
+    .map((het) => canonicalGeneId(het?.gene))
+    .filter((value): value is string => Boolean(value));
+
+  function toggleMorph(geneId: string) {
+    const canonical = canonicalGeneId(geneId);
+    if (!canonical) return;
+
+    onChange({
+      ...parent,
+      snakeId: undefined,
+      morphs: toggleValue(parent.morphs, canonical),
+    });
+  }
+
+  function toggleHet(geneId: string) {
+    const canonical = canonicalGeneId(geneId);
+    if (!canonical) return;
+
+    const exists = selectedHetIds.includes(canonical);
+    const next = exists
+      ? parent.hets.filter((het) => canonicalGeneId(het?.gene) !== canonical)
+      : [...parent.hets, { gene: canonical, percentage: 100 } as Het];
+
+    // A visual gene and a het of the same gene are contradictory for the
+    // same parent selection. Keep the visual call authoritative and remove
+    // the redundant het rather than letting downstream calculation state
+    // become ambiguous.
+    const visualSelected = parent.morphs.map(canonicalGeneId).filter((value): value is string => Boolean(value));
+    const cleanedHets = next.filter((het) => !visualSelected.includes(canonicalGeneId(het.gene) ?? ""));
+
+    onChange({
+      ...parent,
+      snakeId: undefined,
+      hets: cleanedHets,
+    });
+  }
+
+  function handleSnakeChange(id: string) {
+    if (!id) {
+      onChange({ morphs: [], hets: [] });
+      return;
+    }
+
+    const snake = snakes.find((candidate) => candidate.id === id);
+    if (snake) onChange(snakeToSelection(snake));
+  }
+
+  return (
+    <section className="genetics-parent-selector">
+      <div className="genetics-parent-heading">
+        <div>
+          <h3>{title}</h3>
+          <p>Choose one of your snakes or build the genetics manually.</p>
+        </div>
+      </div>
+
+      <div className="genetics-snake-select-wrap">
+        <label htmlFor={`${title}-snake-select`}>Saved Snake</label>
+        <select id={`${title}-snake-select`} className="genetics-snake-select" value={parent.snakeId ?? ""} onChange={(event) => handleSnakeChange(event.target.value)}>
+          <option value="">Manual genetics</option>
+          {snakes.map((snake) => (
+            <option key={snake.id} value={snake.id}>
+              {snake.name} · {snake.sex} · {snake.morphs.length ? snake.morphs.join(", ") : "Normal"}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {selectedSnake && (
+        <div className="genetics-snake-summary">
+          <strong>{selectedSnake.name}</strong>
+          <span>{selectedSnake.sex}</span>
+          <span>{selectedSnake.morphs.length ? selectedSnake.morphs.join(" · ") : "Normal"}</span>
+          {selectedSnake.hets.length > 0 && <span>{normaliseSnakeHets(selectedSnake.hets).map((het) => `${het.percentage} Het ${het.gene}`).join(" · ")}</span>}
+        </div>
+      )}
+
+      <div className="genetics-selector-group">
+        <h4>Visual Morphs & Confirmed Phenotypes</h4>
+        <MultiSelectDropdown label="Select visual morphs" options={morphOptions} selected={parent.morphs} onToggle={toggleMorph} searchPlaceholder="Search confirmed morphs..." />
+        {selectedMorphNames.length > 0 && (
+          <div className="genetics-selected-tags">
+            {selectedMorphNames.map((name) => <span key={name} className="genetics-selection-chip genetics-selection-chip-visual">{name}</span>)}
+          </div>
+        )}
+      </div>
+
+      <div className="genetics-selector-group">
+        <h4>Known Hets</h4>
+        <MultiSelectDropdown label="Select het genetics" options={hetOptions} selected={selectedHetIds} onToggle={toggleHet} searchPlaceholder="Search confirmed het-capable genes..." hetMode />
+        {parent.hets.length > 0 && (
+          <div className="genetics-selected-tags">
+            {parent.hets.map((het) => (
+              <span key={`${canonicalGeneId(het.gene)}-${het.percentage}`} className="genetics-selection-chip genetics-selection-chip-het">
+                {het.percentage} Het {canonicalMorph(het.gene)?.name ?? het.gene}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {(parent.customMorph || parent.customHets) && (
+        <div className="genetics-custom-warning">
+          <strong>Unresolved recorded genetics</strong>
+          <span>{parent.customMorph ? `Custom morph: ${parent.customMorph}. ` : ""}{parent.customHets ? `Custom hets: ${parent.customHets}.` : ""} These are shown for reference but are not silently treated as confirmed calculator genetics.</span>
+        </div>
+      )}
+    </section>
+  );
+}
