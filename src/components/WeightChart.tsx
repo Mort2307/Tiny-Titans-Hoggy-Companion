@@ -7,173 +7,37 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-
 import type { WeightRecord } from "../types/Weight";
+import { useUnits } from "../context/UnitContext";
 
+type WeightChartProps = { history: WeightRecord[] };
 
-type WeightChartProps = {
+type ChartPoint = WeightRecord & { displayWeight: number };
 
-  history: WeightRecord[];
+function WeightChart({ history }: WeightChartProps) {
+  const { isImperial, weightUnit } = useUnits();
 
-};
+  if (!history || history.length === 0) return <p>No weight records yet.</p>;
 
-
-
-function WeightChart({
-
-  history
-
-}: WeightChartProps) {
-
-
-
-  if (!history || history.length === 0) {
-
-    return (
-
-      <p>
-        No weight records yet.
-      </p>
-
-    );
-
-  }
-
-
-
-
-
-  const sortedHistory =
-
-    [...history].sort(
-
-      (a,b) =>
-
-        new Date(a.date).getTime()
-
-        -
-
-        new Date(b.date).getTime()
-
-    );
-
-
-
-
-
-
+  const sortedHistory = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const chartData: ChartPoint[] = sortedHistory.map((record) => ({
+    ...record,
+    displayWeight: isImperial ? record.weight / 28.349523125 : record.weight,
+  }));
 
   return (
-
-    <div
-
-      style={{
-
-        width:"100%",
-
-        height:300
-
-      }}
-
-    >
-
-
-
-      <ResponsiveContainer
-
-        width="100%"
-
-        height="100%"
-
-      >
-
-
-
-        <LineChart
-
-          data={sortedHistory}
-
-        >
-
-
-
-          <CartesianGrid
-
-            strokeDasharray="3 3"
-
-          />
-
-
-
-
-
-          <XAxis
-
-            dataKey="date"
-
-          />
-
-
-
-
-
-          <YAxis
-
-            dataKey="weight"
-
-            unit="g"
-
-          />
-
-
-
-
-
-          <Tooltip
-
-            formatter={(value) =>
-
-              `${value}g`
-
-            }
-
-          />
-
-
-
-
-
-          <Line
-
-            type="monotone"
-
-            dataKey="weight"
-
-            strokeWidth={2}
-
-            dot
-
-          />
-
-
-
-
-
+    <div style={{ width: "100%", height: 300 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis dataKey="displayWeight" unit={weightUnit} />
+          <Tooltip formatter={(value) => `${Number(value).toFixed(1)} ${weightUnit}`} />
+          <Line type="monotone" dataKey="displayWeight" strokeWidth={2} dot />
         </LineChart>
-
-
-
       </ResponsiveContainer>
-
-
-
     </div>
-
   );
-
-
 }
-
-
 
 export default WeightChart;
