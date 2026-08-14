@@ -1,4 +1,3 @@
-import type { MorphDefinition } from "./morphs";
 import type { MorphReferenceEntry } from "./hognoseMorphCatalog";
 
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -18,14 +17,13 @@ const combo = (name: string, contains: string[] = []): MorphReferenceEntry => ({
     type: item.toLowerCase().includes("super") ? "Super" : "Gene",
   })),
   contains,
-  description: `Named Western Hognose combination documented by Reptifit. This entry is a reference name, not a new genetic locus.`,
+  description: "Named Western Hognose combination documented by Reptifit. This entry is a reference name, not a new genetic locus.",
   educationalNotes: "Reference-only combination. The underlying genetic components, not the combination name, are used for breeding calculations.",
   sourceUrl: "https://www.reptifit.nl/en/collection",
   sourceLabel: "Reptifit",
 });
 
 export const reptifitMorphCatalog: MorphReferenceEntry[] = [
-  // Base/individual traits specifically surfaced by Reptifit.
   {
     geneId: "pink-pastel-albino",
     name: "Pink Pastel Albino",
@@ -40,8 +38,7 @@ export const reptifitMorphCatalog: MorphReferenceEntry[] = [
     educationalNotes: "Pink Pastel Albino is its own recessive mutation. It should not be recorded as ordinary Albino.",
     sourceUrl: "https://www.reptifit.nl/en/collection",
     sourceLabel: "Reptifit",
-  } as MorphReferenceEntry,
-
+  },
   combo("Grey Fog", ["Arctic", "Conda"]),
   combo("Platinum", ["Arctic", "Super Conda"]),
   combo("Superarctic Anaconda", ["Super Arctic", "Conda"]),
