@@ -8,68 +8,35 @@ import "../styles/morphLibrary.css";
 
 function MorphDetail({ morph, onClose }: { morph: MorphReferenceEntry; onClose: () => void }) {
   const contains = morph.contains ?? morph.components?.map((component) => component.morphId) ?? [];
-
   return (
     <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}>
       <article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="morph-detail-title" onMouseDown={(event) => event.stopPropagation()}>
         <button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close morph details">×</button>
         <div className="morph-detail__eyebrow">TINY TITANS · MORPH DATABASE</div>
         <h2 id="morph-detail-title">{morph.name}</h2>
-        <div className="morph-detail__badges">
-          <span>{morph.kind}</span>
-          <span>{morph.inheritance}</span>
-          <span>{morph.verification}</span>
-        </div>
+        <div className="morph-detail__badges"><span>{morph.kind}</span><span>{morph.inheritance}</span><span>{morph.verification}</span></div>
         <p className="morph-detail__description">{morph.description ?? "No description has been added yet."}</p>
-
-        {contains.length > 0 && (
-          <section className="morph-detail__section">
-            <h3>Contains</h3>
-            <div className="morph-detail__contains">
-              {contains.map((item) => <span key={item}>{item}</span>)}
-            </div>
-          </section>
-        )}
-
-        {morph.components && morph.components.length > 0 && (
-          <section className="morph-detail__section">
-            <h3>Genetic components</h3>
-            <ul>
-              {morph.components.map((component) => (
-                <li key={`${component.morphId}-${component.copies ?? 1}`}>
-                  <strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <section className="morph-detail__section">
-          <h3>Genetics notes</h3>
-          <p>{morph.educationalNotes ?? "No additional genetics notes have been published for this entry yet."}</p>
-        </section>
-
-        <section className="morph-detail__section morph-detail__source">
-          <strong>Reference</strong>
-          <span>{morph.sourceLabel ?? "Tiny Titans"}</span>
-          <a href={morph.sourceUrl ?? "https://hognose-morphs.com/"} target="_blank" rel="noreferrer">Open source reference ↗</a>
-        </section>
+        {contains.length > 0 && <section className="morph-detail__section"><h3>Contains</h3><div className="morph-detail__contains">{contains.map((item) => <span key={item}>{item}</span>)}</div></section>}
+        {morph.components && morph.components.length > 0 && <section className="morph-detail__section"><h3>Genetic components</h3><ul>{morph.components.map((component) => <li key={`${component.morphId}-${component.copies ?? 1}`}><strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}</li>)}</ul></section>}
+        <section className="morph-detail__section"><h3>Genetics notes</h3><p>{morph.educationalNotes ?? "No additional genetics notes have been published for this entry yet."}</p></section>
+        <section className="morph-detail__section morph-detail__source"><strong>Reference</strong><span>{morph.sourceLabel ?? "Tiny Titans"}</span><a href={morph.sourceUrl ?? "https://hognose-morphs.com/"} target="_blank" rel="noreferrer">Open source reference ↗</a></section>
       </article>
     </div>
   );
 }
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
-
-function asReferenceEntry(entry: MasterMorphDefinition): MorphReferenceEntry {
-  return entry as MorphReferenceEntry;
-}
+function asReferenceEntry(entry: MasterMorphDefinition): MorphReferenceEntry { return entry as MorphReferenceEntry; }
 
 function MorphSubmissionDialog({ onClose }: { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [morphName, setMorphName] = useState("");
   const [description, setDescription] = useState("");
   const [observedTraits, setObservedTraits] = useState("");
+  const [proofDetails, setProofDetails] = useState("");
+  const [proofReference, setProofReference] = useState("");
+  const [photoRequirementsConfirmed, setPhotoRequirementsConfirmed] = useState(false);
+  const [factualAccuracyConfirmed, setFactualAccuracyConfirmed] = useState(false);
   const [creditMode, setCreditMode] = useState<MorphCreditMode>("anonymous");
   const [creditName, setCreditName] = useState("");
   const [creditSocial, setCreditSocial] = useState("");
@@ -79,70 +46,70 @@ function MorphSubmissionDialog({ onClose }: { onClose: () => void }) {
   const [sent, setSent] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setError("");
-    if (!image) {
-      setError("Please add a clear photo for review.");
-      return;
-    }
+    event.preventDefault(); setError("");
+    if (!image) { setError("Please add the required primary photograph."); return; }
+    if (!photoRequirementsConfirmed) { setError("Please confirm that your photo meets all Morph Library requirements."); return; }
+    if (!factualAccuracyConfirmed) { setError("Please confirm that you have provided proof supporting the confirmed morph identification."); return; }
     setBusy(true);
     try {
-      await submitMorphImage({ morphName, description, observedTraits, creditMode, creditName, creditSocial, image });
+      await submitMorphImage({ morphName, description, observedTraits, proofDetails, proofReference, photoRequirementsConfirmed, factualAccuracyConfirmed, creditMode, creditName, creditSocial, image });
       setSent(true);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "We couldn't submit the morph image. Please try again.");
-    } finally {
-      setBusy(false);
-    }
+    } catch (submitError) { setError(submitError instanceof Error ? submitError.message : "We couldn't submit the morph image. Please try again."); }
+    finally { setBusy(false); }
   }
 
   return (
     <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}>
       <article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="morph-submit-title" onMouseDown={(event) => event.stopPropagation()}>
         <button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close morph submission">×</button>
-        {sent ? (
-          <>
-            <div className="morph-detail__eyebrow">🐍 TINY TITANS · SUBMISSION RECEIVED</div>
-            <h2>Thanks — it is in review.</h2>
-            <p className="morph-detail__description">Your photo has been submitted for Creator review. If it is accepted, it can help improve the Tiny Titans morph database. Nothing is added as a confirmed morph automatically.</p>
-            <button className="morph-detail__close" type="button" onClick={onClose}>Done</button>
-          </>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="morph-detail__eyebrow">🐍 TINY TITANS · MORPH SUBMISSION</div>
-            <h2 id="morph-submit-title">Submit a morph image</h2>
-            <p className="morph-detail__description">Help build the database. Every submission is reviewed before it can become part of the confirmed library.</p>
+        {sent ? <>
+          <div className="morph-detail__eyebrow">🐍 TINY TITANS · SUBMISSION RECEIVED</div>
+          <h2>Thanks — it is in review.</h2>
+          <p className="morph-detail__description">Your photo and morph evidence have been submitted for Creator review. Nothing is added as a confirmed morph automatically.</p>
+          <button type="button" onClick={onClose}>Done</button>
+        </> : <form onSubmit={handleSubmit}>
+          <div className="morph-detail__eyebrow">🐍 TINY TITANS · MORPH SUBMISSION</div>
+          <h2 id="morph-submit-title">Submit a morph image</h2>
+          <p className="morph-detail__description">We need reference-quality photographs and factual evidence. This protects the accuracy of the Tiny Titans Morph Library.</p>
 
-            <label>Morph name or description<input value={morphName} onChange={(event) => setMorphName(event.target.value)} placeholder="e.g. Lavender, Super Arctic, unusual combination…" required /></label>
-            <label>What are we looking at?<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the animal, visual traits and why you believe this is the morph." rows={4} required /></label>
-            <label>Known genetic information <span>(optional)</span><textarea value={observedTraits} onChange={(event) => setObservedTraits(event.target.value)} placeholder="Parent genetics, hets, pairing, breeder information, etc." rows={3} /></label>
+          <section className="morph-detail__section">
+            <h3>📸 Primary photo requirements — please read</h3>
+            <p>The primary photograph must show the <strong>full snake body</strong>, be <strong>properly in focus</strong>, clearly lit and large enough to assess the phenotype. Use a <strong>neutral white, grey or black background</strong>. Please use a clean, staged/reference-style photograph rather than a snake hanging out of a bush, hidden in a vivarium or surrounded by distracting decor.</p>
+            <p>Do not use heavy filters, colour grading or edits that could alter the snake's true appearance. A nice snake photo is not necessarily a suitable morphology reference photo.</p>
+            <label className="morph-submit-check"><input type="checkbox" checked={photoRequirementsConfirmed} onChange={(event) => setPhotoRequirementsConfirmed(event.target.checked)} /> <span>I confirm my primary photo meets <strong>all</strong> of these requirements.</span></label>
+          </section>
 
-            <div className="morph-detail__section">
-              <h3>Photo</h3>
-              <p>Use a clear image showing the snake's overall appearance. The image is compressed before upload.</p>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={(event) => setImage(event.target.files?.[0] ?? null)} required />
-              {image && <small>Selected: {image.name}</small>}
-            </div>
+          <label>Morph name<input value={morphName} onChange={(event) => setMorphName(event.target.value)} placeholder="e.g. Lavender, Super Arctic, combination…" required /></label>
+          <label>What are we looking at?<textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe the animal, visual traits and why you believe this is the morph." rows={4} required /></label>
+          <label>Known genetic information <span>(optional)</span><textarea value={observedTraits} onChange={(event) => setObservedTraits(event.target.value)} placeholder="Parent genetics, hets, pairing, breeder information, etc." rows={3} /></label>
 
-            <div className="morph-detail__section">
-              <h3>Credit</h3>
-              <p>Credit is completely optional. Choose how, if at all, you'd like to be credited if the submission is accepted.</p>
-              <div className="morph-detail__badges">
-                {(["name", "social", "anonymous"] as MorphCreditMode[]).map((mode) => (
-                  <button key={mode} type="button" className={creditMode === mode ? "is-active" : ""} onClick={() => setCreditMode(mode)}>
-                    {mode === "name" ? "My name" : mode === "social" ? "Social media" : "Anonymous"}
-                  </button>
-                ))}
-              </div>
-              {creditMode === "name" && <input value={creditName} onChange={(event) => setCreditName(event.target.value)} placeholder="Name to display" required />}
-              {creditMode === "social" && <input value={creditSocial} onChange={(event) => setCreditSocial(event.target.value)} placeholder="@handle or social link" required />}
-            </div>
+          <section className="morph-detail__section">
+            <h3>🧬 Confirmed morph proof — required</h3>
+            <p><strong>A visual guess is not sufficient.</strong> For factual accuracy, provide evidence supporting the stated morph. Examples include breeder documentation, original breeder/seller records, parent genetics/provenance, verified breeding records or other credible evidence.</p>
+            <label>What proof are you providing?<textarea value={proofDetails} onChange={(event) => setProofDetails(event.target.value)} placeholder="Explain the evidence: breeder record, parent pairing, original listing, documentation, etc." rows={4} required /></label>
+            <label>Proof reference <span>(optional)</span><input value={proofReference} onChange={(event) => setProofReference(event.target.value)} placeholder="Source link, breeder name, document reference, etc." /></label>
+            <label className="morph-submit-check"><input type="checkbox" checked={factualAccuracyConfirmed} onChange={(event) => setFactualAccuracyConfirmed(event.target.checked)} /> <span>I confirm that the morph identification is supported by the evidence provided and that I am submitting it for factual review.</span></label>
+          </section>
 
-            {error && <p role="alert">{error}</p>}
-            <button type="submit" disabled={busy}>{busy ? "Submitting for review…" : "Submit for review"}</button>
-            <button type="button" onClick={onClose} disabled={busy}>Cancel</button>
-          </form>
-        )}
+          <section className="morph-detail__section">
+            <h3>Primary photograph</h3>
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={(event) => setImage(event.target.files?.[0] ?? null)} required />
+            {image && <small>Selected: {image.name}</small>}
+            <p>Images are resized/compressed before upload. Creator review is still required.</p>
+          </section>
+
+          <section className="morph-detail__section">
+            <h3>Credit</h3>
+            <p>Credit is optional if your submission is accepted.</p>
+            <div className="morph-detail__badges">{(["name", "social", "anonymous"] as MorphCreditMode[]).map((mode) => <button key={mode} type="button" className={creditMode === mode ? "is-active" : ""} onClick={() => setCreditMode(mode)}>{mode === "name" ? "My name" : mode === "social" ? "Social media" : "Anonymous"}</button>)}</div>
+            {creditMode === "name" && <input value={creditName} onChange={(event) => setCreditName(event.target.value)} placeholder="Name to display" required />}
+            {creditMode === "social" && <input value={creditSocial} onChange={(event) => setCreditSocial(event.target.value)} placeholder="@handle or social link" required />}
+          </section>
+
+          {error && <p role="alert">{error}</p>}
+          <button type="submit" disabled={busy}>{busy ? "Submitting for review…" : "Submit for review"}</button>
+          <button type="button" onClick={onClose} disabled={busy}>Cancel</button>
+        </form>}
       </article>
     </div>
   );
@@ -153,71 +120,7 @@ export default function MorphLibrary() {
   const [filter, setFilter] = useState<"all" | "gene" | "combination" | "polygenic" | "line-bred">("all");
   const [selected, setSelected] = useState<MorphReferenceEntry | null>(null);
   const [showSubmission, setShowSubmission] = useState(false);
-
-  const entries = useMemo<MorphReferenceEntry[]>(() => {
-    const byName = new Map<string, MorphReferenceEntry>();
-    [...masterMorphs, ...reptifitMorphCatalog].forEach((entry) => {
-      const key = normalise(entry.name);
-      if (!byName.has(key)) byName.set(key, asReferenceEntry(entry));
-    });
-    return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, []);
-
-  const filtered = useMemo(() => {
-    const needle = normalise(query);
-    const exactMatches = needle
-      ? entries.filter((entry) => normalise(entry.name) === needle || (entry.aliases ?? []).some((alias) => normalise(alias) === needle))
-      : [];
-    const searchPool = exactMatches.length > 0
-      ? exactMatches
-      : entries.filter((entry) => {
-          if (!needle) return true;
-          const searchable = [entry.name, ...(entry.aliases ?? []), ...(entry.contains ?? [])].map(normalise);
-          return searchable.some((value) => value.includes(needle));
-        });
-    return searchPool.filter((entry) => filter === "all"
-      || (filter === "gene" && (entry.kind === "Gene" || entry.kind === "Super"))
-      || (filter === "combination" && entry.kind === "Combination")
-      || (filter === "polygenic" && entry.inheritance === "Polygenic")
-      || (filter === "line-bred" && entry.inheritance === "Line-bred"));
-  }, [entries, filter, query]);
-
-  return (
-    <main className="page-container morph-library-page">
-      <BackHomeButton />
-      <header className="morph-library__header">
-        <div className="morph-library__eyebrow">🐍 TINY TITANS · WESTERN HOGNOSE</div>
-        <h1>Morph Library</h1>
-        <p>Explore genes, super forms and recognised combinations. Tap any entry to open its full genetics record.</p>
-        <button type="button" onClick={() => setShowSubmission(true)}>📷 Submit a morph image</button>
-        <small>Help expand the database. Submissions are reviewed before anything becomes a confirmed library entry.</small>
-      </header>
-
-      <div className="morph-library__controls">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search morphs, aliases or components…" aria-label="Search morph library" />
-        <div className="morph-library__filters" role="group" aria-label="Morph type filters">
-          {(["all", "gene", "combination", "polygenic", "line-bred"] as const).map((value) => (
-            <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>{value === "all" ? "All" : value.replace("-", " ")}</button>
-          ))}
-        </div>
-      </div>
-
-      <div className="morph-library__count">Showing <strong>{filtered.length}</strong> of <strong>{entries.length}</strong> records</div>
-      <div className="morph-grid morph-library__grid">
-        {filtered.map((morph) => (
-          <button className="morph-card morph-card--interactive" key={morph.geneId} type="button" onClick={() => setSelected(morph)}>
-            <div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div>
-            <h2>{morph.name}</h2>
-            <p className="morph-card__inheritance">{morph.inheritance}</p>
-            {morph.contains && morph.contains.length > 0 ? <p className="morph-card__contains">Contains: {morph.contains.join(" + ")}</p> : <p>{morph.description ?? "Reference entry"}</p>}
-            <span className="morph-card__open">Open details →</span>
-          </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 && <div className="welcome-card"><h2>No matching morphs</h2><p>Try a different name, alias or category.</p></div>}
-      {selected && <MorphDetail morph={selected} onClose={() => setSelected(null)} />}
-      {showSubmission && <MorphSubmissionDialog onClose={() => setShowSubmission(false)} />}
-    </main>
-  );
+  const entries = useMemo<MorphReferenceEntry[]>(() => { const byName = new Map<string, MorphReferenceEntry>(); [...masterMorphs, ...reptifitMorphCatalog].forEach((entry) => { const key = normalise(entry.name); if (!byName.has(key)) byName.set(key, asReferenceEntry(entry)); }); return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name)); }, []);
+  const filtered = useMemo(() => { const needle = normalise(query); const exactMatches = needle ? entries.filter((entry) => normalise(entry.name) === needle || (entry.aliases ?? []).some((alias) => normalise(alias) === needle)) : []; const searchPool = exactMatches.length > 0 ? exactMatches : entries.filter((entry) => { if (!needle) return true; const searchable = [entry.name, ...(entry.aliases ?? []), ...(entry.contains ?? [])].map(normalise); return searchable.some((value) => value.includes(needle)); }); return searchPool.filter((entry) => filter === "all" || (filter === "gene" && (entry.kind === "Gene" || entry.kind === "Super")) || (filter === "combination" && entry.kind === "Combination") || (filter === "polygenic" && entry.inheritance === "Polygenic") || (filter === "line-bred" && entry.inheritance === "Line-bred")); }, [entries, filter, query]);
+  return <main className="page-container morph-library-page"><BackHomeButton /><header className="morph-library__header"><div className="morph-library__eyebrow">🐍 TINY TITANS · WESTERN HOGNOSE</div><h1>Morph Library</h1><p>Explore genes, super forms and recognised combinations. Tap any entry to open its full genetics record.</p><button type="button" onClick={() => setShowSubmission(true)}>📷 Submit a morph image</button><small>Reference-quality photographs and confirmed morph evidence are required. Every submission is reviewed.</small></header><div className="morph-library__controls"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search morphs, aliases or components…" aria-label="Search morph library" /><div className="morph-library__filters" role="group" aria-label="Morph type filters">{(["all", "gene", "combination", "polygenic", "line-bred"] as const).map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>{value === "all" ? "All" : value.replace("-", " ")}</button>)}</div></div><div className="morph-library__count">Showing <strong>{filtered.length}</strong> of <strong>{entries.length}</strong> records</div><div className="morph-grid morph-library__grid">{filtered.map((morph) => <button className="morph-card morph-card--interactive" key={morph.geneId} type="button" onClick={() => setSelected(morph)}><div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div><h2>{morph.name}</h2><p className="morph-card__inheritance">{morph.inheritance}</p>{morph.contains && morph.contains.length > 0 ? <p className="morph-card__contains">Contains: {morph.contains.join(" + ")}</p> : <p>{morph.description ?? "Reference entry"}</p>}<span className="morph-card__open">Open details →</span></button>)}</div>{filtered.length === 0 && <div className="welcome-card"><h2>No matching morphs</h2><p>Try a different name, alias or category.</p></div>}{selected && <MorphDetail morph={selected} onClose={() => setSelected(null)} />}{showSubmission && <MorphSubmissionDialog onClose={() => setShowSubmission(false)} />}</main>;
 }
