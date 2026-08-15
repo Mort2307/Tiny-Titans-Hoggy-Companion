@@ -41,7 +41,8 @@ export type GeneState = {
 export type OffspringComponent = {
   geneId: string;
   name: string;
-  copies: GeneCopyState;
+  /** Runtime-calculated copy count; the calculator constrains this to 0/1/2. */
+  copies: number;
   state: InheritanceState;
 };
 
