@@ -6,6 +6,7 @@ import {
   getCreatorReports,
   getFounderApplications,
   getGlobalStats,
+  getIssueAttachmentUrl,
   getMorphImageSubmissions,
   rejectMorphImageSubmission,
   updateCreatorReport,
@@ -22,18 +23,63 @@ function formatNumber(value: number, maximumFractionDigits = 0) { return new Int
 
 export default function CreatorAdmin() {
   const { profile, user } = useAuth();
-  const [reports, setReports] = useState<ReportIssue[]>([]); const [founders, setFounders] = useState<FounderApplication[]>([]); const [morphSubmissions, setMorphSubmissions] = useState<MorphImageSubmission[]>([]); const [stats, setStats] = useState<GlobalStats>(EMPTY_STATS); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [workingMorphId, setWorkingMorphId] = useState("");
+  const [reports, setReports] = useState<ReportIssue[]>([]);
+  const [founders, setFounders] = useState<FounderApplication[]>([]);
+  const [morphSubmissions, setMorphSubmissions] = useState<MorphImageSubmission[]>([]);
+  const [stats, setStats] = useState<GlobalStats>(EMPTY_STATS);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [workingMorphId, setWorkingMorphId] = useState("");
+  const [selectedReport, setSelectedReport] = useState<ReportIssue | null>(null);
+  const [reportAttachmentUrl, setReportAttachmentUrl] = useState("");
+  const [reportAttachmentLoading, setReportAttachmentLoading] = useState(false);
+  const [workingReportId, setWorkingReportId] = useState("");
 
   async function load() {
     setLoading(true); setError("");
-    try { const [loadedReports, loadedFounders, loadedStats, loadedMorphSubmissions] = await Promise.all([getCreatorReports(), getFounderApplications(), getGlobalStats(), getMorphImageSubmissions()]); setReports(loadedReports); setFounders(loadedFounders); setStats(loadedStats); setMorphSubmissions(loadedMorphSubmissions.filter((submission) => submission.status === "Pending" || submission.status === "NeedsInfo")); }
-    catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded."); }
+    try {
+      const [loadedReports, loadedFounders, loadedStats, loadedMorphSubmissions] = await Promise.all([getCreatorReports(), getFounderApplications(), getGlobalStats(), getMorphImageSubmissions()]);
+      setReports(loadedReports);
+      setFounders(loadedFounders);
+      setStats(loadedStats);
+      setMorphSubmissions(loadedMorphSubmissions.filter((submission) => submission.status === "Pending" || submission.status === "NeedsInfo"));
+    } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded."); }
     finally { setLoading(false); }
   }
+
   useEffect(() => { if (profile?.role === "admin") void load(); }, [profile?.role]);
   if (profile?.role !== "admin") return <Navigate to="/" replace />;
 
-  async function changeReport(id: string, status: ReportIssue["status"]) { await updateCreatorReport(id, status); await load(); }
+  async function changeReport(id: string, status: ReportIssue["status"]) {
+    setWorkingReportId(id); setError("");
+    try {
+      await updateCreatorReport(id, status);
+      setReports((current) => current.map((report) => report.id === id ? { ...report, status } : report));
+      if (selectedReport?.id === id) setSelectedReport((current) => current ? { ...current, status } : current);
+    } catch (reportError) {
+      setError(reportError instanceof Error ? reportError.message : "Issue report could not be updated.");
+    } finally { setWorkingReportId(""); }
+  }
+
+  async function openReport(report: ReportIssue) {
+    setSelectedReport(report);
+    setReportAttachmentUrl("");
+    setError("");
+    if (!report.attachment?.path) return;
+    setReportAttachmentLoading(true);
+    try { setReportAttachmentUrl(await getIssueAttachmentUrl(report.attachment.path)); }
+    catch (attachmentError) { setError(attachmentError instanceof Error ? attachmentError.message : "The report attachment could not be loaded."); }
+    finally { setReportAttachmentLoading(false); }
+  }
+
+  async function reviewReport(report: ReportIssue) {
+    if (report.status === "Pending") await changeReport(report.id, "Reviewing");
+    const updated = report.status === "Pending" ? { ...report, status: "Reviewing" as const } : report;
+    await openReport(updated);
+  }
+
+  async function closeReport() { setSelectedReport(null); setReportAttachmentUrl(""); setReportAttachmentLoading(false); }
+
   async function changeFounder(id: string, status: FounderApplication["status"]) { await updateFounderApplication(id, status); await load(); }
   async function approveMorph(submission: MorphImageSubmission) { setWorkingMorphId(submission.id); setError(""); try { await approveMorphImageSubmission(submission, user?.uid); await load(); } catch (approvalError) { setError(approvalError instanceof Error ? approvalError.message : "Morph image approval failed."); } finally { setWorkingMorphId(""); } }
   async function rejectMorph(submission: MorphImageSubmission) { setWorkingMorphId(submission.id); setError(""); try { await rejectMorphImageSubmission(submission.id, submission.attachment.path, user?.uid, "Rejected by Creator."); await load(); } catch (rejectError) { setError(rejectError instanceof Error ? rejectError.message : "Morph image rejection failed."); } finally { setWorkingMorphId(""); } }
@@ -52,16 +98,26 @@ export default function CreatorAdmin() {
 
         <section className="creator-admin-section"><h2>🧬 Morph Image Submissions</h2><p className="creator-muted">Community images are submitted to a canonical morph ID. Approving one adds it directly to that morph — no catalogue hunting.</p>{morphSubmissions.length === 0 ? <p className="creator-muted">No morph image submissions awaiting review.</p> : <div className="creator-list">{morphSubmissions.map((submission) => <article className="creator-list-card" key={submission.id}>
           <div className="creator-list-top"><div><span className="creator-badge">{submission.status}</span><h3>{submission.morphName}</h3></div><small>geneId: {submission.morphId}</small></div>
-          <img src={submission.attachment.path ? `${import.meta.env.VITE_FIREBASE_STORAGE_PLACEHOLDER ?? ""}` : ""} alt={`Submitted ${submission.morphName}`} style={{ display: "none" }} />
           <p>{submission.description}</p>{submission.geneticsNotes && <p><strong>Genetics:</strong> {submission.geneticsNotes}</p>}
           <p><strong>Credit:</strong> {submission.creditType === "anonymous" ? "Anonymous" : submission.creditType === "social" ? submission.creditSocial || "Social media" : submission.creditName || "Name"}</p>
           <div className="creator-actions"><button disabled={workingMorphId === submission.id} onClick={() => void approveMorph(submission)}>{workingMorphId === submission.id ? "Approving…" : `✓ Approve & Add to ${submission.morphName}`}</button><button disabled={workingMorphId === submission.id} onClick={() => void rejectMorph(submission)}>Reject</button></div>
         </article>)}</div>}</section>
 
-        <section className="creator-admin-section"><h2>🐛 Issue Reports</h2>{reports.length === 0 ? <p className="creator-muted">No reports yet.</p> : <div className="creator-list">{reports.map((report) => <article className="creator-list-card" key={report.id}><div className="creator-list-top"><div><span className={`creator-badge ${report.priority.toLowerCase()}`}>{report.priority}</span><span className="creator-badge">{report.status}</span><h3>{report.title}</h3></div><small>{report.category} · {report.source}</small></div><p>{report.description}</p><div className="creator-actions"><button onClick={() => void changeReport(report.id, "Reviewing")}>Review</button><button onClick={() => void changeReport(report.id, "Resolved")}>Resolve</button><button onClick={() => void changeReport(report.id, "Rejected")}>Reject</button></div></article>)}</div>}</section>
+        <section className="creator-admin-section"><h2>🐛 Issue Reports</h2>{reports.length === 0 ? <p className="creator-muted">No reports yet.</p> : <div className="creator-list">{reports.map((report) => <article className="creator-list-card" key={report.id}><div className="creator-list-top"><div><span className={`creator-badge ${report.priority.toLowerCase()}`}>{report.priority}</span><span className="creator-badge">{report.status}</span><h3>{report.title}</h3></div><small>{report.category} · {report.source}</small></div><p>{report.description}</p><div className="creator-actions"><button disabled={workingReportId === report.id} onClick={() => void reviewReport(report)}>{workingReportId === report.id ? "Opening…" : "Review"}</button><button disabled={workingReportId === report.id} onClick={() => void changeReport(report.id, "Resolved")}>Resolve</button><button disabled={workingReportId === report.id} onClick={() => void changeReport(report.id, "Rejected")}>Reject</button></div></article>)}</div>}</section>
 
         <section className="creator-admin-section"><h2>👑 Legacy Founder Applications</h2><p className="creator-muted">This legacy section remains visible for existing records. New supporter payments will use the Titan Supporter system.</p>{founders.length === 0 ? <p className="creator-muted">No legacy applications.</p> : <div className="creator-list">{founders.map((founder) => <article className="creator-list-card" key={founder.id}><div className="creator-list-top"><div><span className="creator-badge">{founder.status}</span><h3>{founder.displayName || founder.email}</h3></div><small>{founder.email}</small></div><p><strong>Why:</strong> {founder.reason}</p><p><strong>Experience:</strong> {founder.experience}</p>{founder.contribution && <p><strong>Contribution:</strong> {founder.contribution}</p>}<div className="creator-actions"><button onClick={() => void changeFounder(founder.id, "Approved")}>Approve</button><button onClick={() => void changeFounder(founder.id, "Declined")}>Decline</button></div></article>)}</div>}</section>
       </>}
+
+      {selectedReport && <div className="creator-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) void closeReport(); }}>
+        <section className="creator-modal" role="dialog" aria-modal="true" aria-labelledby="issue-review-title">
+          <div className="creator-modal-header"><div><span className="creator-admin-kicker">🐛 ISSUE REVIEW</span><h2 id="issue-review-title">{selectedReport.title}</h2></div><button type="button" className="creator-modal-close" onClick={() => void closeReport()} aria-label="Close issue review">×</button></div>
+          <div className="creator-modal-badges"><span className={`creator-badge ${selectedReport.priority.toLowerCase()}`}>{selectedReport.priority}</span><span className="creator-badge">{selectedReport.status}</span><span className="creator-badge">{selectedReport.category}</span><span className="creator-badge">{selectedReport.source}</span></div>
+          <div className="creator-review-grid"><div><strong>Description</strong><p>{selectedReport.description || "No description provided."}</p></div><div><strong>Context</strong><p>{selectedReport.context || "No additional context provided."}</p></div><div><strong>App version</strong><p>{selectedReport.appVersion || "Not supplied"}</p></div><div><strong>Issue token</strong><p>{selectedReport.issueToken || "Not available"}</p></div></div>
+          {selectedReport.metadata && <details className="creator-review-details"><summary>Technical metadata</summary><pre>{JSON.stringify(selectedReport.metadata, null, 2)}</pre></details>}
+          {selectedReport.attachment && <div className="creator-review-attachment"><strong>Evidence attachment</strong>{reportAttachmentLoading ? <p className="creator-muted">Loading attachment…</p> : reportAttachmentUrl ? selectedReport.attachment.type === "image" ? <img src={reportAttachmentUrl} alt="Issue evidence submitted by tester" /> : <video src={reportAttachmentUrl} controls preload="metadata" /> : <p className="creator-muted">The attachment could not be loaded.</p>}{reportAttachmentUrl && <a href={reportAttachmentUrl} target="_blank" rel="noreferrer">Open evidence in new tab</a>}</div>}
+          <div className="creator-modal-actions"><button type="button" onClick={() => void changeReport(selectedReport.id, "Reviewing")} disabled={workingReportId === selectedReport.id}>🟡 Keep Reviewing</button><button type="button" className="creator-primary" onClick={async () => { await changeReport(selectedReport.id, "Resolved"); await closeReport(); }}>🟢 Resolve</button><button type="button" className="creator-danger" onClick={async () => { await changeReport(selectedReport.id, "Rejected"); await closeReport(); }}>🔴 Reject</button></div>
+        </section>
+      </div>}
     </section>
   );
 }
