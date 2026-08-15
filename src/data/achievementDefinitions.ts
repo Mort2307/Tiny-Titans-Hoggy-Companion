@@ -9,23 +9,17 @@ export const ACHIEVEMENT_TIERS: Array<{ tier: AchievementTier; icon: string; lab
   { tier: "legendary", icon: "👑", label: "Legendary", description: "Holy shit, you've been using Tiny Titans for ages." },
 ];
 
-export type AchievementTrigger = "questions" | "lessons" | "perfectBanks" | "knowledgeScore" | "streak" | "confirmedBugReports" | "snakes" | "weightLogs" | "feedingLogs" | "shedLogs";
-
 export type AchievementDefinition = {
   id: string;
   category: string;
   title: string;
   description: string;
   icon: string;
-  trigger: AchievementTrigger;
+  trigger: "questions" | "lessons" | "perfectBanks" | "knowledgeScore" | "streak" | "confirmedBugReports";
   thresholds: [number, number, number, number, number, number];
 };
 
 export const achievementDefinitions: AchievementDefinition[] = [
-  { id: "snake-keeper", category: "husbandry", title: "Snake Keeper", description: "Build your Tiny Titans collection.", icon: "🐍", trigger: "snakes", thresholds: [1, 3, 5, 10, 20, 30] },
-  { id: "weight-tracker", category: "weight", title: "Weight Tracker", description: "Keep meaningful growth records.", icon: "⚖️", trigger: "weightLogs", thresholds: [5, 25, 50, 100, 250, 500] },
-  { id: "feeding-tracker", category: "feeding", title: "Feeding Keeper", description: "Build a useful feeding history.", icon: "🍽️", trigger: "feedingLogs", thresholds: [10, 50, 100, 250, 500, 1000] },
-  { id: "shed-tracker", category: "shed", title: "Shed Logger", description: "Build a long-term shedding record.", icon: "💧", trigger: "shedLogs", thresholds: [5, 25, 50, 100, 250, 500] },
   { id: "challenge-questions", category: "challenge", title: "Challenge Titan", description: "Complete Titans Challenge questions.", icon: "🧠", trigger: "questions", thresholds: [1, 25, 75, 150, 300, 500] },
   { id: "lessons-mastered", category: "challenge", title: "Knowledge Seeker", description: "Master complete learning topics.", icon: "📚", trigger: "lessons", thresholds: [1, 5, 15, 30, 60, 100] },
   { id: "perfect-banks", category: "challenge", title: "Perfect Bank", description: "Master complete question banks with 100%.", icon: "💯", trigger: "perfectBanks", thresholds: [1, 5, 15, 30, 60, 100] },
