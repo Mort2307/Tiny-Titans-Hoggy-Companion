@@ -1,8 +1,10 @@
-import { addDoc, collection, getDocs, query, serverTimestamp, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, query, serverTimestamp, where, type QuerySnapshot, type DocumentData } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { CommunityAudience, CommunityCategory, CommunityPost, CommunityPriority, KnownIssueStatus } from "../types/community";
 
 const postsCollection = collection(db, "communityPosts");
+
+type CommunitySnapshot = QuerySnapshot<DocumentData, DocumentData>;
 
 function timestampMillis(value: unknown): number {
   if (!value || typeof value !== "object" || !("toMillis" in value) || typeof value.toMillis !== "function") return 0;
@@ -24,20 +26,22 @@ export async function getCommunityPosts(options?: { isTester?: boolean; isAdmin?
   if (isAdmin) audiences.push("admin");
 
   const uniqueAudiences = [...new Set(audiences)];
-  const results = await Promise.allSettled(
-    uniqueAudiences.map((audience) => getDocs(query(postsCollection, where("audience", "==", audience))))
+  const results: PromiseSettledResult<CommunitySnapshot>[] = await Promise.allSettled(
+    uniqueAudiences.map(async (audience): Promise<CommunitySnapshot> =>
+      getDocs(query(postsCollection, where("audience", "==", audience)))
+    )
   );
 
-  const readableSnapshots = results
-    .filter((result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof getDocs>>> => result.status === "fulfilled")
-    .map((result) => result.value);
+  const readableSnapshots: CommunitySnapshot[] = results.flatMap((result) =>
+    result.status === "fulfilled" ? [result.value] : []
+  );
 
   // Public content is the minimum viable Hub. If it is unexpectedly unreadable,
   // surface the real permission error rather than silently showing a fake empty Hub.
   const publicResult = results[0];
   if (publicResult?.status === "rejected") throw publicResult.reason;
 
-  const posts = readableSnapshots.flatMap((snapshot) =>
+  const posts: CommunityPost[] = readableSnapshots.flatMap((snapshot) =>
     snapshot.docs.map((item) => ({
       id: item.id,
       ...(item.data() as Omit<CommunityPost, "id">),
