@@ -2,7 +2,6 @@ import {
   addDoc,
   collection,
   deleteField,
-  deleteDoc,
   doc,
   getDocs,
   orderBy,
@@ -79,14 +78,7 @@ export async function submitIssueReport(input: Omit<ReportIssue, "id" | "created
   }
 
   try {
-    const refDoc = await addDoc(collection(db, "issueReports"), {
-      ...report,
-      issueToken: token,
-      issueFingerprint: fingerprint,
-      attachment: attachment ?? null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    const refDoc = await addDoc(collection(db, "issueReports"), { ...report, issueToken: token, issueFingerprint: fingerprint, attachment: attachment ?? null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     return { id: refDoc.id, issueToken: token, issueFingerprint: fingerprint };
   } catch (error) {
     if (uploadedPath) await deleteObject(ref(storage, uploadedPath)).catch(() => undefined);
@@ -101,18 +93,12 @@ export async function getCreatorReports(): Promise<ReportIssue[]> {
 
 export async function updateCreatorReport(reportId: string, status: ReportIssue["status"]) {
   const reportRef = doc(db, "issueReports", reportId);
-  if (status !== "Cleared") {
-    await updateDoc(reportRef, { status, updatedAt: serverTimestamp() });
-    return;
-  }
+  if (status !== "Cleared") { await updateDoc(reportRef, { status, updatedAt: serverTimestamp() }); return; }
   const snapshot = await getDocs(query(collection(db, "issueReports")));
   const match = snapshot.docs.find((item) => item.id === reportId);
   const data = match?.data() as Partial<ReportIssue> | undefined;
   if (data?.attachment?.path) await deleteObject(ref(storage, data.attachment.path)).catch(() => undefined);
-  await updateDoc(reportRef, {
-    status: "Cleared", updatedAt: serverTimestamp(), title: deleteField(), description: deleteField(), context: deleteField(), metadata: deleteField(),
-    attachment: deleteField(), userId: deleteField(), appVersion: deleteField(),
-  });
+  await updateDoc(reportRef, { status: "Cleared", updatedAt: serverTimestamp(), title: deleteField(), description: deleteField(), context: deleteField(), metadata: deleteField(), attachment: deleteField(), userId: deleteField(), appVersion: deleteField() });
 }
 
 export async function getFounderApplications(): Promise<FounderApplication[]> {
@@ -120,10 +106,7 @@ export async function getFounderApplications(): Promise<FounderApplication[]> {
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<FounderApplication, "id">) }));
 }
 
-export async function updateFounderApplication(id: string, status: FounderApplication["status"]) {
-  await updateDoc(doc(db, "founderApplications", id), { status, updatedAt: serverTimestamp() });
-}
-
+export async function updateFounderApplication(id: string, status: FounderApplication["status"]) { await updateDoc(doc(db, "founderApplications", id), { status, updatedAt: serverTimestamp() }); }
 export async function getUserCount(): Promise<number> { return (await getDocs(collection(db, "users"))).size; }
 function toNumber(value: unknown): number { return typeof value === "number" && Number.isFinite(value) ? value : 0; }
 function weightToKg(weight: number, unit: unknown): number { return unit === "kg" ? weight : weight / 1000; }
@@ -148,89 +131,33 @@ export async function getGlobalStats(): Promise<GlobalStats> {
   return { registeredUsers: usersSnapshot.size, activeUsers, snakeProfiles, mealsFed, weightLogs, totalWeightKg, totalWeightLb: totalWeightKg * 2.2046226218, shedsLogged, totalShedLengthCm, totalShedLengthIn: totalShedLengthCm / 2.54, geneticsCalculations: 0 };
 }
 
-/**
- * Morph submissions are keyed to the canonical geneId chosen by the submitter.
- * Creator approval therefore has a deterministic destination and never requires
- * scrolling through the morph catalogue to find the correct entry.
- */
 export async function getMorphImageSubmissions(): Promise<MorphImageSubmission[]> {
   const snapshot = await getDocs(query(collection(db, "morphImageSubmissions"), orderBy("submittedAt", "desc")));
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<MorphImageSubmission, "id">) }));
 }
 
-export async function updateMorphSubmissionStatus(
-  submissionId: string,
-  status: MorphSubmissionStatus,
-  reviewerUid?: string,
-  rejectionReason?: string,
-) {
-  await updateDoc(doc(db, "morphImageSubmissions", submissionId), {
-    status,
-    reviewedAt: serverTimestamp(),
-    reviewedBy: reviewerUid ?? null,
-    rejectionReason: rejectionReason ?? null,
-  });
+export async function updateMorphSubmissionStatus(submissionId: string, status: MorphSubmissionStatus, reviewerUid?: string, rejectionReason?: string) {
+  await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status, reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: rejectionReason ?? null });
 }
 
-/** Approves the submission to its existing canonical morphId and publishes the image to the approved image collection. */
 export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage> {
   if (!submission.morphId) throw new Error("This submission has no canonical morph ID.");
   if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval.");
-
   const temporaryRef = ref(storage, submission.attachment.path);
   const imageUrl = await getDownloadURL(temporaryRef);
   const approvedPath = `morphLibrary/${submission.morphId}/community/${submission.id}.jpg`;
-
-  // Firebase Storage does not provide a server-side copy primitive in the client SDK.
-  // The approved record therefore keeps the reviewed URL/path while the temporary
-  // asset remains available until the Creator cleanup step. This avoids losing the
-  // evidence if approval succeeds but the follow-up cleanup fails.
-  const approvedDoc = await addDoc(collection(db, "approvedMorphImages"), {
-    morphId: submission.morphId,
-    morphName: submission.morphName,
-    imageUrl,
-    storagePath: submission.attachment.path,
-    approvedPath,
-    creditType: submission.creditType,
-    creditName: submission.creditName ?? null,
-    creditSocial: submission.creditSocial ?? null,
-    sourceSubmissionId: submission.id,
-    approvedAt: serverTimestamp(),
-    approvedBy: reviewerUid ?? null,
-  });
-
-  await updateDoc(doc(db, "morphImageSubmissions", submission.id), {
-    status: "Approved",
-    reviewedAt: serverTimestamp(),
-    reviewedBy: reviewerUid ?? null,
-    approvedImageId: approvedDoc.id,
-  });
-
-  return {
-    id: approvedDoc.id,
-    morphId: submission.morphId,
-    morphName: submission.morphName,
-    imageUrl,
-    storagePath: submission.attachment.path,
-    creditType: submission.creditType,
-    creditName: submission.creditName,
-    creditSocial: submission.creditSocial,
-    sourceSubmissionId: submission.id,
-    approvedAt: undefined,
-    approvedBy: reviewerUid,
-  };
+  const approvedDoc = await addDoc(collection(db, "approvedMorphImages"), { morphId: submission.morphId, morphName: submission.morphName, imageUrl, storagePath: submission.attachment.path, approvedPath, creditType: submission.creditType, creditName: submission.creditName ?? null, creditSocial: submission.creditSocial ?? null, sourceSubmissionId: submission.id, approvedAt: serverTimestamp(), approvedBy: reviewerUid ?? null });
+  await updateDoc(doc(db, "morphImageSubmissions", submission.id), { status: "Approved", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, approvedImageId: approvedDoc.id });
+  return { id: approvedDoc.id, morphId: submission.morphId, morphName: submission.morphName, imageUrl, storagePath: submission.attachment.path, creditType: submission.creditType, creditName: submission.creditName, creditSocial: submission.creditSocial, sourceSubmissionId: submission.id, approvedAt: undefined, approvedBy: reviewerUid };
 }
 
 export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) {
   if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined);
-  await updateDoc(doc(db, "morphImageSubmissions", submissionId), {
-    status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null,
-  });
+  await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null });
 }
 
 export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> {
-  const base = collection(db, "approvedMorphImages");
-  const snapshot = await getDocs(query(base, orderBy("approvedAt", "desc")));
+  const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc")));
   const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) }));
   return morphId ? images.filter((image) => image.morphId === morphId) : images;
 }
