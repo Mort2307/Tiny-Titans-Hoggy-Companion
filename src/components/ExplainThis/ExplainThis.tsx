@@ -172,7 +172,6 @@ export default function ExplainThis() {
       onClick={() => { setOpen((value) => !value); setExplanation(null); }}
     >
       <span className="explain-this__icon">?</span>
-      <span className="explain-this__label">{open ? "Exit help" : "What does this mean?"}</span>
       <span className="explain-this__hint">Tap to learn</span>
     </button>
 
