@@ -98,9 +98,6 @@ function wordAtPoint(clientX: number, clientY: number): { word: string; context:
   const word = text.slice(start, end).trim();
   if (!word) return null;
 
-  // Build a small phrase around the tapped word so terms such as
-  // "incomplete dominant", "thermal gradient" and "data quality"
-  // can be recognised from a normal tap instead of requiring perfect precision.
   const left = text.slice(Math.max(0, start - 42), start);
   const right = text.slice(end, Math.min(text.length, end + 42));
   return { word, context: `${left}${word}${right}` };
@@ -108,7 +105,7 @@ function wordAtPoint(clientX: number, clientY: number): { word: string; context:
 
 function fallbackExplanation(word: string): Explanation {
   return {
-    simple: `You selected “${word}”. Tiny Titans does not have a trusted definition for this term yet, so it will not make one up. This term has been flagged for the glossary team to add a verified explanation.` ,
+    simple: `You selected “${word}”. Tiny Titans does not have a trusted definition for this term yet, so it will not make one up. This term has been flagged for the glossary team to add a verified explanation.`,
     standard: `“${word}” is not currently in the curated Tiny Titans terminology database. The app deliberately avoids inventing definitions when a trusted explanation has not been added yet.`,
     advanced: `No curated Tiny Titans definition currently exists for “${word}”. The terminology system is evidence-aware: unknown terms are surfaced rather than assigned potentially misleading genetic or husbandry claims.`,
   };
@@ -170,11 +167,13 @@ export default function ExplainThis() {
     <button
       className={`explain-this ${open ? "explain-this--active" : ""}`}
       type="button"
-      aria-label={open ? "Exit What does this mean mode" : "What does this mean?"}
+      aria-label={open ? "Exit What does this mean mode" : "What does this mean? Tap to learn"}
+      title="Tap to learn"
       onClick={() => { setOpen((value) => !value); setExplanation(null); }}
     >
       <span className="explain-this__icon">?</span>
       <span className="explain-this__label">{open ? "Exit help" : "What does this mean?"}</span>
+      <span className="explain-this__hint">Tap to learn</span>
     </button>
 
     {open && <div className="explain-this-banner" role="status">
