@@ -3,7 +3,11 @@ import path from "node:path";
 
 const root = process.cwd();
 const dataDir = path.join(root, "src", "data");
-const files = fs.readdirSync(dataDir).filter((name) => /ChallengeQuestions|learningQuestionBanks\.ts$/.test(name));
+
+// Titans Challenge uses the dedicated *ChallengeQuestions data files as its
+// canonical question source. learningQuestionBanks.ts is legacy Learning UI
+// content and intentionally isn't part of the canonical challenge validation.
+const files = fs.readdirSync(dataDir).filter((name) => /ChallengeQuestions\.ts$/.test(name));
 
 const seenIds = new Map();
 const seenPrompts = new Map();
@@ -52,7 +56,7 @@ for (const file of files) {
   }
 }
 
-if (!questionCount) errors.push("No challenge questions were discovered. Check the question-bank file naming/format.");
+if (!questionCount) errors.push("No canonical Titans Challenge questions were discovered. Check the *ChallengeQuestions.ts data files.");
 
 if (errors.length) {
   console.error(`Learning content validation failed with ${errors.length} issue(s):`);
@@ -60,4 +64,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`Learning content validation passed: ${questionCount} question definitions checked across ${files.length} data files.`);
+console.log(`Learning content validation passed: ${questionCount} canonical Titans Challenge question definitions checked across ${files.length} data files.`);
