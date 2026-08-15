@@ -73,6 +73,7 @@ export default function CommunityHub() {
   const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
   const importantCount = posts.filter((post) => post.priority !== "normal" && post.category !== "release").length;
   const testerCount = posts.filter((post) => post.category === "tester").length;
+  const isAdmin = profile?.role === "admin";
 
   return <section className="community-page">
     <header className="community-hero">
@@ -93,6 +94,11 @@ export default function CommunityHub() {
     {!loading && loadError && <div className="community-empty community-error"><span>⚠️</span><h3>Couldn't load updates</h3><p>{loadError}</p>{user && <button type="button" onClick={() => window.location.reload()}>Try again</button>}</div>}
     {!loading && !loadError && visiblePosts.length === 0 && <div className="community-empty"><span>🌱</span><h3>The Hub is ready</h3><p>There aren't any published updates in this section yet. When Tiny Titans has something to announce, it'll appear here.</p></div>}
     {!loading && !loadError && visiblePosts.length > 0 && <div className="community-post-list">{visiblePosts.map((post) => <PostCard key={post.id} post={post} />)}</div>}
+
+    {isAdmin && <section className="community-feedback-card">
+      <div><span className="community-feedback-icon">📢</span><div><h2>Creator publishing</h2><p>Publish the official updates, known issues, tester notices and release notes shown above.</p></div></div>
+      <button type="button" onClick={() => navigate("/creator/community")}>Open Community Manager →</button>
+    </section>}
 
     <section className="community-feedback-card">
       <div><span className="community-feedback-icon">💬</span><div><h2>Feedback & Bug Reports</h2><p>Found something broken or have feedback for the Tiny Titans team?</p></div></div>
