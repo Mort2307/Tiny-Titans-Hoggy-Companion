@@ -8,7 +8,7 @@ export type ReportIssueCategory =
   | "Other";
 
 export type ReportIssuePriority = "Low" | "Normal" | "High" | "Critical";
-export type ReportIssueStatus = "Pending" | "Reviewing" | "Resolved" | "Rejected" | "Cleared";
+export type ReportIssueStatus = "Pending" | "Reviewing" | "Fixing" | "Testing" | "Resolved" | "Rejected" | "Cleared";
 export type ReportIssueSource = "Genetics Calculator" | "Morph Library" | "Breeding Planner" | "Snake Profile" | "Knowledge Base" | "Other";
 
 export type ReportIssue = {
@@ -27,9 +27,10 @@ export type ReportIssue = {
   userId?: string;
   appVersion?: string;
   metadata?: Record<string, unknown>;
-  attachment?: {
-    path: string;
-    type: "image" | "video";
-    sizeBytes: number;
-  };
+  attachment?: { path: string; type: "image" | "video"; sizeBytes: number };
+  resolution?: string;
+  fixedVersion?: string;
+  creatorMessage?: string;
+  reviewedBy?: string;
+  resolvedAt?: string;
 };
