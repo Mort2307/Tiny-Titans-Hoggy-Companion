@@ -38,7 +38,7 @@ function PostCard({ post }: { post: CommunityPost }) {
 }
 
 export default function CommunityHub() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading, profileLoading } = useAuth();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +47,20 @@ export default function CommunityHub() {
 
   useEffect(() => {
     let mounted = true;
+
+    if (authLoading || profileLoading) {
+      setLoading(true);
+      setLoadError("");
+      return () => { mounted = false; };
+    }
+
+    if (!user) {
+      setPosts([]);
+      setLoadError("Please sign in to view the Community Hub.");
+      setLoading(false);
+      return () => { mounted = false; };
+    }
+
     setLoading(true);
     setLoadError("");
     getCommunityPosts({ isTester: profile?.isTester, isAdmin: profile?.role === "admin" })
@@ -54,7 +68,7 @@ export default function CommunityHub() {
       .catch((error) => { if (mounted) setLoadError(error instanceof Error ? error.message : "Unable to load Community Hub."); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
-  }, [profile?.isTester, profile?.role]);
+  }, [authLoading, profileLoading, user?.uid, profile?.isTester, profile?.role]);
 
   const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
   const importantCount = posts.filter((post) => post.priority !== "normal" && post.category !== "release").length;
@@ -76,7 +90,7 @@ export default function CommunityHub() {
     <div className="community-toolbar"><div><h2>{active === "all" ? "Latest from Tiny Titans" : communityCategoryLabel(active)}</h2><p>{active === "all" ? "The latest information from the Tiny Titans team." : sections.find((item) => item.category === active)?.description}</p></div>{active !== "all" && <button type="button" className="community-filter-button" onClick={() => setActive("all")}>Show all</button>}</div>
 
     {loading && <div className="community-empty"><span>🐍</span><h3>Loading the Hub…</h3><p>Checking for the latest Tiny Titans updates.</p></div>}
-    {!loading && loadError && <div className="community-empty community-error"><span>⚠️</span><h3>Couldn't load updates</h3><p>{loadError}</p><button type="button" onClick={() => window.location.reload()}>Try again</button></div>}
+    {!loading && loadError && <div className="community-empty community-error"><span>⚠️</span><h3>Couldn't load updates</h3><p>{loadError}</p>{user && <button type="button" onClick={() => window.location.reload()}>Try again</button>}</div>}
     {!loading && !loadError && visiblePosts.length === 0 && <div className="community-empty"><span>🌱</span><h3>The Hub is ready</h3><p>There aren't any published updates in this section yet. When Tiny Titans has something to announce, it'll appear here.</p></div>}
     {!loading && !loadError && visiblePosts.length > 0 && <div className="community-post-list">{visiblePosts.map((post) => <PostCard key={post.id} post={post} />)}</div>}
 
