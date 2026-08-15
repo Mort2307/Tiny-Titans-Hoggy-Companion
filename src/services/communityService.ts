@@ -36,8 +36,6 @@ export async function getCommunityPosts(options?: { isTester?: boolean; isAdmin?
     result.status === "fulfilled" ? [result.value] : []
   );
 
-  // Public content is the minimum viable Hub. If it is unexpectedly unreadable,
-  // surface the real permission error rather than silently showing a fake empty Hub.
   const publicResult = results[0];
   if (publicResult?.status === "rejected") throw publicResult.reason;
 
@@ -51,12 +49,25 @@ export async function getCommunityPosts(options?: { isTester?: boolean; isAdmin?
   return posts.sort((a, b) => timestampMillis(b.publishedAt) - timestampMillis(a.publishedAt));
 }
 
+/**
+ * Firestore rejects object fields whose value is `undefined`.
+ * Community drafts intentionally contain optional fields, so strip only
+ * undefined values before writing while preserving valid falsey values and null.
+ */
+function removeUndefinedFields<T extends Record<string, unknown>>(value: T): T {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)
+  ) as T;
+}
+
 export async function publishCommunityPost(input: Omit<CommunityPost, "id" | "publishedAt" | "updatedAt">) {
-  const ref = await addDoc(postsCollection, {
+  const data = removeUndefinedFields({
     ...input,
     publishedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+  const ref = await addDoc(postsCollection, data);
   return ref.id;
 }
 
