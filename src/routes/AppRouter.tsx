@@ -19,6 +19,7 @@ import WeightRecords from "../pages/WeightRecords";
 import BreedingPlanner from "../pages/BreedingPlanner";
 import MorphLibrary from "../pages/MorphLibrary";
 import ReportIssue from "../pages/ReportIssue";
+import CommunityHub from "../pages/CommunityHub";
 import Founder from "../pages/Founder";
 import BecomeATitan from "../pages/BecomeATitan";
 import CreatorAdmin from "../pages/CreatorAdmin";
@@ -44,7 +45,7 @@ function AppRouterGate() {
     <Route path="/learn" element={<Navigate to="/challenge" replace />} /><Route path="/learn/topics" element={<Navigate to="/challenge" replace />} /><Route path="/learn/topic/:id" element={<Navigate to="/challenge" replace />} /><Route path="/learn/achievements" element={<LearnAchievements />} />
     <Route path="/feeding" element={<FeedingTracker />} /><Route path="/feeding/:id" element={<FeedingTracker />} /><Route path="/shedding" element={<ShedTracker />} /><Route path="/shedding/:id" element={<ShedTracker />} />
     <Route path="/weights" element={<WeightIndex />} /><Route path="/weights/:id" element={<WeightRecords />} /><Route path="/breeding" element={<BreedingPlanner />} />
-    <Route path="/report-issue" element={<ReportIssue />} /><Route path="/founder" element={<Founder />} /><Route path="/become-a-titan" element={<BecomeATitan />} />
+    <Route path="/community" element={<CommunityHub />} /><Route path="/report-issue" element={<ReportIssue />} /><Route path="/founder" element={<Founder />} /><Route path="/become-a-titan" element={<BecomeATitan />} />
     <Route path="/creator" element={<CreatorAdmin />} /><Route path="/educator" element={<EducatorDashboard />} />
     <Route path="/login" element={<Navigate to="/" replace />} /><Route path="/account-setup" element={<Navigate to="/" replace />} /><Route path="*" element={<Navigate to="/" replace />} />
   </Route></Routes></UnitProvider>;
