@@ -27,6 +27,7 @@ export type UserProfile = {
   experienceLevel: ExperienceLevel;
   interests: UserInterest[];
   role: UserRole;
+  isTester: boolean;
   setupComplete: boolean;
   unitSystem: UnitSystem;
   educatorProfile?: EducatorProfile;
@@ -83,7 +84,8 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> 
     uid: String(profileData.uid ?? firebaseUser.uid), displayName: String(profileData.displayName ?? firebaseUser.displayName ?? ""), email: String(profileData.email ?? firebaseUser.email ?? ""),
     category: profileData.category === "child" ? "child" : "adult", ageBand: isAgeBand(profileData.ageBand) ? profileData.ageBand : undefined, learningLevel: isLearningLevel(profileData.learningLevel) ? profileData.learningLevel : undefined,
     profileType, experienceLevel: profileData.experienceLevel === "intermediate" ? "intermediate" : profileData.experienceLevel === "pro" ? "pro" : "beginner", interests,
-    role: profileData.role === "admin" ? "admin" : profileData.role === "moderator" ? "moderator" : "user", setupComplete: profileData.setupComplete === true,
+    role: profileData.role === "admin" ? "admin" : profileData.role === "moderator" ? "moderator" : "user", isTester: profileData.isTester === true || profileData.role === "tester",
+    setupComplete: profileData.setupComplete === true,
     unitSystem: isUnitSystem(profileData.unitSystem) ? profileData.unitSystem : "metric", educatorProfile: loadEducatorProfile(profileData.educatorProfile), createdAt: profileData.createdAt, updatedAt: profileData.updatedAt,
   };
 }
