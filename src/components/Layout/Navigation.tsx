@@ -12,8 +12,8 @@ function Navigation() {
     ["/calculator", "🧮", "Genetics Calculator"],
     ["/knowledge-base", "📚", "Knowledge Base"],
     ["/challenge", "🧠", "Titans Challenge"],
+    ["/community", "🌿", "Community Hub"],
     ["/account", "🧑", "My Account"],
-    ["/report-issue", "🐛", "Report an Issue"],
     ["/become-a-titan", "🐍", "Become a Titan"],
   ];
 
