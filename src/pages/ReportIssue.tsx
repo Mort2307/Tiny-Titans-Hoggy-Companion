@@ -1,77 +1,17 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { submitIssueReport } from "../services/creatorService";
 import type { ReportIssueCategory, ReportIssuePriority, ReportIssueSource } from "../types/reportIssue";
 import "../styles/CreatorTools.css";
-
 const categories: ReportIssueCategory[] = ["Genetics", "Morph Database", "Calculator", "Breeding Planner", "Husbandry", "App Bug", "Other"];
 const sources: ReportIssueSource[] = ["Genetics Calculator", "Morph Library", "Breeding Planner", "Snake Profile", "Knowledge Base", "Other"];
-
 export default function ReportIssue() {
-  const { user, profile } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [category, setCategory] = useState<ReportIssueCategory>("App Bug");
-  const [source, setSource] = useState<ReportIssueSource>("Other");
-  const [priority, setPriority] = useState<ReportIssuePriority>("Normal");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [expected, setExpected] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState<{ token: string } | null>(null);
-  const [error, setError] = useState("");
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!user || !title.trim() || !description.trim()) return;
-    setSending(true); setError("");
-    try {
-      const result = await submitIssueReport({
-        category, priority, status: "Pending", source,
-        title: title.trim(),
-        description: description.trim(),
-        context: `${location.pathname}${expected.trim() ? ` | Expected: ${expected.trim()}` : ""}`,
-        userId: user.uid,
-        appVersion: "0.0.0",
-        metadata: { displayName: profile?.displayName ?? user.displayName ?? "", userAgent: navigator.userAgent },
-        file,
-      });
-      setSent({ token: result.issueToken });
-      setTitle(""); setDescription(""); setExpected(""); setFile(null);
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Unable to send the report.");
-    } finally { setSending(false); }
-  }
-
-  return (
-    <section className="creator-tools-page">
-      <div className="creator-tools-card">
-        <div className="creator-tools-header"><span>🐛</span><div><h1>Feedback & Issue Report</h1><p>Help improve Tiny Titans. A screenshot or short video can make a tricky problem much easier to reproduce.</p></div></div>
-        {sent ? (
-          <div className="creator-success">
-            <h2>Report submitted ✓</h2>
-            <p>Thanks. Your report is now in the Tiny Titans issue queue.</p>
-            <p><strong>Issue token:</strong> <code>{sent.token}</code></p>
-            <p>The report receives a privacy-safe fingerprint so repeated problems can be grouped. Your image/video is evidence only and is not part of that fingerprint.</p>
-            <div className="creator-actions"><button type="button" onClick={() => setSent(null)}>Send another report</button><button type="button" onClick={() => navigate("/account")}>Back to My Account</button></div>
-          </div>
-        ) : (
-          <form className="creator-form" onSubmit={handleSubmit}>
-            <label>Feedback type<select value={category} onChange={(e) => setCategory(e.target.value as ReportIssueCategory)}>{categories.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>Where did it happen?<select value={source} onChange={(e) => setSource(e.target.value as ReportIssueSource)}>{sources.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>How serious is it?<select value={priority} onChange={(e) => setPriority(e.target.value as ReportIssuePriority)}>{["Low", "Normal", "High", "Critical"].map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label>What were you doing?<textarea value={expected} onChange={(e) => setExpected(e.target.value)} rows={3} maxLength={2000} placeholder="For example: I opened Marmalade's weight tracker on my phone…" /></label>
-            <label>Short title<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="e.g. Weight record disappears after saving" required /></label>
-            <label>What happened instead?<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={7} maxLength={4000} placeholder="Tell us what actually happened and, if possible, how to reproduce it." required /></label>
-            <label>📷 Photo or video<input type="file" accept="image/*,video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /><small>Images are resized/compressed before upload. Videos are limited to 25 MB. Evidence is temporary and is deleted when the report is cleared.</small></label>
-            {file && <p>Attached: <strong>{file.name}</strong> ({Math.round(file.size / 1024)} KB)</p>}
-            {error && <div className="creator-error">{error}</div>}
-            <div className="creator-actions"><button type="button" onClick={() => navigate(-1)}>Cancel</button><button className="creator-primary" type="submit" disabled={sending || !title.trim() || !description.trim()}>{sending ? "Sending…" : "🐛 Submit Feedback"}</button></div>
-          </form>
-        )}
-      </div>
-    </section>
-  );
+  const { user, profile } = useAuth(); const location = useLocation(); const navigate = useNavigate(); const [category, setCategory] = useState<ReportIssueCategory>("App Bug"); const [source, setSource] = useState<ReportIssueSource>("Other"); const [priority, setPriority] = useState<ReportIssuePriority>("Normal"); const [title, setTitle] = useState(""); const [description, setDescription] = useState(""); const [expected, setExpected] = useState(""); const [file, setFile] = useState<File | null>(null); const [sending, setSending] = useState(false); const [sent, setSent] = useState<{ token: string } | null>(null); const [error, setError] = useState("");
+  async function handleSubmit(event: React.FormEvent) { event.preventDefault(); if (!user || !title.trim() || !description.trim()) return; setSending(true); setError(""); try { const result = await submitIssueReport({ category, priority, status: "Pending", source, title: title.trim(), description: description.trim(), context: `${location.pathname}${expected.trim() ? ` | Expected: ${expected.trim()}` : ""}`, userId: user.uid, appVersion: "0.0.0", metadata: { displayName: profile?.displayName ?? user.displayName ?? "", userAgent: navigator.userAgent }, file }); setSent({ token: result.issueToken }); setTitle(""); setDescription(""); setExpected(""); setFile(null); } catch (submitError) { setError(submitError instanceof Error ? submitError.message : "Unable to send the report."); } finally { setSending(false); } }
+  return <section className="creator-tools-page"><div className="creator-tools-card"><div className="creator-tools-header"><span>🐛</span><div><h1>Feedback &amp; Issue Report</h1><p>Help improve Tiny Titans. A screenshot or short video can make a tricky problem much easier to reproduce.</p></div></div>
+    {sent ? <div className="creator-success"><h2>💚 Thank you for helping improve Tiny Titans!</h2><p>Your report has been received successfully and is now in the Tiny Titans issue queue.</p><p><strong>Issue token:</strong> <code>{sent.token}</code></p><p>You can follow the report from submission through review, fixing, testing and resolution.</p><div className="creator-actions"><Link to="/my-issue-reports">🐛 View My Reports</Link><button type="button" onClick={() => setSent(null)}>Send another report</button><button type="button" onClick={() => navigate("/account")}>Back to My Account</button></div></div> : <form className="creator-form" onSubmit={handleSubmit}>
+      <label>Feedback type<select value={category} onChange={(e) => setCategory(e.target.value as ReportIssueCategory)}>{categories.map((item) => <option key={item}>{item}</option>)}</select></label><label>Where did it happen?<select value={source} onChange={(e) => setSource(e.target.value as ReportIssueSource)}>{sources.map((item) => <option key={item}>{item}</option>)}</select></label><label>How serious is it?<select value={priority} onChange={(e) => setPriority(e.target.value as ReportIssuePriority)}>{["Low", "Normal", "High", "Critical"].map((item) => <option key={item}>{item}</option>)}</select></label><label>What were you doing?<textarea value={expected} onChange={(e) => setExpected(e.target.value)} rows={3} maxLength={2000} placeholder="For example: I opened Marmalade's weight tracker on my phone…" /></label><label>Short title<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="e.g. Weight record disappears after saving" required /></label><label>What happened instead?<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={7} maxLength={4000} placeholder="Tell us what actually happened and, if possible, how to reproduce it." required /></label><label>📷 Photo or video<input type="file" accept="image/*,video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /><small>Images are resized/compressed before upload. Videos are limited to 25 MB. Evidence is temporary and is deleted when the report is cleared.</small></label>{file && <p>Attached: <strong>{file.name}</strong> ({Math.round(file.size / 1024)} KB)</p>}{error && <div className="creator-error">{error}</div>}<div className="creator-actions"><button type="button" onClick={() => navigate(-1)}>Cancel</button><Link to="/my-issue-reports">My Reports</Link><button className="creator-primary" type="submit" disabled={sending || !title.trim() || !description.trim()}>{sending ? "Sending…" : "🐛 Submit Feedback"}</button></div>
+    </form>}
+  </div></section>;
 }
