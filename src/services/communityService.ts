@@ -10,10 +10,10 @@ function timestampMillis(value: unknown): number {
 }
 
 /**
- * Firestore rules restrict communityPosts by audience. Every read query therefore
- * includes an audience equality filter so Firestore can prove that the complete
- * result set is readable. In particular, admins must NOT use an unrestricted
- * collection query because the rules still require an audience value.
+ * Firestore rules restrict communityPosts by audience. Every query therefore
+ * includes an audience equality filter. Queries are intentionally independent:
+ * if a tester/admin audience is not readable yet, public "everyone" updates
+ * must still load rather than turning the entire Hub into a permissions error.
  */
 export async function getCommunityPosts(options?: { isTester?: boolean; isAdmin?: boolean }): Promise<CommunityPost[]> {
   const isAdmin = options?.isAdmin === true;
@@ -24,11 +24,20 @@ export async function getCommunityPosts(options?: { isTester?: boolean; isAdmin?
   if (isAdmin) audiences.push("admin");
 
   const uniqueAudiences = [...new Set(audiences)];
-  const snapshots = await Promise.all(
+  const results = await Promise.allSettled(
     uniqueAudiences.map((audience) => getDocs(query(postsCollection, where("audience", "==", audience))))
   );
 
-  const posts = snapshots.flatMap((snapshot) =>
+  const readableSnapshots = results
+    .filter((result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof getDocs>>> => result.status === "fulfilled")
+    .map((result) => result.value);
+
+  // Public content is the minimum viable Hub. If it is unexpectedly unreadable,
+  // surface the real permission error rather than silently showing a fake empty Hub.
+  const publicResult = results[0];
+  if (publicResult?.status === "rejected") throw publicResult.reason;
+
+  const posts = readableSnapshots.flatMap((snapshot) =>
     snapshot.docs.map((item) => ({
       id: item.id,
       ...(item.data() as Omit<CommunityPost, "id">),
