@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TERMINOLOGY_GLOSSARY } from "../../data/terminologyGlossary";
 import { morphs } from "../../data/morphs";
+import { hasKnowledgeNote, type KnowledgeNote, type KnowledgeStatus } from "../../data/knowledgeStatus";
 import "./ExplainThis.css";
 
 type Level = "simple" | "standard" | "advanced";
@@ -10,6 +11,7 @@ type Explanation = { simple: string; standard?: string; advanced?: string };
 type FoundExplanation = {
   term: string;
   explanation: Explanation;
+  knowledgeNote?: KnowledgeNote;
 };
 
 function normalize(value: string): string {
@@ -24,16 +26,41 @@ function normalize(value: string): string {
 const glossaryKeys = Object.keys(TERMINOLOGY_GLOSSARY).sort((a, b) => b.length - a.length);
 const morphLookup = morphs.flatMap((morph) => [morph.name, ...(morph.aliases ?? [])].map((term) => ({ term: normalize(term), morph })));
 
+function morphKnowledgeStatus(verification: string): KnowledgeStatus {
+  if (verification === "Confirmed") return "established";
+  if (verification === "Recognised") return "widelyAccepted";
+  if (verification === "Disputed") return "disputed";
+  return "insufficientEvidence";
+}
+
 function morphExplanation(term: string): FoundExplanation | null {
   const normalized = normalize(term);
   const match = morphLookup.find((entry) => entry.term === normalized);
   if (!match) return null;
 
   const morph = match.morph;
-  const inheritance = morph.inheritance === "Unknown" ? "The inheritance model is not confirmed, so Tiny Titans will not invent one." : `Inheritance: ${morph.inheritance}.`;
+  const status = morphKnowledgeStatus(morph.verification);
+  const inheritance = morph.inheritance === "Unknown"
+    ? "The inheritance model is not confirmed, so Tiny Titans will not invent one."
+    : `Inheritance: ${morph.inheritance}.`;
   const verification = `Evidence status: ${morph.verification}.`;
   const description = morph.description ?? `${morph.name} is recorded in the Tiny Titans morph database.`;
   const notes = morph.educationalNotes ?? "Use the recorded genetics and breeding evidence rather than guessing from appearance alone.";
+
+  const knowledgeNote: KnowledgeNote = {
+    status,
+    communityNote: status === "widelyAccepted"
+      ? "This interpretation is recognised across the international keeper and breeding community, while individual terminology can still vary."
+      : status === "disputed"
+        ? "There is meaningful disagreement around this terminology or interpretation. Tiny Titans keeps the term available without presenting disputed claims as settled fact."
+        : status === "insufficientEvidence"
+          ? "There is not currently enough reliable evidence for Tiny Titans to present a stronger inheritance claim as established fact."
+          : undefined,
+    tinyTitansApproach: morph.inheritance === "Unknown"
+      ? "Tiny Titans records the morph for identification and education but does not assume an inheritance model that has not been confirmed."
+      : "Tiny Titans uses the recorded inheritance model while keeping the verification status visible when context is useful.",
+    lastReviewed: "August 2026",
+  };
 
   return {
     term: morph.name,
@@ -42,6 +69,7 @@ function morphExplanation(term: string): FoundExplanation | null {
       standard: `${description} ${inheritance} ${verification}`,
       advanced: `${description} ${notes} ${inheritance} ${verification}`,
     },
+    knowledgeNote,
   };
 }
 
@@ -115,6 +143,7 @@ export default function ExplainThis() {
   const { profile } = useAuth();
   const [open, setOpen] = useState(false);
   const [explanation, setExplanation] = useState<FoundExplanation | null>(null);
+  const [showKnowledgeNote, setShowKnowledgeNote] = useState(false);
   const [level, setLevel] = useState<Level>(() => {
     const stored = window.localStorage.getItem("tinytitans-explain-level");
     return stored === "standard" || stored === "advanced" ? stored : "simple";
@@ -145,6 +174,7 @@ export default function ExplainThis() {
       const wordResult = findExplanation(selection.word);
       const result = phraseResult ?? wordResult;
 
+      setShowKnowledgeNote(false);
       setExplanation(result ?? {
         term: selection.word,
         explanation: fallbackExplanation(selection.word),
@@ -162,6 +192,8 @@ export default function ExplainThis() {
 
   const currentText = explanation?.explanation[level] ?? explanation?.explanation.standard ?? explanation?.explanation.simple ?? "";
   const isCurated = explanation ? Boolean(TERMINOLOGY_GLOSSARY[explanation.term] || morphExplanation(explanation.term)) : false;
+  const knowledgeNote = explanation?.knowledgeNote;
+  const showKnowledgeLink = hasKnowledgeNote(knowledgeNote);
 
   return <>
     <button
@@ -169,7 +201,7 @@ export default function ExplainThis() {
       type="button"
       aria-label={open ? "Exit What does this mean mode" : "What does this mean? Tap to learn"}
       title="Tap to learn"
-      onClick={() => { setOpen((value) => !value); setExplanation(null); }}
+      onClick={() => { setOpen((value) => !value); setExplanation(null); setShowKnowledgeNote(false); }}
     >
       <span className="explain-this__icon">?</span>
       <span className="explain-this__hint">Tap to learn</span>
@@ -197,6 +229,26 @@ export default function ExplainThis() {
         </div>
 
         <p className="explain-this-modal__text">{currentText}</p>
+
+        {showKnowledgeLink && !showKnowledgeNote && <button
+          type="button"
+          className="explain-this-modal__knowledge-link"
+          onClick={() => setShowKnowledgeNote(true)}
+        >
+          ⓘ About this terminology
+        </button>}
+
+        {showKnowledgeNote && knowledgeNote && <div className="explain-this-knowledge" aria-label="Terminology and evidence context">
+          <div className="explain-this-knowledge__header">
+            <strong>ⓘ About this terminology</strong>
+            <button type="button" aria-label="Close terminology context" onClick={() => setShowKnowledgeNote(false)}>×</button>
+          </div>
+          <p><strong>Current understanding</strong><br />{knowledgeNote.communityNote ?? "The available information is treated according to its current evidence and community understanding."}</p>
+          {knowledgeNote.evidenceNote && <p><strong>Evidence</strong><br />{knowledgeNote.evidenceNote}</p>}
+          {knowledgeNote.tinyTitansApproach && <p><strong>Tiny Titans approach</strong><br />{knowledgeNote.tinyTitansApproach}</p>}
+          {knowledgeNote.lastReviewed && <p className="explain-this-knowledge__reviewed">Reviewed: {knowledgeNote.lastReviewed}</p>}
+        </div>}
+
         {!isCurated && <p className="explain-this-modal__text" style={{ opacity: .7 }}>💡 This term has been surfaced but needs a verified glossary entry before Tiny Titans treats it as authoritative.</p>}
         <button type="button" className="explain-this-modal__done" onClick={() => setExplanation(null)}>Got it</button>
       </section>
