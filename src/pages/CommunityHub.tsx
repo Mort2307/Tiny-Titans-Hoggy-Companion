@@ -1,0 +1,80 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { getCommunityPosts } from "../services/communityService";
+import type { CommunityCategory, CommunityPost } from "../types/community";
+import { communityCategoryIcon, communityCategoryLabel } from "../types/community";
+import "../styles/CommunityHub.css";
+
+const sections: { category: CommunityCategory; description: string }[] = [
+  { category: "update", description: "News, important announcements and what is changing in Tiny Titans." },
+  { category: "known_issue", description: "Current problems, affected versions, workarounds and fixes." },
+  { category: "tester", description: "Builds and focused testing requests for approved testers." },
+  { category: "release", description: "A clear history of releases, fixes and improvements." },
+];
+
+function formatDate(value: unknown) {
+  if (!value) return "";
+  if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") return value.toDate().toLocaleDateString();
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+}
+
+function PostCard({ post }: { post: CommunityPost }) {
+  return <article className={`community-post community-post-${post.priority}`}>
+    <div className="community-post-top"><span className="community-post-icon">{communityCategoryIcon(post.category)}</span><div><span className="community-post-category">{communityCategoryLabel(post.category)}</span>{post.priority !== "normal" && <span className="community-priority">{post.priority}</span>}</div><time>{formatDate(post.publishedAt)}</time></div>
+    <h3>{post.title}</h3>
+    <p>{post.message}</p>
+    {post.category === "known_issue" && <div className="community-issue-meta">
+      {post.status && <span>🛠️ {post.status}</span>}
+      {post.affectedVersion && <span>📱 {post.affectedVersion}</span>}
+      {post.affectedPlatform && <span>💻 {post.affectedPlatform}</span>}
+    </div>}
+    {post.workaround && <div className="community-workaround"><strong>Workaround</strong><p>{post.workaround}</p></div>}
+    {post.resolvedVersion && <div className="community-resolved">🟢 Resolved in {post.resolvedVersion}</div>}
+  </article>;
+}
+
+export default function CommunityHub() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [active, setActive] = useState<CommunityCategory | "all">("all");
+
+  useEffect(() => {
+    let mounted = true;
+    getCommunityPosts().then((items) => { if (mounted) setPosts(items); }).catch((error) => { if (mounted) setLoadError(error instanceof Error ? error.message : "Unable to load Community Hub."); }).finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
+  const importantCount = posts.filter((post) => post.priority !== "normal" && post.category !== "release").length;
+
+  return <section className="community-page">
+    <header className="community-hero">
+      <div className="community-hero-icon">🌿</div>
+      <div><p className="community-eyebrow">TINY TITANS</p><h1>Community Hub</h1><p>Your central place for Tiny Titans news, known issues, tester notices and release information.</p></div>
+      {importantCount > 0 && <span className="community-live-badge">● {importantCount} important</span>}
+    </header>
+
+    <div className="community-section-grid">
+      {sections.map((section) => <button key={section.category} type="button" className={`community-section-card ${active === section.category ? "active" : ""}`} onClick={() => setActive(section.category)}>
+        <span className="community-section-icon">{communityCategoryIcon(section.category)}</span><span><strong>{communityCategoryLabel(section.category)}</strong><small>{section.description}</small></span>
+      </button>)}
+    </div>
+
+    <div className="community-toolbar"><div><h2>{active === "all" ? "Latest from Tiny Titans" : communityCategoryLabel(active)}</h2><p>{active === "all" ? "The latest information from the Tiny Titans team." : sections.find((item) => item.category === active)?.description}</p></div><button type="button" className="community-filter-button" onClick={() => setActive("all")}>Show all</button></div>
+
+    {loading && <div className="community-empty"><span>🐍</span><h3>Loading the Hub…</h3><p>Checking for the latest Tiny Titans updates.</p></div>}
+    {!loading && loadError && <div className="community-empty community-error"><span>⚠️</span><h3>Couldn't load updates</h3><p>{loadError}</p><button type="button" onClick={() => window.location.reload()}>Try again</button></div>}
+    {!loading && !loadError && visiblePosts.length === 0 && <div className="community-empty"><span>🌱</span><h3>The Hub is ready</h3><p>There aren't any published updates in this section yet. When Tiny Titans has something to announce, it'll appear here.</p></div>}
+    {!loading && !loadError && visiblePosts.length > 0 && <div className="community-post-list">{visiblePosts.map((post) => <PostCard key={post.id} post={post} />)}</div>}
+
+    <section className="community-feedback-card">
+      <div><span className="community-feedback-icon">💬</span><div><h2>Feedback & Bug Reports</h2><p>Found something broken, have an idea, or want to tell us how Tiny Titans could be better?</p></div></div>
+      <button type="button" onClick={() => navigate("/report-issue")}>{user ? "Send feedback" : "Report an issue"} →</button>
+    </section>
+  </section>;
+}
