@@ -9,17 +9,32 @@ function timestampMillis(value: unknown): number {
   return value.toMillis();
 }
 
+/**
+ * Firestore rules restrict communityPosts by audience. Every read query therefore
+ * includes an audience equality filter so Firestore can prove that the complete
+ * result set is readable. In particular, admins must NOT use an unrestricted
+ * collection query because the rules still require an audience value.
+ */
 export async function getCommunityPosts(options?: { isTester?: boolean; isAdmin?: boolean }): Promise<CommunityPost[]> {
   const isAdmin = options?.isAdmin === true;
   const isTester = options?.isTester === true;
-  const queries = isAdmin
-    ? [query(postsCollection)]
-    : [query(postsCollection, where("audience", "==", "everyone"))];
 
-  if (isTester) queries.push(query(postsCollection, where("audience", "==", "testers")));
+  const audiences: CommunityAudience[] = ["everyone"];
+  if (isTester || isAdmin) audiences.push("testers");
+  if (isAdmin) audiences.push("admin");
 
-  const snapshots = await Promise.all(queries.map((item) => getDocs(item)));
-  const posts = snapshots.flatMap((snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<CommunityPost, "id">) })));
+  const uniqueAudiences = [...new Set(audiences)];
+  const snapshots = await Promise.all(
+    uniqueAudiences.map((audience) => getDocs(query(postsCollection, where("audience", "==", audience))))
+  );
+
+  const posts = snapshots.flatMap((snapshot) =>
+    snapshot.docs.map((item) => ({
+      id: item.id,
+      ...(item.data() as Omit<CommunityPost, "id">),
+    }))
+  );
+
   return posts.sort((a, b) => timestampMillis(b.publishedAt) - timestampMillis(a.publishedAt));
 }
 
