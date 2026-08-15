@@ -18,7 +18,10 @@ function Navigation() {
   ];
 
   if (profile?.profileType === "educator") links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
-  if (profile?.role === "admin") links.push(["/creator", "🛠️", "Creator Centre"]);
+  if (profile?.role === "admin") {
+    links.push(["/creator", "🛠️", "Creator Centre"]);
+    links.push(["/creator/community", "📢", "Community Manager"]);
+  }
 
   return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner"><ul className="app-navigation-list">{links.map(([to, icon, label]) => <li className="app-navigation-item" key={to}><NavLink to={to} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span></NavLink></li>)}</ul></div></nav>;
 }
