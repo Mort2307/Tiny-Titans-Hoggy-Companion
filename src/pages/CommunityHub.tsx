@@ -24,11 +24,13 @@ function PostCard({ post }: { post: CommunityPost }) {
   return <article className={`community-post community-post-${post.priority}`}>
     <div className="community-post-top"><span className="community-post-icon">{communityCategoryIcon(post.category)}</span><div><span className="community-post-category">{communityCategoryLabel(post.category)}</span>{post.priority !== "normal" && <span className="community-priority">{post.priority}</span>}</div><time>{formatDate(post.publishedAt)}</time></div>
     <h3>{post.title}</h3>
+    {post.imageUrl && <img className="community-post-image" src={post.imageUrl} alt="" loading="lazy" />}
     <p>{post.message}</p>
     {post.category === "known_issue" && <div className="community-issue-meta">
       {post.status && <span>🛠️ {post.status}</span>}
       {post.affectedVersion && <span>📱 {post.affectedVersion}</span>}
       {post.affectedPlatform && <span>💻 {post.affectedPlatform}</span>}
+      {post.severity && <span>⚠️ {post.severity}</span>}
     </div>}
     {post.workaround && <div className="community-workaround"><strong>Workaround</strong><p>{post.workaround}</p></div>}
     {post.resolvedVersion && <div className="community-resolved">🟢 Resolved in {post.resolvedVersion}</div>}
@@ -36,7 +38,7 @@ function PostCard({ post }: { post: CommunityPost }) {
 }
 
 export default function CommunityHub() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,12 +47,18 @@ export default function CommunityHub() {
 
   useEffect(() => {
     let mounted = true;
-    getCommunityPosts().then((items) => { if (mounted) setPosts(items); }).catch((error) => { if (mounted) setLoadError(error instanceof Error ? error.message : "Unable to load Community Hub."); }).finally(() => { if (mounted) setLoading(false); });
+    setLoading(true);
+    setLoadError("");
+    getCommunityPosts({ isTester: profile?.isTester, isAdmin: profile?.role === "admin" })
+      .then((items) => { if (mounted) setPosts(items); })
+      .catch((error) => { if (mounted) setLoadError(error instanceof Error ? error.message : "Unable to load Community Hub."); })
+      .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
-  }, []);
+  }, [profile?.isTester, profile?.role]);
 
   const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
   const importantCount = posts.filter((post) => post.priority !== "normal" && post.category !== "release").length;
+  const testerCount = posts.filter((post) => post.category === "tester").length;
 
   return <section className="community-page">
     <header className="community-hero">
@@ -61,11 +69,11 @@ export default function CommunityHub() {
 
     <div className="community-section-grid">
       {sections.map((section) => <button key={section.category} type="button" className={`community-section-card ${active === section.category ? "active" : ""}`} onClick={() => setActive(section.category)}>
-        <span className="community-section-icon">{communityCategoryIcon(section.category)}</span><span><strong>{communityCategoryLabel(section.category)}</strong><small>{section.description}</small></span>
+        <span className="community-section-icon">{communityCategoryIcon(section.category)}</span><span><strong>{communityCategoryLabel(section.category)}</strong><small>{section.description}</small>{section.category === "tester" && testerCount > 0 && <small className="community-section-count">{testerCount} current tester update{testerCount === 1 ? "" : "s"}</small>}</span>
       </button>)}
     </div>
 
-    <div className="community-toolbar"><div><h2>{active === "all" ? "Latest from Tiny Titans" : communityCategoryLabel(active)}</h2><p>{active === "all" ? "The latest information from the Tiny Titans team." : sections.find((item) => item.category === active)?.description}</p></div><button type="button" className="community-filter-button" onClick={() => setActive("all")}>Show all</button></div>
+    <div className="community-toolbar"><div><h2>{active === "all" ? "Latest from Tiny Titans" : communityCategoryLabel(active)}</h2><p>{active === "all" ? "The latest information from the Tiny Titans team." : sections.find((item) => item.category === active)?.description}</p></div>{active !== "all" && <button type="button" className="community-filter-button" onClick={() => setActive("all")}>Show all</button>}</div>
 
     {loading && <div className="community-empty"><span>🐍</span><h3>Loading the Hub…</h3><p>Checking for the latest Tiny Titans updates.</p></div>}
     {!loading && loadError && <div className="community-empty community-error"><span>⚠️</span><h3>Couldn't load updates</h3><p>{loadError}</p><button type="button" onClick={() => window.location.reload()}>Try again</button></div>}
@@ -73,7 +81,7 @@ export default function CommunityHub() {
     {!loading && !loadError && visiblePosts.length > 0 && <div className="community-post-list">{visiblePosts.map((post) => <PostCard key={post.id} post={post} />)}</div>}
 
     <section className="community-feedback-card">
-      <div><span className="community-feedback-icon">💬</span><div><h2>Feedback & Bug Reports</h2><p>Found something broken, have an idea, or want to tell us how Tiny Titans could be better?</p></div></div>
+      <div><span className="community-feedback-icon">💬</span><div><h2>Feedback & Bug Reports</h2><p>Found something broken or have feedback for the Tiny Titans team?</p></div></div>
       <button type="button" onClick={() => navigate("/report-issue")}>{user ? "Send feedback" : "Report an issue"} →</button>
     </section>
   </section>;
