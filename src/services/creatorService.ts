@@ -91,14 +91,13 @@ export async function getCreatorReports(): Promise<ReportIssue[]> {
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ReportIssue, "id">) }));
 }
 
+export async function getIssueAttachmentUrl(path: string): Promise<string> {
+  return getDownloadURL(ref(storage, path));
+}
+
 export async function updateCreatorReport(reportId: string, status: ReportIssue["status"]) {
   const reportRef = doc(db, "issueReports", reportId);
-  if (status !== "Cleared") { await updateDoc(reportRef, { status, updatedAt: serverTimestamp() }); return; }
-  const snapshot = await getDocs(query(collection(db, "issueReports")));
-  const match = snapshot.docs.find((item) => item.id === reportId);
-  const data = match?.data() as Partial<ReportIssue> | undefined;
-  if (data?.attachment?.path) await deleteObject(ref(storage, data.attachment.path)).catch(() => undefined);
-  await updateDoc(reportRef, { status: "Cleared", updatedAt: serverTimestamp(), title: deleteField(), description: deleteField(), context: deleteField(), metadata: deleteField(), attachment: deleteField(), userId: deleteField(), appVersion: deleteField() });
+  await updateDoc(reportRef, { status, updatedAt: serverTimestamp() });
 }
 
 export async function getFounderApplications(): Promise<FounderApplication[]> {
