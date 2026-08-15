@@ -2,85 +2,10 @@ export type LearningDifficulty = 1 | 2 | 3 | 4 | 5;
 export type LearningBank = 1 | 2 | 3 | 4 | 5;
 export type LanguageLevel = "young" | "teen" | "keeper" | "advanced";
 export type LearningSectionKey = "who" | "what" | "why" | "when" | "how" | "examples";
-
-/** The activity format used to demonstrate mastery. */
-export type ChallengeType =
-  | "knowledge"
-  | "genetics-builder"
-  | "feeding-scenario"
-  | "husbandry-detective"
-  | "normal-monitor-investigate"
-  | "shed-scenario"
-  | "sequence"
-  | "keeper-scenario"
-  | "reasoning";
-
-export type LearnerProfile = {
-  languageLevel: LanguageLevel;
-  showScientificTerms: boolean;
-  profileSet: boolean;
-};
-
-export type ChallengeData = {
-  instruction?: string;
-  labels?: string[];
-  sequenceItems?: string[];
-  scenario?: string;
-};
-
-export type QuizQuestion = {
-  id: string;
-  prompt: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-  difficulty: LearningDifficulty;
-  bank?: LearningBank;
-  challengeType?: ChallengeType;
-  challengeData?: ChallengeData;
-  promptByLanguage?: Partial<Record<LanguageLevel, string>>;
-  explanationByLanguage?: Partial<Record<LanguageLevel, string>>;
-  terminology?: Array<{ term: string; simple: string; definition: string }>;
-};
-
-export type LearningTopic = {
-  id: string;
-  title: string;
-  icon: string;
-  category: string;
-  summary: string;
-  sections: Partial<Record<LearningSectionKey, string>>;
-  questions: QuizQuestion[];
-};
-
-export type TopicProgress = {
-  attempts: number;
-  correct: number;
-  mastery: number;
-  lastScore: number | null;
-  bestScore: number;
-  completed: boolean;
-  lastAttemptAt: string | null;
-  currentBank: LearningBank;
-  masteredBanks: LearningBank[];
-  seenQuestionIds: string[];
-  missedQuestionIds: string[];
-  recentQuestionIds: string[];
-};
-
-export type LearningProgress = {
-  xp: number;
-  totalQuestions: number;
-  totalCorrect: number;
-  topics: Record<string, TopicProgress>;
-  unlockedBadges: string[];
-  /** Completed perfect-bank mastery events. */
-  perfectBanks: number;
-  /** Legacy/display metric: number of submitted perfect tests. */
-  perfectTests: number;
-  completedLessons: number;
-  currentStreak: number;
-  longestStreak: number;
-  lastTestAt: string | null;
-  learnerProfile: LearnerProfile;
-};
+export type ChallengeType = "knowledge" | "genetics-builder" | "feeding-scenario" | "husbandry-detective" | "normal-monitor-investigate" | "shed-scenario" | "sequence" | "keeper-scenario" | "reasoning";
+export type LearnerProfile = { languageLevel: LanguageLevel; showScientificTerms: boolean; profileSet: boolean };
+export type ChallengeData = { instruction?: string; labels?: string[]; sequenceItems?: string[]; scenario?: string };
+export type QuizQuestion = { id: string; prompt: string; options: string[]; correctIndex: number; explanation: string; difficulty: LearningDifficulty; bank?: LearningBank; challengeType?: ChallengeType; challengeData?: ChallengeData; promptByLanguage?: Partial<Record<LanguageLevel, string>>; explanationByLanguage?: Partial<Record<LanguageLevel, string>>; terminology?: Array<{ term: string; simple: string; definition: string }> };
+export type LearningTopic = { id: string; title: string; icon: string; category: string; summary: string; sections: Partial<Record<LearningSectionKey, string>>; questions: QuizQuestion[] };
+export type TopicProgress = { attempts: number; correct: number; mastery: number; lastScore: number | null; bestScore: number; completed: boolean; lastAttemptAt: string | null; currentBank: LearningBank; masteredBanks: LearningBank[]; seenQuestionIds: string[]; missedQuestionIds: string[]; recentQuestionIds: string[] };
+export type LearningProgress = { xp: number; totalQuestions: number; totalCorrect: number; topics: Record<string, TopicProgress>; unlockedBadges: string[]; perfectBanks: number; perfectTests: number; completedLessons: number; currentStreak: number; longestStreak: number; lastTestAt: string | null; learnerProfile: LearnerProfile; confirmedBugReportIds: string[] };
