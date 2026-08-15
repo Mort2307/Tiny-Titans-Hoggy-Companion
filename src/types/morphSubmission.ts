@@ -5,10 +5,15 @@ export type MorphSubmissionStatus = "Pending" | "Approved" | "Rejected" | "Needs
 export type MorphImageSubmission = {
   id: string;
   userId?: string;
-  morphId: string;
+  morphId?: string;
   morphName: string;
   description: string;
   geneticsNotes?: string;
+  observedTraits?: string;
+  proofDetails: string;
+  proofReference?: string;
+  photoRequirementsConfirmed: boolean;
+  factualAccuracyConfirmed: boolean;
   creditType: MorphSubmissionCredit;
   creditName?: string;
   creditSocial?: string;
