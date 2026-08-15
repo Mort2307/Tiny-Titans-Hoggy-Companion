@@ -15,7 +15,8 @@ const aliases = new Map();
 const normalise = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
 
 function value(record, key) {
-  return record.match(new RegExp(`\\b${key}\\s*:\\s*["'\\`]([^"'\\`]*)["'\\`]`))?.[1]?.trim() ?? "";
+  const pattern = "\\b" + key + "\\s*:\\s*[\"'`]([^\"'`]*)[\"'`]";
+  return record.match(new RegExp(pattern))?.[1]?.trim() ?? "";
 }
 
 function booleanValue(record, key) {
