@@ -1,7 +1,6 @@
 // Tiny Titans support destination.
-// Set this once the final Ko-fi page is ready.
-// Keep the URL public — never put payment secrets in the app.
-export const KOFI_SUPPORT_URL = "https://ko-fi.com/REPLACE_WITH_TINY_TITANS";
+// This is a public Ko-fi page URL; never put payment secrets in the app.
+export const KOFI_SUPPORT_URL = "https://ko-fi.com/tinytitans";
 export const SUPPORT_PLATFORM_NAME = "Ko-fi";
 
 export const isSupportConfigured = () =>
