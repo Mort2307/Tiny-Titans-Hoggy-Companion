@@ -1,4 +1,4 @@
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, updateDoc, doc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { db, storage } from "../firebase/config";
 
@@ -8,6 +8,10 @@ export interface MorphSubmissionInput {
   morphName: string;
   description: string;
   observedTraits: string;
+  proofDetails: string;
+  proofReference?: string;
+  photoRequirementsConfirmed: boolean;
+  factualAccuracyConfirmed: boolean;
   creditMode: MorphCreditMode;
   creditName?: string;
   creditSocial?: string;
@@ -40,10 +44,15 @@ export async function submitMorphImage(input: MorphSubmissionInput): Promise<{ s
   const morphName = input.morphName.trim();
   const description = input.description.trim();
   const observedTraits = input.observedTraits.trim();
+  const proofDetails = input.proofDetails.trim();
+  const proofReference = input.proofReference?.trim();
 
   if (!morphName) throw new Error("Please enter the morph name.");
   if (!description) throw new Error("Please describe the animal and why you believe it matches this morph.");
-  if (!input.image) throw new Error("Please add an image for review.");
+  if (!input.image) throw new Error("Please add the primary morph photograph.");
+  if (!proofDetails) throw new Error("Proof of the confirmed morph is required for factual accuracy.");
+  if (!input.factualAccuracyConfirmed) throw new Error("Please confirm that the morph identification is supported by factual evidence.");
+  if (!input.photoRequirementsConfirmed) throw new Error("Please confirm that the primary photograph meets the Morph Library photo requirements.");
 
   if (input.creditMode === "name" && !input.creditName?.trim()) {
     throw new Error("Please enter the name you want displayed, or choose another credit option.");
@@ -57,6 +66,10 @@ export async function submitMorphImage(input: MorphSubmissionInput): Promise<{ s
     morphName,
     description,
     observedTraits,
+    proofDetails,
+    proofReference: proofReference || null,
+    photoRequirementsConfirmed: true,
+    factualAccuracyConfirmed: true,
     creditMode: input.creditMode,
     creditName: input.creditMode === "name" ? input.creditName?.trim() : null,
     creditSocial: input.creditMode === "social" ? input.creditSocial?.trim() : null,
@@ -68,12 +81,6 @@ export async function submitMorphImage(input: MorphSubmissionInput): Promise<{ s
   await uploadBytes(storageRef, compressed, { contentType: "image/jpeg" });
   const imageUrl = await getDownloadURL(storageRef);
 
-  // Keep the review record in Firestore; the image is intentionally isolated in
-  // Storage so it can be removed when a submission is rejected/cleared without
-  // deleting the review history.
-  // The Creator review workflow can promote an approved image into the canonical
-  // morph database and delete the temporary submission asset afterwards.
-  const { updateDoc, doc } = await import("firebase/firestore");
   await updateDoc(doc(db, "morphSubmissions", submissionRef.id), {
     imageUrl,
     storagePath: storageRef.fullPath,
