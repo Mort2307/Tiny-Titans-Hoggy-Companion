@@ -5,11 +5,11 @@ service cloud.firestore {
     function hasCreatorClaim() { return signedIn() && (request.auth.token.creator == true || request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["creator", "admin"]); }
     function hasModeratorClaim() { return signedIn() && (request.auth.token.moderator == true || request.auth.token.creator == true || request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["creator", "admin", "moderator"]); }
     function isAdmin() { return signedIn() && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"); }
-    function isTester() { return signedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isTester == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tester"); }
+    function isTester() { return signedIn() && (get(/databases/$(database).data.users/$(request.auth.uid)).data.isTester == true || get(/databases/$(database).data.users/$(request.auth.uid)).data.role == "tester"); }
     function isPaidSupporter(uid) { return signedIn() && uid == request.auth.uid && get(/databases/$(database)/documents/supporters/$(uid)).data.status == "active"; }
     match /users/{userId} { allow create: if signedIn() && request.auth.uid == userId && request.resource.data.role == "user"; allow get: if signedIn() && (request.auth.uid == userId || request.auth.token.creator == true || request.auth.token.admin == true); allow list: if hasCreatorClaim(); allow update: if signedIn() && (isAdmin() || (request.auth.uid == userId && request.resource.data.role == resource.data.role && request.resource.data.isTester == resource.data.isTester && request.resource.data.isSecurityTestUser == resource.data.isSecurityTestUser)); allow delete: if isAdmin(); }
     match /users/{userId}/{document=**} { allow read, write: if signedIn() && (request.auth.uid == userId || hasCreatorClaim()); }
-    match /appConfig/creatorSettings { allow read, write: if hasCreatorClaim(); }
+    match /appConfig/creatorSettings { allow get: if signedIn(); allow create, update, delete: if hasCreatorClaim(); }
     match /appConfig/creatorContent { allow get: if signedIn(); allow create, update, delete: if hasCreatorClaim(); }
     match /appConfig/{configId} { allow read, write: if false; }
     match /supporters/{userId} { allow get: if signedIn() && (request.auth.uid == userId || hasCreatorClaim()); allow list: if hasCreatorClaim(); allow create, update, delete: if isAdmin(); }
