@@ -15,25 +15,15 @@ function Navigation() {
     }
 
     let active = true;
-
     void hasCreatorClaim(false)
       .then((claimAuthorized) => {
         if (!active) return;
-
-        // Backwards-compatible transition for the existing Creator/Admin
-        // accounts. Firebase claims remain preferred; the legacy profile role
-        // keeps the existing Creator UI visible while claims are being rolled
-        // out to the existing account population.
-        const legacyCreatorAuthorized =
-          profile?.role === "admin" || profile?.profileType === "creator";
-
+        const legacyCreatorAuthorized = profile?.role === "admin" || profile?.profileType === "creator";
         setCreatorAuthorized(claimAuthorized || legacyCreatorAuthorized);
       })
       .catch(() => {
         if (!active) return;
-        setCreatorAuthorized(
-          profile?.role === "admin" || profile?.profileType === "creator"
-        );
+        setCreatorAuthorized(profile?.role === "admin" || profile?.profileType === "creator");
       });
 
     return () => {
@@ -44,6 +34,10 @@ function Navigation() {
   const links: [string, string, string][] = [
     ["/", "🏠", "Home"],
     ["/snakes", "🐍", "My Snakes"],
+    ["/feeding", "🍽️", "Feeding"],
+    ["/feeding/preparation", "🧊", "Feeding Preparation"],
+    ["/shedding", "🐍", "Shed Tracker"],
+    ["/weights", "⚖️", "Weights"],
     ["/morph-library", "🧬", "Morph Library"],
     ["/calculator", "🧮", "Genetics Calculator"],
     ["/knowledge-base", "📚", "Knowledge Base"],
@@ -60,6 +54,7 @@ function Navigation() {
   if (creatorAuthorized) {
     links.push(["/creator", "🛠️", "Creator Centre"]);
     links.push(["/creator/community", "📢", "Community Manager"]);
+    links.push(["/creator/tester", "🧪", "Tester Centre"]);
   }
 
   return (
