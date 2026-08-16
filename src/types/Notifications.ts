@@ -74,6 +74,7 @@ export interface MedicationReminder {
   dose: string;
   unit: string;
   frequency: string;
+  intervalDays: number;
   scheduledTime: string;
   startDate: string;
   endDate?: string;
