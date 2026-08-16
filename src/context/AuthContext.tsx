@@ -8,7 +8,7 @@ import {
 import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, getFirestore, serverTimestamp, updateDoc } from "firebase/firestore";
 import app from "../firebase/config";
-import type { AgeBand, EducatorProfile, LearningLevel, ProfileType } from "../types/Profile";
+import type { AgeBand, ApproximateLocation, DataCollectionPreferences, EducatorProfile, LearningLevel, ProfileType } from "../types/Profile";
 import type { UnitSystem } from "./UnitContext";
 
 export type UserRole = "user" | "admin" | "moderator";
@@ -31,6 +31,8 @@ export type UserProfile = {
   setupComplete: boolean;
   unitSystem: UnitSystem;
   educatorProfile?: EducatorProfile;
+  approximateLocation?: ApproximateLocation;
+  dataCollectionPreferences?: DataCollectionPreferences;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -72,6 +74,17 @@ function loadEducatorProfile(value: unknown): EducatorProfile | undefined {
   const reptileExperience = data.reptileExperience === "advanced" ? "advanced" : data.reptileExperience === "intermediate" ? "intermediate" : "beginner";
   return { teachingLevel, subjects, studentAgeBands, reptileExperience, organisationName: typeof data.organisationName === "string" ? data.organisationName : undefined, country: typeof data.country === "string" ? data.country : undefined, verified: data.verified === true };
 }
+function loadApproximateLocation(value: unknown): ApproximateLocation | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const data = value as Record<string, unknown>;
+  if (typeof data.city !== "string" || typeof data.country !== "string") return undefined;
+  return { city: data.city, country: data.country, source: data.source === "coarse-geolocation" ? "coarse-geolocation" : "user-provided", visibleToCreator: data.visibleToCreator === true, updatedAt: data.updatedAt };
+}
+function loadDataCollectionPreferences(value: unknown): DataCollectionPreferences | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const data = value as Record<string, unknown>;
+  return { approximateLocation: data.approximateLocation === true, analytics: data.analytics === true, productUpdates: data.productUpdates === true, consentVersion: typeof data.consentVersion === "string" ? data.consentVersion : "unknown", consentUpdatedAt: data.consentUpdatedAt };
+}
 
 async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> {
   const profileSnapshot = await getDoc(doc(db, "users", firebaseUser.uid));
@@ -85,8 +98,8 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> 
     category: profileData.category === "child" ? "child" : "adult", ageBand: isAgeBand(profileData.ageBand) ? profileData.ageBand : undefined, learningLevel: isLearningLevel(profileData.learningLevel) ? profileData.learningLevel : undefined,
     profileType, experienceLevel: profileData.experienceLevel === "intermediate" ? "intermediate" : profileData.experienceLevel === "pro" ? "pro" : "beginner", interests,
     role: profileData.role === "admin" ? "admin" : profileData.role === "moderator" ? "moderator" : "user", isTester: profileData.isTester === true || profileData.role === "tester",
-    setupComplete: profileData.setupComplete === true,
-    unitSystem: isUnitSystem(profileData.unitSystem) ? profileData.unitSystem : "metric", educatorProfile: loadEducatorProfile(profileData.educatorProfile), createdAt: profileData.createdAt, updatedAt: profileData.updatedAt,
+    setupComplete: profileData.setupComplete === true, unitSystem: isUnitSystem(profileData.unitSystem) ? profileData.unitSystem : "metric", educatorProfile: loadEducatorProfile(profileData.educatorProfile),
+    approximateLocation: loadApproximateLocation(profileData.approximateLocation), dataCollectionPreferences: loadDataCollectionPreferences(profileData.dataCollectionPreferences), createdAt: profileData.createdAt, updatedAt: profileData.updatedAt,
   };
 }
 
