@@ -5,6 +5,7 @@ import type { ReportIssue } from "../types/reportIssue";
 import type { Feedback } from "../types/feedback";
 import type { ApprovedMorphImage, MorphImageSubmission, MorphSubmissionStatus } from "../types/morphSubmission";
 import { getCanonicalGlobalStats } from "./trackerStatsService";
+import { resolveMorph } from "../data/morphResolver";
 
 export type FounderApplication = {
   id: string;
@@ -63,6 +64,62 @@ export async function getCommunityUserLocations(): Promise<CommunityUserLocation
 
 export async function getMorphImageSubmissions(): Promise<MorphImageSubmission[]> { const snapshot = await getDocs(query(collection(db, "morphImageSubmissions"), orderBy("submittedAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<MorphImageSubmission, "id">) })); }
 export async function updateMorphSubmissionStatus(submissionId: string, status: MorphSubmissionStatus, reviewerUid?: string, rejectionReason?: string) { await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status, reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: rejectionReason ?? null }); }
-export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage> { if (!submission.morphId) throw new Error("This submission has no canonical morph ID."); if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval."); const sourceRef = ref(storage, submission.attachment.path); const approvedPath = `morphLibrary/${submission.morphId}/community/${submission.id}.jpg`; const imageBytes = await getBytes(sourceRef, 12 * 1024 * 1024); await uploadBytes(ref(storage, approvedPath), imageBytes, { contentType: "image/jpeg" }); const approvedImageUrl = await getDownloadURL(ref(storage, approvedPath)); try { const approvedDoc = await addDoc(collection(db, "approvedMorphImages"), { morphId: submission.morphId, morphName: submission.morphName, imageUrl: approvedImageUrl, storagePath: approvedPath, sourceStoragePath: submission.attachment.path, creditType: submission.creditType, creditName: submission.creditName ?? null, creditSocial: submission.creditSocial ?? null, sourceSubmissionId: submission.id, approvedAt: serverTimestamp(), approvedBy: reviewerUid ?? null }); await updateDoc(doc(db, "morphImageSubmissions", submission.id), { status: "Approved", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, approvedImageId: approvedDoc.id }); await deleteObject(sourceRef).catch(() => undefined); return { id: approvedDoc.id, morphId: submission.morphId, morphName: submission.morphName, imageUrl: approvedImageUrl, storagePath: approvedPath, creditType: submission.creditType, creditName: submission.creditName, creditSocial: submission.creditSocial, sourceSubmissionId: submission.id, approvedAt: undefined, approvedBy: reviewerUid }; } catch (error) { await deleteObject(ref(storage, approvedPath)).catch(() => undefined); throw error; } }
+export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage> {
+  if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval.");
+
+  // Older submissions may not have stored a canonical morphId. Resolve the
+  // submitted name at approval time so those submissions remain reviewable.
+  const resolvedMorph = submission.morphId ? resolveMorph(submission.morphId) ?? resolveMorph(submission.morphName) : resolveMorph(submission.morphName);
+  if (!resolvedMorph) throw new Error(`Could not match “${submission.morphName}” to a canonical Morph Library entry. Check the morph name before approving.`);
+
+  const morphId = resolvedMorph.geneId;
+  const morphName = resolvedMorph.name;
+  const sourceRef = ref(storage, submission.attachment.path);
+  const approvedPath = `morphLibrary/${morphId}/community/${submission.id}.jpg`;
+  const imageBytes = await getBytes(sourceRef, 12 * 1024 * 1024);
+  await uploadBytes(ref(storage, approvedPath), imageBytes, { contentType: "image/jpeg" });
+  const approvedImageUrl = await getDownloadURL(ref(storage, approvedPath));
+
+  try {
+    const approvedDoc = await addDoc(collection(db, "approvedMorphImages"), {
+      morphId,
+      morphName,
+      imageUrl: approvedImageUrl,
+      storagePath: approvedPath,
+      sourceStoragePath: submission.attachment.path,
+      creditType: submission.creditType,
+      creditName: submission.creditName ?? null,
+      creditSocial: submission.creditSocial ?? null,
+      sourceSubmissionId: submission.id,
+      approvedAt: serverTimestamp(),
+      approvedBy: reviewerUid ?? null,
+    });
+    await updateDoc(doc(db, "morphImageSubmissions", submission.id), {
+      status: "Approved",
+      morphId,
+      morphName,
+      reviewedAt: serverTimestamp(),
+      reviewedBy: reviewerUid ?? null,
+      approvedImageId: approvedDoc.id,
+    });
+    await deleteObject(sourceRef).catch(() => undefined);
+    return {
+      id: approvedDoc.id,
+      morphId,
+      morphName,
+      imageUrl: approvedImageUrl,
+      storagePath: approvedPath,
+      creditType: submission.creditType,
+      creditName: submission.creditName,
+      creditSocial: submission.creditSocial,
+      sourceSubmissionId: submission.id,
+      approvedAt: undefined,
+      approvedBy: reviewerUid,
+    };
+  } catch (error) {
+    await deleteObject(ref(storage, approvedPath)).catch(() => undefined);
+    throw error;
+  }
+}
 export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) { if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined); await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null }); }
 export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> { const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc"))); const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) })); return morphId ? images.filter((image) => image.morphId === morphId) : images; }
