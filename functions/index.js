@@ -1,11 +1,13 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const Stripe = require("stripe");
 
 initializeApp();
 const db = getFirestore();
+const adminAuth = getAuth();
 
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
@@ -31,6 +33,52 @@ function getAllowedOrigin(request) {
     ? origin
     : "https://tinytitans-hoggy-companion.web.app";
 }
+
+async function getUserRole(uid) {
+  const snapshot = await db.collection("users").doc(uid).get();
+  return snapshot.exists ? snapshot.data()?.role : null;
+}
+
+exports.syncMyCreatorClaims = onCall({ region: "europe-west2" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+
+  const role = await getUserRole(uid);
+  const isAdmin = role === "admin";
+  const isCreator = isAdmin || role === "creator";
+  const isModerator = isAdmin || isCreator || role === "moderator";
+
+  await adminAuth.setCustomUserClaims(uid, {
+    creator: isCreator,
+    admin: isAdmin,
+    moderator: isModerator,
+  });
+
+  return { creator: isCreator, admin: isAdmin, moderator: isModerator };
+});
+
+exports.setCreatorClaims = onCall({ region: "europe-west2" }, async (request) => {
+  const callerUid = request.auth?.uid;
+  if (!callerUid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if ((await getUserRole(callerUid)) !== "admin") {
+    throw new HttpsError("permission-denied", "Only an administrator can manage Creator access.");
+  }
+
+  const uid = String(request.data?.uid || "").trim();
+  const role = String(request.data?.role || "user").trim();
+  if (!uid || !["user", "creator", "moderator", "admin"].includes(role)) {
+    throw new HttpsError("invalid-argument", "Invalid user or Creator role.");
+  }
+
+  await db.collection("users").doc(uid).set({ role }, { merge: true });
+  await adminAuth.setCustomUserClaims(uid, {
+    creator: role === "creator" || role === "admin",
+    admin: role === "admin",
+    moderator: role === "moderator" || role === "creator" || role === "admin",
+  });
+
+  return { uid, role };
+});
 
 exports.createTitanCheckout = onCall(
   { region: "europe-west2", secrets: [STRIPE_SECRET_KEY] },
@@ -65,14 +113,10 @@ exports.createTitanCheckout = onCall(
   }
 );
 
-// Deploy this endpoint independently of the webhook secret. This breaks the
-// deployment chicken-and-egg problem: the endpoint must exist before Stripe
-// can generate its whsec_ signing secret.
 exports.stripeWebhook = onRequest(
   { region: "europe-west2", secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET], invoker: "public" },
   async (req, res) => {
     if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
-
     const signature = req.headers["stripe-signature"];
     if (!signature) return res.status(400).send("Missing Stripe signature");
 
@@ -84,7 +128,6 @@ exports.stripeWebhook = onRequest(
         const session = event.data.object;
         const uid = session.metadata?.uid || session.client_reference_id;
         const tier = PRICE_TIERS[session.metadata?.tier];
-
         if (uid && tier && session.payment_status === "paid") {
           await db.collection("supporters").doc(uid).set({
             uid,
@@ -97,7 +140,6 @@ exports.stripeWebhook = onRequest(
             lastPaymentAt: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),
           }, { merge: true });
-
           await db.collection("supporterStats").doc("global").set({
             totalSupporters: FieldValue.increment(1),
             totalReceivedGbp: FieldValue.increment(tier.amount),
@@ -105,7 +147,6 @@ exports.stripeWebhook = onRequest(
           }, { merge: true });
         }
       }
-
       return res.status(200).json({ received: true });
     } catch (error) {
       console.error("Stripe webhook verification/processing failed", error);
