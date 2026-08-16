@@ -47,6 +47,11 @@ export default defineConfig({
 
         navigateFallback: "/index.html",
 
+        // The current production bundle is larger than Workbox's 2 MiB default.
+        // Keep it precached so the PWA remains installable/offline-capable while
+        // we separately work on route-level code splitting.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+
         globPatterns: [
           "**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}",
         ],
