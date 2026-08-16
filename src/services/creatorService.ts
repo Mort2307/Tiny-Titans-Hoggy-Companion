@@ -59,14 +59,108 @@ export async function getCreatorFeedback(): Promise<Feedback[]> {
 const normaliseIssuePart = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 async function issueFingerprint(parts: string[]) { const source = parts.map(normaliseIssuePart).filter(Boolean).join("|"); const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source)); return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 16); }
 function issueToken() { const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const values = new Uint32Array(8); crypto.getRandomValues(values); return `TT-${Array.from(values, (value) => chars[value % chars.length]).join("").slice(0, 4)}-${Array.from(values, (value) => chars[value % chars.length]).join("").slice(4, 8)}`; }
-async function prepareImage(file: File): Promise<Blob> { if (file.size <= 8 * 1024 * 1024) return file; const bitmap = await createImageBitmap(file); const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height)); const canvas = document.createElement("canvas"); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale)); canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close(); return new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Unable to compress image.")), "image/jpeg", 0.78)); }
+
+async function prepareImage(file: File): Promise<Blob> {
+  if (file.size <= 8 * 1024 * 1024) return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Unable to prepare the image for upload.");
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const compressed = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.78));
+    if (!compressed) throw new Error("Unable to compress the image.");
+    return compressed;
+  } catch (error) {
+    console.warn("Tiny Titans: createImageBitmap failed for bug evidence; trying browser image fallback.", error);
+
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const element = new Image();
+        element.onload = () => resolve(element);
+        element.onerror = () => reject(new Error("This image format could not be prepared for upload. Try JPG or PNG."));
+        element.src = objectUrl;
+      });
+
+      const scale = Math.min(1, 1600 / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+      canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Unable to prepare the image for upload.");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const compressed = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.78));
+      if (!compressed) throw new Error("Unable to compress the image.");
+      return compressed;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+}
 
 export async function submitIssueReport(input: Omit<ReportIssue, "id" | "createdAt" | "updatedAt" | "issueToken" | "issueFingerprint"> & { file?: File | null }) {
   const { file, ...report } = input;
-  const fingerprint = await issueFingerprint([report.category, report.source, report.title, report.description]); const token = issueToken(); let attachment: ReportIssue["attachment"]; let uploadedPath: string | undefined;
-  if (file) { const isImage = file.type.startsWith("image/"); const isVideo = file.type.startsWith("video/"); if (!isImage && !isVideo) throw new Error("Please attach an image or video."); if (file.size > (isVideo ? 25 : 8) * 1024 * 1024) throw new Error(isVideo ? "Video attachments must be 25 MB or smaller." : "Image attachments must be 8 MB or smaller."); const blob = isImage ? await prepareImage(file) : file; uploadedPath = `issueEvidence/${report.userId ?? "anonymous"}/${crypto.randomUUID()}/${isImage ? "evidence.jpg" : file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`; await uploadBytes(ref(storage, uploadedPath), blob, { contentType: isImage ? "image/jpeg" : file.type }); attachment = { path: uploadedPath, type: isImage ? "image" : "video", sizeBytes: blob.size }; }
-  try { const refDoc = await addDoc(collection(db, "issueReports"), { ...report, issueToken: token, issueFingerprint: fingerprint, attachment: attachment ?? null, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); return { id: refDoc.id, issueToken: token, issueFingerprint: fingerprint }; } catch (error) { if (uploadedPath) await deleteObject(ref(storage, uploadedPath)).catch(() => undefined); throw error; }
+  if (!report.userId) throw new Error("You must be signed in to submit a bug report.");
+
+  const fingerprint = await issueFingerprint([report.category, report.source, report.title, report.description]);
+  const token = issueToken();
+  let attachment: ReportIssue["attachment"];
+  let uploadedPath: string | undefined;
+
+  try {
+    if (file) {
+      const isImage = file.type.startsWith("image/");
+      const isVideo = file.type.startsWith("video/");
+      if (!isImage && !isVideo) throw new Error("Please attach an image or video.");
+
+      if (file.size > (isVideo ? 25 : 8) * 1024 * 1024) {
+        throw new Error(isVideo ? "Video attachments must be 25 MB or smaller." : "Image attachments must be 8 MB or smaller.");
+      }
+
+      const blob = isImage ? await prepareImage(file) : file;
+      const evidenceId = crypto.randomUUID();
+      const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      uploadedPath = `issueEvidence/${report.userId}/${evidenceId}/${isImage ? "evidence.jpg" : safeFileName}`;
+      const evidenceRef = ref(storage, uploadedPath);
+
+      await uploadBytes(evidenceRef, blob, {
+        contentType: isImage ? "image/jpeg" : (file.type || "application/octet-stream"),
+        customMetadata: {
+          uploadedBy: report.userId,
+          evidenceType: isImage ? "bug-image" : "bug-video",
+        },
+      });
+
+      attachment = {
+        path: uploadedPath,
+        type: isImage ? "image" : "video",
+        sizeBytes: blob.size,
+      };
+    }
+
+    const refDoc = await addDoc(collection(db, "issueReports"), {
+      ...report,
+      issueToken: token,
+      issueFingerprint: fingerprint,
+      attachment: attachment ?? null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    return { id: refDoc.id, issueToken: token, issueFingerprint: fingerprint };
+  } catch (error) {
+    if (uploadedPath) await deleteObject(ref(storage, uploadedPath)).catch(() => undefined);
+    const message = error instanceof Error ? error.message : "Unable to submit the bug report.";
+    throw new Error(file && !message ? "The bug report could not be submitted with its attachment." : message);
+  }
 }
+
 export async function getCreatorReports(): Promise<ReportIssue[]> { const snapshot = await getDocs(query(collection(db, "issueReports"), orderBy("createdAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ReportIssue, "id">) })); }
 export async function getUserIssueReports(uid: string): Promise<ReportIssue[]> { const snapshot = await getDocs(query(collection(db, "issueReports"), where("userId", "==", uid))); const reports = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ReportIssue, "id">) })); return reports.sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))); }
 export async function getIssueAttachmentUrl(path: string): Promise<string> { return getDownloadURL(ref(storage, path)); }
