@@ -5,13 +5,38 @@ export type HetScenario = {
   probability: number;
 };
 
-export function parseHetPercentage(value: Het["percentage"]): 50 | 66 | 100 {
+/**
+ * Read a het probability without silently upgrading an unrecognised value to
+ * 100%. Legacy persisted data has existed in several representations, so we
+ * accept numeric percentages, percentage strings, descriptive labels such as
+ * "66% Possible Het", and probability fractions such as 0.66.
+ */
+export function parseHetPercentage(value: unknown): 50 | 66 | 100 {
   if (typeof value === "number") {
-    return value === 50 || value === 66 || value === 100 ? value : 100;
+    if (value === 50 || value === 66 || value === 100) return value;
+    if (value === 0.5) return 50;
+    if (value === 0.66) return 66;
+    if (value === 1) return 100;
   }
 
-  const parsed = Number(String(value).trim().replace(/%$/, ""));
-  return parsed === 50 || parsed === 66 || parsed === 100 ? parsed : 100;
+  const text = String(value ?? "").trim();
+  if (!text) return 100;
+
+  const direct = Number(text.replace(/%$/, ""));
+  if (direct === 50 || direct === 66 || direct === 100) return direct;
+
+  const fraction = Number(text);
+  if (fraction === 0.5) return 50;
+  if (fraction === 0.66) return 66;
+  if (fraction === 1) return 100;
+
+  const match = text.match(/(?:^|\s)(50|66|100)\s*%?/i);
+  if (match) {
+    const extracted = Number(match[1]);
+    if (extracted === 50 || extracted === 66 || extracted === 100) return extracted;
+  }
+
+  return 100;
 }
 
 /**
