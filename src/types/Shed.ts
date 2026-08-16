@@ -7,14 +7,15 @@ export type ShedQuality =
 
 export type ShedStatus =
   | "Complete"
-  | "Partial";
+  | "Partial"
+  | "Problematic";
 
 export type RetainedShedArea =
-  | "None"
   | "Eye Cap"
+  | "Head"
   | "Tail Tip"
   | "Body"
-  | "Multiple Areas";
+  | "Other";
 
 export type ShedAssistance =
   | "None"
@@ -34,11 +35,14 @@ export type ShedRecord = {
   shedCompleted: boolean;
 
   // Inspection
-  retainedShedArea: RetainedShedArea;
+  // retainedShedArea is kept for backwards compatibility with existing records.
+  retainedShedArea: RetainedShedArea | "None" | "Multiple Areas";
+  retainedAreas: RetainedShedArea[];
   retainedEyeCaps: boolean;
   retainedTailTip: boolean;
 
   // Overall assessment
+  status: ShedStatus;
   quality: ShedQuality;
   assistance: ShedAssistance;
 
@@ -46,5 +50,6 @@ export type ShedRecord = {
   shedLength?: number;
   snakeWeight?: number;
 
+  // Keeper observations
   notes: string;
 };
