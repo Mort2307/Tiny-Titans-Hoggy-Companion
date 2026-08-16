@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { hasCreatorClaim } from "../../services/creatorAuthService";
+import { getCommunityUnreadCount } from "../../services/communityReadStateService";
 import "./Navigation.css";
 
 function Navigation() {
   const { profile, user, loading, profileLoading } = useAuth();
   const [creatorAuthorized, setCreatorAuthorized] = useState(false);
+  const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
 
   useEffect(() => {
     if (loading || profileLoading || !user) {
@@ -30,6 +32,42 @@ function Navigation() {
       active = false;
     };
   }, [user, profile, loading, profileLoading]);
+
+  useEffect(() => {
+    if (loading || profileLoading || !user) {
+      setCommunityUnreadCount(0);
+      return;
+    }
+
+    let active = true;
+    void getCommunityUnreadCount(user.uid, {
+      isTester: profile?.isTester === true,
+      isAdmin: profile?.role === "admin",
+    })
+      .then((count) => {
+        if (active) setCommunityUnreadCount(count);
+      })
+      .catch(() => {
+        if (active) setCommunityUnreadCount(0);
+      });
+
+    const refresh = () => {
+      void getCommunityUnreadCount(user.uid, {
+        isTester: profile?.isTester === true,
+        isAdmin: profile?.role === "admin",
+      }).then((count) => {
+        if (active) setCommunityUnreadCount(count);
+      }).catch(() => undefined);
+    };
+
+    window.addEventListener("focus", refresh);
+    window.addEventListener("community-read-state-changed", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("community-read-state-changed", refresh);
+    };
+  }, [user?.uid, profile?.isTester, profile?.role, loading, profileLoading]);
 
   const links: [string, string, string][] = [
     ["/", "🏠", "Home"],
@@ -62,6 +100,9 @@ function Navigation() {
               <NavLink to={to} className="app-navigation-link">
                 <span className="app-navigation-icon" aria-hidden="true">{icon}</span>
                 <span className="app-navigation-label">{label}</span>
+                {to === "/community" && communityUnreadCount > 0 && (
+                  <span className="community-unread-dot" aria-label={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} title={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} />
+                )}
               </NavLink>
             </li>
           ))}
