@@ -37,7 +37,6 @@ export async function createNotificationMicroSystemChecks(uid: string): Promise<
       severity: "high",
       run: async () => {
         const today = dateOnly(new Date("2026-08-16T08:00:00Z"));
-        const feedingDate = "2026-08-18";
         const offsets = [2, 1, 0].map((expected) => daysBetween(today, `2026-08-${String(18 - (2 - expected)).padStart(2, "0")}`));
         return offsets.every((value, index) => value === [2, 1, 0][index])
           ? { status: "pass", message: "Deterministic QA clock confirms the three required feeding-preparation offsets can be represented without real timers." }
