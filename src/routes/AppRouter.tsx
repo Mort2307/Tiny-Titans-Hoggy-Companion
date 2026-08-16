@@ -38,6 +38,7 @@ import KnowledgeBase from "../pages/KnowledgeBase";
 import Personalisation from "../pages/Personalisation";
 import TesterCentre from "../pages/TesterCentre";
 import CreatorRouteGuard from "../components/CreatorRouteGuard";
+import CreatorTesterInvitation from "../components/CreatorTesterInvitation";
 import DataPrivacyConsentModal, { CONSENT_VERSION } from "../components/DataPrivacyConsentModal";
 import { useAuth } from "../context/AuthContext";
 import { UnitProvider } from "../context/UnitContext";
@@ -58,7 +59,7 @@ function AppRouterGate() {
     <Route path="/feeding" element={<FeedingTracker />} /><Route path="/feeding/preparation" element={<FeedingPreparation />} /><Route path="/feeding/:id" element={<FeedingTracker />} /><Route path="/shedding" element={<ShedTracker />} /><Route path="/shedding/:id" element={<ShedTracker />} /><Route path="/weights" element={<WeightIndex />} /><Route path="/weights/:id" element={<WeightRecords />} /><Route path="/breeding" element={<BreedingPlanner />} /><Route path="/community" element={<CommunityHub />} /><Route path="/report-bug" element={<ReportIssue />} /><Route path="/report-issue" element={<Navigate to="/report-bug" replace />} /><Route path="/feedback" element={<Feedback />} /><Route path="/my-issue-reports" element={<MyIssueReports />} /><Route path="/founder" element={<Founder />} /><Route path="/become-a-titan" element={<BecomeATitan />} />
     <Route path="/creator" element={<CreatorRouteGuard><CreatorAdmin /></CreatorRouteGuard>} /><Route path="/creator/submissions" element={<CreatorRouteGuard><CreatorSubmissions /></CreatorRouteGuard>} /><Route path="/creator/community" element={<CreatorRouteGuard><CommunityManager /></CreatorRouteGuard>} /><Route path="/creator/tester" element={<TesterCentre />} />
     <Route path="/educator" element={<EducatorDashboard />} /><Route path="/login" element={<Navigate to="/" replace />} /><Route path="/account-setup" element={<Navigate to="/" replace />} /><Route path="*" element={<Navigate to="/" replace />} />
-  </Route></Routes>{consentRequired && <DataPrivacyConsentModal onAccepted={() => setConsentAccepted(true)} />}</UnitProvider>;
+  </Route></Routes>{consentRequired && <DataPrivacyConsentModal onAccepted={() => setConsentAccepted(true)} />}{!consentRequired && <CreatorTesterInvitation />}</UnitProvider>;
 }
 
 export default function AppRouter() { return <BrowserRouter><AppRouterGate /></BrowserRouter>; }
