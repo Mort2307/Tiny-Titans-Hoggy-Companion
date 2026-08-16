@@ -3,7 +3,12 @@ import { useAuth } from "../context/AuthContext";
 import { disableNotifications, enableNotifications, getNotificationPermissionState, getNotificationSettings, saveNotificationSettings } from "../services/notificationService";
 import type { NotificationPermissionState, NotificationSettings } from "../types/Notifications";
 
-const defaultSettings: NotificationSettings = { enabled: false, feedingPreparationEnabled: true, feedingPreparationDaysBefore: 2, feedingPreparationTime: "08:00" };
+const defaultSettings: NotificationSettings = {
+  enabled: false,
+  feedingPreparationEnabled: false,
+  feedingPreparationDaysBefore: 0,
+  feedingPreparationTime: "08:00",
+};
 
 export default function NotificationSettingsPanel() {
   const { user } = useAuth();
@@ -49,21 +54,25 @@ export default function NotificationSettingsPanel() {
 
   return <section className="personalisation-card">
     <h2>🔔 Notifications</h2>
-    <p>Choose when Tiny Titans should remind you to prepare for a scheduled feeding. These settings never change the feeding date itself.</p>
+    <p>Feeding preparation reminders are completely keeper-controlled. Tiny Titans never assumes a preparation window and never changes a feeding date because of a reminder.</p>
     <p><strong>Permission:</strong> {permission === "granted" ? "Enabled" : permission === "denied" ? "Blocked" : permission === "unsupported" ? "Not supported" : "Not enabled"}</p>
     {permission === "granted" && settings.enabled ? <button className="account-button" type="button" onClick={() => void handleDisable()} disabled={busy}>{busy ? "Saving…" : "Disable Notifications"}</button> : <button className="account-button" type="button" onClick={() => void handleEnable()} disabled={busy || permission === "denied"}>{busy ? "Enabling…" : "Enable Notifications"}</button>}
+
     <label style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "16px" }}>
-      <input type="checkbox" checked={settings.feedingPreparationEnabled} onChange={(event) => void save({ ...settings, feedingPreparationEnabled: event.target.checked })} disabled={busy} />
-      <span>Feeding preparation reminders</span>
+      <input type="checkbox" checked={settings.feedingPreparationEnabled} onChange={(event) => void save({ ...settings, feedingPreparationEnabled: event.target.checked })} disabled={busy || !settings.enabled} />
+      <span><strong>Feeding preparation reminders</strong></span>
     </label>
+
     <div style={{ display: "grid", gap: "10px", marginTop: "14px" }}>
-      <label htmlFor="global-feeding-prep-days">Default preparation reminder</label>
-      <select id="global-feeding-prep-days" value={settings.feedingPreparationDaysBefore} onChange={(event) => void save({ ...settings, feedingPreparationDaysBefore: Number(event.target.value) })} disabled={busy || !settings.feedingPreparationEnabled}>
+      <label htmlFor="global-feeding-prep-days">Default preparation lead time</label>
+      <select id="global-feeding-prep-days" value={settings.feedingPreparationDaysBefore} onChange={(event) => void save({ ...settings, feedingPreparationDaysBefore: Number(event.target.value) })} disabled={busy || !settings.enabled || !settings.feedingPreparationEnabled}>
         {Array.from({ length: 31 }, (_, days) => <option key={days} value={days}>{days === 0 ? "On feeding day" : `${days} day${days === 1 ? "" : "s"} before feeding`}</option>)}
       </select>
-      <label htmlFor="global-feeding-prep-time">Reminder time</label>
-      <input id="global-feeding-prep-time" type="time" value={settings.feedingPreparationTime} onChange={(event) => void save({ ...settings, feedingPreparationTime: event.target.value })} disabled={busy || !settings.feedingPreparationEnabled} />
-      <small>This is the default for snakes without their own reminder setting. Per-snake overrides are available in Feeding → Feeding Preparation.</small>
+
+      <label htmlFor="global-feeding-prep-time">Default reminder time</label>
+      <input id="global-feeding-prep-time" type="time" value={settings.feedingPreparationTime} onChange={(event) => void save({ ...settings, feedingPreparationTime: event.target.value })} disabled={busy || !settings.enabled || !settings.feedingPreparationEnabled} />
+
+      <small>This is only a global default. Every snake can have its own reminder timing in Feeding → Feeding Preparation, including a different lead time or reminder time.</small>
     </div>
     {permission === "denied" && <p><small>Your browser has blocked notifications. Change the Tiny Titans notification permission in your browser/device settings, then return here.</small></p>}
     {message && <p className="personalisation-saved">{message}</p>}
