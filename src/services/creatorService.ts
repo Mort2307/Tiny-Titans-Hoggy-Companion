@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDocs, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { deleteObject, getBytes, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { db, storage } from "../firebase/config";
 import type { ReportIssue } from "../types/reportIssue";
@@ -40,5 +40,13 @@ export async function approveMorphImageSubmission(submission: MorphImageSubmissi
     return { id: approvedDoc.id, morphId: submission.morphId, morphName: submission.morphName, imageUrl: approvedImageUrl, storagePath: approvedPath, creditType: submission.creditType, creditName: submission.creditName, creditSocial: submission.creditSocial, sourceSubmissionId: submission.id, approvedAt: undefined, approvedBy: reviewerUid };
   } catch (error) { await deleteObject(ref(storage, approvedPath)).catch(() => undefined); throw error; }
 }
-export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) { if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined); await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null }); }
+export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) {
+  let path = storagePath;
+  if (!path) {
+    const submission = await getDoc(doc(db, "morphImageSubmissions", submissionId));
+    path = submission.exists() ? (submission.data() as MorphImageSubmission).attachment?.path : undefined;
+  }
+  if (path) await deleteObject(ref(storage, path)).catch(() => undefined);
+  await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null });
+}
 export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> { const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc"))); const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) })); return morphId ? images.filter((image) => image.morphId === morphId) : images; }
