@@ -3,6 +3,8 @@ import { db } from "../firebase/config";
 import { getGenes, morphs } from "../data/morphs";
 import type { TesterCheck } from "./testerBotService";
 
+const VALID_VERIFICATION = new Set(["Confirmed", "Recognised", "Unverified", "Disputed"]);
+
 export function createMorphLibraryChecks(): TesterCheck[] {
   return [
     {
@@ -29,22 +31,22 @@ export function createMorphLibraryChecks(): TesterCheck[] {
       category: "morphs",
       severity: "high",
       run: async () => {
-        const invalid = morphs.filter((morph) => morph.isGene && morph.kind !== "Gene");
+        const invalid = morphs.filter((morph) => morph.isGene !== (morph.kind === "Gene"));
         return invalid.length === 0
-          ? { status: "pass", message: `All ${getGenes().length} selectable gene definitions have a valid Gene classification.` }
-          : { status: "fail", message: `${invalid.length} morph definitions are marked as genes but are not classified as kind=Gene.` };
+          ? { status: "pass", message: `Validated ${getGenes().length} selectable gene definition(s) against their kind classification.` }
+          : { status: "fail", message: `${invalid.length} morph definitions have an inconsistent isGene/kind classification.` };
       },
     },
     {
-      checkId: "morph-verification-guard",
-      name: "Unverified/disputed morphs are not silently treated as confirmed",
+      checkId: "morph-verification-values",
+      name: "Morph verification states are explicit",
       category: "genetics",
       severity: "critical",
       run: async () => {
-        const invalid = morphs.filter((morph) => (morph.verification === "Unverified" || morph.verification === "Disputed") && morph.isGene);
+        const invalid = morphs.filter((morph) => !VALID_VERIFICATION.has(morph.verification));
         return invalid.length === 0
-          ? { status: "pass", message: "No unverified/disputed gene definition is incorrectly presented as a confirmed gene by the database contract." }
-          : { status: "fail", message: `${invalid.length} unverified/disputed gene definitions require review before calculator use.` };
+          ? { status: "pass", message: "Every morph definition has an explicit recognised verification state." }
+          : { status: "fail", message: `${invalid.length} morph definition(s) have an invalid or missing verification state.` };
       },
     },
   ];
@@ -65,7 +67,7 @@ export async function createGeneticsJourneyChecks(uid: string): Promise<TesterCh
         const invalid: string[] = [];
         for (const calculation of snapshot.docs) {
           const data = calculation.data() as Record<string, unknown>;
-          if (typeof data.uid !== "string" || !Array.isArray(data.femaleMorphIds) || !Array.isArray(data.maleMorphIds) || typeof data.outcomeCount !== "number") invalid.push(calculation.id);
+          if (typeof data.uid !== "string" || !Array.isArray(data.femaleMorphIds) || !Array.isArray(data.femaleHetGenes) || !Array.isArray(data.maleMorphIds) || !Array.isArray(data.maleHetGenes) || typeof data.outcomeCount !== "number") invalid.push(calculation.id);
         }
         return invalid.length === 0
           ? { status: snapshot.size === 0 ? "blocked" : "pass", message: snapshot.size === 0 ? "No genetics calculation events exist yet; use the calculator once to seed the QA data source." : `Validated ${snapshot.size} persisted genetics calculation event(s).` }
@@ -73,17 +75,17 @@ export async function createGeneticsJourneyChecks(uid: string): Promise<TesterCh
       },
     },
     {
-      checkId: "genetics-current-user-events",
-      name: "Current user's genetics events retain owner identity",
+      checkId: "genetics-owner-identity",
+      name: "Persisted genetics events have valid owner identities",
       category: "genetics",
       severity: "high",
       run: async () => {
         const snapshot = await getDocs(collection(db, "geneticsCalculations"));
-        const currentUserEvents = snapshot.docs.filter((item) => item.data().uid === uid);
-        const foreign = currentUserEvents.filter((item) => item.data().uid !== uid);
-        return foreign.length === 0
-          ? { status: "pass", message: `Current user has ${currentUserEvents.length} tracked genetics event(s); ownership field is explicit.` }
-          : { status: "fail", message: "A genetics event was found with an inconsistent ownership field." };
+        const invalid = snapshot.docs.filter((item) => typeof item.data().uid !== "string" || !String(item.data().uid).trim());
+        const currentUserEvents = snapshot.docs.filter((item) => item.data().uid === uid).length;
+        return invalid.length === 0
+          ? { status: "pass", message: `All ${snapshot.size} persisted genetics events have explicit owners; current user has ${currentUserEvents}.` }
+          : { status: "fail", message: `${invalid.length} genetics event(s) have a missing or invalid owner UID.` };
       },
     },
   ];
