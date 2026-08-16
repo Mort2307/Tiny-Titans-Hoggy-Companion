@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { MorphDefinition } from "../data/morphs";
 import { resolveStrictMorph } from "../utils/geneticsIdentity";
-import type { Het } from "../types/genetics";
+import type { Het, HetPercentage } from "../types/genetics";
 import type { Snake } from "../types/Snake";
 
 export type ParentSelection = {
@@ -21,6 +21,8 @@ type ParentSelectorProps = {
   onChange: (parent: ParentSelection) => void;
 };
 
+const HET_PERCENTAGES: HetPercentage[] = [50, 66, 100];
+
 function canonicalMorph(value: unknown): MorphDefinition | undefined {
   if (typeof value !== "string" || !value.trim()) return undefined;
   return resolveStrictMorph(value);
@@ -30,25 +32,34 @@ function canonicalGeneId(value: unknown): string | undefined {
   return canonicalMorph(value)?.geneId ?? (typeof value === "string" && value.trim() ? value.trim() : undefined);
 }
 
+function parseHetPercentage(value: unknown): HetPercentage {
+  if (typeof value === "string") {
+    const cleaned = value.trim().replace(/%$/, "");
+    const parsed = Number(cleaned);
+    if (parsed === 50 || parsed === 66 || parsed === 100) return parsed;
+  }
+  if (value === 50 || value === 66 || value === 100) return value;
+  return 100;
+}
+
 function normaliseSnakeHets(value: unknown): Het[] {
   if (!Array.isArray(value)) return [];
 
   return value
     .map((entry): Het | null => {
       if (typeof entry === "string" && entry.trim()) {
-        return { gene: canonicalGeneId(entry) ?? entry.trim(), percentage: 100 } as Het;
+        return { gene: canonicalGeneId(entry) ?? entry.trim(), percentage: 100 };
       }
 
       if (!entry || typeof entry !== "object") return null;
       const record = entry as Record<string, unknown>;
-      const gene = record.gene ?? record.name ?? record.morph;
+      const gene = record.gene ?? record.geneId ?? record.name ?? record.morph;
       if (typeof gene !== "string" || !gene.trim()) return null;
 
-      const percentage = Number(record.percentage ?? 100);
       return {
         gene: canonicalGeneId(gene) ?? gene.trim(),
-        percentage: Number.isFinite(percentage) ? Math.min(100, Math.max(0, percentage)) : 100,
-      } as Het;
+        percentage: parseHetPercentage(record.percentage),
+      };
     })
     .filter((het): het is Het => het !== null);
 }
@@ -173,12 +184,8 @@ export default function ParentSelector({ title, parent, snakes, morphOptions, he
     const exists = selectedHetIds.includes(canonical);
     const next = exists
       ? parent.hets.filter((het) => canonicalGeneId(het?.gene) !== canonical)
-      : [...parent.hets, { gene: canonical, percentage: 100 } as Het];
+      : [...parent.hets, { gene: canonical, percentage: 100 as HetPercentage }];
 
-    // A visual gene and a het of the same gene are contradictory for the
-    // same parent selection. Keep the visual call authoritative and remove
-    // the redundant het rather than letting downstream calculation state
-    // become ambiguous.
     const visualSelected = parent.morphs.map(canonicalGeneId).filter((value): value is string => Boolean(value));
     const cleanedHets = next.filter((het) => !visualSelected.includes(canonicalGeneId(het.gene) ?? ""));
 
@@ -186,6 +193,15 @@ export default function ParentSelector({ title, parent, snakes, morphOptions, he
       ...parent,
       snakeId: undefined,
       hets: cleanedHets,
+    });
+  }
+
+  function updateHetPercentage(gene: string, percentage: HetPercentage) {
+    onChange({
+      ...parent,
+      hets: parent.hets.map((het) =>
+        canonicalGeneId(het.gene) === canonicalGeneId(gene) ? { ...het, percentage } : het,
+      ),
     });
   }
 
@@ -225,7 +241,9 @@ export default function ParentSelector({ title, parent, snakes, morphOptions, he
           <strong>{selectedSnake.name}</strong>
           <span>{selectedSnake.sex}</span>
           <span>{selectedSnake.morphs.length ? selectedSnake.morphs.join(" · ") : "Normal"}</span>
-          {selectedSnake.hets.length > 0 && <span>{normaliseSnakeHets(selectedSnake.hets).map((het) => `${het.percentage} Het ${het.gene}`).join(" · ")}</span>}
+          {normaliseSnakeHets(selectedSnake.hets).length > 0 && (
+            <span>{normaliseSnakeHets(selectedSnake.hets).map((het) => `${het.percentage}% Het ${canonicalMorph(het.gene)?.name ?? het.gene}`).join(" · ")}</span>
+          )}
         </div>
       )}
 
@@ -245,8 +263,15 @@ export default function ParentSelector({ title, parent, snakes, morphOptions, he
         {parent.hets.length > 0 && (
           <div className="genetics-selected-tags">
             {parent.hets.map((het) => (
-              <span key={`${canonicalGeneId(het.gene)}-${het.percentage}`} className="genetics-selection-chip genetics-selection-chip-het">
-                {het.percentage} Het {canonicalMorph(het.gene)?.name ?? het.gene}
+              <span key={canonicalGeneId(het.gene)} className="genetics-selection-chip genetics-selection-chip-het genetics-selection-chip-het-editable">
+                <select
+                  aria-label={`Het percentage for ${canonicalMorph(het.gene)?.name ?? het.gene}`}
+                  value={String(parseHetPercentage(het.percentage))}
+                  onChange={(event) => updateHetPercentage(het.gene, parseHetPercentage(event.target.value))}
+                >
+                  {HET_PERCENTAGES.map((percentage) => <option key={percentage} value={percentage}>{percentage}%</option>)}
+                </select>
+                <span>Het {canonicalMorph(het.gene)?.name ?? het.gene}</span>
               </span>
             ))}
           </div>
