@@ -15,18 +15,31 @@ function Navigation() {
     }
 
     let active = true;
+
     void hasCreatorClaim(false)
-      .then((authorized) => {
-        if (active) setCreatorAuthorized(authorized);
+      .then((claimAuthorized) => {
+        if (!active) return;
+
+        // Backwards-compatible transition for the existing Creator/Admin
+        // accounts. Firebase claims remain preferred; the legacy profile role
+        // keeps the existing Creator UI visible while claims are being rolled
+        // out to the existing account population.
+        const legacyCreatorAuthorized =
+          profile?.role === "admin" || profile?.profileType === "creator";
+
+        setCreatorAuthorized(claimAuthorized || legacyCreatorAuthorized);
       })
       .catch(() => {
-        if (active) setCreatorAuthorized(false);
+        if (!active) return;
+        setCreatorAuthorized(
+          profile?.role === "admin" || profile?.profileType === "creator"
+        );
       });
 
     return () => {
       active = false;
     };
-  }, [user, loading, profileLoading]);
+  }, [user, profile, loading, profileLoading]);
 
   const links: [string, string, string][] = [
     ["/", "🏠", "Home"],
@@ -44,9 +57,6 @@ function Navigation() {
     links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
   }
 
-  // Navigation visibility follows the same Firebase custom-claim authority
-  // as CreatorRouteGuard. The navigation is convenience only; the route
-  // remains server-authorized and cannot be unlocked by this UI state.
   if (creatorAuthorized) {
     links.push(["/creator", "🛠️", "Creator Centre"]);
     links.push(["/creator/community", "📢", "Community Manager"]);
