@@ -15,6 +15,7 @@ import SnakeProfile from "../pages/SnakeProfile";
 import SnakeEdit from "../pages/SnakeEdit";
 import SnakeMasterRecord from "../pages/SnakeMasterRecord";
 import FeedingTracker from "../pages/FeedingTracker";
+import FeedingPreparation from "../pages/FeedingPreparation";
 import ShedTracker from "../pages/ShedTracker";
 import WeightIndex from "../pages/WeightIndex";
 import WeightRecords from "../pages/WeightRecords";
@@ -74,6 +75,7 @@ function AppRouterGate() {
         <Route path="/learn/topic/:id" element={<Navigate to="/challenge" replace />} />
         <Route path="/learn/achievements" element={<LearnAchievements />} />
         <Route path="/feeding" element={<FeedingTracker />} />
+        <Route path="/feeding/preparation" element={<FeedingPreparation />} />
         <Route path="/feeding/:id" element={<FeedingTracker />} />
         <Route path="/shedding" element={<ShedTracker />} />
         <Route path="/shedding/:id" element={<ShedTracker />} />

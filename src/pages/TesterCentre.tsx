@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { hasCreatorClaim } from "../services/creatorAuthService";
 import { getGlobalStats, type GlobalStats } from "../services/creatorService";
 import { createCoreDiagnosticChecks, runTesterSuite, type TesterCheck, type TesterRun } from "../services/testerBotService";
 import { createTrackerRegressionChecks } from "../services/testerSuitesService";
 import { createAccountJourneyChecks, createFeedingChecks, createShedJourneyChecks, createSnakeProfileChecks, createWeightChecks } from "../services/testerJourneySuitesService";
 import { createGeneticsJourneyChecks, createMorphLibraryChecks } from "../services/testerGeneticsSuitesService";
+import { createFeedbackAttachmentChecks } from "../services/testerFeedbackSuitesService";
+import { createNotificationMicroSystemChecks } from "../services/testerNotificationSuitesService";
 import { useAuth } from "../context/AuthContext";
 import PageBackButton from "../components/PageBackButton";
 
@@ -20,6 +22,8 @@ const SUITES: SuiteDefinition[] = [
   { id: "snake-profiles", label: "Snake Profiles", description: "Profile integrity and Firebase persistence safety", category: "Snakes", build: createSnakeProfileChecks },
   { id: "weights", label: "Weights", description: "Weight history values, dates, units and chronology", category: "Weights", build: createWeightChecks },
   { id: "feeding", label: "Feeding", description: "Feeding records, dates, responses and snake links", category: "Feeding", build: createFeedingChecks },
+  { id: "feeding-notifications", label: "Feeding Notifications", description: "2-day, 1-day and feeding-day micro-system, permissions and de-duplication", category: "Notifications", build: createNotificationMicroSystemChecks },
+  { id: "feedback-attachments", label: "Feedback / Attachment QA", description: "Three separate feedback tests: text-only, mock image and mock video", category: "Feedback", build: createFeedbackAttachmentChecks },
   { id: "sheds", label: "Sheds", description: "Shed date/status/retained-area regression checks", category: "Sheds", build: createShedJourneyChecks },
   { id: "genetics", label: "Genetics", description: "Genetics event tracking and database integrity", category: "Genetics", build: createGeneticsJourneyChecks },
   { id: "morph-library", label: "Morph Library", description: "Stable IDs, classifications and verification guards", category: "Morphs", build: async () => createMorphLibraryChecks() },
@@ -36,26 +40,10 @@ export default function TesterCentre() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!user) {
-      setAuthorized(false);
-      return;
-    }
-
+    if (!user) { setAuthorized(false); return; }
     let active = true;
-    void hasCreatorClaim(false)
-      .then((claimAuthorized) => {
-        if (!active) return;
-        const legacyCreatorAuthorized = profile?.role === "admin" || profile?.profileType === "creator";
-        setAuthorized(claimAuthorized || legacyCreatorAuthorized);
-      })
-      .catch(() => {
-        if (!active) return;
-        setAuthorized(profile?.role === "admin" || profile?.profileType === "creator");
-      });
-
-    return () => {
-      active = false;
-    };
+    void hasCreatorClaim(false).then((claimAuthorized) => { if (!active) return; const legacyCreatorAuthorized = profile?.role === "admin" || profile?.profileType === "creator"; setAuthorized(claimAuthorized || legacyCreatorAuthorized); }).catch(() => { if (!active) return; setAuthorized(profile?.role === "admin" || profile?.profileType === "creator"); });
+    return () => { active = false; };
   }, [user, profile]);
 
   useEffect(() => {
@@ -69,21 +57,14 @@ export default function TesterCentre() {
   if (authorized === false) return <Navigate to="/" replace />;
   if (!user || authorized === null) return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
 
-  const authenticatedUid = user.uid;
-
+  const authenticatedUser = user;
   async function runSuite(suiteId: string) {
     const suite = SUITES.find((item) => item.id === suiteId);
     if (!suite) return;
-    setRunningSuite(suiteId);
-    setError("");
-    try {
-      const checks = await suite.build(authenticatedUid);
-      setRun(await runTesterSuite(authenticatedUid, suite.id, checks));
-    } catch (suiteError) {
-      setError(suiteError instanceof Error ? suiteError.message : "Tester Bot could not complete the suite.");
-    } finally {
-      setRunningSuite("");
-    }
+    setRunningSuite(suiteId); setError("");
+    try { const checks = await suite.build(authenticatedUser.uid); setRun(await runTesterSuite(authenticatedUser.uid, suite.id, checks)); }
+    catch (suiteError) { setError(suiteError instanceof Error ? suiteError.message : "Tester Bot could not complete the suite."); }
+    finally { setRunningSuite(""); }
   }
 
   const passed = run?.results.filter((result) => result.status === "pass").length ?? 0;
@@ -93,31 +74,16 @@ export default function TesterCentre() {
   const health = criticalFailures > 0 || failed > 0 ? "🔴 Critical / Failed" : blocked > 0 ? "🟠 Warnings / Blocked" : "🟢 Healthy";
   const lastSuite = SUITES.find((suite) => suite.id === run?.suite);
 
-  return (
-    <div className="page-container">
-      <PageBackButton fallbackPath="/creator" label="Back to Creator Centre" />
-      <div className="welcome-card">
-        <p className="eyebrow">🐍 TINY TITANS · PRIVATE QA</p><h1>🤖 Tester Centre</h1>
-        <p>Creator-only automated diagnostics and read-only regression testing against the live Firebase data model.</p>
-        <div className="creator-global-grid">
-          <div className="creator-global-card"><span>🩺</span><strong>{health}</strong><label>System Health</label></div>
-          <div className="creator-global-card"><span>👥</span><strong>{statsLoading ? "…" : number(stats.registeredUsers)}</strong><label>Registered Users</label></div>
-          <div className="creator-global-card"><span>🍽️</span><strong>{statsLoading ? "…" : number(stats.mealsFed)}</strong><label>Meals Fed</label></div>
-          <div className="creator-global-card"><span>🐍</span><strong>{statsLoading ? "…" : number(stats.shedsLogged)}</strong><label>Sheds Logged</label></div>
-          <div className="creator-global-card"><span>📏</span><strong>{statsLoading ? "…" : `${number(stats.totalShedLengthCm / 100, 2)} m`}</strong><label>Total Shed Length</label></div>
-          <div className="creator-global-card"><span>🧬</span><strong>{statsLoading ? "…" : number(stats.geneticsCalculations)}</strong><label>Genetics Calculations</label></div>
-        </div>
-      </div>
-
-      <div className="welcome-card">
-        <div className="creator-list-top"><div><p className="eyebrow">TEST SUITES</p><h2>Run targeted QA</h2></div><span className="creator-badge">{SUITES.length} suites</span></div>
-        <div className="creator-global-grid">
-          {SUITES.map((suite) => <div className="creator-global-card" key={suite.id}><span>{suite.id === "core-diagnostics" ? "🩺" : suite.id === "tracker-regression" ? "🧪" : suite.id === "sheds" ? "🐍" : suite.id === "feeding" ? "🍽️" : suite.id === "weights" ? "⚖️" : suite.id === "snake-profiles" ? "📋" : suite.id === "genetics" ? "🧬" : suite.id === "morph-library" ? "🔎" : "🔐"}</span><strong>{suite.label}</strong><label>{suite.category}</label><small>{suite.description}</small><button className="primary-button" type="button" disabled={Boolean(runningSuite)} onClick={() => void runSuite(suite.id)}>{runningSuite === suite.id ? "🤖 Running…" : "▶ Run suite"}</button></div>)}
-        </div>
-        {error && <div className="creator-error">{error}</div>}
-      </div>
-
-      {run && <div className="welcome-card"><p className="eyebrow">LATEST TEST RUN</p><h2>{run.status === "passed" ? "🟢 Suite Passed" : run.status === "blocked" ? "🟠 Suite Blocked" : "🔴 Suite Failed"}</h2><p>{passed} passed · {failed} failed · {blocked} blocked · {criticalFailures} critical failures</p><p className="creator-muted">{lastSuite?.label ?? run.suite} · {run.ownerUid} · {run.durationMs}ms · {run.completedAt}</p><div className="creator-list">{run.results.map((result) => <div className="creator-list-item" key={result.checkId}><strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong><span>{result.message}</span><small>{result.durationMs}ms · {result.severity} · {result.category} · {result.checkId}</small></div>)}</div></div>}
+  return <div className="page-container">
+    <PageBackButton fallbackPath="/creator" label="Back to Creator Centre" />
+    <div className="welcome-card"><p className="eyebrow">🐍 TINY TITANS · PRIVATE QA</p><h1>🤖 Tester Centre</h1><p>Creator-only automated diagnostics and read-only regression testing against the live Firebase data model.</p>
+      <div className="creator-global-grid"><div className="creator-global-card"><span>🩺</span><strong>{health}</strong><label>System Health</label></div><div className="creator-global-card"><span>👥</span><strong>{statsLoading ? "…" : number(stats.registeredUsers)}</strong><label>Registered Users</label></div><div className="creator-global-card"><span>🍽️</span><strong>{statsLoading ? "…" : number(stats.mealsFed)}</strong><label>Meals Fed</label></div><div className="creator-global-card"><span>🐍</span><strong>{statsLoading ? "…" : number(stats.shedsLogged)}</strong><label>Sheds Logged</label></div><div className="creator-global-card"><span>📏</span><strong>{statsLoading ? "…" : `${number(stats.totalShedLengthCm / 100, 2)} m`}</strong><label>Total Shed Length</label></div><div className="creator-global-card"><span>🧬</span><strong>{statsLoading ? "…" : number(stats.geneticsCalculations)}</strong><label>Genetics Calculations</label></div></div>
     </div>
-  );
+    <div className="welcome-card"><div className="creator-list-top"><div><p className="eyebrow">TEST SUITES</p><h2>Run targeted QA</h2></div><span className="creator-badge">{SUITES.length} suites</span></div>
+      <div className="creator-global-grid">{SUITES.map((suite) => <div className="creator-global-card" key={suite.id}><span>{suite.id === "core-diagnostics" ? "🩺" : suite.id === "tracker-regression" ? "🧪" : suite.id === "sheds" ? "🐍" : suite.id === "feeding" ? "🍽️" : suite.id === "feeding-notifications" ? "🔔" : suite.id === "feedback-attachments" ? "📎" : suite.id === "weights" ? "⚖️" : suite.id === "snake-profiles" ? "📋" : suite.id === "genetics" ? "🧬" : suite.id === "morph-library" ? "🔎" : "🔐"}</span><strong>{suite.label}</strong><label>{suite.category}</label><small>{suite.description}</small><button className="primary-button" type="button" disabled={Boolean(runningSuite)} onClick={() => void runSuite(suite.id)}>{runningSuite === suite.id ? "🤖 Running…" : "▶ Run suite"}</button></div>)}</div>
+      <div className="creator-actions" style={{ marginTop: "16px" }}><Link to="/feedback">💡 Open Feedback</Link><Link to="/report-issue">🐛 Open Bug Report</Link></div>
+      {error && <div className="creator-error">{error}</div>}
+    </div>
+    {run && <div className="welcome-card"><p className="eyebrow">LATEST TEST RUN</p><h2>{run.status === "passed" ? "🟢 Suite Passed" : run.status === "blocked" ? "🟠 Suite Blocked" : "🔴 Suite Failed"}</h2><p>{passed} passed · {failed} failed · {blocked} blocked · {criticalFailures} critical failures</p><p className="creator-muted">{lastSuite?.label ?? run.suite} · {run.ownerUid} · {run.durationMs}ms · {run.completedAt}</p><div className="creator-list">{run.results.map((result) => <div className="creator-list-item" key={result.checkId}><strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong><span>{result.message}</span><small>{result.durationMs}ms · {result.severity} · {result.category} · {result.checkId}</small></div>)}</div></div>}
+  </div>;
 }

@@ -7,19 +7,16 @@ import type { BreedingPairing } from "./Breeding";
 import type { Enclosure } from "./Enclosure";
 import type { TimelineEvent } from "./Timeline";
 
-
 export type WeightTrackingFrequency =
   | "Weekly"
   | "Fortnightly"
   | "Every 3 Weeks"
   | "Monthly";
 
-
 export type SnakeSex =
   | "Male"
   | "Female"
   | "Unknown";
-
 
 export type SnakeStatus =
   | "Active"
@@ -27,157 +24,85 @@ export type SnakeStatus =
   | "Deceased"
   | "Archived";
 
-
-
-export type Snake = {
-
-
-id: string;
-
-
-
-// Identity
-
-name: string;
-
-species: string;
-
-photo: string;
-
-sex: SnakeSex;
-
-
-nickname?: string;
-
-breeder?: string;
-
-origin?: string;
-
-acquisitionDate?: string;
-
-
-
-// Genetics
-
-morphs: string[];
-
-customMorph: string;
-
-hets: Het[];
-
-customHets: string;
-
-
-
-// Weight
-
-startingWeight: number | null;
-
-startingWeightDate: string;
-
-weight: number | null;
-
-lastWeighedDate: string;
-
-weightHistory: WeightRecord[];
-
-
-
-weightTracking: {
-
-enabled: boolean;
-
-frequency: WeightTrackingFrequency;
-
+export type FeedingSchedule = {
+  enabled: boolean;
+  intervalDays: number;
+  nextFeedingDate: string;
+  notificationsEnabled: boolean;
 };
 
+export type Snake = {
+  id: string;
 
+  // Identity
+  name: string;
+  species: string;
+  photo: string;
+  sex: SnakeSex;
+  nickname?: string;
+  breeder?: string;
+  origin?: string;
+  acquisitionDate?: string;
 
-// Feeding
+  // Genetics
+  morphs: string[];
+  customMorph: string;
+  hets: Het[];
+  customHets: string;
 
-feedingHistory?: FeedingRecord[];
+  // Weight
+  startingWeight: number | null;
+  startingWeightDate: string;
+  weight: number | null;
+  lastWeighedDate: string;
+  weightHistory: WeightRecord[];
+  weightTracking: {
+    enabled: boolean;
+    frequency: WeightTrackingFrequency;
+  };
 
+  // Feeding
+  feedingHistory?: FeedingRecord[];
+  feedingSchedule?: FeedingSchedule;
 
+  // Shedding
+  shedHistory?: ShedRecord[];
 
-// Shedding
+  // Health
+  healthHistory?: HealthRecord[];
 
-shedHistory?: ShedRecord[];
+  // Enclosure
+  enclosure?: Enclosure;
 
+  // Breeding
+  breedingHistory?: BreedingPairing[];
 
+  // Timeline
+  timeline?: TimelineEvent[];
 
-// Health
+  // Timeline Dates
+  hatchDate: string;
+  arrivalDate: string;
 
-healthHistory?: HealthRecord[];
+  // Husbandry notes
+  temperatureNotes?: string;
+  humidityNotes?: string;
 
+  // Feeding notes
+  lastMealDate?: string;
+  feedingNotes?: string;
 
+  // Health notes
+  healthNotes?: string;
+  medicationNotes?: string;
 
-// Enclosure
+  // Breeding notes
+  breedingEligible?: boolean;
+  breedingNotes?: string;
 
-enclosure?: Enclosure;
+  // General Notes
+  notes: string;
 
-
-
-// Breeding
-
-breedingHistory?: BreedingPairing[];
-
-
-
-// Timeline
-
-timeline?: TimelineEvent[];
-
-
-
-// Timeline Dates
-
-hatchDate: string;
-
-arrivalDate: string;
-
-
-
-// Husbandry notes
-
-temperatureNotes?: string;
-
-humidityNotes?: string;
-
-
-
-// Feeding notes
-
-lastMealDate?: string;
-
-feedingNotes?: string;
-
-
-
-// Health notes
-
-healthNotes?: string;
-
-medicationNotes?: string;
-
-
-
-// Breeding notes
-
-breedingEligible?: boolean;
-
-breedingNotes?: string;
-
-
-
-// General Notes
-
-notes: string;
-
-
-
-// Status
-
-status?: SnakeStatus;
-
-
+  // Status
+  status?: SnakeStatus;
 };
