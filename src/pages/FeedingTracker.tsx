@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import type { Snake } from "../types/Snake";
 import type { FoodType, FeedingMethod, FeedingRecord, FeedingResponse } from "../types/Feeding";
 import { getUserSnakes } from "../services/snakeService";
@@ -81,6 +82,7 @@ export default function FeedingTracker() {
   if (loading || profileLoading || loadingSnakes) return <div className="page-container"><BackHomeButton /><h1>🍽 Feeding Tracker</h1><div className="tracker-card"><p>Loading Tiny Titans...</p></div></div>;
 
   return <div className="page-container"><BackHomeButton /><h1>🍽 Feeding Tracker</h1><p>Record meals, monitor feeding responses and keep a complete feeding history.</p>
+    <div className="tracker-card"><h3>🧊 Feeding Preparation</h3><p>Prepare and manage feeding plans, notifications and preparation tasks from the feeding section.</p><Link to="/feeding/preparation" className="button">🧊 Open Feeding Preparation</Link></div>
     {error && <div className="tracker-card" role="alert">⚠️ {error}</div>}{success && <div className="tracker-card" role="status">✅ {success}</div>}
     {snakes.length === 0 ? <div className="tracker-card"><h3>No snakes found 🐍</h3><p>Add a snake before recording a feeding.</p></div> : <>
       <div className="tracker-card"><h3>🐍 Snake</h3><label htmlFor="feeding-snake">Record feeding for</label><select id="feeding-snake" value={selectedSnakeId} onChange={(e) => { setSelectedSnakeId(e.target.value); resetForm(); }} disabled={saving}>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select>{selectedSnake && <p>🧬 {selectedSnake.morphs?.join(", ") || "Morph not recorded"}</p>}</div>
