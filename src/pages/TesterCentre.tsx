@@ -11,7 +11,7 @@ import { createNotificationMicroSystemChecks } from "../services/testerNotificat
 import { useAuth } from "../context/AuthContext";
 import PageBackButton from "../components/PageBackButton";
 
-const EMPTY_STATS: GlobalStats = { registeredUsers: 0, activeUsers: 0, snakeProfiles: 0, mealsFed: 0, weightLogs: 0, totalWeightKg: 0, totalWeightLb: 0, shedsLogged: 0, totalShedLengthCm: 0, geneticsCalculations: 0 };
+const EMPTY_STATS: GlobalStats = { registeredUsers: 0, activeUsers: 0, snakeProfiles: 0, mealsFed: 0, weightLogs: 0, totalWeightKg: 0, totalWeightLb: 0, shedsLogged: 0, totalShedLengthCm: 0, totalShedLengthIn: 0, geneticsCalculations: 0 };
 const number = (value: number, maximumFractionDigits = 0) => new Intl.NumberFormat("en-GB", { maximumFractionDigits }).format(value);
 
 type SuiteDefinition = { id: string; label: string; description: string; category: string; build: (uid: string) => Promise<TesterCheck[]> | TesterCheck[] };
@@ -57,11 +57,12 @@ export default function TesterCentre() {
   if (authorized === false) return <Navigate to="/" replace />;
   if (!user || authorized === null) return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
 
+  const authenticatedUser = user;
   async function runSuite(suiteId: string) {
     const suite = SUITES.find((item) => item.id === suiteId);
     if (!suite) return;
     setRunningSuite(suiteId); setError("");
-    try { const checks = await suite.build(user.uid); setRun(await runTesterSuite(user.uid, suite.id, checks)); }
+    try { const checks = await suite.build(authenticatedUser.uid); setRun(await runTesterSuite(authenticatedUser.uid, suite.id, checks)); }
     catch (suiteError) { setError(suiteError instanceof Error ? suiteError.message : "Tester Bot could not complete the suite."); }
     finally { setRunningSuite(""); }
   }
