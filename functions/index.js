@@ -34,6 +34,10 @@ async function getUserRole(uid) {
   return snapshot.exists ? snapshot.data()?.role : null;
 }
 
+function canManageRoles(role, claims = {}) {
+  return role === "creator" || role === "admin" || claims.creator === true || claims.admin === true;
+}
+
 exports.syncMyCreatorClaims = onCall({ region: "europe-west2" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "You must be signed in.");
@@ -48,12 +52,16 @@ exports.syncMyCreatorClaims = onCall({ region: "europe-west2" }, async (request)
 exports.setCreatorClaims = onCall({ region: "europe-west2" }, async (request) => {
   const callerUid = request.auth?.uid;
   if (!callerUid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  if ((await getUserRole(callerUid)) !== "admin") throw new HttpsError("permission-denied", "Only an administrator can manage Creator access.");
+  const callerRole = await getUserRole(callerUid);
+  if (!canManageRoles(callerRole, request.auth.token || {})) throw new HttpsError("permission-denied", "Only the Creator or an administrator can manage admin access.");
   const uid = String(request.data?.uid || "").trim();
   const role = String(request.data?.role || "user").trim();
-  if (!uid || !["user", "creator", "moderator", "admin"].includes(role)) throw new HttpsError("invalid-argument", "Invalid user or Creator role.");
+  if (!uid || !["user", "moderator", "admin"].includes(role)) throw new HttpsError("invalid-argument", "Invalid user or administrator role.");
+  if (uid === callerUid && role !== "admin" && callerRole === "creator") throw new HttpsError("failed-precondition", "The Creator account cannot remove its own Creator access.");
+  const targetRole = await getUserRole(uid);
+  if (targetRole === "creator") throw new HttpsError("failed-precondition", "The Creator account cannot be changed by the Admin Centre.");
   await db.collection("users").doc(uid).set({ role }, { merge: true });
-  await adminAuth.setCustomUserClaims(uid, { creator: role === "creator" || role === "admin", admin: role === "admin", moderator: role === "moderator" || role === "creator" || role === "admin" });
+  await adminAuth.setCustomUserClaims(uid, { creator: false, admin: role === "admin", moderator: role === "moderator" || role === "admin" });
   return { uid, role };
 });
 
