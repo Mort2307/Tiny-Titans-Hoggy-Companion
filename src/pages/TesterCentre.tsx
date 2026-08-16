@@ -7,6 +7,7 @@ import { createTrackerRegressionChecks } from "../services/testerSuitesService";
 import { createAccountJourneyChecks, createFeedingChecks, createShedJourneyChecks, createSnakeProfileChecks, createWeightChecks } from "../services/testerJourneySuitesService";
 import { createGeneticsJourneyChecks, createMorphLibraryChecks } from "../services/testerGeneticsSuitesService";
 import { useAuth } from "../context/AuthContext";
+import PageBackButton from "../components/PageBackButton";
 
 const EMPTY_STATS: GlobalStats = { registeredUsers: 0, activeUsers: 0, snakeProfiles: 0, mealsFed: 0, weightLogs: 0, totalWeightKg: 0, totalWeightLb: 0, shedsLogged: 0, totalShedLengthCm: 0, totalShedLengthIn: 0, geneticsCalculations: 0 };
 const number = (value: number, maximumFractionDigits = 0) => new Intl.NumberFormat("en-GB", { maximumFractionDigits }).format(value);
@@ -94,6 +95,7 @@ export default function TesterCentre() {
 
   return (
     <div className="page-container">
+      <PageBackButton fallbackPath="/creator" label="Back to Creator Centre" />
       <div className="welcome-card">
         <p className="eyebrow">🐍 TINY TITANS · PRIVATE QA</p><h1>🤖 Tester Centre</h1>
         <p>Creator-only automated diagnostics and read-only regression testing against the live Firebase data model.</p>
