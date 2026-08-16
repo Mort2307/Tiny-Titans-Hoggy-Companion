@@ -16,7 +16,9 @@ export type TesterCategory =
   | "morphs"
   | "community"
   | "mobile"
-  | "creator";
+  | "creator"
+  | "feedback"
+  | "notifications";
 
 export type TesterCheck = {
   checkId: string;
