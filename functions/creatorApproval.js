@@ -15,41 +15,99 @@ function creatorAuthorized(request, callerData = {}) {
     || callerData.profileType === "creator";
 }
 
+function invitationManagerAuthorized(request, callerData = {}) {
+  return request.auth?.token?.admin === true
+    || request.auth?.token?.creator === true
+    || callerData.role === "admin"
+    || callerData.profileType === "creator";
+}
+
 exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const caller = await db.collection("users").doc(request.auth.uid).get();
   const callerData = caller.data() || {};
-  if (!creatorAuthorized(request, callerData)) throw new HttpsError("permission-denied", "Creator authorization is required.");
+  if (!invitationManagerAuthorized(request, callerData)) throw new HttpsError("permission-denied", "Creator authorization is required.");
   const targetUid = String(request.data?.uid || "").trim();
   const enabled = request.data?.enabled !== false;
   if (!targetUid) throw new HttpsError("invalid-argument", "A target user ID is required.");
   if (targetUid === request.auth.uid && !enabled) throw new HttpsError("failed-precondition", "The current Creator cannot remove their own Creator access.");
   try {
     const target = await adminAuth.getUser(targetUid);
-    const existingClaims = target.customClaims || {};
-    const nextClaims = { ...existingClaims };
-    if (enabled) {
-      nextClaims.creator = true;
-      nextClaims.creatorTester = true;
-    } else {
-      delete nextClaims.creatorTester;
-    }
-    await adminAuth.setCustomUserClaims(targetUid, nextClaims);
+    const targetProfileSnapshot = await db.collection("users").doc(targetUid).get();
+    const targetProfile = targetProfileSnapshot.data() || {};
 
-    // Bootstrap the canonical Creator claim for an existing Tiny Titans
-    // creator account whose Firestore profile predates custom claims.
+    if (!enabled) {
+      const existingClaims = target.customClaims || {};
+      const nextClaims = { ...existingClaims };
+      delete nextClaims.creatorTester;
+      await adminAuth.setCustomUserClaims(targetUid, nextClaims);
+      await db.collection("users").doc(targetUid).set({ isTester: false, testerType: null, creatorTesterInvitation: { status: "revoked", updatedAt: FieldValue.serverTimestamp() }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_creator_tester", createdAt: FieldValue.serverTimestamp() });
+      return { success: true, uid: targetUid, creator: false, creatorTester: false, isTester: false, invitationStatus: "revoked" };
+    }
+
+    const invitation = {
+      status: "pending",
+      targetUid,
+      invitedBy: request.auth.uid,
+      invitedAt: FieldValue.serverTimestamp(),
+      targetEmail: target.email || null,
+      targetDisplayName: target.displayName || targetProfile.displayName || null,
+      invitationVersion: 1,
+    };
+    await db.collection("creatorTesterInvitations").doc(targetUid).set(invitation, { merge: true });
+    await db.collection("users").doc(targetUid).set({ isTester: false, testerType: null, creatorTesterInvitation: { status: "pending", invitedAt: FieldValue.serverTimestamp(), invitedBy: request.auth.uid }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "invite_creator_tester", createdAt: FieldValue.serverTimestamp() });
+
     if (callerData.profileType === "creator" && request.auth.token.creator !== true) {
       const callerAuthUser = await adminAuth.getUser(request.auth.uid);
       await adminAuth.setCustomUserClaims(request.auth.uid, { ...(callerAuthUser.customClaims || {}), creator: true });
     }
 
-    await db.collection("users").doc(targetUid).set({ isTester: enabled, testerType: enabled ? "creator" : null, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: enabled ? "grant_creator_tester" : "revoke_creator_tester", createdAt: FieldValue.serverTimestamp() });
-    return { success: true, uid: targetUid, creator: enabled, creatorTester: enabled, isTester: enabled };
+    return { success: true, uid: targetUid, creator: Boolean(target.customClaims?.creator), creatorTester: false, isTester: false, invitationStatus: "pending" };
   } catch (error) {
-    console.error("Creator Tester authorization update failed", error);
+    console.error("Creator Tester invitation update failed", error);
     if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Unable to update Creator Tester authorization.");
+    throw new HttpsError("internal", "Unable to create the Creator Tester invitation.");
+  }
+});
+
+exports.getCreatorTesterInvitation = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  const snapshot = await db.collection("creatorTesterInvitations").doc(request.auth.uid).get();
+  if (!snapshot.exists) return { success: true, invitation: null };
+  const data = snapshot.data() || {};
+  return {
+    success: true,
+    invitation: {
+      status: data.status || "pending",
+      invitedBy: data.invitedBy || null,
+      targetEmail: data.targetEmail || null,
+      targetDisplayName: data.targetDisplayName || null,
+      invitationVersion: data.invitationVersion || 1,
+    },
+  };
+});
+
+exports.acceptCreatorTesterInvitation = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  const invitationRef = db.collection("creatorTesterInvitations").doc(request.auth.uid);
+  const snapshot = await invitationRef.get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "No Creator Tester invitation was found for this account.");
+  const invitation = snapshot.data() || {};
+  if (invitation.status !== "pending") throw new HttpsError("failed-precondition", "This Creator Tester invitation is no longer pending.");
+
+  try {
+    const target = await adminAuth.getUser(request.auth.uid);
+    const existingClaims = target.customClaims || {};
+    await adminAuth.setCustomUserClaims(request.auth.uid, { ...existingClaims, creatorTester: true });
+    await invitationRef.set({ status: "accepted", acceptedAt: FieldValue.serverTimestamp(), acceptedBy: request.auth.uid }, { merge: true });
+    await db.collection("users").doc(request.auth.uid).set({ isTester: true, testerType: "creator", creatorTesterInvitation: { status: "accepted", acceptedAt: FieldValue.serverTimestamp() }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid: request.auth.uid, action: "accept_creator_tester_invitation", createdAt: FieldValue.serverTimestamp() });
+    return { success: true, uid: request.auth.uid, creatorTester: true, invitationStatus: "accepted", refreshRequired: true };
+  } catch (error) {
+    console.error("Creator Tester invitation acceptance failed", error);
+    throw new HttpsError("internal", "Unable to activate Creator Tester access.");
   }
 });
 
