@@ -3,7 +3,7 @@ import { db } from "../firebase/config";
 import type { FeedingSchedule } from "../types/Snake";
 
 const DEFAULT_INTERVAL_DAYS = 14;
-const DEFAULT_PREPARATION_DAYS = 2;
+const DEFAULT_PREPARATION_DAYS = 0;
 const DEFAULT_PREPARATION_TIME = "08:00";
 
 function addDays(dateString: string, days: number): string {
@@ -33,7 +33,7 @@ export function normaliseFeedingSchedule(value: unknown, fallbackDate = new Date
       intervalDays: DEFAULT_INTERVAL_DAYS,
       nextFeedingDate: getDefaultNextFeedingDate(fallbackDate),
       notificationsEnabled: true,
-      preparationReminderEnabled: true,
+      preparationReminderEnabled: false,
       preparationReminderDaysBefore: DEFAULT_PREPARATION_DAYS,
       preparationReminderTime: DEFAULT_PREPARATION_TIME,
     };
@@ -46,7 +46,7 @@ export function normaliseFeedingSchedule(value: unknown, fallbackDate = new Date
     intervalDays: Number.isFinite(intervalDays) && intervalDays >= 1 && intervalDays <= 90 ? Math.round(intervalDays) : DEFAULT_INTERVAL_DAYS,
     nextFeedingDate: typeof raw.nextFeedingDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.nextFeedingDate) ? raw.nextFeedingDate : getDefaultNextFeedingDate(fallbackDate),
     notificationsEnabled: raw.notificationsEnabled !== false,
-    preparationReminderEnabled: raw.preparationReminderEnabled !== false,
+    preparationReminderEnabled: raw.preparationReminderEnabled === true,
     preparationReminderDaysBefore: normalisePreparationDays(raw.preparationReminderDaysBefore),
     preparationReminderTime: normaliseTime(raw.preparationReminderTime),
   };
