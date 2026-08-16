@@ -2,11 +2,11 @@ import { addDoc, collection, doc, getDocs, orderBy, query, serverTimestamp, upda
 import { deleteObject, getBytes, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { db, storage } from "../firebase/config";
 import type { ReportIssue } from "../types/reportIssue";
-import type { Snake } from "../types/Snake";
 import type { ApprovedMorphImage, MorphImageSubmission, MorphSubmissionStatus } from "../types/morphSubmission";
+import { getCreatorGlobalMetrics } from "./creatorAnalyticsService";
 
 export type FounderApplication = { id: string; uid: string; email: string; displayName: string; reason: string; experience: string; contribution: string; status: "Pending" | "Approved" | "Declined"; createdAt?: unknown; updatedAt?: unknown };
-export type GlobalStats = { registeredUsers: number; activeUsers: number; snakeProfiles: number; mealsFed: number; weightLogs: number; totalWeightKg: number; totalWeightLb: number; shedsLogged: number; totalShedLengthCm: number; totalShedLengthIn: number; geneticsCalculations: number };
+export type GlobalStats = Awaited<ReturnType<typeof getCreatorGlobalMetrics>>;
 export async function submitFounderApplication(input: Omit<FounderApplication, "id" | "status" | "createdAt" | "updatedAt">) { const ref = await addDoc(collection(db, "founderApplications"), { ...input, status: "Pending", createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); return ref.id; }
 const normaliseIssuePart = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 async function issueFingerprint(parts: string[]) { const source = parts.map(normaliseIssuePart).filter(Boolean).join("|"); const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source)); return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 16); }
@@ -21,49 +21,24 @@ export async function updateCreatorReport(reportId: string, status: ReportIssue[
 export async function getFounderApplications(): Promise<FounderApplication[]> { const snapshot = await getDocs(query(collection(db, "founderApplications"), orderBy("createdAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<FounderApplication, "id">) })); }
 export async function updateFounderApplication(id: string, status: FounderApplication["status"]) { await updateDoc(doc(db, "founderApplications", id), { status, updatedAt: serverTimestamp() }); }
 export async function getUserCount(): Promise<number> { return (await getDocs(collection(db, "users"))).size; }
-function toNumber(value: unknown): number { return typeof value === "number" && Number.isFinite(value) ? value : 0; }
-function weightToKg(weight: number, unit: unknown): number { return unit === "kg" ? weight : weight / 1000; }
-function shedLengthToCm(length: number): number { return length; }
-export async function getGlobalStats(): Promise<GlobalStats> { const usersSnapshot = await getDocs(collection(db, "users")); let activeUsers = 0; let snakeProfiles = 0; let mealsFed = 0; let weightLogs = 0; let totalWeightKg = 0; let shedsLogged = 0; let totalShedLengthCm = 0; const activeCutoff = Date.now() - 15 * 60 * 1000; await Promise.all(usersSnapshot.docs.map(async (userDoc) => { const userData = userDoc.data() as Record<string, unknown>; const lastActive = userData.lastActiveAt; if (lastActive && typeof lastActive === "object" && "toMillis" in lastActive && typeof lastActive.toMillis === "function" && lastActive.toMillis() >= activeCutoff) activeUsers += 1; const snakesSnapshot = await getDocs(collection(db, "users", userDoc.id, "snakes")); snakeProfiles += snakesSnapshot.size; for (const snakeDoc of snakesSnapshot.docs) { const snake = snakeDoc.data() as Partial<Snake>; const feedingHistory = Array.isArray(snake.feedingHistory) ? snake.feedingHistory : []; mealsFed += feedingHistory.length; const weightHistory = Array.isArray(snake.weightHistory) ? snake.weightHistory : []; weightLogs += weightHistory.length; for (const record of weightHistory) { const item = record as { weight?: unknown; unit?: unknown }; totalWeightKg += weightToKg(toNumber(item.weight), item.unit); } const shedHistory = Array.isArray(snake.shedHistory) ? snake.shedHistory : []; shedsLogged += shedHistory.length; for (const record of shedHistory) totalShedLengthCm += shedLengthToCm(toNumber((record as { shedLength?: unknown }).shedLength)); } })); return { registeredUsers: usersSnapshot.size, activeUsers, snakeProfiles, mealsFed, weightLogs, totalWeightKg, totalWeightLb: totalWeightKg * 2.2046226218, shedsLogged, totalShedLengthCm, totalShedLengthIn: totalShedLengthCm / 2.54, geneticsCalculations: 0 }; }
+export async function getGlobalStats(): Promise<GlobalStats> { return getCreatorGlobalMetrics(); }
 export async function getMorphImageSubmissions(): Promise<MorphImageSubmission[]> { const snapshot = await getDocs(query(collection(db, "morphImageSubmissions"), orderBy("submittedAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<MorphImageSubmission, "id">) })); }
 export async function updateMorphSubmissionStatus(submissionId: string, status: MorphSubmissionStatus, reviewerUid?: string, rejectionReason?: string) { await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status, reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: rejectionReason ?? null }); }
 export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage> {
   if (!submission.morphId) throw new Error("This submission has no canonical morph ID.");
   if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval.");
-
   const sourceRef = ref(storage, submission.attachment.path);
   const imageUrl = await getDownloadURL(sourceRef);
   const approvedPath = `morphLibrary/${submission.morphId}/community/${submission.id}.jpg`;
   const imageBytes = await getBytes(sourceRef, 12 * 1024 * 1024);
   await uploadBytes(ref(storage, approvedPath), imageBytes, { contentType: "image/jpeg" });
   const approvedImageUrl = await getDownloadURL(ref(storage, approvedPath));
-
   try {
-    const approvedDoc = await addDoc(collection(db, "approvedMorphImages"), {
-      morphId: submission.morphId,
-      morphName: submission.morphName,
-      imageUrl: approvedImageUrl,
-      storagePath: approvedPath,
-      sourceStoragePath: submission.attachment.path,
-      creditType: submission.creditType,
-      creditName: submission.creditName ?? null,
-      creditSocial: submission.creditSocial ?? null,
-      sourceSubmissionId: submission.id,
-      approvedAt: serverTimestamp(),
-      approvedBy: reviewerUid ?? null,
-    });
-    await updateDoc(doc(db, "morphImageSubmissions", submission.id), {
-      status: "Approved",
-      reviewedAt: serverTimestamp(),
-      reviewedBy: reviewerUid ?? null,
-      approvedImageId: approvedDoc.id,
-    });
+    const approvedDoc = await addDoc(collection(db, "approvedMorphImages"), { morphId: submission.morphId, morphName: submission.morphName, imageUrl: approvedImageUrl, storagePath: approvedPath, sourceStoragePath: submission.attachment.path, creditType: submission.creditType, creditName: submission.creditName ?? null, creditSocial: submission.creditSocial ?? null, sourceSubmissionId: submission.id, approvedAt: serverTimestamp(), approvedBy: reviewerUid ?? null });
+    await updateDoc(doc(db, "morphImageSubmissions", submission.id), { status: "Approved", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, approvedImageId: approvedDoc.id });
     await deleteObject(sourceRef).catch(() => undefined);
     return { id: approvedDoc.id, morphId: submission.morphId, morphName: submission.morphName, imageUrl: approvedImageUrl, storagePath: approvedPath, creditType: submission.creditType, creditName: submission.creditName, creditSocial: submission.creditSocial, sourceSubmissionId: submission.id, approvedAt: undefined, approvedBy: reviewerUid };
-  } catch (error) {
-    await deleteObject(ref(storage, approvedPath)).catch(() => undefined);
-    throw error;
-  }
+  } catch (error) { await deleteObject(ref(storage, approvedPath)).catch(() => undefined); throw error; }
 }
 export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) { if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined); await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null }); }
 export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> { const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc"))); const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) })); return morphId ? images.filter((image) => image.morphId === morphId) : images; }
