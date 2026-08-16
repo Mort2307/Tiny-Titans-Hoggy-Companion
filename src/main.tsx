@@ -8,7 +8,7 @@ import App from "./App";
 
 import { AuthProvider } from "./context/AuthContext";
 
-function SelectorGrabScrollManager() {
+function SelectorGrabScrollManager(): null {
   useEffect(() => {
     let active: HTMLDivElement | null = null;
     let pointerId: number | null = null;
