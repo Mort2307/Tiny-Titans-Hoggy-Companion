@@ -33,7 +33,15 @@ service cloud.firestore {
       allow create: if signedIn() && request.auth.uid == userId && request.resource.data.role == "user";
       allow get: if signedIn() && (request.auth.uid == userId || hasCreatorClaim());
       allow list: if hasCreatorClaim();
-      allow update: if signedIn() && (isAdmin() || (request.auth.uid == userId && request.resource.data.role == resource.data.role));
+      allow update: if signedIn() && (
+        isAdmin() ||
+        (
+          request.auth.uid == userId &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.isTester == resource.data.isTester &&
+          request.resource.data.isSecurityTestUser == resource.data.isSecurityTestUser
+        )
+      );
       allow delete: if isAdmin();
     }
 
