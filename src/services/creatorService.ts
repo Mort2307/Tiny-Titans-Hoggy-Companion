@@ -51,4 +51,19 @@ export async function approveMorphImageSubmission(submission: MorphImageSubmissi
   }
 }
 export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) { if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined); await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null }); }
-export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> { const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc"))); const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) })); return morphId ? images.filter((image) => image.morphId === morphId) : images; }
+
+export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> {
+  const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc")));
+  const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) }));
+  const filtered = morphId ? images.filter((image) => image.morphId === morphId) : images;
+  return Promise.all(filtered.map(async (image) => {
+    if (image.imageUrl) return image;
+    if (!image.storagePath) return image;
+    try {
+      return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) };
+    } catch (error) {
+      console.warn("Approved morph image URL could not be resolved", image.storagePath, error);
+      return image;
+    }
+  }));
+}
