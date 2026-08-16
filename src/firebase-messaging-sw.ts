@@ -4,34 +4,18 @@ import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 import { clientsClaim } from "workbox-core";
 import { precacheAndRoute } from "workbox-precaching";
 
-declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: Array<unknown> };
-
-precacheAndRoute(self.__WB_MANIFEST);
+declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: Array<string | { url: string; revision?: string | null }> };
+precacheAndRoute(self.__WB_MANIFEST as never);
 clientsClaim();
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCaUnpNpfoGcmgs3cfe8PXYTeU7_lz50d0",
-  authDomain: "tinytitans-hoggy-companion.firebaseapp.com",
-  projectId: "tinytitans-hoggy-companion",
-  storageBucket: "tinytitans-hoggy-companion.firebasestorage.app",
-  messagingSenderId: "309730999071",
-  appId: "1:309730999071:web:c2b9364b584f787990e2a",
-};
-
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+const firebaseConfig = { apiKey: "AIzaSyCaUnpNpfoGcmgs3cfe8PXYTeU7_lz50d0", authDomain: "tinytitans-hoggy-companion.firebaseapp.com", projectId: "tinytitans-hoggy-companion", storageBucket: "tinytitans-hoggy-companion.firebasestorage.app", messagingSenderId: "309730999071", appId: "1:309730999071:web:c2b9364b584f787990e2a" };
+const messaging = getMessaging(initializeApp(firebaseConfig));
 
 onBackgroundMessage(messaging, (payload) => {
   const title = payload.notification?.title || payload.data?.title || "🐍 Tiny Titans Reminder";
   const body = payload.notification?.body || payload.data?.body || "You have a Tiny Titans reminder.";
   const url = payload.data?.url || "/";
-  void self.registration.showNotification(title, {
-    body,
-    icon: "/TinyTitans-Logo.jpg",
-    badge: "/TinyTitans-Logo.jpg",
-    data: { url, notificationId: payload.data?.notificationId || "" },
-    tag: payload.data?.notificationId || "tiny-titans-reminder",
-  });
+  void self.registration.showNotification(title, { body, icon: "/TinyTitans-Logo.jpg", badge: "/TinyTitans-Logo.jpg", data: { url, notificationId: payload.data?.notificationId || "" }, tag: payload.data?.notificationId || "tiny-titans-reminder" });
 });
 
 self.addEventListener("notificationclick", (event) => {
