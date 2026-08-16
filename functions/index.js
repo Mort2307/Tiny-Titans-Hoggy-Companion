@@ -110,16 +110,35 @@ function londonToday() {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+function londonTime() {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.hour}:${values.minute}`;
+}
+
 function daysBetween(fromDate, toDate) {
   const from = Date.parse(`${fromDate}T00:00:00Z`);
   const to = Date.parse(`${toDate}T00:00:00Z`);
   return Math.round((to - from) / 86400000);
 }
 
+function reminderTimeReached(targetTime, currentTime) {
+  if (typeof targetTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(targetTime)) return false;
+  const [targetHour, targetMinute] = targetTime.split(":").map(Number);
+  const [currentHour, currentMinute] = currentTime.split(":").map(Number);
+  const targetTotal = targetHour * 60 + targetMinute;
+  const currentTotal = currentHour * 60 + currentMinute;
+  // The scheduler runs every five minutes. Allow a five-minute delivery window
+  // so a keeper can choose any minute rather than being restricted to 5-minute presets.
+  return currentTotal >= targetTotal && currentTotal < targetTotal + 5;
+}
+
 function preparationMessage(daysUntil, snakeName) {
-  if (daysUntil === 2) return { title: `🧊 Feeding preparation — ${snakeName}`, body: "Feeding is in 2 days — make sure you have the correct food in stock." };
-  if (daysUntil === 1) return { title: `🧊 Feeding preparation — ${snakeName}`, body: "Feeding is tomorrow — make sure your feeder is fully defrosted and kept chilled safely until feeding." };
-  return { title: `🍽️ Feeding day — ${snakeName}`, body: "Feeding day — your snake is due for a feed today." };
+  if (daysUntil === 0) return { title: `🍽️ Feeding day — ${snakeName}`, body: "Feeding day — your snake is due for a feed today." };
+  return {
+    title: `🧊 Feeding preparation — ${snakeName}`,
+    body: `Feeding is in ${daysUntil} day${daysUntil === 1 ? "" : "s"} — your chosen preparation reminder is due now.`,
+  };
 }
 
 async function claimNotificationEvent(uid, eventKey, payload) {
@@ -155,38 +174,45 @@ async function sendToUserTokens(uid, eventKey, message) {
 }
 
 exports.sendFeedingPreparationNotifications = onSchedule(
-  { schedule: "0 8 * * *", timeZone: "Europe/London", region: "europe-west2", memory: "256MiB", timeoutSeconds: 120 },
+  { schedule: "*/5 * * * *", timeZone: "Europe/London", region: "europe-west2", memory: "256MiB", timeoutSeconds: 120 },
   async () => {
     const today = londonToday();
+    const currentTime = londonTime();
     const users = await db.collection("users").get();
     let notificationsSent = 0;
 
     for (const userDocument of users.docs) {
       const userData = userDocument.data();
       const notificationSettings = userData.notificationSettings || {};
-      if (notificationSettings.enabled !== true || notificationSettings.feedingPreparationEnabled === false) continue;
+      if (notificationSettings.enabled !== true || notificationSettings.feedingPreparationEnabled !== true) continue;
 
       const snakes = await userDocument.ref.collection("snakes").get();
       for (const snakeDocument of snakes.docs) {
         const snake = snakeDocument.data();
         const schedule = snake.feedingSchedule;
-        if (!schedule || schedule.enabled !== true || schedule.notificationsEnabled === false) continue;
+        if (!schedule || schedule.enabled !== true || schedule.notificationsEnabled === false || schedule.preparationReminderEnabled !== true) continue;
         if (snake.status && snake.status !== "Active") continue;
         if (typeof schedule.nextFeedingDate !== "string") continue;
+        if (!reminderTimeReached(schedule.preparationReminderTime, currentTime)) continue;
 
         const daysUntil = daysBetween(today, schedule.nextFeedingDate);
-        if (![2, 1, 0].includes(daysUntil)) continue;
+        const configuredLeadTime = Number(schedule.preparationReminderDaysBefore);
+        if (!Number.isInteger(configuredLeadTime) || configuredLeadTime < 0 || configuredLeadTime > 30) continue;
+        if (daysUntil !== configuredLeadTime) continue;
 
         const alreadyFed = await snakeDocument.ref.collection("feedings").where("date", "==", schedule.nextFeedingDate).limit(1).get();
         if (!alreadyFed.empty) continue;
 
-        const eventKey = `feeding-preparation-${snakeDocument.id}-${schedule.nextFeedingDate}-${daysUntil}`;
-        const message = preparationMessage(daysUntil, snake.name || "your snake");
-        const delivery = await sendToUserTokens(userDocument.id, eventKey, message);
-        if (delivery.sent === 0) continue;
-
-        const { claimed, eventRef } = await claimNotificationEvent(userDocument.id, eventKey, { type: "feeding-preparation", snakeId: snakeDocument.id, snakeName: snake.name || "", feedingDate: schedule.nextFeedingDate, daysUntil });
+        const eventKey = `feeding-preparation-${snakeDocument.id}-${schedule.nextFeedingDate}-${configuredLeadTime}`;
+        const { claimed, eventRef } = await claimNotificationEvent(userDocument.id, eventKey, { type: "feeding-preparation", snakeId: snakeDocument.id, snakeName: snake.name || "", feedingDate: schedule.nextFeedingDate, daysUntil: configuredLeadTime });
         if (!claimed) continue;
+
+        const message = preparationMessage(configuredLeadTime, snake.name || "your snake");
+        const delivery = await sendToUserTokens(userDocument.id, eventKey, message);
+        if (delivery.sent === 0) {
+          await eventRef.set({ status: "no-delivery", sentCount: 0, invalidTokenCount: delivery.invalid, checkedAt: FieldValue.serverTimestamp() }, { merge: true });
+          continue;
+        }
 
         await eventRef.set({ status: "sent", sentCount: delivery.sent, invalidTokenCount: delivery.invalid, sentAt: FieldValue.serverTimestamp() }, { merge: true });
         notificationsSent += delivery.sent;
