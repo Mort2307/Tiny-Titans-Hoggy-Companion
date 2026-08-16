@@ -17,6 +17,7 @@ export type CreatorGlobalMetrics = {
 };
 
 const ACTIVE_WINDOW_MS = 15 * 60 * 1000;
+const GENETICS_EVENT_TYPE = "genetics_calculation_completed";
 
 function millis(value: unknown): number | null {
   if (value && typeof value === "object" && "toMillis" in value && typeof value.toMillis === "function") {
@@ -77,12 +78,9 @@ export async function getCreatorGlobalMetrics(): Promise<CreatorGlobalMetrics> {
     await Promise.all(snakesSnapshot.docs.map(async (snakeDoc) => {
       const snake = snakeDoc.data() as Partial<Snake>;
 
-      // Feeding is now authoritative in the dedicated feedings subcollection.
       const feedingsSnapshot = await getDocs(collection(db, "users", userDoc.id, "snakes", snakeDoc.id, "feedings"));
       metrics.mealsFed += feedingsSnapshot.size;
 
-      // Weight remains part of the canonical Snake record until its dedicated
-      // collection migration is complete.
       const weights = Array.isArray(snake.weightHistory) ? snake.weightHistory : [];
       metrics.weightLogs += weights.length;
       for (const item of weights) {
@@ -90,8 +88,6 @@ export async function getCreatorGlobalMetrics(): Promise<CreatorGlobalMetrics> {
         metrics.totalWeightKg += weightKg(record.weight, record.unit);
       }
 
-      // Shed is authoritative in the dedicated subcollection. Soft-deleted
-      // records remain historical but are excluded from active global totals.
       const shedsSnapshot = await getDocs(collection(db, "users", userDoc.id, "snakes", snakeDoc.id, "sheds"));
       for (const shedDoc of shedsSnapshot.docs) {
         const shed = shedDoc.data() as Record<string, unknown>;
@@ -101,12 +97,9 @@ export async function getCreatorGlobalMetrics(): Promise<CreatorGlobalMetrics> {
       }
     }));
 
-    // Genetics calculations are explicit analytics events. This makes the
-    // metric independent from UI renders and prevents it being inferred from
-    // calculator state.
     const analyticsSnapshot = await getDocs(query(
       collection(db, "users", userDoc.id, "analyticsEvents"),
-      where("type", "==", "genetics_calculation"),
+      where("type", "==", GENETICS_EVENT_TYPE),
     ));
     metrics.geneticsCalculations += analyticsSnapshot.size;
   }));
