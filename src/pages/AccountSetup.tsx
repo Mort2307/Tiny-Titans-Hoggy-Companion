@@ -9,6 +9,7 @@ import logo from "../assets/TinyTitans-Logo.jpg";
 
 const db = getFirestore(app);
 type Interest = "keeper" | "breeder" | "breeder-seller" | "learner";
+const CONSENT_VERSION = "2026-08-16-location-analytics-v1";
 
 const profileOptions: Array<{ id: ProfileType; icon: string; title: string; description: string }> = [
   { id: "keeper", icon: "🐍", title: "Keeper", description: "I keep and care for reptiles." },
@@ -16,132 +17,52 @@ const profileOptions: Array<{ id: ProfileType; icon: string; title: string; desc
   { id: "educator", icon: "🧑‍🏫", title: "Educator / Teacher", description: "I want to use Tiny Titans for teaching or classes." },
   { id: "professional", icon: "🔬", title: "Professional / Advanced", description: "I want deeper husbandry, genetics and data tools." },
 ];
-
 const ageOptions: Array<{ id: AgeBand; title: string; description: string }> = [
-  { id: "7-10", title: "Explorer", description: "Approx. ages 7–10" },
-  { id: "11-14", title: "Learner", description: "Approx. ages 11–14" },
-  { id: "15-18", title: "Student", description: "Approx. ages 15–18" },
-  { id: "adult", title: "Adult", description: "Adult learner / keeper" },
+  { id: "7-10", title: "Explorer", description: "Approx. ages 7–10" }, { id: "11-14", title: "Learner", description: "Approx. ages 11–14" }, { id: "15-18", title: "Student", description: "Approx. ages 15–18" }, { id: "adult", title: "Adult", description: "Adult learner / keeper" },
 ];
-
 const educatorLevels: Array<{ id: EducatorTeachingLevel; title: string }> = [
-  { id: "primary", title: "Primary" },
-  { id: "secondary", title: "Secondary" },
-  { id: "college", title: "College" },
-  { id: "university", title: "University" },
-  { id: "homeschool", title: "Homeschool" },
-  { id: "club", title: "Club / Group" },
-  { id: "other", title: "Other" },
+  { id: "primary", title: "Primary" }, { id: "secondary", title: "Secondary" }, { id: "college", title: "College" }, { id: "university", title: "University" }, { id: "homeschool", title: "Homeschool" }, { id: "club", title: "Club / Group" }, { id: "other", title: "Other" },
 ];
 
 export default function AccountSetup() {
-  const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
-  const [displayName, setDisplayName] = useState(user?.displayName ?? "");
-  const [category, setCategory] = useState<UserCategory | "">("");
-  const [profileType, setProfileType] = useState<ProfileType | "">("");
-  const [ageBand, setAgeBand] = useState<AgeBand | "">("");
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | "">("");
-  const [learningLevel, setLearningLevel] = useState<LearningLevel | "">("");
-  const [interests, setInterests] = useState<Interest[]>([]);
-  const [teachingLevel, setTeachingLevel] = useState<EducatorTeachingLevel | "">("");
-  const [subjects, setSubjects] = useState("Biology, Science");
-  const [studentAgeBands, setStudentAgeBands] = useState<AgeBand[]>(["11-14"]);
-  const [reptileExperience, setReptileExperience] = useState<"beginner" | "intermediate" | "advanced">("beginner");
-  const [organisationName, setOrganisationName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  function toggleInterest(interest: Interest) {
-    setInterests((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest]);
-  }
-
-  function toggleStudentAge(age: AgeBand) {
-    setStudentAgeBands((current) => current.includes(age) ? current.filter((item) => item !== age) : [...current, age]);
-  }
-
-  function chooseProfile(type: ProfileType) {
-    setProfileType(type);
-    if (type === "educator") setInterests((current) => current.includes("learner") ? current : [...current, "learner"]);
-  }
-
+  const navigate = useNavigate(); const { user, refreshProfile } = useAuth();
+  const [displayName, setDisplayName] = useState(user?.displayName ?? ""); const [category, setCategory] = useState<UserCategory | "">(""); const [profileType, setProfileType] = useState<ProfileType | "">(""); const [ageBand, setAgeBand] = useState<AgeBand | "">(""); const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | "">(""); const [learningLevel, setLearningLevel] = useState<LearningLevel | "">(""); const [interests, setInterests] = useState<Interest[]>([]); const [teachingLevel, setTeachingLevel] = useState<EducatorTeachingLevel | "">(""); const [subjects, setSubjects] = useState("Biology, Science"); const [studentAgeBands, setStudentAgeBands] = useState<AgeBand[]>(["11-14"]); const [reptileExperience, setReptileExperience] = useState<"beginner" | "intermediate" | "advanced">("beginner"); const [organisationName, setOrganisationName] = useState("");
+  const [city, setCity] = useState(""); const [country, setCountry] = useState(""); const [approximateLocationConsent, setApproximateLocationConsent] = useState(false); const [analyticsConsent, setAnalyticsConsent] = useState(false); const [productUpdatesConsent, setProductUpdatesConsent] = useState(false);
+  const [saving, setSaving] = useState(false); const [error, setError] = useState("");
+  function toggleInterest(interest: Interest) { setInterests((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest]); }
+  function toggleStudentAge(age: AgeBand) { setStudentAgeBands((current) => current.includes(age) ? current.filter((item) => item !== age) : [...current, age]); }
+  function chooseProfile(type: ProfileType) { setProfileType(type); if (type === "educator") setInterests((current) => current.includes("learner") ? current : [...current, "learner"]); }
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    if (!user) return setError("We couldn't find your Tiny Titans account.");
-    if (!displayName.trim()) return setError("Please enter your name.");
-    if (!category) return setError("Please choose whether you're an adult or child.");
-    if (!profileType) return setError("Please choose how you will use Tiny Titans.");
-    if (!ageBand) return setError("Please choose your learning age band.");
-    if (!experienceLevel) return setError("Please choose your experience level.");
-    if (!learningLevel) return setError("Please choose your learning level.");
-    if (interests.length === 0) return setError("Please select at least one reason for using Tiny Titans.");
-    if (profileType === "educator" && (!teachingLevel || studentAgeBands.length === 0)) return setError("Please choose your teaching environment and student age band.");
-
+    event.preventDefault(); setError("");
+    if (!user) return setError("We couldn't find your Tiny Titans account."); if (!displayName.trim()) return setError("Please enter your name."); if (!category) return setError("Please choose whether you're an adult or child."); if (!profileType) return setError("Please choose how you will use Tiny Titans."); if (!ageBand) return setError("Please choose your learning age band."); if (!experienceLevel) return setError("Please choose your experience level."); if (!learningLevel) return setError("Please choose your learning level."); if (interests.length === 0) return setError("Please select at least one reason for using Tiny Titans."); if (profileType === "educator" && (!teachingLevel || studentAgeBands.length === 0)) return setError("Please choose your teaching environment and student age band."); if (approximateLocationConsent && (!city.trim() || !country.trim())) return setError("If you opt into the community map, please enter your city and country.");
     setSaving(true);
     try {
-      const userRef = doc(db, "users", user.uid);
-      const existing = await getDoc(userRef);
+      const userRef = doc(db, "users", user.uid); const existing = await getDoc(userRef);
       const profileData = {
-        uid: user.uid,
-        displayName: displayName.trim(),
-        email: user.email ?? "",
-        category,
-        ageBand,
-        learningLevel,
-        profileType,
-        experienceLevel,
-        interests,
-        role: "user" as const,
-        setupComplete: true,
-        ...(profileType === "educator" ? {
-          educatorProfile: {
-            teachingLevel,
-            subjects: subjects.split(",").map((item) => item.trim()).filter(Boolean),
-            studentAgeBands,
-            reptileExperience,
-            organisationName: organisationName.trim() || undefined,
-            verified: false,
-          },
-        } : {}),
-        updatedAt: serverTimestamp(),
+        uid: user.uid, displayName: displayName.trim(), email: user.email ?? "", category, ageBand, learningLevel, profileType, experienceLevel, interests, role: "user" as const, setupComplete: true,
+        ...(approximateLocationConsent ? { approximateLocation: { city: city.trim(), country: country.trim(), source: "user-provided" as const, visibleToCreator: true, updatedAt: serverTimestamp() } } : { approximateLocation: null }),
+        dataCollectionPreferences: { approximateLocation: approximateLocationConsent, analytics: analyticsConsent, productUpdates: productUpdatesConsent, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() },
+        ...(profileType === "educator" ? { educatorProfile: { teachingLevel, subjects: subjects.split(",").map((item) => item.trim()).filter(Boolean), studentAgeBands, reptileExperience, organisationName: organisationName.trim() || undefined, verified: false } } : {}), updatedAt: serverTimestamp(),
       };
-      if (!existing.exists()) await setDoc(userRef, { ...profileData, createdAt: serverTimestamp() });
-      else await setDoc(userRef, profileData, { merge: true });
-
-      const updatedProfile = await refreshProfile();
-      if (!updatedProfile?.setupComplete) throw new Error("Your profile was saved, but Tiny Titans could not confirm setup is complete. Please try again.");
+      if (!existing.exists()) await setDoc(userRef, { ...profileData, createdAt: serverTimestamp() }); else await setDoc(userRef, profileData, { merge: true });
+      const updatedProfile = await refreshProfile(); if (!updatedProfile?.setupComplete) throw new Error("Your profile was saved, but Tiny Titans could not confirm setup is complete. Please try again.");
       navigate(profileType === "educator" ? "/educator" : "/", { replace: true });
-    } catch (saveError) {
-      console.error("Tiny Titans: account setup failed", saveError);
-      setError(saveError instanceof Error ? saveError.message : "Unable to save your profile. Please try again.");
-    } finally { setSaving(false); }
+    } catch (saveError) { console.error("Tiny Titans: account setup failed", saveError); setError(saveError instanceof Error ? saveError.message : "Unable to save your profile. Please try again."); } finally { setSaving(false); }
   }
-
   return (
-    <main className="account-setup-page">
-      <section className="account-setup-card">
-        <div className="account-setup-logo"><img src={logo} alt="Tiny Titans" /></div>
-        <div className="account-setup-header"><span className="account-setup-icon">🐍</span><h1>Welcome to Tiny Titans</h1><p>Let's personalise what Tiny Titans shows you.</p></div>
-        <form onSubmit={handleSubmit} className="account-setup-form">
-          <div className="setup-section"><label htmlFor="displayName">What should we call you?</label><input id="displayName" type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Your name" autoComplete="name" disabled={saving} /></div>
-
-          <div className="setup-section"><h2>🧭 How will you use Tiny Titans?</h2><p className="setup-help">This is your main profile type. You can change your learning preferences later.</p><div className="setup-options">{profileOptions.map((option) => <button type="button" key={option.id} className={`setup-option ${profileType === option.id ? "selected" : ""}`} onClick={() => chooseProfile(option.id)} disabled={saving}><span className="option-icon">{option.icon}</span><span><strong>{option.title}</strong><small>{option.description}</small></span></button>)}</div></div>
-
-          <div className="setup-section"><h2>👤 Who are you?</h2><div className="setup-options"><button type="button" className={`setup-option ${category === "adult" ? "selected" : ""}`} onClick={() => setCategory("adult")} disabled={saving}><span className="option-icon">🧑</span><span><strong>Adult</strong><small>I'm managing my own account.</small></span></button><button type="button" className={`setup-option ${category === "child" ? "selected" : ""}`} onClick={() => setCategory("child")} disabled={saving}><span className="option-icon">👶</span><span><strong>Child</strong><small>I'm learning with adult guidance.</small></span></button></div></div>
-
-          <div className="setup-section"><h2>📚 What learning level fits you?</h2><p className="setup-help">This controls language, explanations and educational depth — not which features you can use.</p><div className="setup-options">{ageOptions.map((option) => <button type="button" key={option.id} className={`setup-option ${ageBand === option.id ? "selected" : ""}`} onClick={() => { setAgeBand(option.id); setLearningLevel(option.id === "7-10" ? "explorer" : option.id === "11-14" ? "learner" : option.id === "15-18" ? "student" : "adult"); }} disabled={saving}><span className="option-icon">{option.id === "7-10" ? "🌱" : option.id === "11-14" ? "🔎" : option.id === "15-18" ? "🔬" : "🧠"}</span><span><strong>{option.title}</strong><small>{option.description}</small></span></button>)}</div></div>
-
-          <div className="setup-section"><h2>🧠 What's your reptile experience?</h2><div className="setup-options"><button type="button" className={`setup-option ${experienceLevel === "beginner" ? "selected" : ""}`} onClick={() => setExperienceLevel("beginner")} disabled={saving}><span className="option-icon">🌱</span><span><strong>Beginner</strong><small>I'm starting my reptile journey.</small></span></button><button type="button" className={`setup-option ${experienceLevel === "intermediate" ? "selected" : ""}`} onClick={() => setExperienceLevel("intermediate")} disabled={saving}><span className="option-icon">🦎</span><span><strong>Intermediate</strong><small>I've got some experience.</small></span></button><button type="button" className={`setup-option ${experienceLevel === "pro" ? "selected" : ""}`} onClick={() => setExperienceLevel("pro")} disabled={saving}><span className="option-icon">🧬</span><span><strong>Advanced</strong><small>Advanced keeping, breeding or genetics.</small></span></button></div></div>
-
-          <div className="setup-section"><h2>🐍 What else interests you?</h2><div className="setup-options">{([{ id: "keeper", icon: "🐍", title: "Keeper", description: "I keep and care for reptiles." }, { id: "breeder", icon: "🧬", title: "Breeder", description: "I breed reptiles and work with genetics." }, { id: "breeder-seller", icon: "🏪", title: "Breeder & Seller", description: "I breed and sell reptiles." }, { id: "learner", icon: "📚", title: "Learner", description: "I'm here to learn." }] as const).map((option) => { const selected = interests.includes(option.id); return <button key={option.id} type="button" className={`setup-option ${selected ? "selected" : ""}`} onClick={() => toggleInterest(option.id)} disabled={saving}><span className="option-icon">{option.icon}</span><span><strong>{option.title}</strong><small>{option.description}</small></span>{selected && <span className="selection-tick">✓</span>}</button>; })}</div></div>
-
-          {profileType === "educator" && <div className="setup-section educator-setup-section"><h2>🧑‍🏫 Tell us about your teaching</h2><p className="setup-help">These settings tailor lessons and classroom tools. No exact student ages are required.</p><label>Teaching environment<select value={teachingLevel} onChange={(event) => setTeachingLevel(event.target.value as EducatorTeachingLevel)}><option value="">Choose…</option>{educatorLevels.map((option) => <option key={option.id} value={option.id}>{option.title}</option>)}</select></label><label>Subjects<input value={subjects} onChange={(event) => setSubjects(event.target.value)} placeholder="Biology, Science" /></label><label>School / organisation (optional)<input value={organisationName} onChange={(event) => setOrganisationName(event.target.value)} placeholder="Optional" /></label><fieldset><legend>Student age bands</legend><div className="setup-options">{ageOptions.filter((option) => option.id !== "adult").map((option) => <button type="button" key={option.id} className={`setup-option ${studentAgeBands.includes(option.id) ? "selected" : ""}`} onClick={() => toggleStudentAge(option.id)}><span className="option-icon">🎓</span><span><strong>{option.title}</strong><small>{option.description}</small></span></button>)}</div></fieldset><label>My reptile knowledge<select value={reptileExperience} onChange={(event) => setReptileExperience(event.target.value as typeof reptileExperience)}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label></div>}
-
-          {error && <div className="setup-error">{error}</div>}
-          <button type="submit" className="setup-submit" disabled={saving || interests.length === 0}>{saving ? "Saving..." : profileType === "educator" ? "🧑‍🏫 Enter Educator Centre" : "🐍 Enter Tiny Titans"}</button>
-        </form>
-      </section>
-    </main>
+    <main className="account-setup-page"><section className="account-setup-card"><div className="account-setup-logo"><img src={logo} alt="Tiny Titans" /></div><div className="account-setup-header"><span className="account-setup-icon">🐍</span><h1>Welcome to Tiny Titans</h1><p>Let's personalise what Tiny Titans shows you.</p></div>
+      <form onSubmit={handleSubmit} className="account-setup-form">
+        <div className="setup-section"><label htmlFor="displayName">What should we call you?</label><input id="displayName" type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Your name" autoComplete="name" disabled={saving} /></div>
+        <div className="setup-section"><h2>🧭 How will you use Tiny Titans?</h2><p className="setup-help">This is your main profile type. You can change your learning preferences later.</p><div className="setup-options">{profileOptions.map((option) => <button type="button" key={option.id} className={`setup-option ${profileType === option.id ? "selected" : ""}`} onClick={() => chooseProfile(option.id)} disabled={saving}><span className="option-icon">{option.icon}</span><span><strong>{option.title}</strong><small>{option.description}</small></span></button>)}</div></div>
+        <div className="setup-section"><h2>👤 Who are you?</h2><div className="setup-options"><button type="button" className={`setup-option ${category === "adult" ? "selected" : ""}`} onClick={() => setCategory("adult")} disabled={saving}><span className="option-icon">🧑</span><span><strong>Adult</strong><small>I'm managing my own account.</small></span></button><button type="button" className={`setup-option ${category === "child" ? "selected" : ""}`} onClick={() => setCategory("child")} disabled={saving}><span className="option-icon">👶</span><span><strong>Child</strong><small>I'm learning with adult guidance.</small></span></button></div></div>
+        <div className="setup-section"><h2>📚 What learning level fits you?</h2><p className="setup-help">This controls language, explanations and educational depth — not which features you can use.</p><div className="setup-options">{ageOptions.map((option) => <button type="button" key={option.id} className={`setup-option ${ageBand === option.id ? "selected" : ""}`} onClick={() => { setAgeBand(option.id); setLearningLevel(option.id === "7-10" ? "explorer" : option.id === "11-14" ? "learner" : option.id === "15-18" ? "student" : "adult"); }} disabled={saving}><span className="option-icon">{option.id === "7-10" ? "🌱" : option.id === "11-14" ? "🔎" : option.id === "15-18" ? "🔬" : "🧠"}</span><span><strong>{option.title}</strong><small>{option.description}</small></span></button>)}</div></div>
+        <div className="setup-section"><h2>🧠 What's your reptile experience?</h2><div className="setup-options"><button type="button" className={`setup-option ${experienceLevel === "beginner" ? "selected" : ""}`} onClick={() => setExperienceLevel("beginner")} disabled={saving}><span className="option-icon">🌱</span><span><strong>Beginner</strong><small>I'm starting my reptile journey.</small></span></button><button type="button" className={`setup-option ${experienceLevel === "intermediate" ? "selected" : ""}`} onClick={() => setExperienceLevel("intermediate")} disabled={saving}><span className="option-icon">🦎</span><span><strong>Intermediate</strong><small>I've got some experience.</small></span></button><button type="button" className={`setup-option ${experienceLevel === "pro" ? "selected" : ""}`} onClick={() => setExperienceLevel("pro")} disabled={saving}><span className="option-icon">🧬</span><span><strong>Advanced</strong><small>Advanced keeping, breeding or genetics.</small></span></button></div></div>
+        <div className="setup-section"><h2>🐍 What else interests you?</h2><div className="setup-options">{([{ id: "keeper", icon: "🐍", title: "Keeper", description: "I keep and care for reptiles." }, { id: "breeder", icon: "🧬", title: "Breeder", description: "I breed reptiles and work with genetics." }, { id: "breeder-seller", icon: "🏪", title: "Breeder & Seller", description: "I breed and sell reptiles." }, { id: "learner", icon: "📚", title: "Learner", description: "I'm here to learn." }] as const).map((option) => { const selected = interests.includes(option.id); return <button key={option.id} type="button" className={`setup-option ${selected ? "selected" : ""}`} onClick={() => toggleInterest(option.id)} disabled={saving}><span className="option-icon">{option.icon}</span><span><strong>{option.title}</strong><small>{option.description}</small></span>{selected && <span className="selection-tick">✓</span>}</button>; })}</div></div>
+        <div className="setup-section"><h2>🌍 Your community location</h2><p className="setup-help">Optional. If you choose to share it, Tiny Titans stores the city and country you provide — not your home address or exact GPS position. This lets the Creator Hub show the community by city, such as London or New York.</p><label className="setup-check"><input type="checkbox" checked={approximateLocationConsent} onChange={(event) => setApproximateLocationConsent(event.target.checked)} disabled={saving} /> <span><strong>Show my approximate location on the Tiny Titans community map</strong><small>Only the city and country you provide are used for the map. You can withdraw this permission later.</small></span></label>{approximateLocationConsent && <div className="setup-location-fields"><label htmlFor="community-city">City<input id="community-city" value={city} onChange={(event) => setCity(event.target.value)} placeholder="e.g. London" disabled={saving} autoComplete="address-level2" /></label><label htmlFor="community-country">Country<input id="community-country" value={country} onChange={(event) => setCountry(event.target.value)} placeholder="e.g. United Kingdom" disabled={saving} autoComplete="country-name" /></label></div>}</div>
+        <div className="setup-section"><h2>🔐 Your data choices</h2><p className="setup-help">These choices are separate. Tiny Titans can provide its core features without optional analytics, product updates or community location sharing.</p><label className="setup-check"><input type="checkbox" checked={analyticsConsent} onChange={(event) => setAnalyticsConsent(event.target.checked)} disabled={saving} /><span><strong>Help improve Tiny Titans with anonymous product analytics</strong><small>Allows aggregated usage and feature-performance data to help improve the app.</small></span></label><label className="setup-check"><input type="checkbox" checked={productUpdatesConsent} onChange={(event) => setProductUpdatesConsent(event.target.checked)} disabled={saving} /><span><strong>Receive Tiny Titans product updates</strong><small>Optional updates about new features, releases and important app information.</small></span></label><p className="setup-help">Your choices are recorded with a consent version and timestamp so we can respect changes later.</p></div>
+        {profileType === "educator" && <div className="setup-section educator-setup-section"><h2>🧑‍🏫 Tell us about your teaching</h2><p className="setup-help">These settings tailor lessons and classroom tools. No exact student ages are required.</p><label>Teaching environment<select value={teachingLevel} onChange={(event) => setTeachingLevel(event.target.value as EducatorTeachingLevel)}><option value="">Choose…</option>{educatorLevels.map((option) => <option key={option.id} value={option.id}>{option.title}</option>)}</select></label><label>Subjects<input value={subjects} onChange={(event) => setSubjects(event.target.value)} placeholder="Biology, Science" /></label><label>School / organisation (optional)<input value={organisationName} onChange={(event) => setOrganisationName(event.target.value)} placeholder="Optional" /></label><fieldset><legend>Student age bands</legend><div className="setup-options">{ageOptions.filter((option) => option.id !== "adult").map((option) => <button type="button" key={option.id} className={`setup-option ${studentAgeBands.includes(option.id) ? "selected" : ""}`} onClick={() => toggleStudentAge(option.id)}><span className="option-icon">🎓</span><span><strong>{option.title}</strong><small>{option.description}</small></span></button>)}</div></fieldset><label>My reptile knowledge<select value={reptileExperience} onChange={(event) => setReptileExperience(event.target.value as typeof reptileExperience)}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label></div>}
+        {error && <div className="setup-error">{error}</div>}<button type="submit" className="setup-submit" disabled={saving || interests.length === 0}>{saving ? "Saving..." : profileType === "educator" ? "🧑‍🏫 Enter Educator Centre" : "🐍 Enter Tiny Titans"}</button>
+      </form>
+    </section></main>
   );
 }
