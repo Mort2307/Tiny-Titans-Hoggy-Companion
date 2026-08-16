@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Globe, { type GlobeProps } from "react-globe.gl";
+import Globe from "react-globe.gl";
 import FullScreenSubview from "./FullScreenSubview";
 import { getCommunityLocationAggregates } from "../services/privacyService";
 import type { CommunityLocationAggregate } from "../types/privacy";
@@ -11,9 +11,7 @@ type CountryFeature = {
 };
 
 type CountryCollection = { type: "FeatureCollection"; features: CountryFeature[] };
-type PolygonGeometry = Parameters<NonNullable<GlobeProps["polygonGeoJsonGeometry"]>> extends [object]
-  ? ReturnType<Extract<NonNullable<GlobeProps["polygonGeoJsonGeometry"]>, (...args: any[]) => any>>
-  : never;
+type GlobeGeometry = { type: string; coordinates: unknown };
 
 const COUNTRY_GEOJSON_URL = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
 
@@ -149,7 +147,7 @@ export default function CreatorCommunityGlobe() {
                 atmosphereColor="#00AEFF"
                 atmosphereAltitude={0.16}
                 polygonsData={countriesGeoJson.features}
-                polygonGeoJsonGeometry={(feature): PolygonGeometry => (feature as CountryFeature).geometry as PolygonGeometry}
+                polygonGeoJsonGeometry={(feature): GlobeGeometry => (feature as CountryFeature).geometry as GlobeGeometry}
                 polygonCapColor={(feature) => {
                   const name = countryName(feature as CountryFeature);
                   return countries.some(([country]) => country === name) ? "rgba(111,36,184,0.82)" : "rgba(255,255,255,0.07)";
