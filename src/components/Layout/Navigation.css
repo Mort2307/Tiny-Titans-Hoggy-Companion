@@ -104,9 +104,28 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 1100px) {
+/* Desktop shell compensation: the fixed sidebar must never cover page content. */
+@media (min-width: 801px) {
+  .app-shell .app-header,
+  .app-shell .app-main {
+    margin-left: 250px;
+    width: calc(100% - 250px);
+  }
+
+  .app-shell .app-content {
+    width: min(var(--content-max-width), 100%);
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 801px) {
   .app-navigation {
     width: 220px;
+  }
+
+  .app-shell .app-header,
+  .app-shell .app-main {
+    margin-left: 220px;
+    width: calc(100% - 220px);
   }
 }
 
@@ -172,6 +191,12 @@
   .app-navigation-icon {
     width: auto;
     font-size: 1.1rem;
+  }
+
+  .app-shell .app-header,
+  .app-shell .app-main {
+    margin-left: 0;
+    width: 100%;
   }
 }
 
