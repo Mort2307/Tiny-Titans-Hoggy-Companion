@@ -13,28 +13,21 @@ export type WeightTrackingFrequency =
   | "Every 3 Weeks"
   | "Monthly";
 
-export type SnakeSex =
-  | "Male"
-  | "Female"
-  | "Unknown";
-
-export type SnakeStatus =
-  | "Active"
-  | "Sold"
-  | "Deceased"
-  | "Archived";
+export type SnakeSex = "Male" | "Female" | "Unknown";
+export type SnakeStatus = "Active" | "Sold" | "Deceased" | "Archived";
 
 export type FeedingSchedule = {
   enabled: boolean;
   intervalDays: number;
   nextFeedingDate: string;
   notificationsEnabled: boolean;
+  preparationReminderEnabled: boolean;
+  preparationReminderDaysBefore: number;
+  preparationReminderTime: string;
 };
 
 export type Snake = {
   id: string;
-
-  // Identity
   name: string;
   species: string;
   photo: string;
@@ -43,66 +36,33 @@ export type Snake = {
   breeder?: string;
   origin?: string;
   acquisitionDate?: string;
-
-  // Genetics
   morphs: string[];
   customMorph: string;
   hets: Het[];
   customHets: string;
-
-  // Weight
   startingWeight: number | null;
   startingWeightDate: string;
   weight: number | null;
   lastWeighedDate: string;
   weightHistory: WeightRecord[];
-  weightTracking: {
-    enabled: boolean;
-    frequency: WeightTrackingFrequency;
-  };
-
-  // Feeding
+  weightTracking: { enabled: boolean; frequency: WeightTrackingFrequency };
   feedingHistory?: FeedingRecord[];
   feedingSchedule?: FeedingSchedule;
-
-  // Shedding
   shedHistory?: ShedRecord[];
-
-  // Health
   healthHistory?: HealthRecord[];
-
-  // Enclosure
   enclosure?: Enclosure;
-
-  // Breeding
   breedingHistory?: BreedingPairing[];
-
-  // Timeline
   timeline?: TimelineEvent[];
-
-  // Timeline Dates
   hatchDate: string;
   arrivalDate: string;
-
-  // Husbandry notes
   temperatureNotes?: string;
   humidityNotes?: string;
-
-  // Feeding notes
   lastMealDate?: string;
   feedingNotes?: string;
-
-  // Health notes
   healthNotes?: string;
   medicationNotes?: string;
-
-  // Breeding notes
   breedingEligible?: boolean;
   breedingNotes?: string;
-
-  // General Notes
   notes: string;
-
-  // Status
   status?: SnakeStatus;
 };
