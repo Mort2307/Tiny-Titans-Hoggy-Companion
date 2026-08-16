@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   disableNotifications,
   enableNotifications,
@@ -9,34 +10,26 @@ import {
 import type { NotificationPermissionState, NotificationSettings } from "../types/Notifications";
 
 export default function NotificationSettingsPanel() {
-  const { user } = (() => {
-    // Auth is intentionally imported lazily through the hook below so this component
-    // remains a small, reusable notification control surface.
-    return { user: undefined as { uid: string } | undefined };
-  })();
-  return <NotificationSettingsPanelInner userId={user?.uid ?? ""} />;
-}
-
-function NotificationSettingsPanelInner({ userId }: { userId: string }) {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<NotificationSettings>({ enabled: false, feedingPreparationEnabled: true });
   const [permission, setPermission] = useState<NotificationPermissionState>(getNotificationPermissionState());
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!userId) return;
-    void getNotificationSettings(userId).then(setSettings).catch(() => undefined);
+    if (!user) return;
+    void getNotificationSettings(user.uid).then(setSettings).catch(() => undefined);
     setPermission(getNotificationPermissionState());
-  }, [userId]);
+  }, [user]);
 
   async function handleEnable() {
-    if (!userId || busy) return;
+    if (!user || busy) return;
     setBusy(true); setMessage("");
     try {
-      const result = await enableNotifications(userId);
+      const result = await enableNotifications(user.uid);
       setPermission(result);
       if (result === "granted") {
-        setSettings(await getNotificationSettings(userId));
+        setSettings(await getNotificationSettings(user.uid));
         setMessage("Notifications are enabled on this device.");
       } else if (result === "denied") {
         setMessage("Notifications are blocked by your browser/device. Tiny Titans will not keep asking.");
@@ -49,10 +42,10 @@ function NotificationSettingsPanelInner({ userId }: { userId: string }) {
   }
 
   async function handleDisable() {
-    if (!userId || busy) return;
+    if (!user || busy) return;
     setBusy(true); setMessage("");
     try {
-      await disableNotifications(userId);
+      await disableNotifications(user.uid);
       setSettings((current) => ({ ...current, enabled: false }));
       setMessage("Notifications are disabled for Tiny Titans on this device.");
     } catch (error) {
@@ -61,10 +54,10 @@ function NotificationSettingsPanelInner({ userId }: { userId: string }) {
   }
 
   async function toggleFeedingPreparation(enabled: boolean) {
-    if (!userId || busy) return;
+    if (!user || busy) return;
     setBusy(true); setMessage("");
     try {
-      const next = await saveNotificationSettings(userId, { ...settings, feedingPreparationEnabled: enabled });
+      const next = await saveNotificationSettings(user.uid, { ...settings, feedingPreparationEnabled: enabled });
       setSettings(next);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save notification preferences.");
