@@ -6,10 +6,12 @@ import type { Snake } from "../types/Snake";
 import type { GeneticsCalculatorResult } from "../types/genetics";
 import { calculateGenetics } from "../utils/geneticsCalculator";
 import { getUserSnakes } from "../services/snakeService";
+import { recordGeneticsCalculation } from "../services/geneticsTrackingService";
 import { useAuth } from "../context/AuthContext";
 import "../styles/calculator.css";
 
 const EMPTY_PARENT: ParentSelection = { morphs: [], hets: [] };
+const TRACKING_STORAGE_PREFIX = "tiny-titans-genetics-tracked:";
 
 export default function Calculator() {
   const { user, loading, profileLoading } = useAuth();
@@ -53,9 +55,6 @@ export default function Calculator() {
 
   const allMorphs = useMemo(() => morphDatabase, []);
 
-  // The selector should show the complete recognised visual registry.
-  // Unverified/disputed reference entries are deliberately excluded from
-  // breeding calculations, but recognised Mendelian genes are available.
   const recognisedVisualOptions = useMemo(
     () =>
       allMorphs.filter(
@@ -69,9 +68,6 @@ export default function Calculator() {
     [allMorphs]
   );
 
-  // A het is offered ONLY when the database explicitly says that the gene is
-  // het-capable. This prevents incomplete-dominant traits such as Conda and
-  // Arctic from ever appearing as fake "hets".
   const hetOptions = useMemo(
     () =>
       getGenes().filter(
@@ -103,6 +99,37 @@ export default function Calculator() {
     mother.hets.length > 0 ||
     father.morphs.length > 0 ||
     father.hets.length > 0;
+
+  useEffect(() => {
+    if (!user || !hasSelection || result.offspring.length === 0) return;
+
+    const trackingKey = `${TRACKING_STORAGE_PREFIX}${user.uid}:${JSON.stringify({
+      femaleMorphs: mother.morphs.map((morph) => morph.id).sort(),
+      femaleHets: mother.hets.map((het) => het.gene).sort(),
+      maleMorphs: father.morphs.map((morph) => morph.id).sort(),
+      maleHets: father.hets.map((het) => het.gene).sort(),
+      outcomeCount: result.offspring.length,
+      unresolved: result.hasUnresolvedGenetics,
+    })}`;
+
+    if (sessionStorage.getItem(trackingKey) === "1") return;
+
+    const timer = window.setTimeout(() => {
+      void recordGeneticsCalculation({
+        uid: user.uid,
+        femaleMorphIds: mother.morphs.map((morph) => morph.id),
+        femaleHetGenes: mother.hets.map((het) => het.gene),
+        maleMorphIds: father.morphs.map((morph) => morph.id),
+        maleHetGenes: father.hets.map((het) => het.gene),
+        outcomeCount: result.offspring.length,
+        unresolved: result.hasUnresolvedGenetics,
+      })
+        .then(() => sessionStorage.setItem(trackingKey, "1"))
+        .catch((error) => console.warn("Tiny Titans: genetics calculation tracking failed", error));
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [user, hasSelection, mother, father, result]);
 
   function clearCalculator() {
     setMother({ ...EMPTY_PARENT });
