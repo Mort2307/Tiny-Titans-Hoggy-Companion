@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { MorphDefinition } from "../data/morphs";
 import { resolveStrictMorph } from "../utils/geneticsIdentity";
+import { parseHetPercentage } from "../utils/geneticsHetScenarios";
 import type { Het, HetPercentage } from "../types/genetics";
 import type { Snake } from "../types/Snake";
 
@@ -32,16 +33,6 @@ function canonicalGeneId(value: unknown): string | undefined {
   return canonicalMorph(value)?.geneId ?? (typeof value === "string" && value.trim() ? value.trim() : undefined);
 }
 
-function parseHetPercentage(value: unknown): HetPercentage {
-  if (typeof value === "string") {
-    const cleaned = value.trim().replace(/%$/, "");
-    const parsed = Number(cleaned);
-    if (parsed === 50 || parsed === 66 || parsed === 100) return parsed;
-  }
-  if (value === 50 || value === 66 || value === 100) return value;
-  return 100;
-}
-
 function normaliseSnakeHets(value: unknown): Het[] {
   if (!Array.isArray(value)) return [];
 
@@ -56,9 +47,20 @@ function normaliseSnakeHets(value: unknown): Het[] {
       const gene = record.gene ?? record.geneId ?? record.name ?? record.morph;
       if (typeof gene !== "string" || !gene.trim()) return null;
 
+      // Preserve the stored probability regardless of which legacy field was
+      // used. Never default a recognisable partial het to 100% just because it
+      // was persisted as a descriptive string or probability fraction.
+      const rawPercentage =
+        record.percentage ??
+        record.hetPercentage ??
+        record.probability ??
+        record.hetProbability ??
+        record.likelihood ??
+        record.percent;
+
       return {
         gene: canonicalGeneId(gene) ?? gene.trim(),
-        percentage: parseHetPercentage(record.percentage),
+        percentage: parseHetPercentage(rawPercentage),
       };
     })
     .filter((het): het is Het => het !== null);
