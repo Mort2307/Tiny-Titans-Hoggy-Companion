@@ -35,7 +35,6 @@ function Navigation() {
     ["/", "🏠", "Home"],
     ["/snakes", "🐍", "My Snakes"],
     ["/feeding", "🍽️", "Feeding"],
-    ["/feeding/preparation", "🧊", "Feeding Preparation"],
     ["/shedding", "🐍", "Shed Tracker"],
     ["/weights", "⚖️", "Weights"],
     ["/morph-library", "🧬", "Morph Library"],
