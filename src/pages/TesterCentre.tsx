@@ -26,7 +26,7 @@ const SUITES: SuiteDefinition[] = [
 ];
 
 export default function TesterCentre() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [runningSuite, setRunningSuite] = useState("");
   const [run, setRun] = useState<TesterRun | null>(null);
@@ -35,10 +35,27 @@ export default function TesterCentre() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!user) {
+      setAuthorized(false);
+      return;
+    }
+
     let active = true;
-    hasCreatorClaim(true).then((value) => { if (active) setAuthorized(value); }).catch(() => { if (active) setAuthorized(false); });
-    return () => { active = false; };
-  }, []);
+    void hasCreatorClaim(false)
+      .then((claimAuthorized) => {
+        if (!active) return;
+        const legacyCreatorAuthorized = profile?.role === "admin" || profile?.profileType === "creator";
+        setAuthorized(claimAuthorized || legacyCreatorAuthorized);
+      })
+      .catch(() => {
+        if (!active) return;
+        setAuthorized(profile?.role === "admin" || profile?.profileType === "creator");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user, profile]);
 
   useEffect(() => {
     if (!authorized) return;
