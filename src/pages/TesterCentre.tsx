@@ -44,26 +44,28 @@ export default function TesterCentre() {
     return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
   }
 
+  const creatorUid = user.uid;
+
   async function execute(suite: string, checks: TesterCheck[]) {
     setRunning(true); setCopied(false);
     try {
-      const result = await runTesterSuite(user.uid, suite, checks);
+      const result = await runTesterSuite(creatorUid, suite, checks);
       setRun(result); setReport(buildTesterReport(result));
     } finally { setRunning(false); }
   }
 
   async function buildUserChecks() {
     const claims = await hasCreatorClaim(true);
-    const core = createCoreDiagnosticChecks({ uid: user.uid, authenticated: true, creatorClaim: claims, analyticsConsent: true }).filter((check) => check.category !== "security");
-    const trackerChecks = await createTrackerRegressionChecks(user.uid);
-    const snakes = await getUserSnakes(user.uid);
-    return [...core, ...trackerChecks, createShedPhotoRegressionCheck(user.uid, snakes[0])];
+    const core = createCoreDiagnosticChecks({ uid: creatorUid, authenticated: true, creatorClaim: claims, analyticsConsent: true }).filter((check) => check.category !== "security");
+    const trackerChecks = await createTrackerRegressionChecks(creatorUid);
+    const snakes = await getUserSnakes(creatorUid);
+    return [...core, ...trackerChecks, createShedPhotoRegressionCheck(creatorUid, snakes[0])];
   }
 
   async function buildSecurityChecks() {
     const claims = await hasCreatorClaim(true);
     const blockedIds = new Set(["security-firestore-cross-user", "security-storage-cross-user", "security-role-matrix", "security-cross-user-test-identity"]);
-    const clientChecks = createSecurityBoundaryChecks(user.uid, claims).filter((check) => !blockedIds.has(check.id));
+    const clientChecks = createSecurityBoundaryChecks(creatorUid, claims).filter((check) => !blockedIds.has(check.id));
     return [...clientChecks, createServerSecurityAttackCheck()];
   }
 
@@ -108,6 +110,6 @@ export default function TesterCentre() {
       </div>
       <small>{mode === "user" ? "Tests the app as a normal user would use it." : "Attempts unauthorized operations and verifies Firebase authorization boundaries."}</small>
     </div>
-    {run && <><div className="welcome-card"><h2>{run.status === "passed" ? "🟢 Suite Passed" : "🔴 Suite Failed / Blocked"}</h2><p>{passed} passed · {failed} failed · {blocked} blocked</p><p>{categories.map((category) => categoryLabels[category] ?? category).join(" · ")}</p></div><div className="welcome-card"><h2>🔎 Detailed Results</h2><div className="creator-list">{run.results.map((result) => <div className="creator-list-item" key={result.checkId}><strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong><span>{result.details?.descriptor ? `Page/feature: ${String(result.details.descriptor)}` : categoryLabels[result.category]}</span><span>{result.message}</span>{result.details?.expected && <span>Expected: {String(result.details.expected)}</span>}{result.details?.actual && <span>Actual: {String(result.details.actual)}</span>}{result.details?.fixHint && <span>🛠️ Fix: {String(result.details.fixHint)}</span>}<small>{result.durationMs}ms · {result.severity}</small></div>)}</div></div><div className="welcome-card"><div className="creator-card-header"><div><h2>📋 Copy-Paste Developer Report</h2><p>Paste this entire report into ChatGPT. It contains test IDs, page/feature descriptors, expected vs actual behaviour and fix direction.</p></div><button className="secondary-button" type="button" onClick={copyReport}>{copied ? "✅ Copied" : "📋 Copy Report"}</button></div><textarea readOnly value={report} rows={24} aria-label="Tester Bot copy-paste report" /></div></>}
+    {run && <><div className="welcome-card"><h2>{run.status === "passed" ? "🟢 Suite Passed" : "🔴 Suite Failed / Blocked"}</h2><p>{passed} passed · {failed} failed · {blocked} blocked</p><p>{categories.map((category) => categoryLabels[category] ?? category).join(" · ")}</p></div><div className="welcome-card"><h2>🔎 Detailed Results</h2><div className="creator-list">{run.results.map((result) => <div className="creator-list-item" key={result.checkId}><strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong><span>{result.details?.descriptor ? `Page/feature: ${String(result.details.descriptor)}` : categoryLabels[result.category]}</span><span>{result.message}</span>{result.details?.expected !== undefined && <span>Expected: {String(result.details.expected)}</span>}{result.details?.actual !== undefined && <span>Actual: {String(result.details.actual)}</span>}{result.details?.fixHint !== undefined && <span>🛠️ Fix: {String(result.details.fixHint)}</span>}<small>{result.durationMs}ms · {result.severity}</small></div>)}</div></div><div className="welcome-card"><div className="creator-card-header"><div><h2>📋 Copy-Paste Developer Report</h2><p>Paste this entire report into ChatGPT. It contains test IDs, page/feature descriptors, expected vs actual behaviour and fix direction.</p></div><button className="secondary-button" type="button" onClick={copyReport}>{copied ? "✅ Copied" : "📋 Copy Report"}</button></div><textarea readOnly value={report} rows={24} aria-label="Tester Bot copy-paste report" /></div></>}
   </div>;
 }
