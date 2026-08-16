@@ -69,11 +69,11 @@ export default function CommunityHub() {
   }, [authLoading, profileLoading, user?.uid, profile?.isTester, profile?.role]);
 
   useEffect(() => {
-    if (authLoading || profileLoading || !user) return;
+    if (authLoading || profileLoading || !user || loading || loadError) return;
     void markCommunityAsRead(user.uid)
       .then(() => window.dispatchEvent(new Event("community-read-state-changed")))
       .catch(() => undefined);
-  }, [authLoading, profileLoading, user?.uid]);
+  }, [authLoading, profileLoading, user?.uid, loading, loadError]);
 
   const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
   const importantCount = posts.filter((post) => post.priority !== "normal" && post.category !== "release").length;
