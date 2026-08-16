@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getGlobalStats, type GlobalStats } from "../services/creatorService";
+import { getGlobalStats, getMorphImageSubmissions, type GlobalStats } from "../services/creatorService";
 import { getCanonicalGlobalStats } from "../services/trackerStatsService";
 import CreatorCommunityGlobe, { type CommunityUserLocation } from "../components/CreatorCommunityGlobe";
 import { db } from "../firebase/config";
@@ -17,68 +17,14 @@ function formatDate(value: unknown) { if (!value) return "—"; if (typeof value
 
 export default function CreatorAdmin() {
   const { profile, user } = useAuth();
-  const [stats, setStats] = useState<GlobalStats>(EMPTY_STATS);
-  const [users, setUsers] = useState<CreatorUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | null>(null);
-  const [selectedUser, setSelectedUser] = useState<CreatorUser | null>(null);
-  const [search, setSearch] = useState("");
+  const [stats, setStats] = useState<GlobalStats>(EMPTY_STATS); const [users, setUsers] = useState<CreatorUser[]>([]); const [morphPending, setMorphPending] = useState(0); const [loading, setLoading] = useState(true); const [usersLoading, setUsersLoading] = useState(false); const [error, setError] = useState(""); const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | null>(null); const [selectedUser, setSelectedUser] = useState<CreatorUser | null>(null); const [search, setSearch] = useState("");
 
-  async function loadDashboard() {
-    if (!user) return;
-    setLoading(true);
-    setError("");
-    try {
-      const [legacyStats, canonicalStats] = await Promise.all([getGlobalStats(), getCanonicalGlobalStats()]);
-      setStats({ ...legacyStats, ...canonicalStats });
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadUsers() {
-    if (!user) return;
-    setUsersLoading(true);
-    setError("");
-    try {
-      const snapshot = await getDocs(collection(db, "users"));
-      const nextUsers = snapshot.docs.map((item) => ({ uid: item.id, ...(item.data() as Omit<CreatorUser, "uid">) }));
-      nextUsers.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || ""));
-      setUsers(nextUsers);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "User overview could not be loaded.");
-    } finally {
-      setUsersLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (profile?.role === "admin" && user) {
-      void loadDashboard();
-      void loadUsers();
-    }
-  }, [profile?.role, user]);
-
-  useEffect(() => {
-    if (panel === "users") void loadUsers();
-  }, [panel]);
-
-  const filteredUsers = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return users;
-    return users.filter((item) => [item.displayName, item.email, item.uid, item.profileType, item.approximateLocation?.city, item.approximateLocation?.country].some((value) => String(value ?? "").toLowerCase().includes(term)));
-  }, [search, users]);
-
-  const optedInLocations: CommunityUserLocation[] = users.flatMap((item) => {
-    const location = item.approximateLocation;
-    if (!location?.visibleToCreator || !location.city || !location.country || item.dataCollectionPreferences?.approximateLocation !== true) return [];
-    return [{ city: location.city, country: location.country }];
-  });
-
+  async function loadDashboard() { if (!user) return; setLoading(true); setError(""); try { const [legacyStats, canonicalStats, submissions] = await Promise.all([getGlobalStats(), getCanonicalGlobalStats(), getMorphImageSubmissions()]); setStats({ ...legacyStats, ...canonicalStats }); setMorphPending(submissions.filter((item) => item.status === "Pending" || item.status === "NeedsInfo").length); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded."); } finally { setLoading(false); } }
+  async function loadUsers() { if (!user) return; setUsersLoading(true); setError(""); try { const snapshot = await getDocs(collection(db, "users")); const nextUsers = snapshot.docs.map((item) => ({ uid: item.id, ...(item.data() as Omit<CreatorUser, "uid">) })); nextUsers.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "")); setUsers(nextUsers); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "User overview could not be loaded."); } finally { setUsersLoading(false); } }
+  useEffect(() => { if (profile?.role === "admin" && user) { void loadDashboard(); void loadUsers(); } }, [profile?.role, user]);
+  useEffect(() => { if (panel === "users") void loadUsers(); }, [panel]);
+  const filteredUsers = useMemo(() => { const term = search.trim().toLowerCase(); if (!term) return users; return users.filter((item) => [item.displayName, item.email, item.uid, item.profileType, item.approximateLocation?.city, item.approximateLocation?.country].some((value) => String(value ?? "").toLowerCase().includes(term))); }, [search, users]);
+  const optedInLocations: CommunityUserLocation[] = users.flatMap((item) => { const location = item.approximateLocation; if (!location?.visibleToCreator || !location.city || !location.country || item.dataCollectionPreferences?.approximateLocation !== true) return []; return [{ city: location.city, country: location.country }]; });
   if (profile?.role !== "admin") return <Navigate to="/" replace />;
 
   const cards = [
@@ -91,28 +37,22 @@ export default function CreatorAdmin() {
   ];
 
   return <section className="creator-admin-page">
-    <div className="creator-admin-header">
-      <div><PageBackButton fallbackPath="/" label="Back to App" /><span className="creator-admin-kicker">PRIVATE CREATOR CENTRE</span><h1>🛠️ Tiny Titans Control Centre</h1><p>Global app activity, community intelligence and QA.</p></div>
-      <button type="button" onClick={() => { void loadDashboard(); void loadUsers(); }} disabled={loading || usersLoading}>{loading || usersLoading ? "↻ Loading…" : "↻ Refresh"}</button>
-    </div>
+    <div className="creator-admin-header"><div><PageBackButton fallbackPath="/" label="Back to App" /><span className="creator-admin-kicker">PRIVATE CREATOR CENTRE</span><h1>🛠️ Tiny Titans Creator Centre</h1><p>One organised command centre for community intelligence, moderation, QA and app operations.</p></div><button type="button" onClick={() => { void loadDashboard(); void loadUsers(); }} disabled={loading || usersLoading}>{loading || usersLoading ? "↻ Loading…" : "↻ Refresh"}</button></div>
     {error && <div className="creator-error">{error}</div>}
-    {loading ? <div className="creator-loading">Loading global Tiny Titans statistics…</div> : <>
-      <section className="creator-admin-section creator-global-section">
-        <div className="creator-section-heading"><div><span className="creator-admin-kicker">INTERACTIVE GLOBAL TRACKERS</span><h2>🌍 Tiny Titans Community</h2><p>Click a statistic to open its detailed Creator view.</p></div></div>
-        <div className="creator-global-grid">{cards.map((card) => <button key={card.key} className="creator-global-card creator-global-card-button" type="button" onClick={card.onClick}><span>{card.icon}</span><strong>{card.value}</strong><label>{card.label}</label><small>{card.detail} · View details →</small></button>)}</div>
-      </section>
+    {loading ? <div className="creator-loading">Loading global Tiny Titans intelligence…</div> : <>
+      <section className="creator-admin-section creator-global-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">LIVE CREATOR SNAPSHOT</span><h2>🌍 Tiny Titans Community</h2><p>Consent-controlled, city-level community intelligence. No exact addresses or GPS locations are exposed.</p></div></div><div className="creator-global-grid">{cards.map((card) => <button key={card.key} className="creator-global-card creator-global-card-button" type="button" onClick={card.onClick}><span>{card.icon}</span><strong>{card.value}</strong><label>{card.label}</label><small>{card.detail} · View details →</small></button>)}</div></section>
       <CreatorCommunityGlobe locations={optedInLocations} />
-      <section className="creator-admin-section">
-        <div className="creator-section-heading"><div><span className="creator-admin-kicker">AUTOMATED QUALITY ASSURANCE</span><h2>🤖 Tester Bot</h2><p>Run the Tiny Titans automated QA suites against the live Firebase data model.</p></div></div>
-        <Link className="creator-global-card creator-feature-tile" to="/creator/tester">
-          <span>🤖</span><strong>Tester Centre</strong><label>Automated QA & Diagnostics</label><small>11 targeted test suites · Core diagnostics · Feeding · Sheds · Genetics · Notifications · Feedback · Tracker regression</small><span className="creator-feature-tile-cta">Open Tester Centre →</span>
-        </Link>
-      </section>
-      <div className="creator-actions"><Link className="secondary-button" to="/creator/community">🌍 Community Manager</Link></div>
+      <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">CREATOR OPERATIONS</span><h2>🧰 Tools & queues</h2><p>Everything you need to run, review and improve Tiny Titans without hunting through tiny links.</p></div></div><div className="creator-global-grid creator-tools-grid">
+        <Link className="creator-global-card creator-feature-tile" to="/creator/submissions"><span>🧬</span><strong>{morphPending} Morph Submissions</strong><label>Submission Review</label><small>Inspect uploaded photographs, proof and genetics notes before approval.</small><span className="creator-feature-tile-cta">Open Submission Review →</span></Link>
+        <Link className="creator-global-card creator-feature-tile" to="/creator/tester"><span>🤖</span><strong>Tester Bot Centre</strong><label>Automated QA & Diagnostics</label><small>Run the targeted Tiny Titans QA suites across core, trackers, genetics, notifications and feedback.</small><span className="creator-feature-tile-cta">Open Tester Centre →</span></Link>
+        <Link className="creator-global-card creator-feature-tile" to="/creator/community"><span>📢</span><strong>Community Manager</strong><label>Announcements & Known Issues</label><small>Publish updates, tester notices, release notes and known-issue information.</small><span className="creator-feature-tile-cta">Open Community Manager →</span></Link>
+        <Link className="creator-global-card creator-feature-tile" to="/creator/community"><span>🛡️</span><strong>Moderation & Reports</strong><label>Community Operations</label><small>Keep reports, moderation workflows and creator-facing communications in one place.</small><span className="creator-feature-tile-cta">Open Operations →</span></Link>
+      </div></section>
+      <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">QUICK ACCESS</span><h2>📊 App intelligence</h2></div></div><div className="creator-actions"><button className="secondary-button" type="button" onClick={() => setPanel("users")}>👥 Browse Users</button><button className="secondary-button" type="button" onClick={() => setPanel("trackers")}>📈 Tracker Analytics</button><button className="secondary-button" type="button" onClick={() => setPanel("snakes")}>🐍 Snake Overview</button></div></section>
     </>}
-    {panel === "users" && <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">GLOBAL USER OVERVIEW</span><h2>👥 Users</h2><p>Click a user for their full Creator-safe profile overview.</p></div><button type="button" onClick={() => void loadUsers()} disabled={usersLoading}>{usersLoading ? "Loading…" : "↻ Refresh users"}</button></div><div className="creator-user-toolbar"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, UID, city or profile…" aria-label="Search users" /><strong>{filteredUsers.length} shown</strong></div>{usersLoading ? <div className="creator-loading">Loading registered users…</div> : <div className="creator-list">{filteredUsers.map((item) => <button className="creator-user-row" type="button" key={item.uid} onClick={() => setSelectedUser(item)}><span className="creator-user-avatar">{item.displayName?.trim().charAt(0).toUpperCase() || "🐍"}</span><span className="creator-user-main"><strong>{item.displayName || "Unnamed user"}</strong><small>{item.email || "No email"}</small></span><span className="creator-user-meta"><strong>{item.profileType || "user"}</strong><small>{item.approximateLocation?.city ? `${item.approximateLocation.city}, ${item.approximateLocation.country}` : "Location not shared"}</small></span><span>→</span></button>)}{filteredUsers.length === 0 && <div className="creator-list-item"><strong>No users found</strong><span>Try another search.</span></div>}</div>}<button type="button" onClick={() => setPanel(null)}>← Back to Control Centre</button></section>}
-    {panel === "snakes" && <section className="creator-admin-section"><h2>🐍 Snake Overview</h2><div className="creator-global-grid"><div className="creator-global-card"><span>🐍</span><strong>{fmt(stats.snakeProfiles)}</strong><label>Total Snake Profiles</label></div><div className="creator-global-card"><span>⚖️</span><strong>{fmt(stats.weightLogs)}</strong><label>Weight Records</label></div><div className="creator-global-card"><span>🍽️</span><strong>{fmt(stats.mealsFed)}</strong><label>Feeding Records</label></div><div className="creator-global-card"><span>🐍</span><strong>{fmt(stats.shedsLogged)}</strong><label>Shed Records</label></div></div><p className="creator-muted">Global totals are derived from the current Firebase data model.</p><button type="button" onClick={() => setPanel(null)}>← Back</button></section>}
-    {panel === "trackers" && <section className="creator-admin-section"><h2>📊 Tracker Analytics</h2><div className="creator-list"><div className="creator-list-card"><strong>🍽️ Feeding</strong><span>{fmt(stats.mealsFed)} meals recorded globally.</span></div><div className="creator-list-card"><strong>🐍 Sheds</strong><span>{fmt(stats.shedsLogged)} sheds recorded globally.</span></div><div className="creator-list-card"><strong>📏 Shed Length</strong><span>{(stats.totalShedLengthCm / 100).toFixed(2)} m total recorded.</span></div><div className="creator-list-card"><strong>🧬 Genetics</strong><span>{fmt(stats.geneticsCalculations)} persisted calculations.</span></div></div><button type="button" onClick={() => setPanel(null)}>← Back</button></section>}
-    {selectedUser && <div className="creator-user-modal-backdrop" role="presentation" onClick={() => setSelectedUser(null)}><section className="creator-user-modal" role="dialog" aria-modal="true" aria-labelledby="creator-user-title" onClick={(event) => event.stopPropagation()}><div className="creator-section-heading"><div><span className="creator-admin-kicker">USER PROFILE OVERVIEW</span><h2 id="creator-user-title">👤 {selectedUser.displayName || "Unnamed user"}</h2><p>{selectedUser.email || "No email available"}</p></div><button type="button" onClick={() => setSelectedUser(null)}>✕</button></div><div className="creator-user-detail-grid"><div><strong>UID</strong><span>{selectedUser.uid}</span></div><div><strong>Role</strong><span>{selectedUser.role || "user"}</span></div><div><strong>Profile</strong><span>{selectedUser.profileType || "—"}</span></div><div><strong>Category</strong><span>{selectedUser.category || "—"}</span></div><div><strong>Age band</strong><span>{selectedUser.ageBand || "—"}</span></div><div><strong>Experience</strong><span>{selectedUser.experienceLevel || "—"}</span></div><div><strong>Learning level</strong><span>{selectedUser.learningLevel || "—"}</span></div><div><strong>Setup complete</strong><span>{selectedUser.setupComplete ? "Yes" : "No"}</span></div><div><strong>Last active</strong><span>{formatDate(selectedUser.lastActiveAt)}</span></div><div><strong>Joined</strong><span>{formatDate(selectedUser.createdAt)}</span></div><div><strong>Platform</strong><span>{selectedUser.platform || "Not recorded"}</span></div><div><strong>App version</strong><span>{selectedUser.appVersion || "Not recorded"}</span></div></div><div className="creator-user-detail-section"><h3>🌍 Community location</h3><p>{selectedUser.dataCollectionPreferences?.approximateLocation && selectedUser.approximateLocation?.visibleToCreator && selectedUser.approximateLocation.city && selectedUser.approximateLocation.country ? `${selectedUser.approximateLocation.city}, ${selectedUser.approximateLocation.country}` : "Not shared / consent not enabled"}</p><small>Only the city and country supplied by the user are shown here. No exact address or GPS position is collected for this feature.</small></div><div className="creator-user-detail-section"><h3>🔐 Data collection permissions</h3><div className="creator-user-permissions"><span>Community location: {selectedUser.dataCollectionPreferences?.approximateLocation ? "ON" : "OFF"}</span><span>Analytics: {selectedUser.dataCollectionPreferences?.analytics ? "ON" : "OFF"}</span><span>Product updates: {selectedUser.dataCollectionPreferences?.productUpdates ? "ON" : "OFF"}</span></div><small>Consent version: {selectedUser.dataCollectionPreferences?.consentVersion || "Not recorded"}</small></div></section></div>}
+    {panel === "users" && <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">GLOBAL USER OVERVIEW</span><h2>👥 Users</h2><p>Creator-safe profile overview.</p></div><button type="button" onClick={() => void loadUsers()} disabled={usersLoading}>{usersLoading ? "Loading…" : "↻ Refresh users"}</button></div><div className="creator-user-toolbar"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, UID, city or profile…" aria-label="Search users" /><strong>{filteredUsers.length} shown</strong></div>{usersLoading ? <div className="creator-loading">Loading registered users…</div> : <div className="creator-list">{filteredUsers.map((item) => <button className="creator-user-row" type="button" key={item.uid} onClick={() => setSelectedUser(item)}><span className="creator-user-avatar">{item.displayName?.trim().charAt(0).toUpperCase() || "🐍"}</span><span className="creator-user-main"><strong>{item.displayName || "Unnamed user"}</strong><small>{item.email || "No email"}</small></span><span className="creator-user-meta"><strong>{item.profileType || "user"}</strong><small>{item.approximateLocation?.city ? `${item.approximateLocation.city}, ${item.approximateLocation.country}` : "Location not shared"}</small></span><span>→</span></button>)}{filteredUsers.length === 0 && <div className="creator-list-item"><strong>No users found</strong><span>Try another search.</span></div>}</div>}<button type="button" onClick={() => setPanel(null)}>← Back to Creator Centre</button></section>}
+    {panel === "snakes" && <section className="creator-admin-section"><h2>🐍 Snake Overview</h2><div className="creator-global-grid"><div className="creator-global-card"><span>🐍</span><strong>{fmt(stats.snakeProfiles)}</strong><label>Total Snake Profiles</label></div><div className="creator-global-card"><span>⚖️</span><strong>{fmt(stats.weightLogs)}</strong><label>Weight Records</label></div><div className="creator-global-card"><span>🍽️</span><strong>{fmt(stats.mealsFed)}</strong><label>Feeding Records</label></div><div className="creator-global-card"><span>🐍</span><strong>{fmt(stats.shedsLogged)}</strong><label>Shed Records</label></div></div><button type="button" onClick={() => setPanel(null)}>← Back</button></section>}
+    {panel === "trackers" && <section className="creator-admin-section"><h2>📊 Tracker Analytics</h2><div className="creator-list"><div className="creator-list-card"><strong>🍽️ Feeding</strong><span>{fmt(stats.mealsFed)} meals recorded globally.</span></div><div className="creator-list-card"><strong>⚖️ Weight</strong><span>{fmt(stats.weightLogs)} weight records.</span></div><div className="creator-list-card"><strong>🐍 Sheds</strong><span>{fmt(stats.shedsLogged)} sheds recorded globally.</span></div><div className="creator-list-card"><strong>🧬 Genetics</strong><span>{fmt(stats.geneticsCalculations)} persisted calculations.</span></div></div><button type="button" onClick={() => setPanel(null)}>← Back</button></section>}
+    {selectedUser && <div className="creator-user-modal-backdrop" role="presentation" onClick={() => setSelectedUser(null)}><section className="creator-user-modal" role="dialog" aria-modal="true" aria-labelledby="creator-user-title" onClick={(event) => event.stopPropagation()}><div className="creator-section-heading"><div><span className="creator-admin-kicker">USER PROFILE OVERVIEW</span><h2 id="creator-user-title">👤 {selectedUser.displayName || "Unnamed user"}</h2><p>{selectedUser.email || "No email available"}</p></div><button type="button" onClick={() => setSelectedUser(null)}>✕</button></div><div className="creator-user-detail-grid"><div><strong>UID</strong><span>{selectedUser.uid}</span></div><div><strong>Role</strong><span>{selectedUser.role || "user"}</span></div><div><strong>Profile</strong><span>{selectedUser.profileType || "—"}</span></div><div><strong>Category</strong><span>{selectedUser.category || "—"}</span></div><div><strong>Age band</strong><span>{selectedUser.ageBand || "—"}</span></div><div><strong>Experience</strong><span>{selectedUser.experienceLevel || "—"}</span></div><div><strong>Learning level</strong><span>{selectedUser.learningLevel || "—"}</span></div><div><strong>Setup complete</strong><span>{selectedUser.setupComplete ? "Yes" : "No"}</span></div><div><strong>Last active</strong><span>{formatDate(selectedUser.lastActiveAt)}</span></div><div><strong>Joined</strong><span>{formatDate(selectedUser.createdAt)}</span></div><div><strong>Platform</strong><span>{selectedUser.platform || "Not recorded"}</span></div><div><strong>App version</strong><span>{selectedUser.appVersion || "Not recorded"}</span></div></div><div className="creator-user-detail-section"><h3>🌍 Community location</h3><p>{selectedUser.dataCollectionPreferences?.approximateLocation && selectedUser.approximateLocation?.visibleToCreator && selectedUser.approximateLocation.city && selectedUser.approximateLocation.country ? `${selectedUser.approximateLocation.city}, ${selectedUser.approximateLocation.country}` : "Not shared / consent not enabled"}</p><small>Only city and country are shown for this feature.</small></div><div className="creator-user-detail-section"><h3>🔐 Data collection permissions</h3><div className="creator-user-permissions"><span>Community location: {selectedUser.dataCollectionPreferences?.approximateLocation ? "ON" : "OFF"}</span><span>Analytics: {selectedUser.dataCollectionPreferences?.analytics ? "ON" : "OFF"}</span><span>Product updates: {selectedUser.dataCollectionPreferences?.productUpdates ? "ON" : "OFF"}</span></div></div></section></div>}
   </section>;
 }
