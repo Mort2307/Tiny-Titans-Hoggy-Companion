@@ -5,6 +5,7 @@ import { getGlobalStats, type GlobalStats } from "../services/creatorService";
 import { createCoreDiagnosticChecks, runTesterSuite, type TesterCheck, type TesterRun } from "../services/testerBotService";
 import { createTrackerRegressionChecks } from "../services/testerSuitesService";
 import { createAccountJourneyChecks, createFeedingChecks, createShedJourneyChecks, createSnakeProfileChecks, createWeightChecks } from "../services/testerJourneySuitesService";
+import { createGeneticsJourneyChecks, createMorphLibraryChecks } from "../services/testerGeneticsSuitesService";
 import { useAuth } from "../context/AuthContext";
 
 const EMPTY_STATS: GlobalStats = { registeredUsers: 0, activeUsers: 0, snakeProfiles: 0, mealsFed: 0, weightLogs: 0, totalWeightKg: 0, totalWeightLb: 0, shedsLogged: 0, totalShedLengthCm: 0, totalShedLengthIn: 0, geneticsCalculations: 0 };
@@ -19,6 +20,8 @@ const SUITES: SuiteDefinition[] = [
   { id: "weights", label: "Weights", description: "Weight history values, dates, units and chronology", category: "Weights", build: createWeightChecks },
   { id: "feeding", label: "Feeding", description: "Feeding records, dates, responses and snake links", category: "Feeding", build: createFeedingChecks },
   { id: "sheds", label: "Sheds", description: "Shed date/status/retained-area regression checks", category: "Sheds", build: createShedJourneyChecks },
+  { id: "genetics", label: "Genetics", description: "Genetics event tracking and database integrity", category: "Genetics", build: createGeneticsJourneyChecks },
+  { id: "morph-library", label: "Morph Library", description: "Stable IDs, classifications and verification guards", category: "Morphs", build: async () => createMorphLibraryChecks() },
   { id: "tracker-regression", label: "Tracker Regression", description: "Global tracker totals and shared Firebase data model", category: "Trackers", build: createTrackerRegressionChecks },
 ];
 
@@ -73,8 +76,7 @@ export default function TesterCentre() {
   return (
     <div className="page-container">
       <div className="welcome-card">
-        <p className="eyebrow">🐍 TINY TITANS · PRIVATE QA</p>
-        <h1>🤖 Tester Centre</h1>
+        <p className="eyebrow">🐍 TINY TITANS · PRIVATE QA</p><h1>🤖 Tester Centre</h1>
         <p>Creator-only automated diagnostics and read-only regression testing against the live Firebase data model.</p>
         <div className="creator-global-grid">
           <div className="creator-global-card"><span>🩺</span><strong>{health}</strong><label>System Health</label></div>
@@ -89,28 +91,12 @@ export default function TesterCentre() {
       <div className="welcome-card">
         <div className="creator-list-top"><div><p className="eyebrow">TEST SUITES</p><h2>Run targeted QA</h2></div><span className="creator-badge">{SUITES.length} suites</span></div>
         <div className="creator-global-grid">
-          {SUITES.map((suite) => (
-            <div className="creator-global-card" key={suite.id}>
-              <span>{suite.id === "core-diagnostics" ? "🩺" : suite.id === "tracker-regression" ? "🧪" : suite.id === "sheds" ? "🐍" : suite.id === "feeding" ? "🍽️" : suite.id === "weights" ? "⚖️" : suite.id === "snake-profiles" ? "📋" : "🔐"}</span>
-              <strong>{suite.label}</strong><label>{suite.category}</label><small>{suite.description}</small>
-              <button className="primary-button" type="button" disabled={Boolean(runningSuite)} onClick={() => void runSuite(suite.id)}>{runningSuite === suite.id ? "🤖 Running…" : "▶ Run suite"}</button>
-            </div>
-          ))}
+          {SUITES.map((suite) => <div className="creator-global-card" key={suite.id}><span>{suite.id === "core-diagnostics" ? "🩺" : suite.id === "tracker-regression" ? "🧪" : suite.id === "sheds" ? "🐍" : suite.id === "feeding" ? "🍽️" : suite.id === "weights" ? "⚖️" : suite.id === "snake-profiles" ? "📋" : suite.id === "genetics" ? "🧬" : suite.id === "morph-library" ? "🔎" : "🔐"}</span><strong>{suite.label}</strong><label>{suite.category}</label><small>{suite.description}</small><button className="primary-button" type="button" disabled={Boolean(runningSuite)} onClick={() => void runSuite(suite.id)}>{runningSuite === suite.id ? "🤖 Running…" : "▶ Run suite"}</button></div>)}
         </div>
         {error && <div className="creator-error">{error}</div>}
       </div>
 
-      {run && (
-        <div className="welcome-card">
-          <p className="eyebrow">LATEST TEST RUN</p>
-          <h2>{run.status === "passed" ? "🟢 Suite Passed" : run.status === "blocked" ? "🟠 Suite Blocked" : "🔴 Suite Failed"}</h2>
-          <p>{passed} passed · {failed} failed · {blocked} blocked · {criticalFailures} critical failures</p>
-          <p className="creator-muted">{lastSuite?.label ?? run.suite} · {run.ownerUid} · {run.durationMs}ms · {run.completedAt}</p>
-          <div className="creator-list">
-            {run.results.map((result) => <div className="creator-list-item" key={result.checkId}><strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong><span>{result.message}</span><small>{result.durationMs}ms · {result.severity} · {result.category} · {result.checkId}</small></div>)}
-          </div>
-        </div>
-      )}
+      {run && <div className="welcome-card"><p className="eyebrow">LATEST TEST RUN</p><h2>{run.status === "passed" ? "🟢 Suite Passed" : run.status === "blocked" ? "🟠 Suite Blocked" : "🔴 Suite Failed"}</h2><p>{passed} passed · {failed} failed · {blocked} blocked · {criticalFailures} critical failures</p><p className="creator-muted">{lastSuite?.label ?? run.suite} · {run.ownerUid} · {run.durationMs}ms · {run.completedAt}</p><div className="creator-list">{run.results.map((result) => <div className="creator-list-item" key={result.checkId}><strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong><span>{result.message}</span><small>{result.durationMs}ms · {result.severity} · {result.category} · {result.checkId}</small></div>)}</div></div>}
     </div>
   );
 }
