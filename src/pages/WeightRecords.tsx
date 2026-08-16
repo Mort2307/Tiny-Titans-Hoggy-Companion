@@ -10,116 +10,38 @@ import { getUserSnake, saveUserSnake } from "../services/snakeService";
 import { useAuth } from "../context/AuthContext";
 import { useUnits } from "../context/UnitContext";
 
-function sortHistory(history: WeightRecord[]) {
-  return [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-}
-function displayDate(iso: string) {
-  if (!iso) return "";
-  const [year, month, day] = iso.split("-");
-  return year && month && day ? `${day}/${month}/${year}` : "";
-}
-function maskDate(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-}
-function parseDate(value: string): string | null {
-  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!match) return null;
-  const day = Number(match[1]); const month = Number(match[2]); const year = Number(match[3]);
-  const date = new Date(year, month - 1, day);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-function id() {
-  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `weight-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
+function sortHistory(history: WeightRecord[]) { return [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); }
+function displayDate(iso: string) { if (!iso) return ""; const [year, month, day] = iso.split("-"); return year && month && day ? `${day}/${month}/${year}` : ""; }
+function maskDate(value: string) { const digits = value.replace(/\D/g, "").slice(0, 8); if (digits.length <= 2) return digits; if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`; return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`; }
+function parseDate(value: string): string | null { const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if (!match) return null; const day = Number(match[1]); const month = Number(match[2]); const year = Number(match[3]); const date = new Date(year, month - 1, day); if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null; return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`; }
+function id() { return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `weight-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
 export default function WeightRecords() {
-  const { id: snakeId } = useParams();
-  const navigate = useNavigate();
-  const { user, loading, profileLoading } = useAuth();
-  const { isImperial, formatWeight, weightUnit } = useUnits();
-  const [snake, setSnake] = useState<Snake | null>(null);
-  const [loadingSnake, setLoadingSnake] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [weightInput, setWeightInput] = useState("");
-  const today = new Date().toISOString().split("T")[0];
-  const [date, setDate] = useState(today);
-  const [typedDate, setTypedDate] = useState(displayDate(today));
-  const [dateError, setDateError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const { id: snakeId } = useParams(); const navigate = useNavigate(); const { user, loading, profileLoading } = useAuth(); const { isImperial, formatWeight, weightUnit } = useUnits();
+  const [snake, setSnake] = useState<Snake | null>(null); const [loadingSnake, setLoadingSnake] = useState(true); const [error, setError] = useState<string | null>(null); const [weightInput, setWeightInput] = useState(""); const today = new Date().toISOString().split("T")[0]; const [date, setDate] = useState(today); const [typedDate, setTypedDate] = useState(displayDate(today)); const [dateError, setDateError] = useState(""); const [saving, setSaving] = useState(false); const [saveMessage, setSaveMessage] = useState("");
 
-  useEffect(() => {
-    async function load() {
-      if (loading || profileLoading) return;
-      if (!user || !snakeId) { setError(!user ? "You must be logged in to view this snake." : "No snake ID was supplied."); setLoadingSnake(false); return; }
-      try {
-        const loaded = await getUserSnake(user.uid, snakeId);
-        if (!loaded) { setError("This snake could not be found."); setLoadingSnake(false); return; }
-        const migrated = migrateSnake(loaded);
-        migrated.weightHistory = sortHistory(migrated.weightHistory ?? []);
-        setSnake(migrated); setError(null);
-      } catch (err) {
-        console.error("Tiny Titans: unable to load weight records", err);
-        setError("Unable to load this snake. Please try again.");
-      } finally { setLoadingSnake(false); }
-    }
-    void load();
-  }, [user, snakeId, loading, profileLoading]);
+  async function loadSnake(showSpinner = true) {
+    if (showSpinner) setLoadingSnake(true); setError(null);
+    if (loading || profileLoading || !user || !snakeId) { if (!loading && !profileLoading) { setError(!user ? "You must be logged in to view this snake." : "No snake ID was supplied."); setLoadingSnake(false); } return; }
+    try { const loaded = await getUserSnake(user.uid, snakeId); if (!loaded) { setError("This snake could not be found."); return; } const migrated = migrateSnake(loaded); migrated.weightHistory = sortHistory(migrated.weightHistory ?? []); setSnake(migrated); }
+    catch (err) { console.error("Tiny Titans: unable to load weight records", err); setError(err instanceof Error ? err.message : "Unable to load this snake. Please try again."); }
+    finally { setLoadingSnake(false); }
+  }
 
-  const history = useMemo(() => sortHistory(snake?.weightHistory ?? []), [snake?.weightHistory]);
-  const firstWeight = snake?.startingWeight ?? history[0]?.weight ?? 0;
-  const currentWeight = snake?.weight ?? 0;
-  const totalGain = currentWeight - firstWeight;
-  const percentageGain = firstWeight > 0 ? Math.round((totalGain / firstWeight) * 100) : 0;
-  const reminder = snake ? getWeightReminder(snake) : null;
-  const daysSinceWeigh = snake?.lastWeighedDate ? Math.floor((Date.now() - new Date(snake.lastWeighedDate).getTime()) / 86400000) : null;
-  const chartHistory = useMemo(() => {
-    if (!snake) return [] as WeightRecord[];
-    const records: WeightRecord[] = [];
-    if (snake.startingWeight != null && snake.startingWeight > 0) records.push({ id: `starting-${snake.id}`, snakeId: snake.id, weight: snake.startingWeight, date: snake.startingWeightDate || snake.hatchDate || snake.arrivalDate || today, unit: "g" });
-    records.push(...history);
-    if (snake.weight != null && snake.weight > 0) {
-      const latest = records[records.length - 1];
-      const currentDate = snake.lastWeighedDate || today;
-      if (!latest || latest.weight !== snake.weight || latest.date !== currentDate) records.push({ id: `current-${snake.id}`, snakeId: snake.id, weight: snake.weight, date: currentDate, unit: "g" });
-    }
-    return sortHistory(records);
-  }, [snake, history, today]);
+  useEffect(() => { void loadSnake(); }, [user, snakeId, loading, profileLoading]);
+  const history = useMemo(() => sortHistory(snake?.weightHistory ?? []), [snake?.weightHistory]); const firstWeight = snake?.startingWeight ?? history[0]?.weight ?? 0; const currentWeight = snake?.weight ?? 0; const totalGain = currentWeight - firstWeight; const percentageGain = firstWeight > 0 ? Math.round((totalGain / firstWeight) * 100) : 0; const reminder = snake ? getWeightReminder(snake) : null; const daysSinceWeigh = snake?.lastWeighedDate ? Math.floor((Date.now() - new Date(snake.lastWeighedDate).getTime()) / 86400000) : null;
+  const chartHistory = useMemo(() => { if (!snake) return [] as WeightRecord[]; const records: WeightRecord[] = []; if (snake.startingWeight != null && snake.startingWeight > 0) records.push({ id: `starting-${snake.id}`, snakeId: snake.id, weight: snake.startingWeight, date: snake.startingWeightDate || snake.hatchDate || snake.arrivalDate || today, unit: "g" }); records.push(...history); if (snake.weight != null && snake.weight > 0) { const latest = records[records.length - 1]; const currentDate = snake.lastWeighedDate || today; if (!latest || latest.weight !== snake.weight || latest.date !== currentDate) records.push({ id: `current-${snake.id}`, snakeId: snake.id, weight: snake.weight, date: currentDate, unit: "g" }); } return sortHistory(records); }, [snake, history, today]);
 
   async function addWeight() {
-    if (!snake || !user) return;
-    const entered = Number(weightInput);
-    if (!Number.isFinite(entered) || entered <= 0) { alert(`Please enter a valid weight in ${weightUnit}.`); return; }
-    const finalDate = parseDate(typedDate);
-    if (!finalDate) { setDateError("Please enter a valid date, e.g. 10/08/2026."); return; }
-    const grams = isImperial ? entered * 28.349523125 : entered;
+    if (!snake || !user) return; setSaveMessage(""); const entered = Number(weightInput); if (!Number.isFinite(entered) || entered <= 0) { setSaveMessage(`Please enter a valid weight in ${weightUnit}.`); return; } const finalDate = parseDate(typedDate); if (!finalDate) { setDateError("Please enter a valid date, e.g. 10/08/2026."); return; }
+    const grams = isImperial ? entered * 28.349523125 : entered; const existingForDate = (snake.weightHistory ?? []).find((record) => record.date === finalDate); if (existingForDate) { setSaveMessage("A weight record already exists for this date. Edit that record rather than creating a duplicate."); return; }
     setSaving(true);
-    try {
-      const record: WeightRecord = { id: id(), snakeId: snake.id, weight: grams, date: finalDate, unit: "g" };
-      const updatedHistory = sortHistory([...(snake.weightHistory ?? []), record]);
-      const newest = updatedHistory[updatedHistory.length - 1];
-      const updatedSnake = migrateSnake({ ...snake, weight: newest.weight, lastWeighedDate: newest.date, weightHistory: updatedHistory });
-      await saveUserSnake(user.uid, updatedSnake);
-      setSnake(updatedSnake); setWeightInput(""); setDate(today); setTypedDate(displayDate(today)); setDateError("");
-    } catch (err) {
-      console.error("Tiny Titans: unable to save weight record", err);
-      alert(`Unable to save this weight record.\n\n${err instanceof Error ? err.message : "Unknown error"}`);
-    } finally { setSaving(false); }
+    try { const record: WeightRecord = { id: id(), snakeId: snake.id, weight: grams, date: finalDate, unit: "g" }; const updatedHistory = sortHistory([...(snake.weightHistory ?? []), record]); const newest = updatedHistory[updatedHistory.length - 1]; const updatedSnake = migrateSnake({ ...snake, weight: newest.weight, lastWeighedDate: newest.date, weightHistory: updatedHistory }); await saveUserSnake(user.uid, updatedSnake); const canonical = await getUserSnake(user.uid, snake.id); if (!canonical) throw new Error("The weight was saved, but Tiny Titans could not re-read the snake from Firebase. Please refresh before adding another record."); setSnake(migrateSnake(canonical)); setWeightInput(""); setDate(today); setTypedDate(displayDate(today)); setDateError(""); setSaveMessage("✅ Weight saved and confirmed in Firebase."); }
+    catch (err) { console.error("Tiny Titans: unable to save weight record", err); setSaveMessage(`Unable to save this weight record. ${err instanceof Error ? err.message : "Unknown error"}`); }
+    finally { setSaving(false); }
   }
 
   if (loading || profileLoading || loadingSnake) return <div><BackHomeButton /><h1>⚖️ Loading Weight Records...</h1><div className="tracker-card"><p>Fetching weight records from Firebase.</p></div></div>;
   if (error || !snake) return <div><BackHomeButton /><h1>🐍 Snake Not Found</h1><div className="tracker-card"><h3>{error ?? "This snake could not be found."}</h3><button type="button" onClick={() => navigate("/snakes")}>← Back to My Hoggies</button></div></div>;
-
-  return <div>
-    <BackHomeButton />
-    <h1>⚖️ {snake.name} Weight Records</h1>
-    <div className="tracker-card"><h2>🐍 {snake.name}</h2><p>Species:<br /><strong>{snake.species}</strong></p><p>Morphs:<br /><strong>{snake.morphs?.join(", ") || "-"}</strong></p><p>Sex:<br /><strong>{snake.sex}</strong></p></div>
-    <div className="tracker-card"><h2>📊 Growth Summary</h2><p>Current Weight:<br /><strong>{formatWeight(currentWeight)}</strong></p><p>Starting Weight:<br /><strong>{formatWeight(firstWeight)}</strong></p><p>Total Growth:<br /><strong>{totalGain >= 0 ? "+" : ""}{formatWeight(totalGain)}</strong></p><p>Growth:<br /><strong>{percentageGain >= 0 ? "+" : ""}{percentageGain}%</strong></p><p>Last Weighed:<br /><strong>{snake.lastWeighedDate || "-"}</strong></p><p>Days Since Weigh:<br /><strong>{daysSinceWeigh ?? "-"}</strong></p><p>Reminder:<br /><strong>{reminder?.status ?? "-"}</strong></p></div>
-    <div className="tracker-card"><h2>➕ Add Weight Record</h2><label htmlFor="weight-record">Weight ({weightUnit})</label><input id="weight-record" type="number" inputMode="decimal" min="0" step="any" placeholder={isImperial ? "e.g. 3.5" : "e.g. 50.7"} value={weightInput} onChange={(event) => setWeightInput(event.target.value)} /><label htmlFor="weight-date-text">📅 Date</label><div style={{ display: "flex", gap: "8px", alignItems: "center", width: "100%" }}><input id="weight-date-text" type="text" inputMode="text" autoComplete="off" placeholder="DD/MM/YYYY" value={typedDate} onChange={(event) => { const formatted = maskDate(event.target.value); setTypedDate(formatted); setDateError(""); const parsed = parseDate(formatted); if (parsed) setDate(parsed); }} onBlur={() => { const parsed = parseDate(typedDate); if (!parsed) setDateError("Please enter a valid date, e.g. 10/08/2026."); else { setDate(parsed); setTypedDate(displayDate(parsed)); setDateError(""); } }} style={{ flex: 1 }} /><input type="date" value={date} onChange={(event) => { setDate(event.target.value); setTypedDate(displayDate(event.target.value)); setDateError(""); }} aria-label="Choose weight record date" style={{ width: "52px", minWidth: "52px", padding: "8px" }} /></div><small>Type DD/MM/YYYY or use the calendar.</small>{dateError && <p>⚠️ {dateError}</p>}<button type="button" onClick={() => void addWeight()} disabled={saving}>{saving ? "💾 Saving..." : "💾 Save Weight"}</button></div>
-    <div className="tracker-card"><h2>📈 Growth Chart</h2>{chartHistory.length >= 2 ? <WeightChart history={chartHistory} /> : <p>Add more weight records to see your growth chart.</p>}</div>
-    <div className="tracker-card"><h2>📜 Weight History</h2>{history.length ? [...history].reverse().map((record, index, array) => { const previous = array[index + 1]; const change = previous ? record.weight - previous.weight : null; return <div key={record.id} className="weight-history-card"><h3>📅 {record.date}</h3><p>⚖️ {formatWeight(record.weight)}</p>{change !== null && <p>{change >= 0 ? "⬆️ " : "⬇️ "}{change >= 0 ? "+" : ""}{formatWeight(change)}</p>}</div>; }) : <p>No recorded weigh-ins yet.</p>}</div>
-  </div>;
+  return <div><BackHomeButton /><h1>⚖️ {snake.name} Weight Records</h1><div className="tracker-card"><h2>🐍 {snake.name}</h2><p>Species:<br /><strong>{snake.species}</strong></p><p>Morphs:<br /><strong>{snake.morphs?.join(", ") || "-"}</strong></p><p>Sex:<br /><strong>{snake.sex}</strong></p></div><div className="tracker-card"><h2>📊 Growth Summary</h2><p>Current Weight:<br /><strong>{formatWeight(currentWeight)}</strong></p><p>Starting Weight:<br /><strong>{formatWeight(firstWeight)}</strong></p><p>Total Growth:<br /><strong>{totalGain >= 0 ? "+" : ""}{formatWeight(totalGain)}</strong></p><p>Growth:<br /><strong>{percentageGain >= 0 ? "+" : ""}{percentageGain}%</strong></p><p>Last Weighed:<br /><strong>{snake.lastWeighedDate || "-"}</strong></p><p>Days Since Weigh:<br /><strong>{daysSinceWeigh ?? "-"}</strong></p><p>Reminder:<br /><strong>{reminder?.status ?? "-"}</strong></p></div><div className="tracker-card"><h2>➕ Add Weight Record</h2><label htmlFor="weight-record">Weight ({weightUnit})</label><input id="weight-record" type="number" inputMode="decimal" min="0" step="any" placeholder={isImperial ? "e.g. 3.5" : "e.g. 50.7"} value={weightInput} onChange={(event) => { setWeightInput(event.target.value); setSaveMessage(""); }} /><label htmlFor="weight-date-text">📅 Date</label><div style={{ display: "flex", gap: "8px", alignItems: "center", width: "100%" }}><input id="weight-date-text" type="text" inputMode="text" autoComplete="off" placeholder="DD/MM/YYYY" value={typedDate} onChange={(event) => { const formatted = maskDate(event.target.value); setTypedDate(formatted); setDateError(""); const parsed = parseDate(formatted); if (parsed) setDate(parsed); }} onBlur={() => { const parsed = parseDate(typedDate); if (!parsed) setDateError("Please enter a valid date, e.g. 10/08/2026."); else { setDate(parsed); setTypedDate(displayDate(parsed)); setDateError(""); } }} style={{ flex: 1 }} /><input type="date" value={date} onChange={(event) => { setDate(event.target.value); setTypedDate(displayDate(event.target.value)); setDateError(""); }} aria-label="Choose weight record date" style={{ width: "52px", minWidth: "52px", padding: "8px" }} /></div><small>Type DD/MM/YYYY or use the calendar.</small>{dateError && <p role="alert">⚠️ {dateError}</p>}{saveMessage && <p role={saveMessage.startsWith("✅") ? "status" : "alert"}>{saveMessage}</p>}<button type="button" onClick={() => void addWeight()} disabled={saving}>{saving ? "💾 Saving..." : "💾 Save Weight"}</button></div><div className="tracker-card"><h2>📈 Growth Chart</h2>{chartHistory.length >= 2 ? <WeightChart history={chartHistory} /> : <p>Add more weight records to see your growth chart.</p>}</div><div className="tracker-card"><h2>📜 Weight History</h2>{history.length ? [...history].reverse().map((record, index, array) => { const previous = array[index + 1]; const change = previous ? record.weight - previous.weight : null; return <div key={record.id} className="weight-history-card"><h3>📅 {record.date}</h3><p>⚖️ {formatWeight(record.weight)}</p>{change !== null && <p>{change >= 0 ? "⬆️ " : "⬇️ "}{change >= 0 ? "+" : ""}{formatWeight(change)}</p>}</div>; }) : <p>No recorded weigh-ins yet.</p>}</div></div>;
 }
