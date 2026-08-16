@@ -17,7 +17,7 @@ export default function AdminRouteGuard() {
       return () => { active = false; };
     }
     setChecking(true);
-    void getCreatorClaims().then((claims) => {
+    void getCreatorClaims(true).then((claims) => {
       if (active) setAllowed(claims.admin === true || claims.creator === true);
     }).catch(() => {
       if (active) setAllowed(false);
@@ -27,9 +27,7 @@ export default function AdminRouteGuard() {
     return () => { active = false; };
   }, [user]);
 
-  if (loading || profileLoading || checking) {
-    return <div className="page-container"><div className="welcome-card"><h1>🔐 Checking admin access…</h1><p>Securing the Tiny Titans admin area.</p></div></div>;
-  }
+  if (loading || profileLoading || checking) return <div className="page-container"><div className="welcome-card"><h1>🔐 Checking admin access…</h1><p>Securing the Tiny Titans admin area.</p></div></div>;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (!allowed) return <Navigate to="/" replace />;
   return <Outlet />;
