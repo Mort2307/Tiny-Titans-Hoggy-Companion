@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { hasCreatorClaim } from "../services/creatorAuthService";
-import { createCoreDiagnosticChecks, runTesterSuite, type TesterRun, type TesterCheck } from "../services/testerBotService";
+import { createCoreDiagnosticChecks, getTesterRunHistory, runTesterSuite, type TesterRun, type TesterCheck } from "../services/testerBotService";
 import { createTrackerRegressionChecks } from "../services/testerSuitesService";
 import { createShedPhotoRegressionCheck } from "../services/testerPhotoService";
 import { getUserSnakes } from "../services/snakeService";
@@ -10,106 +10,30 @@ import { createSecurityBoundaryChecks } from "../services/testerSecurityService"
 import { createServerSecurityAttackCheck } from "../services/testerSecurityRunnerService";
 import { buildTesterReport } from "../services/testerReportService";
 
-const categoryLabels: Record<string, string> = {
-  auth: "Authentication", security: "Security & Authorization", data: "Snake Profiles & Data",
-  feeding: "Feeding Tracker", weight: "Weight Tracker", shed: "Shed Tracker & Photos",
-  genetics: "Genetics Calculator", privacy: "Privacy & Permissions", analytics: "Creator Analytics", mobile: "Mobile / UI",
-};
+const categoryLabels: Record<string, string> = { auth: "Authentication", security: "Security & Authorization", data: "Snake Profiles & Data", feeding: "Feeding Tracker", weight: "Weight Tracker", shed: "Shed Tracker & Photos", genetics: "Genetics Calculator", privacy: "Privacy & Permissions", analytics: "Creator Analytics", mobile: "Mobile / UI", admin: "Creator / Admin Routing" };
 
 export default function TesterCentre() {
   const { user } = useAuth();
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
-  const [running, setRunning] = useState(false);
-  const [run, setRun] = useState<TesterRun | null>(null);
-  const [specificArea, setSpecificArea] = useState("");
-  const [report, setReport] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [mode, setMode] = useState<"user" | "security">("user");
+  const [authorized, setAuthorized] = useState<boolean | null>(null); const [running, setRunning] = useState(false); const [run, setRun] = useState<TesterRun | null>(null); const [history, setHistory] = useState<TesterRun[]>([]); const [specificArea, setSpecificArea] = useState(""); const [report, setReport] = useState(""); const [copied, setCopied] = useState(false); const [mode, setMode] = useState<"user" | "security">("user");
+  const categories = useMemo(() => [...new Set(run?.results.map((result) => result.category) ?? [])], [run]); const passed = run?.results.filter((result) => result.status === "pass").length ?? 0; const failed = run?.results.filter((result) => result.status === "fail").length ?? 0; const blocked = run?.results.filter((result) => result.status === "blocked").length ?? 0;
 
-  const categories = useMemo(() => [...new Set(run?.results.map((result) => result.category) ?? [])], [run]);
-  const passed = run?.results.filter((result) => result.status === "pass").length ?? 0;
-  const failed = run?.results.filter((result) => result.status === "fail").length ?? 0;
-  const blocked = run?.results.filter((result) => result.status === "blocked").length ?? 0;
-
-  useEffect(() => {
-    let active = true;
-    hasCreatorClaim(true)
-      .then((value) => { if (active) setAuthorized(value); })
-      .catch(() => { if (active) setAuthorized(false); });
-    return () => { active = false; };
-  }, []);
-
+  async function refreshHistory() { if (!user) return; try { setHistory(await getTesterRunHistory(user.uid)); } catch { setHistory([]); } }
+  useEffect(() => { let active = true; hasCreatorClaim(true).then((value) => { if (active) setAuthorized(value); }).catch(() => { if (active) setAuthorized(false); }); return () => { active = false; }; }, []);
+  useEffect(() => { if (authorized && user) void refreshHistory(); }, [authorized, user]);
   if (authorized === false) return <Navigate to="/" replace />;
-  if (!user || authorized === null) {
-    return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
-  }
-
+  if (!user || authorized === null) return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
   const creatorUid = user.uid;
-
-  async function execute(suite: string, checks: TesterCheck[]) {
-    setRunning(true); setCopied(false);
-    try {
-      const result = await runTesterSuite(creatorUid, suite, checks);
-      setRun(result); setReport(buildTesterReport(result));
-    } finally { setRunning(false); }
-  }
-
-  async function buildUserChecks() {
-    const claims = await hasCreatorClaim(true);
-    const core = createCoreDiagnosticChecks({ uid: creatorUid, authenticated: true, creatorClaim: claims, analyticsConsent: true }).filter((check) => check.category !== "security");
-    const trackerChecks = await createTrackerRegressionChecks(creatorUid);
-    const snakes = await getUserSnakes(creatorUid);
-    return [...core, ...trackerChecks, createShedPhotoRegressionCheck(creatorUid, snakes[0])];
-  }
-
-  async function buildSecurityChecks() {
-    const claims = await hasCreatorClaim(true);
-    const blockedIds = new Set(["security-firestore-cross-user", "security-storage-cross-user", "security-role-matrix", "security-cross-user-test-identity"]);
-    const clientChecks = createSecurityBoundaryChecks(creatorUid, claims).filter((check) => !blockedIds.has(check.id));
-    return [...clientChecks, createServerSecurityAttackCheck()];
-  }
-
-  async function runFull() {
-    await execute(mode === "user" ? "full-user-regression" : "full-security-regression", mode === "user" ? await buildUserChecks() : await buildSecurityChecks());
-  }
-
-  async function runSpecific() {
-    const query = specificArea.trim().toLowerCase();
-    if (!query) return;
-    const all = mode === "user" ? await buildUserChecks() : await buildSecurityChecks();
-    const matches = all.filter((check) => [check.id, check.name, check.category, check.descriptor ?? "", categoryLabels[check.category] ?? ""].join(" ").toLowerCase().includes(query));
-    if (!matches.length) {
-      matches.push({
-        id: "specific-no-match", name: `No ${mode} test matched: ${specificArea}`, category: mode === "security" ? "security" : "data", severity: "high",
-        descriptor: `Tester Centre / ${mode} specific test search`,
-        run: async () => ({ status: "fail", message: `No registered ${mode} test matches '${specificArea}'.`, details: { expected: "At least one matching test", actual: "No match", fixHint: "Use a registered feature or test-area name." } }),
-      });
-    }
-    await execute(`specific-${mode}:${query}`, matches);
-  }
-
-  async function copyReport() {
-    if (!report) return;
-    await navigator.clipboard.writeText(report);
-    setCopied(true); window.setTimeout(() => setCopied(false), 2000);
-  }
+  async function execute(suite: string, checks: TesterCheck[]) { setRunning(true); setCopied(false); try { const result = await runTesterSuite(creatorUid, suite, checks); setRun(result); setReport(buildTesterReport(result)); await refreshHistory(); } finally { setRunning(false); } }
+  async function buildUserChecks() { const claims = await hasCreatorClaim(true); const core = createCoreDiagnosticChecks({ uid: creatorUid, authenticated: true, creatorClaim: claims, analyticsConsent: true }).filter((check) => check.category !== "security"); const trackerChecks = await createTrackerRegressionChecks(creatorUid); const snakes = await getUserSnakes(creatorUid); return [...core, ...trackerChecks, createShedPhotoRegressionCheck(creatorUid, snakes[0])]; }
+  async function buildSecurityChecks() { const claims = await hasCreatorClaim(true); const blockedIds = new Set(["security-firestore-cross-user", "security-storage-cross-user", "security-role-matrix", "security-cross-user-test-identity"]); const clientChecks = createSecurityBoundaryChecks(creatorUid, claims).filter((check) => !blockedIds.has(check.id)); return [...clientChecks, createServerSecurityAttackCheck()]; }
+  async function runFull() { await execute(mode === "user" ? "full-user-regression" : "full-security-regression", mode === "user" ? await buildUserChecks() : await buildSecurityChecks()); }
+  async function runSpecific() { const query = specificArea.trim().toLowerCase(); if (!query) return; const all = mode === "user" ? await buildUserChecks() : await buildSecurityChecks(); const matches = all.filter((check) => [check.id, check.name, check.category, check.descriptor ?? "", categoryLabels[check.category] ?? ""].join(" ").toLowerCase().includes(query)); if (!matches.length) matches.push({ id: "specific-no-match", name: `No ${mode} test matched: ${specificArea}`, category: mode === "security" ? "security" : "data", severity: "high", descriptor: `Tester Centre / ${mode} specific test search`, run: async () => ({ status: "fail", message: `No registered ${mode} test matches '${specificArea}'.`, details: { expected: "At least one matching test", actual: "No match", fixHint: "Use a registered feature or test-area name." } }) }); await execute(`specific-${mode}:${query}`, matches); }
+  async function copyReport() { if (!report) return; await navigator.clipboard.writeText(report); setCopied(true); window.setTimeout(() => setCopied(false), 2000); }
+  const historyDate = (value: unknown) => { const date = new Date(String(value)); return Number.isNaN(date.getTime()) ? "Unknown time" : date.toLocaleString("en-GB"); };
 
   return <div className="page-container">
-    <div className="welcome-card">
-      <p className="eyebrow">🐍 TINY TITANS · CREATOR QA</p>
-      <h1>🤖 Tester Centre</h1>
-      <p>Choose normal-user regression testing or the separate security attack suite. Security tests never get hidden inside the normal user run.</p>
-      <div className="creator-actions">
-        <button className={mode === "user" ? "primary-button" : "secondary-button"} type="button" disabled={running} onClick={() => { setMode("user"); setRun(null); setReport(""); }}>👤 User Testing</button>
-        <button className={mode === "security" ? "primary-button" : "secondary-button"} type="button" disabled={running} onClick={() => { setMode("security"); setRun(null); setReport(""); }}>🔐 Security Testing</button>
-      </div>
-      <div className="creator-actions"><button className="primary-button" type="button" disabled={running} onClick={runFull}>{running ? "🤖 Tester Bot running..." : mode === "user" ? "▶ Full User Test" : "🔐 Full Security Test"}</button></div>
-      <div className="creator-form-grid">
-        <label><span>{mode === "user" ? "Specific user test area" : "Specific security test area"}</span><input value={specificArea} onChange={(event) => setSpecificArea(event.target.value)} placeholder={mode === "user" ? "e.g. Shed, Genetics, Feeding" : "e.g. Claims, Firestore, Storage, Cross-user"} /></label>
-        <button className="secondary-button" type="button" disabled={running || !specificArea.trim()} onClick={runSpecific}>🎯 Specific {mode === "user" ? "User" : "Security"} Test</button>
-      </div>
-      <small>{mode === "user" ? "Tests the app as a normal user would use it." : "Attempts unauthorized operations and verifies Firebase authorization boundaries."}</small>
-    </div>
+    <div className="welcome-card"><p className="eyebrow">🐍 TINY TITANS · CREATOR QA</p><h1>🤖 Tester Centre</h1><p>Choose normal-user regression testing or the separate security attack suite. Security tests never get hidden inside the normal user run.</p><div className="creator-actions"><button className={mode === "user" ? "primary-button" : "secondary-button"} type="button" disabled={running} onClick={() => { setMode("user"); setRun(null); setReport(""); }}>👤 User Testing</button><button className={mode === "security" ? "primary-button" : "secondary-button"} type="button" disabled={running} onClick={() => { setMode("security"); setRun(null); setReport(""); }}>🔐 Security Testing</button></div><div className="creator-actions"><button className="primary-button" type="button" disabled={running} onClick={runFull}>{running ? "🤖 Tester Bot running..." : mode === "user" ? "▶ Full User Test" : "🔐 Full Security Test"}</button></div><div className="creator-form-grid"><label><span>{mode === "user" ? "Specific user test area" : "Specific security test area"}</span><input value={specificArea} onChange={(event) => setSpecificArea(event.target.value)} placeholder={mode === "user" ? "e.g. Shed, Genetics, Feeding, Admin" : "e.g. Claims, Firestore, Storage, Cross-user"} /></label><button className="secondary-button" type="button" disabled={running || !specificArea.trim()} onClick={runSpecific}>🎯 Specific {mode === "user" ? "User" : "Security"} Test</button></div><small>{mode === "user" ? "Tests the app as a normal user would use it." : "Attempts unauthorized operations and verifies Firebase authorization boundaries."}</small></div>
+    <div className="welcome-card"><div className="creator-card-header"><div><h2>🕘 Test History</h2><p>Previous runs are kept so you do not have to repeat the same test just to remember what happened.</p></div><button className="secondary-button" type="button" onClick={() => void refreshHistory()}>↻ Refresh history</button></div>{history.length === 0 ? <p>No previous test runs found.</p> : <div className="creator-list">{history.map((item) => <div className="creator-list-item" key={item.id}><strong>{item.status === "passed" ? "🟢" : "🔴"} {item.suite}</strong><span>{historyDate(item.finishedAt ?? item.startedAt)} · {item.results.filter((r) => r.status === "pass").length} passed · {item.results.filter((r) => r.status === "fail").length} failed · {item.results.filter((r) => r.status === "blocked").length} blocked</span></div>)}</div>}</div>
     {run && <><div className="welcome-card"><h2>{run.status === "passed" ? "🟢 Suite Passed" : "🔴 Suite Failed / Blocked"}</h2><p>{passed} passed · {failed} failed · {blocked} blocked</p><p>{categories.map((category) => categoryLabels[category] ?? category).join(" · ")}</p></div><div className="welcome-card"><h2>🔎 Detailed Results</h2><div className="creator-list">{run.results.map((result) => <div className="creator-list-item" key={result.checkId}><strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong><span>{result.details?.descriptor ? `Page/feature: ${String(result.details.descriptor)}` : categoryLabels[result.category]}</span><span>{result.message}</span>{result.details?.expected !== undefined && <span>Expected: {String(result.details.expected)}</span>}{result.details?.actual !== undefined && <span>Actual: {String(result.details.actual)}</span>}{result.details?.fixHint !== undefined && <span>🛠️ Fix: {String(result.details.fixHint)}</span>}<small>{result.durationMs}ms · {result.severity}</small></div>)}</div></div><div className="welcome-card"><div className="creator-card-header"><div><h2>📋 Copy-Paste Developer Report</h2><p>Paste this entire report into ChatGPT. It contains test IDs, page/feature descriptors, expected vs actual behaviour and fix direction.</p></div><button className="secondary-button" type="button" onClick={copyReport}>{copied ? "✅ Copied" : "📋 Copy Report"}</button></div><textarea readOnly value={report} rows={24} aria-label="Tester Bot copy-paste report" /></div></>}
   </div>;
 }
