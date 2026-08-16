@@ -3,11 +3,12 @@ import { db } from "../firebase/config";
 
 export type TesterSeverity = "critical" | "high" | "medium" | "low";
 export type TesterStatus = "pass" | "fail" | "blocked";
+export type TesterCategory = "auth" | "security" | "data" | "feeding" | "weight" | "shed" | "genetics" | "privacy" | "analytics" | "mobile";
 
 export type TesterCheck = {
   id: string;
   name: string;
-  category: "auth" | "data" | "feeding" | "weight" | "shed" | "genetics" | "privacy" | "analytics" | "mobile";
+  category: TesterCategory;
   severity: TesterSeverity;
   descriptor?: string;
   run: () => Promise<{ status: TesterStatus; message: string; details?: Record<string, unknown> }>;
@@ -16,7 +17,7 @@ export type TesterCheck = {
 export type TesterResult = {
   checkId: string;
   name: string;
-  category: TesterCheck["category"];
+  category: TesterCategory;
   severity: TesterSeverity;
   status: TesterStatus;
   message: string;
@@ -54,8 +55,8 @@ export async function runTesterSuite(ownerUid: string, suite: string, checks: Te
 export function createCoreDiagnosticChecks(context: { uid: string; authenticated: boolean; creatorClaim: boolean; analyticsConsent: boolean }): TesterCheck[] {
   return [
     { id: "auth-authenticated", name: "Authentication state", category: "auth", severity: "critical", descriptor: "Login / authenticated app session", run: async () => ({ status: context.authenticated ? "pass" : "fail", message: context.authenticated ? "Firebase authentication is active." : "No authenticated Firebase user is available.", details: { expected: "Authenticated Firebase user", actual: context.authenticated ? "Authenticated" : "Not authenticated", fixHint: "Inspect AuthContext, Firebase sign-in and auth hydration/navigation." } }) },
-    { id: "auth-creator-claim", name: "Creator authorization claim", category: "auth", severity: "critical", descriptor: "Creator Hub / authorization", run: async () => ({ status: context.creatorClaim ? "pass" : "fail", message: context.creatorClaim ? "Creator/admin custom claim is present." : "Creator/admin custom claim is missing.", details: { expected: "creator=true or admin=true custom claim", actual: context.creatorClaim ? "Claim present" : "Claim missing", fixHint: "Check Firebase custom-claim assignment, token refresh and Creator security rules." } }) },
+    { id: "auth-creator-claim", name: "Creator authorization claim", category: "security", severity: "critical", descriptor: "Creator Hub / authorization", run: async () => ({ status: context.creatorClaim ? "pass" : "fail", message: context.creatorClaim ? "Creator/admin custom claim is present." : "Creator/admin custom claim is missing.", details: { expected: "creator=true or admin=true custom claim", actual: context.creatorClaim ? "Claim present" : "Claim missing", fixHint: "Check Firebase custom-claim assignment, token refresh and Creator security rules." } }) },
     { id: "privacy-analytics-consent", name: "Analytics consent state", category: "privacy", severity: "high", descriptor: "Privacy Settings / analytics consent", run: async () => ({ status: context.analyticsConsent ? "pass" : "blocked", message: context.analyticsConsent ? "Anonymous analytics are permitted for this test user." : "Analytics checks are blocked because consent is disabled.", details: { expected: "Analytics consent enabled for analytics tests", actual: context.analyticsConsent ? "Enabled" : "Disabled", fixHint: "If unexpected, inspect Privacy Settings and consent persistence." } }) },
-    { id: "identity-uid", name: "Authenticated UID integrity", category: "auth", severity: "critical", descriptor: "Authentication identity / user data boundary", run: async () => ({ status: context.uid.trim().length > 0 ? "pass" : "fail", message: context.uid.trim().length > 0 ? "Authenticated UID is available." : "Authenticated UID is missing.", details: { expected: "Non-empty authenticated UID", actual: context.uid.trim().length > 0 ? "UID present" : "UID missing", fixHint: "Inspect AuthContext and Firebase currentUser propagation." } }) },
+    { id: "identity-uid", name: "Authenticated UID integrity", category: "security", severity: "critical", descriptor: "Authentication identity / user data boundary", run: async () => ({ status: context.uid.trim().length > 0 ? "pass" : "fail", message: context.uid.trim().length > 0 ? "Authenticated UID is available." : "Authenticated UID is missing.", details: { expected: "Non-empty authenticated UID", actual: context.uid.trim().length > 0 ? "UID present" : "UID missing", fixHint: "Inspect AuthContext and Firebase currentUser propagation." } }) },
   ];
 }
