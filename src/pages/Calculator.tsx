@@ -3,8 +3,9 @@ import { getGenes, morphs as morphDatabase } from "../data/morphs";
 import ParentSelector, { type ParentSelection } from "../components/ParentSelector";
 import ResultCard from "../components/ResultCard";
 import type { Snake } from "../types/Snake";
-import type { Het, GeneticsCalculatorResult, OffspringResult } from "../types/genetics";
+import type { GeneticsCalculatorResult, OffspringResult } from "../types/genetics";
 import { calculateGenetics } from "../utils/geneticsCalculator";
+import { expandHetScenarios } from "../utils/geneticsHetScenarios";
 import { getUserSnakes } from "../services/snakeService";
 import { trackGeneticsCalculation } from "../services/analyticsEventService";
 import { useAuth } from "../context/AuthContext";
@@ -17,59 +18,21 @@ type CalculatorScenario = {
 
 const EMPTY_PARENT: ParentSelection = { morphs: [], hets: [] };
 
-function hetPercentage(value: Het["percentage"]): number {
-  if (typeof value === "number") return value;
-  const parsed = Number(String(value).replace(/%$/, ""));
-  return parsed === 50 || parsed === 66 || parsed === 100 ? parsed : 100;
+function expandParentHetScenarios(parent: ParentSelection): CalculatorScenario[] {
+  return expandHetScenarios(parent.hets).map((scenario) => ({
+    parent: { ...parent, hets: scenario.hets },
+    probability: scenario.probability,
+  }));
 }
 
 /**
- * A possible het is a probability that the animal actually carries one copy,
- * not a fractional copy of a gene. We therefore expand the parent into
- * carrier/non-carrier scenarios and let the normal Mendelian engine calculate
- * each certain scenario. This preserves 50%, 66% and 100% hets correctly
- * without weakening the existing genetics engine's copy-count model.
+ * Possible hets are expanded into certain carrier/non-carrier scenarios.
+ * This preserves the distinction between 50%, 66% and 100% hets instead of
+ * treating a percentage as a fractional gene copy.
  */
-function expandHetScenarios(parent: ParentSelection): CalculatorScenario[] {
-  let scenarios: CalculatorScenario[] = [{ parent: { ...parent, hets: [] }, probability: 1 }];
-
-  for (const het of parent.hets) {
-    const percentage = hetPercentage(het.percentage) / 100;
-    const next: CalculatorScenario[] = [];
-
-    for (const scenario of scenarios) {
-      if (percentage >= 1) {
-        next.push({
-          parent: { ...scenario.parent, hets: [...scenario.parent.hets, { ...het, percentage: 100 }] },
-          probability: scenario.probability,
-        });
-        continue;
-      }
-
-      if (percentage > 0) {
-        next.push({
-          parent: { ...scenario.parent, hets: [...scenario.parent.hets, { ...het, percentage: 100 }] },
-          probability: scenario.probability * percentage,
-        });
-      }
-
-      if (percentage < 1) {
-        next.push({
-          parent: { ...scenario.parent },
-          probability: scenario.probability * (1 - percentage),
-        });
-      }
-    }
-
-    scenarios = next;
-  }
-
-  return scenarios;
-}
-
 function calculateWithHetProbabilities(mother: ParentSelection, father: ParentSelection): GeneticsCalculatorResult {
-  const motherScenarios = expandHetScenarios(mother);
-  const fatherScenarios = expandHetScenarios(father);
+  const motherScenarios = expandParentHetScenarios(mother);
+  const fatherScenarios = expandParentHetScenarios(father);
   const merged = new Map<string, OffspringResult>();
   let hasUnresolvedGenetics = false;
 
