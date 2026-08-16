@@ -45,9 +45,23 @@ exports.createTitanCheckout = onCall(
 
     const tierKey = String(request.data?.tier || "").trim();
     const tier = SUPPORT_TIERS[tierKey];
+    if (tierKey !== "custom" && !tier) throw new HttpsError("invalid-argument", "Invalid Titan support option.");
+
+    let stripeSecret;
+    try {
+      stripeSecret = STRIPE_SECRET_KEY.value();
+    } catch (error) {
+      console.error("Stripe secret could not be loaded", error);
+      throw new HttpsError("failed-precondition", "Stripe support payments are not configured on the live server yet.");
+    }
+
+    if (!stripeSecret || !stripeSecret.startsWith("sk_")) {
+      console.error("Stripe secret is missing or invalid");
+      throw new HttpsError("failed-precondition", "Stripe support payments are not configured on the live server yet.");
+    }
 
     try {
-      const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+      const stripe = new Stripe(stripeSecret);
       const origin = getAllowedOrigin(request);
       let lineItems;
       let amountGbp;
@@ -69,7 +83,6 @@ exports.createTitanCheckout = onCall(
           quantity: 1,
         }];
       } else {
-        if (!tier) throw new HttpsError("invalid-argument", "Invalid Titan support option.");
         amountGbp = tier.amount.toFixed(2);
         label = tier.label;
         lineItems = [{ price: tier.priceId, quantity: 1 }];
@@ -95,9 +108,16 @@ exports.createTitanCheckout = onCall(
       if (!session.url) throw new Error("Stripe did not return a checkout URL.");
       return { url: session.url };
     } catch (error) {
-      console.error("Flexible Titan Stripe checkout creation failed", error);
+      console.error("Tiny Titans Stripe checkout creation failed", error);
       if (error instanceof HttpsError) throw error;
-      throw new HttpsError("internal", "Unable to start Stripe Checkout.");
+      const stripeMessage = typeof error?.message === "string" ? error.message : "";
+      if (/No such price/i.test(stripeMessage)) {
+        throw new HttpsError("failed-precondition", "This support option is not configured correctly in Stripe yet.");
+      }
+      if (/Invalid API Key|authentication/i.test(stripeMessage)) {
+        throw new HttpsError("failed-precondition", "Stripe is not configured correctly on the live server yet.");
+      }
+      throw new HttpsError("internal", "Stripe Checkout could not be started. Please try again.");
     }
   }
 );
