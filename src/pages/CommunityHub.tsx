@@ -47,20 +47,17 @@ export default function CommunityHub() {
 
   useEffect(() => {
     let mounted = true;
-
     if (authLoading || profileLoading) {
       setLoading(true);
       setLoadError("");
       return () => { mounted = false; };
     }
-
     if (!user) {
       setPosts([]);
       setLoadError("Please sign in to view the Community Hub.");
       setLoading(false);
       return () => { mounted = false; };
     }
-
     setLoading(true);
     setLoadError("");
     getCommunityPosts({ isTester: profile?.isTester, isAdmin: profile?.role === "admin" })
@@ -81,6 +78,11 @@ export default function CommunityHub() {
       <div><p className="community-eyebrow">TINY TITANS</p><h1>Community Hub</h1><p>Your central place for Tiny Titans news, known issues, tester notices and release information.</p></div>
       {importantCount > 0 && <span className="community-live-badge">● {importantCount} important</span>}
     </header>
+
+    <section className="community-feedback-card community-wall-card">
+      <div><span className="community-feedback-icon">🏆</span><div><h2>Wall of Titans</h2><p>Meet the people supporting Tiny Titans and see the Founder recognised at the top of the wall.</p></div></div>
+      <button type="button" onClick={() => navigate("/community/wall-of-titans")}>Open Wall of Titans →</button>
+    </section>
 
     <div className="community-section-grid">
       {sections.map((section) => <button key={section.category} type="button" className={`community-section-card ${active === section.category ? "active" : ""}`} onClick={() => setActive(section.category)}>
