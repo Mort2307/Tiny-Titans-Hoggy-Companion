@@ -7,16 +7,19 @@ const db = getFirestore();
 const adminAuth = getAuth();
 const bucket = getStorage().bucket();
 
-function creatorAuthorized(request) {
-  return request.auth?.token?.admin === true || request.auth?.token?.creator === true || request.auth?.token?.creatorTester === true;
+function creatorAuthorized(request, callerData = {}) {
+  return request.auth?.token?.admin === true
+    || request.auth?.token?.creator === true
+    || request.auth?.token?.creatorTester === true
+    || callerData.role === "admin"
+    || callerData.profileType === "creator";
 }
 
 exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const caller = await db.collection("users").doc(request.auth.uid).get();
-  const callerClaims = request.auth.token || {};
-  const callerAuthorized = callerClaims.admin === true || callerClaims.creator === true || caller.data()?.role === "admin";
-  if (!callerAuthorized) throw new HttpsError("permission-denied", "Creator authorization is required.");
+  const callerData = caller.data() || {};
+  if (!creatorAuthorized(request, callerData)) throw new HttpsError("permission-denied", "Creator authorization is required.");
   const targetUid = String(request.data?.uid || "").trim();
   const enabled = request.data?.enabled !== false;
   if (!targetUid) throw new HttpsError("invalid-argument", "A target user ID is required.");
@@ -32,6 +35,14 @@ exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => 
       delete nextClaims.creatorTester;
     }
     await adminAuth.setCustomUserClaims(targetUid, nextClaims);
+
+    // Bootstrap the canonical Creator claim for an existing Tiny Titans
+    // creator account whose Firestore profile predates custom claims.
+    if (callerData.profileType === "creator" && request.auth.token.creator !== true) {
+      const callerAuthUser = await adminAuth.getUser(request.auth.uid);
+      await adminAuth.setCustomUserClaims(request.auth.uid, { ...(callerAuthUser.customClaims || {}), creator: true });
+    }
+
     await db.collection("users").doc(targetUid).set({ isTester: enabled, testerType: enabled ? "creator" : null, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: enabled ? "grant_creator_tester" : "revoke_creator_tester", createdAt: FieldValue.serverTimestamp() });
     return { success: true, uid: targetUid, creator: enabled, creatorTester: enabled, isTester: enabled };
@@ -47,9 +58,8 @@ exports.approveMorphImageSubmission = onCall(
   async (request) => {
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
     const caller = await db.collection("users").doc(request.auth.uid).get();
-    const claims = request.auth.token || {};
-    const creatorAuthorized = claims.creator === true || claims.admin === true || claims.creatorTester === true || caller.data()?.role === "admin";
-    if (!creatorAuthorized) throw new HttpsError("permission-denied", "Creator authorization is required.");
+    const callerData = caller.data() || {};
+    if (!creatorAuthorized(request, callerData)) throw new HttpsError("permission-denied", "Creator authorization is required.");
     const submissionId = String(request.data?.submissionId || "").trim();
     if (!submissionId) throw new HttpsError("invalid-argument", "A submission ID is required.");
     const submissionRef = db.collection("morphImageSubmissions").doc(submissionId);
@@ -88,7 +98,8 @@ exports.deleteApprovedMorphImage = onCall(
   { region: "europe-west2", timeoutSeconds: 60, memory: "256MiB" },
   async (request) => {
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-    if (!creatorAuthorized(request)) throw new HttpsError("permission-denied", "Creator authorization is required.");
+    const caller = await db.collection("users").doc(request.auth.uid).get();
+    if (!creatorAuthorized(request, caller.data() || {})) throw new HttpsError("permission-denied", "Creator authorization is required.");
     const approvedImageId = String(request.data?.approvedImageId || "").trim();
     const reason = String(request.data?.reason || "").trim();
     if (!approvedImageId) throw new HttpsError("invalid-argument", "An approved image ID is required.");
