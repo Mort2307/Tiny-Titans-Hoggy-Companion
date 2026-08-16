@@ -8,21 +8,14 @@ import {
 import { deleteToken, getMessaging, getToken, isSupported } from "firebase/messaging";
 
 import { app, db } from "../firebase/config";
-import {
-  DEFAULT_NOTIFICATION_SETTINGS,
-  type NotificationPermissionState,
-  type NotificationSettings,
-} from "../types/Notifications";
+import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationPermissionState, type NotificationSettings } from "../types/Notifications";
 
 const SETTINGS_FIELD = "notificationSettings";
 
 function settingsFor(value: unknown): NotificationSettings {
   if (!value || typeof value !== "object") return { ...DEFAULT_NOTIFICATION_SETTINGS };
   const raw = value as Partial<NotificationSettings>;
-  return {
-    enabled: raw.enabled === true,
-    feedingPreparationEnabled: raw.feedingPreparationEnabled !== false,
-  };
+  return { enabled: raw.enabled === true, feedingPreparationEnabled: raw.feedingPreparationEnabled !== false };
 }
 
 export function getNotificationPermissionState(): NotificationPermissionState {
@@ -36,16 +29,9 @@ export async function getNotificationSettings(uid: string): Promise<Notification
   return settingsFor(snapshot.data()?.[SETTINGS_FIELD]);
 }
 
-export async function saveNotificationSettings(
-  uid: string,
-  settings: NotificationSettings,
-): Promise<NotificationSettings> {
+export async function saveNotificationSettings(uid: string, settings: NotificationSettings): Promise<NotificationSettings> {
   const next = settingsFor(settings);
-  await setDoc(
-    doc(db, "users", uid),
-    { [SETTINGS_FIELD]: next, updatedAt: serverTimestamp() },
-    { merge: true },
-  );
+  await setDoc(doc(db, "users", uid), { [SETTINGS_FIELD]: next, updatedAt: serverTimestamp() }, { merge: true });
   return next;
 }
 
@@ -56,7 +42,7 @@ async function tokenDocumentId(token: string): Promise<string> {
 
 async function registerMessagingWorker(): Promise<ServiceWorkerRegistration> {
   if (!("serviceWorker" in navigator)) throw new Error("This browser does not support service workers.");
-  return navigator.serviceWorker.register("/firebase-messaging-sw.js");
+  return navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/firebase-messaging/" });
 }
 
 export async function enableNotifications(uid: string): Promise<NotificationPermissionState> {
@@ -74,33 +60,22 @@ export async function enableNotifications(uid: string): Promise<NotificationPerm
   if (!token) throw new Error("Tiny Titans could not register this device for notifications.");
 
   const tokenId = await tokenDocumentId(token);
-  await setDoc(
-    doc(db, "users", uid, "notificationTokens", tokenId),
-    {
-      token,
-      enabled: true,
-      platform: navigator.platform || "unknown",
-      userAgent: navigator.userAgent,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
-
-  await saveNotificationSettings(uid, {
-    ...(await getNotificationSettings(uid)),
+  await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), {
+    token,
     enabled: true,
-  });
+    platform: navigator.platform || "unknown",
+    userAgent: navigator.userAgent,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
 
+  await saveNotificationSettings(uid, { ...(await getNotificationSettings(uid)), enabled: true });
   return "granted";
 }
 
 export async function disableNotifications(uid: string): Promise<void> {
   if (!uid) return;
   try {
-    if (await isSupported()) {
-      const messaging = getMessaging(app);
-      await deleteToken(messaging);
-    }
+    if (await isSupported()) await deleteToken(getMessaging(app));
   } catch (error) {
     console.warn("Tiny Titans: local notification token could not be removed", error);
   }
@@ -110,11 +85,7 @@ export async function disableNotifications(uid: string): Promise<void> {
 
   if ("serviceWorker" in navigator) {
     const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(
-      registrations
-        .filter((registration) => registration.active?.scriptURL.includes("firebase-messaging-sw.js"))
-        .map((registration) => registration.unregister()),
-    );
+    await Promise.all(registrations.filter((registration) => registration.active?.scriptURL.includes("firebase-messaging-sw.js")).map((registration) => registration.unregister()));
   }
 }
 
