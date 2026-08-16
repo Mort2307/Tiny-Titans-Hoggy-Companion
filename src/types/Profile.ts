@@ -26,6 +26,22 @@ export type EducatorTeachingLevel =
   | "club"
   | "other";
 
+export type ApproximateLocation = {
+  city: string;
+  country: string;
+  source: "user-provided" | "coarse-geolocation";
+  visibleToCreator: boolean;
+  updatedAt?: unknown;
+};
+
+export type DataCollectionPreferences = {
+  approximateLocation: boolean;
+  analytics: boolean;
+  productUpdates: boolean;
+  consentVersion: string;
+  consentUpdatedAt?: unknown;
+};
+
 export type EducatorProfile = {
   teachingLevel: EducatorTeachingLevel;
   subjects: string[];
