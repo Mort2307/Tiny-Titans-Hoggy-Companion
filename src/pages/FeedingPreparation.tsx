@@ -7,12 +7,14 @@ import type { FeedingSchedule, Snake } from "../types/Snake";
 import { getNotificationPermissionState, getNotificationSettings } from "../services/notificationService";
 import type { NotificationSettings } from "../types/Notifications";
 
+const defaultNotifications: NotificationSettings = { enabled: false, feedingPreparationEnabled: true, feedingPreparationDaysBefore: 2, feedingPreparationTime: "08:00" };
+
 export default function FeedingPreparation() {
   const { user, loading, profileLoading } = useAuth();
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [selectedSnakeId, setSelectedSnakeId] = useState("");
   const [schedule, setSchedule] = useState<FeedingSchedule | null>(null);
-  const [notifications, setNotifications] = useState<NotificationSettings>({ enabled: false, feedingPreparationEnabled: true });
+  const [notifications, setNotifications] = useState<NotificationSettings>(defaultNotifications);
   const [permission, setPermission] = useState(getNotificationPermissionState());
   const [saving, setSaving] = useState(false);
   const [loadingPage, setLoadingPage] = useState(true);
@@ -42,6 +44,7 @@ export default function FeedingPreparation() {
   }, [user, selectedSnakeId, snakes]);
 
   const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]);
+  const usingGlobalReminder = schedule ? schedule.preparationReminderDaysBefore === notifications.feedingPreparationDaysBefore && schedule.preparationReminderTime === notifications.feedingPreparationTime : true;
 
   async function saveSchedule() {
     if (!user || !selectedSnakeId || !schedule || saving) return;
@@ -49,10 +52,14 @@ export default function FeedingPreparation() {
     try {
       const saved = await saveFeedingSchedule(user.uid, selectedSnakeId, schedule);
       setSchedule(saved);
-      setMessage("Feeding schedule saved. The preparation micro-system will now use this date.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to save this feeding schedule.");
-    } finally { setSaving(false); }
+      setMessage("Feeding schedule saved. Your chosen preparation reminder will be used without changing the feeding date.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to save this feeding schedule."); }
+    finally { setSaving(false); }
+  }
+
+  function useGlobalReminder() {
+    if (!schedule) return;
+    setSchedule({ ...schedule, preparationReminderDaysBefore: notifications.feedingPreparationDaysBefore, preparationReminderTime: notifications.feedingPreparationTime });
   }
 
   if (loading || profileLoading || loadingPage) return <div className="page-container"><BackHomeButton /><div className="tracker-card"><p>Loading Tiny Titans...</p></div></div>;
@@ -60,10 +67,10 @@ export default function FeedingPreparation() {
   return <div className="page-container">
     <BackHomeButton />
     <h1>🧊 Feeding Preparation</h1>
-    <p>Set a recurring feeding date and Tiny Titans will handle the preparation reminders automatically.</p>
+    <p>Choose exactly when each snake should remind you to prepare. Tiny Titans never changes the scheduled feeding date because of a reminder.</p>
 
     <div className="tracker-card">
-      <h2>🔔 Micro-system status</h2>
+      <h2>🔔 Notification status</h2>
       <p><strong>Device permission:</strong> {permission === "granted" ? "Granted" : permission === "denied" ? "Blocked" : permission === "unsupported" ? "Not supported" : "Not enabled"}</p>
       <p><strong>Global notifications:</strong> {notifications.enabled ? "Enabled" : "Disabled"}</p>
       <p><strong>Feeding preparation:</strong> {notifications.feedingPreparationEnabled ? "Enabled" : "Disabled"}</p>
@@ -89,8 +96,18 @@ export default function FeedingPreparation() {
         </select>
         <label htmlFor="next-feeding-date">Next feeding date</label>
         <input id="next-feeding-date" type="date" value={schedule.nextFeedingDate} onChange={(event) => setSchedule({ ...schedule, nextFeedingDate: event.target.value })} disabled={saving || !schedule.enabled} />
-        <label style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "14px" }}><input type="checkbox" checked={schedule.notificationsEnabled} onChange={(event) => setSchedule({ ...schedule, notificationsEnabled: event.target.checked })} disabled={saving || !schedule.enabled} /> Send feeding preparation notifications for this snake</label>
-        <p><small>Notifications are sent at the configured daily reminder run: 2 days before, 1 day before, and on feeding day.</small></p>
+
+        <h3 style={{ marginTop: "20px" }}>🔔 Preparation reminder for {selectedSnake?.name || "this snake"}</h3>
+        <label style={{ display: "flex", alignItems: "center", gap: "10px" }}><input type="checkbox" checked={schedule.notificationsEnabled} onChange={(event) => setSchedule({ ...schedule, notificationsEnabled: event.target.checked })} disabled={saving || !schedule.enabled} /> Allow feeding notifications for this snake</label>
+        <label style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px" }}><input type="checkbox" checked={schedule.preparationReminderEnabled} onChange={(event) => setSchedule({ ...schedule, preparationReminderEnabled: event.target.checked })} disabled={saving || !schedule.enabled || !schedule.notificationsEnabled} /> Send preparation reminder</label>
+        <label htmlFor="snake-prep-days">Remind me</label>
+        <select id="snake-prep-days" value={schedule.preparationReminderDaysBefore} onChange={(event) => setSchedule({ ...schedule, preparationReminderDaysBefore: Number(event.target.value) })} disabled={saving || !schedule.enabled || !schedule.notificationsEnabled || !schedule.preparationReminderEnabled}>
+          {Array.from({ length: 31 }, (_, days) => <option key={days} value={days}>{days === 0 ? "On feeding day" : `${days} day${days === 1 ? "" : "s"} before feeding`}</option>)}
+        </select>
+        <label htmlFor="snake-prep-time">At</label>
+        <input id="snake-prep-time" type="time" value={schedule.preparationReminderTime} onChange={(event) => setSchedule({ ...schedule, preparationReminderTime: event.target.value })} disabled={saving || !schedule.enabled || !schedule.notificationsEnabled || !schedule.preparationReminderEnabled} />
+        <p><small>Choose anything from same-day to 30 days before. This reminder timing is completely independent of the feeding interval.</small></p>
+        {!usingGlobalReminder && <button type="button" onClick={useGlobalReminder} disabled={saving}>↩ Use my global notification timing</button>}
         <button type="button" onClick={() => void saveSchedule()} disabled={saving}>{saving ? "💾 Saving…" : "💾 Save Feeding Schedule"}</button>
       </div>}
     </>}
