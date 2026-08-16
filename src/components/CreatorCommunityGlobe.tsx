@@ -146,7 +146,7 @@ export default function CreatorCommunityGlobe() {
                 atmosphereColor="#00AEFF"
                 atmosphereAltitude={0.16}
                 polygonsData={countriesGeoJson.features}
-                polygonGeoJsonGeometry={(feature) => feature.geometry}
+                polygonGeoJsonGeometry={(feature) => (feature as CountryFeature).geometry}
                 polygonCapColor={(feature) => {
                   const name = countryName(feature as CountryFeature);
                   return countries.some(([country]) => country === name) ? "rgba(111,36,184,0.82)" : "rgba(255,255,255,0.07)";
