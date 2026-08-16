@@ -39,17 +39,19 @@ export async function approveMorphImageSubmission(submission: MorphImageSubmissi
   const functions = getFunctions(undefined, "europe-west2");
   const approveCallable = httpsCallable<{ submissionId: string }, { success: boolean; approvedImageId: string; morphId: string; morphName: string; storagePath: string }>(functions, "approveMorphImageSubmission");
   try {
-    const result = await Promise.race([
-      approveCallable({ submissionId: submission.id }),
-      new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Approval timed out after 60 seconds. The submission was not marked approved. Please refresh and try again.")), 60000)),
-    ]);
+    const result = await Promise.race([approveCallable({ submissionId: submission.id }), new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Approval timed out after 60 seconds. The submission was not marked approved. Please refresh and try again.")), 60000))]);
     const data = result.data;
     const imageUrl = await getDownloadURL(ref(storage, data.storagePath));
     return { id: data.approvedImageId, morphId: data.morphId, morphName: data.morphName, imageUrl, storagePath: data.storagePath, creditType: submission.creditType, creditName: submission.creditName, creditSocial: submission.creditSocial, sourceSubmissionId: submission.id, approvedAt: undefined, approvedBy: reviewerUid };
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Unable to approve this submission.");
-  }
+  } catch (error) { throw new Error(error instanceof Error ? error.message : "Unable to approve this submission."); }
 }
+
+export async function deleteApprovedMorphImage(approvedImageId: string, reason: string): Promise<void> {
+  const functions = getFunctions(undefined, "europe-west2");
+  const removeCallable = httpsCallable<{ approvedImageId: string; reason: string }, { success: boolean }>(functions, "deleteApprovedMorphImage");
+  await removeCallable({ approvedImageId, reason: reason.trim() });
+}
+
 export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) { if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined); await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null }); }
 
 export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> {
@@ -59,11 +61,7 @@ export async function getApprovedMorphImages(morphId?: string): Promise<Approved
   return Promise.all(filtered.map(async (image) => {
     if (image.imageUrl) return image;
     if (!image.storagePath) return image;
-    try {
-      return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) };
-    } catch (error) {
-      console.warn("Approved morph image URL could not be resolved", image.storagePath, error);
-      return image;
-    }
+    try { return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) }; }
+    catch (error) { console.warn("Approved morph image URL could not be resolved", image.storagePath, error); return image; }
   }));
 }
