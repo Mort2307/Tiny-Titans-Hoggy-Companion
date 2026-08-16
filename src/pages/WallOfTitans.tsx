@@ -4,16 +4,18 @@ import { getTitanWallEntries, type TitanWallEntry } from "../services/titanSuppo
 import "../styles/CreatorTools.css";
 import "../styles/titanWall.css";
 
+const OFFICIAL_TITAN: TitanWallEntry = { id: "tiny-titans-official", displayName: "Tiny Titans", socialUrl: "https://www.facebook.com/share/1bmTfhZgc1/", tierLabel: "Founder & Creator", amountGbp: 0, supportedAt: null };
+
 export default function WallOfTitans() {
-  const [entries, setEntries] = useState<TitanWallEntry[]>([]);
+  const [entries, setEntries] = useState<TitanWallEntry[]>([OFFICIAL_TITAN]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
     void getTitanWallEntries()
-      .then((items) => { if (active) setEntries(items); })
-      .catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "The Wall of Titans could not be loaded."); })
+      .then((items) => { if (active) setEntries(items.some((entry) => entry.id === OFFICIAL_TITAN.id) ? items : [OFFICIAL_TITAN, ...items]); })
+      .catch((loadError) => { if (active) { setEntries([OFFICIAL_TITAN]); setError(loadError instanceof Error ? loadError.message : "The supporter entries could not be loaded, but the official Tiny Titans founder entry remains available."); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
@@ -28,8 +30,7 @@ export default function WallOfTitans() {
       </header>
       {loading && <p role="status">Loading the Wall of Titans…</p>}
       {error && <p role="alert">{error}</p>}
-      {!loading && !error && entries.length === 0 && <section className="welcome-card"><h2>The first Titans are coming.</h2><p>Be one of the first supporters to take your place on the wall. 🐍</p></section>}
-      {!loading && !error && entries.length > 0 && (
+      {!loading && entries.length > 0 && (
         <section className="titan-wall-grid" aria-label="Wall of Titans supporters">
           {entries.map((entry) => (
             <article className="titan-wall-card" key={entry.id}>
@@ -39,7 +40,7 @@ export default function WallOfTitans() {
                 <span className="titan-wall-card__tier">{entry.tierLabel}</span>
                 {entry.socialUrl && <a href={entry.socialUrl} target="_blank" rel="noreferrer noopener">🔗 Social profile</a>}
               </div>
-              <time dateTime={entry.supportedAt ?? undefined}>{entry.supportedAt ? new Date(entry.supportedAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "Titan supporter"}</time>
+              <time dateTime={entry.supportedAt ?? undefined}>{entry.supportedAt ? new Date(entry.supportedAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "Founder"}</time>
             </article>
           ))}
         </section>
