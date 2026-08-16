@@ -51,14 +51,16 @@ export default function TesterCentre() {
   if (authorized === false) return <Navigate to="/" replace />;
   if (!user || authorized === null) return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
 
+  const authenticatedUid = user.uid;
+
   async function runSuite(suiteId: string) {
     const suite = SUITES.find((item) => item.id === suiteId);
     if (!suite) return;
     setRunningSuite(suiteId);
     setError("");
     try {
-      const checks = await suite.build(user.uid);
-      setRun(await runTesterSuite(user.uid, suite.id, checks));
+      const checks = await suite.build(authenticatedUid);
+      setRun(await runTesterSuite(authenticatedUid, suite.id, checks));
     } catch (suiteError) {
       setError(suiteError instanceof Error ? suiteError.message : "Tester Bot could not complete the suite.");
     } finally {
