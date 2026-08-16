@@ -1,24 +1,28 @@
 {
+  "id": "/",
   "name": "Tiny Titans Hoggy Companion",
   "short_name": "Tiny Titans",
   "description": "Western Hognose snake tracking, genetics and husbandry companion app.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",
+  "lang": "en-GB",
   "background_color": "#140022",
   "theme_color": "#140022",
+  "categories": ["education", "lifestyle"],
   "icons": [
     {
-      "src": "/TinyTitans-Logo.jpg",
-      "sizes": "2048x2048",
-      "type": "image/jpeg",
+      "src": "/favicon.svg",
+      "sizes": "48x46",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/TinyTitans-Logo.jpg",
-      "sizes": "2048x2048",
-      "type": "image/jpeg",
+      "src": "/favicon.svg",
+      "sizes": "48x46",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ]
