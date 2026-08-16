@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    match /users/{userId}/snakes/{snakeId}/{fileName} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /morph-submissions/{userId}/{submissionId}/{fileName} {
+      allow write: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /issueEvidence/{userId}/{reportId}/{fileName} {
+      allow write: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /morphLibrary/{morphId}/community/{fileName} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
