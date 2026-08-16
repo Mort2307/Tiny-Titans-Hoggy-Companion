@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getCommunityPosts } from "../services/communityService";
+import { markCommunityAsRead } from "../services/communityReadStateService";
 import type { CommunityCategory, CommunityPost } from "../types/community";
 import { communityCategoryIcon, communityCategoryLabel } from "../types/community";
 import "../styles/CommunityHub.css";
@@ -66,6 +67,13 @@ export default function CommunityHub() {
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, [authLoading, profileLoading, user?.uid, profile?.isTester, profile?.role]);
+
+  useEffect(() => {
+    if (authLoading || profileLoading || !user) return;
+    void markCommunityAsRead(user.uid)
+      .then(() => window.dispatchEvent(new Event("community-read-state-changed")))
+      .catch(() => undefined);
+  }, [authLoading, profileLoading, user?.uid]);
 
   const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
   const importantCount = posts.filter((post) => post.priority !== "normal" && post.category !== "release").length;
