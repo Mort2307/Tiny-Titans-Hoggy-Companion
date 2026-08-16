@@ -11,7 +11,9 @@ type CountryFeature = {
 };
 
 type CountryCollection = { type: "FeatureCollection"; features: CountryFeature[] };
-type PolygonGeometry = ReturnType<NonNullable<GlobeProps["polygonGeoJsonGeometry"]>>;
+type PolygonGeometry = Parameters<NonNullable<GlobeProps["polygonGeoJsonGeometry"]>> extends [object]
+  ? ReturnType<Extract<NonNullable<GlobeProps["polygonGeoJsonGeometry"]>, (...args: any[]) => any>>
+  : never;
 
 const COUNTRY_GEOJSON_URL = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
 
