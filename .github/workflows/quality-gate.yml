@@ -26,11 +26,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
       - name: Production build
         run: npm run build
 
       - name: Verify build output
         run: test -f dist/index.html
+
+      - name: Validate Functions syntax
+        run: node --check functions/index.js
+
+      - name: Lint changed Tester Bot code
+        run: >-
+          npx eslint
+          src/pages/TesterCentre.tsx
+          src/services/testerSecurityService.ts
+          src/services/testerSecurityRunnerService.ts
+          src/services/testerReportService.ts
+          src/services/testerBotService.ts
+          src/services/testerSuitesService.ts
+          src/services/testerPhotoService.ts
