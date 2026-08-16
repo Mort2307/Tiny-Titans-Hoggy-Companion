@@ -1,0 +1,16 @@
+import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { db } from "../firebase/config";
+import BackHomeButton from "../components/BackHomeButton";
+
+type Health = { lastSchedulerRunAt?: { toDate?: () => Date }; pendingProcessed?: number; sent?: number; failed?: number; suppressed?: number; quietDeferred?: number; usersWithNotifications?: number; feedingEnabledUsers?: number; weighingEnabledUsers?: number; shedEnabledUsers?: number; medicationEnabledUsers?: number; activeDevices?: number };
+
+export default function CreatorNotificationSystem() {
+  const navigate = useNavigate();
+  const [health, setHealth] = useState<Health>({});
+  const [error, setError] = useState("");
+  useEffect(() => { void getDoc(doc(db, "creatorNotificationHealth", "system")).then((snap) => { if (snap.exists()) setHealth(snap.data() as Health); }).catch((err) => setError(err instanceof Error ? err.message : "Unable to load notification health.")); }, []);
+  const lastRun = health.lastSchedulerRunAt?.toDate?.();
+  return <main className="page-container"><BackHomeButton /><header className="page-header"><p className="creator-dashboard__eyebrow">PRIVATE CREATOR CENTRE</p><h1>🔔 Notification System</h1><p>Aggregate notification infrastructure health only. Individual reminder content and medication details are never exposed here.</p></header>{error && <div className="creator-error">{error}</div>}<section className="creator-global-grid"><div className="creator-global-card"><span>⏱️</span><strong>{lastRun ? lastRun.toLocaleString("en-GB") : "Not yet"}</strong><label>Last scheduler run</label><small>Cloud Scheduler / Functions</small></div><div className="creator-global-card"><span>📱</span><strong>{health.activeDevices ?? 0}</strong><label>Active devices</label><small>Registered notification devices</small></div><div className="creator-global-card"><span>👥</span><strong>{health.usersWithNotifications ?? 0}</strong><label>Users with notifications</label><small>Aggregate only</small></div><div className="creator-global-card"><span>📤</span><strong>{health.sent ?? 0}</strong><label>Recently sent</label><small>Current scheduler cycle</small></div><div className="creator-global-card"><span>⚠️</span><strong>{health.failed ?? 0}</strong><label>Failed sends</label><small>Current scheduler cycle</small></div><div className="creator-global-card"><span>🌙</span><strong>{health.quietDeferred ?? 0}</strong><label>Quiet-hour deferrals</label><small>Current scheduler cycle</small></div></section><section className="creator-admin-section"><h2>Reminder coverage</h2><div className="creator-global-grid"><div className="creator-global-card"><strong>{health.feedingEnabledUsers ?? 0}</strong><label>Feeding enabled</label></div><div className="creator-global-card"><strong>{health.weighingEnabledUsers ?? 0}</strong><label>Weighing enabled</label></div><div className="creator-global-card"><strong>{health.shedEnabledUsers ?? 0}</strong><label>Shed enabled</label></div><div className="creator-global-card"><strong>{health.medicationEnabledUsers ?? 0}</strong><label>Medication enabled</label><small>No medication details shown.</small></div></div></section><button type="button" className="account-button" onClick={() => navigate("/creator")}>← Back to Creator Hub</button></main>;
+}
