@@ -1,6 +1,13 @@
 /// <reference lib="webworker" />
 import { initializeApp } from "firebase/app";
 import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
+import { clientsClaim } from "workbox-core";
+import { precacheAndRoute } from "workbox-precaching";
+
+declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: Array<unknown> };
+
+precacheAndRoute(self.__WB_MANIFEST);
+clientsClaim();
 
 const firebaseConfig = {
   apiKey: "AIzaSyCaUnpNpfoGcmgs3cfe8PXYTeU7_lz50d0",
@@ -13,13 +20,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
-const sw = self as unknown as ServiceWorkerGlobalScope;
 
 onBackgroundMessage(messaging, (payload) => {
   const title = payload.notification?.title || payload.data?.title || "🐍 Tiny Titans Reminder";
   const body = payload.notification?.body || payload.data?.body || "You have a Tiny Titans reminder.";
   const url = payload.data?.url || "/";
-  void sw.registration.showNotification(title, {
+  void self.registration.showNotification(title, {
     body,
     icon: "/TinyTitans-Logo.jpg",
     badge: "/TinyTitans-Logo.jpg",
@@ -28,14 +34,12 @@ onBackgroundMessage(messaging, (payload) => {
   });
 });
 
-sw.addEventListener("notificationclick", (event) => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = new URL(String((event.notification.data as { url?: string } | undefined)?.url || "/"), sw.location.origin).href;
-  event.waitUntil(sw.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+  const target = new URL(String((event.notification.data as { url?: string } | undefined)?.url || "/"), self.location.origin).href;
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
     const existing = clients.find((client) => "focus" in client);
-    if (existing && "navigate" in existing) {
-      return (existing as WindowClient).navigate(target).then((client) => client?.focus());
-    }
-    return sw.clients.openWindow(target);
+    if (existing && "navigate" in existing) return (existing as WindowClient).navigate(target).then((client) => client?.focus());
+    return self.clients.openWindow(target);
   }));
 });
