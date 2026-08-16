@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import { hasCreatorClaim } from "../services/creatorAuthService";
 import { createCoreDiagnosticChecks, runTesterSuite, type TesterRun, type TesterCheck } from "../services/testerBotService";
 import { createTrackerRegressionChecks } from "../services/testerSuitesService";
+import { createShedPhotoRegressionCheck } from "../services/testerPhotoService";
+import { getUserSnakes } from "../services/snakeService";
 import { createSecurityBoundaryChecks } from "../services/testerSecurityService";
 import { buildTesterReport } from "../services/testerReportService";
 
@@ -29,7 +31,9 @@ export default function TesterCentre() {
   async function buildUserChecks() {
     const claims = await hasCreatorClaim(true);
     const core = createCoreDiagnosticChecks({ uid: user.uid, authenticated: true, creatorClaim: claims, analyticsConsent: true }).filter((check) => check.category !== "security");
-    return [...core, ...(await createTrackerRegressionChecks(user.uid))];
+    const trackerChecks = await createTrackerRegressionChecks(user.uid);
+    const snakes = await getUserSnakes(user.uid);
+    return [...core, ...trackerChecks, createShedPhotoRegressionCheck(user.uid, snakes[0])];
   }
 
   async function buildSecurityChecks() {
