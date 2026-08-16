@@ -10,7 +10,11 @@ import { createSecurityBoundaryChecks } from "../services/testerSecurityService"
 import { createServerSecurityAttackCheck } from "../services/testerSecurityRunnerService";
 import { buildTesterReport } from "../services/testerReportService";
 
-const categoryLabels: Record<string, string> = { auth: "Authentication", security: "Security & Authorization", data: "Snake Profiles & Data", feeding: "Feeding Tracker", weight: "Weight Tracker", shed: "Shed Tracker & Photos", genetics: "Genetics Calculator", privacy: "Privacy & Permissions", analytics: "Creator Analytics", mobile: "Mobile / UI" };
+const categoryLabels: Record<string, string> = {
+  auth: "Authentication", security: "Security & Authorization", data: "Snake Profiles & Data",
+  feeding: "Feeding Tracker", weight: "Weight Tracker", shed: "Shed Tracker & Photos",
+  genetics: "Genetics Calculator", privacy: "Privacy & Permissions", analytics: "Creator Analytics", mobile: "Mobile / UI",
+};
 
 export default function TesterCentre() {
   const { user } = useAuth();
@@ -22,12 +26,31 @@ export default function TesterCentre() {
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<"user" | "security">("user");
 
-  useEffect(() => { let active = true; hasCreatorClaim(true).then((value) => { if (active) setAuthorized(value); }).catch(() => { if (active) setAuthorized(false); }); return () => { active = false; }; }, []);
+  const categories = useMemo(() => [...new Set(run?.results.map((result) => result.category) ?? [])], [run]);
+  const passed = run?.results.filter((result) => result.status === "pass").length ?? 0;
+  const failed = run?.results.filter((result) => result.status === "fail").length ?? 0;
+  const blocked = run?.results.filter((result) => result.status === "blocked").length ?? 0;
+
+  useEffect(() => {
+    let active = true;
+    hasCreatorClaim(true)
+      .then((value) => { if (active) setAuthorized(value); })
+      .catch(() => { if (active) setAuthorized(false); });
+    return () => { active = false; };
+  }, []);
 
   if (authorized === false) return <Navigate to="/" replace />;
-  if (!user || authorized === null) return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
+  if (!user || authorized === null) {
+    return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
+  }
 
-  async function execute(suite: string, checks: TesterCheck[]) { setRunning(true); setCopied(false); try { const result = await runTesterSuite(user.uid, suite, checks); setRun(result); setReport(buildTesterReport(result)); } finally { setRunning(false); } }
+  async function execute(suite: string, checks: TesterCheck[]) {
+    setRunning(true); setCopied(false);
+    try {
+      const result = await runTesterSuite(user.uid, suite, checks);
+      setRun(result); setReport(buildTesterReport(result));
+    } finally { setRunning(false); }
+  }
 
   async function buildUserChecks() {
     const claims = await hasCreatorClaim(true);
@@ -39,26 +62,35 @@ export default function TesterCentre() {
 
   async function buildSecurityChecks() {
     const claims = await hasCreatorClaim(true);
-    const clientChecks = createSecurityBoundaryChecks(user.uid, claims).filter((check) => !["security-firestore-cross-user", "security-storage-cross-user", "security-role-matrix", "security-cross-user-test-identity"].includes(check.id));
+    const blockedIds = new Set(["security-firestore-cross-user", "security-storage-cross-user", "security-role-matrix", "security-cross-user-test-identity"]);
+    const clientChecks = createSecurityBoundaryChecks(user.uid, claims).filter((check) => !blockedIds.has(check.id));
     return [...clientChecks, createServerSecurityAttackCheck()];
   }
 
-  async function runFull() { await execute(mode === "user" ? "full-user-regression" : "full-security-regression", mode === "user" ? await buildUserChecks() : await buildSecurityChecks()); }
+  async function runFull() {
+    await execute(mode === "user" ? "full-user-regression" : "full-security-regression", mode === "user" ? await buildUserChecks() : await buildSecurityChecks());
+  }
 
   async function runSpecific() {
     const query = specificArea.trim().toLowerCase();
     if (!query) return;
     const all = mode === "user" ? await buildUserChecks() : await buildSecurityChecks();
     const matches = all.filter((check) => [check.id, check.name, check.category, check.descriptor ?? "", categoryLabels[check.category] ?? ""].join(" ").toLowerCase().includes(query));
-    await execute(`specific-${mode}:${query}`, matches.length ? matches : [{ id: "specific-no-match", name: `No ${mode} test matched: ${specificArea}`, category: mode === "security" ? "security" : "data", severity: "high", descriptor: `Tester Centre / ${mode} specific test search`, run: async () => ({ status: "fail", message: `No registered ${mode} test matches '${specificArea}'.`, details: { expected: "At least one matching test", actual: "No match", fixHint: `Use a registered ${mode} feature/area name.` } }) }]);
+    if (!matches.length) {
+      matches.push({
+        id: "specific-no-match", name: `No ${mode} test matched: ${specificArea}`, category: mode === "security" ? "security" : "data", severity: "high",
+        descriptor: `Tester Centre / ${mode} specific test search`,
+        run: async () => ({ status: "fail", message: `No registered ${mode} test matches '${specificArea}'.`, details: { expected: "At least one matching test", actual: "No match", fixHint: "Use a registered feature or test-area name." } }),
+      });
+    }
+    await execute(`specific-${mode}:${query}`, matches);
   }
 
-  const passed = run?.results.filter((result) => result.status === "pass").length ?? 0;
-  const failed = run?.results.filter((result) => result.status === "fail").length ?? 0;
-  const blocked = run?.results.filter((result) => result.status === "blocked").length ?? 0;
-  const categories = useMemo(() => [...new Set(run?.results.map((result) => result.category) ?? [])], [run]);
-
-  async function copyReport() { if (!report) return; await navigator.clipboard.writeText(report); setCopied(true); window.setTimeout(() => setCopied(false), 2000); }
+  async function copyReport() {
+    if (!report) return;
+    await navigator.clipboard.writeText(report);
+    setCopied(true); window.setTimeout(() => setCopied(false), 2000);
+  }
 
   return <div className="page-container">
     <div className="welcome-card">
