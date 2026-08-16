@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useAuth } from "../context/AuthContext";
 import { hasCreatorClaim } from "../services/creatorAuthService";
 
