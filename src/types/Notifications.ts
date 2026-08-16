@@ -11,9 +11,12 @@ export type NotificationSettings = {
   feedingPreparationTime: string;
 };
 
+// No preparation reminder is assumed until the keeper enables it and chooses
+// their preferred timing. The timing fields are retained as a safe editable
+// default for the settings UI and existing records.
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   enabled: false,
-  feedingPreparationEnabled: true,
-  feedingPreparationDaysBefore: 2,
+  feedingPreparationEnabled: false,
+  feedingPreparationDaysBefore: 0,
   feedingPreparationTime: "08:00",
 };
