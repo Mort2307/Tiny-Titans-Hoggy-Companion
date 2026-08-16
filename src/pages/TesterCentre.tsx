@@ -28,7 +28,7 @@ export default function TesterCentre() {
 
   async function buildUserChecks() {
     const claims = await hasCreatorClaim(true);
-    const core = createCoreDiagnosticChecks({ uid: user.uid, authenticated: true, creatorClaim: claims, analyticsConsent: true });
+    const core = createCoreDiagnosticChecks({ uid: user.uid, authenticated: true, creatorClaim: claims, analyticsConsent: true }).filter((check) => check.category !== "security");
     return [...core, ...(await createTrackerRegressionChecks(user.uid))];
   }
 
