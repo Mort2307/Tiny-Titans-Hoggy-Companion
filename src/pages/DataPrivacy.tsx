@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase/config";
+import PageBackButton from "../components/PageBackButton";
 
 const CONSENT_VERSION = "2026-08-16-location-analytics-v1";
 
@@ -65,10 +66,6 @@ export default function DataPrivacy() {
         } : null,
         updatedAt: serverTimestamp(),
       }, { merge: true });
-
-      // Keep this page mounted after a successful save. Calling refreshProfile()
-      // here refreshes the router-wide auth/profile state and can bounce the user
-      // away from this form while the Firestore write is completing.
       setSaved(true);
     } catch (saveError) {
       console.error("Tiny Titans: data privacy save failed", saveError);
@@ -81,6 +78,7 @@ export default function DataPrivacy() {
   return (
     <main className="page-container">
       <section className="personalisation-shell">
+        <PageBackButton fallbackPath="/account" label="Back to My Account" />
         <p className="personalisation-eyebrow">My Account</p>
         <h1>🔐 Data &amp; Privacy</h1>
         <p>You control the optional data Tiny Titans collects. Core reptile tracking does not require optional analytics, product updates or community location sharing.</p>
