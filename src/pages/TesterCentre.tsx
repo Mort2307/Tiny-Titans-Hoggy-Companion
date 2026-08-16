@@ -7,6 +7,7 @@ import { createTrackerRegressionChecks } from "../services/testerSuitesService";
 import { createShedPhotoRegressionCheck } from "../services/testerPhotoService";
 import { getUserSnakes } from "../services/snakeService";
 import { createSecurityBoundaryChecks } from "../services/testerSecurityService";
+import { createServerSecurityAttackCheck } from "../services/testerSecurityRunnerService";
 import { buildTesterReport } from "../services/testerReportService";
 
 const categoryLabels: Record<string, string> = { auth: "Authentication", security: "Security & Authorization", data: "Snake Profiles & Data", feeding: "Feeding Tracker", weight: "Weight Tracker", shed: "Shed Tracker & Photos", genetics: "Genetics Calculator", privacy: "Privacy & Permissions", analytics: "Creator Analytics", mobile: "Mobile / UI" };
@@ -38,7 +39,8 @@ export default function TesterCentre() {
 
   async function buildSecurityChecks() {
     const claims = await hasCreatorClaim(true);
-    return createSecurityBoundaryChecks(user.uid, claims);
+    const clientChecks = createSecurityBoundaryChecks(user.uid, claims).filter((check) => !["security-firestore-cross-user", "security-storage-cross-user", "security-role-matrix", "security-cross-user-test-identity"].includes(check.id));
+    return [...clientChecks, createServerSecurityAttackCheck()];
   }
 
   async function runFull() { await execute(mode === "user" ? "full-user-regression" : "full-security-regression", mode === "user" ? await buildUserChecks() : await buildSecurityChecks()); }
