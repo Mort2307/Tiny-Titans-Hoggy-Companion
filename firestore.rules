@@ -4,7 +4,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function hasCreatorClaim() { return signedIn() && (request.auth.token.creator == true || request.auth.token.admin == true); }
-    function isAdmin() { return hasCreatorClaim() || (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"); }
     function isCreator() { return hasCreatorClaim() || (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"); }
     function isTester() { return signedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isTester == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tester"); }
 
@@ -31,6 +30,14 @@ service cloud.firestore {
     match /issueReports/{reportId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid); allow update, delete: if isCreator(); }
     match /founderApplications/{applicationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isCreator(); }
     match /communityPosts/{postId} { allow read: if signedIn() && (resource.data.audience == "everyone" || (resource.data.audience == "testers" && isTester()) || (resource.data.audience == "admin" && isCreator())); allow create, update, delete: if isCreator(); }
+
+    match /morphSubmissions/{submissionId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "creating" && request.resource.data.moderationStatus == "pending" && request.resource.data.submissionComplete == false;
+      allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
+      allow list: if isCreator();
+      allow update, delete: if isCreator();
+    }
+
     match /morphImageSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (request.auth.uid == resource.data.userId || isCreator()); allow list: if isCreator(); allow update, delete: if isCreator(); }
     match /approvedMorphImages/{imageId} { allow read: if signedIn(); allow create, update, delete: if isCreator(); }
     match /{document=**} { allow read, write: if false; }
