@@ -2,8 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function hasCreatorClaim() { return signedIn() && (request.auth.token.creator == true || request.auth.token.admin == true); }
-    function hasModeratorClaim() { return signedIn() && (request.auth.token.moderator == true || request.auth.token.creator == true || request.auth.token.admin == true); }
+    // Creator/Admin access is backed by Firebase custom claims, with the
+    // persisted role as a safe fallback. Users cannot change their own role
+    // because the /users update rule requires role preservation for self-writes.
+    function hasCreatorClaim() { return signedIn() && (request.auth.token.creator == true || request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["creator", "admin"]); }
+    function hasModeratorClaim() { return signedIn() && (request.auth.token.moderator == true || request.auth.token.creator == true || request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["creator", "admin", "moderator"]); }
     function isAdmin() { return signedIn() && (request.auth.token.admin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"); }
     function isTester() { return signedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isTester == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tester"); }
     function isPaidSupporter(uid) { return signedIn() && uid == request.auth.uid && get(/databases/$(database)/documents/supporters/$(uid)).data.status == "active"; }
