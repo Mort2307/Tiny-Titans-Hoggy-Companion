@@ -31,7 +31,6 @@ export default function Calculator() {
     }
 
     let cancelled = false;
-
     setSnakesLoading(true);
     setSnakesError(null);
 
@@ -40,9 +39,7 @@ export default function Calculator() {
         if (!cancelled) setSnakes(loaded);
       })
       .catch((error: unknown) => {
-        if (!cancelled) {
-          setSnakesError(error instanceof Error ? error.message : "Unable to load your snakes.");
-        }
+        if (!cancelled) setSnakesError(error instanceof Error ? error.message : "Unable to load your snakes.");
       })
       .finally(() => {
         if (!cancelled) setSnakesLoading(false);
@@ -61,9 +58,7 @@ export default function Calculator() {
         (morph) =>
           morph.verification !== "Unverified" &&
           morph.verification !== "Disputed" &&
-          (morph.kind === "Gene" ||
-            morph.kind === "Super" ||
-            morph.kind === "Combination")
+          (morph.kind === "Gene" || morph.kind === "Super" || morph.kind === "Combination")
       ),
     [allMorphs]
   );
@@ -82,14 +77,8 @@ export default function Calculator() {
   const result: GeneticsCalculatorResult = useMemo(
     () =>
       calculateGenetics({
-        female: {
-          morphs: mother.morphs,
-          hets: mother.hets.map((het) => het.gene),
-        },
-        male: {
-          morphs: father.morphs,
-          hets: father.hets.map((het) => het.gene),
-        },
+        female: { morphs: mother.morphs, hets: mother.hets.map((het) => het.gene) },
+        male: { morphs: father.morphs, hets: father.hets.map((het) => het.gene) },
       }),
     [mother, father]
   );
@@ -103,23 +92,24 @@ export default function Calculator() {
   useEffect(() => {
     if (!user || !hasSelection || result.offspring.length === 0) return;
 
-    const trackingKey = `${TRACKING_STORAGE_PREFIX}${user.uid}:${JSON.stringify({
-      femaleMorphs: mother.morphs.map((morph) => morph.id).sort(),
+    const trackingPayload = {
+      femaleMorphs: [...mother.morphs].sort(),
       femaleHets: mother.hets.map((het) => het.gene).sort(),
-      maleMorphs: father.morphs.map((morph) => morph.id).sort(),
+      maleMorphs: [...father.morphs].sort(),
       maleHets: father.hets.map((het) => het.gene).sort(),
       outcomeCount: result.offspring.length,
       unresolved: result.hasUnresolvedGenetics,
-    })}`;
+    };
+    const trackingKey = `${TRACKING_STORAGE_PREFIX}${user.uid}:${JSON.stringify(trackingPayload)}`;
 
     if (sessionStorage.getItem(trackingKey) === "1") return;
 
     const timer = window.setTimeout(() => {
       void recordGeneticsCalculation({
         uid: user.uid,
-        femaleMorphIds: mother.morphs.map((morph) => morph.id),
+        femaleMorphIds: mother.morphs,
         femaleHetGenes: mother.hets.map((het) => het.gene),
-        maleMorphIds: father.morphs.map((morph) => morph.id),
+        maleMorphIds: father.morphs,
         maleHetGenes: father.hets.map((het) => het.gene),
         outcomeCount: result.offspring.length,
         unresolved: result.hasUnresolvedGenetics,
@@ -142,16 +132,10 @@ export default function Calculator() {
         <div>
           <span className="calculator-kicker">TINY TITANS · BREEDING LAB</span>
           <h1>Genetics Calculator</h1>
-          <p>
-            Choose your actual hoggies or build a pairing manually from the
-            recognised genetics database.
-          </p>
+          <p>Choose your actual hoggies or build a pairing manually from the recognised genetics database.</p>
         </div>
-
         {hasSelection && (
-          <button type="button" onClick={clearCalculator} className="calculator-clear-button">
-            Clear pairing
-          </button>
+          <button type="button" onClick={clearCalculator} className="calculator-clear-button">Clear pairing</button>
         )}
       </header>
 
@@ -162,34 +146,12 @@ export default function Calculator() {
       </div>
 
       {snakesError && <div className="calculator-error">{snakesError}</div>}
-
-      {snakesLoading && (
-        <div className="calculator-loading">Loading your logged snakes and their genetics…</div>
-      )}
-
-      {!snakesLoading && snakes.length === 0 && (
-        <div className="calculator-note">
-          No saved snakes were found. You can still build both parents manually from the recognised database.
-        </div>
-      )}
+      {snakesLoading && <div className="calculator-loading">Loading your logged snakes and their genetics…</div>}
+      {!snakesLoading && snakes.length === 0 && <div className="calculator-note">No saved snakes were found. You can still build both parents manually from the recognised database.</div>}
 
       <div className="calculator-parents">
-        <ParentSelector
-          title="Female / Mother"
-          parent={mother}
-          snakes={snakes}
-          morphOptions={recognisedVisualOptions}
-          hetOptions={hetOptions}
-          onChange={setMother}
-        />
-        <ParentSelector
-          title="Male / Father"
-          parent={father}
-          snakes={snakes}
-          morphOptions={recognisedVisualOptions}
-          hetOptions={hetOptions}
-          onChange={setFather}
-        />
+        <ParentSelector title="Female / Mother" parent={mother} snakes={snakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setMother} />
+        <ParentSelector title="Male / Father" parent={father} snakes={snakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setFather} />
       </div>
 
       <section className="calculator-results">
@@ -197,11 +159,7 @@ export default function Calculator() {
           <div>
             <span className="calculator-kicker">OFFSPRING PREDICTION</span>
             <h2>Possible Offspring</h2>
-            <p>
-              {hasSelection
-                ? `${result.offspring.length} genetic outcome${result.offspring.length === 1 ? "" : "s"} calculated.`
-                : "Select both parents to calculate the pairing."}
-            </p>
+            <p>{hasSelection ? `${result.offspring.length} genetic outcome${result.offspring.length === 1 ? "" : "s"} calculated.` : "Select both parents to calculate the pairing."}</p>
           </div>
           {hasSelection && <strong className="calculator-probability-total">100%</strong>}
         </div>
@@ -210,10 +168,7 @@ export default function Calculator() {
           <div className="calculator-empty">
             <div className="calculator-empty-icon">🧬</div>
             <h3>Build your pairing</h3>
-            <p>
-              Pick one of your snakes, then fine-tune its genetics with the dropdowns,
-              or create both parents entirely manually.
-            </p>
+            <p>Pick one of your snakes, then fine-tune its genetics with the dropdowns, or create both parents entirely manually.</p>
           </div>
         )}
 
@@ -226,16 +181,12 @@ export default function Calculator() {
 
         {result.offspring.length > 0 && (
           <div className="calculator-result-grid">
-            {result.offspring.map((offspring) => (
-              <ResultCard key={offspring.id} result={offspring} morphs={allMorphs} />
-            ))}
+            {result.offspring.map((offspring) => <ResultCard key={offspring.id} result={offspring} morphs={allMorphs} />)}
           </div>
         )}
 
         {result.hasUnresolvedGenetics && (
-          <div className="calculator-note calculator-note-warning">
-            Some recorded genetics could not be resolved confidently and were not silently treated as confirmed.
-          </div>
+          <div className="calculator-note calculator-note-warning">Some recorded genetics could not be resolved confidently and were not silently treated as confirmed.</div>
         )}
       </section>
     </main>
