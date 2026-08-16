@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { submitFounderApplication } from "../services/creatorService";
+import PageBackButton from "../components/PageBackButton";
 import "../styles/CreatorTools.css";
 
 export default function Founder() {
@@ -36,7 +37,7 @@ export default function Founder() {
     }
   }
 
-  return <section className="creator-tools-page"><div className="creator-tools-card">
+  return <section className="creator-tools-page"><PageBackButton fallbackPath="/account" label="Back to My Account" /><div className="creator-tools-card">
     <div className="creator-tools-header"><span>👑</span><div><h1>Become a Founder</h1><p>Help shape Tiny Titans from the ground up.</p></div></div>
     <div className="creator-founder-grid"><div><h2>Founder access</h2><p>Founders are early supporters who help test features, challenge the genetics database, report bugs and influence what Tiny Titans becomes.</p><ul><li>Founder recognition inside Tiny Titans</li><li>Early access to selected new features</li><li>A direct voice in product development</li><li>Priority consideration for future Founder-only features</li></ul></div><div className="creator-founder-callout"><strong>Founder status is reviewed.</strong><span>Submitting an application does not automatically grant elevated permissions.</span></div></div>
     {sent ? <div className="creator-success"><h2>Application received ✓</h2><p>Thanks, {profile?.displayName || "Founder"}. Your application is now in the Creator Centre.</p><button type="button" onClick={() => navigate("/account")}>Back to My Account</button></div> : <form className="creator-form" onSubmit={submit}>
