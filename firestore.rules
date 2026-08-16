@@ -10,6 +10,7 @@ service cloud.firestore {
     match /users/{userId}/{document=**} { allow read, write: if signedIn() && (request.auth.uid == userId || isCreator()); }
     match /geneticsCalculations/{calculationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow get, list: if isCreator(); allow update, delete: if isCreator(); }
     match /supporters/{userId} { allow get: if signedIn() && (request.auth.uid == userId || isCreator()); allow list: if isCreator(); allow create, update, delete: if isCreator(); }
+    match /supporterWall/{entryId} { allow read: if signedIn(); allow create, update, delete: if isCreator(); }
     match /supporterStats/{statId} { allow read, write: if isCreator(); }
     match /issueReports/{reportId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid); allow update, delete: if isCreator(); }
     match /feedback/{feedbackId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator(); allow update, delete: if isCreator(); }
