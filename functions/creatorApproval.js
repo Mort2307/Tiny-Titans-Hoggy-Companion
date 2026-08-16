@@ -1,9 +1,64 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 const { getStorage } = require("firebase-admin/storage");
 
 const db = getFirestore();
+const adminAuth = getAuth();
 const bucket = getStorage().bucket();
+
+// The Creator Centre's existing "Make Creator Tester" control calls
+// setCreatorClaim. Keep that public function name for backwards compatibility,
+// but make the operation actually provision the dedicated tester account state.
+// The caller must already be an Admin/Creator; the target cannot self-promote.
+exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+
+  const caller = await db.collection("users").doc(request.auth.uid).get();
+  const callerClaims = request.auth.token || {};
+  const callerAuthorized = callerClaims.admin === true || callerClaims.creator === true || caller.data()?.role === "admin";
+  if (!callerAuthorized) throw new HttpsError("permission-denied", "Creator authorization is required.");
+
+  const targetUid = String(request.data?.uid || "").trim();
+  const enabled = request.data?.enabled !== false;
+  if (!targetUid) throw new HttpsError("invalid-argument", "A target user ID is required.");
+  if (targetUid === request.auth.uid && !enabled) throw new HttpsError("failed-precondition", "The current Creator cannot remove their own Creator access.");
+
+  try {
+    const target = await adminAuth.getUser(targetUid);
+    const existingClaims = target.customClaims || {};
+    const nextClaims = { ...existingClaims };
+
+    if (enabled) {
+      nextClaims.creator = true;
+      nextClaims.creatorTester = true;
+    } else {
+      delete nextClaims.creatorTester;
+      // Do not revoke an existing production Creator claim when disabling tester mode.
+    }
+
+    await adminAuth.setCustomUserClaims(targetUid, nextClaims);
+
+    await db.collection("users").doc(targetUid).set({
+      isTester: enabled,
+      testerType: enabled ? "creator" : null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    await db.collection("creatorAudit").add({
+      actorUid: request.auth.uid,
+      targetUid,
+      action: enabled ? "grant_creator_tester" : "revoke_creator_tester",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true, uid: targetUid, creator: enabled, creatorTester: enabled, isTester: enabled };
+  } catch (error) {
+    console.error("Creator Tester authorization update failed", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Unable to update Creator Tester authorization.");
+  }
+});
 
 exports.approveMorphImageSubmission = onCall(
   { region: "europe-west2", timeoutSeconds: 120, memory: "256MiB" },
@@ -12,7 +67,7 @@ exports.approveMorphImageSubmission = onCall(
 
     const caller = await db.collection("users").doc(request.auth.uid).get();
     const claims = request.auth.token || {};
-    const creatorAuthorized = claims.creator === true || claims.admin === true || caller.data()?.role === "admin";
+    const creatorAuthorized = claims.creator === true || claims.admin === true || claims.creatorTester === true || caller.data()?.role === "admin";
     if (!creatorAuthorized) throw new HttpsError("permission-denied", "Creator authorization is required.");
 
     const submissionId = String(request.data?.submissionId || "").trim();
