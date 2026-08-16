@@ -6,6 +6,7 @@ import { app } from "../firebase/config";
 import "../styles/CreatorTools.css";
 
 const supportOptions = [
+  { key: "starter", amount: 1, label: "Become a Titan", icon: "🐍" },
   { key: "little", amount: 5, label: "Little Titan", icon: "🐍" },
   { key: "growing", amount: 10, label: "Growing Titan", icon: "🐍" },
   { key: "champion", amount: 20, label: "Champion Titan", icon: "👑" },
@@ -15,7 +16,7 @@ const supportOptions = [
 
 const functions = getFunctions(app, "europe-west2");
 const createTitanCheckout = httpsCallable<
-  { tier: string },
+  { tier: string; amountGbp?: string },
   { url: string }
 >(functions, "createTitanCheckout");
 
@@ -23,14 +24,20 @@ export default function BecomeATitan() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [selectedTier, setSelectedTier] = useState("growing");
+  const [selectedTier, setSelectedTier] = useState("starter");
+  const [customMode, setCustomMode] = useState(false);
+  const [customAmount, setCustomAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const selected = useMemo(
-    () => supportOptions.find((option) => option.key === selectedTier) ?? supportOptions[1],
+    () => supportOptions.find((option) => option.key === selectedTier) ?? supportOptions[0],
     [selectedTier]
   );
+
+  const customAmountNumber = Number(customAmount);
+  const customAmountValid = /^\d+(?:\.\d{1,2})?$/.test(customAmount.trim()) && Number.isFinite(customAmountNumber) && customAmountNumber >= 1;
+  const displayAmount = customMode ? (customAmountValid ? customAmountNumber.toFixed(2) : "—") : selected.amount.toFixed(2);
 
   if (!user) return null;
 
@@ -38,14 +45,20 @@ export default function BecomeATitan() {
 
   const handleCheckout = async () => {
     setError("");
-    setLoading(true);
+    if (customMode && !customAmountValid) {
+      setError("Please enter a custom support amount of at least £1.00.");
+      return;
+    }
 
+    setLoading(true);
     try {
-      const result = await createTitanCheckout({ tier: selected.key });
+      const result = customMode
+        ? await createTitanCheckout({ tier: "custom", amountGbp: customAmount.trim() })
+        : await createTitanCheckout({ tier: selected.key });
       window.location.assign(result.data.url);
     } catch (checkoutError) {
       console.error("Titan checkout failed", checkoutError);
-      setError("We couldn't open Stripe Checkout. Please try again in a moment.");
+      setError("We couldn't open Stripe Checkout. Please check the amount and try again.");
       setLoading(false);
     }
   };
@@ -63,7 +76,7 @@ export default function BecomeATitan() {
 
         {paymentState === "success" && (
           <div className="creator-success" role="status">
-            <strong>Thank you for becoming a Titan! 🐍💚</strong>
+            <strong>Thank you for supporting Tiny Titans! 🐍💚</strong>
             <span>
               Stripe has confirmed your checkout. Your supporter status will be
               added to your account when the payment confirmation reaches Tiny Titans.
@@ -74,7 +87,7 @@ export default function BecomeATitan() {
         {paymentState === "cancelled" && (
           <div className="creator-founder-callout" role="status">
             <strong>Checkout cancelled.</strong>
-            <span>No payment was taken. You can choose a tier and try again whenever you like.</span>
+            <span>No payment was taken. You can choose another amount and try again whenever you like.</span>
           </div>
         )}
 
@@ -85,7 +98,7 @@ export default function BecomeATitan() {
               Tiny Titans is built to give keepers a genuinely useful place to
               track their hoggies, understand genetics and learn better
               husbandry. If you enjoy the app and want to help keep it growing,
-              you can become a Titan supporter.
+              you can support the project with a one-time contribution.
             </p>
             <ul>
               <li>Help cover hosting and development costs</li>
@@ -98,33 +111,62 @@ export default function BecomeATitan() {
           <div className="creator-founder-callout">
             <strong>Every Titan counts. 🐍</strong>
             <span>
-              Support is completely optional and does not unlock admin access
-              or change your normal account permissions.
+              Support is completely optional, one-time and does not unlock admin
+              access or change your normal account permissions.
             </span>
           </div>
         </div>
 
         <div className="creator-form">
-          <h2>Choose your Titan level</h2>
+          <h2>Choose your support</h2>
+          <p>Start with £1 or choose a preset amount. Want to give something different? Enter any custom amount from £1.00 upwards.</p>
+
           <div className="creator-actions" style={{ flexWrap: "wrap" }}>
             {supportOptions.map((option) => (
               <button
                 key={option.key}
                 type="button"
-                className={selectedTier === option.key ? "creator-primary" : ""}
-                onClick={() => setSelectedTier(option.key)}
+                className={!customMode && selectedTier === option.key ? "creator-primary" : ""}
+                onClick={() => { setCustomMode(false); setSelectedTier(option.key); setError(""); }}
                 disabled={loading}
               >
                 {option.icon} {option.label} · £{option.amount}
               </button>
             ))}
+            <button
+              type="button"
+              className={customMode ? "creator-primary" : ""}
+              onClick={() => { setCustomMode(true); setError(""); }}
+              disabled={loading}
+            >
+              💚 Custom amount
+            </button>
           </div>
 
+          {customMode && (
+            <label>
+              Custom support amount
+              <span> (minimum £1.00)</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span aria-hidden="true">£</span>
+                <input
+                  inputMode="decimal"
+                  type="text"
+                  value={customAmount}
+                  onChange={(event) => { setCustomAmount(event.target.value.replace(/[^0-9.]/g, "")); setError(""); }}
+                  placeholder="1.00"
+                  aria-label="Custom support amount in pounds"
+                  disabled={loading}
+                />
+              </div>
+              <small>Enter pounds and pence, for example £1, £2.50 or £25.</small>
+            </label>
+          )}
+
           <div className="creator-founder-callout">
-            <strong>Selected support: £{selected.amount} · {selected.label}</strong>
+            <strong>Selected support: {displayAmount === "—" ? "Enter an amount" : `£${displayAmount}`}</strong>
             <span>
-              You'll be taken to Stripe's secure hosted checkout. Tiny Titans
-              never handles or stores your card details.
+              This is a one-time contribution. You'll be taken to Stripe's secure hosted checkout. Tiny Titans never handles or stores your card details.
             </span>
           </div>
 
@@ -138,9 +180,9 @@ export default function BecomeATitan() {
               type="button"
               className="creator-primary"
               onClick={handleCheckout}
-              disabled={loading}
+              disabled={loading || (customMode && !customAmountValid)}
             >
-              {loading ? "Opening Stripe…" : `🐍 Support Tiny Titans · £${selected.amount}`}
+              {loading ? "Opening Stripe…" : `🐍 Support Tiny Titans · ${displayAmount === "—" ? "Choose amount" : `£${displayAmount}`}`}
             </button>
           </div>
         </div>
