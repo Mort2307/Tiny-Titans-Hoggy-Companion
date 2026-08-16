@@ -91,14 +91,13 @@ export function createSecurityBoundaryChecks(uid: string, creatorClaim: boolean)
       id: "security-probe-cleanup",
       name: "Security probes leave no test document",
       category: "security",
-      severity: "high",
+      severity: "critical",
       descriptor: "Creator Hub / security probe cleanup",
       run: async () => {
         const probe = doc(db, "creatorAggregates", probeId);
         const denied = await expectPermissionDenied(() => deleteDoc(probe));
-        return denied
-          ? { status: "pass", message: "Security probe cleanup was also denied, confirming the client cannot mutate server-owned aggregates.", details: { descriptor: "Creator Hub / security probe cleanup", expected: "permission-denied", actual: "permission-denied" } }
-          : { status: "pass", message: "No client-created aggregate probe was removable; server-owned aggregate remains protected.", details: { descriptor: "Creator Hub / security probe cleanup" } };
+        if (denied) return { status: "pass", message: "Client-side cleanup of the server-owned aggregate was correctly denied.", details: { descriptor: "Creator Hub / security probe cleanup", expected: "permission-denied", actual: "permission-denied" } };
+        return { status: "fail", message: "Client-side deletion of a protected creator aggregate was accepted.", details: { descriptor: "Creator Hub / security probe cleanup", expected: "permission-denied", actual: "delete accepted", fixHint: "Inspect firestore.rules match /creatorAggregates/{aggregateId}; all client writes and deletes must remain denied." } };
       },
     },
   ];
