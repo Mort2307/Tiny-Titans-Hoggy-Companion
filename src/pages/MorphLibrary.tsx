@@ -1,13 +1,76 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import BackHomeButton from "../components/BackHomeButton";
 import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
 import { reptifitMorphCatalog } from "../data/reptifitMorphCatalog";
 import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
+import { getApprovedMorphImages } from "../services/creatorService";
 import { submitMorphImageV2, type MorphCreditMode } from "../services/morphSubmissionServiceV2";
 import "../styles/morphLibrary.css";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
 function asReferenceEntry(entry: MasterMorphDefinition): MorphReferenceEntry { return entry as MorphReferenceEntry; }
+
+type ApprovedMorphImage = {
+  id?: string;
+  imageUrl: string;
+  creditName?: string;
+  creditSocial?: string;
+  creditMode?: MorphCreditMode;
+  approvedAt?: unknown;
+};
+
+function CommunityMorphGallery({ morphId, morphName }: { morphId: string; morphName: string }) {
+  const [images, setImages] = useState<ApprovedMorphImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedImage, setSelectedImage] = useState<ApprovedMorphImage | null>(null);
+  const galleryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    setImages([]);
+    void getApprovedMorphImages(morphId)
+      .then((result) => {
+        if (cancelled) return;
+        setImages((result as ApprovedMorphImage[]).filter((image) => Boolean(image?.imageUrl)));
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "We couldn't load the community images.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [morphId]);
+
+  function moveGallery(direction: "left" | "right") {
+    galleryRef.current?.scrollBy({ left: direction === "right" ? 320 : -320, behavior: "smooth" });
+  }
+
+  return <section className="morph-detail__section morph-community-gallery" aria-labelledby="community-gallery-title">
+    <div className="morph-community-gallery__header">
+      <div><h3 id="community-gallery-title">Community examples</h3><p>Approved reference photographs submitted by Tiny Titans keepers.</p></div>
+      {!loading && !error && images.length > 0 && <span className="morph-community-gallery__count">{images.length} {images.length === 1 ? "example" : "examples"}</span>}
+    </div>
+    {loading ? <p className="morph-community-gallery__state">Loading approved {morphName} examples…</p> : error ? <p className="morph-community-gallery__state" role="alert">{error}</p> : images.length === 0 ? <p className="morph-community-gallery__state">No community examples have been approved for {morphName} yet. Be the first to contribute.</p> : <div className="morph-community-gallery__viewport">
+      <button type="button" className="morph-community-gallery__nav" onClick={() => moveGallery("left")} aria-label="Previous community image">‹</button>
+      <div className="morph-community-gallery__scroller" ref={galleryRef} tabIndex={0} aria-label={`${morphName} community image gallery`}>
+        {images.map((image, index) => <button key={image.id ?? `${image.imageUrl}-${index}`} type="button" className="morph-community-gallery__card" onClick={() => setSelectedImage(image)} aria-label={`Open ${morphName} community image ${index + 1}`}>
+          <img src={image.imageUrl} alt={`${morphName} community example ${index + 1}`} loading={index < 2 ? "eager" : "lazy"} />
+          {(image.creditName || image.creditSocial) && <span className="morph-community-gallery__credit">{image.creditName || image.creditSocial}</span>}
+        </button>)}
+      </div>
+      <button type="button" className="morph-community-gallery__nav" onClick={() => moveGallery("right")} aria-label="Next community image">›</button>
+    </div>}
+    {selectedImage && <div className="morph-community-gallery__lightbox" role="presentation" onMouseDown={() => setSelectedImage(null)}>
+      <button type="button" className="morph-community-gallery__lightbox-close" onClick={() => setSelectedImage(null)} aria-label="Close image">×</button>
+      <img src={selectedImage.imageUrl} alt={`${morphName} community example`} onMouseDown={(event) => event.stopPropagation()} />
+      {(selectedImage.creditName || selectedImage.creditSocial) && <p onMouseDown={(event) => event.stopPropagation()}>Credit: {selectedImage.creditName || selectedImage.creditSocial}</p>}
+    </div>}
+  </section>;
+}
 
 function MorphDetail({ morph, onClose }: { morph: MorphReferenceEntry; onClose: () => void }) {
   const contains = morph.contains ?? morph.components?.map((component) => component.morphId) ?? [];
@@ -16,10 +79,11 @@ function MorphDetail({ morph, onClose }: { morph: MorphReferenceEntry; onClose: 
     <div className="morph-detail__eyebrow">TINY TITANS · MORPH DATABASE</div><h2 id="morph-detail-title">{morph.name}</h2>
     <div className="morph-detail__badges"><span>{morph.kind}</span><span>{morph.inheritance}</span><span>{morph.verification}</span></div>
     <p className="morph-detail__description">{morph.description ?? "No description has been added yet."}</p>
+    <CommunityMorphGallery morphId={morph.geneId} morphName={morph.name} />
     {contains.length > 0 && <section className="morph-detail__section"><h3>Contains</h3><div className="morph-detail__contains">{contains.map((item) => <span key={item}>{item}</span>)}</div></section>}
     {morph.components && morph.components.length > 0 && <section className="morph-detail__section"><h3>Genetic components</h3><ul>{morph.components.map((component) => <li key={`${component.morphId}-${component.copies ?? 1}`}><strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}</li>)}</ul></section>}
     <section className="morph-detail__section"><h3>Genetics notes</h3><p>{morph.educationalNotes ?? "No additional genetics notes have been published for this entry yet."}</p></section>
-    <section className="morph-detail__section morph-detail__source"><strong>Reference</strong><span>{morph.sourceLabel ?? "Tiny Titans"}</span><a href={morph.sourceUrl ?? "https://hognose-morphs.com/"} target="_blank" rel="noreferrer">Open source reference ↗</a></section>
+    <section className="morph-detail__section morph-detail__source"><strong>Reference</strong><span>{morph.sourceLabel ?? "Tiny Titans"}</span><a href={morph.sourceUrl ?? "https://hognose-morphs.com/"} target="_blank" rel="noreferrer">Open source reference →</a></section>
   </article></div>;
 }
 
