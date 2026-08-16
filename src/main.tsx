@@ -1,12 +1,38 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import { registerSW } from "virtual:pwa-register";
 
 import "./index.css";
 import "./styles/selector-scroll.css";
 
 import App from "./App";
-
 import { AuthProvider } from "./context/AuthContext";
+
+// Keep installed PWA clients aggressively aligned with the latest Firebase
+// Hosting release. This is intentionally registered from the application
+// entrypoint so both normal browser sessions and installed mobile/desktop PWAs
+// use the same update path.
+const updateSW = registerSW({
+  immediate: true,
+  onRegisteredSW(_swUrl, registration) {
+    if (!registration) return;
+
+    // Check periodically while the app is open. This catches deployments even
+    // when the browser has kept the existing service worker alive for a while.
+    window.setInterval(() => {
+      void registration.update();
+    }, 60 * 60 * 1000);
+  },
+  onNeedRefresh() {
+    // With autoUpdate enabled VitePWA normally handles this automatically.
+    // Keep the callback explicit so a future configuration change cannot leave
+    // a stale installed shell running indefinitely.
+    void updateSW(true);
+  },
+  onOfflineReady() {
+    // Intentionally silent: the app remains fully usable offline.
+  },
+});
 
 function SelectorGrabScrollManager() {
   useEffect(() => {
