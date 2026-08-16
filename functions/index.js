@@ -45,12 +45,10 @@ exports.setCreatorClaim = onCall(
   async (request) => {
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
     if (!isLegacyAdminRequest(request)) throw new HttpsError("permission-denied", "Creator authorization is required.");
-
     const targetUid = String(request.data?.uid || "").trim();
     const enabled = request.data?.enabled !== false;
     if (!targetUid) throw new HttpsError("invalid-argument", "A target user ID is required.");
     if (targetUid === request.auth.uid && !enabled) throw new HttpsError("failed-precondition", "The current Creator cannot remove their own Creator access.");
-
     try {
       const target = await adminAuth.getUser(targetUid);
       const existing = target.customClaims || {};
@@ -107,12 +105,7 @@ exports.stripeWebhook = onRequest(
 );
 
 function londonToday() {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
 }
@@ -124,18 +117,9 @@ function daysBetween(fromDate, toDate) {
 }
 
 function preparationMessage(daysUntil, snakeName) {
-  if (daysUntil === 2) return {
-    title: `🧊 Feeding preparation — ${snakeName}`,
-    body: "Feeding is in 2 days — make sure you have the correct food in stock.",
-  };
-  if (daysUntil === 1) return {
-    title: `🧊 Feeding preparation — ${snakeName}`,
-    body: "Feeding is tomorrow — make sure your feeder is fully defrosted and kept chilled safely until feeding.",
-  };
-  return {
-    title: `🍽️ Feeding day — ${snakeName}`,
-    body: "Feeding day — your snake is due for a feed today.",
-  };
+  if (daysUntil === 2) return { title: `🧊 Feeding preparation — ${snakeName}`, body: "Feeding is in 2 days — make sure you have the correct food in stock." };
+  if (daysUntil === 1) return { title: `🧊 Feeding preparation — ${snakeName}`, body: "Feeding is tomorrow — make sure your feeder is fully defrosted and kept chilled safely until feeding." };
+  return { title: `🍽️ Feeding day — ${snakeName}`, body: "Feeding day — your snake is due for a feed today." };
 }
 
 async function claimNotificationEvent(uid, eventKey, payload) {
@@ -144,11 +128,7 @@ async function claimNotificationEvent(uid, eventKey, payload) {
   await db.runTransaction(async (transaction) => {
     const existing = await transaction.get(eventRef);
     if (existing.exists) return;
-    transaction.create(eventRef, {
-      ...payload,
-      status: "sending",
-      createdAt: FieldValue.serverTimestamp(),
-    });
+    transaction.create(eventRef, { ...payload, status: "sending", createdAt: FieldValue.serverTimestamp() });
     claimed = true;
   });
   return { claimed, eventRef };
@@ -158,41 +138,24 @@ async function sendToUserTokens(uid, eventKey, message) {
   const tokenSnapshot = await db.collection("users").doc(uid).collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokenSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
   if (!tokenDocs.length) return { sent: 0, invalid: 0 };
-
   let sent = 0;
   let invalid = 0;
   for (let index = 0; index < tokenDocs.length; index += 500) {
     const batch = tokenDocs.slice(index, index + 500);
     const tokens = batch.map((item) => item.data().token);
-    const response = await messaging.sendEachForMulticast({
-      tokens,
-      data: {
-        title: message.title,
-        body: message.body,
-        eventKey,
-        url: "/feeding/preparation",
-      },
-    });
+    const response = await messaging.sendEachForMulticast({ tokens, data: { title: message.title, body: message.body, eventKey, url: "/feeding/preparation" } });
     sent += response.successCount;
     invalid += response.failureCount;
     await Promise.all(response.responses.map(async (result, responseIndex) => {
       const code = result.error?.code || "";
-      if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") {
-        await batch[responseIndex].ref.delete();
-      }
+      if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete();
     }));
   }
   return { sent, invalid };
 }
 
 exports.sendFeedingPreparationNotifications = onSchedule(
-  {
-    schedule: "0 8 * * *",
-    timeZone: "Europe/London",
-    region: "europe-west2",
-    memory: "256MiB",
-    timeoutSeconds: 120,
-  },
+  { schedule: "0 8 * * *", timeZone: "Europe/London", region: "europe-west2", memory: "256MiB", timeoutSeconds: 120 },
   async () => {
     const today = londonToday();
     const users = await db.collection("users").get();
@@ -214,18 +177,15 @@ exports.sendFeedingPreparationNotifications = onSchedule(
         const daysUntil = daysBetween(today, schedule.nextFeedingDate);
         if (![2, 1, 0].includes(daysUntil)) continue;
 
+        const alreadyFed = await snakeDocument.ref.collection("feedings").where("date", "==", schedule.nextFeedingDate).limit(1).get();
+        if (!alreadyFed.empty) continue;
+
         const eventKey = `feeding-preparation-${snakeDocument.id}-${schedule.nextFeedingDate}-${daysUntil}`;
         const message = preparationMessage(daysUntil, snake.name || "your snake");
         const delivery = await sendToUserTokens(userDocument.id, eventKey, message);
         if (delivery.sent === 0) continue;
 
-        const { claimed, eventRef } = await claimNotificationEvent(userDocument.id, eventKey, {
-          type: "feeding-preparation",
-          snakeId: snakeDocument.id,
-          snakeName: snake.name || "",
-          feedingDate: schedule.nextFeedingDate,
-          daysUntil,
-        });
+        const { claimed, eventRef } = await claimNotificationEvent(userDocument.id, eventKey, { type: "feeding-preparation", snakeId: snakeDocument.id, snakeName: snake.name || "", feedingDate: schedule.nextFeedingDate, daysUntil });
         if (!claimed) continue;
 
         await eventRef.set({ status: "sent", sentCount: delivery.sent, invalidTokenCount: delivery.invalid, sentAt: FieldValue.serverTimestamp() }, { merge: true });
