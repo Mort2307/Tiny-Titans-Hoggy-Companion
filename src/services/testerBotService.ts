@@ -47,7 +47,14 @@ export async function runTesterSuite(ownerUid: string, suite: string, checks: Te
       results.push({ checkId: check.id, name: check.name, category: check.category, severity: "critical", status: "fail", message: error instanceof Error ? error.message : "Tester Bot encountered an unexpected error.", details: { descriptor: check.descriptor, fixHint: "Inspect the Firebase/service call used by this check and reproduce the failing operation in the named area." }, durationMs: Date.now() - checkStarted });
     }
   }
-  const run: TesterRun = { ownerUid, suite, startedAt: new Date(started).toISOString(), finishedAt: new Date().toISOString(), status: results.some((result) => result.status === "fail") ? "failed" : "passed", results };
+  const run: TesterRun = {
+    ownerUid,
+    suite,
+    startedAt: new Date(started).toISOString(),
+    finishedAt: new Date().toISOString(),
+    status: results.some((result) => result.status === "fail" || result.status === "blocked") ? "failed" : "passed",
+    results,
+  };
   const saved = await addDoc(collection(db, "testerRuns"), { ...run, createdAt: serverTimestamp() });
   return { ...run, id: saved.id };
 }
