@@ -9,13 +9,7 @@ export async function getManagedUsers(): Promise<ManagedUser[]> {
   const snapshot = await getDocs(collection(db, "users"));
   return snapshot.docs.map((doc) => {
     const data = doc.data();
-    return {
-      uid: doc.id,
-      email: typeof data.email === "string" ? data.email : "",
-      displayName: typeof data.displayName === "string" ? data.displayName : "",
-      role: typeof data.role === "string" ? data.role : "user",
-      isTester: data.isTester === true,
-    };
+    return { uid: doc.id, email: typeof data.email === "string" ? data.email : "", displayName: typeof data.displayName === "string" ? data.displayName : "", role: typeof data.role === "string" ? data.role : "user", isTester: data.isTester === true };
   }).sort((a, b) => (a.displayName || a.email || a.uid).localeCompare(b.displayName || b.email || b.uid));
 }
 

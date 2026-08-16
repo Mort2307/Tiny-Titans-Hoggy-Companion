@@ -1,11 +1,13 @@
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { deleteTitanWallEntry, ensureOfficialTitanWallEntry, getTitanWallEntries, saveTitanWallAdminEntry, type TitanWallEntry } from "../services/titanSupportService";
 import "../styles/CreatorTools.css";
 import "../styles/titanWall.css";
+
 type EditorState = { id: string; displayName: string; socialUrl: string; tierLabel: string; amountGbp: string; visibility: "named" | "anonymous"; supportedAt: string };
 const EMPTY: EditorState = { id: "", displayName: "", socialUrl: "", tierLabel: "Titan Supporter", amountGbp: "0", visibility: "named", supportedAt: "" };
 const toDateInput = (value: string | null) => { if (!value) return ""; const date = new Date(value); return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10); };
+
 export default function CreatorWallOfTitans() {
   const [entries, setEntries] = useState<TitanWallEntry[]>([]), [editor, setEditor] = useState<EditorState>(EMPTY), [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [error, setError] = useState(""), [message, setMessage] = useState("");
   async function load() { setLoading(true); setError(""); try { await ensureOfficialTitanWallEntry(); setEntries(await getTitanWallEntries()); } catch (e) { setError(e instanceof Error ? e.message : "The Wall of Titans could not be loaded."); } finally { setLoading(false); } }
