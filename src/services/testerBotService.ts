@@ -35,6 +35,16 @@ export type TesterRun = {
   results: TesterResult[];
 };
 
+function buildDiagnosticDetails(check: TesterCheck, details?: Record<string, unknown>) {
+  return {
+    descriptor: check.descriptor,
+    issueId: check.id,
+    category: check.category,
+    severity: check.severity,
+    ...details,
+  };
+}
+
 export async function runTesterSuite(ownerUid: string, suite: string, checks: TesterCheck[]): Promise<TesterRun> {
   const started = Date.now();
   const results: TesterResult[] = [];
@@ -42,9 +52,31 @@ export async function runTesterSuite(ownerUid: string, suite: string, checks: Te
     const checkStarted = Date.now();
     try {
       const outcome = await check.run();
-      results.push({ checkId: check.id, name: check.name, category: check.category, severity: check.severity, ...outcome, details: { descriptor: check.descriptor, ...(outcome.details ?? {}) }, durationMs: Date.now() - checkStarted });
+      results.push({
+        checkId: check.id,
+        name: check.name,
+        category: check.category,
+        severity: check.severity,
+        ...outcome,
+        details: buildDiagnosticDetails(check, outcome.details),
+        durationMs: Date.now() - checkStarted,
+      });
     } catch (error) {
-      results.push({ checkId: check.id, name: check.name, category: check.category, severity: "critical", status: "fail", message: error instanceof Error ? error.message : "Tester Bot encountered an unexpected error.", details: { descriptor: check.descriptor, fixHint: "Inspect the Firebase/service call used by this check and reproduce the failing operation in the named area." }, durationMs: Date.now() - checkStarted });
+      results.push({
+        checkId: check.id,
+        name: check.name,
+        category: check.category,
+        severity: "critical",
+        status: "fail",
+        message: error instanceof Error ? error.message : "Tester Bot encountered an unexpected error.",
+        details: buildDiagnosticDetails(check, {
+          actual: error instanceof Error ? error.message : String(error),
+          operation: "tester-check-execution",
+          classification: "unexpected-test-runner-error",
+          fixHint: "Inspect the Firebase/service call used by this check and reproduce the failing operation in the named area.",
+        }),
+        durationMs: Date.now() - checkStarted,
+      });
     }
   }
   const run: TesterRun = {
@@ -86,8 +118,8 @@ export function createCoreDiagnosticChecks(context: { uid: string; authenticated
         if (!root) failures.push("#root mount element is missing");
         if (horizontalOverflow) failures.push(`mobile horizontal overflow detected (${document.documentElement.scrollWidth}px content vs ${document.documentElement.clientWidth}px viewport)`);
         return failures.length
-          ? { status: "fail", message: failures.join("; "), details: { expected: "Mobile-safe viewport, manifest, favicon, root mount and no horizontal overflow", actual: failures, viewport, manifest, favicon, mobileViewport, horizontalOverflow, descriptor: "App shell / viewport / PWA branding", fixHint: "Inspect index.html, PWA metadata and the page/component producing horizontal overflow." } }
-          : { status: "pass", message: "Mobile/PWA runtime foundation is present and no horizontal overflow was detected in the current viewport.", details: { viewport, manifest, favicon, mobileViewport, horizontalOverflow, descriptor: "App shell / viewport / PWA branding" } };
+          ? { status: "fail", message: failures.join("; "), details: { expected: "Mobile-safe viewport, manifest, favicon, root mount and no horizontal overflow", actual: failures, viewport, manifest, favicon, mobileViewport, horizontalOverflow, classification: "runtime-or-ui", fixHint: "Inspect index.html, PWA metadata and the page/component producing horizontal overflow." } }
+          : { status: "pass", message: "Mobile/PWA runtime foundation is present and no horizontal overflow was detected in the current viewport.", details: { viewport, manifest, favicon, mobileViewport, horizontalOverflow } };
       },
     },
   ];
