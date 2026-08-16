@@ -16,9 +16,8 @@ function fallbackPosition(country: string, index: number) {
   return { left: 15 + ((hash + index * 17) % 72), top: 20 + ((hash * 7 + index * 13) % 60) };
 }
 
-function normaliseLongitudes(value: number) {
-  const wrapped = ((value + 50) % 100 + 100) % 100 - 50;
-  return wrapped;
+function wrapPercent(value: number) {
+  return ((value % 100) + 100) % 100;
 }
 
 export default function CreatorCommunityGlobe({ locations = [] }: CreatorCommunityGlobeProps) {
@@ -54,7 +53,7 @@ export default function CreatorCommunityGlobe({ locations = [] }: CreatorCommuni
   function moveDrag(clientX: number) {
     if (!dragRef.current) return;
     const delta = clientX - dragRef.current.x;
-    setRotation(normaliseLongitudes(dragRef.current.rotation + delta * 0.22));
+    setRotation(dragRef.current.rotation + delta * 0.22);
   }
 
   function stopDrag() {
@@ -87,7 +86,7 @@ export default function CreatorCommunityGlobe({ locations = [] }: CreatorCommuni
               <div className="creator-globe-grid creator-globe-grid-two" />
             </div>
             <div className="creator-globe-marker-layer">
-              {summary.markers.map((marker) => <span className="creator-globe-marker" key={`${marker.city}-${marker.country}`} style={{ left: `${normaliseLongitudes(marker.left + rotation + 50)}%`, top: `${marker.top}%` }} title={`${marker.city}, ${marker.country}`} aria-label={`${marker.city}, ${marker.country}`} />)}
+              {summary.markers.map((marker) => <span className="creator-globe-marker" key={`${marker.city}-${marker.country}`} style={{ left: `${wrapPercent(marker.left + rotation)}%`, top: `${marker.top}%` }} title={`${marker.city}, ${marker.country}`} aria-label={`${marker.city}, ${marker.country}`} />)}
             </div>
             <div className="creator-globe-highlight" />
           </div>
