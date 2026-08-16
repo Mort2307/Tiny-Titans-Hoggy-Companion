@@ -18,11 +18,10 @@ export type CreatorGlobalMetrics = {
 
 const ACTIVE_WINDOW_MS = 15 * 60 * 1000;
 const GENETICS_EVENT_TYPE = "genetics_calculation_completed";
+const INTERNAL_SECURITY_TEST_FLAG = "isSecurityTestUser";
 
 function millis(value: unknown): number | null {
-  if (value && typeof value === "object" && "toMillis" in value && typeof value.toMillis === "function") {
-    return value.toMillis();
-  }
+  if (value && typeof value === "object" && "toMillis" in value && typeof value.toMillis === "function") return value.toMillis();
   if (typeof value === "string") {
     const parsed = Date.parse(value);
     return Number.isFinite(parsed) ? parsed : null;
@@ -51,8 +50,9 @@ function shedLengthCm(record: Record<string, unknown>): number {
 
 export async function getCreatorGlobalMetrics(): Promise<CreatorGlobalMetrics> {
   const usersSnapshot = await getDocs(collection(db, "users"));
+  const realUsers = usersSnapshot.docs.filter((userDoc) => userDoc.data()?.[INTERNAL_SECURITY_TEST_FLAG] !== true);
   const metrics: CreatorGlobalMetrics = {
-    registeredUsers: usersSnapshot.size,
+    registeredUsers: realUsers.length,
     activeUsers: 0,
     snakeProfiles: 0,
     mealsFed: 0,
@@ -66,8 +66,7 @@ export async function getCreatorGlobalMetrics(): Promise<CreatorGlobalMetrics> {
   };
 
   const cutoff = Date.now() - ACTIVE_WINDOW_MS;
-
-  await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
+  await Promise.all(realUsers.map(async (userDoc) => {
     const userData = userDoc.data() as Record<string, unknown>;
     const lastActive = millis(userData.lastActiveAt);
     if (lastActive !== null && lastActive >= cutoff) metrics.activeUsers += 1;
@@ -77,7 +76,6 @@ export async function getCreatorGlobalMetrics(): Promise<CreatorGlobalMetrics> {
 
     await Promise.all(snakesSnapshot.docs.map(async (snakeDoc) => {
       const snake = snakeDoc.data() as Partial<Snake>;
-
       const feedingsSnapshot = await getDocs(collection(db, "users", userDoc.id, "snakes", snakeDoc.id, "feedings"));
       metrics.mealsFed += feedingsSnapshot.size;
 
@@ -97,10 +95,7 @@ export async function getCreatorGlobalMetrics(): Promise<CreatorGlobalMetrics> {
       }
     }));
 
-    const analyticsSnapshot = await getDocs(query(
-      collection(db, "users", userDoc.id, "analyticsEvents"),
-      where("type", "==", GENETICS_EVENT_TYPE),
-    ));
+    const analyticsSnapshot = await getDocs(query(collection(db, "users", userDoc.id, "analyticsEvents"), where("type", "==", GENETICS_EVENT_TYPE)));
     metrics.geneticsCalculations += analyticsSnapshot.size;
   }));
 
