@@ -47,6 +47,11 @@ export default defineConfig({
 
         navigateFallback: "/index.html",
 
+        // The interactive 3D globe adds a large client bundle. Keep it in the
+        // PWA precache so installed/mobile builds do not omit the application
+        // shell after introducing the globe renderer.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+
         globPatterns: [
           "**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}",
         ],
