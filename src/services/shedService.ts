@@ -48,28 +48,16 @@ async function prepareImage(file: File): Promise<Blob> {
   }
 }
 
-async function uploadShedPhoto(
-  uid: string,
-  snakeId: string,
-  shedId: string,
-  file: File,
-): Promise<ShedPhoto> {
+async function uploadShedPhoto(uid: string, snakeId: string, shedId: string, file: File): Promise<ShedPhoto> {
   const compressed = await prepareImage(file);
   const photoId = generateId();
   const storagePath = `users/${uid}/snakes/${snakeId}/sheds/${shedId}/${photoId}.jpg`;
   const storageRef = ref(storage, storagePath);
 
   await uploadBytes(storageRef, compressed, { contentType: "image/jpeg" });
-
   try {
     const url = await getDownloadURL(storageRef);
-    return {
-      id: photoId,
-      url,
-      storagePath,
-      name: file.name,
-      uploadedAt: new Date().toISOString(),
-    };
+    return { id: photoId, url, storagePath, name: file.name, uploadedAt: new Date().toISOString() };
   } catch (error) {
     await deleteObject(storageRef).catch(() => undefined);
     throw error instanceof Error ? error : new Error("Unable to prepare the uploaded shed photo.");
@@ -77,11 +65,7 @@ async function uploadShedPhoto(
 }
 
 function toShedRecord(id: string, snakeId: string, data: Record<string, unknown>): ShedRecord {
-  return {
-    ...(data as ShedRecord),
-    id,
-    snakeId,
-  };
+  return { ...(data as ShedRecord), id, snakeId };
 }
 
 async function fetchCanonicalShed(uid: string, snakeId: string, shedId: string): Promise<ShedRecord> {
@@ -115,6 +99,7 @@ export async function saveSnakeShed(
 
   const shedRef = doc(getShedCollection(uid, shed.snakeId), shed.id);
   const uploadedPaths: string[] = [];
+  let firestoreCommitted = false;
 
   try {
     const uploadedPhotos: ShedPhoto[] = [];
@@ -133,19 +118,20 @@ export async function saveSnakeShed(
     };
 
     await setDoc(shedRef, recordToSave, { merge: true });
+    firestoreCommitted = true;
     const canonical = await fetchCanonicalShed(uid, shed.snakeId, shed.id);
 
-    await Promise.all(
-      uniqueRemovedPaths.map(async (storagePath) => {
-        await deleteObject(ref(storage, storagePath)).catch(() => undefined);
-      }),
-    );
+    await Promise.all(uniqueRemovedPaths.map(async (storagePath) => {
+      await deleteObject(ref(storage, storagePath)).catch(() => undefined);
+    }));
 
     return canonical;
   } catch (error) {
-    await Promise.all(uploadedPaths.map(async (storagePath) => {
-      await deleteObject(ref(storage, storagePath)).catch(() => undefined);
-    }));
+    if (!firestoreCommitted) {
+      await Promise.all(uploadedPaths.map(async (storagePath) => {
+        await deleteObject(ref(storage, storagePath)).catch(() => undefined);
+      }));
+    }
     throw error instanceof Error ? error : new Error("Unable to save this shed record.");
   }
 }
