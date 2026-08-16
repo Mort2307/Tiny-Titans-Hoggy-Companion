@@ -10,11 +10,13 @@ import { doc, getDoc, getFirestore, serverTimestamp, updateDoc } from "firebase/
 import app from "../firebase/config";
 import type { AgeBand, ApproximateLocation, DataCollectionPreferences, EducatorProfile, LearningLevel, ProfileType } from "../types/Profile";
 import type { UnitSystem } from "./UnitContext";
+import packageJson from "../../package.json";
 
 export type UserRole = "user" | "admin" | "moderator";
 export type UserCategory = "adult" | "child";
 export type ExperienceLevel = "beginner" | "intermediate" | "pro";
 export type UserInterest = "keeper" | "breeder" | "breeder-seller" | "learner";
+export type UserPlatform = "iOS" | "Android" | "Windows" | "macOS" | "Linux" | "Other";
 
 export type UserProfile = {
   uid: string;
@@ -33,6 +35,8 @@ export type UserProfile = {
   educatorProfile?: EducatorProfile;
   approximateLocation?: ApproximateLocation;
   dataCollectionPreferences?: DataCollectionPreferences;
+  platform?: UserPlatform;
+  appVersion?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -49,6 +53,20 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 type AuthProviderProps = { children: ReactNode };
 const db = getFirestore(app);
+
+function detectPlatform(): UserPlatform {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/iphone|ipad|ipod/.test(ua)) return "iOS";
+  if (/android/.test(ua)) return "Android";
+  if (/windows/.test(ua)) return "Windows";
+  if (/macintosh|mac os x/.test(ua)) return "macOS";
+  if (/linux/.test(ua)) return "Linux";
+  return "Other";
+}
+
+function getAppVersion(): string {
+  return String(packageJson.version || "unknown");
+}
 
 function isValidInterest(value: unknown): value is UserInterest {
   return value === "keeper" || value === "breeder" || value === "breeder-seller" || value === "learner";
@@ -99,12 +117,21 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> 
     profileType, experienceLevel: profileData.experienceLevel === "intermediate" ? "intermediate" : profileData.experienceLevel === "pro" ? "pro" : "beginner", interests,
     role: profileData.role === "admin" ? "admin" : profileData.role === "moderator" ? "moderator" : "user", isTester: profileData.isTester === true || profileData.role === "tester",
     setupComplete: profileData.setupComplete === true, unitSystem: isUnitSystem(profileData.unitSystem) ? profileData.unitSystem : "metric", educatorProfile: loadEducatorProfile(profileData.educatorProfile),
-    approximateLocation: loadApproximateLocation(profileData.approximateLocation), dataCollectionPreferences: loadDataCollectionPreferences(profileData.dataCollectionPreferences), createdAt: profileData.createdAt, updatedAt: profileData.updatedAt,
+    approximateLocation: loadApproximateLocation(profileData.approximateLocation), dataCollectionPreferences: loadDataCollectionPreferences(profileData.dataCollectionPreferences),
+    platform: profileData.platform === "iOS" || profileData.platform === "Android" || profileData.platform === "Windows" || profileData.platform === "macOS" || profileData.platform === "Linux" || profileData.platform === "Other" ? profileData.platform : undefined,
+    appVersion: typeof profileData.appVersion === "string" ? profileData.appVersion : undefined,
+    createdAt: profileData.createdAt, updatedAt: profileData.updatedAt,
   };
 }
 
 async function recordActivity(firebaseUser: User): Promise<void> {
-  try { await updateDoc(doc(db, "users", firebaseUser.uid), { lastActiveAt: serverTimestamp() }); } catch (error) { console.warn("Tiny Titans: unable to update activity timestamp", error); }
+  try {
+    await updateDoc(doc(db, "users", firebaseUser.uid), {
+      lastActiveAt: serverTimestamp(),
+      platform: detectPlatform(),
+      appVersion: getAppVersion(),
+    });
+  } catch (error) { console.warn("Tiny Titans: unable to update activity timestamp", error); }
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
