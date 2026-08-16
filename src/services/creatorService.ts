@@ -19,6 +19,8 @@ export type FounderApplication = {
   updatedAt?: unknown;
 };
 
+export type CommunityUserLocation = { city: string; country: string };
+
 export type GlobalStats = {
   registeredUsers: number;
   activeUsers: number;
@@ -50,6 +52,15 @@ export async function getFounderApplications(): Promise<FounderApplication[]> { 
 export async function updateFounderApplication(id: string, status: FounderApplication["status"]) { await updateDoc(doc(db, "founderApplications", id), { status, updatedAt: serverTimestamp() }); }
 export async function getUserCount(): Promise<number> { return (await getDocs(collection(db, "users"))).size; }
 export async function getGlobalStats(): Promise<GlobalStats> { return getCanonicalGlobalStats(); }
+
+export async function getCommunityUserLocations(): Promise<CommunityUserLocation[]> {
+  const snapshot = await getDocs(collection(db, "users"));
+  return snapshot.docs
+    .map((item) => item.data().approximateLocation as Partial<CommunityUserLocation> & { visibleToCreator?: boolean } | undefined)
+    .filter((location): location is CommunityUserLocation & { visibleToCreator?: boolean } => Boolean(location?.visibleToCreator && location.city?.trim() && location.country?.trim()))
+    .map((location) => ({ city: location.city.trim(), country: location.country.trim() }));
+}
+
 export async function getMorphImageSubmissions(): Promise<MorphImageSubmission[]> { const snapshot = await getDocs(query(collection(db, "morphImageSubmissions"), orderBy("submittedAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<MorphImageSubmission, "id">) })); }
 export async function updateMorphSubmissionStatus(submissionId: string, status: MorphSubmissionStatus, reviewerUid?: string, rejectionReason?: string) { await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status, reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: rejectionReason ?? null }); }
 export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage> { if (!submission.morphId) throw new Error("This submission has no canonical morph ID."); if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval."); const sourceRef = ref(storage, submission.attachment.path); const approvedPath = `morphLibrary/${submission.morphId}/community/${submission.id}.jpg`; const imageBytes = await getBytes(sourceRef, 12 * 1024 * 1024); await uploadBytes(ref(storage, approvedPath), imageBytes, { contentType: "image/jpeg" }); const approvedImageUrl = await getDownloadURL(ref(storage, approvedPath)); try { const approvedDoc = await addDoc(collection(db, "approvedMorphImages"), { morphId: submission.morphId, morphName: submission.morphName, imageUrl: approvedImageUrl, storagePath: approvedPath, sourceStoragePath: submission.attachment.path, creditType: submission.creditType, creditName: submission.creditName ?? null, creditSocial: submission.creditSocial ?? null, sourceSubmissionId: submission.id, approvedAt: serverTimestamp(), approvedBy: reviewerUid ?? null }); await updateDoc(doc(db, "morphImageSubmissions", submission.id), { status: "Approved", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, approvedImageId: approvedDoc.id }); await deleteObject(sourceRef).catch(() => undefined); return { id: approvedDoc.id, morphId: submission.morphId, morphName: submission.morphName, imageUrl: approvedImageUrl, storagePath: approvedPath, creditType: submission.creditType, creditName: submission.creditName, creditSocial: submission.creditSocial, sourceSubmissionId: submission.id, approvedAt: undefined, approvedBy: reviewerUid }; } catch (error) { await deleteObject(ref(storage, approvedPath)).catch(() => undefined); throw error; } }
