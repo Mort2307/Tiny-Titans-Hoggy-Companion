@@ -1,6 +1,6 @@
 export type MorphSubmissionCredit = "name" | "social" | "anonymous";
 
-export type MorphSubmissionStatus = "Pending" | "Approved" | "Rejected" | "NeedsInfo";
+export type MorphSubmissionStatus = "Pending" | "Approved" | "Rejected" | "NeedsInfo" | "Removed";
 
 export type MorphImageSubmission = {
   id: string;
