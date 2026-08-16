@@ -4,7 +4,7 @@ import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getGlobalStats, getMorphImageSubmissions, type GlobalStats } from "../services/creatorService";
 import { getCanonicalGlobalStats } from "../services/trackerStatsService";
-import CreatorCommunityGlobe, { type CommunityUserLocation } from "../components/CreatorCommunityGlobe";
+import CreatorCommunityGlobe from "../components/CreatorCommunityGlobeV2";
 import { db } from "../firebase/config";
 import PageBackButton from "../components/PageBackButton";
 import "../styles/CreatorTools.css";
@@ -18,15 +18,13 @@ function formatDate(value: unknown) { if (!value) return "—"; if (typeof value
 export default function CreatorAdmin() {
   const { profile, user } = useAuth();
   const [stats, setStats] = useState<GlobalStats>(EMPTY_STATS); const [users, setUsers] = useState<CreatorUser[]>([]); const [morphPending, setMorphPending] = useState(0); const [loading, setLoading] = useState(true); const [usersLoading, setUsersLoading] = useState(false); const [error, setError] = useState(""); const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | null>(null); const [selectedUser, setSelectedUser] = useState<CreatorUser | null>(null); const [search, setSearch] = useState("");
-
   async function loadDashboard() { if (!user) return; setLoading(true); setError(""); try { const [legacyStats, canonicalStats, submissions] = await Promise.all([getGlobalStats(), getCanonicalGlobalStats(), getMorphImageSubmissions()]); setStats({ ...legacyStats, ...canonicalStats }); setMorphPending(submissions.filter((item) => item.status === "Pending" || item.status === "NeedsInfo").length); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded."); } finally { setLoading(false); } }
   async function loadUsers() { if (!user) return; setUsersLoading(true); setError(""); try { const snapshot = await getDocs(collection(db, "users")); const nextUsers = snapshot.docs.map((item) => ({ uid: item.id, ...(item.data() as Omit<CreatorUser, "uid">) })); nextUsers.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "")); setUsers(nextUsers); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "User overview could not be loaded."); } finally { setUsersLoading(false); } }
   useEffect(() => { if (profile?.role === "admin" && user) { void loadDashboard(); void loadUsers(); } }, [profile?.role, user]);
   useEffect(() => { if (panel === "users") void loadUsers(); }, [panel]);
   const filteredUsers = useMemo(() => { const term = search.trim().toLowerCase(); if (!term) return users; return users.filter((item) => [item.displayName, item.email, item.uid, item.profileType, item.approximateLocation?.city, item.approximateLocation?.country].some((value) => String(value ?? "").toLowerCase().includes(term))); }, [search, users]);
-  const optedInLocations: CommunityUserLocation[] = users.flatMap((item) => { const location = item.approximateLocation; if (!location?.visibleToCreator || !location.city || !location.country || item.dataCollectionPreferences?.approximateLocation !== true) return []; return [{ city: location.city, country: location.country }]; });
+  const optedInLocations = users.flatMap((item) => { const location = item.approximateLocation; if (!location?.visibleToCreator || !location.city || !location.country || item.dataCollectionPreferences?.approximateLocation !== true) return []; return [{ city: location.city, country: location.country }]; });
   if (profile?.role !== "admin") return <Navigate to="/" replace />;
-
   const cards = [
     { key: "users", icon: "👥", value: stats.registeredUsers, label: "Registered Users", detail: `${fmt(stats.activeUsers)} active`, onClick: () => setPanel("users") },
     { key: "snakes", icon: "🐍", value: stats.snakeProfiles, label: "Snake Profiles", detail: "Global collection", onClick: () => setPanel("snakes") },
@@ -35,7 +33,6 @@ export default function CreatorAdmin() {
     { key: "length", icon: "📏", value: `${(stats.totalShedLengthCm / 100).toFixed(2)} m`, label: "Total Shed Length", detail: "Recorded shed lengths", onClick: () => setPanel("trackers") },
     { key: "genetics", icon: "🧬", value: stats.geneticsCalculations, label: "Genetics Calculations", detail: "Tracked calculations", onClick: () => setPanel("trackers") },
   ];
-
   return <section className="creator-admin-page">
     <div className="creator-admin-header"><div><PageBackButton fallbackPath="/" label="Back to App" /><span className="creator-admin-kicker">PRIVATE CREATOR CENTRE</span><h1>🛠️ Tiny Titans Creator Centre</h1><p>One organised command centre for community intelligence, moderation, QA and app operations.</p></div><button type="button" onClick={() => { void loadDashboard(); void loadUsers(); }} disabled={loading || usersLoading}>{loading || usersLoading ? "↻ Loading…" : "↻ Refresh"}</button></div>
     {error && <div className="creator-error">{error}</div>}
