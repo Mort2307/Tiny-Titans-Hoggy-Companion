@@ -1,1 +1,0 @@
-Stripe fixed-price IDs are being removed from the Titan checkout path. Checkout will use inline GBP price_data so the advertised amount is the amount charged and custom support remains supported.
