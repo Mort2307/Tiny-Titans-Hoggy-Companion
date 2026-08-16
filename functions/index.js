@@ -13,11 +13,7 @@ const adminAuth = getAuth();
 const messaging = getMessaging();
 Object.assign(exports, require("./creatorApproval"));
 const creatorTesterInvitation = require("./creatorTesterInvitation");
-Object.assign(exports, {
-  getCreatorTesterInvitation: creatorTesterInvitation.getCreatorTesterInvitation,
-  acceptCreatorTesterInvitation: creatorTesterInvitation.acceptCreatorTesterInvitation,
-  declineCreatorTesterInvitation: creatorTesterInvitation.declineCreatorTesterInvitation,
-});
+Object.assign(exports, { getCreatorTesterInvitation: creatorTesterInvitation.getCreatorTesterInvitation, acceptCreatorTesterInvitation: creatorTesterInvitation.acceptCreatorTesterInvitation, declineCreatorTesterInvitation: creatorTesterInvitation.declineCreatorTesterInvitation });
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 const PRICE_TIERS = Object.freeze({ little: { priceId: "price_1U4E9q3zyS86a3ry2Lrikcjq", amount: 5, label: "Little Titan" }, growing: { priceId: "price_1U4EBp3zyS86a3ryn3HfNU0R", amount: 10, label: "Growing Titan" }, champion: { priceId: "price_1U4EDE3zyS86a3ryKXVPLEhd", amount: 20, label: "Champion Titan" }, legendary: { priceId: "price_1U4EDx3zyS86a3ryxlW1Scz8", amount: 40, label: "Legendary Titan" }, broken: { priceId: "price_1U4EEf3zyS86a3ryLupeschV", amount: 100, label: "You Just Broke Me" } });
@@ -37,10 +33,7 @@ exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => 
   try {
     if (enabled) {
       const invitation = await creatorTesterInvitation.createCreatorTesterInvitation(request.auth.uid, targetUid);
-      if (callerData.profileType === "creator" && callerClaims.creator !== true) {
-        const callerAuthUser = await adminAuth.getUser(request.auth.uid);
-        await adminAuth.setCustomUserClaims(request.auth.uid, { ...(callerAuthUser.customClaims || {}), creator: true });
-      }
+      if (callerData.profileType === "creator" && callerClaims.creator !== true) { const callerAuthUser = await adminAuth.getUser(request.auth.uid); await adminAuth.setCustomUserClaims(request.auth.uid, { ...(callerAuthUser.customClaims || {}), creator: true }); }
       await db.collection("users").doc(targetUid).set({ isTester: false, testerType: "creator", testerInvitationStatus: "pending", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "invite_creator_tester", createdAt: FieldValue.serverTimestamp() });
       return { success: true, uid: targetUid, creator: false, creatorTester: false, isTester: false, invitation: true, invitationStatus: invitation.status };
@@ -50,6 +43,7 @@ exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => 
     delete nextClaims.creatorTester;
     await adminAuth.setCustomUserClaims(targetUid, nextClaims);
     await db.collection("users").doc(targetUid).set({ isTester: false, testerType: null, testerInvitationStatus: "revoked", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("users").doc(targetUid).collection("creatorTesterInvitations").doc("creator-tester").set({ status: "revoked", revokedAt: FieldValue.serverTimestamp() }, { merge: true });
     await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_creator_tester", createdAt: FieldValue.serverTimestamp() });
     return { success: true, uid: targetUid, creator: nextClaims.creator === true, creatorTester: false, isTester: false, invitation: false, invitationStatus: "revoked" };
   } catch (error) { console.error("Creator claim/invitation update failed", error); if (error instanceof HttpsError) throw error; throw new HttpsError("internal", "Unable to update Creator Tester authorization."); }
