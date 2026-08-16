@@ -22,6 +22,9 @@ const PRICE_TIERS = Object.freeze({
   broken: { priceId: "price_1U51PWI4DKNMJVXD4flYcU4R", amount: 100, label: "You Just Broke Me" },
 });
 
+const MIN_CUSTOM_SUPPORT_GBP = 1;
+const MAX_CUSTOM_SUPPORT_GBP = 1000;
+
 const ALLOWED_ORIGINS = new Set(["https://tinytitans-hoggy-companion.web.app", "https://tinytitans-hoggy-companion.firebaseapp.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
 
 function getAllowedOrigin(request) {
@@ -68,12 +71,37 @@ exports.setCreatorClaims = onCall({ region: "europe-west2" }, async (request) =>
 exports.createTitanCheckout = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in to become a Titan.");
   const tierKey = String(request.data?.tier || "");
-  const tier = PRICE_TIERS[tierKey];
-  if (!tier) throw new HttpsError("invalid-argument", "Invalid Titan support tier.");
+  let amountGbp;
+  let label;
+  let priceLineItem;
+
+  if (tierKey === "custom") {
+    const rawAmount = Number(request.data?.customAmountGbp);
+    if (!Number.isFinite(rawAmount) || rawAmount < MIN_CUSTOM_SUPPORT_GBP || rawAmount > MAX_CUSTOM_SUPPORT_GBP) {
+      throw new HttpsError("invalid-argument", `Custom Titan support must be between £${MIN_CUSTOM_SUPPORT_GBP} and £${MAX_CUSTOM_SUPPORT_GBP}.`);
+    }
+    amountGbp = Number(rawAmount.toFixed(2));
+    label = "Custom Titan Support";
+    priceLineItem = {
+      price_data: {
+        currency: "gbp",
+        product_data: { name: "Tiny Titans — Custom Titan Support", description: "One-time voluntary support for Tiny Titans." },
+        unit_amount: Math.round(amountGbp * 100),
+      },
+      quantity: 1,
+    };
+  } else {
+    const tier = PRICE_TIERS[tierKey];
+    if (!tier) throw new HttpsError("invalid-argument", "Invalid Titan support tier.");
+    amountGbp = tier.amount;
+    label = tier.label;
+    priceLineItem = { price: tier.priceId, quantity: 1 };
+  }
+
   try {
     const stripe = new Stripe(STRIPE_SECRET_KEY.value());
     const origin = getAllowedOrigin(request);
-    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [{ price: tier.priceId, quantity: 1 }], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label: tier.label, amount_gbp: String(tier.amount) }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto" });
+    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [priceLineItem], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label, amount_gbp: amountGbp.toFixed(2), support_type: "voluntary_support" }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto" });
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");
     return { url: session.url };
   } catch (error) {
@@ -92,10 +120,13 @@ exports.stripeWebhook = onRequest({ region: "europe-west2", secrets: [STRIPE_SEC
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const uid = session.metadata?.uid || session.client_reference_id;
-      const tier = PRICE_TIERS[session.metadata?.tier];
-      if (uid && tier && session.payment_status === "paid") {
-        await db.collection("supporters").doc(uid).set({ uid, status: "active", tier: session.metadata.tier, tierLabel: tier.label, amountGbp: tier.amount, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-        await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(tier.amount), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      const tierKey = String(session.metadata?.tier || "");
+      const tier = PRICE_TIERS[tierKey];
+      const amountGbp = Number(session.metadata?.amount_gbp || 0);
+      const tierLabel = tier?.label || (tierKey === "custom" ? "Custom Titan Support" : String(session.metadata?.label || "Titan Supporter"));
+      if (uid && amountGbp > 0 && session.payment_status === "paid") {
+        await db.collection("supporters").doc(uid).set({ uid, status: "active", tier: tierKey, tierLabel, amountGbp, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(amountGbp), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       }
     }
     return res.status(200).json({ received: true });
