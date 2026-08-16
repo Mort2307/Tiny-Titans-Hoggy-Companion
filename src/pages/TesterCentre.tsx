@@ -4,10 +4,12 @@ import { useAuth } from "../context/AuthContext";
 import { hasCreatorClaim } from "../services/creatorAuthService";
 import { createCoreDiagnosticChecks, runTesterSuite, type TesterRun, type TesterCheck } from "../services/testerBotService";
 import { createTrackerRegressionChecks } from "../services/testerSuitesService";
+import { createSecurityBoundaryChecks } from "../services/testerSecurityService";
 import { buildTesterReport } from "../services/testerReportService";
 
 const categoryLabels: Record<string, string> = {
-  auth: "Authentication & Security",
+  auth: "Authentication",
+  security: "Security & Authorization",
   data: "Snake Profiles & Data",
   feeding: "Feeding Tracker",
   weight: "Weight Tracker",
@@ -48,20 +50,22 @@ export default function TesterCentre() {
     }
   }
 
-  async function runFull() {
+  async function buildAllChecks() {
     const claims = await hasCreatorClaim(true);
     const core = createCoreDiagnosticChecks({ uid: user.uid, authenticated: true, creatorClaim: claims, analyticsConsent: true });
     const tracker = await createTrackerRegressionChecks(user.uid);
-    await execute("full-release-regression", [...core, ...tracker]);
+    const security = createSecurityBoundaryChecks(user.uid, claims);
+    return [...core, ...tracker, ...security];
+  }
+
+  async function runFull() {
+    await execute("full-release-regression", await buildAllChecks());
   }
 
   async function runSpecific() {
     const query = specificArea.trim().toLowerCase();
     if (!query) return;
-    const claims = await hasCreatorClaim(true);
-    const core = createCoreDiagnosticChecks({ uid: user.uid, authenticated: true, creatorClaim: claims, analyticsConsent: true });
-    const tracker = await createTrackerRegressionChecks(user.uid);
-    const all = [...core, ...tracker];
+    const all = await buildAllChecks();
     const matches = all.filter((check) => [check.id, check.name, check.category, check.descriptor ?? "", categoryLabels[check.category] ?? ""].join(" ").toLowerCase().includes(query));
     await execute(`specific:${query}`, matches.length ? matches : [{ id: "specific-no-match", name: `No test matched: ${specificArea}`, category: "data", severity: "high", descriptor: "Tester Centre / specific test search", run: async () => ({ status: "fail", message: `No registered test matches '${specificArea}'.`, details: { expected: "At least one matching test", actual: "No match", fixHint: "Use a feature name such as Shed, Genetics, Feeding, Weight, Privacy, Security or Analytics." } }) }]);
   }
@@ -83,7 +87,7 @@ export default function TesterCentre() {
       <div className="welcome-card">
         <p className="eyebrow">🐍 TINY TITANS · CREATOR QA</p>
         <h1>🤖 Tester Centre</h1>
-        <p>Run the full regression system or target one feature. Every failure is described in human-readable terms so it can be handed straight into development.</p>
+        <p>Run the full regression system or target one feature. Every result identifies the page/feature, expected behaviour, actual behaviour and a concrete fix direction.</p>
         <div className="creator-actions">
           <button className="primary-button" type="button" disabled={running} onClick={runFull}>{running ? "🤖 Tester Bot running..." : "▶ Run Full"}</button>
         </div>
@@ -123,7 +127,7 @@ export default function TesterCentre() {
           </div>
 
           <div className="welcome-card">
-            <div className="creator-card-header"><div><h2>📋 Copy-Paste Developer Report</h2><p>Paste this entire report into ChatGPT and it has the test IDs, area, expected/actual result and fix direction.</p></div><button className="secondary-button" type="button" onClick={copyReport}>{copied ? "✅ Copied" : "📋 Copy Report"}</button></div>
+            <div className="creator-card-header"><div><h2>📋 Copy-Paste Developer Report</h2><p>Paste this entire report into ChatGPT. It contains test IDs, human-readable page/feature descriptors, expected vs actual behaviour and fix direction.</p></div><button className="secondary-button" type="button" onClick={copyReport}>{copied ? "✅ Copied" : "📋 Copy Report"}</button></div>
             <textarea readOnly value={report} rows={24} aria-label="Tester Bot copy-paste report" />
           </div>
         </>
