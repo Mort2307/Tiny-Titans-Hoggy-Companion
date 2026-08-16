@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && firestore.get(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        ).data.role == "admin";
+    }
+
+    /* =========================================================
+       MORPH SUBMISSION IMAGES
+       ========================================================= */
+
+    match /morph-submissions/{submissionId}/{fileName} {
+
+      /* Owner and Creator can view the image */
+      allow read:
+        if signedIn()
+        && (
+          isAdmin()
+          ||
+          firestore.get(
+            /databases/(default)/documents/morphSubmissions/$(submissionId)
+          ).data.userId == request.auth.uid
+        );
+
+      /* User can upload only to their own submission */
+      allow create:
+        if signedIn()
+        && firestore.get(
+          /databases/(default)/documents/morphSubmissions/$(submissionId)
+        ).data.userId == request.auth.uid
+        && request.resource.contentType.matches('image/.*');
+
+      /* Only Creator/Admin can replace an uploaded image */
+      allow update:
+        if isAdmin();
+
+      /* Only Creator/Admin can delete */
+      allow delete:
+        if isAdmin();
+    }
+
+    /* =========================================================
+       DEFAULT DENY
+       ========================================================= */
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

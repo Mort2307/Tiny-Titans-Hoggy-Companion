@@ -2,18 +2,313 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    function isAdmin() { return signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"; }
-    function isTester() { return signedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isTester == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tester"); }
-    match /users/{userId} { allow create: if signedIn() && request.auth.uid == userId && request.resource.data.role == "user"; allow get: if signedIn() && request.auth.uid == userId; allow list: if isAdmin(); allow update: if signedIn() && (isAdmin() || (request.auth.uid == userId && request.resource.data.role == resource.data.role)); allow delete: if isAdmin(); }
-    match /users/{userId}/{document=**} { allow read, write: if signedIn() && (request.auth.uid == userId || isAdmin()); }
-    match /supporters/{userId} { allow get: if signedIn() && (request.auth.uid == userId || isAdmin()); allow list: if isAdmin(); allow create, update, delete: if isAdmin(); }
-    match /supporterStats/{statId} { allow read, write: if isAdmin(); }
-    match /issueReports/{reportId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (isAdmin() || resource.data.userId == request.auth.uid); allow list: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid); allow update, delete: if isAdmin(); }
-    match /founderApplications/{applicationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isAdmin(); }
-    match /communityPosts/{postId} { allow read: if signedIn() && (resource.data.audience == "everyone" || (resource.data.audience == "testers" && isTester()) || (resource.data.audience == "admin" && isAdmin())); allow create, update, delete: if isAdmin(); }
-    match /morphImageSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (request.auth.uid == resource.data.userId || isAdmin()); allow list: if isAdmin(); allow update, delete: if isAdmin(); }
-    match /approvedMorphImages/{imageId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
-    match /{document=**} { allow read, write: if false; }
+
+    /* =========================================================
+       AUTH HELPERS
+       ========================================================= */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.role == "admin";
+    }
+
+    function isTester() {
+      return signedIn()
+        && (
+          get(
+            /databases/$(database)/documents/users/$(request.auth.uid)
+          ).data.isTester == true
+          ||
+          get(
+            /databases/$(database)/documents/users/$(request.auth.uid)
+          ).data.role == "tester"
+        );
+    }
+
+
+    /* =========================================================
+       USER PROFILES
+       ========================================================= */
+
+    match /users/{userId} {
+
+      allow create:
+        if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == "user";
+
+      allow get:
+        if signedIn()
+        && request.auth.uid == userId;
+
+      allow list:
+        if isAdmin();
+
+      allow update:
+        if signedIn()
+        && (
+          isAdmin()
+          ||
+          (
+            request.auth.uid == userId
+            && request.resource.data.role == resource.data.role
+          )
+        );
+
+      allow delete:
+        if isAdmin();
+    }
+
+    match /users/{userId}/{document=**} {
+      allow read, write:
+        if signedIn()
+        && (
+          request.auth.uid == userId
+          || isAdmin()
+        );
+    }
+
+
+    /* =========================================================
+       SUPPORTERS
+       ========================================================= */
+
+    match /supporters/{userId} {
+
+      allow get:
+        if signedIn()
+        && (
+          request.auth.uid == userId
+          || isAdmin()
+        );
+
+      allow list:
+        if isAdmin();
+
+      allow create, update, delete:
+        if isAdmin();
+    }
+
+    match /supporterStats/{statId} {
+      allow read, write:
+        if isAdmin();
+    }
+
+
+    /* =========================================================
+       ISSUE / BUG REPORTS
+       ========================================================= */
+
+    match /issueReports/{reportId} {
+
+      allow create:
+        if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow get:
+        if signedIn()
+        && (
+          isAdmin()
+          || resource.data.userId == request.auth.uid
+        );
+
+      allow list:
+        if isAdmin()
+        || (
+          signedIn()
+          && resource.data.userId == request.auth.uid
+        );
+
+      allow update, delete:
+        if isAdmin();
+    }
+
+
+    /* =========================================================
+       FOUNDER APPLICATIONS
+       ========================================================= */
+
+    match /founderApplications/{applicationId} {
+
+      allow create:
+        if signedIn()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow read, update, delete:
+        if isAdmin();
+    }
+
+
+    /* =========================================================
+       COMMUNITY POSTS
+       ========================================================= */
+
+    match /communityPosts/{postId} {
+
+      allow read:
+        if signedIn()
+        && (
+          resource.data.audience == "everyone"
+          ||
+          (
+            resource.data.audience == "testers"
+            && isTester()
+          )
+          ||
+          (
+            resource.data.audience == "admin"
+            && isAdmin()
+          )
+        );
+
+      allow create, update, delete:
+        if isAdmin();
+    }
+
+
+    /* =========================================================
+       MORPH SUBMISSIONS
+       =========================================================
+       
+       Lifecycle:
+
+       User:
+         creates submission
+         reads own submission
+
+       Creator/Admin:
+         reads all submissions
+         verifies evidence
+         approves / denies
+         manages moderation
+
+       Processing status:
+         creating
+         uploading
+         finalising
+         submitted
+         failed
+
+       Moderation status:
+         pending
+         approved
+         denied
+
+       IMPORTANT:
+       Users cannot update their own submission after creation.
+       This prevents them changing evidence after submission.
+       ========================================================= */
+
+    match /morphSubmissions/{submissionId} {
+
+      /* ---------------------------------------------------------
+         CREATE
+
+         User must be authenticated and must identify themselves
+         as the owner of the submission.
+
+         Users cannot create an already-approved submission.
+         --------------------------------------------------------- */
+
+      allow create:
+        if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == "creating"
+        && request.resource.data.moderationStatus == "pending"
+        && request.resource.data.submissionComplete == false;
+
+
+      /* ---------------------------------------------------------
+         READ OWN SUBMISSION / CREATOR READ ALL
+         --------------------------------------------------------- */
+
+      allow get:
+        if signedIn()
+        && (
+          isAdmin()
+          || resource.data.userId == request.auth.uid
+        );
+
+
+      /* ---------------------------------------------------------
+         LIST
+
+         Creator/Admin can list all submissions.
+
+         Users are deliberately NOT allowed to list the entire
+         collection. They should only access their own submissions
+         through specific document reads/queries.
+         --------------------------------------------------------- */
+
+      allow list:
+        if isAdmin();
+
+
+      /* ---------------------------------------------------------
+         UPDATE
+
+         ONLY Creator/Admin can modify submissions.
+
+         This protects:
+           - evidence
+           - image
+           - status
+           - moderation status
+           - approval
+           - denial
+           - Creator notes
+         --------------------------------------------------------- */
+
+      allow update:
+        if isAdmin();
+
+
+      /* ---------------------------------------------------------
+         DELETE
+
+         Only Creator/Admin.
+         --------------------------------------------------------- */
+
+      allow delete:
+        if isAdmin();
+    }
+
+
+    /* =========================================================
+       APPROVED MORPH IMAGES
+       =========================================================
+
+       This is the public/confirmed side of the workflow.
+
+       A submission does NOT automatically become a confirmed
+       Morph Library entry.
+
+       Creator/Admin must explicitly approve it and create/update
+       the approved record.
+       ========================================================= */
+
+    match /approvedMorphImages/{imageId} {
+
+      allow read:
+        if signedIn();
+
+      allow create, update, delete:
+        if isAdmin();
+    }
+
+
+    /* =========================================================
+       DEFAULT DENY
+       ========================================================= */
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
