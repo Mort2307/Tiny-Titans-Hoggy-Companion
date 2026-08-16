@@ -48,7 +48,7 @@ export function buildTesterReport(run: TesterRun): string {
     `Overall: ${run.status.toUpperCase()}`,
     "",
     `ISSUES REQUIRING ATTENTION: ${failures.length}`,
-    `RELEASE BLOCKERS: ${critical.length} critical | ${high} high | ${blocked.length} blocked`,
+    `RELEASE BLOCKERS: ${critical.length} critical | ${high.length} high | ${blocked.length} blocked`,
     "",
   ];
 
