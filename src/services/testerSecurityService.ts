@@ -58,6 +58,20 @@ export function createSecurityBoundaryChecks(uid: string, creatorClaim: boolean)
       run: async () => ({ status: creatorClaim ? "pass" : "fail", message: creatorClaim ? "Creator/admin authorization claim is available for the Creator test session." : "Creator/admin authorization claim is missing.", details: { descriptor: "Creator Hub / Firebase custom claims", expected: "creator=true or admin=true", actual: creatorClaim ? "present" : "missing", fixHint: "Refresh the ID token after claim assignment and verify the callable claim-management flow." } })),
     },
     {
+      id: "security-user-privilege-escalation-denied",
+      name: "User cannot self-assign tester privileges",
+      category: "security",
+      severity: "critical",
+      descriptor: "Authentication / users/{uid} privilege escalation boundary",
+      run: async () => {
+        const userRef = doc(db, "users", uid);
+        const denied = await expectPermissionDenied(() => setDoc(userRef, { isTester: true, isSecurityTestUser: true }, { merge: true }));
+        return denied
+          ? { status: "pass", message: "Client-side privilege escalation to tester/security-test status was denied.", details: { descriptor: "Authentication / users/{uid} privilege escalation boundary", expected: "permission-denied", actual: "permission-denied" } }
+          : { status: "fail", message: "A client write was accepted that attempted to assign tester/security-test privileges.", details: { descriptor: "Authentication / users/{uid} privilege escalation boundary", expected: "permission-denied", actual: "write accepted", fixHint: "Keep isTester and isSecurityTestUser server-controlled. Do not allow normal users to mutate either field." } };
+      },
+    },
+    {
       id: "security-tester-run-owner-spoof-denied",
       name: "Tester run owner UID spoof is denied",
       category: "security",
