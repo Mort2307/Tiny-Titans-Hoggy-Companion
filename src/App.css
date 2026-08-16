@@ -51,8 +51,28 @@ html { min-height:100%; overflow-x:hidden; overflow-y:auto; -webkit-text-size-ad
 body { min-height:100%; margin:0; overflow-x:hidden; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:none; }
 #root { min-height:100%; min-height:100dvh; min-width:0; }
 
+.shed-photo-panel { margin-top: 18px; padding: 16px; border: 1px solid rgba(0,174,255,.28); border-radius: 14px; background: rgba(0,174,255,.05); }
+.shed-photo-panel h4 { margin: 0 0 6px; }
+.shed-photo-panel p { margin: 6px 0 12px; }
+.tiny-titans-photo-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border-radius: 12px; cursor: pointer; font-weight: 700; color: var(--text); background: var(--surface); border: 1px solid rgba(0,174,255,.45); box-sizing: border-box; }
+.tiny-titans-photo-button:hover { filter: brightness(1.08); }
+.shed-photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 12px; }
+.shed-photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; display: block; }
+.shed-photo-item { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.shed-photo-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; }
+.shed-photo-item button, .shed-photo-list button { align-self: flex-start; }
+.shed-photo-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.shed-photo-list > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 10px; background: rgba(255,255,255,.05); }
+.shed-photo-list span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 @supports (padding: env(safe-area-inset-bottom)) {
   .app-header { padding-top:max(10px, env(safe-area-inset-top)); }
+}
+
+@media (max-width:700px) {
+  .shed-photo-panel { padding: 13px; }
+  .shed-photo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .shed-photo-list > div { align-items: flex-start; }
 }
 
 @media (prefers-reduced-motion:reduce) {
