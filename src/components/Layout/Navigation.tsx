@@ -15,6 +15,7 @@ function Navigation() {
     ["/community", "🌿", "Community Hub"],
     ["/account", "🧑", "My Account"],
     ["/become-a-titan", "🐍", "Become a Titan"],
+    ["/wall-of-titans", "🏆", "Wall of Titans"],
   ];
 
   if (profile?.profileType === "educator") links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
