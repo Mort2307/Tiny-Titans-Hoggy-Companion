@@ -8,12 +8,12 @@ const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 const db = getFirestore();
 
 const SUPPORT_TIERS = Object.freeze({
-  starter: { amount: 1, label: "Titan Supporter" },
-  little: { amount: 5, label: "Little Titan" },
-  growing: { amount: 10, label: "Growing Titan" },
-  champion: { amount: 20, label: "Champion Titan" },
-  legendary: { amount: 40, label: "Legendary Titan" },
-  broken: { amount: 100, label: "You Just Broke Me" },
+  starter: { amount: 1, label: "Titan Supporter", priceId: "price_1U5AMqI4DKNMJVXDKv0jvq4m" },
+  little: { amount: 5, label: "Little Titan", priceId: "price_1U51PDI4DKNMJVXDaEvd0OUJ" },
+  growing: { amount: 10, label: "Growing Titan", priceId: "price_1U51PHI4DKNMJVXDYWQlFoRv" },
+  champion: { amount: 20, label: "Champion Titan", priceId: "price_1U51PMI4DKNMJVXD014dtANW" },
+  legendary: { amount: 40, label: "Legendary Titan", priceId: "price_1U51PRI4DKNMJVXDgIZKBg4k" },
+  broken: { amount: 100, label: "You Just Broke Me", priceId: "price_1U51PWI4DKNMJVXD4flYcU4R" },
 });
 
 function getAllowedOrigin(request) {
@@ -44,36 +44,40 @@ exports.createTitanCheckout = onCall(
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in to become a Titan.");
 
     const tierKey = String(request.data?.tier || "").trim();
-    let amountPence;
-    let label;
-
-    if (tierKey === "custom") {
-      amountPence = parseCustomAmountPence(request.data?.amountGbp);
-      label = "Custom Titan Support";
-    } else {
-      const tier = SUPPORT_TIERS[tierKey];
-      if (!tier) throw new HttpsError("invalid-argument", "Invalid Titan support option.");
-      amountPence = tier.amount * 100;
-      label = tier.label;
-    }
+    const tier = SUPPORT_TIERS[tierKey];
 
     try {
       const stripe = new Stripe(STRIPE_SECRET_KEY.value());
       const origin = getAllowedOrigin(request);
-      const amountGbp = (amountPence / 100).toFixed(2);
-      const session = await stripe.checkout.sessions.create({
-        mode: "payment",
-        line_items: [{
+      let lineItems;
+      let amountGbp;
+      let label;
+
+      if (tierKey === "custom") {
+        const amountPence = parseCustomAmountPence(request.data?.amountGbp);
+        amountGbp = (amountPence / 100).toFixed(2);
+        label = "Custom Tiny Titans Support";
+        lineItems = [{
           price_data: {
             currency: "gbp",
             product_data: {
-              name: "Tiny Titans Support",
-              description: label,
+              name: `Tiny Titans Support — £${amountGbp}`,
+              description: "One-time voluntary support contribution to Tiny Titans Hoggy Companion. This payment is project support and does not purchase goods, services, membership, or administrative access.",
             },
             unit_amount: amountPence,
           },
           quantity: 1,
-        }],
+        }];
+      } else {
+        if (!tier) throw new HttpsError("invalid-argument", "Invalid Titan support option.");
+        amountGbp = tier.amount.toFixed(2);
+        label = tier.label;
+        lineItems = [{ price: tier.priceId, quantity: 1 }];
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: lineItems,
         customer_email: request.auth.token.email || undefined,
         client_reference_id: request.auth.uid,
         metadata: {
@@ -81,6 +85,7 @@ exports.createTitanCheckout = onCall(
           tier: tierKey,
           label,
           amount_gbp: amountGbp,
+          payment_purpose: "one_time_project_support",
         },
         success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/become-a-titan?payment=cancelled`,
@@ -115,7 +120,7 @@ exports.stripeWebhook = onRequest(
         const amountGbp = amountPence / 100;
         const tierKey = String(session.metadata?.tier || "custom");
         const tier = SUPPORT_TIERS[tierKey];
-        const label = session.metadata?.label || tier?.label || "Custom Titan Support";
+        const label = session.metadata?.label || tier?.label || "Custom Tiny Titans Support";
         const eventRef = db.collection("stripeEvents").doc(event.id);
 
         if (uid && session.payment_status === "paid" && amountPence >= 100) {
