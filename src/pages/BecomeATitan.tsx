@@ -16,15 +16,19 @@ const supportOptions = [
   { key: "broken", amount: 100, label: "You Just Broke Me", icon: "💀" },
 ] as const;
 
+const MIN_CUSTOM_AMOUNT = 1;
+const MAX_CUSTOM_AMOUNT = 1000;
+
 const functions = getFunctions(app, "europe-west2");
 const db = getFirestore(app);
-const createTitanCheckout = httpsCallable<{ tier: string }, { url: string }>(functions, "createTitanCheckout");
+const createTitanCheckout = httpsCallable<{ tier: string; customAmountGbp?: number }, { url: string }>(functions, "createTitanCheckout");
 
 export default function BecomeATitan() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [selectedTier, setSelectedTier] = useState("growing");
+  const [customAmount, setCustomAmount] = useState("10");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [wallVisibility, setWallVisibility] = useState<WallVisibility>("anonymous");
@@ -35,9 +39,13 @@ export default function BecomeATitan() {
   const [wallReady, setWallReady] = useState(false);
 
   const selected = useMemo(
-    () => supportOptions.find((option) => option.key === selectedTier) ?? supportOptions[1],
+    () => supportOptions.find((option) => option.key === selectedTier),
     [selectedTier]
   );
+  const parsedCustomAmount = Number(customAmount.replace(",", "."));
+  const customAmountValid = Number.isFinite(parsedCustomAmount) && parsedCustomAmount >= MIN_CUSTOM_AMOUNT && parsedCustomAmount <= MAX_CUSTOM_AMOUNT;
+  const selectedAmount = selected?.amount ?? (customAmountValid ? parsedCustomAmount : 0);
+  const selectedLabel = selected?.label ?? "Custom Titan";
   const paymentState = searchParams.get("payment");
 
   useEffect(() => {
@@ -79,9 +87,17 @@ export default function BecomeATitan() {
 
   const handleCheckout = async () => {
     setError("");
+    if (selectedTier === "custom" && !customAmountValid) {
+      setError(`Please enter a custom support amount between £${MIN_CUSTOM_AMOUNT} and £${MAX_CUSTOM_AMOUNT}.`);
+      return;
+    }
     setLoading(true);
     try {
-      const result = await createTitanCheckout({ tier: selected.key });
+      const result = await createTitanCheckout(
+        selectedTier === "custom"
+          ? { tier: "custom", customAmountGbp: Number(parsedCustomAmount.toFixed(2)) }
+          : { tier: selectedTier }
+      );
       window.location.assign(result.data.url);
     } catch (checkoutError) {
       console.error("Titan checkout failed", checkoutError);
@@ -127,10 +143,34 @@ export default function BecomeATitan() {
 
         <div className="creator-form">
           <h2>Choose your Titan level</h2>
-          <div className="creator-actions" style={{ flexWrap: "wrap" }}>{supportOptions.map((option) => <button key={option.key} type="button" className={selectedTier === option.key ? "creator-primary" : ""} onClick={() => setSelectedTier(option.key)} disabled={loading}>{option.icon} {option.label} · £{option.amount}</button>)}</div>
-          <div className="creator-founder-callout"><strong>Selected support: £{selected.amount} · {selected.label}</strong><span>You'll be taken to Stripe's secure hosted checkout. Tiny Titans never handles or stores your card details.</span></div>
+          <div className="creator-actions" style={{ flexWrap: "wrap" }}>
+            {supportOptions.map((option) => <button key={option.key} type="button" className={selectedTier === option.key ? "creator-primary" : ""} onClick={() => setSelectedTier(option.key)} disabled={loading}>{option.icon} {option.label} · £{option.amount}</button>)}
+            <button type="button" className={selectedTier === "custom" ? "creator-primary" : ""} onClick={() => setSelectedTier("custom")} disabled={loading}>💚 Custom amount</button>
+          </div>
+
+          {selectedTier === "custom" && <div className="creator-founder-callout">
+            <strong>Choose your own support amount</strong>
+            <span>Enter whatever you'd like to give. There is no fixed custom tier — you choose the amount yourself.</span>
+            <label style={{ display: "grid", gap: "0.45rem", marginTop: "0.75rem" }}>
+              <span>Custom support amount (£)</span>
+              <input
+                type="number"
+                min={MIN_CUSTOM_AMOUNT}
+                max={MAX_CUSTOM_AMOUNT}
+                step="0.01"
+                inputMode="decimal"
+                value={customAmount}
+                onChange={(event) => setCustomAmount(event.target.value)}
+                placeholder="Enter any amount"
+                disabled={loading}
+              />
+            </label>
+            {!customAmountValid && <span role="alert">Enter an amount from £{MIN_CUSTOM_AMOUNT} to £{MAX_CUSTOM_AMOUNT}.</span>}
+          </div>}
+
+          <div className="creator-founder-callout"><strong>Selected support: {selectedAmount > 0 ? `£${selectedAmount.toFixed(2)} · ${selectedLabel}` : "Choose an amount"}</strong><span>You'll be taken to Stripe's secure hosted checkout. Tiny Titans never handles or stores your card details.</span></div>
           {error && <div className="creator-error" role="alert">{error}</div>}
-          <div className="creator-actions"><button type="button" onClick={() => navigate(-1)} disabled={loading}>Back</button><button type="button" className="creator-primary" onClick={handleCheckout} disabled={loading}>{loading ? "Opening Stripe…" : `🐍 Support Tiny Titans · £${selected.amount}`}</button></div>
+          <div className="creator-actions"><button type="button" onClick={() => navigate(-1)} disabled={loading}>Back</button><button type="button" className="creator-primary" onClick={handleCheckout} disabled={loading || (selectedTier === "custom" && !customAmountValid)}>{loading ? "Opening Stripe…" : `🐍 Support Tiny Titans · ${selectedAmount > 0 ? `£${selectedAmount.toFixed(2)}` : "Choose amount"}`}</button></div>
         </div>
 
         {paymentState === "success" && <section className="titan-wall-support-choice" aria-labelledby="wall-choice-title">
