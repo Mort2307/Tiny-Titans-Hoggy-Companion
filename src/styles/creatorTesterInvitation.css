@@ -1,0 +1,48 @@
+.creator-tester-invite {
+  width: min(100%, 1180px);
+  margin: 0 auto 18px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid rgba(123, 255, 184, 0.28);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(20, 35, 31, 0.96), rgba(14, 23, 27, 0.96));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.creator-tester-invite__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: rgba(123, 255, 184, 0.1);
+  border: 1px solid rgba(123, 255, 184, 0.2);
+  font-size: 1.55rem;
+}
+
+.creator-tester-invite__content { min-width: 0; }
+.creator-tester-invite__eyebrow { display: block; margin-bottom: 5px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; opacity: 0.72; }
+.creator-tester-invite h2 { margin: 0 0 6px; font-size: clamp(1.05rem, 2vw, 1.35rem); }
+.creator-tester-invite p { margin: 0; line-height: 1.55; opacity: 0.82; }
+.creator-tester-invite__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.creator-tester-invite__actions button { min-height: 44px; padding: 10px 16px; border-radius: 12px; border: 1px solid transparent; font: inherit; font-weight: 800; cursor: pointer; transition: transform 140ms ease, filter 140ms ease, background 140ms ease; }
+.creator-tester-invite__actions button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); }
+.creator-tester-invite__actions button:focus-visible { outline: 3px solid rgba(123, 255, 184, 0.38); outline-offset: 2px; }
+.creator-tester-invite__actions button:disabled { cursor: not-allowed; opacity: 0.58; }
+.creator-tester-invite__accept { color: #07130d; background: #7bffb8; }
+.creator-tester-invite__dismiss { color: inherit; background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12) !important; }
+.creator-tester-invite__error { margin-top: 10px !important; color: #ffb4b4; }
+
+@media (max-width: 640px) {
+  .creator-tester-invite { grid-template-columns: 1fr; gap: 12px; padding: 15px; border-radius: 15px; }
+  .creator-tester-invite__icon { width: 46px; height: 46px; }
+  .creator-tester-invite__actions { flex-direction: column; }
+  .creator-tester-invite__actions button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creator-tester-invite__actions button { transition: none; }
+}
