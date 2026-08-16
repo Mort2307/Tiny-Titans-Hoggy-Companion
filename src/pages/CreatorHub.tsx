@@ -6,6 +6,21 @@ import "../styles/CreatorTools.css";
 const EMPTY_STATS: GlobalStats = { registeredUsers: 0, activeUsers: 0, snakeProfiles: 0, mealsFed: 0, weightLogs: 0, totalWeightKg: 0, totalWeightLb: 0, shedsLogged: 0, totalShedLengthCm: 0, totalShedLengthIn: 0, geneticsCalculations: 0 };
 const number = (value: number) => new Intl.NumberFormat("en-GB").format(value);
 
+type HubCardProps = { to: string; icon: string; title: string; description: string; value?: string; detail?: string };
+
+function HubCard({ to, icon, title, description, value, detail }: HubCardProps) {
+  return (
+    <Link className="creator-global-card creator-hub-navigation-card" to={to}>
+      <span>{icon}</span>
+      {value !== undefined && <strong>{value}</strong>}
+      <label>{title}</label>
+      <small>{description}</small>
+      {detail && <small>{detail}</small>}
+      <b>Open full screen →</b>
+    </Link>
+  );
+}
+
 export default function CreatorHub() {
   const [stats, setStats] = useState<GlobalStats>(EMPTY_STATS);
   const [reportCount, setReportCount] = useState(0);
@@ -49,21 +64,21 @@ export default function CreatorHub() {
       </section>
 
       <section className="creator-admin-section">
-        <div className="creator-section-heading"><div><span className="creator-admin-kicker">ACTION QUEUE</span><h2>What needs your attention?</h2></div></div>
+        <div className="creator-section-heading"><div><span className="creator-admin-kicker">CREATOR NAVIGATION</span><h2>Open a tool</h2><p>Every destination opens as its own full screen. Nothing is appended underneath this page.</p></div></div>
         <div className="creator-global-grid">
-          <Link className="creator-global-card" to="/creator"><span>🐛</span><strong>{number(reportCount)}</strong><label>Open Issue Reports</label><small>Review tester/community reports</small></Link>
-          <Link className="creator-global-card" to="/creator"><span>🧬</span><strong>{number(morphCount)}</strong><label>Morph Images Awaiting Review</label><small>Moderate community submissions</small></Link>
-          <Link className="creator-global-card" to="/creator"><span>👑</span><strong>{number(founderCount)}</strong><label>Founder Applications</label><small>Applications awaiting review</small></Link>
+          <HubCard to="/creator/community" icon="🌍" title="Community Globe" description="Explore consenting community locations by country and city." />
+          <HubCard to="/creator/tester" icon="🤖" title="Tester Bot" description="Run full user, specific user, full security and specific security tests." />
+          <HubCard to="/creator/moderation" icon="🛡️" title="Moderation Centre" description="Review reports, morph submissions and legacy applications." />
+          <HubCard to="/account" icon="🔐" title="Privacy & Data" description="Review account privacy and permission controls." />
         </div>
       </section>
 
       <section className="creator-admin-section">
-        <div className="creator-section-heading"><div><span className="creator-admin-kicker">CONTROL CENTRE</span><h2>Creator tools</h2><p>The remaining Hub modules are being built on this secured foundation.</p></div></div>
-        <div className="creator-list">
-          <article className="creator-list-card"><h3>🌎 Community Globe</h3><p>City-level, consented and aggregated community growth. No addresses or precise GPS.</p><span className="creator-badge">NEXT MODULE</span></article>
-          <article className="creator-list-card"><h3>🔐 Privacy & Data</h3><p>Consent versions, timestamps, location sharing, analytics and product-update preferences.</p><span className="creator-badge">NEXT MODULE</span></article>
-          <article className="creator-list-card"><h3>📈 Analytics & App Health</h3><p>Versions, platforms, feature usage, error trends and community growth over time.</p><span className="creator-badge">NEXT MODULE</span></article>
-          <article className="creator-list-card"><h3>🛡️ Moderation Centre</h3><p>Morph submissions, community images, reports and Founder/Creator applications.</p><span className="creator-badge">EXISTING TOOLS</span></article>
+        <div className="creator-section-heading"><div><span className="creator-admin-kicker">ACTION QUEUE</span><h2>What needs your attention?</h2></div></div>
+        <div className="creator-global-grid">
+          <HubCard to="/creator/moderation" icon="🐛" value={number(reportCount)} title="Open Issue Reports" description="Review tester/community reports." />
+          <HubCard to="/creator/moderation" icon="🧬" value={number(morphCount)} title="Morph Images Awaiting Review" description="Moderate community submissions." />
+          <HubCard to="/creator/moderation" icon="👑" value={number(founderCount)} title="Founder Applications" description="Applications awaiting review." />
         </div>
       </section>
     </>}
