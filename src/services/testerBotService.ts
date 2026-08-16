@@ -1,4 +1,4 @@
-import { addDoc, collection, getDocs, limit, orderBy, query, serverTimestamp, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, limit, query, serverTimestamp, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 export type TesterSeverity = "critical" | "high" | "medium" | "low";
