@@ -1,9 +1,32 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { hasCreatorClaim } from "../../services/creatorAuthService";
 import "./Navigation.css";
 
 function Navigation() {
-  const { profile } = useAuth();
+  const { profile, user, loading, profileLoading } = useAuth();
+  const [creatorAuthorized, setCreatorAuthorized] = useState(false);
+
+  useEffect(() => {
+    if (loading || profileLoading || !user) {
+      setCreatorAuthorized(false);
+      return;
+    }
+
+    let active = true;
+    void hasCreatorClaim(false)
+      .then((authorized) => {
+        if (active) setCreatorAuthorized(authorized);
+      })
+      .catch(() => {
+        if (active) setCreatorAuthorized(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user, loading, profileLoading]);
 
   const links: [string, string, string][] = [
     ["/", "🏠", "Home"],
@@ -17,13 +40,34 @@ function Navigation() {
     ["/become-a-titan", "🐍", "Become a Titan"],
   ];
 
-  if (profile?.profileType === "educator") links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
-  if (profile?.role === "admin") {
+  if (profile?.profileType === "educator") {
+    links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
+  }
+
+  // Navigation visibility follows the same Firebase custom-claim authority
+  // as CreatorRouteGuard. The navigation is convenience only; the route
+  // remains server-authorized and cannot be unlocked by this UI state.
+  if (creatorAuthorized) {
     links.push(["/creator", "🛠️", "Creator Centre"]);
     links.push(["/creator/community", "📢", "Community Manager"]);
   }
 
-  return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner"><ul className="app-navigation-list">{links.map(([to, icon, label]) => <li className="app-navigation-item" key={to}><NavLink to={to} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span></NavLink></li>)}</ul></div></nav>;
+  return (
+    <nav className="app-navigation" aria-label="Main navigation">
+      <div className="app-navigation-inner">
+        <ul className="app-navigation-list">
+          {links.map(([to, icon, label]) => (
+            <li className="app-navigation-item" key={to}>
+              <NavLink to={to} className="app-navigation-link">
+                <span className="app-navigation-icon" aria-hidden="true">{icon}</span>
+                <span className="app-navigation-label">{label}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </nav>
+  );
 }
 
 export default Navigation;
