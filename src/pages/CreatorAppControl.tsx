@@ -10,7 +10,7 @@ const controls: Control[] = [
   { to: "/creator/moderation", icon: "🛡️", title: "Moderation & Reports", description: "Manage issue reports, morph submissions and legacy applications." },
   { to: "/creator/wall-of-titans", icon: "🐍", title: "Wall of Titans", description: "Manage every public supporter identity, link and Wall record." },
   { to: "/creator/community", icon: "🗺️", title: "Community Globe", description: "Inspect consenting community locations and drill into geographic groups." },
-  { to: "/admin", icon: "👥", title: "Admin Management", description: "Grant or remove everyday administrator access." },
+  { to: "/creator/admin", icon: "👥", title: "Admin Management", description: "Grant or remove everyday administrator access." },
   { to: "/become-a-titan", icon: "💚", title: "Titan Support", description: "Review the public supporter experience and Stripe entry point." },
 ];
 
