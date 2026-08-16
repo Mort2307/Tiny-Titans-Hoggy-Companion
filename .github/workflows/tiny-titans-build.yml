@@ -14,19 +14,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
-      - name: Install dependencies
+      - name: Install application dependencies
         run: npm install --no-audit --no-fund
       - name: Build application
         run: npm run build
       - name: Install Functions dependencies
         working-directory: functions
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Check Functions JavaScript syntax
         working-directory: functions
         run: node --check index.js
