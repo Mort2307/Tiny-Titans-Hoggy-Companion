@@ -31,6 +31,10 @@ export type UserProfile = {
   isTester: boolean;
   setupComplete: boolean;
   unitSystem: UnitSystem;
+  requiredConsentAccepted: boolean;
+  consentVersion?: string;
+  consentAcceptedAt?: unknown;
+  optionalAnalyticsConsent: boolean;
   educatorProfile?: EducatorProfile;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -43,12 +47,14 @@ type AuthContextType = {
   profileLoading: boolean;
   isAuthenticated: boolean;
   refreshProfile: () => Promise<UserProfile | null>;
+  completeRequiredConsent: (choices: { optionalAnalytics: boolean }) => Promise<UserProfile | null>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 type AuthProviderProps = { children: ReactNode };
 const db = getFirestore(app);
 const functions = getFunctions(app, "europe-west2");
+const CURRENT_CONSENT_VERSION = "2026-08-16-v1";
 
 function isValidInterest(value: unknown): value is UserInterest {
   return value === "keeper" || value === "breeder" || value === "breeder-seller" || value === "learner";
@@ -88,7 +94,12 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> 
     profileType, experienceLevel: profileData.experienceLevel === "intermediate" ? "intermediate" : profileData.experienceLevel === "pro" ? "pro" : "beginner", interests,
     role: profileData.role === "admin" ? "admin" : profileData.role === "creator" ? "creator" : profileData.role === "moderator" ? "moderator" : "user", isTester: profileData.isTester === true || profileData.role === "tester",
     setupComplete: profileData.setupComplete === true,
-    unitSystem: isUnitSystem(profileData.unitSystem) ? profileData.unitSystem : "metric", educatorProfile: loadEducatorProfile(profileData.educatorProfile), createdAt: profileData.createdAt, updatedAt: profileData.updatedAt,
+    unitSystem: isUnitSystem(profileData.unitSystem) ? profileData.unitSystem : "metric",
+    requiredConsentAccepted: profileData.requiredConsentAccepted === true && profileData.consentVersion === CURRENT_CONSENT_VERSION,
+    consentVersion: typeof profileData.consentVersion === "string" ? profileData.consentVersion : undefined,
+    consentAcceptedAt: profileData.consentAcceptedAt,
+    optionalAnalyticsConsent: profileData.optionalAnalyticsConsent === true,
+    educatorProfile: loadEducatorProfile(profileData.educatorProfile), createdAt: profileData.createdAt, updatedAt: profileData.updatedAt,
   };
 }
 
@@ -102,8 +113,6 @@ async function syncCreatorClaims(firebaseUser: User): Promise<void> {
     await sync();
     await firebaseUser.getIdToken(true);
   } catch (error) {
-    // Claim sync must never block normal login. Existing profile-based routing
-    // remains available while a newly deployed function propagates.
     console.warn("Tiny Titans: Creator claim sync unavailable", error);
   }
 }
@@ -111,7 +120,20 @@ async function syncCreatorClaims(firebaseUser: User): Promise<void> {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null); const [profile, setProfile] = useState<UserProfile | null>(null); const [loading, setLoading] = useState(true); const [profileLoading, setProfileLoading] = useState(false);
   async function refreshProfile(): Promise<UserProfile | null> { const auth = getAuth(app); const currentUser = auth.currentUser; if (!currentUser) { setProfile(null); return null; } setProfileLoading(true); try { await syncCreatorClaims(currentUser); const loadedProfile = await loadUserProfile(currentUser); setProfile(loadedProfile); await recordActivity(currentUser); return loadedProfile; } catch (error) { console.error("Tiny Titans: unable to refresh user profile", error); setProfile(null); return null; } finally { setProfileLoading(false); } }
+  async function completeRequiredConsent(choices: { optionalAnalytics: boolean }): Promise<UserProfile | null> {
+    const currentUser = getAuth(app).currentUser;
+    if (!currentUser) throw new Error("You must be signed in to save privacy choices.");
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      requiredConsentAccepted: true,
+      consentVersion: CURRENT_CONSENT_VERSION,
+      consentAcceptedAt: serverTimestamp(),
+      optionalAnalyticsConsent: choices.optionalAnalytics,
+    });
+    const loadedProfile = await loadUserProfile(currentUser);
+    setProfile(loadedProfile);
+    return loadedProfile;
+  }
   useEffect(() => { const auth = getAuth(app); const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => { setUser(firebaseUser); setProfile(null); if (!firebaseUser) { setProfileLoading(false); setLoading(false); return; } setProfileLoading(true); try { await syncCreatorClaims(firebaseUser); const loadedProfile = await loadUserProfile(firebaseUser); setProfile(loadedProfile); await recordActivity(firebaseUser); } catch (error) { console.error("Tiny Titans: unable to load user profile", error); setProfile(null); } finally { setProfileLoading(false); setLoading(false); } }); return unsubscribe; }, []);
-  return <AuthContext.Provider value={{ user, profile, loading, profileLoading, isAuthenticated: user !== null, refreshProfile }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, profile, loading, profileLoading, isAuthenticated: user !== null, refreshProfile, completeRequiredConsent }}>{children}</AuthContext.Provider>;
 }
 export function useAuth() { const context = useContext(AuthContext); if (!context) throw new Error("useAuth must be used inside AuthProvider"); return context; }
