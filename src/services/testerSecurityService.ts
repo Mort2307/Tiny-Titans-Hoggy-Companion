@@ -12,6 +12,26 @@ async function expectPermissionDenied(action: () => Promise<unknown>): Promise<b
   }
 }
 
+function blockedIdentityCheck(id: string, name: string, descriptor: string, scope: string): TesterCheck {
+  return {
+    id,
+    name,
+    category: "security",
+    severity: "critical",
+    descriptor,
+    run: async () => ({
+      status: "blocked",
+      message: `This ${scope} attack test requires a dedicated non-Creator security identity and cannot be safely executed from the Creator session.`,
+      details: {
+        descriptor,
+        expected: "Dedicated non-Creator security identity performs the unauthorized operation",
+        actual: "No dedicated security identity is configured",
+        fixHint: "Configure a server-side security test runner with isolated Normal User/Moderator/Creator/Admin identities. Never store test-account passwords in the client bundle.",
+      },
+    }),
+  };
+}
+
 export function createSecurityBoundaryChecks(uid: string, creatorClaim: boolean): TesterCheck[] {
   const probeId = `security-probe-${uid}`;
   return [
@@ -79,14 +99,9 @@ export function createSecurityBoundaryChecks(uid: string, creatorClaim: boolean)
           : { status: "fail", message: "Morph image submission UID spoof was accepted.", details: { descriptor: "Morph image submissions / submitter UID ownership boundary", expected: "permission-denied", actual: "write accepted", fixHint: "Inspect firestore.rules match /morphImageSubmissions/{submissionId}; create must require request.resource.data.userId == request.auth.uid." } };
       },
     },
-    {
-      id: "security-cross-user-test-identity",
-      name: "Cross-user authorization test identity configured",
-      category: "security",
-      severity: "critical",
-      descriptor: "Security regression / dedicated non-Creator test account",
-      run: async () => ({ status: "blocked", message: "Full cross-user authorization probing requires a dedicated non-Creator security test identity; the Creator session must never impersonate or weaken its own claims.", details: { descriptor: "Security regression / dedicated non-Creator test account", expected: "Dedicated test-user credentials supplied through a secure test runner", actual: "Not configured in the live Creator session", fixHint: "Configure a dedicated non-Creator test account in a secure server-side test runner, then probe Firestore and Storage as that identity." } })),
-    },
+    blockedIdentityCheck("security-firestore-cross-user", "Cross-user Firestore access test", "Security regression / Firestore ownership boundary", "Firestore"),
+    blockedIdentityCheck("security-storage-cross-user", "Cross-user Storage access test", "Security regression / Firebase Storage ownership boundary", "Storage"),
+    blockedIdentityCheck("security-role-matrix", "Role permission matrix test", "Security regression / Normal User vs Moderator vs Creator vs Admin", "role-matrix"),
     {
       id: "security-probe-cleanup",
       name: "Security probes leave no test document",
