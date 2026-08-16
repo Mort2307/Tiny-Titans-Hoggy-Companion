@@ -8,7 +8,7 @@ export const CONSENT_VERSION = "2026-08-16-location-analytics-v1";
 type Props = { onAccepted: () => void };
 
 export default function DataPrivacyConsentModal({ onAccepted }: Props) {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [location, setLocation] = useState(Boolean(profile?.dataCollectionPreferences?.approximateLocation));
   const [analytics, setAnalytics] = useState(Boolean(profile?.dataCollectionPreferences?.analytics));
   const [updates, setUpdates] = useState(Boolean(profile?.dataCollectionPreferences?.productUpdates));
@@ -43,6 +43,11 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
         } : null,
         updatedAt: serverTimestamp(),
       }, { merge: true });
+
+      // The Firestore write succeeded, but AuthContext still holds the previous
+      // profile snapshot. Refresh it immediately so account/settings UI reflects
+      // the new consent without requiring the user to reload the app.
+      await refreshProfile();
       onAccepted();
     } catch (saveError) {
       console.error("Tiny Titans: consent save failed", saveError);
