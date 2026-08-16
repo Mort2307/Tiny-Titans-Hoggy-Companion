@@ -3,7 +3,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getGlobalStats, getMorphImageSubmissions, type GlobalStats } from "../services/creatorService";
+import { getCreatorFeedback, getCreatorReports, getGlobalStats, getMorphImageSubmissions, type GlobalStats } from "../services/creatorService";
 import { getCanonicalGlobalStats } from "../services/trackerStatsService";
 import CreatorCommunityGlobe from "../components/CreatorCommunityGlobeV2";
 import { app, db } from "../firebase/config";
@@ -21,8 +21,33 @@ const setCreatorClaim = httpsCallable<{ uid: string; enabled: boolean }, { succe
 
 export default function CreatorAdmin() {
   const { profile, user } = useAuth();
-  const [stats, setStats] = useState<GlobalStats>(EMPTY_STATS); const [users, setUsers] = useState<CreatorUser[]>([]); const [morphPending, setMorphPending] = useState(0); const [loading, setLoading] = useState(true); const [usersLoading, setUsersLoading] = useState(false); const [error, setError] = useState(""); const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | null>(null); const [selectedUser, setSelectedUser] = useState<CreatorUser | null>(null); const [search, setSearch] = useState(""); const [claimBusy, setClaimBusy] = useState(false); const [claimMessage, setClaimMessage] = useState("");
-  async function loadDashboard() { if (!user) return; setLoading(true); setError(""); try { const [legacyStats, canonicalStats, submissions] = await Promise.all([getGlobalStats(), getCanonicalGlobalStats(), getMorphImageSubmissions()]); setStats({ ...legacyStats, ...canonicalStats }); setMorphPending(submissions.filter((item) => item.status === "Pending" || item.status === "NeedsInfo").length); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded."); } finally { setLoading(false); } }
+  const [stats, setStats] = useState<GlobalStats>(EMPTY_STATS);
+  const [users, setUsers] = useState<CreatorUser[]>([]);
+  const [morphPending, setMorphPending] = useState(0);
+  const [bugPending, setBugPending] = useState(0);
+  const [feedbackNew, setFeedbackNew] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | null>(null);
+  const [selectedUser, setSelectedUser] = useState<CreatorUser | null>(null);
+  const [search, setSearch] = useState("");
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimMessage, setClaimMessage] = useState("");
+
+  async function loadDashboard() {
+    if (!user) return;
+    setLoading(true); setError("");
+    try {
+      const [legacyStats, canonicalStats, submissions, reports, feedback] = await Promise.all([getGlobalStats(), getCanonicalGlobalStats(), getMorphImageSubmissions(), getCreatorReports(), getCreatorFeedback()]);
+      setStats({ ...legacyStats, ...canonicalStats });
+      setMorphPending(submissions.filter((item) => item.status === "Pending" || item.status === "NeedsInfo").length);
+      setBugPending(reports.filter((item) => item.status === "Pending").length);
+      setFeedbackNew(feedback.filter((item) => !item.status || item.status === "New").length);
+    } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded."); }
+    finally { setLoading(false); }
+  }
+
   async function loadUsers() { if (!user) return; setUsersLoading(true); setError(""); try { const snapshot = await getDocs(collection(db, "users")); const nextUsers = snapshot.docs.map((item) => ({ uid: item.id, ...(item.data() as Omit<CreatorUser, "uid">) })); nextUsers.sort((a, b) => (a.displayName || "").localeCompare(b.displayName || "")); setUsers(nextUsers); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "User overview could not be loaded."); } finally { setUsersLoading(false); } }
   async function grantCreatorTesterClaim(target: CreatorUser) { if (!target.uid) return; setClaimBusy(true); setClaimMessage(""); setError(""); try { await setCreatorClaim({ uid: target.uid, enabled: true }); setClaimMessage(`Creator authorization granted to ${target.email || target.displayName || target.uid}. Sign into that account and refresh its ID token before running Creator Tester.`); } catch (claimError) { setError(claimError instanceof Error ? claimError.message : "Creator authorization could not be granted."); } finally { setClaimBusy(false); } }
   useEffect(() => { if (profile?.role === "admin" && user) { void loadDashboard(); void loadUsers(); } }, [profile?.role, user]);
@@ -47,6 +72,8 @@ export default function CreatorAdmin() {
       <CreatorCommunityGlobe locations={optedInLocations} />
       <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">CREATOR OPERATIONS</span><h2>🧰 Tools & queues</h2><p>Everything you need to run, review and improve Tiny Titans without hunting through tiny links.</p></div></div><div className="creator-global-grid creator-tools-grid">
         <Link className="creator-global-card creator-feature-tile" to="/creator/submissions"><span>🧬</span><strong>{morphPending} Morph Submissions</strong><label>Submission Review</label><small>Inspect uploaded photographs, proof and genetics notes before approval.</small><span className="creator-feature-tile-cta">Open Submission Review →</span></Link>
+        <Link className="creator-global-card creator-feature-tile" to="/creator/issues"><span>🐛</span><strong>{bugPending} Bug Reports</strong><label>Bug Report Review</label><small>Review community bugs, severity, reproduction information, attachments, platform and app version.</small><span className="creator-feature-tile-cta">Open Bug Reports →</span></Link>
+        <Link className="creator-global-card creator-feature-tile" to="/creator/issues"><span>💬</span><strong>{feedbackNew} Feedback</strong><label>Feedback Review</label><small>Review ideas, suggestions, usability feedback and creator decisions in a dedicated queue.</small><span className="creator-feature-tile-cta">Open Feedback →</span></Link>
         <Link className="creator-global-card creator-feature-tile" to="/creator/tester"><span>🤖</span><strong>Tester Bot Centre</strong><label>Automated QA & Diagnostics</label><small>Run the targeted Tiny Titans QA suites across core, trackers, genetics, notifications and feedback.</small><span className="creator-feature-tile-cta">Open Tester Centre →</span></Link>
         <Link className="creator-global-card creator-feature-tile" to="/creator/community"><span>📢</span><strong>Community Manager</strong><label>Announcements & Known Issues</label><small>Publish updates, tester notices, release notes and known-issue information.</small><span className="creator-feature-tile-cta">Open Community Manager →</span></Link>
         <Link className="creator-global-card creator-feature-tile" to="/creator/community"><span>🛡️</span><strong>Moderation & Reports</strong><label>Community Operations</label><small>Keep reports, moderation workflows and creator-facing communications in one place.</small><span className="creator-feature-tile-cta">Open Operations →</span></Link>
