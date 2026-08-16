@@ -15,6 +15,7 @@ export default function CreatorRouteGuard({ children }: CreatorRouteGuardProps) 
 
   useEffect(() => {
     let active = true;
+
     async function check() {
       if (!user) {
         if (active) {
@@ -23,16 +24,38 @@ export default function CreatorRouteGuard({ children }: CreatorRouteGuardProps) 
         }
         return;
       }
+
+      // A persisted creator/admin role is the app's profile-level authorization
+      // source. Custom claims provide an additional, stronger authorization path,
+      // but a failed/unavailable claim sync must not lock the account out when the
+      // profile already identifies the user as a creator or admin.
+      const profileAuthorized = profile?.role === "creator" || profile?.role === "admin";
+      if (profileAuthorized) {
+        if (active) {
+          setAuthorized(true);
+          setCheckingClaims(false);
+        }
+        // Still refresh claims in the background so newly assigned/revoked claims
+        // are picked up without making the Creator Hub unusable during claim sync.
+        try {
+          await hasCreatorClaim(true);
+        } catch {
+          // Profile authorization remains valid for this route guard.
+        }
+        return;
+      }
+
       setCheckingClaims(true);
       try {
         const claimAuthorized = await hasCreatorClaim(true);
-        if (active) setAuthorized(claimAuthorized || profile?.role === "admin");
+        if (active) setAuthorized(claimAuthorized);
       } catch {
-        if (active) setAuthorized(profile?.role === "admin");
+        if (active) setAuthorized(false);
       } finally {
         if (active) setCheckingClaims(false);
       }
     }
+
     void check();
     return () => {
       active = false;
