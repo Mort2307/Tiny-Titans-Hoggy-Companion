@@ -38,7 +38,7 @@ export default function ShedTracker() {
   const [bluePhaseStarted, setBluePhaseStarted] = useState(false);
   const [eyesSkinCleared, setEyesSkinCleared] = useState(false);
   const [shedStatus, setShedStatus] = useState<ShedStatus>("Complete");
-  const [retainedAreas, setRetainedAreas] = useState<RetainedShedArea[]>([]);
+  const [selectedRetainedAreas, setSelectedRetainedAreas] = useState<RetainedShedArea[]>([]);
   const [quality, setQuality] = useState<ShedQuality>("Unknown");
   const [assistance, setAssistance] = useState<ShedAssistance>("None");
   const [shedLength, setShedLength] = useState("");
@@ -48,23 +48,17 @@ export default function ShedTracker() {
   useEffect(() => {
     if (loading || profileLoading) return;
     if (!user) { setLoadingSnakes(false); return; }
-    void getUserSnakes(user.uid)
-      .then((loaded) => {
-        const valid = loaded.filter((snake) => Boolean(snake?.id));
-        setSnakes(valid);
-        setSelectedSnakeId((current) => valid.some((snake) => snake.id === current) ? current : valid[0]?.id ?? "");
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load your snakes."))
-      .finally(() => setLoadingSnakes(false));
+    void getUserSnakes(user.uid).then((loaded) => {
+      const valid = loaded.filter((snake) => Boolean(snake?.id));
+      setSnakes(valid);
+      setSelectedSnakeId((current) => valid.some((snake) => snake.id === current) ? current : valid[0]?.id ?? "");
+    }).catch((err) => setError(err instanceof Error ? err.message : "Unable to load your snakes.")).finally(() => setLoadingSnakes(false));
   }, [user, loading, profileLoading]);
 
   useEffect(() => {
     if (!user || !selectedSnakeId) { setSheds([]); return; }
     setLoadingSheds(true);
-    void getSnakeSheds(user.uid, selectedSnakeId)
-      .then(setSheds)
-      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load shed history."))
-      .finally(() => setLoadingSheds(false));
+    void getSnakeSheds(user.uid, selectedSnakeId).then(setSheds).catch((err) => setError(err instanceof Error ? err.message : "Unable to load shed history.")).finally(() => setLoadingSheds(false));
   }, [user, selectedSnakeId]);
 
   const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]);
@@ -72,95 +66,44 @@ export default function ShedTracker() {
   const averageLength = measured.length ? measured.reduce((sum, shed) => sum + (shed.shedLength ?? 0), 0) / measured.length : 0;
 
   function resetForm() {
-    setEditingId(null);
-    setDate(new Date().toISOString().split("T")[0]);
-    setBluePhaseStarted(false);
-    setEyesSkinCleared(false);
-    setShedStatus("Complete");
-    setRetainedAreas([]);
-    setQuality("Unknown");
-    setAssistance("None");
-    setShedLength("");
-    setSnakeWeight("");
-    setNotes("");
+    setEditingId(null); setDate(new Date().toISOString().split("T")[0]); setBluePhaseStarted(false); setEyesSkinCleared(false); setShedStatus("Complete"); setSelectedRetainedAreas([]); setQuality("Unknown"); setAssistance("None"); setShedLength(""); setSnakeWeight(""); setNotes("");
   }
 
   function editShed(shed: ShedRecord) {
-    setEditingId(shed.id);
-    setDate(shed.date);
-    setBluePhaseStarted(shed.bluePhaseStarted);
-    setEyesSkinCleared(shed.eyesSkinCleared);
-    setShedStatus(shed.status ?? (shed.shedCompleted ? "Complete" : "Partial"));
-    setRetainedAreas(normaliseRetainedAreas(shed));
-    setQuality(shed.quality);
-    setAssistance(shed.assistance);
-    setShedLength(shed.shedLength == null ? "" : String(isImperial ? shed.shedLength / 2.54 : shed.shedLength));
-    setSnakeWeight(shed.snakeWeight == null ? "" : String(isImperial ? shed.snakeWeight / 28.349523125 : shed.snakeWeight));
-    setNotes(shed.notes ?? "");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setEditingId(shed.id); setDate(shed.date); setBluePhaseStarted(shed.bluePhaseStarted); setEyesSkinCleared(shed.eyesSkinCleared); setShedStatus(shed.status ?? (shed.shedCompleted ? "Complete" : "Partial")); setSelectedRetainedAreas(normaliseRetainedAreas(shed)); setQuality(shed.quality); setAssistance(shed.assistance); setShedLength(shed.shedLength == null ? "" : String(isImperial ? shed.shedLength / 2.54 : shed.shedLength)); setSnakeWeight(shed.snakeWeight == null ? "" : String(isImperial ? shed.snakeWeight / 28.349523125 : shed.snakeWeight)); setNotes(shed.notes ?? ""); window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function toggleRetainedArea(area: RetainedShedArea) {
-    setRetainedAreas((current) => current.includes(area) ? current.filter((item) => item !== area) : [...current, area]);
+    setSelectedRetainedAreas((current) => current.includes(area) ? current.filter((item) => item !== area) : [...current, area]);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
+    event.preventDefault(); setError(""); setSuccess("");
     if (!user || !selectedSnakeId) { setError("Please select a snake and make sure you are logged in."); return; }
     if (shedLength !== "" && (!Number.isFinite(Number(shedLength)) || Number(shedLength) < 0)) { setError(`Please enter a valid shed length in ${lengthUnit}.`); return; }
     if (snakeWeight !== "" && (!Number.isFinite(Number(snakeWeight)) || Number(snakeWeight) < 0)) { setError(`Please enter a valid snake weight in ${weightUnit}.`); return; }
     setSaving(true);
     try {
-      const legacyRetainedArea = retainedAreas.length === 0 ? "None" : retainedAreas.length === 1 ? retainedAreas[0] : "Multiple Areas";
-      const record: ShedRecord = {
-        id: editingId ?? generateId(),
-        snakeId: selectedSnakeId,
-        date,
-        bluePhaseStarted,
-        eyesSkinCleared,
-        shedCompleted: shedStatus === "Complete",
-        retainedShedArea: legacyRetainedArea,
-        retainedAreas,
-        retainedEyeCaps: retainedAreas.includes("Eye Cap"),
-        retainedTailTip: retainedAreas.includes("Tail Tip"),
-        status: shedStatus,
-        quality,
-        assistance,
-        ...(shedLength !== "" ? { shedLength: isImperial ? Number(shedLength) * 2.54 : Number(shedLength) } : {}),
-        ...(snakeWeight !== "" ? { snakeWeight: isImperial ? Number(snakeWeight) * 28.349523125 : Number(snakeWeight) } : {}),
-        notes: notes.trim(),
-      };
+      const legacyRetainedArea = selectedRetainedAreas.length === 0 ? "None" : selectedRetainedAreas.length === 1 ? selectedRetainedAreas[0] : "Multiple Areas";
+      const record: ShedRecord = { id: editingId ?? generateId(), snakeId: selectedSnakeId, date, bluePhaseStarted, eyesSkinCleared, shedCompleted: shedStatus === "Complete", retainedShedArea: legacyRetainedArea, retainedAreas: selectedRetainedAreas, retainedEyeCaps: selectedRetainedAreas.includes("Eye Cap"), retainedTailTip: selectedRetainedAreas.includes("Tail Tip"), status: shedStatus, quality, assistance, ...(shedLength !== "" ? { shedLength: isImperial ? Number(shedLength) * 2.54 : Number(shedLength) } : {}), ...(snakeWeight !== "" ? { snakeWeight: isImperial ? Number(snakeWeight) * 28.349523125 : Number(snakeWeight) } : {}), notes: notes.trim() };
       const saved = await saveSnakeShed(user.uid, record);
       setSheds((current) => [saved, ...current.filter((item) => item.id !== saved.id)].sort((a, b) => b.date.localeCompare(a.date)));
-      setSuccess(editingId ? "Shed record updated successfully." : "Shed recorded successfully.");
-      resetForm();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save this shed.");
-    } finally { setSaving(false); }
+      setSuccess(editingId ? "Shed record updated successfully." : "Shed recorded successfully."); resetForm();
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to save this shed."); } finally { setSaving(false); }
   }
 
   async function handleDelete(shed: ShedRecord) {
     if (!user || !window.confirm(`Delete the shed recorded on ${shed.date}?`)) return;
-    setSaving(true);
-    try {
-      await deleteSnakeShed(user.uid, shed.snakeId, shed.id);
-      setSheds((current) => current.filter((item) => item.id !== shed.id));
-      if (editingId === shed.id) resetForm();
-      setSuccess("Shed record deleted.");
-    } catch (err) { setError(err instanceof Error ? err.message : "Unable to delete this shed."); }
+    setSaving(true); setError("");
+    try { await deleteSnakeShed(user.uid, shed.snakeId, shed.id); setSheds((current) => current.filter((item) => item.id !== shed.id)); if (editingId === shed.id) resetForm(); setSuccess("Shed record deleted."); }
+    catch (err) { setError(err instanceof Error ? err.message : "Unable to delete this shed."); }
     finally { setSaving(false); }
   }
 
   if (loading || profileLoading || loadingSnakes) return <div className="page-container"><BackHomeButton /><h1>🐍 Shed Tracker</h1><div className="tracker-card"><p>Loading Tiny Titans...</p></div></div>;
 
-  return <div className="page-container">
-    <BackHomeButton />
-    <h1>🐍 Shed Tracker</h1>
-    <p>Track shed dates separately from shed condition, retained areas and keeper observations.</p>
-    {error && <div className="tracker-card" role="alert">⚠️ {error}</div>}
-    {success && <div className="tracker-card" role="status">✅ {success}</div>}
+  return <div className="page-container"><BackHomeButton /><h1>🐍 Shed Tracker</h1><p>Track shed dates separately from shed condition, retained areas and keeper observations.</p>
+    {error && <div className="tracker-card" role="alert">⚠️ {error}</div>}{success && <div className="tracker-card" role="status">✅ {success}</div>}
     {snakes.length === 0 ? <div className="tracker-card"><h3>No snakes found 🐍</h3><p>Add a snake before recording a shed.</p></div> : <>
       <div className="tracker-card"><h3>🐍 Snake</h3><label htmlFor="shed-snake">Record shed for</label><select id="shed-snake" value={selectedSnakeId} onChange={(e) => { setSelectedSnakeId(e.target.value); resetForm(); }} disabled={saving}>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select>{selectedSnake && <p>🧬 {selectedSnake.morphs?.join(", ") || "Morph not recorded"}</p>}</div>
       <div className="tracker-card"><h3>{editingId ? "✏️ Edit Shed" : "🐍 Record Shed"}</h3><form onSubmit={(e) => void handleSubmit(e)}>
@@ -168,7 +111,7 @@ export default function ShedTracker() {
         <label><input type="checkbox" checked={bluePhaseStarted} onChange={(e) => setBluePhaseStarted(e.target.checked)} disabled={saving} /> Blue phase occurred</label>
         <label><input type="checkbox" checked={eyesSkinCleared} onChange={(e) => setEyesSkinCleared(e.target.checked)} disabled={saving} /> Eyes/skin cleared</label>
         <label htmlFor="shed-status">Shed Status</label><select id="shed-status" value={shedStatus} onChange={(e) => setShedStatus(e.target.value as ShedStatus)} disabled={saving}>{statuses.map((item) => <option key={item}>{item}</option>)}</select>
-        <fieldset><legend>Retained Shed Areas</legend><p>Select every area that applies. Leave all unticked for no retained shed.</p>{retainedAreas.map((area) => <label key={area}><input type="checkbox" checked={retainedAreas.includes(area)} onChange={() => toggleRetainedArea(area)} disabled={saving} /> {area}</label>)}</fieldset>
+        <fieldset><legend>Retained Shed Areas</legend><p>Select every area that applies. Leave all unticked for no retained shed.</p>{retainedAreas.map((area) => <label key={area}><input type="checkbox" checked={selectedRetainedAreas.includes(area)} onChange={() => toggleRetainedArea(area)} disabled={saving} /> {area}</label>)}</fieldset>
         <label htmlFor="shed-quality">Shed Quality</label><select id="shed-quality" value={quality} onChange={(e) => setQuality(e.target.value as ShedQuality)} disabled={saving}>{qualities.map((item) => <option key={item}>{item}</option>)}</select>
         <label htmlFor="shed-assistance">Assistance</label><select id="shed-assistance" value={assistance} onChange={(e) => setAssistance(e.target.value as ShedAssistance)} disabled={saving}>{assistances.map((item) => <option key={item}>{item}</option>)}</select>
         <label htmlFor="shed-length">Shed Length ({lengthUnit})</label><input id="shed-length" type="number" min="0" step="any" inputMode="decimal" value={shedLength} onChange={(e) => setShedLength(e.target.value)} placeholder={isImperial ? "e.g. 18" : "e.g. 45"} disabled={saving} />
