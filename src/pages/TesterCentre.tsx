@@ -2,26 +2,25 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { hasCreatorClaim } from "../services/creatorAuthService";
 import { getGlobalStats, type GlobalStats } from "../services/creatorService";
-import { createCoreDiagnosticChecks, runTesterSuite, type TesterRun } from "../services/testerBotService";
+import { createCoreDiagnosticChecks, runTesterSuite, type TesterCheck, type TesterRun } from "../services/testerBotService";
 import { createTrackerRegressionChecks } from "../services/testerSuitesService";
+import { createAccountJourneyChecks, createFeedingChecks, createShedJourneyChecks, createSnakeProfileChecks, createWeightChecks } from "../services/testerJourneySuitesService";
 import { useAuth } from "../context/AuthContext";
 
-const EMPTY_STATS: GlobalStats = {
-  registeredUsers: 0,
-  activeUsers: 0,
-  snakeProfiles: 0,
-  mealsFed: 0,
-  weightLogs: 0,
-  totalWeightKg: 0,
-  totalWeightLb: 0,
-  shedsLogged: 0,
-  totalShedLengthCm: 0,
-  totalShedLengthIn: 0,
-  geneticsCalculations: 0,
-};
+const EMPTY_STATS: GlobalStats = { registeredUsers: 0, activeUsers: 0, snakeProfiles: 0, mealsFed: 0, weightLogs: 0, totalWeightKg: 0, totalWeightLb: 0, shedsLogged: 0, totalShedLengthCm: 0, totalShedLengthIn: 0, geneticsCalculations: 0 };
+const number = (value: number, maximumFractionDigits = 0) => new Intl.NumberFormat("en-GB", { maximumFractionDigits }).format(value);
 
-const number = (value: number, maximumFractionDigits = 0) =>
-  new Intl.NumberFormat("en-GB", { maximumFractionDigits }).format(value);
+type SuiteDefinition = { id: string; label: string; description: string; category: string; build: (uid: string) => Promise<TesterCheck[]> | TesterCheck[] };
+
+const SUITES: SuiteDefinition[] = [
+  { id: "core-diagnostics", label: "Core Diagnostics", description: "Auth, claims, profile and Firebase access", category: "System", build: async (uid) => createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: await hasCreatorClaim(true) }) },
+  { id: "account-journey", label: "Authentication / Account", description: "Account document and setup state", category: "Account", build: createAccountJourneyChecks },
+  { id: "snake-profiles", label: "Snake Profiles", description: "Profile integrity and Firebase persistence safety", category: "Snakes", build: createSnakeProfileChecks },
+  { id: "weights", label: "Weights", description: "Weight history values, dates, units and chronology", category: "Weights", build: createWeightChecks },
+  { id: "feeding", label: "Feeding", description: "Feeding records, dates, responses and snake links", category: "Feeding", build: createFeedingChecks },
+  { id: "sheds", label: "Sheds", description: "Shed date/status/retained-area regression checks", category: "Sheds", build: createShedJourneyChecks },
+  { id: "tracker-regression", label: "Tracker Regression", description: "Global tracker totals and shared Firebase data model", category: "Trackers", build: createTrackerRegressionChecks },
+];
 
 export default function TesterCentre() {
   const { user } = useAuth();
@@ -34,61 +33,29 @@ export default function TesterCentre() {
 
   useEffect(() => {
     let active = true;
-    hasCreatorClaim(true)
-      .then((value) => {
-        if (active) setAuthorized(value);
-      })
-      .catch(() => {
-        if (active) setAuthorized(false);
-      });
-    return () => {
-      active = false;
-    };
+    hasCreatorClaim(true).then((value) => { if (active) setAuthorized(value); }).catch(() => { if (active) setAuthorized(false); });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
     if (!authorized) return;
     let active = true;
     setStatsLoading(true);
-    void getGlobalStats()
-      .then((loaded) => {
-        if (active) setStats(loaded);
-      })
-      .catch((statsError) => {
-        if (active) setError(statsError instanceof Error ? statsError.message : "Global tracker statistics could not be loaded.");
-      })
-      .finally(() => {
-        if (active) setStatsLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+    void getGlobalStats().then((loaded) => { if (active) setStats(loaded); }).catch((statsError) => { if (active) setError(statsError instanceof Error ? statsError.message : "Global tracker statistics could not be loaded."); }).finally(() => { if (active) setStatsLoading(false); });
+    return () => { active = false; };
   }, [authorized, run]);
 
   if (authorized === false) return <Navigate to="/" replace />;
-  if (!user || authorized === null) {
-    return (
-      <div className="page-container">
-        <div className="welcome-card">
-          <h1>🤖 Tester Centre</h1>
-          <p>Checking Creator authorization...</p>
-        </div>
-      </div>
-    );
-  }
+  if (!user || authorized === null) return <div className="page-container"><div className="welcome-card"><h1>🤖 Tester Centre</h1><p>Checking Creator authorization...</p></div></div>;
 
-  async function runSuite(suite: string) {
-    setRunningSuite(suite);
+  async function runSuite(suiteId: string) {
+    const suite = SUITES.find((item) => item.id === suiteId);
+    if (!suite) return;
+    setRunningSuite(suiteId);
     setError("");
     try {
-      const checks = suite === "core-diagnostics"
-        ? createCoreDiagnosticChecks({
-            uid: user.uid,
-            authenticated: true,
-            creatorClaim: await hasCreatorClaim(true),
-          })
-        : await createTrackerRegressionChecks(user.uid);
-      setRun(await runTesterSuite(user.uid, suite, checks));
+      const checks = await suite.build(user.uid);
+      setRun(await runTesterSuite(user.uid, suite.id, checks));
     } catch (suiteError) {
       setError(suiteError instanceof Error ? suiteError.message : "Tester Bot could not complete the suite.");
     } finally {
@@ -100,8 +67,8 @@ export default function TesterCentre() {
   const failed = run?.results.filter((result) => result.status === "fail").length ?? 0;
   const blocked = run?.results.filter((result) => result.status === "blocked").length ?? 0;
   const criticalFailures = run?.results.filter((result) => result.status === "fail" && result.severity === "critical").length ?? 0;
-
   const health = criticalFailures > 0 || failed > 0 ? "🔴 Critical / Failed" : blocked > 0 ? "🟠 Warnings / Blocked" : "🟢 Healthy";
+  const lastSuite = SUITES.find((suite) => suite.id === run?.suite);
 
   return (
     <div className="page-container">
@@ -109,7 +76,6 @@ export default function TesterCentre() {
         <p className="eyebrow">🐍 TINY TITANS · PRIVATE QA</p>
         <h1>🤖 Tester Centre</h1>
         <p>Creator-only automated diagnostics and read-only regression testing against the live Firebase data model.</p>
-
         <div className="creator-global-grid">
           <div className="creator-global-card"><span>🩺</span><strong>{health}</strong><label>System Health</label></div>
           <div className="creator-global-card"><span>👥</span><strong>{statsLoading ? "…" : number(stats.registeredUsers)}</strong><label>Registered Users</label></div>
@@ -118,31 +84,30 @@ export default function TesterCentre() {
           <div className="creator-global-card"><span>📏</span><strong>{statsLoading ? "…" : `${number(stats.totalShedLengthCm / 100, 2)} m`}</strong><label>Total Shed Length</label></div>
           <div className="creator-global-card"><span>🧬</span><strong>{statsLoading ? "…" : number(stats.geneticsCalculations)}</strong><label>Genetics Calculations</label></div>
         </div>
+      </div>
 
-        <div className="creator-actions">
-          <button className="primary-button" type="button" disabled={Boolean(runningSuite)} onClick={() => void runSuite("core-diagnostics")}>
-            {runningSuite === "core-diagnostics" ? "🤖 Running core diagnostics…" : "▶ Run Core Diagnostics"}
-          </button>
-          <button className="primary-button" type="button" disabled={Boolean(runningSuite)} onClick={() => void runSuite("tracker-regression")}>
-            {runningSuite === "tracker-regression" ? "🤖 Running tracker regression…" : "🧪 Run Tracker Regression"}
-          </button>
+      <div className="welcome-card">
+        <div className="creator-list-top"><div><p className="eyebrow">TEST SUITES</p><h2>Run targeted QA</h2></div><span className="creator-badge">{SUITES.length} suites</span></div>
+        <div className="creator-global-grid">
+          {SUITES.map((suite) => (
+            <div className="creator-global-card" key={suite.id}>
+              <span>{suite.id === "core-diagnostics" ? "🩺" : suite.id === "tracker-regression" ? "🧪" : suite.id === "sheds" ? "🐍" : suite.id === "feeding" ? "🍽️" : suite.id === "weights" ? "⚖️" : suite.id === "snake-profiles" ? "📋" : "🔐"}</span>
+              <strong>{suite.label}</strong><label>{suite.category}</label><small>{suite.description}</small>
+              <button className="primary-button" type="button" disabled={Boolean(runningSuite)} onClick={() => void runSuite(suite.id)}>{runningSuite === suite.id ? "🤖 Running…" : "▶ Run suite"}</button>
+            </div>
+          ))}
         </div>
         {error && <div className="creator-error">{error}</div>}
       </div>
 
       {run && (
         <div className="welcome-card">
+          <p className="eyebrow">LATEST TEST RUN</p>
           <h2>{run.status === "passed" ? "🟢 Suite Passed" : run.status === "blocked" ? "🟠 Suite Blocked" : "🔴 Suite Failed"}</h2>
           <p>{passed} passed · {failed} failed · {blocked} blocked · {criticalFailures} critical failures</p>
-          <p className="creator-muted">{run.suite === "tracker-regression" ? "Tracker Regression" : "Core Diagnostics"} · {run.ownerUid} · {run.durationMs}ms</p>
+          <p className="creator-muted">{lastSuite?.label ?? run.suite} · {run.ownerUid} · {run.durationMs}ms · {run.completedAt}</p>
           <div className="creator-list">
-            {run.results.map((result) => (
-              <div className="creator-list-item" key={result.checkId}>
-                <strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong>
-                <span>{result.message}</span>
-                <small>{result.durationMs}ms · {result.severity} · {result.category} · {result.checkId}</small>
-              </div>
-            ))}
+            {run.results.map((result) => <div className="creator-list-item" key={result.checkId}><strong>{result.status === "pass" ? "🟢" : result.status === "fail" ? "🔴" : "🟠"} {result.name}</strong><span>{result.message}</span><small>{result.durationMs}ms · {result.severity} · {result.category} · {result.checkId}</small></div>)}
           </div>
         </div>
       )}
