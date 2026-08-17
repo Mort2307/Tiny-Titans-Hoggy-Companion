@@ -16,17 +16,11 @@ const updateSW = registerSW({
   immediate: true,
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
-
-    // Check periodically while the app is open. This catches deployments even
-    // when the browser has kept the existing service worker alive for a while.
     window.setInterval(() => {
       void registration.update();
     }, 60 * 60 * 1000);
   },
   onNeedRefresh() {
-    // With autoUpdate enabled VitePWA normally handles this automatically.
-    // Keep the callback explicit so a future configuration change cannot leave
-    // a stale installed shell running indefinitely.
     void updateSW(true);
   },
   onOfflineReady() {
@@ -34,7 +28,7 @@ const updateSW = registerSW({
   },
 });
 
-function SelectorGrabScrollManager() {
+export function SelectorGrabScrollManager() {
   useEffect(() => {
     let active: HTMLDivElement | null = null;
     let pointerId: number | null = null;
@@ -52,7 +46,6 @@ function SelectorGrabScrollManager() {
       if (event.pointerType === "mouse" && event.button !== 0) return;
       const selector = getSelector(event.target);
       if (!selector) return;
-
       active = selector;
       pointerId = event.pointerId;
       startY = event.clientY;
@@ -63,11 +56,9 @@ function SelectorGrabScrollManager() {
 
     const onPointerMove = (event: PointerEvent) => {
       if (!active || pointerId !== event.pointerId) return;
-
       const deltaY = event.clientY - startY;
       if (Math.abs(deltaY) > 5) dragged = true;
       if (!dragged) return;
-
       active.scrollTop = startScrollTop - deltaY;
       event.preventDefault();
     };
@@ -105,9 +96,7 @@ function SelectorGrabScrollManager() {
   return null;
 }
 
-createRoot(
-  document.getElementById("root")!
-).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <SelectorGrabScrollManager />
