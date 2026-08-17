@@ -95,6 +95,7 @@ async function createCheckout(request) {
       success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/become-a-titan?payment=cancelled`,
       billing_address_collection: "auto",
+      managed_payments: { enabled: false },
     });
 
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");
