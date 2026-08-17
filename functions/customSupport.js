@@ -7,13 +7,15 @@ const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 const db = getFirestore();
 
+// Fixed tiers use inline Stripe price_data rather than hard-coded Price IDs.
+// This prevents stale/deleted Stripe Price IDs from breaking checkout.
 const SUPPORT_TIERS = Object.freeze({
-  starter: { amount: 1, label: "Titan Supporter", priceId: "price_1U5AMqI4DKNMJVXDKv0jvq4m" },
-  little: { amount: 5, label: "Little Titan", priceId: "price_1U51PDI4DKNMJVXDaEvd0OUJ" },
-  growing: { amount: 10, label: "Growing Titan", priceId: "price_1U51PHI4DKNMJVXDYWQlFoRv" },
-  champion: { amount: 20, label: "Champion Titan", priceId: "price_1U51PMI4DKNMJVXD014dtANW" },
-  legendary: { amount: 40, label: "Legendary Titan", priceId: "price_1U51PRI4DKNMJVXDgIZKBg4k" },
-  broken: { amount: 100, label: "You Just Broke Me", priceId: "price_1U51PWI4DKNMJVXD4flYcU4R" },
+  starter: { amount: 1, label: "Titan Supporter" },
+  little: { amount: 5, label: "Little Titan" },
+  growing: { amount: 10, label: "Growing Titan" },
+  champion: { amount: 20, label: "Champion Titan" },
+  legendary: { amount: 40, label: "Legendary Titan" },
+  broken: { amount: 100, label: "You Just Broke Me" },
 });
 
 function getAllowedOrigin(request) {
@@ -36,6 +38,21 @@ function parseCustomAmountPence(value) {
   if (pence < 100) throw new HttpsError("invalid-argument", "Custom support must be at least £1.00.");
   if (pence > 99999999) throw new HttpsError("invalid-argument", "That support amount is above Stripe's maximum supported GBP checkout amount.");
   return pence;
+}
+
+function buildSupportLineItem(amountPence, label) {
+  const amountGbp = (amountPence / 100).toFixed(2);
+  return {
+    price_data: {
+      currency: "gbp",
+      product_data: {
+        name: `Tiny Titans — ${label}`,
+        description: "One-time voluntary support contribution to Tiny Titans Hoggy Companion. This payment is project support and does not purchase goods, services, membership, or administrative access.",
+      },
+      unit_amount: amountPence,
+    },
+    quantity: 1,
+  };
 }
 
 exports.createTitanCheckout = onCall(
@@ -71,21 +88,12 @@ exports.createTitanCheckout = onCall(
         const amountPence = parseCustomAmountPence(request.data?.amountGbp);
         amountGbp = (amountPence / 100).toFixed(2);
         label = "Custom Tiny Titans Support";
-        lineItems = [{
-          price_data: {
-            currency: "gbp",
-            product_data: {
-              name: `Tiny Titans Support — £${amountGbp}`,
-              description: "One-time voluntary support contribution to Tiny Titans Hoggy Companion. This payment is project support and does not purchase goods, services, membership, or administrative access.",
-            },
-            unit_amount: amountPence,
-          },
-          quantity: 1,
-        }];
+        lineItems = [buildSupportLineItem(amountPence, `Support — £${amountGbp}`)];
       } else {
+        const amountPence = Math.round(tier.amount * 100);
         amountGbp = tier.amount.toFixed(2);
         label = tier.label;
-        lineItems = [{ price: tier.priceId, quantity: 1 }];
+        lineItems = [buildSupportLineItem(amountPence, label)];
       }
 
       const session = await stripe.checkout.sessions.create({
@@ -110,11 +118,7 @@ exports.createTitanCheckout = onCall(
     } catch (error) {
       console.error("Tiny Titans Stripe checkout creation failed", error);
       if (error instanceof HttpsError) throw error;
-      const stripeMessage = typeof error?.message === "string" ? error.message : "";
-      if (/No such price/i.test(stripeMessage)) {
-        throw new HttpsError("failed-precondition", "This support option is not configured correctly in Stripe yet.");
-      }
-      if (/Invalid API Key|authentication/i.test(stripeMessage)) {
+      if (/Invalid API Key|authentication/i.test(String(error?.message || ""))) {
         throw new HttpsError("failed-precondition", "Stripe is not configured correctly on the live server yet.");
       }
       throw new HttpsError("internal", "Stripe Checkout could not be started. Please try again.");
