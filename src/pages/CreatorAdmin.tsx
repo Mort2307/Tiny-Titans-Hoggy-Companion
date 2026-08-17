@@ -4,7 +4,7 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getCreatorFeedback, getCreatorReports, getGlobalStats, getMorphImageSubmissions, type GlobalStats } from "../services/creatorService";
-import { getCanonicalGlobalStats } from "../services/trackerStatsService";
+import { getCanonicalReportIssueStatus, isActiveReportIssueStatus } from "../services/reportLifecycle";
 import CreatorCommunityGlobe from "../components/CreatorCommunityGlobeV2";
 import { app, db } from "../firebase/config";
 import PageBackButton from "../components/PageBackButton";
@@ -39,10 +39,10 @@ export default function CreatorAdmin() {
     if (!user) return;
     setLoading(true); setError("");
     try {
-      const [legacyStats, canonicalStats, submissions, reports, feedback] = await Promise.all([getGlobalStats(), getCanonicalGlobalStats(), getMorphImageSubmissions(), getCreatorReports(), getCreatorFeedback()]);
-      setStats({ ...legacyStats, ...canonicalStats });
+      const [canonicalStats, submissions, reports, feedback] = await Promise.all([getGlobalStats(), getMorphImageSubmissions(), getCreatorReports(), getCreatorFeedback()]);
+      setStats(canonicalStats);
       setMorphPending(submissions.filter((item) => item.status === "Pending" || item.status === "NeedsInfo").length);
-      setBugPending(reports.filter((item) => item.status === "Pending").length);
+      setBugPending(reports.filter((item) => isActiveReportIssueStatus(getCanonicalReportIssueStatus(item.status))).length);
       setFeedbackNew(feedback.filter((item) => !item.status || item.status === "New").length);
     } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded."); }
     finally { setLoading(false); }
