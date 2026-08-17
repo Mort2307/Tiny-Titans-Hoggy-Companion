@@ -8,8 +8,4 @@ The final CI build gate runs on every push to `master` and checks:
 
 1. `npm install --no-audit --no-fund`
 2. `npm run lint`
-3. `npm run build`
-4. Functions dependency installation
-5. JavaScript syntax validation for all Functions source files
 
-The application build itself runs the morph-database validator, learning-content validator, TypeScript project build, and Vite production build.
