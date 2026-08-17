@@ -6,6 +6,7 @@ import "./index.css";
 import "./styles/selector-scroll.css";
 
 import App from "./App";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 import { AuthProvider } from "./context/AuthContext";
 
 // Keep installed PWA clients aggressively aligned with the latest Firebase
@@ -100,7 +101,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <SelectorGrabScrollManager />
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
     </AuthProvider>
   </StrictMode>
 );
