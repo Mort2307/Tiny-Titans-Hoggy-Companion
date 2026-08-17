@@ -8,6 +8,7 @@ import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
 import WeightMiniChart from "../components/WeightMiniChart";
 import BackHomeButton from "../components/BackHomeButton";
+import ConfirmActionDialog from "../components/ConfirmActionDialog";
 
 function SnakeProfile() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,8 @@ function SnakeProfile() {
   const { formatWeight } = useUnits();
   const [snake, setSnake] = useState<Snake | null>(null);
   const [loadingSnake, setLoadingSnake] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,8 +49,10 @@ function SnakeProfile() {
     return ([years ? `${years} year${years === 1 ? "" : "s"}` : "", months ? `${months} month${months === 1 ? "" : "s"}` : "", days ? `${days} day${days === 1 ? "" : "s"}` : ""].filter(Boolean).join(", ") || "0 days");
   }
   async function deleteSnake() {
-    if (!snake || !user || !snake.id || !window.confirm(`Delete ${snake.name}? This cannot be undone.`)) return;
-    try { await deleteUserSnake(user.uid, snake.id); navigate("/snakes", { replace: true }); } catch (err) { alert(err instanceof Error ? err.message : "Unable to delete this snake. Please try again."); }
+    if (!snake || !user || !snake.id || deleting) return;
+    setDeleting(true);
+    setError(null);
+    try { await deleteUserSnake(user.uid, snake.id); navigate("/snakes", { replace: true }); } catch (err) { setError(err instanceof Error ? err.message : "Unable to delete this snake. Please try again."); setDeleting(false); setConfirmDelete(false); }
   }
   function openSnakeEditor() { if (snake?.id) navigate(`/snakes/${snake.id}/edit`); }
   function openMasterRecord() { if (snake?.id) navigate(`/snakes/${snake.id}/master-record`); }
@@ -59,7 +64,7 @@ function SnakeProfile() {
   const weightHistory = snake.weightHistory ?? [];
   return <div className="page-container"><BackHomeButton /><h1>🐍 {snake.name}</h1>
     <div className="snake-profile-photo">{snake.photo ? <img src={snake.photo} alt={snake.name} /> : <div className="snake-profile-placeholder">🐍</div>}</div>
-    <div className="tracker-card snake-profile-actions"><button type="button" onClick={openMasterRecord}>📖 Living History / Master Record</button><button type="button" onClick={openSnakeEditor}>✏️ Edit Snake</button><button type="button" onClick={() => navigate(`/feeding/${snake.id}`)}>🍽 Log Feeding</button><button type="button" onClick={() => navigate(`/shedding/${snake.id}`)}>🐍 Log Shed</button><button type="button" onClick={() => navigate(`/weights/${snake.id}`)}>⚖️ Weight</button><button type="button" onClick={() => void deleteSnake()}>🗑️ Delete Snake</button></div>
+    <div className="tracker-card snake-profile-actions"><button type="button" onClick={openMasterRecord}>📖 Living History / Master Record</button><button type="button" onClick={openSnakeEditor}>✏️ Edit Snake</button><button type="button" onClick={() => navigate(`/feeding/${snake.id}`)}>🍽 Log Feeding</button><button type="button" onClick={() => navigate(`/shedding/${snake.id}`)}>🐍 Log Shed</button><button type="button" onClick={() => navigate(`/weights/${snake.id}`)}>⚖️ Weight</button><button type="button" onClick={() => setConfirmDelete(true)} disabled={deleting}>🗑️ Delete Snake</button></div>
     <div className="snake-profile-grid">
       <button type="button" className="snake-profile-card" onClick={openSnakeEditor}><div className="snake-profile-card-icon">📋</div><h2>Basic Information</h2><p><strong>{snake.species}</strong></p><p>{snake.sex}</p>{snake.nickname && <p>"{snake.nickname}"</p>}</button>
       <button type="button" className="snake-profile-card" onClick={openSnakeEditor}><div className="snake-profile-card-icon">🧬</div><h2>Genetics</h2><p><strong>{snake.morphs?.length ? snake.morphs.join(", ") : "No morphs listed"}</strong></p>{snake.hets?.length > 0 && <p>{snake.hets.length} het{snake.hets.length !== 1 ? "s" : ""}</p>}{snake.customMorph && <p>{snake.customMorph}</p>}</button>
@@ -69,6 +74,7 @@ function SnakeProfile() {
       <button type="button" className="snake-profile-card" onClick={() => navigate(`/feeding/${snake.id}`)}><div className="snake-profile-card-icon">📚</div><h2>Records</h2><p>🍽 Feeding: <strong>{snake.feedingHistory?.length ?? 0}</strong></p><p>🐍 Sheds: <strong>{snake.shedHistory?.length ?? 0}</strong></p><p>❤️ Health: <strong>{snake.healthHistory?.length ?? 0}</strong></p></button>
       <button type="button" className="snake-profile-card snake-profile-card-notes" onClick={openSnakeEditor}><div className="snake-profile-card-icon">📝</div><h2>Notes</h2><p>{snake.notes || "No notes added"}</p></button>
     </div>
+    <ConfirmActionDialog open={confirmDelete} title={`Delete ${snake.name}?`} description={<p>This removes the snake from your active collection. Weight, feeding and shed history associated with the snake will no longer be reachable through the app.</p>} confirmLabel="Delete Snake" busy={deleting} onConfirm={() => void deleteSnake()} onCancel={() => { if (!deleting) setConfirmDelete(false); }} />
   </div>;
 }
 export default SnakeProfile;
