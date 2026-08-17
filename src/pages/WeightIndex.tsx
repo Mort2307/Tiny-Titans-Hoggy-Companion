@@ -48,7 +48,7 @@ function WeightIndex() {
 
   if (loading || profileLoading || loadingSnakes) return <div className="page-container"><BackHomeButton /><h1>⚖️ Weight Records</h1><div className="tracker-card"><h3>Loading your Tiny Titans...</h3><p>Fetching canonical weight events from Firebase.</p></div></div>;
   if (error) return <div className="page-container"><BackHomeButton /><h1>⚖️ Weight Records</h1><div className="tracker-card"><h3>{error}</h3><button type="button" onClick={() => navigate("/snakes")}>← Back to My Hoggies</button></div></div>;
-  if (snakes.length === 0) return <div className="page-container"><BackHomeButton /><h1>⚖️ Weight Records</h1><div className="tracker-card"><h2>📊 No Weight Records Yet</h2><p>Add a weight record to one of your Tiny Titans and it will appear here.</p><div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}><button type="button" onClick={() => navigate("/snakes")}>🐍 View My Hoggies</button><button type="button" onClick={() => navigate("/snakes")}>➕ Add a Snake</button></div></div></div>;
+  if (snakes.length === 0) return <div className="page-container"><BackHomeButton /><h1>⚖️ Weight Records</h1><div className="tracker-card"><h2>📊 No Weight Records Yet</h2><p>Add a weight record to one of your Tiny Titans and it will appear here.</p><div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}><button type="button" onClick={() => navigate("/snakes")}>🐍 View My Hoggies</button><button type="button" onClick={() => navigate("/snakes/new")}>➕ Add a Snake</button></div></div></div>;
 
   return <div className="page-container"><BackHomeButton /><h1>⚖️ Weight Records</h1><p>Track the growth of all your Tiny Titans in one place.</p><div className="weight-records-grid">
     {snakes.map((snake) => {
