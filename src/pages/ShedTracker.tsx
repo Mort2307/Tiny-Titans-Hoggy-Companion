@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Snake } from "../types/Snake";
 import type { ShedAssistance, ShedQuality, ShedRecord, ShedStatus, RetainedShedArea } from "../types/Shed";
@@ -92,14 +92,14 @@ export default function ShedTracker() {
     setShedStatus("Complete"); setSelectedRetainedAreas([]); setQuality("Unknown"); setAssistance("None"); setShedLength(""); setSnakeWeight(""); setNotes("");
   }
 
-  function editShed(shed: ShedRecord) {
+  const editShed = useCallback((shed: ShedRecord) => {
     setEditingId(shed.id); setDate(shed.date); setBluePhaseStarted(shed.bluePhaseStarted); setEyesSkinCleared(shed.eyesSkinCleared);
     setShedStatus(shed.status ?? (shed.shedCompleted ? "Complete" : "Partial")); setSelectedRetainedAreas(normaliseRetainedAreas(shed));
     setQuality(shed.quality); setAssistance(shed.assistance);
     setShedLength(shed.shedLength == null ? "" : String(isImperial ? shed.shedLength / 2.54 : shed.shedLength));
     setSnakeWeight(shed.snakeWeight == null ? "" : String(isImperial ? shed.snakeWeight / 28.349523125 : shed.snakeWeight)); setNotes(shed.notes ?? "");
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [isImperial]);
 
   useEffect(() => {
     const recordId = searchParams.get("record");
@@ -112,7 +112,7 @@ export default function ShedTracker() {
       requestAnimationFrame(() => document.getElementById("shed-date")?.scrollIntoView({ behavior: "smooth", block: "center" }));
       setSearchParams((current) => { current.delete("record"); return current; }, { replace: true });
     });
-  }, [sheds, searchParams, setSearchParams, isImperial, editShed]);
+  }, [sheds, searchParams, setSearchParams, editShed]);
 
   function toggleRetainedArea(area: RetainedShedArea) { setSelectedRetainedAreas((current) => current.includes(area) ? current.filter((item) => item !== area) : [...current, area]); }
 
