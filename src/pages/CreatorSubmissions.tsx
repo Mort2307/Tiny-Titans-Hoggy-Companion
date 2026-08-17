@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PageBackButton from "../components/PageBackButton";
 import { approveMorphImageSubmission, getMorphImageSubmissions, rejectMorphImageSubmission } from "../services/creatorService";
+import { isAwaitingMorphReview, canTransitionMorphSubmission, getMorphSubmissionActionLabel, validateMorphSubmissionForApproval } from "../services/morphSubmissionLifecycle";
 import { storage } from "../firebase/config";
 import type { MorphImageSubmission } from "../types/morphSubmission";
 import "../styles/CreatorTools.css";
@@ -42,11 +43,14 @@ export default function CreatorSubmissions() {
     return () => { active = false; };
   }, [selected]);
 
-  const visible = useMemo(() => filter === "pending" ? items.filter((item) => item.status === "Pending" || item.status === "NeedsInfo") : items, [filter, items]);
-  const pendingCount = items.filter((item) => item.status === "Pending" || item.status === "NeedsInfo").length;
+  const visible = useMemo(() => filter === "pending" ? items.filter((item) => isAwaitingMorphReview(item.status)) : items, [filter, items]);
+  const pendingCount = items.filter((item) => isAwaitingMorphReview(item.status)).length;
 
   async function approve() {
     if (!selected || !user) return;
+    const validationError = validateMorphSubmissionForApproval(selected);
+    if (validationError) { setError(validationError); return; }
+    if (!canTransitionMorphSubmission(selected.status, "Approved")) { setError("This submission cannot transition to Approved from its current state."); return; }
     setWorking(true); setError(""); setSuccess("");
     try {
       await approveMorphImageSubmission(selected, user.uid);
@@ -58,6 +62,7 @@ export default function CreatorSubmissions() {
 
   async function reject() {
     if (!selected || !user) return;
+    if (!canTransitionMorphSubmission(selected.status, "Rejected")) { setError("This submission cannot transition to Rejected from its current state."); return; }
     const reason = window.prompt("Optional rejection reason for the creator:", "") ?? "";
     if (reason === "") return;
     setWorking(true); setError(""); setSuccess("");
@@ -80,14 +85,14 @@ export default function CreatorSubmissions() {
     {success && <div className="creator-success">✓ {success}</div>}
     <section className="creator-admin-section">
       <div className="creator-section-heading"><div><span className="creator-admin-kicker">SUBMISSION QUEUE</span><h2>{pendingCount} awaiting review</h2><p>Submitted files remain available here for review until approved or rejected.</p></div><label>Show <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}><option value="pending">Pending / Needs Info</option><option value="all">All submissions</option></select></label></div>
-      {loading ? <div className="creator-loading">Loading submission files…</div> : visible.length === 0 ? <div className="creator-list-item"><strong>No submissions in this view.</strong><span>The queue is clear.</span></div> : <div className="creator-list">{visible.map((item) => <button key={item.id} type="button" className="creator-user-row" onClick={() => { setSelected(item); setError(""); setSuccess(""); }}><span className="creator-user-avatar">🧬</span><span className="creator-user-main"><strong>{item.morphName}</strong><small>{item.description || "No description provided"}</small></span><span className="creator-user-meta"><strong>{item.status}</strong><small>{formatDate(item.submittedAt)}</small></span><span>→</span></button>)}</div>}
+      {loading ? <div className="creator-loading">Loading submission files…</div> : visible.length === 0 ? <div className="creator-list-item"><strong>No submissions in this view.</strong><span>The queue is clear.</span></div> : <div className="creator-list">{visible.map((item) => <button key={item.id} type="button" className="creator-user-row" onClick={() => { setSelected(item); setError(""); setSuccess(""); }}><span className="creator-user-avatar">🧬</span><span className="creator-user-main"><strong>{item.morphName}</strong><small>{item.description || "No description provided"}</small></span><span className="creator-user-meta"><strong>{getMorphSubmissionActionLabel(item.status)}</strong><small>{formatDate(item.submittedAt)}</small></span><span>→</span></button>)}</div>}
     </section>
     {selected && <div className="creator-user-modal-backdrop" role="presentation" onClick={() => !working && setSelected(null)}><section className="creator-user-modal creator-submission-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-      <div className="creator-section-heading"><div><span className="creator-admin-kicker">SUBMISSION REVIEW</span><h2>🧬 {selected.morphName}</h2><p>Submitted {formatDate(selected.submittedAt)} · {selected.status}</p></div><button type="button" onClick={() => setSelected(null)} disabled={working}>✕</button></div>
+      <div className="creator-section-heading"><div><span className="creator-admin-kicker">SUBMISSION REVIEW</span><h2>🧬 {selected.morphName}</h2><p>Submitted {formatDate(selected.submittedAt)} · {getMorphSubmissionActionLabel(selected.status)}</p></div><button type="button" onClick={() => setSelected(null)} disabled={working}>✕</button></div>
       {imageUrl ? <div className="creator-submission-preview"><img src={imageUrl} alt={`Submitted ${selected.morphName}`} /></div> : <div className="creator-list-item"><strong>Preview unavailable</strong><span>The submission record exists, but its temporary storage preview could not be opened. Approval can still use the stored file if it remains available.</span></div>}
       <div className="creator-user-detail-grid"><div><strong>Morph</strong><span>{selected.morphName}</span></div><div><strong>Canonical ID</strong><span>{selected.morphId || "Will be resolved during approval"}</span></div><div><strong>Submitter UID</strong><span>{selected.userId || "Not recorded"}</span></div><div><strong>Credit</strong><span>{selected.creditType === "anonymous" ? "Anonymous" : selected.creditName || selected.creditSocial || "Not supplied"}</span></div></div>
       <div className="creator-user-detail-section"><h3>📝 Submission details</h3><p>{selected.description || "No description supplied."}</p>{selected.observedTraits && <p><strong>Observed traits:</strong> {selected.observedTraits}</p>}{selected.geneticsNotes && <p><strong>Genetics notes:</strong> {selected.geneticsNotes}</p>}{selected.proofDetails && <p><strong>Proof:</strong> {selected.proofDetails}</p>}{selected.proofReference && <p><strong>Reference:</strong> {selected.proofReference}</p>}</div>
-      {(selected.status === "Pending" || selected.status === "NeedsInfo") && <div className="creator-submission-actions"><button type="button" onClick={() => void reject()} disabled={working}>✕ Reject</button><button type="button" onClick={() => void approve()} disabled={working}>✓ {working ? "Approving…" : "Approve & Add to Morph Library"}</button></div>}
+      {(isAwaitingMorphReview(selected.status)) && <div className="creator-submission-actions"><button type="button" onClick={() => void reject()} disabled={working || !canTransitionMorphSubmission(selected.status, "Rejected")}>✕ Reject</button><button type="button" onClick={() => void approve()} disabled={working || !canTransitionMorphSubmission(selected.status, "Approved")}>✓ {working ? "Approving…" : "Approve & Add to Morph Library"}</button></div>}
     </section></div>}
   </main>;
 }
