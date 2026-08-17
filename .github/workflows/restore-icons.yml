@@ -3,6 +3,7 @@ name: Restore normal icons
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,25 +19,24 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # Icons/characters already intended by Tiny Titans UI.
           chars = [
-              "🐍", "🍽️", "🧬", "🧪", "📊", "📋", "📸", "📷", "📈", "📉", "📜", "📚", "📅", "📣",
-              "🔬", "🔎", "🔄", "🔒", "🔔", "💾", "💡", "🌟", "🌱", "🌎", "🐛", "🥚", "🧠", "💧",
-              "🚨", "🗑️", "✅", "❌", "⚠️", "✏️", "➡️", "⬅️", "→", "←", "•", "—", "–", "…",
-              "🔴", "🟢", "🟡", "🐁", "🐀", "🍴", "📏", "📝", "📌", "⚖️", "🛡️", "🔗", "🏆", "🎯",
-              "🎓", "⭐", "❤️", "❗", "❓", "➕", "➖", "🔧", "🛠️", "📦", "📱", "💻", "🌐", "👀",
-              "💬", "📢", "🗺️", "🔍", "🧹", "🦎", "🐸", "🦗", "🪱", "🐣", "🐣", "🩹", "🩺",
+              "🏠", "🐍", "🍽️", "🧬", "🧮", "🥚", "📚", "🧠", "🌿", "🏆", "🧑", "🧑‍🏫", "🛠️", "📢", "🧪",
+              "🔬", "🔎", "🔄", "🔒", "🔔", "💾", "💡", "🌟", "🌱", "🌎", "🐛", "💧", "🚨", "🗑️", "✅", "❌",
+              "⚠️", "✏️", "➡️", "⬅️", "→", "←", "•", "—", "–", "…", "🔴", "🟢", "🟡", "🐁", "🐀", "🍴",
+              "📏", "📝", "📌", "⚖️", "🛡️", "🔗", "🎯", "🎓", "⭐", "❤️", "❗", "❓", "➕", "➖", "🔧",
+              "📦", "📱", "💻", "🌐", "👀", "💬", "🗺️", "🔍", "🧹", "🦎", "🐸", "🦗", "🪱", "🐣", "🩹", "🩺",
+              "🍽", "🧬", "🧠", "🧑", "🐍", "🛠", "📢", "🧪", "🏠", "🏆", "🌿", "🧮", "📚"
           ]
 
           replacements = {}
           for char in chars:
-              try:
-                  mojibake = char.encode("utf-8").decode("cp1252")
-              except UnicodeDecodeError:
-                  continue
-              replacements[mojibake] = char
+              for codec in ("cp1252", "latin1"):
+                  try:
+                      mojibake = char.encode("utf-8").decode(codec)
+                      replacements[mojibake] = char
+                  except UnicodeDecodeError:
+                      pass
 
-          # Common mojibake fragments whose original character is punctuation/symbol text.
           replacements.update({
               "â€¢": "•", "â€”": "—", "â€“": "–", "â€¦": "…", "â†’": "→", "â†": "←",
           })
