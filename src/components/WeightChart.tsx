@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { WeightRecord } from "../types/Weight";
-import { useUnits } from "../context/UnitContextValue";
+import { useUnits } from "../context/UnitContextValueValue";
 
 type WeightChartProps = { history: WeightRecord[] };
 
