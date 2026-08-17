@@ -22,8 +22,9 @@ function normaliseUrl(value: string) {
   return socialUrl;
 }
 
-function toEntry(item: { id: string; data: () => Record<string, any> }): TitanWallEntry {
+function toEntry(item: { id: string; data: () => Record<string, any> }): TitanWallEntry | null {
   const data = item.data();
+  if (data.visibility !== "named" && data.visibility !== "anonymous") return null;
   return {
     id: item.id,
     displayName: String(data.displayName || "Anonymous Titan"),
@@ -35,11 +36,9 @@ function toEntry(item: { id: string; data: () => Record<string, any> }): TitanWa
 }
 
 export async function getTitanWallEntries(): Promise<TitanWallEntry[]> {
-  // Reconcile from the payment source of truth before reading the public Wall.
-  // The callable is idempotent and never overwrites existing recognition choices.
   await reconcileTitanWall();
   const snapshot = await getDocs(collection(db, "supporterWall"));
-  const entries = snapshot.docs.map(toEntry);
+  const entries = snapshot.docs.map(toEntry).filter((entry): entry is TitanWallEntry => entry !== null);
   if (!entries.some((entry) => entry.id === OFFICIAL_TITAN.id)) entries.push(OFFICIAL_TITAN);
   return entries.sort((a, b) => {
     if (a.id === OFFICIAL_TITAN.id) return -1;
@@ -52,7 +51,7 @@ export async function saveTitanWallProfile(uid: string, profile: SupporterWallPr
   const displayName = profile.visibility === "named" ? String(profile.displayName ?? "").trim() : "Anonymous Titan";
   if (profile.visibility === "named" && !displayName) throw new Error("Please enter the name you would like shown on the Wall of Titans.");
   const socialUrl = normaliseUrl(String(profile.socialUrl ?? ""));
-  await setDoc(doc(db, "supporterWall", uid), { uid, displayName, socialUrl, visibility: profile.visibility, tierLabel: supporter.tierLabel, amountGbp: supporter.amountGbp, supportedAt: supporter.supportedAt ?? null }, { merge: true });
+  await setDoc(doc(db, "supporterWall", uid), { uid, displayName, socialUrl, visibility: profile.visibility, recognitionStatus: "chosen", tierLabel: supporter.tierLabel, amountGbp: supporter.amountGbp, supportedAt: supporter.supportedAt ?? null, updatedAt: Timestamp.now() }, { merge: true });
 }
 
 export async function saveTitanWallAdminEntry(input: TitanWallAdminEntry): Promise<void> {
@@ -62,11 +61,11 @@ export async function saveTitanWallAdminEntry(input: TitanWallAdminEntry): Promi
   const socialUrl = normaliseUrl(input.socialUrl);
   const id = input.id || crypto.randomUUID();
   const supportedAt = input.supportedAt ? Timestamp.fromDate(new Date(input.supportedAt)) : null;
-  await setDoc(doc(db, "supporterWall", id), { uid: id, displayName, socialUrl, visibility: input.visibility, tierLabel: input.tierLabel.trim() || "Titan Supporter", amountGbp: input.amountGbp, supportedAt }, { merge: true });
+  await setDoc(doc(db, "supporterWall", id), { uid: id, displayName, socialUrl, visibility: input.visibility, recognitionStatus: "chosen", tierLabel: input.tierLabel.trim() || "Titan Supporter", amountGbp: input.amountGbp, supportedAt }, { merge: true });
 }
 
 export async function ensureOfficialTitanWallEntry(): Promise<void> {
-  await setDoc(doc(db, "supporterWall", OFFICIAL_TITAN.id), { uid: OFFICIAL_TITAN.id, displayName: OFFICIAL_TITAN.displayName, socialUrl: OFFICIAL_TITAN.socialUrl, visibility: "named", tierLabel: OFFICIAL_TITAN.tierLabel, amountGbp: 0, supportedAt: null }, { merge: true });
+  await setDoc(doc(db, "supporterWall", OFFICIAL_TITAN.id), { uid: OFFICIAL_TITAN.id, displayName: OFFICIAL_TITAN.displayName, socialUrl: OFFICIAL_TITAN.socialUrl, visibility: "named", recognitionStatus: "chosen", tierLabel: OFFICIAL_TITAN.tierLabel, amountGbp: 0, supportedAt: null }, { merge: true });
 }
 
 export async function deleteTitanWallEntry(id: string): Promise<void> {
