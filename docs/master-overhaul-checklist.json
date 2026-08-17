@@ -38,10 +38,10 @@
     {"id":"bug-hunter","classification":"IMPROVE","status":"BUILD","result":"Only confirmed/in-progress/testing/resolved lifecycle states contribute to confirmed bug progression"},
     {"id":"master-record","classification":"IMPROVE","status":"VERIFY","result":"Master Record consumes canonical Weight, Feeding and Shed services, builds interactive timeline and individual-data intelligence"},
     {"id":"learning-topic-route","classification":"IMPROVE","status":"BUILD","result":"/learn/topic/:id now uses canonical LearnTopic rather than the generic Knowledge Base"},
-    {"id":"knowledge-links","classification":"IMPROVE","status":"BUILD","result":"Knowledge Base cards now point to canonical learning topic IDs and full lessons"}
+    {"id":"knowledge-links","classification":"IMPROVE","status":"BUILD","result":"Knowledge Base cards now point to canonical learning topic IDs and full lessons"},
+    {"id":"tracker-achievements","classification":"IMPROVE","status":"BUILD","result":"Tracker achievement counts are now derived from canonical Firestore Snake, Weight, Feeding and Shed records through syncTrackerAchievementCounts() during authenticated user hydration/refresh"}
   ],
   "inProgress": [
-    {"id":"tracker-achievements","classification":"IMPROVE","status":"AUDIT","target":"Derive tracker achievement counts from canonical Firestore tracker records through existing syncTrackerAchievementCounts()"},
     {"id":"weight","classification":"IMPROVE","status":"VERIFY","target":"Full CRUD/history/mobile/units/duplicates/timeline/confidence verification"},
     {"id":"feeding","classification":"KEEP","status":"VERIFY","target":"Post-save journeys, empty states, timeline/intelligence and preparation integration"},
     {"id":"shedding","classification":"KEEP","status":"VERIFY","target":"Stages/retained areas/quality/assistance/length and migration verification"},
@@ -61,7 +61,6 @@
     {"id":"legacy-retirement","classification":"MERGE","status":"AUDIT","target":"Reference audit before any retirement; document decisions in retirement manifest"}
   ],
   "nextDependencyOrder": [
-    "tracker-achievements",
     "weight",
     "feeding",
     "shedding",
