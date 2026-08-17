@@ -36,6 +36,38 @@ function buildSupportLineItem(amountPence, label) {
   return { price_data: { currency: "gbp", product_data: { name: `Tiny Titans — ${label}`, description: "One-time voluntary support contribution to Tiny Titans Hoggy Companion. This payment is project support and does not purchase goods, services, membership, or administrative access." }, unit_amount: amountPence }, quantity: 1 };
 }
 
+async function writePaidSupport(uid, session) {
+  const amountGbp = Number(session.amount_total || 0) / 100;
+  if (!uid || session.payment_status !== "paid" || amountGbp < 1) return { recorded: false, reason: "not-paid" };
+  const tierKey = String(session.metadata?.tier || "custom");
+  const tier = SUPPORT_TIERS[tierKey];
+  const label = session.metadata?.label || tier?.label || "Custom Tiny Titans Support";
+  const supporterRef = db.collection("supporters").doc(uid);
+  const wallRef = db.collection("supporterWall").doc(uid);
+  const eventRef = db.collection("stripeEvents").doc(`checkout_${session.id}`);
+  const existing = await supporterRef.get();
+  if (!existing.exists || existing.data()?.status !== "active") {
+    await supporterRef.set({ uid, status: "active", tier: tierKey, tierLabel: label, amountGbp, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await wallRef.set({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: label, amountGbp, supportedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await eventRef.set({ type: "support-recorded", uid, sessionId: session.id, amountGbp, processedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(amountGbp), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return { recorded: true, createdWall: true };
+  }
+  const wall = await wallRef.get();
+  if (!wall.exists) await wallRef.set({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: label, amountGbp, supportedAt: existing.data()?.lastPaymentAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { recorded: false, createdWall: !wall.exists };
+}
+
+async function recoverLatestPaidSession(uid, stripe) {
+  const sessions = await stripe.checkout.sessions.list({ limit: 100, status: "complete" });
+  const matches = sessions.data.filter((session) => {
+    const sessionUid = String(session.metadata?.uid || session.client_reference_id || "");
+    return sessionUid === uid && session.payment_status === "paid" && Number(session.amount_total || 0) >= 100;
+  });
+  matches.sort((a, b) => Number(b.created || 0) - Number(a.created || 0));
+  return matches[0] || null;
+}
+
 async function createCheckout(request) {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in to become a Titan.");
   const tierKey = String(request.data?.tier || "").trim();
@@ -62,28 +94,6 @@ async function createCheckout(request) {
   }
 }
 
-async function writePaidSupport(uid, session) {
-  const amountGbp = Number(session.amount_total || 0) / 100;
-  if (!uid || session.payment_status !== "paid" || amountGbp < 1) return { recorded: false, reason: "not-paid" };
-  const tierKey = String(session.metadata?.tier || "custom");
-  const tier = SUPPORT_TIERS[tierKey];
-  const label = session.metadata?.label || tier?.label || "Custom Tiny Titans Support";
-  const supporterRef = db.collection("supporters").doc(uid);
-  const wallRef = db.collection("supporterWall").doc(uid);
-  const eventRef = db.collection("stripeEvents").doc(`checkout_${session.id}`);
-  const existing = await supporterRef.get();
-  if (!existing.exists || existing.data()?.status !== "active") {
-    await supporterRef.set({ uid, status: "active", tier: tierKey, tierLabel: label, amountGbp, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await wallRef.set({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: label, amountGbp, supportedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await eventRef.set({ type: "support-recorded", uid, sessionId: session.id, amountGbp, processedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(amountGbp), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return { recorded: true, createdWall: true };
-  }
-  const wall = await wallRef.get();
-  if (!wall.exists) await wallRef.set({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: label, amountGbp, supportedAt: existing.data()?.lastPaymentAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-  return { recorded: false, createdWall: !wall.exists };
-}
-
 exports.finalizeTitanSupport = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const sessionId = String(request.data?.sessionId || "").trim();
@@ -101,24 +111,32 @@ exports.finalizeTitanSupport = onCall({ region: "europe-west2", secrets: [STRIPE
   }
 });
 
-async function reconcileTitanWall() {
-  const supportersSnapshot = await db.collection("supporters").where("status", "==", "active").get();
-  let created = 0;
-  for (const supporterDoc of supportersSnapshot.docs) {
-    const uid = supporterDoc.id;
-    const supporter = supporterDoc.data();
-    const wallRef = db.collection("supporterWall").doc(uid);
-    const wallDoc = await wallRef.get();
-    if (wallDoc.exists) continue;
-    await wallRef.create({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: String(supporter.tierLabel || "Titan Supporter"), amountGbp: Number(supporter.amountGbp || 0), supportedAt: supporter.lastPaymentAt || null, updatedAt: FieldValue.serverTimestamp() });
-    created += 1;
-  }
-  return { created, checked: supportersSnapshot.size };
-}
-
-exports.reconcileTitanWall = onCall({ region: "europe-west2" }, async (request) => {
+exports.reconcileTitanWall = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in to view the Wall of Titans.");
-  try { return await reconcileTitanWall(); } catch (error) { console.error("Tiny Titans Wall reconciliation failed", error); throw new HttpsError("internal", "The Wall of Titans could not be refreshed right now."); }
+  try {
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+    const existingSupporter = await db.collection("supporters").doc(request.auth.uid).get();
+    if (!existingSupporter.exists || existingSupporter.data()?.status !== "active") {
+      const recovered = await recoverLatestPaidSession(request.auth.uid, stripe);
+      if (recovered) await writePaidSupport(request.auth.uid, recovered);
+    }
+    const supportersSnapshot = await db.collection("supporters").where("status", "==", "active").get();
+    let created = 0;
+    for (const supporterDoc of supportersSnapshot.docs) {
+      const uid = supporterDoc.id;
+      const supporter = supporterDoc.data();
+      const wallRef = db.collection("supporterWall").doc(uid);
+      const wallDoc = await wallRef.get();
+      if (wallDoc.exists) continue;
+      await wallRef.create({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: String(supporter.tierLabel || "Titan Supporter"), amountGbp: Number(supporter.amountGbp || 0), supportedAt: supporter.lastPaymentAt || null, updatedAt: FieldValue.serverTimestamp() });
+      created += 1;
+    }
+    return { created, checked: supportersSnapshot.size };
+  } catch (error) {
+    console.error("Tiny Titans Wall reconciliation failed", error);
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "The Wall of Titans could not be refreshed right now.");
+  }
 });
 
 exports.createTitanCheckoutV2 = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, createCheckout);
@@ -137,5 +155,5 @@ exports.stripeWebhook = onRequest({ region: "europe-west2", secrets: [STRIPE_SEC
       await writePaidSupport(uid, session);
     }
     return res.status(200).json({ received: true });
-  } catch (error) { console.error("Stripe webhook verification/processing failed", error); return res.status(400).send("Invalid Stripe webhook signature or event"); }
+  } catch (error) { console.error("Stripe webhook verification/processing failed", error); return res.status(400).send("Invalid webhook signature or event"); }
 });
