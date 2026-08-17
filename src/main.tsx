@@ -9,20 +9,17 @@ import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import { AuthProvider } from "./context/AuthContext";
 
-// Keep installed PWA clients aggressively aligned with the latest Firebase
-// Hosting release. This is intentionally registered from the application
-// entrypoint so both normal browser sessions and installed mobile/desktop PWAs
-// use the same update path.
-const updateSW = registerSW({
+// Keep installed PWA clients aligned with the latest Firebase Hosting release.
+// The VitePWA plugin is configured for autoUpdate; we still poll the active
+// registration hourly, but we do not force an immediate reload from an
+// onNeedRefresh callback so an open form is not unexpectedly interrupted.
+registerSW({
   immediate: true,
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
     window.setInterval(() => {
       void registration.update();
     }, 60 * 60 * 1000);
-  },
-  onNeedRefresh() {
-    void updateSW(true);
   },
   onOfflineReady() {
     // Intentionally silent: the app remains fully usable offline.
