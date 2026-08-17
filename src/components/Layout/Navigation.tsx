@@ -7,59 +7,33 @@ import "./Navigation.css";
 
 function Navigation() {
   const { profile, user, loading, profileLoading } = useAuth();
+  const userId = user?.uid;
   const [creatorAuthorized, setCreatorAuthorized] = useState(false);
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
+  const authReady = !loading && !profileLoading && Boolean(userId);
 
   useEffect(() => {
-    if (loading || profileLoading || !user) {
-      setCreatorAuthorized(false);
-      return;
-    }
-
+    if (!authReady) return;
     let active = true;
-    void hasCreatorClaim(false)
-      .then((claimAuthorized) => {
-        if (!active) return;
-        const legacyCreatorAuthorized = profile?.role === "admin" || profile?.profileType === "creator";
-        setCreatorAuthorized(claimAuthorized || legacyCreatorAuthorized);
-      })
-      .catch(() => {
-        if (!active) return;
-        setCreatorAuthorized(profile?.role === "admin" || profile?.profileType === "creator");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [user, profile, loading, profileLoading]);
+    void hasCreatorClaim(false).then((claimAuthorized) => {
+      if (!active) return;
+      const legacyCreatorAuthorized = profile?.role === "admin" || profile?.profileType === "creator";
+      setCreatorAuthorized(claimAuthorized || legacyCreatorAuthorized);
+    }).catch(() => {
+      if (active) setCreatorAuthorized(profile?.role === "admin" || profile?.profileType === "creator");
+    });
+    return () => { active = false; };
+  }, [authReady, profile]);
 
   useEffect(() => {
-    if (loading || profileLoading || !user) {
-      setCommunityUnreadCount(0);
-      return;
-    }
-
+    if (!authReady || !userId) return;
     let active = true;
-    void getCommunityUnreadCount(user.uid, {
-      isTester: profile?.isTester === true,
-      isAdmin: profile?.role === "admin",
-    })
-      .then((count) => {
-        if (active) setCommunityUnreadCount(count);
-      })
-      .catch(() => {
-        if (active) setCommunityUnreadCount(0);
-      });
-
     const refresh = () => {
-      void getCommunityUnreadCount(user.uid, {
-        isTester: profile?.isTester === true,
-        isAdmin: profile?.role === "admin",
-      }).then((count) => {
-        if (active) setCommunityUnreadCount(count);
-      }).catch(() => undefined);
+      void getCommunityUnreadCount(userId, { isTester: profile?.isTester === true, isAdmin: profile?.role === "admin" })
+        .then((count) => { if (active) setCommunityUnreadCount(count); })
+        .catch(() => { if (active) setCommunityUnreadCount(0); });
     };
-
+    refresh();
     window.addEventListener("focus", refresh);
     window.addEventListener("community-read-state-changed", refresh);
     return () => {
@@ -67,50 +41,14 @@ function Navigation() {
       window.removeEventListener("focus", refresh);
       window.removeEventListener("community-read-state-changed", refresh);
     };
-  }, [user?.uid, profile?.isTester, profile?.role, loading, profileLoading]);
+  }, [authReady, userId, profile?.isTester, profile?.role]);
 
   const links: [string, string, string][] = [
-    ["/", "🏠", "Home"],
-    ["/snakes", "🐍", "My Snakes"],
-    ["/morph-library", "🧬", "Morph Library"],
-    ["/calculator", "🧮", "Genetics Calculator"],
-    ["/knowledge-base", "📚", "Knowledge Base"],
-    ["/challenge", "🧠", "Titans Challenge"],
-    ["/community", "🌿", "Community Hub"],
-    ["/community/wall-of-titans", "🏆", "Wall of Titans"],
-    ["/account", "🧑", "My Account"],
-    ["/become-a-titan", "🐍", "Become a Titan"],
+    ["/", "🏠", "Home"], ["/snakes", "🐍", "My Snakes"], ["/morph-library", "🧬", "Morph Library"], ["/calculator", "🧮", "Genetics Calculator"], ["/knowledge-base", "📚", "Knowledge Base"], ["/challenge", "🧠", "Titans Challenge"], ["/community", "🌿", "Community Hub"], ["/community/wall-of-titans", "🏆", "Wall of Titans"], ["/account", "🧑", "My Account"], ["/become-a-titan", "🐍", "Become a Titan"],
   ];
+  if (profile?.profileType === "educator") links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
+  if (creatorAuthorized) { links.push(["/creator", "🛠️", "Creator Centre"]); links.push(["/creator/community", "📢", "Community Manager"]); links.push(["/creator/tester", "🧪", "Tester Centre"]); }
 
-  if (profile?.profileType === "educator") {
-    links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
-  }
-
-  if (creatorAuthorized) {
-    links.push(["/creator", "🛠️", "Creator Centre"]);
-    links.push(["/creator/community", "📢", "Community Manager"]);
-    links.push(["/creator/tester", "🧪", "Tester Centre"]);
-  }
-
-  return (
-    <nav className="app-navigation" aria-label="Main navigation">
-      <div className="app-navigation-inner">
-        <ul className="app-navigation-list">
-          {links.map(([to, icon, label]) => (
-            <li className="app-navigation-item" key={to}>
-              <NavLink to={to} className="app-navigation-link">
-                <span className="app-navigation-icon" aria-hidden="true">{icon}</span>
-                <span className="app-navigation-label">{label}</span>
-                {to === "/community" && communityUnreadCount > 0 && (
-                  <span className="community-unread-dot" aria-label={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} title={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} />
-                )}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </nav>
-  );
+  return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner"><ul className="app-navigation-list">{links.map(([to, icon, label]) => <li className="app-navigation-item" key={to}><NavLink to={to} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && communityUnreadCount > 0 && <span className="community-unread-dot" aria-label={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} title={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} />}</NavLink></li>)}</ul></div></nav>;
 }
-
 export default Navigation;
