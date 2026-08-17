@@ -10,20 +10,23 @@ function Navigation() {
   const userId = user?.uid;
   const [creatorAuthorized, setCreatorAuthorized] = useState(false);
   const [testerAuthorized, setTesterAuthorized] = useState(false);
+  const [educatorAuthorized, setEducatorAuthorized] = useState(false);
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
   const authReady = !loading && !profileLoading && Boolean(userId);
 
   useEffect(() => {
     if (!authReady) return;
     let active = true;
-    void Promise.all([hasCapability("creator", profile), hasCapability("tester", profile)]).then(([creator, tester]) => {
+    void Promise.all([hasCapability("creator", profile), hasCapability("tester", profile), hasCapability("educator", profile)]).then(([creator, tester, educator]) => {
       if (!active) return;
       setCreatorAuthorized(creator);
       setTesterAuthorized(tester);
+      setEducatorAuthorized(educator);
     }).catch(() => {
       if (!active) return;
       setCreatorAuthorized(false);
       setTesterAuthorized(false);
+      setEducatorAuthorized(false);
     });
     return () => { active = false; };
   }, [authReady, profile]);
@@ -59,7 +62,7 @@ function Navigation() {
     ["/account", "🧑", "My Account"],
     ["/become-a-titan", "🐍", "Become a Titan"],
   ];
-  if (profile?.profileType === "educator") links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
+  if (educatorAuthorized) links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
   if (creatorAuthorized) {
     links.push(["/creator", "🛠️", "Creator Centre"]);
     links.push(["/creator/community", "📢", "Community Manager"]);
