@@ -1,0 +1,70 @@
+name: Restore normal icons
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    if: ${{ github.event.head_commit.message != 'chore: restore normal icons' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore UTF-8 mojibake
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Icons/characters already intended by Tiny Titans UI.
+          chars = [
+              "🐍", "🍽️", "🧬", "🧪", "📊", "📋", "📸", "📷", "📈", "📉", "📜", "📚", "📅", "📣",
+              "🔬", "🔎", "🔄", "🔒", "🔔", "💾", "💡", "🌟", "🌱", "🌎", "🐛", "🥚", "🧠", "💧",
+              "🚨", "🗑️", "✅", "❌", "⚠️", "✏️", "➡️", "⬅️", "→", "←", "•", "—", "–", "…",
+              "🔴", "🟢", "🟡", "🐁", "🐀", "🍴", "📏", "📝", "📌", "⚖️", "🛡️", "🔗", "🏆", "🎯",
+              "🎓", "⭐", "❤️", "❗", "❓", "➕", "➖", "🔧", "🛠️", "📦", "📱", "💻", "🌐", "👀",
+              "💬", "📢", "🗺️", "🔍", "🧹", "🦎", "🐸", "🦗", "🪱", "🐣", "🐣", "🩹", "🩺",
+          ]
+
+          replacements = {}
+          for char in chars:
+              try:
+                  mojibake = char.encode("utf-8").decode("cp1252")
+              except UnicodeDecodeError:
+                  continue
+              replacements[mojibake] = char
+
+          # Common mojibake fragments whose original character is punctuation/symbol text.
+          replacements.update({
+              "â€¢": "•", "â€”": "—", "â€“": "–", "â€¦": "…", "â†’": "→", "â†": "←",
+          })
+
+          changed = []
+          for path in Path("src").rglob("*"):
+              if not path.is_file() or path.suffix not in {".ts", ".tsx", ".css", ".html", ".json"}:
+                  continue
+              text = path.read_text(encoding="utf-8-sig")
+              original = text
+              for bad, good in sorted(replacements.items(), key=lambda item: len(item[0]), reverse=True):
+                  text = text.replace(bad, good)
+              if text != original:
+                  path.write_text(text, encoding="utf-8")
+                  changed.append(str(path))
+
+          print(f"Restored normal icons in {len(changed)} files")
+          for path in changed:
+              print(path)
+          PY
+      - name: Commit restored icons
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          if git diff --cached --quiet; then
+            echo "No icon changes required."
+            exit 0
+          fi
+          git commit -m "chore: restore normal icons"
+          git push
