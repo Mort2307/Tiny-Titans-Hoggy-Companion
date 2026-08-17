@@ -1,5 +1,6 @@
 name: Tiny Titans Full Lint Audit
 
+# Final source-quality audit for master and the zero-warning hardening branch.
 on:
   push:
     branches:
