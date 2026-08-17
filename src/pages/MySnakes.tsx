@@ -109,6 +109,7 @@ function MySnakes() {
         <div className="tracker-card">
           <h3>No snakes added yet 🐍</h3>
           <p>Add your first Tiny Titan to begin tracking weights, feeding, sheds and genetics.</p>
+          <button type="button" className="add-snake-button" onClick={() => navigate("/snakes/new")}>➕ Add Your First Snake</button>
         </div>
       )}
       {!pageLoading && !error && snakes.length > 0 && (
