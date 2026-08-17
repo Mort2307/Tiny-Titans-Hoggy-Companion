@@ -1,5 +1,6 @@
 name: Tiny Titans Full Lint Audit
 
+# Full source-quality gate: warnings are intentionally visible in the artifact.
 on:
   push:
     branches:
