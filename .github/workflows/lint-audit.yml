@@ -27,6 +27,12 @@ jobs:
       - name: Run full ESLint audit
         run: npm run lint 2>&1 | tee lint-report.txt
         shell: bash
+      - name: Enforce zero warnings
+        shell: bash
+        run: |
+          warnings=$(grep -cE 'warning[[:space:]]' lint-report.txt || true)
+          echo "ESLint warnings: ${warnings}"
+          test "${warnings}" -eq 0
       - name: Upload lint report
         if: always()
         uses: actions/upload-artifact@v4
