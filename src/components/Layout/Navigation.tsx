@@ -44,10 +44,24 @@ function Navigation() {
   }, [authReady, userId, profile?.isTester, profile?.role]);
 
   const links: [string, string, string][] = [
-    ["/", "🏠", "Home"], ["/snakes", "🐍", "My Snakes"], ["/morph-library", "🧬", "Morph Library"], ["/calculator", "🧮", "Genetics Calculator"], ["/knowledge-base", "📚", "Knowledge Base"], ["/challenge", "🧠", "Titans Challenge"], ["/community", "🌿", "Community Hub"], ["/community/wall-of-titans", "🏆", "Wall of Titans"], ["/account", "🧑", "My Account"], ["/become-a-titan", "🐍", "Become a Titan"],
+    ["/", "🏠", "Home"],
+    ["/snakes", "🐍", "My Snakes"],
+    ["/morph-library", "🧬", "Morph Library"],
+    ["/calculator", "🧮", "Genetics Calculator"],
+    ["/breeding", "🥚", "Breeding Planner"],
+    ["/knowledge-base", "📚", "Knowledge Base"],
+    ["/challenge", "🧠", "Titans Challenge"],
+    ["/community", "🌿", "Community Hub"],
+    ["/community/wall-of-titans", "🏆", "Wall of Titans"],
+    ["/account", "🧑", "My Account"],
+    ["/become-a-titan", "🐍", "Become a Titan"],
   ];
   if (profile?.profileType === "educator") links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
-  if (creatorAuthorized) { links.push(["/creator", "🛠️", "Creator Centre"]); links.push(["/creator/community", "📢", "Community Manager"]); links.push(["/creator/tester", "🧪", "Tester Centre"]); }
+  if (creatorAuthorized) {
+    links.push(["/creator", "🛠️", "Creator Centre"]);
+    links.push(["/creator/community", "📢", "Community Manager"]);
+    links.push(["/creator/tester", "🧪", "Tester Centre"]);
+  }
 
   return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner"><ul className="app-navigation-list">{links.map(([to, icon, label]) => <li className="app-navigation-item" key={to}><NavLink to={to} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && communityUnreadCount > 0 && <span className="community-unread-dot" aria-label={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} title={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} />}</NavLink></li>)}</ul></div></nav>;
 }
