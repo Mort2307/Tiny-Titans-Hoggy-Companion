@@ -1,13 +1,8 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, getFirestore, serverTimestamp, updateDoc } from "firebase/firestore";
 import app from "../firebase/config";
+import { syncLearningFromCloud } from "../services/learningEngine";
 import type { AgeBand, ApproximateLocation, DataCollectionPreferences, EducatorProfile, LearningLevel, ProfileType } from "../types/Profile";
 import type { UnitSystem } from "./UnitContext";
 import packageJson from "../../package.json";
@@ -17,127 +12,24 @@ export type UserCategory = "adult" | "child";
 export type ExperienceLevel = "beginner" | "intermediate" | "pro";
 export type UserInterest = "keeper" | "breeder" | "breeder-seller" | "learner";
 export type UserPlatform = "iOS" | "Android" | "Windows" | "macOS" | "Linux" | "Other";
-
-export type UserProfile = {
-  uid: string;
-  displayName: string;
-  email: string;
-  category: UserCategory;
-  ageBand?: AgeBand;
-  learningLevel?: LearningLevel;
-  profileType: ProfileType;
-  experienceLevel: ExperienceLevel;
-  interests: UserInterest[];
-  role: UserRole;
-  isTester: boolean;
-  setupComplete: boolean;
-  unitSystem: UnitSystem;
-  educatorProfile?: EducatorProfile;
-  approximateLocation?: ApproximateLocation;
-  dataCollectionPreferences?: DataCollectionPreferences;
-  platform?: UserPlatform;
-  appVersion?: string;
-  createdAt?: unknown;
-  updatedAt?: unknown;
-};
-
-type AuthContextType = {
-  user: User | null;
-  profile: UserProfile | null;
-  loading: boolean;
-  profileLoading: boolean;
-  isAuthenticated: boolean;
-  refreshProfile: () => Promise<UserProfile | null>;
-};
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-type AuthProviderProps = { children: ReactNode };
-const db = getFirestore(app);
-
-function detectPlatform(): UserPlatform {
-  const ua = navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|ipod/.test(ua)) return "iOS";
-  if (/android/.test(ua)) return "Android";
-  if (/windows/.test(ua)) return "Windows";
-  if (/macintosh|mac os x/.test(ua)) return "macOS";
-  if (/linux/.test(ua)) return "Linux";
-  return "Other";
-}
-
-function getAppVersion(): string {
-  return String(packageJson.version || "unknown");
-}
-
-function isValidInterest(value: unknown): value is UserInterest {
-  return value === "keeper" || value === "breeder" || value === "breeder-seller" || value === "learner";
-}
-function isProfileType(value: unknown): value is ProfileType {
-  return value === "keeper" || value === "learner" || value === "educator" || value === "professional" || value === "creator";
-}
-function isAgeBand(value: unknown): value is AgeBand {
-  return value === "7-10" || value === "11-14" || value === "15-18" || value === "adult";
-}
-function isLearningLevel(value: unknown): value is LearningLevel {
-  return value === "explorer" || value === "learner" || value === "student" || value === "adult";
-}
-function isUnitSystem(value: unknown): value is UnitSystem {
-  return value === "imperial" || value === "metric";
-}
-function loadEducatorProfile(value: unknown): EducatorProfile | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  const data = value as Record<string, unknown>;
-  const teachingLevel = ["primary", "secondary", "college", "university", "homeschool", "club", "other"].includes(String(data.teachingLevel)) ? data.teachingLevel as EducatorProfile["teachingLevel"] : "other";
-  const subjects = Array.isArray(data.subjects) ? data.subjects.filter((item): item is string => typeof item === "string") : [];
-  const studentAgeBands = Array.isArray(data.studentAgeBands) ? data.studentAgeBands.filter(isAgeBand) : [];
-  const reptileExperience = data.reptileExperience === "advanced" ? "advanced" : data.reptileExperience === "intermediate" ? "intermediate" : "beginner";
-  return { teachingLevel, subjects, studentAgeBands, reptileExperience, organisationName: typeof data.organisationName === "string" ? data.organisationName : undefined, country: typeof data.country === "string" ? data.country : undefined, verified: data.verified === true };
-}
-function loadApproximateLocation(value: unknown): ApproximateLocation | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  const data = value as Record<string, unknown>;
-  if (typeof data.city !== "string" || typeof data.country !== "string") return undefined;
-  return { city: data.city, country: data.country, source: data.source === "coarse-geolocation" ? "coarse-geolocation" : "user-provided", visibleToCreator: data.visibleToCreator === true, updatedAt: data.updatedAt };
-}
-function loadDataCollectionPreferences(value: unknown): DataCollectionPreferences | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  const data = value as Record<string, unknown>;
-  return { approximateLocation: data.approximateLocation === true, analytics: data.analytics === true, productUpdates: data.productUpdates === true, consentVersion: typeof data.consentVersion === "string" ? data.consentVersion : "unknown", consentUpdatedAt: data.consentUpdatedAt };
-}
-
-async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> {
-  const profileSnapshot = await getDoc(doc(db, "users", firebaseUser.uid));
-  if (!profileSnapshot.exists()) return null;
-  const profileData = profileSnapshot.data();
-  const rawInterests = Array.isArray(profileData.interests) ? profileData.interests : [];
-  const interests = rawInterests.filter(isValidInterest);
-  const profileType: ProfileType = isProfileType(profileData.profileType) ? profileData.profileType : interests.includes("learner") && interests.length === 1 ? "learner" : "keeper";
-  return {
-    uid: String(profileData.uid ?? firebaseUser.uid), displayName: String(profileData.displayName ?? firebaseUser.displayName ?? ""), email: String(profileData.email ?? firebaseUser.email ?? ""),
-    category: profileData.category === "child" ? "child" : "adult", ageBand: isAgeBand(profileData.ageBand) ? profileData.ageBand : undefined, learningLevel: isLearningLevel(profileData.learningLevel) ? profileData.learningLevel : undefined,
-    profileType, experienceLevel: profileData.experienceLevel === "intermediate" ? "intermediate" : profileData.experienceLevel === "pro" ? "pro" : "beginner", interests,
-    role: profileData.role === "admin" ? "admin" : profileData.role === "moderator" ? "moderator" : "user", isTester: profileData.isTester === true || profileData.role === "tester",
-    setupComplete: profileData.setupComplete === true, unitSystem: isUnitSystem(profileData.unitSystem) ? profileData.unitSystem : "metric", educatorProfile: loadEducatorProfile(profileData.educatorProfile),
-    approximateLocation: loadApproximateLocation(profileData.approximateLocation), dataCollectionPreferences: loadDataCollectionPreferences(profileData.dataCollectionPreferences),
-    platform: profileData.platform === "iOS" || profileData.platform === "Android" || profileData.platform === "Windows" || profileData.platform === "macOS" || profileData.platform === "Linux" || profileData.platform === "Other" ? profileData.platform : undefined,
-    appVersion: typeof profileData.appVersion === "string" ? profileData.appVersion : undefined,
-    createdAt: profileData.createdAt, updatedAt: profileData.updatedAt,
-  };
-}
-
-async function recordActivity(firebaseUser: User): Promise<void> {
-  try {
-    await updateDoc(doc(db, "users", firebaseUser.uid), {
-      lastActiveAt: serverTimestamp(),
-      platform: detectPlatform(),
-      appVersion: getAppVersion(),
-    });
-  } catch (error) { console.warn("Tiny Titans: unable to update activity timestamp", error); }
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null); const [profile, setProfile] = useState<UserProfile | null>(null); const [loading, setLoading] = useState(true); const [profileLoading, setProfileLoading] = useState(false);
-  async function refreshProfile(): Promise<UserProfile | null> { const auth = getAuth(app); const currentUser = auth.currentUser; if (!currentUser) { setProfile(null); return null; } setProfileLoading(true); try { const loadedProfile = await loadUserProfile(currentUser); setProfile(loadedProfile); await recordActivity(currentUser); return loadedProfile; } catch (error) { console.error("Tiny Titans: unable to refresh user profile", error); setProfile(null); return null; } finally { setProfileLoading(false); } }
-  useEffect(() => { const auth = getAuth(app); const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => { setUser(firebaseUser); setProfile(null); if (!firebaseUser) { setProfileLoading(false); setLoading(false); return; } setProfileLoading(true); try { const loadedProfile = await loadUserProfile(firebaseUser); setProfile(loadedProfile); await recordActivity(firebaseUser); } catch (error) { console.error("Tiny Titans: unable to load user profile", error); setProfile(null); } finally { setProfileLoading(false); setLoading(false); } }); return unsubscribe; }, []);
-  return <AuthContext.Provider value={{ user, profile, loading, profileLoading, isAuthenticated: user !== null, refreshProfile }}>{children}</AuthContext.Provider>;
-}
-export function useAuth() { const context = useContext(AuthContext); if (!context) throw new Error("useAuth must be used inside AuthProvider"); return context; }
+export type UserProfile = { uid:string; displayName:string; email:string; category:UserCategory; ageBand?:AgeBand; learningLevel?:LearningLevel; profileType:ProfileType; experienceLevel:ExperienceLevel; interests:UserInterest[]; role:UserRole; isTester:boolean; setupComplete:boolean; unitSystem:UnitSystem; educatorProfile?:EducatorProfile; approximateLocation?:ApproximateLocation; dataCollectionPreferences?:DataCollectionPreferences; platform?:UserPlatform; appVersion?:string; createdAt?:unknown; updatedAt?:unknown };
+type AuthContextType = { user:User|null; profile:UserProfile|null; loading:boolean; profileLoading:boolean; isAuthenticated:boolean; refreshProfile:()=>Promise<UserProfile|null> };
+const AuthContext=createContext<AuthContextType|undefined>(undefined); type AuthProviderProps={children:ReactNode}; const db=getFirestore(app);
+function detectPlatform():UserPlatform { const ua=navigator.userAgent.toLowerCase(); if(/iphone|ipad|ipod/.test(ua))return"iOS"; if(/android/.test(ua))return"Android"; if(/windows/.test(ua))return"Windows"; if(/macintosh|mac os x/.test(ua))return"macOS"; if(/linux/.test(ua))return"Linux"; return"Other"; }
+function getAppVersion(){return String(packageJson.version||"unknown");}
+function isValidInterest(v:unknown):v is UserInterest{return v==="keeper"||v==="breeder"||v==="breeder-seller"||v==="learner";}
+function isProfileType(v:unknown):v is ProfileType{return v==="keeper"||v==="learner"||v==="educator"||v==="professional"||v==="creator";}
+function isAgeBand(v:unknown):v is AgeBand{return v==="7-10"||v==="11-14"||v==="15-18"||v==="adult";}
+function isLearningLevel(v:unknown):v is LearningLevel{return v==="explorer"||v==="learner"||v==="student"||v==="adult";}
+function isUnitSystem(v:unknown):v is UnitSystem{return v==="imperial"||v==="metric";}
+function loadEducatorProfile(v:unknown):EducatorProfile|undefined{if(!v||typeof v!=="object")return undefined;const d=v as Record<string,unknown>;return{teachingLevel:["primary","secondary","college","university","homeschool","club","other"].includes(String(d.teachingLevel))?d.teachingLevel as EducatorProfile["teachingLevel"]:"other",subjects:Array.isArray(d.subjects)?d.subjects.filter((x):x is string=>typeof x==="string"):[],studentAgeBands:Array.isArray(d.studentAgeBands)?d.studentAgeBands.filter(isAgeBand):[],reptileExperience:d.reptileExperience==="advanced"?"advanced":d.reptileExperience==="intermediate"?"intermediate":"beginner",organisationName:typeof d.organisationName==="string"?d.organisationName:undefined,country:typeof d.country==="string"?d.country:undefined,verified:d.verified===true};}
+function loadApproximateLocation(v:unknown):ApproximateLocation|undefined{if(!v||typeof v!=="object")return undefined;const d=v as Record<string,unknown>;if(typeof d.city!=="string"||typeof d.country!=="string")return undefined;return{city:d.city,country:d.country,source:d.source==="coarse-geolocation"?"coarse-geolocation":"user-provided",visibleToCreator:d.visibleToCreator===true,updatedAt:d.updatedAt};}
+function loadDataCollectionPreferences(v:unknown):DataCollectionPreferences|undefined{if(!v||typeof v!=="object")return undefined;const d=v as Record<string,unknown>;return{approximateLocation:d.approximateLocation===true,analytics:d.analytics===true,productUpdates:d.productUpdates===true,consentVersion:typeof d.consentVersion==="string"?d.consentVersion:"unknown",consentUpdatedAt:d.consentUpdatedAt};}
+async function loadUserProfile(firebaseUser:User):Promise<UserProfile|null>{const s=await getDoc(doc(db,"users",firebaseUser.uid));if(!s.exists())return null;const d=s.data();const interests=(Array.isArray(d.interests)?d.interests:[]).filter(isValidInterest);const profileType:ProfileType=isProfileType(d.profileType)?d.profileType:interests.includes("learner")&&interests.length===1?"learner":"keeper";return{uid:String(d.uid??firebaseUser.uid),displayName:String(d.displayName??firebaseUser.displayName??""),email:String(d.email??firebaseUser.email??""),category:d.category==="child"?"child":"adult",ageBand:isAgeBand(d.ageBand)?d.ageBand:undefined,learningLevel:isLearningLevel(d.learningLevel)?d.learningLevel:undefined,profileType,experienceLevel:d.experienceLevel==="intermediate"?"intermediate":d.experienceLevel==="pro"?"pro":"beginner",interests,role:d.role==="admin"?"admin":d.role==="moderator"?"moderator":"user",isTester:d.isTester===true||d.role==="tester",setupComplete:d.setupComplete===true,unitSystem:isUnitSystem(d.unitSystem)?d.unitSystem:"metric",educatorProfile:loadEducatorProfile(d.educatorProfile),approximateLocation:loadApproximateLocation(d.approximateLocation),dataCollectionPreferences:loadDataCollectionPreferences(d.dataCollectionPreferences),platform:d.platform==="iOS"||d.platform==="Android"||d.platform==="Windows"||d.platform==="macOS"||d.platform==="Linux"||d.platform==="Other"?d.platform:undefined,appVersion:typeof d.appVersion==="string"?d.appVersion:undefined,createdAt:d.createdAt,updatedAt:d.updatedAt};}
+async function recordActivity(u:User){try{await updateDoc(doc(db,"users",u.uid),{lastActiveAt:serverTimestamp(),platform:detectPlatform(),appVersion:getAppVersion()});}catch(error){console.warn("Tiny Titans: unable to update activity timestamp",error);}}
+export function AuthProvider({children}:AuthProviderProps){const[user,setUser]=useState<User|null>(null);const[profile,setProfile]=useState<UserProfile|null>(null);const[loading,setLoading]=useState(true);const[profileLoading,setProfileLoading]=useState(false);
+async function hydrateUser(u:User){setProfileLoading(true);try{const[loadedProfile]=await Promise.all([loadUserProfile(u),syncLearningFromCloud(u.uid)]);setProfile(loadedProfile);await recordActivity(u);}catch(error){console.error("Tiny Titans: unable to hydrate user state",error);try{setProfile(await loadUserProfile(u));}catch{setProfile(null);}}finally{setProfileLoading(false);setLoading(false);}}
+async function refreshProfile(){const u=getAuth(app).currentUser;if(!u){setProfile(null);return null;}setProfileLoading(true);try{const loaded=await loadUserProfile(u);setProfile(loaded);await syncLearningFromCloud(u.uid);await recordActivity(u);return loaded;}finally{setProfileLoading(false);}}
+useEffect(()=>{const unsubscribe=onAuthStateChanged(getAuth(app),async u=>{setUser(u);setProfile(null);if(!u){setProfileLoading(false);setLoading(false);return;}await hydrateUser(u);});return unsubscribe;},[]);
+return <AuthContext.Provider value={{user,profile,loading,profileLoading,isAuthenticated:user!==null,refreshProfile}}>{children}</AuthContext.Provider>;}
+export function useAuth(){const context=useContext(AuthContext);if(!context)throw new Error("useAuth must be used inside AuthProvider");return context;}
