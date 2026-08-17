@@ -25,6 +25,10 @@ service firebase.storage {
       allow read, write: if signedIn() && request.auth.uid == userId;
     }
 
+    match /snakePhotos/{userId}/{snakeId}/{fileName} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
     match /morph-submissions/{userId}/{submissionId}/{fileName} {
       allow write: if signedIn() && request.auth.uid == userId;
       allow read: if signedIn() && (request.auth.uid == userId || isCreator());
