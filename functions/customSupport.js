@@ -48,22 +48,19 @@ async function writePaidSupport(uid, session) {
   const existing = await supporterRef.get();
   if (!existing.exists || existing.data()?.status !== "active") {
     await supporterRef.set({ uid, status: "active", tier: tierKey, tierLabel: label, amountGbp, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await wallRef.set({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: label, amountGbp, supportedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await wallRef.set({ uid, displayName: "", socialUrl: "", visibility: "pending", recognitionStatus: "pending", tierLabel: label, amountGbp, supportedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await eventRef.set({ type: "support-recorded", uid, sessionId: session.id, amountGbp, processedAt: FieldValue.serverTimestamp() }, { merge: true });
     await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(amountGbp), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return { recorded: true, createdWall: true };
+    return { recorded: true, createdWall: true, needsRecognition: true };
   }
   const wall = await wallRef.get();
-  if (!wall.exists) await wallRef.set({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: label, amountGbp, supportedAt: existing.data()?.lastPaymentAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-  return { recorded: false, createdWall: !wall.exists };
+  if (!wall.exists) await wallRef.set({ uid, displayName: "", socialUrl: "", visibility: "pending", recognitionStatus: "pending", tierLabel: label, amountGbp, supportedAt: existing.data()?.lastPaymentAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { recorded: false, createdWall: !wall.exists, needsRecognition: !wall.exists };
 }
 
 async function recoverLatestPaidSession(uid, stripe) {
   const sessions = await stripe.checkout.sessions.list({ limit: 100, status: "complete" });
-  const matches = sessions.data.filter((session) => {
-    const sessionUid = String(session.metadata?.uid || session.client_reference_id || "");
-    return sessionUid === uid && session.payment_status === "paid" && Number(session.amount_total || 0) >= 100;
-  });
+  const matches = sessions.data.filter((session) => { const sessionUid = String(session.metadata?.uid || session.client_reference_id || ""); return sessionUid === uid && session.payment_status === "paid" && Number(session.amount_total || 0) >= 100; });
   matches.sort((a, b) => Number(b.created || 0) - Number(a.created || 0));
   return matches[0] || null;
 }
@@ -78,9 +75,7 @@ async function createCheckout(request) {
   try {
     const stripe = new Stripe(stripeSecret);
     const origin = getAllowedOrigin(request);
-    let amountPence;
-    let amountGbp;
-    let label;
+    let amountPence; let amountGbp; let label;
     if (tierKey === "custom") { amountPence = parseCustomAmountPence(request.data?.amountGbp); amountGbp = (amountPence / 100).toFixed(2); label = `Support — £${amountGbp}`; }
     else { amountPence = Math.round(tier.amount * 100); amountGbp = tier.amount.toFixed(2); label = tier.label; }
     const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [buildSupportLineItem(amountPence, label)], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label, amount_gbp: amountGbp, payment_purpose: "one_time_project_support" }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto", managed_payments: { enabled: false } });
@@ -116,10 +111,7 @@ exports.reconcileTitanWall = onCall({ region: "europe-west2", secrets: [STRIPE_S
   try {
     const stripe = new Stripe(STRIPE_SECRET_KEY.value());
     const existingSupporter = await db.collection("supporters").doc(request.auth.uid).get();
-    if (!existingSupporter.exists || existingSupporter.data()?.status !== "active") {
-      const recovered = await recoverLatestPaidSession(request.auth.uid, stripe);
-      if (recovered) await writePaidSupport(request.auth.uid, recovered);
-    }
+    if (!existingSupporter.exists || existingSupporter.data()?.status !== "active") { const recovered = await recoverLatestPaidSession(request.auth.uid, stripe); if (recovered) await writePaidSupport(request.auth.uid, recovered); }
     const supportersSnapshot = await db.collection("supporters").where("status", "==", "active").get();
     let created = 0;
     for (const supporterDoc of supportersSnapshot.docs) {
@@ -128,7 +120,7 @@ exports.reconcileTitanWall = onCall({ region: "europe-west2", secrets: [STRIPE_S
       const wallRef = db.collection("supporterWall").doc(uid);
       const wallDoc = await wallRef.get();
       if (wallDoc.exists) continue;
-      await wallRef.create({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: String(supporter.tierLabel || "Titan Supporter"), amountGbp: Number(supporter.amountGbp || 0), supportedAt: supporter.lastPaymentAt || null, updatedAt: FieldValue.serverTimestamp() });
+      await wallRef.create({ uid, displayName: "", socialUrl: "", visibility: "pending", recognitionStatus: "pending", tierLabel: String(supporter.tierLabel || "Titan Supporter"), amountGbp: Number(supporter.amountGbp || 0), supportedAt: supporter.lastPaymentAt || null, updatedAt: FieldValue.serverTimestamp() });
       created += 1;
     }
     return { created, checked: supportersSnapshot.size };
@@ -149,11 +141,7 @@ exports.stripeWebhook = onRequest({ region: "europe-west2", secrets: [STRIPE_SEC
   try {
     const stripe = new Stripe(STRIPE_SECRET_KEY.value());
     const event = stripe.webhooks.constructEvent(req.rawBody, signature, STRIPE_WEBHOOK_SECRET.value());
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const uid = session.metadata?.uid || session.client_reference_id;
-      await writePaidSupport(uid, session);
-    }
+    if (event.type === "checkout.session.completed") { const session = event.data.object; const uid = session.metadata?.uid || session.client_reference_id; await writePaidSupport(uid, session); }
     return res.status(200).json({ received: true });
-  } catch (error) { console.error("Stripe webhook verification/processing failed", error); return res.status(400).send("Invalid webhook signature or event"); }
+  } catch (error) { console.error("Stripe webhook verification/processing failed", error); return res.status(400).send("Invalid Stripe webhook signature or event"); }
 });
