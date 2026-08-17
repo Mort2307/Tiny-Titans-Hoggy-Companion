@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - chore/lint-zero-hardening
   workflow_dispatch:
 
 permissions:
