@@ -7,7 +7,8 @@
     "dev": "vite",
     "validate:morphs": "node scripts/validate-morph-database.mjs",
     "validate:learning": "node scripts/validate-learning-content.mjs",
-    "build": "npm run validate:morphs && npm run validate:learning && tsc -b && vite build",
+    "validate:routes": "node scripts/check-route-contracts.mjs",
+    "build": "npm run validate:morphs && npm run validate:learning && npm run validate:routes && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -29,9 +30,6 @@
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.0",
     "eslint-plugin-react-refresh": "^0.5.3",
-    "globals": "^17.7.0",
-    "typescript": "~6.0.2",
-    "typescript-eslint": "^8.65.0",
-    "vite": "^8.2.0"
+    "globals": "^17.7.0"
   }
 }
