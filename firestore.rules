@@ -3,22 +3,107 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function hasCreatorClaim() { return signedIn() && (request.auth.token.creator == true || request.auth.token.admin == true); }
-    function isCreator() { return hasCreatorClaim() || (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"); }
-    function isTester() { return signedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isTester == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "tester"); }
-    match /users/{userId} { allow create: if signedIn() && request.auth.uid == userId && request.resource.data.role == "user"; allow get: if signedIn() && request.auth.uid == userId; allow list: if isCreator(); allow update: if signedIn() && (isCreator() || (request.auth.uid == userId && request.resource.data.role == resource.data.role)); allow delete: if isCreator(); }
-    match /users/{userId}/{document=**} { allow read, write: if signedIn() && (request.auth.uid == userId || isCreator()); }
-    match /geneticsCalculations/{calculationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow get, list: if isCreator(); allow update, delete: if isCreator(); }
-    match /supporters/{userId} { allow get: if signedIn() && (request.auth.uid == userId || isCreator()); allow list: if isCreator(); allow create, update, delete: if isCreator(); }
-    match /supporterWall/{entryId} { allow read: if signedIn(); allow create, update, delete: if isCreator(); }
-    match /supporterStats/{statId} { allow read, write: if isCreator(); }
-    match /issueReports/{reportId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid); allow update, delete: if isCreator(); }
-    match /feedback/{feedbackId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator(); allow update, delete: if isCreator(); }
-    match /founderApplications/{applicationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isCreator(); }
-    match /communityPosts/{postId} { allow read: if signedIn() && (resource.data.audience == "everyone" || (resource.data.audience == "testers" && isTester()) || (resource.data.audience == "admin" && isCreator())); allow create, update, delete: if isCreator(); }
-    match /morphSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "creating" && request.resource.data.moderationStatus == "pending" && request.resource.data.submissionComplete == false; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator(); allow update, delete: if isCreator(); }
-    match /morphImageSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (request.auth.uid == resource.data.userId || isCreator()); allow list: if isCreator(); allow update, delete: if isCreator(); }
-    match /approvedMorphImages/{imageId} { allow read: if signedIn(); allow create, update, delete: if isCreator(); }
-    match /{document=**} { allow read, write: if false; }
+    function userRecord() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    // Canonical capability resolver. Claims are preferred; the user document remains
+    // a compatibility fallback for existing accounts while capabilities migrate.
+    function hasCapability(capability) {
+      return signedIn() && (
+        request.auth.token.admin == true ||
+        request.auth.token[capability] == true ||
+        userRecord().role == "admin" ||
+        userRecord().role == capability ||
+        (capability == "tester" && userRecord().isTester == true)
+      );
+    }
+    function isCreator() { return hasCapability("creator"); }
+    function isTester() { return hasCapability("tester"); }
+    function isEducator() { return hasCapability("educator"); }
+    function isModerator() { return hasCapability("moderator"); }
+
+    match /users/{userId} {
+      allow create: if signedIn() && request.auth.uid == userId && request.resource.data.role == "user";
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list: if isCreator();
+      allow update: if signedIn() && (isCreator() || (request.auth.uid == userId && request.resource.data.role == resource.data.role));
+      allow delete: if isCreator();
+    }
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if signedIn() && (request.auth.uid == userId || isCreator());
+    }
+
+    match /geneticsCalculations/{calculationId} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow get, list: if isCreator();
+      allow update, delete: if isCreator();
+    }
+
+    match /supporters/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isCreator());
+      allow list: if isCreator();
+      allow create, update, delete: if isCreator();
+    }
+
+    match /supporterWall/{entryId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCreator();
+    }
+
+    match /supporterStats/{statId} {
+      allow read, write: if isCreator();
+    }
+
+    match /issueReports/{reportId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
+      allow list: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isCreator();
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
+      allow list: if isCreator();
+      allow update, delete: if isCreator();
+    }
+
+    match /founderApplications/{applicationId} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if isCreator();
+    }
+
+    match /communityPosts/{postId} {
+      allow read: if signedIn() && (
+        resource.data.audience == "everyone" ||
+        (resource.data.audience == "testers" && isTester()) ||
+        (resource.data.audience == "educator" && isEducator()) ||
+        (resource.data.audience == "moderator" && isModerator()) ||
+        (resource.data.audience == "admin" && isCreator())
+      );
+      allow create, update, delete: if isCreator();
+    }
+
+    match /morphSubmissions/{submissionId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "creating" && request.resource.data.moderationStatus == "pending" && request.resource.data.submissionComplete == false;
+      allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
+      allow list: if isCreator();
+      allow update, delete: if isCreator();
+    }
+
+    match /morphImageSubmissions/{submissionId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow get: if signedIn() && (request.auth.uid == resource.data.userId || isCreator());
+      allow list: if isCreator();
+      allow update, delete: if isCreator();
+    }
+
+    match /approvedMorphImages/{imageId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCreator();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
