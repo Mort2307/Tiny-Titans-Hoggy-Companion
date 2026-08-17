@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Snake } from "../types/Snake";
-import { getUserSnakes, migrateLocalSnakesToFirestore } from "../services/snakeService";
+import { getUserSnakes } from "../services/snakeService";
 import { useAuth } from "../context/AuthContext";
 import SnakeTile from "../components/SnakeTile";
 import BackHomeButton from "../components/BackHomeButton";
@@ -31,8 +31,6 @@ function MySnakes() {
       setLoadingSnakes(true);
       setError(null);
       try {
-        await migrateLocalSnakesToFirestore(uid);
-        if (cancelled) return;
         const loadedSnakes = await getUserSnakes(uid);
         if (cancelled) return;
         const validSnakes = loadedSnakes
@@ -41,7 +39,7 @@ function MySnakes() {
         setSnakes(validSnakes);
       } catch (err) {
         if (!cancelled) {
-          console.error("Tiny Titans: unable to load or migrate snakes", err);
+          console.error("Tiny Titans: unable to load snakes", err);
           setError(err instanceof Error ? err.message : "Unable to load your snakes. Please try again.");
         }
       } finally {
