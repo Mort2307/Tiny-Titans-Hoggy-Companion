@@ -7,6 +7,9 @@ export interface SupporterWallProfile { visibility: WallVisibility; displayName?
 export interface TitanWallEntry { id: string; displayName: string; socialUrl: string | null; tierLabel: string; amountGbp: number; supportedAt: string | null; }
 export interface TitanWallAdminEntry { id?: string; displayName: string; socialUrl: string; tierLabel: string; amountGbp: number; visibility: WallVisibility; supportedAt: string | null; }
 
+type FirestoreWallData = Record<string, unknown>;
+type TimestampLike = { toDate: () => Date };
+
 const db = getFirestore(app);
 const functions = getFunctions(app, "europe-west2");
 const reconcileTitanWall = httpsCallable<void, { created: number; checked: number }>(functions, "reconcileTitanWall");
@@ -22,16 +25,21 @@ function normaliseUrl(value: string) {
   return socialUrl;
 }
 
-function toEntry(item: { id: string; data: () => Record<string, any> }): TitanWallEntry | null {
+function isTimestampLike(value: unknown): value is TimestampLike {
+  return typeof value === "object" && value !== null && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function";
+}
+
+function toEntry(item: { id: string; data: () => FirestoreWallData }): TitanWallEntry | null {
   const data = item.data();
   if (data.visibility !== "named" && data.visibility !== "anonymous") return null;
+  const supportedAt = isTimestampLike(data.supportedAt) ? data.supportedAt.toDate().toISOString() : null;
   return {
     id: item.id,
     displayName: String(data.displayName || "Anonymous Titan"),
     socialUrl: typeof data.socialUrl === "string" && data.socialUrl ? data.socialUrl : null,
     tierLabel: String(data.tierLabel || "Titan Supporter"),
     amountGbp: typeof data.amountGbp === "number" ? data.amountGbp : 0,
-    supportedAt: data.supportedAt?.toDate?.()?.toISOString?.() ?? null,
+    supportedAt,
   };
 }
 
