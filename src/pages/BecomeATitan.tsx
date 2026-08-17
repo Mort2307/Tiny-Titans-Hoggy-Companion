@@ -15,7 +15,8 @@ const supportOptions = [
 ] as const;
 
 const functions = getFunctions(app, "europe-west2");
-const createTitanCheckout = httpsCallable<{ tier: string; amountGbp?: string }, { url: string }>(functions, "createTitanCheckout");
+// Use the isolated V2 callable so the live app cannot accidentally hit the legacy Stripe implementation.
+const createTitanCheckout = httpsCallable<{ tier: string; amountGbp?: string }, { url: string }>(functions, "createTitanCheckoutV2");
 
 function checkoutErrorMessage(error: unknown) {
   const firebaseError = error as { code?: string; message?: string };
