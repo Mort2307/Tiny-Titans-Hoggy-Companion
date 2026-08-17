@@ -21,6 +21,11 @@ function tokenMatch(value: string, queryTokens: string[]): boolean {
   return queryTokens.every((token) => candidate.split(" ").some((part) => part === token || part.startsWith(token)));
 }
 
+function sameTokenSet(value: string, queryTokens: string[]): boolean {
+  const candidateTokens = tokens(value);
+  return candidateTokens.length === queryTokens.length && tokenMatch(value, queryTokens);
+}
+
 function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode): number {
   const q = normaliseSearch(query);
   if (!q) return 0;
@@ -28,22 +33,35 @@ function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode
   const name = normaliseSearch(morph.name);
   const id = normaliseSearch(morph.geneId);
   const aliases = (morph.aliases ?? []).map(normaliseSearch).filter(Boolean);
-  const directFields = [name, id];
   const combinationFields = [name, id, ...(morph.contains ?? []).map(normaliseSearch)];
 
+  // Exact canonical identity always wins.
   if (name === q || id === q) return 1000;
-  if (directFields.some((field) => field === q)) return 900;
-  if (name.startsWith(`${q} `) || name.startsWith(q)) return 800;
-  if (tokenMatch(name, qTokens)) return 700;
-  if (mode !== "strict" && aliases.some((alias) => alias === q)) return 650;
-  if (mode !== "strict" && aliases.some((alias) => tokenMatch(alias, qTokens))) return 550;
+
+  // A canonical name beginning with the query is a useful direct match,
+  // but only when the query is not merely a token buried inside the name.
+  if (name.startsWith(`${q} `)) return 850;
+  if (name.startsWith(q)) return 800;
+
+  // Strict selectors are intentionally conservative. A search for
+  // "Super Arctic" must not surface "Albino Super Arctic" just because
+  // both query tokens occur somewhere in the candidate name.
+  if (mode === "strict") {
+    if (sameTokenSet(name, qTokens)) return 700;
+    if (aliases.some((alias) => alias === q || sameTokenSet(alias, qTokens))) return 650;
+    return -1;
+  }
+
+  if (aliases.some((alias) => alias === q)) return 650;
+  if (aliases.some((alias) => tokenMatch(alias, qTokens))) return 550;
 
   if (mode === "combination") {
     if (morph.isCombination && combinationFields.some((field) => tokenMatch(field, qTokens))) return 500;
     return -1;
   }
 
-  if (mode === "strict") return -1;
+  // General search may use token matching, but it remains deterministic and
+  // only returns candidates containing every query token.
   if (combinationFields.some((field) => tokenMatch(field, qTokens))) return 300;
   return -1;
 }
