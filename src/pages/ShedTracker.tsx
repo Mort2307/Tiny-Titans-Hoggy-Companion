@@ -88,31 +88,16 @@ export default function ShedTracker() {
   const averageLength = measured.length ? measured.reduce((sum, shed) => sum + (shed.shedLength ?? 0), 0) / measured.length : 0;
 
   function resetForm() {
-    setEditingId(null);
-    setDate(new Date().toISOString().split("T")[0]);
-    setBluePhaseStarted(false);
-    setEyesSkinCleared(false);
-    setShedStatus("Complete");
-    setSelectedRetainedAreas([]);
-    setQuality("Unknown");
-    setAssistance("None");
-    setShedLength("");
-    setSnakeWeight("");
-    setNotes("");
+    setEditingId(null); setDate(new Date().toISOString().split("T")[0]); setBluePhaseStarted(false); setEyesSkinCleared(false);
+    setShedStatus("Complete"); setSelectedRetainedAreas([]); setQuality("Unknown"); setAssistance("None"); setShedLength(""); setSnakeWeight(""); setNotes("");
   }
 
   function editShed(shed: ShedRecord) {
-    setEditingId(shed.id);
-    setDate(shed.date);
-    setBluePhaseStarted(shed.bluePhaseStarted);
-    setEyesSkinCleared(shed.eyesSkinCleared);
-    setShedStatus(shed.status ?? (shed.shedCompleted ? "Complete" : "Partial"));
-    setSelectedRetainedAreas(normaliseRetainedAreas(shed));
-    setQuality(shed.quality);
-    setAssistance(shed.assistance);
+    setEditingId(shed.id); setDate(shed.date); setBluePhaseStarted(shed.bluePhaseStarted); setEyesSkinCleared(shed.eyesSkinCleared);
+    setShedStatus(shed.status ?? (shed.shedCompleted ? "Complete" : "Partial")); setSelectedRetainedAreas(normaliseRetainedAreas(shed));
+    setQuality(shed.quality); setAssistance(shed.assistance);
     setShedLength(shed.shedLength == null ? "" : String(isImperial ? shed.shedLength / 2.54 : shed.shedLength));
-    setSnakeWeight(shed.snakeWeight == null ? "" : String(isImperial ? shed.snakeWeight / 28.349523125 : shed.snakeWeight));
-    setNotes(shed.notes ?? "");
+    setSnakeWeight(shed.snakeWeight == null ? "" : String(isImperial ? shed.snakeWeight / 28.349523125 : shed.snakeWeight)); setNotes(shed.notes ?? "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -127,16 +112,12 @@ export default function ShedTracker() {
       requestAnimationFrame(() => document.getElementById("shed-date")?.scrollIntoView({ behavior: "smooth", block: "center" }));
       setSearchParams((current) => { current.delete("record"); return current; }, { replace: true });
     });
-  }, [sheds, searchParams, setSearchParams, isImperial]);
+  }, [sheds, searchParams, setSearchParams, isImperial, editShed]);
 
-  function toggleRetainedArea(area: RetainedShedArea) {
-    setSelectedRetainedAreas((current) => current.includes(area) ? current.filter((item) => item !== area) : [...current, area]);
-  }
+  function toggleRetainedArea(area: RetainedShedArea) { setSelectedRetainedAreas((current) => current.includes(area) ? current.filter((item) => item !== area) : [...current, area]); }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setSuccess("");
+    event.preventDefault(); setError(""); setSuccess("");
     if (!user || !selectedSnakeId) { setError("Please select a snake and make sure you are logged in."); return; }
     if (shedLength !== "" && (!Number.isFinite(Number(shedLength)) || Number(shedLength) < 0)) { setError(`Please enter a valid shed length in ${lengthUnit}.`); return; }
     if (snakeWeight !== "" && (!Number.isFinite(Number(snakeWeight)) || Number(snakeWeight) < 0)) { setError(`Please enter a valid snake weight in ${weightUnit}.`); return; }
@@ -144,41 +125,22 @@ export default function ShedTracker() {
     try {
       const legacyRetainedArea = selectedRetainedAreas.length === 0 ? "None" : selectedRetainedAreas.length === 1 ? selectedRetainedAreas[0] : "Multiple Areas";
       const record: ShedRecord = {
-        id: editingId ?? generateId(), snakeId: selectedSnakeId, date, bluePhaseStarted, eyesSkinCleared,
-        shedCompleted: shedStatus === "Complete", retainedShedArea: legacyRetainedArea, retainedAreas: selectedRetainedAreas,
-        retainedEyeCaps: selectedRetainedAreas.includes("Eye Cap"), retainedTailTip: selectedRetainedAreas.includes("Tail Tip"),
+        id: editingId ?? generateId(), snakeId: selectedSnakeId, date, bluePhaseStarted, eyesSkinCleared, shedCompleted: shedStatus === "Complete",
+        retainedShedArea: legacyRetainedArea, retainedAreas: selectedRetainedAreas, retainedEyeCaps: selectedRetainedAreas.includes("Eye Cap"), retainedTailTip: selectedRetainedAreas.includes("Tail Tip"),
         status: shedStatus, quality, assistance,
         ...(shedLength !== "" ? { shedLength: isImperial ? Number(shedLength) * 2.54 : Number(shedLength) } : {}),
-        ...(snakeWeight !== "" ? { snakeWeight: isImperial ? Number(snakeWeight) * 28.349523125 : Number(snakeWeight) } : {}),
-        notes: notes.trim(),
+        ...(snakeWeight !== "" ? { snakeWeight: isImperial ? Number(snakeWeight) * 28.349523125 : Number(snakeWeight) } : {}), notes: notes.trim(),
       };
       const saved = await saveSnakeShed(user.uid, record);
       setSheds((current) => [saved, ...current.filter((item) => item.id !== saved.id)].sort((a, b) => b.date.localeCompare(a.date)));
-      setLoadedShedsKey(shedsKey);
-      setSuccess(editingId ? "Shed record updated successfully." : "Shed recorded successfully.");
-      resetForm();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save this shed.");
-    } finally {
-      setSaving(false);
-    }
+      setLoadedShedsKey(shedsKey); setSuccess(editingId ? "Shed record updated successfully." : "Shed recorded successfully."); resetForm();
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to save this shed."); } finally { setSaving(false); }
   }
 
   async function handleDelete(shed: ShedRecord) {
-    if (!user) return;
-    setDeleteTarget(null);
-    setSaving(true);
-    setError("");
-    try {
-      await deleteSnakeShed(user.uid, shed.snakeId, shed.id);
-      setSheds((current) => current.filter((item) => item.id !== shed.id));
-      if (editingId === shed.id) resetForm();
-      setSuccess("Shed record deleted.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to delete this shed.");
-    } finally {
-      setSaving(false);
-    }
+    if (!user) return; setDeleteTarget(null); setSaving(true); setError("");
+    try { await deleteSnakeShed(user.uid, shed.snakeId, shed.id); setSheds((current) => current.filter((item) => item.id !== shed.id)); if (editingId === shed.id) resetForm(); setSuccess("Shed record deleted."); }
+    catch (err) { setError(err instanceof Error ? err.message : "Unable to delete this shed."); } finally { setSaving(false); }
   }
 
   if (loading || profileLoading || (Boolean(user) && loadingSnakes)) return <div className="page-container"><BackHomeButton /><h1>🐍 Shed Tracker</h1><div className="tracker-card"><p>Loading Tiny Titans...</p></div></div>;
