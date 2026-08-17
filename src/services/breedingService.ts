@@ -18,21 +18,16 @@ function pairingsCollection(uid: string, projectId: string) { return collection(
 function clutchCollection(uid: string, projectId: string) { return collection(projectDoc(uid, projectId), "clutches"); }
 function hatchlingsCollection(uid: string, projectId: string) { return collection(projectDoc(uid, projectId), "hatchlings"); }
 
-export async function getBreedingProjects(uid: string): Promise<BreedingProject[]> { const snapshot = await getDocs(query(projectsCollection(uid), orderBy("updatedAt", "desc"))); return snapshot.docs.map((item) => item.data() as BreedingProject); }
+export async function getBreedingProjects(uid: string): Promise<BreedingProject[]> {
+  const snapshot = await getDocs(projectsCollection(uid));
+  return snapshot.docs.map((item) => item.data() as BreedingProject).sort((a, b) => String(b.updatedAt ?? b.createdAt ?? "").localeCompare(String(a.updatedAt ?? a.createdAt ?? "")));
+}
 export async function getBreedingProject(uid: string, projectId: string): Promise<BreedingProject | null> { const snapshot = await getDoc(projectDoc(uid, projectId)); return snapshot.exists() ? (snapshot.data() as BreedingProject) : null; }
 export async function saveBreedingProject(uid: string, project: BreedingProject): Promise<void> { const reference = projectDoc(uid, project.id); const existing = await getDoc(reference); await setDoc(reference, { ...project, updatedAt: serverTimestamp(), ...(existing.exists() ? {} : { createdAt: serverTimestamp() }) }, { merge: true }); }
 
 export async function deleteBreedingProject(uid: string, projectId: string): Promise<void> {
-  const [pairings, clutches, hatchlings] = await Promise.all([
-    getDocs(pairingsCollection(uid, projectId)),
-    getDocs(clutchCollection(uid, projectId)),
-    getDocs(hatchlingsCollection(uid, projectId)),
-  ]);
-  await Promise.all([
-    ...pairings.docs.map((item) => deleteDoc(item.ref)),
-    ...clutches.docs.map((item) => deleteDoc(item.ref)),
-    ...hatchlings.docs.map((item) => deleteDoc(item.ref)),
-  ]);
+  const [pairings, clutches, hatchlings] = await Promise.all([getDocs(pairingsCollection(uid, projectId)), getDocs(clutchCollection(uid, projectId)), getDocs(hatchlingsCollection(uid, projectId))]);
+  await Promise.all([...pairings.docs.map((item) => deleteDoc(item.ref)), ...clutches.docs.map((item) => deleteDoc(item.ref)), ...hatchlings.docs.map((item) => deleteDoc(item.ref))]);
   await deleteDoc(projectDoc(uid, projectId));
 }
 
