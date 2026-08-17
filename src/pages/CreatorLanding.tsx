@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import BackHomeButton from "../components/BackHomeButton";
 
 const tools = [
   ["🧬", "Morph Submission Review", "/creator/submissions", "Review and moderate morph submissions."],
@@ -10,6 +11,7 @@ const tools = [
 export default function CreatorLanding() {
   return (
     <main className="page-container">
+      <BackHomeButton fallback="/" />
       <section className="welcome-card">
         <p className="eyebrow">TINY TITANS · CREATOR</p>
         <h1>🛠️ Creator Centre</h1>
