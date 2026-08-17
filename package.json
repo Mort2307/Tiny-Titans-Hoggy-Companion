@@ -8,7 +8,8 @@
     "validate:morphs": "node scripts/validate-morph-database.mjs",
     "validate:learning": "node scripts/validate-learning-content.mjs",
     "validate:routes": "node scripts/check-route-contracts.mjs",
-    "build": "npm run validate:morphs && npm run validate:learning && npm run validate:routes && tsc -b && vite build",
+    "validate:encoding": "node scripts/check-mojibake.mjs",
+    "build": "npm run validate:morphs && npm run validate:learning && npm run validate:routes && npm run validate:encoding && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
