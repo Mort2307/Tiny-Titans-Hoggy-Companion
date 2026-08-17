@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Feedback, FeedbackStatus } from "../types/feedback";
 import type { CanonicalReportIssueStatus, ReportIssue } from "../types/reportIssue";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { getCreatorFeedback, getCreatorReports, getIssueAttachmentUrl, updateCreatorFeedback, updateCreatorReport } from "../services/creatorService";
 import { canTransitionReport, getAllowedReportTransitions, getReportLifecycleLabel } from "../services/reportLifecycle";
 import PageBackButton from "../components/PageBackButton";

@@ -4,8 +4,8 @@ import type { Snake } from "../types/Snake";
 import { migrateSnake } from "../utils/snakeMigration";
 import { getWeightReminder } from "../utils/weightReminder";
 import { getUserSnake, deleteUserSnake } from "../services/snakeService";
-import { useAuth } from "../context/AuthContext";
-import { useUnits } from "../context/UnitContext";
+import { useAuth } from "../context/useAuth";
+import { useUnits } from "../context/UnitContextValue";
 import WeightMiniChart from "../components/WeightMiniChart";
 import BackHomeButton from "../components/BackHomeButton";
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import "./Home.css";
 

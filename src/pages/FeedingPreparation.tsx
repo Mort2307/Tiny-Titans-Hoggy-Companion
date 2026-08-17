@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import BackHomeButton from "../components/BackHomeButton";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { getFeedingSchedule, saveFeedingSchedule } from "../services/feedingScheduleService";
 import type { FeedingSchedule, Snake } from "../types/Snake";

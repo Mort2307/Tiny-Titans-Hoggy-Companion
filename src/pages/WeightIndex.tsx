@@ -6,8 +6,8 @@ import type { Snake } from "../types/Snake";
 import type { WeightRecord } from "../types/Weight";
 import { getUserSnakes } from "../services/snakeService";
 import { getSnakeWeights, migrateEmbeddedWeights } from "../services/weightService";
-import { useAuth } from "../context/AuthContext";
-import { useUnits } from "../context/UnitContext";
+import { useAuth } from "../context/useAuth";
+import { useUnits } from "../context/UnitContextValue";
 
 function WeightIndex() {
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { challengeTopics } from "../data/challengeTopics";
 import { challengeTypeLabels, getLearningProgress, knowledgeLevel, knowledgeScore } from "../services/learningEngine";
 import "../styles/TitansChallenge.css";

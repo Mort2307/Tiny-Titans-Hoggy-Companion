@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { db } from "../firebase/config";
 import PageBackButton from "../components/PageBackButton";
 

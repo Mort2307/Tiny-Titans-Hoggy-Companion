@@ -7,7 +7,7 @@ import type { GeneticsCalculatorResult } from "../types/genetics";
 import { calculateGenetics } from "../utils/geneticsCalculator";
 import { getUserSnakes } from "../services/snakeService";
 import { recordGeneticsCalculation } from "../services/geneticsTrackingService";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import "../styles/calculator.css";
 
 const EMPTY_PARENT: ParentSelection = { morphs: [], hets: [] };

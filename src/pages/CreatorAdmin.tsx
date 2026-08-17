@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { Link, Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { getCreatorFeedback, getCreatorReports, getGlobalStats, getMorphImageSubmissions, type GlobalStats } from "../services/creatorService";
 import { getCanonicalReportIssueStatus, isActiveReportIssueStatus } from "../services/reportLifecycle";
 import CreatorCommunityGlobe from "../components/CreatorCommunityGlobeV2";

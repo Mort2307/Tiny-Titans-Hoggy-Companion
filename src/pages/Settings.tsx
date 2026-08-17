@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { doc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import type { UnitSystem } from "../context/UnitContext";
 import app from "../firebase/config";
 import NotificationSettingsPanel from "../components/NotificationSettingsPanel";

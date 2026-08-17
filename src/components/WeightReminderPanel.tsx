@@ -6,7 +6,7 @@ import type { Snake } from "../types/Snake";
 import { migrateSnake } from "../utils/snakeMigration";
 import { getUserSnakes } from "../services/snakeService";
 
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 import WeightMiniChart from "./WeightMiniChart";
 

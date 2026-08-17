@@ -9,7 +9,7 @@ import { createGeneticsJourneyChecks, createMorphLibraryChecks } from "../servic
 import { createFeedbackAttachmentChecks } from "../services/testerFeedbackSuitesService";
 import { createNotificationMicroSystemChecks } from "../services/testerNotificationSuitesService";
 import { createCreatorFunctionChecks } from "../services/testerCreatorSuitesService";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import PageBackButton from "../components/PageBackButton";
 
 const EMPTY_STATS: GlobalStats = { registeredUsers: 0, activeUsers: 0, snakeProfiles: 0, mealsFed: 0, weightLogs: 0, totalWeightKg: 0, totalWeightLb: 0, shedsLogged: 0, totalShedLengthCm: 0, totalShedLengthIn: 0, geneticsCalculations: 0 };

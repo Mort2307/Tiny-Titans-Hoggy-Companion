@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { doc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth, type UserCategory } from "../context/AuthContext";
+import { useAuth, type UserCategory } from "../context/useAuth";
 import type { AgeBand, EducatorTeachingLevel, LearningLevel, ProfileType } from "../types/Profile";
 import app from "../firebase/config";
 import "../styles/Personalisation.css";
