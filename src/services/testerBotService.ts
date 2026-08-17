@@ -18,7 +18,11 @@ export type TesterCategory =
   | "mobile"
   | "creator"
   | "feedback"
-  | "notifications";
+  | "notifications"
+  | "application"
+  | "learning"
+  | "trackers"
+  | "breeding";
 
 export type TesterCheck = {
   checkId: string;
