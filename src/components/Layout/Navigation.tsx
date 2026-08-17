@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
-import { hasCreatorClaim } from "../../services/creatorAuthService";
+import { hasCapability } from "../../services/capabilityService";
 import { getCommunityUnreadCount } from "../../services/communityReadStateService";
 import "./Navigation.css";
 
@@ -15,12 +15,10 @@ function Navigation() {
   useEffect(() => {
     if (!authReady) return;
     let active = true;
-    void hasCreatorClaim(false).then((claimAuthorized) => {
-      if (!active) return;
-      const legacyCreatorAuthorized = profile?.role === "admin" || profile?.profileType === "creator";
-      setCreatorAuthorized(claimAuthorized || legacyCreatorAuthorized);
+    void hasCapability("creator", profile).then((authorized) => {
+      if (active) setCreatorAuthorized(authorized);
     }).catch(() => {
-      if (active) setCreatorAuthorized(profile?.role === "admin" || profile?.profileType === "creator");
+      if (active) setCreatorAuthorized(false);
     });
     return () => { active = false; };
   }, [authReady, profile]);
