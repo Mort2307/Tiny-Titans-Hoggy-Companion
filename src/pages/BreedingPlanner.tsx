@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/AuthContext";
-import { getUserSnakes } from "../services/snakeService";
+import { getUserSnakes, saveUserSnake } from "../services/snakeService";
 import { getBreedingProjects, getBreedingPairings, getEggClutches, getHatchlings, saveBreedingProject, saveBreedingPairing, saveEggClutch, saveHatchling } from "../services/breedingService";
 import type { Snake } from "../types/Snake";
 import type { BreedingProject, BreedingPairing, EggClutch, HatchlingRecord } from "../types/Breeding";
 import { createBreedingGeneticsSnapshot, type BreedingGeneticsSnapshot } from "../utils/breedingGenetics";
+import { migrateSnake } from "../utils/snakeMigration";
 
 function makeId(prefix: string) { return typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${prefix}-${Date.now()}`; }
 
@@ -97,6 +98,64 @@ export default function BreedingPlanner() {
     try { await saveHatchling(user.uid, selectedProject.id, hatchling); setHatchlings((current) => [hatchling, ...current]); setHatchlingName(""); setHatchlingMorph(""); setMessage("🐣 Hatchling saved. Next step: create its canonical Snake profile."); } catch (err) { setError(err instanceof Error ? err.message : "Unable to save hatchling."); } finally { setSaving(false); }
   }
 
+  async function createSnakeFromHatchling(hatchling: HatchlingRecord) {
+    if (!user || !selectedProject) return;
+    if (hatchling.snakeId) {
+      navigate(`/snakes/${hatchling.snakeId}`);
+      return;
+    }
+
+    setSaving(true);
+    setMessage("");
+    setError("");
+
+    try {
+      const morphs = hatchling.morphId ? [hatchling.morphId] : [];
+      const customMorph = !hatchling.morphId ? (hatchling.morph ?? "") : "";
+      const customHets = hatchling.hets?.join(", ") ?? "";
+      const weight = hatchling.weightAtHatch ?? null;
+
+      const draft = migrateSnake({
+        name: hatchling.name ?? "",
+        species: "Western Hognose",
+        photo: "",
+        sex: hatchling.sex,
+        morphs,
+        customMorph,
+        hets: [],
+        customHets,
+        startingWeight: weight,
+        startingWeightDate: weight !== null ? hatchling.hatchDate : "",
+        weight,
+        lastWeighedDate: weight !== null ? hatchling.hatchDate : "",
+        weightHistory: [],
+        weightTracking: { enabled: true, frequency: "Monthly" },
+        hatchDate: hatchling.hatchDate,
+        arrivalDate: hatchling.hatchDate,
+        notes: `Created from breeding project "${selectedProject.name}". Hatchling record: ${hatchling.id}.${customHets ? ` Genetics entered on hatchling record: ${customHets}` : ""}`,
+      });
+
+      delete (draft as Partial<Snake>).id;
+
+      const savedSnake = await saveUserSnake(user.uid, draft as Snake);
+      if (!savedSnake.id) throw new Error("The Snake was saved but no canonical Snake ID was returned.");
+
+      const linkedHatchling: HatchlingRecord = {
+        ...hatchling,
+        snakeId: savedSnake.id,
+      };
+      await saveHatchling(user.uid, selectedProject.id, linkedHatchling);
+
+      setHatchlings((current) => current.map((item) => item.id === hatchling.id ? linkedHatchling : item));
+      setMessage(`🐍 ${savedSnake.name || "Snake"} created successfully. The hatchling is now linked to its canonical Snake record.`);
+      navigate(`/snakes/${savedSnake.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to create the Snake profile from this hatchling.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading || profileLoading) return <div className="page-container"><BackHomeButton /><h2>🧬 Breeding Planner</h2><p>Loading your breeding data…</p></div>;
   if (!user) return <div className="page-container"><BackHomeButton /><h2>🧬 Breeding Planner</h2><p>Sign in to create and manage breeding projects.</p><button type="button" onClick={() => navigate("/login")}>Sign In</button></div>;
 
@@ -108,7 +167,7 @@ export default function BreedingPlanner() {
     {selectedProject && <>
       <section className="tracker-card"><h3>🔗 {selectedProject.name} — Pairing</h3><p>Parents are locked to the canonical Snake records.</p>{geneticsSnapshot ? <div className="weight-history-card"><h4>🧬 Expected Genetics</h4><p>Calculated by the canonical genetics engine on {new Date(geneticsSnapshot.calculatedAt).toLocaleString()}.</p>{geneticsSnapshot.outcomes.map((outcome, index) => <p key={`${index}-${outcome.probability}`}>• {outcome.visualMorphs.length ? outcome.visualMorphs.join(" + ") : "Wild Type"}{outcome.hets.length ? ` — ${outcome.hets.join(", ")}` : ""} · <strong>{outcome.probability}%</strong></p>)}</div> : <p>Expected genetics will appear once both canonical parent records are available.</p>}<label>Pairing date<input type="date" value={pairingDate} onChange={(event) => setPairingDate(event.target.value)} /></label><button type="button" disabled={saving} onClick={() => void addPairing()}>{saving ? "Saving…" : "🤝 Record Pairing"}</button><button type="button" onClick={() => navigate(`/calculator?male=${selectedProject.maleId}&female=${selectedProject.femaleId}`)}>🧬 Open Genetics Calculator</button>{pairings.map((pairing) => <p key={pairing.id}>✓ {pairing.pairingDate} — {pairing.status}</p>)}</section>
       <section className="tracker-card"><h3>🥚 Clutch</h3><label>Laid date<input type="date" value={clutchDate} onChange={(event) => setClutchDate(event.target.value)} /></label><label>Egg count<input type="number" min={1} value={eggCount} onChange={(event) => setEggCount(Number(event.target.value) || 1)} /></label><button type="button" disabled={saving} onClick={() => void addClutch()}>{saving ? "Saving…" : "🥚 Record Clutch"}</button>{clutches.map((clutch) => <p key={clutch.id}>✓ {clutch.laidDate} — {clutch.eggCount} egg{clutch.eggCount === 1 ? "" : "s"}</p>)}</section>
-      <section className="tracker-card"><h3>🐣 Hatchlings</h3><label>Hatch date<input type="date" value={hatchDate} onChange={(event) => setHatchDate(event.target.value)} /></label><label>Name<input value={hatchlingName} onChange={(event) => setHatchlingName(event.target.value)} placeholder="Optional hatchling name" /></label><label>Sex<select value={hatchlingSex} onChange={(event) => setHatchlingSex(event.target.value as HatchlingRecord["sex"])}><option>Unknown</option><option>Male</option><option>Female</option></select></label><label>Morph / phenotype<input value={hatchlingMorph} onChange={(event) => setHatchlingMorph(event.target.value)} placeholder="Only record what is actually known" /></label><button type="button" disabled={saving} onClick={() => void addHatchling()}>{saving ? "Saving…" : "🐣 Record Hatchling"}</button>{hatchlings.map((hatchling) => <article key={hatchling.id} className="weight-history-card"><strong>{hatchling.name || "Unnamed hatchling"}</strong><p>{hatchling.hatchDate} · {hatchling.sex} · {hatchling.morph || "Phenotype not recorded"}</p><button type="button" onClick={() => navigate(`/snakes/new?from=hatchling&hatchling=${hatchling.id}`)}>🐍 Create Snake Profile</button></article>)}</section>
+      <section className="tracker-card"><h3>🐣 Hatchlings</h3><label>Hatch date<input type="date" value={hatchDate} onChange={(event) => setHatchDate(event.target.value)} /></label><label>Name<input value={hatchlingName} onChange={(event) => setHatchlingName(event.target.value)} placeholder="Optional hatchling name" /></label><label>Sex<select value={hatchlingSex} onChange={(event) => setHatchlingSex(event.target.value as HatchlingRecord["sex"])}><option>Unknown</option><option>Male</option><option>Female</option></select></label><label>Morph / phenotype<input value={hatchlingMorph} onChange={(event) => setHatchlingMorph(event.target.value)} placeholder="Only record what is actually known" /></label><button type="button" disabled={saving} onClick={() => void addHatchling()}>{saving ? "Saving…" : "🐣 Record Hatchling"}</button>{hatchlings.map((hatchling) => <article key={hatchling.id} className="weight-history-card"><strong>{hatchling.name || "Unnamed hatchling"}</strong><p>{hatchling.hatchDate} · {hatchling.sex} · {hatchling.morph || "Phenotype not recorded"}</p>{hatchling.snakeId ? <button type="button" onClick={() => navigate(`/snakes/${hatchling.snakeId}`)}>🐍 View Snake Profile</button> : <button type="button" disabled={saving} onClick={() => void createSnakeFromHatchling(hatchling)}>🐍 Create Snake Profile</button>}</article>)}</section>
     </>}
   </div>;
 }
