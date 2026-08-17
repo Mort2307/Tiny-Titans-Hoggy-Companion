@@ -8,7 +8,9 @@ function BackHomeButton({ fallback = "/" }: Props) {
   const navigate = useNavigate();
 
   function goBack() {
-    if (window.history.length > 1) {
+    const historyState = window.history.state as { idx?: unknown } | null;
+    const routerIndex = typeof historyState?.idx === "number" ? historyState.idx : 0;
+    if (routerIndex > 0) {
       navigate(-1);
       return;
     }
