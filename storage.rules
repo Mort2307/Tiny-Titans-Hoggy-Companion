@@ -6,9 +6,19 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function isAdmin() {
+    function creatorRecord() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isCreator() {
       return signedIn()
-        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == "admin";
+        && (
+          request.auth.token.admin == true
+          || request.auth.token.creator == true
+          || creatorRecord().role == "admin"
+          || creatorRecord().role == "creator"
+          || creatorRecord().profileType == "creator"
+        );
     }
 
     match /users/{userId}/snakes/{snakeId}/{fileName} {
@@ -17,17 +27,17 @@ service firebase.storage {
 
     match /morph-submissions/{userId}/{submissionId}/{fileName} {
       allow write: if signedIn() && request.auth.uid == userId;
-      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow read: if signedIn() && (request.auth.uid == userId || isCreator());
     }
 
     match /issueEvidence/{userId}/{reportId}/{fileName} {
       allow write: if signedIn() && request.auth.uid == userId;
-      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow read: if signedIn() && (request.auth.uid == userId || isCreator());
     }
 
     match /morphLibrary/{morphId}/community/{fileName} {
       allow read: if signedIn();
-      allow write: if isAdmin();
+      allow write: if isCreator();
     }
   }
 }
