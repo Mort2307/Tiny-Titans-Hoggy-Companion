@@ -34,7 +34,13 @@ export async function getCapabilities(
       const tokenResult = await getIdTokenResult(currentUser, forceRefresh);
       const claims = tokenResult.claims as Record<string, unknown>;
 
-      if (claims.admin === true) capabilities.add("admin");
+      if (claims.admin === true) {
+        capabilities.add("admin");
+        capabilities.add("creator");
+        capabilities.add("tester");
+        capabilities.add("educator");
+        capabilities.add("moderator");
+      }
       if (claims.creator === true) capabilities.add("creator");
       if (claims.tester === true) capabilities.add("tester");
       if (claims.educator === true) capabilities.add("educator");
@@ -49,6 +55,9 @@ export async function getCapabilities(
   if (profile?.role === "admin") {
     capabilities.add("admin");
     capabilities.add("creator");
+    capabilities.add("tester");
+    capabilities.add("educator");
+    capabilities.add("moderator");
   }
   if (profile?.profileType === "creator") capabilities.add("creator");
   if (profile?.role === "tester" || profile?.isTester === true) capabilities.add("tester");
