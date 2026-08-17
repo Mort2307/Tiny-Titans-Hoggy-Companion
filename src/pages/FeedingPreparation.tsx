@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
@@ -15,6 +16,7 @@ const defaultNotifications: NotificationSettings = {
 };
 
 export default function FeedingPreparation() {
+  const navigate = useNavigate();
   const { user, loading, profileLoading } = useAuth();
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [selectedSnakeId, setSelectedSnakeId] = useState("");
@@ -90,7 +92,7 @@ export default function FeedingPreparation() {
   }
 
   const snakeContent = snakes.length === 0
-    ? <div className="tracker-card"><h3>No snakes found 🐍</h3><p>Add a snake before configuring feeding reminders.</p></div>
+    ? <div className="tracker-card"><h3>No snakes found 🐍</h3><p>Add a snake before configuring feeding reminders.</p><button type="button" onClick={() => navigate("/snakes/new")}>➕ Add Your First Snake</button></div>
     : <>
         <div className="tracker-card">
           <h2>🐍 Snake</h2>
