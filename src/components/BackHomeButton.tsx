@@ -1,33 +1,24 @@
-import {
-  useNavigate,
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-function BackHomeButton() {
+type Props = {
+  fallback?: string;
+};
 
-  const navigate =
-    useNavigate();
+function BackHomeButton({ fallback = "/" }: Props) {
+  const navigate = useNavigate();
 
   function goBack() {
-
-    navigate(-1);
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate(fallback, { replace: true });
   }
 
   return (
-    <button
-      type="button"
-      className="back-button"
-      onClick={goBack}
-    >
-      <span
-        className="back-button-arrow"
-        aria-hidden="true"
-      >
-        ←
-      </span>
-
-      <span>
-        Back
-      </span>
+    <button type="button" className="back-button" onClick={goBack}>
+      <span className="back-button-arrow" aria-hidden="true">←</span>
+      <span>Back</span>
     </button>
   );
 }
