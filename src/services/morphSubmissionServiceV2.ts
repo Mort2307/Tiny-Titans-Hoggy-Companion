@@ -1,8 +1,9 @@
 import { collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { auth, db, storage } from "../firebase/config";
-import type { MorphCreditMode } from "./morphSubmissionService";
-export type { MorphCreditMode } from "./morphSubmissionService";
+import type { MorphSubmissionCredit } from "../types/morphSubmission";
+
+export type MorphCreditMode = MorphSubmissionCredit;
 
 export interface MorphSubmissionInputV2 {
   morphId: string;
