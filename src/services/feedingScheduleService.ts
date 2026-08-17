@@ -1,10 +1,11 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationSettings } from "../types/Notifications";
 import type { FeedingSchedule } from "../types/Snake";
 
 const DEFAULT_INTERVAL_DAYS = 14;
-const DEFAULT_PREPARATION_DAYS = 0;
-const DEFAULT_PREPARATION_TIME = "08:00";
+const DEFAULT_PREPARATION_DAYS = DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationDaysBefore;
+const DEFAULT_PREPARATION_TIME = DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationTime;
 
 function addDays(dateString: string, days: number): string {
   const base = new Date(`${dateString}T00:00:00Z`);
@@ -22,11 +23,31 @@ function normalisePreparationDays(value: unknown, fallback = DEFAULT_PREPARATION
   return Number.isFinite(days) && days >= 0 && days <= 30 ? Math.round(days) : fallback;
 }
 
+function notificationDefaults(value: unknown): Pick<NotificationSettings, "feedingPreparationDaysBefore" | "feedingPreparationTime"> {
+  if (!value || typeof value !== "object") return {
+    feedingPreparationDaysBefore: DEFAULT_PREPARATION_DAYS,
+    feedingPreparationTime: DEFAULT_PREPARATION_TIME,
+  };
+
+  const settings = value as Partial<NotificationSettings>;
+  return {
+    feedingPreparationDaysBefore: normalisePreparationDays(settings.feedingPreparationDaysBefore),
+    feedingPreparationTime: normaliseTime(settings.feedingPreparationTime),
+  };
+}
+
 export function getDefaultNextFeedingDate(referenceDate = new Date().toISOString().slice(0, 10)): string {
   return addDays(referenceDate, DEFAULT_INTERVAL_DAYS);
 }
 
-export function normaliseFeedingSchedule(value: unknown, fallbackDate = new Date().toISOString().slice(0, 10)): FeedingSchedule {
+export function normaliseFeedingSchedule(
+  value: unknown,
+  fallbackDate = new Date().toISOString().slice(0, 10),
+  preparationDefaults: Pick<NotificationSettings, "feedingPreparationDaysBefore" | "feedingPreparationTime"> = {
+    feedingPreparationDaysBefore: DEFAULT_PREPARATION_DAYS,
+    feedingPreparationTime: DEFAULT_PREPARATION_TIME,
+  }
+): FeedingSchedule {
   if (!value || typeof value !== "object") {
     return {
       enabled: false,
@@ -34,8 +55,8 @@ export function normaliseFeedingSchedule(value: unknown, fallbackDate = new Date
       nextFeedingDate: getDefaultNextFeedingDate(fallbackDate),
       notificationsEnabled: true,
       preparationReminderEnabled: false,
-      preparationReminderDaysBefore: DEFAULT_PREPARATION_DAYS,
-      preparationReminderTime: DEFAULT_PREPARATION_TIME,
+      preparationReminderDaysBefore: preparationDefaults.feedingPreparationDaysBefore,
+      preparationReminderTime: preparationDefaults.feedingPreparationTime,
     };
   }
 
@@ -47,14 +68,18 @@ export function normaliseFeedingSchedule(value: unknown, fallbackDate = new Date
     nextFeedingDate: typeof raw.nextFeedingDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.nextFeedingDate) ? raw.nextFeedingDate : getDefaultNextFeedingDate(fallbackDate),
     notificationsEnabled: raw.notificationsEnabled !== false,
     preparationReminderEnabled: raw.preparationReminderEnabled === true,
-    preparationReminderDaysBefore: normalisePreparationDays(raw.preparationReminderDaysBefore),
-    preparationReminderTime: normaliseTime(raw.preparationReminderTime),
+    preparationReminderDaysBefore: normalisePreparationDays(raw.preparationReminderDaysBefore, preparationDefaults.feedingPreparationDaysBefore),
+    preparationReminderTime: normaliseTime(raw.preparationReminderTime, preparationDefaults.feedingPreparationTime),
   };
 }
 
 export async function getFeedingSchedule(uid: string, snakeId: string, fallbackDate?: string): Promise<FeedingSchedule> {
-  const snapshot = await getDoc(doc(db, "users", uid, "snakes", snakeId));
-  return normaliseFeedingSchedule(snapshot.data()?.feedingSchedule, fallbackDate);
+  const [snakeSnapshot, userSnapshot] = await Promise.all([
+    getDoc(doc(db, "users", uid, "snakes", snakeId)),
+    getDoc(doc(db, "users", uid)),
+  ]);
+  const preparationDefaults = notificationDefaults(userSnapshot.data()?.notificationSettings);
+  return normaliseFeedingSchedule(snakeSnapshot.data()?.feedingSchedule, fallbackDate, preparationDefaults);
 }
 
 export async function saveFeedingSchedule(uid: string, snakeId: string, schedule: FeedingSchedule): Promise<FeedingSchedule> {
