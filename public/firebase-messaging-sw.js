@@ -29,8 +29,8 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(title, {
     body,
-    icon: "/TinyTitans-Logo.jpg",
-    badge: "/TinyTitans-Logo.jpg",
+    icon: "/favicon.svg",
+    badge: "/favicon.svg",
     tag: data.eventKey || "tiny-titans-notification",
     data: { url },
   });
