@@ -1,11 +1,7 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
-<<<<<<< HEAD
 import { hasCapability } from "../../services/capabilityService";
-=======
-import { hasCreatorClaim } from "../../services/creatorAuthService";
->>>>>>> origin/master
 import { getCommunityUnreadCount } from "../../services/communityReadStateService";
 import "./Navigation.css";
 
@@ -54,24 +50,24 @@ function Navigation() {
   }, [authReady, userId, profile?.isTester, profile?.role]);
 
   const links: [string, string, string][] = [
-    ["/", "🏠", "Home"],
-    ["/snakes", "🐍", "My Snakes"],
-    ["/morph-library", "🧬", "Morph Library"],
-    ["/calculator", "🧮", "Genetics Calculator"],
-    ["/breeding", "🥚", "Breeding Planner"],
-    ["/knowledge-base", "📚", "Knowledge Base"],
-    ["/challenge", "🧠", "Titans Challenge"],
-    ["/community", "🌿", "Community Hub"],
-    ["/community/wall-of-titans", "🏆", "Wall of Titans"],
-    ["/account", "🧑", "My Account"],
-    ["/become-a-titan", "🐍", "Become a Titan"],
+    ["/", "ðŸ ", "Home"],
+    ["/snakes", "ðŸ", "My Snakes"],
+    ["/morph-library", "ðŸ§¬", "Morph Library"],
+    ["/calculator", "ðŸ§®", "Genetics Calculator"],
+    ["/breeding", "ðŸ¥š", "Breeding Planner"],
+    ["/knowledge-base", "ðŸ“š", "Knowledge Base"],
+    ["/challenge", "ðŸ§ ", "Titans Challenge"],
+    ["/community", "ðŸŒ¿", "Community Hub"],
+    ["/community/wall-of-titans", "ðŸ†", "Wall of Titans"],
+    ["/account", "ðŸ§‘", "My Account"],
+    ["/become-a-titan", "ðŸ", "Become a Titan"],
   ];
-  if (educatorAuthorized) links.push(["/educator", "🧑‍🏫", "Educator Centre"]);
+  if (educatorAuthorized) links.push(["/educator", "ðŸ§‘â€ðŸ«", "Educator Centre"]);
   if (creatorAuthorized) {
-    links.push(["/creator", "🛠️", "Creator Centre"]);
-    links.push(["/creator/community", "📢", "Community Manager"]);
+    links.push(["/creator", "ðŸ› ï¸", "Creator Centre"]);
+    links.push(["/creator/community", "ðŸ“¢", "Community Manager"]);
   }
-  if (testerAuthorized) links.push(["/creator/tester", "🧪", "Tester Centre"]);
+  if (testerAuthorized) links.push(["/creator/tester", "ðŸ§ª", "Tester Centre"]);
 
   return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner"><ul className="app-navigation-list">{links.map(([to, icon, label]) => <li className="app-navigation-item" key={to}><NavLink to={to} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && communityUnreadCount > 0 && <span className="community-unread-dot" aria-label={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} title={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} />}</NavLink></li>)}</ul></div></nav>;
 }

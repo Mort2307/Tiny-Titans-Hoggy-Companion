@@ -1,16 +1,12 @@
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+﻿import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import type { WeightRecord } from "../types/Weight";
-<<<<<<< HEAD
 import { useUnits } from "../context/UnitContextValue";
-=======
-import { useUnits } from "../context/UnitContextValueValue";
->>>>>>> origin/master
 
 type WeightMiniChartProps = { history: WeightRecord[] };
 
 function WeightMiniChart({ history }: WeightMiniChartProps) {
   const { isImperial, weightUnit } = useUnits();
-  if (!history || history.length < 2) return <div className="weight-chart-empty">📈 Add more weight records<br />to see growth progress</div>;
+  if (!history || history.length < 2) return <div className="weight-chart-empty">ðŸ“ˆ Add more weight records<br />to see growth progress</div>;
 
   const data = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((record) => ({
     date: new Date(record.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),

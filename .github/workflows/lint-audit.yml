@@ -1,10 +1,6 @@
-name: Tiny Titans Full Lint Audit
+﻿name: Tiny Titans Full Lint Audit
 
-<<<<<<< HEAD
 # Final source-quality audit for master and the zero-warning hardening branch.
-=======
-# Full source-quality gate: warnings are intentionally visible in the artifact.
->>>>>>> origin/master
 on:
   push:
     branches:
