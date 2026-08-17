@@ -15,6 +15,7 @@ export type GlobalStats = { registeredUsers: number; activeUsers: number; snakeP
 export async function submitFounderApplication(input: Omit<FounderApplication, "id" | "status" | "createdAt" | "updatedAt">) { const ref = await addDoc(collection(db, "founderApplications"), { ...input, status: "Pending", createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); return ref.id; }
 export async function submitFeedback(input: Omit<Feedback, "id" | "createdAt" | "updatedAt">) { if (!input.userId) throw new Error("You must be signed in to send feedback."); if (!input.title.trim() || !input.message.trim()) throw new Error("Please provide a title and feedback message."); const ref = await addDoc(collection(db, "feedback"), { ...input, status: input.status ?? "New", title: input.title.trim(), message: input.message.trim(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); return ref.id; }
 export async function getCreatorFeedback(): Promise<Feedback[]> { const snapshot = await getDocs(query(collection(db, "feedback"), orderBy("createdAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Feedback, "id">) })); }
+export async function getUserFeedback(uid: string): Promise<Feedback[]> { const snapshot = await getDocs(query(collection(db, "feedback"), where("userId", "==", uid))); const items = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Feedback, "id">) })); return items.sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))); }
 export async function updateCreatorFeedback(feedbackId: string, status: NonNullable<Feedback["status"]>, creatorNotes: string | undefined, reviewerUid?: string) { const payload: Record<string, unknown> = { status, updatedAt: serverTimestamp() }; if (creatorNotes !== undefined) payload.creatorNotes = creatorNotes.trim() || null; if (reviewerUid) payload.reviewedBy = reviewerUid; await updateDoc(doc(db, "feedback", feedbackId), payload); }
 const normaliseIssuePart = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 async function issueFingerprint(parts: string[]) { const source = parts.map(normaliseIssuePart).filter(Boolean).join("|"); const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source)); return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 16); }
@@ -49,7 +50,7 @@ export async function approveMorphImageSubmission(submission: MorphImageSubmissi
 
 export async function deleteApprovedMorphImage(approvedImageId: string, reason: string): Promise<void> {
   const functions = getFunctions(undefined, "europe-west2");
-  const removeCallable = httpsCallable<{ approvedImageId: string; reason: string }, { success: boolean }>(functions, "deleteApprovedMorphImage");
+  const removeCallable = httpsCallable<{ approvedMorphImageId: string; reason: string }, { success: boolean }>(functions, "deleteApprovedMorphImage");
   await removeCallable({ approvedImageId, reason: reason.trim() });
 }
 
@@ -62,7 +63,6 @@ export async function getApprovedMorphImages(morphId?: string): Promise<Approved
   return Promise.all(filtered.map(async (image) => {
     if (image.imageUrl) return image;
     if (!image.storagePath) return image;
-    try { return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) }; }
-    catch (error) { console.warn("Approved morph image URL could not be resolved", image.storagePath, error); return image; }
+    try { return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) }; catch (error) { console.warn("Approved morph image URL could not be resolved", image.storagePath, error); return image; }
   }));
 }
