@@ -3,14 +3,7 @@ import { join, relative } from "node:path";
 
 const root = join(process.cwd(), "src");
 const extensions = new Set([".ts", ".tsx", ".js", ".jsx", ".css", ".json"]);
-const suspicious = [
-  /ðŸ/g,
-  /â[\x80-\xBF]/g,
-  /Ã[\x80-\xBF]/g,
-  /Â[\x80-\xBF]/g,
-  /ï¸/g,
-  /�/g,
-];
+const suspicious = /[ðÃÂâï�]/;
 
 async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -26,9 +19,7 @@ async function walk(dir) {
 const failures = [];
 for (const file of await walk(root)) {
   const content = await readFile(file, "utf8");
-  const matches = suspicious.filter((pattern) => pattern.test(content));
-  suspicious.forEach((pattern) => pattern.lastIndex = 0);
-  if (matches.length) failures.push(relative(process.cwd(), file));
+  if (suspicious.test(content)) failures.push(relative(process.cwd(), file));
 }
 
 if (failures.length) {
