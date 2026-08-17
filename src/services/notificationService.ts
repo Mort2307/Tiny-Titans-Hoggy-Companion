@@ -1,4 +1,4 @@
-import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
 import { deleteToken, getMessaging, getToken, isSupported } from "firebase/messaging";
 import { app, db } from "../firebase/config";
 import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationPermissionState, type NotificationSettings } from "../types/Notifications";
@@ -64,8 +64,22 @@ export async function enableNotifications(uid: string): Promise<NotificationPerm
 
 export async function disableNotifications(uid: string): Promise<void> {
   if (!uid) return;
-  try { if (await isSupported()) await deleteToken(getMessaging(app)); }
-  catch (error) { console.warn("Tiny Titans: local notification token could not be removed", error); }
+  try {
+    if (await isSupported()) await deleteToken(getMessaging(app));
+  } catch (error) {
+    console.warn("Tiny Titans: local notification token could not be removed", error);
+  }
+
+  // A client cannot reliably recover the previous FCM token after deleteToken().
+  // Disable every token owned by this account so the backend cannot continue
+  // targeting a device after the user explicitly turns notifications off.
+  try {
+    const tokenSnapshot = await getDocs(collection(db, "users", uid, "notificationTokens"));
+    await Promise.all(tokenSnapshot.docs.map((tokenDoc) => deleteDoc(tokenDoc.ref)));
+  } catch (error) {
+    console.warn("Tiny Titans: notification token records could not be cleaned up", error);
+  }
+
   const settings = await getNotificationSettings(uid);
   await saveNotificationSettings(uid, { ...settings, enabled: false });
   if ("serviceWorker" in navigator) {
