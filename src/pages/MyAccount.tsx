@@ -2,8 +2,9 @@ import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
-import app from "../firebase/config";
 import { KOFI_SUPPORT_URL, SUPPORT_PLATFORM_NAME, isSupportConfigured } from "../config/support";
+import TitanRecognitionChoice from "../components/TitanRecognitionChoice";
+import app from "../firebase/config";
 import "../styles/MyAccount.css";
 
 function MyAccount() {
@@ -26,6 +27,7 @@ function MyAccount() {
     <div className="account-section"><h2>Tiny Titans</h2><div className="account-interests">{profile?.interests?.map((interest) => <span key={interest} className="interest-badge">{interest === "breeder-seller" ? "Breeder & Seller" : interest.charAt(0).toUpperCase() + interest.slice(1)}</span>)}</div></div>
     {profile?.profileType === "educator" && <div className="account-section"><h2>Education</h2><button type="button" className="account-button" onClick={() => navigate("/educator")}>🧑‍🏫 Educator Centre</button></div>}
     <div className="account-section"><h2>Community &amp; Support</h2><button type="button" className="account-button" onClick={() => navigate("/report-bug")}>🐛 Report a Bug<span className="account-button-subtext">Report a reproducible problem so the Creator QA system can investigate it.</span></button><button type="button" className="account-button" onClick={() => navigate("/feedback")}>💡 Send Feedback<span className="account-button-subtext">Ideas, suggestions and general feedback are kept separate from bug reports.</span></button><button type="button" className="account-button" onClick={() => navigate("/founder")}>👑 Become a Founder</button><button type="button" className="account-button" onClick={handleSupport} disabled={!supportConfigured}>☕ Support Tiny Titans on {SUPPORT_PLATFORM_NAME}{!supportConfigured ? " (link coming soon)" : ""}</button>{profile?.role === "admin" && <button type="button" className="account-button" onClick={() => navigate("/creator")}>🛠️ Creator / Admin Centre</button>}</div>
+    <TitanRecognitionChoice alwaysShow />
     <div className="account-section"><h2>🔐 Data &amp; Privacy</h2><div className="account-detail"><span>Community location</span><strong>{locationEnabled ? "Enabled" : "Not enabled"}</strong></div><div className="account-detail"><span>Anonymous analytics</span><strong>{analyticsEnabled ? "Enabled" : "Not enabled"}</strong></div><div className="account-detail"><span>Product updates</span><strong>{updatesEnabled ? "Enabled" : "Not enabled"}</strong></div><p className="account-button-subtext">These optional permissions are separate from the core Tiny Titans features. You can change or withdraw them at any time.</p><button type="button" className="account-button account-button--highlight" onClick={() => navigate("/account/data-privacy")}>🔐 Manage Data Collection Permissions<span className="account-button-subtext">Choose whether Tiny Titans may use your optional community location, anonymous analytics and product-update preferences.</span></button></div>
     <div className="account-section"><h2>Account</h2><button type="button" className="account-button" onClick={() => navigate("/account/settings")}>⚙️ Settings</button><button type="button" className="account-button" onClick={() => navigate("/account/personalise")}>✏️ Personalise Experience</button><button type="button" className="account-button" onClick={() => navigate("/account/security")}>🔐 Security</button><button type="button" className="account-button logout-button" onClick={handleLogout}>🚪 Log Out</button></div>
   </div></section>;
