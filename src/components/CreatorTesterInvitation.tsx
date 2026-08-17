@@ -12,8 +12,7 @@ export default function CreatorTesterInvitation() {
 
   useEffect(() => {
     let active = true;
-    if (!user) { setInvitation(null); setLoading(false); return () => undefined; }
-    setLoading(true);
+    if (!user) return () => undefined;
     void getCreatorTesterInvitation()
       .then((result) => { if (active) setInvitation(result); })
       .catch(() => { if (active) setInvitation(null); })
