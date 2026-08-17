@@ -1,0 +1,78 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
+import { getCreatorFeedback, getCreatorReports, getUserIssueReports } from "../services/creatorService";
+import { getConversationMessages, sendConversationMessage } from "../services/conversationService";
+import type { ConversationKind, ConversationMessage } from "../services/conversationService";
+import type { Feedback } from "../types/feedback";
+import type { ReportIssue } from "../types/reportIssue";
+import "../styles/CreatorTools.css";
+
+type Thread = { kind: ConversationKind; id: string; title: string; summary: string; status: string; token?: string; userId: string };
+
+function displayDate(value: unknown) {
+  if (!value) return "";
+  if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") return value.toDate().toLocaleString("en-GB");
+  if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return new Date(value.toMillis()).toLocaleString("en-GB");
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("en-GB");
+}
+
+export default function ConversationInbox({ creatorMode = false }: { creatorMode?: boolean }) {
+  const { user } = useAuth();
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [selected, setSelected] = useState<Thread | null>(null);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function loadThreads() {
+    if (!user) return;
+    setLoading(true); setError("");
+    try {
+      const [bugs, feedback] = creatorMode ? await Promise.all([getCreatorReports(), getCreatorFeedback()]) : await Promise.all([getUserIssueReports(user.uid), Promise.resolve([] as Feedback[])]);
+      const bugThreads = (bugs as ReportIssue[]).map((item) => ({ kind: "bug" as const, id: item.id, title: item.title, summary: item.description, status: String(item.status ?? "Submitted"), token: item.issueToken, userId: item.userId }));
+      const feedbackThreads = (feedback as Feedback[]).map((item) => ({ kind: "feedback" as const, id: item.id, title: item.title, summary: item.message, status: String(item.status ?? "New"), userId: item.userId }));
+      setThreads([...bugThreads, ...feedbackThreads]);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load conversations."); }
+    finally { setLoading(false); }
+  }
+
+  useEffect(() => { void loadThreads(); }, [user, creatorMode]);
+
+  useEffect(() => {
+    if (!selected) { setMessages([]); return; }
+    let active = true;
+    setLoadingMessages(true); setError("");
+    void getConversationMessages(selected.kind, selected.id).then((items) => { if (active) setMessages(items); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Unable to load this conversation."); }).finally(() => { if (active) setLoadingMessages(false); });
+    return () => { active = false; };
+  }, [selected]);
+
+  const orderedThreads = useMemo(() => [...threads].sort((a, b) => a.title.localeCompare(b.title)), [threads]);
+
+  async function sendReply() {
+    if (!user || !selected || !draft.trim() || sending) return;
+    setSending(true); setError("");
+    try {
+      await sendConversationMessage({ kind: selected.kind, parentId: selected.id, senderId: user.uid, senderRole: creatorMode ? "creator" : "user", message: draft });
+      const refreshed = await getConversationMessages(selected.kind, selected.id);
+      setMessages(refreshed); setDraft("");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to send your reply."); }
+    finally { setSending(false); }
+  }
+
+  if (!user) return null;
+  return <main className="page-container">
+    <section className="creator-tools-card">
+      <div className="creator-tools-header"><span>💬</span><div><p className="eyebrow">TINY TITANS · {creatorMode ? "CREATOR CONVERSATIONS" : "MY CONVERSATIONS"}</p><h1>{creatorMode ? "Community Conversations" : "My Conversations"}</h1><p>Bug reports and feedback are now two-way conversations. {creatorMode ? "Reply directly to users and continue the conversation." : "Reply to the Tiny Titans team whenever they respond."}</p></div></div>
+      {error && <div className="creator-error" role="alert">{error}</div>}
+      {loading ? <p className="creator-muted">Loading conversations…</p> : orderedThreads.length === 0 ? <div className="creator-success"><h2>No conversations yet</h2><p>{creatorMode ? "User bug reports and feedback will appear here." : "Your bug reports and feedback will appear here once submitted."}</p>{!creatorMode && <div className="creator-actions"><Link to="/report-bug">🐛 Report an issue</Link><Link to="/feedback">💡 Send feedback</Link></div>}</div> : <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, .8fr) minmax(300px, 1.5fr)", gap: "16px" }}>
+        <div className="creator-list">{orderedThreads.map((thread) => <button key={`${thread.kind}-${thread.id}`} type="button" className="creator-list-card" onClick={() => setSelected(thread)} style={{ textAlign: "left", width: "100%" }}><strong>{thread.kind === "bug" ? "🐛" : "💡"} {thread.title}</strong><small>{thread.status}{thread.token ? ` · ${thread.token}` : ""}</small><p>{thread.summary}</p></button>)}</div>
+        <section className="creator-list-card" aria-live="polite">{selected ? <><div className="creator-list-top"><div><span className="creator-badge">{selected.kind === "bug" ? "🐛 Bug Report" : "💡 Feedback"}</span><h2>{selected.title}</h2></div><button type="button" onClick={() => setSelected(null)}>Close</button></div><p className="creator-muted">Status: {selected.status}{selected.token ? ` · ${selected.token}` : ""}</p><div style={{ display: "grid", gap: "10px", margin: "16px 0" }}>{loadingMessages ? <p>Loading messages…</p> : messages.length === 0 ? <p className="creator-muted">No replies yet. Start the conversation below.</p> : messages.map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : "👤 User"}</strong><p>{item.message}</p><small>{displayDate(item.createdAt)}</small></article>)}</div><div><label htmlFor="conversation-reply"><strong>{creatorMode ? "Reply to user" : "Reply to Tiny Titans"}</strong></label><textarea id="conversation-reply" value={draft} onChange={(event) => setDraft(event.target.value)} rows={5} maxLength={5000} placeholder="Write your reply…" disabled={sending}/><button type="button" className="creator-primary" onClick={() => void sendReply()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : "💬 Send Reply"}</button></div></> : <div className="creator-success"><h2>Select a conversation</h2><p>Choose a bug report or feedback item to view the conversation.</p></div>}</section>
+      </div>}
+    </section>
+  </main>;
+}
