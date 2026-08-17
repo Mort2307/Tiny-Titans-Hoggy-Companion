@@ -25,14 +25,17 @@ exports.getTitanWallRecognition = onCall({ region: "europe-west2" }, async (requ
   const wall = wallDoc.exists ? wallDoc.data() : {};
   const supporterDoc = await db.collection("supporters").doc(uid).get();
   const supporter = supporterDoc.exists ? supporterDoc.data() : {};
-  if (!supporterDoc.exists || supporter.status !== "active") return { isTitan: false, needsChoice: false, visibility: null, displayName: await getAccountDisplayName(uid), socialUrl: "" };
+  const suggestedName = await getAccountDisplayName(uid);
+  if (!supporterDoc.exists || supporter.status !== "active") return { isTitan: false, needsChoice: false, visibility: null, displayName: suggestedName, socialUrl: "" };
   const visibility = wall.visibility === "named" || wall.visibility === "anonymous" ? wall.visibility : null;
+  const needsChoice = visibility === null || wall.recognitionStatus === "pending";
+  const displayName = needsChoice && (!wall.displayName || wall.displayName === "Anonymous Titan") ? suggestedName : String(wall.displayName || suggestedName || "");
   return {
     isTitan: true,
-    needsChoice: visibility === null || wall.recognitionStatus === "pending",
+    needsChoice,
     visibility,
-    displayName: String(wall.displayName || await getAccountDisplayName(uid) || ""),
-    suggestedName: await getAccountDisplayName(uid),
+    displayName,
+    suggestedName,
     socialUrl: String(wall.socialUrl || ""),
     tierLabel: String(supporter.tierLabel || wall.tierLabel || "Titan Supporter"),
   };
@@ -43,7 +46,6 @@ exports.setTitanWallRecognition = onCall({ region: "europe-west2" }, async (requ
   const uid = request.auth.uid;
   const visibility = String(request.data?.visibility || "");
   if (visibility !== "named" && visibility !== "anonymous") throw new HttpsError("invalid-argument", "Choose whether to show your name or remain anonymous.");
-
   const supporterDoc = await db.collection("supporters").doc(uid).get();
   if (!supporterDoc.exists || supporterDoc.data()?.status !== "active") throw new HttpsError("failed-precondition", "You need an active Titan support record before choosing Wall recognition.");
   const supporter = supporterDoc.data() || {};
@@ -52,18 +54,6 @@ exports.setTitanWallRecognition = onCall({ region: "europe-west2" }, async (requ
   const displayName = visibility === "named" ? suppliedName || suggestedName : "Anonymous Titan";
   if (visibility === "named" && !displayName) throw new HttpsError("invalid-argument", "Please enter the name you would like shown on the Wall of Titans.");
   const socialUrl = normaliseSocialUrl(request.data?.socialUrl);
-
-  await db.collection("supporterWall").doc(uid).set({
-    uid,
-    displayName,
-    socialUrl,
-    visibility,
-    recognitionStatus: "chosen",
-    tierLabel: String(supporter.tierLabel || "Titan Supporter"),
-    amountGbp: Number(supporter.amountGbp || 0),
-    supportedAt: supporter.lastPaymentAt || FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
-
+  await db.collection("supporterWall").doc(uid).set({ uid, displayName, socialUrl, visibility, recognitionStatus: "chosen", tierLabel: String(supporter.tierLabel || "Titan Supporter"), amountGbp: Number(supporter.amountGbp || 0), supportedAt: supporter.lastPaymentAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { saved: true, visibility, displayName, socialUrl };
 });
