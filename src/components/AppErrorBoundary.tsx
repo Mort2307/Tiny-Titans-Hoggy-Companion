@@ -13,7 +13,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: unknown, info: ErrorInfo) {
+  componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("Tiny Titans application error", error, info);
   }
 
