@@ -74,7 +74,7 @@ export async function getUserSnakes(uid: string): Promise<Snake[]> {
     return snapshot.docs.map((document) => migrateSnake({ ...(document.data() as Partial<Snake>), id: document.id }));
   } catch (error) {
     console.error("Tiny Titans: unable to get user snakes", error);
-    throw new Error(getFirestoreErrorMessage(error));
+    throw new Error(getFirestoreErrorMessage(error), { cause: error });
   }
 }
 
@@ -88,7 +88,7 @@ export async function getUserSnake(uid: string, snakeId: string): Promise<Snake 
     return migrateSnake({ ...(snapshot.data() as Partial<Snake>), id: snapshot.id });
   } catch (error) {
     console.error("Tiny Titans: unable to get snake", error);
-    throw new Error(getFirestoreErrorMessage(error));
+    throw new Error(getFirestoreErrorMessage(error), { cause: error });
   }
 }
 
@@ -100,7 +100,7 @@ export async function createUserSnake(uid: string, snake: Snake): Promise<Snake>
     await setDoc(snakeRef, { ...snakeToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   } catch (error) {
     console.error("Tiny Titans: CREATE FIRESTORE FAILED", { error, uid, snakeId: snakeRef.id });
-    throw new Error(`Unable to save your snake: ${getFirestoreErrorMessage(error)}`);
+    throw new Error(`Unable to save your snake: ${getFirestoreErrorMessage(error)}`, { cause: error });
   }
   return migrateSnake({ ...(snakeToSave as Partial<Snake>), id: snakeRef.id });
 }
@@ -115,7 +115,7 @@ export async function updateUserSnake(uid: string, snake: Snake): Promise<Snake>
     await setDoc(snakeRef, { ...snakeToSave, updatedAt: serverTimestamp() }, { merge: true });
   } catch (error) {
     console.error("Tiny Titans: UPDATE FIRESTORE FAILED", { error, uid, snakeId });
-    throw new Error(`Unable to update your snake: ${getFirestoreErrorMessage(error)}`);
+    throw new Error(`Unable to update your snake: ${getFirestoreErrorMessage(error)}`, { cause: error });
   }
   return migrateSnake({ ...(snakeToSave as Partial<Snake>), id: snakeId });
 }
