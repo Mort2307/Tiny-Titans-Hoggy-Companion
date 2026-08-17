@@ -50,6 +50,7 @@ function SnakeProfile() {
     try { await deleteUserSnake(user.uid, snake.id); navigate("/snakes", { replace: true }); } catch (err) { alert(err instanceof Error ? err.message : "Unable to delete this snake. Please try again."); }
   }
   function openSnakeEditor() { if (snake?.id) navigate(`/snakes/${snake.id}/edit`); }
+  function openMasterRecord() { if (snake?.id) navigate(`/snakes/${snake.id}/master-record`); }
 
   if (loading || profileLoading || loadingSnake) return <div className="page-container"><BackHomeButton /><h1>🐍 Loading Snake...</h1><div className="tracker-card"><p>Fetching the snake profile from Firebase.</p></div></div>;
   if (error || !snake) return <div className="page-container"><BackHomeButton /><h1>🐍 Snake Not Found</h1><div className="tracker-card"><h3>{error ?? "This snake could not be found."}</h3><button type="button" onClick={() => navigate("/snakes")}>← Back to My Hoggies</button></div></div>;
@@ -58,7 +59,7 @@ function SnakeProfile() {
   const weightHistory = snake.weightHistory ?? [];
   return <div className="page-container"><BackHomeButton /><h1>🐍 {snake.name}</h1>
     <div className="snake-profile-photo">{snake.photo ? <img src={snake.photo} alt={snake.name} /> : <div className="snake-profile-placeholder">🐍</div>}</div>
-    <div className="tracker-card snake-profile-actions"><button type="button" onClick={openSnakeEditor}>✏️ Edit Snake</button><button type="button" onClick={() => navigate(`/feeding/${snake.id}`)}>🍽 Log Feeding</button><button type="button" onClick={() => navigate(`/shedding/${snake.id}`)}>🐍 Log Shed</button><button type="button" onClick={() => navigate(`/weights/${snake.id}`)}>⚖️ Weight</button><button type="button" onClick={() => void deleteSnake()}>🗑️ Delete Snake</button></div>
+    <div className="tracker-card snake-profile-actions"><button type="button" onClick={openMasterRecord}>📖 Living History / Master Record</button><button type="button" onClick={openSnakeEditor}>✏️ Edit Snake</button><button type="button" onClick={() => navigate(`/feeding/${snake.id}`)}>🍽 Log Feeding</button><button type="button" onClick={() => navigate(`/shedding/${snake.id}`)}>🐍 Log Shed</button><button type="button" onClick={() => navigate(`/weights/${snake.id}`)}>⚖️ Weight</button><button type="button" onClick={() => void deleteSnake()}>🗑️ Delete Snake</button></div>
     <div className="snake-profile-grid">
       <button type="button" className="snake-profile-card" onClick={openSnakeEditor}><div className="snake-profile-card-icon">📋</div><h2>Basic Information</h2><p><strong>{snake.species}</strong></p><p>{snake.sex}</p>{snake.nickname && <p>"{snake.nickname}"</p>}</button>
       <button type="button" className="snake-profile-card" onClick={openSnakeEditor}><div className="snake-profile-card-icon">🧬</div><h2>Genetics</h2><p><strong>{snake.morphs?.length ? snake.morphs.join(", ") : "No morphs listed"}</strong></p>{snake.hets?.length > 0 && <p>{snake.hets.length} het{snake.hets.length !== 1 ? "s" : ""}</p>}{snake.customMorph && <p>{snake.customMorph}</p>}</button>
