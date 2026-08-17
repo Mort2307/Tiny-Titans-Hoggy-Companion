@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - chore/lint-zero-hardening
       - feature/feeding-preparation-notifications
   pull_request:
     branches:
