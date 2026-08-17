@@ -118,6 +118,49 @@ async function createCheckout(request) {
   }
 }
 
+/**
+ * Self-heal the Wall from the payment source of truth.
+ * This is intentionally idempotent: existing Wall entries (including
+ * named/social recognition choices) are never overwritten.
+ */
+async function reconcileTitanWall() {
+  const supportersSnapshot = await db.collection("supporters").where("status", "==", "active").get();
+  if (supportersSnapshot.empty) return { created: 0, checked: 0 };
+
+  let created = 0;
+  for (const supporterDoc of supportersSnapshot.docs) {
+    const uid = supporterDoc.id;
+    const supporter = supporterDoc.data();
+    const wallRef = db.collection("supporterWall").doc(uid);
+    const wallDoc = await wallRef.get();
+    if (wallDoc.exists) continue;
+
+    await wallRef.create({
+      uid,
+      displayName: "Anonymous Titan",
+      socialUrl: "",
+      visibility: "anonymous",
+      tierLabel: String(supporter.tierLabel || "Titan Supporter"),
+      amountGbp: Number(supporter.amountGbp || 0),
+      supportedAt: supporter.lastPaymentAt || null,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    created += 1;
+  }
+
+  return { created, checked: supportersSnapshot.size };
+}
+
+exports.reconcileTitanWall = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in to view the Wall of Titans.");
+  try {
+    return await reconcileTitanWall();
+  } catch (error) {
+    console.error("Tiny Titans Wall reconciliation failed", error);
+    throw new HttpsError("internal", "The Wall of Titans could not be refreshed right now.");
+  }
+});
+
 exports.createTitanCheckoutV2 = onCall(
   { region: "europe-west2", secrets: [STRIPE_SECRET_KEY] },
   createCheckout
