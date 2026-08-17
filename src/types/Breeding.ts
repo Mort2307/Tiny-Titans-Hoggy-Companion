@@ -19,6 +19,11 @@ export type BreedingProject = {
   notes?: string;
   expectedTraits?: string[];
   expectedGenetics?: unknown;
+  targetTraits?: string[];
+  goal?: string;
+  priority?: "Low" | "Normal" | "High" | "Flagship";
+  holdbackStrategy?: string;
+  futurePairingNotes?: string;
 };
 
 export type BreedingPairing = {
@@ -63,6 +68,9 @@ export type HatchlingRecord = {
   weightAtHatch?: number;
   notes?: string;
   snakeId?: string;
+  holdback?: boolean;
+  holdbackReason?: string;
+  futurePairingGoal?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
