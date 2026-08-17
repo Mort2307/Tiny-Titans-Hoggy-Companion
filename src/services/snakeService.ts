@@ -15,7 +15,7 @@ import type { Snake } from "../types/Snake";
 import { db } from "../firebase/config";
 
 import { migrateSnake } from "../utils/snakeMigration";
-import { ensureSnakePhotoReference } from "./snakePhotoService";
+import { deleteSnakePhotoFiles, ensureSnakePhotoReference } from "./snakePhotoService";
 
 function snakesCollection(uid: string) {
   return collection(db, "users", uid, "snakes");
@@ -130,4 +130,9 @@ export async function deleteUserSnake(uid: string, snakeId: string): Promise<voi
   if (!uid) throw new Error("Cannot delete snake without a user ID.");
   if (!snakeId) throw new Error("Cannot delete snake without a snake ID.");
   await deleteDoc(doc(db, "users", uid, "snakes", snakeId));
+  try {
+    await deleteSnakePhotoFiles(uid, snakeId);
+  } catch (error) {
+    console.warn("Tiny Titans: snake deleted but associated photo cleanup could not complete", error);
+  }
 }
