@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { MorphDefinition } from "../data/morphs";
 import { resolveStrictMorph } from "../utils/geneticsIdentity";
 import { rankMorphSearch, normaliseSearch } from "../utils/searchRelevance";
-import type { Het } from "../types/genetics";
+import type { Het, HetPercentage } from "../types/genetics";
 import type { Snake } from "../types/Snake";
 
 export type ParentSelection = {
@@ -31,17 +31,40 @@ function canonicalGeneId(value: unknown): string | undefined {
   return canonicalMorph(value)?.geneId ?? (typeof value === "string" && value.trim() ? value.trim() : undefined);
 }
 
+/**
+ * Preserve the recorded het confidence exactly as stored.
+ * Firestore/legacy records may contain either 66 or "66%".
+ * Number("66%") is NaN, which previously caused the calculator
+ * to silently fall back to 100%. That is not genetically valid.
+ */
+function parseHetPercentage(value: unknown): HetPercentage {
+  if (value === "50%" || value === "66%" || value === "100%") return value;
+
+  const numeric = typeof value === "number" ? value : Number(String(value).replace("%", "").trim());
+  if (numeric === 50) return 50;
+  if (numeric === 66) return 66;
+  if (numeric === 100) return 100;
+
+  return 100;
+}
+
 function normaliseSnakeHets(value: unknown): Het[] {
   if (!Array.isArray(value)) return [];
   return value
     .map((entry): Het | null => {
-      if (typeof entry === "string" && entry.trim()) return { gene: canonicalGeneId(entry) ?? entry.trim(), percentage: 100 } as Het;
+      if (typeof entry === "string" && entry.trim()) {
+        return { gene: canonicalGeneId(entry) ?? entry.trim(), percentage: 100 };
+      }
+
       if (!entry || typeof entry !== "object") return null;
       const record = entry as Record<string, unknown>;
-      const gene = record.gene ?? record.name ?? record.morph;
+      const gene = record.gene ?? record.geneId ?? record.name ?? record.morph;
       if (typeof gene !== "string" || !gene.trim()) return null;
-      const percentage = Number(record.percentage ?? 100);
-      return { gene: canonicalGeneId(gene) ?? gene.trim(), percentage: Number.isFinite(percentage) ? Math.min(100, Math.max(0, percentage)) : 100 } as Het;
+
+      return {
+        gene: canonicalGeneId(gene) ?? gene.trim(),
+        percentage: parseHetPercentage(record.percentage),
+      };
     })
     .filter((het): het is Het => het !== null);
 }
