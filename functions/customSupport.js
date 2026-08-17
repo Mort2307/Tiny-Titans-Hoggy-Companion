@@ -100,19 +100,28 @@ async function createCheckout(request) {
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");
     return { url: session.url };
   } catch (error) {
-    console.error("Tiny Titans Stripe checkout creation failed", error);
+    console.error("Tiny Titans Stripe checkout creation failed", {
+      type: error?.type || null,
+      code: error?.code || null,
+      statusCode: error?.statusCode || null,
+      message: error?.message || String(error),
+      requestId: error?.requestId || null,
+    });
     if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Stripe Checkout could not be started. Please try again.");
+    const stripeMessage = error?.type === "StripeAuthenticationError"
+      ? "Stripe authentication failed on the server."
+      : error?.type === "StripeInvalidRequestError"
+        ? `Stripe rejected the checkout request: ${error.message}`
+        : "Stripe Checkout could not be started. Please try again.";
+    throw new HttpsError("internal", stripeMessage);
   }
 }
 
-// New uniquely named callable removes ambiguity with the legacy function in index.js.
 exports.createTitanCheckoutV2 = onCall(
   { region: "europe-west2", secrets: [STRIPE_SECRET_KEY] },
   createCheckout
 );
 
-// Retain the existing export for compatibility with older clients.
 exports.createTitanCheckout = onCall(
   { region: "europe-west2", secrets: [STRIPE_SECRET_KEY] },
   createCheckout
