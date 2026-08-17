@@ -40,10 +40,23 @@ for (const route of routes) {
   }
 }
 
-const routePatterns = routes.map(({ route }) => ({
-  route,
-  regex: new RegExp(`^${route.replace(/:[^/]+/g, "[^/]+")}$`),
-}));
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function routeToRegex(route) {
+  const tokens = route.split(/(:[^/]+|\*)/g);
+  const pattern = tokens.map((token) => {
+    if (token === "*") return ".*";
+    if (/^:[^/]+$/.test(token)) return "[^/]+";
+    return escapeRegex(token);
+  }).join("");
+  return new RegExp(`^${pattern}$`);
+}
+
+const routePatterns = routes
+  .filter(({ route }) => route !== "*")
+  .map(({ route }) => ({ route, regex: routeToRegex(route) }));
 
 function normaliseDynamicPath(value) {
   return value.replace(/\$\{[^}]+\}/g, ":dynamic");
