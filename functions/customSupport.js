@@ -151,6 +151,7 @@ exports.stripeWebhook = onRequest(
           if (!existingEvent.exists) {
             await eventRef.set({ type: event.type, uid, amountGbp, processedAt: FieldValue.serverTimestamp() });
             await db.collection("supporters").doc(uid).set({ uid, status: "active", tier: tierKey, tierLabel: label, amountGbp, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+            await db.collection("supporterWall").doc(uid).set({ uid, displayName: "Anonymous Titan", socialUrl: "", visibility: "anonymous", tierLabel: label, amountGbp, supportedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
             await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(amountGbp), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
           }
         }
