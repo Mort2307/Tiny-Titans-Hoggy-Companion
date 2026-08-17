@@ -2,7 +2,7 @@ import { addDoc, collection, doc, getDocs, orderBy, query, serverTimestamp, upda
 import { deleteObject, getDownloadURL, ref } from "firebase/storage";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { db, storage } from "../firebase/config";
-import type { ReportIssue } from "../types/reportIssue";
+import type { CanonicalReportIssueStatus, ReportIssue } from "../types/reportIssue";
 import type { Feedback } from "../types/feedback";
 import type { ApprovedMorphImage, MorphImageSubmission, MorphSubmissionStatus } from "../types/morphSubmission";
 import { getCanonicalGlobalStats } from "./trackerStatsService";
@@ -24,7 +24,7 @@ export async function getCreatorReports(): Promise<ReportIssue[]> { const snapsh
 export async function getUserIssueReports(uid: string): Promise<ReportIssue[]> { const snapshot = await getDocs(query(collection(db, "issueReports"), where("userId", "==", uid))); const reports = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ReportIssue, "id">) })); return reports.sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""))); }
 export async function getIssueAttachmentUrl(path: string): Promise<string> { return getDownloadURL(ref(storage, path)); }
 export type IssueResolution = { resolution?: string; fixedVersion?: string; creatorMessage?: string };
-export async function updateCreatorReport(reportId: string, status: ReportIssue["status"], resolution?: IssueResolution, reviewerUid?: string) { const reportRef = doc(db, "issueReports", reportId); const payload: Record<string, unknown> = { status, updatedAt: serverTimestamp() }; if (reviewerUid) payload.reviewedBy = reviewerUid; if (resolution?.resolution !== undefined) payload.resolution = resolution.resolution.trim() || null; if (resolution?.fixedVersion !== undefined) payload.fixedVersion = resolution.fixedVersion.trim() || null; if (resolution?.creatorMessage !== undefined) payload.creatorMessage = resolution.creatorMessage.trim() || null; if (status === "Resolved") payload.resolvedAt = serverTimestamp(); await updateDoc(reportRef, payload); }
+export async function updateCreatorReport(reportId: string, status: ReportIssue["status"] | CanonicalReportIssueStatus, resolution?: IssueResolution, reviewerUid?: string) { const reportRef = doc(db, "issueReports", reportId); const payload: Record<string, unknown> = { status, updatedAt: serverTimestamp() }; if (reviewerUid) payload.reviewedBy = reviewerUid; if (resolution?.resolution !== undefined) payload.resolution = resolution.resolution.trim() || null; if (resolution?.fixedVersion !== undefined) payload.fixedVersion = resolution.fixedVersion.trim() || null; if (resolution?.creatorMessage !== undefined) payload.creatorMessage = resolution.creatorMessage.trim() || null; if (status === "Resolved") payload.resolvedAt = serverTimestamp(); await updateDoc(reportRef, payload); }
 export async function getFounderApplications(): Promise<FounderApplication[]> { const snapshot = await getDocs(query(collection(db, "founderApplications"), orderBy("createdAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<FounderApplication, "id">) })); }
 export async function updateFounderApplication(id: string, status: FounderApplication["status"]) { await updateDoc(doc(db, "founderApplications", id), { status, updatedAt: serverTimestamp() }); }
 export async function getUserCount(): Promise<number> { return (await getDocs(collection(db, "users"))).size; }
