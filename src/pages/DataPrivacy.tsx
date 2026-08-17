@@ -1,122 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase/config";
 import PageBackButton from "../components/PageBackButton";
-
 const CONSENT_VERSION = "2026-08-16-location-analytics-v1";
-
-type Preferences = {
-  approximateLocation: boolean;
-  analytics: boolean;
-  productUpdates: boolean;
-  consentVersion: string;
-  consentUpdatedAt?: unknown;
-};
-
+type Preferences = { approximateLocation: boolean; analytics: boolean; productUpdates: boolean; consentVersion: string; consentUpdatedAt?: unknown };
 export default function DataPrivacy() {
-  const { user, profile } = useAuth();
-  const current = profile?.dataCollectionPreferences;
-  const [location, setLocation] = useState(Boolean(current?.approximateLocation));
-  const [analytics, setAnalytics] = useState(Boolean(current?.analytics));
-  const [updates, setUpdates] = useState(Boolean(current?.productUpdates));
-  const [city, setCity] = useState(profile?.approximateLocation?.city ?? "");
-  const [country, setCountry] = useState(profile?.approximateLocation?.country ?? "");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    setLocation(Boolean(current?.approximateLocation));
-    setAnalytics(Boolean(current?.analytics));
-    setUpdates(Boolean(current?.productUpdates));
-    setCity(profile?.approximateLocation?.city ?? "");
-    setCountry(profile?.approximateLocation?.country ?? "");
-  }, [current?.approximateLocation, current?.analytics, current?.productUpdates, profile?.approximateLocation?.city, profile?.approximateLocation?.country]);
-
-  async function save(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaved(false);
-    setError("");
-    if (!user) {
-      setError("You need to be signed in to save your data choices.");
-      return;
-    }
-    if (location && (!city.trim() || !country.trim())) {
-      setError("Enter your city and country to enable the community map.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const preferences: Preferences = {
-        approximateLocation: location,
-        analytics,
-        productUpdates: updates,
-        consentVersion: CONSENT_VERSION,
-        consentUpdatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, "users", user.uid), {
-        dataCollectionPreferences: preferences,
-        approximateLocation: location ? {
-          city: city.trim(),
-          country: country.trim(),
-          source: "user-provided",
-          visibleToCreator: true,
-          updatedAt: serverTimestamp(),
-        } : null,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-      setSaved(true);
-    } catch (saveError) {
-      console.error("Tiny Titans: data privacy save failed", saveError);
-      setError(saveError instanceof Error ? saveError.message : "Unable to save your privacy choices.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <main className="page-container">
-      <section className="personalisation-shell">
-        <PageBackButton fallbackPath="/account" label="Back to My Account" />
-        <p className="personalisation-eyebrow">My Account</p>
-        <h1>🔐 Data &amp; Privacy</h1>
-        <p>You control the optional data Tiny Titans collects. Core reptile tracking does not require optional analytics, product updates or community location sharing.</p>
-        <form onSubmit={save}>
-          <section className="personalisation-card">
-            <h2>🌍 Community location</h2>
-            <p>Optional. If enabled, Tiny Titans stores only the city and country you provide so the Creator community view can show aggregated locations. We do not collect your home address or exact GPS position for this feature.</p>
-            <label className="setup-check">
-              <input type="checkbox" checked={location} onChange={(event) => setLocation(event.target.checked)} disabled={saving} />
-              <span><strong>Show my approximate location on the community map</strong><small>Only your supplied city and country are used.</small></span>
-            </label>
-            {location && <div className="setup-location-fields">
-              <label>City<input value={city} onChange={(event) => setCity(event.target.value)} placeholder="e.g. Peterborough" disabled={saving} /></label>
-              <label>Country<input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="e.g. United Kingdom" disabled={saving} /></label>
-            </div>}
-          </section>
-          <section className="personalisation-card">
-            <h2>📊 Anonymous product analytics</h2>
-            <p>Optional aggregated usage and feature-performance information used to improve Tiny Titans.</p>
-            <label className="setup-check">
-              <input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} disabled={saving} />
-              <span><strong>Allow anonymous product analytics</strong><small>You can switch this off later.</small></span>
-            </label>
-          </section>
-          <section className="personalisation-card">
-            <h2>📣 Product updates</h2>
-            <p>Optional Tiny Titans feature, release and important product updates.</p>
-            <label className="setup-check">
-              <input type="checkbox" checked={updates} onChange={(event) => setUpdates(event.target.checked)} disabled={saving} />
-              <span><strong>Receive product updates</strong><small>This choice is separate from community and analytics consent.</small></span>
-            </label>
-          </section>
-          {error && <div className="setup-error">{error}</div>}
-          {saved && <p className="personalisation-saved">✓ Your data choices have been saved.</p>}
-          <button className="setup-submit" type="submit" disabled={saving}>{saving ? "Saving…" : "Save Data & Privacy Choices"}</button>
-          <p className="setup-help">Consent version: {current?.consentVersion ?? CONSENT_VERSION}. Your choices are stored with a timestamp so changes can be respected later.</p>
-        </form>
-      </section>
-    </main>
-  );
+  const { user, profile } = useAuth(); const current = profile?.dataCollectionPreferences; const [location, setLocation] = useState(Boolean(current?.approximateLocation)); const [analytics, setAnalytics] = useState(Boolean(current?.analytics)); const [updates, setUpdates] = useState(Boolean(current?.productUpdates)); const [city, setCity] = useState(profile?.approximateLocation?.city ?? ""); const [country, setCountry] = useState(profile?.approximateLocation?.country ?? ""); const [saving, setSaving] = useState(false); const [saved, setSaved] = useState(false); const [error, setError] = useState("");
+  async function save(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); setSaved(false); setError(""); if (!user) { setError("You need to be signed in to save your data choices."); return; } if (location && (!city.trim() || !country.trim())) { setError("Enter your city and country to enable the community map."); return; } setSaving(true); try { const preferences: Preferences = { approximateLocation: location, analytics, productUpdates: updates, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() }; await setDoc(doc(db, "users", user.uid), { dataCollectionPreferences: preferences, approximateLocation: location ? { city: city.trim(), country: country.trim(), source: "user-provided", visibleToCreator: true, updatedAt: serverTimestamp() } : null, updatedAt: serverTimestamp() }, { merge: true }); setSaved(true); } catch (saveError) { console.error("Tiny Titans: data privacy save failed", saveError); setError(saveError instanceof Error ? saveError.message : "Unable to save your privacy choices."); } finally { setSaving(false); } }
+  return <main className="page-container"><section className="personalisation-shell"><PageBackButton fallbackPath="/account" label="Back to My Account" /><p className="personalisation-eyebrow">My Account</p><h1>🔐 Data &amp; Privacy</h1><p>You control the optional data Tiny Titans collects. Core reptile tracking does not require optional analytics, product updates or community location sharing.</p><form onSubmit={save}><section className="personalisation-card"><h2>🌍 Community location</h2><p>Optional. If enabled, Tiny Titans stores only the city and country you provide so the Creator community view can show aggregated locations. We do not collect your home address or exact GPS position for this feature.</p><label className="setup-check"><input type="checkbox" checked={location} onChange={(event) => setLocation(event.target.checked)} disabled={saving} /><span><strong>Show my approximate location on the community map</strong><small>Only your supplied city and country are used.</small></span></label>{location && <div className="setup-location-fields"><label>City<input value={city} onChange={(event) => setCity(event.target.value)} placeholder="e.g. Peterborough" disabled={saving} /></label><label>Country<input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="e.g. United Kingdom" disabled={saving} /></label></div>}</section><section className="personalisation-card"><h2>📊 Anonymous product analytics</h2><p>Optional aggregated usage and feature-performance information used to improve Tiny Titans.</p><label className="setup-check"><input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} disabled={saving} /><span><strong>Allow anonymous product analytics</strong><small>You can switch this off later.</small></span></label></section><section className="personalisation-card"><h2>📣 Product updates</h2><p>Optional Tiny Titans feature, release and important product updates.</p><label className="setup-check"><input type="checkbox" checked={updates} onChange={(event) => setUpdates(event.target.checked)} disabled={saving} /><span><strong>Receive product updates</strong><small>This choice is separate from community and analytics consent.</small></span></label></section>{error && <div className="setup-error">{error}</div>}{saved && <p className="personalisation-saved">✓ Your data choices have been saved.</p>}<button className="setup-submit" type="submit" disabled={saving}>{saving ? "Saving…" : "Save Data & Privacy Choices"}</button><p className="setup-help">Consent version: {current?.consentVersion ?? CONSENT_VERSION}. Your choices are stored with a timestamp so changes can be respected later.</p></form></section></main>;
 }
