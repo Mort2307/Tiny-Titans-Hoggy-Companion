@@ -17,9 +17,8 @@ import { db } from "../firebase/config";
 import { migrateSnake } from "../utils/snakeMigration";
 import { deleteSnakePhotoFiles, ensureSnakePhotoReference } from "./snakePhotoService";
 
-function snakesCollection(uid: string) {
-  return collection(db, "users", uid, "snakes");
-}
+function snakesCollection(uid: string) { return collection(db, "users", uid, "snakes"); }
+function snakeSubcollection(uid: string, snakeId: string, name: "weights" | "feedings" | "sheds") { return collection(db, "users", uid, "snakes", snakeId, name); }
 
 function getFirestoreErrorMessage(error: unknown): string {
   if (error && typeof error === "object" && "code" in error) {
@@ -55,6 +54,19 @@ function removeUndefined(value: unknown): unknown {
     return cleaned;
   }
   return value;
+}
+
+async function deleteSnakeSubcollections(uid: string, snakeId: string): Promise<void> {
+  const [weights, feedings, sheds] = await Promise.all([
+    getDocs(snakeSubcollection(uid, snakeId, "weights")),
+    getDocs(snakeSubcollection(uid, snakeId, "feedings")),
+    getDocs(snakeSubcollection(uid, snakeId, "sheds")),
+  ]);
+  await Promise.all([
+    ...weights.docs.map((item) => deleteDoc(item.ref)),
+    ...feedings.docs.map((item) => deleteDoc(item.ref)),
+    ...sheds.docs.map((item) => deleteDoc(item.ref)),
+  ]);
 }
 
 /** Prepare one canonical Snake document. Legacy data-URL photos are migrated
@@ -96,12 +108,8 @@ export async function createUserSnake(uid: string, snake: Snake): Promise<Snake>
   if (!uid) throw new Error("Cannot create snake without a user ID.");
   const snakeRef = doc(snakesCollection(uid));
   const snakeToSave = await prepareSnakeForFirestore(snake, snakeRef.id, uid);
-  try {
-    await setDoc(snakeRef, { ...snakeToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-  } catch (error) {
-    console.error("Tiny Titans: CREATE FIRESTORE FAILED", { error, uid, snakeId: snakeRef.id });
-    throw new Error(`Unable to save your snake: ${getFirestoreErrorMessage(error)}`, { cause: error });
-  }
+  try { await setDoc(snakeRef, { ...snakeToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); }
+  catch (error) { console.error("Tiny Titans: CREATE FIRESTORE FAILED", { error, uid, snakeId: snakeRef.id }); throw new Error(`Unable to save your snake: ${getFirestoreErrorMessage(error)}`, { cause: error }); }
   return migrateSnake({ ...(snakeToSave as Partial<Snake>), id: snakeRef.id });
 }
 
@@ -111,12 +119,8 @@ export async function updateUserSnake(uid: string, snake: Snake): Promise<Snake>
   const snakeId = snake.id;
   const snakeRef = doc(db, "users", uid, "snakes", snakeId);
   const snakeToSave = await prepareSnakeForFirestore(snake, snakeId, uid);
-  try {
-    await setDoc(snakeRef, { ...snakeToSave, updatedAt: serverTimestamp() }, { merge: true });
-  } catch (error) {
-    console.error("Tiny Titans: UPDATE FIRESTORE FAILED", { error, uid, snakeId });
-    throw new Error(`Unable to update your snake: ${getFirestoreErrorMessage(error)}`, { cause: error });
-  }
+  try { await setDoc(snakeRef, { ...snakeToSave, updatedAt: serverTimestamp() }, { merge: true }); }
+  catch (error) { console.error("Tiny Titans: UPDATE FIRESTORE FAILED", { error, uid, snakeId }); throw new Error(`Unable to update your snake: ${getFirestoreErrorMessage(error)}`, { cause: error }); }
   return migrateSnake({ ...(snakeToSave as Partial<Snake>), id: snakeId });
 }
 
@@ -129,10 +133,11 @@ export async function saveUserSnake(uid: string, snake: Snake): Promise<Snake> {
 export async function deleteUserSnake(uid: string, snakeId: string): Promise<void> {
   if (!uid) throw new Error("Cannot delete snake without a user ID.");
   if (!snakeId) throw new Error("Cannot delete snake without a snake ID.");
+  // Firestore does not cascade subcollections when a parent document is deleted.
+  // Remove canonical tracker records first so deleting a snake does not leave
+  // unreachable weight, feeding or shed documents behind.
+  await deleteSnakeSubcollections(uid, snakeId);
   await deleteDoc(doc(db, "users", uid, "snakes", snakeId));
-  try {
-    await deleteSnakePhotoFiles(uid, snakeId);
-  } catch (error) {
-    console.warn("Tiny Titans: snake deleted but associated photo cleanup could not complete", error);
-  }
+  try { await deleteSnakePhotoFiles(uid, snakeId); }
+  catch (error) { console.warn("Tiny Titans: snake deleted but associated photo cleanup could not complete", error); }
 }
