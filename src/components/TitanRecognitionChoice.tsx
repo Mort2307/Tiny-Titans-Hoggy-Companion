@@ -1,0 +1,59 @@
+import { useEffect, useState } from "react";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app } from "../firebase/config";
+
+const functions = getFunctions(app, "europe-west2");
+const getRecognition = httpsCallable<void, { isTitan: boolean; needsChoice: boolean; visibility: "named" | "anonymous" | null; displayName: string; suggestedName?: string; socialUrl?: string; tierLabel?: string }>(functions, "getTitanWallRecognition");
+const setRecognition = httpsCallable<{ visibility: "named" | "anonymous"; displayName?: string; socialUrl?: string }, { saved: boolean; displayName: string; visibility: "named" | "anonymous" }>(functions, "setTitanWallRecognition");
+
+export default function TitanRecognitionChoice() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [needsChoice, setNeedsChoice] = useState(false);
+  const [visibility, setVisibility] = useState<"named" | "anonymous">("named");
+  const [displayName, setDisplayName] = useState("");
+  const [socialUrl, setSocialUrl] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void getRecognition()
+      .then(({ data }) => {
+        if (!active) return;
+        setNeedsChoice(Boolean(data.needsChoice));
+        setVisibility(data.visibility === "anonymous" ? "anonymous" : "named");
+        setDisplayName(data.displayName || data.suggestedName || "");
+        setSocialUrl(data.socialUrl || "");
+      })
+      .catch((error) => console.error("Titan recognition lookup failed", error))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, []);
+
+  async function save() {
+    setSaving(true); setMessage("");
+    try {
+      await setRecognition({ visibility, displayName: visibility === "named" ? displayName.trim() : "", socialUrl: socialUrl.trim() });
+      setNeedsChoice(false);
+      setMessage(visibility === "named" ? "You're on the Wall as your chosen name. 🏆" : "You'll be shown as Anonymous Titan. 🕶️");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "We couldn't save your Wall recognition choice yet.";
+      setMessage(message);
+    } finally { setSaving(false); }
+  }
+
+  if (loading || !needsChoice) return message ? <div className="creator-success" role="status"><strong>{message}</strong></div> : null;
+
+  return <div className="creator-founder-callout" style={{ marginTop: 16 }}>
+    <strong>🏆 Choose your Wall of Titans recognition</strong>
+    <span>Your support is confirmed. Now choose how you'd like to be recognised. You can change this later.</span>
+    <div className="creator-actions" style={{ flexWrap: "wrap", marginTop: 12 }}>
+      <button type="button" className={visibility === "named" ? "creator-primary" : ""} onClick={() => setVisibility("named")} disabled={saving}>👤 Show my name</button>
+      <button type="button" className={visibility === "anonymous" ? "creator-primary" : ""} onClick={() => setVisibility("anonymous")} disabled={saving}>🕶️ Stay anonymous</button>
+    </div>
+    {visibility === "named" && <label style={{ display: "block", marginTop: 12 }}>Name shown on the Wall<input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Your display name" disabled={saving} /></label>}
+    <label style={{ display: "block", marginTop: 12 }}>Social profile <span>(optional)</span><input type="url" value={socialUrl} onChange={(event) => setSocialUrl(event.target.value)} placeholder="https://..." disabled={saving} /></label>
+    {message && <div className="creator-error" role="alert" style={{ marginTop: 12 }}>{message}</div>}
+    <div className="creator-actions" style={{ marginTop: 12 }}><button type="button" className="creator-primary" onClick={save} disabled={saving || (visibility === "named" && !displayName.trim())}>{saving ? "Saving…" : "Save my Wall choice"}</button></div>
+  </div>;
+}
