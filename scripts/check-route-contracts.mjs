@@ -29,14 +29,18 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
 
 if (!routes.length) errors.push("No application routes were detected in AppRouter.tsx.");
 
-const importedPages = new Set();
-for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.\/pages\/([^"']+)["']/g)) {
-  importedPages.add(match[1]);
+// A route's top-level element may be a page, a redirect, or a local guard/wrapper
+// containing the actual page (for example CreatorRouteGuard -> CreatorAdmin).
+// Validate that the top-level component is genuinely imported locally rather than
+// assuming every route element must be a direct ../pages import.
+const importedComponents = new Set();
+for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
+  importedComponents.add(match[1]);
 }
 
 for (const route of routes) {
-  if (route.component && !importedPages.has(route.component) && route.component !== "Navigate" && route.component !== "Layout") {
-    errors.push(`Route ${route.route} references <${route.component}> but that page is not imported in AppRouter.tsx.`);
+  if (route.component && !importedComponents.has(route.component) && route.component !== "Navigate") {
+    errors.push(`Route ${route.route} references <${route.component}> but that component is not imported locally in AppRouter.tsx.`);
   }
 }
 
