@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getDownloadURL, ref } from "firebase/storage";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import PageBackButton from "../components/PageBackButton";
 import { approveMorphImageSubmission, getMorphImageSubmissions, rejectMorphImageSubmission } from "../services/creatorService";
 import { isAwaitingMorphReview, canTransitionMorphSubmission, getMorphSubmissionActionLabel, validateMorphSubmissionForApproval } from "../services/morphSubmissionLifecycle";

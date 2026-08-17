@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { app } from "../firebase/config";
 import TitanRecognitionChoice from "../components/TitanRecognitionChoice";
 import "../styles/CreatorTools.css";

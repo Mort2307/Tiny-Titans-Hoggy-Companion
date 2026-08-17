@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { clearCommunityLocation, getPrivacyPreferences, savePrivacyPreferences } from "../services/privacyService";
 import type { PrivacyPreferences } from "../types/privacy";
 import "../styles/CreatorTools.css";

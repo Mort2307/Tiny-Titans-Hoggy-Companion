@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { submitIssueReport } from "../services/creatorService";
 import type { ReportIssueCategory, ReportIssuePriority, ReportIssueSource } from "../types/reportIssue";
 import PageBackButton from "../components/PageBackButton";

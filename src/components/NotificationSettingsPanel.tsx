@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { disableNotifications, enableNotifications, getNotificationPermissionState, getNotificationSettings, saveNotificationSettings } from "../services/notificationService";
 import type { NotificationPermissionState, NotificationSettings } from "../types/Notifications";
 const defaultSettings: NotificationSettings = { enabled: false, feedingPreparationEnabled: false, feedingPreparationDaysBefore: 0, feedingPreparationTime: "08:00" };

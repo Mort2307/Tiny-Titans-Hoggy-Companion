@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { getChallengeTopic } from "../data/challengeTopics";
 import { getCurrentBank, getDifficulty, getLearningProgress, knowledgeLevel, knowledgeScore, presentQuestion, recordTest, selectQuestions } from "../services/learningEngine";
 import type { LearningBank, QuizQuestion } from "../types/Learning";

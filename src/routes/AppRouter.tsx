@@ -45,7 +45,7 @@ import CreatorRouteGuard from "../components/CreatorRouteGuard";
 import RequireCapability from "../components/RequireCapability";
 import CreatorTesterInvitation from "../components/CreatorTesterInvitation";
 import DataPrivacyConsentModal, { CONSENT_VERSION } from "../components/DataPrivacyConsentModal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { UnitProvider } from "../context/UnitContext";
 
 function AppRouterGate() {

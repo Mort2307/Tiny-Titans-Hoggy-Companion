@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
-import { useUnits } from "../context/UnitContext";
+import { useUnits } from "../context/UnitContextValue";
 import "../styles/SnakeMasterRecord.css";
 function Metric({ label, value, detail }: { label: string; value: string; detail?: string }) { return <article className="master-metric"><span>{label}</span><strong>{value}</strong>{detail && <small>{detail}</small>}</article>; }
 function formatDate(value: string | null) { if (!value) return "—"; const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(); }

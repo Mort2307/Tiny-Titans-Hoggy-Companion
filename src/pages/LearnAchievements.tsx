@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { badges, getLearningProgress, knowledgeLevel, knowledgeScore, syncTrackerAchievementCounts } from "../services/learningEngine";
 import { getUserSnakes } from "../services/snakeService";
 import "../styles/LearnAchievements.css";

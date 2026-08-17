@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { createClassroom, getEducatorClassrooms, type Classroom } from "../services/educatorService";
 import type { AgeBand } from "../types/Profile";
 import "../styles/EducatorDashboard.css";

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import { TERMINOLOGY_GLOSSARY } from "../../data/terminologyGlossary";
 import { morphs } from "../../data/morphs";
 import { hasKnowledgeNote, type KnowledgeNote, type KnowledgeStatus } from "../../data/knowledgeStatus";

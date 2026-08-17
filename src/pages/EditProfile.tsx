@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { doc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import app from "../firebase/config";
 const db = getFirestore(app);
 export default function EditProfile() {

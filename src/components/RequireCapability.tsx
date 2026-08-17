@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { hasCapability, type Capability } from "../services/capabilityService";
 
 export default function RequireCapability({ capability, children, fallback = "/" }: { capability: Capability; children: ReactNode; fallback?: string }) {

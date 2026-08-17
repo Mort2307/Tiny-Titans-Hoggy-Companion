@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Snake } from "../types/Snake";
 import { getUserSnakes } from "../services/snakeService";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import SnakeTile from "../components/SnakeTile";
 import BackHomeButton from "../components/BackHomeButton";
 import "../styles/snake-selector.css";

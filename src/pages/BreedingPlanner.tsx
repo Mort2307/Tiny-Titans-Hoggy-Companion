@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { getUserSnakes, saveUserSnake } from "../services/snakeService";
 import { getBreedingProjects, getBreedingPairings, getEggClutches, getHatchlings, saveBreedingProject, saveBreedingPairing, saveEggClutch, saveHatchling } from "../services/breedingService";
 import type { Snake } from "../types/Snake";

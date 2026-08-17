@@ -1,7 +1,7 @@
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { KOFI_SUPPORT_URL, SUPPORT_PLATFORM_NAME, isSupportConfigured } from "../config/support";
 import TitanRecognitionChoice from "../components/TitanRecognitionChoice";
 import app from "../firebase/config";

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { db } from "../firebase/config";
 import PageBackButton from "../components/PageBackButton";
 const CONSENT_VERSION = "2026-08-16-location-analytics-v1";
