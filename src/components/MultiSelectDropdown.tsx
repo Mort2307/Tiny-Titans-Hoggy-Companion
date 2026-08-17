@@ -1,123 +1,20 @@
 import { useMemo, useState } from "react";
-
 import type { MorphDefinition } from "../data/morphs";
 import { useGrabScroll } from "../hooks/useGrabScroll";
 import { normaliseSearch, rankMorphSearch } from "../utils/searchRelevance";
 
-type MultiSelectDropdownProps = {
-  title: string;
-  options: MorphDefinition[];
-  selected: string[];
-  setSelected: (values: string[]) => void;
-  onMorphResolved?: (morph: MorphDefinition) => void;
-};
-
-function canonicalKey(value: unknown): string {
-  return normaliseSearch(value);
-}
+type MultiSelectDropdownProps = { title: string; options: MorphDefinition[]; selected: string[]; setSelected: (values: string[]) => void; onMorphResolved?: (morph: MorphDefinition) => void };
+function canonicalKey(value: unknown): string { return normaliseSearch(value); }
 
 function MultiSelectDropdown({ title, options, selected, setSelected, onMorphResolved }: MultiSelectDropdownProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const grabScroll = useGrabScroll();
-
-  const morphOptions = useMemo(() => {
-    const byGeneId = new Map<string, MorphDefinition>();
-    for (const morph of options) {
-      if (!morph.geneId) continue;
-      if (morph.verification !== "Confirmed" && morph.verification !== "Recognised") continue;
-      if (morph.isProject || morph.kind === "Project") continue;
-      const key = canonicalKey(morph.geneId);
-      if (!key || byGeneId.has(key)) continue;
-      byGeneId.set(key, morph);
-    }
-    return [...byGeneId.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [options]);
-
-  const morphByCanonicalValue = useMemo(() => {
-    const map = new Map<string, MorphDefinition>();
-    for (const morph of morphOptions) {
-      map.set(canonicalKey(morph.geneId), morph);
-      map.set(canonicalKey(morph.name), morph);
-      for (const alias of morph.aliases ?? []) map.set(canonicalKey(alias), morph);
-    }
-    return map;
-  }, [morphOptions]);
-
-  function resolveStoredMorph(value: unknown): MorphDefinition | undefined {
-    const key = canonicalKey(value);
-    return key ? morphByCanonicalValue.get(key) : undefined;
-  }
-
-  const filteredOptions = useMemo(() => {
-    if (!normaliseSearch(search)) return morphOptions;
-    return rankMorphSearch(morphOptions, search, "strict");
-  }, [morphOptions, search]);
-
-  const selectedGeneIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const value of selected) {
-      const morph = resolveStoredMorph(value);
-      if (morph?.geneId) ids.add(morph.geneId);
-    }
-    return ids;
-  }, [selected, morphByCanonicalValue]);
-
-  function isOptionSelected(morph: MorphDefinition): boolean {
-    return selectedGeneIds.has(morph.geneId);
-  }
-
-  function toggleOption(morph: MorphDefinition) {
-    const canonicalId = morph.geneId;
-    if (!canonicalId) return;
-    if (isOptionSelected(morph)) {
-      setSelected(selected.filter((value) => resolveStoredMorph(value)?.geneId !== canonicalId));
-      return;
-    }
-    setSelected([...selected.filter((value) => resolveStoredMorph(value)?.geneId !== canonicalId), canonicalId]);
-    onMorphResolved?.(morph);
-  }
-
-  return (
-    <div className="multi-select">
-      <button type="button" className="multi-select-button" onClick={() => setOpen((current) => !current)} aria-expanded={open} aria-haspopup="listbox">
-        <span>{title}</span>
-        <span className={`multi-select-arrow ${open ? "open" : ""}`} aria-hidden="true">▼</span>
-      </button>
-
-      {selected.length > 0 && (
-        <div className="selected-tags" aria-label="Selected morphs">
-          {selected.map((item) => {
-            const morph = resolveStoredMorph(item);
-            return <span key={morph?.geneId ?? item} className="selected-tag">{morph?.name ?? item}</span>;
-          })}
-        </div>
-      )}
-
-      {open && (
-        <div className="multi-select-menu" role="listbox" aria-multiselectable="true">
-          <div className="multi-select-search-wrap">
-            <input type="search" className="multi-select-search" placeholder="Search exact morph or gene..." value={search} onChange={(event) => setSearch(event.target.value)} aria-label="Search morphs by exact name, alias, or gene ID" autoComplete="off" />
-            {search && <button type="button" className="multi-select-search-clear" onClick={() => setSearch("")} aria-label="Clear morph search">×</button>}
-          </div>
-
-          <div ref={grabScroll.ref} className="multi-select-options grab-scroll" onPointerDown={grabScroll.onPointerDown} onPointerMove={grabScroll.onPointerMove} onPointerUp={grabScroll.onPointerUp} onPointerCancel={grabScroll.onPointerCancel} onClickCapture={grabScroll.onClickCapture}>
-            {filteredOptions.length > 0 ? filteredOptions.map((morph) => {
-              const isSelected = isOptionSelected(morph);
-              const optionId = `morph-${canonicalKey(morph.geneId).replace(/[^a-z0-9_-]/g, "-")}`;
-              return (
-                <label key={morph.geneId} htmlFor={optionId} className={`multi-select-option ${isSelected ? "selected" : ""}`}>
-                  <input id={optionId} type="checkbox" checked={isSelected} onChange={() => toggleOption(morph)} />
-                  <span className="multi-select-check" aria-hidden="true">{isSelected ? "✓" : ""}</span>
-                  <span className="multi-select-label">{morph.name}</span>
-                </label>
-              );
-            }) : <div className="multi-select-empty">No relevant morphs found. Try the canonical morph name.</div>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const [open, setOpen] = useState(false); const [search, setSearch] = useState(""); const grabScroll = useGrabScroll();
+  const morphOptions = useMemo(() => { const byGeneId = new Map<string, MorphDefinition>(); for (const morph of options) { if (!morph.geneId || morph.verification !== "Confirmed" && morph.verification !== "Recognised" || morph.isProject || morph.kind === "Project") continue; const key = canonicalKey(morph.geneId); if (!key || byGeneId.has(key)) continue; byGeneId.set(key, morph); } return [...byGeneId.values()].sort((a, b) => a.name.localeCompare(b.name)); }, [options]);
+  const morphByCanonicalValue = useMemo(() => { const map = new Map<string, MorphDefinition>(); for (const morph of morphOptions) { map.set(canonicalKey(morph.geneId), morph); map.set(canonicalKey(morph.name), morph); for (const alias of morph.aliases ?? []) map.set(canonicalKey(alias), morph); } return map; }, [morphOptions]);
+  const filteredOptions = useMemo(() => !normaliseSearch(search) ? morphOptions : rankMorphSearch(morphOptions, search, "strict"), [morphOptions, search]);
+  const selectedGeneIds = useMemo(() => { const ids = new Set<string>(); for (const value of selected) { const morph = morphByCanonicalValue.get(canonicalKey(value)); if (morph?.geneId) ids.add(morph.geneId); } return ids; }, [selected, morphByCanonicalValue]);
+  function resolveStoredMorph(value: unknown): MorphDefinition | undefined { const key = canonicalKey(value); return key ? morphByCanonicalValue.get(key) : undefined; }
+  function isOptionSelected(morph: MorphDefinition) { return selectedGeneIds.has(morph.geneId); }
+  function toggleOption(morph: MorphDefinition) { const canonicalId = morph.geneId; if (!canonicalId) return; if (isOptionSelected(morph)) { setSelected(selected.filter((value) => resolveStoredMorph(value)?.geneId !== canonicalId)); return; } setSelected([...selected.filter((value) => resolveStoredMorph(value)?.geneId !== canonicalId), canonicalId]); onMorphResolved?.(morph); }
+  return <div className="multi-select"><button type="button" className="multi-select-button" onClick={() => setOpen((current) => !current)} aria-expanded={open} aria-haspopup="listbox"><span>{title}</span><span className={`multi-select-arrow ${open ? "open" : ""}`} aria-hidden="true">▼</span></button>{selected.length > 0 && <div className="selected-tags" aria-label="Selected morphs">{selected.map((item) => { const morph = resolveStoredMorph(item); return <span key={morph?.geneId ?? item} className="selected-tag">{morph?.name ?? item}</span>; })}</div>}{open && <div className="multi-select-menu" role="listbox" aria-multiselectable="true"><div className="multi-select-search-wrap"><input type="search" className="multi-select-search" placeholder="Search exact morph or gene..." value={search} onChange={(event) => setSearch(event.target.value)} aria-label="Search morphs by exact name, alias, or gene ID" autoComplete="off" />{search && <button type="button" className="multi-select-search-clear" onClick={() => setSearch("")} aria-label="Clear morph search">×</button>}</div><div ref={grabScroll.ref} className="multi-select-options grab-scroll" onPointerDown={grabScroll.onPointerDown} onPointerMove={grabScroll.onPointerMove} onPointerUp={grabScroll.onPointerUp} onPointerCancel={grabScroll.onPointerCancel} onClickCapture={grabScroll.onClickCapture}>{filteredOptions.length > 0 ? filteredOptions.map((morph) => { const isSelected = isOptionSelected(morph); const optionId = `morph-${canonicalKey(morph.geneId).replace(/[^a-z0-9_-]/g, "-")}`; return <label key={morph.geneId} htmlFor={optionId} className={`multi-select-option ${isSelected ? "selected" : ""}`}><input id={optionId} type="checkbox" checked={isSelected} onChange={() => toggleOption(morph)} /><span className="multi-select-check" aria-hidden="true">{isSelected ? "✓" : ""}</span><span className="multi-select-label">{morph.name}</span></label>; }) : <div className="multi-select-empty">No relevant morphs found. Try the canonical morph name.</div>}</div></div>}</div>;
 }
-
 export default MultiSelectDropdown;
