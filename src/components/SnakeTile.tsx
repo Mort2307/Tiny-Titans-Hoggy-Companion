@@ -38,12 +38,14 @@ function SnakeTile({
     navigate(clickDestination === "weight" ? `/weights/${id}` : `/snakes/${id}`);
   }
 
+  const destinationLabel = clickDestination === "weight" ? "weight tracker" : "profile";
+
   return (
     <button
       type="button"
       className="snake-tile snake-tile-circle"
       onClick={openTile}
-      aria-label={`Open ${name} tracker menu`}
+      aria-label={onSelect ? `Select ${name}` : `Open ${name} ${destinationLabel}`}
     >
       <span className="snake-tile-avatar">
         {photo ? <img src={photo} alt="" aria-hidden="true" /> : <span>🐍</span>}
