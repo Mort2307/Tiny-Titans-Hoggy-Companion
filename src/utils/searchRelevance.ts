@@ -18,7 +18,9 @@ function tokens(value: string): string[] {
 
 function tokenMatch(value: string, queryTokens: string[]): boolean {
   const candidate = normaliseSearch(value);
-  return queryTokens.every((token) => candidate.split(" ").some((part) => part === token || part.startsWith(token)));
+  return queryTokens.every((token) =>
+    candidate.split(" ").some((part) => part === token || part.startsWith(token))
+  );
 }
 
 function sameTokenSet(value: string, queryTokens: string[]): boolean {
@@ -29,11 +31,19 @@ function sameTokenSet(value: string, queryTokens: string[]): boolean {
 function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode): number {
   const q = normaliseSearch(query);
   if (!q) return 0;
+
   const qTokens = tokens(q);
   const name = normaliseSearch(morph.name);
   const id = normaliseSearch(morph.geneId);
   const aliases = (morph.aliases ?? []).map(normaliseSearch).filter(Boolean);
-  const combinationFields = [name, id, ...(morph.contains ?? []).map(normaliseSearch)];
+
+  // MorphDefinition stores combination relationships as typed components;
+  // there is deliberately no loose `contains` field. Component IDs are used
+  // here as genetic identity evidence rather than treating arbitrary display
+  // text as a match.
+  const componentIds = (morph.components ?? [])
+    .map((component) => normaliseSearch(component.morphId))
+    .filter(Boolean);
 
   // Exact canonical identity always wins.
   if (name === q || id === q) return 1000;
@@ -44,8 +54,8 @@ function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode
   if (name.startsWith(q)) return 800;
 
   // Strict selectors are intentionally conservative. A search for
-  // "Super Arctic" must not surface "Albino Super Arctic" just because
-  // both query tokens occur somewhere in the candidate name.
+  // "Super Arctic" must not surface "Albino Super Arctic" merely because
+  // all query tokens occur somewhere in a longer candidate name.
   if (mode === "strict") {
     if (sameTokenSet(name, qTokens)) return 700;
     if (aliases.some((alias) => alias === q || sameTokenSet(alias, qTokens))) return 650;
@@ -56,27 +66,39 @@ function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode
   if (aliases.some((alias) => tokenMatch(alias, qTokens))) return 550;
 
   if (mode === "combination") {
-    if (morph.isCombination && combinationFields.some((field) => tokenMatch(field, qTokens))) return 500;
+    if (morph.isCombination && componentIds.some((componentId) => tokenMatch(componentId, qTokens))) return 500;
     return -1;
   }
 
   // General search may use token matching, but it remains deterministic and
-  // only returns candidates containing every query token.
-  if (combinationFields.some((field) => tokenMatch(field, qTokens))) return 300;
+  // only returns candidates containing every query token in canonical fields.
+  if (componentIds.some((componentId) => tokenMatch(componentId, qTokens))) return 300;
   return -1;
 }
 
-export function rankMorphSearch<T extends MorphDefinition>(options: T[], query: string, mode: MorphSearchMode = "strict"): T[] {
+export function rankMorphSearch<T extends MorphDefinition>(
+  options: T[],
+  query: string,
+  mode: MorphSearchMode = "strict"
+): T[] {
   const q = normaliseSearch(query);
   if (!q) return options;
 
   return options
     .map((option, index) => ({ option, index, score: scoreMorph(option, q, mode) }))
     .filter((item) => item.score >= 0)
-    .sort((a, b) => b.score - a.score || a.option.name.localeCompare(b.option.name) || a.index - b.index)
+    .sort((a, b) =>
+      b.score - a.score ||
+      a.option.name.localeCompare(b.option.name) ||
+      a.index - b.index
+    )
     .map((item) => item.option);
 }
 
-export function morphMatchesQuery(morph: MorphDefinition, query: string, mode: MorphSearchMode = "strict"): boolean {
+export function morphMatchesQuery(
+  morph: MorphDefinition,
+  query: string,
+  mode: MorphSearchMode = "strict"
+): boolean {
   return scoreMorph(morph, query, mode) >= 0;
 }
