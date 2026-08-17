@@ -4,7 +4,6 @@ const tools = [
   ["🧬", "Morph Submission Review", "/creator/submissions", "Review and moderate morph submissions."],
   ["🐛", "Bug Reports & Feedback", "/creator/issues", "Review bugs, evidence, status and creator decisions."],
   ["📢", "Community Manager", "/creator/community", "Publish updates, known issues, tester notices and releases."],
-  ["🧪", "Tester Centre", "/creator/tester", "Run the protected testing and diagnostics workflows."],
   ["🛡️", "Creator Privacy Data", "/creator/privacy-data", "Review consent-controlled creator data and privacy tools."],
 ];
 
