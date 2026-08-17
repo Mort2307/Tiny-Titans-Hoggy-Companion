@@ -6,35 +6,27 @@ import "./index.css";
 import "./styles/selector-scroll.css";
 
 import App from "./App";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 import { AuthProvider } from "./context/AuthContext";
 
-// Keep installed PWA clients aggressively aligned with the latest Firebase
-// Hosting release. This is intentionally registered from the application
-// entrypoint so both normal browser sessions and installed mobile/desktop PWAs
-// use the same update path.
-const updateSW = registerSW({
+// Keep installed PWA clients aligned with the latest Firebase Hosting release.
+// The VitePWA plugin is configured for autoUpdate; we still poll the active
+// registration hourly, but we do not force an immediate reload from an
+// onNeedRefresh callback so an open form is not unexpectedly interrupted.
+registerSW({
   immediate: true,
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
-
-    // Check periodically while the app is open. This catches deployments even
-    // when the browser has kept the existing service worker alive for a while.
     window.setInterval(() => {
       void registration.update();
     }, 60 * 60 * 1000);
-  },
-  onNeedRefresh() {
-    // With autoUpdate enabled VitePWA normally handles this automatically.
-    // Keep the callback explicit so a future configuration change cannot leave
-    // a stale installed shell running indefinitely.
-    void updateSW(true);
   },
   onOfflineReady() {
     // Intentionally silent: the app remains fully usable offline.
   },
 });
 
-function SelectorGrabScrollManager() {
+export function SelectorGrabScrollManager() {
   useEffect(() => {
     let active: HTMLDivElement | null = null;
     let pointerId: number | null = null;
@@ -52,7 +44,6 @@ function SelectorGrabScrollManager() {
       if (event.pointerType === "mouse" && event.button !== 0) return;
       const selector = getSelector(event.target);
       if (!selector) return;
-
       active = selector;
       pointerId = event.pointerId;
       startY = event.clientY;
@@ -63,11 +54,9 @@ function SelectorGrabScrollManager() {
 
     const onPointerMove = (event: PointerEvent) => {
       if (!active || pointerId !== event.pointerId) return;
-
       const deltaY = event.clientY - startY;
       if (Math.abs(deltaY) > 5) dragged = true;
       if (!dragged) return;
-
       active.scrollTop = startScrollTop - deltaY;
       event.preventDefault();
     };
@@ -105,13 +94,13 @@ function SelectorGrabScrollManager() {
   return null;
 }
 
-createRoot(
-  document.getElementById("root")!
-).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <SelectorGrabScrollManager />
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
     </AuthProvider>
   </StrictMode>
 );

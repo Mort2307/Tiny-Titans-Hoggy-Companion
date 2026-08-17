@@ -14,16 +14,10 @@
   "categories": ["education", "lifestyle"],
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "48x46",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/favicon.svg",
-      "sizes": "48x46",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "src": "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }

@@ -16,42 +16,37 @@ function MySnakes() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (loading || profileLoading) return;
-    if (!user) {
-      setSnakes([]);
-      setLoadingSnakes(false);
-      setError(null);
-      return;
-    }
+    if (loading || profileLoading || !user) return;
 
     let cancelled = false;
-    const uid = user.uid;
 
-    async function loadSnakes() {
-      setLoadingSnakes(true);
-      setError(null);
-      try {
-        const loadedSnakes = await getUserSnakes(uid);
+    void getUserSnakes(user.uid)
+      .then((loadedSnakes) => {
         if (cancelled) return;
         const validSnakes = loadedSnakes
           .filter((snake) => Boolean(snake?.id))
           .map((snake) => ({ ...snake, id: String(snake.id).trim() }));
         setSnakes(validSnakes);
-      } catch (err) {
+        setError(null);
+      })
+      .catch((err) => {
         if (!cancelled) {
           console.error("Tiny Titans: unable to load snakes", err);
           setError(err instanceof Error ? err.message : "Unable to load your snakes. Please try again.");
         }
-      } finally {
+      })
+      .finally(() => {
         if (!cancelled) setLoadingSnakes(false);
-      }
-    }
+      });
 
-    void loadSnakes();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading, profileLoading]);
 
-  function closePanel() { setSelectedSnake(null); }
+  function closePanel() {
+    setSelectedSnake(null);
+  }
 
   function openTracker(path: string) {
     if (!selectedSnake?.id) return;
@@ -74,12 +69,17 @@ function MySnakes() {
     navigate(`/snakes/${snakeId}/edit`);
   }
 
+  const pageLoading = loading || profileLoading || (Boolean(user) && loadingSnakes);
+
   if (loading || profileLoading) {
     return (
       <div className="page-container">
         <BackHomeButton />
         <h1>🐍 My Hoggies</h1>
-        <div className="tracker-card"><h3>Loading your Tiny Titans...</h3><p>Connecting to your Tiny Titans account.</p></div>
+        <div className="tracker-card">
+          <h3>Loading your Tiny Titans...</h3>
+          <p>Connecting to your Tiny Titans account.</p>
+        </div>
       </div>
     );
   }
@@ -89,33 +89,66 @@ function MySnakes() {
       <BackHomeButton />
       <h1>🐍 My Hoggies</h1>
       <p className="page-subtitle">Choose a Tiny Titan to open their trackers.</p>
-
-      <button type="button" className="add-snake-button" onClick={() => navigate("/snakes/new/edit")}>➕ Add Snake</button>
-
-      {loadingSnakes && <div className="tracker-card"><h3>Loading your snakes...</h3><p>Please wait while Tiny Titans retrieves your records.</p></div>}
-      {error && <div className="tracker-card"><h3>Something went wrong</h3><p>{error}</p><button type="button" onClick={() => window.location.reload()}>Try Again</button></div>}
-
-      {!loadingSnakes && !error && snakes.length === 0 && (
-        <div className="tracker-card"><h3>No snakes added yet 🐍</h3><p>Add your first Tiny Titan to begin tracking weights, feeding, sheds and genetics.</p></div>
+      <button type="button" className="add-snake-button" onClick={() => navigate("/snakes/new")}>
+        ➕ Add Snake
+      </button>
+      {pageLoading && (
+        <div className="tracker-card">
+          <h3>Loading your snakes...</h3>
+          <p>Please wait while Tiny Titans retrieves your records.</p>
+        </div>
       )}
-
-      {!loadingSnakes && !error && snakes.length > 0 && (
+      {error && (
+        <div className="tracker-card">
+          <h3>Something went wrong</h3>
+          <p>{error}</p>
+          <button type="button" onClick={() => window.location.reload()}>Try Again</button>
+        </div>
+      )}
+      {!pageLoading && !error && snakes.length === 0 && (
+        <div className="tracker-card">
+          <h3>No snakes added yet 🐍</h3>
+          <p>Add your first Tiny Titan to begin tracking weights, feeding, sheds and genetics.</p>
+          <button type="button" className="add-snake-button" onClick={() => navigate("/snakes/new")}>➕ Add Your First Snake</button>
+        </div>
+      )}
+      {!pageLoading && !error && snakes.length > 0 && (
         <div className="snake-grid snake-circle-grid">
           {snakes.map((snake) => {
             const snakeId = String(snake.id ?? "").trim();
             if (!snakeId) return null;
-            return <SnakeTile key={snakeId} id={snakeId} name={snake.name} photo={snake.photo} sex={snake.sex} snake={{ ...snake, id: snakeId }} onSelect={setSelectedSnake} />;
+            return (
+              <SnakeTile
+                key={snakeId}
+                id={snakeId}
+                name={snake.name}
+                photo={snake.photo}
+                sex={snake.sex}
+                snake={{ ...snake, id: snakeId }}
+                onSelect={setSelectedSnake}
+              />
+            );
           })}
         </div>
       )}
-
       {selectedSnake && (
-        <div className="snake-tracker-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closePanel(); }}>
+        <div
+          className="snake-tracker-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closePanel();
+          }}
+        >
           <aside className="snake-tracker-panel" role="dialog" aria-modal="true" aria-label={`${selectedSnake.name} tracker menu`}>
             <button type="button" className="snake-panel-close" onClick={closePanel} aria-label="Close tracker menu">×</button>
             <div className="snake-panel-identity">
-              <span className="snake-panel-avatar">{selectedSnake.photo ? <img src={selectedSnake.photo} alt={selectedSnake.name} /> : <span>🐍</span>}</span>
-              <div><h2>{selectedSnake.name}</h2><p>{selectedSnake.sex ?? "Unknown sex"}</p></div>
+              <span className="snake-panel-avatar">
+                {selectedSnake.photo ? <img src={selectedSnake.photo} alt={selectedSnake.name} /> : <span>🐍</span>}
+              </span>
+              <div>
+                <h2>{selectedSnake.name}</h2>
+                <p>{selectedSnake.sex ?? "Unknown sex"}</p>
+              </div>
             </div>
             <div className="snake-panel-actions">
               <button type="button" onClick={openProfile}>🐍 View Full Profile</button>

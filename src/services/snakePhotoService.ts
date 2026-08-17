@@ -50,6 +50,20 @@ export async function deleteSnakePhotoReference(storagePath: string): Promise<vo
   await deleteObject(ref(storage, storagePath));
 }
 
+export async function deleteSnakePhotoFiles(uid: string, snakeId: string): Promise<void> {
+  const extensions = ["jpg", "png", "webp"];
+  await Promise.all(
+    extensions.map(async (extension) => {
+      try {
+        await deleteSnakePhotoReference(`snakePhotos/${uid}/${snakeId}/profile.${extension}`);
+      } catch (error) {
+        const code = error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code) : "";
+        if (code !== "storage/object-not-found") throw error;
+      }
+    }),
+  );
+}
+
 export function isLegacySnakePhoto(value: string | undefined): boolean {
   return Boolean(value && isDataUrl(value));
 }

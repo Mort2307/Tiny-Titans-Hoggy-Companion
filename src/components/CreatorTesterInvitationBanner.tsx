@@ -28,10 +28,7 @@ export default function CreatorTesterInvitationBanner() {
 
   useEffect(() => {
     let active = true;
-    if (!auth.currentUser) {
-      setLoading(false);
-      return () => { active = false; };
-    }
+    if (!auth.currentUser) return () => { active = false; };
     void getInvitation({}).then((result) => {
       if (!active) return;
       const next = result.data.invitation;

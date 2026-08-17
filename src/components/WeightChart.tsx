@@ -1,4 +1,4 @@
-import {
+﻿import {
   LineChart,
   Line,
   XAxis,
@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { WeightRecord } from "../types/Weight";
-import { useUnits } from "../context/UnitContextValueValue";
+import { useUnits } from "../context/UnitContextValue";
 
 type WeightChartProps = { history: WeightRecord[] };
 
