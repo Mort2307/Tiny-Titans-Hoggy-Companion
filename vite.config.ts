@@ -38,12 +38,6 @@ export default defineConfig({
             type: "image/svg+xml",
             purpose: "any",
           },
-          {
-            src: "/favicon.svg",
-            sizes: "48x46",
-            type: "image/svg+xml",
-            purpose: "maskable",
-          },
         ],
       },
 
