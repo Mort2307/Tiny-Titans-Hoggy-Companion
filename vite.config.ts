@@ -13,7 +13,6 @@ export default defineConfig({
       includeAssets: [
         "favicon.svg",
         "icons.svg",
-        "TinyTitans-Logo.jpg",
       ],
 
       manifest: {
@@ -34,17 +33,22 @@ export default defineConfig({
 
         icons: [
           {
-            src: "/TinyTitans-Logo.jpg",
-            sizes: "512x512",
-            type: "image/jpeg",
-            purpose: "any maskable",
+            src: "/favicon.svg",
+            sizes: "48x46",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
+          {
+            src: "/favicon.svg",
+            sizes: "48x46",
+            type: "image/svg+xml",
+            purpose: "maskable",
           },
         ],
       },
 
       workbox: {
         cleanupOutdatedCaches: true,
-
         navigateFallback: "/index.html",
 
         // The interactive 3D globe adds a large client bundle. Keep it in the
