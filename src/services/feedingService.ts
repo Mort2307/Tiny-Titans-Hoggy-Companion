@@ -57,7 +57,7 @@ export async function getSnakeFeedings(uid: string, snakeId: string): Promise<Fe
     });
   } catch (error) {
     console.error("Tiny Titans: unable to load feeding history", error);
-    throw new Error(getFirestoreErrorMessage(error));
+    throw new Error(getFirestoreErrorMessage(error), { cause: error });
   }
 }
 
@@ -74,7 +74,7 @@ export async function saveSnakeFeeding(uid: string, feeding: FeedingRecord): Pro
     return feeding;
   } catch (error) {
     console.error("Tiny Titans: unable to save feeding", error);
-    throw new Error(`Unable to save this feeding: ${getFirestoreErrorMessage(error)}`);
+    throw new Error(`Unable to save this feeding: ${getFirestoreErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -89,6 +89,6 @@ export async function deleteSnakeFeeding(uid: string, snakeId: string, feedingId
     console.log("Tiny Titans: feeding deleted", feedingId);
   } catch (error) {
     console.error("Tiny Titans: unable to delete feeding", error);
-    throw new Error(`Unable to delete this feeding: ${getFirestoreErrorMessage(error)}`);
+    throw new Error(`Unable to delete this feeding: ${getFirestoreErrorMessage(error)}`, { cause: error });
   }
 }
