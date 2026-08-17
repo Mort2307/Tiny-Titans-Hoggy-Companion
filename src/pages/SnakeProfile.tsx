@@ -5,7 +5,11 @@ import { migrateSnake } from "../utils/snakeMigration";
 import { getWeightReminder } from "../utils/weightReminder";
 import { getUserSnake, deleteUserSnake } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
+<<<<<<< HEAD
 import { useUnits } from "../context/UnitContextValue";
+=======
+import { useUnits } from "../context/UnitContextValueValue";
+>>>>>>> origin/master
 import WeightMiniChart from "../components/WeightMiniChart";
 import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";

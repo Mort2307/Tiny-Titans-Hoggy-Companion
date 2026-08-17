@@ -2,8 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
+<<<<<<< HEAD
 import { getCanonicalBreedingTimeline } from "../services/canonicalBreedingTimeline";
 import { useUnits } from "../context/UnitContextValue";
+=======
+import { useUnits } from "../context/UnitContextValueValue";
+>>>>>>> origin/master
 import "../styles/SnakeMasterRecord.css";
 function Metric({ label, value, detail }: { label: string; value: string; detail?: string }) { return <article className="master-metric"><span>{label}</span><strong>{value}</strong>{detail && <small>{detail}</small>}</article>; }
 function formatDate(value: string | null) { if (!value) return "—"; const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(); }

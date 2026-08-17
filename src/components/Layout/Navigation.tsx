@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
+<<<<<<< HEAD
 import { hasCapability } from "../../services/capabilityService";
+=======
+import { hasCreatorClaim } from "../../services/creatorAuthService";
+>>>>>>> origin/master
 import { getCommunityUnreadCount } from "../../services/communityReadStateService";
 import "./Navigation.css";
 

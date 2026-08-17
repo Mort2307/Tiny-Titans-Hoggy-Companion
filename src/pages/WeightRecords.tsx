@@ -10,7 +10,11 @@ import { getWeightReminder } from "../utils/weightReminder";
 import { getUserSnake, saveUserSnake } from "../services/snakeService";
 import { deleteSnakeWeight, getSnakeWeights, migrateEmbeddedWeights, saveSnakeWeight } from "../services/weightService";
 import { useAuth } from "../context/useAuth";
+<<<<<<< HEAD
 import { useUnits } from "../context/UnitContextValue";
+=======
+import { useUnits } from "../context/UnitContextValueValue";
+>>>>>>> origin/master
 function sortHistory(history: WeightRecord[]) { return [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); }
 function displayDate(iso: string) { if (!iso) return ""; const [year, month, day] = iso.split("-"); return year && month && day ? `${day}/${month}/${year}` : ""; }
 function maskDate(value: string) { const digits = value.replace(/\D/g, "").slice(0, 8); if (digits.length <= 2) return digits; if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`; return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`; }

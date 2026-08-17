@@ -1,6 +1,10 @@
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import type { WeightRecord } from "../types/Weight";
+<<<<<<< HEAD
 import { useUnits } from "../context/UnitContextValue";
+=======
+import { useUnits } from "../context/UnitContextValueValue";
+>>>>>>> origin/master
 
 type WeightMiniChartProps = { history: WeightRecord[] };
 
