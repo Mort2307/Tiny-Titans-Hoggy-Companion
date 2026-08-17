@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
 
 const tools = [
   ["🧬", "Morph Submission Review", "/creator/submissions", "Review and moderate morph submissions."],
@@ -10,9 +9,6 @@ const tools = [
 ];
 
 export default function CreatorLanding() {
-  const { profile } = useAuth();
-  if (profile?.role === "admin") return <AdminCreatorLink />;
-
   return (
     <main className="page-container">
       <section className="welcome-card">
@@ -32,12 +28,4 @@ export default function CreatorLanding() {
       </section>
     </main>
   );
-}
-
-function AdminCreatorLink() {
-  return <AdminCreatorContent />;
-}
-
-function AdminCreatorContent() {
-  return <iframe title="Creator Centre" src="/creator" style={{ width: "100%", minHeight: "100vh", border: 0 }} />;
 }
