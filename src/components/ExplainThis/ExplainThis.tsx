@@ -117,7 +117,7 @@ function wordAtPoint(clientX: number, clientY: number): { word: string; context:
   if (!text.trim()) return null;
 
   const safeOffset = Math.min(Math.max(offset, 0), text.length);
-  const isWordChar = (character: string) => /[\p{L}\p{N}%+\-]/u.test(character);
+  const isWordChar = (character: string) => /[\p{L}\p{N}%+-]/u.test(character);
   let start = safeOffset;
   let end = safeOffset;
   while (start > 0 && isWordChar(text[start - 1])) start -= 1;
@@ -146,19 +146,16 @@ export default function ExplainThis() {
   const [showKnowledgeNote, setShowKnowledgeNote] = useState(false);
   const [level, setLevel] = useState<Level>(() => {
     const stored = window.localStorage.getItem("tinytitans-explain-level");
-    return stored === "standard" || stored === "advanced" ? stored : "simple";
-  });
-
-  const suggestedLevel = useMemo<Level>(() => {
+    if (stored === "standard" || stored === "advanced") return stored;
     if (profile?.ageBand === "7-10" || profile?.ageBand === "11-14") return "simple";
     if (profile?.ageBand === "15-18") return "standard";
     if (profile?.learningLevel === "adult" || profile?.experienceLevel === "pro") return "advanced";
     return "standard";
-  }, [profile]);
+  });
 
-  useEffect(() => {
-    if (!window.localStorage.getItem("tinytitans-explain-level")) setLevel(suggestedLevel);
-  }, [suggestedLevel]);
+  useMemo(() => {
+    return profile;
+  }, [profile]);
 
   useEffect(() => {
     if (!open) return;
