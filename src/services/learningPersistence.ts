@@ -1,69 +1,31 @@
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import type { LearningProgress } from "../types/Learning";
+import type { LearningProgress, TopicProgress, TrackerAchievementCounts } from "../types/Learning";
 
-const COLLECTION = "learningProgress";
 const VERSION = 4;
+const progressRef = (userId: string) => doc(db, "users", userId, "learningProgress", "state");
+const safeNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : 0;
 
-type JsonRecord = Record<string, any>;
-
-function number(value: unknown, fallback = 0): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+function mergeTopic(a: TopicProgress | undefined, b: TopicProgress | undefined): TopicProgress {
+  if (!a && !b) return { attempts: 0, correct: 0, mastery: 0, lastScore: null, bestScore: 0, completed: false, lastAttemptAt: null, currentBank: 1, masteredBanks: [], seenQuestionIds: [], missedQuestionIds: [], recentQuestionIds: [] };
+  if (!a) return b!;
+  if (!b) return a;
+  const latest = (a.lastAttemptAt ?? "") >= (b.lastAttemptAt ?? "") ? a : b;
+  return { ...a, attempts: Math.max(a.attempts, b.attempts), correct: Math.max(a.correct, b.correct), mastery: Math.max(a.mastery, b.mastery), bestScore: Math.max(a.bestScore, b.bestScore), completed: a.completed || b.completed, lastScore: latest.lastScore, lastAttemptAt: latest.lastAttemptAt, currentBank: Math.max(a.currentBank, b.currentBank) as TopicProgress["currentBank"], masteredBanks: [...new Set([...a.masteredBanks, ...b.masteredBanks])].sort((x, y) => x - y) as TopicProgress["masteredBanks"], seenQuestionIds: [...new Set([...a.seenQuestionIds, ...b.seenQuestionIds])], missedQuestionIds: [...new Set([...a.missedQuestionIds, ...b.missedQuestionIds])], recentQuestionIds: [...new Set([...a.recentQuestionIds, ...b.recentQuestionIds])].slice(-8) };
 }
 
-function mergeRecord<T extends JsonRecord>(local: T, cloud: T): T {
-  const result: T = { ...local };
-  for (const key of new Set([...Object.keys(local), ...Object.keys(cloud)])) {
-    const a = local[key];
-    const b = cloud[key];
-    if (typeof a === "number" && typeof b === "number") result[key] = Math.max(a, b);
-    else if (a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a) && !Array.isArray(b)) result[key] = mergeRecord(a, b);
-    else if (b !== undefined && b !== null) result[key] = b;
-  }
-  return result;
+function mergeTrackerCounts(a: TrackerAchievementCounts, b: TrackerAchievementCounts): TrackerAchievementCounts {
+  return { snakes: Math.max(safeNumber(a.snakes), safeNumber(b.snakes)), weightLogs: Math.max(safeNumber(a.weightLogs), safeNumber(b.weightLogs)), feedingLogs: Math.max(safeNumber(a.feedingLogs), safeNumber(b.feedingLogs)), shedLogs: Math.max(safeNumber(a.shedLogs), safeNumber(b.shedLogs)) };
 }
 
 export function mergeLearningProgress(local: LearningProgress, cloud: LearningProgress | null): LearningProgress {
   if (!cloud) return { ...local };
-  const merged = mergeRecord(local as unknown as JsonRecord, cloud as unknown as JsonRecord) as unknown as LearningProgress;
-  merged.xp = Math.max(number(local.xp), number(cloud.xp));
-  merged.totalQuestions = Math.max(number(local.totalQuestions), number(cloud.totalQuestions));
-  merged.totalCorrect = Math.max(number(local.totalCorrect), number(cloud.totalCorrect));
-  merged.perfectBanks = Math.max(number(local.perfectBanks), number(cloud.perfectBanks));
-  merged.perfectTests = Math.max(number(local.perfectTests), number(cloud.perfectTests));
-  merged.completedLessons = Math.max(number(local.completedLessons), number(cloud.completedLessons));
-  merged.currentStreak = Math.max(number(local.currentStreak), number(cloud.currentStreak));
-  merged.longestStreak = Math.max(number(local.longestStreak), number(cloud.longestStreak));
-  merged.confirmedBugReportIds = [...new Set([...local.confirmedBugReportIds, ...cloud.confirmedBugReportIds])];
-  merged.unlockedBadges = [...new Set([...local.unlockedBadges, ...cloud.unlockedBadges])];
-  merged.trackerCounts = {
-    snakes: Math.max(number(local.trackerCounts?.snakes), number(cloud.trackerCounts?.snakes)),
-    weightLogs: Math.max(number(local.trackerCounts?.weightLogs), number(cloud.trackerCounts?.weightLogs)),
-    feedingLogs: Math.max(number(local.trackerCounts?.feedingLogs), number(cloud.trackerCounts?.feedingLogs)),
-    shedLogs: Math.max(number(local.trackerCounts?.shedLogs), number(cloud.trackerCounts?.shedLogs)),
-  };
-  return merged;
+  const topics: Record<string, TopicProgress> = {};
+  for (const id of new Set([...Object.keys(local.topics), ...Object.keys(cloud.topics)])) topics[id] = mergeTopic(local.topics[id], cloud.topics[id]);
+  const latest = (local.lastTestAt ?? "") >= (cloud.lastTestAt ?? "") ? local : cloud;
+  return { ...local, xp: Math.max(local.xp, cloud.xp), totalQuestions: Math.max(local.totalQuestions, cloud.totalQuestions), totalCorrect: Math.max(local.totalCorrect, cloud.totalCorrect), topics, unlockedBadges: [...new Set([...local.unlockedBadges, ...cloud.unlockedBadges])], perfectBanks: Math.max(local.perfectBanks, cloud.perfectBanks), perfectTests: Math.max(local.perfectTests, cloud.perfectTests), completedLessons: Math.max(local.completedLessons, cloud.completedLessons), currentStreak: Math.max(local.currentStreak, cloud.currentStreak), longestStreak: Math.max(local.longestStreak, cloud.longestStreak), lastTestAt: latest.lastTestAt, learnerProfile: latest.learnerProfile, confirmedBugReportIds: [...new Set([...local.confirmedBugReportIds, ...cloud.confirmedBugReportIds])], trackerCounts: mergeTrackerCounts(local.trackerCounts, cloud.trackerCounts) };
 }
 
-export async function getCloudLearningProgress(userId: string): Promise<LearningProgress | null> {
-  const snapshot = await getDoc(doc(db, COLLECTION, userId));
-  if (!snapshot.exists()) return null;
-  const data = snapshot.data();
-  return (data.progress as LearningProgress) ?? null;
-}
-
-export async function saveCloudLearningProgress(userId: string, progress: LearningProgress): Promise<void> {
-  await setDoc(doc(db, COLLECTION, userId), {
-    userId,
-    version: VERSION,
-    progress,
-    updatedAt: serverTimestamp(),
-  }, { merge: true });
-}
-
-export async function syncLearningProgress(userId: string, local: LearningProgress): Promise<LearningProgress> {
-  const cloud = await getCloudLearningProgress(userId);
-  const merged = mergeLearningProgress(local, cloud);
-  await saveCloudLearningProgress(userId, merged);
-  return merged;
-}
+export async function getCloudLearningProgress(userId: string): Promise<LearningProgress | null> { const snapshot = await getDoc(progressRef(userId)); if (!snapshot.exists()) return null; return (snapshot.data().progress as LearningProgress | undefined) ?? null; }
+export async function saveCloudLearningProgress(userId: string, progress: LearningProgress): Promise<void> { await setDoc(progressRef(userId), { userId, version: VERSION, progress, updatedAt: serverTimestamp() }, { merge: true }); }
+export async function syncLearningProgress(userId: string, local: LearningProgress): Promise<LearningProgress> { const cloud = await getCloudLearningProgress(userId); const merged = mergeLearningProgress(local, cloud); await saveCloudLearningProgress(userId, merged); return merged; }
