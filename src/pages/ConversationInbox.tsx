@@ -11,7 +11,7 @@ import type { ReportIssue } from "../types/reportIssue";
 import "../styles/CreatorTools.css";
 import "../styles/ConversationInbox.css";
 
-type Thread = { kind: ConversationKind; id: string; title: string; summary: string; status: string; token?: string; userId: string; userDisplayName: string; createdAt?: unknown; };
+type Thread = { kind: ConversationKind; id: string; title: string; summary: string; status: string; token?: string; userId: string; userDisplayName: string; createdAt?: unknown };
 type Queue = "active" | "history";
 
 function displayDate(value: unknown) { if (!value) return ""; if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") return value.toDate().toLocaleString("en-GB"); if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return new Date(value.toMillis()).toLocaleString("en-GB"); const date = new Date(String(value)); return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("en-GB"); }
@@ -19,15 +19,130 @@ function timestamp(value: unknown) { if (!value) return 0; if (typeof value === 
 function isHistoryThread(thread: Thread) { if (thread.kind === "bug") return isConfirmedBugReportStatus(thread.status as ReportIssue["status"]); return ["Implemented", "Declined", "Duplicate"].includes(thread.status); }
 
 export default function ConversationInbox({ creatorMode = false }: { creatorMode?: boolean }) {
-  const { user } = useAuth(); const [threads, setThreads] = useState<Thread[]>([]); const [selected, setSelected] = useState<Thread | null>(null); const [messages, setMessages] = useState<ConversationMessage[]>([]); const [draft, setDraft] = useState(""); const [loading, setLoading] = useState(true); const [loadingMessages, setLoadingMessages] = useState(false); const [sending, setSending] = useState(false); const [error, setError] = useState(""); const [queue, setQueue] = useState<Queue>("active");
-  async function loadThreads() { if (!user) return; setLoading(true); setError(""); try { const [bugs, feedback] = creatorMode ? await Promise.all([getCreatorReports(), getCreatorFeedback()]) : await Promise.all([getUserIssueReports(user.uid), getUserFeedback(user.uid)]); const bugThreads = (bugs as ReportIssue[]).map((item) => ({ kind: "bug" as const, id: item.id, title: item.title, summary: item.description, status: canonicaliseReportIssueStatus(item.status), token: item.issueToken, userId: item.userId ?? "", userDisplayName: "", createdAt: item.createdAt })).filter((item) => item.userId); const feedbackThreads = (feedback as Feedback[]).map((item) => ({ kind: "feedback" as const, id: item.id, title: item.title, summary: item.message, status: String(item.status ?? "New"), userId: item.userId ?? "", userDisplayName: "", createdAt: item.createdAt })).filter((item) => item.userId); const nextThreads = [...bugThreads, ...feedbackThreads]; const names = creatorMode ? await getCreatorUserDisplayNames(nextThreads.map((item) => item.userId)) : { [user.uid]: user.displayName?.trim() || "You" }; setThreads(nextThreads.map((item) => ({ ...item, userDisplayName: names[item.userId] || "Anonymous user" }))); } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load conversations."); } finally { setLoading(false); } }
+  const { user } = useAuth();
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [selected, setSelected] = useState<Thread | null>(null);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [queue, setQueue] = useState<Queue>("active");
+
+  async function loadThreads() {
+    if (!user) return;
+    setLoading(true); setError("");
+    try {
+      const [bugs, feedback] = creatorMode ? await Promise.all([getCreatorReports(), getCreatorFeedback()]) : await Promise.all([getUserIssueReports(user.uid), getUserFeedback(user.uid)]);
+      const bugThreads = (bugs as ReportIssue[]).map((item) => ({ kind: "bug" as const, id: item.id, title: item.title, summary: item.description, status: canonicaliseReportIssueStatus(item.status), token: item.issueToken, userId: item.userId ?? "", userDisplayName: "", createdAt: item.createdAt })).filter((item) => item.userId);
+      const feedbackThreads = (feedback as Feedback[]).map((item) => ({ kind: "feedback" as const, id: item.id, title: item.title, summary: item.message, status: String(item.status ?? "New"), userId: item.userId ?? "", userDisplayName: "", createdAt: item.createdAt })).filter((item) => item.userId);
+      const nextThreads = [...bugThreads, ...feedbackThreads];
+      const names = creatorMode ? await getCreatorUserDisplayNames(nextThreads.map((item) => item.userId)) : { [user.uid]: user.displayName?.trim() || "You" };
+      setThreads(nextThreads.map((item) => ({ ...item, userDisplayName: names[item.userId] || "Anonymous user" })));
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load conversations."); }
+    finally { setLoading(false); }
+  }
+
   useEffect(() => { void loadThreads(); }, [user, creatorMode]);
   useEffect(() => { if (!selected) { setMessages([]); return; } let active = true; setLoadingMessages(true); setError(""); void getConversationMessages(selected.kind, selected.id).then((items) => { if (active) setMessages(items); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Unable to load this conversation."); }).finally(() => { if (active) setLoadingMessages(false); }); return () => { active = false; }; }, [selected]);
+
   const activeThreads = useMemo(() => threads.filter((thread) => !isHistoryThread(thread)).sort((a, b) => timestamp(b.createdAt) - timestamp(a.createdAt)), [threads]);
   const historyThreads = useMemo(() => threads.filter(isHistoryThread).sort((a, b) => timestamp(b.createdAt) - timestamp(a.createdAt)), [threads]);
   const visibleThreads = queue === "active" ? activeThreads : historyThreads;
-  async function sendReply() { if (!user || !selected || !draft.trim() || sending) return; setSending(true); setError(""); try { await sendConversationMessage({ kind: selected.kind, parentId: selected.id, senderId: user.uid, senderRole: creatorMode ? "creator" : "user", message: draft }); const refreshed = await getConversationMessages(selected.kind, selected.id); setMessages(refreshed); setDraft(""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to send your reply."); } finally { setSending(false); } }
+
+  async function sendReply() {
+    if (!user || !selected || !draft.trim() || sending) return;
+    setSending(true); setError("");
+    try { await sendConversationMessage({ kind: selected.kind, parentId: selected.id, senderId: user.uid, senderRole: creatorMode ? "creator" : "user", message: draft }); setMessages(await getConversationMessages(selected.kind, selected.id)); setDraft(""); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to send your reply."); }
+    finally { setSending(false); }
+  }
+
   function selectQueue(nextQueue: Queue) { setQueue(nextQueue); setSelected(null); setMessages([]); setDraft(""); }
   if (!user) return null;
-  return <main className="page-container conversation-inbox"><section className="creator-tools-card conversation-shell"><div className="creator-tools-header conversation-header"><span aria-hidden="true">💬</span><div><p className="eyebrow">TINY TITANS · {creatorMode ? "CREATOR CONVERSATIONS" : "MY CONVERSATIONS"}</p><h1>{creatorMode ? "Community Conversations" : "My Conversations"}</h1><p>{creatorMode ? "Keep active reports visible, reply quickly, and move confirmed conversations into history." : "Reply to the Tiny Titans team whenever they respond."}</p></div></div>{error && <div className="creator-error" role="alert">{error}</div>}{loading ? <p className="creator-muted">Loading conversations…</p> : <><div className="conversation-queue-tabs" role="tablist" aria-label="Conversation queues"><button type="button" role="tab" aria-selected={queue === "active"} className={queue === "active" ? "conversation-queue-tab conversation-queue-tab-active" : "conversation-queue-tab"} onClick={() => selectQueue("active")}>💬 Active <span>{activeThreads.length}</span></button><button type="button" role="tab" aria-selected={queue === "history"} className={queue === "history" ? "conversation-queue-tab conversation-queue-tab-active" : "conversation-queue-tab"} onClick={() => selectQueue("history")}>🗄️ History <span>{historyThreads.length}</span></button></div>{visibleThreads.length === 0 ? <div className="creator-success conversation-empty"><h2>{queue === "active" ? "Nothing needs attention" : "No conversation history yet"}</h2><p>{queue === "active" ? "Confirmed, resolved and completed conversations are kept safely in History." : "Completed conversations will appear here automatically."}</p>{!creatorMode && queue === "active" && <div className="creator-actions"><Link to="/report-bug">🐛 Report an issue</Link><Link to="/feedback">💡 Send feedback</Link></div>}</div> : <div className="conversation-grid"><div className="creator-list conversation-thread-list"><div className="conversation-queue-label">{queue === "active" ? "Needs attention" : "Completed conversations"}</div>{visibleThreads.map((thread) => <button key={`${thread.kind}-${thread.id}`} type="button" className={`creator-list-card conversation-thread ${selected?.id === thread.id && selected.kind === thread.kind ? "conversation-thread-selected" : ""}`} onClick={() => setSelected(thread)}><span className="conversation-thread-type">{thread.kind === "bug" ? "🐛 Bug Report" : "💡 Feedback"}</span><strong>{thread.title}</strong><small>{thread.userDisplayName} · {thread.status}{thread.token ? ` · ${thread.token}` : ""}</small><p>{thread.summary}</p></button>)}</div><section className="creator-list-card conversation-detail" aria-live="polite">{selected ? <><div className="creator-list-top conversation-detail-top"><div><span className="creator-badge">{selected.kind === "bug" ? "🐛 Bug Report" : "💡 Feedback"}</span><h2>{selected.title}</h2><p className="conversation-user"><strong>{selected.userDisplayName}</strong><span>· {selected.status}</span>{selected.token && <span>· {selected.token}</span>}</p></div><button type="button" onClick={() => setSelected(null)}>Close</button></div>{queue === "active" && creatorMode && <div className="conversation-reply conversation-reply-top"><label htmlFor="conversation-reply"><strong>💬 Reply to {selected.userDisplayName}</strong></label><textarea id="conversation-reply" value={draft} onChange={(event) => setDraft(event.target.value)} rows={4} maxLength={5000} placeholder="Write your reply…" disabled={sending}/><button type="button" className="creator-primary" onClick={() => void sendReply()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : "💬 Send Reply"}</button></div>}<div className="conversation-messages">{loadingMessages ? <p>Loading messages…</p> : messages.length === 0 ? <p className="creator-muted">{queue === "active" ? "No replies yet." : "No conversation messages were recorded."}</p> : messages.map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : `👤 ${selected.userDisplayName}`}</strong><p>{item.message}</p><small>{displayDate(item.createdAt)}</small></article>)}</div>{queue === "history" ? <div className="conversation-history-note"><strong>🗄️ Archived conversation</strong><p>This conversation is retained for reference and no longer clutters the active queue.</p></div> : !creatorMode && <div className="conversation-reply"><label htmlFor="conversation-reply"><strong>Reply to Tiny Titans</strong></label><textarea id="conversation-reply" value={draft} onChange={(event) => setDraft(event.target.value)} rows={5} maxLength={5000} placeholder="Write your reply…" disabled={sending}/><button type="button" className="creator-primary" onClick={() => void sendReply()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : "💬 Send Reply"}</button></div>}</section></div>}</>}</section></main>;
+
+  return (
+    <main className="page-container conversation-inbox">
+      <section className="creator-tools-card conversation-shell">
+        <div className="creator-tools-header conversation-header">
+          <span aria-hidden="true">💬</span>
+          <div>
+            <p className="eyebrow">TINY TITANS · {creatorMode ? "CREATOR CONVERSATIONS" : "MY CONVERSATIONS"}</p>
+            <h1>{creatorMode ? "Community Conversations" : "My Conversations"}</h1>
+            <p>{creatorMode ? "Keep active reports visible, reply quickly, and move confirmed conversations into history." : "Reply to the Tiny Titans team whenever they respond."}</p>
+          </div>
+        </div>
+        {error && <div className="creator-error" role="alert">{error}</div>}
+        {loading ? <p className="creator-muted">Loading conversations…</p> : (
+          <>
+            <div className="conversation-queue-tabs" role="tablist" aria-label="Conversation queues">
+              <button type="button" role="tab" aria-selected={queue === "active"} className={queue === "active" ? "conversation-queue-tab conversation-queue-tab-active" : "conversation-queue-tab"} onClick={() => selectQueue("active")}>💬 Active <span>{activeThreads.length}</span></button>
+              <button type="button" role="tab" aria-selected={queue === "history"} className={queue === "history" ? "conversation-queue-tab conversation-queue-tab-active" : "conversation-queue-tab"} onClick={() => selectQueue("history")}>🗄️ History <span>{historyThreads.length}</span></button>
+            </div>
+            {visibleThreads.length === 0 ? (
+              <div className="creator-success conversation-empty">
+                <h2>{queue === "active" ? "Nothing needs attention" : "No conversation history yet"}</h2>
+                <p>{queue === "active" ? "Confirmed, resolved and completed conversations are kept safely in History." : "Completed conversations will appear here automatically."}</p>
+                {!creatorMode && queue === "active" && <div className="creator-actions"><Link to="/report-bug">🐛 Report an issue</Link><Link to="/feedback">💡 Send feedback</Link></div>}
+              </div>
+            ) : (
+              <div className="conversation-grid">
+                <div className="creator-list conversation-thread-list">
+                  <div className="conversation-queue-label">{queue === "active" ? "Needs attention" : "Completed conversations"}</div>
+                  {visibleThreads.map((thread) => (
+                    <button key={`${thread.kind}-${thread.id}`} type="button" className={`creator-list-card conversation-thread ${selected?.id === thread.id && selected.kind === thread.kind ? "conversation-thread-selected" : ""}`} onClick={() => setSelected(thread)}>
+                      <span className="conversation-thread-type">{thread.kind === "bug" ? "🐛 Bug Report" : "💡 Feedback"}</span>
+                      <strong>{thread.title}</strong>
+                      <small>{thread.userDisplayName} · {thread.status}{thread.token ? ` · ${thread.token}` : ""}</small>
+                      <p>{thread.summary}</p>
+                    </button>
+                  ))}
+                </div>
+                <section className="creator-list-card conversation-detail" aria-live="polite">
+                  {selected ? (
+                    <>
+                      <div className="creator-list-top conversation-detail-top">
+                        <div>
+                          <span className="creator-badge">{selected.kind === "bug" ? "🐛 Bug Report" : "💡 Feedback"}</span>
+                          <h2>{selected.title}</h2>
+                          <p className="conversation-user"><strong>{selected.userDisplayName}</strong><span>· {selected.status}</span>{selected.token && <span>· {selected.token}</span>}</p>
+                        </div>
+                        <button type="button" onClick={() => setSelected(null)}>Close</button>
+                      </div>
+                      {queue === "active" && creatorMode && (
+                        <div className="conversation-reply conversation-reply-top">
+                          <label htmlFor="conversation-reply"><strong>💬 Reply to {selected.userDisplayName}</strong></label>
+                          <textarea id="conversation-reply" value={draft} onChange={(event) => setDraft(event.target.value)} rows={4} maxLength={5000} placeholder="Write your reply…" disabled={sending}/>
+                          <button type="button" className="creator-primary" onClick={() => void sendReply()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : "💬 Send Reply"}</button>
+                        </div>
+                      )}
+                      <div className="conversation-messages">
+                        {loadingMessages ? <p>Loading messages…</p> : messages.length === 0 ? <p className="creator-muted">{queue === "active" ? "No replies yet." : "No conversation messages were recorded."}</p> : messages.map((item) => (
+                          <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}>
+                            <strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : `👤 ${selected.userDisplayName}`}</strong>
+                            <p>{item.message}</p>
+                            <small>{displayDate(item.createdAt)}</small>
+                          </article>
+                        ))}
+                      </div>
+                      {queue === "history" ? (
+                        <div className="conversation-history-note"><strong>🗄️ Archived conversation</strong><p>This conversation is retained for reference and no longer clutters the active queue.</p></div>
+                      ) : !creatorMode && (
+                        <div className="conversation-reply">
+                          <label htmlFor="conversation-reply"><strong>Reply to Tiny Titans</strong></label>
+                          <textarea id="conversation-reply" value={draft} onChange={(event) => setDraft(event.target.value)} rows={5} maxLength={5000} placeholder="Write your reply…" disabled={sending}/>
+                          <button type="button" className="creator-primary" onClick={() => void sendReply()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : "💬 Send Reply"}</button>
+                        </div>
+                      )}
+                    </>
+                  ) : <div className="creator-muted conversation-detail-placeholder">Select a conversation to view its history.</div>}
+                </section>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    </main>
+  );
 }
