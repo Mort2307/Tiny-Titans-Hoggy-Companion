@@ -1,0 +1,1 @@
+This file is intentionally temporary and will be removed after the Firestore family binding fix is committed through the Git tree.
