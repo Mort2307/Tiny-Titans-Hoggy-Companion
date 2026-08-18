@@ -14,6 +14,12 @@ const checks = [
   ["Family membership is capped at three accounts", /request\.resource\.data\.memberUids\.size\(\) <= 3/, firestore],
   ["Family invitations are owner-bound", /request\.resource\.data\.ownerUid == request\.auth\.uid/, firestore],
   ["Family invite acceptance is email-bound", /request\.resource\.data\.get\('acceptingInviteId'/, firestore],
+  ["Family permissions are enforced in Firestore", /function familyPermission\(userId, area, action\)/, firestore],
+  ["Family permission documents are owner-controlled", /allow create, update: if signedIn\(\) && get\(\/databases\/\$\(database\)\/documents\/families\/\$\(familyId\)\)\.data\.ownerUid == request\.auth\.uid/, firestore],
+  ["Family approval requests are authenticated and family-bound", /request\.resource\.data\.requesterUid == request\.auth\.uid.*request\.resource\.data\.familyId == userRecord\(\)\.get\('familyId'/s, firestore],
+  ["Approved family changes are owner-controlled", /function decideFamilyApproval|familyApprovals/, readFileSync("src/services/familyPermissionsService.ts", "utf8")],
+  ["Sandbox experiments are isolated from user records", /match \/sandboxExperiments\/\{experimentId\}/, firestore],
+  ["Sandbox experiments are owner-bound", /request\.resource\.data\.ownerUid == request\.auth\.uid/, firestore],
   ["Storage user snake files are owner-bound", /request\.auth\.uid\s*==\s*userId/, storage],
   ["Storage morph community writes require creator", /allow write: if isCreator\(\);/, storage],
 ];
