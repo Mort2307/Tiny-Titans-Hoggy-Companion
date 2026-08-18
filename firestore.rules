@@ -11,6 +11,7 @@ service cloud.firestore {
     function isModerator() { return hasCapability("moderator"); }
     function familyMemberOf(userId) { return signedIn() && request.auth.uid != userId && userRecord().get('familyId', '') != '' && userRecord().get('familyId', '') == get(/databases/$(database)/documents/users/$(userId)).data.get('familyId', '') && get(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))).data.memberUids.hasAll([request.auth.uid, userId]); }
     function canAccessUserData(userId) { return signedIn() && (request.auth.uid == userId || familyMemberOf(userId) || isCreator()); }
+    function familyPermission(userId, area, action) { return familyMemberOf(userId) && get(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))/permissions/$(request.auth.uid)).data.get('permissions', {}).get(area + '.' + action, 'allow') == 'allow'; }
 
     match /users/{userId} {
       allow create: if signedIn() && request.auth.uid == userId && request.resource.data.role == "user";
@@ -19,23 +20,92 @@ service cloud.firestore {
       allow update: if signedIn() && (isCreator() || (request.auth.uid == userId && request.resource.data.role == resource.data.role) || (familyMemberOf(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['familyId', 'familyRole'])));
       allow delete: if isCreator();
     }
-    match /users/{userId}/{document=**} { allow read, write: if canAccessUserData(userId); }
+    match /users/{userId}/{document=**} { allow read: if canAccessUserData(userId); allow write: if signedIn() && (request.auth.uid == userId || isCreator()); }
+
+    match /users/{userId}/snakes/{snakeId} {
+      allow read: if canAccessUserData(userId);
+      allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'snakes', 'create'));
+      allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'snakes', 'edit'));
+      allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'snakes', 'delete'));
+      match /weights/{recordId} {
+        allow read: if canAccessUserData(userId);
+        allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'weights', 'create'));
+        allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'weights', 'edit'));
+        allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'weights', 'delete'));
+      }
+      match /feedings/{recordId} {
+        allow read: if canAccessUserData(userId);
+        allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'feeding', 'create'));
+        allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'feeding', 'edit'));
+        allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'feeding', 'delete'));
+      }
+      match /sheds/{recordId} {
+        allow read: if canAccessUserData(userId);
+        allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'sheds', 'create'));
+        allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'sheds', 'edit'));
+        allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'sheds', 'delete'));
+      }
+    }
+
+    match /users/{userId}/breedingProjects/{projectId} {
+      allow read: if canAccessUserData(userId);
+      allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'create'));
+      allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'edit'));
+      allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'delete'));
+      match /pairings/{pairingId} {
+        allow read: if canAccessUserData(userId);
+        allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'create'));
+        allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'edit'));
+        allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'delete'));
+      }
+      match /clutches/{clutchId} {
+        allow read: if canAccessUserData(userId);
+        allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'create'));
+        allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'edit'));
+        allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'delete'));
+      }
+      match /hatchlings/{hatchlingId} {
+        allow read: if canAccessUserData(userId);
+        allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'create'));
+        allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'edit'));
+        allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'delete'));
+      }
+    }
 
     match /families/{familyId} {
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.memberUids == [request.auth.uid] && request.resource.data.members.size() == 1;
       allow get: if signedIn() && (request.auth.uid in resource.data.memberUids || isCreator());
       allow list: if false;
-      allow update: if signedIn() && (
-        (resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid && request.resource.data.memberUids.size() <= 3) ||
-        (request.auth.uid in request.resource.data.memberUids && !(request.auth.uid in resource.data.memberUids) && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1 && request.resource.data.memberUids.hasAll(resource.data.memberUids) && request.resource.data.get('acceptingInviteId', '') != '' && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('familyId', '') == familyId && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('targetEmail', '') == request.auth.token.email && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('status', '') == 'pending')
-      );
+      allow update: if signedIn() && ((resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid && request.resource.data.memberUids.size() <= 3) || (request.auth.uid in request.resource.data.memberUids && !(request.auth.uid in resource.data.memberUids) && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1 && request.resource.data.memberUids.hasAll(resource.data.memberUids) && request.resource.data.get('acceptingInviteId', '') != '' && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('familyId', '') == familyId && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('targetEmail', '') == request.auth.token.email && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('status', '') == 'pending'));
       allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      match /permissions/{memberUid} {
+        allow get: if signedIn() && (request.auth.uid == memberUid || resource.data.get('familyId', '') == familyId && get(/databases/$(database)/documents/families/$(familyId)).data.ownerUid == request.auth.uid);
+        allow list: if signedIn() && get(/databases/$(database)/documents/families/$(familyId)).data.ownerUid == request.auth.uid;
+        allow create, update: if signedIn() && get(/databases/$(database)/documents/families/$(familyId)).data.ownerUid == request.auth.uid && request.resource.data.memberUid == memberUid;
+        allow delete: if signedIn() && get(/databases/$(database)/documents/families/$(familyId)).data.ownerUid == request.auth.uid;
+      }
     }
 
     match /familyInvites/{inviteId} {
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && get(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.ownerUid == request.auth.uid && request.resource.data.targetEmail is string && request.resource.data.status == 'pending';
       allow get, list: if signedIn() && (isCreator() || resource.data.ownerUid == request.auth.uid || resource.data.targetEmail == request.auth.token.email);
       allow update: if signedIn() && ((resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid) || (resource.data.targetEmail == request.auth.token.email && request.resource.data.targetEmail == resource.data.targetEmail && request.resource.data.familyId == resource.data.familyId && request.resource.data.status in ['accepted', 'declined']));
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /familyApprovals/{approvalId} {
+      allow create: if signedIn() && request.resource.data.requesterUid == request.auth.uid && request.resource.data.familyId == userRecord().get('familyId', '') && request.resource.data.status == 'pending';
+      allow get: if signedIn() && (isCreator() || resource.data.requesterUid == request.auth.uid || get(/databases/$(database)/documents/families/$(resource.data.familyId)).data.ownerUid == request.auth.uid);
+      allow list: if signedIn() && (isCreator() || resource.data.requesterUid == request.auth.uid || get(/databases/$(database)/documents/families/$(resource.data.familyId)).data.ownerUid == request.auth.uid);
+      allow update: if signedIn() && get(/databases/$(database)/documents/families/$(resource.data.familyId)).data.ownerUid == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'decidedByUid', 'decidedAt']) && request.resource.data.status in ['approved', 'rejected'];
+      allow delete: if false;
+    }
+
+    match /sandboxExperiments/{experimentId} {
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.type in ['genetics', 'pairing', 'clutch', 'custom'];
+      allow get: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow list: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow update: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == request.auth.uid;
       allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
     }
 
