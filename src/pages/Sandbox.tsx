@@ -28,7 +28,7 @@ export default function Sandbox() {
     if (!user || !hasSelection || saving) return;
     setSaving(true); setSaved(false); setError("");
     try {
-      await saveSandboxExperiment({ title: title.trim() || "Untitled Sandbox Experiment", type: "genetics", data: { female: mother, male: father, offspring: result.offspring, unresolved: result.hasUnresolvedGenetics } });
+      await saveSandboxExperiment(user.uid, { title: title.trim() || "Untitled Sandbox Experiment", type: "genetics", data: { female: mother, male: father, offspring: result.offspring, unresolved: result.hasUnresolvedGenetics } });
       setSaved(true);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to save the sandbox experiment."); }
     finally { setSaving(false); }
