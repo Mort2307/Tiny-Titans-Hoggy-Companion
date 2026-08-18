@@ -1,145 +1,26 @@
 import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  deleteDoc,
-  serverTimestamp,
-  query,
-  orderBy,
+  collection, doc, getDoc, getDocs, setDoc, deleteDoc, serverTimestamp, query, orderBy,
 } from "firebase/firestore";
-
 import type { Snake } from "../types/Snake";
 import type { WeightRecord } from "../types/Weight";
 import type { FeedingRecord } from "../types/Feeding";
 import type { ShedRecord } from "../types/Shed";
-
 import { db } from "../firebase/config";
-
 import { migrateSnake } from "../utils/snakeMigration";
 import { deleteSnakePhotoFiles, ensureSnakePhotoReference } from "./snakePhotoService";
 import { getBreedingProjects } from "./breedingService";
 
 function snakesCollection(uid: string) { return collection(db, "users", uid, "snakes"); }
 function snakeSubcollection(uid: string, snakeId: string, name: "weights" | "feedings" | "sheds") { return collection(db, "users", uid, "snakes", snakeId, name); }
-
-function getFirestoreErrorMessage(error: unknown): string {
-  if (error && typeof error === "object" && "code" in error) {
-    const firebaseError = error as { code?: string; message?: string };
-    switch (firebaseError.code) {
-      case "permission-denied": return "Firebase permission denied. Your Firestore security rules are currently blocking this save.";
-      case "unauthenticated": return "Firebase says you are not authenticated. Please log out and log back in.";
-      case "unavailable": return "Firebase is temporarily unavailable. Please check your internet connection.";
-      case "failed-precondition": return "Firebase could not complete the request because a required database configuration is missing.";
-      case "invalid-argument": return "Firebase rejected the snake data because one or more values are invalid.";
-      case "deadline-exceeded": return "Firebase took too long to respond. Please check your connection and try again.";
-      case "resource-exhausted": return "The snake record is too large for Firestore. Please choose a smaller photo.";
-      case "not-found": return "The requested Firestore snake document could not be found.";
-      default: if (firebaseError.message) return firebaseError.message;
-    }
-  }
-  if (error instanceof Error) return error.message;
-  return "Unable to save this snake.";
-}
-
-function removeUndefined(value: unknown): unknown {
-  if (value === undefined || value === null) return value;
-  if (Array.isArray(value)) return value.map(removeUndefined).filter((item) => item !== undefined);
-  if (typeof value === "object") {
-    const prototype = Object.getPrototypeOf(value);
-    if (prototype !== Object.prototype && prototype !== null) return value;
-    const cleaned: Record<string, unknown> = {};
-    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
-      if (child === undefined) continue;
-      const cleanedChild = removeUndefined(child);
-      if (cleanedChild !== undefined) cleaned[key] = cleanedChild;
-    }
-    return cleaned;
-  }
-  return value;
-}
-
-async function deleteSnakeSubcollections(uid: string, snakeId: string): Promise<void> {
-  const [weights, feedings, sheds] = await Promise.all([
-    getDocs(snakeSubcollection(uid, snakeId, "weights")),
-    getDocs(snakeSubcollection(uid, snakeId, "feedings")),
-    getDocs(snakeSubcollection(uid, snakeId, "sheds")),
-  ]);
-  await Promise.all([
-    ...weights.docs.map((item) => deleteDoc(item.ref)),
-    ...feedings.docs.map((item) => deleteDoc(item.ref)),
-    ...sheds.docs.map((item) => deleteDoc(item.ref)),
-  ]);
-}
-
-async function assertSnakeCanBeDeleted(uid: string, snakeId: string): Promise<void> {
-  const projects = await getBreedingProjects(uid);
-  const linked = projects.filter((project) => project.maleId === snakeId || project.femaleId === snakeId);
-  if (linked.length) {
-    throw new Error(`This snake is linked to ${linked.length} breeding project${linked.length === 1 ? "" : "s"}. Remove or update those breeding projects first so their history is not orphaned.`);
-  }
-}
-
-/** Prepare one canonical Snake document. Legacy data-URL photos are migrated
- * through Firebase Storage before Firestore receives the record. */
-async function prepareSnakeForFirestore(snake: Snake, firestoreId: string, uid: string): Promise<Record<string, unknown>> {
-  const migrated = migrateSnake({ ...snake, id: firestoreId });
-  const preparedPhoto = await ensureSnakePhotoReference(uid, firestoreId, migrated.photo || "");
-  const cleaned = removeUndefined({ ...migrated, id: firestoreId, ownerId: uid, photo: preparedPhoto });
-  if (!cleaned || typeof cleaned !== "object") throw new Error("Tiny Titans produced invalid snake data before saving.");
-  return cleaned as Record<string, unknown>;
-}
-
-async function hydrateSnakeTrackerHistory(uid: string, snake: Snake): Promise<Snake> {
-  if (!snake.id) return snake;
-  const [weights, feedings, sheds] = await Promise.all([
-    getDocs(snakeSubcollection(uid, snake.id, "weights")),
-    getDocs(snakeSubcollection(uid, snake.id, "feedings")),
-    getDocs(snakeSubcollection(uid, snake.id, "sheds")),
-  ]);
-
-  return {
-    ...snake,
-    weightHistory: weights.docs.map((item) => ({ ...(item.data() as WeightRecord), id: item.id, snakeId: snake.id })),
-    feedingHistory: feedings.docs.map((item) => ({ ...(item.data() as FeedingRecord), id: item.id, snakeId: snake.id })),
-    shedHistory: sheds.docs.map((item) => ({ ...(item.data() as ShedRecord), id: item.id, snakeId: snake.id })),
-  };
-}
-
-export async function getUserSnakes(uid: string): Promise<Snake[]> {
-  if (!uid) throw new Error("Cannot load snakes without a user ID.");
-  try {
-    const snapshot = await getDocs(query(snakesCollection(uid), orderBy("name")));
-    const snakes = snapshot.docs.map((document) => migrateSnake({ ...(document.data() as Partial<Snake>), id: document.id }));
-    return await Promise.all(snakes.map((snake) => hydrateSnakeTrackerHistory(uid, snake)));
-  } catch (error) { console.error("Tiny Titans: unable to get user snakes", error); throw new Error(getFirestoreErrorMessage(error), { cause: error }); }
-}
-
-export async function getUserSnake(uid: string, snakeId: string): Promise<Snake | null> {
-  if (!uid) throw new Error("Cannot load snake without a user ID."); if (!snakeId) throw new Error("Cannot load snake without a snake ID."); const snakeRef = doc(db, "users", uid, "snakes", snakeId);
-  try { const snapshot = await getDoc(snakeRef); if (!snapshot.exists()) return null; return migrateSnake({ ...(snapshot.data() as Partial<Snake>), id: snapshot.id }); }
-  catch (error) { console.error("Tiny Titans: unable to get snake", error); throw new Error(getFirestoreErrorMessage(error), { cause: error }); }
-}
-
-export async function createUserSnake(uid: string, snake: Snake): Promise<Snake> {
-  if (!uid) throw new Error("Cannot create snake without a user ID."); const snakeRef = doc(snakesCollection(uid)); const snakeToSave = await prepareSnakeForFirestore(snake, snakeRef.id, uid);
-  try { await setDoc(snakeRef, { ...snakeToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); } catch (error) { console.error("Tiny Titans: CREATE FIRESTORE FAILED", { error, uid, snakeId: snakeRef.id }); throw new Error(`Unable to save your snake: ${getFirestoreErrorMessage(error)}`, { cause: error }); }
-  return migrateSnake({ ...(snakeToSave as Partial<Snake>), id: snakeRef.id });
-}
-
-export async function updateUserSnake(uid: string, snake: Snake): Promise<Snake> {
-  if (!uid) throw new Error("Cannot update snake without a user ID."); if (!snake.id) throw new Error("Cannot update snake without a snake ID."); const snakeId = snake.id; const snakeRef = doc(db, "users", uid, "snakes", snakeId); const snakeToSave = await prepareSnakeForFirestore(snake, snakeId, uid);
-  try { await setDoc(snakeRef, { ...snakeToSave, updatedAt: serverTimestamp() }, { merge: true }); } catch (error) { console.error("Tiny Titans: UPDATE FIRESTORE FAILED", { error, uid, snakeId }); throw new Error(`Unable to update your snake: ${getFirestoreErrorMessage(error)}`, { cause: error }); }
-  return migrateSnake({ ...(snakeToSave as Partial<Snake>), id: snakeId });
-}
-
+function getFirestoreErrorMessage(error: unknown): string { if (error && typeof error === "object" && "code" in error) { const firebaseError = error as { code?: string; message?: string }; switch (firebaseError.code) { case "permission-denied": return "Firebase permission denied. Your Firestore security rules are currently blocking this save."; case "unauthenticated": return "Firebase says you are not authenticated. Please log out and log back in."; case "unavailable": return "Firebase is temporarily unavailable. Please check your internet connection."; case "failed-precondition": return "Firebase could not complete the request because a required database configuration is missing."; case "invalid-argument": return "Firebase rejected the snake data because one or more values are invalid."; case "deadline-exceeded": return "Firebase took too long to respond. Please check your connection and try again."; case "resource-exhausted": return "The snake record is too large for Firestore. Please choose a smaller photo."; case "not-found": return "The requested Firestore snake document could not be found."; default: if (firebaseError.message) return firebaseError.message; } } if (error instanceof Error) return error.message; return "Unable to save this snake."; }
+function removeUndefined(value: unknown): unknown { if (value === undefined || value === null) return value; if (Array.isArray(value)) return value.map(removeUndefined).filter((item) => item !== undefined); if (typeof value === "object") { const prototype = Object.getPrototypeOf(value); if (prototype !== Object.prototype && prototype !== null) return value; const cleaned: Record<string, unknown> = {}; for (const [key, child] of Object.entries(value as Record<string, unknown>)) { if (child === undefined) continue; const cleanedChild = removeUndefined(child); if (cleanedChild !== undefined) cleaned[key] = cleanedChild; } return cleaned; } return value; }
+async function deleteSnakeSubcollections(uid: string, snakeId: string): Promise<void> { const [weights, feedings, sheds] = await Promise.all([getDocs(snakeSubcollection(uid, snakeId, "weights")), getDocs(snakeSubcollection(uid, snakeId, "feedings")), getDocs(snakeSubcollection(uid, snakeId, "sheds"))]); await Promise.all([...weights.docs.map((item) => deleteDoc(item.ref)), ...feedings.docs.map((item) => deleteDoc(item.ref)), ...sheds.docs.map((item) => deleteDoc(item.ref))]); }
+async function assertSnakeCanBeDeleted(uid: string, snakeId: string): Promise<void> { const projects = await getBreedingProjects(uid); const linked = projects.filter((project) => project.maleId === snakeId || project.femaleId === snakeId); if (linked.length) throw new Error(`This snake is linked to ${linked.length} breeding project${linked.length === 1 ? "" : "s"}. Remove or update those breeding projects first so their history is not orphaned.`); }
+async function prepareSnakeForFirestore(snake: Snake, firestoreId: string, uid: string): Promise<Record<string, unknown>> { const migrated = migrateSnake({ ...snake, id: firestoreId }); const preparedPhoto = await ensureSnakePhotoReference(uid, firestoreId, migrated.photo || ""); const cleaned = removeUndefined({ ...migrated, id: firestoreId, ownerId: uid, photo: preparedPhoto }); if (!cleaned || typeof cleaned !== "object") throw new Error("Tiny Titans produced invalid snake data before saving."); return cleaned as Record<string, unknown>; }
+async function hydrateSnakeTrackerHistory(uid: string, snake: Snake): Promise<Snake> { if (!snake.id) return snake; const [weights, feedings, sheds] = await Promise.all([getDocs(snakeSubcollection(uid, snake.id, "weights")), getDocs(snakeSubcollection(uid, snake.id, "feedings")), getDocs(snakeSubcollection(uid, snake.id, "sheds"))]); return { ...snake, weightHistory: weights.docs.map((item) => ({ ...(item.data() as WeightRecord), id: item.id, snakeId: snake.id })), feedingHistory: feedings.docs.map((item) => ({ ...(item.data() as FeedingRecord), id: item.id, snakeId: snake.id })), shedHistory: sheds.docs.map((item) => ({ ...(item.data() as ShedRecord), id: item.id, snakeId: snake.id })) }; }
+export async function getUserSnakes(uid: string): Promise<Snake[]> { if (!uid) throw new Error("Cannot load snakes without a user ID."); try { const snapshot = await getDocs(query(snakesCollection(uid), orderBy("name"))); const snakes = snapshot.docs.map((document) => migrateSnake({ ...(document.data() as Partial<Snake>), id: document.id })); return await Promise.all(snakes.map((snake) => hydrateSnakeTrackerHistory(uid, snake))); } catch (error) { console.error("Tiny Titans: unable to get user snakes", error); throw new Error(getFirestoreErrorMessage(error), { cause: error }); } }
+export async function getUserSnake(uid: string, snakeId: string): Promise<Snake | null> { if (!uid) throw new Error("Cannot load snake without a user ID."); if (!snakeId) throw new Error("Cannot load snake without a snake ID."); const snakeRef = doc(db, "users", uid, "snakes", snakeId); try { const snapshot = await getDoc(snakeRef); if (!snapshot.exists()) return null; return migrateSnake({ ...(snapshot.data() as Partial<Snake>), id: snapshot.id }); } catch (error) { console.error("Tiny Titans: unable to get snake", error); throw new Error(getFirestoreErrorMessage(error), { cause: error }); } }
+export async function createUserSnake(uid: string, snake: Snake): Promise<Snake> { if (!uid) throw new Error("Cannot create snake without a user ID."); const snakeRef = doc(snakesCollection(uid)); const snakeToSave = await prepareSnakeForFirestore(snake, snakeRef.id, uid); try { await setDoc(snakeRef, { ...snakeToSave, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); } catch (error) { console.error("Tiny Titans: CREATE FIRESTORE FAILED", { error, uid, snakeId: snakeRef.id }); throw new Error(`Unable to save your snake: ${getFirestoreErrorMessage(error)}`, { cause: error }); } return migrateSnake({ ...(snakeToSave as Partial<Snake>), id: snakeRef.id }); }
+export async function updateUserSnake(uid: string, snake: Snake): Promise<Snake> { if (!uid) throw new Error("Cannot update snake without a user ID."); if (!snake.id) throw new Error("Cannot update snake without a snake ID."); const snakeId = snake.id; const snakeRef = doc(db, "users", uid, "snakes", snakeId); const snakeToSave = await prepareSnakeForFirestore(snake, snakeId, uid); try { await setDoc(snakeRef, { ...snakeToSave, updatedAt: serverTimestamp() }, { merge: true }); } catch (error) { console.error("Tiny Titans: UPDATE FIRESTORE FAILED", { error, uid, snakeId }); throw new Error(`Unable to update your snake: ${getFirestoreErrorMessage(error)}`, { cause: error }); } return migrateSnake({ ...(snakeToSave as Partial<Snake>), id: snakeId }); }
 export async function saveUserSnake(uid: string, snake: Snake): Promise<Snake> { if (!uid) throw new Error("Cannot save snake without a user ID."); if (!snake) throw new Error("Cannot save an empty snake record."); return snake.id ? updateUserSnake(uid, snake) : createUserSnake(uid, snake); }
-
-export async function deleteUserSnake(uid: string, snakeId: string): Promise<void> {
-  if (!uid) throw new Error("Cannot delete snake without a user ID."); if (!snakeId) throw new Error("Cannot delete snake without a snake ID.");
-  await assertSnakeCanBeDeleted(uid, snakeId);
-  await deleteSnakeSubcollections(uid, snakeId);
-  await deleteDoc(doc(db, "users", uid, "snakes", snakeId));
-  try { await deleteSnakePhotoFiles(uid, snakeId); } catch (error) { console.warn("Tiny Titans: snake deleted but associated photo cleanup could not complete", error); }
-}
+export async function deleteUserSnake(uid: string, snakeId: string): Promise<void> { if (!uid) throw new Error("Cannot delete snake without a user ID."); if (!snakeId) throw new Error("Cannot delete snake without a snake ID."); await assertSnakeCanBeDeleted(uid, snakeId); await deleteSnakeSubcollections(uid, snakeId); await deleteDoc(doc(db, "users", uid, "snakes", snakeId)); try { await deleteSnakePhotoFiles(uid, snakeId); } catch (error) { console.warn("Tiny Titans: snake deleted but associated photo cleanup could not complete", error); } }
