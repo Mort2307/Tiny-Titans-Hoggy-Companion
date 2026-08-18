@@ -19,6 +19,8 @@ export type SnakeIntelligence = {
   snakeId: string;
   snakeName: string;
   confidence: DataConfidence;
+  /** Percentage of the core personal-history dataset currently available to the engine. */
+  dataCoveragePercent: number;
   insights: SnakeInsight[];
   priority: SnakeInsight | null;
   summary: string;
@@ -34,10 +36,7 @@ function average(values: number[]): number | null {
 }
 
 function feedingIntervals(record: SnakeMasterRecord): number[] {
-  const dates = [...record.feedings]
-    .map((item) => item.date)
-    .filter(Boolean)
-    .sort();
+  const dates = [...record.feedings].map((item) => item.date).filter(Boolean).sort();
   return dates.slice(1).map((date, index) => {
     const current = new Date(`${date}T00:00:00`).getTime();
     const previous = new Date(`${dates[index]}T00:00:00`).getTime();
@@ -46,15 +45,26 @@ function feedingIntervals(record: SnakeMasterRecord): number[] {
 }
 
 function shedIntervals(record: SnakeMasterRecord): number[] {
-  const dates = [...record.sheds]
-    .map((item) => item.date)
-    .filter(Boolean)
-    .sort();
+  const dates = [...record.sheds].map((item) => item.date).filter(Boolean).sort();
   return dates.slice(1).map((date, index) => {
     const current = new Date(`${date}T00:00:00`).getTime();
     const previous = new Date(`${dates[index]}T00:00:00`).getTime();
     return Math.round((current - previous) / 86_400_000);
   }).filter((gap) => Number.isFinite(gap) && gap >= 0);
+}
+
+/**
+ * Transparent progress score, not a health score.
+ * Weight, feeding and shedding contribute equally and each reaches full credit
+ * once enough records exist to establish a useful individual baseline.
+ */
+function calculateDataCoverage(record: SnakeMasterRecord): number {
+  const areas = [
+    Math.min(record.weights.length / 5, 1),
+    Math.min(record.feedings.length / 8, 1),
+    Math.min(record.sheds.length / 5, 1),
+  ];
+  return Math.round((areas.reduce((sum, value) => sum + value, 0) / areas.length) * 100);
 }
 
 function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
@@ -156,6 +166,7 @@ export function buildSnakeIntelligence(record: SnakeMasterRecord): SnakeIntellig
     snakeId: record.snake.id,
     snakeName: record.snake.name,
     confidence: record.overview.confidence.overall,
+    dataCoveragePercent: calculateDataCoverage(record),
     insights,
     priority,
     summary,
