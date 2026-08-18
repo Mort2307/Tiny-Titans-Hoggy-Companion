@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
@@ -28,7 +28,7 @@ export default function SnakeMasterRecord() {
   const recordKey = user && id ? `${user.uid}:${id}` : null;
   const loading = Boolean(recordKey && loadedRecordKey !== recordKey);
 
-  const loadRecord = async () => {
+  const loadRecord = useCallback(async () => {
     if (!user || !id) return;
     const [result, breedingTimeline] = await Promise.all([getSnakeMasterRecord(user.uid, id), getCanonicalBreedingTimeline(user.uid, id)]);
     if (!result) { setRecord(null); setError(""); return; }
@@ -36,18 +36,14 @@ export default function SnakeMasterRecord() {
     const mergedTimeline = [...result.timeline, ...breedingTimeline.filter((event) => !existingIds.has(event.id))].sort((a, b) => b.date.localeCompare(a.date));
     setRecord({ ...result, timeline: mergedTimeline });
     setError("");
-  };
+  }, [user, id]);
 
-  // loadRecord closes over the current authenticated snake identity. The lifecycle
-  // key below is the explicit trigger; keeping this effect dependency contract here
-  // avoids recreating the loader solely to satisfy the dependency analyser.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!user || !id) return;
     let cancelled = false;
     void loadRecord().catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load this snake overview."); }).finally(() => { if (!cancelled) setLoadedRecordKey(recordKey); });
     return () => { cancelled = true; };
-  }, [user, id, recordKey]);
+  }, [user, id, recordKey, loadRecord]);
 
   const intelligence = useMemo(() => record ? buildSnakeIntelligence(record) : null, [record]);
 
