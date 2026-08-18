@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Snake } from "../types/Snake";
 import type { RetainedShedArea, ShedAssistance, ShedQuality, ShedRecord, ShedStage, ShedStatus } from "../types/Shed";
-import { getActiveShedCycle, getSnakeSheds, deleteSnakeShed, saveSnakeShed } from "../services/shedService";
+import { getSnakeSheds, deleteSnakeShed, saveSnakeShed } from "../services/shedService";
 import { getUserSnakes } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
@@ -21,7 +21,7 @@ function parseDate(value: string) {
   const clean = value.trim().replace(/\./g, "/").replace(/-/g, "/");
   const parts = clean.split("/");
   if (parts.length !== 3) return null;
-  let day = Number(parts[0]); let month = Number(parts[1]); let year = Number(parts[2]);
+  const day = Number(parts[0]); const month = Number(parts[1]); let year = Number(parts[2]);
   if (year < 100) year += 2000;
   if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year) || month < 1 || month > 12 || day < 1 || day > 31) return null;
   const date = new Date(Date.UTC(year, month - 1, day));
@@ -81,13 +81,13 @@ export default function ShedTracker() {
     return () => { active = false; };
   }, [loading, profileLoading, routeSnakeId, user]);
 
-  async function loadSheds(snakeId = selectedSnakeId) {
+  const loadSheds = useCallback(async (snakeId = selectedSnakeId) => {
     if (!user || !snakeId) return;
     setLoadingSheds(true); setError("");
     try { setSheds(await getSnakeSheds(user.uid, snakeId)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load shed history."); } finally { setLoadingSheds(false); }
-  }
+  }, [selectedSnakeId, user]);
 
-  useEffect(() => { void loadSheds(); }, [selectedSnakeId, user]);
+  useEffect(() => { void loadSheds(); }, [loadSheds]);
 
   const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [selectedSnakeId, snakes]);
   const activeCycle = useMemo(() => sheds.find((record) => record.currentStage !== "Complete" && !record.completedAt) ?? null, [sheds]);
@@ -103,14 +103,14 @@ export default function ShedTracker() {
 
   function clearForm() { setEditingId(null); setStage("Blue"); setStageDate(displayDate(todayIso())); setQuality("Unknown"); setStatus("Complete"); setRetained([]); setAssistance("None"); setShedLength(""); setSnakeWeight(""); setNotes(""); }
 
-  function editCycle(record: ShedRecord, preferredStage?: ShedStage) {
+  const editCycle = useCallback((record: ShedRecord, preferredStage?: ShedStage) => {
     const nextStage = preferredStage ?? record.currentStage ?? (record.shedCompleted ? "Complete" : record.eyesSkinCleared ? "Clear" : record.bluePhaseStarted ? "Blue" : "Complete");
     const nextDate = nextStage === "Blue" ? record.cycleStartedAt || record.date : nextStage === "Clear" ? record.clearPhaseAt || record.date : record.completedAt || record.date;
     setEditingId(record.id); setStage(nextStage); setStageDate(displayDate(nextDate)); setQuality(record.quality ?? "Unknown"); setStatus(record.status ?? "Complete"); setRetained(retainedFrom(record)); setAssistance(record.assistance ?? "None");
     setShedLength(record.shedLength == null ? "" : String(isImperial ? record.shedLength / 2.54 : record.shedLength));
     setSnakeWeight(record.snakeWeight == null ? "" : String(isImperial ? record.snakeWeight / 28.349523125 : record.snakeWeight)); setNotes(record.notes ?? "");
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [isImperial]);
 
   useEffect(() => {
     const recordId = searchParams.get("record");
@@ -118,7 +118,7 @@ export default function ShedTracker() {
     const record = sheds.find((item) => item.id === recordId);
     if (!record) return;
     queueMicrotask(() => { editCycle(record); setSuccess("📌 Opened from the Life Timeline. You are editing this shedding cycle."); setSearchParams((current) => { current.delete("record"); return current; }, { replace: true }); });
-  }, [searchParams, setSearchParams, sheds]);
+  }, [editCycle, searchParams, setSearchParams, sheds]);
 
   async function continueActiveCycle() {
     if (!activeCycle) return;
