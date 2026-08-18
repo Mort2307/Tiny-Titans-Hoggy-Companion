@@ -44,6 +44,9 @@ export default function ConversationInbox({ creatorMode = false }: { creatorMode
     finally { setLoading(false); }
   }
 
+  // loadThreads is intentionally declared in the component because it consumes the current auth/mode state.
+  // The effect is the lifecycle trigger; the function itself is not an independently reactive value.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void loadThreads(); }, [user, creatorMode]);
   useEffect(() => { if (!selected) { setMessages([]); return; } let active = true; setLoadingMessages(true); setError(""); void getConversationMessages(selected.kind, selected.id).then((items) => { if (active) setMessages(items); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Unable to load this conversation."); }).finally(() => { if (active) setLoadingMessages(false); }); return () => { active = false; }; }, [selected]);
 
