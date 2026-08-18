@@ -92,6 +92,19 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
 .tt-confidence-details summary { cursor: pointer; color: var(--tt-text-strong); font-weight: 700; }
 .tt-confidence-details p { line-height: 1.55; }
 
+.tt-update-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 18px; background: rgba(10, 0, 18, .78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.tt-update-panel { width: min(460px, 100%); padding: clamp(24px, 5vw, 34px); border: 1px solid var(--tt-border-strong); border-radius: 24px; background: linear-gradient(145deg, rgba(64, 22, 96, .98), rgba(20, 0, 34, .99)); box-shadow: 0 24px 70px rgba(0, 0, 0, .52), 0 0 40px rgba(0, 174, 255, .08); text-align: center; color: var(--tt-text); }
+.tt-update-logo { display: grid; width: 68px; height: 68px; margin: 0 auto 12px; place-items: center; border: 1px solid var(--tt-border); border-radius: 20px; background: rgba(0, 174, 255, .07); font-size: 34px; box-shadow: 0 0 28px rgba(111, 36, 184, .22); }
+.tt-update-kicker { margin: 0 0 6px; color: var(--tt-accent); font-size: .72rem; font-weight: 850; letter-spacing: .14em; }
+.tt-update-panel h2 { margin: 0; color: var(--tt-text-strong); font-size: clamp(1.35rem, 5vw, 1.8rem); }
+.tt-update-panel > p:not(.tt-update-kicker) { margin: 12px 0 0; color: var(--tt-muted); line-height: 1.6; }
+.tt-update-actions { display: flex; flex-direction: column; gap: 9px; margin-top: 22px; }
+.tt-update-actions button { width: 100%; min-height: 46px; }
+.tt-update-primary { background: linear-gradient(135deg, var(--tt-brand), var(--tt-brand-strong)); }
+.tt-update-secondary { background: rgba(255,255,255,.035); border-color: var(--tt-border); color: var(--tt-muted); box-shadow: none; }
+.tt-update-secondary:hover { background: rgba(0,174,255,.08); color: var(--tt-text-strong); }
+.tt-update-required { display: block; margin-top: 13px; color: var(--tt-warning); line-height: 1.45; }
+
 @media (max-width: 800px) {
   .app-header { min-height: 64px; padding: 9px 14px; }
   .app-header img { width: 42px; height: 42px; border-radius: 12px; }
