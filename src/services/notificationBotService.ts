@@ -1,6 +1,6 @@
-import { httpsCallable } from "firebase/functions";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { doc, getDoc } from "firebase/firestore";
-import { functions, db } from "../firebase/config";
+import { auth, db } from "../firebase/config";
 
 export type NotificationProbeStatus = "sent" | "no-delivery" | "failed" | "duplicate" | "timeout";
 
@@ -23,17 +23,16 @@ function probeId() {
 
 export async function runLiveNotificationProbe(uid: string): Promise<NotificationProbeResult> {
   if (!uid) throw new Error("Notification BOT requires an authenticated UID.");
+  if (auth.currentUser?.uid !== uid) throw new Error("Notification BOT UID does not match the authenticated account.");
 
   const eventKey = probeId();
   const started = Date.now();
+  const functions = getFunctions(undefined, "europe-west2");
   const call = httpsCallable<{ eventKey: string }, ProbeResponse>(functions, "runNotificationBotProbe");
   const response = await call({ eventKey });
   const result = response.data;
 
-  return {
-    ...result,
-    elapsedMs: Date.now() - started,
-  };
+  return { ...result, elapsedMs: Date.now() - started };
 }
 
 export async function readNotificationEvent(uid: string, eventKey: string) {
