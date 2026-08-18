@@ -38,11 +38,12 @@ export function isTerminalReportStatus(status: ReportIssueStatus | CanonicalRepo
   return REPORT_LIFECYCLE[current].length === 0;
 }
 
-/** True while a report remains in a non-terminal workflow state. */
+/** True only while a report still requires active Creator action. Resolved reports are intentionally excluded from dashboard/action counts even though they may still be awaiting optional verification. */
 export function isActiveReportIssueStatus(status: ReportIssueStatus | CanonicalReportIssueStatus): boolean {
-  return !isTerminalReportStatus(status);
+  const current = getCanonicalReportStatus(status);
+  return current !== "Resolved" && !isTerminalReportStatus(current);
 }
 
-export function getReportLifecycleLabel(status: ReportIssueStatus | CanonicalReportIssueStatus): string {
+export function getReportLifecycleLabel(status: ReportIssueStatus | CanonicalReportStatus): string {
   return getCanonicalReportStatus(status);
 }
