@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Snake } from "../types/Snake";
 import type { WeightRecord } from "../types/Weight";
-import type { FeedingRecord } from "../types/Feeding";
-import type { ShedRecord } from "../types/Shed";
 import { getUserSnakes } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
