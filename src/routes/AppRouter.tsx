@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useState } from "react";
 import Layout from "../components/Layout/Layout";
 import Calculator from "../pages/Calculator";
@@ -57,12 +57,16 @@ import { UnitProvider } from "../context/UnitContext";
 function hasLocalPrivacyConsent(userId: string) { try { return window.localStorage.getItem(`tinytitans:privacy-consent:${userId}`) === CONSENT_VERSION; } catch { return false; } }
 
 function AppRouterGate() {
+  const location = useLocation();
   const { user, profile, loading, profileLoading } = useAuth();
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const currentDestination = `${location.pathname}${location.search}`;
+  const loginRedirect = `/login?redirect=${encodeURIComponent(currentDestination)}`;
+  const setupRedirect = `/account-setup?redirect=${encodeURIComponent(currentDestination)}`;
 
   if (loading || profileLoading) return <div className="page-container"><div className="welcome-card"><h1>🐍 Loading Tiny Titans...</h1></div></div>;
-  if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="*" element={<Navigate to="/login" replace />} /></Routes>;
-  if (!profile || !profile.setupComplete) return <Routes><Route path="/account-setup" element={<AccountSetup />} /><Route path="*" element={<Navigate to="/account-setup" replace />} /></Routes>;
+  if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="*" element={<Navigate to={loginRedirect} replace />} /></Routes>;
+  if (!profile || !profile.setupComplete) return <Routes><Route path="/account-setup" element={<AccountSetup />} /><Route path="*" element={<Navigate to={setupRedirect} replace />} /></Routes>;
 
   const consentRequired = !consentAccepted && !hasLocalPrivacyConsent(user.uid) && profile.dataCollectionPreferences?.consentVersion !== CONSENT_VERSION;
 
