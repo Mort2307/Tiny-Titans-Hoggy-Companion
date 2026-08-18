@@ -48,10 +48,21 @@ const userSuites: BotSuiteDefinition[] = [
   { id: "trackers", label: "All Tracker Regression", description: "Cross-tracker totals and shared data-model consistency.", category: "Trackers", safety: "read-only", build: createTrackerRegressionChecks },
 ];
 
+const browserRunnerPendingCheck = (): TesterCheck => ({
+  checkId: "app-browser-journey-runner",
+  name: "Real browser journey execution",
+  category: "application",
+  severity: "high",
+  run: async () => ({
+    status: "blocked",
+    message: "Not executed: the real browser interaction runner is not wired yet. Static route inventory must never be reported as proof that a user can click, submit, persist and reach the correct destination.",
+  }),
+});
+
 const appSuites: BotSuiteDefinition[] = [
   { id: "route-inventory", label: "Route Inventory", description: "Checks the registered application route inventory for duplicates and missing core surfaces.", category: "Routes", safety: "read-only", build: async () => createApplicationCoverageChecks() },
   { id: "tracker-surfaces", label: "Tracker Surfaces", description: "Confirms feeding, preparation, shedding and weight surfaces are represented in QA coverage.", category: "Trackers", safety: "read-only", build: async () => createApplicationCoverageChecks().filter((check) => check.checkId === "app-tracker-surfaces-covered") },
-  { id: "navigation-coverage", label: "Navigation Coverage", description: "Current application topology coverage. Browser-level click/path automation will be added to the sandbox runner rather than falsely reported as complete here.", category: "Navigation", safety: "read-only", build: async () => createApplicationCoverageChecks().filter((check) => ["app-route-inventory-complete", "app-core-surfaces-covered"].includes(check.checkId)) },
+  { id: "navigation-coverage", label: "Navigation Coverage", description: "Combines topology checks with an explicit browser-runner gate. Until real interaction automation is available, that portion remains blocked rather than being falsely marked as passed.", category: "Navigation", safety: "sandbox", build: async () => [...createApplicationCoverageChecks().filter((check) => ["app-route-inventory-complete", "app-core-surfaces-covered"].includes(check.checkId)), browserRunnerPendingCheck()] },
   { id: "learning-community", label: "Learning / Community", description: "Confirms learning, achievement, community and reporting surfaces remain represented.", category: "Surfaces", safety: "read-only", build: async () => createApplicationCoverageChecks().filter((check) => ["app-learning-surfaces-covered", "app-community-surfaces-covered"].includes(check.checkId)) },
   { id: "creator-surfaces", label: "Creator Routes", description: "Confirms Creator-only surfaces are explicitly represented in the application QA inventory.", category: "Creator", safety: "read-only", build: async () => createApplicationCoverageChecks().filter((check) => check.checkId === "app-creator-surfaces-covered") },
 ];
@@ -66,7 +77,7 @@ const securitySuites: BotSuiteDefinition[] = [
 export const BOT_DEFINITIONS: BotDefinition[] = [
   { id: "creator", label: "Creator BOT", icon: "🛠️", description: "Deep creator and system diagnostics.", purpose: "Creator tools, permissions, Firebase paths and regression coverage.", suites: creatorSuites },
   { id: "user", label: "User BOT", icon: "👤", description: "Keeper-facing health and workflow coverage.", purpose: "Checks the data and tracker journeys a normal user depends on, without writing to real records.", suites: userSuites },
-  { id: "app", label: "App BOT", icon: "🧭", description: "Route and application-topology auditing.", purpose: "Checks route inventory and identifies where browser-level journey automation still needs the isolated runner.", suites: appSuites },
+  { id: "app", label: "App BOT", icon: "🧭", description: "Route and application-topology auditing.", purpose: "Checks route inventory and refuses to claim browser journey coverage until the isolated runner actually executes it.", suites: appSuites },
   { id: "security", label: "Security BOT", icon: "🛡️", description: "Defensive application security checks.", purpose: "Tests safe security boundaries without attacking production or claiming unsupported antivirus capabilities.", suites: securitySuites },
 ];
 
