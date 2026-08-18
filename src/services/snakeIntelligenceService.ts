@@ -15,12 +15,25 @@ export type SnakeInsight = {
   category: "weight" | "feeding" | "shedding" | "data" | "activity";
 };
 
+export type IntelligenceMetric = {
+  key: "weight" | "feeding" | "shedding";
+  label: string;
+  percent: number;
+  records: number;
+  recordsForFullCoverage: number;
+};
+
 export type SnakeIntelligence = {
   snakeId: string;
   snakeName: string;
+  /** Overall reliability of the engine's current interpretation. This is never a keeper rating or health score. */
   confidence: DataConfidence;
   /** Percentage of the core personal-history dataset currently available to the engine. */
   dataCoveragePercent: number;
+  /** Transparent breakdown behind dataCoveragePercent. */
+  coverageMetrics: IntelligenceMetric[];
+  /** User-facing definition that can be shown beside the confidence value. */
+  confidenceExplanation: string;
   insights: SnakeInsight[];
   priority: SnakeInsight | null;
   summary: string;
@@ -53,18 +66,42 @@ function shedIntervals(record: SnakeMasterRecord): number[] {
   }).filter((gap) => Number.isFinite(gap) && gap >= 0);
 }
 
-/**
- * Transparent progress score, not a health score.
- * Weight, feeding and shedding contribute equally and each reaches full credit
- * once enough records exist to establish a useful individual baseline.
- */
-function calculateDataCoverage(record: SnakeMasterRecord): number {
-  const areas = [
-    Math.min(record.weights.length / 5, 1),
-    Math.min(record.feedings.length / 8, 1),
-    Math.min(record.sheds.length / 5, 1),
+function buildCoverageMetrics(record: SnakeMasterRecord): IntelligenceMetric[] {
+  const definitions: Array<[IntelligenceMetric["key"], string, number, number]> = [
+    ["weight", "Weight", record.weights.length, 5],
+    ["feeding", "Feeding", record.feedings.length, 8],
+    ["shedding", "Shedding", record.sheds.length, 5],
   ];
-  return Math.round((areas.reduce((sum, value) => sum + value, 0) / areas.length) * 100);
+
+  return definitions.map(([key, label, records, recordsForFullCoverage]) => ({
+    key,
+    label,
+    records,
+    recordsForFullCoverage,
+    percent: Math.round(Math.min(records / recordsForFullCoverage, 1) * 100),
+  }));
+}
+
+/**
+ * Transparent progress score, not a health score and not a keeper score.
+ * The user-facing UI should explain that this measures how much useful
+ * individual-history data is available to Tiny Titans.
+ */
+function calculateDataCoverage(metrics: IntelligenceMetric[]): number {
+  return Math.round(metrics.reduce((sum, metric) => sum + metric.percent, 0) / metrics.length);
+}
+
+function buildConfidenceExplanation(confidence: DataConfidence): string {
+  if (confidence === "High") {
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. High means the available records are consistent enough to support a reliable pattern. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+  }
+  if (confidence === "Moderate") {
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Moderate means useful patterns are present, but some history is limited, inconsistent or still developing. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+  }
+  if (confidence === "Low") {
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Low means the engine should be cautious because the available pattern is weak or inconsistent. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+  }
+  return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. More useful history is needed before Tiny Titans can make a confident interpretation. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
 }
 
 function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
@@ -155,6 +192,7 @@ export function buildSnakeIntelligence(record: SnakeMasterRecord): SnakeIntellig
     const toneWeight = (value: IntelligenceTone) => value === "attention" ? 3 : value === "positive" ? 1 : 2;
     return toneWeight(b.tone) - toneWeight(a.tone) || confidenceRank(b.confidence) - confidenceRank(a.confidence);
   })[0] ?? null;
+  const coverageMetrics = buildCoverageMetrics(record);
 
   const summary = priority?.tone === "attention"
     ? `${record.snake.name} has something worth reviewing, but Tiny Titans will not assume a cause without enough evidence.`
@@ -166,7 +204,9 @@ export function buildSnakeIntelligence(record: SnakeMasterRecord): SnakeIntellig
     snakeId: record.snake.id,
     snakeName: record.snake.name,
     confidence: record.overview.confidence.overall,
-    dataCoveragePercent: calculateDataCoverage(record),
+    dataCoveragePercent: calculateDataCoverage(coverageMetrics),
+    coverageMetrics,
+    confidenceExplanation: buildConfidenceExplanation(record.overview.confidence.overall),
     insights,
     priority,
     summary,
