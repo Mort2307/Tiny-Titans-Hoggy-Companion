@@ -12,15 +12,7 @@ type SnakeTileProps = {
   onSelect?: (snake: Snake) => void;
 };
 
-function SnakeTile({
-  id,
-  name,
-  photo,
-  sex,
-  snake,
-  clickDestination = "profile",
-  onSelect,
-}: SnakeTileProps) {
+function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", onSelect }: SnakeTileProps) {
   const navigate = useNavigate();
 
   function getSexIcon() {
@@ -34,22 +26,14 @@ function SnakeTile({
       onSelect({ ...snake, id: String(snake.id ?? id).trim() });
       return;
     }
-
     navigate(clickDestination === "weight" ? `/weights/${id}` : `/snakes/${id}`);
   }
 
   const destinationLabel = clickDestination === "weight" ? "weight tracker" : "profile";
 
   return (
-    <button
-      type="button"
-      className="snake-tile snake-tile-circle"
-      onClick={openTile}
-      aria-label={onSelect ? `Select ${name}` : `Open ${name} ${destinationLabel}`}
-    >
-      <span className="snake-tile-avatar">
-        {photo ? <img src={photo} alt="" aria-hidden="true" /> : <span>🐍</span>}
-      </span>
+    <button type="button" className="snake-tile snake-tile-circle" onClick={openTile} aria-label={onSelect ? `Select ${name}` : `Open ${name} ${destinationLabel}`}>
+      <span className="snake-tile-avatar">{photo ? <img src={photo} alt="" aria-hidden="true" /> : <span>🐍</span>}</span>
       <span className="snake-tile-name">{name}</span>
       {sex && <span className="snake-tile-sex">{getSexIcon()}</span>}
     </button>
