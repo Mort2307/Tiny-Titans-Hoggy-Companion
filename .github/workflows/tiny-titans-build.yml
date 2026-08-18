@@ -27,6 +27,8 @@ jobs:
         run: npm run lint
       - name: Build application
         run: npm run build
+      - name: App BOT static route coverage
+        run: node scripts/check-route-coverage.mjs
       - name: Install Functions dependencies
         working-directory: functions
         run: npm install --no-audit --no-fund
