@@ -52,6 +52,7 @@ function Navigation() {
   const links: [string, string, string][] = [
     ["/", "🏠", "Home"],
     ["/snakes", "🐍", "My Snakes"],
+    ["/husbandry", "🌡️", "Husbandry & Care"],
     ["/morph-library", "🧬", "Morph Library"],
     ["/calculator", "🧮", "Genetics Calculator"],
     ["/breeding", "🥚", "Breeding Planner"],
