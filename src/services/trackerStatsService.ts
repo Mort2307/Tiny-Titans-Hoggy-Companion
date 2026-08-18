@@ -63,8 +63,7 @@ export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
         if (lastActive >= monthCutoff) activeMonthUsers += 1;
       }
 
-      const setupComplete = userData.setupComplete === true;
-      if (setupComplete) activatedUsers += 1;
+      if (userData.setupComplete === true) activatedUsers += 1;
       else incompleteUserProfiles += 1;
 
       const snakesSnapshot = await getDocs(collection(db, "users", userDoc.id, "snakes"));
@@ -77,19 +76,16 @@ export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
       await Promise.all(
         snakesSnapshot.docs.map(async (snakeDoc) => {
           const snake = snakeDoc.data() as Record<string, unknown>;
-          let snakeHasData = false;
 
           const weightHistory = Array.isArray(snake.weightHistory) ? snake.weightHistory : [];
           weightLogs += weightHistory.length;
           for (const record of weightHistory) {
             const item = record as NumericRecord;
             const weight = toNumber(item.weight);
-            const unit = item.unit;
-            const valid = weight > 0 && (unit === "g" || unit === "kg");
+            const valid = weight > 0 && (item.unit === "g" || item.unit === "kg");
             if (valid) {
               validWeightLogs += 1;
-              totalWeightKg += weightToKg(weight, unit);
-              snakeHasData = true;
+              totalWeightKg += weightToKg(weight, item.unit);
             } else {
               invalidWeightLogs += 1;
             }
@@ -99,7 +95,6 @@ export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
             collection(db, "users", userDoc.id, "snakes", snakeDoc.id, "feedings")
           );
           mealsFed += feedingSnapshot.size;
-          if (feedingSnapshot.size > 0) snakeHasData = true;
 
           const shedSnapshot = await getDocs(
             collection(db, "users", userDoc.id, "snakes", snakeDoc.id, "sheds")
@@ -111,25 +106,18 @@ export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
             if (length > 0) {
               validShedLogs += 1;
               totalShedLengthCm += length;
-              snakeHasData = true;
             } else {
               invalidShedLogs += 1;
             }
           }
-
-          if (snakeHasData && snakesSnapshot.size > 0 && !engagedUsers) engagedUsers += 1;
         })
       );
     })
   );
 
   const geneticsSnapshot = await getDocs(collection(db, "geneticsCalculations"));
-
-  // Engagement is deliberately derived from canonical user-owned records rather than
-  // document counts. The snake count is already enough to classify a user as engaged;
-  // this fallback keeps the invariant explicit without introducing a second user source.
   const reconciledEngagedUsers = Math.min(engagedUsers, usersSnapshot.size);
-  const dataQualityIssues = invalidWeightLogs + invalidShedLogs + incompleteUserProfiles;
+  const dataQualityIssues = invalidWeightLogs + invalidShedLogs;
 
   return {
     registeredUsers: usersSnapshot.size,
