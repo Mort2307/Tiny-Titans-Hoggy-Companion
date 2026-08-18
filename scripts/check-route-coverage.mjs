@@ -33,23 +33,60 @@ const navigationTargets = [];
 for (const file of sourceFiles) {
   const text = fs.readFileSync(file, "utf8");
   const relative = path.relative(root, file).replaceAll(path.sep, "/");
-  for (const match of text.matchAll(/\bnavigate\(\s*(?:"([^"]+)"|'([^']+)'|`([^`]+)`)/g)) navigationTargets.push({ file: relative, target: match[1] ?? match[2] ?? match[3] });
-  for (const match of text.matchAll(/\bhref=["']([^"']+)["']/g)) if (match[1].startsWith("/")) navigationTargets.push({ file: relative, target: match[1] });
+  for (const match of text.matchAll(/\bnavigate\(\s*(?:"([^"]+)"|'([^']+)'|`([^`]+)`)/g)) {
+    navigationTargets.push({ file: relative, target: match[1] ?? match[2] ?? match[3] });
+  }
+  for (const match of text.matchAll(/\bhref=["']([^"']+)["']/g)) {
+    if (match[1].startsWith("/")) navigationTargets.push({ file: relative, target: match[1] });
+  }
 }
 
 function routeRegex(route) {
   const tokens = route.split(/(:[^/]+|\*)/g);
-  const escaped = tokens.map((token) => token === "*" ? ".*" : /^:[^/]+$/.test(token) ? "[^/]+" : token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("");
+  const escaped = tokens.map((token) =>
+    token === "*"
+      ? ".*"
+      : /^:[^/]+$/.test(token)
+        ? "[^/]+"
+        : token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  ).join("");
   return new RegExp(`^${escaped}/?$`);
 }
-const patterns = uniqueRoutes.filter((route) => route !== "*").map((route) => ({ route, regex: routeRegex(route) }));
-const unresolvedTargets = navigationTargets.filter(({ target }) => target && target.startsWith("/") && !target.includes("${") && !patterns.some(({ regex }) => regex.test(target.split(/[?#]/)[0])));
-const duplicateRoutes = uniqueRoutes.filter((route, index) => routes.indexOf(route) !== index);
+
+const patterns = uniqueRoutes
+  .filter((route) => route !== "*")
+  .map((route) => ({ route, regex: routeRegex(route) }));
+
+const unresolvedTargets = navigationTargets.filter(({ target }) =>
+  target &&
+  target.startsWith("/") &&
+  !target.includes("${") &&
+  !patterns.some(({ regex }) => regex.test(target.split(/[?#]/)[0]))
+);
+
+// AppRouter contains separate conditional <Routes> trees for the unauthenticated
+// and incomplete-profile states. /login and /account-setup therefore appear once
+// in their gated tree and once as authenticated redirects. They are not competing
+// declarations in the same rendered route tree and are intentionally allowed here.
+const allowedConditionalDuplicates = new Set(["/login", "/account-setup"]);
+const duplicateRoutes = [...new Set(
+  routes.filter((route, index) => routes.indexOf(route) !== index)
+)].filter((route) => !allowedConditionalDuplicates.has(route));
 
 const findings = [];
 if (!uniqueRoutes.length) findings.push({ severity: "critical", message: "No routes detected." });
-if (duplicateRoutes.length) findings.push({ severity: "high", message: `Duplicate route declarations detected: ${[...new Set(duplicateRoutes)].join(", ")}` });
-if (unresolvedTargets.length) findings.push({ severity: "high", message: `${unresolvedTargets.length} internal navigation target(s) do not match a declared route.` });
+if (duplicateRoutes.length) {
+  findings.push({
+    severity: "high",
+    message: `Duplicate route declarations detected: ${duplicateRoutes.join(", ")}`,
+  });
+}
+if (unresolvedTargets.length) {
+  findings.push({
+    severity: "high",
+    message: `${unresolvedTargets.length} internal navigation target(s) do not match a declared route.`,
+  });
+}
 
 console.log(JSON.stringify({
   test: "app-route-coverage",
@@ -60,6 +97,7 @@ console.log(JSON.stringify({
     redirects: redirects.length,
     inspectedNavigationTargets: navigationTargets.length,
     unresolvedNavigationTargets: unresolvedTargets.length,
+    allowedConditionalDuplicates: [...allowedConditionalDuplicates],
   },
   status: findings.some((item) => item.severity === "critical") ? "fail" : findings.length ? "fail" : "pass",
   findings,
