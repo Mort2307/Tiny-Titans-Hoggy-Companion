@@ -113,8 +113,13 @@ export default function CreatorCommunityGlobeV2({ locations = [] }: CreatorCommu
   const selected = selectedKey ? markers.find((marker) => marker.areaId === selectedKey) ?? null : null;
   const totalUsers = new Set(members.map((member) => member.uid)).size;
   const countryCount = countryGroups.length;
-  const areaCount = markers.length;
-  const totalSnakes = members.reduce((sum, member) => sum + (member.snakeCount ?? 0), 0);
+  // Count actual community areas from the consented members rather than relying
+  // on map marker state. This remains correct even if a marker is temporarily
+  // unavailable to the globe renderer.
+  const areaKeys = new Set(members.map((member) => `${normalise(member.city)}|${normalise(member.country)}`));
+  const areaCount = areaKeys.size;
+  const snakeCountsAvailable = members.every((member) => member.snakeCount !== undefined);
+  const totalSnakes = snakeCountsAvailable ? members.reduce((sum, member) => sum + (member.snakeCount ?? 0), 0) : undefined;
 
   const toggleCountry = (country: string) => setExpandedCountries((current) => {
     const next = new Set(current);
@@ -144,7 +149,7 @@ export default function CreatorCommunityGlobeV2({ locations = [] }: CreatorCommu
       <div><strong>{totalUsers}</strong><span>represented users</span></div>
       <div><strong>{countryCount}</strong><span>countries</span></div>
       <div><strong>{areaCount}</strong><span>community areas</span></div>
-      <div><strong>{totalSnakes || "—"}</strong><span>{totalSnakes ? "tracked snakes" : "snake count not available"}</span></div>
+      <div><strong>{totalSnakes ?? "—"}</strong><span>{totalSnakes === undefined ? "snake count not available" : "tracked snakes"}</span></div>
     </div>
     <div className="creator-globe-panel">
       <div ref={visualRef} className="creator-globe-visual" aria-label="Interactive Tiny Titans community globe">
