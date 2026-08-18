@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 
 import "./index.css";
+import "./styles/tiny-titans-modern.css";
 import "./styles/selector-scroll.css";
 
 import App from "./App";
