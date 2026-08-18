@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
@@ -32,8 +32,8 @@ export default function HusbandryCare() {
   const [savingEnvironment, setSavingEnvironment] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
-  async function loadData() { if (!user) return; setBusy(true); setLoadError(""); try { const loaded = await getUserSnakes(user.uid); setSnakes(loaded); const entries = await Promise.all(loaded.map(async (snake) => [snake.id, await getSnakeWeights(user.uid, snake.id)] as const)); setWeights(Object.fromEntries(entries)); setSelectedSnakeId((current) => loaded.some((snake) => snake.id === current) ? current : loaded[0]?.id ?? ""); } catch (error) { setLoadError(error instanceof Error ? error.message : "Unable to load husbandry data."); } finally { setBusy(false); } }
-  useEffect(() => { if (loading || profileLoading || !user) return; void loadData(); }, [user, loading, profileLoading]);
+  const loadData = useCallback(async () => { if (!user) return; setBusy(true); setLoadError(""); try { const loaded = await getUserSnakes(user.uid); setSnakes(loaded); const entries = await Promise.all(loaded.map(async (snake) => [snake.id, await getSnakeWeights(user.uid, snake.id)] as const)); setWeights(Object.fromEntries(entries)); setSelectedSnakeId((current) => loaded.some((snake) => snake.id === current) ? current : loaded[0]?.id ?? ""); } catch (error) { setLoadError(error instanceof Error ? error.message : "Unable to load husbandry data."); } finally { setBusy(false); } }, [user]);
+  useEffect(() => { if (loading || profileLoading || !user) return; void loadData(); }, [user, loading, profileLoading, loadData]);
 
   const snake = useMemo(() => snakes.find((item) => item.id === selectedSnakeId) ?? snakes[0], [snakes, selectedSnakeId]);
   const history = snake ? (weights[snake.id] ?? snake.weightHistory ?? []) : [];
