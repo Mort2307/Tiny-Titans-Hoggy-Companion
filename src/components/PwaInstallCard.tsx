@@ -12,10 +12,21 @@ function isStandalone() {
     ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
 }
 
+function isIosSafari() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+    /safari/i.test(navigator.userAgent) &&
+    !/crios|fxios|edgios/i.test(navigator.userAgent);
+}
+
+function isChromiumDesktop() {
+  return /chrome|edg/i.test(navigator.userAgent) && !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
 export default function PwaInstallCard() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [iosHelp, setIosHelp] = useState(false);
+  const [browserHelp, setBrowserHelp] = useState(false);
 
   useEffect(() => {
     if (isStandalone() || localStorage.getItem(INSTALLED_KEY) === "true") {
@@ -26,19 +37,21 @@ export default function PwaInstallCard() {
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
+      setBrowserHelp(false);
     };
+
     const onInstalled = () => {
       localStorage.setItem(INSTALLED_KEY, "true");
       setInstalled(true);
       setInstallPrompt(null);
       setIosHelp(false);
+      setBrowserHelp(false);
     };
 
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
     window.addEventListener("appinstalled", onInstalled);
 
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
-    if (ios) setIosHelp(true);
+    if (isIosSafari()) setIosHelp(true);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
@@ -50,17 +63,30 @@ export default function PwaInstallCard() {
 
   const install = async () => {
     if (!installPrompt) {
-      setIosHelp(true);
+      if (isIosSafari()) {
+        setIosHelp(true);
+      } else if (isChromiumDesktop()) {
+        setBrowserHelp(true);
+      }
       return;
     }
+
     await installPrompt.prompt();
     const choice = await installPrompt.userChoice;
+
     if (choice.outcome === "accepted") {
       localStorage.setItem(INSTALLED_KEY, "true");
       setInstalled(true);
     }
+
     setInstallPrompt(null);
   };
+
+  const buttonLabel = installPrompt
+    ? "📲 Install App"
+    : isIosSafari()
+      ? "📱 Add to Home Screen"
+      : "📲 Show Install Help";
 
   return <section className="pwa-install-card" aria-label="Install Tiny Titans">
     <div className="pwa-install-icon">🐍</div>
@@ -69,7 +95,8 @@ export default function PwaInstallCard() {
       <h3>Install Tiny Titans</h3>
       <p>Keep your Hoggy Companion one tap away, with its own app window and automatic updates.</p>
       {iosHelp && !installPrompt && <p className="pwa-install-help">On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>.</p>}
+      {browserHelp && !installPrompt && <p className="pwa-install-help">Your browser has not offered the install prompt yet. Use the browser menu <strong>⋮</strong> → <strong>Install Tiny Titans</strong> (or <strong>Install app</strong>). After installation, this tile will disappear automatically.</p>}
     </div>
-    <button type="button" className="pwa-install-button" onClick={() => void install()}>{installPrompt ? "📲 Install App" : "📱 Add to Home Screen"}</button>
+    <button type="button" className="pwa-install-button" onClick={() => void install()}>{buttonLabel}</button>
   </section>;
 }
