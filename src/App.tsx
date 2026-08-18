@@ -1,4 +1,5 @@
 import "./data/expandMorphDatabase";
+import "./tinyTitansModern.css";
 import AppRouter from "./routes/AppRouter";
 import ExplainThis from "./components/ExplainThis/ExplainThis";
 
