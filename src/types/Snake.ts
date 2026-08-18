@@ -46,6 +46,8 @@ export type Snake = {
   lastWeighedDate: string;
   weightHistory: WeightRecord[];
   weightTracking: { enabled: boolean; frequency: WeightTrackingFrequency };
+  /** Most recently recorded body length in centimetres. Optional so older records remain valid. */
+  lengthCm?: number | null;
   feedingHistory?: FeedingRecord[];
   feedingSchedule?: FeedingSchedule;
   shedHistory?: ShedRecord[];
