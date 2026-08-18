@@ -7,6 +7,9 @@ export type CommunityLocationMember = {
   role: string;
   city: string;
   country: string;
+  areaId: string;
+  latitude: number;
+  longitude: number;
   snakeCount?: number;
 };
 
@@ -18,17 +21,28 @@ export async function getCommunityLocationMembers(): Promise<CommunityLocationMe
     const location = data.approximateLocation as Record<string, unknown> | undefined;
     const preferences = data.dataCollectionPreferences as Record<string, unknown> | undefined;
     if (preferences?.approximateLocation !== true || location?.visibleToCreator !== true) return [];
+
     const city = String(location?.city ?? "").trim();
     const country = String(location?.country ?? "").trim();
     if (!city || !country) return [];
+
+    const areaId = typeof location?.areaId === "string" && location.areaId.trim()
+      ? location.areaId.trim()
+      : `legacy-${city.toLocaleLowerCase("en-GB")}-${country.toLocaleLowerCase("en-GB")}`;
+    const latitude = typeof location?.latitude === "number" && Number.isFinite(location.latitude) ? location.latitude : 0;
+    const longitude = typeof location?.longitude === "number" && Number.isFinite(location.longitude) ? location.longitude : 0;
     const rawSnakeCount = data.snakeCount;
     const snakeCount = typeof rawSnakeCount === "number" && Number.isFinite(rawSnakeCount) ? rawSnakeCount : undefined;
+
     return [{
       uid: item.id,
       displayName: String(data.displayName ?? "").trim() || "Anonymous Titan",
       role: String(data.role ?? "user").trim() || "user",
       city,
       country,
+      areaId,
+      latitude,
+      longitude,
       ...(snakeCount === undefined ? {} : { snakeCount }),
     }];
   });
