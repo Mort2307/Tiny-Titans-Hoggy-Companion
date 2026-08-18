@@ -35,7 +35,7 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
       let approximateLocation = null as Record<string, unknown> | null;
       if (next.location) {
         let resolved: CoarseLocation | undefined;
-        if (navigator.geolocation) { setLocating(true); try { const position = await new Promise<GeolocationPosition>((resolve, reject) => { navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }); }); resolved = await resolveCoarseLocation(position.coords.latitude, position.coords.longitude); } catch { } finally { setLocating(false); } }
+        if (navigator.geolocation) { setLocating(true); try { const position = await new Promise<GeolocationPosition>((resolve, reject) => { navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }); }); resolved = await resolveCoarseLocation(position.coords.latitude, position.coords.longitude); } catch { resolved = undefined; } finally { setLocating(false); } }
         if (!resolved) {
           if (!city.trim() || !country.trim()) throw new Error("Allow approximate location access, or enter your city and country manually.");
           const existing = profile?.approximateLocation;
