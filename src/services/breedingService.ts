@@ -1,4 +1,5 @@
 import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
+import { db } from "../firebase/config";
 import type { BreedingPairing, BreedingProject, EggClutch, HatchlingRecord } from "../types/Breeding";
 import { resolveDataOwnerUid } from "./familyService";
 import { requestFamilyMutation } from "./familyPermissionsService";
