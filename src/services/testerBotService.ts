@@ -2,27 +2,12 @@ import { collection, doc, getDoc, serverTimestamp, setDoc } from "firebase/fires
 import { getIdTokenResult } from "firebase/auth";
 import { auth, db } from "../firebase/config";
 
-export type TesterStatus = "pass" | "fail" | "blocked";
+export type TesterStatus = "pass" | "fail" | "blocked" | "not-tested";
 export type TesterSeverity = "info" | "low" | "medium" | "high" | "critical";
 export type TesterCategory =
-  | "auth"
-  | "account"
-  | "firebase"
-  | "snakes"
-  | "weights"
-  | "feeding"
-  | "sheds"
-  | "genetics"
-  | "morphs"
-  | "community"
-  | "mobile"
-  | "creator"
-  | "feedback"
-  | "notifications"
-  | "application"
-  | "learning"
-  | "trackers"
-  | "breeding";
+  | "auth" | "account" | "firebase" | "snakes" | "weights" | "feeding" | "sheds"
+  | "genetics" | "morphs" | "community" | "mobile" | "creator" | "feedback"
+  | "notifications" | "application" | "learning" | "trackers" | "breeding";
 
 export type TesterCheck = {
   checkId: string;
@@ -48,7 +33,7 @@ export type TesterRun = {
   id: string;
   ownerUid: string;
   suite: string;
-  status: "passed" | "failed" | "blocked";
+  status: "passed" | "failed" | "blocked" | "incomplete";
   startedAt: string;
   completedAt: string;
   durationMs: number;
@@ -61,23 +46,21 @@ function makeRunId() {
 
 function getResultStatus(results: TesterResult[]): TesterRun["status"] {
   if (results.some((result) => result.status === "fail")) return "failed";
-  if (results.some((result) => result.status === "blocked")) return "blocked";
+  if (results.some((result) => result.status === "blocked" || result.status === "not-tested")) return "incomplete";
   return "passed";
 }
 
 async function persistTesterRun(uid: string, run: TesterRun): Promise<void> {
   if (!uid) throw new Error("Tester run cannot be persisted without an owner UID.");
-
   const runRef = doc(collection(db, "users", uid, "testerRuns"), run.id);
   await setDoc(runRef, {
     ...run,
-    startedAt: run.startedAt,
-    completedAt: run.completedAt,
     createdAt: serverTimestamp(),
     resultCount: run.results.length,
     passedCount: run.results.filter((result) => result.status === "pass").length,
     failedCount: run.results.filter((result) => result.status === "fail").length,
     blockedCount: run.results.filter((result) => result.status === "blocked").length,
+    notTestedCount: run.results.filter((result) => result.status === "not-tested").length,
   });
 }
 
@@ -91,10 +74,7 @@ export function createCoreDiagnosticChecks(input: {
 
   return [
     {
-      checkId: "auth-current-user",
-      name: "Authenticated user is available",
-      category: "auth",
-      severity: "critical",
+      checkId: "auth-current-user", name: "Authenticated user is available", category: "auth", severity: "critical",
       run: async () => {
         const currentUser = auth.currentUser;
         if (!authenticated || !currentUser) return { status: "fail", message: "Firebase Auth does not report an authenticated user." };
@@ -103,19 +83,11 @@ export function createCoreDiagnosticChecks(input: {
       },
     },
     {
-      checkId: "auth-creator-claim",
-      name: "Creator authorization claim is present",
-      category: "creator",
-      severity: "critical",
-      run: async () => creatorClaim
-        ? { status: "pass", message: "Creator/admin authorization claim is active." }
-        : { status: "fail", message: "Creator/admin authorization claim is missing." },
+      checkId: "auth-creator-claim", name: "Creator authorization claim is present", category: "creator", severity: "critical",
+      run: async () => creatorClaim ? { status: "pass", message: "Creator/admin authorization claim is active." } : { status: "fail", message: "Creator/admin authorization claim is missing." },
     },
     {
-      checkId: "auth-token-refresh",
-      name: "Firebase ID token can be refreshed",
-      category: "auth",
-      severity: "high",
+      checkId: "auth-token-refresh", name: "Firebase ID token can be refreshed", category: "auth", severity: "high",
       run: async () => {
         const currentUser = auth.currentUser;
         if (!currentUser) return { status: "blocked", message: "No authenticated Firebase user is available." };
@@ -128,10 +100,7 @@ export function createCoreDiagnosticChecks(input: {
       },
     },
     {
-      checkId: "account-profile-readable",
-      name: "Current account profile is readable",
-      category: "account",
-      severity: "high",
+      checkId: "account-profile-readable", name: "Current account profile is readable", category: "account", severity: "high",
       run: async () => {
         try {
           const snapshot = await getDoc(doc(db, "users", uid));
@@ -145,10 +114,7 @@ export function createCoreDiagnosticChecks(input: {
       },
     },
     {
-      checkId: "firebase-user-scope",
-      name: "User-scoped Firestore access works",
-      category: "firebase",
-      severity: "critical",
+      checkId: "firebase-user-scope", name: "User-scoped Firestore access works", category: "firebase", severity: "critical",
       run: async () => {
         try {
           await getDoc(doc(db, "users", uid));
@@ -175,37 +141,13 @@ export async function runTesterSuite(uid: string, suite: string, checks: TesterC
     try {
       outcome = await check.run();
     } catch (error) {
-      outcome = {
-        status: "fail",
-        message: error instanceof Error ? error.message : "Tester check threw an unknown error.",
-      };
+      outcome = { status: "fail", message: error instanceof Error ? error.message : "Tester check threw an unknown error." };
     }
-
-    results.push({
-      checkId: check.checkId,
-      name: check.name,
-      suite,
-      category: check.category,
-      status: outcome.status,
-      severity: check.severity,
-      message: outcome.message,
-      durationMs: Date.now() - checkStarted,
-      timestamp: new Date().toISOString(),
-    });
+    results.push({ checkId: check.checkId, name: check.name, suite, category: check.category, status: outcome.status, severity: check.severity, message: outcome.message, durationMs: Date.now() - checkStarted, timestamp: new Date().toISOString() });
   }
 
   const completedAt = new Date().toISOString();
-  const run: TesterRun = {
-    id: makeRunId(),
-    ownerUid: uid,
-    suite,
-    status: getResultStatus(results),
-    startedAt,
-    completedAt,
-    durationMs: Date.now() - started,
-    results,
-  };
-
+  const run: TesterRun = { id: makeRunId(), ownerUid: uid, suite, status: getResultStatus(results), startedAt, completedAt, durationMs: Date.now() - started, results };
   await persistTesterRun(uid, run);
   return run;
 }
