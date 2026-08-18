@@ -38,10 +38,19 @@ export function isTerminalReportStatus(status: ReportIssueStatus | CanonicalRepo
   return REPORT_LIFECYCLE[current].length === 0;
 }
 
-/** True only while a report still requires active Creator action. Resolved reports are intentionally excluded from dashboard/action counts even though they may still be awaiting optional verification. */
+/**
+ * Returns true only while a report requires active Creator action.
+ * Resolved and Verified reports are no longer counted as new/actionable
+ * dashboard reports. They remain available in the queue/history and can be
+ * explicitly archived there without inflating the active badge count.
+ */
 export function isActiveReportIssueStatus(status: ReportIssueStatus | CanonicalReportIssueStatus): boolean {
   const current = getCanonicalReportStatus(status);
-  return current !== "Resolved" && !isTerminalReportStatus(current);
+  return current === "Draft"
+    || current === "Submitted"
+    || current === "Under Review"
+    || current === "Confirmed"
+    || current === "In Progress";
 }
 
 export function getReportLifecycleLabel(status: ReportIssueStatus | CanonicalReportIssueStatus): string {
