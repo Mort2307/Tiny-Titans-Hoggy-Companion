@@ -4,22 +4,40 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function userRecord() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function hasCapability(capability) {
-      return signedIn() && (request.auth.token.admin == true || request.auth.token[capability] == true || userRecord().role == "admin" || userRecord().role == capability || (capability == "tester" && userRecord().isTester == true));
-    }
+    function hasCapability(capability) { return signedIn() && (request.auth.token.admin == true || request.auth.token[capability] == true || userRecord().role == "admin" || userRecord().role == capability || (capability == "tester" && userRecord().isTester == true)); }
     function isCreator() { return hasCapability("creator"); }
     function isTester() { return hasCapability("tester"); }
     function isEducator() { return hasCapability("educator"); }
     function isModerator() { return hasCapability("moderator"); }
+    function familyMemberOf(userId) { return signedIn() && request.auth.uid != userId && userRecord().get('familyId', '') != '' && userRecord().get('familyId', '') == get(/databases/$(database)/documents/users/$(userId)).data.get('familyId', '') && get(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))).data.memberUids.hasAll([request.auth.uid, userId]); }
+    function canAccessUserData(userId) { return signedIn() && (request.auth.uid == userId || familyMemberOf(userId) || isCreator()); }
 
     match /users/{userId} {
       allow create: if signedIn() && request.auth.uid == userId && request.resource.data.role == "user";
-      allow get: if signedIn() && request.auth.uid == userId;
+      allow get: if signedIn() && (request.auth.uid == userId || familyMemberOf(userId) || isCreator());
       allow list: if isCreator();
-      allow update: if signedIn() && (isCreator() || (request.auth.uid == userId && request.resource.data.role == resource.data.role));
+      allow update: if signedIn() && (isCreator() || (request.auth.uid == userId && request.resource.data.role == resource.data.role) || (familyMemberOf(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['familyId', 'familyRole'])));
       allow delete: if isCreator();
     }
-    match /users/{userId}/{document=**} { allow read, write: if signedIn() && (request.auth.uid == userId || isCreator()); }
+    match /users/{userId}/{document=**} { allow read, write: if canAccessUserData(userId); }
+
+    match /families/{familyId} {
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.memberUids == [request.auth.uid] && request.resource.data.members.size() == 1;
+      allow get: if signedIn() && (request.auth.uid in resource.data.memberUids || isCreator());
+      allow list: if false;
+      allow update: if signedIn() && (
+        (resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid && request.resource.data.memberUids.size() <= 3) ||
+        (request.auth.uid in request.resource.data.memberUids && !(request.auth.uid in resource.data.memberUids) && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1 && request.resource.data.memberUids.hasAll(resource.data.memberUids) && request.resource.data.get('acceptingInviteId', '') != '' && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('familyId', '') == familyId && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('targetEmail', '') == request.auth.token.email && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.get('acceptingInviteId', ''))).data.get('status', '') == 'pending')
+      );
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /familyInvites/{inviteId} {
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && get(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.ownerUid == request.auth.uid && request.resource.data.targetEmail is string && request.resource.data.status == 'pending';
+      allow get, list: if signedIn() && (isCreator() || resource.data.ownerUid == request.auth.uid || resource.data.targetEmail == request.auth.token.email);
+      allow update: if signedIn() && ((resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid) || (resource.data.targetEmail == request.auth.token.email && request.resource.data.targetEmail == resource.data.targetEmail && request.resource.data.familyId == resource.data.familyId && request.resource.data.status in ['accepted', 'declined']));
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
 
     match /testerSandboxes/{sandboxId} {
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.syntheticOnly == true && request.resource.data.purpose == "bot-test";
@@ -27,42 +45,14 @@ service cloud.firestore {
       allow update: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == request.auth.uid && request.resource.data.syntheticOnly == true;
       allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
       allow list: if false;
-      match /{document=**} {
-        allow read, write: if signedIn() && get(/databases/$(database)/documents/testerSandboxes/$(sandboxId)).data.ownerUid == request.auth.uid;
-      }
+      match /{document=**} { allow read, write: if signedIn() && get(/databases/$(database)/documents/testerSandboxes/$(sandboxId)).data.ownerUid == request.auth.uid; }
     }
-
-    match /geneticsCalculations/{calculationId} {
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
-      allow get, list: if isCreator();
-      allow update, delete: if isCreator();
-    }
+    match /geneticsCalculations/{calculationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow get, list: if isCreator(); allow update, delete: if isCreator(); }
     match /supporters/{userId} { allow get: if signedIn() && (request.auth.uid == userId || isCreator()); allow list: if isCreator(); allow create, update, delete: if isCreator(); }
     match /supporterWall/{entryId} { allow read: if signedIn(); allow create, update, delete: if isCreator(); }
     match /supporterStats/{statId} { allow read, write: if isCreator(); }
-
-    match /issueReports/{reportId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
-      allow list: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid);
-      allow update, delete: if isCreator();
-      match /messages/{messageId} {
-        allow read: if signedIn() && (isCreator() || get(/databases/$(database)/documents/issueReports/$(reportId)).data.userId == request.auth.uid);
-        allow create: if signedIn() && (isCreator() || get(/databases/$(database)/documents/issueReports/$(reportId)).data.userId == request.auth.uid) && request.resource.data.senderId == request.auth.uid && request.resource.data.senderRole == (isCreator() ? "creator" : "user");
-        allow update, delete: if false;
-      }
-    }
-    match /feedback/{feedbackId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
-      allow list: if isCreator();
-      allow update, delete: if isCreator();
-      match /messages/{messageId} {
-        allow read: if signedIn() && (isCreator() || get(/databases/$(database)/documents/feedback/$(feedbackId)).data.userId == request.auth.uid);
-        allow create: if signedIn() && (isCreator() || get(/databases/$(database)/documents/feedback/$(feedbackId)).data.userId == request.auth.uid) && request.resource.data.senderId == request.auth.uid && request.resource.data.senderRole == (isCreator() ? "creator" : "user");
-        allow update, delete: if false;
-      }
-    }
+    match /issueReports/{reportId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid); allow update, delete: if isCreator(); match /messages/{messageId} { allow read: if signedIn() && (isCreator() || get(/databases/$(database)/documents/issueReports/$(reportId)).data.userId == request.auth.uid); allow create: if signedIn() && (isCreator() || get(/databases/$(database)/documents/issueReports/$(reportId)).data.userId == request.auth.uid) && request.resource.data.senderId == request.auth.uid && request.resource.data.senderRole == (isCreator() ? "creator" : "user"); allow update, delete: if false; } }
+    match /feedback/{feedbackId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator(); allow update, delete: if isCreator(); match /messages/{messageId} { allow read: if signedIn() && (isCreator() || get(/databases/$(database)/documents/feedback/$(feedbackId)).data.userId == request.auth.uid); allow create: if signedIn() && (isCreator() || get(/databases/$(database)/documents/feedback/$(feedbackId)).data.userId == request.auth.uid) && request.resource.data.senderId == request.auth.uid && request.resource.data.senderRole == (isCreator() ? "creator" : "user"); allow update, delete: if false; } }
     match /founderApplications/{applicationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isCreator(); }
     match /communityPosts/{postId} { allow read: if signedIn() && (resource.data.audience == "everyone" || (resource.data.audience == "testers" && isTester()) || (resource.data.audience == "educator" && isEducator()) || (resource.data.audience == "moderator" && isModerator()) || (resource.data.audience == "admin" && isCreator())); allow create, update, delete: if isCreator(); }
     match /morphSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "creating" && request.resource.data.moderationStatus == "pending" && request.resource.data.submissionComplete == false; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator(); allow update, delete: if isCreator(); }
