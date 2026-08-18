@@ -1,4 +1,4 @@
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getCountFromServer, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 export type CommunityLocationMember = {
@@ -13,10 +13,21 @@ export type CommunityLocationMember = {
   snakeCount?: number;
 };
 
+async function getTrackedSnakeCount(uid: string): Promise<number | undefined> {
+  try {
+    const snapshot = await getCountFromServer(collection(db, "users", uid, "snakes"));
+    return snapshot.data().count;
+  } catch (error) {
+    // The community map should still render if a count cannot be read.
+    console.warn("Tiny Titans: unable to read community snake count", { uid, error });
+    return undefined;
+  }
+}
+
 /** Creator-only, consent-filtered community location intelligence. */
 export async function getCommunityLocationMembers(): Promise<CommunityLocationMember[]> {
   const snapshot = await getDocs(collection(db, "users"));
-  return snapshot.docs.flatMap((item) => {
+  const candidates = snapshot.docs.flatMap((item) => {
     const data = item.data() as Record<string, unknown>;
     const location = data.approximateLocation as Record<string, unknown> | undefined;
     const preferences = data.dataCollectionPreferences as Record<string, unknown> | undefined;
@@ -35,8 +46,6 @@ export async function getCommunityLocationMembers(): Promise<CommunityLocationMe
     const areaId = typeof location?.areaId === "string" && location.areaId.trim()
       ? location.areaId.trim()
       : `legacy-${city.toLocaleLowerCase("en-GB")}-${country.toLocaleLowerCase("en-GB")}`;
-    const rawSnakeCount = data.snakeCount;
-    const snakeCount = typeof rawSnakeCount === "number" && Number.isFinite(rawSnakeCount) ? rawSnakeCount : undefined;
 
     return [{
       uid: item.id,
@@ -47,7 +56,13 @@ export async function getCommunityLocationMembers(): Promise<CommunityLocationMe
       areaId,
       latitude,
       longitude,
-      ...(snakeCount === undefined ? {} : { snakeCount }),
     }];
   });
+
+  const members = await Promise.all(candidates.map(async (member) => {
+    const snakeCount = await getTrackedSnakeCount(member.uid);
+    return snakeCount === undefined ? member : { ...member, snakeCount };
+  }));
+
+  return members;
 }
