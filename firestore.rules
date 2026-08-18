@@ -5,13 +5,7 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function userRecord() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function hasCapability(capability) {
-      return signedIn() && (
-        request.auth.token.admin == true ||
-        request.auth.token[capability] == true ||
-        userRecord().role == "admin" ||
-        userRecord().role == capability ||
-        (capability == "tester" && userRecord().isTester == true)
-      );
+      return signedIn() && (request.auth.token.admin == true || request.auth.token[capability] == true || userRecord().role == "admin" || userRecord().role == capability || (capability == "tester" && userRecord().isTester == true));
     }
     function isCreator() { return hasCapability("creator"); }
     function isTester() { return hasCapability("tester"); }
@@ -29,7 +23,9 @@ service cloud.firestore {
 
     match /testerSandboxes/{sandboxId} {
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.syntheticOnly == true && request.resource.data.purpose == "bot-test";
-      allow get, update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == request.auth.uid;
+      allow get: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow update: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == request.auth.uid && request.resource.data.syntheticOnly == true;
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
       allow list: if false;
       match /{document=**} {
         allow read, write: if signedIn() && get(/databases/$(database)/documents/testerSandboxes/$(sandboxId)).data.ownerUid == request.auth.uid;
@@ -56,7 +52,6 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
-
     match /feedback/{feedbackId} {
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
       allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
@@ -68,18 +63,9 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
-
     match /founderApplications/{applicationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read, update, delete: if isCreator(); }
-    match /communityPosts/{postId} {
-      allow read: if signedIn() && (resource.data.audience == "everyone" || (resource.data.audience == "testers" && isTester()) || (resource.data.audience == "educator" && isEducator()) || (resource.data.audience == "moderator" && isModerator()) || (resource.data.audience == "admin" && isCreator()));
-      allow create, update, delete: if isCreator();
-    }
-    match /morphSubmissions/{submissionId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "creating" && request.resource.data.moderationStatus == "pending" && request.resource.data.submissionComplete == false;
-      allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
-      allow list: if isCreator();
-      allow update, delete: if isCreator();
-    }
+    match /communityPosts/{postId} { allow read: if signedIn() && (resource.data.audience == "everyone" || (resource.data.audience == "testers" && isTester()) || (resource.data.audience == "educator" && isEducator()) || (resource.data.audience == "moderator" && isModerator()) || (resource.data.audience == "admin" && isCreator())); allow create, update, delete: if isCreator(); }
+    match /morphSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "creating" && request.resource.data.moderationStatus == "pending" && request.resource.data.submissionComplete == false; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator(); allow update, delete: if isCreator(); }
     match /morphImageSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (request.auth.uid == resource.data.userId || isCreator()); allow list: if isCreator(); allow update, delete: if isCreator(); }
     match /approvedMorphImages/{imageId} { allow read: if signedIn(); allow create, update, delete: if isCreator(); }
     match /{document=**} { allow read, write: if false; }
