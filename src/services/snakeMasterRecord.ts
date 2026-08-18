@@ -26,7 +26,21 @@ function buildTimeline(snake: Snake, weights: WeightRecord[], feedings: FeedingR
   (snake.healthHistory ?? []).forEach((record) => events.push({ id: `health-${record.id}`, snakeId: snake.id, date: record.date, type: "Health", title: record.title || record.eventType, description: record.description || record.status, relatedRecordId: record.id }));
   (snake.breedingHistory ?? []).forEach((record) => events.push({ id: `breeding-${record.id}`, snakeId: snake.id, date: record.pairingDate, type: "Breeding", title: `Breeding — ${record.status}`, description: record.notes, relatedRecordId: record.id }));
   (snake.timeline ?? []).forEach((event) => { if (!event.date || events.some((existing) => existing.id === event.id)) return; events.push(event); });
-  return events.filter((event) => event.date).sort((a, b) => b.date.localeCompare(a.date));
+
+  // The timeline is a presentation of the snake's history, not a second database.
+  // Some older migrations can expose the same event twice under different record IDs.
+  // Collapse only genuinely identical events; legitimate same-day records with different
+  // values/details remain separate.
+  const seen = new Set<string>();
+  return events
+    .filter((event) => event.date)
+    .filter((event) => {
+      const duplicateKey = [event.snakeId, event.date, event.type, event.title, event.description ?? ""].join("|");
+      if (seen.has(duplicateKey)) return false;
+      seen.add(duplicateKey);
+      return true;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 }
 
 export async function getSnakeMasterRecord(uid: string, snakeId: string): Promise<SnakeMasterRecord | null> {
