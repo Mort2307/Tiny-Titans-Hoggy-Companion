@@ -7,7 +7,7 @@ import { getDashboardIntelligence, type SnakeIntelligence } from "../services/sn
 import "./Home.css";
 
 function confidenceLabel(value: SnakeIntelligence["confidence"]): string {
-  return value === "High" ? "High confidence" : value === "Moderate" ? "Moderate confidence" : value === "Low" ? "Low confidence" : "Building baseline";
+  return value === "High" ? "High · Reliable pattern" : value === "Moderate" ? "Moderate · Pattern developing" : value === "Low" ? "Low · More data needed" : "More data needed";
 }
 
 function Home() {
@@ -54,6 +54,15 @@ function Home() {
     return Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length);
   }, [intelligence]);
 
+  const overallConfidence = useMemo<SnakeIntelligence["confidence"]>(() => {
+    if (!intelligence.length) return "Insufficient";
+    const order: Record<SnakeIntelligence["confidence"], number> = { High: 4, Moderate: 3, Low: 2, Insufficient: 1 };
+    const averageRank = intelligence.reduce((sum, item) => sum + order[item.confidence], 0) / intelligence.length;
+    return averageRank >= 3.5 ? "High" : averageRank >= 2.5 ? "Moderate" : averageRank >= 1.5 ? "Low" : "Insufficient";
+  }, [intelligence]);
+
+  const confidenceExplanation = intelligence[0]?.confidenceExplanation ?? "Intelligence Confidence describes how reliably Tiny Titans can interpret the recorded data. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+
   return <div className="dashboard">
     <section className="welcome-card">
       <div className="welcome-content">
@@ -86,6 +95,15 @@ function Home() {
             <div className="tt-coverage-heading"><div><p className="tt-intelligence-kicker">OVERALL INTELLIGENCE COVERAGE</p><h4 className="tt-intelligence-title">{totalCoveragePercent}% of the core personal-history baseline built</h4></div><strong className="tt-coverage-value">{totalCoveragePercent}%</strong></div>
             <div className="tt-coverage-track" role="progressbar" aria-label="Overall intelligence data coverage" aria-valuemin={0} aria-valuemax={100} aria-valuenow={totalCoveragePercent}><span style={{ width: `${totalCoveragePercent}%` }} /></div>
             <p className="tt-intelligence-meta">This is a transparent data-coverage percentage, not a health score. It represents how much useful weight, feeding and shed history Tiny Titans currently has across your snakes. More real records make the individual intelligence stronger.</p>
+          </section>
+
+          <section className="tt-intelligence-panel tt-confidence-panel">
+            <div className="tt-confidence-heading">
+              <div><p className="tt-intelligence-kicker">INTELLIGENCE CONFIDENCE</p><h4 className="tt-intelligence-title">{confidenceLabel(overallConfidence)} <button type="button" className="tt-confidence-help" title={confidenceExplanation} aria-label="What does Intelligence Confidence mean?">?</button></h4></div>
+              <strong className="tt-confidence-value">{overallConfidence}</strong>
+            </div>
+            <p className="tt-intelligence-meta">This is <strong>not</strong> a rating of your keeping ability or your snake's health. It tells you how reliably Tiny Titans can interpret the information you have recorded.</p>
+            <details className="tt-confidence-details"><summary>What does Intelligence Confidence mean?</summary><p>{confidenceExplanation}</p></details>
           </section>
 
           {priorityInsights.length === 0 ? <section className="tt-intelligence-panel"><p className="tt-intelligence-kicker">Baseline mode</p><h4 className="tt-intelligence-title">Nothing needs your attention right now.</h4><p className="tt-intelligence-meta">That's a good thing. As you record weights, feeds, sheds and observations, Tiny Titans will only surface patterns when your own data gives it a useful reason.</p><a className="tt-intelligence-action" href="/snakes">Open My Snakes →</a></section>
