@@ -14,21 +14,15 @@
   "categories": ["education", "lifestyle"],
   "icons": [
     {
-      "src": "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg",
-      "sizes": "any",
+      "src": "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=2",
+      "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "/icons/tiny-titans-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/tiny-titans-512.svg",
+      "src": "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=2",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ]
