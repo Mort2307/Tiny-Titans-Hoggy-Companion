@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { hasCreatorTesterClaim } from "../services/creatorTesterAuthService";
 import { runTesterSuite, type TesterRun } from "../services/testerBotService";
 import { buildBotChecks, buildFullBotChecks, BOT_DEFINITIONS, getBotDefinition, type BotDefinition } from "../services/testerBotRegistry";
-import { summariseTesterEvidence, type TesterEvidenceStatus } from "../services/testerEvidenceService";
+import type { TesterEvidenceStatus } from "../services/testerEvidenceService";
 import { useAuth } from "../context/useAuth";
 import PageBackButton from "../components/PageBackButton";
 import "./TesterCentre.css";
