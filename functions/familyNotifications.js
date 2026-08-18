@@ -11,34 +11,26 @@ async function sendPush(uid, eventKey, title, body, url) {
   const profile = await userRef.get();
   const settings = profile.data()?.notificationSettings || {};
   if (settings.enabled !== true) return { sent: 0, invalid: 0 };
-
   const eventRef = userRef.collection("notificationEvents").doc(eventKey);
   const existing = await eventRef.get();
   if (existing.exists) return { sent: 0, invalid: 0, duplicate: true };
-
   const tokenSnapshot = await userRef.collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokenSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
   if (!tokenDocs.length) {
     await eventRef.set({ type: "family", status: "no-delivery", title, body, url, createdAt: FieldValue.serverTimestamp() });
     return { sent: 0, invalid: 0 };
   }
-
   await eventRef.set({ type: "family", status: "sending", title, body, url, createdAt: FieldValue.serverTimestamp() });
   let sent = 0;
   let invalid = 0;
   for (let index = 0; index < tokenDocs.length; index += 500) {
     const batch = tokenDocs.slice(index, index + 500);
-    const response = await messaging.sendEachForMulticast({
-      tokens: batch.map((item) => item.data().token),
-      data: { title, body, eventKey, url },
-    });
+    const response = await messaging.sendEachForMulticast({ tokens: batch.map((item) => item.data().token), data: { title, body, eventKey, url } });
     sent += response.successCount;
     invalid += response.failureCount;
     await Promise.all(response.responses.map(async (result, responseIndex) => {
       const code = result.error?.code || "";
-      if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") {
-        await batch[responseIndex].ref.delete();
-      }
+      if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete();
     }));
   }
   await eventRef.set({ status: sent > 0 ? "sent" : "failed", sentCount: sent, invalidTokenCount: invalid, sentAt: FieldValue.serverTimestamp() }, { merge: true });
@@ -83,16 +75,10 @@ exports.sendFamilyApprovalDecisionNotification = onDocumentUpdated({ document: "
   await sendPush(requesterUid, `family-approval-decision-${event.params.approvalId}-${after.status}`, title, body, "/account/family");
 });
 
-/**
- * Live QA probe used by the Creator Notification BOT.
- * It never accepts a target UID: the notification is always sent to the
- * authenticated caller, preventing the probe from becoming a cross-account
- * notification primitive.
- */
+/** Live QA probe. The target is always the authenticated caller; no target UID is accepted. */
 exports.runNotificationBotProbe = onCall({ region: "europe-west2" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "You must be signed in to run the Notification BOT.");
-
   const profile = await db.collection("users").doc(uid).get();
   const data = profile.data() || {};
   const claims = request.auth.token || {};
@@ -104,7 +90,7 @@ exports.runNotificationBotProbe = onCall({ region: "europe-west2" }, async (requ
 
   const title = "🤖 Tiny Titans Notification BOT";
   const body = "Live notification probe passed through the production notification pipeline.";
-  const url = "/notifications";
+  const url = "/settings";
   const eventRef = db.collection("users").doc(uid).collection("notificationEvents").doc(eventKey);
   const existing = await eventRef.get();
   if (existing.exists) throw new HttpsError("already-exists", "Notification BOT event key already exists.");
@@ -129,7 +115,6 @@ exports.runNotificationBotProbe = onCall({ region: "europe-west2" }, async (requ
       if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete();
     }));
   }
-
   const status = sent > 0 ? "sent" : "failed";
   await eventRef.set({ status, sentCount: sent, invalidTokenCount: invalid, completedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { eventKey, status, sentCount: sent, invalidTokenCount: invalid, title, body, url };
