@@ -67,6 +67,8 @@ export default function PwaInstallCard() {
         setIosHelp(true);
       } else if (isChromiumDesktop()) {
         setBrowserHelp(true);
+      } else {
+        setBrowserHelp(true);
       }
       return;
     }
@@ -83,19 +85,19 @@ export default function PwaInstallCard() {
   };
 
   const buttonLabel = installPrompt
-    ? "📲 Install App"
+    ? "📲 Download Tiny Titans"
     : isIosSafari()
       ? "📱 Add to Home Screen"
-      : "📲 Show Install Help";
+      : "📲 Show Download Help";
 
-  return <section className="pwa-install-card" aria-label="Install Tiny Titans">
+  return <section className="pwa-install-card" aria-label="Download Tiny Titans">
     <div className="pwa-install-icon">🐍</div>
     <div className="pwa-install-copy">
       <p className="section-eyebrow">TINY TITANS APP</p>
-      <h3>Install Tiny Titans</h3>
-      <p>Keep your Hoggy Companion one tap away, with its own app window and automatic updates.</p>
-      {iosHelp && !installPrompt && <p className="pwa-install-help">On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>.</p>}
-      {browserHelp && !installPrompt && <p className="pwa-install-help">Your browser has not offered the install prompt yet. Use the browser menu <strong>⋮</strong> → <strong>Install Tiny Titans</strong> (or <strong>Install app</strong>). After installation, this tile will disappear automatically.</p>}
+      <h3>Download Tiny Titans</h3>
+      <p>Install Tiny Titans on your device for quick access, its own app window and automatic updates.</p>
+      {iosHelp && !installPrompt && <p className="pwa-install-help">On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. This installs Tiny Titans as an app.</p>}
+      {browserHelp && !installPrompt && <p className="pwa-install-help">Your browser has not offered the download prompt yet. Open the browser menu <strong>⋮</strong> and choose <strong>Install Tiny Titans</strong> or <strong>Install app</strong>. This installs the app rather than creating an ordinary bookmark.</p>}
     </div>
     <button type="button" className="pwa-install-button" onClick={() => void install()}>{buttonLabel}</button>
   </section>;
