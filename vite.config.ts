@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 const tinyTitansLogo = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg";
+const tinyTitansIcon = "/favicon.svg";
 
 export default defineConfig({
   plugins: [
@@ -11,17 +12,21 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "icons.svg", tinyTitansLogo.replace(/^\//, "")],
       manifest: {
+        id: "/",
         name: "Tiny Titans Hoggy Companion",
         short_name: "Tiny Titans",
         description: "Western Hognose snake tracking, genetics and husbandry companion app.",
         theme_color: "#140022",
         background_color: "#140022",
         display: "standalone",
-        orientation: "portrait",
+        orientation: "portrait-primary",
         start_url: "/",
         scope: "/",
+        lang: "en-GB",
+        categories: ["education", "lifestyle"],
         icons: [
-          { src: tinyTitansLogo, sizes: "any", type: "image/jpeg", purpose: "any maskable" },
+          { src: tinyTitansLogo, sizes: "any", type: "image/jpeg", purpose: "any" },
+          { src: tinyTitansIcon, sizes: "any", type: "image/svg+xml", purpose: "any maskable" },
         ],
       },
       workbox: {
