@@ -38,6 +38,10 @@ export default function SnakeMasterRecord() {
     setError("");
   };
 
+  // loadRecord closes over the current authenticated snake identity. The lifecycle
+  // key below is the explicit trigger; keeping this effect dependency contract here
+  // avoids recreating the loader solely to satisfy the dependency analyser.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!user || !id) return;
     let cancelled = false;
