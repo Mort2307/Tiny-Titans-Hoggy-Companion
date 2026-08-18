@@ -11,6 +11,9 @@ import {
 } from "firebase/firestore";
 
 import type { Snake } from "../types/Snake";
+import type { WeightRecord } from "../types/Weight";
+import type { FeedingRecord } from "../types/Feeding";
+import type { ShedRecord } from "../types/Shed";
 
 import { db } from "../firebase/config";
 
@@ -88,10 +91,29 @@ async function prepareSnakeForFirestore(snake: Snake, firestoreId: string, uid: 
   return cleaned as Record<string, unknown>;
 }
 
+async function hydrateSnakeTrackerHistory(uid: string, snake: Snake): Promise<Snake> {
+  if (!snake.id) return snake;
+  const [weights, feedings, sheds] = await Promise.all([
+    getDocs(snakeSubcollection(uid, snake.id, "weights")),
+    getDocs(snakeSubcollection(uid, snake.id, "feedings")),
+    getDocs(snakeSubcollection(uid, snake.id, "sheds")),
+  ]);
+
+  return {
+    ...snake,
+    weightHistory: weights.docs.map((item) => ({ ...(item.data() as WeightRecord), id: item.id, snakeId: snake.id })),
+    feedingHistory: feedings.docs.map((item) => ({ ...(item.data() as FeedingRecord), id: item.id, snakeId: snake.id })),
+    shedHistory: sheds.docs.map((item) => ({ ...(item.data() as ShedRecord), id: item.id, snakeId: snake.id })),
+  };
+}
+
 export async function getUserSnakes(uid: string): Promise<Snake[]> {
   if (!uid) throw new Error("Cannot load snakes without a user ID.");
-  try { const snapshot = await getDocs(query(snakesCollection(uid), orderBy("name"))); return snapshot.docs.map((document) => migrateSnake({ ...(document.data() as Partial<Snake>), id: document.id })); }
-  catch (error) { console.error("Tiny Titans: unable to get user snakes", error); throw new Error(getFirestoreErrorMessage(error), { cause: error }); }
+  try {
+    const snapshot = await getDocs(query(snakesCollection(uid), orderBy("name")));
+    const snakes = snapshot.docs.map((document) => migrateSnake({ ...(document.data() as Partial<Snake>), id: document.id }));
+    return await Promise.all(snakes.map((snake) => hydrateSnakeTrackerHistory(uid, snake)));
+  } catch (error) { console.error("Tiny Titans: unable to get user snakes", error); throw new Error(getFirestoreErrorMessage(error), { cause: error }); }
 }
 
 export async function getUserSnake(uid: string, snakeId: string): Promise<Snake | null> {
