@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 import { useAuth, type UserCategory, type ExperienceLevel } from "../context/useAuth";
 import app from "../firebase/config";
@@ -10,12 +10,8 @@ import logo from "../assets/TinyTitans-Logo.jpg";
 const db = getFirestore(app);
 type Interest = "keeper" | "breeder" | "breeder-seller" | "learner";
 const CONSENT_VERSION = "2026-08-16-location-analytics-v1";
-
 const profileOptions: Array<{ id: ProfileType; icon: string; title: string; description: string }> = [
-  { id: "keeper", icon: "🐍", title: "Keeper", description: "I keep and care for reptiles." },
-  { id: "learner", icon: "🎓", title: "Learner", description: "I'm here to learn about reptiles and biology." },
-  { id: "educator", icon: "🧑‍🏫", title: "Educator / Teacher", description: "I want to use Tiny Titans for teaching or classes." },
-  { id: "professional", icon: "🔬", title: "Professional / Advanced", description: "I want deeper husbandry, genetics and data tools." },
+  { id: "keeper", icon: "🐍", title: "Keeper", description: "I keep and care for reptiles." }, { id: "learner", icon: "🎓", title: "Learner", description: "I'm here to learn about reptiles and biology." }, { id: "educator", icon: "🧑‍🏫", title: "Educator / Teacher", description: "I want to use Tiny Titans for teaching or classes." }, { id: "professional", icon: "🔬", title: "Professional / Advanced", description: "I want deeper husbandry, genetics and data tools." },
 ];
 const ageOptions: Array<{ id: AgeBand; title: string; description: string }> = [
   { id: "7-10", title: "Explorer", description: "Approx. ages 7–10" }, { id: "11-14", title: "Learner", description: "Approx. ages 11–14" }, { id: "15-18", title: "Student", description: "Approx. ages 15–18" }, { id: "adult", title: "Adult", description: "Adult learner / keeper" },
@@ -25,7 +21,7 @@ const educatorLevels: Array<{ id: EducatorTeachingLevel; title: string }> = [
 ];
 
 export default function AccountSetup() {
-  const navigate = useNavigate(); const { user, refreshProfile } = useAuth();
+  const navigate = useNavigate(); const [searchParams] = useSearchParams(); const { user, refreshProfile } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName ?? ""); const [category, setCategory] = useState<UserCategory | "">(""); const [profileType, setProfileType] = useState<ProfileType | "">(""); const [ageBand, setAgeBand] = useState<AgeBand | "">(""); const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | "">(""); const [learningLevel, setLearningLevel] = useState<LearningLevel | "">(""); const [interests, setInterests] = useState<Interest[]>([]); const [teachingLevel, setTeachingLevel] = useState<EducatorTeachingLevel | "">(""); const [subjects, setSubjects] = useState("Biology, Science"); const [studentAgeBands, setStudentAgeBands] = useState<AgeBand[]>(["11-14"]); const [reptileExperience, setReptileExperience] = useState<"beginner" | "intermediate" | "advanced">("beginner"); const [organisationName, setOrganisationName] = useState("");
   const [city, setCity] = useState(""); const [country, setCountry] = useState(""); const [approximateLocationConsent, setApproximateLocationConsent] = useState(false); const [analyticsConsent, setAnalyticsConsent] = useState(false); const [productUpdatesConsent, setProductUpdatesConsent] = useState(false);
   const [saving, setSaving] = useState(false); const [error, setError] = useState("");
@@ -38,15 +34,11 @@ export default function AccountSetup() {
     setSaving(true);
     try {
       const userRef = doc(db, "users", user.uid); const existing = await getDoc(userRef);
-      const profileData = {
-        uid: user.uid, displayName: displayName.trim(), email: user.email ?? "", category, ageBand, learningLevel, profileType, experienceLevel, interests, role: "user" as const, setupComplete: true,
-        ...(approximateLocationConsent ? { approximateLocation: { city: city.trim(), country: country.trim(), source: "user-provided" as const, visibleToCreator: true, updatedAt: serverTimestamp() } } : { approximateLocation: null }),
-        dataCollectionPreferences: { approximateLocation: approximateLocationConsent, analytics: analyticsConsent, productUpdates: productUpdatesConsent, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() },
-        ...(profileType === "educator" ? { educatorProfile: { teachingLevel, subjects: subjects.split(",").map((item) => item.trim()).filter(Boolean), studentAgeBands, reptileExperience, organisationName: organisationName.trim() || undefined, verified: false } } : {}), updatedAt: serverTimestamp(),
-      };
+      const profileData = { uid: user.uid, displayName: displayName.trim(), email: user.email ?? "", category, ageBand, learningLevel, profileType, experienceLevel, interests, role: "user" as const, setupComplete: true, ...(approximateLocationConsent ? { approximateLocation: { city: city.trim(), country: country.trim(), source: "user-provided" as const, visibleToCreator: true, updatedAt: serverTimestamp() } } : { approximateLocation: null }), dataCollectionPreferences: { approximateLocation: approximateLocationConsent, analytics: analyticsConsent, productUpdates: productUpdatesConsent, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() }, ...(profileType === "educator" ? { educatorProfile: { teachingLevel, subjects: subjects.split(",").map((item) => item.trim()).filter(Boolean), studentAgeBands, reptileExperience, organisationName: organisationName.trim() || undefined, verified: false } } : {}), updatedAt: serverTimestamp() };
       if (!existing.exists()) await setDoc(userRef, { ...profileData, createdAt: serverTimestamp() }); else await setDoc(userRef, profileData, { merge: true });
       const updatedProfile = await refreshProfile(); if (!updatedProfile?.setupComplete) throw new Error("Your profile was saved, but Tiny Titans could not confirm setup is complete. Please try again.");
-      navigate(profileType === "educator" ? "/educator" : "/", { replace: true });
+      const redirect = searchParams.get("redirect"); const safeRedirect = redirect && redirect.startsWith("/") && !redirect.startsWith("//") && redirect !== "/account-setup" ? redirect : null;
+      navigate(safeRedirect || (profileType === "educator" ? "/educator" : "/"), { replace: true });
     } catch (saveError) { console.error("Tiny Titans: account setup failed", saveError); setError(saveError instanceof Error ? saveError.message : "Unable to save your profile. Please try again."); } finally { setSaving(false); }
   }
   return (
