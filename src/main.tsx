@@ -8,14 +8,17 @@ import "./styles/selector-scroll.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import AppUpdatePrompt, { setTinyTitansUpdateHandler, notifyTinyTitansUpdateAvailable } from "./components/AppUpdatePrompt";
 import { AuthProvider } from "./context/AuthContext";
 
 // Keep installed PWA clients aligned with the latest Firebase Hosting release.
-// The VitePWA plugin is configured for autoUpdate; we still poll the active
-// registration hourly, but we do not force an immediate reload from an
-// onNeedRefresh callback so an open form is not unexpectedly interrupted.
-registerSW({
+// Prompt mode deliberately leaves the current app running until the user taps
+// Update Now, preventing an unexpected reload while a form is being edited.
+const updateServiceWorker = registerSW({
   immediate: true,
+  onNeedRefresh() {
+    notifyTinyTitansUpdateAvailable();
+  },
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
     window.setInterval(() => {
@@ -25,6 +28,10 @@ registerSW({
   onOfflineReady() {
     // Intentionally silent: the app remains fully usable offline.
   },
+});
+
+setTinyTitansUpdateHandler(async () => {
+  await updateServiceWorker(true);
 });
 
 export function SelectorGrabScrollManager() {
@@ -99,6 +106,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <SelectorGrabScrollManager />
+      <AppUpdatePrompt />
       <AppErrorBoundary>
         <App />
       </AppErrorBoundary>
