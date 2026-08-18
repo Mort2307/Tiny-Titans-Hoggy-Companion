@@ -13,6 +13,20 @@ export const husbandryReferenceBands = {
   adultObservedWeight: { maleMinG: 60, maleMaxG: 133, femaleMinG: 180, femaleMaxG: 300, ageYears: 3 },
 } as const;
 
+export type GrowthStage = "Hatchling" | "Juvenile" | "Subadult" | "Adult";
+
+/**
+ * These are presentation stages, not claims that every hognose reaches a fixed
+ * weight or length at a particular age. The available references do not provide
+ * a defensible universal juvenile growth chart, so Tiny Titans must not invent one.
+ */
+export function growthStageForAge(ageYears: number): GrowthStage {
+  if (ageYears < 0.5) return "Hatchling";
+  if (ageYears < 1.5) return "Juvenile";
+  if (ageYears < 2.5) return "Subadult";
+  return "Adult";
+}
+
 export function ageInYears(hatchDate: string): number {
   const birth = new Date(`${hatchDate}T00:00:00`);
   if (Number.isNaN(birth.getTime())) return 0;
