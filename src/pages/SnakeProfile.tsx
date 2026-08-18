@@ -4,9 +4,11 @@ import type { Snake } from "../types/Snake";
 import { migrateSnake } from "../utils/snakeMigration";
 import { getWeightReminder } from "../utils/weightReminder";
 import { getUserSnake, deleteUserSnake } from "../services/snakeService";
+import { getSnakeIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
 import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
 import WeightMiniChart from "../components/WeightMiniChart";
+import IntelligencePanel from "../components/IntelligencePanel";
 import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 
@@ -17,6 +19,8 @@ function SnakeProfile() {
   const { formatWeight } = useUnits();
   const [snake, setSnake] = useState<Snake | null>(null);
   const [loadingSnake, setLoadingSnake] = useState(true);
+  const [intelligence, setIntelligence] = useState<SnakeIntelligence | null>(null);
+  const [intelligenceLoading, setIntelligenceLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +35,17 @@ function SnakeProfile() {
         const loadedSnake = await getUserSnake(user.uid, id);
         if (cancelled) return;
         if (!loadedSnake) { setError("This snake could not be found in your Tiny Titans account."); setLoadingSnake(false); return; }
-        setSnake(migrateSnake({ ...loadedSnake, id: loadedSnake.id || id })); setError(null); setLoadingSnake(false);
-      } catch (loadError) { if (!cancelled) { console.error("Tiny Titans: unable to load snake profile", loadError); setError(loadError instanceof Error ? loadError.message : "Unable to load this snake. Please try again."); setLoadingSnake(false); } }
+        setSnake(migrateSnake({ ...loadedSnake, id: loadedSnake.id || id }));
+        setError(null);
+        setLoadingSnake(false);
+        setIntelligenceLoading(true);
+        const learned = await getSnakeIntelligence(user.uid, id).catch(() => null);
+        if (!cancelled) setIntelligence(learned);
+      } catch (loadError) {
+        if (!cancelled) { console.error("Tiny Titans: unable to load snake profile", loadError); setError(loadError instanceof Error ? loadError.message : "Unable to load this snake. Please try again."); setLoadingSnake(false); }
+      } finally {
+        if (!cancelled) setIntelligenceLoading(false);
+      }
     }
     void loadSnake();
     return () => { cancelled = true; };
@@ -63,6 +76,9 @@ function SnakeProfile() {
   const reminder = getWeightReminder(snake);
   const weightHistory = snake.weightHistory ?? [];
   return <div className="page-container"><BackHomeButton /><h1>🐍 {snake.name}</h1>
+    {intelligenceLoading && <section className="tt-intelligence-panel" aria-live="polite"><p className="tt-intelligence-kicker">PERSONALISED INTELLIGENCE</p><h2 className="tt-intelligence-title">Reading {snake.name}'s history…</h2><p className="tt-intelligence-meta">Tiny Titans is checking the records already stored for this snake. No generic conclusion is being substituted while the individual history loads.</p></section>}
+    {intelligence && <IntelligencePanel intelligence={intelligence} />}
+    {!intelligenceLoading && !intelligence && <section className="tt-intelligence-panel"><p className="tt-intelligence-kicker">PERSONALISED INTELLIGENCE</p><h2 className="tt-intelligence-title">Baseline still building</h2><p className="tt-intelligence-meta">Tiny Titans could not build a current intelligence record for {snake.name}. Your existing snake records are unchanged. Record another weight, feeding or shed and the engine can try again.</p></section>}
     <div className="snake-profile-photo">{snake.photo ? <img src={snake.photo} alt={snake.name} /> : <div className="snake-profile-placeholder" aria-label="No snake photo">🐍</div>}</div>
     <div className="tracker-card snake-profile-actions"><button type="button" onClick={openMasterRecord}>📖 Living History / Master Record</button><button type="button" onClick={openSnakeEditor}>✏️ Edit Snake</button><button type="button" onClick={() => navigate(`/feeding/${snake.id}`)}>🍽️ Log Feeding</button><button type="button" onClick={() => navigate(`/shedding/${snake.id}`)}>🐍 Log Shed</button><button type="button" onClick={() => navigate(`/weights/${snake.id}`)}>⚖️ Weight</button><button type="button" onClick={() => setConfirmDelete(true)} disabled={deleting}>🗑️ Delete Snake</button></div>
     <div className="snake-profile-grid">
