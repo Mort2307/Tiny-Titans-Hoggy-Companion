@@ -63,8 +63,7 @@ function SnakeProfile() {
   }
   async function deleteSnake() {
     if (!snake || !user || !snake.id || deleting) return;
-    setDeleting(true);
-    setError(null);
+    setDeleting(true); setError(null);
     try { await deleteUserSnake(user.uid, snake.id); navigate("/snakes", { replace: true }); } catch (err) { setError(err instanceof Error ? err.message : "Unable to delete this snake. Please try again."); setDeleting(false); setConfirmDelete(false); }
   }
   function openSnakeEditor() { if (snake?.id) navigate(`/snakes/${snake.id}/edit`); }
@@ -86,7 +85,7 @@ function SnakeProfile() {
       <button type="button" className="snake-profile-card" onClick={openSnakeEditor}><div className="snake-profile-card-icon">🧬</div><h2>Genetics</h2><p><strong>{snake.morphs?.length ? snake.morphs.join(", ") : "No morphs listed"}</strong></p>{snake.hets?.length > 0 && <p>{snake.hets.length} het{snake.hets.length !== 1 ? "s" : ""}</p>}{snake.customMorph && <p>{snake.customMorph}</p>}</button>
       <button type="button" className="snake-profile-card" onClick={() => navigate(`/weights/${snake.id}`)}><div className="snake-profile-card-icon">⚖️</div><h2>Weight</h2><p className="snake-profile-big-value">{snake.weight != null ? formatWeight(snake.weight) : "—"}</p><p>{snake.lastWeighedDate ? `Last weighed ${snake.lastWeighedDate}` : "No weight recorded"}</p><div className="snake-profile-mini-chart"><WeightMiniChart history={weightHistory} /></div></button>
       <button type="button" className="snake-profile-card" onClick={openSnakeEditor}><div className="snake-profile-card-icon">⏰</div><h2>Weight Reminders</h2><p>{snake.weightTracking?.enabled ? "Enabled" : "Disabled"}</p>{snake.weightTracking?.enabled && <p>{snake.weightTracking.frequency}</p>}{reminder.status !== "disabled" && <p>{reminder.status === "overdue" ? "🔴 Weight overdue" : reminder.status === "due" ? "🟡 Due today" : `🟢 Due in ${reminder.daysRemaining} days`}</p>}</button>
-      <button type="button" className="snake-profile-card" onClick={openSnakeEditor}><div className="snake-profile-card-icon">📅</div><h2>Timeline</h2>{snake.hatchDate ? <><p>🥚 {snake.hatchDate}</p><p>🎂 {calculateAge(snake.hatchDate)}</p></> : <p>No hatch date recorded</p>}{snake.arrivalDate && <p>🏠 {snake.arrivalDate}</p>}</button>
+      <button type="button" className="snake-profile-card" onClick={() => navigate(`/snakes/${snake.id}/timeline`)}><div className="snake-profile-card-icon">📅</div><h2>Timeline</h2>{snake.hatchDate ? <><p>🥚 {snake.hatchDate}</p><p>🎂 {calculateAge(snake.hatchDate)}</p></> : <p>No hatch date recorded</p>}{snake.arrivalDate && <p>🏠 {snake.arrivalDate}</p>}<p className="tt-intelligence-action">Open full timeline →</p></button>
       <button type="button" className="snake-profile-card" onClick={() => navigate(`/feeding/${snake.id}`)}><div className="snake-profile-card-icon">📚</div><h2>Records</h2><p>🍽️ Feeding: <strong>{snake.feedingHistory?.length ?? 0}</strong></p><p>🐍 Sheds: <strong>{snake.shedHistory?.length ?? 0}</strong></p><p>❤️ Health: <strong>{snake.healthHistory?.length ?? 0}</strong></p></button>
       <button type="button" className="snake-profile-card snake-profile-card-notes" onClick={openSnakeEditor}><div className="snake-profile-card-icon">📝</div><h2>Notes</h2><p>{snake.notes || "No notes added"}</p></button>
     </div>
