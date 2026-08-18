@@ -13,7 +13,8 @@ function isStandalone() {
 }
 
 function isIos() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 function isIosSafari() {
@@ -24,24 +25,52 @@ function isAndroid() {
   return /android/i.test(navigator.userAgent);
 }
 
+function isEdge() {
+  return /edg|edgios|edga/i.test(navigator.userAgent);
+}
+
+function isFirefox() {
+  return /firefox|fxios/i.test(navigator.userAgent);
+}
+
+function isSamsungInternet() {
+  return /samsungbrowser/i.test(navigator.userAgent);
+}
+
 function isChromium() {
   return /chrome|crios|edg|edgios/i.test(navigator.userAgent) && !/firefox|fxios|opr/i.test(navigator.userAgent);
 }
 
 function browserHelpText() {
   if (isIosSafari()) {
-    return <>On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. Tiny Titans will open as its own app.</>;
+    return <>On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong> → <strong>Add</strong>. Tiny Titans will then appear on your Home Screen and open as its own app.</>;
   }
+
   if (isIos()) {
-    return <>On this browser: open the browser's <strong>Share</strong> or menu option and choose <strong>Add to Home Screen</strong>. Tiny Titans will open as its own app.</>;
+    return <>On iPhone or iPad: tap your browser's <strong>Share</strong> button → <strong>Add to Home Screen</strong> → <strong>Add</strong>. If you cannot see it, scroll down in the Share menu and select <strong>Edit Actions</strong> to add it.</>;
   }
+
+  if (isAndroid() && isSamsungInternet()) {
+    return <>Samsung Internet: tap the browser menu <strong>☰</strong> → <strong>Add page to</strong> → <strong>Home screen</strong> → <strong>Add</strong>. If Samsung offers <strong>Install app</strong>, you can use that instead.</>;
+  }
+
+  if (isAndroid() && isFirefox()) {
+    return <>Firefox on Android: tap the browser menu <strong>⋮</strong> → <strong>Add to Home screen</strong> → confirm <strong>Add</strong>. If Firefox offers an install option for Tiny Titans, use that instead.</>;
+  }
+
   if (isAndroid() && isChromium()) {
-    return <>Open your browser menu <strong>⋮</strong> and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</>;
+    return <>Android: tap the browser menu <strong>⋮</strong> → choose <strong>Install app</strong> or <strong>Add to Home screen</strong> → confirm. The exact wording can vary between Chrome, Edge and other Chromium browsers.</>;
   }
-  if (isChromium()) {
-    return <>Open your browser menu <strong>⋮</strong> and choose <strong>Install Tiny Titans</strong> or <strong>Install app</strong>.</>;
+
+  if (isEdge()) {
+    return <>Microsoft Edge: open the <strong>⋯</strong> menu → <strong>Apps</strong> → <strong>Install Tiny Titans</strong> (or <strong>Install this site as an app</strong>).</>;
   }
-  return <>Open your browser's menu and look for <strong>Install app</strong>, <strong>Install Tiny Titans</strong>, or <strong>Add to Home Screen</strong>.</>;
+
+  if (isFirefox()) {
+    return <>Firefox on desktop does not always provide the web-app install prompt. For a desktop shortcut, use your browser's <strong>Bookmarks/Shortcuts</strong> option, or open Tiny Titans in a Chromium-based browser such as Edge or Chrome for full PWA installation.</>;
+  }
+
+  return <>Open your browser's menu and look for <strong>Install app</strong>, <strong>Install Tiny Titans</strong>, or <strong>Add to Home Screen</strong>. Browser wording varies slightly, but the option is normally inside the main menu or Share menu.</>;
 }
 
 export default function PwaInstallCard() {
@@ -102,7 +131,10 @@ export default function PwaInstallCard() {
       <p className="section-eyebrow">TINY TITANS APP</p>
       <h3>Install Tiny Titans</h3>
       <p>Install Tiny Titans for quick access, its own app window and automatic updates.</p>
-      {browserHelp && <p className="pwa-install-help">{browserHelpText()}</p>}
+      {browserHelp && <div className="pwa-install-help" role="status">
+        <strong>📲 How to add Tiny Titans to your device</strong>
+        <p>{browserHelpText()}</p>
+      </div>}
     </div>
     <button type="button" className="pwa-install-button" onClick={() => void install()}>
       📲 Install Tiny Titans
