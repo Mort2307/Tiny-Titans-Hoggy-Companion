@@ -5,14 +5,163 @@ export type FamilyRole = "owner" | "adult" | "child";
 export type FamilyMember = { uid: string; displayName: string; email: string; role: FamilyRole; ageBand?: string; experienceLevel?: string; joinedAt?: unknown };
 export type FamilyAccount = { id: string; ownerUid: string; memberUids: string[]; members: FamilyMember[]; createdAt?: unknown; updatedAt?: unknown };
 export type FamilyInvite = { id: string; familyId: string; ownerUid: string; targetEmail: string; status: "pending" | "accepted" | "declined"; createdAt?: unknown; expiresAt?: unknown };
-const familyRef=(familyId:string)=>doc(db,"families",familyId); const userRef=(uid:string)=>doc(db,"users",uid);
-function normaliseMember(data:Record<string,unknown>):FamilyMember{return{uid:String(data.uid??""),displayName:String(data.displayName??"Tiny Titan"),email:String(data.email??""),role:data.role==="child"?"child":data.role==="owner"?"owner":"adult",ageBand:typeof data.ageBand==="string"?data.ageBand:undefined,experienceLevel:typeof data.experienceLevel==="string"?data.experienceLevel:undefined,joinedAt:data.joinedAt};}
-export async function getFamilyForUser(uid:string):Promise<FamilyAccount|null>{if(!uid)return null;const profile=await getDoc(userRef(uid));const familyId=profile.exists()&&typeof profile.data().familyId==="string"?profile.data().familyId:null;if(!familyId)return null;const snapshot=await getDoc(familyRef(familyId));if(!snapshot.exists())return null;const data=snapshot.data();const memberUids=Array.isArray(data.memberUids)?data.memberUids.filter((value):value is string=>typeof value==="string"):[];const members=Array.isArray(data.members)?data.members.filter((value):value is Record<string,unknown>=>Boolean(value&&typeof value==="object")).map(normaliseMember):[];return{id:snapshot.id,ownerUid:String(data.ownerUid??""),memberUids,members,createdAt:data.createdAt,updatedAt:data.updatedAt};}
-export async function resolveDataOwnerUid(uid:string):Promise<string>{const family=await getFamilyForUser(uid);return family?.ownerUid||uid;}
-export async function createFamily(uid:string,member:FamilyMember):Promise<FamilyAccount>{const existing=await getFamilyForUser(uid);if(existing)return existing;const familyDoc=await addDoc(collection(db,"families"),{ownerUid:uid,memberUids:[uid],members:[{...member,uid,role:"owner",joinedAt:serverTimestamp()}],createdAt:serverTimestamp(),updatedAt:serverTimestamp()});await updateDoc(userRef(uid),{familyId:familyDoc.id,familyRole:"owner"});const created=await getDoc(familyDoc);const data=created.data()??{};return{id:familyDoc.id,ownerUid:uid,memberUids:[uid],members:Array.isArray(data.members)?data.members.map((value)=>normaliseMember(value as Record<string,unknown>)):[],createdAt:data.createdAt,updatedAt:data.updatedAt};}
-export async function inviteFamilyMember(uid:string,targetEmail:string):Promise<void>{const family=await getFamilyForUser(uid);if(!family)throw new Error("Create your Tiny Titans family first.");if(family.ownerUid!==uid)throw new Error("Only the Family Owner can invite members.");if(family.memberUids.length>=3)throw new Error("This family account already has its two additional member links.");const email=targetEmail.trim().toLowerCase();if(!email)throw new Error("Enter the family member's email address.");const ownerEmail=String((await getDoc(userRef(uid))).data()?.email??"").toLowerCase();if(email===ownerEmail)throw new Error("You are already the Family Owner.");if(family.members.some((member)=>member.email.toLowerCase()===email))throw new Error("That account is already in your family.");const existing=await getDocs(query(collection(db,"familyInvites"),where("familyId","==",family.id),where("targetEmail","==",email),where("status","==","pending")));if(!existing.empty)throw new Error("A pending invitation already exists for this email address.");await addDoc(collection(db,"familyInvites"),{familyId:family.id,ownerUid:uid,targetEmail:email,status:"pending",createdAt:serverTimestamp()});}
-export async function getMyFamilyInvites(email:string):Promise<FamilyInvite[]>{if(!email)return[];const snapshot=await getDocs(query(collection(db,"familyInvites"),where("targetEmail","==",email.trim().toLowerCase()),where("status","==","pending")));return snapshot.docs.map((item)=>({id:item.id,...(item.data() as Omit<FamilyInvite,"id">)}));}
-export async function acceptFamilyInvite(uid:string,inviteId:string):Promise<FamilyAccount>{const inviteSnapshot=await getDoc(doc(db,"familyInvites",inviteId));if(!inviteSnapshot.exists())throw new Error("That family invitation no longer exists.");const invite=inviteSnapshot.data();if(invite.status!=="pending")throw new Error("That family invitation has already been used.");const profileSnapshot=await getDoc(userRef(uid));const email=String(profileSnapshot.data()?.email??"").toLowerCase();if(!email||email!==String(invite.targetEmail??"").toLowerCase())throw new Error("This invitation belongs to a different email address.");const familySnapshot=await getDoc(familyRef(String(invite.familyId)));if(!familySnapshot.exists())throw new Error("The Tiny Titans family could not be found.");const family=familySnapshot.data();const memberUids=Array.isArray(family.memberUids)?family.memberUids.filter((value):value is string=>typeof value==="string"):[];if(memberUids.length>=3&&!memberUids.includes(uid))throw new Error("This Tiny Titans family is full.");const profile=profileSnapshot.data()??{};const role:FamilyRole=profile.category==="child"||profile.ageBand==="7-10"||profile.ageBand==="11-14"?"child":"adult";const member:FamilyMember={uid,displayName:String(profile.displayName??email.split("@")[0]??"Family Member"),email,role,ageBand:typeof profile.ageBand==="string"?profile.ageBand:undefined,experienceLevel:typeof profile.experienceLevel==="string"?profile.experienceLevel:undefined,joinedAt:serverTimestamp()};await updateDoc(familyRef(String(invite.familyId)),{memberUids:arrayUnion(uid),members:arrayUnion(member),acceptingInviteId:inviteId,updatedAt:serverTimestamp()});await updateDoc(userRef(uid),{familyId:String(invite.familyId),familyRole:role});await updateDoc(doc(db,"familyInvites",inviteId),{status:"accepted",acceptedByUid:uid,acceptedAt:serverTimestamp()});const refreshed=await getDoc(familyRef(String(invite.familyId)));const data=refreshed.data()??{};return{id:refreshed.id,ownerUid:String(data.ownerUid??""),memberUids:Array.isArray(data.memberUids)?data.memberUids as string[]:[],members:Array.isArray(data.members)?data.members.map((value)=>normaliseMember(value as Record<string,unknown>)):[]};}
-export async function removeFamilyMember(uid:string,memberUid:string):Promise<void>{const family=await getFamilyForUser(uid);if(!family||family.ownerUid!==uid)throw new Error("Only the Family Owner can remove members.");if(memberUid===uid)throw new Error("The Family Owner cannot remove themselves.");const member=family.members.find((item)=>item.uid===memberUid);await updateDoc(familyRef(family.id),member?{memberUids:arrayRemove(memberUid),members:arrayRemove(member),updatedAt:serverTimestamp()}:{memberUids:arrayRemove(memberUid),updatedAt:serverTimestamp()});await updateDoc(userRef(memberUid),{familyId:null,familyRole:null});}
-export async function leaveFamily(uid:string):Promise<void>{const family=await getFamilyForUser(uid);if(!family)return;if(family.ownerUid===uid)throw new Error("The Family Owner must remove the family or transfer ownership before leaving.");await removeFamilyMember(family.ownerUid,uid);}
-export async function declineFamilyInvite(uid:string,inviteId:string):Promise<void>{const profile=await getDoc(userRef(uid));const email=String(profile.data()?.email??"").toLowerCase();const invite=await getDoc(doc(db,"familyInvites",inviteId));if(!invite.exists()||String(invite.data().targetEmail??"").toLowerCase()!==email)throw new Error("Invitation not found.");await updateDoc(invite.ref,{status:"declined",declinedAt:serverTimestamp()});}
+
+const familyRef = (familyId: string) => doc(db, "families", familyId);
+const userRef = (uid: string) => doc(db, "users", uid);
+
+function normaliseMember(data: Record<string, unknown>): FamilyMember {
+  return {
+    uid: String(data.uid ?? ""),
+    displayName: String(data.displayName ?? "Tiny Titan"),
+    email: String(data.email ?? ""),
+    role: data.role === "child" ? "child" : data.role === "owner" ? "owner" : "adult",
+    ageBand: typeof data.ageBand === "string" ? data.ageBand : undefined,
+    experienceLevel: typeof data.experienceLevel === "string" ? data.experienceLevel : undefined,
+    joinedAt: data.joinedAt,
+  };
+}
+
+export async function getFamilyForUser(uid: string): Promise<FamilyAccount | null> {
+  if (!uid) return null;
+  const profile = await getDoc(userRef(uid));
+  const familyId = profile.exists() && typeof profile.data().familyId === "string" ? profile.data().familyId : null;
+  if (!familyId) return null;
+  const snapshot = await getDoc(familyRef(familyId));
+  if (!snapshot.exists()) return null;
+  const data = snapshot.data();
+  const memberUids = Array.isArray(data.memberUids) ? data.memberUids.filter((value): value is string => typeof value === "string") : [];
+  const members = Array.isArray(data.members) ? data.members.filter((value): value is Record<string, unknown> => Boolean(value && typeof value === "object")).map(normaliseMember) : [];
+  return { id: snapshot.id, ownerUid: String(data.ownerUid ?? ""), memberUids, members, createdAt: data.createdAt, updatedAt: data.updatedAt };
+}
+
+export async function resolveDataOwnerUid(uid: string): Promise<string> {
+  const family = await getFamilyForUser(uid);
+  return family?.ownerUid || uid;
+}
+
+export async function createFamily(uid: string, member: FamilyMember): Promise<FamilyAccount> {
+  const existing = await getFamilyForUser(uid);
+  if (existing) return existing;
+  const familyDoc = await addDoc(collection(db, "families"), {
+    ownerUid: uid,
+    memberUids: [uid],
+    members: [{ ...member, uid, role: "owner", joinedAt: serverTimestamp() }],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  await updateDoc(userRef(uid), { familyId: familyDoc.id, familyRole: "owner" });
+  const created = await getDoc(familyDoc);
+  const data = created.data() ?? {};
+  return {
+    id: familyDoc.id,
+    ownerUid: uid,
+    memberUids: [uid],
+    members: Array.isArray(data.members) ? data.members.map((value) => normaliseMember(value as Record<string, unknown>)) : [],
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
+}
+
+export async function inviteFamilyMember(uid: string, targetEmail: string): Promise<FamilyInvite> {
+  const family = await getFamilyForUser(uid);
+  if (!family) throw new Error("Create your Tiny Titans family first.");
+  if (family.ownerUid !== uid) throw new Error("Only the Family Owner can invite members.");
+  if (family.memberUids.length >= 3) throw new Error("This family account already has its two additional member links.");
+  const email = targetEmail.trim().toLowerCase();
+  if (!email) throw new Error("Enter the family member's email address.");
+  const ownerEmail = String((await getDoc(userRef(uid))).data()?.email ?? "").toLowerCase();
+  if (email === ownerEmail) throw new Error("You are already the Family Owner.");
+  if (family.members.some((member) => member.email.toLowerCase() === email)) throw new Error("That account is already in your family.");
+  const existing = await getDocs(query(collection(db, "familyInvites"), where("familyId", "==", family.id), where("targetEmail", "==", email), where("status", "==", "pending")));
+  if (!existing.empty) return { id: existing.docs[0].id, ...(existing.docs[0].data() as Omit<FamilyInvite, "id">) };
+  const created = await addDoc(collection(db, "familyInvites"), {
+    familyId: family.id,
+    ownerUid: uid,
+    targetEmail: email,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+  const invite = await getDoc(created);
+  return { id: created.id, ...(invite.data() as Omit<FamilyInvite, "id">) };
+}
+
+export async function getMyFamilyInvites(email: string): Promise<FamilyInvite[]> {
+  if (!email) return [];
+  const snapshot = await getDocs(query(collection(db, "familyInvites"), where("targetEmail", "==", email.trim().toLowerCase()), where("status", "==", "pending")));
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<FamilyInvite, "id">) }));
+}
+
+export async function acceptFamilyInvite(uid: string, inviteId: string): Promise<FamilyAccount> {
+  const inviteSnapshot = await getDoc(doc(db, "familyInvites", inviteId));
+  if (!inviteSnapshot.exists()) throw new Error("That family invitation no longer exists.");
+  const invite = inviteSnapshot.data();
+  if (invite.status !== "pending") throw new Error("That family invitation has already been used.");
+
+  const profileSnapshot = await getDoc(userRef(uid));
+  const profile = profileSnapshot.data() ?? {};
+  const email = String(profile.email ?? "").toLowerCase();
+  if (!email || email !== String(invite.targetEmail ?? "").toLowerCase()) throw new Error("This invitation belongs to a different email address.");
+
+  const invitedFamilyId = String(invite.familyId ?? "");
+  const currentFamilyId = typeof profile.familyId === "string" ? profile.familyId : "";
+  if (currentFamilyId && currentFamilyId !== invitedFamilyId) throw new Error("This account is already connected to another Tiny Titans family.");
+
+  const familySnapshot = await getDoc(familyRef(invitedFamilyId));
+  if (!familySnapshot.exists()) throw new Error("The Tiny Titans family could not be found.");
+  const family = familySnapshot.data();
+  const memberUids = Array.isArray(family.memberUids) ? family.memberUids.filter((value): value is string => typeof value === "string") : [];
+
+  if (memberUids.includes(uid)) {
+    await updateDoc(doc(db, "familyInvites", inviteId), { status: "accepted", acceptedByUid: uid, acceptedAt: serverTimestamp() });
+    return { id: familySnapshot.id, ownerUid: String(family.ownerUid ?? ""), memberUids, members: Array.isArray(family.members) ? family.members.map((value) => normaliseMember(value as Record<string, unknown>)) : [] };
+  }
+  if (memberUids.length >= 3) throw new Error("This Tiny Titans family is full.");
+
+  const role: FamilyRole = profile.category === "child" || profile.ageBand === "7-10" || profile.ageBand === "11-14" ? "child" : "adult";
+  const member: FamilyMember = {
+    uid,
+    displayName: String(profile.displayName ?? email.split("@")[0] ?? "Family Member"),
+    email,
+    role,
+    ageBand: typeof profile.ageBand === "string" ? profile.ageBand : undefined,
+    experienceLevel: typeof profile.experienceLevel === "string" ? profile.experienceLevel : undefined,
+    joinedAt: serverTimestamp(),
+  };
+
+  await updateDoc(familyRef(invitedFamilyId), { memberUids: arrayUnion(uid), members: arrayUnion(member), updatedAt: serverTimestamp() });
+  await updateDoc(userRef(uid), { familyId: invitedFamilyId, familyRole: role });
+  await updateDoc(doc(db, "familyInvites", inviteId), { status: "accepted", acceptedByUid: uid, acceptedAt: serverTimestamp() });
+
+  const refreshed = await getDoc(familyRef(invitedFamilyId));
+  const data = refreshed.data() ?? {};
+  return {
+    id: refreshed.id,
+    ownerUid: String(data.ownerUid ?? ""),
+    memberUids: Array.isArray(data.memberUids) ? data.memberUids as string[] : [],
+    members: Array.isArray(data.members) ? data.members.map((value) => normaliseMember(value as Record<string, unknown>)) : [],
+  };
+}
+
+export async function removeFamilyMember(uid: string, memberUid: string): Promise<void> {
+  const family = await getFamilyForUser(uid);
+  if (!family || family.ownerUid !== uid) throw new Error("Only the Family Owner can remove members.");
+  if (memberUid === uid) throw new Error("The Family Owner cannot remove themselves.");
+  const member = family.members.find((item) => item.uid === memberUid);
+  await updateDoc(familyRef(family.id), member ? { memberUids: arrayRemove(memberUid), members: arrayRemove(member), updatedAt: serverTimestamp() } : { memberUids: arrayRemove(memberUid), updatedAt: serverTimestamp() });
+  await updateDoc(userRef(memberUid), { familyId: null, familyRole: null });
+}
+
+export async function leaveFamily(uid: string): Promise<void> {
+  const family = await getFamilyForUser(uid);
+  if (!family) return;
+  if (family.ownerUid === uid) throw new Error("The Family Owner must remove the family or transfer ownership before leaving.");
+  await removeFamilyMember(family.ownerUid, uid);
+}
+
+export async function declineFamilyInvite(uid: string, inviteId: string): Promise<void> {
+  const profile = await getDoc(userRef(uid));
+  const email = String(profile.data()?.email ?? "").toLowerCase();
+  const invite = await getDoc(doc(db, "familyInvites", inviteId));
+  if (!invite.exists() || String(invite.data().targetEmail ?? "").toLowerCase() !== email) throw new Error("Invitation not found.");
+  await updateDoc(invite.ref, { status: "declined", declinedAt: serverTimestamp() });
+}
