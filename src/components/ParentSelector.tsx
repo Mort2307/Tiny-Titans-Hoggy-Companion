@@ -69,7 +69,7 @@ function normaliseSnakeHets(value: unknown): Het[] {
     .filter((het): het is Het => het !== null);
 }
 
-function snakeToSelection(snake: Snake): ParentSelection {
+export function snakeToSelection(snake: Snake): ParentSelection {
   const morphs = (Array.isArray(snake.morphs) ? snake.morphs : [])
     .filter((value): value is string => typeof value === "string" && !!value.trim())
     .map((value) => canonicalGeneId(value) ?? value.trim());
