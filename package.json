@@ -13,7 +13,7 @@
     "validate:security": "node scripts/validate-security-contracts.mjs",
     "test:bot:contracts": "node scripts/run-bot-test-contract.mjs",
     "test:production-gate": "node scripts/run-production-gate.mjs",
-    "build": "npm run validate:morphs && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && tsc -b && vite build",
+    "build": "npm run validate:morphs && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:security && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -22,15 +22,15 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-globe.gl": "^2.37.0",
-    "react-router-dom": "^7.18.2",
     "recharts": "^3.10.1",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite-plugin-pwa": "^1.3.0",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
+    "@types/react-dom": "^19.2.17",
     "@vitejs/plugin-react": "^6.0.4",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.0",
