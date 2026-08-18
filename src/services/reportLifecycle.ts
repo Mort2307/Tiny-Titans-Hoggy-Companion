@@ -44,6 +44,6 @@ export function isActiveReportIssueStatus(status: ReportIssueStatus | CanonicalR
   return current !== "Resolved" && !isTerminalReportStatus(current);
 }
 
-export function getReportLifecycleLabel(status: ReportIssueStatus | CanonicalReportStatus): string {
+export function getReportLifecycleLabel(status: ReportIssueStatus | CanonicalReportIssueStatus): string {
   return getCanonicalReportStatus(status);
 }
