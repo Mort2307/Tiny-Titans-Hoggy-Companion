@@ -9,6 +9,10 @@ export type TesterSandboxContext = {
   ownerUid: string;
 };
 
+type ActiveTesterSandboxContext = TesterSandboxContext & {
+  sandboxId: string;
+};
+
 export type TesterSandbox = TesterSandboxContext & {
   sandboxId: string;
   createdAt: string;
@@ -18,7 +22,7 @@ export type TesterSandbox = TesterSandboxContext & {
 export function assertTesterMutationAllowed(
   mode: TesterMutationMode,
   context: TesterSandboxContext | undefined,
-): asserts context is TesterSandboxContext {
+): asserts context is ActiveTesterSandboxContext {
   if (mode !== "sandbox") throw new Error("BOT mutation blocked: this test is not declared as sandbox-safe.");
   if (!context?.enabled || !context.sandboxId) throw new Error("BOT mutation blocked: an explicit isolated sandbox context is required.");
   if (!context.ownerUid) throw new Error("BOT mutation blocked: sandbox owner identity is missing.");
