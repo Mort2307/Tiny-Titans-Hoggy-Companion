@@ -49,6 +49,11 @@ function Home() {
     .sort((a, b) => (a.tone === "attention" ? -1 : b.tone === "attention" ? 1 : 0))
     .slice(0, 3), [intelligence]);
 
+  const totalCoveragePercent = useMemo(() => {
+    if (!intelligence.length) return 0;
+    return Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length);
+  }, [intelligence]);
+
   return <div className="dashboard">
     <section className="welcome-card">
       <div className="welcome-content">
@@ -76,16 +81,24 @@ function Home() {
       </div>
 
       {loadingIntelligence ? <section className="tt-intelligence-panel" aria-live="polite"><p className="tt-intelligence-kicker">Learning your records</p><h4 className="tt-intelligence-title">Building today's view…</h4><p className="tt-intelligence-meta">Tiny Titans is reading the individual history already recorded for your snakes.</p></section>
-        : priorityInsights.length === 0 ? <section className="tt-intelligence-panel"><p className="tt-intelligence-kicker">Baseline mode</p><h4 className="tt-intelligence-title">Nothing needs your attention right now.</h4><p className="tt-intelligence-meta">That's a good thing. As you record weights, feeds, sheds and observations, Tiny Titans will only surface patterns when your own data gives it a useful reason.</p><a className="tt-intelligence-action" href="/snakes">Open My Snakes →</a></section>
-        : <div className="tt-intelligence-grid">{priorityInsights.map((item) => <article className="tt-intelligence-panel" data-tone={item.tone} key={`${item.snakeId}-${item.id}`}>
-          <p className="tt-intelligence-kicker">{item.snakeName} · {item.category}</p>
-          <h4 className="tt-intelligence-title">{item.title}</h4>
-          <strong className="tt-intelligence-value">{item.value}</strong>
-          <p className="tt-intelligence-meta"><b>Why:</b> {item.why}</p>
-          <p className="tt-intelligence-meta"><b>Next:</b> {item.action}</p>
-          <span className="tt-confidence">◉ {confidenceLabel(item.confidence)}</span>
-          <a className="tt-intelligence-action" href={`/snakes/${item.snakeId}/master-record`}>Open {item.snakeName}'s record →</a>
-        </article>)}</div>}
+        : <>
+          <section className="tt-intelligence-panel tt-coverage-panel">
+            <div className="tt-coverage-heading"><div><p className="tt-intelligence-kicker">OVERALL INTELLIGENCE COVERAGE</p><h4 className="tt-intelligence-title">{totalCoveragePercent}% of the core personal-history baseline built</h4></div><strong className="tt-coverage-value">{totalCoveragePercent}%</strong></div>
+            <div className="tt-coverage-track" role="progressbar" aria-label="Overall intelligence data coverage" aria-valuemin={0} aria-valuemax={100} aria-valuenow={totalCoveragePercent}><span style={{ width: `${totalCoveragePercent}%` }} /></div>
+            <p className="tt-intelligence-meta">This is a transparent data-coverage percentage, not a health score. It represents how much useful weight, feeding and shed history Tiny Titans currently has across your snakes. More real records make the individual intelligence stronger.</p>
+          </section>
+
+          {priorityInsights.length === 0 ? <section className="tt-intelligence-panel"><p className="tt-intelligence-kicker">Baseline mode</p><h4 className="tt-intelligence-title">Nothing needs your attention right now.</h4><p className="tt-intelligence-meta">That's a good thing. As you record weights, feeds, sheds and observations, Tiny Titans will only surface patterns when your own data gives it a useful reason.</p><a className="tt-intelligence-action" href="/snakes">Open My Snakes →</a></section>
+            : <div className="tt-intelligence-grid">{priorityInsights.map((item) => <article className="tt-intelligence-panel" data-tone={item.tone} key={`${item.snakeId}-${item.id}`}>
+              <p className="tt-intelligence-kicker">{item.snakeName} · {item.category}</p>
+              <h4 className="tt-intelligence-title">{item.title}</h4>
+              <strong className="tt-intelligence-value">{item.value}</strong>
+              <p className="tt-intelligence-meta"><b>Why:</b> {item.why}</p>
+              <p className="tt-intelligence-meta"><b>Next:</b> {item.action}</p>
+              <span className="tt-confidence">◉ {confidenceLabel(item.confidence)}</span>
+              <a className="tt-intelligence-action" href={`/snakes/${item.snakeId}/master-record`}>Open {item.snakeName}'s record →</a>
+            </article>)}</div>}
+        </>}
     </section>
 
     {profile?.profileType === "educator" && <section className="dashboard-section"><div className="section-heading"><div><p className="section-eyebrow">EDUCATION</p><h3>Your teaching centre</h3></div></div><section className="dashboard-grid"><DashboardCard icon="🧑‍🏫" title="Educator Centre" description="Create classrooms, plan lessons and manage teaching activities" link="/educator" /></section></section>}
