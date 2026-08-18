@@ -17,6 +17,12 @@
       "src": "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg",
       "sizes": "any",
       "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]
