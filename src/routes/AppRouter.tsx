@@ -51,6 +51,8 @@ import DataPrivacyConsentModal, { CONSENT_VERSION } from "../components/DataPriv
 import { useAuth } from "../context/useAuth";
 import { UnitProvider } from "../context/UnitContext";
 
+function hasLocalPrivacyConsent(userId: string) { try { return window.localStorage.getItem(`tinytitans:privacy-consent:${userId}`) === CONSENT_VERSION; } catch { return false; } }
+
 function AppRouterGate() {
   const { user, profile, loading, profileLoading } = useAuth();
   const [consentAccepted, setConsentAccepted] = useState(false);
@@ -59,7 +61,7 @@ function AppRouterGate() {
   if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="*" element={<Navigate to="/login" replace />} /></Routes>;
   if (!profile || !profile.setupComplete) return <Routes><Route path="/account-setup" element={<AccountSetup />} /><Route path="*" element={<Navigate to="/account-setup" replace />} /></Routes>;
 
-  const consentRequired = !consentAccepted && profile.dataCollectionPreferences?.consentVersion !== CONSENT_VERSION;
+  const consentRequired = !consentAccepted && !hasLocalPrivacyConsent(user.uid) && profile.dataCollectionPreferences?.consentVersion !== CONSENT_VERSION;
 
   return <UnitProvider><Routes><Route element={<Layout />}>
     <Route path="/" element={<Home />} /><Route path="/account" element={<MyAccount />} /><Route path="/account/profile" element={<EditProfile />} /><Route path="/account/security" element={<Security />} /><Route path="/account/settings" element={<Settings />} /><Route path="/account/data-privacy" element={<DataPrivacy />} /><Route path="/account/personalise" element={<Personalisation />} />
