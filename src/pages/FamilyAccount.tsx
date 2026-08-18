@@ -1,0 +1,83 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../context/useAuth";
+import { acceptFamilyInvite, createFamily, declineFamilyInvite, getFamilyForUser, getMyFamilyInvites, inviteFamilyMember, removeFamilyMember, type FamilyAccount, type FamilyInvite } from "../services/familyService";
+import BackHomeButton from "../components/BackHomeButton";
+
+export default function FamilyAccount() {
+  const { user, profile, refreshProfile } = useAuth();
+  const [family, setFamily] = useState<FamilyAccount | null>(null);
+  const [invites, setInvites] = useState<FamilyInvite[]>([]);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  async function load() {
+    if (!user) return;
+    setLoading(true); setError("");
+    try { setFamily(await getFamilyForUser(user.uid)); setInvites(await getMyFamilyInvites(user.email || "")); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load your family account."); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { void load(); }, [user]);
+
+  async function startFamily() {
+    if (!user || !profile) return;
+    setBusy(true); setError("");
+    try {
+      const created = await createFamily(user.uid, { uid: user.uid, displayName: profile.displayName || user.displayName || "Family Owner", email: user.email || profile.email, role: "owner", ageBand: profile.ageBand, experienceLevel: profile.experienceLevel });
+      setFamily(created); await refreshProfile(); setMessage("Your Tiny Titans Family is ready. You have two family links available.");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to create the family account."); }
+    finally { setBusy(false); }
+  }
+
+  async function sendInvite() {
+    if (!user || !email.trim()) return;
+    setBusy(true); setError(""); setMessage("");
+    try { await inviteFamilyMember(user.uid, email); setEmail(""); setMessage("Family invitation created. They can accept it from their Tiny Titans account."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to create the invitation."); }
+    finally { setBusy(false); }
+  }
+
+  async function accept(inviteId: string) {
+    if (!user) return;
+    setBusy(true); setError("");
+    try { setFamily(await acceptFamilyInvite(user.uid, inviteId)); setInvites((current) => current.filter((invite) => invite.id !== inviteId)); await refreshProfile(); setMessage("Welcome to the family. Shared Tiny Titans data is now available on this account."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to accept that invitation."); }
+    finally { setBusy(false); }
+  }
+
+  async function decline(inviteId: string) {
+    if (!user) return;
+    setBusy(true); setError("");
+    try { await declineFamilyInvite(user.uid, inviteId); setInvites((current) => current.filter((invite) => invite.id !== inviteId)); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to decline that invitation."); }
+    finally { setBusy(false); }
+  }
+
+  async function remove(uid: string) {
+    if (!user || !window.confirm("Remove this person from your Tiny Titans family? Their own account stays intact.")) return;
+    setBusy(true); setError("");
+    try { await removeFamilyMember(user.uid, uid); await load(); setMessage("Family member removed. Their account and personal profile remain intact."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to remove this family member."); }
+    finally { setBusy(false); }
+  }
+
+  if (!user) return null;
+  if (loading) return <div className="page-container"><BackHomeButton /><div className="welcome-card"><h1>👨‍👩‍👦 Loading Tiny Titans Family…</h1></div></div>;
+
+  return <section className="my-account-page"><BackHomeButton /><div className="my-account-card">
+    <div className="my-account-header"><div className="my-account-avatar">👨‍👩‍👦</div><div><h1>Tiny Titans Family</h1><p>One shared reptile record, with an intelligent experience for every family member.</p></div></div>
+    {message && <div className="creator-success" role="status"><p>{message}</p></div>}
+    {error && <div className="creator-error" role="alert"><p>{error}</p></div>}
+
+    {invites.length > 0 && <div className="account-section"><h2>📨 Family Invitations</h2>{invites.map((invite) => <div className="account-detail" key={invite.id}><div><strong>Tiny Titans Family</strong><p className="account-button-subtext">You've been invited to share a family reptile record.</p></div><div><button type="button" className="account-button account-button--highlight" disabled={busy} onClick={() => void accept(invite.id)}>✅ Accept</button><button type="button" className="account-button" disabled={busy} onClick={() => void decline(invite.id)}>Decline</button></div></div>)}</div>}
+
+    {!family ? <div className="account-section"><h2>Build Your Family Account</h2><p>Keep Mike, Megs and Eli on their own secure logins while sharing the same Tiny Titans snakes, feeding records, weights, sheds and breeding data.</p><button type="button" className="account-button account-button--highlight" disabled={busy} onClick={() => void startFamily()}>👨‍👩‍👦 Create Family Account</button></div> : <>
+      <div className="account-section"><h2>👨‍👩‍👦 Your Family</h2><div className="account-detail"><span>Family links</span><strong>{Math.max(0, family.memberUids.length - 1)} / 2 used</strong></div>{family.members.map((member) => <div className="account-detail" key={member.uid}><div><strong>{member.displayName}</strong><p className="account-button-subtext">{member.role === "owner" ? "Family Owner" : member.role === "child" ? "Child profile" : "Adult profile"} · {member.experienceLevel || "beginner"}</p></div>{member.uid !== family.ownerUid && <button type="button" className="account-button" disabled={busy} onClick={() => void remove(member.uid)}>Remove</button>}</div>)}</div>
+      {family.ownerUid === user.uid && family.memberUids.length < 3 && <div className="account-section"><h2>➕ Add Family Member</h2><p>Invite an existing Tiny Titans account by email. They keep their own login, age/experience profile and personal learning progress while the family reptile data is shared.</p><input className="account-input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Eli or Megs' email address" autoComplete="email" /><button type="button" className="account-button account-button--highlight" disabled={busy || !email.trim()} onClick={() => void sendInvite()}>📨 Send Family Invitation</button></div>}
+      <div className="account-section"><h2>🧠 Intelligent Family Experience</h2><p>Tiny Titans uses each member's age band and experience level to adapt explanations, learning content and what is surfaced to them. The underlying husbandry records stay shared.</p><div className="account-detail"><span>Shared data</span><strong>🐍 Snakes · 🍽️ Feedings · ⚖️ Weights · 🐍 Sheds · 🧬 Breeding</strong></div></div>
+    </>}
+  </div></section>;
+}
