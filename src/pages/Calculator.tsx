@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getGenes, morphs as morphDatabase } from "../data/morphs";
 import ParentSelector, { snakeToSelection, type ParentSelection } from "../components/ParentSelector";
 import ResultCard from "../components/ResultCard";
@@ -111,6 +111,9 @@ export default function Calculator() {
 
   return (
     <main className="calculator-page">
+      <div className="calculator-navigation">
+        <Link to="/breeding" className="calculator-back-button">← Back to Breeding Planner</Link>
+      </div>
       <header className="calculator-header">
         <div>
           <span className="calculator-kicker">TINY TITANS · BREEDING LAB</span>
