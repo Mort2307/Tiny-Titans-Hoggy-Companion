@@ -8,7 +8,8 @@ export type CreatorCommunityGlobeProps = { locations?: CommunityUserLocation[] }
 type GeoFeature = { geometry: unknown };
 type GeoJson = { features: GeoFeature[] };
 type Marker = { areaId: string; city: string; country: string; lat: number; lng: number; members: CommunityLocationMember[] };
-type CountryGroup = { country: string; members: CommunityLocationMember[]; areas: Map<string, { city: string; members: CommunityLocationMember[] }> };
+type CommunityArea = { city: string; members: CommunityLocationMember[] };
+type CountryGroup = { country: string; members: CommunityLocationMember[]; areas: Map<string, CommunityArea> };
 
 const normalise = (value: string) => value.trim().toLocaleLowerCase("en-GB").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -98,10 +99,10 @@ export default function CreatorCommunityGlobeV2({ locations = [] }: CreatorCommu
     const groups = new Map<string, CountryGroup>();
     for (const member of members) {
       const key = normalise(member.country);
-      const group = groups.get(key) ?? { country: member.country, members: [], areas: new Map() };
+      const group = groups.get(key) ?? { country: member.country, members: [] as CommunityLocationMember[], areas: new Map<string, CommunityArea>() };
       group.members.push(member);
       const areaKey = member.areaId || `${normalise(member.city)}-${key}`;
-      const area = group.areas.get(areaKey) ?? { city: member.city, members: [] };
+      const area = group.areas.get(areaKey) ?? { city: member.city, members: [] as CommunityLocationMember[] };
       area.members.push(member);
       group.areas.set(areaKey, area);
       groups.set(key, group);
