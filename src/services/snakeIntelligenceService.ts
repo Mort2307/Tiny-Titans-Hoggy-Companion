@@ -48,6 +48,27 @@ function average(values: number[]): number | null {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
 }
 
+function median(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function coefficientOfVariation(values: number[]): number | null {
+  if (values.length < 3) return null;
+  const mean = average(values);
+  if (mean === null || mean === 0) return null;
+  const variance = average(values.map((value) => (value - mean) ** 2));
+  return variance === null ? null : Math.sqrt(variance) / Math.abs(mean);
+}
+
+function dateSpanDays(dates: string[]): number {
+  const valid = dates.map((date) => new Date(`${date}T00:00:00`).getTime()).filter(Number.isFinite);
+  if (valid.length < 2) return 0;
+  return Math.round((Math.max(...valid) - Math.min(...valid)) / 86_400_000);
+}
+
 function feedingIntervals(record: SnakeMasterRecord): number[] {
   const dates = [...record.feedings].map((item) => item.date).filter(Boolean).sort();
   return dates.slice(1).map((date, index) => {
@@ -83,23 +104,57 @@ function buildCoverageMetrics(record: SnakeMasterRecord): IntelligenceMetric[] {
 }
 
 /**
- * Transparent progress score, not a health score and not a keeper score.
- * The user-facing UI should explain that this measures how much useful
- * individual-history data is available to Tiny Titans.
+ * Coverage measures how much useful individual-history data exists.
+ * Confidence is deliberately different: it measures how trustworthy the
+ * resulting pattern is based on amount, spread, recency and consistency.
  */
 function calculateDataCoverage(metrics: IntelligenceMetric[]): number {
   return Math.round(metrics.reduce((sum, metric) => sum + metric.percent, 0) / metrics.length);
 }
 
+function confidenceFromScore(score: number): DataConfidence {
+  if (score >= 78) return "High";
+  if (score >= 52) return "Moderate";
+  if (score >= 25) return "Low";
+  return "Insufficient";
+}
+
+function calculateEvidenceConfidence(record: SnakeMasterRecord, coveragePercent: number): DataConfidence {
+  const datedSets = [record.weights, record.feedings, record.sheds].map((items) => items.map((item) => item.date).filter(Boolean));
+  const recordCounts = datedSets.map((dates) => dates.length);
+  const totalRecords = recordCounts.reduce((sum, count) => sum + count, 0);
+  if (totalRecords < 3 || coveragePercent < 20) return "Insufficient";
+
+  const spans = datedSets.map(dateSpanDays);
+  const spanScore = Math.min(20, (Math.max(...spans, 0) / 90) * 20);
+  const volumeScore = Math.min(30, totalRecords * 1.5);
+
+  const weightValues = record.weights.map((item) => item.weight).filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0);
+  const feedingConsistency = coefficientOfVariation(feedingIntervals(record));
+  const shedConsistency = coefficientOfVariation(shedIntervals(record));
+  const weightConsistency = coefficientOfVariation(weightValues);
+  const consistencyValues = [feedingConsistency, shedConsistency, weightConsistency].filter((value): value is number => value !== null);
+  const consistencyScore = consistencyValues.length
+    ? Math.max(0, 25 - Math.min(25, average(consistencyValues.map((value) => Math.min(value, 2)))! * 12.5))
+    : 8;
+
+  const recencyDates = datedSets.flat().map((date) => new Date(`${date}T00:00:00`).getTime()).filter(Number.isFinite);
+  const newest = recencyDates.length ? Math.max(...recencyDates) : 0;
+  const ageDays = newest ? Math.max(0, (Date.now() - newest) / 86_400_000) : 9999;
+  const recencyScore = ageDays <= 30 ? 15 : ageDays <= 90 ? 10 : ageDays <= 180 ? 5 : 0;
+
+  return confidenceFromScore(Math.min(100, coveragePercent * 0.4 + volumeScore + spanScore + consistencyScore + recencyScore));
+}
+
 function buildConfidenceExplanation(confidence: DataConfidence): string {
   if (confidence === "High") {
-    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. High means the available records are consistent enough to support a reliable pattern. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. High means the available records have enough quantity, history, recency and consistency to support a strong pattern. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
   }
   if (confidence === "Moderate") {
-    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Moderate means useful patterns are present, but some history is limited, inconsistent or still developing. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Moderate means useful patterns are present, but the history, consistency or time span is not yet strong enough for high confidence. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
   }
   if (confidence === "Low") {
-    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Low means the engine should be cautious because the available pattern is weak or inconsistent. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Low means the engine can see some evidence but should remain cautious because the dataset is limited, recent or inconsistent. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
   }
   return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. More useful history is needed before Tiny Titans can make a confident interpretation. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
 }
@@ -187,12 +242,14 @@ function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
 }
 
 export function buildSnakeIntelligence(record: SnakeMasterRecord): SnakeIntelligence {
+  const coverageMetrics = buildCoverageMetrics(record);
+  const dataCoveragePercent = calculateDataCoverage(coverageMetrics);
+  const confidence = calculateEvidenceConfidence(record, dataCoveragePercent);
   const insights = buildInsights(record);
   const priority = [...insights].sort((a, b) => {
     const toneWeight = (value: IntelligenceTone) => value === "attention" ? 3 : value === "positive" ? 1 : 2;
     return toneWeight(b.tone) - toneWeight(a.tone) || confidenceRank(b.confidence) - confidenceRank(a.confidence);
   })[0] ?? null;
-  const coverageMetrics = buildCoverageMetrics(record);
 
   const summary = priority?.tone === "attention"
     ? `${record.snake.name} has something worth reviewing, but Tiny Titans will not assume a cause without enough evidence.`
@@ -203,10 +260,10 @@ export function buildSnakeIntelligence(record: SnakeMasterRecord): SnakeIntellig
   return {
     snakeId: record.snake.id,
     snakeName: record.snake.name,
-    confidence: record.overview.confidence.overall,
-    dataCoveragePercent: calculateDataCoverage(coverageMetrics),
+    confidence,
+    dataCoveragePercent,
     coverageMetrics,
-    confidenceExplanation: buildConfidenceExplanation(record.overview.confidence.overall),
+    confidenceExplanation: buildConfidenceExplanation(confidence),
     insights,
     priority,
     summary,
