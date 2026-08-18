@@ -68,7 +68,9 @@ const unresolvedTargets = navigationTargets.filter(({ target }) =>
 // and incomplete-profile states. /login and /account-setup therefore appear once
 // in their gated tree and once as authenticated redirects. They are not competing
 // declarations in the same rendered route tree and are intentionally allowed here.
-const allowedConditionalDuplicates = new Set(["/login", "/account-setup"]);
+// The wildcard path is the intentional final fallback route; it is expected to
+// occur in more than one gated tree and must not be treated as a duplicate error.
+const allowedConditionalDuplicates = new Set(["/login", "/account-setup", "*"]);
 const duplicateRoutes = [...new Set(
   routes.filter((route, index) => routes.indexOf(route) !== index)
 )].filter((route) => !allowedConditionalDuplicates.has(route));
