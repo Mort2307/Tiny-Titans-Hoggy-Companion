@@ -1,15 +1,59 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Snake } from "../types/Snake";
+import type { WeightRecord } from "../types/Weight";
+import type { FeedingRecord } from "../types/Feeding";
+import type { ShedRecord } from "../types/Shed";
 import { getUserSnakes } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
+import { useUnits } from "../context/UnitContextValue";
 import SnakeTile from "../components/SnakeTile";
 import BackHomeButton from "../components/BackHomeButton";
 import "../styles/snake-selector.css";
 
+type SparklineProps = { values: number[]; emptyLabel: string };
+
+function Sparkline({ values, emptyLabel }: SparklineProps) {
+  const clean = values.filter((value) => Number.isFinite(value));
+  if (clean.length < 2) return <div className="snake-mini-graph-empty">{emptyLabel}</div>;
+
+  const min = Math.min(...clean);
+  const max = Math.max(...clean);
+  const range = max - min || 1;
+  const points = clean.map((value, index) => {
+    const x = clean.length === 1 ? 50 : (index / (clean.length - 1)) * 100;
+    const y = 38 - ((value - min) / range) * 30;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ");
+
+  return (
+    <svg className="snake-mini-graph" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function weightValues(history: WeightRecord[]): number[] {
+  return [...history]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-8)
+    .map((record) => record.unit === "kg" ? record.weight * 1000 : record.weight);
+}
+
+function intervalValues(records: Array<{ date: string }>): number[] {
+  const dates = records
+    .map((record) => new Date(record.date).getTime())
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b)
+    .slice(-9);
+
+  return dates.slice(1).map((date, index) => Math.max(0, (date - dates[index]) / 86400000));
+}
+
 function MySnakes() {
   const navigate = useNavigate();
   const { user, loading, profileLoading } = useAuth();
+  const { formatWeight } = useUnits();
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [selectedSnake, setSelectedSnake] = useState<Snake | null>(null);
   const [loadingSnakes, setLoadingSnakes] = useState(true);
@@ -27,6 +71,7 @@ function MySnakes() {
           .filter((snake) => Boolean(snake?.id))
           .map((snake) => ({ ...snake, id: String(snake.id).trim() }));
         setSnakes(validSnakes);
+        setSelectedSnake((current) => current ? validSnakes.find((snake) => snake.id === current.id) ?? null : null);
         setError(null);
       })
       .catch((err) => {
@@ -68,6 +113,21 @@ function MySnakes() {
     closePanel();
     navigate(`/snakes/${snakeId}/edit`);
   }
+
+  const trackerData = useMemo(() => {
+    if (!selectedSnake) return null;
+    const weights = selectedSnake.weightHistory ?? [];
+    const feedings = selectedSnake.feedingHistory ?? [];
+    const sheds = selectedSnake.shedHistory ?? [];
+    return {
+      weights,
+      feedings,
+      sheds,
+      weightGraph: weightValues(weights),
+      feedingGraph: intervalValues(feedings),
+      shedGraph: intervalValues(sheds),
+    };
+  }, [selectedSnake]);
 
   const pageLoading = loading || profileLoading || (Boolean(user) && loadingSnakes);
 
@@ -131,7 +191,7 @@ function MySnakes() {
           })}
         </div>
       )}
-      {selectedSnake && (
+      {selectedSnake && trackerData && (
         <div
           className="snake-tracker-backdrop"
           role="presentation"
@@ -150,11 +210,32 @@ function MySnakes() {
                 <p>{selectedSnake.sex ?? "Unknown sex"}</p>
               </div>
             </div>
-            <div className="snake-panel-actions">
+
+            <div className="snake-quick-tracker-bar" aria-label={`${selectedSnake.name} tracker summary`}>
+              <button type="button" className="snake-quick-tracker" onClick={() => openTracker("/weights")}>
+                <span className="snake-quick-tracker-title">⚖️ Weight</span>
+                <Sparkline values={trackerData.weightGraph} emptyLabel="Add 2+ weights" />
+                <strong>{selectedSnake.weight != null ? formatWeight(selectedSnake.weight) : "—"}</strong>
+                <small>{trackerData.weights.length} record{trackerData.weights.length === 1 ? "" : "s"}</small>
+              </button>
+
+              <button type="button" className="snake-quick-tracker" onClick={() => openTracker("/feeding")}>
+                <span className="snake-quick-tracker-title">🍽️ Feeding</span>
+                <Sparkline values={trackerData.feedingGraph} emptyLabel="Add 2+ feeds" />
+                <strong>{trackerData.feedings.length}</strong>
+                <small>feed{trackerData.feedings.length === 1 ? "" : "s"} logged</small>
+              </button>
+
+              <button type="button" className="snake-quick-tracker" onClick={() => openTracker("/shedding")}>
+                <span className="snake-quick-tracker-title">🐍 Sheds</span>
+                <Sparkline values={trackerData.shedGraph} emptyLabel="Add 2+ sheds" />
+                <strong>{trackerData.sheds.length}</strong>
+                <small>shed{trackerData.sheds.length === 1 ? "" : "s"} logged</small>
+              </button>
+            </div>
+
+            <div className="snake-panel-actions snake-panel-secondary-actions">
               <button type="button" onClick={openProfile}>🐍 View Full Profile</button>
-              <button type="button" onClick={() => openTracker("/weights")}>⚖️ Weight Tracker <span>{selectedSnake.weightHistory?.length ?? 0}</span></button>
-              <button type="button" onClick={() => openTracker("/feeding")}>🍽️ Feeding Tracker <span>{selectedSnake.feedingHistory?.length ?? 0}</span></button>
-              <button type="button" onClick={() => openTracker("/shedding")}>💧 Shed Tracker <span>{selectedSnake.shedHistory?.length ?? 0}</span></button>
               <button type="button" onClick={openEditor}>✏️ Edit Snake</button>
             </div>
           </aside>
