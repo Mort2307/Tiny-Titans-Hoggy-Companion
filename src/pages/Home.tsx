@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
+import PwaInstallCard from "../components/PwaInstallCard";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import "./Home.css";
@@ -16,6 +17,8 @@ function Home() {
 
   return <div className="dashboard">
     <section className="welcome-card"><div className="welcome-content"><p className="welcome-eyebrow">🐍 Tiny Titans</p><h2>Welcome back, {displayName}!</h2><p>Your Western Hognose companion for husbandry, genetics, learning and breeding.</p></div><div className="profile-summary"><div className="profile-level"><span>Experience</span><strong>{experience}</strong></div><div className="profile-category"><span>Profile</span><strong>{profileLabel}</strong></div><div className="profile-category"><span>Learning</span><strong>{learningLabel}</strong></div><div className="profile-category"><span>Snakes</span><strong>{snakeCount ?? "—"}</strong></div></div></section>
+
+    <PwaInstallCard />
 
     {profile?.profileType === "educator" && <section className="dashboard-section"><div className="section-heading"><div><p className="section-eyebrow">EDUCATION</p><h3>Your teaching centre</h3></div></div><section className="dashboard-grid"><DashboardCard icon="🧑‍🏫" title="Educator Centre" description="Create classrooms, plan lessons and manage teaching activities" link="/educator" /></section></section>}
 
