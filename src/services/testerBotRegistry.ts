@@ -7,6 +7,7 @@ import { createFeedbackAttachmentChecks } from "./testerFeedbackSuitesService";
 import { createNotificationMicroSystemChecks } from "./testerNotificationSuitesService";
 import { createCreatorFunctionChecks } from "./testerCreatorSuitesService";
 import { createApplicationCoverageChecks, createBreedingPlannerChecks } from "./testerApplicationSuitesService";
+import { createFamilyAccountChecks } from "./testerFamilySuitesService";
 
 export type TesterBotId = "creator" | "user" | "app" | "security";
 
@@ -34,6 +35,7 @@ const creatorSuites: BotSuiteDefinition[] = [
   { id: "notifications", label: "Notifications", description: "Feeding-preparation notification logic, permissions and de-duplication checks.", category: "Notifications", safety: "read-only", build: createNotificationMicroSystemChecks },
   { id: "feedback", label: "Feedback / Attachments", description: "Feedback text, mock image and mock video validation paths.", category: "Feedback", safety: "read-only", build: createFeedbackAttachmentChecks },
   { id: "regression", label: "Tracker Regression", description: "Shared tracker totals and Firebase data-model regression checks.", category: "Regression", safety: "read-only", build: createTrackerRegressionChecks },
+  { id: "family-account", label: "Family Account", description: "Owner, invitation, membership, Allow/Deny/Verify permissions, approvals and sandbox isolation checks.", category: "Family", safety: "read-only", build: createFamilyAccountChecks },
 ];
 
 const userSuites: BotSuiteDefinition[] = [
