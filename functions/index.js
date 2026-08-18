@@ -48,6 +48,28 @@ exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => 
     return { success: true, uid: targetUid, creator: nextClaims.creator === true, creatorTester: false, isTester: false, invitation: false, invitationStatus: "revoked" };
   } catch (error) { console.error("Creator claim/invitation update failed", error); if (error instanceof HttpsError) throw error; throw new HttpsError("internal", "Unable to update Creator Tester authorization."); }
 });
+exports.ensureCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  const uid = request.auth.uid;
+  const profileSnapshot = await db.collection("users").doc(uid).get();
+  const profile = profileSnapshot.data() || {};
+  const existingClaims = request.auth.token || {};
+  const profileAuthorizesCreator = profile.profileType === "creator" || profile.role === "admin";
+  const claimAlreadyPresent = existingClaims.creator === true || existingClaims.admin === true || existingClaims.creatorTester === true;
+  if (!profileAuthorizesCreator && !claimAlreadyPresent) throw new HttpsError("permission-denied", "Creator authorization is required.");
+  try {
+    const authUser = await adminAuth.getUser(uid);
+    const nextClaims = { ...(authUser.customClaims || {}) };
+    if (profile.role === "admin" || nextClaims.admin === true) nextClaims.admin = true;
+    else if (profile.profileType === "creator" || nextClaims.creator === true) nextClaims.creator = true;
+    else if (nextClaims.creatorTester === true) nextClaims.creatorTester = true;
+    await adminAuth.setCustomUserClaims(uid, nextClaims);
+    return { success: true, uid, creator: nextClaims.creator === true, admin: nextClaims.admin === true, creatorTester: nextClaims.creatorTester === true, refreshRequired: true };
+  } catch (error) {
+    console.error("Creator claim synchronisation failed", error);
+    throw new HttpsError("internal", "Unable to synchronise Creator authorization.");
+  }
+});
 exports.createTitanCheckout = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => { if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in to become a Titan."); const tierKey = String(request.data?.tier || ""); const tier = PRICE_TIERS[tierKey]; if (!tier) throw new HttpsError("invalid-argument", "Invalid Titan support tier."); try { const stripe = new Stripe(STRIPE_SECRET_KEY.value()); const origin = getAllowedOrigin(request); const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [{ price: tier.priceId, quantity: 1 }], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label: tier.label, amount_gbp: String(tier.amount) }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto" }); if (!session.url) throw new Error("Stripe did not return a checkout URL."); return { url: session.url }; } catch (error) { console.error("Stripe checkout creation failed", error); throw new HttpsError("internal", "Unable to start Stripe Checkout."); } });
 exports.stripeWebhook = onRequest({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET], invoker: "public" }, async (req, res) => { if (req.method !== "POST") return res.status(405).send("Method Not Allowed"); const signature = req.headers["stripe-signature"]; if (!signature) return res.status(400).send("Missing Stripe signature"); try { const stripe = new Stripe(STRIPE_SECRET_KEY.value()); const event = stripe.webhooks.constructEvent(req.rawBody, signature, STRIPE_WEBHOOK_SECRET.value()); if (event.type === "checkout.session.completed") { const session = event.data.object; const uid = session.metadata?.uid || session.client_reference_id; const tier = PRICE_TIERS[session.metadata?.tier]; if (uid && tier && session.payment_status === "paid") { await db.collection("supporters").doc(uid).set({ uid, status: "active", tier: session.metadata.tier, tierLabel: tier.label, amountGbp: tier.amount, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true }); await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(tier.amount), updatedAt: FieldValue.serverTimestamp() }, { merge: true }); } } return res.status(200).json({ received: true }); } catch (error) { console.error("Stripe webhook verification/processing failed", error); return res.status(400).send("Invalid webhook signature or event"); } });
 function londonToday() { const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date()); const values = Object.fromEntries(parts.map((part) => [part.type, part.value])); return `${values.year}-${values.month}-${values.day}`; }
