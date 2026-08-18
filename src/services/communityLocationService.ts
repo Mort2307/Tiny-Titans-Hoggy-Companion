@@ -14,13 +14,25 @@ export type CommunityLocationMember = {
 };
 
 async function getTrackedSnakeCount(uid: string): Promise<number | undefined> {
+  const snakes = collection(db, "users", uid, "snakes");
   try {
-    const snapshot = await getCountFromServer(collection(db, "users", uid, "snakes"));
+    const snapshot = await getCountFromServer(snakes);
     return snapshot.data().count;
-  } catch (error) {
-    // The community map should still render if a count cannot be read.
-    console.warn("Tiny Titans: unable to read community snake count", { uid, error });
-    return undefined;
+  } catch (countError) {
+    // Some Firestore deployments/SDK combinations can reject aggregation reads
+    // even when normal collection reads are permitted. Fall back to the same
+    // canonical collection used by the snake service and count the documents.
+    try {
+      const snapshot = await getDocs(snakes);
+      return snapshot.size;
+    } catch (readError) {
+      console.warn("Tiny Titans: unable to read community snake count", {
+        uid,
+        countError,
+        readError,
+      });
+      return undefined;
+    }
   }
 }
 
@@ -59,10 +71,8 @@ export async function getCommunityLocationMembers(): Promise<CommunityLocationMe
     }];
   });
 
-  const members = await Promise.all(candidates.map(async (member) => {
+  return Promise.all(candidates.map(async (member) => {
     const snakeCount = await getTrackedSnakeCount(member.uid);
     return snakeCount === undefined ? member : { ...member, snakeCount };
   }));
-
-  return members;
 }
