@@ -6,6 +6,7 @@ const suites = [
   ["morph database", "validate:morphs"],
   ["learning content", "validate:learning"],
   ["encoding", "validate:encoding"],
+  ["security contracts", "validate:security"],
 ];
 
 const results = [];
@@ -21,14 +22,15 @@ for (const [label, script] of suites) {
 }
 
 const failed = results.filter((result) => result.status === "FAIL");
+const attempted = results.length;
+
 console.log("\nBOT CONTRACT REPORT");
 console.table(results);
-console.log(`Executed: ${results.length}`);
-console.log(`Passed: ${results.length - failed.length}`);
+console.log(`Registered: ${suites.length}`);
+console.log(`Attempted: ${attempted}`);
+console.log(`Passed: ${attempted - failed.length}`);
 console.log(`Failed: ${failed.length}`);
-console.log(`Coverage: 100% (all registered contract suites were attempted)`);
-console.log(`Effective pass rate: ${results.length ? Math.round(((results.length - failed.length) / results.length) * 100) : 0}%`);
+console.log(`Coverage: ${Math.round((attempted / suites.length) * 100)}% of registered contract suites attempted`);
+console.log(`Effective pass rate: ${attempted ? Math.round(((attempted - failed.length) / attempted) * 100) : 0}%`);
 
-if (failed.length) {
-  process.exitCode = 1;
-}
+if (failed.length) process.exitCode = 1;
