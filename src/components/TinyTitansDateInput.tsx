@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 type TinyTitansDateInputProps = {
   id: string;
@@ -42,6 +42,10 @@ export default function TinyTitansDateInput({ id, label, value, onChange, disabl
   const [draft, setDraft] = useState(displayDate(value));
   const [invalid, setInvalid] = useState(false);
 
+  useEffect(() => {
+    setDraft(displayDate(value));
+  }, [value]);
+
   function handleTextChange(next: string) {
     setDraft(next);
     if (!next.trim()) {
@@ -74,33 +78,27 @@ export default function TinyTitansDateInput({ id, label, value, onChange, disabl
     }
   }
 
+  function openPicker() {
+    const input = pickerRef.current;
+    if (!input || disabled) return;
+    if (typeof input.showPicker === "function") input.showPicker();
+    else input.click();
+  }
+
   function handlePickerChange(next: string) {
     setDraft(displayDate(next));
     setInvalid(false);
     onChange(next);
   }
 
-  return <div className="tiny-titans-date-field">
+  return <div className="tiny-titans-date-field" style={{ width: "100%" }}>
     {label && <label htmlFor={id}>{label}</label>}
-    <div className="tiny-titans-date-control">
-      <input
-        id={id}
-        type="text"
-        inputMode="numeric"
-        autoComplete="off"
-        placeholder="DD/MM/YYYY"
-        value={draft}
-        onChange={(event) => handleTextChange(event.target.value)}
-        onBlur={handleBlur}
-        disabled={disabled}
-        required={required}
-        aria-invalid={invalid}
-        aria-describedby={invalid ? errorId : helpText ? `${id}-help` : undefined}
-      />
-      <button type="button" className="tiny-titans-date-picker-button" onClick={() => pickerRef.current?.showPicker?.()} disabled={disabled} aria-label={`Choose ${label || "date"} from calendar`} title="Choose from calendar">📅</button>
-      <input ref={pickerRef} className="tiny-titans-native-date-picker" type="date" value={value} onChange={(event) => handlePickerChange(event.target.value)} disabled={disabled} min={min} max={max} tabIndex={-1} aria-hidden="true" />
+    <div className="tiny-titans-date-control" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "8px", width: "100%", position: "relative" }}>
+      <input id={id} type="text" inputMode="numeric" autoComplete="off" placeholder="DD/MM/YYYY" value={draft} onChange={(event) => handleTextChange(event.target.value)} onBlur={handleBlur} disabled={disabled} required={required} aria-invalid={invalid} aria-describedby={invalid ? errorId : helpText ? `${id}-help` : undefined} style={{ width: "100%", minWidth: 0 }} />
+      <button type="button" onClick={openPicker} disabled={disabled} aria-label={`Choose ${label || "date"} from calendar`} title="Choose from calendar" style={{ minWidth: "44px", minHeight: "44px", padding: "8px 12px", border: "2px solid var(--border-strong, #00aeff)", borderRadius: "10px", background: "var(--surface, #26083d)", color: "var(--text, #f5b642)", fontSize: "18px", lineHeight: 1 }}>📅</button>
+      <input ref={pickerRef} className="tiny-titans-native-date-picker" type="date" value={value} onChange={(event) => handlePickerChange(event.target.value)} disabled={disabled} min={min} max={max} tabIndex={-1} aria-hidden="true" style={{ position: "absolute", width: "1px", height: "1px", opacity: 0, pointerEvents: "none", bottom: 0, right: 0 }} />
     </div>
-    {invalid && <small id={errorId} className="tiny-titans-date-error">Use DD/MM/YYYY, for example 18/08/2026.</small>}
+    {invalid && <small id={errorId} className="tiny-titans-date-error" style={{ display: "block", marginTop: "6px", color: "var(--danger, #ff4d4d)" }}>Use DD/MM/YYYY, for example 18/08/2026.</small>}
     {!invalid && helpText && <small id={`${id}-help`} className="tiny-titans-date-help">{helpText}</small>}
   </div>;
 }
