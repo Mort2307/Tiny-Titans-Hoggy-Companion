@@ -6,6 +6,12 @@ import { loginWithEmail, loginWithGoogle, registerWithEmail } from "../firebase/
 import "../styles/Auth.css";
 import logo from "../assets/TinyTitans-Logo.jpg";
 
+function getRedirectDestination(search: string): string {
+  const redirect = new URLSearchParams(search).get("redirect");
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//") || redirect === "/login") return "/";
+  return redirect;
+}
+
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,17 +23,11 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function getRedirectDestination() {
-    const redirect = new URLSearchParams(location.search).get("redirect");
-    if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//") || redirect === "/login") return "/";
-    return redirect;
-  }
-
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (!firebaseUser) return;
-      navigate(getRedirectDestination(), { replace: true });
+      navigate(getRedirectDestination(location.search), { replace: true });
     });
     return unsubscribe;
   }, [location.search, navigate]);
