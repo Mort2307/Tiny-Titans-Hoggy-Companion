@@ -66,4 +66,6 @@ export type ReportIssue = {
   creatorMessage?: string;
   reviewedBy?: string;
   resolvedAt?: string;
+  /** Creator-only queue flag. Archived reports remain in Firestore but are hidden from the active queue. */
+  archived?: boolean;
 };
