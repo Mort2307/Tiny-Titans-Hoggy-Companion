@@ -12,20 +12,41 @@ function isStandalone() {
     ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
 }
 
-function isIosSafari() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent) &&
-    /safari/i.test(navigator.userAgent) &&
-    !/crios|fxios|edgios/i.test(navigator.userAgent);
+function isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-function isChromiumDesktop() {
-  return /chrome|edg/i.test(navigator.userAgent) && !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
+function isIosSafari() {
+  return isIos() && /safari/i.test(navigator.userAgent) && !/crios|fxios|edgios/i.test(navigator.userAgent);
+}
+
+function isAndroid() {
+  return /android/i.test(navigator.userAgent);
+}
+
+function isChromium() {
+  return /chrome|crios|edg|edgios/i.test(navigator.userAgent) && !/firefox|fxios|opr/i.test(navigator.userAgent);
+}
+
+function browserHelpText() {
+  if (isIosSafari()) {
+    return <>On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. Tiny Titans will open as its own app.</>;
+  }
+  if (isIos()) {
+    return <>On this browser: open the browser's <strong>Share</strong> or menu option and choose <strong>Add to Home Screen</strong>. Tiny Titans will open as its own app.</>;
+  }
+  if (isAndroid() && isChromium()) {
+    return <>Open your browser menu <strong>⋮</strong> and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</>;
+  }
+  if (isChromium()) {
+    return <>Open your browser menu <strong>⋮</strong> and choose <strong>Install Tiny Titans</strong> or <strong>Install app</strong>.</>;
+  }
+  return <>Open your browser's menu and look for <strong>Install app</strong>, <strong>Install Tiny Titans</strong>, or <strong>Add to Home Screen</strong>.</>;
 }
 
 export default function PwaInstallCard() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
-  const [iosHelp, setIosHelp] = useState(false);
   const [browserHelp, setBrowserHelp] = useState(false);
 
   useEffect(() => {
@@ -44,14 +65,11 @@ export default function PwaInstallCard() {
       localStorage.setItem(INSTALLED_KEY, "true");
       setInstalled(true);
       setInstallPrompt(null);
-      setIosHelp(false);
       setBrowserHelp(false);
     };
 
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
     window.addEventListener("appinstalled", onInstalled);
-
-    if (isIosSafari()) setIosHelp(true);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
@@ -63,13 +81,7 @@ export default function PwaInstallCard() {
 
   const install = async () => {
     if (!installPrompt) {
-      if (isIosSafari()) {
-        setIosHelp(true);
-      } else if (isChromiumDesktop()) {
-        setBrowserHelp(true);
-      } else {
-        setBrowserHelp(true);
-      }
+      setBrowserHelp(true);
       return;
     }
 
@@ -84,21 +96,16 @@ export default function PwaInstallCard() {
     setInstallPrompt(null);
   };
 
-  const buttonLabel = installPrompt
-    ? "📲 Download Tiny Titans"
-    : isIosSafari()
-      ? "📱 Add to Home Screen"
-      : "📲 Show Download Help";
-
-  return <section className="pwa-install-card" aria-label="Download Tiny Titans">
+  return <section className="pwa-install-card" aria-label="Install Tiny Titans">
     <div className="pwa-install-icon">🐍</div>
     <div className="pwa-install-copy">
       <p className="section-eyebrow">TINY TITANS APP</p>
-      <h3>Download Tiny Titans</h3>
-      <p>Install Tiny Titans on your device for quick access, its own app window and automatic updates.</p>
-      {iosHelp && !installPrompt && <p className="pwa-install-help">On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>. This installs Tiny Titans as an app.</p>}
-      {browserHelp && !installPrompt && <p className="pwa-install-help">Your browser has not offered the download prompt yet. Open the browser menu <strong>⋮</strong> and choose <strong>Install Tiny Titans</strong> or <strong>Install app</strong>. This installs the app rather than creating an ordinary bookmark.</p>}
+      <h3>Install Tiny Titans</h3>
+      <p>Install Tiny Titans for quick access, its own app window and automatic updates.</p>
+      {browserHelp && <p className="pwa-install-help">{browserHelpText()}</p>}
     </div>
-    <button type="button" className="pwa-install-button" onClick={() => void install()}>{buttonLabel}</button>
+    <button type="button" className="pwa-install-button" onClick={() => void install()}>
+      📲 Install Tiny Titans
+    </button>
   </section>;
 }
