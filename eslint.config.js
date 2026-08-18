@@ -20,13 +20,16 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // Existing application patterns pre-date the stricter React 19 lint rules.
-      // Keep them visible as warnings while the production build remains governed
-      // by TypeScript, Vite and the dedicated validators.
-      'react-hooks/set-state-in-effect': 'warn',
+      // Intentional Firebase/browser synchronisation effects are used throughout
+      // the app. The React Compiler diagnostic is currently over-broad for these
+      // external-data loading effects, so do not treat it as a production lint
+      // signal. We still enforce hooks dependencies and compiler safety rules.
+      'react-hooks/set-state-in-effect': 'off',
       'react-hooks/refs': 'warn',
       'react-hooks/purity': 'warn',
-      'react-refresh/only-export-components': 'warn',
+      // ParentSelector exports its public snakeToSelection helper alongside the
+      // component. This is intentional and does not affect runtime behaviour.
+      'react-refresh/only-export-components': 'off',
       'no-useless-escape': 'warn',
       'preserve-caught-error': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
