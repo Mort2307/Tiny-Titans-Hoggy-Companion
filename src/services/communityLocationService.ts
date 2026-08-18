@@ -26,11 +26,15 @@ export async function getCommunityLocationMembers(): Promise<CommunityLocationMe
     const country = String(location?.country ?? "").trim();
     if (!city || !country) return [];
 
+    const latitude = typeof location?.latitude === "number" && Number.isFinite(location.latitude) ? location.latitude : undefined;
+    const longitude = typeof location?.longitude === "number" && Number.isFinite(location.longitude) ? location.longitude : undefined;
+    // Do not render legacy city-only records at 0,0. They will re-enter the
+    // map when the user accepts the current coarse-location consent version.
+    if (latitude === undefined || longitude === undefined || (latitude === 0 && longitude === 0)) return [];
+
     const areaId = typeof location?.areaId === "string" && location.areaId.trim()
       ? location.areaId.trim()
       : `legacy-${city.toLocaleLowerCase("en-GB")}-${country.toLocaleLowerCase("en-GB")}`;
-    const latitude = typeof location?.latitude === "number" && Number.isFinite(location.latitude) ? location.latitude : 0;
-    const longitude = typeof location?.longitude === "number" && Number.isFinite(location.longitude) ? location.longitude : 0;
     const rawSnakeCount = data.snakeCount;
     const snakeCount = typeof rawSnakeCount === "number" && Number.isFinite(rawSnakeCount) ? rawSnakeCount : undefined;
 
