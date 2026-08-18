@@ -26,6 +26,16 @@ service cloud.firestore {
       allow delete: if isCreator();
     }
     match /users/{userId}/{document=**} { allow read, write: if signedIn() && (request.auth.uid == userId || isCreator()); }
+
+    match /testerSandboxes/{sandboxId} {
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.syntheticOnly == true && request.resource.data.purpose == "bot-test";
+      allow get, update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == request.auth.uid;
+      allow list: if false;
+      match /{document=**} {
+        allow read, write: if signedIn() && get(/databases/$(database)/documents/testerSandboxes/$(sandboxId)).data.ownerUid == request.auth.uid;
+      }
+    }
+
     match /geneticsCalculations/{calculationId} {
       allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
       allow get, list: if isCreator();
