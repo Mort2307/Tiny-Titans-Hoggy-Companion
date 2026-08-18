@@ -46,13 +46,9 @@ function BackHomeButton({ fallback = "/" }: Props) {
     setProjectError("");
     try {
       await deleteBreedingProject(user.uid, project.id);
-      const remaining = projects.filter((item) => item.id !== project.id);
-      setProjects(remaining);
-      setSelectedProjectId(remaining[0]?.id || "");
-      window.dispatchEvent(new CustomEvent("tinytitans:breeding-project-deleted", { detail: { projectId: project.id } }));
+      window.location.reload();
     } catch (error) {
       setProjectError(error instanceof Error ? error.message : "Unable to delete this breeding project.");
-    } finally {
       setDeleting(false);
     }
   }
