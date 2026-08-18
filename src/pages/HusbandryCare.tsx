@@ -44,7 +44,7 @@ export default function HusbandryCare() {
 
   const snake = useMemo(() => snakes.find((item) => item.id === selectedId) ?? snakes[0], [snakes, selectedId]);
   const history = useMemo(() => snake ? [...(weights[snake.id] ?? snake.weightHistory ?? [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) : [], [snake, weights]);
-  const currentWeight = history.at(-1)?.weight ?? snake?.weight;
+  const currentWeight = history.at(-1)?.weight ?? snake?.weight ?? undefined;
   const age = snake ? ageInYears(snake.hatchDate) : 0;
   const stage = growthStageForAge(age);
   const growth = trend(history);
