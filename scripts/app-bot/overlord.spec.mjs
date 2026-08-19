@@ -66,7 +66,7 @@ async function signIn(page) {
   }
   await page.goto(`${baseURL}/login`, { waitUntil: "domcontentloaded" });
   await page.getByLabel("Email Address").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: /sign in/i }).click();
   await expect(page).not.toHaveURL(/\/login\/?$/);
 }
