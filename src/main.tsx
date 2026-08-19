@@ -4,6 +4,7 @@ import { registerSW } from "virtual:pwa-register";
 
 import "./index.css";
 import "./styles/tiny-titans-modern.css";
+import "./styles/unified-keeper-ui.css";
 import "./styles/selector-scroll.css";
 
 import App from "./App";
