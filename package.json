@@ -13,6 +13,7 @@
     "validate:security": "node scripts/validate-security-contracts.mjs",
     "test:bot:contracts": "node scripts/run-bot-test-contract.mjs",
     "test:overlord": "node scripts/run-overlord-bot.mjs",
+    "test:visual-ux": "node scripts/run-visual-ux-bot.mjs",
     "test:production-gate": "node scripts/run-production-gate.mjs",
     "build": "npm run validate:morphs && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:security && tsc -b && vite build",
     "lint": "eslint .",
