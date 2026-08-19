@@ -53,6 +53,7 @@ function Navigation() {
     ["/", "🏠", "Home"],
     ["/snakes", "🐍", "My Snakes"],
     ["/husbandry", "🌡️", "Husbandry & Care"],
+    ["/enclosure-intelligence", "🏠", "Enclosure Intelligence"],
     ["/morph-library", "🧬", "Morph Library"],
     ["/calculator", "🧮", "Genetics Calculator"],
     ["/breeding", "🥚", "Breeding Planner"],
