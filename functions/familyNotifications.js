@@ -1,4 +1,5 @@
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
@@ -75,7 +76,6 @@ exports.sendFamilyApprovalDecisionNotification = onDocumentUpdated({ document: "
   await sendPush(requesterUid, `family-approval-decision-${event.params.approvalId}-${after.status}`, title, body, "/account/family");
 });
 
-/** Live QA probe. The target is always the authenticated caller; no target UID is accepted. */
 exports.runNotificationBotProbe = onCall({ region: "europe-west2" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "You must be signed in to run the Notification BOT.");
@@ -84,38 +84,47 @@ exports.runNotificationBotProbe = onCall({ region: "europe-west2" }, async (requ
   const claims = request.auth.token || {};
   const authorised = claims.admin === true || claims.creator === true || claims.creatorTester === true || data.role === "admin" || data.profileType === "creator";
   if (!authorised) throw new HttpsError("permission-denied", "Creator or Creator Tester authorization is required.");
-
   const eventKey = String(request.data?.eventKey || "").trim();
   if (!/^notification-bot-[a-z0-9-]{10,80}$/.test(eventKey)) throw new HttpsError("invalid-argument", "Invalid notification BOT event key.");
-
   const title = "🤖 Tiny Titans Notification BOT";
   const body = "Live notification probe passed through the production notification pipeline.";
   const url = "/settings";
   const eventRef = db.collection("users").doc(uid).collection("notificationEvents").doc(eventKey);
   const existing = await eventRef.get();
   if (existing.exists) throw new HttpsError("already-exists", "Notification BOT event key already exists.");
-
   const tokensSnapshot = await db.collection("users").doc(uid).collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokensSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
-  if (!tokenDocs.length) {
-    await eventRef.set({ type: "notification-bot-probe", status: "no-delivery", title, body, url, sentCount: 0, invalidTokenCount: 0, createdAt: FieldValue.serverTimestamp() });
-    return { eventKey, status: "no-delivery", sentCount: 0, invalidTokenCount: 0, title, body, url };
-  }
-
+  if (!tokenDocs.length) { await eventRef.set({ type: "notification-bot-probe", status: "no-delivery", title, body, url, sentCount: 0, invalidTokenCount: 0, createdAt: FieldValue.serverTimestamp() }); return { eventKey, status: "no-delivery", sentCount: 0, invalidTokenCount: 0, title, body, url }; }
   await eventRef.set({ type: "notification-bot-probe", status: "sending", title, body, url, createdAt: FieldValue.serverTimestamp() });
-  let sent = 0;
-  let invalid = 0;
-  for (let index = 0; index < tokenDocs.length; index += 500) {
-    const batch = tokenDocs.slice(index, index + 500);
-    const response = await messaging.sendEachForMulticast({ tokens: batch.map((item) => item.data().token), data: { title, body, eventKey, url } });
-    sent += response.successCount;
-    invalid += response.failureCount;
-    await Promise.all(response.responses.map(async (result, responseIndex) => {
-      const code = result.error?.code || "";
-      if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete();
-    }));
+  let sent = 0; let invalid = 0;
+  for (let index = 0; index < tokenDocs.length; index += 500) { const batch = tokenDocs.slice(index, index + 500); const response = await messaging.sendEachForMulticast({ tokens: batch.map((item) => item.data().token), data: { title, body, eventKey, url } }); sent += response.successCount; invalid += response.failureCount; await Promise.all(response.responses.map(async (result, responseIndex) => { const code = result.error?.code || ""; if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete(); })); }
+  const status = sent > 0 ? "sent" : "failed"; await eventRef.set({ status, sentCount: sent, invalidTokenCount: invalid, completedAt: FieldValue.serverTimestamp() }, { merge: true }); return { eventKey, status, sentCount: sent, invalidTokenCount: invalid, title, body, url };
+});
+
+exports.sendHealthMedicationNotifications = onSchedule({ schedule: "*/5 * * * *", timeZone: "Europe/London", region: "europe-west2", memory: "256MiB", timeoutSeconds: 120 }, async () => {
+  const now = Date.now(); const users = await db.collection("users").get(); let sent = 0;
+  for (const userDocument of users.docs) {
+    const uid = userDocument.id; const settings = userDocument.data().notificationSettings || {};
+    if (settings.enabled !== true || settings.healthRemindersEnabled === false) continue;
+    const snakes = await userDocument.ref.collection("snakes").get();
+    for (const snakeDocument of snakes.docs) {
+      const snakeName = String(snakeDocument.data().name || "your snake"); const healthSnapshot = await snakeDocument.ref.collection("health").get();
+      for (const healthDocument of healthSnapshot.docs) {
+        const record = healthDocument.data(); const schedule = record.medicationSchedule;
+        if (!schedule || schedule.enabled !== true || schedule.reminderEnabled !== true || !schedule.nextDueAt) continue;
+        const due = Date.parse(schedule.nextDueAt); if (!Number.isFinite(due) || due > now) continue;
+        const administrations = Array.isArray(record.medicationAdministrations) ? record.medicationAdministrations : [];
+        const alreadyRecorded = administrations.some((item) => item.scheduledFor === schedule.nextDueAt && ["given", "skipped"].includes(item.status)); if (alreadyRecorded) continue;
+        const eventKey = `health-medication-due-${snakeDocument.id}-${healthDocument.id}-${schedule.nextDueAt}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+        const medication = String(schedule.medicationName || record.medication || "Medication");
+        const dose = String(schedule.dose || record.dosage || "Dose recorded in Tiny Titans");
+        const delivery = await sendPush(uid, eventKey, `💊 Medication due — ${snakeName}`, `${medication} · ${dose}`, `/health/${snakeDocument.id}`); sent += delivery.sent;
+        const followUpMinutes = Number(settings.medicationMissedFollowUpMinutes || 60);
+        if (settings.healthReminderFollowUpEnabled !== false && now - due >= Math.max(5, followUpMinutes) * 60 * 1000) {
+          const followUp = await sendPush(uid, `${eventKey}-followup`, `🟠 Medication not recorded — ${snakeName}`, `${medication} is overdue. Record the dose in Tiny Titans when you have administered or intentionally skipped it.`, `/health/${snakeDocument.id}`); sent += followUp.sent;
+        }
+      }
+    }
   }
-  const status = sent > 0 ? "sent" : "failed";
-  await eventRef.set({ status, sentCount: sent, invalidTokenCount: invalid, completedAt: FieldValue.serverTimestamp() }, { merge: true });
-  return { eventKey, status, sentCount: sent, invalidTokenCount: invalid, title, body, url };
+  console.log(`Tiny Titans: health notification run complete — ${sent} notifications sent.`);
 });

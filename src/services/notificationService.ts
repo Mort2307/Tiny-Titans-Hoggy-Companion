@@ -10,11 +10,15 @@ function settingsFor(value: unknown): NotificationSettings {
   const raw = value as Partial<NotificationSettings>;
   const days = Number(raw.feedingPreparationDaysBefore);
   const time = raw.feedingPreparationTime;
+  const missedMinutes = Number(raw.medicationMissedFollowUpMinutes);
   return {
     enabled: raw.enabled === true,
     feedingPreparationEnabled: raw.feedingPreparationEnabled !== false,
     feedingPreparationDaysBefore: Number.isFinite(days) && days >= 0 && days <= 30 ? Math.round(days) : DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationDaysBefore,
     feedingPreparationTime: typeof time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationTime,
+    healthRemindersEnabled: raw.healthRemindersEnabled !== false,
+    healthReminderFollowUpEnabled: raw.healthReminderFollowUpEnabled !== false,
+    medicationMissedFollowUpMinutes: Number.isFinite(missedMinutes) && missedMinutes >= 5 && missedMinutes <= 1440 ? Math.round(missedMinutes) : DEFAULT_NOTIFICATION_SETTINGS.medicationMissedFollowUpMinutes,
   };
 }
 
@@ -64,22 +68,11 @@ export async function enableNotifications(uid: string): Promise<NotificationPerm
 
 export async function disableNotifications(uid: string): Promise<void> {
   if (!uid) return;
-  try {
-    if (await isSupported()) await deleteToken(getMessaging(app));
-  } catch (error) {
-    console.warn("Tiny Titans: local notification token could not be removed", error);
-  }
-
-  // A client cannot reliably recover the previous FCM token after deleteToken().
-  // Disable every token owned by this account so the backend cannot continue
-  // targeting a device after the user explicitly turns notifications off.
+  try { if (await isSupported()) await deleteToken(getMessaging(app)); } catch (error) { console.warn("Tiny Titans: local notification token could not be removed", error); }
   try {
     const tokenSnapshot = await getDocs(collection(db, "users", uid, "notificationTokens"));
     await Promise.all(tokenSnapshot.docs.map((tokenDoc) => deleteDoc(tokenDoc.ref)));
-  } catch (error) {
-    console.warn("Tiny Titans: notification token records could not be cleaned up", error);
-  }
-
+  } catch (error) { console.warn("Tiny Titans: notification token records could not be cleaned up", error); }
   const settings = await getNotificationSettings(uid);
   await saveNotificationSettings(uid, { ...settings, enabled: false });
   if ("serviceWorker" in navigator) {
