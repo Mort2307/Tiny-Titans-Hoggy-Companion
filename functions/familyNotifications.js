@@ -102,26 +102,60 @@ exports.runNotificationBotProbe = onCall({ region: "europe-west2" }, async (requ
 });
 
 exports.sendHealthMedicationNotifications = onSchedule({ schedule: "*/5 * * * *", timeZone: "Europe/London", region: "europe-west2", memory: "256MiB", timeoutSeconds: 120 }, async () => {
-  const now = Date.now(); const users = await db.collection("users").get(); let sent = 0;
+  const now = Date.now();
+  const users = await db.collection("users").get();
+  let sent = 0;
   for (const userDocument of users.docs) {
-    const uid = userDocument.id; const settings = userDocument.data().notificationSettings || {};
+    const uid = userDocument.id;
+    const settings = userDocument.data().notificationSettings || {};
     if (settings.enabled !== true || settings.healthRemindersEnabled === false) continue;
     const snakes = await userDocument.ref.collection("snakes").get();
     for (const snakeDocument of snakes.docs) {
-      const snakeName = String(snakeDocument.data().name || "your snake"); const healthSnapshot = await snakeDocument.ref.collection("health").get();
+      const snakeName = String(snakeDocument.data().name || "your snake");
+      const healthSnapshot = await snakeDocument.ref.collection("health").get();
       for (const healthDocument of healthSnapshot.docs) {
-        const record = healthDocument.data(); const schedule = record.medicationSchedule;
-        if (!schedule || schedule.enabled !== true || schedule.reminderEnabled !== true || !schedule.nextDueAt) continue;
-        const due = Date.parse(schedule.nextDueAt); if (!Number.isFinite(due) || due > now) continue;
-        const administrations = Array.isArray(record.medicationAdministrations) ? record.medicationAdministrations : [];
-        const alreadyRecorded = administrations.some((item) => item.scheduledFor === schedule.nextDueAt && ["given", "skipped"].includes(item.status)); if (alreadyRecorded) continue;
-        const eventKey = `health-medication-due-${snakeDocument.id}-${healthDocument.id}-${schedule.nextDueAt}`.replace(/[^a-zA-Z0-9_-]/g, "-");
-        const medication = String(schedule.medicationName || record.medication || "Medication");
-        const dose = String(schedule.dose || record.dosage || "Dose recorded in Tiny Titans");
-        const delivery = await sendPush(uid, eventKey, `💊 Medication due — ${snakeName}`, `${medication} · ${dose}`, `/health/${snakeDocument.id}`); sent += delivery.sent;
-        const followUpMinutes = Number(settings.medicationMissedFollowUpMinutes || 60);
-        if (settings.healthReminderFollowUpEnabled !== false && now - due >= Math.max(5, followUpMinutes) * 60 * 1000) {
-          const followUp = await sendPush(uid, `${eventKey}-followup`, `🟠 Medication not recorded — ${snakeName}`, `${medication} is overdue. Record the dose in Tiny Titans when you have administered or intentionally skipped it.`, `/health/${snakeDocument.id}`); sent += followUp.sent;
+        const record = healthDocument.data();
+        const schedule = record.medicationSchedule;
+
+        // Medication due + missed-dose follow-up.
+        if (schedule && schedule.enabled === true && schedule.reminderEnabled === true && schedule.nextDueAt) {
+          const due = Date.parse(schedule.nextDueAt);
+          if (Number.isFinite(due) && due <= now) {
+            const administrations = Array.isArray(record.medicationAdministrations) ? record.medicationAdministrations : [];
+            const alreadyRecorded = administrations.some((item) => item.scheduledFor === schedule.nextDueAt && ["given", "skipped"].includes(item.status));
+            if (!alreadyRecorded) {
+              const eventKey = `health-medication-due-${snakeDocument.id}-${healthDocument.id}-${schedule.nextDueAt}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+              const medication = String(schedule.medicationName || record.medication || "Medication");
+              const dose = String(schedule.dose || record.dosage || "Dose recorded in Tiny Titans");
+              const delivery = await sendPush(uid, eventKey, `💊 Medication due — ${snakeName}`, `${medication} · ${dose}`, `/health/${snakeDocument.id}`);
+              sent += delivery.sent;
+              const followUpMinutes = Number(settings.medicationMissedFollowUpMinutes || 60);
+              if (settings.healthReminderFollowUpEnabled !== false && now - due >= Math.max(5, followUpMinutes) * 60 * 1000) {
+                const followUp = await sendPush(uid, `${eventKey}-followup`, `🟠 Medication not recorded — ${snakeName}`, `${medication} is overdue. Record the dose in Tiny Titans when you have administered or intentionally skipped it.`, `/health/${snakeDocument.id}`);
+                sent += followUp.sent;
+              }
+            }
+          }
+        }
+
+        // Vet/treatment follow-up reminder. A follow-up is an event in its own
+        // right; it is not coupled to medication and therefore also works for
+        // rechecks, wound reviews, test results and treatment reviews.
+        const followUpDate = String(record.followUpDate || "").trim();
+        if (followUpDate && settings.healthReminderFollowUpEnabled !== false) {
+          const followUp = Date.parse(`${followUpDate}T09:00:00`);
+          if (Number.isFinite(followUp)) {
+            const daysUntil = Math.ceil((followUp - now) / 86400000);
+            const leadDays = Number(settings.healthFollowUpLeadDays || 1);
+            const shouldSend = daysUntil <= leadDays && daysUntil >= 0;
+            if (shouldSend) {
+              const eventKey = `health-followup-${snakeDocument.id}-${healthDocument.id}-${followUpDate}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+              const title = record.eventType === "Vet Visit" ? `🩺 Vet follow-up — ${snakeName}` : `🩺 Health follow-up — ${snakeName}`;
+              const body = daysUntil === 0 ? `${String(record.title || "Health follow-up")} is due today.` : `${String(record.title || "Health follow-up")} is due in ${daysUntil} day${daysUntil === 1 ? "" : "s"}.`;
+              const delivery = await sendPush(uid, eventKey, title, body, `/health/${snakeDocument.id}`);
+              sent += delivery.sent;
+            }
+          }
         }
       }
     }
