@@ -12,11 +12,11 @@ export type SnakeInsight = {
   action: string;
   tone: IntelligenceTone;
   confidence: IntelligenceConfidence;
-  category: "weight" | "feeding" | "shedding" | "data" | "activity";
+  category: "weight" | "feeding" | "shedding" | "behaviour" | "health" | "data" | "activity";
 };
 
 export type IntelligenceMetric = {
-  key: "weight" | "feeding" | "shedding";
+  key: "weight" | "feeding" | "shedding" | "behaviour" | "health";
   label: string;
   percent: number;
   records: number;
@@ -85,6 +85,8 @@ function buildCoverageMetrics(record: SnakeMasterRecord): IntelligenceMetric[] {
     ["weight", "Weight", record.weights.length, 5],
     ["feeding", "Feeding", record.feedings.length, 8],
     ["shedding", "Shedding", record.sheds.length, 5],
+    ["behaviour", "Behaviour", record.behaviours.length, 5],
+    ["health", "Health", record.health.length, 3],
   ];
 
   return definitions.map(([key, label, records, recordsForFullCoverage]) => ({
@@ -153,7 +155,7 @@ function buildConfidenceExplanation(confidence: DataConfidence): string {
 }
 
 function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
-  const { snake, overview, weights, feedings, sheds } = record;
+  const { snake, overview, weights, feedings, sheds, behaviours, health } = record;
   const insights: SnakeInsight[] = [];
 
   if (weights.length >= 2 && overview.weightChangeG !== null && overview.weightChangePercent !== null) {
@@ -203,7 +205,17 @@ function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
     });
   }
 
-  const missingAreas = [overview.confidence.weight, overview.confidence.feeding, overview.confidence.shedding].filter((value) => value === "Insufficient");
+  if (behaviours.length > 0) {
+    const latest = behaviours[0];
+    insights.push({ id: "behaviour-context", title: "Latest behaviour observation", value: latest.observation, why: `Recorded for ${snake.name} in the context of ${latest.context.toLowerCase()}. Tiny Titans describes the observation rather than assigning a fixed temperament or cause.`, action: "Continue recording context and any relevant changes; a pattern is more useful than a single observation.", tone: "neutral", confidence: overview.confidence.behaviour, category: "behaviour" });
+  }
+
+  const dueFollowUp = health.filter((item) => item.followUpDate && item.followUpDate <= new Date().toISOString().slice(0, 10) && item.status !== "Recovered").sort((a, b) => String(a.followUpDate).localeCompare(String(b.followUpDate)))[0];
+  if (dueFollowUp) {
+    insights.push({ id: "health-follow-up", title: "Health follow-up is due", value: dueFollowUp.followUpDate ?? "Due", why: `A follow-up was recorded for “${dueFollowUp.title}”. Tiny Titans is surfacing the keeper's own plan, not making a medical assessment.`, action: "Review the record and follow the agreed veterinary plan, or update the record if circumstances have changed.", tone: "attention", confidence: overview.confidence.health, category: "health" });
+  }
+
+  const missingAreas = [overview.confidence.weight, overview.confidence.feeding, overview.confidence.shedding, overview.confidence.behaviour, overview.confidence.health].filter((value) => value === "Insufficient");
   if (missingAreas.length > 0) {
     const missing = missingAreas.length === 3 ? "weight, feeding and shed" : missingAreas.length === 2 ? "two key history areas" : "one key history area";
     insights.push({

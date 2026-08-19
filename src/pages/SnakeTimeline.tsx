@@ -11,7 +11,7 @@ function formatDate(value: string) {
 }
 
 function eventIcon(type: string) {
-  return type === "Weight" ? "⚖️" : type === "Feeding" ? "🍽️" : type === "Shed" ? "🐍" : type === "Health" ? "❤️" : type === "Breeding" ? "🥚" : type === "Hatch" ? "🥚" : type === "Arrival" ? "🏠" : "📝";
+  return type === "Weight" ? "⚖️" : type === "Feeding" ? "🍽️" : type === "Shed" ? "🐍" : type === "Behaviour" ? "👀" : type === "Health" ? "❤️" : type === "Breeding" ? "🥚" : type === "Hatch" ? "🥚" : type === "Arrival" ? "🏠" : "📝";
 }
 
 export default function SnakeTimeline() {

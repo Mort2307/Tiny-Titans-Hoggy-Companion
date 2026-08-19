@@ -9,6 +9,7 @@ const protectedRoutes = [
   "/snakes", "/snakes/new", "/snakes/example-id", "/snakes/example-id/master-record", "/snakes/example-id/timeline", "/snakes/example-id/edit",
   "/morph-library", "/calculator", "/knowledge-base", "/learn", "/learn/topics", "/learn/topic/example-id", "/adaptive-learning", "/challenge", "/challenge/topic/example-id", "/learn/achievements",
   "/feeding", "/feeding/preparation", "/feeding/example-id", "/snakes/example-id/feeding", "/shedding", "/shedding/example-id", "/snakes/example-id/shedding", "/weights", "/weights/example-id", "/snakes/example-id/weights",
+  "/health", "/health/example-id", "/snakes/example-id/health", "/behaviour", "/behaviour/example-id", "/snakes/example-id/behaviour",
   "/breeding", "/community", "/community/wall-of-titans", "/wall-of-titans", "/report-bug", "/report-issue", "/feedback", "/my-issue-reports", "/founder", "/become-a-titan",
   "/creator", "/creator/privacy-data", "/creator/submissions", "/creator/issues", "/creator/community", "/creator/tester", "/creator/tester/app", "/educator",
 ];

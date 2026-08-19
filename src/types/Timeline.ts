@@ -4,6 +4,7 @@ export type TimelineEventType =
   | "Weight"
   | "Feeding"
   | "Shed"
+  | "Behaviour"
   | "Health"
   | "Breeding"
   | "Milestone"
