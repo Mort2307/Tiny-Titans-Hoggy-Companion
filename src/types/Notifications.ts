@@ -12,6 +12,7 @@ export type NotificationSettings = {
   healthRemindersEnabled: boolean;
   healthReminderFollowUpEnabled: boolean;
   medicationMissedFollowUpMinutes: number;
+  healthFollowUpLeadDays: number;
 };
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
@@ -22,4 +23,5 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   healthRemindersEnabled: true,
   healthReminderFollowUpEnabled: true,
   medicationMissedFollowUpMinutes: 60,
+  healthFollowUpLeadDays: 1,
 };
