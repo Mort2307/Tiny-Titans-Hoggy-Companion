@@ -28,8 +28,6 @@ const concepts = {
   "/learn": { name: "Digital Field Guide", reason: "Use topic discovery, progression and learning context instead of dense dashboard cards." },
 };
 
-function number(value, fallback = 0) { return Number.isFinite(value) ? value : fallback; }
-
 async function signIn(page) {
   if (!email || !password) throw new Error("Visual UX BOT requires TINY_TITANS_BOT_EMAIL and TINY_TITANS_BOT_PASSWORD.");
   await page.goto(`${baseURL}/login`, { waitUntil: "domcontentloaded" });
@@ -79,20 +77,7 @@ async function auditPage(page, route, viewport) {
       const links = clickable.filter((element) => element.tagName === "A").filter((element) => !(element.getAttribute("href") || "").trim()).length;
       const buttons = clickable.filter((element) => element.tagName === "BUTTON");
       const suspiciousButtons = buttons.filter((button) => !button.disabled && !button.getAttribute("aria-label") && !(button.textContent || "").trim()).length;
-      return {
-        textLength: text.length,
-        interactiveCount: interactive.length,
-        cardCount: cards.length,
-        headingCount: headings,
-        primaryHeading,
-        touchProblems,
-        overflow: Math.max(0, overflow),
-        emptyLinks: links,
-        suspiciousButtons,
-        brandSignals,
-        bodyWidth: bodyRect?.width || 0,
-        viewportWidth,
-      };
+      return { textLength: text.length, interactiveCount: interactive.length, cardCount: cards.length, headingCount: headings, primaryHeading, touchProblems, overflow: Math.max(0, overflow), emptyLinks: links, suspiciousButtons, brandSignals, bodyWidth: bodyRect?.width || 0, viewportWidth };
     });
 
     const findings = [];
@@ -140,23 +125,7 @@ async function main() {
       const concept = concepts[route] || { name: "Purpose-led composition", reason: "Choose a composition based on the page's primary job." };
       return { route, averageScore: average, findings, recommendedConcept: concept, screenshots: routeResults.map((result) => result.screenshot) };
     });
-    const report = {
-      bot: "Tiny Titans Visual UX BOT",
-      generatedAt: new Date().toISOString(),
-      baseURL,
-      routesInspected: routes.length,
-      viewports: contract.responsiveViewports,
-      screenshotCount: results.length,
-      results,
-      routeSummary,
-      methodology: [
-        "Rendered evidence is captured with Playwright at mobile, tablet and desktop sizes.",
-        "Heuristics flag overflow, hierarchy, density, touch-target and action-clarity problems.",
-        "Alternative page concepts are selected by page purpose rather than applying one template everywhere.",
-        "The Tiny Titans visual contract remains authoritative for brand identity.",
-        "The bot recommends changes; it never silently mutates production code."
-      ]
-    };
+    const report = { bot: "Tiny Titans Visual UX BOT", generatedAt: new Date().toISOString(), baseURL, routesInspected: routes.length, viewports: contract.responsiveViewports, screenshotCount: results.length, results, routeSummary, methodology: ["Rendered evidence is captured with Playwright at mobile, tablet and desktop sizes.", "Heuristics flag overflow, hierarchy, density, touch-target and action-clarity problems.", "Alternative page concepts are selected by page purpose rather than applying one template everywhere.", "The Tiny Titans visual contract remains authoritative for brand identity.", "The bot recommends changes; it never silently mutates production code."] };
     await fs.writeFile(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
     await fs.writeFile(path.join(outputDir, "README.md"), `# Tiny Titans Visual UX BOT\n\nGenerated: ${report.generatedAt}\n\nRoutes: ${report.routesInspected}\nScreenshots: ${report.screenshotCount}\n\nOpen \\`report.json\\` for route-level findings and recommended alternative page concepts. Screenshots are stored beside the report.\n`);
     console.log(`\\nVisual UX BOT complete: ${results.length} rendered page/viewport audits and ${results.length} screenshots.`);
