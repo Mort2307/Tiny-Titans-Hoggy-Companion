@@ -2,7 +2,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { GlobalStats } from "./creatorService";
 
-type NumericRecord = { weight?: unknown; unit?: unknown; shedLength?: unknown; lengthCm?: unknown };
+type NumericRecord = { weight?: unknown; unit?: unknown; date?: unknown; shedLength?: unknown; lengthCm?: unknown };
 type UserData = Record<string, unknown>;
 
 function toNumber(value: unknown): number { return typeof value === "number" && Number.isFinite(value) ? value : 0; }
@@ -63,7 +63,7 @@ export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
           const weightId = typeof item.id === "string" ? item.id : "";
           if (weightId && weightIds.has(weightId)) continue;
           const weight = toNumber(item.weight);
-          const duplicate = weightsSnapshot.docs.some((doc) => { const existing = doc.data() as NumericRecord; return String(existing.date ?? "") === String((item as Record<string, unknown>).date ?? "") && existing.weight === item.weight && existing.unit === item.unit; });
+          const duplicate = weightsSnapshot.docs.some((doc) => { const existing = doc.data() as NumericRecord; return String(existing.date ?? "") === String(item.date ?? "") && existing.weight === item.weight && existing.unit === item.unit; });
           if (duplicate) continue;
           // Legacy records are counted as data-quality candidates, not silently included in totals.
           if (weight > 0 && (item.unit === "g" || item.unit === "kg")) invalidWeightLogs += 1;
