@@ -60,32 +60,48 @@ async function assertHealthy(page, errors) {
 }
 
 async function completeAccountSetup(page) {
-  if (!page.url().includes("/account-setup")) return;
+  if (!page.url().includes("/account-setup")) return false;
 
   console.log("[OVERLORD] BOT account requires first-run setup; completing synthetic profile.");
   const setup = page.locator(".account-setup-page");
+  await expect(setup).toBeVisible({ timeout: 10000 });
 
-  const displayName = setup.locator("#displayName");
-  await displayName.fill("Tiny Titans Overlord BOT");
+  await setup.locator("#displayName").fill("Tiny Titans Overlord BOT");
 
-  const profileSection = setup.locator(".setup-section").filter({ hasText: "How will you use Tiny Titans?" });
-  await profileSection.getByRole("button", { name: /Keeper/ }).click();
-
-  const categorySection = setup.locator(".setup-section").filter({ hasText: "Who are you?" });
-  await categorySection.getByRole("button", { name: /^Adult/ }).click();
-
-  const learningSection = setup.locator(".setup-section").filter({ hasText: "What learning level fits you?" });
-  await learningSection.getByRole("button", { name: /^Adult/ }).click();
-
-  const experienceSection = setup.locator(".setup-section").filter({ hasText: "What's your reptile experience?" });
-  await experienceSection.getByRole("button", { name: /^Advanced/ }).click();
-
-  const interestsSection = setup.locator(".setup-section").filter({ hasText: "What else interests you?" });
-  await interestsSection.getByRole("button", { name: /^Keeper/ }).click();
+  await setup.locator(".setup-section").filter({ hasText: "How will you use Tiny Titans?" }).getByRole("button", { name: /Keeper/ }).click();
+  await setup.locator(".setup-section").filter({ hasText: "Who are you?" }).getByRole("button", { name: /^Adult/ }).click();
+  await setup.locator(".setup-section").filter({ hasText: "What learning level fits you?" }).getByRole("button", { name: /^Adult/ }).click();
+  await setup.locator(".setup-section").filter({ hasText: "What's your reptile experience?" }).getByRole("button", { name: /^Advanced/ }).click();
+  await setup.locator(".setup-section").filter({ hasText: "What else interests you?" }).getByRole("button", { name: /^Keeper/ }).click();
 
   await setup.locator("button.setup-submit").click();
-  await expect(page).not.toHaveURL(/\/account-setup\/?/);
+  await expect(page).not.toHaveURL(/\/account-setup(?:\/|\?|$)/, { timeout: 15000 });
   console.log(`[OVERLORD] BOT account setup complete → ${page.url()}`);
+  return true;
+}
+
+async function establishAuthenticatedApp(page) {
+  await page.goto(`${baseURL}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle").catch(() => undefined);
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const currentUrl = page.url();
+    console.log(`[OVERLORD] Authenticated bootstrap attempt ${attempt}: ${currentUrl}`);
+
+    if (currentUrl.includes("/login")) {
+      throw new Error(`[OVERLORD] Authentication unexpectedly returned to login: ${currentUrl}`);
+    }
+
+    if (currentUrl.includes("/account-setup")) {
+      await completeAccountSetup(page);
+      await page.waitForLoadState("networkidle").catch(() => undefined);
+      continue;
+    }
+
+    return currentUrl;
+  }
+
+  throw new Error(`[OVERLORD] Account setup did not complete after 3 bootstrap attempts. Current URL: ${page.url()}`);
 }
 
 async function signIn(page) {
@@ -93,12 +109,13 @@ async function signIn(page) {
     test.skip(true, "Authenticated Overlord BOT requires TINY_TITANS_BOT_EMAIL and TINY_TITANS_BOT_PASSWORD.");
     return;
   }
+
   await page.goto(`${baseURL}/login`, { waitUntil: "domcontentloaded" });
   await page.getByLabel("Email Address").fill(email);
   await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: /sign in/i }).click();
-  await expect(page).not.toHaveURL(/\/login\/?$/);
-  await completeAccountSetup(page);
+  await expect(page).not.toHaveURL(/\/login\/?$/, { timeout: 15000 });
+  await establishAuthenticatedApp(page);
 }
 
 async function visit(page, route) {
@@ -108,8 +125,14 @@ async function visit(page, route) {
   await page.waitForLoadState("networkidle").catch(() => undefined);
   const currentUrl = page.url();
   console.log(`[OVERLORD] Navigation result: ${route} → ${currentUrl || "<empty URL>"}`);
-  await expect(page).not.toHaveURL(/\/login\/?$/);
-  await expect(page).not.toHaveURL(/\/account-setup(?:\/|\?|$)/);
+
+  if (currentUrl.includes("/login")) {
+    throw new Error(`[OVERLORD] Route ${route} redirected to login: ${currentUrl}`);
+  }
+  if (currentUrl.includes("/account-setup")) {
+    throw new Error(`[OVERLORD] Route ${route} is still blocked by account setup: ${currentUrl}`);
+  }
+
   return currentUrl;
 }
 
