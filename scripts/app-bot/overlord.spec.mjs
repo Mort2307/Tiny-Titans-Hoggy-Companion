@@ -72,9 +72,14 @@ async function signIn(page) {
 }
 
 async function visit(page, route) {
-  await page.goto(new URL(route, baseURL).toString(), { waitUntil: "domcontentloaded" });
+  console.log(`[OVERLORD] Visiting: ${route}`);
+  const targetUrl = new URL(route, baseURL).toString();
+  await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("networkidle").catch(() => undefined);
+  const currentUrl = page.url();
+  console.log(`[OVERLORD] Navigation result: ${route} → ${currentUrl || "<empty URL>"}`);
   await expect(page).not.toHaveURL(/\/login\/?$/);
+  return currentUrl;
 }
 
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
@@ -92,6 +97,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
       await visit(page, route);
       await expect(page.locator("body")).not.toBeEmpty();
       await assertHealthy(page, errors);
+      console.log(`[OVERLORD] Passed core route: ${route}`);
     }
   });
 
