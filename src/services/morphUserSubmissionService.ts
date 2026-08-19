@@ -1,6 +1,6 @@
 import { addDoc, collection, getDocs, orderBy, query, serverTimestamp, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import type { MorphSubmissionCategory, MorphSubmissionStatus, UserMorphSubmission } from "../types/MorphSubmission";
+import type { MorphSubmissionCategory, UserMorphSubmission, UserMorphSubmissionStatus } from "../types/morphSubmission";
 
 function submissionCollection(uid: string) {
   return collection(db, "users", uid, "morphSubmissions");
@@ -32,7 +32,7 @@ export async function createUserMorphSubmission(uid: string, input: CreateMorphS
     knownGenetics: input.knownGenetics?.trim() || "",
     sourceOrBreeder: input.sourceOrBreeder?.trim() || "",
     sourceUrl: input.sourceUrl?.trim() || "",
-    status: "pending" as MorphSubmissionStatus,
+    status: "pending" as UserMorphSubmissionStatus,
     createdAt: now,
     updatedAt: now,
     serverCreatedAt: serverTimestamp(),
@@ -47,7 +47,7 @@ export async function getUserMorphSubmissions(uid: string): Promise<UserMorphSub
   return snapshot.docs.map((item) => ({ ...item.data(), id: item.id }) as UserMorphSubmission);
 }
 
-export async function updateUserMorphSubmissionStatus(uid: string, submissionId: string, status: MorphSubmissionStatus, reviewerNotes?: string, matchedCanonicalMorphId?: string): Promise<void> {
+export async function updateUserMorphSubmissionStatus(uid: string, submissionId: string, status: UserMorphSubmissionStatus, reviewerNotes?: string, matchedCanonicalMorphId?: string): Promise<void> {
   if (!uid || !submissionId) return;
   await updateDoc(doc(submissionCollection(uid), submissionId), {
     status,
