@@ -1,0 +1,51 @@
+{
+  "version": "2026-08-19",
+  "name": "Tiny Titans Visual UX Contract",
+  "purpose": "Keep visual identity consistent while allowing each page to use the composition best suited to its job.",
+  "brand": {
+    "primary": "purple",
+    "secondary": "cyan/electric blue",
+    "accent": "orange/warm gold",
+    "surface": "dark reptile-inspired layered surfaces",
+    "avoid": ["generic SaaS purple", "random accent colours", "purple lightning defaults"]
+  },
+  "principles": [
+    "Every page has a clear primary purpose.",
+    "Pages may use different compositions; visual identity must remain recognisably Tiny Titans.",
+    "Interactive tiles must have a real action or destination.",
+    "Information density must match the task rather than maximising content on screen.",
+    "Mobile is a first-class layout, not a compressed desktop layout.",
+    "Primary actions must be visually obvious.",
+    "Decorative UI must never masquerade as functional UI.",
+    "Progressive disclosure should be preferred over dashboard overload.",
+    "Visual findings must be backed by rendered evidence where possible.",
+    "The visual bot recommends changes; it never silently edits production code."
+  ],
+  "pageConcepts": {
+    "home": "intelligence-dashboard",
+    "my-snakes": "visual-collection",
+    "weights": "data-timeline",
+    "feeding": "care-log",
+    "shedding": "lifecycle-timeline",
+    "vivarium": "environment-control-panel",
+    "husbandry": "guided-field-guide",
+    "genetics": "genetics-workbench",
+    "breeding": "project-workspace",
+    "learning": "digital-field-guide",
+    "creator": "operations-command-centre"
+  },
+  "responsiveViewports": [
+    {"name":"mobile","width":390,"height":844},
+    {"name":"tablet","width":834,"height":1112},
+    {"name":"desktop","width":1440,"height":1000}
+  ],
+  "auditRules": {
+    "horizontalOverflow": "fail",
+    "missingPrimaryHeading": "warning",
+    "excessiveInteractiveDensity": 18,
+    "excessiveTextDensity": 1200,
+    "minimumTouchTarget": 44,
+    "suspiciousDeadTileRatio": 0.25,
+    "minimumBrandSignalScore": 0.6
+  }
+}
