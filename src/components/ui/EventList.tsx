@@ -12,11 +12,13 @@ export type EventListItem = {
 type EventListProps = {
   items: EventListItem[];
   onSelect?: (item: EventListItem) => void;
+  onDelete?: (item: EventListItem) => void;
+  deletingId?: string | null;
   empty?: ReactNode;
 };
 
 /** One compact visual language for chronological keeper records. */
-export default function EventList({ items, onSelect, empty }: EventListProps) {
+export default function EventList({ items, onSelect, onDelete, deletingId, empty }: EventListProps) {
   if (!items.length) return <>{empty ?? null}</>;
 
   return (
@@ -37,12 +39,19 @@ export default function EventList({ items, onSelect, empty }: EventListProps) {
           </>
         );
 
-        return onSelect ? (
-          <button key={item.id} type="button" className="tt-event-row" onClick={() => onSelect(item)}>
-            {content}
-          </button>
-        ) : (
-          <div key={item.id} className="tt-event-row tt-event-row--static">{content}</div>
+        return (
+          <div key={item.id} className="tt-event-row tt-event-row--static">
+            {onSelect ? (
+              <button type="button" className="tt-event-select" onClick={() => onSelect(item)} aria-label={`Edit ${item.title} recorded ${item.date}`}>
+                {content}
+              </button>
+            ) : content}
+            {onDelete && (
+              <button type="button" className="tt-event-delete" onClick={() => onDelete(item)} disabled={deletingId === item.id} aria-label={`Delete ${item.title} recorded ${item.date}`}>
+                {deletingId === item.id ? "…" : "×"}
+              </button>
+            )}
+          </div>
         );
       })}
     </div>
