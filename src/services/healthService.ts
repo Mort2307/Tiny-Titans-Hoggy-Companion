@@ -16,6 +16,12 @@ function nextDueAt(record: HealthRecord, scheduledFor: string): string | undefin
   return new Date(base.getTime() + hours * 60 * 60 * 1000).toISOString();
 }
 
+export async function getSnakeHealthRecords(uid: string, snakeId: string): Promise<HealthRecord[]> {
+  const owner = await resolveDataOwnerUid(uid);
+  const snapshot = await getDocs(query(records(owner, snakeId), orderBy("date", "desc")));
+  return snapshot.docs.map((item) => ({ ...item.data() as HealthRecord, id: item.id, snakeId }));
+}
+
 export async function saveSnakeHealthRecord(uid: string, record: HealthRecord): Promise<HealthRecord> {
   const owner = await resolveDataOwnerUid(uid);
   const existing = await getDocs(records(owner, record.snakeId));
@@ -41,4 +47,10 @@ export async function recordMedicationAdministration(uid: string, record: Health
 
 export async function cancelMedicationSchedule(uid: string, record: HealthRecord): Promise<HealthRecord> {
   return saveSnakeHealthRecord(uid, { ...record, reminderState: "cancelled", medicationSchedule: record.medicationSchedule ? { ...record.medicationSchedule, enabled: false, reminderEnabled: false } : undefined });
+}
+
+export async function deleteSnakeHealthRecord(uid: string, snakeId: string, recordId: string): Promise<void> {
+  const owner = await resolveDataOwnerUid(uid);
+  await requestFamilyMutation({ requesterUid: uid, requesterName: uid, area: "health", action: "delete", title: "Delete health record", description: "A family member wants to permanently remove a shared health or veterinary record.", targetPath: `users/${owner}/snakes/${snakeId}/health/${recordId}`, operation: "delete" });
+  await deleteDoc(doc(records(owner, snakeId), recordId));
 }
