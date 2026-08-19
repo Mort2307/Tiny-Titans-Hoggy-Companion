@@ -76,7 +76,6 @@ exports.sendFamilyApprovalDecisionNotification = onDocumentUpdated({ document: "
   await sendPush(requesterUid, `family-approval-decision-${event.params.approvalId}-${after.status}`, title, body, "/account/family");
 });
 
-/** Live QA probe. The target is always the authenticated caller; no target UID is accepted. */
 exports.runNotificationBotProbe = onCall({ region: "europe-west2" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "You must be signed in to run the Notification BOT.");
@@ -95,72 +94,34 @@ exports.runNotificationBotProbe = onCall({ region: "europe-west2" }, async (requ
   if (existing.exists) throw new HttpsError("already-exists", "Notification BOT event key already exists.");
   const tokensSnapshot = await db.collection("users").doc(uid).collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokensSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
-  if (!tokenDocs.length) {
-    await eventRef.set({ type: "notification-bot-probe", status: "no-delivery", title, body, url, sentCount: 0, invalidTokenCount: 0, createdAt: FieldValue.serverTimestamp() });
-    return { eventKey, status: "no-delivery", sentCount: 0, invalidTokenCount: 0, title, body, url };
-  }
+  if (!tokenDocs.length) { await eventRef.set({ type: "notification-bot-probe", status: "no-delivery", title, body, url, sentCount: 0, invalidTokenCount: 0, createdAt: FieldValue.serverTimestamp() }); return { eventKey, status: "no-delivery", sentCount: 0, invalidTokenCount: 0, title, body, url }; }
   await eventRef.set({ type: "notification-bot-probe", status: "sending", title, body, url, createdAt: FieldValue.serverTimestamp() });
-  let sent = 0;
-  let invalid = 0;
-  for (let index = 0; index < tokenDocs.length; index += 500) {
-    const batch = tokenDocs.slice(index, index + 500);
-    const response = await messaging.sendEachForMulticast({ tokens: batch.map((item) => item.data().token), data: { title, body, eventKey, url } });
-    sent += response.successCount;
-    invalid += response.failureCount;
-    await Promise.all(response.responses.map(async (result, responseIndex) => {
-      const code = result.error?.code || "";
-      if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete();
-    }));
-  }
-  const status = sent > 0 ? "sent" : "failed";
-  await eventRef.set({ status, sentCount: sent, invalidTokenCount: invalid, completedAt: FieldValue.serverTimestamp() }, { merge: true });
-  return { eventKey, status, sentCount: sent, invalidTokenCount: invalid, title, body, url };
+  let sent = 0; let invalid = 0;
+  for (let index = 0; index < tokenDocs.length; index += 500) { const batch = tokenDocs.slice(index, index + 500); const response = await messaging.sendEachForMulticast({ tokens: batch.map((item) => item.data().token), data: { title, body, eventKey, url } }); sent += response.successCount; invalid += response.failureCount; await Promise.all(response.responses.map(async (result, responseIndex) => { const code = result.error?.code || ""; if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete(); })); }
+  const status = sent > 0 ? "sent" : "failed"; await eventRef.set({ status, sentCount: sent, invalidTokenCount: invalid, completedAt: FieldValue.serverTimestamp() }, { merge: true }); return { eventKey, status, sentCount: sent, invalidTokenCount: invalid, title, body, url };
 });
 
-function nextMedicationDue(schedule, fromDate) {
-  const frequency = schedule.frequency || "daily";
-  const base = new Date(fromDate);
-  if (frequency === "once") return null;
-  if (frequency === "twice-daily") return new Date(base.getTime() + 12 * 60 * 60 * 1000).toISOString();
-  if (frequency === "every-other-day") return new Date(base.getTime() + 48 * 60 * 60 * 1000).toISOString();
-  if (frequency === "custom") {
-    const hours = Number(schedule.intervalHours);
-    if (Number.isFinite(hours) && hours > 0) return new Date(base.getTime() + hours * 60 * 60 * 1000).toISOString();
-  }
-  return new Date(base.getTime() + 24 * 60 * 60 * 1000).toISOString();
-}
-
 exports.sendHealthMedicationNotifications = onSchedule({ schedule: "*/5 * * * *", timeZone: "Europe/London", region: "europe-west2", memory: "256MiB", timeoutSeconds: 120 }, async () => {
-  const now = Date.now();
-  const users = await db.collection("users").get();
-  let sent = 0;
+  const now = Date.now(); const users = await db.collection("users").get(); let sent = 0;
   for (const userDocument of users.docs) {
-    const uid = userDocument.id;
-    const settings = userDocument.data().notificationSettings || {};
+    const uid = userDocument.id; const settings = userDocument.data().notificationSettings || {};
     if (settings.enabled !== true || settings.healthRemindersEnabled === false) continue;
     const snakes = await userDocument.ref.collection("snakes").get();
     for (const snakeDocument of snakes.docs) {
-      const snakeName = String(snakeDocument.data().name || "your snake");
-      const healthSnapshot = await snakeDocument.ref.collection("health").get();
+      const snakeName = String(snakeDocument.data().name || "your snake"); const healthSnapshot = await snakeDocument.ref.collection("health").get();
       for (const healthDocument of healthSnapshot.docs) {
-        const record = healthDocument.data();
-        const schedule = record.medicationSchedule;
+        const record = healthDocument.data(); const schedule = record.medicationSchedule;
         if (!schedule || schedule.enabled !== true || schedule.reminderEnabled !== true || !schedule.nextDueAt) continue;
-        const due = Date.parse(schedule.nextDueAt);
-        if (!Number.isFinite(due) || due > now) continue;
+        const due = Date.parse(schedule.nextDueAt); if (!Number.isFinite(due) || due > now) continue;
         const administrations = Array.isArray(record.medicationAdministrations) ? record.medicationAdministrations : [];
-        const alreadyRecorded = administrations.some((item) => item.scheduledFor === schedule.nextDueAt && ["given", "skipped"].includes(item.status));
-        if (alreadyRecorded) continue;
+        const alreadyRecorded = administrations.some((item) => item.scheduledFor === schedule.nextDueAt && ["given", "skipped"].includes(item.status)); if (alreadyRecorded) continue;
         const eventKey = `health-medication-due-${snakeDocument.id}-${healthDocument.id}-${schedule.nextDueAt}`.replace(/[^a-zA-Z0-9_-]/g, "-");
-        const message = { title: `💊 Medication due — ${snakeName}`, body: `${String(schedule.medicationName || record.medication || "Medication")} · ${String(schedule.dose || record.dosage || "Dose recorded in Tiny Titans")}`, url: `/health/${snakeDocument.id}` };
-        const delivery = await sendPush(uid, eventKey, message.title, message.body, message.url);
-        sent += delivery.sent;
-
+        const medication = String(schedule.medicationName || record.medication || "Medication");
+        const dose = String(schedule.dose || record.dosage || "Dose recorded in Tiny Titans");
+        const delivery = await sendPush(uid, eventKey, `💊 Medication due — ${snakeName}`, `${medication} · ${dose}`, `/health/${snakeDocument.id}`); sent += delivery.sent;
         const followUpMinutes = Number(settings.medicationMissedFollowUpMinutes || 60);
         if (settings.healthReminderFollowUpEnabled !== false && now - due >= Math.max(5, followUpMinutes) * 60 * 1000) {
-          const followUpKey = `${eventKey}-followup-${Math.round((now - due) / 60000)}`;
-          const followUp = await sendPush(uid, followUpKey, `🟠 Medication not recorded — ${snakeName}`, `${String(schedule.medicationName || record.medication || "Medication")} is overdue. Record the dose in Tiny Titans when you have administered or intentionally skipped it.`, `/health/${snakeDocument.id}`);
-          sent += followUp.sent;
+          const followUp = await sendPush(uid, `${eventKey}-followup`, `🟠 Medication not recorded — ${snakeName}`, `${medication} is overdue. Record the dose in Tiny Titans when you have administered or intentionally skipped it.`, `/health/${snakeDocument.id}`); sent += followUp.sent;
         }
       }
     }
