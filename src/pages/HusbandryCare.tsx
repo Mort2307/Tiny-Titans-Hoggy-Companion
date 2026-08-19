@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes, updateUserSnake } from "../services/snakeService";
+import { getSnakeWeights } from "../services/weightService";
 import type { Snake } from "../types/Snake";
 import type { WeightRecord } from "../types/Weight";
 import { ageInYears, growthStageForAge, husbandryReferenceBands, husbandryReferences } from "../data/husbandryReferences";
@@ -23,7 +24,7 @@ export default function HusbandryCare() {
   const [lengthSaving, setLengthSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  const loadData = useCallback(async () => { if (!user) return; setLoadingData(true); setError(""); try { const loaded = await getUserSnakes(user.uid); setSnakes(loaded); const entries = await Promise.all(loaded.map(async (snake) => [snake.id, await import("../services/weightService").then(({ getSnakeWeights }) => getSnakeWeights(user.uid, snake.id))] as const)); setWeights(Object.fromEntries(entries)); setSelectedId((current) => loaded.some((snake) => snake.id === current) ? current : loaded[0]?.id ?? ""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load husbandry data."); } finally { setLoadingData(false); } }, [user]);
+  const loadData = useCallback(async () => { if (!user) return; setLoadingData(true); setError(""); try { const loaded = await getUserSnakes(user.uid); setSnakes(loaded); const entries = await Promise.all(loaded.map(async (snake) => [snake.id, await getSnakeWeights(user.uid, snake.id)] as const)); setWeights(Object.fromEntries(entries)); setSelectedId((current) => loaded.some((snake) => snake.id === current) ? current : loaded[0]?.id ?? ""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load husbandry data."); } finally { setLoadingData(false); } }, [user]);
   useEffect(() => { if (!user || loading || profileLoading) return; void loadData(); }, [user, loading, profileLoading, loadData]);
 
   const snake = useMemo(() => snakes.find((item) => item.id === selectedId) ?? snakes[0], [snakes, selectedId]);
