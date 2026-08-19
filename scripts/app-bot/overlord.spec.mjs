@@ -59,6 +59,35 @@ async function assertHealthy(page, errors) {
   expect(errors).toEqual([]);
 }
 
+async function completeAccountSetup(page) {
+  if (!page.url().includes("/account-setup")) return;
+
+  console.log("[OVERLORD] BOT account requires first-run setup; completing synthetic profile.");
+  const setup = page.locator(".account-setup-page");
+
+  const displayName = setup.locator("#displayName");
+  await displayName.fill("Tiny Titans Overlord BOT");
+
+  const profileSection = setup.locator(".setup-section").filter({ hasText: "How will you use Tiny Titans?" });
+  await profileSection.getByRole("button", { name: /Keeper/ }).click();
+
+  const categorySection = setup.locator(".setup-section").filter({ hasText: "Who are you?" });
+  await categorySection.getByRole("button", { name: /^Adult/ }).click();
+
+  const learningSection = setup.locator(".setup-section").filter({ hasText: "What learning level fits you?" });
+  await learningSection.getByRole("button", { name: /^Adult/ }).click();
+
+  const experienceSection = setup.locator(".setup-section").filter({ hasText: "What's your reptile experience?" });
+  await experienceSection.getByRole("button", { name: /^Advanced/ }).click();
+
+  const interestsSection = setup.locator(".setup-section").filter({ hasText: "What else interests you?" });
+  await interestsSection.getByRole("button", { name: /^Keeper/ }).click();
+
+  await setup.locator("button.setup-submit").click();
+  await expect(page).not.toHaveURL(/\/account-setup\/?/);
+  console.log(`[OVERLORD] BOT account setup complete → ${page.url()}`);
+}
+
 async function signIn(page) {
   if (!email || !password) {
     test.skip(true, "Authenticated Overlord BOT requires TINY_TITANS_BOT_EMAIL and TINY_TITANS_BOT_PASSWORD.");
@@ -69,6 +98,7 @@ async function signIn(page) {
   await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: /sign in/i }).click();
   await expect(page).not.toHaveURL(/\/login\/?$/);
+  await completeAccountSetup(page);
 }
 
 async function visit(page, route) {
@@ -79,6 +109,7 @@ async function visit(page, route) {
   const currentUrl = page.url();
   console.log(`[OVERLORD] Navigation result: ${route} → ${currentUrl || "<empty URL>"}`);
   await expect(page).not.toHaveURL(/\/login\/?$/);
+  await expect(page).not.toHaveURL(/\/account-setup(?:\/|\?|$)/);
   return currentUrl;
 }
 
