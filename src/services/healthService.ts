@@ -1,6 +1,6 @@
 import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import type { HealthRecord } from "../types/Health";
+import type { HealthRecord, MedicationAdministration } from "../types/Health";
 import { resolveDataOwnerUid } from "./familyService";
 import { requestFamilyMutation } from "./familyPermissionsService";
 
@@ -20,6 +20,21 @@ export async function saveSnakeHealthRecord(uid: string, record: HealthRecord): 
   await requestFamilyMutation({ requesterUid: uid, requesterName: uid, area: "health", action: operation === "create" ? "create" : "edit", title: "Update health record", description: "A family member wants to update a shared health or veterinary record.", targetPath: `users/${owner}/snakes/${record.snakeId}/health/${record.id}`, operation, data: payload });
   await setDoc(doc(records(owner, record.snakeId), record.id), payload, { merge: true });
   return payload;
+}
+
+export async function recordMedicationAdministration(uid: string, record: HealthRecord, administration: MedicationAdministration): Promise<HealthRecord> {
+  const current = record.medicationAdministrations ?? [];
+  const nextAdministration = { ...administration, recordedBy: uid };
+  const next: HealthRecord = {
+    ...record,
+    medicationAdministrations: [...current.filter((item) => item.id !== administration.id), nextAdministration],
+    reminderState: administration.status === "given" ? "active" : record.reminderState,
+  };
+  return saveSnakeHealthRecord(uid, next);
+}
+
+export async function cancelMedicationSchedule(uid: string, record: HealthRecord): Promise<HealthRecord> {
+  return saveSnakeHealthRecord(uid, { ...record, reminderState: "cancelled", medicationSchedule: record.medicationSchedule ? { ...record.medicationSchedule, enabled: false, reminderEnabled: false } : undefined });
 }
 
 export async function deleteSnakeHealthRecord(uid: string, snakeId: string, recordId: string): Promise<void> {
