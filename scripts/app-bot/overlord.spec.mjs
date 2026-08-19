@@ -12,6 +12,8 @@ const coreRoutes = [
   "/weights",
   "/feeding",
   "/shedding",
+  "/behaviour",
+  "/health",
   "/morph-library",
   "/calculator",
   "/knowledge-base",
@@ -158,7 +160,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
   test("tracker entry points expose usable forms rather than dead pages", async ({ page }) => {
     const errors = applicationErrors(page);
     await signIn(page);
-    for (const route of ["/weights", "/feeding", "/shedding"]) {
+    for (const route of ["/weights", "/feeding", "/shedding", "/behaviour", "/health"]) {
       await visit(page, route);
       const controls = page.locator("input, select, textarea, button");
       await expect(controls.first()).toBeVisible();
