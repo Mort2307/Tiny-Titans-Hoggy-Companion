@@ -15,10 +15,10 @@ export type MorphTerminologyAuditRow = {
 
 /**
  * Audits the real canonical master database rather than treating the existence
- * of the terminology module itself as coverage. A canonical name is a valid
- * fallback, but it is deliberately reported as fallback coverage so Creator
- * Centre can distinguish researched regional terminology from "no difference
- * currently recorded".
+ * of the terminology module itself as coverage. A canonical name is a safe
+ * display fallback, but it is deliberately reported as fallback coverage.
+ * Fallback coverage remains in the research queue until a Creator verifies
+ * that the canonical name is also the appropriate regional terminology.
  */
 export function buildMorphTerminologyAudit(morphs: MasterMorphDefinition[]) {
   const rows: MorphTerminologyAuditRow[] = morphs.map((morph) => {
@@ -30,6 +30,7 @@ export function buildMorphTerminologyAudit(morphs: MasterMorphDefinition[]) {
     })) as MorphTerminologyAuditRow["regions"];
     const names = record?.names ?? [];
     const unresolvedNames = names.filter((name) => name.status === "unverified" || name.confidence === "low").map((name) => name.name);
+    const hasFallbackOrMissing = AUDIT_REGIONS.some((region) => regions[region] !== "explicit");
     return {
       morphId: morph.geneId,
       canonicalName: morph.name,
@@ -37,13 +38,13 @@ export function buildMorphTerminologyAudit(morphs: MasterMorphDefinition[]) {
       regionalNames: names.filter((name) => name.status !== "preferred").map((name) => name.name),
       unresolvedNames,
       statuses: [...new Set(names.map((name) => name.status))],
-      needsResearch: unresolvedNames.length > 0 || AUDIT_REGIONS.some((region) => regions[region] === "missing"),
+      needsResearch: unresolvedNames.length > 0 || hasFallbackOrMissing,
     };
   });
 
   const explicit = rows.filter((row) => AUDIT_REGIONS.every((region) => row.regions[region] === "explicit")).length;
   const fallbackOnly = rows.filter((row) => AUDIT_REGIONS.every((region) => row.regions[region] === "fallback")).length;
-  const partial = rows.filter((row) => !row.needsResearch && !AUDIT_REGIONS.every((region) => row.regions[region] === "explicit")).length;
+  const mixedCoverage = rows.filter((row) => AUDIT_REGIONS.some((region) => row.regions[region] === "explicit") && AUDIT_REGIONS.some((region) => row.regions[region] !== "explicit")).length;
   const research = rows.filter((row) => row.needsResearch).length;
   const unresolvedAliases = rows.reduce((total, row) => total + row.unresolvedNames.length, 0);
 
@@ -51,7 +52,7 @@ export function buildMorphTerminologyAudit(morphs: MasterMorphDefinition[]) {
     totalMorphs: rows.length,
     fullyExplicit: explicit,
     fallbackOnly,
-    mixedCoverage: partial,
+    mixedCoverage,
     needsResearch: research,
     unresolvedAliases,
     coveragePercent: rows.length === 0 ? 100 : Math.round(((rows.length - research) / rows.length) * 100),
