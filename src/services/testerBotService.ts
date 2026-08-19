@@ -34,32 +34,121 @@ export type TesterRun = {
   id: string;
   ownerUid: string;
   suite: string;
-  botId?: string;
-  status: TesterStatus;
-  results: TesterResult[];
+  status: "passed" | "failed" | "blocked" | "incomplete";
   startedAt: string;
-  completedAt?: string;
+  completedAt: string;
+  durationMs: number;
+  results: TesterResult[];
 };
 
-export type CoreDiagnosticOptions = { uid: string; authenticated: boolean; creatorClaim: boolean };
+function makeRunId() {
+  return `run-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
-export async function createCoreDiagnosticChecks(options: CoreDiagnosticOptions): Promise<TesterCheck[]> {
+function getResultStatus(results: TesterResult[]): TesterRun["status"] {
+  if (results.some((result) => result.status === "fail")) return "failed";
+  if (results.some((result) => result.status === "blocked" || result.status === "not-tested")) return "incomplete";
+  return "passed";
+}
+
+async function persistTesterRun(uid: string, run: TesterRun): Promise<void> {
+  if (!uid) throw new Error("Tester run cannot be persisted without an owner UID.");
+  const runRef = doc(collection(db, "users", uid, "testerRuns"), run.id);
+  await setDoc(runRef, {
+    ...run,
+    createdAt: serverTimestamp(),
+    resultCount: run.results.length,
+    passedCount: run.results.filter((result) => result.status === "pass").length,
+    failedCount: run.results.filter((result) => result.status === "fail").length,
+    blockedCount: run.results.filter((result) => result.status === "blocked").length,
+    notTestedCount: run.results.filter((result) => result.status === "not-tested").length,
+  });
+}
+
+export function createCoreDiagnosticChecks(input: {
+  uid: string;
+  authenticated: boolean;
+  creatorClaim: boolean;
+  analyticsConsent?: boolean;
+}): TesterCheck[] {
+  const { uid, authenticated, creatorClaim } = input;
+
   return [
-    { checkId: "auth-current-user", name: "Authenticated user is present", category: "auth", severity: "critical", run: async () => ({ status: options.authenticated && Boolean(auth.currentUser?.uid === options.uid) ? "pass" : "fail", message: options.authenticated && auth.currentUser?.uid === options.uid ? "Authenticated user matches the tester UID." : "The current Firebase user does not match the tester UID." }) },
-    { checkId: "auth-token-refresh", name: "Authentication token is readable", category: "auth", severity: "high", run: async () => { if (!auth.currentUser) return { status: "fail", message: "No authenticated Firebase user is available." }; try { const token = await getIdTokenResult(auth.currentUser, true); return token.token ? { status: "pass", message: "Firebase authentication token refreshed successfully." } : { status: "fail", message: "Firebase returned no usable token." }; } catch (error) { return { status: "fail", message: error instanceof Error ? error.message : "Unable to refresh the Firebase token." }; } } },
-    { checkId: "auth-creator-claim", name: "Creator tester claim matches expected role", category: "creator", severity: "high", run: async () => ({ status: options.creatorClaim === Boolean((await getIdTokenResult(auth.currentUser!, true)).claims.creator) ? "pass" : "fail", message: options.creatorClaim ? "Creator claim is present." : "Creator claim is not required for this bot." }) },
-    { checkId: "tester-run-write-boundary", name: "Tester run records are scoped to the authenticated owner", category: "firebase", severity: "critical", run: async () => ({ status: options.uid ? "pass" : "fail", message: "Tester diagnostics are constructed with an authenticated owner UID." }) },
+    {
+      checkId: "auth-current-user", name: "Authenticated user is available", category: "auth", severity: "critical",
+      run: async () => {
+        const currentUser = auth.currentUser;
+        if (!authenticated || !currentUser) return { status: "fail", message: "Firebase Auth does not report an authenticated user." };
+        if (currentUser.uid !== uid) return { status: "fail", message: "Authenticated UID does not match the tester owner UID." };
+        return { status: "pass", message: "Authenticated user and tester UID match." };
+      },
+    },
+    {
+      checkId: "auth-creator-claim", name: "Creator authorization claim is present", category: "creator", severity: "critical",
+      run: async () => creatorClaim ? { status: "pass", message: "Creator/admin authorization claim is active." } : { status: "fail", message: "Creator/admin authorization claim is missing." },
+    },
+    {
+      checkId: "auth-token-refresh", name: "Firebase ID token can be refreshed", category: "auth", severity: "high",
+      run: async () => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) return { status: "blocked", message: "No authenticated Firebase user is available." };
+        try {
+          const token = await getIdTokenResult(currentUser, true);
+          return token.token ? { status: "pass", message: "A fresh Firebase ID token was obtained." } : { status: "fail", message: "Firebase returned an empty ID token." };
+        } catch (error) {
+          return { status: "fail", message: error instanceof Error ? error.message : "Unable to refresh Firebase ID token." };
+        }
+      },
+    },
+    {
+      checkId: "account-profile-readable", name: "Current account profile is readable", category: "account", severity: "high",
+      run: async () => {
+        try {
+          const snapshot = await getDoc(doc(db, "users", uid));
+          if (!snapshot.exists()) return { status: "fail", message: "The authenticated user's Firestore profile document does not exist." };
+          const data = snapshot.data() as Record<string, unknown>;
+          if (data.setupComplete !== true) return { status: "blocked", message: "The account profile exists but setupComplete is not true." };
+          return { status: "pass", message: "Account profile exists and setup is complete." };
+        } catch (error) {
+          return { status: "fail", message: error instanceof Error ? error.message : "Unable to read the account profile." };
+        }
+      },
+    },
+    {
+      checkId: "firebase-user-scope", name: "User-scoped Firestore access works", category: "firebase", severity: "critical",
+      run: async () => {
+        try {
+          await getDoc(doc(db, "users", uid));
+          return { status: "pass", message: "The tester can read its own Firebase user scope." };
+        } catch (error) {
+          return { status: "fail", message: error instanceof Error ? error.message : "User-scoped Firestore access failed." };
+        }
+      },
+    },
   ];
 }
 
-export async function saveTesterRun(run: TesterRun): Promise<void> {
-  if (!run.ownerUid) throw new Error("Tester runs require an authenticated owner UID.");
-  await setDoc(doc(collection(db, "testerRuns"), run.id), { ...run, updatedAt: serverTimestamp() }, { merge: true });
-}
+export async function runTesterSuite(uid: string, suite: string, checks: TesterCheck[]): Promise<TesterRun> {
+  if (!uid) throw new Error("Tester Bot requires an authenticated UID.");
+  if (!checks.length) throw new Error(`Tester suite '${suite}' contains no checks.`);
 
-export async function getTesterRun(uid: string, runId: string): Promise<TesterRun | null> {
-  if (!uid || !runId) return null;
-  const snapshot = await getDoc(doc(db, "testerRuns", runId));
-  if (!snapshot.exists() || snapshot.data().ownerUid !== uid) return null;
-  return { ...(snapshot.data() as Omit<TesterRun, "id">), id: snapshot.id };
+  const started = Date.now();
+  const startedAt = new Date(started).toISOString();
+  const results: TesterResult[] = [];
+
+  for (const check of checks) {
+    const checkStarted = Date.now();
+    let outcome: { status: TesterStatus; message: string };
+    try {
+      outcome = await check.run();
+    } catch (error) {
+      outcome = { status: "fail", message: error instanceof Error ? error.message : "Tester check threw an unknown error." };
+    }
+    results.push({ checkId: check.checkId, name: check.name, suite, category: check.category, status: outcome.status, severity: check.severity, message: outcome.message, durationMs: Date.now() - checkStarted, timestamp: new Date().toISOString() });
+  }
+
+  const completedAt = new Date().toISOString();
+  const run: TesterRun = { id: makeRunId(), ownerUid: uid, suite, status: getResultStatus(results), startedAt, completedAt, durationMs: Date.now() - started, results };
+  await persistTesterRun(uid, run);
+  return run;
 }
