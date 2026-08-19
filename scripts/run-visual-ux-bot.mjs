@@ -127,7 +127,7 @@ async function main() {
     });
     const report = { bot: "Tiny Titans Visual UX BOT", generatedAt: new Date().toISOString(), baseURL, routesInspected: routes.length, viewports: contract.responsiveViewports, screenshotCount: results.length, results, routeSummary, methodology: ["Rendered evidence is captured with Playwright at mobile, tablet and desktop sizes.", "Heuristics flag overflow, hierarchy, density, touch-target and action-clarity problems.", "Alternative page concepts are selected by page purpose rather than applying one template everywhere.", "The Tiny Titans visual contract remains authoritative for brand identity.", "The bot recommends changes; it never silently mutates production code."] };
     await fs.writeFile(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
-    await fs.writeFile(path.join(outputDir, "README.md"), `# Tiny Titans Visual UX BOT\n\nGenerated: ${report.generatedAt}\n\nRoutes: ${report.routesInspected}\nScreenshots: ${report.screenshotCount}\n\nOpen \\`report.json\\` for route-level findings and recommended alternative page concepts. Screenshots are stored beside the report.\n`);
+    await fs.writeFile(path.join(outputDir, "README.md"), `# Tiny Titans Visual UX BOT\n\nGenerated: ${report.generatedAt}\n\nRoutes: ${report.routesInspected}\nScreenshots: ${report.screenshotCount}\n\nOpen \`report.json\` for route-level findings and recommended alternative page concepts. Screenshots are stored beside the report.\n`);
     console.log(`\\nVisual UX BOT complete: ${results.length} rendered page/viewport audits and ${results.length} screenshots.`);
   } finally {
     await browser.close();
