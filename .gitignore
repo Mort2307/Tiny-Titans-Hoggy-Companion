@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Visual and automated test evidence generated locally
+artifacts/visual-ux/
+artifacts/app-bot-results.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
