@@ -8,6 +8,7 @@ import { createNotificationMicroSystemChecks } from "./testerNotificationSuitesS
 import { createCreatorFunctionChecks } from "./testerCreatorSuitesService";
 import { createApplicationCoverageChecks, createBreedingPlannerChecks } from "./testerApplicationSuitesService";
 import { createFamilyAccountChecks } from "./testerFamilySuitesService";
+import { createVisualUxChecks } from "./visualUxBotService";
 
 export type TesterBotId = "creator" | "user" | "app" | "security";
 
@@ -36,6 +37,7 @@ const creatorSuites: BotSuiteDefinition[] = [
   { id: "feedback", label: "Feedback / Attachments", description: "Feedback text, mock image and mock video validation paths.", category: "Feedback", safety: "read-only", build: createFeedbackAttachmentChecks },
   { id: "regression", label: "Tracker Regression", description: "Shared tracker totals and Firebase data-model regression checks.", category: "Regression", safety: "read-only", build: createTrackerRegressionChecks },
   { id: "family-account", label: "Family Account", description: "Owner, invitation, membership, Allow/Deny/Verify permissions, approvals and sandbox isolation checks.", category: "Family", safety: "read-only", build: createFamilyAccountChecks },
+  { id: "visual-ux", label: "Visual UX & Design", description: "Rendered visual auditing, Tiny Titans brand consistency, responsive evidence and alternative page concepts.", category: "Visual UX", safety: "read-only", build: createVisualUxChecks },
 ];
 
 const userSuites: BotSuiteDefinition[] = [
