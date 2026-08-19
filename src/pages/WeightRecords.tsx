@@ -1,30 +1,305 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
+import EventList from "../components/ui/EventList";
+import PageShell from "../components/ui/PageShell";
+import { LoadingState, RecordState } from "../components/ui/RecordState";
+import SnakeContextCard from "../components/ui/SnakeContextCard";
 import WeightChart from "../components/WeightChart";
 import type { Snake } from "../types/Snake";
 import type { WeightRecord } from "../types/Weight";
 import { migrateSnake } from "../utils/snakeMigration";
 import { getWeightReminder } from "../utils/weightReminder";
-import { getUserSnake, saveUserSnake } from "../services/snakeService";
 import { deleteSnakeWeight, getSnakeWeights, migrateEmbeddedWeights, saveSnakeWeight } from "../services/weightService";
+import { getUserSnake, saveUserSnake } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
-function sortHistory(history: WeightRecord[]) { return [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); }
-function displayDate(iso: string) { if (!iso) return ""; const [year, month, day] = iso.split("-"); return year && month && day ? `${day}/${month}/${year}` : ""; }
-function maskDate(value: string) { const digits = value.replace(/\D/g, "").slice(0, 8); if (digits.length <= 2) return digits; if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`; return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`; }
-function parseDate(value: string): string | null { const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if (!match) return null; const day = Number(match[1]); const month = Number(match[2]); const year = Number(match[3]); const date = new Date(year, month - 1, day); if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null; return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`; }
-function makeId() { return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `weight-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
+
+function sortHistory(history: WeightRecord[]) {
+  return [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+function displayDate(iso: string) {
+  if (!iso) return "";
+  const [year, month, day] = iso.split("-");
+  return year && month && day ? `${day}/${month}/${year}` : "";
+}
+
+function maskDate(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function parseDate(value: string): string | null {
+  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function makeId() {
+  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `weight-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default function WeightRecords() {
-  const { id: snakeId } = useParams(); const navigate = useNavigate(); const [searchParams, setSearchParams] = useSearchParams(); const { user, loading, profileLoading } = useAuth(); const { isImperial, formatWeight, weightUnit } = useUnits(); const [snake, setSnake] = useState<Snake | null>(null); const [history, setHistory] = useState<WeightRecord[]>([]); const [loadedRecordKey, setLoadedRecordKey] = useState<string | null>(null); const [error, setError] = useState<string | null>(null); const weightInputInitial = ""; const [weightInput, setWeightInput] = useState(weightInputInitial); const today = new Date().toISOString().split("T")[0]; const [typedDate, setTypedDate] = useState(displayDate(today)); const [dateError, setDateError] = useState(""); const [saving, setSaving] = useState(false); const [saveMessage, setSaveMessage] = useState(""); const [editingId, setEditingId] = useState<string | null>(null); const [deletingId, setDeletingId] = useState<string | null>(null); const [deleteTarget, setDeleteTarget] = useState<WeightRecord | null>(null); const recordKey = user && snakeId ? `${user.uid}:${snakeId}` : null; const loadingSnake = Boolean(recordKey && loadedRecordKey !== recordKey);
-  useEffect(() => { if (loading || profileLoading || !user || !snakeId) return; let cancelled = false; void getUserSnake(user.uid, snakeId).then(async (loaded) => { if (cancelled) return; if (!loaded) { setError("This snake could not be found."); return; } const migrated = migrateSnake(loaded); const canonical = await migrateEmbeddedWeights(user.uid, snakeId, migrated.weightHistory ?? []); if (cancelled) return; const refreshed = await getUserSnake(user.uid, snakeId); if (cancelled) return; setSnake(migrateSnake(refreshed ?? migrated)); setHistory(sortHistory(canonical)); setError(null); }).catch((err) => { if (!cancelled) { console.error("Tiny Titans: unable to load weight records", err); setError(err instanceof Error ? err.message : "Unable to load this snake. Please try again."); } }).finally(() => { if (!cancelled) setLoadedRecordKey(recordKey); }); return () => { cancelled = true; }; }, [user, snakeId, loading, profileLoading, recordKey]);
-  useEffect(() => { const recordId = searchParams.get("record"); if (!recordId || history.length === 0) return; const record = history.find((item) => item.id === recordId); if (!record) return; queueMicrotask(() => { setEditingId(record.id); setWeightInput(isImperial ? String((record.weight / 28.349523125).toFixed(2)) : String(record.weight)); setTypedDate(displayDate(record.date)); setDateError(""); setSaveMessage("📌 Opened from the Life Timeline. You are editing this exact weight record."); requestAnimationFrame(() => document.getElementById("weight-record")?.scrollIntoView({ behavior: "smooth", block: "center" })); setSearchParams((current) => { current.delete("record"); return current; }, { replace: true }); }); }, [history, isImperial, searchParams, setSearchParams]);
-  const firstWeight = snake?.startingWeight ?? history[0]?.weight ?? 0; const currentWeight = history[history.length - 1]?.weight ?? snake?.weight ?? 0; const totalGain = currentWeight - firstWeight; const percentageGain = firstWeight > 0 ? Math.round((totalGain / firstWeight) * 100) : 0; const reminder = snake ? getWeightReminder(snake) : null; const daysSinceWeigh = snake?.lastWeighedDate ? Math.max(0, Math.floor((new Date(`${today}T00:00:00`).getTime() - new Date(`${snake.lastWeighedDate}T00:00:00`).getTime()) / 86400000)) : null;
-  const chartHistory = useMemo(() => { if (!snake) return []; const records: WeightRecord[] = []; if (snake.startingWeight != null && snake.startingWeight > 0) records.push({ id: `starting-${snake.id}`, snakeId: snake.id, weight: snake.startingWeight, date: snake.startingWeightDate || snake.hatchDate || snake.arrivalDate || today, unit: "g" }); records.push(...history); return sortHistory(records); }, [snake, history, today]);
-  async function saveWeight() { if (!snake || !user) return; setSaveMessage(""); const entered = Number(weightInput); if (!Number.isFinite(entered) || entered <= 0) { setSaveMessage(`Please enter a valid weight in ${weightUnit}.`); return; } const finalDate = parseDate(typedDate); if (!finalDate) { setDateError("Please enter a valid date, e.g. 10/08/2026."); return; } const grams = isImperial ? entered * 28.349523125 : entered; const duplicate = history.find((record) => record.date === finalDate && record.id !== editingId); if (duplicate) { setSaveMessage("A weight record already exists for this date. Edit that record instead of creating a duplicate."); return; } setSaving(true); try { const wasEditing = Boolean(editingId); const record: WeightRecord = { id: editingId ?? makeId(), snakeId: snake.id, weight: grams, date: finalDate, unit: "g" }; await saveSnakeWeight(user.uid, record); const canonical = sortHistory(await getSnakeWeights(user.uid, snake.id)); const newest = canonical[canonical.length - 1]; const updatedSnake = migrateSnake({ ...snake, weight: newest?.weight ?? snake.weight, lastWeighedDate: newest?.date ?? snake.lastWeighedDate, weightHistory: canonical }); await saveUserSnake(user.uid, updatedSnake); const refreshed = await getUserSnake(user.uid, snake.id); setSnake(migrateSnake(refreshed ?? updatedSnake)); setHistory(canonical); setLoadedRecordKey(recordKey); setWeightInput(""); setTypedDate(displayDate(today)); setDateError(""); setEditingId(null); setSaveMessage(wasEditing ? "✅ Weight record updated and confirmed in Firebase." : "✅ Weight saved and confirmed in Firebase."); } catch (err) { console.error("Tiny Titans: unable to save weight record", err); setSaveMessage(`Unable to save this weight record. ${err instanceof Error ? err.message : "Unknown error"}`); } finally { setSaving(false); } }
-  function startEdit(record: WeightRecord) { setEditingId(record.id); setWeightInput(isImperial ? String((record.weight / 28.349523125).toFixed(2)) : String(record.weight)); setTypedDate(displayDate(record.date)); setDateError(""); setSaveMessage(""); window.scrollTo({ top: 0, behavior: "smooth" }); }
-  async function removeWeight(record: WeightRecord) { if (!user || !snake) return; setDeleteTarget(null); setDeletingId(record.id); setSaveMessage(""); try { await deleteSnakeWeight(user.uid, snake.id, record.id); const canonical = sortHistory(await getSnakeWeights(user.uid, snake.id)); const newest = canonical[canonical.length - 1]; const updatedSnake = migrateSnake({ ...snake, weight: newest?.weight ?? snake.startingWeight, lastWeighedDate: newest?.date ?? undefined, weightHistory: canonical }); await saveUserSnake(user.uid, updatedSnake); const refreshed = await getUserSnake(user.uid, snake.id); setSnake(migrateSnake(refreshed ?? updatedSnake)); setHistory(canonical); setLoadedRecordKey(recordKey); if (editingId === record.id) { setEditingId(null); setWeightInput(""); setTypedDate(displayDate(today)); } setSaveMessage("✅ Weight record deleted and Firebase synchronised."); } catch (err) { setSaveMessage(`Unable to delete this weight record. ${err instanceof Error ? err.message : "Unknown error"}`); } finally { setDeletingId(null); } }
-  if (loading || profileLoading || loadingSnake) return <div><BackHomeButton /><h1>⚖️ Loading Weight Records...</h1><div className="tracker-card"><p>Fetching weight records from Firebase.</p></div></div>; if (error || !snake) return <div><BackHomeButton /><h1>🐍 Snake Not Found</h1><div className="tracker-card"><h3>{error ?? "This snake could not be found."}</h3><button type="button" onClick={() => navigate("/snakes")}>← Back to My Hoggies</button></div></div>;
-  return <div><BackHomeButton /><h1>⚖️ {snake.name} Weight Records</h1><div className="tracker-card"><h2>🐍 {snake.name}</h2><p>Species:<br /><strong>{snake.species}</strong></p><p>Morphs:<br /><strong>{snake.morphs?.join(", ") || "-"}</strong></p><p>Sex:<br /><strong>{snake.sex}</strong></p></div><div className="tracker-card"><h2>📊 Growth Summary</h2><p>Current Weight:<br /><strong>{formatWeight(currentWeight)}</strong></p><p>Starting Weight:<br /><strong>{formatWeight(firstWeight)}</strong></p><p>Total Growth:<br /><strong>{totalGain >= 0 ? "+" : ""}{formatWeight(totalGain)}</strong></p><p>Growth:<br /><strong>{percentageGain >= 0 ? "+" : ""}{percentageGain}%</strong></p><p>Last Weighed:<br /><strong>{snake.lastWeighedDate || "-"}</strong></p><p>Days Since Weigh:<br /><strong>{daysSinceWeigh ?? "-"}</strong></p><p>Reminder:<br /><strong>{reminder?.status ?? "-"}</strong></p></div><div className="tracker-card"><h2>{editingId ? "✏️ Edit Weight Record" : "➕ Add Weight Record"}</h2><label htmlFor="weight-record">Weight ({weightUnit})</label><input id="weight-record" type="number" inputMode="decimal" min="0" step="any" placeholder={isImperial ? "e.g. 3.5" : "e.g. 50.7"} value={weightInput} onChange={(event) => { setWeightInput(event.target.value); setSaveMessage(""); }} /><label htmlFor="weight-date-text">📅 Date</label><input id="weight-date-text" type="text" inputMode="text" autoComplete="off" placeholder="DD/MM/YYYY" value={typedDate} onChange={(event) => { const formatted = maskDate(event.target.value); setTypedDate(formatted); setDateError(""); }} onBlur={() => { const parsed = parseDate(typedDate); if (!parsed) setDateError("Please enter a valid date, e.g. 10/08/2026."); else { setTypedDate(displayDate(parsed)); setDateError(""); } }} /><small>Type DD/MM/YYYY. Mobile-friendly and keyboard-safe.</small>{dateError && <p role="alert">⚠️ {dateError}</p>}{saveMessage && <p role={saveMessage.startsWith("✅") ? "status" : "alert"}>{saveMessage}</p>}<div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}><button type="button" onClick={() => void saveWeight()} disabled={saving}>{saving ? "💾 Saving..." : editingId ? "💾 Update Weight" : "💾 Save Weight"}</button>{editingId && <button type="button" onClick={() => { setEditingId(null); setWeightInput(""); setTypedDate(displayDate(today)); setDateError(""); }}>Cancel Edit</button>}</div></div><div className="tracker-card"><h2>📈 Growth Chart</h2>{chartHistory.length >= 2 ? <WeightChart history={chartHistory} /> : <p>Add more weight records to see your growth chart.</p>}</div><div className="tracker-card"><h2>📜 Weight History</h2>{history.length ? [...history].reverse().map((record, index, array) => { const previous = array[index + 1]; const change = previous ? record.weight - previous.weight : null; return <div key={record.id} className="weight-history-card"><h3>📅 {record.date}</h3><p>⚖️ {formatWeight(record.weight)}</p>{change !== null && <p>{change >= 0 ? "⬆️ " : "⬇️ "}{change >= 0 ? "+" : ""}{formatWeight(change)}</p>}<div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}><button type="button" onClick={() => startEdit(record)}>✏️ Edit</button><button type="button" onClick={() => setDeleteTarget(record)} disabled={deletingId === record.id}>{deletingId === record.id ? "Deleting..." : "🗑️ Delete"}</button></div></div>; }) : <p>No recorded weigh-ins yet. <button type="button" onClick={() => document.getElementById("weight-record")?.focus()}>Log the first weight</button>.</p>}</div><div className="tracker-card"><h2>🐍 Next Steps</h2><div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}><button type="button" onClick={() => navigate(`/snakes/${snake.id}/master-record`)}>Open Master Record</button><button type="button" onClick={() => navigate(`/snakes/${snake.id}/feeding`)}>Log Feeding</button><button type="button" onClick={() => navigate(`/snakes/${snake.id}/shedding`)}>Record Shed</button></div></div><ConfirmActionDialog open={Boolean(deleteTarget)} title="Delete this weight record?" description={<p>The record for {deleteTarget?.date ?? "this date"} will be removed from the canonical Weight Records and the snake's summary will be synchronised again.</p>} confirmLabel="Delete Weight" busy={Boolean(deleteTarget && deletingId === deleteTarget.id)} onConfirm={() => { if (deleteTarget) void removeWeight(deleteTarget); }} onCancel={() => { if (!deletingId) setDeleteTarget(null); }} /></div>;
+  const { id: snakeId } = useParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user, loading, profileLoading } = useAuth();
+  const { isImperial, formatWeight, weightUnit } = useUnits();
+  const [snake, setSnake] = useState<Snake | null>(null);
+  const [history, setHistory] = useState<WeightRecord[]>([]);
+  const [loadedRecordKey, setLoadedRecordKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [weightInput, setWeightInput] = useState("");
+  const today = new Date().toISOString().split("T")[0];
+  const [typedDate, setTypedDate] = useState(displayDate(today));
+  const [dateError, setDateError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<WeightRecord | null>(null);
+
+  const recordKey = user && snakeId ? `${user.uid}:${snakeId}` : null;
+  const loadingSnake = Boolean(recordKey && loadedRecordKey !== recordKey);
+
+  useEffect(() => {
+    if (loading || profileLoading || !user || !snakeId) return;
+    let cancelled = false;
+    void getUserSnake(user.uid, snakeId)
+      .then(async (loaded) => {
+        if (cancelled) return;
+        if (!loaded) {
+          setError("This snake could not be found.");
+          return;
+        }
+        const migrated = migrateSnake(loaded);
+        const canonical = await migrateEmbeddedWeights(user.uid, snakeId, migrated.weightHistory ?? []);
+        if (cancelled) return;
+        const refreshed = await getUserSnake(user.uid, snakeId);
+        if (cancelled) return;
+        setSnake(migrateSnake(refreshed ?? migrated));
+        setHistory(sortHistory(canonical));
+        setError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error("Tiny Titans: unable to load weight records", err);
+          setError(err instanceof Error ? err.message : "Unable to load this snake. Please try again.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedRecordKey(recordKey);
+      });
+    return () => { cancelled = true; };
+  }, [user, snakeId, loading, profileLoading, recordKey]);
+
+  useEffect(() => {
+    const recordId = searchParams.get("record");
+    if (!recordId || history.length === 0) return;
+    const record = history.find((item) => item.id === recordId);
+    if (!record) return;
+    queueMicrotask(() => {
+      setEditingId(record.id);
+      setWeightInput(isImperial ? String((record.weight / 28.349523125).toFixed(2)) : String(record.weight));
+      setTypedDate(displayDate(record.date));
+      setDateError("");
+      setSaveMessage("Opened from the Life Timeline. You are editing this exact weight record.");
+      requestAnimationFrame(() => document.getElementById("weight-record")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      setSearchParams((current) => {
+        current.delete("record");
+        return current;
+      }, { replace: true });
+    });
+  }, [history, isImperial, searchParams, setSearchParams]);
+
+  const firstWeight = snake?.startingWeight ?? history[0]?.weight ?? 0;
+  const currentWeight = history[history.length - 1]?.weight ?? snake?.weight ?? 0;
+  const totalGain = currentWeight - firstWeight;
+  const percentageGain = firstWeight > 0 ? Math.round((totalGain / firstWeight) * 100) : 0;
+  const reminder = snake ? getWeightReminder(snake) : null;
+  const daysSinceWeigh = snake?.lastWeighedDate
+    ? Math.max(0, Math.floor((new Date(`${today}T00:00:00`).getTime() - new Date(`${snake.lastWeighedDate}T00:00:00`).getTime()) / 86400000))
+    : null;
+
+  const chartHistory = useMemo(() => {
+    if (!snake) return [];
+    const records: WeightRecord[] = [];
+    if (snake.startingWeight != null && snake.startingWeight > 0) {
+      records.push({ id: `starting-${snake.id}`, snakeId: snake.id, weight: snake.startingWeight, date: snake.startingWeightDate || snake.hatchDate || snake.arrivalDate || today, unit: "g" });
+    }
+    records.push(...history);
+    return sortHistory(records);
+  }, [snake, history, today]);
+
+  async function saveWeight() {
+    if (!snake || !user) return;
+    setSaveMessage("");
+    const entered = Number(weightInput);
+    if (!Number.isFinite(entered) || entered <= 0) {
+      setSaveMessage(`Please enter a valid weight in ${weightUnit}.`);
+      return;
+    }
+    const finalDate = parseDate(typedDate);
+    if (!finalDate) {
+      setDateError("Please enter a valid date, e.g. 10/08/2026.");
+      return;
+    }
+    const grams = isImperial ? entered * 28.349523125 : entered;
+    const duplicate = history.find((record) => record.date === finalDate && record.id !== editingId);
+    if (duplicate) {
+      setSaveMessage("A weight record already exists for this date. Edit that record instead of creating a duplicate.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const wasEditing = Boolean(editingId);
+      const record: WeightRecord = { id: editingId ?? makeId(), snakeId: snake.id, weight: grams, date: finalDate, unit: "g" };
+      await saveSnakeWeight(user.uid, record);
+      const canonical = sortHistory(await getSnakeWeights(user.uid, snake.id));
+      const newest = canonical[canonical.length - 1];
+      const updatedSnake = migrateSnake({ ...snake, weight: newest?.weight ?? snake.weight, lastWeighedDate: newest?.date ?? snake.lastWeighedDate, weightHistory: canonical });
+      await saveUserSnake(user.uid, updatedSnake);
+      const refreshed = await getUserSnake(user.uid, snake.id);
+      setSnake(migrateSnake(refreshed ?? updatedSnake));
+      setHistory(canonical);
+      setLoadedRecordKey(recordKey);
+      setWeightInput("");
+      setTypedDate(displayDate(today));
+      setDateError("");
+      setEditingId(null);
+      setSaveMessage(wasEditing ? "Weight record updated and confirmed in Firebase." : "Weight saved and confirmed in Firebase.");
+    } catch (err) {
+      console.error("Tiny Titans: unable to save weight record", err);
+      setSaveMessage(`Unable to save this weight record. ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(record: WeightRecord) {
+    setEditingId(record.id);
+    setWeightInput(isImperial ? String((record.weight / 28.349523125).toFixed(2)) : String(record.weight));
+    setTypedDate(displayDate(record.date));
+    setDateError("");
+    setSaveMessage("");
+    requestAnimationFrame(() => document.getElementById("weight-record")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+
+  async function removeWeight(record: WeightRecord) {
+    if (!user || !snake) return;
+    setDeleteTarget(null);
+    setDeletingId(record.id);
+    setSaveMessage("");
+    try {
+      await deleteSnakeWeight(user.uid, snake.id, record.id);
+      const canonical = sortHistory(await getSnakeWeights(user.uid, snake.id));
+      const newest = canonical[canonical.length - 1];
+      const updatedSnake = migrateSnake({ ...snake, weight: newest?.weight ?? snake.startingWeight, lastWeighedDate: newest?.date ?? undefined, weightHistory: canonical });
+      await saveUserSnake(user.uid, updatedSnake);
+      const refreshed = await getUserSnake(user.uid, snake.id);
+      setSnake(migrateSnake(refreshed ?? updatedSnake));
+      setHistory(canonical);
+      setLoadedRecordKey(recordKey);
+      if (editingId === record.id) {
+        setEditingId(null);
+        setWeightInput("");
+        setTypedDate(displayDate(today));
+      }
+      setSaveMessage("Weight record deleted and Firebase synchronised.");
+    } catch (err) {
+      setSaveMessage(`Unable to delete this weight record. ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  if (loading || profileLoading || loadingSnake) {
+    return <PageShell eyebrow="Weight tracker" title="Weight records" icon="⚖️"><LoadingState label="Fetching weight records from Firebase…" /></PageShell>;
+  }
+
+  if (error || !snake) {
+    return (
+      <PageShell eyebrow="Weight tracker" title="Snake not found" icon="🐍">
+        <RecordState tone="error" icon="⚠️" title="This snake could not be found." description={error ?? "The requested snake record is unavailable."} action={<button type="button" onClick={() => navigate("/snakes")}>Back to My Hoggies</button>} />
+      </PageShell>
+    );
+  }
+
+  const historyItems = [...history].reverse().map((record, index, array) => {
+    const previous = array[index + 1];
+    const change = previous ? record.weight - previous.weight : null;
+    return {
+      id: record.id,
+      date: record.date,
+      title: formatWeight(record.weight),
+      detail: change === null ? "Recorded weight" : `${change >= 0 ? "+" : ""}${formatWeight(change)} since previous record`,
+      meta: editingId === record.id ? "Currently editing" : "Select to edit",
+      icon: change === null ? "⚖️" : change >= 0 ? "↗️" : "↘️",
+    };
+  });
+
+  return (
+    <PageShell
+      eyebrow="Daily care • Growth"
+      title={`${snake.name}'s weight`}
+      description="Keep a clean, chronological record of growth and use your own measurements as the evidence for trends."
+      icon="⚖️"
+      actions={<button type="button" onClick={() => navigate(`/snakes/${snake.id}/master-record`)}>Open Master Record</button>}
+    >
+      <SnakeContextCard snake={snake} context="Currently logging" />
+
+      <section className="tt-section-grid">
+        <article className="tt-info-card"><span>Current</span><strong>{formatWeight(currentWeight)}</strong><small>{daysSinceWeigh == null ? "No recent weigh-in" : `${daysSinceWeigh} day${daysSinceWeigh === 1 ? "" : "s"} since last weigh`}</small></article>
+        <article className="tt-info-card"><span>Starting</span><strong>{formatWeight(firstWeight)}</strong><small>{percentageGain >= 0 ? "+" : ""}{percentageGain}% change from starting weight</small></article>
+        <article className="tt-info-card"><span>Change</span><strong>{totalGain >= 0 ? "+" : ""}{formatWeight(totalGain)}</strong><small>{history.length} recorded weigh-in{history.length === 1 ? "" : "s"}</small></article>
+        <article className="tt-info-card"><span>Reminder</span><strong>{reminder?.status ?? "Not set"}</strong><small>Based on this snake's record, not a generic health score.</small></article>
+      </section>
+
+      <section className="tt-section-card" id="weight-record">
+        <div className="tt-section-heading"><div><p className="tt-section-eyebrow">{editingId ? "Update record" : "New record"}</p><h2>{editingId ? "Edit weight" : "Log a weight"}</h2></div></div>
+        <div className="tt-form-grid">
+          <label>Weight ({weightUnit})<input type="number" inputMode="decimal" min="0" step="any" placeholder={isImperial ? "e.g. 3.5" : "e.g. 50.7"} value={weightInput} onChange={(event) => { setWeightInput(event.target.value); setSaveMessage(""); }} /></label>
+          <label>Date<input type="text" inputMode="text" autoComplete="off" placeholder="DD/MM/YYYY" value={typedDate} onChange={(event) => { setTypedDate(maskDate(event.target.value)); setDateError(""); }} onBlur={() => { const parsed = parseDate(typedDate); if (!parsed) setDateError("Please enter a valid date, e.g. 10/08/2026."); else setTypedDate(displayDate(parsed)); }} /><small>DD/MM/YYYY</small></label>
+        </div>
+        {dateError && <p className="tt-form-message tt-form-message--error" role="alert">{dateError}</p>}
+        {saveMessage && <p className="tt-form-message" role={saveMessage.startsWith("Weight") ? "status" : "alert"}>{saveMessage}</p>}
+        <div className="tt-action-row">
+          <button type="button" onClick={() => void saveWeight()} disabled={saving}>{saving ? "Saving…" : editingId ? "Update weight" : "Save weight"}</button>
+          {editingId && <button type="button" className="tt-button-secondary" onClick={() => { setEditingId(null); setWeightInput(""); setTypedDate(displayDate(today)); setDateError(""); setSaveMessage(""); }}>Cancel edit</button>}
+        </div>
+      </section>
+
+      <section className="tt-section-card">
+        <div className="tt-section-heading"><div><p className="tt-section-eyebrow">Trend</p><h2>Growth chart</h2></div></div>
+        {chartHistory.length >= 2 ? <WeightChart history={chartHistory} /> : <RecordState title="Not enough measurements yet" description="Add another weight record and Tiny Titans will show the individual trend." icon="📈" />}
+      </section>
+
+      <section className="tt-section-card">
+        <div className="tt-section-heading"><div><p className="tt-section-eyebrow">History</p><h2>Weight history</h2></div><span className="tt-section-count">{history.length}</span></div>
+        <EventList items={historyItems} onSelect={(item) => { const record = history.find((entry) => entry.id === item.id); if (record) startEdit(record); }} empty={<RecordState title="No weigh-ins yet" description="Start with a current weight. Your own history becomes the evidence for future growth insights." icon="⚖️" action={<button type="button" onClick={() => document.getElementById("weight-record")?.scrollIntoView({ behavior: "smooth" })}>Log first weight</button>} />} />
+      </section>
+
+      <section className="tt-section-card">
+        <div className="tt-section-heading"><div><p className="tt-section-eyebrow">Continue care</p><h2>Next useful action</h2></div></div>
+        <div className="tt-action-row">
+          <button type="button" onClick={() => navigate(`/snakes/${snake.id}/feeding`)}>Log feeding</button>
+          <button type="button" className="tt-button-secondary" onClick={() => navigate(`/snakes/${snake.id}/shedding`)}>Record shed</button>
+          <button type="button" className="tt-button-secondary" onClick={() => navigate(`/snakes/${snake.id}/behaviour`)}>Log behaviour</button>
+          <button type="button" className="tt-button-secondary" onClick={() => navigate(`/snakes/${snake.id}/health`)}>Health & vet</button>
+        </div>
+      </section>
+
+      <ConfirmActionDialog open={Boolean(deleteTarget)} title="Delete this weight record?" description={<p>The {deleteTarget?.date ?? "selected"} record will be removed and the snake summary synchronised again.</p>} confirmLabel="Delete weight" busy={Boolean(deleteTarget && deletingId === deleteTarget.id)} onConfirm={() => { if (deleteTarget) void removeWeight(deleteTarget); }} onCancel={() => { if (!deletingId) setDeleteTarget(null); }} />
+    </PageShell>
+  );
 }
