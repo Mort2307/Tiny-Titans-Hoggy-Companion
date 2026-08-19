@@ -11,6 +11,7 @@ function settingsFor(value: unknown): NotificationSettings {
   const days = Number(raw.feedingPreparationDaysBefore);
   const time = raw.feedingPreparationTime;
   const missedMinutes = Number(raw.medicationMissedFollowUpMinutes);
+  const healthFollowUpLeadDays = Number(raw.healthFollowUpLeadDays);
   return {
     enabled: raw.enabled === true,
     feedingPreparationEnabled: raw.feedingPreparationEnabled !== false,
@@ -19,6 +20,7 @@ function settingsFor(value: unknown): NotificationSettings {
     healthRemindersEnabled: raw.healthRemindersEnabled !== false,
     healthReminderFollowUpEnabled: raw.healthReminderFollowUpEnabled !== false,
     medicationMissedFollowUpMinutes: Number.isFinite(missedMinutes) && missedMinutes >= 5 && missedMinutes <= 1440 ? Math.round(missedMinutes) : DEFAULT_NOTIFICATION_SETTINGS.medicationMissedFollowUpMinutes,
+    healthFollowUpLeadDays: Number.isFinite(healthFollowUpLeadDays) && healthFollowUpLeadDays >= 0 && healthFollowUpLeadDays <= 30 ? Math.round(healthFollowUpLeadDays) : DEFAULT_NOTIFICATION_SETTINGS.healthFollowUpLeadDays,
   };
 }
 
