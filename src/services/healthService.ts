@@ -6,6 +6,16 @@ import { requestFamilyMutation } from "./familyPermissionsService";
 
 function records(uid: string, snakeId: string) { return collection(db, "users", uid, "snakes", snakeId, "health"); }
 
+function nextDueAt(record: HealthRecord, scheduledFor: string): string | undefined {
+  const schedule = record.medicationSchedule;
+  if (!schedule || schedule.frequency === "once") return undefined;
+  const base = new Date(scheduledFor);
+  if (Number.isNaN(base.getTime())) return undefined;
+  const hours = schedule.frequency === "twice-daily" ? 12 : schedule.frequency === "every-other-day" ? 48 : schedule.frequency === "custom" ? Number(schedule.intervalHours) : 24;
+  if (!Number.isFinite(hours) || hours <= 0) return undefined;
+  return new Date(base.getTime() + hours * 60 * 60 * 1000).toISOString();
+}
+
 export async function getSnakeHealthRecords(uid: string, snakeId: string): Promise<HealthRecord[]> {
   const owner = await resolveDataOwnerUid(uid);
   const snapshot = await getDocs(query(records(owner, snakeId), orderBy("date", "desc")));
@@ -25,9 +35,11 @@ export async function saveSnakeHealthRecord(uid: string, record: HealthRecord): 
 export async function recordMedicationAdministration(uid: string, record: HealthRecord, administration: MedicationAdministration): Promise<HealthRecord> {
   const current = record.medicationAdministrations ?? [];
   const nextAdministration = { ...administration, recordedBy: uid };
+  const nextSchedule = administration.status === "given" ? { ...record.medicationSchedule, nextDueAt: nextDueAt(record, administration.scheduledFor) } : record.medicationSchedule;
   const next: HealthRecord = {
     ...record,
     medicationAdministrations: [...current.filter((item) => item.id !== administration.id), nextAdministration],
+    medicationSchedule: record.medicationSchedule ? nextSchedule : undefined,
     reminderState: administration.status === "given" ? "active" : record.reminderState,
   };
   return saveSnakeHealthRecord(uid, next);
