@@ -14,6 +14,11 @@ export type SubstrateType =
   | "Sand Mix"
   | "Other";
 
+export type SubstrateMixPart = {
+  material: string;
+  percentage: number;
+};
+
 export type EnvironmentHistoryEntry = {
   id: string;
   snakeId: string;
@@ -44,6 +49,7 @@ export type Enclosure = {
   enclosureType: string;
   substrate: SubstrateType;
   customSubstrate?: string;
+  substrateMix?: SubstrateMixPart[];
 
   // Heating
   heatingType: HeatingType;
