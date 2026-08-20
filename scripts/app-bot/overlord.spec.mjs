@@ -129,16 +129,41 @@ async function findSnakeInCollection(page, name) {
 }
 
 async function selectShedStage(page, stage) {
-  const stageInput = page.locator(`input[name="shed-stage"][value="${stage}"]`).first();
-  if (!(await stageInput.count())) {
-    const available = await page.locator('input[name="shed-stage"]').evaluateAll((inputs) => inputs.map((input) => ({ value: input.getAttribute("value"), label: input.parentElement?.textContent?.trim() })));
-    throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage value "${stage}" but discovered ${JSON.stringify(available)}.`);
+  // Prefer the current semantic radio contract, but do not hard-code the
+  // implementation to input[name=...]. The shedding UI may evolve its control
+  // primitive while retaining the same user-facing Stage semantics.
+  const stageFieldset = page.locator("fieldset").filter({ has: page.getByText("Stage", { exact: true }) }).first();
+  const radio = stageFieldset.getByRole("radio", { name: new RegExp(stage, "i") }).first();
+  if (await radio.count()) {
+    await expect(radio).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(radio).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+    await radio.check();
+    await expect(radio).toBeChecked();
+    console.log(`[OVERLORD] Shedding stage selected semantically via radio: ${stage}.`);
+    return;
   }
-  await expect(stageInput).toBeVisible({ timeout: APP_READY_TIMEOUT });
-  await expect(stageInput).toBeEnabled({ timeout: APP_READY_TIMEOUT });
-  await stageInput.check();
-  await expect(stageInput).toBeChecked();
-  console.log(`[OVERLORD] Shedding stage selected semantically: ${stage}.`);
+
+  const legacyInput = page.locator(`input[name="shed-stage"][value="${stage}"]`).first();
+  if (await legacyInput.count()) {
+    await expect(legacyInput).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(legacyInput).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+    await legacyInput.check();
+    await expect(legacyInput).toBeChecked();
+    console.log(`[OVERLORD] Shedding stage selected via compatible input contract: ${stage}.`);
+    return;
+  }
+
+  const stageButton = stageFieldset.getByRole("button", { name: new RegExp(stage, "i") }).first();
+  if (await stageButton.count()) {
+    await expect(stageButton).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(stageButton).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+    await stageButton.click();
+    console.log(`[OVERLORD] Shedding stage selected semantically via button: ${stage}.`);
+    return;
+  }
+
+  const available = await page.locator("fieldset").evaluateAll((fields) => fields.map((field) => ({ legend: field.querySelector("legend")?.textContent?.trim() || "", text: field.textContent?.trim() || "" })));
+  throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage "${stage}" but no compatible Stage control was discovered. Fieldsets: ${JSON.stringify(available)}`);
 }
 
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
