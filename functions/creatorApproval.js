@@ -22,6 +22,26 @@ function invitationManagerAuthorized(request, callerData = {}) {
     || callerData.profileType === "creator";
 }
 
+exports.reconcileCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  const uid = request.auth.uid;
+  const profileSnapshot = await db.collection("users").doc(uid).get();
+  const profile = profileSnapshot.data() || {};
+  if (profile.profileType !== "creator") throw new HttpsError("permission-denied", "This account is not registered as a Creator.");
+
+  try {
+    const user = await adminAuth.getUser(uid);
+    const existingClaims = user.customClaims || {};
+    if (existingClaims.creator !== true) {
+      await adminAuth.setCustomUserClaims(uid, { ...existingClaims, creator: true });
+    }
+    return { success: true, uid, creator: true, refreshRequired: existingClaims.creator !== true };
+  } catch (error) {
+    console.error("Creator claim reconciliation failed", error);
+    throw new HttpsError("internal", "Unable to reconcile Creator authorization.");
+  }
+});
+
 exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const caller = await db.collection("users").doc(request.auth.uid).get();
@@ -77,16 +97,7 @@ exports.getCreatorTesterInvitation = onCall({ region: "europe-west2" }, async (r
   const snapshot = await db.collection("creatorTesterInvitations").doc(request.auth.uid).get();
   if (!snapshot.exists) return { success: true, invitation: null };
   const data = snapshot.data() || {};
-  return {
-    success: true,
-    invitation: {
-      status: data.status || "pending",
-      invitedBy: data.invitedBy || null,
-      targetEmail: data.targetEmail || null,
-      targetDisplayName: data.targetDisplayName || null,
-      invitationVersion: data.invitationVersion || 1,
-    },
-  };
+  return { success: true, invitation: { status: data.status || "pending", invitedBy: data.invitedBy || null, targetEmail: data.targetEmail || null, targetDisplayName: data.targetDisplayName || null, invitationVersion: data.invitationVersion || 1 } };
 });
 
 exports.acceptCreatorTesterInvitation = onCall({ region: "europe-west2" }, async (request) => {
@@ -96,7 +107,6 @@ exports.acceptCreatorTesterInvitation = onCall({ region: "europe-west2" }, async
   if (!snapshot.exists) throw new HttpsError("not-found", "No Creator Tester invitation was found for this account.");
   const invitation = snapshot.data() || {};
   if (invitation.status !== "pending") throw new HttpsError("failed-precondition", "This Creator Tester invitation is no longer pending.");
-
   try {
     const target = await adminAuth.getUser(request.auth.uid);
     const existingClaims = target.customClaims || {};
@@ -171,9 +181,7 @@ exports.deleteApprovedMorphImage = onCall(
     try {
       await bucket.file(storagePath).delete().catch((error) => console.warn("Approved morph image storage object was already missing", storagePath, error?.message || error));
       await imageRef.delete();
-      if (image.sourceSubmissionId) {
-        await db.collection("morphImageSubmissions").doc(String(image.sourceSubmissionId)).set({ status: "Removed", removedAt: FieldValue.serverTimestamp(), removedBy: request.auth.uid, removalReason: reason }, { merge: true });
-      }
+      if (image.sourceSubmissionId) await db.collection("morphImageSubmissions").doc(String(image.sourceSubmissionId)).set({ status: "Removed", removedAt: FieldValue.serverTimestamp(), removedBy: request.auth.uid, removalReason: reason }, { merge: true });
       await db.collection("creatorAudit").add({ actorUid: request.auth.uid, action: "remove_approved_morph_image", approvedImageId, morphId: image.morphId || null, morphName: image.morphName || null, sourceSubmissionId: image.sourceSubmissionId || null, reason, createdAt: FieldValue.serverTimestamp() });
       return { success: true, approvedImageId, morphId: image.morphId || null, morphName: image.morphName || null };
     } catch (error) {
