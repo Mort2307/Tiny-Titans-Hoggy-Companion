@@ -6,11 +6,7 @@ const syntheticEditedName = "OVERLORD SHED TEST EDITED";
 let createdSnakeId = "";
 
 async function selectShedStage(page, stage) {
-  // Current Shed Tracker uses a semantic <select> for the stage. Prefer the
-  // option text/value contract over brittle assumptions about input names.
-  const stageSelect = page.locator("select").filter({
-    has: page.locator("option", { hasText: new RegExp(`${stage}\\s+phase|Full shed`, "i") }),
-  }).first();
+  const stageSelect = page.locator("select").filter({ has: page.locator("option", { hasText: new RegExp(`${stage}\\s+phase|Full shed`, "i") }) }).first();
   if (await stageSelect.count()) {
     await expect(stageSelect).toBeVisible({ timeout: APP_READY_TIMEOUT });
     await expect(stageSelect).toBeEnabled({ timeout: APP_READY_TIMEOUT });
@@ -54,13 +50,7 @@ async function selectShedStage(page, stage) {
     return;
   }
 
-  const availableControls = await page.locator("input, select, button, [role='radio'], [role='button']").evaluateAll((controls) => controls.map((control) => ({
-    tag: control.tagName.toLowerCase(),
-    role: control.getAttribute("role"),
-    name: control.getAttribute("aria-label") || control.textContent?.trim() || "",
-    value: control.getAttribute("value"),
-    type: control.getAttribute("type"),
-  })).filter((control) => /blue|clear|complete|stage/i.test(`${control.name} ${control.value || ""}`)).slice(0, 40));
+  const availableControls = await page.locator("input, select, button, [role='radio'], [role='button']").evaluateAll((controls) => controls.map((control) => ({ tag: control.tagName.toLowerCase(), role: control.getAttribute("role"), name: control.getAttribute("aria-label") || control.textContent?.trim() || "", value: control.getAttribute("value"), type: control.getAttribute("type") })).filter((control) => /blue|clear|complete|stage/i.test(`${control.name} ${control.value || ""}`)).slice(0, 40));
   throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage "${stage}" but no compatible semantic control was discovered. Candidate controls: ${JSON.stringify(availableControls)}`);
 }
 
@@ -87,145 +77,54 @@ async function continueActiveShedCycle(page) {
   await button.click();
 }
 
+async function expectShedStatus(page, patterns) {
+  const status = page.getByRole("status").first();
+  await expect(status).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  const text = await status.innerText();
+  if (!patterns.some((pattern) => pattern.test(text))) {
+    throw new Error(`[OVERLORD] Shedding success-message contract mismatch. Expected one of ${patterns.map(String).join(", ")}; received ${JSON.stringify(text)}.`);
+  }
+}
+
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
-  test("boot, authenticate and prove the application shell is healthy", async ({ page }) => {
-    const errors = applicationErrors(page);
-    await signIn(page);
-    await assertHealthy(page, errors);
-  });
+  test("boot, authenticate and prove the application shell is healthy", async ({ page }) => { const errors = applicationErrors(page); await signIn(page); await assertHealthy(page, errors); });
 
   test("core application routes render without runtime failures", async ({ page }) => {
-    const errors = applicationErrors(page);
-    await signIn(page);
-    for (const route of ["/", "/snakes", "/snakes/new", "/weights", "/feeding", "/shedding", "/behaviour", "/health", "/morph-library", "/calculator", "/knowledge-base", "/learn", "/adaptive-learning", "/challenge", "/learn/achievements", "/breeding", "/community", "/report-bug", "/feedback", "/account", "/account/profile", "/account/security", "/account/settings", "/account/data-privacy", "/account/personalise"]) {
-      await visit(page, route);
-      await assertHealthy(page, errors);
-      console.log(`[OVERLORD] Passed core route: ${route}`);
-    }
+    const errors = applicationErrors(page); await signIn(page);
+    for (const route of ["/", "/snakes", "/snakes/new", "/weights", "/feeding", "/shedding", "/behaviour", "/health", "/morph-library", "/calculator", "/knowledge-base", "/learn", "/adaptive-learning", "/challenge", "/learn/achievements", "/breeding", "/community", "/report-bug", "/feedback", "/account", "/account/profile", "/account/security", "/account/settings", "/account/data-privacy", "/account/personalise"]) { await visit(page, route); await assertHealthy(page, errors); console.log(`[OVERLORD] Passed core route: ${route}`); }
   });
 
   test("navigation stays inside the declared application surface", async ({ page }) => {
-    const errors = applicationErrors(page);
-    await signIn(page);
-    await visit(page, "/");
+    const errors = applicationErrors(page); await signIn(page); await visit(page, "/");
     const hrefs = await page.locator("a[href]").evaluateAll((anchors) => anchors.map((anchor) => anchor.getAttribute("href")).filter(Boolean));
     const internal = [...new Set(hrefs.filter((href) => href.startsWith("/") && !href.startsWith("//")))];
     const targets = internal.length ? internal.slice(0, 80) : ["/", "/snakes", "/snakes/new", "/weights", "/feeding", "/shedding", "/behaviour", "/health", "/morph-library", "/calculator", "/knowledge-base", "/learn", "/adaptive-learning", "/challenge", "/learn/achievements", "/breeding", "/community", "/report-bug", "/feedback", "/account", "/account/profile", "/account/security", "/account/settings", "/account/data-privacy", "/account/personalise"];
     console.log(`[OVERLORD] Navigation audit discovered ${internal.length} internal anchor target(s); validating ${targets.length} declared/discovered route(s).`);
-    for (const href of targets) {
-      await visit(page, href);
-      await assertHealthy(page, errors);
-    }
+    for (const href of targets) { await visit(page, href); await assertHealthy(page, errors); }
   });
 
   test("Add Snake → save → reopen → edit → save is a real persistence journey", async ({ page }) => {
-    const errors = applicationErrors(page);
-    await signIn(page);
-    await visit(page, "/snakes/new");
-    await page.getByLabel("Snake Name").fill(syntheticName);
-    await page.getByLabel("Species").fill("Western Hognose");
-    await page.getByLabel(/Current Weight/i).fill("42");
-    await dismissPrivacyConsent(page);
-    await page.getByRole("button", { name: /save snake/i }).click();
-    await expect(page).not.toHaveURL(/\/snakes\/new\/?$/);
-    const snakePath = new URL(page.url()).pathname;
-    const match = snakePath.match(/^\/snakes\/([^/]+)$/);
-    expect(match, `Expected save to land on /snakes/:id, received ${snakePath}`).not.toBeNull();
-    createdSnakeId = match?.[1] || "";
-    expect(createdSnakeId).toBeTruthy();
-    await visit(page, `/snakes/${createdSnakeId}`);
-    await expect(page.locator("body")).toContainText(syntheticName);
-    await visit(page, `/snakes/${createdSnakeId}/edit`);
-    const name = page.getByLabel("Snake Name");
-    await expect(name).toHaveValue(syntheticName);
-    await name.fill(syntheticEditedName);
-    await dismissPrivacyConsent(page);
-    await page.getByRole("button", { name: /save snake/i }).click();
-    await expect(page).not.toHaveURL(/\/edit\/?$/);
-    await expect(page.locator("body")).toContainText(syntheticEditedName);
-    await visit(page, `/snakes/${createdSnakeId}`);
-    await expect(page.locator("body")).toContainText(syntheticEditedName);
-    await assertHealthy(page, errors);
-    console.log(`[OVERLORD] Persistence journey passed for known snake ID ${createdSnakeId}.`);
+    const errors = applicationErrors(page); await signIn(page); await visit(page, "/snakes/new");
+    await page.getByLabel("Snake Name").fill(syntheticName); await page.getByLabel("Species").fill("Western Hognose"); await page.getByLabel(/Current Weight/i).fill("42"); await dismissPrivacyConsent(page); await page.getByRole("button", { name: /save snake/i }).click();
+    await expect(page).not.toHaveURL(/\/snakes\/new\/?$/); const snakePath = new URL(page.url()).pathname; const match = snakePath.match(/^\/snakes\/([^/]+)$/); expect(match, `Expected save to land on /snakes/:id, received ${snakePath}`).not.toBeNull(); createdSnakeId = match?.[1] || ""; expect(createdSnakeId).toBeTruthy();
+    await visit(page, `/snakes/${createdSnakeId}`); await expect(page.locator("body")).toContainText(syntheticName); await visit(page, `/snakes/${createdSnakeId}/edit`); const name = page.getByLabel("Snake Name"); await expect(name).toHaveValue(syntheticName); await name.fill(syntheticEditedName); await dismissPrivacyConsent(page); await page.getByRole("button", { name: /save snake/i }).click(); await expect(page).not.toHaveURL(/\/edit\/?$/); await expect(page.locator("body")).toContainText(syntheticEditedName); await visit(page, `/snakes/${createdSnakeId}`); await expect(page.locator("body")).toContainText(syntheticEditedName); await assertHealthy(page, errors); console.log(`[OVERLORD] Persistence journey passed for known snake ID ${createdSnakeId}.`);
   });
 
   test("snake intelligence and event surfaces are reachable for the exact persisted snake", async ({ page }) => {
-    const errors = applicationErrors(page);
-    await signIn(page);
-    expect(createdSnakeId, "The persistence journey must produce a real snake ID before this dependent test runs.").toBeTruthy();
-    await visit(page, "/snakes");
-    const tile = await findSnakeInCollection(page, syntheticEditedName);
-    await expect(tile).toHaveAttribute("aria-label", `Select ${syntheticEditedName}`);
-    await tile.click();
-    await expect(page.getByRole("region", { name: `${syntheticEditedName} trackers` })).toBeVisible({ timeout: APP_READY_TIMEOUT });
-    await visit(page, `/snakes/${createdSnakeId}`);
-    await expect(page.locator("body")).toContainText(syntheticEditedName);
-    for (const route of snakeRoutes(createdSnakeId)) {
-      await visit(page, route);
-      await assertHealthy(page, errors);
-    }
-    console.log(`[OVERLORD] Snake collection → profile → intelligence/event surfaces passed for ${createdSnakeId}.`);
+    const errors = applicationErrors(page); await signIn(page); expect(createdSnakeId, "The persistence journey must produce a real snake ID before this dependent test runs.").toBeTruthy(); await visit(page, "/snakes"); const tile = await findSnakeInCollection(page, syntheticEditedName); await expect(tile).toHaveAttribute("aria-label", `Select ${syntheticEditedName}`); await tile.click(); await expect(page.getByRole("region", { name: `${syntheticEditedName} trackers` })).toBeVisible({ timeout: APP_READY_TIMEOUT }); await visit(page, `/snakes/${createdSnakeId}`); await expect(page.locator("body")).toContainText(syntheticEditedName); for (const route of snakeRoutes(createdSnakeId)) { await visit(page, route); await assertHealthy(page, errors); } console.log(`[OVERLORD] Snake collection → profile → intelligence/event surfaces passed for ${createdSnakeId}.`);
   });
 
   test("tracker entry points expose usable forms rather than dead pages", async ({ page }) => {
-    const errors = applicationErrors(page);
-    await signIn(page);
-    expect(createdSnakeId, "Tracker journey requires the persisted Overlord snake.").toBeTruthy();
-    for (const route of ["/weights", "/feeding", "/shedding", "/behaviour", "/health"]) {
-      await visit(page, route);
-      const controls = page.locator("input, select, textarea, button");
-      await expect(controls.first()).toBeVisible();
-      await assertHealthy(page, errors);
-    }
+    const errors = applicationErrors(page); await signIn(page); expect(createdSnakeId, "Tracker journey requires the persisted Overlord snake.").toBeTruthy(); for (const route of ["/weights", "/feeding", "/shedding", "/behaviour", "/health"]) { await visit(page, route); const controls = page.locator("input, select, textarea, button"); await expect(controls.first()).toBeVisible(); await assertHealthy(page, errors); }
   });
 
   test("shedding is a real single-cycle persistence journey", async ({ page }) => {
-    const errors = applicationErrors(page);
-    await signIn(page);
-    expect(createdSnakeId, "Shedding journey requires the persisted Overlord snake.").toBeTruthy();
-    await visit(page, "/shedding");
-    const snakeSelect = page.locator("#shed-snake");
-    await expect(snakeSelect).toBeVisible();
-    await expect(snakeSelect.locator(`option[value="${createdSnakeId}"]`)).toBeAttached();
-    await snakeSelect.selectOption(createdSnakeId);
-    const snakeId = await snakeSelect.inputValue();
-    expect(snakeId).toBe(createdSnakeId);
-
-    await selectShedStage(page, "Blue");
-    await submitShedForm(page, "Blue/start");
-    await expect(page.getByRole("status")).toContainText(/Blue Phase recorded/i);
-    await assertHealthy(page, errors);
-
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await waitForApplicationShell(page, "shedding reload after Blue Phase");
-    await dismissPrivacyConsent(page);
-    await waitForActiveShedCycle(page, "Blue");
-
-    await continueActiveShedCycle(page);
-    await selectShedStage(page, "Clear");
-    await submitShedForm(page, "Clear/stage");
-    await expect(page.getByRole("status")).toContainText(/Clear Phase recorded/i);
-    await assertHealthy(page, errors);
-
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await waitForApplicationShell(page, "shedding reload after Clear Phase");
-    await dismissPrivacyConsent(page);
-    await waitForActiveShedCycle(page, "Clear");
-
-    await continueActiveShedCycle(page);
-    await selectShedStage(page, "Complete");
-    await page.getByLabel("Final outcome").selectOption("Complete");
-    await submitShedForm(page, "Complete/stage");
-    await expect(page.getByRole("status")).toContainText(/Full shed recorded/i);
-    await assertHealthy(page, errors);
-
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await waitForApplicationShell(page, "shedding final reload");
-    await dismissPrivacyConsent(page);
-    await expect(page.getByText(/Shed Cycle History/i)).toBeVisible({ timeout: APP_READY_TIMEOUT });
-    await expect(page.getByText(/Full Shed/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
-    await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i);
-    await expect(page.locator("#shed-snake")).toHaveValue(snakeId);
-    console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
+    const errors = applicationErrors(page); await signIn(page); expect(createdSnakeId, "Shedding journey requires the persisted Overlord snake.").toBeTruthy(); await visit(page, "/shedding"); const snakeSelect = page.locator("#shed-snake"); await expect(snakeSelect).toBeVisible(); await expect(snakeSelect.locator(`option[value="${createdSnakeId}"]`)).toBeAttached(); await snakeSelect.selectOption(createdSnakeId); const snakeId = await snakeSelect.inputValue(); expect(snakeId).toBe(createdSnakeId);
+    await selectShedStage(page, "Blue"); await submitShedForm(page, "Blue/start"); await expectShedStatus(page, [/Blue\s+Phase\s+(?:recorded|saved)/i, /same shedding cycle is preserved/i]); await assertHealthy(page, errors);
+    await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding reload after Blue Phase"); await dismissPrivacyConsent(page); await waitForActiveShedCycle(page, "Blue");
+    await continueActiveShedCycle(page); await selectShedStage(page, "Clear"); await submitShedForm(page, "Clear/stage"); await expectShedStatus(page, [/Clear\s+Phase\s+(?:recorded|saved)/i, /same shedding cycle is preserved/i]); await assertHealthy(page, errors);
+    await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding reload after Clear Phase"); await dismissPrivacyConsent(page); await waitForActiveShedCycle(page, "Clear");
+    await continueActiveShedCycle(page); await selectShedStage(page, "Complete"); await page.getByLabel("Final outcome").selectOption("Complete"); await submitShedForm(page, "Complete/stage"); await expectShedStatus(page, [/Full\s+shed\s+recorded/i, /Full\s+shed\s+saved/i]); await assertHealthy(page, errors);
+    await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding final reload"); await dismissPrivacyConsent(page); await expect(page.getByText(/Shed Cycle History/i)).toBeVisible({ timeout: APP_READY_TIMEOUT }); await expect(page.getByText(/Full Shed/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT }); await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i); await expect(page.locator("#shed-snake")).toHaveValue(snakeId); console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
   });
 });
