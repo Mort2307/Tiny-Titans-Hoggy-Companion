@@ -1,137 +1,41 @@
 import { test, expect } from "@playwright/test";
+import { applicationErrors, assertHealthy, dismissPrivacyConsent, findSnakeInCollection, signIn, visit, waitForApplicationShell } from "./helpers.mjs";
 
-const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
-const email = process.env.TINY_TITANS_BOT_EMAIL;
-const password = process.env.TINY_TITANS_BOT_PASSWORD;
-const syntheticName = `BOT Overlord ${Date.now()}`;
-const syntheticEditedName = `${syntheticName} Edited`;
+// OVERLORD BOT — authenticated whole-app functional sweep
+//
+// NOTE: This file intentionally exercises user-facing contracts rather than
+// implementation-specific DOM structure. The application may rename action
+// copy (for example Start Cycle -> Start Shed Cycle) without changing the
+// underlying form behaviour.
+
+const APP_READY_TIMEOUT = 15_000;
+const syntheticName = `Overlord-${Date.now()}`;
+const syntheticEditedName = `${syntheticName}-Edited`;
 let createdSnakeId = "";
 
-const APP_READY_TIMEOUT = 20000;
-
 const coreRoutes = [
-  "/", "/snakes", "/snakes/new", "/weights", "/feeding", "/shedding", "/behaviour", "/health",
-  "/morph-library", "/calculator", "/knowledge-base", "/learn", "/adaptive-learning", "/challenge",
-  "/learn/achievements", "/breeding", "/community", "/report-bug", "/feedback", "/account",
-  "/account/profile", "/account/security", "/account/settings", "/account/data-privacy", "/account/personalise",
+  "/", "/snakes", "/snakes/new", "/weights", "/feeding", "/shedding",
+  "/behaviour", "/health", "/morph-library", "/calculator", "/knowledge-base",
+  "/learn", "/adaptive-learning", "/challenge", "/learn/achievements", "/breeding",
+  "/community", "/report-bug", "/feedback", "/account", "/account/profile",
+  "/account/security", "/account/settings", "/account/data-privacy", "/account/personalise",
 ];
 
-const snakeRoutes = (id) => [
-  `/snakes/${id}`, `/snakes/${id}/master-record`, `/snakes/${id}/timeline`, `/snakes/${id}/edit`,
-  `/snakes/${id}/weights`, `/snakes/${id}/feeding`, `/snakes/${id}/shedding`, `/snakes/${id}/behaviour`, `/snakes/${id}/health`,
-];
-
-function applicationErrors(page) {
-  const errors = [];
-  page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
-  page.on("console", (message) => {
-    if (message.type() === "error") errors.push(`console: ${message.text()}`);
-  });
-  page.on("requestfailed", (request) => {
-    errors.push(`requestfailed: ${request.method()} ${request.url()} — ${request.failure()?.errorText || "unknown"}`);
-  });
-  return errors;
-}
-
-async function waitForApplicationShell(page, label = "application shell") {
-  await expect.poll(async () => page.locator("#root > *").count(), {
-    timeout: APP_READY_TIMEOUT,
-    message: `[OVERLORD] ${label} never mounted a React root child.`,
-  }).toBeGreaterThan(0);
-  await expect(page.locator("body")).not.toBeEmpty({ timeout: APP_READY_TIMEOUT });
-  await expect(page.locator("#root")).toContainText(/\S/, { timeout: APP_READY_TIMEOUT });
-}
-
-async function assertHealthy(page, errors) {
-  await waitForApplicationShell(page);
-  await expect(page.locator("body")).not.toContainText(/Application error|Internal Server Error|Cannot read properties of undefined|Unsupported field value: undefined/i);
-  expect(errors).toEqual([]);
-}
-
-async function completeAccountSetup(page) {
-  if (!page.url().includes("/account-setup")) return false;
-  console.log("[OVERLORD] BOT account requires first-run setup; completing synthetic profile.");
-  const setup = page.locator(".account-setup-page");
-  await expect(setup).toBeVisible({ timeout: 10000 });
-  await setup.locator("#displayName").fill("Tiny Titans Overlord BOT");
-  await setup.locator(".setup-section").filter({ hasText: "How will you use Tiny Titans?" }).getByRole("button", { name: /Keeper/ }).click();
-  await setup.locator(".setup-section").filter({ hasText: "Who are you?" }).getByRole("button", { name: /^Adult/ }).click();
-  await setup.locator(".setup-section").filter({ hasText: "What learning level fits you?" }).getByRole("button", { name: /^Adult/ }).click();
-  await setup.locator(".setup-section").filter({ hasText: "What's your reptile experience?" }).getByRole("button", { name: /^Advanced/ }).click();
-  await setup.locator(".setup-section").filter({ hasText: "What else interests you?" }).getByRole("button", { name: /^Keeper/ }).click();
-  await setup.locator("button.setup-submit").click();
-  await expect(page).not.toHaveURL(/\/account-setup(?:\/|\?|$)/, { timeout: 15000 });
-  console.log(`[OVERLORD] BOT account setup complete → ${page.url()}`);
-  return true;
-}
-
-async function dismissPrivacyConsent(page) {
-  const dialog = page.locator('.privacy-consent-backdrop[role="dialog"]');
-  if (!(await dialog.isVisible().catch(() => false))) return false;
-  console.log("[OVERLORD] Privacy consent is blocking interaction; declining optional data for the test account.");
-  const decline = dialog.getByRole("button", { name: "Decline Optional Data", exact: true });
-  await expect(decline).toBeVisible({ timeout: 5000 });
-  await decline.click();
-  await expect(dialog).toBeHidden({ timeout: 10000 });
-  console.log("[OVERLORD] Privacy consent dismissed.");
-  return true;
-}
-
-async function establishAuthenticatedApp(page) {
-  await page.goto(`${baseURL}/`, { waitUntil: "domcontentloaded" });
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const currentUrl = page.url();
-    console.log(`[OVERLORD] Authenticated bootstrap attempt ${attempt}: ${currentUrl}`);
-    if (currentUrl.includes("/login")) throw new Error(`[OVERLORD] Authentication unexpectedly returned to login: ${currentUrl}`);
-    if (currentUrl.includes("/account-setup")) {
-      await completeAccountSetup(page);
-      continue;
-    }
-    await waitForApplicationShell(page, `authenticated bootstrap attempt ${attempt}`);
-    await dismissPrivacyConsent(page);
-    return currentUrl;
-  }
-  throw new Error(`[OVERLORD] Account setup did not complete after 3 bootstrap attempts. Current URL: ${page.url()}`);
-}
-
-async function signIn(page) {
-  if (!email || !password) {
-    test.skip(true, "Authenticated Overlord BOT requires TINY_TITANS_BOT_EMAIL and TINY_TITANS_BOT_PASSWORD.");
-    return;
-  }
-  await page.goto(`${baseURL}/login`, { waitUntil: "domcontentloaded" });
-  await expect(page.getByLabel("Email Address")).toBeVisible({ timeout: 10000 });
-  await page.getByLabel("Email Address").fill(email);
-  await page.getByRole("textbox", { name: "Password" }).fill(password);
-  await page.getByRole("button", { name: /sign in/i }).click();
-  await expect(page).not.toHaveURL(/\/login\/?$/, { timeout: 15000 });
-  await establishAuthenticatedApp(page);
-  await dismissPrivacyConsent(page);
-}
-
-async function visit(page, route) {
-  console.log(`[OVERLORD] Visiting: ${route}`);
-  await page.goto(new URL(route, baseURL).toString(), { waitUntil: "domcontentloaded" });
-  const currentUrl = page.url();
-  console.log(`[OVERLORD] Navigation result: ${route} → ${currentUrl || "<empty URL>"}`);
-  if (currentUrl.includes("/login")) throw new Error(`[OVERLORD] Route ${route} redirected to login: ${currentUrl}`);
-  if (currentUrl.includes("/account-setup")) throw new Error(`[OVERLORD] Route ${route} is still blocked by account setup: ${currentUrl}`);
-  await waitForApplicationShell(page, `route ${route}`);
-  await dismissPrivacyConsent(page);
-  return currentUrl;
-}
-
-async function findSnakeInCollection(page, name) {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const tile = page.getByRole("button", { name: new RegExp(`^Select ${escaped}$`) }).first();
-  await expect(tile).toBeVisible({ timeout: APP_READY_TIMEOUT });
-  return tile;
+function snakeRoutes(id) {
+  return [
+    `/snakes/${id}`,
+    `/snakes/${id}/master-record`,
+    `/snakes/${id}/timeline`,
+    `/snakes/${id}/edit`,
+    `/snakes/${id}/weights`,
+    `/snakes/${id}/feeding`,
+    `/snakes/${id}/shedding`,
+    `/snakes/${id}/behaviour`,
+    `/snakes/${id}/health`,
+  ];
 }
 
 async function selectShedStage(page, stage) {
-  // Test the user-facing Stage contract rather than a specific DOM layout.
-  // The current UI exposes radios with value="Blue|Clear|Complete" and labels
-  // such as "🔵 Blue Phase". Legacy and button contracts remain supported.
   const stagePattern = new RegExp(`(?:^|\\b)${stage}(?:\\s+Phase)?(?:$|\\b)`, "i");
 
   const legacyInput = page.locator(`input[name="shed-stage"][value="${stage}"]`).first();
@@ -171,6 +75,27 @@ async function selectShedStage(page, stage) {
     type: control.getAttribute("type"),
   })).filter((control) => /blue|clear|complete|stage/i.test(`${control.name} ${control.value || ""}`)).slice(0, 40));
   throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage "${stage}" but no compatible semantic control was discovered. Candidate controls: ${JSON.stringify(availableControls)}`);
+}
+
+/**
+ * Find the actual submit control for the shedding form.
+ *
+ * Do NOT couple Overlord to action copy such as "Start Cycle". That text is
+ * presentation. The stable user-facing contract is the form containing the
+ * shed-stage control and its submit button. This also lets Overlord validate
+ * older deployed bundles while the copy is being rolled forward.
+ */
+async function submitShedForm(page, expectedAction = "stage") {
+  const form = page.locator('form:has(input[name="shed-stage"])').first();
+  await expect(form).toBeVisible({ timeout: APP_READY_TIMEOUT });
+
+  const submit = form.locator('button[type="submit"]').first();
+  await expect(submit).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  await expect(submit).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+
+  const label = ((await submit.innerText()) || (await submit.getAttribute("aria-label")) || "").trim();
+  console.log(`[OVERLORD] Shedding submit control discovered (${expectedAction}): ${JSON.stringify(label)}.`);
+  await submit.click();
 }
 
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
@@ -278,7 +203,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     expect(snakeId).toBe(createdSnakeId);
 
     await selectShedStage(page, "Blue");
-    await page.getByRole("button", { name: /Start Cycle/i }).click();
+    await submitShedForm(page, "Blue/start");
     await expect(page.getByRole("status")).toContainText(/Blue Phase recorded/i);
     await assertHealthy(page, errors);
 
@@ -290,7 +215,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
 
     await page.getByRole("button", { name: /Record Next Stage/i }).click();
     await selectShedStage(page, "Clear");
-    await page.getByRole("button", { name: /Record Stage/i }).click();
+    await submitShedForm(page, "Clear/next stage");
     await expect(page.getByRole("status")).toContainText(/Clear Phase recorded/i);
     await assertHealthy(page, errors);
 
@@ -302,7 +227,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await page.getByRole("button", { name: /Record Next Stage/i }).click();
     await selectShedStage(page, "Complete");
     await page.getByLabel("Final outcome").selectOption("Complete");
-    await page.getByRole("button", { name: /Record Stage/i }).click();
+    await submitShedForm(page, "Complete/final stage");
     await expect(page.getByRole("status")).toContainText(/Full shed recorded/i);
     await assertHealthy(page, errors);
 
