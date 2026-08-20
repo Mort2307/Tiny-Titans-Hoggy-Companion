@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { acceptFamilyInvite, createFamily, declineFamilyInvite, getFamilyForUser, getFamilyPendingInvites, getMyFamilyInvites, inviteFamilyMember, removeFamilyMember, type FamilyAccount, type FamilyInvite } from "../services/familyService";
 import { decideFamilyApproval, getFamilyApprovals, getMemberPermissions, permissionActions, permissionAreas, permissionLabel, resetMemberPermissions, setMemberPermission, type FamilyApproval, type FamilyPermissionKey, type PermissionMode, type FamilyPermissions } from "../services/familyPermissionsService";
+import { enableNotifications, getNotificationPermissionState } from "../services/notificationService";
 import BackHomeButton from "../components/BackHomeButton";
 
 const modeOptions: PermissionMode[] = ["allow", "deny", "verify"];
@@ -21,6 +22,7 @@ export default function FamilyAccount() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [notificationPermission, setNotificationPermission] = useState(getNotificationPermissionState());
 
   const linkInviteId = searchParams.get("invite");
   const linkInvite = useMemo(() => invites.find((invite) => invite.id === linkInviteId) ?? null, [invites, linkInviteId]);
@@ -42,7 +44,18 @@ export default function FamilyAccount() {
     finally { setLoading(false); }
   }, [user]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); setNotificationPermission(getNotificationPermissionState()); }, [load]);
+
+  async function enableFamilyNotifications() {
+    if (!user) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const permission = await enableNotifications(user.uid);
+      setNotificationPermission(permission);
+      setMessage(permission === "granted" ? "Family notifications are enabled on this device." : permission === "denied" ? "Notifications are blocked by your browser. Allow them in the browser site settings, then try again." : "This browser cannot provide Tiny Titans notifications.");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to enable notifications on this device."); }
+    finally { setBusy(false); }
+  }
 
   async function selectMember(uid: string) {
     setSelectedMember(uid); setPermissions(null); setError("");
@@ -114,8 +127,10 @@ export default function FamilyAccount() {
       {selectedMember && permissions && family.ownerUid === user.uid && <div className="account-section"><div className="account-detail"><div><h2>🛡️ Family Permissions</h2><p className="account-button-subtext">Control what this member can do. <strong>Allow</strong> is immediate, <strong>Deny</strong> blocks the action, and <strong>Verify</strong> sends a proposed change to Family Approval before it becomes official.</p></div><button type="button" className="account-button" disabled={busy} onClick={() => void resetPermissions()}>Reset recommended</button></div><div className="creator-list">{permissionAreas.map((area) => <div className="account-section" key={area.id}><h3>{area.icon} {area.label}</h3>{permissionActions.map((action) => { const key = `${area.id}.${action.id}` as FamilyPermissionKey; return <div className="account-detail" key={key}><span>{action.label}</span><select className="account-input" value={permissions[key]} disabled={busy} onChange={(event) => void changePermission(key, event.target.value as PermissionMode)}>{modeOptions.map((mode) => <option key={mode} value={mode}>{mode === "allow" ? "🟢 Allow" : mode === "deny" ? "🔴 Deny" : "🟠 Verify"}</option>)}</select><small>{permissionLabel(permissions[key])}</small></div>; })}</div>)}</div></div>}
       {family.ownerUid === user.uid && family.memberUids.length < 3 && <div className="account-section"><h2>➕ Add Family Member</h2><p>Invite an existing Tiny Titans account <strong>or someone who has never used Tiny Titans</strong>. The secure link works for both. They keep their own login, age/experience profile and personal learning progress while the family reptile data is shared.</p><input className="account-input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Eli or Megs' email address" autoComplete="email" /><button type="button" className="account-button account-button--highlight" disabled={busy || !email.trim()} onClick={() => void sendInvite()}>📨 Create &amp; Share Family Link</button></div>}
       {family.ownerUid === user.uid && outgoingInvites.length > 0 && <div className="account-section"><h2>🔗 Active Family Links</h2><p className="account-button-subtext">Pending links can be shared anywhere. The link is tied to the invited email, so another person cannot use it to join.</p>{outgoingInvites.map((invite) => <div className="account-detail" key={invite.id}><div><strong>{invite.targetEmail}</strong><p className="account-button-subtext">Pending invitation · <span>{getInviteLink(invite)}</span></p></div><button type="button" className="account-button" disabled={busy} onClick={() => void copyInviteLink(invite)}>📋 Copy Link</button></div>)}</div>}
+      <div className="account-section"><h2>🔔 Family Notifications</h2><p>Family invitations, approval requests and approval decisions use Tiny Titans notifications. Notification permission is stored by the browser, while the device token is registered to your account.</p><div className="account-detail"><span>Browser permission</span><strong>{notificationPermission}</strong></div>{notificationPermission === "granted" ? <p className="creator-success" role="status">✓ Notifications are permitted on this device. If a Family event occurs, the backend can target this device when a valid token is registered.</p> : <button type="button" className="account-button account-button--highlight" disabled={busy || notificationPermission === "denied"} onClick={() => void enableFamilyNotifications()}>{notificationPermission === "denied" ? "🔒 Notifications blocked — allow in browser settings" : "🔔 Enable Family Notifications"}</button>}</div>
       {family.ownerUid === user.uid && <div className="account-section"><h2>🔔 Family Approval Queue</h2>{approvals.filter((item) => item.status === "pending").length === 0 ? <p>No pending approvals. Your family is all clear.</p> : approvals.filter((item) => item.status === "pending").map((item) => <div className="account-detail" key={item.id}><div><strong>{item.title}</strong><p className="account-button-subtext">{item.requesterName} · {item.description}</p></div><div><button type="button" className="account-button account-button--highlight" disabled={busy} onClick={() => void decide(item.id, "approved")}>✅ Approve</button><button type="button" className="account-button" disabled={busy} onClick={() => void decide(item.id, "rejected")}>❌ Reject</button></div></div>)}</div>}
       <div className="account-section"><h2>🧪 Safe Family Sandbox</h2><p>Kids and adults can experiment with genetics, hypothetical pairings and breeding ideas without changing the real family records. Sandbox calculations are isolated from production data.</p><Link className="account-button account-button--highlight" to="/sandbox">🧪 Open Family Sandbox</Link></div>
+      <div className="account-section"><h2>💬 Family Communication</h2><p>Need help with a Tiny Titans issue or want to follow up on feedback?</p><div className="account-detail"><Link className="account-button account-button--highlight" to="/conversations">💬 My Conversations</Link><Link className="account-button" to="/my-issue-reports">🐛 My Reports</Link></div></div>
       <div className="account-section"><h2>🧠 Intelligent Family Experience</h2><p>Tiny Titans uses each member's age band and experience level to adapt explanations, learning content and what is surfaced to them. Permissions control the actions they can take, while the underlying husbandry records remain shared.</p><div className="account-detail"><span>Shared data</span><strong>🐍 Snakes · 🍽️ Feedings · ⚖️ Weights · 🐍 Sheds · 🧬 Breeding</strong></div></div>
     </>}
   </div></section>;
