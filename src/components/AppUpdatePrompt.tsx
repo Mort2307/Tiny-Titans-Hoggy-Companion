@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
-const UPDATE_PENDING_KEY = "__tinyTitansUpdatePending";
 const UPDATE_TIMEOUT_MS = 8000;
 
 export function notifyTinyTitansUpdateAvailable() {
