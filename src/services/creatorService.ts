@@ -7,12 +7,37 @@ import type { Feedback } from "../types/feedback";
 import type { ApprovedMorphImage, MorphImageSubmission, MorphSubmissionStatus } from "../types/morphSubmission";
 import { getCanonicalGlobalStats } from "./trackerStatsService";
 import { resolveMorph } from "../data/morphResolver";
+
 export type FounderApplication = { id: string; uid: string; email: string; displayName: string; reason: string; experience: string; contribution: string; status: "Pending" | "Approved" | "Declined"; createdAt?: unknown; updatedAt?: unknown };
 export type CommunityUserLocation = { city: string; country: string };
 export type GlobalStats = {
-  registeredUsers: number; activeUsers: number; onlineUsers?: number; activeTodayUsers?: number; activeWeekUsers?: number; activeMonthUsers?: number; activatedUsers?: number; engagedUsers?: number; usersWithData?: number; incompleteUserProfiles?: number;
-  snakeProfiles: number; mealsFed: number; weightLogs: number; validWeightLogs?: number; invalidWeightLogs?: number; totalWeightKg: number; totalWeightLb: number; shedsLogged: number; validShedLogs?: number; invalidShedLogs?: number; totalShedLengthCm: number; totalShedLengthIn?: number; geneticsCalculations: number; dataQualityIssues?: number;
+  registeredUsers: number;
+  activeUsers: number;
+  onlineUsers?: number;
+  activeTodayUsers?: number;
+  activeWeekUsers?: number;
+  activeMonthUsers?: number;
+  activatedUsers?: number;
+  engagedUsers?: number;
+  usersWithData?: number;
+  incompleteUserProfiles?: number;
+  snakeProfiles: number;
+  mealsFed: number;
+  weightLogs: number;
+  validWeightLogs?: number;
+  invalidWeightLogs?: number;
+  legacyWeightCandidates?: number;
+  totalWeightKg: number;
+  totalWeightLb: number;
+  shedsLogged: number;
+  validShedLogs?: number;
+  invalidShedLogs?: number;
+  totalShedLengthCm: number;
+  totalShedLengthIn?: number;
+  geneticsCalculations: number;
+  dataQualityIssues?: number;
 };
+
 export async function submitFounderApplication(input: Omit<FounderApplication, "id" | "status" | "createdAt" | "updatedAt">) { const ref = await addDoc(collection(db, "founderApplications"), { ...input, status: "Pending", createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); return ref.id; }
 export async function submitFeedback(input: Omit<Feedback, "id" | "createdAt" | "updatedAt">) { if (!input.userId) throw new Error("You must be signed in to send feedback."); if (!input.title.trim() || !input.message.trim()) throw new Error("Please provide a title and feedback message."); const ref = await addDoc(collection(db, "feedback"), { ...input, status: input.status ?? "New", title: input.title.trim(), message: input.message.trim(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); return ref.id; }
 export async function getCreatorFeedback(): Promise<Feedback[]> { const snapshot = await getDocs(query(collection(db, "feedback"), orderBy("createdAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Feedback, "id">) })); }
