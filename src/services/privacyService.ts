@@ -2,8 +2,10 @@ import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firest
 import { db } from "../firebase/config";
 import type { PrivacyPreferences } from "../types/privacy";
 
+export const PRIVACY_CONSENT_VERSION = "2026-08-20-privacy-community-husbandry-v3";
+
 const DEFAULT_PRIVACY: PrivacyPreferences = {
-  consentVersion: "1.1",
+  consentVersion: PRIVACY_CONSENT_VERSION,
   communityLocation: false,
   anonymousAnalytics: false,
   communityHusbandryData: false,
@@ -24,7 +26,7 @@ export async function savePrivacyPreferences(
   if (!uid) throw new Error("Privacy preferences require an authenticated user.");
   await setDoc(doc(db, "users", uid, "settings", "privacy"), {
     ...next,
-    consentVersion: DEFAULT_PRIVACY.consentVersion,
+    consentVersion: PRIVACY_CONSENT_VERSION,
     consentUpdatedAt: serverTimestamp(),
   }, { merge: true });
 }
