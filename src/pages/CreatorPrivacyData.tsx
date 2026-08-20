@@ -5,7 +5,7 @@ import { clearCommunityLocation, getPrivacyPreferences, savePrivacyPreferences }
 import type { PrivacyPreferences } from "../types/privacy";
 import "../styles/CreatorTools.css";
 
-const EMPTY: PrivacyPreferences = { consentVersion: "", communityLocation: false, anonymousAnalytics: false, productUpdates: false };
+const EMPTY: PrivacyPreferences = { consentVersion: "", communityLocation: false, anonymousAnalytics: false, communityHusbandryData: false, productUpdates: false };
 
 export default function CreatorPrivacyData() {
   const { user } = useAuth();
@@ -44,9 +44,11 @@ export default function CreatorPrivacyData() {
     {loading ? <div className="creator-loading">Loading privacy controls…</div> : <>
       <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">CONSENT STATUS</span><h2>Current account permissions</h2><p>Consent version: {preferences.consentVersion || "Not recorded"}</p></div></div><div className="creator-global-grid">
         <article className="creator-global-card"><span>📊</span><label>Anonymous analytics</label><small>{preferences.anonymousAnalytics ? "Enabled" : "Disabled"}</small><button type="button" disabled={saving} onClick={() => void save({ ...preferences, anonymousAnalytics: !preferences.anonymousAnalytics })}>{preferences.anonymousAnalytics ? "Disable" : "Enable"}</button></article>
+        <article className="creator-global-card"><span>🌍</span><label>Community husbandry data</label><small>{preferences.communityHusbandryData ? "Enabled" : "Disabled"}</small><p>Allow anonymous aggregate feeding, weight and shedding data to contribute to Tiny Titans community intelligence. Your individual records are never displayed in the global totals.</p><button type="button" disabled={saving} onClick={() => void save({ ...preferences, communityHusbandryData: !preferences.communityHusbandryData })}>{preferences.communityHusbandryData ? "Disable" : "Enable"}</button></article>
         <article className="creator-global-card"><span>📰</span><label>Product updates</label><small>{preferences.productUpdates ? "Enabled" : "Disabled"}</small><button type="button" disabled={saving} onClick={() => void save({ ...preferences, productUpdates: !preferences.productUpdates })}>{preferences.productUpdates ? "Disable" : "Enable"}</button></article>
-        <article className="creator-global-card"><span>🌍</span><label>Community location</label><small>{preferences.communityLocation ? "Enabled" : "Disabled"}</small><p>{preferences.communityLocation && preferences.city && preferences.country ? `${preferences.city}, ${preferences.country}` : "No community location recorded."}</p>{preferences.communityLocation && <button type="button" disabled={saving} onClick={() => void disableLocation()}>Disable & clear location</button>}</article>
+        <article className="creator-global-card"><span>📍</span><label>Community location</label><small>{preferences.communityLocation ? "Enabled" : "Disabled"}</small><p>{preferences.communityLocation && preferences.city && preferences.country ? `${preferences.city}, ${preferences.country}` : "No community location recorded."}</p>{preferences.communityLocation && <button type="button" disabled={saving} onClick={() => void disableLocation()}>Disable & clear location</button>}</article>
       </div></section>
+      <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">COMMUNITY DATA POLICY</span><h2>How community husbandry intelligence works</h2><p>Only users who enable Community husbandry data contribute to aggregate feeding, weight and shedding statistics. Creator or admin status does not exclude a consenting contributor. Individual snake records are never shown as part of the global totals.</p></div></div></section>
       <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">LOCATION SAFETY</span><h2>Community Globe policy</h2><p>Community locations are intended to identify an approximate town/city and country only. Exact GPS coordinates and home addresses must never be displayed on the Creator Globe.</p></div></div></section>
     </>}
   </main>;
