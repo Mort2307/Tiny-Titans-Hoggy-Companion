@@ -6,6 +6,20 @@ const password = process.env.TINY_TITANS_BOT_PASSWORD;
 
 export const APP_READY_TIMEOUT = 15_000;
 
+export function snakeRoutes(snakeId) {
+  return [
+    `/snakes/${snakeId}`,
+    `/snakes/${snakeId}/master-record`,
+    `/snakes/${snakeId}/timeline`,
+    `/snakes/${snakeId}/edit`,
+    `/snakes/${snakeId}/weights`,
+    `/snakes/${snakeId}/feeding`,
+    `/snakes/${snakeId}/shedding`,
+    `/snakes/${snakeId}/behaviour`,
+    `/snakes/${snakeId}/health`,
+  ];
+}
+
 export function applicationErrors(page) {
   const errors = [];
   page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
