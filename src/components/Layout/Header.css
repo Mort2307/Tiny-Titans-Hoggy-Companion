@@ -1,35 +1,27 @@
 .app-header {
-
   display: flex;
-
   align-items: center;
-
   gap: 15px;
-
   padding: 15px;
-
 }
-
 
 .logo-link {
-
   display: flex;
-
   align-items: center;
-
 }
 
-
 .tiny-titans-logo {
-
   width: 70px;
-
   height: 70px;
-
   object-fit: cover;
-
   border-radius: 50%;
-
   cursor: pointer;
+}
 
+.app-brand-name {
+  color: #f7f3fb;
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
