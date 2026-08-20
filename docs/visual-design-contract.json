@@ -1,5 +1,5 @@
 {
-  "version": "2026-08-19",
+  "version": "2026-08-20",
   "name": "Tiny Titans Visual UX Contract",
   "purpose": "Keep visual identity consistent while allowing each page to use the composition best suited to its job.",
   "brand": {
@@ -35,12 +35,17 @@
     "creator": "operations-command-centre"
   },
   "responsiveViewports": [
-    {"name":"mobile","width":390,"height":844},
+    {"name":"mobile320","width":320,"height":700},
+    {"name":"mobile360","width":360,"height":780},
+    {"name":"mobile390","width":390,"height":844},
+    {"name":"mobile414","width":414,"height":896},
     {"name":"tablet","width":834,"height":1112},
     {"name":"desktop","width":1440,"height":1000}
   ],
   "auditRules": {
     "horizontalOverflow": "fail",
+    "viewportClipping": "fail",
+    "hiddenOverflowClipping": "fail",
     "missingPrimaryHeading": "warning",
     "excessiveInteractiveDensity": 18,
     "excessiveTextDensity": 1200,
