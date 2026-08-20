@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { MorphDefinition } from "../data/morphs";
 import { normaliseSearch, rankMorphSearch } from "../utils/searchRelevance";
 
@@ -17,47 +17,6 @@ function canonicalKey(value: unknown): string {
 export default function MultiSelectDropdown({ title, options, selected, setSelected, onMorphResolved }: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const pointerId = useRef<number | null>(null);
-  const startY = useRef(0);
-  const startScrollTop = useRef(0);
-  const dragged = useRef(false);
-
-  const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    const element = scrollRef.current;
-    if (!element) return;
-    pointerId.current = event.pointerId;
-    startY.current = event.clientY;
-    startScrollTop.current = element.scrollTop;
-    dragged.current = false;
-    element.setPointerCapture?.(event.pointerId);
-  }, []);
-
-  const onPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (pointerId.current !== event.pointerId) return;
-    const element = scrollRef.current;
-    if (!element) return;
-    const deltaY = event.clientY - startY.current;
-    if (Math.abs(deltaY) > 5) dragged.current = true;
-    if (!dragged.current) return;
-    element.scrollTop = startScrollTop.current - deltaY;
-    event.preventDefault();
-  }, []);
-
-  const endDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (pointerId.current !== event.pointerId) return;
-    const element = scrollRef.current;
-    if (element?.hasPointerCapture?.(event.pointerId)) element.releasePointerCapture(event.pointerId);
-    pointerId.current = null;
-  }, []);
-
-  const onClickCapture = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (!dragged.current) return;
-    event.preventDefault();
-    event.stopPropagation();
-    dragged.current = false;
-  }, []);
 
   const morphOptions = useMemo(() => {
     const byGeneId = new Map<string, MorphDefinition>();
@@ -72,10 +31,21 @@ export default function MultiSelectDropdown({ title, options, selected, setSelec
 
   const morphByCanonicalValue = useMemo(() => {
     const map = new Map<string, MorphDefinition>();
+
+    // Canonical IDs and exact display names are authoritative. Aliases are
+    // lookup-only and must never overwrite an exact morph identity.
     for (const morph of morphOptions) {
       map.set(canonicalKey(morph.geneId), morph);
-      map.set(canonicalKey(morph.name), morph);
-      for (const alias of morph.aliases ?? []) map.set(canonicalKey(alias), morph);
+    }
+    for (const morph of morphOptions) {
+      const key = canonicalKey(morph.name);
+      if (key && !map.has(key)) map.set(key, morph);
+    }
+    for (const morph of morphOptions) {
+      for (const alias of morph.aliases ?? []) {
+        const key = canonicalKey(alias);
+        if (key && !map.has(key)) map.set(key, morph);
+      }
     }
     return map;
   }, [morphOptions]);
@@ -85,7 +55,7 @@ export default function MultiSelectDropdown({ title, options, selected, setSelec
     [morphOptions, search],
   );
 
-  const selectedGeneIds = useMemo(() => {
+  const selectedMorphIds = useMemo(() => {
     const ids = new Set<string>();
     for (const value of selected) {
       const morph = morphByCanonicalValue.get(canonicalKey(value));
@@ -100,7 +70,7 @@ export default function MultiSelectDropdown({ title, options, selected, setSelec
   }
 
   function isOptionSelected(morph: MorphDefinition): boolean {
-    return selectedGeneIds.has(morph.geneId);
+    return selectedMorphIds.has(morph.geneId);
   }
 
   function toggleOption(morph: MorphDefinition): void {
@@ -158,15 +128,7 @@ export default function MultiSelectDropdown({ title, options, selected, setSelec
             )}
           </div>
 
-          <div
-            ref={scrollRef}
-            className="multi-select-options grab-scroll"
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-            onClickCapture={onClickCapture}
-          >
+          <div className="multi-select-options">
             {filteredOptions.length > 0 ? filteredOptions.map((morph) => {
               const isSelected = isOptionSelected(morph);
               return (
