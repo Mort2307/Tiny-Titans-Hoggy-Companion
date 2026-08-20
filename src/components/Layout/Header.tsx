@@ -17,7 +17,7 @@ function Header() {
         />
       </Link>
 
-      <h1>Tiny Titans</h1>
+      <span className="app-brand-name" aria-label="Tiny Titans">Tiny Titans</span>
     </header>
   );
 }
