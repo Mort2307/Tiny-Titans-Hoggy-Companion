@@ -62,6 +62,14 @@ async function auditPage(page, route, viewport) {
         const style = getComputedStyle(element);
         return element.scrollWidth > element.clientWidth + 2 && ["auto", "scroll"].includes(style.overflowX);
       };
+      const hasScrollableAncestor = (element) => {
+        let parent = element.parentElement;
+        while (parent && parent !== document.body) {
+          if (isScrollableX(parent)) return true;
+          parent = parent.parentElement;
+        }
+        return false;
+      };
       const body = document.body;
       const root = document.documentElement;
       const text = body?.innerText || "";
@@ -91,15 +99,18 @@ async function auditPage(page, route, viewport) {
       const suspiciousButtons = buttons.filter((button) => !button.disabled && !button.getAttribute("aria-label") && !(button.textContent || "").trim()).length;
 
       const allVisible = [...document.querySelectorAll("body *")].filter(isVisibleElement);
+
+      // IMPORTANT: vertical position outside the viewport is normal page scrolling.
+      // The previous implementation treated every element below the fold as
+      // "viewport clipping", producing 100+ false failures on every mobile route.
+      // A genuine viewport-clipping failure here means horizontal content that
+      // cannot be reached through an intentional horizontal scroll container.
       const viewportClipped = allVisible.filter((element) => {
         if (["HTML", "BODY"].includes(element.tagName)) return false;
+        if (hasScrollableAncestor(element)) return false;
         const rect = element.getBoundingClientRect();
-        if (rect.left >= -2 && rect.right <= viewportWidth + 2 && rect.top >= -2 && rect.bottom <= viewportHeight + 2) return false;
-        let parent = element.parentElement;
-        while (parent && parent !== body) {
-          if (isScrollableX(parent)) return false;
-          parent = parent.parentElement;
-        }
+        const horizontallyOutside = rect.left < -2 || rect.right > viewportWidth + 2;
+        if (!horizontallyOutside) return false;
         const position = getComputedStyle(element).position;
         return position !== "fixed" && position !== "sticky";
       });
@@ -124,7 +135,9 @@ async function auditPage(page, route, viewport) {
       });
       const snakeCollection = snakeItems.length ? {
         count: snakeItems.length,
-        clipped: snakeItems.filter((item) => item.left < 0 || item.right > viewportWidth || item.top < 0 || item.bottom > viewportHeight).length,
+        // Vertical position outside the viewport is expected because the page scrolls.
+        // Only horizontal escape from the viewport is a collection-layout failure.
+        clipped: snakeItems.filter((item) => item.left < -2 || item.right > viewportWidth + 2).length,
         items: snakeItems,
       } : null;
 
@@ -158,10 +171,10 @@ async function auditPage(page, route, viewport) {
 
     const findings = [];
     if (metrics.overflow > 2) findings.push({ severity: "error", code: "horizontal-overflow", message: `Rendered content exceeds the ${viewport.name} viewport by ${Math.round(metrics.overflow)}px.` });
-    if (metrics.viewportClippedCount > 0) findings.push({ severity: "error", code: "viewport-clipping", message: `${metrics.viewportClippedCount} visible element(s) extend beyond the ${viewport.name} viewport.` });
+    if (metrics.viewportClippedCount > 0) findings.push({ severity: "error", code: "viewport-clipping", message: `${metrics.viewportClippedCount} visible element(s) extend horizontally beyond the ${viewport.name} viewport.` });
     if (metrics.clippedContainerCount > 0) findings.push({ severity: "error", code: "content-clipped-by-container", message: `${metrics.clippedContainerCount} visible container(s) hide content wider than their box.` });
     if (metrics.textClippedCount > 0) findings.push({ severity: "warning", code: "text-clipping", message: `${metrics.textClippedCount} visible text element(s) appear horizontally clipped.` });
-    if (metrics.snakeCollection?.clipped) findings.push({ severity: "error", code: "snake-card-clipping", message: `${metrics.snakeCollection.clipped} of ${metrics.snakeCollection.count} visible snake item(s) extend outside the ${viewport.name} viewport.` });
+    if (metrics.snakeCollection?.clipped) findings.push({ severity: "error", code: "snake-card-clipping", message: `${metrics.snakeCollection.clipped} of ${metrics.snakeCollection.count} visible snake item(s) extend horizontally outside the ${viewport.name} viewport.` });
     if (!metrics.primaryHeading) findings.push({ severity: "warning", code: "missing-h1", message: "No primary h1 heading was detected." });
     if (metrics.interactiveCount > 18) findings.push({ severity: "warning", code: "interaction-density", message: `${metrics.interactiveCount} interactive controls are competing for attention.` });
     if (metrics.textLength > 1200) findings.push({ severity: "warning", code: "text-density", message: `${metrics.textLength} rendered text characters suggest progressive disclosure may help.` });
@@ -220,9 +233,10 @@ async function main() {
         "Rendered evidence is captured with Playwright at mobile, tablet and desktop sizes.",
         "Browser-context visibility helpers are declared inside page.evaluate so the audit cannot fail from Node/browser scope leakage.",
         "The bot inspects actual DOM geometry rather than trusting CSS intent or screenshots alone.",
-        "Every visible element is checked for viewport clipping, including nested grid/flex children.",
-        "Hidden-overflow containers are inspected for silently clipped content.",
-        "My Snakes items are treated as a dedicated responsive collection and checked individually.",
+        "Vertical position below the fold is treated as normal page scrolling, not viewport clipping.",
+        "Viewport clipping checks horizontal escape from the viewport while respecting intentional horizontal scroll containers.",
+        "Hidden-overflow containers are inspected separately for silently clipped content.",
+        "My Snakes items are treated as a dedicated responsive collection and checked individually for horizontal clipping.",
         "Explicitly horizontally scrollable containers are not falsely reported as page overflow.",
         "Heuristics flag hierarchy, density, touch-target, action-clarity and runtime problems.",
         "Route-specific visual concepts are selected by page purpose rather than one universal template.",
