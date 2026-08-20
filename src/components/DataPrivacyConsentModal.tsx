@@ -2,11 +2,11 @@ import { useState } from "react";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useAuth } from "../context/useAuth";
 import { db } from "../firebase/config";
+import { savePrivacyPreferences } from "../services/privacyService";
 
-export const CONSENT_VERSION = "2026-08-18-privacy-location-v2";
+export const CONSENT_VERSION = "2026-08-20-privacy-community-husbandry-v3";
 
 type Props = { onAccepted: () => void };
-
 type CoarseLocation = { city: string; country: string; areaId: string; latitude: number; longitude: number };
 const CELL_SIZE_DEGREES = 0.05;
 
@@ -21,6 +21,7 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
   const [customising, setCustomising] = useState(false);
   const [location, setLocation] = useState(Boolean(profile?.dataCollectionPreferences?.approximateLocation));
   const [analytics, setAnalytics] = useState(Boolean(profile?.dataCollectionPreferences?.analytics));
+  const [communityHusbandryData, setCommunityHusbandryData] = useState(false);
   const [updates, setUpdates] = useState(Boolean(profile?.dataCollectionPreferences?.productUpdates));
   const [city, setCity] = useState(profile?.approximateLocation?.city ?? "");
   const [country, setCountry] = useState(profile?.approximateLocation?.country ?? "");
@@ -28,7 +29,7 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState("");
 
-  async function saveChoices(next: { location: boolean; analytics: boolean; updates: boolean }) {
+  async function saveChoices(next: { location: boolean; analytics: boolean; communityHusbandryData: boolean; updates: boolean }) {
     if (!user) return;
     setError(""); setSaving(true);
     try {
@@ -44,7 +45,9 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
         }
         approximateLocation = { city: resolved.city, country: resolved.country, source: "coarse-geolocation", visibleToCreator: true, areaId: resolved.areaId, latitude: resolved.latitude, longitude: resolved.longitude, updatedAt: serverTimestamp() };
       }
+
       await setDoc(doc(db, "users", user.uid), { dataCollectionPreferences: { approximateLocation: next.location, analytics: next.analytics, productUpdates: next.updates, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() }, approximateLocation, updatedAt: serverTimestamp() }, { merge: true });
+      await savePrivacyPreferences(user.uid, { communityLocation: next.location, anonymousAnalytics: next.analytics, communityHusbandryData: next.communityHusbandryData, productUpdates: next.updates });
       await refreshProfile();
       window.localStorage.setItem(`tinytitans:privacy-consent:${user.uid}`, CONSENT_VERSION);
       onAccepted();
@@ -60,17 +63,19 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
         {!customising ? <>
           <div className="privacy-consent-option"><strong>🌍 Community location</strong><small>If enabled, your device location is immediately converted into a coarse privacy area. Tiny Titans does not store your raw GPS position. The Creator globe shows one aggregated marker for each area.</small></div>
           <div className="privacy-consent-option"><strong>📊 Anonymous product analytics</strong><small>Optional aggregated usage information that helps improve Tiny Titans.</small></div>
+          <div className="privacy-consent-option"><strong>🐍 Community husbandry intelligence</strong><small>If enabled, your feeding, weight and shedding records can be included anonymously in aggregate community statistics. Your individual records are never shown as community data.</small></div>
           <div className="privacy-consent-option"><strong>📣 Product updates</strong><small>Optional Tiny Titans feature and release updates.</small></div>
           {error && <div className="setup-error" role="alert">{error}</div>}
-          <button className="setup-submit" type="button" onClick={() => void saveChoices({ location: true, analytics: true, updates: true })} disabled={saving}>{saving ? (locating ? "Finding your approximate area…" : "Saving your choices…") : "Accept Optional Data"}</button>
-          <button className="creator-tool-button" type="button" onClick={() => void saveChoices({ location: false, analytics: false, updates: false })} disabled={saving}>Decline Optional Data</button>
+          <button className="setup-submit" type="button" onClick={() => void saveChoices({ location: true, analytics: true, communityHusbandryData: true, updates: true })} disabled={saving}>{saving ? (locating ? "Finding your approximate area…" : "Saving your choices…") : "Accept Optional Data"}</button>
+          <button className="creator-tool-button" type="button" onClick={() => void saveChoices({ location: false, analytics: false, communityHusbandryData: false, updates: false })} disabled={saving}>Decline Optional Data</button>
           <button className="creator-tool-button" type="button" onClick={() => setCustomising(true)} disabled={saving}>Customise choices</button>
         </> : <>
           <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={location} onChange={(event) => setLocation(event.target.checked)} disabled={saving} /><span><strong>🌍 Community location</strong><small>Uses a coarse privacy area rather than your exact GPS position. The globe aggregates users into one area marker.</small></span></label>{location && <div className="setup-location-fields"><label>City<input value={city} onChange={(event) => setCity(event.target.value)} placeholder="Fallback: e.g. Peterborough" disabled={saving} /></label><label>Country<input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="Fallback: e.g. United Kingdom" disabled={saving} /></label></div>}</div>
           <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} disabled={saving} /><span><strong>📊 Anonymous product analytics</strong><small>Aggregated usage and feature-performance information.</small></span></label></div>
+          <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={communityHusbandryData} onChange={(event) => setCommunityHusbandryData(event.target.checked)} disabled={saving} /><span><strong>🐍 Community husbandry intelligence</strong><small>Allows feeding, weight and shedding records to contribute anonymously to aggregate community statistics.</small></span></label></div>
           <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={updates} onChange={(event) => setUpdates(event.target.checked)} disabled={saving} /><span><strong>📣 Product updates</strong><small>Optional Tiny Titans feature and release updates.</small></span></label></div>
           {error && <div className="setup-error" role="alert">{error}</div>}
-          <button className="setup-submit" type="button" onClick={() => void saveChoices({ location, analytics, updates })} disabled={saving}>{saving ? "Saving…" : "Save Choices"}</button>
+          <button className="setup-submit" type="button" onClick={() => void saveChoices({ location, analytics, communityHusbandryData, updates })} disabled={saving}>{saving ? "Saving…" : "Save Choices"}</button>
           <button className="creator-tool-button" type="button" onClick={() => setCustomising(false)} disabled={saving}>Back to simple choice</button>
         </>}
         <p className="setup-help">Optional choices can be withdrawn later. Core snake tracking remains available without optional sharing.</p>
