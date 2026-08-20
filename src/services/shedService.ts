@@ -8,10 +8,6 @@ function getShedCollection(uid: string, snakeId: string) {
   return collection(db, "users", uid, "snakes", snakeId, "sheds");
 }
 
-/** Firestore rejects undefined values. Optional lifecycle fields are deliberately
- * undefined when a shedding stage has not happened yet, so strip them before
- * sending the record to Firestore (including family-mutation preview data).
- */
 function removeUndefined<T>(value: T): T {
   if (Array.isArray(value)) return value.filter((item) => item !== undefined).map((item) => removeUndefined(item)) as T;
   if (value && typeof value === "object") {
@@ -25,16 +21,15 @@ function removeUndefined<T>(value: T): T {
 }
 
 function asCycle(record: ShedRecord): ShedRecord {
-  if (record.currentStage && (record.cycleStartedAt || record.clearPhaseAt || record.completedAt)) return record;
+  if (record.currentStage && (record.cycleStartedAt || record.clearPhaseAt || record.completedAt)) return removeUndefined(record);
   const stage: ShedStage = record.shedCompleted ? "Complete" : record.eyesSkinCleared ? "Clear" : record.bluePhaseStarted ? "Blue" : "Complete";
-  const date = record.date;
-  return {
+  return removeUndefined({
     ...record,
     currentStage: stage,
-    cycleStartedAt: record.bluePhaseStarted ? date : undefined,
-    clearPhaseAt: record.eyesSkinCleared ? date : undefined,
-    completedAt: record.shedCompleted ? date : undefined,
-  };
+    cycleStartedAt: record.bluePhaseStarted ? record.date : undefined,
+    clearPhaseAt: record.eyesSkinCleared ? record.date : undefined,
+    completedAt: record.shedCompleted ? record.date : undefined,
+  });
 }
 
 function cycleSortDate(record: ShedRecord) {
@@ -49,19 +44,18 @@ export async function getSnakeSheds(uid: string, snakeId: string): Promise<ShedR
     .sort((a, b) => cycleSortDate(b).localeCompare(cycleSortDate(a)));
 }
 
-/** Return the newest incomplete lifecycle so users continue it instead of creating a duplicate shed. */
 export async function getActiveShedCycle(uid: string, snakeId: string): Promise<ShedRecord | null> {
   const records = await getSnakeSheds(uid, snakeId);
   return records.find((record) => record.currentStage !== "Complete" && !record.completedAt) ?? null;
 }
 
 export async function saveSnakeShed(uid: string, shed: ShedRecord): Promise<ShedRecord> {
+  if (!shed.id || !shed.snakeId) throw new Error("A shedding cycle requires a valid snake and record ID.");
   const dataOwnerUid = await resolveDataOwnerUid(uid);
   const existing = await getDocs(query(getShedCollection(dataOwnerUid, shed.snakeId)));
   const isUpdate = existing.docs.some((item) => item.id === shed.id);
   const cycle = asCycle(shed);
   const firestoreData = removeUndefined({ ...cycle, snakeId: cycle.snakeId, id: cycle.id, lastModifiedBy: uid });
-
   await requestFamilyMutation({
     requesterUid: uid,
     requesterName: uid,
@@ -73,24 +67,14 @@ export async function saveSnakeShed(uid: string, shed: ShedRecord): Promise<Shed
     operation: isUpdate ? "update" : "create",
     data: firestoreData,
   });
-
-  const shedRef = doc(getShedCollection(dataOwnerUid, cycle.snakeId), cycle.id);
-  await setDoc(shedRef, firestoreData, { merge: true });
+  await setDoc(doc(getShedCollection(dataOwnerUid, cycle.snakeId), cycle.id), firestoreData, { merge: true });
   return removeUndefined(cycle);
 }
 
 export async function deleteSnakeShed(uid: string, snakeId: string, shedId: string): Promise<void> {
+  if (!snakeId || !shedId) throw new Error("A shedding cycle cannot be deleted without a valid snake and record ID.");
   const dataOwnerUid = await resolveDataOwnerUid(uid);
   const targetPath = `users/${dataOwnerUid}/snakes/${snakeId}/sheds/${shedId}`;
-  await requestFamilyMutation({
-    requesterUid: uid,
-    requesterName: uid,
-    area: "sheds",
-    action: "delete",
-    title: "Delete shedding cycle",
-    description: "A family member wants to permanently remove a shedding cycle.",
-    targetPath,
-    operation: "delete",
-  });
+  await requestFamilyMutation({ requesterUid: uid, requesterName: uid, area: "sheds", action: "delete", title: "Delete shedding cycle", description: "A family member wants to permanently remove a shedding cycle.", targetPath, operation: "delete" });
   await deleteDoc(doc(getShedCollection(dataOwnerUid, snakeId), shedId));
 }
