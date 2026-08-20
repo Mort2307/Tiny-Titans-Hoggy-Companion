@@ -8,8 +8,11 @@ function getShedCollection(uid: string, snakeId: string) {
   return collection(db, "users", uid, "snakes", snakeId, "sheds");
 }
 
+/** Firestore rejects undefined anywhere in a payload. Keep this boundary defensive. */
 function removeUndefined<T>(value: T): T {
-  if (Array.isArray(value)) return value.filter((item) => item !== undefined).map((item) => removeUndefined(item)) as T;
+  if (Array.isArray(value)) {
+    return value.filter((item) => item !== undefined).map((item) => removeUndefined(item)) as T;
+  }
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
@@ -20,16 +23,81 @@ function removeUndefined<T>(value: T): T {
   return value;
 }
 
-function asCycle(record: ShedRecord): ShedRecord {
-  if (record.currentStage && (record.cycleStartedAt || record.clearPhaseAt || record.completedAt)) return removeUndefined(record);
-  const stage: ShedStage = record.shedCompleted ? "Complete" : record.eyesSkinCleared ? "Clear" : record.bluePhaseStarted ? "Blue" : "Complete";
-  return removeUndefined({
+function isValidIsoDate(value?: string): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function cycleStage(record: ShedRecord): ShedStage {
+  if (record.completedAt || record.shedCompleted) return "Complete";
+  if (record.clearPhaseAt || record.eyesSkinCleared) return "Clear";
+  if (record.cycleStartedAt || record.bluePhaseStarted) return "Blue";
+  return record.currentStage ?? "Complete";
+}
+
+/**
+ * Converts legacy shed records into the canonical single-cycle representation.
+ * Stage dates are only emitted when they actually exist; they are never written as undefined.
+ */
+function normaliseCycle(record: ShedRecord): ShedRecord {
+  const stage = cycleStage(record);
+  const cycleStartedAt = record.cycleStartedAt || (record.bluePhaseStarted ? record.date : undefined);
+  const clearPhaseAt = record.clearPhaseAt || (record.eyesSkinCleared ? record.date : undefined);
+  const completedAt = record.completedAt || (record.shedCompleted ? record.date : undefined);
+  const retainedAreas = Array.from(new Set(record.retainedAreas ?? []));
+  const retainedEyeCaps = retainedAreas.includes("Eye Cap") || record.retainedEyeCaps === true;
+  const retainedTailTip = retainedAreas.includes("Tail Tip") || record.retainedTailTip === true;
+  const canonicalRetainedAreas = Array.from(new Set([
+    ...retainedAreas,
+    ...(retainedEyeCaps ? ["Eye Cap" as const] : []),
+    ...(retainedTailTip ? ["Tail Tip" as const] : []),
+  ]));
+
+  const date = completedAt || cycleStartedAt || record.date;
+  const base: ShedRecord = {
     ...record,
+    date,
     currentStage: stage,
-    cycleStartedAt: record.bluePhaseStarted ? record.date : undefined,
-    clearPhaseAt: record.eyesSkinCleared ? record.date : undefined,
-    completedAt: record.shedCompleted ? record.date : undefined,
-  });
+    retainedAreas: canonicalRetainedAreas,
+    retainedShedArea: canonicalRetainedAreas.length === 0
+      ? "None"
+      : canonicalRetainedAreas.length === 1
+        ? canonicalRetainedAreas[0]
+        : "Multiple Areas",
+    retainedEyeCaps,
+    retainedTailTip,
+    status: record.status ?? "Complete",
+    quality: record.quality ?? "Unknown",
+    assistance: record.assistance ?? "None",
+    notes: record.notes ?? "",
+    bluePhaseStarted: Boolean(cycleStartedAt),
+    eyesSkinCleared: Boolean(clearPhaseAt),
+    shedCompleted: Boolean(completedAt),
+  };
+
+  if (cycleStartedAt) base.cycleStartedAt = cycleStartedAt;
+  if (clearPhaseAt) base.clearPhaseAt = clearPhaseAt;
+  if (completedAt) base.completedAt = completedAt;
+
+  const duration = cycleStartedAt && completedAt
+    ? Math.max(0, Math.round((Date.parse(`${completedAt}T00:00:00Z`) - Date.parse(`${cycleStartedAt}T00:00:00Z`)) / 86400000))
+    : undefined;
+  if (duration !== undefined && Number.isFinite(duration)) base.cycleDurationDays = duration;
+  else delete base.cycleDurationDays;
+
+  return removeUndefined(base);
+}
+
+function validateCycle(record: ShedRecord): void {
+  if (!record.id || !record.snakeId) throw new Error("A shedding cycle requires a valid snake and record ID.");
+  if (!isValidIsoDate(record.date)) throw new Error("A shedding cycle requires a valid record date.");
+  if (record.cycleStartedAt && !isValidIsoDate(record.cycleStartedAt)) throw new Error("The shedding start date is invalid.");
+  if (record.clearPhaseAt && !isValidIsoDate(record.clearPhaseAt)) throw new Error("The clear-phase date is invalid.");
+  if (record.completedAt && !isValidIsoDate(record.completedAt)) throw new Error("The completed-shed date is invalid.");
+  if (record.cycleStartedAt && record.clearPhaseAt && record.clearPhaseAt < record.cycleStartedAt) throw new Error("The clear-phase date cannot be before the shedding start date.");
+  if (record.cycleStartedAt && record.completedAt && record.completedAt < record.cycleStartedAt) throw new Error("The completed-shed date cannot be before the shedding start date.");
+  if (record.clearPhaseAt && record.completedAt && record.completedAt < record.clearPhaseAt) throw new Error("The completed-shed date cannot be before the clear phase.");
 }
 
 function cycleSortDate(record: ShedRecord) {
@@ -37,10 +105,11 @@ function cycleSortDate(record: ShedRecord) {
 }
 
 export async function getSnakeSheds(uid: string, snakeId: string): Promise<ShedRecord[]> {
+  if (!snakeId) return [];
   const dataOwnerUid = await resolveDataOwnerUid(uid);
   const snapshot = await getDocs(query(getShedCollection(dataOwnerUid, snakeId)));
   return snapshot.docs
-    .map((shedDoc) => asCycle({ ...shedDoc.data() as ShedRecord, id: shedDoc.id, snakeId }))
+    .map((shedDoc) => normaliseCycle({ ...shedDoc.data() as ShedRecord, id: shedDoc.id, snakeId }))
     .sort((a, b) => cycleSortDate(b).localeCompare(cycleSortDate(a)));
 }
 
@@ -50,12 +119,13 @@ export async function getActiveShedCycle(uid: string, snakeId: string): Promise<
 }
 
 export async function saveSnakeShed(uid: string, shed: ShedRecord): Promise<ShedRecord> {
-  if (!shed.id || !shed.snakeId) throw new Error("A shedding cycle requires a valid snake and record ID.");
+  const cycle = normaliseCycle(shed);
+  validateCycle(cycle);
   const dataOwnerUid = await resolveDataOwnerUid(uid);
-  const existing = await getDocs(query(getShedCollection(dataOwnerUid, shed.snakeId)));
-  const isUpdate = existing.docs.some((item) => item.id === shed.id);
-  const cycle = asCycle(shed);
-  const firestoreData = removeUndefined({ ...cycle, snakeId: cycle.snakeId, id: cycle.id, lastModifiedBy: uid });
+  const existing = await getDocs(query(getShedCollection(dataOwnerUid, cycle.snakeId)));
+  const isUpdate = existing.docs.some((item) => item.id === cycle.id);
+  const firestoreData = removeUndefined({ ...cycle, lastModifiedBy: uid });
+
   await requestFamilyMutation({
     requesterUid: uid,
     requesterName: uid,
@@ -67,8 +137,9 @@ export async function saveSnakeShed(uid: string, shed: ShedRecord): Promise<Shed
     operation: isUpdate ? "update" : "create",
     data: firestoreData,
   });
+
   await setDoc(doc(getShedCollection(dataOwnerUid, cycle.snakeId), cycle.id), firestoreData, { merge: true });
-  return removeUndefined(cycle);
+  return cycle;
 }
 
 export async function deleteSnakeShed(uid: string, snakeId: string, shedId: string): Promise<void> {
