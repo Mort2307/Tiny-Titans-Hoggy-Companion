@@ -5,7 +5,7 @@ import type { PrivacyPreferences } from "../types/privacy";
 export const PRIVACY_CONSENT_VERSION = "2026-08-20-privacy-community-husbandry-v3";
 
 const DEFAULT_PRIVACY: PrivacyPreferences = {
-  consentVersion: PRIVACY_CONSENT_VERSION,
+  consentVersion: "",
   communityLocation: false,
   anonymousAnalytics: false,
   communityHusbandryData: false,
@@ -16,7 +16,8 @@ export async function getPrivacyPreferences(uid: string): Promise<PrivacyPrefere
   if (!uid) throw new Error("Privacy preferences require an authenticated user.");
   const snapshot = await getDoc(doc(db, "users", uid, "settings", "privacy"));
   if (!snapshot.exists()) return DEFAULT_PRIVACY;
-  return { ...DEFAULT_PRIVACY, ...(snapshot.data() as Partial<PrivacyPreferences>) };
+  const data = snapshot.data() as Partial<PrivacyPreferences>;
+  return { ...DEFAULT_PRIVACY, ...data, consentVersion: typeof data.consentVersion === "string" ? data.consentVersion : "" };
 }
 
 export async function savePrivacyPreferences(
