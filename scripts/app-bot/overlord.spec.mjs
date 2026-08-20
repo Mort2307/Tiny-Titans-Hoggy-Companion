@@ -63,6 +63,18 @@ async function completeAccountSetup(page) {
   return true;
 }
 
+async function dismissPrivacyConsent(page) {
+  const dialog = page.locator('.privacy-consent-backdrop[role="dialog"]');
+  if (!(await dialog.isVisible().catch(() => false))) return false;
+  console.log("[OVERLORD] Privacy consent is blocking interaction; declining optional data for the test account.");
+  const decline = dialog.getByRole("button", { name: "Decline Optional Data", exact: true });
+  await expect(decline).toBeVisible({ timeout: 5000 });
+  await decline.click();
+  await expect(dialog).toBeHidden({ timeout: 10000 });
+  console.log("[OVERLORD] Privacy consent dismissed.");
+  return true;
+}
+
 async function establishAuthenticatedApp(page) {
   await page.goto(`${baseURL}/`, { waitUntil: "domcontentloaded" });
   for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -74,6 +86,7 @@ async function establishAuthenticatedApp(page) {
       continue;
     }
     await waitForApplicationShell(page, `authenticated bootstrap attempt ${attempt}`);
+    await dismissPrivacyConsent(page);
     return currentUrl;
   }
   throw new Error(`[OVERLORD] Account setup did not complete after 3 bootstrap attempts. Current URL: ${page.url()}`);
@@ -91,6 +104,7 @@ async function signIn(page) {
   await page.getByRole("button", { name: /sign in/i }).click();
   await expect(page).not.toHaveURL(/\/login\/?$/, { timeout: 15000 });
   await establishAuthenticatedApp(page);
+  await dismissPrivacyConsent(page);
 }
 
 async function visit(page, route) {
@@ -101,6 +115,7 @@ async function visit(page, route) {
   if (currentUrl.includes("/login")) throw new Error(`[OVERLORD] Route ${route} redirected to login: ${currentUrl}`);
   if (currentUrl.includes("/account-setup")) throw new Error(`[OVERLORD] Route ${route} is still blocked by account setup: ${currentUrl}`);
   await waitForApplicationShell(page, `route ${route}`);
+  await dismissPrivacyConsent(page);
   return currentUrl;
 }
 
@@ -142,6 +157,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await page.getByLabel("Snake Name").fill(syntheticName);
     await page.getByLabel("Species").fill("Western Hognose");
     await page.getByLabel(/Current Weight/i).fill("42");
+    await dismissPrivacyConsent(page);
     await page.getByRole("button", { name: /save snake/i }).click();
     await expect(page).not.toHaveURL(/\/snakes\/new\/?$/);
     const snakePath = new URL(page.url()).pathname;
@@ -155,6 +171,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     const name = page.getByLabel("Snake Name");
     await expect(name).toHaveValue(syntheticName);
     await name.fill(`${syntheticName} Edited`);
+    await dismissPrivacyConsent(page);
     await page.getByRole("button", { name: /save snake/i }).click();
     await expect(page).not.toHaveURL(/\/edit\/?$/);
     await expect(page.locator("body")).toContainText(`${syntheticName} Edited`);
@@ -205,6 +222,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await assertHealthy(page, errors);
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding reload after Blue Phase");
+    await dismissPrivacyConsent(page);
     await expect(page.getByText(/Active shedding cycle/i)).toBeVisible();
     await expect(page.getByText(/Blue Phase/i).first()).toBeVisible();
     await page.getByRole("button", { name: /Record Next Stage/i }).click();
@@ -214,6 +232,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await assertHealthy(page, errors);
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding reload after Clear Phase");
+    await dismissPrivacyConsent(page);
     await expect(page.getByText(/Active shedding cycle/i)).toBeVisible();
     await page.getByRole("button", { name: /Record Next Stage/i }).click();
     await page.getByRole("radio", { name: /Full Shed/i }).check();
@@ -223,6 +242,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await assertHealthy(page, errors);
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding final reload");
+    await dismissPrivacyConsent(page);
     await expect(page.getByText(/Shed Cycle History/i)).toBeVisible();
     await expect(page.getByText(/Full Shed/i).first()).toBeVisible();
     await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i);
