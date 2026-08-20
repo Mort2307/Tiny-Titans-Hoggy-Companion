@@ -4,6 +4,8 @@ const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
 const email = process.env.TINY_TITANS_BOT_EMAIL;
 const password = process.env.TINY_TITANS_BOT_PASSWORD;
 const syntheticName = `BOT Overlord ${Date.now()}`;
+const syntheticEditedName = `${syntheticName} Edited`;
+let createdSnakeId = "";
 
 const APP_READY_TIMEOUT = 20000;
 
@@ -119,6 +121,12 @@ async function visit(page, route) {
   return currentUrl;
 }
 
+async function findSnakeInCollection(page, name) {
+  const tile = page.getByRole("button", { name: new RegExp(`^Select ${name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}$`) }).first();
+  await expect(tile).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  return tile;
+}
+
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
   test("boot, authenticate and prove the application shell is healthy", async ({ page }) => {
     const errors = applicationErrors(page);
@@ -163,43 +171,46 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     const snakePath = new URL(page.url()).pathname;
     const match = snakePath.match(/^\/snakes\/([^/]+)$/);
     expect(match, `Expected save to land on /snakes/:id, received ${snakePath}`).not.toBeNull();
-    const snakeId = match?.[1];
-    expect(snakeId).toBeTruthy();
-    await visit(page, `/snakes/${snakeId}`);
+    createdSnakeId = match?.[1] || "";
+    expect(createdSnakeId).toBeTruthy();
+    await visit(page, `/snakes/${createdSnakeId}`);
     await expect(page.locator("body")).toContainText(syntheticName);
-    await visit(page, `/snakes/${snakeId}/edit`);
+    await visit(page, `/snakes/${createdSnakeId}/edit`);
     const name = page.getByLabel("Snake Name");
     await expect(name).toHaveValue(syntheticName);
-    await name.fill(`${syntheticName} Edited`);
+    await name.fill(syntheticEditedName);
     await dismissPrivacyConsent(page);
     await page.getByRole("button", { name: /save snake/i }).click();
     await expect(page).not.toHaveURL(/\/edit\/?$/);
-    await expect(page.locator("body")).toContainText(`${syntheticName} Edited`);
-    await visit(page, `/snakes/${snakeId}`);
-    await expect(page.locator("body")).toContainText(`${syntheticName} Edited`);
+    await expect(page.locator("body")).toContainText(syntheticEditedName);
+    await visit(page, `/snakes/${createdSnakeId}`);
+    await expect(page.locator("body")).toContainText(syntheticEditedName);
     await assertHealthy(page, errors);
+    console.log(`[OVERLORD] Persistence journey passed for known snake ID ${createdSnakeId}.`);
   });
 
-  test("snake intelligence and event surfaces are reachable for a real snake ID", async ({ page }) => {
+  test("snake intelligence and event surfaces are reachable for the exact persisted snake", async ({ page }) => {
     const errors = applicationErrors(page);
     await signIn(page);
+    expect(createdSnakeId, "The persistence journey must produce a real snake ID before this dependent test runs.").toBeTruthy();
     await visit(page, "/snakes");
-    const snakeLink = page.locator('a[href^="/snakes/"]:not([href$="/new"])').first();
-    await expect(snakeLink).toBeVisible();
-    const href = await snakeLink.getAttribute("href");
-    const match = href?.match(/^\/snakes\/([^/]+)$/);
-    expect(match).not.toBeNull();
-    const snakeId = match?.[1];
-    expect(snakeId).toBeTruthy();
-    for (const route of snakeRoutes(snakeId)) {
+    const tile = await findSnakeInCollection(page, syntheticEditedName);
+    await expect(tile).toHaveAttribute("aria-label", `Select ${syntheticEditedName}`);
+    await tile.click();
+    await expect(page.getByRole("region", { name: `${syntheticEditedName} trackers` })).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await visit(page, `/snakes/${createdSnakeId}`);
+    await expect(page.locator("body")).toContainText(syntheticEditedName);
+    for (const route of snakeRoutes(createdSnakeId)) {
       await visit(page, route);
       await assertHealthy(page, errors);
     }
+    console.log(`[OVERLORD] Snake collection → profile → intelligence/event surfaces passed for ${createdSnakeId}.`);
   });
 
   test("tracker entry points expose usable forms rather than dead pages", async ({ page }) => {
     const errors = applicationErrors(page);
     await signIn(page);
+    expect(createdSnakeId, "Tracker journey requires the persisted Overlord snake.").toBeTruthy();
     for (const route of ["/weights", "/feeding", "/shedding", "/behaviour", "/health"]) {
       await visit(page, route);
       const controls = page.locator("input, select, textarea, button");
@@ -211,11 +222,14 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
   test("shedding is a real single-cycle persistence journey", async ({ page }) => {
     const errors = applicationErrors(page);
     await signIn(page);
+    expect(createdSnakeId, "Shedding journey requires the persisted Overlord snake.").toBeTruthy();
     await visit(page, "/shedding");
     const snakeSelect = page.locator("#shed-snake");
     await expect(snakeSelect).toBeVisible();
+    await expect(snakeSelect.locator(`option[value="${createdSnakeId}"]`)).toBeAttached();
+    await snakeSelect.selectOption(createdSnakeId);
     const snakeId = await snakeSelect.inputValue();
-    expect(snakeId).toBeTruthy();
+    expect(snakeId).toBe(createdSnakeId);
     await page.getByRole("radio", { name: /Blue Phase/i }).check();
     await page.getByRole("button", { name: /Start Cycle/i }).click();
     await expect(page.getByRole("status")).toContainText(/Blue Phase recorded/i);
