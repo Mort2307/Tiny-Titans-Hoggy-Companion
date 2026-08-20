@@ -39,9 +39,9 @@ function timestampMillis(value: unknown): number | null {
 /**
  * Canonical Creator Centre aggregation.
  *
- * Community tracker metrics use the canonical privacy document. Creator/admin
- * status does not exclude a consenting contributor. Known fixture/test users can
- * be excluded explicitly by UID through options.excludedUserIds.
+ * Community tracker metrics use the dedicated community-husbandry consent.
+ * Creator/admin status does not exclude a consenting contributor. Known fixture
+ * or test users can be excluded explicitly by UID through options.
  */
 export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}): Promise<GlobalStats> {
   const excludedUserIds = new Set(options.excludedUserIds ?? []);
@@ -94,8 +94,7 @@ export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}):
       usersWithData += 1;
     }
 
-    const isExplicitlyExcluded = excludedUserIds.has(userDoc.id);
-    if (isExplicitlyExcluded) return;
+    if (excludedUserIds.has(userDoc.id)) return;
 
     let privacy;
     try {
@@ -104,8 +103,7 @@ export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}):
       return;
     }
 
-    // Only contributors who have explicitly enabled anonymous analytics are included.
-    if (privacy.anonymousAnalytics !== true) return;
+    if (privacy.communityHusbandryData !== true) return;
 
     await Promise.all(snakesSnapshot.docs.map(async (snakeDoc) => {
       const snake = snakeDoc.data() as Record<string, unknown>;
