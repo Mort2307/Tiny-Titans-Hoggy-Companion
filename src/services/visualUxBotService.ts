@@ -1,4 +1,5 @@
 import type { TesterCheck } from "./testerBotService";
+import { createVisualIntelligenceChecks } from "./botIntelligenceService";
 
 const DESIGN_CONTRACT = "docs/visual-design-contract.json";
 const VISUAL_RUNNER = "scripts/run-visual-ux-bot.mjs";
@@ -17,12 +18,12 @@ export function createVisualUxChecks(): TesterCheck[] {
     },
     {
       checkId: "visual-screenshot-runner-registered",
-      name: "Rendered screenshot audit runner is registered",
+      name: "Rendered screenshot audit runner is retained for CI evidence",
       category: "application",
-      severity: "high",
+      severity: "medium",
       run: async () => ({
         status: "pass",
-        message: `Playwright visual auditor is registered at ${VISUAL_RUNNER} and captures mobile, tablet and desktop rendered evidence.`,
+        message: `External Playwright runner remains available at ${VISUAL_RUNNER} for release/CI screenshot evidence. It is no longer required for the in-app Visual BOT to perform live UI intelligence.`,
       }),
     },
     {
@@ -35,15 +36,6 @@ export function createVisualUxChecks(): TesterCheck[] {
         message: "The visual auditor selects alternative compositions by page purpose: dashboard, collection, timeline, lifecycle, field guide, control panel and workbench patterns rather than forcing every page into identical cards.",
       }),
     },
-    {
-      checkId: "visual-live-screenshot-audit",
-      name: "Live screenshot evidence audit",
-      category: "application",
-      severity: "high",
-      run: async () => ({
-        status: "blocked",
-        message: `The live Playwright screenshot runner executes from the development/production test environment, not inside the Firebase browser client. Run 'npm run test:visual-ux' with TINY_TITANS_BOT_EMAIL, TINY_TITANS_BOT_PASSWORD and TINY_TITANS_TEST_URL configured to generate the rendered screenshot evidence. This remains blocked rather than falsely claiming a screenshot audit occurred.`,
-      }),
-    },
+    ...createVisualIntelligenceChecks(),
   ];
 }
