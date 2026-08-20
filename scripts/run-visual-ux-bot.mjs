@@ -3,8 +3,8 @@ import path from "node:path";
 import { chromium } from "playwright";
 
 const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
-const email = process.env.TINY_TITANS_BOT_EMAIL;
-const password = process.env.TINY_TITANS_BOT_PASSWORD;
+const email = process.env.TINY_TITANS_VISUAL_BOT_EMAIL || process.env.TINY_TITANS_BOT_EMAIL;
+const password = process.env.TINY_TITANS_VISUAL_BOT_PASSWORD || process.env.TINY_TITANS_BOT_PASSWORD;
 const outputDir = path.resolve("artifacts/visual-ux");
 const contractPath = path.resolve("docs/visual-design-contract.json");
 
@@ -29,7 +29,7 @@ const concepts = {
 };
 
 async function signIn(page) {
-  if (!email || !password) throw new Error("Visual UX BOT requires TINY_TITANS_BOT_EMAIL and TINY_TITANS_BOT_PASSWORD.");
+  if (!email || !password) throw new Error("Visual UX BOT requires TINY_TITANS_VISUAL_BOT_EMAIL and TINY_TITANS_VISUAL_BOT_PASSWORD (or the legacy generic BOT variables).");
   await page.goto(`${baseURL}/login`, { waitUntil: "domcontentloaded" });
   await page.getByLabel("Email Address").fill(email);
   await page.getByRole("textbox", { name: "Password" }).fill(password);
@@ -50,27 +50,18 @@ async function auditPage(page, route, viewport) {
     await page.goto(new URL(route, baseURL).toString(), { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle").catch(() => undefined);
     await page.waitForTimeout(250);
-
     const metrics = await page.evaluate(() => {
       const body = document.body;
       const root = document.documentElement;
       const text = body?.innerText || "";
       const interactive = [...document.querySelectorAll("button, a, input, select, textarea, [role='button']")];
       const clickable = [...document.querySelectorAll("button, a, [role='button']")];
-      const touchProblems = interactive.filter((element) => {
-        const rect = element.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44);
-      }).length;
+      const touchProblems = interactive.filter((element) => { const rect = element.getBoundingClientRect(); return rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44); }).length;
       const cards = [...document.querySelectorAll("[class*='card'], [class*='tile'], [class*='panel']")];
       const headings = document.querySelectorAll("h1, h2, h3").length;
       const primaryHeading = document.querySelector("h1")?.textContent?.trim() || "";
       const styles = getComputedStyle(root);
-      const brandSignals = [
-        styles.getPropertyValue("--tt-brand").trim(),
-        styles.getPropertyValue("--tt-brand-strong").trim(),
-        styles.getPropertyValue("--tt-accent").trim(),
-        styles.getPropertyValue("--tt-warning").trim(),
-      ].filter(Boolean);
+      const brandSignals = [styles.getPropertyValue("--tt-brand").trim(), styles.getPropertyValue("--tt-brand-strong").trim(), styles.getPropertyValue("--tt-accent").trim(), styles.getPropertyValue("--tt-warning").trim()].filter(Boolean);
       const bodyRect = body?.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const overflow = Math.max(root.scrollWidth - viewportWidth, bodyRect ? bodyRect.width - viewportWidth : 0);
@@ -79,7 +70,6 @@ async function auditPage(page, route, viewport) {
       const suspiciousButtons = buttons.filter((button) => !button.disabled && !button.getAttribute("aria-label") && !(button.textContent || "").trim()).length;
       return { textLength: text.length, interactiveCount: interactive.length, cardCount: cards.length, headingCount: headings, primaryHeading, touchProblems, overflow: Math.max(0, overflow), emptyLinks: links, suspiciousButtons, brandSignals, bodyWidth: bodyRect?.width || 0, viewportWidth };
     });
-
     const findings = [];
     if (metrics.overflow > 2) findings.push({ severity: "error", code: "horizontal-overflow", message: `Rendered content exceeds the ${viewport.name} viewport by ${Math.round(metrics.overflow)}px.` });
     if (!metrics.primaryHeading) findings.push({ severity: "warning", code: "missing-h1", message: "No primary h1 heading was detected." });
@@ -89,7 +79,6 @@ async function auditPage(page, route, viewport) {
     if (metrics.brandSignals.length < 3) findings.push({ severity: "warning", code: "brand-signal", message: "The rendered page does not expose the full Tiny Titans brand token set." });
     if (metrics.suspiciousButtons > 0 || metrics.emptyLinks > 0) findings.push({ severity: "warning", code: "ambiguous-actions", message: `${metrics.suspiciousButtons + metrics.emptyLinks} controls/links appear to lack useful visible or semantic action cues.` });
     if (!findings.length) findings.push({ severity: "info", code: "visual-health", message: "No major heuristic visual issues detected at this viewport. Screenshot review remains recommended." });
-
     const concept = concepts[route] || { name: "Purpose-led composition", reason: "Keep the Tiny Titans design language while choosing a layout that matches the page's primary job." };
     const score = Math.max(0, Math.min(100, 100 - findings.reduce((total, finding) => total + (finding.severity === "error" ? 22 : finding.severity === "warning" ? 9 : 0), 0)));
     return { route, viewport: viewport.name, score, metrics, findings, alternativeConcept: concept, screenshot: null, runtimeErrors: [...errors, ...consoleErrors] };
@@ -128,7 +117,7 @@ async function main() {
     const report = { bot: "Tiny Titans Visual UX BOT", generatedAt: new Date().toISOString(), baseURL, routesInspected: routes.length, viewports: contract.responsiveViewports, screenshotCount: results.length, results, routeSummary, methodology: ["Rendered evidence is captured with Playwright at mobile, tablet and desktop sizes.", "Heuristics flag overflow, hierarchy, density, touch-target and action-clarity problems.", "Alternative page concepts are selected by page purpose rather than applying one template everywhere.", "The Tiny Titans visual contract remains authoritative for brand identity.", "The bot recommends changes; it never silently mutates production code."] };
     await fs.writeFile(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
     await fs.writeFile(path.join(outputDir, "README.md"), `# Tiny Titans Visual UX BOT\n\nGenerated: ${report.generatedAt}\n\nRoutes: ${report.routesInspected}\nScreenshots: ${report.screenshotCount}\n\nOpen \`report.json\` for route-level findings and recommended alternative page concepts. Screenshots are stored beside the report.\n`);
-    console.log(`\\nVisual UX BOT complete: ${results.length} rendered page/viewport audits and ${results.length} screenshots.`);
+    console.log(`\nVisual UX BOT complete: ${results.length} rendered page/viewport audits and ${results.length} screenshots.`);
   } finally {
     await browser.close();
   }
