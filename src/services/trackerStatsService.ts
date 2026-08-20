@@ -1,6 +1,7 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { GlobalStats } from "./creatorService";
+import { getPrivacyPreferences } from "./privacyService";
 
 type NumericRecord = {
   weight?: unknown;
@@ -38,10 +39,9 @@ function timestampMillis(value: unknown): number | null {
 /**
  * Canonical Creator Centre aggregation.
  *
- * Community tracker metrics use the app's explicit anonymousAnalytics consent.
- * Creator/admin status is NOT a reason to exclude a consenting user: the creator
- * is a real community contributor and their real records belong in the stats.
- * Explicit exclusions remain available for known fixture/test accounts.
+ * Community tracker metrics use the canonical privacy document. Creator/admin
+ * status does not exclude a consenting contributor. Known fixture/test users can
+ * be excluded explicitly by UID through options.excludedUserIds.
  */
 export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}): Promise<GlobalStats> {
   const excludedUserIds = new Set(options.excludedUserIds ?? []);
@@ -94,10 +94,18 @@ export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}):
       usersWithData += 1;
     }
 
-    const preferences = userData.dataCollectionPreferences as { analytics?: unknown } | undefined;
-    const analyticsOptedIn = preferences?.analytics === true;
     const isExplicitlyExcluded = excludedUserIds.has(userDoc.id);
-    if (!analyticsOptedIn || isExplicitlyExcluded) return;
+    if (isExplicitlyExcluded) return;
+
+    let privacy;
+    try {
+      privacy = await getPrivacyPreferences(userDoc.id);
+    } catch {
+      return;
+    }
+
+    // Only contributors who have explicitly enabled anonymous analytics are included.
+    if (privacy.anonymousAnalytics !== true) return;
 
     await Promise.all(snakesSnapshot.docs.map(async (snakeDoc) => {
       const snake = snakeDoc.data() as Record<string, unknown>;
