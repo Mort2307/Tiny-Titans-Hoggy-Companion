@@ -71,10 +71,6 @@ async function waitForActiveShedCycle(page, stage = "Blue") {
 }
 
 async function continueActiveShedCycle(page) {
-  // The intelligent tracker may expose the next-stage form immediately after
-  // hydration. Older tracker variants expose an explicit Continue button.
-  // Support both contracts instead of making the persistence test depend on a
-  // presentation-only navigation control.
   const button = page.getByRole("button", { name: /Continue to (Clear|Full Shed)/i }).first();
   if (await button.count()) {
     await expect(button).toBeVisible({ timeout: APP_READY_TIMEOUT });
@@ -86,6 +82,15 @@ async function continueActiveShedCycle(page) {
   const form = page.locator("form").filter({ hasText: /Stage date|Observations \/ notes/ }).first();
   await expect(form).toBeVisible({ timeout: APP_READY_TIMEOUT });
   console.log("[OVERLORD] Next-stage form already active; no Continue control required.");
+}
+
+async function selectFinalOutcome(page) {
+  const outcome = page.getByLabel(/(?:Final outcome|Outcome status)/i).first();
+  await expect(outcome).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  await expect(outcome).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+  const options = await outcome.locator("option").allTextContents();
+  console.log(`[OVERLORD] Final shedding outcome control discovered: ${JSON.stringify(options)}.`);
+  await outcome.selectOption("Complete");
 }
 
 async function expectShedStatus(page, patterns) {
@@ -137,7 +142,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding reload after Blue Phase"); await dismissPrivacyConsent(page); await waitForActiveShedCycle(page, "Blue");
     await continueActiveShedCycle(page); await selectShedStage(page, "Clear"); await submitShedForm(page, "Clear/stage"); await expectShedStatus(page, [/Clear\s+phase\s+(?:recorded|saved)/i, /same shedding cycle is preserved/i]); await assertHealthy(page, errors);
     await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding reload after Clear Phase"); await dismissPrivacyConsent(page); await waitForActiveShedCycle(page, "Clear");
-    await continueActiveShedCycle(page); await selectShedStage(page, "Complete"); await page.getByLabel("Final outcome").selectOption("Complete"); await submitShedForm(page, "Complete/stage"); await expectShedStatus(page, [/Full\s+shed\s+recorded/i, /Full\s+shed\s+saved/i]); await assertHealthy(page, errors);
+    await continueActiveShedCycle(page); await selectShedStage(page, "Complete"); await selectFinalOutcome(page); await submitShedForm(page, "Complete/stage"); await expectShedStatus(page, [/Full\s+shed\s+recorded/i, /Full\s+shed\s+saved/i]); await assertHealthy(page, errors);
     await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding final reload"); await dismissPrivacyConsent(page); await expect(page.getByText(/Shed Cycle History/i).or(page.getByText(/Shed history/i)).first()).toBeVisible({ timeout: APP_READY_TIMEOUT }); await expect(page.getByText(/Full shed/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT }); await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i); await expect(page.locator("#shed-snake")).toHaveValue(snakeId); console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
   });
 });
