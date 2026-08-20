@@ -139,8 +139,6 @@ test.describe.serial("OVERLORD BOT — exhaustive interactive form matrix", () =
     let tested = 0;
     let skipped = 0;
 
-    // Exercise each initially exposed option independently. The index is intentionally
-    // re-resolved after every interaction so a React re-render cannot hide a broken menu.
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
       const result = await exerciseHetOption(page, selector, descriptor, index);
@@ -150,14 +148,14 @@ test.describe.serial("OVERLORD BOT — exhaustive interactive form matrix", () =
 
     // Explicit regression probe for the real-world failure reported against Dutch Hypo.
     await openHets(page);
-    const dutchHypo = selector.locator(".het-option").filter({ hasText: /^Dutch Hypo\s*$/m }).first();
+    const dutchHypo = selector.locator(".het-option").filter({ hasText: "Dutch Hypo" }).first();
     await expect(dutchHypo).toBeVisible({ timeout: APP_READY_TIMEOUT });
     const dutchCheckbox = dutchHypo.locator('input[type="checkbox"]').first();
     await expect(dutchCheckbox).toBeEnabled();
     await dutchCheckbox.check();
     await expect(dutchCheckbox).toBeChecked();
     await inspectHetsState(selector, "selecting Dutch Hypo");
-    await expect(selector.locator(".het-option").filter({ hasText: /^Dutch Hypo\s*$/m }).first()).toBeVisible();
+    await expect(selector.locator(".het-option").filter({ hasText: "Dutch Hypo" }).first()).toBeVisible();
     await dutchCheckbox.uncheck();
     await inspectHetsState(selector, "deselecting Dutch Hypo");
 
