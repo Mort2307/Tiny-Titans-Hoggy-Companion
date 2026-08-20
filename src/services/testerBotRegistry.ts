@@ -9,6 +9,7 @@ import { createCreatorFunctionChecks } from "./testerCreatorSuitesService";
 import { createApplicationCoverageChecks, createBreedingPlannerChecks } from "./testerApplicationSuitesService";
 import { createFamilyAccountChecks } from "./testerFamilySuitesService";
 import { createVisualUxChecks } from "./visualUxBotService";
+import { createOverlordIntelligenceChecks } from "./botIntelligenceService";
 
 export type TesterBotId = "creator" | "user" | "app" | "security" | "overlord" | "visual";
 
@@ -79,7 +80,7 @@ const securitySuites: BotSuiteDefinition[] = [
 ];
 
 const overlordSuites: BotSuiteDefinition[] = [
-  { id: "full-functional", label: "Full Functional Sweep", description: "Application topology, core diagnostics, trackers, genetics, notifications, family and browser-runner readiness.", category: "Functional", safety: "sandbox", build: async (uid) => [...await createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: false }), ...createApplicationCoverageChecks(), ...await createTrackerRegressionChecks(uid), browserRunnerPendingCheck()] },
+  { id: "full-functional", label: "Full Functional Sweep", description: "Application topology, core diagnostics, trackers, genetics, notifications, family, live rendered intelligence and browser-runner readiness.", category: "Functional", safety: "sandbox", build: async (uid) => [...await createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: false }), ...createApplicationCoverageChecks(), ...await createTrackerRegressionChecks(uid), ...createOverlordIntelligenceChecks(), browserRunnerPendingCheck()] },
   { id: "routes", label: "Routes & Navigation", description: "Route inventory plus an explicit gate for real browser navigation evidence.", category: "Routes", safety: "read-only", build: async () => createApplicationCoverageChecks() },
   { id: "morph-library", label: "Morph Library", description: "Morph database integrity and regional-library coverage checks.", category: "Morphs", safety: "read-only", build: async () => createMorphLibraryChecks() },
   { id: "health-medication", label: "Health & Medication", description: "Health and medication surfaces are included in the functional QA contract without modifying live keeper records.", category: "Health", safety: "read-only", build: async () => createApplicationCoverageChecks().filter((check) => /health|medication/i.test(`${check.checkId} ${check.name}`)) },
@@ -88,14 +89,14 @@ const overlordSuites: BotSuiteDefinition[] = [
 ];
 
 const visualSuites: BotSuiteDefinition[] = [
-  { id: "visual-ux", label: "Visual UX Audit", description: "Tiny Titans visual consistency, responsive concepts and rendered UI contracts.", category: "Visual", safety: "read-only", build: createVisualUxChecks },
+  { id: "visual-ux", label: "Visual UX Audit", description: "Tiny Titans visual consistency, responsive concepts and live rendered UI intelligence.", category: "Visual", safety: "read-only", build: createVisualUxChecks },
   { id: "regional-ui", label: "Regional UI", description: "Checks that regional terminology and presentation remain represented in the application QA surface.", category: "Regionalisation", safety: "read-only", build: async () => createApplicationCoverageChecks().filter((check) => /region|locale|morph/i.test(`${check.checkId} ${check.name}`)) },
-  { id: "screenshots", label: "Screenshot Evidence", description: "Declares browser screenshot evidence as pending until the Playwright visual runner executes inside the app context.", category: "Evidence", safety: "sandbox", build: async () => [{ checkId: "visual-browser-screenshot-runner", name: "Browser screenshot capture", category: "visual", severity: "high", run: async () => ({ status: "blocked", message: "Not executed by the in-app diagnostic layer. Playwright must capture the actual rendered screenshots before visual evidence can be marked passed." }) }] },
+  { id: "screenshots", label: "Screenshot Evidence", description: "External Playwright screenshot evidence remains a CI/release layer; the in-app Visual BOT uses live DOM intelligence directly.", category: "Evidence", safety: "sandbox", build: async () => [{ checkId: "visual-browser-screenshot-runner", name: "Browser screenshot capture", category: "visual", severity: "medium", run: async () => ({ status: "blocked", message: "Screenshot capture is deliberately retained as external browser evidence. The in-app Visual BOT does not claim screenshots it has not captured." }) }] },
 ];
 
 export const BOT_DEFINITIONS: BotDefinition[] = [
-  { id: "overlord", label: "Overlord BOT", icon: "🤖", description: "Full functional and integration QA.", purpose: "Runs the broadest safe functional coverage and clearly separates live read-only checks from sandbox/browser evidence.", suites: overlordSuites },
-  { id: "visual", label: "Visual BOT", icon: "👁️", description: "Visual, responsive and regional UI QA.", purpose: "Audits the rendered UI contract and records exactly where real screenshot/browser evidence still needs the Visual runner.", suites: visualSuites },
+  { id: "overlord", label: "Overlord BOT", icon: "🤖", description: "Full functional, integration and application intelligence QA.", purpose: "Runs the broadest safe functional coverage and synthesises live rendered evidence into an evidence-based application verdict.", suites: overlordSuites },
+  { id: "visual", label: "Visual BOT", icon: "👁️", description: "Intelligent visual, responsive and regional UI QA.", purpose: "Understands the rendered page, its interaction hierarchy and responsive behaviour instead of merely checking whether UI elements exist.", suites: visualSuites },
   { id: "creator", label: "Creator BOT", icon: "🛠️", description: "Deep creator and system diagnostics.", purpose: "Creator tools, permissions, Firebase paths and regression coverage.", suites: creatorSuites },
   { id: "user", label: "User BOT", icon: "👤", description: "Keeper-facing health and workflow coverage.", purpose: "Checks the data and tracker journeys a normal user depends on, without writing to real records.", suites: userSuites },
   { id: "app", label: "App BOT", icon: "🧭", description: "Route and application-topology auditing.", purpose: "Checks route inventory and refuses to claim browser journey coverage until the isolated runner actually executes it.", suites: appSuites },
