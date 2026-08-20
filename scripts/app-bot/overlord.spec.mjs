@@ -66,8 +66,11 @@ async function submitShedForm(page, expectedAction = "stage") {
 }
 
 async function waitForActiveShedCycle(page, stage = "Blue") {
-  await expect(page.getByText(/Active shedding cycle/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
-  await expect(page.getByText(new RegExp(`${stage} Phase`, "i")).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  // The current intelligent tracker calls this simply "Active cycle" and uses
+  // sentence-case stage labels ("Blue phase"). Keep this semantic rather than
+  // coupling Overlord to the old presentation copy.
+  await expect(page.getByText(/Active(?: shedding)? cycle/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  await expect(page.getByText(new RegExp(`${stage}\\s+phase`, "i")).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
 }
 
 async function continueActiveShedCycle(page) {
@@ -119,12 +122,16 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
   });
 
   test("shedding is a real single-cycle persistence journey", async ({ page }) => {
-    const errors = applicationErrors(page); await signIn(page); expect(createdSnakeId, "Shedding journey requires the persisted Overlord snake.").toBeTruthy(); await visit(page, "/shedding"); const snakeSelect = page.locator("#shed-snake"); await expect(snakeSelect).toBeVisible(); await expect(snakeSelect.locator(`option[value="${createdSnakeId}"]`)).toBeAttached(); await snakeSelect.selectOption(createdSnakeId); const snakeId = await snakeSelect.inputValue(); expect(snakeId).toBe(createdSnakeId);
-    await selectShedStage(page, "Blue"); await submitShedForm(page, "Blue/start"); await expectShedStatus(page, [/Blue\s+Phase\s+(?:recorded|saved)/i, /same shedding cycle is preserved/i]); await assertHealthy(page, errors);
+    const errors = applicationErrors(page); await signIn(page); expect(createdSnakeId, "Shedding journey requires the persisted Overlord snake.").toBeTruthy();
+    // Pin the tracker to the exact snake created by the persistence journey so a
+    // reload cannot silently fall back to another snake in the user's collection.
+    await visit(page, `/shedding/${createdSnakeId}`);
+    const snakeSelect = page.locator("#shed-snake"); await expect(snakeSelect).toBeVisible(); await expect(snakeSelect).toHaveValue(createdSnakeId); const snakeId = await snakeSelect.inputValue(); expect(snakeId).toBe(createdSnakeId);
+    await selectShedStage(page, "Blue"); await submitShedForm(page, "Blue/start"); await expectShedStatus(page, [/Blue\s+phase\s+(?:recorded|saved)/i, /same shedding cycle is preserved/i]); await assertHealthy(page, errors);
     await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding reload after Blue Phase"); await dismissPrivacyConsent(page); await waitForActiveShedCycle(page, "Blue");
-    await continueActiveShedCycle(page); await selectShedStage(page, "Clear"); await submitShedForm(page, "Clear/stage"); await expectShedStatus(page, [/Clear\s+Phase\s+(?:recorded|saved)/i, /same shedding cycle is preserved/i]); await assertHealthy(page, errors);
+    await continueActiveShedCycle(page); await selectShedStage(page, "Clear"); await submitShedForm(page, "Clear/stage"); await expectShedStatus(page, [/Clear\s+phase\s+(?:recorded|saved)/i, /same shedding cycle is preserved/i]); await assertHealthy(page, errors);
     await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding reload after Clear Phase"); await dismissPrivacyConsent(page); await waitForActiveShedCycle(page, "Clear");
     await continueActiveShedCycle(page); await selectShedStage(page, "Complete"); await page.getByLabel("Final outcome").selectOption("Complete"); await submitShedForm(page, "Complete/stage"); await expectShedStatus(page, [/Full\s+shed\s+recorded/i, /Full\s+shed\s+saved/i]); await assertHealthy(page, errors);
-    await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding final reload"); await dismissPrivacyConsent(page); await expect(page.getByText(/Shed Cycle History/i)).toBeVisible({ timeout: APP_READY_TIMEOUT }); await expect(page.getByText(/Full Shed/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT }); await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i); await expect(page.locator("#shed-snake")).toHaveValue(snakeId); console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
+    await page.reload({ waitUntil: "domcontentloaded" }); await waitForApplicationShell(page, "shedding final reload"); await dismissPrivacyConsent(page); await expect(page.getByText(/Shed Cycle History/i).or(page.getByText(/Shed history/i)).first()).toBeVisible({ timeout: APP_READY_TIMEOUT }); await expect(page.getByText(/Full shed/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT }); await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i); await expect(page.locator("#shed-snake")).toHaveValue(snakeId); console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
   });
 });
