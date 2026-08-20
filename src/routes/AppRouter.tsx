@@ -19,7 +19,7 @@ import SnakeMasterRecord from "../pages/SnakeMasterRecord";
 import SnakeTimeline from "../pages/SnakeTimeline";
 import FeedingTracker from "../pages/FeedingTracker";
 import FeedingPreparation from "../pages/FeedingPreparation";
-import ShedTracker from "../pages/ShedTracker";
+import ShedTracker from "../pages/ShedTrackerIntelligent";
 import HealthTracker from "../pages/HealthTracker";
 import BehaviourTracker from "../pages/BehaviourTracker";
 import WeightIndex from "../pages/WeightIndex";
