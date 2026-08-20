@@ -52,8 +52,6 @@ async function auditPage(page, route, viewport) {
     await page.waitForLoadState("networkidle").catch(() => undefined);
     await page.waitForTimeout(350);
 
-    // IMPORTANT: page.evaluate executes in the browser context. Helpers declared in
-    // Node scope are not visible there, which was the cause of the isVisibleElement crash.
     const metrics = await page.evaluate(() => {
       const isVisibleElement = (element) => {
         const style = getComputedStyle(element);
@@ -233,8 +231,20 @@ async function main() {
       ],
     };
     await fs.writeFile(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
-    await fs.writeFile(path.join(outputDir, "README.md"), `# Tiny Titans Visual UX BOT\n\nGenerated: ${report.generatedAt}\n\nRoutes: ${report.routesInspected}\nScreenshots: ${report.screenshotCount}\n\nThe bot audits rendered geometry, responsive clipping, hidden-overflow containers, text clipping, touch targets, interaction density, action clarity, runtime errors and route-specific visual purpose. Open \\`report.json\\` for detailed evidence.\n`);
-    console.log(`\nVisual UX BOT complete: ${results.length} rendered page/viewport audits and ${results.length} screenshots.`);
+    const readme = [
+      "# Tiny Titans Visual UX BOT",
+      "",
+      `Generated: ${report.generatedAt}`,
+      "",
+      `Routes: ${report.routesInspected}`,
+      `Screenshots: ${report.screenshotCount}`,
+      "",
+      "The bot audits rendered geometry, responsive clipping, hidden-overflow containers, text clipping, touch targets, interaction density, action clarity, runtime errors and route-specific visual purpose.",
+      "Open report.json for detailed evidence.",
+      "",
+    ].join("\n");
+    await fs.writeFile(path.join(outputDir, "README.md"), readme);
+    console.log(`Visual UX BOT complete: ${results.length} rendered page/viewport audits and ${results.length} screenshots.`);
   } finally {
     await browser.close();
   }
