@@ -46,10 +46,11 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
         approximateLocation = { city: resolved.city, country: resolved.country, source: "coarse-geolocation", visibleToCreator: true, areaId: resolved.areaId, latitude: resolved.latitude, longitude: resolved.longitude, updatedAt: serverTimestamp() };
       }
 
-      await setDoc(doc(db, "users", user.uid), { dataCollectionPreferences: { approximateLocation: next.location, analytics: next.analytics, productUpdates: next.updates, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() }, approximateLocation, updatedAt: serverTimestamp() }, { merge: true });
+      const consentRecord = { version: CONSENT_VERSION, acceptedAt: serverTimestamp() };
+      await setDoc(doc(db, "users", user.uid), { privacyConsent: consentRecord, dataCollectionPreferences: { approximateLocation: next.location, analytics: next.analytics, communityHusbandryData: next.communityHusbandryData, productUpdates: next.updates, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() }, approximateLocation, updatedAt: serverTimestamp() }, { merge: true });
       await savePrivacyPreferences(user.uid, { communityLocation: next.location, anonymousAnalytics: next.analytics, communityHusbandryData: next.communityHusbandryData, productUpdates: next.updates });
-      await refreshProfile();
       window.localStorage.setItem(`tinytitans:privacy-consent:${user.uid}`, CONSENT_VERSION);
+      await refreshProfile();
       onAccepted();
     } catch (saveError) { console.error("Tiny Titans: consent save failed", saveError); setError(saveError instanceof Error ? saveError.message : "Unable to save your data choices. Please try again."); }
     finally { setSaving(false); setLocating(false); }
