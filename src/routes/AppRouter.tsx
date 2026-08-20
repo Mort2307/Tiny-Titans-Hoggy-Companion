@@ -76,18 +76,20 @@ function AppRouterGate() {
     setPrivacyConsentVersion(null);
     if (!user) return () => { active = false; };
     void getPrivacyPreferences(user.uid).then((preferences) => {
-      if (active) setPrivacyConsentVersion(preferences.consentVersion || null);
+      if (!active) return;
+      setPrivacyConsentVersion(preferences.consentVersion || profile?.privacyConsentVersion || profile?.dataCollectionPreferences?.consentVersion || "");
     }).catch(() => {
-      if (active) setPrivacyConsentVersion("");
+      if (!active) return;
+      setPrivacyConsentVersion(profile?.privacyConsentVersion || profile?.dataCollectionPreferences?.consentVersion || "");
     });
     return () => { active = false; };
-  }, [user]);
+  }, [user, profile?.privacyConsentVersion, profile?.dataCollectionPreferences?.consentVersion]);
 
   if (loading || profileLoading || (user && privacyConsentVersion === null)) return <div className="page-container"><div className="welcome-card"><h1>🐍 Loading Tiny Titans...</h1></div></div>;
   if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="*" element={<Navigate to={loginRedirect} replace />} /></Routes>;
   if (!profile || !profile.setupComplete) return <Routes><Route path="/account-setup" element={<AccountSetup />} /><Route path="*" element={<Navigate to={setupRedirect} replace />} /></Routes>;
 
-  const consentAlreadyStored = privacyConsentVersion === PRIVACY_CONSENT_VERSION || profile.dataCollectionPreferences?.consentVersion === CONSENT_VERSION || hasLocalPrivacyConsent(user.uid);
+  const consentAlreadyStored = privacyConsentVersion === PRIVACY_CONSENT_VERSION || profile.privacyConsentVersion === CONSENT_VERSION || profile.dataCollectionPreferences?.consentVersion === CONSENT_VERSION || hasLocalPrivacyConsent(user.uid);
   const consentRequired = !consentAccepted && !consentAlreadyStored;
 
   return <UnitProvider><Routes><Route element={<Layout />}>
