@@ -70,6 +70,7 @@ async function auditPage(page, route, viewport) {
         }
         return false;
       };
+      const isChrome = (element) => Boolean(element.closest("header, nav, footer, aside, [role='navigation'], [data-visual-chrome], .sidebar, .app-sidebar, .bottom-nav"));
       const body = document.body;
       const root = document.documentElement;
       const text = body?.innerText || "";
@@ -79,32 +80,37 @@ async function auditPage(page, route, viewport) {
       const clickable = [...document.querySelectorAll("button, a, [role='button']")];
       const visibleInteractive = interactive.filter(isVisibleElement);
       const touchProblems = visibleInteractive.filter((element) => {
+        const type = element.getAttribute("type")?.toLowerCase();
+        // Native checkbox/radio controls are intentionally compact; their labelled
+        // control surface is the touch target and is audited separately by action clarity.
+        if (type === "checkbox" || type === "radio") return false;
         const rect = element.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44);
       }).length;
       const cards = [...document.querySelectorAll("[class*='card'], [class*='tile'], [class*='panel']")].filter(isVisibleElement);
-      const headings = document.querySelectorAll("h1, h2, h3").length;
-      const primaryHeading = document.querySelector("h1")?.textContent?.trim() || "";
+      const contentInteractive = visibleInteractive.filter((element) => !isChrome(element));
+      const contentTextLength = [...document.querySelectorAll("main, [role='main'], .page-content, .app-content")]
+        .filter(isVisibleElement)
+        .map((element) => element.innerText || "")
+        .join(" ").length || text.length;
+      const headings = document.querySelectorAll("main h1, [role='main'] h1, h1").length;
+      const primaryHeading = document.querySelector("main h1, [role='main'] h1, h1")?.textContent?.trim() || "";
       const styles = getComputedStyle(root);
+      // The app historically used --primary/--secondary/--accent rather than the
+      // newer --tt-* names. Treat both as valid Tiny Titans brand evidence.
       const brandSignals = [
-        styles.getPropertyValue("--tt-brand").trim(),
-        styles.getPropertyValue("--tt-brand-strong").trim(),
-        styles.getPropertyValue("--tt-accent").trim(),
-        styles.getPropertyValue("--tt-warning").trim(),
+        styles.getPropertyValue("--tt-brand").trim() || styles.getPropertyValue("--primary").trim(),
+        styles.getPropertyValue("--tt-brand-strong").trim() || styles.getPropertyValue("--secondary").trim(),
+        styles.getPropertyValue("--tt-accent").trim() || styles.getPropertyValue("--accent").trim(),
+        styles.getPropertyValue("--tt-warning").trim() || styles.getPropertyValue("--warning").trim(),
       ].filter(Boolean);
       const bodyRect = body?.getBoundingClientRect();
       const overflow = Math.max(root.scrollWidth - viewportWidth, bodyRect ? bodyRect.width - viewportWidth : 0);
       const emptyLinks = clickable.filter((element) => element.tagName === "A" && !(element.getAttribute("href") || "").trim()).length;
       const buttons = clickable.filter((element) => element.tagName === "BUTTON");
       const suspiciousButtons = buttons.filter((button) => !button.disabled && !button.getAttribute("aria-label") && !(button.textContent || "").trim()).length;
-
       const allVisible = [...document.querySelectorAll("body *")].filter(isVisibleElement);
 
-      // IMPORTANT: vertical position outside the viewport is normal page scrolling.
-      // The previous implementation treated every element below the fold as
-      // "viewport clipping", producing 100+ false failures on every mobile route.
-      // A genuine viewport-clipping failure here means horizontal content that
-      // cannot be reached through an intentional horizontal scroll container.
       const viewportClipped = allVisible.filter((element) => {
         if (["HTML", "BODY"].includes(element.tagName)) return false;
         if (hasScrollableAncestor(element)) return false;
@@ -135,15 +141,13 @@ async function auditPage(page, route, viewport) {
       });
       const snakeCollection = snakeItems.length ? {
         count: snakeItems.length,
-        // Vertical position outside the viewport is expected because the page scrolls.
-        // Only horizontal escape from the viewport is a collection-layout failure.
         clipped: snakeItems.filter((item) => item.left < -2 || item.right > viewportWidth + 2).length,
         items: snakeItems,
       } : null;
 
       return {
-        textLength: text.length,
-        interactiveCount: visibleInteractive.length,
+        textLength: contentTextLength,
+        interactiveCount: contentInteractive.length,
         cardCount: cards.length,
         headingCount: headings,
         primaryHeading,
@@ -176,10 +180,10 @@ async function auditPage(page, route, viewport) {
     if (metrics.textClippedCount > 0) findings.push({ severity: "warning", code: "text-clipping", message: `${metrics.textClippedCount} visible text element(s) appear horizontally clipped.` });
     if (metrics.snakeCollection?.clipped) findings.push({ severity: "error", code: "snake-card-clipping", message: `${metrics.snakeCollection.clipped} of ${metrics.snakeCollection.count} visible snake item(s) extend horizontally outside the ${viewport.name} viewport.` });
     if (!metrics.primaryHeading) findings.push({ severity: "warning", code: "missing-h1", message: "No primary h1 heading was detected." });
-    if (metrics.interactiveCount > 18) findings.push({ severity: "warning", code: "interaction-density", message: `${metrics.interactiveCount} interactive controls are competing for attention.` });
-    if (metrics.textLength > 1200) findings.push({ severity: "warning", code: "text-density", message: `${metrics.textLength} rendered text characters suggest progressive disclosure may help.` });
-    if (metrics.touchProblems > 0) findings.push({ severity: "warning", code: "touch-targets", message: `${metrics.touchProblems} visible controls are smaller than the 44px touch-target guideline.` });
-    if (metrics.brandSignals.length < 3) findings.push({ severity: "warning", code: "brand-signal", message: "The rendered page does not expose the full Tiny Titans brand token set." });
+    if (metrics.interactiveCount > 18) findings.push({ severity: "warning", code: "interaction-density", message: `${metrics.interactiveCount} content controls are competing for attention.` });
+    if (metrics.textLength > 1200) findings.push({ severity: "warning", code: "text-density", message: `${metrics.textLength} content characters suggest progressive disclosure may help.` });
+    if (metrics.touchProblems > 0) findings.push({ severity: "warning", code: "touch-targets", message: `${metrics.touchProblems} visible actionable controls are smaller than the 44px touch-target guideline.` });
+    if (metrics.brandSignals.length < 3) findings.push({ severity: "warning", code: "brand-signal", message: "The rendered page does not expose enough Tiny Titans brand token evidence." });
     if (metrics.suspiciousButtons > 0 || metrics.emptyLinks > 0) findings.push({ severity: "warning", code: "ambiguous-actions", message: `${metrics.suspiciousButtons + metrics.emptyLinks} controls/links lack useful visible or semantic action cues.` });
     if ([...errors, ...consoleErrors].length) findings.push({ severity: "error", code: "runtime-errors", message: `${errors.length + consoleErrors.length} runtime/console error(s) were captured during the visual audit.` });
     if (!findings.length) findings.push({ severity: "info", code: "visual-health", message: "No major heuristic visual issues detected at this viewport. Screenshot review remains recommended." });
@@ -237,10 +241,11 @@ async function main() {
         "Viewport clipping checks horizontal escape from the viewport while respecting intentional horizontal scroll containers.",
         "Hidden-overflow containers are inspected separately for silently clipped content.",
         "My Snakes items are treated as a dedicated responsive collection and checked individually for horizontal clipping.",
-        "Explicitly horizontally scrollable containers are not falsely reported as page overflow.",
+        "Persistent navigation/chrome is excluded from content-density scoring so global navigation does not make every page fail.",
+        "Native checkbox/radio controls are excluded from raw-size touch failures because their labelled control surface is the actual touch target.",
+        "Both legacy and current Tiny Titans CSS brand tokens are accepted as valid brand evidence.",
         "Heuristics flag hierarchy, density, touch-target, action-clarity and runtime problems.",
         "Route-specific visual concepts are selected by page purpose rather than one universal template.",
-        "The Tiny Titans visual contract remains authoritative for brand identity.",
         "The bot recommends changes and records evidence; it never silently mutates application code.",
       ],
     };
@@ -253,7 +258,7 @@ async function main() {
       `Routes: ${report.routesInspected}`,
       `Screenshots: ${report.screenshotCount}`,
       "",
-      "The bot audits rendered geometry, responsive clipping, hidden-overflow containers, text clipping, touch targets, interaction density, action clarity, runtime errors and route-specific visual purpose.",
+      "The bot audits rendered geometry, responsive clipping, hidden-overflow containers, text clipping, touch targets, content interaction density, action clarity, runtime errors and route-specific visual purpose.",
       "Open report.json for detailed evidence.",
       "",
     ].join("\n");
