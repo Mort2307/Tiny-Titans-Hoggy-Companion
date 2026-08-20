@@ -3,6 +3,7 @@ export type ShedQuality = "Perfect" | "Good" | "Partial" | "Difficult" | "Unknow
 export type ShedStatus = "Complete" | "Partial" | "Problematic";
 export type RetainedShedArea = "Eye Cap" | "Head" | "Tail Tip" | "Body" | "Other";
 export type ShedAssistance = "None" | "Monitoring Only" | "Humidity Adjustment" | "Keeper Intervention" | "Veterinary Assistance";
+export type ShedInsightSeverity = "info" | "watch" | "action";
 
 export type ShedPhoto = {
   id: string;
@@ -12,13 +13,6 @@ export type ShedPhoto = {
   uploadedAt: string;
 };
 
-/**
- * One physical shedding cycle. Blue, Clear and Complete are stages of the
- * same cycle, never separate shed events.
- *
- * Legacy fields remain optional so existing Firestore records continue to
- * render while new records use the lifecycle fields below.
- */
 export type ShedRecord = {
   id: string;
   snakeId: string;
@@ -44,4 +38,18 @@ export type ShedRecord = {
   photos?: ShedPhoto[];
   deletedAt?: string;
   lastModifiedBy?: string;
+};
+
+export type ShedIntelligence = {
+  completeness: number;
+  headline: string;
+  summary: string;
+  severity: ShedInsightSeverity;
+  cycleStage: ShedStage | "None";
+  activeDays: number | null;
+  averageIntervalDays: number | null;
+  averageDurationDays: number | null;
+  retainedAreaFrequency: number;
+  problematicCycleCount: number;
+  insights: string[];
 };
