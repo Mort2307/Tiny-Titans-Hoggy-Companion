@@ -9,6 +9,9 @@ export type NotificationSettings = {
   feedingPreparationEnabled: boolean;
   feedingPreparationDaysBefore: number;
   feedingPreparationTime: string;
+  feedingRemindersEnabled: boolean;
+  weightRemindersEnabled: boolean;
+  weightReminderTime: string;
   healthRemindersEnabled: boolean;
   healthReminderFollowUpEnabled: boolean;
   medicationMissedFollowUpMinutes: number;
@@ -20,6 +23,9 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   feedingPreparationEnabled: false,
   feedingPreparationDaysBefore: 0,
   feedingPreparationTime: "08:00",
+  feedingRemindersEnabled: true,
+  weightRemindersEnabled: true,
+  weightReminderTime: "09:00",
   healthRemindersEnabled: true,
   healthReminderFollowUpEnabled: true,
   medicationMissedFollowUpMinutes: 60,
