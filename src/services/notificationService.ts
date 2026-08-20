@@ -5,18 +5,24 @@ import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationPermissionState, type N
 
 const SETTINGS_FIELD = "notificationSettings";
 
+function validTime(value: unknown, fallback: string): string {
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback;
+}
+
 function settingsFor(value: unknown): NotificationSettings {
   if (!value || typeof value !== "object") return { ...DEFAULT_NOTIFICATION_SETTINGS };
   const raw = value as Partial<NotificationSettings>;
   const days = Number(raw.feedingPreparationDaysBefore);
-  const time = raw.feedingPreparationTime;
   const missedMinutes = Number(raw.medicationMissedFollowUpMinutes);
   const healthFollowUpLeadDays = Number(raw.healthFollowUpLeadDays);
   return {
     enabled: raw.enabled === true,
     feedingPreparationEnabled: raw.feedingPreparationEnabled !== false,
     feedingPreparationDaysBefore: Number.isFinite(days) && days >= 0 && days <= 30 ? Math.round(days) : DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationDaysBefore,
-    feedingPreparationTime: typeof time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationTime,
+    feedingPreparationTime: validTime(raw.feedingPreparationTime, DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationTime),
+    feedingRemindersEnabled: raw.feedingRemindersEnabled !== false,
+    weightRemindersEnabled: raw.weightRemindersEnabled !== false,
+    weightReminderTime: validTime(raw.weightReminderTime, DEFAULT_NOTIFICATION_SETTINGS.weightReminderTime),
     healthRemindersEnabled: raw.healthRemindersEnabled !== false,
     healthReminderFollowUpEnabled: raw.healthReminderFollowUpEnabled !== false,
     medicationMissedFollowUpMinutes: Number.isFinite(missedMinutes) && missedMinutes >= 5 && missedMinutes <= 1440 ? Math.round(missedMinutes) : DEFAULT_NOTIFICATION_SETTINGS.medicationMissedFollowUpMinutes,
