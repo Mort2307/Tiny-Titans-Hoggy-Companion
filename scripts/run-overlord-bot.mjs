@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 
 const isWindows = process.platform === "win32";
 const command = isWindows ? "npx.cmd" : "npx";
-const args = ["--yes", "playwright", "test", "scripts/app-bot/overlord.spec.mjs"];
+const args = ["--yes", "playwright", "test", "scripts/app-bot/overlord.spec.mjs", "scripts/app-bot/overlord-form-matrix.spec.mjs"];
 
 const result = spawnSync(command, args, {
   stdio: "inherit",
