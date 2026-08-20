@@ -17,7 +17,17 @@ const retainedAreas: RetainedShedArea[] = ["Eye Cap", "Head", "Tail Tip", "Body"
 const assistances: ShedAssistance[] = ["None", "Monitoring Only", "Humidity Adjustment", "Keeper Intervention", "Veterinary Assistance"];
 const today = () => new Date().toISOString().slice(0, 10);
 const displayDate = (iso?: string) => iso ? new Intl.DateTimeFormat("en-GB").format(new Date(`${iso}T00:00:00Z`)) : "Not recorded";
-const parseDate = (value: string) => { const parts = value.trim().replace(/[.-]/g, "/").split("/"); if (parts.length !== 3) return null; const [d, m, rawY] = parts.map(Number); const y = rawY < 100 ? rawY + 2000 : rawY; const date = new Date(Date.UTC(y, m - 1, d)); return Number.isFinite(date.getTime()) && date.getUTCDate() === d && date.getUTCMonth() === m - 1 ? `${y.toString().padStart(4,"0")}-${m.toString().padStart(2,"0")}-${d.toString().padStart(2,"0")}` : null; };
+const parseDate = (value: string) => {
+  const parts = value.trim().replace(/[.-]/g, "/").split("/");
+  if (parts.length !== 3) return null;
+  const values = parts.map(Number);
+  const d = values[0];
+  const m = values[1];
+  const rawY = values[2];
+  const y = rawY < 100 ? rawY + 2000 : rawY;
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return Number.isFinite(date.getTime()) && date.getUTCDate() === d && date.getUTCMonth() === m - 1 ? `${y.toString().padStart(4,"0")}-${m.toString().padStart(2,"0")}-${d.toString().padStart(2,"0")}` : null;
+};
 const stageTitle = (stage: ShedStage) => stage === "Blue" ? "🔵 Blue phase" : stage === "Clear" ? "⚪ Clear phase" : "🟢 Full shed";
 const retainedFrom = (r: ShedRecord): RetainedShedArea[] => r.retainedAreas?.length ? r.retainedAreas : [...new Set([...(r.retainedEyeCaps ? ["Eye Cap" as const] : []), ...(r.retainedTailTip ? ["Tail Tip" as const] : []), ...(r.retainedShedArea && r.retainedShedArea !== "None" && r.retainedShedArea !== "Multiple Areas" ? [r.retainedShedArea] : [])])];
 
