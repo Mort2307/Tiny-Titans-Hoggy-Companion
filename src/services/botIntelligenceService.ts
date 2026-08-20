@@ -92,7 +92,7 @@ function semanticRole(element: Element): string {
 function regionCandidates(): Region[] {
   const candidates = Array.from(document.querySelectorAll("main, section, article, form, [role='region'], [data-card], [class*='card'], [class*='tile'], [class*='panel']"));
   const seen = new Set<string>();
-  return candidates.map((element, index) => {
+  return candidates.map((element) => {
     const rect = viewportRect(element);
     const interactive = element.querySelectorAll("button, a[href], input, select, textarea, [role='button']").length;
     const headings = element.querySelectorAll("h1, h2, h3, h4, h5, h6").length;
@@ -100,11 +100,12 @@ function regionCandidates(): Region[] {
     if (seen.has(key)) return null;
     seen.add(key);
     return { element, rect, text: textOf(element).slice(0, 260), interactive, headings, visible: isVisible(element), role: semanticRole(element) };
-  }).filter((item): item is Region => Boolean(item) && item.visible && item.rect.width >= 100 && item.rect.height >= 40 && indexSafe(item!));
-}
-
-function indexSafe(region: Region): boolean {
-  return Boolean(region.element);
+  }).filter((item): item is Region =>
+    item !== null &&
+    item.visible &&
+    item.rect.width >= 100 &&
+    item.rect.height >= 40
+  );
 }
 
 function visibleInteractive(): Element[] {
@@ -195,7 +196,7 @@ function inspectRenderedUi(): IntelligenceFinding[] {
   if (h1s.length > 1) findings.push({ id: "multiple-h1", kind: "problem", severity: "low", title: "The page exposes multiple H1 headings", evidence: `${h1s.length} visible H1 elements were found.`, recommendation: "Use one dominant page heading and demote independent section headings to H2/H3 where appropriate.", confidence: 93 });
 
   const firstViewportActionRatio = firstViewportInteractive.length ? strongActions.filter(item => isInFirstViewport(viewportRect(item.element))).length / firstViewportInteractive.length : 0;
-  if (interactive.length >= 10 && strongActions.length === 0) findings.push({ id: "no-dominant-action", kind: "problem", severity: "medium", title: "The page has no clearly dominant action", evidence: `${interactive.length} visible interactive controls were found, but none has enough contextual, semantic and visual evidence to be identified as a strong primary action.`, recommendation: `Make the action that fulfils “${profile.primaryIntent}” visually and semantically dominant. Avoid giving every button equal weight.`, confidence: 88 });
+  if (interactive.length >= 10 && strongActions.length === 0) findings.push({ id: "no-dominant-action", kind: "problem", severity: "medium", title: "The page has no clearly dominant action", evidence: `${interactive.length} visible interactive controls were found, but none has enough contextual, semantic and visual evidence to be identified as a strong primary action. Only ${Math.round(firstViewportActionRatio * 100)}% of opening-viewport interactive controls are strongly associated with the primary task.`, recommendation: `Make the action that fulfils “${profile.primaryIntent}” visually and semantically dominant. Avoid giving every button equal weight.`, confidence: 88 });
   if (strongActions.length >= 4) findings.push({ id: "competing-primary-actions", kind: "problem", severity: "medium", title: "Several actions compete for primary attention", evidence: `${strongActions.length} controls score strongly as primary actions; the first viewport contains ${firstViewportInteractive.length} interactive controls.`, recommendation: `Choose one dominant outcome for this ${profile.pattern} page. Demote secondary actions with quieter styling, placement or grouping.`, confidence: 86 });
 
   if (firstViewportRegions.length >= 7 && firstViewportWords >= 220) findings.push({ id: "busy-first-viewport", kind: "problem", severity: "medium", title: "The first viewport is visually information-dense", evidence: `${firstViewportRegions.length} significant regions and approximately ${firstViewportWords} words are visible before the first viewport ends.`, recommendation: "Reduce simultaneous competition in the opening viewport. Prioritise the page purpose, primary action and immediate status; move secondary history, education or management controls lower or behind progressive disclosure.", confidence: 84 });
@@ -231,7 +232,7 @@ function inspectRenderedUi(): IntelligenceFinding[] {
     if (max - min > 28) findings.push({ id: "control-scale-inconsistency", kind: "opportunity", severity: "low", title: "Interactive control sizing is noticeably inconsistent", evidence: `Sampled control heights range from ${Math.round(min)}px to ${Math.round(max)}px.`, recommendation: "Check whether the variation is intentional. Establish a small set of control sizes so primary, secondary and compact actions have predictable visual grammar.", confidence: 75 });
   }
 
-  if (verticalHeight > window.innerHeight * 6 && profile.pattern !== "timeline" && profile.pattern !== "field-guide") findings.push({ id: "excessive-page-length", kind: "opportunity", severity: "low", title: "This page is unusually long for its detected purpose", evidence: `Rendered document height is ${verticalHeight}px (${(verticalHeight / window.innerHeight).toFixed(1)} viewport heights).`, recommendation: "Consider progressive disclosure, anchored sections, tabs or separate purpose-led pages. Do not shorten a genuinely useful timeline or reference page merely to reduce scroll length.", confidence: 77 });
+  if (verticalHeight > window.innerHeight * 6 && profile.pattern !== "timeline" && profile.pattern !== "field-guide") findings.push({ id: "excessive-page-length", kind: "opportunity", severity: "low", title: "This page is unusually long for its detected purpose", evidence: `Rendered document height is ${verticalHeight}px (${(verticalHeight / window.innerHeight).toFixed(1)} viewport heights) and contains approximately ${wordCount} words of visible content.`, recommendation: "Consider progressive disclosure, anchored sections, tabs or separate purpose-led pages. Do not shorten a genuinely useful timeline or reference page merely to reduce scroll length.", confidence: 77 });
 
   const cssGrid = Array.from(document.querySelectorAll("main section, main article, main > div, [class*='grid']")).filter(isVisible).slice(0, 80);
   const narrowCards = cssGrid.filter(el => { const r = viewportRect(el); return r.width >= 240 && r.width < 380 && r.height >= 100; });
