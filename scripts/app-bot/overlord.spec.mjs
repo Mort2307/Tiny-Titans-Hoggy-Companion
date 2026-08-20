@@ -122,9 +122,23 @@ async function visit(page, route) {
 }
 
 async function findSnakeInCollection(page, name) {
-  const tile = page.getByRole("button", { name: new RegExp(`^Select ${name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}$`) }).first();
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const tile = page.getByRole("button", { name: new RegExp(`^Select ${escaped}$`) }).first();
   await expect(tile).toBeVisible({ timeout: APP_READY_TIMEOUT });
   return tile;
+}
+
+async function selectShedStage(page, stage) {
+  const stageInput = page.locator(`input[name="shed-stage"][value="${stage}"]`).first();
+  if (!(await stageInput.count())) {
+    const available = await page.locator('input[name="shed-stage"]').evaluateAll((inputs) => inputs.map((input) => ({ value: input.getAttribute("value"), label: input.parentElement?.textContent?.trim() })));
+    throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage value "${stage}" but discovered ${JSON.stringify(available)}.`);
+  }
+  await expect(stageInput).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  await expect(stageInput).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+  await stageInput.check();
+  await expect(stageInput).toBeChecked();
+  console.log(`[OVERLORD] Shedding stage selected semantically: ${stage}.`);
 }
 
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
@@ -230,37 +244,43 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await snakeSelect.selectOption(createdSnakeId);
     const snakeId = await snakeSelect.inputValue();
     expect(snakeId).toBe(createdSnakeId);
-    await page.getByRole("radio", { name: /Blue Phase/i }).check();
+
+    await selectShedStage(page, "Blue");
     await page.getByRole("button", { name: /Start Cycle/i }).click();
     await expect(page.getByRole("status")).toContainText(/Blue Phase recorded/i);
     await assertHealthy(page, errors);
+
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding reload after Blue Phase");
     await dismissPrivacyConsent(page);
     await expect(page.getByText(/Active shedding cycle/i)).toBeVisible();
     await expect(page.getByText(/Blue Phase/i).first()).toBeVisible();
+
     await page.getByRole("button", { name: /Record Next Stage/i }).click();
-    await page.getByRole("radio", { name: /Clear Phase/i }).check();
+    await selectShedStage(page, "Clear");
     await page.getByRole("button", { name: /Record Stage/i }).click();
     await expect(page.getByRole("status")).toContainText(/Clear Phase recorded/i);
     await assertHealthy(page, errors);
+
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding reload after Clear Phase");
     await dismissPrivacyConsent(page);
     await expect(page.getByText(/Active shedding cycle/i)).toBeVisible();
+
     await page.getByRole("button", { name: /Record Next Stage/i }).click();
-    await page.getByRole("radio", { name: /Full Shed/i }).check();
-    await page.getByRole("combobox", { name: "Final outcome" }).selectOption("Complete");
+    await selectShedStage(page, "Complete");
+    await page.getByLabel("Final outcome").selectOption("Complete");
     await page.getByRole("button", { name: /Record Stage/i }).click();
     await expect(page.getByRole("status")).toContainText(/Full shed recorded/i);
     await assertHealthy(page, errors);
+
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding final reload");
     await dismissPrivacyConsent(page);
     await expect(page.getByText(/Shed Cycle History/i)).toBeVisible();
     await expect(page.getByText(/Full Shed/i).first()).toBeVisible();
     await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i);
-    expect(await snakeSelect.inputValue().catch(() => "")).toBe(snakeId);
+    await expect(page.locator("#shed-snake")).toHaveValue(snakeId);
     console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
   });
 });
