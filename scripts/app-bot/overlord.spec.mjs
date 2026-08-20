@@ -1,64 +1,13 @@
-import { test, expect } from "@playwright/test";
-import { applicationErrors, assertHealthy, dismissPrivacyConsent, findSnakeInCollection, signIn, visit, waitForApplicationShell } from "./helpers.mjs";
+import { expect, test } from "@playwright/test";
+import { APP_READY_TIMEOUT, applicationErrors, assertHealthy, dismissPrivacyConsent, findSnakeInCollection, signIn, snakeRoutes, visit, waitForApplicationShell } from "./helpers.mjs";
 
-// OVERLORD BOT — authenticated whole-app functional sweep
-//
-// NOTE: This file intentionally exercises user-facing contracts rather than
-// implementation-specific DOM structure. The shedding tracker deliberately
-// has a native Stage <select>; do not couple the bot to obsolete input[name]
-// contracts from the previous shedding implementation.
-
-const APP_READY_TIMEOUT = 15_000;
-const syntheticName = `Overlord-${Date.now()}`;
-const syntheticEditedName = `${syntheticName}-Edited`;
+const syntheticName = "OVERLORD SHED TEST";
+const syntheticEditedName = "OVERLORD SHED TEST EDITED";
 let createdSnakeId = "";
 
-const coreRoutes = [
-  "/", "/snakes", "/snakes/new", "/weights", "/feeding", "/shedding",
-  "/behaviour", "/health", "/morph-library", "/calculator", "/knowledge-base",
-  "/learn", "/adaptive-learning", "/challenge", "/learn/achievements", "/breeding",
-  "/community", "/report-bug", "/feedback", "/account", "/account/profile",
-  "/account/security", "/account/settings", "/account/data-privacy", "/account/personalise",
-];
-
-function snakeRoutes(id) {
-  return [
-    `/snakes/${id}`,
-    `/snakes/${id}/master-record`,
-    `/snakes/${id}/timeline`,
-    `/snakes/${id}/edit`,
-    `/snakes/${id}/weights`,
-    `/snakes/${id}/feeding`,
-    `/snakes/${id}/shedding`,
-    `/snakes/${id}/behaviour`,
-    `/snakes/${id}/health`,
-  ];
-}
-
 async function selectShedStage(page, stage) {
-  const stagePattern = new RegExp(`(?:^|\\b)${stage}(?:\\s+Phase)?(?:$|\\b)`, "i");
-
-  const stageSelect = page.getByLabel("Stage", { exact: true }).first();
-  if (await stageSelect.count()) {
-    await expect(stageSelect).toBeVisible({ timeout: APP_READY_TIMEOUT });
-    await expect(stageSelect).toBeEnabled({ timeout: APP_READY_TIMEOUT });
-    await stageSelect.selectOption(stage);
-    await expect(stageSelect).toHaveValue(stage);
-    console.log(`[OVERLORD] Shedding stage selected via Stage select: ${stage}.`);
-    return;
-  }
-
-  const legacyInput = page.locator(`input[name="shed-stage"][value="${stage}"]`).first();
-  if (await legacyInput.count()) {
-    await expect(legacyInput).toBeVisible({ timeout: APP_READY_TIMEOUT });
-    await expect(legacyInput).toBeEnabled({ timeout: APP_READY_TIMEOUT });
-    await legacyInput.check();
-    await expect(legacyInput).toBeChecked();
-    console.log(`[OVERLORD] Shedding stage selected via legacy Stage value contract: ${stage}.`);
-    return;
-  }
-
-  const radio = page.getByRole("radio", { name: stagePattern }).first();
+  const stageFieldset = page.locator("fieldset").filter({ hasText: /Stage/i }).first();
+  const radio = stageFieldset.getByRole("radio", { name: new RegExp(stage, "i") }).first();
   if (await radio.count()) {
     await expect(radio).toBeVisible({ timeout: APP_READY_TIMEOUT });
     await expect(radio).toBeEnabled({ timeout: APP_READY_TIMEOUT });
@@ -68,7 +17,17 @@ async function selectShedStage(page, stage) {
     return;
   }
 
-  const stageButton = page.getByRole("button", { name: stagePattern }).first();
+  const legacyInput = page.locator(`input[name="shed-stage"][value="${stage}"]`).first();
+  if (await legacyInput.count()) {
+    await expect(legacyInput).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(legacyInput).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+    await legacyInput.check();
+    await expect(legacyInput).toBeChecked();
+    console.log(`[OVERLORD] Shedding stage selected via compatible input contract: ${stage}.`);
+    return;
+  }
+
+  const stageButton = stageFieldset.getByRole("button", { name: new RegExp(stage, "i") }).first();
   if (await stageButton.count()) {
     await expect(stageButton).toBeVisible({ timeout: APP_READY_TIMEOUT });
     await expect(stageButton).toBeEnabled({ timeout: APP_READY_TIMEOUT });
@@ -88,7 +47,7 @@ async function selectShedStage(page, stage) {
 }
 
 async function submitShedForm(page, expectedAction = "stage") {
-  const form = page.locator("form").filter({ hasText: /Record shedding|Update shedding cycle/ }).first();
+  const form = page.locator("form").filter({ hasText: /Stage date|Observations \/ notes/ }).first();
   await expect(form).toBeVisible({ timeout: APP_READY_TIMEOUT });
   const submit = form.locator('button[type="submit"]').first();
   await expect(submit).toBeVisible({ timeout: APP_READY_TIMEOUT });
@@ -99,12 +58,18 @@ async function submitShedForm(page, expectedAction = "stage") {
 }
 
 async function waitForActiveShedCycle(page, stage = "Blue") {
-  // Firebase-backed tracker data can arrive after the application shell is
-  // ready. A short fixed timeout creates false negatives when the write has
-  // succeeded but the post-reload query is still hydrating. The assertion
-  // remains the persistence proof.
-  await expect(page.getByText(/Active cycle/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
-  await expect(page.getByText(new RegExp(`${stage} phase`, "i")).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  // The live Shed Tracker calls this "Active shedding cycle". Keep the
+  // assertion semantic enough to survive harmless copy changes while still
+  // proving the Firebase-backed cycle was restored after a full reload.
+  await expect(page.getByText(/Active shedding cycle/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  await expect(page.getByText(new RegExp(`${stage} Phase`, "i")).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
+}
+
+async function continueToNextShedStage(page) {
+  const button = page.getByRole("button", { name: /Record Next Stage/i }).first();
+  await expect(button).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  await expect(button).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+  await button.click();
 }
 
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
@@ -117,7 +82,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
   test("core application routes render without runtime failures", async ({ page }) => {
     const errors = applicationErrors(page);
     await signIn(page);
-    for (const route of coreRoutes) {
+    for (const route of ["/", "/snakes", "/snakes/new", "/weights", "/feeding", "/shedding", "/behaviour", "/health", "/morph-library", "/calculator", "/knowledge-base", "/learn", "/adaptive-learning", "/challenge", "/learn/achievements", "/breeding", "/community", "/report-bug", "/feedback", "/account", "/account/profile", "/account/security", "/account/settings", "/account/data-privacy", "/account/personalise"]) {
       await visit(page, route);
       await assertHealthy(page, errors);
       console.log(`[OVERLORD] Passed core route: ${route}`);
@@ -130,7 +95,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await visit(page, "/");
     const hrefs = await page.locator("a[href]").evaluateAll((anchors) => anchors.map((anchor) => anchor.getAttribute("href")).filter(Boolean));
     const internal = [...new Set(hrefs.filter((href) => href.startsWith("/") && !href.startsWith("//")))];
-    const targets = internal.length ? internal.slice(0, 80) : coreRoutes;
+    const targets = internal.length ? internal.slice(0, 80) : ["/", "/snakes", "/snakes/new", "/weights", "/feeding", "/shedding", "/behaviour", "/health", "/morph-library", "/calculator", "/knowledge-base", "/learn", "/adaptive-learning", "/challenge", "/learn/achievements", "/breeding", "/community", "/report-bug", "/feedback", "/account", "/account/profile", "/account/security", "/account/settings", "/account/data-privacy", "/account/personalise"];
     console.log(`[OVERLORD] Navigation audit discovered ${internal.length} internal anchor target(s); validating ${targets.length} declared/discovered route(s).`);
     for (const href of targets) {
       await visit(page, href);
@@ -180,7 +145,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await expect(page.getByRole("region", { name: `${syntheticEditedName} trackers` })).toBeVisible({ timeout: APP_READY_TIMEOUT });
     await visit(page, `/snakes/${createdSnakeId}`);
     await expect(page.locator("body")).toContainText(syntheticEditedName);
-    for (const route of snakeRoutes(createdSnakeId)) {
+    for (const route of [`/snakes/${createdSnakeId}`, `/snakes/${createdSnakeId}/master-record`, `/snakes/${createdSnakeId}/timeline`, `/snakes/${createdSnakeId}/edit`, `/snakes/${createdSnakeId}/weights`, `/snakes/${createdSnakeId}/feeding`, `/snakes/${createdSnakeId}/shedding`, `/snakes/${createdSnakeId}/behaviour`, `/snakes/${createdSnakeId}/health`]) {
       await visit(page, route);
       await assertHealthy(page, errors);
     }
@@ -213,7 +178,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
 
     await selectShedStage(page, "Blue");
     await submitShedForm(page, "Blue/start");
-    await expect(page.getByRole("status")).toContainText(/Blue phase saved|Blue Phase recorded/i);
+    await expect(page.getByRole("status")).toContainText(/Blue Phase recorded/i);
     await assertHealthy(page, errors);
 
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -221,10 +186,10 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await dismissPrivacyConsent(page);
     await waitForActiveShedCycle(page, "Blue");
 
-    await page.getByRole("button", { name: /Continue to Clear/i }).click();
+    await continueToNextShedStage(page);
     await selectShedStage(page, "Clear");
     await submitShedForm(page, "Clear/next stage");
-    await expect(page.getByRole("status")).toContainText(/Clear phase saved|Clear Phase recorded/i);
+    await expect(page.getByRole("status")).toContainText(/Clear Phase recorded/i);
     await assertHealthy(page, errors);
 
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -232,9 +197,9 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await dismissPrivacyConsent(page);
     await waitForActiveShedCycle(page, "Clear");
 
-    await page.getByRole("button", { name: /Record Full Shed/i }).click();
+    await continueToNextShedStage(page);
     await selectShedStage(page, "Complete");
-    await page.getByLabel("Outcome status").selectOption("Complete");
+    await page.getByLabel("Final outcome").selectOption("Complete");
     await submitShedForm(page, "Complete/final stage");
     await expect(page.getByRole("status")).toContainText(/Full shed recorded/i);
     await assertHealthy(page, errors);
@@ -242,9 +207,9 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding final reload");
     await dismissPrivacyConsent(page);
-    await expect(page.getByText(/Shed history/i)).toBeVisible({ timeout: APP_READY_TIMEOUT });
-    await expect(page.getByText(/Full shed/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
-    await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save shedding cycle/i);
+    await expect(page.getByText(/Shed Cycle History/i)).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(page.getByText(/Full Shed/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i);
     await expect(page.locator("#shed-snake")).toHaveValue(snakeId);
     console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
   });
