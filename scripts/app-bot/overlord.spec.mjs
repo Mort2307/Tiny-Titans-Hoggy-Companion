@@ -55,7 +55,7 @@ function applicationErrors(page) {
 }
 
 async function assertHealthy(page, errors) {
-  await expect(page.locator("body")).not.toContainText(/Application error|Internal Server Error|Cannot read properties of undefined/i);
+  await expect(page.locator("body")).not.toContainText(/Application error|Internal Server Error|Cannot read properties of undefined|Unsupported field value: undefined/i);
   expect(errors).toEqual([]);
 }
 
@@ -226,5 +226,57 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
       await expect(controls.first()).toBeVisible();
       await assertHealthy(page, errors);
     }
+  });
+
+  test("shedding is a real single-cycle persistence journey", async ({ page }) => {
+    const errors = applicationErrors(page);
+    await signIn(page);
+    await visit(page, "/shedding");
+
+    const snakeSelect = page.locator("#shed-snake");
+    await expect(snakeSelect).toBeVisible();
+    const snakeOptions = await snakeSelect.locator("option").allTextContents();
+    expect(snakeOptions.length).toBeGreaterThan(0);
+    const snakeId = await snakeSelect.inputValue();
+    expect(snakeId).toBeTruthy();
+
+    const stageDate = page.locator("#shed-stage-date");
+    await expect(stageDate).toBeVisible();
+    const originalDate = await stageDate.inputValue();
+
+    await page.getByRole("radio", { name: /Blue Phase/i }).check();
+    await page.getByRole("button", { name: /Start Cycle/i }).click();
+    await expect(page.getByRole("status")).toContainText(/Blue Phase recorded/i);
+    await assertHealthy(page, errors);
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await expect(page.getByText(/Active shedding cycle/i)).toBeVisible();
+    await expect(page.getByText(/Blue Phase/i).first()).toBeVisible();
+
+    await page.getByRole("button", { name: /Record Next Stage/i }).click();
+    await page.getByRole("radio", { name: /Clear Phase/i }).check();
+    await page.getByRole("button", { name: /Record Stage/i }).click();
+    await expect(page.getByRole("status")).toContainText(/Clear Phase recorded/i);
+    await assertHealthy(page, errors);
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await expect(page.getByText(/Active shedding cycle/i)).toBeVisible();
+    await page.getByRole("button", { name: /Record Next Stage/i }).click();
+    await page.getByRole("radio", { name: /Full Shed/i }).check();
+    await page.getByRole("combobox", { name: "Final outcome" }).selectOption("Complete");
+    await page.getByRole("button", { name: /Record Stage/i }).click();
+    await expect(page.getByRole("status")).toContainText(/Full shed recorded/i);
+    await assertHealthy(page, errors);
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await expect(page.getByText(/Shed Cycle History/i)).toBeVisible();
+    await expect(page.getByText(/Full Shed/i).first()).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i);
+    expect(await snakeSelect.inputValue().catch(() => "")).toBe(snakeId);
+    expect(originalDate).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
   });
 });
