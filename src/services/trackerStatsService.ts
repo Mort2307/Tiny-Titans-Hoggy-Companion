@@ -1,5 +1,5 @@
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { auth, db } from "../firebase/config";
 import type { GlobalStats } from "./creatorService";
 
 type NumericRecord = {
@@ -39,12 +39,21 @@ function timestampMillis(value: unknown): number | null {
  * Canonical Creator Centre aggregation.
  *
  * Community tracker metrics are consent-controlled and explicitly separated
- * from creator/test data. The caller can additionally exclude the current
- * creator account by UID, which makes the boundary deterministic even when
- * the Firestore profile does not contain an admin/creator role field.
+ * from creator/test data. The authenticated creator/admin account is also
+ * excluded using its Firebase custom claim, so a creator's local test record
+ * cannot become community intelligence simply because the profile document
+ * does not contain an admin/creator role field.
  */
 export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}): Promise<GlobalStats> {
   const excludedUserIds = new Set(options.excludedUserIds ?? []);
+  const currentUser = auth.currentUser;
+  if (currentUser) {
+    const tokenResult = await currentUser.getIdTokenResult();
+    if (tokenResult.claims.admin === true || tokenResult.claims.creator === true) {
+      excludedUserIds.add(currentUser.uid);
+    }
+  }
+
   const usersSnapshot = await getDocs(collection(db, "users"));
   const now = Date.now();
   const dayCutoff = now - 24 * 60 * 60 * 1000;
@@ -94,7 +103,6 @@ export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}):
       usersWithData += 1;
     }
 
-    // Community tracker intelligence must never consume creator/test records.
     const preferences = userData.dataCollectionPreferences as { analytics?: unknown } | undefined;
     const analyticsOptedIn = preferences?.analytics === true;
     const isCreatorOrQaAccount = userData.profileType === "creator" || userData.role === "admin" || userData.role === "creator";
