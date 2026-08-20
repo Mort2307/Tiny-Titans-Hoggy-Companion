@@ -34,9 +34,9 @@ function timestampMillis(value: unknown): number | null {
 /**
  * Canonical Creator Centre aggregation.
  *
- * The Firebase subcollections are the source of truth for tracker totals.
- * Legacy embedded arrays are inspected only for reconciliation candidates and
- * are never silently mixed into the canonical totals.
+ * Tracker totals are community metrics, not a mirror of the creator/QA account.
+ * Creator/test records must never contaminate community intelligence. Optional
+ * analytics consent is also required before a user's tracker data contributes.
  */
 export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
   const usersSnapshot = await getDocs(collection(db, "users"));
@@ -88,6 +88,12 @@ export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
       usersWithData += 1;
     }
 
+    // Community tracker intelligence is explicitly opt-in and excludes creator/QA accounts.
+    const preferences = userData.dataCollectionPreferences as { analytics?: unknown } | undefined;
+    const analyticsOptedIn = preferences?.analytics === true;
+    const isCreatorOrQaAccount = userData.profileType === "creator" || userData.role === "admin" || userData.role === "creator";
+    if (!analyticsOptedIn || isCreatorOrQaAccount) return;
+
     await Promise.all(snakesSnapshot.docs.map(async (snakeDoc) => {
       const snake = snakeDoc.data() as Record<string, unknown>;
 
@@ -108,9 +114,6 @@ export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
         }
       }
 
-      // Legacy arrays are reconciliation candidates only. A valid legacy record
-      // is NOT an invalid canonical record, so it must not inflate data-quality
-      // failures or the global weight totals.
       if (Array.isArray(snake.weightHistory)) {
         for (const record of snake.weightHistory) {
           const item = record as NumericRecord & { id?: unknown };
