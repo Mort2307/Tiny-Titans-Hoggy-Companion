@@ -6,6 +6,24 @@ const syntheticEditedName = "OVERLORD SHED TEST EDITED";
 let createdSnakeId = "";
 
 async function selectShedStage(page, stage) {
+  // Current Shed Tracker uses a semantic <select> for the stage. Prefer the
+  // option text/value contract over brittle assumptions about input names.
+  const stageSelect = page.locator("select").filter({
+    has: page.locator("option", { hasText: new RegExp(`${stage}\\s+phase|Full shed`, "i") }),
+  }).first();
+  if (await stageSelect.count()) {
+    await expect(stageSelect).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(stageSelect).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+    const option = stageSelect.locator("option").filter({ hasText: new RegExp(stage === "Complete" ? "Full shed|Complete" : `${stage}\\s+phase`, "i") }).first();
+    await expect(option).toBeAttached({ timeout: APP_READY_TIMEOUT });
+    const value = await option.getAttribute("value");
+    if (value == null) throw new Error(`[OVERLORD] Stage option for "${stage}" has no value.`);
+    await stageSelect.selectOption(value);
+    await expect(stageSelect).toHaveValue(value);
+    console.log(`[OVERLORD] Shedding stage selected via semantic select option: ${stage}.`);
+    return;
+  }
+
   const stageFieldset = page.locator("fieldset").filter({ hasText: /Stage/i }).first();
   const radio = stageFieldset.getByRole("radio", { name: new RegExp(stage, "i") }).first();
   if (await radio.count()) {
@@ -58,15 +76,12 @@ async function submitShedForm(page, expectedAction = "stage") {
 }
 
 async function waitForActiveShedCycle(page, stage = "Blue") {
-  // The live Shed Tracker calls this "Active shedding cycle". Keep the
-  // assertion semantic enough to survive harmless copy changes while still
-  // proving the Firebase-backed cycle was restored after a full reload.
   await expect(page.getByText(/Active shedding cycle/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
   await expect(page.getByText(new RegExp(`${stage} Phase`, "i")).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
 }
 
-async function continueToNextShedStage(page) {
-  const button = page.getByRole("button", { name: /Record Next Stage/i }).first();
+async function continueActiveShedCycle(page) {
+  const button = page.getByRole("button", { name: /Continue to (Clear|Full Shed)/i }).first();
   await expect(button).toBeVisible({ timeout: APP_READY_TIMEOUT });
   await expect(button).toBeEnabled({ timeout: APP_READY_TIMEOUT });
   await button.click();
@@ -145,7 +160,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await expect(page.getByRole("region", { name: `${syntheticEditedName} trackers` })).toBeVisible({ timeout: APP_READY_TIMEOUT });
     await visit(page, `/snakes/${createdSnakeId}`);
     await expect(page.locator("body")).toContainText(syntheticEditedName);
-    for (const route of [`/snakes/${createdSnakeId}`, `/snakes/${createdSnakeId}/master-record`, `/snakes/${createdSnakeId}/timeline`, `/snakes/${createdSnakeId}/edit`, `/snakes/${createdSnakeId}/weights`, `/snakes/${createdSnakeId}/feeding`, `/snakes/${createdSnakeId}/shedding`, `/snakes/${createdSnakeId}/behaviour`, `/snakes/${createdSnakeId}/health`]) {
+    for (const route of snakeRoutes(createdSnakeId)) {
       await visit(page, route);
       await assertHealthy(page, errors);
     }
@@ -186,9 +201,9 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await dismissPrivacyConsent(page);
     await waitForActiveShedCycle(page, "Blue");
 
-    await continueToNextShedStage(page);
+    await continueActiveShedCycle(page);
     await selectShedStage(page, "Clear");
-    await submitShedForm(page, "Clear/next stage");
+    await submitShedForm(page, "Clear/stage");
     await expect(page.getByRole("status")).toContainText(/Clear Phase recorded/i);
     await assertHealthy(page, errors);
 
@@ -197,10 +212,10 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await dismissPrivacyConsent(page);
     await waitForActiveShedCycle(page, "Clear");
 
-    await continueToNextShedStage(page);
+    await continueActiveShedCycle(page);
     await selectShedStage(page, "Complete");
     await page.getByLabel("Final outcome").selectOption("Complete");
-    await submitShedForm(page, "Complete/final stage");
+    await submitShedForm(page, "Complete/stage");
     await expect(page.getByRole("status")).toContainText(/Full shed recorded/i);
     await assertHealthy(page, errors);
 
