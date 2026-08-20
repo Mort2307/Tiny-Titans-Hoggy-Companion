@@ -1,4 +1,4 @@
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 import type { GlobalStats } from "./creatorService";
 
@@ -14,6 +14,10 @@ type UserData = Record<string, unknown>;
 
 type GlobalStatsOptions = {
   excludedUserIds?: string[];
+};
+
+type PrivacyData = {
+  anonymousAnalytics?: unknown;
 };
 
 function toNumber(value: unknown): number {
@@ -40,13 +44,16 @@ function timestampMillis(value: unknown): number | null {
  *
  * Community tracker metrics are consent-controlled and explicitly separated
  * from creator/test data. The authenticated creator/admin account is also
- * excluded using its Firebase custom claim, so a creator's local test record
- * cannot become community intelligence simply because the profile document
- * does not contain an admin/creator role field.
+ * excluded using its Firebase custom claim.
+ *
+ * Privacy consent is stored canonically at users/{uid}/settings/privacy.
+ * Do not read a legacy/non-existent dataCollectionPreferences field from the
+ * user profile: doing so silently excluded legitimate community records.
  */
 export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}): Promise<GlobalStats> {
   const excludedUserIds = new Set(options.excludedUserIds ?? []);
   const currentUser = auth.currentUser;
+
   if (currentUser) {
     const tokenResult = await currentUser.getIdTokenResult();
     if (tokenResult.claims.admin === true || tokenResult.claims.creator === true) {
@@ -103,11 +110,13 @@ export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}):
       usersWithData += 1;
     }
 
-    const preferences = userData.dataCollectionPreferences as { analytics?: unknown } | undefined;
-    const analyticsOptedIn = preferences?.analytics === true;
+    const privacySnapshot = await getDoc(doc(db, "users", userDoc.id, "settings", "privacy"));
+    const privacy = privacySnapshot.exists() ? privacySnapshot.data() as PrivacyData : {};
+    const communityDataOptedIn = privacy.anonymousAnalytics === true;
     const isCreatorOrQaAccount = userData.profileType === "creator" || userData.role === "admin" || userData.role === "creator";
     const explicitlyExcluded = excludedUserIds.has(userDoc.id);
-    if (!analyticsOptedIn || isCreatorOrQaAccount || explicitlyExcluded) return;
+
+    if (!communityDataOptedIn || isCreatorOrQaAccount || explicitlyExcluded) return;
 
     await Promise.all(snakesSnapshot.docs.map(async (snakeDoc) => {
       const snake = snakeDoc.data() as Record<string, unknown>;
@@ -149,7 +158,7 @@ export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}):
       }
 
       const feedingSnapshot = await getDocs(collection(db, "users", userDoc.id, "snakes", snakeDoc.id, "feedings"));
-      mealsFed += feedingSnapshot.docs.filter((doc) => !(doc.data() as NumericRecord).deletedAt).length;
+      mealsFed += feedingSnapshot.docs.filter((feedDoc) => !(feedDoc.data() as NumericRecord).deletedAt).length;
 
       const shedSnapshot = await getDocs(collection(db, "users", userDoc.id, "snakes", snakeDoc.id, "sheds"));
       for (const shedDoc of shedSnapshot.docs) {
