@@ -129,11 +129,12 @@ async function findSnakeInCollection(page, name) {
 }
 
 async function selectShedStage(page, stage) {
-  // Prefer the current semantic radio contract, but do not hard-code the
-  // implementation to input[name=...]. The shedding UI may evolve its control
-  // primitive while retaining the same user-facing Stage semantics.
-  const stageFieldset = page.locator("fieldset").filter({ has: page.getByText("Stage", { exact: true }) }).first();
-  const radio = stageFieldset.getByRole("radio", { name: new RegExp(stage, "i") }).first();
+  // The shedding UI has changed implementation over time. Overlord must test
+  // the user-facing Stage contract, not a particular fieldset/DOM structure.
+  // Prefer semantic controls globally, then compatible legacy controls.
+  const stagePattern = new RegExp(`^${stage}$`, "i");
+
+  const radio = page.getByRole("radio", { name: stagePattern }).first();
   if (await radio.count()) {
     await expect(radio).toBeVisible({ timeout: APP_READY_TIMEOUT });
     await expect(radio).toBeEnabled({ timeout: APP_READY_TIMEOUT });
@@ -153,7 +154,7 @@ async function selectShedStage(page, stage) {
     return;
   }
 
-  const stageButton = stageFieldset.getByRole("button", { name: new RegExp(stage, "i") }).first();
+  const stageButton = page.getByRole("button", { name: stagePattern }).first();
   if (await stageButton.count()) {
     await expect(stageButton).toBeVisible({ timeout: APP_READY_TIMEOUT });
     await expect(stageButton).toBeEnabled({ timeout: APP_READY_TIMEOUT });
@@ -162,8 +163,14 @@ async function selectShedStage(page, stage) {
     return;
   }
 
-  const available = await page.locator("fieldset").evaluateAll((fields) => fields.map((field) => ({ legend: field.querySelector("legend")?.textContent?.trim() || "", text: field.textContent?.trim() || "" })));
-  throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage "${stage}" but no compatible Stage control was discovered. Fieldsets: ${JSON.stringify(available)}`);
+  const availableControls = await page.locator("input, button, [role='radio'], [role='button']").evaluateAll((controls) => controls.map((control) => ({
+    tag: control.tagName.toLowerCase(),
+    role: control.getAttribute("role"),
+    name: control.getAttribute("aria-label") || control.textContent?.trim() || "",
+    value: control.getAttribute("value"),
+    type: control.getAttribute("type"),
+  })).filter((control) => /blue|clear|complete|stage/i.test(`${control.name} ${control.value || ""}`)).slice(0, 30));
+  throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage "${stage}" but no compatible semantic control was discovered. Candidate controls: ${JSON.stringify(availableControls)}`);
 }
 
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
