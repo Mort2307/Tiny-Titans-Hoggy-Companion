@@ -87,24 +87,24 @@ async function selectShedStage(page, stage) {
   throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage "${stage}" but no compatible semantic control was discovered. Candidate controls: ${JSON.stringify(availableControls)}`);
 }
 
-/**
- * Find the actual submit control for the current shedding form.
- *
- * The current tracker uses a native Stage <select> and a single form. The
- * previous bot looked for input[name="shed-stage"], which no longer exists
- * and caused a false failure even though the user-facing form was healthy.
- */
 async function submitShedForm(page, expectedAction = "stage") {
   const form = page.locator("form").filter({ hasText: /Record shedding|Update shedding cycle/ }).first();
   await expect(form).toBeVisible({ timeout: APP_READY_TIMEOUT });
-
   const submit = form.locator('button[type="submit"]').first();
   await expect(submit).toBeVisible({ timeout: APP_READY_TIMEOUT });
   await expect(submit).toBeEnabled({ timeout: APP_READY_TIMEOUT });
-
   const label = ((await submit.innerText()) || (await submit.getAttribute("aria-label")) || "").trim();
   console.log(`[OVERLORD] Shedding submit control discovered (${expectedAction}): ${JSON.stringify(label)}.`);
   await submit.click();
+}
+
+async function waitForActiveShedCycle(page, stage = "Blue") {
+  // Firebase-backed tracker data can arrive after the application shell is
+  // ready. A short fixed timeout creates false negatives when the write has
+  // succeeded but the post-reload query is still hydrating. The assertion
+  // remains the persistence proof.
+  await expect(page.getByText(/Active cycle/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  await expect(page.getByText(new RegExp(`${stage} phase`, "i")).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
 }
 
 test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep", () => {
@@ -219,8 +219,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding reload after Blue Phase");
     await dismissPrivacyConsent(page);
-    await expect(page.getByText(/Active cycle/i)).toBeVisible();
-    await expect(page.getByText(/Blue phase/i).first()).toBeVisible();
+    await waitForActiveShedCycle(page, "Blue");
 
     await page.getByRole("button", { name: /Continue to Clear/i }).click();
     await selectShedStage(page, "Clear");
@@ -231,7 +230,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding reload after Clear Phase");
     await dismissPrivacyConsent(page);
-    await expect(page.getByText(/Active cycle/i)).toBeVisible();
+    await waitForActiveShedCycle(page, "Clear");
 
     await page.getByRole("button", { name: /Record Full Shed/i }).click();
     await selectShedStage(page, "Complete");
@@ -243,8 +242,8 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await page.reload({ waitUntil: "domcontentloaded" });
     await waitForApplicationShell(page, "shedding final reload");
     await dismissPrivacyConsent(page);
-    await expect(page.getByText(/Shed history/i)).toBeVisible();
-    await expect(page.getByText(/Full shed/i).first()).toBeVisible();
+    await expect(page.getByText(/Shed history/i)).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(page.getByText(/Full shed/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
     await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save shedding cycle/i);
     await expect(page.locator("#shed-snake")).toHaveValue(snakeId);
     console.log(`[OVERLORD] Shedding single-cycle journey passed for snake ${snakeId}.`);
