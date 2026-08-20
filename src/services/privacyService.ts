@@ -3,9 +3,10 @@ import { db } from "../firebase/config";
 import type { PrivacyPreferences } from "../types/privacy";
 
 const DEFAULT_PRIVACY: PrivacyPreferences = {
-  consentVersion: "1.0",
+  consentVersion: "1.1",
   communityLocation: false,
   anonymousAnalytics: false,
+  communityHusbandryData: false,
   productUpdates: false,
 };
 
