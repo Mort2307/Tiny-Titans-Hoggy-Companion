@@ -38,17 +38,6 @@ async function signIn(page) {
   if (/\/login\/?$/.test(new URL(page.url()).pathname)) throw new Error("Visual UX BOT could not authenticate.");
 }
 
-function isVisibleElement(element) {
-  const style = getComputedStyle(element);
-  const rect = element.getBoundingClientRect();
-  return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0 && rect.width > 0 && rect.height > 0;
-}
-
-function isScrollableX(element) {
-  const style = getComputedStyle(element);
-  return element.scrollWidth > element.clientWidth + 2 && ["auto", "scroll"].includes(style.overflowX);
-}
-
 async function auditPage(page, route, viewport) {
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
   const errors = [];
@@ -57,27 +46,49 @@ async function auditPage(page, route, viewport) {
   const onConsole = (message) => { if (message.type() === "error") consoleErrors.push(message.text()); };
   page.on("pageerror", onPageError);
   page.on("console", onConsole);
+
   try {
     await page.goto(new URL(route, baseURL).toString(), { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle").catch(() => undefined);
     await page.waitForTimeout(350);
+
+    // IMPORTANT: page.evaluate executes in the browser context. Helpers declared in
+    // Node scope are not visible there, which was the cause of the isVisibleElement crash.
     const metrics = await page.evaluate(() => {
+      const isVisibleElement = (element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0 && rect.width > 0 && rect.height > 0;
+      };
+      const isScrollableX = (element) => {
+        const style = getComputedStyle(element);
+        return element.scrollWidth > element.clientWidth + 2 && ["auto", "scroll"].includes(style.overflowX);
+      };
       const body = document.body;
       const root = document.documentElement;
       const text = body?.innerText || "";
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
       const interactive = [...document.querySelectorAll("button, a, input, select, textarea, [role='button']")];
       const clickable = [...document.querySelectorAll("button, a, [role='button']")];
       const visibleInteractive = interactive.filter(isVisibleElement);
-      const touchProblems = visibleInteractive.filter((element) => { const rect = element.getBoundingClientRect(); return rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44); }).length;
+      const touchProblems = visibleInteractive.filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44);
+      }).length;
       const cards = [...document.querySelectorAll("[class*='card'], [class*='tile'], [class*='panel']")].filter(isVisibleElement);
       const headings = document.querySelectorAll("h1, h2, h3").length;
       const primaryHeading = document.querySelector("h1")?.textContent?.trim() || "";
       const styles = getComputedStyle(root);
-      const brandSignals = [styles.getPropertyValue("--tt-brand").trim(), styles.getPropertyValue("--tt-brand-strong").trim(), styles.getPropertyValue("--tt-accent").trim(), styles.getPropertyValue("--tt-warning").trim()].filter(Boolean);
+      const brandSignals = [
+        styles.getPropertyValue("--tt-brand").trim(),
+        styles.getPropertyValue("--tt-brand-strong").trim(),
+        styles.getPropertyValue("--tt-accent").trim(),
+        styles.getPropertyValue("--tt-warning").trim(),
+      ].filter(Boolean);
       const bodyRect = body?.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
       const overflow = Math.max(root.scrollWidth - viewportWidth, bodyRect ? bodyRect.width - viewportWidth : 0);
-      const links = clickable.filter((element) => element.tagName === "A").filter((element) => !(element.getAttribute("href") || "").trim()).length;
+      const emptyLinks = clickable.filter((element) => element.tagName === "A" && !(element.getAttribute("href") || "").trim()).length;
       const buttons = clickable.filter((element) => element.tagName === "BUTTON");
       const suspiciousButtons = buttons.filter((button) => !button.disabled && !button.getAttribute("aria-label") && !(button.textContent || "").trim()).length;
 
@@ -85,7 +96,7 @@ async function auditPage(page, route, viewport) {
       const viewportClipped = allVisible.filter((element) => {
         if (["HTML", "BODY"].includes(element.tagName)) return false;
         const rect = element.getBoundingClientRect();
-        if (rect.left >= -2 && rect.right <= viewportWidth + 2) return false;
+        if (rect.left >= -2 && rect.right <= viewportWidth + 2 && rect.top >= -2 && rect.bottom <= viewportHeight + 2) return false;
         let parent = element.parentElement;
         while (parent && parent !== body) {
           if (isScrollableX(parent)) return false;
@@ -107,11 +118,15 @@ async function auditPage(page, route, viewport) {
 
       const snakeItems = [...document.querySelectorAll(".hoggie-selector-item")].filter(isVisibleElement).map((element) => {
         const rect = element.getBoundingClientRect();
-        return { name: element.querySelector(".snake-tile-name")?.textContent?.trim() || "Unnamed snake", left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), width: Math.round(rect.width), height: Math.round(rect.height) };
+        return {
+          name: element.querySelector(".snake-tile-name")?.textContent?.trim() || "Unnamed snake",
+          left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom),
+          width: Math.round(rect.width), height: Math.round(rect.height),
+        };
       });
       const snakeCollection = snakeItems.length ? {
         count: snakeItems.length,
-        clipped: snakeItems.filter((item) => item.left < 0 || item.right > viewportWidth).length,
+        clipped: snakeItems.filter((item) => item.left < 0 || item.right > viewportWidth || item.top < 0 || item.bottom > viewportHeight).length,
         items: snakeItems,
       } : null;
 
@@ -123,13 +138,20 @@ async function auditPage(page, route, viewport) {
         primaryHeading,
         touchProblems,
         overflow: Math.max(0, overflow),
-        emptyLinks: links,
+        emptyLinks,
         suspiciousButtons,
         brandSignals,
         bodyWidth: bodyRect?.width || 0,
         viewportWidth,
+        viewportHeight,
         viewportClippedCount: viewportClipped.length,
-        viewportClippedExamples: viewportClipped.slice(0, 8).map((element) => ({ tag: element.tagName.toLowerCase(), className: String(element.className || "").slice(0, 120), text: (element.textContent || "").replace(/\s+/g, " ").trim().slice(0, 100), left: Math.round(element.getBoundingClientRect().left), right: Math.round(element.getBoundingClientRect().right) })),
+        viewportClippedExamples: viewportClipped.slice(0, 8).map((element) => ({
+          tag: element.tagName.toLowerCase(),
+          className: String(element.className || "").slice(0, 120),
+          text: (element.textContent || "").replace(/\s+/g, " ").trim().slice(0, 100),
+          left: Math.round(element.getBoundingClientRect().left),
+          right: Math.round(element.getBoundingClientRect().right),
+        })),
         clippedContainerCount: clippedContainers.length,
         textClippedCount: textClipped.length,
         snakeCollection,
@@ -138,16 +160,17 @@ async function auditPage(page, route, viewport) {
 
     const findings = [];
     if (metrics.overflow > 2) findings.push({ severity: "error", code: "horizontal-overflow", message: `Rendered content exceeds the ${viewport.name} viewport by ${Math.round(metrics.overflow)}px.` });
-    if (metrics.viewportClippedCount > 0) findings.push({ severity: "error", code: "viewport-clipping", message: `${metrics.viewportClippedCount} visible element(s) extend beyond the ${viewport.name} viewport. Examples: ${metrics.viewportClippedExamples.map((item) => `${item.tag}.${item.className || "?"}`).join(", ")}.` });
-    if (metrics.clippedContainerCount > 0) findings.push({ severity: "error", code: "content-clipped-by-container", message: `${metrics.clippedContainerCount} visible container(s) have content wider than their box while hiding horizontal overflow. This can silently cut UI content.` });
-    if (metrics.textClippedCount > 0) findings.push({ severity: "warning", code: "text-clipping", message: `${metrics.textClippedCount} visible text element(s) appear horizontally clipped or forced onto one line.` });
-    if (metrics.snakeCollection?.clipped) findings.push({ severity: "error", code: "snake-card-clipping", message: `${metrics.snakeCollection.clipped} of ${metrics.snakeCollection.count} visible snake card(s) extend outside the ${viewport.name} viewport.` });
+    if (metrics.viewportClippedCount > 0) findings.push({ severity: "error", code: "viewport-clipping", message: `${metrics.viewportClippedCount} visible element(s) extend beyond the ${viewport.name} viewport.` });
+    if (metrics.clippedContainerCount > 0) findings.push({ severity: "error", code: "content-clipped-by-container", message: `${metrics.clippedContainerCount} visible container(s) hide content wider than their box.` });
+    if (metrics.textClippedCount > 0) findings.push({ severity: "warning", code: "text-clipping", message: `${metrics.textClippedCount} visible text element(s) appear horizontally clipped.` });
+    if (metrics.snakeCollection?.clipped) findings.push({ severity: "error", code: "snake-card-clipping", message: `${metrics.snakeCollection.clipped} of ${metrics.snakeCollection.count} visible snake item(s) extend outside the ${viewport.name} viewport.` });
     if (!metrics.primaryHeading) findings.push({ severity: "warning", code: "missing-h1", message: "No primary h1 heading was detected." });
     if (metrics.interactiveCount > 18) findings.push({ severity: "warning", code: "interaction-density", message: `${metrics.interactiveCount} interactive controls are competing for attention.` });
-    if (metrics.textLength > 1200) findings.push({ severity: "warning", code: "text-density", message: `${metrics.textLength} rendered text characters suggest the page may benefit from progressive disclosure.` });
+    if (metrics.textLength > 1200) findings.push({ severity: "warning", code: "text-density", message: `${metrics.textLength} rendered text characters suggest progressive disclosure may help.` });
     if (metrics.touchProblems > 0) findings.push({ severity: "warning", code: "touch-targets", message: `${metrics.touchProblems} visible controls are smaller than the 44px touch-target guideline.` });
     if (metrics.brandSignals.length < 3) findings.push({ severity: "warning", code: "brand-signal", message: "The rendered page does not expose the full Tiny Titans brand token set." });
-    if (metrics.suspiciousButtons > 0 || metrics.emptyLinks > 0) findings.push({ severity: "warning", code: "ambiguous-actions", message: `${metrics.suspiciousButtons + metrics.emptyLinks} controls/links appear to lack useful visible or semantic action cues.` });
+    if (metrics.suspiciousButtons > 0 || metrics.emptyLinks > 0) findings.push({ severity: "warning", code: "ambiguous-actions", message: `${metrics.suspiciousButtons + metrics.emptyLinks} controls/links lack useful visible or semantic action cues.` });
+    if ([...errors, ...consoleErrors].length) findings.push({ severity: "error", code: "runtime-errors", message: `${errors.length + consoleErrors.length} runtime/console error(s) were captured during the visual audit.` });
     if (!findings.length) findings.push({ severity: "info", code: "visual-health", message: "No major heuristic visual issues detected at this viewport. Screenshot review remains recommended." });
 
     const concept = concepts[route] || { name: "Purpose-led composition", reason: "Keep the Tiny Titans design language while choosing a layout that matches the page's primary job." };
@@ -197,19 +220,20 @@ async function main() {
       routeSummary,
       methodology: [
         "Rendered evidence is captured with Playwright at mobile, tablet and desktop sizes.",
+        "Browser-context visibility helpers are declared inside page.evaluate so the audit cannot fail from Node/browser scope leakage.",
         "The bot inspects actual DOM geometry rather than trusting CSS intent or screenshots alone.",
         "Every visible element is checked for viewport clipping, including nested grid/flex children.",
         "Hidden-overflow containers are inspected for silently clipped content.",
-        "My Snakes cards are treated as a dedicated responsive collection and checked individually.",
-        "Overflow inside an explicitly horizontally scrollable container is not falsely reported as a page failure.",
-        "Heuristics flag hierarchy, density, touch-target and action-clarity problems.",
-        "Alternative page concepts are selected by page purpose rather than applying one template everywhere.",
+        "My Snakes items are treated as a dedicated responsive collection and checked individually.",
+        "Explicitly horizontally scrollable containers are not falsely reported as page overflow.",
+        "Heuristics flag hierarchy, density, touch-target, action-clarity and runtime problems.",
+        "Route-specific visual concepts are selected by page purpose rather than one universal template.",
         "The Tiny Titans visual contract remains authoritative for brand identity.",
-        "The bot recommends changes; it never silently mutates production code.",
+        "The bot recommends changes and records evidence; it never silently mutates application code.",
       ],
     };
     await fs.writeFile(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
-    await fs.writeFile(path.join(outputDir, "README.md"), `# Tiny Titans Visual UX BOT\n\nGenerated: ${report.generatedAt}\n\nRoutes: ${report.routesInspected}\nScreenshots: ${report.screenshotCount}\n\nThe bot now audits rendered geometry, viewport clipping, hidden-overflow containers, text clipping, touch targets, interaction density and route-specific visual purpose. Open \`report.json\` for detailed evidence.\n`);
+    await fs.writeFile(path.join(outputDir, "README.md"), `# Tiny Titans Visual UX BOT\n\nGenerated: ${report.generatedAt}\n\nRoutes: ${report.routesInspected}\nScreenshots: ${report.screenshotCount}\n\nThe bot audits rendered geometry, responsive clipping, hidden-overflow containers, text clipping, touch targets, interaction density, action clarity, runtime errors and route-specific visual purpose. Open \\`report.json\\` for detailed evidence.\n`);
     console.log(`\nVisual UX BOT complete: ${results.length} rendered page/viewport audits and ${results.length} screenshots.`);
   } finally {
     await browser.close();
