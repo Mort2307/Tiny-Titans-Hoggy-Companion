@@ -129,10 +129,20 @@ async function findSnakeInCollection(page, name) {
 }
 
 async function selectShedStage(page, stage) {
-  // The shedding UI has changed implementation over time. Overlord must test
-  // the user-facing Stage contract, not a particular fieldset/DOM structure.
-  // Prefer semantic controls globally, then compatible legacy controls.
-  const stagePattern = new RegExp(`^${stage}$`, "i");
+  // Test the user-facing Stage contract rather than a specific DOM layout.
+  // The current UI exposes radios with value="Blue|Clear|Complete" and labels
+  // such as "🔵 Blue Phase". Legacy and button contracts remain supported.
+  const stagePattern = new RegExp(`(?:^|\\b)${stage}(?:\\s+Phase)?(?:$|\\b)`, "i");
+
+  const legacyInput = page.locator(`input[name="shed-stage"][value="${stage}"]`).first();
+  if (await legacyInput.count()) {
+    await expect(legacyInput).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(legacyInput).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+    await legacyInput.check();
+    await expect(legacyInput).toBeChecked();
+    console.log(`[OVERLORD] Shedding stage selected via Stage value contract: ${stage}.`);
+    return;
+  }
 
   const radio = page.getByRole("radio", { name: stagePattern }).first();
   if (await radio.count()) {
@@ -141,16 +151,6 @@ async function selectShedStage(page, stage) {
     await radio.check();
     await expect(radio).toBeChecked();
     console.log(`[OVERLORD] Shedding stage selected semantically via radio: ${stage}.`);
-    return;
-  }
-
-  const legacyInput = page.locator(`input[name="shed-stage"][value="${stage}"]`).first();
-  if (await legacyInput.count()) {
-    await expect(legacyInput).toBeVisible({ timeout: APP_READY_TIMEOUT });
-    await expect(legacyInput).toBeEnabled({ timeout: APP_READY_TIMEOUT });
-    await legacyInput.check();
-    await expect(legacyInput).toBeChecked();
-    console.log(`[OVERLORD] Shedding stage selected via compatible input contract: ${stage}.`);
     return;
   }
 
@@ -163,13 +163,13 @@ async function selectShedStage(page, stage) {
     return;
   }
 
-  const availableControls = await page.locator("input, button, [role='radio'], [role='button']").evaluateAll((controls) => controls.map((control) => ({
+  const availableControls = await page.locator("input, select, button, [role='radio'], [role='button']").evaluateAll((controls) => controls.map((control) => ({
     tag: control.tagName.toLowerCase(),
     role: control.getAttribute("role"),
     name: control.getAttribute("aria-label") || control.textContent?.trim() || "",
     value: control.getAttribute("value"),
     type: control.getAttribute("type"),
-  })).filter((control) => /blue|clear|complete|stage/i.test(`${control.name} ${control.value || ""}`)).slice(0, 30));
+  })).filter((control) => /blue|clear|complete|stage/i.test(`${control.name} ${control.value || ""}`)).slice(0, 40));
   throw new Error(`[OVERLORD] Shedding stage contract mismatch: expected stage "${stage}" but no compatible semantic control was discovered. Candidate controls: ${JSON.stringify(availableControls)}`);
 }
 
