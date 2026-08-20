@@ -66,18 +66,26 @@ async function submitShedForm(page, expectedAction = "stage") {
 }
 
 async function waitForActiveShedCycle(page, stage = "Blue") {
-  // The current intelligent tracker calls this simply "Active cycle" and uses
-  // sentence-case stage labels ("Blue phase"). Keep this semantic rather than
-  // coupling Overlord to the old presentation copy.
   await expect(page.getByText(/Active(?: shedding)? cycle/i).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
   await expect(page.getByText(new RegExp(`${stage}\\s+phase`, "i")).first()).toBeVisible({ timeout: APP_READY_TIMEOUT });
 }
 
 async function continueActiveShedCycle(page) {
+  // The intelligent tracker may expose the next-stage form immediately after
+  // hydration. Older tracker variants expose an explicit Continue button.
+  // Support both contracts instead of making the persistence test depend on a
+  // presentation-only navigation control.
   const button = page.getByRole("button", { name: /Continue to (Clear|Full Shed)/i }).first();
-  await expect(button).toBeVisible({ timeout: APP_READY_TIMEOUT });
-  await expect(button).toBeEnabled({ timeout: APP_READY_TIMEOUT });
-  await button.click();
+  if (await button.count()) {
+    await expect(button).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    await expect(button).toBeEnabled({ timeout: APP_READY_TIMEOUT });
+    await button.click();
+    console.log("[OVERLORD] Explicit next-stage control used.");
+    return;
+  }
+  const form = page.locator("form").filter({ hasText: /Stage date|Observations \/ notes/ }).first();
+  await expect(form).toBeVisible({ timeout: APP_READY_TIMEOUT });
+  console.log("[OVERLORD] Next-stage form already active; no Continue control required.");
 }
 
 async function expectShedStatus(page, patterns) {
@@ -123,8 +131,6 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
 
   test("shedding is a real single-cycle persistence journey", async ({ page }) => {
     const errors = applicationErrors(page); await signIn(page); expect(createdSnakeId, "Shedding journey requires the persisted Overlord snake.").toBeTruthy();
-    // Pin the tracker to the exact snake created by the persistence journey so a
-    // reload cannot silently fall back to another snake in the user's collection.
     await visit(page, `/shedding/${createdSnakeId}`);
     const snakeSelect = page.locator("#shed-snake"); await expect(snakeSelect).toBeVisible(); await expect(snakeSelect).toHaveValue(createdSnakeId); const snakeId = await snakeSelect.inputValue(); expect(snakeId).toBe(createdSnakeId);
     await selectShedStage(page, "Blue"); await submitShedForm(page, "Blue/start"); await expectShedStatus(page, [/Blue\s+phase\s+(?:recorded|saved)/i, /same shedding cycle is preserved/i]); await assertHealthy(page, errors);
