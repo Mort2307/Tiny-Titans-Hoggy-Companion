@@ -12,6 +12,10 @@ type NumericRecord = {
 };
 type UserData = Record<string, unknown>;
 
+type GlobalStatsOptions = {
+  excludedUserIds?: string[];
+};
+
 function toNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
@@ -34,11 +38,13 @@ function timestampMillis(value: unknown): number | null {
 /**
  * Canonical Creator Centre aggregation.
  *
- * Tracker totals are community metrics, not a mirror of the creator/QA account.
- * Creator/test records must never contaminate community intelligence. Optional
- * analytics consent is also required before a user's tracker data contributes.
+ * Community tracker metrics are consent-controlled and explicitly separated
+ * from creator/test data. The caller can additionally exclude the current
+ * creator account by UID, which makes the boundary deterministic even when
+ * the Firestore profile does not contain an admin/creator role field.
  */
-export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
+export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}): Promise<GlobalStats> {
+  const excludedUserIds = new Set(options.excludedUserIds ?? []);
   const usersSnapshot = await getDocs(collection(db, "users"));
   const now = Date.now();
   const dayCutoff = now - 24 * 60 * 60 * 1000;
@@ -88,11 +94,12 @@ export async function getCanonicalGlobalStats(): Promise<GlobalStats> {
       usersWithData += 1;
     }
 
-    // Community tracker intelligence is explicitly opt-in and excludes creator/QA accounts.
+    // Community tracker intelligence must never consume creator/test records.
     const preferences = userData.dataCollectionPreferences as { analytics?: unknown } | undefined;
     const analyticsOptedIn = preferences?.analytics === true;
     const isCreatorOrQaAccount = userData.profileType === "creator" || userData.role === "admin" || userData.role === "creator";
-    if (!analyticsOptedIn || isCreatorOrQaAccount) return;
+    const explicitlyExcluded = excludedUserIds.has(userDoc.id);
+    if (!analyticsOptedIn || isCreatorOrQaAccount || explicitlyExcluded) return;
 
     await Promise.all(snakesSnapshot.docs.map(async (snakeDoc) => {
       const snake = snakeDoc.data() as Record<string, unknown>;
