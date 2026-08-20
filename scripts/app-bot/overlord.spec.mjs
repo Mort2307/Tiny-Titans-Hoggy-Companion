@@ -5,6 +5,8 @@ const email = process.env.TINY_TITANS_BOT_EMAIL;
 const password = process.env.TINY_TITANS_BOT_PASSWORD;
 const syntheticName = `BOT Overlord ${Date.now()}`;
 
+const APP_READY_TIMEOUT = 20000;
+
 const coreRoutes = [
   "/",
   "/snakes",
@@ -51,10 +53,26 @@ function applicationErrors(page) {
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(`console: ${message.text()}`);
   });
+  page.on("requestfailed", (request) => {
+    errors.push(`requestfailed: ${request.method()} ${request.url()} — ${request.failure()?.errorText || "unknown"}`);
+  });
   return errors;
 }
 
+async function waitForApplicationShell(page, label = "application shell") {
+  await expect
+    .poll(
+      async () => page.locator("#root > *").count(),
+      { timeout: APP_READY_TIMEOUT, message: `[OVERLORD] ${label} never mounted a React root child.` },
+    )
+    .toBeGreaterThan(0);
+
+  await expect(page.locator("body")).not.toBeEmpty({ timeout: APP_READY_TIMEOUT });
+  await expect(page.locator("#root")).toContainText(/\S/, { timeout: APP_READY_TIMEOUT });
+}
+
 async function assertHealthy(page, errors) {
+  await waitForApplicationShell(page);
   await expect(page.locator("body")).not.toContainText(/Application error|Internal Server Error|Cannot read properties of undefined|Unsupported field value: undefined/i);
   expect(errors).toEqual([]);
 }
@@ -67,7 +85,6 @@ async function completeAccountSetup(page) {
   await expect(setup).toBeVisible({ timeout: 10000 });
 
   await setup.locator("#displayName").fill("Tiny Titans Overlord BOT");
-
   await setup.locator(".setup-section").filter({ hasText: "How will you use Tiny Titans?" }).getByRole("button", { name: /Keeper/ }).click();
   await setup.locator(".setup-section").filter({ hasText: "Who are you?" }).getByRole("button", { name: /^Adult/ }).click();
   await setup.locator(".setup-section").filter({ hasText: "What learning level fits you?" }).getByRole("button", { name: /^Adult/ }).click();
@@ -82,7 +99,6 @@ async function completeAccountSetup(page) {
 
 async function establishAuthenticatedApp(page) {
   await page.goto(`${baseURL}/`, { waitUntil: "domcontentloaded" });
-  await page.waitForLoadState("networkidle").catch(() => undefined);
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const currentUrl = page.url();
@@ -94,10 +110,10 @@ async function establishAuthenticatedApp(page) {
 
     if (currentUrl.includes("/account-setup")) {
       await completeAccountSetup(page);
-      await page.waitForLoadState("networkidle").catch(() => undefined);
       continue;
     }
 
+    await waitForApplicationShell(page, `authenticated bootstrap attempt ${attempt}`);
     return currentUrl;
   }
 
@@ -111,6 +127,7 @@ async function signIn(page) {
   }
 
   await page.goto(`${baseURL}/login`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByLabel("Email Address")).toBeVisible({ timeout: 10000 });
   await page.getByLabel("Email Address").fill(email);
   await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: /sign in/i }).click();
@@ -122,7 +139,6 @@ async function visit(page, route) {
   console.log(`[OVERLORD] Visiting: ${route}`);
   const targetUrl = new URL(route, baseURL).toString();
   await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
-  await page.waitForLoadState("networkidle").catch(() => undefined);
   const currentUrl = page.url();
   console.log(`[OVERLORD] Navigation result: ${route} → ${currentUrl || "<empty URL>"}`);
 
@@ -133,6 +149,7 @@ async function visit(page, route) {
     throw new Error(`[OVERLORD] Route ${route} is still blocked by account setup: ${currentUrl}`);
   }
 
+  await waitForApplicationShell(page, `route ${route}`);
   return currentUrl;
 }
 
@@ -140,7 +157,6 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
   test("boot, authenticate and prove the application shell is healthy", async ({ page }) => {
     const errors = applicationErrors(page);
     await signIn(page);
-    await expect(page.locator("body")).not.toBeEmpty();
     await assertHealthy(page, errors);
   });
 
@@ -149,7 +165,6 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await signIn(page);
     for (const route of coreRoutes) {
       await visit(page, route);
-      await expect(page.locator("body")).not.toBeEmpty();
       await assertHealthy(page, errors);
       console.log(`[OVERLORD] Passed core route: ${route}`);
     }
@@ -250,7 +265,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await assertHealthy(page, errors);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await waitForApplicationShell(page, "shedding reload after Blue Phase");
     await expect(page.getByText(/Active shedding cycle/i)).toBeVisible();
     await expect(page.getByText(/Blue Phase/i).first()).toBeVisible();
 
@@ -261,7 +276,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await assertHealthy(page, errors);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await waitForApplicationShell(page, "shedding reload after Clear Phase");
     await expect(page.getByText(/Active shedding cycle/i)).toBeVisible();
     await page.getByRole("button", { name: /Record Next Stage/i }).click();
     await page.getByRole("radio", { name: /Full Shed/i }).check();
@@ -271,7 +286,7 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     await assertHealthy(page, errors);
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await waitForApplicationShell(page, "shedding final reload");
     await expect(page.getByText(/Shed Cycle History/i)).toBeVisible();
     await expect(page.getByText(/Full Shed/i).first()).toBeVisible();
     await expect(page.locator("body")).not.toContainText(/Unsupported field value: undefined|Cannot update this snake|Unable to save this shedding cycle/i);
