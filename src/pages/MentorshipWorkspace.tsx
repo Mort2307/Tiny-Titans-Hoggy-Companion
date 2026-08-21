@@ -1,0 +1,1 @@
+import { useParams } from "react-router-dom";import MentorshipWorkspacePreview from "../components/KeeperMeetsBreeder/MentorshipWorkspacePreview";export default function MentorshipWorkspace(){const{workspaceId}=useParams();return <main className="kmb-page"><MentorshipWorkspacePreview goal={`Workspace ${workspaceId??""}`}/></main>}
