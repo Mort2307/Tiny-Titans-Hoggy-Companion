@@ -4,7 +4,7 @@
 // Add inside match /databases/{database}/documents alongside the existing helpers:
 //
 // function isMentorshipParticipant(data) {
-//   return signedIn() && data.participants != null && data.participants.map(function(participant) { return participant.userId; }).hasAny([request.auth.uid]);
+//   return signedIn() && data.participants.size() == 2 && (data.participants[0].userId == request.auth.uid || data.participants[1].userId == request.auth.uid);
 // }
 //
 // match /mentorshipWorkspaces/{workspaceId} {
@@ -17,7 +17,7 @@
 //
 // match /mentorshipRequests/{requestId} {
 //   allow get: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
-//   allow list: if false;
+//   allow list: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
 //   allow create: if signedIn() && request.resource.data.requesterId == request.auth.uid;
 //   allow update: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
 //   allow delete: if false;
