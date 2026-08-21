@@ -4,6 +4,30 @@ export type NotificationPermissionState =
   | "denied"
   | "unsupported";
 
+export type NotificationEventType =
+  | "marketplace-enquiry"
+  | "marketplace-reply"
+  | "marketplace-reservation-request"
+  | "marketplace-reservation-accepted"
+  | "marketplace-reservation-declined"
+  | "marketplace-payment-arranged"
+  | "marketplace-completed"
+  | "community-reply"
+  | "community-mention"
+  | "featured-approved"
+  | "featured-declined"
+  | "project-enquiry"
+  | "mentor-response"
+  | "moderation-action"
+  | "feeding"
+  | "feeding-preparation"
+  | "weight"
+  | "health-followup"
+  | "medication"
+  | "medication-followup"
+  | "family"
+  | "notification-bot-probe";
+
 export type NotificationSettings = {
   enabled: boolean;
   feedingPreparationEnabled: boolean;
@@ -16,6 +40,11 @@ export type NotificationSettings = {
   healthReminderFollowUpEnabled: boolean;
   medicationMissedFollowUpMinutes: number;
   healthFollowUpLeadDays: number;
+  marketplaceNotificationsEnabled?: boolean;
+  communityNotificationsEnabled?: boolean;
+  featuredNotificationsEnabled?: boolean;
+  projectNotificationsEnabled?: boolean;
+  mentorNotificationsEnabled?: boolean;
 };
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
@@ -30,4 +59,9 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   healthReminderFollowUpEnabled: true,
   medicationMissedFollowUpMinutes: 60,
   healthFollowUpLeadDays: 1,
+  marketplaceNotificationsEnabled: true,
+  communityNotificationsEnabled: true,
+  featuredNotificationsEnabled: true,
+  projectNotificationsEnabled: true,
+  mentorNotificationsEnabled: true,
 };
