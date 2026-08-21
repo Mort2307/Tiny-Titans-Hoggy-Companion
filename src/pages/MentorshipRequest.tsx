@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { listPublishedMentors, type MentorDirectoryEntry } from "../services/mentorDirectoryRepository";
+import { listPublishedMentors } from "../services/mentorDirectoryRepository";
+import type { MentorDirectoryEntry } from "../services/mentorNetwork";
 import { createMentorshipRequest } from "../services/mentorshipRepository";
 import type { MentorshipGoal } from "../services/mentorshipIntelligence";
 import "../styles/KeeperMeetsBreeder.css";
