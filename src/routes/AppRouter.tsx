@@ -27,7 +27,7 @@ import WeightRecords from "../pages/WeightRecords";
 import HusbandryCare from "../pages/HusbandryCare";
 import EnclosureIntelligence from "../pages/EnclosureIntelligence";
 import BreedingPlanner from "../pages/BreedingPlanner";
-import BreedingAcademy from "../pages/BreedingAcademy";
+import BreedingAcademy from "../pages/BreedingAcademyV2";
 import MorphLibrary from "../pages/MorphLibrary";
 import MorphTerminologyAudit from "../pages/MorphTerminologyAudit";
 import ReportIssue from "../pages/ReportIssue";
