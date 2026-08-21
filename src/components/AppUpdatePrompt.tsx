@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
-const UPDATE_TIMEOUT_MS = 10000;
 const UPDATE_ATTEMPT_KEY = "tiny-titans-update-attempt";
 const UPDATE_ATTEMPT_COOLDOWN_MS = 30000;
+const UPDATE_RELOAD_TIMEOUT_MS = 15000;
 
 export function notifyTinyTitansUpdateAvailable() {
   window.__tinyTitansUpdatePending = true;
@@ -55,9 +55,6 @@ export default function AppUpdatePrompt() {
 
   useEffect(() => {
     const show = () => {
-      // A service worker can emit the refresh event more than once while a
-      // client is transitioning between versions. Consume the pending flag so
-      // it cannot keep reopening the modal after the user dismisses it.
       window.__tinyTitansUpdatePending = false;
       setUpdateError(false);
       setOpen(true);
@@ -92,25 +89,39 @@ export default function AppUpdatePrompt() {
         throw new Error("Tiny Titans update handler is not ready.");
       }
 
-      let reloaded = false;
-      const reload = () => {
-        if (reloaded) return;
-        reloaded = true;
-        clearUpdateAttempt();
-        window.location.reload();
-      };
+      // vite-plugin-pwa's updateSW(true) handles activation and reload via
+      // controllerchange. Do not manually reload while the new worker is
+      // activating: doing so can load the old index.html against a new cache
+      // and briefly produce a blank screen until the user refreshes manually.
+      let controllerChanged = navigator.serviceWorker.controller === null;
+      const controllerPromise = new Promise<void>((resolve) => {
+        if (controllerChanged) {
+          resolve();
+          return;
+        }
+        const onControllerChange = () => {
+          controllerChanged = true;
+          navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+          resolve();
+        };
+        navigator.serviceWorker.addEventListener("controllerchange", onControllerChange, { once: true });
+      });
 
-      const watchdog = window.setTimeout(reload, UPDATE_TIMEOUT_MS);
-      try {
-        await applyPendingTinyTitansUpdate();
-      } finally {
-        window.clearTimeout(watchdog);
+      await applyPendingTinyTitansUpdate();
+
+      if (navigator.serviceWorker.controller && !controllerChanged) {
+        await Promise.race([
+          controllerPromise,
+          new Promise<void>((_, reject) => window.setTimeout(() => reject(new Error("Service worker activation timed out.")), UPDATE_RELOAD_TIMEOUT_MS)),
+        ]);
       }
 
-      // updateSW(true) normally reloads through controllerchange. If the
-      // service worker implementation resolves without doing so, give the
-      // browser a short settling window and then reload exactly once.
-      window.setTimeout(reload, 500);
+      // updateSW(true) normally performs the reload itself after controllerchange.
+      // The fallback is only reached if the helper resolves without navigating.
+      if (!controllerChanged && navigator.serviceWorker.controller) {
+        clearUpdateAttempt();
+        window.location.reload();
+      }
     } catch (error) {
       console.error("[Tiny Titans] Failed to apply app update", error);
       clearUpdateAttempt();
