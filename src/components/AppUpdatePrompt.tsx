@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
-const UPDATE_TIMEOUT_MS = 8000;
+const UPDATE_TIMEOUT_MS = 10000;
+const UPDATE_ATTEMPT_KEY = "tiny-titans-update-attempt";
+const UPDATE_ATTEMPT_COOLDOWN_MS = 30000;
 
 export function notifyTinyTitansUpdateAvailable() {
   window.__tinyTitansUpdatePending = true;
@@ -20,6 +22,31 @@ declare global {
   }
 }
 
+function hasRecentUpdateAttempt() {
+  try {
+    const value = Number(window.sessionStorage.getItem(UPDATE_ATTEMPT_KEY));
+    return Number.isFinite(value) && Date.now() - value < UPDATE_ATTEMPT_COOLDOWN_MS;
+  } catch {
+    return false;
+  }
+}
+
+function markUpdateAttempt() {
+  try {
+    window.sessionStorage.setItem(UPDATE_ATTEMPT_KEY, String(Date.now()));
+  } catch {
+    // Session storage can be unavailable in restricted/private browser modes.
+  }
+}
+
+function clearUpdateAttempt() {
+  try {
+    window.sessionStorage.removeItem(UPDATE_ATTEMPT_KEY);
+  } catch {
+    // Ignore storage failures; the update flow still works without it.
+  }
+}
+
 export default function AppUpdatePrompt() {
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -28,54 +55,65 @@ export default function AppUpdatePrompt() {
 
   useEffect(() => {
     const show = () => {
+      // A service worker can emit the refresh event more than once while a
+      // client is transitioning between versions. Consume the pending flag so
+      // it cannot keep reopening the modal after the user dismisses it.
+      window.__tinyTitansUpdatePending = false;
       setUpdateError(false);
       setOpen(true);
     };
 
     window.addEventListener(UPDATE_EVENT, show);
 
-    // onNeedRefresh can fire before React has mounted this component. Honour
-    // that pending update instead of silently losing the notification.
-    if (window.__tinyTitansUpdatePending) show();
+    if (window.__tinyTitansUpdatePending && !hasRecentUpdateAttempt()) show();
+    else window.__tinyTitansUpdatePending = false;
 
     return () => window.removeEventListener(UPDATE_EVENT, show);
   }, []);
 
   if (!open) return null;
 
+  const close = () => {
+    if (updating) return;
+    window.__tinyTitansUpdatePending = false;
+    setOpen(false);
+    setUpdateError(false);
+  };
+
   const updateNow = async () => {
     if (updating) return;
     setUpdating(true);
     setUpdateError(false);
+    window.__tinyTitansUpdatePending = false;
+    markUpdateAttempt();
 
     try {
       if (!applyPendingTinyTitansUpdate) {
         throw new Error("Tiny Titans update handler is not ready.");
       }
 
-      // The service-worker helper normally reloads the page itself. Keep a
-      // watchdog so a browser/PWA that fails to deliver controllerchange does
-      // not leave the user permanently stuck on the old bundle.
-      let timedOut = false;
-      const watchdog = window.setTimeout(() => {
-        timedOut = true;
+      let reloaded = false;
+      const reload = () => {
+        if (reloaded) return;
+        reloaded = true;
+        clearUpdateAttempt();
         window.location.reload();
-      }, UPDATE_TIMEOUT_MS);
+      };
 
+      const watchdog = window.setTimeout(reload, UPDATE_TIMEOUT_MS);
       try {
         await applyPendingTinyTitansUpdate();
       } finally {
         window.clearTimeout(watchdog);
       }
 
-      if (!timedOut) {
-        // updateSW(true) should already have reloaded after skipWaiting. If it
-        // returned without doing so, explicitly reload once the update call
-        // has completed.
-        window.location.reload();
-      }
+      // updateSW(true) normally reloads through controllerchange. If the
+      // service worker implementation resolves without doing so, give the
+      // browser a short settling window and then reload exactly once.
+      window.setTimeout(reload, 500);
     } catch (error) {
       console.error("[Tiny Titans] Failed to apply app update", error);
+      clearUpdateAttempt();
       setUpdating(false);
       setUpdateError(true);
     }
@@ -95,7 +133,7 @@ export default function AppUpdatePrompt() {
             {updating ? "Updating Tiny Titans…" : "Update Now"}
           </button>
           {!mandatory && (
-            <button type="button" className="tt-update-secondary" onClick={() => setOpen(false)} disabled={updating}>
+            <button type="button" className="tt-update-secondary" onClick={close} disabled={updating}>
               Later
             </button>
           )}
