@@ -145,3 +145,5 @@ exports.stripeWebhook = onRequest({ region: "europe-west2", secrets: [STRIPE_SEC
     return res.status(200).json({ received: true });
   } catch (error) { console.error("Stripe webhook verification/processing failed", error); return res.status(400).send("Invalid Stripe webhook signature or event"); }
 });
+
+Object.assign(exports, require("./marketplaceNotifications"));
