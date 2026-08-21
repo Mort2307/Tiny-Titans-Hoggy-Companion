@@ -62,6 +62,7 @@ function Navigation() {
     ["/knowledge-base", "📚", "Knowledge Base"],
     ["/challenge", "🧠", "Titans Challenge"],
     ["/community", "🌿", "Community Hub"],
+    ["/community/keeper-meets-breeder", "🤝", "Keeper Meets Breeder"],
     ["/community/wall-of-titans", "🏆", "Wall of Titans"],
     ["/account", "🧑", "My Account"],
     ["/become-a-titan", "🐍", "Become a Titan"],
