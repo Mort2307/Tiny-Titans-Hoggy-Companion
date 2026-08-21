@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, increment, serverTimestamp, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, increment, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 export type CommunityReaction = "like" | "helpful";
@@ -18,6 +18,6 @@ export async function reactToCommunityContent(contentId: string, userId: string,
   const existing = await getDoc(reactionRef);
   if (existing.exists()) return false;
   await updateDoc(doc(db, "communityContent", contentId), { [`engagement.${reaction === "helpful" ? "helpful" : "likes"}`]: increment(1), updatedAt: serverTimestamp() });
-  await import("firebase/firestore").then(({ setDoc }) => setDoc(reactionRef, { userId, reaction, createdAt: serverTimestamp() }));
+  await setDoc(reactionRef, { userId, reaction, createdAt: serverTimestamp() });
   return true;
 }
