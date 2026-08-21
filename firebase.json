@@ -12,7 +12,7 @@
   },
   "firestore": {
     "rules": "firestore.rules",
-    "predeploy": ["python3 scripts/mergeFirestoreRules.py"]
+    "predeploy": ["node scripts/mergeFirestoreRules.mjs"]
   },
   "storage": { "rules": "storage.rules" }
 }
