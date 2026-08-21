@@ -6,6 +6,7 @@ on:
       - feature/keeper-meets-breeder-reconciled
   pull_request:
     branches:
+      - feature/community-ecosystem-safe
       - master
 
 jobs:
