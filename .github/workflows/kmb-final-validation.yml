@@ -1,0 +1,31 @@
+name: KMB Final Integration Validation
+
+on:
+  push:
+    branches:
+      - feature/kmb-final-integration
+  pull_request:
+    branches:
+      - feature/community-ecosystem-safe
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: Validate Firestore rules syntax
+        run: npx firebase-tools@latest firestore:rules:release --help >/dev/null
