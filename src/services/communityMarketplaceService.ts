@@ -1,6 +1,6 @@
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { db } from "../firebase/config";
-import type { MarketplaceListing, MarketplaceListingStatus } from "../types/communityMarketplace";
+import type { MarketplaceFilters, MarketplaceListing, MarketplaceListingStatus } from "../types/communityMarketplace";
 
 const listings = collection(db, "communityMarketplace");
 
@@ -20,8 +20,18 @@ export function validateMarketplaceListing(input: Partial<MarketplaceListing>): 
 export async function createMarketplaceListing(input: MarketplaceListing): Promise<string> {
   const errors = validateMarketplaceListing(input);
   if (errors.length) throw new Error(errors.join(" "));
-  const ref = await addDoc(listings, { ...input, status: "pending", createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  const ref = await addDoc(listings, { ...input, status: "pending", availability: "coming-soon", createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   return ref.id;
+}
+
+export async function getActiveMarketplaceListings(filters: MarketplaceFilters = {}, maxItems = 40): Promise<MarketplaceListing[]> {
+  const constraints = [where("status", "==", "active")];
+  if (filters.species) constraints.push(where("species", "==", filters.species));
+  if (filters.sex) constraints.push(where("sex", "==", filters.sex));
+  if (filters.listingType) constraints.push(where("listingType", "==", filters.listingType));
+  if (filters.availability) constraints.push(where("availability", "==", filters.availability));
+  const snapshot = await getDocs(query(listings, ...constraints, limit(maxItems)));
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<MarketplaceListing, "id">) })).filter((item) => item.price == null || (filters.minPrice == null || item.price >= filters.minPrice) && (filters.maxPrice == null || item.price <= filters.maxPrice)).filter((item) => !filters.morph || item.morph?.toLowerCase().includes(filters.morph.toLowerCase()));
 }
 
 export async function updateMarketplaceListingStatus(listingId: string, status: MarketplaceListingStatus): Promise<void> {
