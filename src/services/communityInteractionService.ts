@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, increment, serverTimestamp, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, increment, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 export type CommunityReaction = "like" | "helpful";
@@ -20,14 +20,13 @@ export async function addCommunityReply(contentId: string, authorId: string, aut
   return reply.id;
 }
 
+/** Reactions use a stable user/reaction document so a keeper cannot inflate metrics with repeated clicks. */
 export async function reactToCommunityContent(contentId: string, userId: string, reaction: CommunityReaction): Promise<void> {
   if (!contentId || !userId) throw new Error("You must be signed in to react.");
   const reactionRef = doc(db, "communityContent", contentId, "reactions", `${userId}_${reaction}`);
+  await setDoc(reactionRef, { userId, reaction, createdAt: serverTimestamp() }, { merge: false });
   await updateDoc(doc(db, "communityContent", contentId), {
     [`engagement.${reaction === "helpful" ? "helpful" : "likes"}`]: increment(1),
     updatedAt: serverTimestamp(),
-  });
-  await updateDoc(reactionRef, { userId, reaction, createdAt: serverTimestamp() }).catch(async () => {
-    await addDoc(collection(db, "communityContent", contentId, "reactionEvents"), { userId, reaction, createdAt: serverTimestamp() });
   });
 }
