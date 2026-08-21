@@ -1,0 +1,34 @@
+name: KMB Clean Integration Build Check
+on:
+  push:
+    branches:
+      - feature/kmb-clean-integration
+  pull_request:
+    branches:
+      - feature/community-ecosystem-safe
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: Route coverage
+        run: node scripts/check-route-coverage.mjs
+      - name: Functions dependencies
+        working-directory: functions
+        run: npm install --no-audit --no-fund
+      - name: Functions syntax
+        working-directory: functions
+        run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
