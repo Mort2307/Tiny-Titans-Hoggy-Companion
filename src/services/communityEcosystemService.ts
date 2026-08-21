@@ -1,4 +1,4 @@
-import { collection, getDocs, limit, query, where, type DocumentData } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, query, where, type DocumentData } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { CommunityContent, CommunityContentType, CommunityBoardKey, FeaturedCandidate } from "../types/communityEcosystem";
 
@@ -10,30 +10,22 @@ function timestampMillis(value: unknown): number {
 }
 
 function normaliseContent(id: string, data: DocumentData): CommunityContent {
-  return {
-    id,
-    ...(data as Omit<CommunityContent, "id">),
-    permissions: Array.isArray(data.permissions) ? data.permissions : [],
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    engagement: data.engagement ?? {},
-  };
+  return { id, ...(data as Omit<CommunityContent, "id">), permissions: Array.isArray(data.permissions) ? data.permissions : [], tags: Array.isArray(data.tags) ? data.tags : [], engagement: data.engagement ?? {} };
 }
 
-export async function getCommunityContent(options?: {
-  type?: CommunityContentType;
-  board?: CommunityBoardKey;
-  limitCount?: number;
-}): Promise<CommunityContent[]> {
+export async function getCommunityContentById(id: string): Promise<CommunityContent | null> {
+  if (!id) return null;
+  const snapshot = await getDoc(doc(contentCollection, id));
+  if (!snapshot.exists()) return null;
+  const item = normaliseContent(snapshot.id, snapshot.data());
+  return item.visibility === "community" && item.moderationStatus === "approved" ? item : null;
+}
+
+export async function getCommunityContent(options?: { type?: CommunityContentType; board?: CommunityBoardKey; limitCount?: number }): Promise<CommunityContent[]> {
   const field = options?.board ? "board" : options?.type ? "type" : "visibility";
   const value = options?.board ?? options?.type ?? "community";
   const snapshot = await getDocs(query(contentCollection, where(field, "==", value), limit(options?.limitCount ?? 40)));
-  return snapshot.docs
-    .map((item) => normaliseContent(item.id, item.data()))
-    .filter((item) => item.visibility === "community")
-    .filter((item) => item.moderationStatus !== "rejected")
-    .filter((item) => !options?.type || item.type === options.type)
-    .filter((item) => !options?.board || item.board === options.board)
-    .sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
+  return snapshot.docs.map((item) => normaliseContent(item.id, item.data())).filter((item) => item.visibility === "community" && item.moderationStatus === "approved").filter((item) => !options?.type || item.type === options.type).filter((item) => !options?.board || item.board === options.board).sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
 }
 
 function featureScore(item: CommunityContent, now: number): number {
@@ -47,24 +39,7 @@ function featureScore(item: CommunityContent, now: number): number {
 }
 
 export function rankFeaturedCandidates(items: CommunityContent[], now = Date.now()): FeaturedCandidate[] {
-  return items
-    .filter((item) => item.visibility === "community" && item.moderationStatus !== "rejected")
-    .filter((item) => item.permissions?.includes("featured"))
-    .map((item) => {
-      const score = featureScore(item, now);
-      const reason = item.type === "showcase"
-        ? "Community showcase with an opted-in feature permission."
-        : item.type === "project"
-          ? "Community project selected for variety and collaboration value."
-          : item.type === "marketplace"
-            ? "New community listing opted into Featured."
-            : "Community contribution selected for relevance and freshness.";
-      return { ...item, featureScore: score, featureReason: reason };
-    })
-    .sort((a, b) => b.featureScore - a.featureScore);
+  return items.filter((item) => item.visibility === "community" && item.moderationStatus === "approved").filter((item) => item.permissions?.includes("featured")).map((item) => { const score = featureScore(item, now); const reason = item.type === "showcase" ? "Community showcase with an opted-in feature permission." : item.type === "project" ? "Community project selected for variety and collaboration value." : item.type === "marketplace" ? "New community listing opted into Featured." : "Community contribution selected for relevance and freshness."; return { ...item, featureScore: score, featureReason: reason }; }).sort((a, b) => b.featureScore - a.featureScore);
 }
 
-export async function getFeaturedCandidates(): Promise<FeaturedCandidate[]> {
-  const items = await getCommunityContent({ limitCount: 60 });
-  return rankFeaturedCandidates(items);
-}
+export async function getFeaturedCandidates(): Promise<FeaturedCandidate[]> { return rankFeaturedCandidates(await getCommunityContent({ limitCount: 60 })); }
