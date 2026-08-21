@@ -10,9 +10,10 @@ type SnakeTileProps = {
   snake?: Snake;
   clickDestination?: "profile" | "weight";
   onSelect?: (snake: Snake) => void;
+  selected?: boolean;
 };
 
-function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", onSelect }: SnakeTileProps) {
+function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", onSelect, selected = false }: SnakeTileProps) {
   const navigate = useNavigate();
 
   function getSexIcon() {
@@ -32,7 +33,13 @@ function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", 
   const destinationLabel = clickDestination === "weight" ? "weight tracker" : "profile";
 
   return (
-    <button type="button" className="snake-tile snake-tile-circle" onClick={openTile} aria-label={onSelect ? `Select ${name}` : `Open ${name} ${destinationLabel}`}>
+    <button
+      type="button"
+      className={`snake-tile snake-tile-circle${selected ? " is-selected" : ""}`}
+      onClick={openTile}
+      aria-label={onSelect ? `${selected ? "Deselect" : "Select"} ${name}` : `Open ${name} ${destinationLabel}`}
+      aria-pressed={onSelect ? selected : undefined}
+    >
       <span className="snake-tile-avatar">{photo ? <img src={photo} alt="" aria-hidden="true" /> : <span>🐍</span>}</span>
       <span className="snake-tile-name">{name}</span>
       {sex && <span className="snake-tile-sex">{getSexIcon()}</span>}
