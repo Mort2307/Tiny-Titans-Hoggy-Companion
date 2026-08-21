@@ -24,9 +24,12 @@ export async function getCommunityContent(options?: {
   board?: CommunityBoardKey;
   limitCount?: number;
 }): Promise<CommunityContent[]> {
-  const snapshot = await getDocs(query(contentCollection, where("visibility", "==", "community"), limit(options?.limitCount ?? 40)));
+  const field = options?.board ? "board" : options?.type ? "type" : "visibility";
+  const value = options?.board ?? options?.type ?? "community";
+  const snapshot = await getDocs(query(contentCollection, where(field, "==", value), limit(options?.limitCount ?? 40)));
   return snapshot.docs
     .map((item) => normaliseContent(item.id, item.data()))
+    .filter((item) => item.visibility === "community")
     .filter((item) => item.moderationStatus !== "rejected")
     .filter((item) => !options?.type || item.type === options.type)
     .filter((item) => !options?.board || item.board === options.board)
