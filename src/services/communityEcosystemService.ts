@@ -22,10 +22,11 @@ export async function getCommunityContentById(id: string): Promise<CommunityCont
 }
 
 export async function getCommunityContent(options?: { type?: CommunityContentType; board?: CommunityBoardKey; limitCount?: number }): Promise<CommunityContent[]> {
-  const field = options?.board ? "board" : options?.type ? "type" : "visibility";
-  const value = options?.board ?? options?.type ?? "community";
-  const snapshot = await getDocs(query(contentCollection, where(field, "==", value), limit(options?.limitCount ?? 40)));
-  return snapshot.docs.map((item) => normaliseContent(item.id, item.data())).filter((item) => item.visibility === "community" && item.moderationStatus === "approved").filter((item) => !options?.type || item.type === options.type).filter((item) => !options?.board || item.board === options.board).sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
+  const constraints = [where("visibility", "==", "community"), where("moderationStatus", "==", "approved")];
+  if (options?.board) constraints.push(where("board", "==", options.board));
+  if (options?.type) constraints.push(where("type", "==", options.type));
+  const snapshot = await getDocs(query(contentCollection, ...constraints, limit(options?.limitCount ?? 40)));
+  return snapshot.docs.map((item) => normaliseContent(item.id, item.data())).sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
 }
 
 function featureScore(item: CommunityContent, now: number): number {
