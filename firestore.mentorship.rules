@@ -1,0 +1,31 @@
+// Production rule design for the mentorship collections.
+// Merge these rules into the project's existing firestore.rules rather than deploying this file alone.
+// Principle: users may only read/write resources where they are an approved participant; mentor applications are private to the applicant/admin; requests are private to requester/mentor.
+//
+// match /mentorshipWorkspaces/{workspaceId} {
+//   allow read: if signedIn() && isWorkspaceParticipant(resource.data);
+//   allow create: if signedIn() && isWorkspaceParticipant(request.resource.data);
+//   allow update: if signedIn() && isWorkspaceParticipant(resource.data) && isWorkspaceParticipant(request.resource.data);
+//   allow delete: if false;
+// }
+//
+// match /mentorshipRequests/{requestId} {
+//   allow read: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
+//   allow create: if signedIn() && request.resource.data.requesterId == request.auth.uid;
+//   allow update: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
+//   allow delete: if false;
+// }
+//
+// match /mentorApplications/{applicationId} {
+//   allow read: if signedIn() && (resource.data.applicantId == request.auth.uid || isAdmin());
+//   allow create: if signedIn() && request.resource.data.applicantId == request.auth.uid;
+//   allow update: if signedIn() && (resource.data.applicantId == request.auth.uid || isAdmin());
+//   allow delete: if false;
+// }
+//
+// match /mentorshipEvents/{eventId} {
+//   allow read: if signedIn() && exists(/databases/$(database)/documents/mentorshipWorkspaces/$(resource.data.workspaceId)) && isWorkspaceParticipant(get(/databases/$(database)/documents/mentorshipWorkspaces/$(resource.data.workspaceId)).data);
+//   allow write: if false; // server/admin pathway only
+// }
+//
+// Never expose health records through a broad mentor permission. Health sharing should require an explicit, separately-audited permission and remain subordinate to professional veterinary boundaries.
