@@ -1,0 +1,127 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import BackHomeButton from "../components/BackHomeButton";
+import { ACADEMY_CHAPTERS, ACADEMY_PRINCIPLE, BREEDING_CHECKLIST, BRUMATION_METHODS, EVIDENCE_LABELS, INCUBATION_METHODS, SOURCES, type AcademySection, type EvidenceLevel } from "../data/breedingAcademy";
+import "./BreedingAcademyV2.css";
+
+const STORAGE_KEY = "tinytitans:breeding-academy:v2";
+const levels: EvidenceLevel[] = ["established", "practice", "limited", "avoid"];
+
+interface AcademyState { active: AcademySection; completed: AcademySection[]; checklist: boolean[]; }
+
+function loadState(): AcademyState {
+  const fallback: AcademyState = { active: "foundations", completed: [], checklist: BREEDING_CHECKLIST.map(() => false) };
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<AcademyState>;
+    return {
+      active: ACADEMY_CHAPTERS.some((chapter) => chapter.id === parsed.active) ? parsed.active as AcademySection : fallback.active,
+      completed: Array.isArray(parsed.completed) ? parsed.completed.filter((id): id is AcademySection => ACADEMY_CHAPTERS.some((chapter) => chapter.id === id)) : fallback.completed,
+      checklist: Array.isArray(parsed.checklist) && parsed.checklist.length === BREEDING_CHECKLIST.length ? parsed.checklist.map(Boolean) : fallback.checklist,
+    };
+  } catch { return fallback; }
+}
+
+function EvidenceBadge({ level }: { level: EvidenceLevel }) {
+  return <span className={`academy-v2-badge badge-${level}`} title={EVIDENCE_LABELS[level].description}>{EVIDENCE_LABELS[level].label}</span>;
+}
+
+function MethodCard({ method }: { method: typeof BRUMATION_METHODS[number] }) {
+  return <article className="academy-v2-method">
+    <header><div><EvidenceBadge level={method.level} /><h3>{method.title}</h3></div></header>
+    <p>{method.summary}</p>
+    <div className="academy-v2-method-grid">
+      <div><h4>✅ Potential advantages</h4><ul>{method.advantages.map((item) => <li key={item}>{item}</li>)}</ul></div>
+      <div><h4>⚠️ Limitations</h4><ul>{method.limitations.map((item) => <li key={item}>{item}</li>)}</ul></div>
+    </div>
+    <div className="academy-v2-monitor"><strong>Monitor</strong><ul>{method.monitor.map((item) => <li key={item}>{item}</li>)}</ul></div>
+    <div className="academy-v2-decision"><strong>🧭 Decision lens</strong><p>{method.decision}</p></div>
+  </article>;
+}
+
+function ComparePanel() {
+  const [topic, setTopic] = useState<"brumation" | "incubation">("brumation");
+  const methods = topic === "brumation" ? BRUMATION_METHODS : INCUBATION_METHODS;
+  return <section className="academy-v2-card">
+    <div className="academy-v2-section-head"><div><span className="academy-v2-kicker">Decision lab</span><h2>⚖️ Compare the approaches</h2><p>There is no prize for pretending disagreement does not exist. Put the methods side-by-side and decide from evidence, risk, equipment and your own circumstances.</p></div><div className="academy-v2-toggle"><button className={topic === "brumation" ? "active" : ""} onClick={() => setTopic("brumation")}>🥶 Brumation</button><button className={topic === "incubation" ? "active" : ""} onClick={() => setTopic("incubation")}>🥚 Incubation</button></div></div>
+    <div className="academy-v2-compare-grid">{methods.map((method) => <div key={method.title} className="academy-v2-compare-card"><EvidenceBadge level={method.level} /><h3>{method.title}</h3><p>{method.summary}</p><strong>Best fit when…</strong><p>{method.decision}</p><strong>Watch closely</strong><ul>{method.monitor.slice(0, 3).map((item) => <li key={item}>{item}</li>)}</ul></div>)}</div>
+  </section>;
+}
+
+export default function BreedingAcademyV2() {
+  const navigate = useNavigate();
+  const [state, setState] = useState<AcademyState>(() => loadState());
+  const [showSources, setShowSources] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | EvidenceLevel>("all");
+
+  useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* local persistence is best effort */ } }, [state]);
+
+  const chapter = ACADEMY_CHAPTERS.find((item) => item.id === state.active) ?? ACADEMY_CHAPTERS[0];
+  const chapterIndex = ACADEMY_CHAPTERS.findIndex((item) => item.id === chapter.id);
+  const progress = Math.round((state.completed.length / ACADEMY_CHAPTERS.length) * 100);
+  const checklistDone = state.checklist.filter(Boolean).length;
+  const filteredMethods = useMemo(() => [...BRUMATION_METHODS, ...INCUBATION_METHODS].filter((method) => {
+    const matchesLevel = filter === "all" || method.level === filter;
+    const haystack = `${method.title} ${method.summary} ${method.advantages.join(" ")} ${method.limitations.join(" ")} ${method.decision}`.toLowerCase();
+    return matchesLevel && (!query.trim() || haystack.includes(query.trim().toLowerCase()));
+  }), [filter, query]);
+
+  const setActive = (id: AcademySection) => { setState((current) => ({ ...current, active: id })); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const next = () => { const target = ACADEMY_CHAPTERS[chapterIndex + 1]; if (target) setActive(target.id); };
+  const previous = () => { const target = ACADEMY_CHAPTERS[chapterIndex - 1]; if (target) setActive(target.id); };
+  const complete = () => setState((current) => ({ ...current, completed: current.completed.includes(chapter.id) ? current.completed : [...current.completed, chapter.id] }));
+  const toggleChecklist = (index: number) => setState((current) => ({ ...current, checklist: current.checklist.map((value, itemIndex) => itemIndex === index ? !value : value) }));
+  const reset = () => setState({ active: "foundations", completed: [], checklist: BREEDING_CHECKLIST.map(() => false) });
+
+  return <main className="page-container academy-v2-page">
+    <BackHomeButton />
+    <header className="academy-v2-hero">
+      <div><span className="academy-v2-kicker">Tiny Titans · Keeper Education</span><h1>🐍 Breeding Academy</h1><p>Learn the principles, compare the methods, understand the uncertainty and build a breeding programme you can actually defend with evidence.</p><div className="academy-v2-actions"><button onClick={() => setActive("foundations")}>Start / resume Academy</button><button className="secondary" onClick={() => navigate("/breeding")}>Open Breeding Planner</button></div></div>
+      <div className="academy-v2-progress"><span>Academy progress</span><strong>{progress}%</strong><div className="academy-v2-progress-track"><i style={{ width: `${progress}%` }} /></div><small>{state.completed.length}/{ACADEMY_CHAPTERS.length} chapters completed · {checklistDone}/{BREEDING_CHECKLIST.length} readiness checks</small></div>
+    </header>
+
+    <section className="academy-v2-principle"><span>🧠</span><div><strong>Our rule: teach the decision, not just the recipe.</strong><p>{ACADEMY_PRINCIPLE}</p></div></section>
+
+    <section className="academy-v2-evidence-strip"><div><strong>FACT</strong><span>Reasonably established information.</span></div><div><strong>PRACTICE</strong><span>What experienced keepers commonly do.</span></div><div><strong>LIMITED</strong><span>Useful but incomplete or variable evidence.</span></div><div><strong>OPINION</strong><span>A preference or interpretation — not a biological law.</span></div></section>
+
+    <div className="academy-v2-shell">
+      <aside className="academy-v2-nav"><h2>Course map</h2>{ACADEMY_CHAPTERS.map((item, index) => <button key={item.id} className={state.active === item.id ? "active" : ""} onClick={() => setActive(item.id)}><span>{item.icon}</span><div><strong>{index + 1}. {item.title}</strong><small>{state.completed.includes(item.id) ? "✓ Complete" : item.subtitle}</small></div></button>)}<button className="reset" onClick={reset}>↺ Reset learning progress</button></aside>
+
+      <section className="academy-v2-content">
+        <div className="academy-v2-chapter-head"><div><span className="academy-v2-kicker">Chapter {chapterIndex + 1} of {ACADEMY_CHAPTERS.length}</span><h2>{chapter.icon} {chapter.title}</h2><p>{chapter.subtitle}</p></div><button className={state.completed.includes(chapter.id) ? "complete done" : "complete"} onClick={complete}>{state.completed.includes(chapter.id) ? "✓ Complete" : "Mark complete"}</button></div>
+        <div className="academy-v2-why"><strong>Why this matters</strong><p>{chapter.why}</p></div>
+        <article className="academy-v2-card"><h3>Core learning points</h3><ul className="academy-v2-points">{chapter.keyPoints.map((point) => <li key={point}>{point}</li>)}</ul></article>
+
+        {chapter.id === "foundations" && <section className="academy-v2-card"><h3>🧭 Readiness gate</h3><p>Work through this before a planned pairing. A missing box is a prompt to investigate — not an automatic “you can't breed”.</p><div className="academy-v2-checklist">{BREEDING_CHECKLIST.map((item, index) => <label key={item}><input type="checkbox" checked={state.checklist[index]} onChange={() => toggleChecklist(index)} /><span>{item}</span></label>)}</div><footer><strong>{checklistDone}/{BREEDING_CHECKLIST.length}</strong><span>{checklistDone === BREEDING_CHECKLIST.length ? "Everything is accounted for. Now review the actual animals and your plan." : "Keep investigating before you commit animals to a breeding programme."}</span></footer></section>}
+
+        {chapter.id === "conditioning" && <section className="academy-v2-card"><h3>💪 Conditioning is a trend, not a magic number</h3><div className="academy-v2-three"><div><b>01</b><h4>Body condition</h4><p>Assess the animal as a whole rather than using a single scale number.</p></div><div><b>02</b><h4>History</h4><p>Use feeding, health, shed and previous reproductive records.</p></div><div><b>03</b><h4>Decision</h4><p>Combine the signals and account for individual variation.</p></div></div><div className="academy-v2-warning"><strong>🚫 Don't power-feed to hit a breeding target.</strong><p>There is a difference between healthy conditioning and forcing weight gain because a chart says the animal “should” weigh more.</p></div></section>}
+
+        {chapter.id === "brumation" && <section className="academy-v2-card"><div className="academy-v2-section-head"><div><h3>🥶 Brumation: fight for both sides</h3><p>Seasonal cycling is real. The captive protocol is not one-size-fits-all. Current institutional guidance describes deliberate cooling, while experienced keepers also report successful breeding without deliberate brumation. The responsible position is to explain the difference rather than pretend one camp owns the truth.</p></div><EvidenceBadge level="practice" /></div><div className="academy-v2-method-list">{BRUMATION_METHODS.map((method) => <MethodCard key={method.title} method={method} />)}</div></section>}
+
+        {chapter.id === "pairing" && <section className="academy-v2-card"><h3>🤝 Courtship → introduction → record → review</h3><div className="academy-v2-timeline">{[["01", "Prepare", "Both animals are appropriate for introduction and immediate separation is available."], ["02", "Introduce", "Use a controlled introduction and observe behaviour rather than assuming a lock will occur."], ["03", "Record", "Log date, time, courtship, observed copulation/lock, separation and unusual behaviour."], ["04", "Review", "Use the animal's response and your records to decide whether another introduction is appropriate."]].map(([number, title, text]) => <div key={number}><b>{number}</b><div><h4>{title}</h4><p>{text}</p></div></div>)}</div><div className="academy-v2-note"><strong>Hognose behaviour matters:</strong> bluffing, hissing, flattening and thanatosis can make a quick visual interpretation unreliable. Behaviour should be recorded, not over-diagnosed.</div></section>}
+
+        {chapter.id === "ovulation" && <section className="academy-v2-card"><h3>🥚 Reproductive sequence</h3><div className="academy-v2-stage-grid">{["Follicular development", "Ovulation", "Post-ovulation changes", "Gravidity", "Pre-lay behaviour", "Oviposition"].map((stage, index) => <div key={stage}><b>{index + 1}</b><h4>{stage}</h4><p>Record trends and multiple observations. A single swelling or behaviour is not a diagnosis.</p></div>)}</div><div className="academy-v2-warning"><strong>⚠️ Veterinary boundary</strong><p>Persistent straining, distress, prolonged reproductive difficulty or suspected dystocia needs qualified reptile-veterinary assessment. This Academy deliberately does not provide invasive DIY treatment instructions.</p></div></section>}
+
+        {chapter.id === "laying" && <section className="academy-v2-card"><h3>🪹 Lay box & clutch management</h3><div className="academy-v2-two"><div><h4>Prepare</h4><ul><li>Secure, appropriately sized nesting area</li><li>Suitable diggable substrate</li><li>Low-disturbance access</li><li>Recovery space ready</li></ul></div><div><h4>Record</h4><ul><li>Searching/digging observations</li><li>Lay date</li><li>Clutch count</li><li>Egg condition</li><li>Post-lay female condition/weight</li></ul></div></div><div className="academy-v2-note"><strong>Stop experimenting when welfare becomes uncertain.</strong> Suspected egg-binding is a veterinary problem, not a breeding-technique challenge.</div></section>}
+
+        {chapter.id === "incubation" && <section className="academy-v2-card"><div className="academy-v2-section-head"><div><h3>🌡️ Incubation: systems, not magic ratios</h3><p>Vermiculite, perlite, commercial media and keeper-specific systems can all be discussed. What matters is that the actual microclimate is controlled and measured.</p></div><EvidenceBadge level="established" /></div><div className="academy-v2-method-list">{INCUBATION_METHODS.map((method) => <MethodCard key={method.title} method={method} />)}</div><div className="academy-v2-failure"><h3>🚨 Failure plan before eggs arrive</h3><div><span><b>Primary</b> Thermostat + probe</span><span><b>Independent</b> Separate thermometer/data logger</span><span><b>Emergency</b> Backup equipment + transfer procedure</span></div></div></section>}
+
+        {chapter.id === "hatching" && <section className="academy-v2-card"><h3>🐣 Pipping is not an automatic rescue signal</h3><div className="academy-v2-pip">{[["First pip", "Record the date/time."], ["Observe", "Maintain stable conditions and watch the process."], ["Emergence", "Record hatch separately from pip."], ["Assess", "Move to neonatal care when appropriately emerged."]].map(([title, text]) => <div key={title}><strong>{title}</strong><span>{text}</span></div>)}</div><div className="academy-v2-warning"><strong>Patience is part of the protocol.</strong><p>Do not use an arbitrary timer as an automatic trigger for invasive assistance. Genuinely abnormal situations should be escalated to appropriate expert/veterinary support.</p></div></section>}
+
+        {chapter.id === "neonates" && <section className="academy-v2-card"><h3>🐍 Egg → hatchling → permanent lineage</h3><div className="academy-v2-lineage"><div><span>PAIRING</span><b>♂ × ♀</b></div><i>→</i><div><span>CLUTCH</span><b>Egg #01</b></div><i>→</i><div><span>HATCHLING</span><b>TT-2026-01</b></div><i>→</i><div><span>FUTURE</span><b>Breeder record</b></div></div><div className="academy-v2-two"><div><h4>Animal record</h4><ul><li>Unique ID and sex</li><li>Observed phenotype</li><li>Hatch weight</li><li>First shed</li><li>Feeding and growth</li></ul></div><div><h4>Genetic record</h4><ul><li>Parentage</li><li>Expected probabilities</li><li>Confirmed visuals</li><li>Proven genetics when appropriate</li><li>Unknown/unproven traits labelled honestly</li></ul></div></div></section>}
+
+        {chapter.id === "ethics" && <section className="academy-v2-card"><h3>⚖️ Responsible breeding framework</h3><div className="academy-v2-ethics">{["Animal first", "Evidence over certainty", "Transparent genetics", "Every offspring planned", "No avoidable hereditary harm", "Honest records and sales"].map((item) => <div key={item}><span>✓</span><strong>{item}</strong></div>)}</div><div className="academy-v2-principle-small"><strong>💡 Remember:</strong><p>Experience is valuable. Evidence is valuable. Neither gives us permission to manufacture certainty. When we don't know, Tiny Titans should say <b>“we don't know yet.”</b></p></div></section>}
+
+        <ComparePanel />
+
+        <section className="academy-v2-card"><div className="academy-v2-section-head"><div><span className="academy-v2-kicker">Research layer</span><h2>🔎 Method Finder</h2><p>Search the practical approaches and filter them by evidence level.</p></div><select value={filter} onChange={(event) => setFilter(event.target.value as "all" | EvidenceLevel)} aria-label="Filter methods"><option value="all">All evidence levels</option>{levels.map((level) => <option key={level} value={level}>{EVIDENCE_LABELS[level].label}</option>)}</select></div><input className="academy-v2-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search methods, risks, monitoring…" aria-label="Search breeding methods" /><div className="academy-v2-results">{filteredMethods.length ? filteredMethods.map((method) => <div key={method.title}><EvidenceBadge level={method.level} /><strong>{method.title}</strong><span>{method.summary}</span></div>) : <p>No methods match that search.</p>}</div></section>
+
+        <section className="academy-v2-card"><button className="academy-v2-source-toggle" onClick={() => setShowSources((value) => !value)}>{showSources ? "▾ Hide sources & methodology" : "▸ Show sources & methodology"}</button>{showSources && <div className="academy-v2-sources"><p><strong>How Tiny Titans uses sources:</strong> biological claims are anchored to institutional, government and academic material where available. Practical husbandry methods are identified separately. Breeder experience can inform the guide, but anecdote is never silently upgraded into fact.</p>{SOURCES.map((source) => <article key={source.title}><div><EvidenceBadge level={source.type === "breeder" ? "practice" : source.type === "husbandry" ? "practice" : "established"} /><strong>{source.title}</strong><small>{source.publisher} · {source.type}</small></div><p>{source.note}</p><a href={source.url} target="_blank" rel="noreferrer">Open source ↗</a></article>)}</div>}</section>
+
+        <nav className="academy-v2-footer-nav"><button disabled={chapterIndex === 0} onClick={previous}>← Previous chapter</button><span>{chapterIndex + 1}/{ACADEMY_CHAPTERS.length}</span><button disabled={chapterIndex === ACADEMY_CHAPTERS.length - 1} onClick={next}>Next chapter →</button></nav>
+      </section>
+    </div>
+  </main>;
+}
