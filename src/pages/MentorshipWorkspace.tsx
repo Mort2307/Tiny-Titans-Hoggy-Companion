@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getMentorshipWorkspace, appendWorkspaceMessage } from "../services/mentorshipRepository";
@@ -19,7 +19,7 @@ export default function MentorshipWorkspace() {
   const [loadingBrief, setLoadingBrief] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!workspaceId) return;
     try {
       const nextWorkspace = await getMentorshipWorkspace(workspaceId);
@@ -32,9 +32,9 @@ export default function MentorshipWorkspace() {
       setBrief(buildMentorBrief(nextWorkspace.goal as Parameters<typeof buildMentorBrief>[0], tracker, learning, nextWorkspace));
     } catch { setError("The workspace could not be loaded."); }
     finally { setLoadingBrief(false); }
-  };
+  }, [user, workspaceId]);
 
-  useEffect(() => { void load(); }, [workspaceId, user?.uid]);
+  useEffect(() => { void load(); }, [load]);
 
   const send = async () => {
     if (!workspace || !user || !body.trim() || !canSendMessage(workspace, user.uid)) return;
