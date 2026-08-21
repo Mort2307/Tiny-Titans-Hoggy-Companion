@@ -3,6 +3,7 @@ import { useAuth } from "../context/useAuth";
 import { scoreMentor, type MentorshipGoal, type MentorSpeciality } from "../services/mentorshipIntelligence";
 import { mentorshipMilestones } from "../services/mentorshipProfiles";
 import MentorNetworkPreview from "../components/KeeperMeetsBreeder/MentorNetworkPreview";
+import MentorshipWorkspacePreview from "../components/KeeperMeetsBreeder/MentorshipWorkspacePreview";
 import "../styles/KeeperMeetsBreeder.css";
 
 type Goal = { id: MentorshipGoal; icon: string; title: string; description: string; tags: string[] };
@@ -29,12 +30,10 @@ export default function KeeperMeetsBreeder() {
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showJourney, setShowJourney] = useState(false);
+  const [showWorkspace, setShowWorkspace] = useState(false);
   const [selectedRecords, setSelectedRecords] = useState<string[]>(["Weight history", "Feeding history", "Shed history", "Morph / genetics"]);
   const selectedGoal = goals.find((item) => item.id === goal) ?? goals[0];
-  const recommendations = useMemo(() => tracks.map((track) => {
-    const result = scoreMentor(goal, { goals: [goal], specialities: track.specialities });
-    return { ...track, score: Math.min(99, result.score), signals: result.signals };
-  }).sort((a, b) => b.score - a.score), [goal]);
+  const recommendations = useMemo(() => tracks.map((track) => { const result = scoreMentor(goal, { goals: [goal], specialities: track.specialities }); return { ...track, score: Math.min(99, result.score), signals: result.signals }; }).sort((a, b) => b.score - a.score), [goal]);
   const primary = recommendations[0];
   const milestones = mentorshipMilestones[goal];
   const toggleRecord = (record: string) => setSelectedRecords((current) => current.includes(record) ? current.filter((item) => item !== record) : [...current, record]);
@@ -48,6 +47,8 @@ export default function KeeperMeetsBreeder() {
     <section className="kmb-section"><div className="kmb-section-heading"><div><span className="kmb-label">STEP 3</span><h2>Share only what you choose</h2><p>A mentor should never get blanket access to your TTHC account. Future sharing will be explicit and read-only.</p></div></div><div className="kmb-sharing"><div className="kmb-sharing-head"><div><strong>Mentor record snapshot</strong><small>Only selected information would be shared with an approved mentor.</small></div><span>🔒 Permission controlled</span></div><div className="kmb-record-grid">{sharedRecordOptions.map((record) => <label key={record} className={`kmb-record ${selectedRecords.includes(record) ? "selected" : ""}`}><input type="checkbox" checked={selectedRecords.includes(record)} onChange={() => toggleRecord(record)} /><span>{record}</span></label>)}</div><p className="kmb-share-note">Health records are deliberately separate because mentorship is not veterinary care. TTHC can later support specific, user-approved sharing where appropriate.</p></div></section>
     <MentorNetworkPreview goal={goal} />
     <section className="kmb-section"><div className="kmb-section-heading"><div><span className="kmb-label">PATHWAYS</span><h2>Explore mentorship paths</h2><p>These pathways are structured learning routes; the live mentor directory will be matched here as the network opens.</p></div></div><div className="kmb-track-grid">{recommendations.slice(0, showAllTracks ? recommendations.length : 3).map((track) => <article className="kmb-track" key={track.title}><div className="kmb-track-top"><span>{track.icon}</span><span className="kmb-track-score">{track.score}% fit</span></div><h3>{track.title}</h3><p>{track.description}</p><div className="kmb-focus-list">{track.focus.map((item) => <span key={item}>• {item}</span>)}</div></article>)}</div><button type="button" className="kmb-show-more" onClick={() => setShowAllTracks((value) => !value)}>{showAllTracks ? "Show fewer pathways" : "Show all pathways"}</button></section>
+    <section className="kmb-workspace-launch"><div><span className="kmb-label">STEP 5 · PRIVATE SPACE</span><h2>Ready for the real mentorship workspace?</h2><p>The private workspace is where messages, permissions, milestones and the mentorship relationship live together.</p></div><button type="button" className="kmb-primary-button" onClick={() => setShowWorkspace((value) => !value)}>{showWorkspace ? "Hide workspace preview" : "Open workspace preview"}</button></section>
+    {showWorkspace && <MentorshipWorkspacePreview goal={goal} />}
     <section className="kmb-safety"><div><span className="kmb-label">CREDIBILITY & SAFETY</span><h2>Experience is demonstrated, not simply claimed.</h2><p>Mentor status will be based on transparent experience and contribution. TTHC will distinguish community experience from veterinary qualification and will never present a mentor as a substitute for professional veterinary care.</p></div><div className="kmb-badges"><span>🟢 Community experience</span><span>🔵 Mentor verified</span><span>⚕️ Veterinary boundary</span></div></section>
     <section className="kmb-coming"><span>🚧</span><div><strong>Network foundation is now in place.</strong><p>Real applications, verification, matching, permission requests, messaging and active mentorship workspaces can now be connected without changing the keeper journey.</p></div></section>
   </main>;
