@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { getCommunityPosts, } from "../services/communityService";
+import { getCommunityPosts } from "../services/communityService";
 import { getCommunityContent } from "../services/communityEcosystemService";
 import { markCommunityAsRead } from "../services/communityReadStateService";
 import type { CommunityCategory, CommunityPost } from "../types/community";
@@ -74,7 +74,6 @@ export default function CommunityHub() {
   const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
   const visibleContent = useMemo(() => activeBoard === "all" ? content : content.filter((item) => item.board === activeBoard), [activeBoard, content]);
   const importantCount = posts.filter((post) => post.priority !== "normal" && post.category !== "release").length;
-  const testerCount = posts.filter((post) => post.category === "tester").length;
   const isAdmin = profile?.role === "admin";
 
   return <section className="community-page">
@@ -83,7 +82,7 @@ export default function CommunityHub() {
     <FeaturedTitans onOpen={(item) => { if (item.type === "marketplace") navigate("/community?view=marketplace"); }} />
 
     <section className="community-ecosystem-grid">
-      <button type="button" onClick={() => setActiveBoard("showcase" as CommunityBoardKey)}><span>🐍</span><div><strong>Snake Showcase</strong><small>Show off your Titans with explicit sharing permission.</small></div></button>
+      <button type="button" onClick={() => setActiveBoard("all")}><span>🐍</span><div><strong>Snake Showcase</strong><small>Show off your Titans with explicit sharing permission.</small></div></button>
       <button type="button" onClick={() => setActiveBoard("breeding")}><span>🧬</span><div><strong>Project Partnerships</strong><small>Find keepers working towards compatible breeding goals.</small></div></button>
       <button type="button" onClick={() => navigate("/community?view=marketplace")}><span>🏪</span><div><strong>Marketplace</strong><small>Structured listings for animals, clutches and future community services.</small></div></button>
       <button type="button" onClick={() => setActiveBoard("community")}><span>🤝</span><div><strong>Mentorship & Knowledge</strong><small>Turn real keeper experience into useful community knowledge.</small></div></button>
