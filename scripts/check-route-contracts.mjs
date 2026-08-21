@@ -29,12 +29,13 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
 
 if (!routes.length) errors.push("No application routes were detected in AppRouter.tsx.");
 
-// A route's top-level element may be a page, a redirect, or a local guard/wrapper
-// containing the actual page (for example CreatorRouteGuard -> CreatorAdmin).
-// Validate that the top-level component is genuinely imported locally rather than
-// assuming every route element must be a direct ../pages import.
+// Route components may be eagerly imported or declared as React.lazy(() => import(...)).
+// The contract checker treats both forms as local component availability.
 const importedComponents = new Set();
 for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
+  importedComponents.add(match[1]);
+}
+for (const match of router.matchAll(/const\s+([A-Za-z][A-Za-z0-9]*)\s*=\s*lazy\(\s*\(\s*\)\s*=>\s*import\(/g)) {
   importedComponents.add(match[1]);
 }
 
