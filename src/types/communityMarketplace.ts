@@ -1,6 +1,7 @@
 export type MarketplaceListingStatus = "draft" | "pending" | "active" | "reserved" | "sold" | "withdrawn";
 export type MarketplaceListingType = "hatchling" | "juvenile" | "adult" | "proven" | "clutch" | "equipment";
 export type MarketplaceContactMode = "community-message" | "external-contact";
+export type MarketplaceAvailability = "available" | "coming-soon" | "reserved" | "sold";
 
 export type MarketplaceListing = {
   id: string;
@@ -18,6 +19,7 @@ export type MarketplaceListing = {
   currency?: string;
   quantity?: number;
   availableFrom?: string;
+  availability?: MarketplaceAvailability;
   description: string;
   imageUrls: string[];
   geneticsDisclosure?: string;
@@ -27,4 +29,14 @@ export type MarketplaceListing = {
   termsVersion: string;
   createdAt?: unknown;
   updatedAt?: unknown;
+};
+
+export type MarketplaceFilters = {
+  species?: string;
+  morph?: string;
+  sex?: MarketplaceListing["sex"];
+  listingType?: MarketplaceListingType;
+  availability?: MarketplaceAvailability;
+  minPrice?: number;
+  maxPrice?: number;
 };
