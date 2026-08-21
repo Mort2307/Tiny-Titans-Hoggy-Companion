@@ -1,31 +1,47 @@
-// Production rule design for the mentorship collections.
-// Merge these rules into the project's existing firestore.rules rather than deploying this file alone.
-// Principle: users may only read/write resources where they are an approved participant; mentor applications are private to the applicant/admin; requests are private to requester/mentor.
+// FIRESTORE MERGE FRAGMENT — merge these helpers/matches into firestore.rules.
+// Do not deploy this file by itself. firebase.json intentionally continues to use firestore.rules.
+//
+// Add inside match /databases/{database}/documents alongside the existing helpers:
+//
+// function isMentorshipParticipant(data) {
+//   return signedIn() && data.participants != null && data.participants.map(function(participant) { return participant.userId; }).hasAny([request.auth.uid]);
+// }
 //
 // match /mentorshipWorkspaces/{workspaceId} {
-//   allow read: if signedIn() && isWorkspaceParticipant(resource.data);
-//   allow create: if signedIn() && isWorkspaceParticipant(request.resource.data);
-//   allow update: if signedIn() && isWorkspaceParticipant(resource.data) && isWorkspaceParticipant(request.resource.data);
+//   allow get: if isMentorshipParticipant(resource.data);
+//   allow list: if false;
+//   allow create: if signedIn() && isMentorshipParticipant(request.resource.data);
+//   allow update: if isMentorshipParticipant(resource.data) && isMentorshipParticipant(request.resource.data);
 //   allow delete: if false;
 // }
 //
 // match /mentorshipRequests/{requestId} {
-//   allow read: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
+//   allow get: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
+//   allow list: if false;
 //   allow create: if signedIn() && request.resource.data.requesterId == request.auth.uid;
 //   allow update: if signedIn() && (resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
 //   allow delete: if false;
 // }
 //
 // match /mentorApplications/{applicationId} {
-//   allow read: if signedIn() && (resource.data.applicantId == request.auth.uid || isAdmin());
+//   allow get: if signedIn() && (resource.data.applicantId == request.auth.uid || isCreator());
+//   allow list: if isCreator();
 //   allow create: if signedIn() && request.resource.data.applicantId == request.auth.uid;
-//   allow update: if signedIn() && (resource.data.applicantId == request.auth.uid || isAdmin());
+//   allow update: if signedIn() && (resource.data.applicantId == request.auth.uid || isCreator());
 //   allow delete: if false;
 // }
 //
-// match /mentorshipEvents/{eventId} {
-//   allow read: if signedIn() && exists(/databases/$(database)/documents/mentorshipWorkspaces/$(resource.data.workspaceId)) && isWorkspaceParticipant(get(/databases/$(database)/documents/mentorshipWorkspaces/$(resource.data.workspaceId)).data);
-//   allow write: if false; // server/admin pathway only
+// match /mentors/{mentorId} {
+//   allow get: if signedIn();
+//   allow list: if signedIn();
+//   allow create, update: if isCreator();
+//   allow delete: if isCreator();
 // }
 //
-// Never expose health records through a broad mentor permission. Health sharing should require an explicit, separately-audited permission and remain subordinate to professional veterinary boundaries.
+// match /mentorshipEvents/{eventId} {
+//   allow get: if signedIn() && exists(/databases/$(database)/documents/mentorshipWorkspaces/$(resource.data.workspaceId)) && isMentorshipParticipant(get(/databases/$(database)/documents/mentorshipWorkspaces/$(resource.data.workspaceId)).data);
+//   allow list: if false;
+//   allow write: if false;
+// }
+//
+// IMPORTANT: the mentor request/workspace paths must be merged into the existing firestore.rules before the feature is enabled. Health data is never granted through mentorship permissions; view_health remains false unless a future separately-audited professional workflow is introduced.
