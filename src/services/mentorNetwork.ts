@@ -49,6 +49,7 @@ export function createMentorshipJourney(goal: string, requesterId: string, mento
   return {
     id: crypto.randomUUID(),
     goal,
+    requesterId,
     mentorId,
     status: mentorId ? "requested" : "planning",
     milestones: [],
