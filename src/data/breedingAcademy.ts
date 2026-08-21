@@ -1,0 +1,92 @@
+export type EvidenceLevel = "established" | "practice" | "limited" | "avoid";
+export type AcademySection = "foundations" | "conditioning" | "brumation" | "pairing" | "ovulation" | "laying" | "incubation" | "hatching" | "neonates" | "ethics";
+
+export interface AcademySource {
+  title: string;
+  publisher: string;
+  url: string;
+  type: "institution" | "government" | "academic" | "husbandry" | "breeder";
+  note: string;
+}
+
+export interface AcademyMethod {
+  title: string;
+  level: EvidenceLevel;
+  summary: string;
+  advantages: string[];
+  limitations: string[];
+  monitor: string[];
+  decision: string;
+}
+
+export interface AcademyChapter {
+  id: AcademySection;
+  icon: string;
+  title: string;
+  subtitle: string;
+  why: string;
+  keyPoints: string[];
+}
+
+export const ACADEMY_PRINCIPLE = `There is not always one correct method. Tiny Titans separates established information, experienced keeper practice and unresolved uncertainty so keepers can make responsible, informed decisions without treating this guide as a bullet-proof recipe.`;
+
+export const ACADEMY_CHAPTERS: AcademyChapter[] = [
+  { id: "foundations", icon: "🧭", title: "Foundations", subtitle: "Build the programme before breeding the snakes.", why: "Successful breeding starts with healthy animals, reliable records, realistic goals and a plan for the offspring.", keyPoints: ["Confirm species, sex and identity.", "Assess health and body condition before reproductive stress.", "Know the genetics you can actually substantiate.", "Have housing, food, incubation capacity and a rehoming plan ready."] },
+  { id: "conditioning", icon: "💪", title: "Conditioning & readiness", subtitle: "Maturity is not the same thing as readiness.", why: "Age or a single scale number cannot describe the whole breeding condition of an individual.", keyPoints: ["Consider age, size, body condition, feeding history and health together.", "Avoid power-feeding solely to hit a breeding target.", "Record baseline weight and condition before the breeding season.", "Have a reptile-veterinary plan for animals that are not thriving."] },
+  { id: "brumation", icon: "🥶", title: "Brumation & seasonal cycling", subtitle: "Two legitimate camps exist; explain both.", why: "Western hognoses are seasonal animals, but captive breeding protocols vary. The guide must not turn one breeder's protocol into a biological law.", keyPoints: ["Brumation is an advanced technique and should begin only with healthy animals.", "Cooling protocols differ in temperature, duration and equipment.", "Some breeders deliberately cool; some report successful breeding without deliberate brumation.", "Monitoring and contingency planning matter more than copying a number from the internet."] },
+  { id: "pairing", icon: "🤝", title: "Courtship & pairing", subtitle: "Controlled introductions, observation and records.", why: "Breeding behaviour is variable and pairing records become the evidence for your own programme.", keyPoints: ["Introduce appropriately conditioned animals and supervise the process.", "Record introductions, observed courtship, locks and separation.", "Do not confuse defensive hognose behaviour with a guaranteed breeding outcome.", "Avoid leaving breeding animals together indefinitely without a reason and monitoring plan."] },
+  { id: "ovulation", icon: "🥚", title: "Follicles, ovulation & gravidity", subtitle: "Learn the sequence rather than guessing from one visual sign.", why: "Follicular development, ovulation and later gravidity are different stages and can be confused by inexperienced keepers.", keyPoints: ["Use behaviour, body changes, shed timing and records together.", "A visible swelling is not automatically proof of ovulation.", "Document observations instead of relying on memory.", "Persistent straining, distress or abnormal reproductive signs warrant veterinary input."] },
+  { id: "laying", icon: "🪹", title: "Lay box & clutch", subtitle: "Make the laying environment secure and observable.", why: "A suitable nesting opportunity lets a female express normal digging and laying behaviour while reducing avoidable husbandry problems.", keyPoints: ["Provide a secure, appropriately sized diggable lay area.", "Record the laying date, clutch size and observations.", "Handle eggs gently and avoid unnecessary disturbance.", "Treat suspected dystocia as a veterinary problem, not a DIY experiment."] },
+  { id: "incubation", icon: "🌡️", title: "Incubation", subtitle: "Compare systems, don't worship a recipe.", why: "Incubation success depends on temperature stability, moisture management, ventilation and monitoring—not simply the brand of medium.", keyPoints: ["Common systems include vermiculite, perlite and commercial media.", "Temperature affects development time; faster is not automatically better.", "Use independent temperature monitoring and a failure plan.", "Record the exact system so your own results become useful evidence."] },
+  { id: "hatching", icon: "🐣", title: "Pipping & hatching", subtitle: "Patience is a husbandry tool.", why: "Hatchlings may spend significant time pipped before fully emerging. Unnecessary intervention can create more problems than it solves.", keyPoints: ["Record the first pip and eventual hatch separately.", "Maintain appropriate incubation conditions while the hatchling completes development.", "Do not automatically assist because a hatchling is taking longer than expected.", "Escalate genuinely abnormal situations rather than improvising invasive interventions."] },
+  { id: "neonates", icon: "🐍", title: "Neonates & records", subtitle: "The clutch becomes a generation of individually tracked animals.", why: "Accurate lineage and phenotype records protect the keeper, the buyer and future breeding decisions.", keyPoints: ["Give every hatchling an unambiguous identifier.", "Track sex, phenotype, weight, sheds and feeding.", "Separate observed phenotype from genetic probability.", "Link hatchlings to the original pairing and clutch whenever possible."] },
+  { id: "ethics", icon: "⚖️", title: "Ethics, uncertainty & responsibility", subtitle: "Good breeding includes knowing what not to produce.", why: "A responsible breeding programme considers animal welfare, genetics, transparency, demand and long-term placement—not just whether a pairing can produce a visual morph.", keyPoints: ["Do not represent possible genetics as confirmed.", "Research questionable or disputed traits before propagating them.", "Plan for every offspring, not just the desirable holdbacks.", "Be honest when evidence is limited or breeder opinion is divided."] },
+];
+
+export const BRUMATION_METHODS: AcademyMethod[] = [
+  { title: "Controlled cooling chamber", level: "practice", summary: "A dedicated, thermostat-controlled cooling environment gives the keeper tight control over the seasonal temperature cycle.", advantages: ["Precise temperature control", "Easy independent monitoring", "Repeatable between seasons", "Clear emergency-transfer plan"], limitations: ["Equipment cost", "Thermostat/probe failure remains possible", "Requires careful setup and ventilation"], monitor: ["Actual snake-level temperature", "Weight trend", "Hydration/water where appropriate", "Equipment alarms and backup plan"], decision: "Best suited to keepers who want repeatability and have reliable monitoring equipment. It is not automatically superior simply because it is more technical." },
+  { title: "Cool-room / naturally cool environment", level: "practice", summary: "Some keepers use a suitably controlled cool room or seasonal environment instead of a dedicated cooling chamber.", advantages: ["Simple equipment", "Natural seasonal variation", "Lower setup cost"], limitations: ["Weather can fluctuate", "Warm spells can interrupt the cycle", "Frost and extreme lows must be prevented", "Less precise than a controlled chamber"], monitor: ["Minimum and maximum temperature", "Unexpected weather changes", "Animal condition", "Water availability and equipment/security"], decision: "Can make sense where the room is genuinely controlled and monitored. Do not assume a UK garage is a stable climate just because it is winter." },
+  { title: "Enclosure-based winter cooling", level: "limited", summary: "Some keepers reduce or remove artificial heat and allow an appropriately housed adult to experience a cooler seasonal period in its normal enclosure.", advantages: ["No transfer to a separate cooling container", "Can preserve familiar enclosure security", "Simple for suitable environments"], limitations: ["Greater environmental variability", "Requires careful control of ambient temperatures", "Less suitable where the room cannot be reliably managed"], monitor: ["Ambient temperature", "Animal condition and weight", "Water", "Room-level extremes"], decision: "Consider only when the room and enclosure environment can be controlled safely. It should not be treated as a shortcut around proper monitoring." },
+  { title: "No deliberate brumation", level: "limited", summary: "Some breeders do not deliberately cool their adult hognoses and still report successful breeding. Evidence and breeder experience are not uniform enough to claim that every programme must use the same winter protocol.", advantages: ["Avoids deliberate prolonged cooling", "Simplifies the seasonal routine", "May suit individual animals or keeper circumstances"], limitations: ["May not provide the same seasonal cue", "Breeding response may vary", "Successful anecdotes do not prove equivalence for every animal"], monitor: ["Seasonal activity", "Body condition", "Feeding", "Reproductive behaviour and outcomes"], decision: "Treat this as a legitimate alternative approach with uncertainty, not as proof that cooling is unnecessary for every breeding programme." },
+];
+
+export const INCUBATION_METHODS: AcademyMethod[] = [
+  { title: "Vermiculite", level: "established", summary: "A long-used reptile incubation medium that can work well when moisture and egg contact are managed appropriately.", advantages: ["Widely available", "Low cost", "Long history of use", "Easy to inspect"], limitations: ["Moisture ratios vary between setups", "Over-wetting can create problems", "Requires active monitoring"], monitor: ["Egg surface condition", "Moisture/condensation", "Temperature at egg level", "Mould or deterioration"], decision: "A sensible conventional choice when the keeper understands moisture management rather than following a single water ratio blindly." },
+  { title: "Perlite", level: "established", summary: "Another widely used incubation medium with strong moisture-holding properties.", advantages: ["Lightweight", "Good moisture retention", "Widely used by reptile keepers"], limitations: ["Can be messy", "Still requires moisture control", "Different container designs behave differently"], monitor: ["Egg condition", "Moisture", "Temperature", "Condensation/ventilation"], decision: "A reasonable conventional alternative. The container's microclimate matters as much as the medium itself." },
+  { title: "Commercial incubation media", level: "practice", summary: "Purpose-made products can simplify preparation and provide repeatable starting conditions.", advantages: ["Convenient", "Consistent product", "Less preparation"], limitations: ["Higher cost", "Instructions may not match every species/setup", "Still needs independent monitoring"], monitor: ["Manufacturer guidance", "Actual egg-level temperature", "Moisture and condensation", "Egg condition"], decision: "Useful when convenience and repeatability matter, but the product should not replace environmental measurement." },
+  { title: "Alternative / keeper-specific systems", level: "limited", summary: "Experienced keepers sometimes use unconventional media, container designs or moisture strategies with reported success.", advantages: ["May solve specific environmental problems", "Can be highly repeatable for an experienced keeper", "Encourages experimentation when carefully controlled"], limitations: ["Evidence may be anecdotal", "Harder to reproduce safely", "A successful clutch does not validate every variable"], monitor: ["Every environmental variable you can measure", "Egg condition", "Failure rate", "Repeatability across clutches"], decision: "Document it as an experiment, not a universal recommendation. Change one major variable at a time where possible." },
+];
+
+export const BREEDING_CHECKLIST = [
+  "Species, sex and identity confirmed",
+  "Health and body condition reviewed",
+  "Breeding history and baseline weight recorded",
+  "Genetic claims separated into visual / confirmed het / possible het / unknown",
+  "Quarantine and disease-control considerations addressed",
+  "Pairing objective defined",
+  "Housing and separation plan ready",
+  "Food supply and post-breeding support ready",
+  "Lay box and clutch-recording plan ready",
+  "Incubation system tested before eggs arrive",
+  "Independent temperature monitoring available",
+  "Power/equipment failure plan prepared",
+  "Hatchling housing and feeding capacity available",
+  "Rehoming/holdback plan considered before breeding",
+];
+
+export const SOURCES: AcademySource[] = [
+  { title: "Western Hognose Snake — Herpetarium care information", publisher: "Bowling Green State University", url: "https://www.bgsu.edu/arts-and-sciences/biological-sciences/facilities-and-resources/bgsu-herpetarium/animals/reptiles/western-hognose-snake", type: "institution", note: "Provides an institutional reference point for seasonal cooling, breeding-to-lay timing, clutch size and incubation." },
+  { title: "Plains Hog-nosed Snake COSEWIC assessment", publisher: "Government of Canada", url: "https://www.canada.ca/en/environment-climate-change/services/species-risk-public-registry/cosewic-assessments-status-reports/plains-hog-nosed-snake-2019.html", type: "government", note: "Useful species-level information on reproduction, clutch size, reproductive size and observed incubation data." },
+  { title: "Heterodon nasicus — Animal Diversity Web", publisher: "University of Michigan", url: "https://animaldiversity.org/accounts/Heterodon_nasicus/", type: "academic", note: "Species natural-history reference covering seasonal reproduction and egg-laying." },
+  { title: "Natural history notes on Plains Hognose Snake", publisher: "Research literature / ResearchGate record", url: "https://www.researchgate.net/publication/353291279_Lessons_learned_Notes_on_the_natural_history_of_the_Plains_Hognose_Snake_Heterodon_nasicus_in_Minnesota", type: "academic", note: "Field observations showing reproductive timing can vary and that breeding behaviour has been observed in more than one season." },
+  { title: "Hognose brumation guidance", publisher: "ReptiFiles", url: "https://reptifiles.com/heterodon-hognose-snake-care/hognose-snake-health/brumation/", type: "husbandry", note: "A detailed captive-husbandry protocol; used here as one husbandry reference, not as the sole authority." },
+  { title: "Western Plains Hognose Care", publisher: "San Diego Reptile", url: "https://www.sandiegoreptile.com/breeding-info-caresheets/hognose-snakes/western-plains-hognose-care", type: "breeder", note: "Useful example of experienced-breeder practice, including conditioning, cooling and supervised pairing; breeder preference is clearly identified as such." },
+  { title: "Reproduction in the Dusty Hognose Snake", publisher: "Litteratura Serpentium / Chris Mattison", url: "https://www.snakesociety.nl/jaargangen/1992e/Litteratura%20Serpentium%2012-5%20098-101%20Mattison%2C%20Reproduction%20in%20Heterodon%20nasicus%20gloydi.pdf", type: "academic", note: "Historical captive-reproduction account useful for comparison and historical context." },
+];
+
+export const EVIDENCE_LABELS: Record<EvidenceLevel, { label: string; description: string }> = {
+  established: { label: "Established", description: "Supported by institutional, academic or broad husbandry evidence." },
+  practice: { label: "Experienced practice", description: "A method used by experienced keepers, but not necessarily established as the only or optimal approach." },
+  limited: { label: "Limited / variable evidence", description: "Potentially useful information or practice where evidence is incomplete, variable or largely experiential." },
+  avoid: { label: "Avoid", description: "Not recommended because the safety margin or evidence is inadequate." },
+};
