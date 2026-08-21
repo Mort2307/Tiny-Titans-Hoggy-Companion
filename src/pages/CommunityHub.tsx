@@ -55,14 +55,19 @@ export default function CommunityHub() {
   useEffect(() => {
     if (authLoading || profileLoading || !userId) return;
     let mounted = true;
-    Promise.all([
+    void Promise.allSettled([
       getCommunityPosts({ isTester: profile?.isTester, isAdmin: profile?.role === "admin" }),
       getCommunityContent({ limitCount: 24 }),
-    ]).then(([official, community]) => {
+    ]).then(([officialResult, communityResult]) => {
       if (!mounted) return;
-      setPosts(official); setContent(community); setLoadError("");
-    }).catch((error) => { if (mounted) setLoadError(error instanceof Error ? error.message : "Unable to load Community Hub."); })
-      .finally(() => { if (mounted) setLoadedUserId(userId); });
+      if (officialResult.status === "rejected") {
+        setLoadError(officialResult.reason instanceof Error ? officialResult.reason.message : "Unable to load Tiny Titans updates.");
+        return;
+      }
+      setPosts(officialResult.value);
+      setContent(communityResult.status === "fulfilled" ? communityResult.value : []);
+      setLoadError("");
+    }).finally(() => { if (mounted) setLoadedUserId(userId); });
     return () => { mounted = false; };
   }, [authLoading, profileLoading, userId, profile?.isTester, profile?.role]);
 
