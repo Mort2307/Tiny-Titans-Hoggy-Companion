@@ -57,3 +57,5 @@ exports.setTitanWallRecognition = onCall({ region: "europe-west2" }, async (requ
   await db.collection("supporterWall").doc(uid).set({ uid, displayName, socialUrl, visibility, recognitionStatus: "chosen", tierLabel: String(supporter.tierLabel || "Titan Supporter"), amountGbp: Number(supporter.amountGbp || 0), supportedAt: supporter.lastPaymentAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { saved: true, visibility, displayName, socialUrl };
 });
+
+Object.assign(exports, require("./featureVoting"));
