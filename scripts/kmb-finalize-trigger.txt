@@ -1,1 +1,0 @@
-This file intentionally triggers the KMB finalization workflow. It can be removed after the workflow has applied the generated changes.
