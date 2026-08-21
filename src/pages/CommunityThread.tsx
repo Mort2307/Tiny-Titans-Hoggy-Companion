@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { addCommunityReply, reactToCommunityContent } from "../services/communityInteractionService";
@@ -25,7 +25,7 @@ export default function CommunityThread() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!contentId) return;
     setLoading(true); setError("");
     try {
@@ -36,9 +36,9 @@ export default function CommunityThread() {
       setContent(nextContent); setReplies(nextReplies);
     } catch (threadError) { setError(threadError instanceof Error ? threadError.message : "Unable to load this community contribution."); }
     finally { setLoading(false); }
-  };
+  }, [contentId, user?.uid, profile?.role]);
 
-  useEffect(() => { void load(); }, [contentId, user?.uid, profile?.role]);
+  useEffect(() => { void load(); }, [load]);
 
   const submitReply = async (event: React.FormEvent) => {
     event.preventDefault();
