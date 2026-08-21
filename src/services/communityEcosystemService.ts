@@ -24,14 +24,12 @@ export async function getCommunityContent(options?: {
   board?: CommunityBoardKey;
   limitCount?: number;
 }): Promise<CommunityContent[]> {
-  const constraints = [where("visibility", "==", "community")];
-  if (options?.type) constraints.push(where("type", "==", options.type));
-  if (options?.board) constraints.push(where("board", "==", options.board));
-
-  const snapshot = await getDocs(query(contentCollection, ...constraints, limit(options?.limitCount ?? 40)));
+  const snapshot = await getDocs(query(contentCollection, where("visibility", "==", "community"), limit(options?.limitCount ?? 40)));
   return snapshot.docs
     .map((item) => normaliseContent(item.id, item.data()))
     .filter((item) => item.moderationStatus !== "rejected")
+    .filter((item) => !options?.type || item.type === options.type)
+    .filter((item) => !options?.board || item.board === options.board)
     .sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
 }
 
