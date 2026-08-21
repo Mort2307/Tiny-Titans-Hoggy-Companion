@@ -3,9 +3,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getCommunityContentById } from "../services/communityEcosystemService";
 import { addCommunityReply, reactToCommunityContent, type CommunityReaction } from "../services/communityInteractionService";
-import { reportCommunityContent } from "../services/communityModerationService";
+import { reportCommunityContent, type CommunityReportReason } from "../services/communityModerationService";
 import type { CommunityContent } from "../types/communityEcosystem";
 import "../styles/CommunityHub.css";
+
+const REPORT_REASONS: Array<{ value: CommunityReportReason; label: string }> = [
+  { value: "spam", label: "Spam" },
+  { value: "misinformation", label: "Misinformation" },
+  { value: "harassment", label: "Harassment" },
+  { value: "animal_welfare", label: "Animal welfare concern" },
+  { value: "scam", label: "Scam" },
+  { value: "incorrect_information", label: "Incorrect information" },
+  { value: "other", label: "Other" },
+];
 
 export default function CommunityContentView() {
   const { id } = useParams<{ id: string }>();
@@ -39,8 +49,11 @@ export default function CommunityContentView() {
 
   const report = async () => {
     if (!item || !user) { setMessage("Sign in to report community content."); return; }
-    const reason = window.prompt("Why are you reporting this contribution? (spam, misinformation, harassment, welfare, scam, other)");
-    if (!reason) return;
+    const selection = window.prompt(`Why are you reporting this contribution?\n${REPORT_REASONS.map((reason, index) => `${index + 1}. ${reason.label}`).join("\n")}\n\nEnter a number:`);
+    if (!selection) return;
+    const index = Number.parseInt(selection, 10) - 1;
+    const reason = Number.isInteger(index) ? REPORT_REASONS[index]?.value : undefined;
+    if (!reason) { setMessage("Please choose a valid report reason."); return; }
     setBusy(true);
     try { await reportCommunityContent(item.id, user.uid, reason, "Reported from community detail view"); setMessage("Report submitted for moderation."); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to submit the report."); } finally { setBusy(false); }
   };
