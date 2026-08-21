@@ -45,11 +45,10 @@ export function getVerificationTrustNote(level: MentorVerification): string {
   }
 }
 
-export function createMentorshipJourney(goal: string, requesterId: string, mentorId?: string): MentorshipJourney {
+export function createMentorshipJourney(goal: string, mentorId?: string): MentorshipJourney {
   return {
     id: crypto.randomUUID(),
     goal,
-    requesterId,
     mentorId,
     status: mentorId ? "requested" : "planning",
     milestones: [],
