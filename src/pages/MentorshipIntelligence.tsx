@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import MentorshipIntelligencePanel from "../components/KeeperMeetsBreeder/MentorshipIntelligencePanel";
 import { mentorshipMilestones } from "../services/mentorshipProfiles";
+import { getMentorshipTrackerEvidence, type MentorshipTrackerEvidence } from "../services/mentorshipTrackerEvidence";
 import type { MentorshipGoal } from "../services/mentorshipIntelligence";
 import "../styles/KeeperMeetsBreeder.css";
 
@@ -14,14 +16,29 @@ const goals: { id: MentorshipGoal; title: string; description: string }[] = [
 ];
 
 export default function MentorshipIntelligence() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [goal, setGoal] = useState<MentorshipGoal>("breeding");
+  const [evidence, setEvidence] = useState<MentorshipTrackerEvidence | null>(null);
+  const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const milestones = mentorshipMilestones[goal];
+
+  useEffect(() => {
+    if (!user) { setEvidence(null); return; }
+    let cancelled = false;
+    setLoadingEvidence(true);
+    setError(null);
+    void getMentorshipTrackerEvidence(user.uid).then((result) => { if (!cancelled) setEvidence(result); }).catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "TTHC could not analyse your tracker evidence yet."); }).finally(() => { if (!cancelled) setLoadingEvidence(false); });
+    return () => { cancelled = true; };
+  }, [user]);
+
   return <main className="kmb-page">
     <header className="kmb-hero"><div className="kmb-hero-mark">🧠</div><div className="kmb-hero-copy"><span className="kmb-eyebrow">TINY TITANS HOGNOSE COMPANION</span><h1>Mentorship Intelligence</h1><p>Understand where you are, what you should work on next and why TTHC recommends a particular learning pathway.</p></div><span className="kmb-status">🧭 Adaptive guidance</span></header>
     <section className="kmb-section"><div className="kmb-section-heading"><div><span className="kmb-label">YOUR CURRENT GOAL</span><h2>What are you working towards?</h2><p>The intelligence layer changes its recommendations when your goal changes.</p></div><span className="kmb-profile-chip">🐍 {profile?.isTester ? "Contributor" : "Keeper"}</span></div><div className="kmb-goal-grid">{goals.map((item) => <button type="button" key={item.id} className={`kmb-goal ${goal === item.id ? "selected" : ""}`} onClick={() => setGoal(item.id)}><span className="kmb-goal-icon">{item.id === "genetics" ? "🧬" : item.id === "breeding" || item.id === "first-clutch" ? "🥚" : item.id === "hatchlings" ? "🐣" : item.id === "mentor" ? "🤝" : "🌡️"}</span><span><strong>{item.title}</strong><small>{item.description}</small></span></button>)}</div></section>
-    <MentorshipIntelligencePanel goal={goal} onNextStep={() => document.getElementById("mentorship-progression")?.scrollIntoView({ behavior: "smooth" })} />
+    {error && <div className="kmb-network-error">⚠️ {error}</div>}
+    <MentorshipIntelligencePanel goal={goal} evidence={evidence ?? undefined} loading={loadingEvidence} onNextStep={() => document.getElementById("mentorship-progression")?.scrollIntoView({ behavior: "smooth" })} />
+    {evidence && <section className="kmb-section"><div className="kmb-section-heading"><div><span className="kmb-label">EVIDENCE SNAPSHOT</span><h2>What TTHC is actually seeing</h2><p>This is derived from your existing tracker records. Nothing is copied into a second tracker.</p></div></div><div className="kmb-readiness-grid"><div className="kmb-readiness-item strong"><strong>🐍 {evidence.snakeCount} snake{evidence.snakeCount === 1 ? "" : "s"}</strong><small>Included in the current evidence analysis.</small></div><div className="kmb-readiness-item strong"><strong>⚖️ {evidence.weightRecordCount} weight records</strong><small>Used as evidence of consistent monitoring.</small></div><div className="kmb-readiness-item strong"><strong>🍽️ {evidence.feedingRecordCount} feeding records</strong><small>Used for husbandry and routine evidence.</small></div><div className="kmb-readiness-item strong"><strong>🐍 {evidence.shedRecordCount} shed records</strong><small>Used as an observation signal.</small></div><div className="kmb-readiness-item strong"><strong>🧬 {evidence.snakesWithGenetics} genetics profiles</strong><small>Used when genetics is relevant to the goal.</small></div><div className="kmb-readiness-item strong"><strong>🏠 {evidence.snakesWithEnclosures} enclosure records</strong><small>Used as husbandry evidence where relevant.</small></div></div></section>}
     <section className="kmb-section" id="mentorship-progression"><div className="kmb-section-heading"><div><span className="kmb-label">NEXT STAGE</span><h2>Your suggested progression</h2><p>TTHC should help you progress through knowledge gaps rather than simply collecting completion badges.</p></div></div><div className="kmb-milestones">{milestones.map((milestone, index) => <article className="kmb-milestone" key={milestone.id}><span>{index + 1}</span><div><strong>{milestone.title}</strong><p>{milestone.description}</p></div><em>{index === 0 ? "Start here" : "Next"}</em></article>)}</div></section>
-    <section className="kmb-section"><div className="kmb-section-heading"><div><span className="kmb-label">HOW IT EVOLVES</span><h2>From self-assessment to real TTHC evidence</h2><p>The current evidence picker is a transparent bridge. The production intelligence layer will progressively replace manual inputs with signals already present in your account.</p></div></div><div className="kmb-track-grid"><article className="kmb-track"><div className="kmb-track-top"><span>📊</span><span className="kmb-track-score">Phase 1</span></div><h3>Evidence collection</h3><p>Use explicit tracker signals to understand what evidence exists and what is missing.</p></article><article className="kmb-track"><div className="kmb-track-top"><span>🧠</span><span className="kmb-track-score">Phase 2</span></div><h3>Gap analysis</h3><p>Compare the keeper's current evidence against the knowledge required for the selected goal.</p></article><article className="kmb-track"><div className="kmb-track-top"><span>🧭</span><span className="kmb-track-score">Phase 3</span></div><h3>Adaptive pathway</h3><p>Recommend the most useful next action, learning topic or mentor rather than repeating material already demonstrated.</p></article></div></section>
+    <section className="kmb-section"><div className="kmb-section-heading"><div><span className="kmb-label">HOW IT EVOLVES</span><h2>From tracker evidence to adaptive guidance</h2><p>TTHC now reads the existing tracker data directly. Future phases can add learning completion and deeper behavioural evidence without creating duplicate records.</p></div></div></section>
   </main>;
 }
