@@ -9,17 +9,64 @@ import { deriveLearningEvidence, type LearningEvidence } from "../services/mento
 import { detectKnowledgeGaps } from "../services/mentorshipKnowledgeGaps";
 import type { MentorshipGoal } from "../services/mentorshipIntelligence";
 import "../styles/KeeperMeetsBreeder.css";
+
 const goals: { id: MentorshipGoal; title: string; description: string }[] = [
-  { id: "husbandry", title: "Improve my husbandry", description: "Build stronger observation, enclosure and routine skills." }, { id: "genetics", title: "Understand genetics", description: "Build confidence with inheritance, hets and responsible records." }, { id: "breeding", title: "Prepare for breeding", description: "Understand conditioning, pairing decisions and reproductive planning." }, { id: "first-clutch", title: "Work towards my first clutch", description: "Build the knowledge and preparation needed before pairing." }, { id: "hatchlings", title: "Get better with hatchlings", description: "Develop repeatable hatchling care and placement systems." }, { id: "mentor", title: "Eventually become a mentor", description: "Turn practical experience into useful community contribution." },
+  { id: "husbandry", title: "Improve my husbandry", description: "Build stronger observation, enclosure and routine skills." },
+  { id: "genetics", title: "Understand genetics", description: "Build confidence with inheritance, hets and responsible records." },
+  { id: "breeding", title: "Prepare for breeding", description: "Understand conditioning, pairing decisions and reproductive planning." },
+  { id: "first-clutch", title: "Work towards my first clutch", description: "Build the knowledge and preparation needed before pairing." },
+  { id: "hatchlings", title: "Get better with hatchlings", description: "Develop repeatable hatchling care and placement systems." },
+  { id: "mentor", title: "Eventually become a mentor", description: "Turn practical experience into useful community contribution." },
 ];
+
 const emptyLearning: LearningEvidence = { completedLessons: 0, masteredTopics: 0, averageMastery: 0, relevantMastery: 0, xp: 0, streak: 0, reasoningSignals: 0, relevantTopics: [] };
+
 export default function MentorshipIntelligence() {
-  const { user, profile } = useAuth(); const navigate = useNavigate(); const [goal, setGoal] = useState<MentorshipGoal>("breeding"); const [evidence, setEvidence] = useState<MentorshipTrackerEvidence | null>(null); const [learning, setLearning] = useState<LearningEvidence>(emptyLearning); const [loadingEvidence, setLoadingEvidence] = useState(false); const [error, setError] = useState<string | null>(null); const milestones = mentorshipMilestones[goal];
-  useEffect(() => { if (!user) { setEvidence(null); setLearning(emptyLearning); return; } let cancelled = false; setLoadingEvidence(true); setError(null); void Promise.all([getMentorshipTrackerEvidence(user.uid), getCloudLearningProgress(user.uid)]).then(([tracker, progress]) => { if (cancelled) return; setEvidence(tracker); setLearning(progress ? deriveLearningEvidence(progress, goal) : emptyLearning); }).catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "TTHC could not analyse your evidence yet."); }).finally(() => { if (!cancelled) setLoadingEvidence(false); }); return () => { cancelled = true; }; }, [user]);
-  useEffect(() => { void getCloudLearningProgress(user?.uid ?? "").then((progress) => { if (progress) setLearning(deriveLearningEvidence(progress, goal)); }).catch(() => undefined); }, [goal, user]);
+  const { user, profile } = useAuth();
+  const navigate = useNavigate();
+  const [goal, setGoal] = useState<MentorshipGoal>("breeding");
+  const [evidence, setEvidence] = useState<MentorshipTrackerEvidence | null>(null);
+  const [learning, setLearning] = useState<LearningEvidence>(emptyLearning);
+  const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const milestones = mentorshipMilestones[goal];
+
+  useEffect(() => {
+    if (!user) {
+      setEvidence(null);
+      setLearning(emptyLearning);
+      setLoadingEvidence(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingEvidence(true);
+    setError(null);
+    void Promise.all([getMentorshipTrackerEvidence(user.uid), getCloudLearningProgress(user.uid)])
+      .then(([tracker, progress]) => {
+        if (cancelled) return;
+        setEvidence(tracker);
+        setLearning(progress ? deriveLearningEvidence(progress, goal) : emptyLearning);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "TTHC could not analyse your evidence yet.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEvidence(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, goal]);
+
   const gaps = useMemo(() => evidence ? detectKnowledgeGaps(goal, evidence, learning) : [], [goal, evidence, learning]);
-  const gapDestination = (action: string) => action === "record" ? (goal === "genetics" || goal === "breeding" || goal === "first-clutch" ? "/breeding" : "/weights") : action === "mentor" ? "/community/keeper-meets-breeder/mentors" : "/learn";
-  return <main className="kmb-page"><header className="kmb-hero"><div className="kmb-hero-mark">🧠</div><div className="kmb-hero-copy"><span className="kmb-eyebrow">TINY TITANS HOGNOSE COMPANION</span><h1>Mentorship Intelligence</h1><p>Understand where you are, what you should work on next and why TTHC recommends a particular learning pathway.</p></div><span className="kmb-status">🧭 Adaptive guidance</span></header>
+  const gapDestination = (action: string) => action === "record"
+    ? (goal === "genetics" || goal === "breeding" || goal === "first-clutch" ? "/breeding" : "/weights")
+    : action === "mentor"
+      ? "/community/keeper-meets-breeder/mentors"
+      : "/learn";
+
+  return <main className="kmb-page">
+    <header className="kmb-hero"><div className="kmb-hero-mark">🧠</div><div className="kmb-hero-copy"><span className="kmb-eyebrow">TINY TITANS HOGNOSE COMPANION</span><h1>Mentorship Intelligence</h1><p>Understand where you are, what you should work on next and why TTHC recommends a particular learning pathway.</p></div><span className="kmb-status">🧭 Adaptive guidance</span></header>
     <section className="kmb-section"><div className="kmb-section-heading"><div><span className="kmb-label">YOUR CURRENT GOAL</span><h2>What are you working towards?</h2><p>The intelligence layer changes its recommendations when your goal changes.</p></div><span className="kmb-profile-chip">🐍 {profile?.isTester ? "Contributor" : "Keeper"}</span></div><div className="kmb-goal-grid">{goals.map((item) => <button type="button" key={item.id} className={`kmb-goal ${goal === item.id ? "selected" : ""}`} onClick={() => setGoal(item.id)}><span className="kmb-goal-icon">{item.id === "genetics" ? "🧬" : item.id === "breeding" || item.id === "first-clutch" ? "🥚" : item.id === "hatchlings" ? "🐣" : item.id === "mentor" ? "🤝" : "🌡️"}</span><span><strong>{item.title}</strong><small>{item.description}</small></span></button>)}</div></section>
     {error && <div className="kmb-network-error">⚠️ {error}</div>}
     <MentorshipIntelligencePanel goal={goal} evidence={evidence ?? undefined} loading={loadingEvidence} sourceLabel="Live TTHC tracker evidence + learning progress" onNextStep={() => document.getElementById("mentorship-gaps")?.scrollIntoView({ behavior: "smooth" })} />
