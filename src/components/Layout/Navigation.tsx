@@ -59,6 +59,7 @@ function Navigation() {
     ["/morph-library", "🧬", "Morph Library"],
     ["/calculator", "🧮", "Genetics Calculator"],
     ["/breeding", "🥚", "Breeding Planner"],
+    ["/breeding/academy", "🎓", "Breeding Academy"],
     ["/knowledge-base", "📚", "Knowledge Base"],
     ["/challenge", "🧠", "Titans Challenge"],
     ["/community", "🌿", "Community Hub"],
