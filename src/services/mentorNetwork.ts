@@ -1,6 +1,6 @@
 import type { MentorProfile, MentorVerification, MentorshipJourney } from "./mentorshipProfiles";
 
-export type MentorApplicationStatus = "draft" | "submitted" | "under-review" | "approved" | "needs-more-evidence" | "declined";
+export type MentorApplicationStatus = "draft" | "submitted" | "under-review" | "approved" | "needs-more-evidence" | "declined" | "published";
 export type MentorshipRequestStatus = "draft" | "sent" | "accepted" | "declined" | "cancelled";
 
 export type MentorApplication = {
