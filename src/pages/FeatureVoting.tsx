@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { deleteFeatureRequest, getFeatureRequests, getUserFeatureVotes, submitFeatureRequest, toggleFeatureVote, updateFeatureRequestStatus } from "../services/featureVotingService";
@@ -7,12 +7,7 @@ import "../styles/FeatureVoting.css";
 
 const SORTS = ["top", "new"] as const;
 type SortMode = (typeof SORTS)[number];
-
-function timestampMillis(value: unknown) {
-  if (value && typeof value === "object" && "toMillis" in value && typeof value.toMillis === "function") return value.toMillis();
-  const parsed = value ? new Date(String(value)).getTime() : 0;
-  return Number.isFinite(parsed) ? parsed : 0;
-}
+function timestampMillis(value: unknown) { if (value && typeof value === "object" && "toMillis" in value && typeof value.toMillis === "function") return value.toMillis(); const parsed = value ? new Date(String(value)).getTime() : 0; return Number.isFinite(parsed) ? parsed : 0; }
 function dateLabel(value: unknown) { if (!value) return ""; if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") return value.toDate().toLocaleDateString(); const date = new Date(String(value)); return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(); }
 
 function FeatureCard({ feature, voted, busy, onVote, isAdmin, onStatus, onDelete }: { feature: FeatureRequest; voted: boolean; busy: boolean; onVote: () => void; isAdmin: boolean; onStatus: (status: FeatureVotingStatus) => void; onDelete: () => void; }) {
@@ -21,8 +16,8 @@ function FeatureCard({ feature, voted, busy, onVote, isAdmin, onStatus, onDelete
 
 export default function FeatureVoting() {
   const { user, profile } = useAuth(); const navigate = useNavigate(); const [features, setFeatures] = useState<FeatureRequest[]>([]); const [votedIds, setVotedIds] = useState<Set<string>>(new Set()); const [sort, setSort] = useState<SortMode>("top"); const [category, setCategory] = useState<FeatureVotingCategory | "all">("all"); const [showForm, setShowForm] = useState(false); const [loading, setLoading] = useState(true); const [busyId, setBusyId] = useState<string | null>(null); const [message, setMessage] = useState(""); const [error, setError] = useState(""); const [title, setTitle] = useState(""); const [description, setDescription] = useState(""); const [whyUseful, setWhyUseful] = useState(""); const [formCategory, setFormCategory] = useState<FeatureVotingCategory>("snake_keeping"); const isAdmin = profile?.role === "admin";
-  async function load() { if (!user) return; setLoading(true); setError(""); try { const [items, votes] = await Promise.all([getFeatureRequests(), getUserFeatureVotes()]); setFeatures(items); setVotedIds(votes); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Unable to load feature voting."); } finally { setLoading(false); } }
-  useEffect(() => { void load(); }, [user?.uid]);
+  const load = useCallback(async () => { if (!user) return; setLoading(true); setError(""); try { const [items, votes] = await Promise.all([getFeatureRequests(), getUserFeatureVotes()]); setFeatures(items); setVotedIds(votes); } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Unable to load feature voting."); } finally { setLoading(false); } }, [user]);
+  useEffect(() => { void load(); }, [load]);
   const visibleFeatures = useMemo(() => { const filtered = category === "all" ? features : features.filter((feature) => feature.category === category); return [...filtered].sort((a, b) => sort === "new" ? timestampMillis(b.createdAt) - timestampMillis(a.createdAt) : b.voteCount - a.voteCount); }, [category, features, sort]);
   async function vote(featureId: string) { setBusyId(featureId); setError(""); try { const voted = await toggleFeatureVote(featureId); setVotedIds((current) => { const next = new Set(current); voted ? next.add(featureId) : next.delete(featureId); return next; }); setFeatures((current) => current.map((feature) => feature.id === featureId ? { ...feature, voteCount: Math.max(0, feature.voteCount + (voted ? 1 : -1)) } : feature)); } catch (voteError) { setError(voteError instanceof Error ? voteError.message : "Unable to record your vote."); } finally { setBusyId(null); } }
   async function submit(event: FormEvent) { event.preventDefault(); setMessage(""); setError(""); try { await submitFeatureRequest({ title, description, whyUseful, category: formCategory, creatorName: profile?.displayName || user?.displayName || "Tiny Titans user" }); setTitle(""); setDescription(""); setWhyUseful(""); setFormCategory("snake_keeping"); setShowForm(false); setMessage("Your feature idea is live. Other Tiny Titans users can now vote on it."); await load(); } catch (submitError) { setError(submitError instanceof Error ? submitError.message : "Unable to submit the feature request."); } }
