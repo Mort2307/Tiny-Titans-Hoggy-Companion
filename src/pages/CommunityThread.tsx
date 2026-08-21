@@ -36,7 +36,7 @@ export default function CommunityThread() {
       setContent(nextContent); setReplies(nextReplies);
     } catch (threadError) { setError(threadError instanceof Error ? threadError.message : "Unable to load this community contribution."); }
     finally { setLoading(false); }
-  }, [contentId, user?.uid, profile?.role]);
+  }, [contentId, user, profile]);
 
   useEffect(() => { void load(); }, [load]);
 
