@@ -1,4 +1,4 @@
-import { collection, getDocs, limit, orderBy, query, where, type DocumentData } from "firebase/firestore";
+import { collection, getDocs, limit, query, where, type DocumentData } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { CommunityContent, CommunityContentType, CommunityBoardKey, FeaturedCandidate } from "../types/communityEcosystem";
 
@@ -24,16 +24,15 @@ export async function getCommunityContent(options?: {
   board?: CommunityBoardKey;
   limitCount?: number;
 }): Promise<CommunityContent[]> {
-  const constraints = [];
+  const constraints = [where("visibility", "==", "community")];
   if (options?.type) constraints.push(where("type", "==", options.type));
   if (options?.board) constraints.push(where("board", "==", options.board));
-  constraints.push(where("visibility", "==", "community"));
-  constraints.push(where("moderationStatus", "==", "approved"));
-  constraints.push(orderBy("createdAt", "desc"));
-  constraints.push(limit(options?.limitCount ?? 40));
 
-  const snapshot = await getDocs(query(contentCollection, ...constraints));
-  return snapshot.docs.map((item) => normaliseContent(item.id, item.data()));
+  const snapshot = await getDocs(query(contentCollection, ...constraints, limit(options?.limitCount ?? 40)));
+  return snapshot.docs
+    .map((item) => normaliseContent(item.id, item.data()))
+    .filter((item) => item.moderationStatus !== "rejected")
+    .sort((a, b) => timestampMillis(b.createdAt) - timestampMillis(a.createdAt));
 }
 
 function featureScore(item: CommunityContent, now: number): number {
@@ -48,7 +47,7 @@ function featureScore(item: CommunityContent, now: number): number {
 
 export function rankFeaturedCandidates(items: CommunityContent[], now = Date.now()): FeaturedCandidate[] {
   return items
-    .filter((item) => item.visibility === "community" && item.moderationStatus === "approved")
+    .filter((item) => item.visibility === "community" && item.moderationStatus !== "rejected")
     .filter((item) => item.permissions?.includes("featured"))
     .map((item) => {
       const score = featureScore(item, now);
