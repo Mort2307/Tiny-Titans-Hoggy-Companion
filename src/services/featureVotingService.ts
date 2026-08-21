@@ -3,7 +3,6 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  orderBy,
   query,
   runTransaction,
   serverTimestamp,
@@ -37,6 +36,7 @@ export async function getUserFeatureVotes(uid: string): Promise<Set<string>> {
 export async function toggleFeatureVote(featureId: string, uid: string): Promise<boolean> {
   const featureRef = doc(db, "featureRequests", featureId);
   const voteRef = doc(db, "featureRequests", featureId, "votes", uid);
+  const userVoteRef = doc(db, "users", uid, "featureVotes", featureId);
 
   return runTransaction(db, async (transaction) => {
     const [featureSnapshot, voteSnapshot] = await Promise.all([
@@ -49,11 +49,13 @@ export async function toggleFeatureVote(featureId: string, uid: string): Promise
     const currentCount = Number(featureSnapshot.data().voteCount || 0);
     if (voteSnapshot.exists()) {
       transaction.delete(voteRef);
+      transaction.delete(userVoteRef);
       transaction.update(featureRef, { voteCount: Math.max(0, currentCount - 1), updatedAt: serverTimestamp() });
       return false;
     }
 
     transaction.set(voteRef, { uid, createdAt: serverTimestamp() });
+    transaction.set(userVoteRef, { featureId, createdAt: serverTimestamp() });
     transaction.update(featureRef, { voteCount: currentCount + 1, updatedAt: serverTimestamp() });
     return true;
   });
