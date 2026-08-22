@@ -2,6 +2,10 @@ import { readFileSync } from "node:fs";
 
 const firestore = readFileSync("firestore.rules", "utf8");
 const storage = readFileSync("storage.rules", "utf8");
+const permissionGate = readFileSync("src/services/intelligencePermissionGateService.ts", "utf8");
+const accessService = readFileSync("src/services/intelligenceAccessService.ts", "utf8");
+const communityIntelligence = readFileSync("functions/communityIntelligence.js", "utf8");
+const creatorService = readFileSync("src/services/creatorService.ts", "utf8");
 
 const checks = [
   ["Firestore rules are version 2", /rules_version\s*=\s*'2'/, firestore],
@@ -22,6 +26,14 @@ const checks = [
   ["Sandbox experiments are owner-bound", /request\.resource\.data\.ownerUid == request\.auth\.uid/, firestore],
   ["Storage user snake files are owner-bound", /request\.auth\.uid\s*==\s*userId/, storage],
   ["Storage morph community writes require creator", /allow write: if isCreator\(\);/, storage],
+  ["Intelligence is always personal-data safe at the gate", /coreTracking:\s*true/, permissionGate],
+  ["Full intelligence requires explicit community consent", /personalIntelligence:\s*optedIn/, permissionGate],
+  ["Community contribution requires explicit community consent", /communityContribution:\s*optedIn/, permissionGate],
+  ["Community intelligence requires explicit community consent", /communityIntelligence:\s*optedIn/, permissionGate],
+  ["Missing consent defaults to denied", /communityHusbandryData\s*===\s*true/, permissionGate],
+  ["Access service reads the central permission decision", /getIntelligencePermissionDecision\(preferences\)/, accessService],
+  ["Community backend filters non-consenting users", /if \(privacy\.communityHusbandryData !== true\) continue;/, communityIntelligence],
+  ["Creator global aggregation excludes non-consenting users", /communityHusbandryData/, creatorService],
 ];
 
 const failures = [];
