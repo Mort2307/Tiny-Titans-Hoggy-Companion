@@ -1,0 +1,9 @@
+import type { Snake } from "../types/Snake";
+import type { CommunityBenchmarkDataset } from "../services/benchmarkIntelligenceService";
+import { buildIntelligenceSnapshot, compareIntelligenceSnapshots, type IntelligenceSnapshot } from "../services/intelligenceMemoryService";
+
+export default function IntelligenceMemoryPanel({ snake, benchmark, previousSnapshot }: { snake: Snake; benchmark: CommunityBenchmarkDataset | null; previousSnapshot?: IntelligenceSnapshot | null }) {
+  const current = buildIntelligenceSnapshot(snake, benchmark);
+  const delta = compareIntelligenceSnapshots(previousSnapshot ?? null, current);
+  return <section className="tt-intelligence-panel tt-intelligence-memory"><p className="tt-intelligence-kicker">INTELLIGENCE MEMORY</p><h2 className="tt-intelligence-title">How Tiny Titans' understanding has changed</h2><p className="tt-intelligence-meta">{delta.narrative}</p><div className="tt-intelligence-summary-grid"><article className="tt-intelligence-summary-item"><strong>Current evidence strength</strong><p className="tt-intelligence-meta">{current.confidenceScore}/100 · {current.confidenceLevel}</p>{previousSnapshot && <p className="tt-intelligence-meta">Previous: {previousSnapshot.confidenceScore}/100</p>}</article>{delta.changedMetrics.map((metric) => <article key={metric.key} className="tt-intelligence-summary-item"><strong>{metric.label}</strong><p className="tt-intelligence-meta">{metric.from} → <strong>{metric.to}</strong></p></article>)}{delta.newAnomalies.map((key) => <article key={`anomaly-${key}`} className="tt-intelligence-summary-item"><strong>New pattern watch</strong><p className="tt-intelligence-meta">A new {key} pattern change is present in the current assessment.</p></article>)}</div><p className="tt-intelligence-meta"><em>Snapshots describe how the recorded evidence changed. They do not establish cause or diagnose health conditions.</em></p></section>;
+}
