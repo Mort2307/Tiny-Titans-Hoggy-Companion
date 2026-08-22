@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { deleteFeatureRequest, getFeatureRequests, getUserFeatureVotes, submitFeatureRequest, toggleFeatureVote, updateFeatureRequestStatus } from "../services/featureVotingService";
