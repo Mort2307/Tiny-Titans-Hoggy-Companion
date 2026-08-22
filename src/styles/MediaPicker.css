@@ -1,0 +1,13 @@
+.media-picker { display: grid; gap: 0.75rem; padding: 1rem; border: 1px dashed rgba(255,255,255,0.18); border-radius: 14px; background: rgba(255,255,255,0.025); }
+.media-picker__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.media-picker__header > div { display: grid; gap: 0.2rem; }
+.media-picker__header small { opacity: 0.72; }
+.media-picker__header button, .media-picker__preview button { border: 0; border-radius: 10px; padding: 0.65rem 0.9rem; cursor: pointer; font: inherit; }
+.media-picker__preview { display: grid; gap: 0.65rem; }
+.media-picker__preview img, .media-picker__preview video { width: min(100%, 520px); max-height: 280px; object-fit: contain; border-radius: 12px; background: #000; }
+.media-picker__preview > div { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.media-picker__preview > div span { overflow-wrap: anywhere; }
+.media-picker__preview > div small { opacity: 0.7; }
+.media-picker__preview > div button { margin-left: auto; }
+.media-picker__error { margin: 0; font-size: 0.9rem; }
+@media (max-width: 640px) { .media-picker__header { align-items: stretch; flex-direction: column; } .media-picker__header button { width: 100%; min-height: 48px; } .media-picker__preview > div button { margin-left: 0; width: 100%; } }
