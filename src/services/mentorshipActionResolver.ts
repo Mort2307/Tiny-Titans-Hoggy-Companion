@@ -8,20 +8,23 @@ export type MentorshipAction = {
 
 export function resolveMentorshipAction(gap: KnowledgeGap): MentorshipAction {
   switch (gap.id) {
-    case "genetic-certainty":
-      return { label: "Review genetics", route: "/morph-library", reason: "Check documented genetics before making pairing decisions." };
-    case "genetics-learning":
-    case "breeding-learning":
-      return { label: "Continue learning", route: "/learning", reason: "Build the relevant knowledge before progressing." };
+    case "genetics-mastery":
+      return { label: "Open genetics learning", route: "/learn", reason: "Build the relevant inheritance knowledge before progressing." };
+    case "genetics-records":
+      return { label: "Review genetics records", route: "/morph-library", reason: "Check documented genetics before making pairing decisions." };
     case "weight-evidence":
-      return { label: "Open weight tracker", route: "/weight-records", reason: "Build a stronger growth and condition history." };
-    case "enclosure-evidence":
-      return { label: "Review enclosure", route: "/enclosures", reason: "Complete husbandry evidence for the relevant snake." };
-    case "no-snake-records":
-      return { label: "Add a snake", route: "/add-snake", reason: "TTHC needs an animal record before it can use tracker evidence." };
-    case "mentor-foundations":
-      return { label: "View learning", route: "/learning", reason: "Strengthen transferable knowledge before applying as a mentor." };
+      return { label: "Open weight tracker", route: "/weights", reason: "Build a stronger growth and condition history." };
+    case "feeding-evidence":
+      return { label: "Open feeding tracker", route: "/feeding", reason: "Build a stronger feeding history for husbandry context." };
+    case "shed-observation":
+      return { label: "Open shed tracker", route: "/shedding", reason: "Build a stronger observation and shed history." };
+    case "reasoning":
+      return { label: "Try reasoning challenges", route: "/challenge", reason: "Demonstrate applied reasoning rather than simple recall." };
+    case "practical-evidence":
+      return { label: "Build tracker history", route: "/community/keeper-meets-breeder/intelligence", reason: "Continue building practical evidence before applying as a mentor." };
+    case "mentor-review":
+      return { label: "Find a suitable mentor", route: "/community/keeper-meets-breeder/mentors", reason: "A mentor can add human context that automated evidence cannot." };
     default:
-      return { label: "Find a mentor", route: "/community/keeper-meets-breeder", reason: "A mentor can add human context where automated evidence is limited." };
+      return { label: "Review your pathway", route: "/community/keeper-meets-breeder/intelligence", reason: "Return to Mentorship Intelligence and reassess your next step." };
   }
 }
