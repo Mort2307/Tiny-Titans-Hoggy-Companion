@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "../styles/MediaPicker.css";
 
 type MediaPickerProps = {
   value: File | null;
