@@ -28,3 +28,4 @@ exports.stripeWebhook = onRequest({ region: "europe-west2", secrets: [STRIPE_SEC
 Object.assign(exports, require("./familyNotifications"));
 Object.assign(exports, require("./customSupport"));
 Object.assign(exports, require("./titanRecognition"));
+Object.assign(exports, require("./equipmentNotifications"));
