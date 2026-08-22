@@ -13,6 +13,7 @@ import { useUnits } from "../context/UnitContextValue";
 import WeightMiniChart from "../components/WeightMiniChart";
 import IntelligencePanel from "../components/IntelligencePanel";
 import ExplainableIntelligenceSummary from "../components/ExplainableIntelligenceSummary";
+import IntelligenceDataQualityPanel from "../components/IntelligenceDataQualityPanel";
 import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 
@@ -56,6 +57,7 @@ function SnakeProfile() {
   const summary: IntelligenceSummary | null = intelligenceAccess && benchmark ? buildIntelligenceSummary(snake, benchmark) : null;
   return <div className="page-container"><BackHomeButton /><h1>🐍 {snake.name}</h1>
     {intelligenceAccess === false && <section className="tt-intelligence-panel tt-intelligence-locked"><p className="tt-intelligence-kicker">TINY TITANS INTELLIGENCE</p><h2 className="tt-intelligence-title">Full Intelligence is optional</h2><p className="tt-intelligence-meta">Your personal tracking still works normally. Advanced Tiny Titans Intelligence is available when you choose to contribute eligible husbandry data anonymously to the growing Tiny Titans knowledge base.</p><p className="tt-intelligence-meta"><strong>Your choice:</strong> optional husbandry data sharing is currently off.</p><button type="button" className="tt-intelligence-action" onClick={() => navigate("/account/data-privacy")}>Enable Intelligence in Data &amp; Privacy →</button></section>}
+    {intelligenceAccess && <IntelligenceDataQualityPanel snake={snake} />}
     {intelligenceAccess && benchmarkLoading && <section className="tt-intelligence-panel" aria-live="polite"><p className="tt-intelligence-kicker">TINY TITANS INTELLIGENCE</p><h2 className="tt-intelligence-title">Building your comparison…</h2><p className="tt-intelligence-meta">Checking the consent-filtered age-aware community cohort.</p></section>}
     {intelligenceAccess && benchmarkError && <section className="tt-intelligence-panel"><p className="tt-intelligence-kicker">TINY TITANS INTELLIGENCE</p><h2 className="tt-intelligence-title">Community comparison unavailable</h2><p className="tt-intelligence-meta">The community benchmark is temporarily unavailable. Your personal records are unaffected.</p></section>}
     {summary && !benchmarkLoading && !benchmarkError && <ExplainableIntelligenceSummary summary={summary} />}
