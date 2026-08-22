@@ -56,6 +56,8 @@ export type DataCollectionPreferences = {
   approximateLocation: boolean;
   analytics: boolean;
   productUpdates: boolean;
+  /** Optional husbandry contribution that unlocks the full intelligence layer. */
+  communityHusbandryData: boolean;
   consentVersion: string;
   consentUpdatedAt?: unknown;
 };
