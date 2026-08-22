@@ -1,5 +1,5 @@
-import { httpsCallable } from "firebase/functions";
-import { functions } from "../firebase/config";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import app from "../firebase/config";
 
 export type BenchmarkConfidence = "strong" | "developing" | "limited" | "insufficient";
 
@@ -24,6 +24,7 @@ export type CommunityBenchmarkDataset = {
   metrics: BenchmarkMetric[];
 };
 
+const functions = getFunctions(app);
 const getCommunityBenchmarks = httpsCallable<
   { species?: string; sex?: string; morph?: string; ageBand?: string },
   CommunityBenchmarkDataset
