@@ -6,6 +6,7 @@ const panel = readFileSync("src/components/IntelligencePanel.tsx", "utf8");
 const privacy = readFileSync("src/services/privacyService.ts", "utf8");
 const community = readFileSync("functions/communityIntelligence.js", "utf8");
 const creator = readFileSync("src/services/creatorService.ts", "utf8");
+const trackerStats = readFileSync("src/services/trackerStatsService.ts", "utf8");
 
 const tests = [
   ["default consent is OFF", /communityHusbandryData:\s*false/, privacy],
@@ -20,18 +21,21 @@ const tests = [
   ["UI uses central access service", /hasFullIntelligenceAccess\(user\.uid\)/, panel],
   ["UI provides re-enable route", /\/account\/data-privacy/, panel],
   ["community backend filters consent before records", /communityHusbandryData !== true\) continue;/, community],
-  ["Creator aggregation is consent-aware", /communityHusbandryData/, creator],
+  ["Creator service delegates global stats to canonical aggregation", /getCanonicalGlobalStats\(\)/, creator],
+  ["Creator aggregation checks community consent", /privacy\.communityHusbandryData !== true/, trackerStats],
+  ["Creator aggregation excludes consented accounts with no snake profile", /privacy\.communityHusbandryData !== true \|\| snakesSnapshot\.empty/, trackerStats],
+  ["Creator aggregation counts only consent-eligible snake profiles", /communityContributors \+= 1;\s*snakeProfiles \+= snakesSnapshot\.size/, trackerStats],
 ];
 
 const failures = [];
-for (const [label, pattern, source] of tests) {
-  if (!pattern.test(source)) failures.push(label);
-}
+for (const [label, pattern, source] of tests) if (!pattern.test(source)) failures.push(label);
 
 const transitionMatrix = [
   { name: "missing preference", consent: undefined, core: true, intelligence: false, contribution: false },
   { name: "explicit opt-out", consent: false, core: true, intelligence: false, contribution: false },
   { name: "explicit opt-in", consent: true, core: true, intelligence: true, contribution: true },
+  { name: "opt-in → opt-out", consent: false, core: true, intelligence: false, contribution: false },
+  { name: "opt-out → opt-in", consent: true, core: true, intelligence: true, contribution: true },
 ];
 for (const row of transitionMatrix) {
   const optedIn = row.consent === true;
