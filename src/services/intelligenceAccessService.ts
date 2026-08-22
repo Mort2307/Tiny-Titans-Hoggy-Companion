@@ -1,6 +1,10 @@
 import { getPrivacyPreferences } from "./privacyService";
 
-/** Full Intelligence is an optional benefit of contributing eligible husbandry data anonymously. */
+/**
+ * Full Tiny Titans Intelligence is an optional benefit of contributing
+ * eligible husbandry data anonymously to the community intelligence layer.
+ * Core personal tracking remains available regardless of this choice.
+ */
 export async function hasFullIntelligenceAccess(uid: string): Promise<boolean> {
   if (!uid) return false;
   const preferences = await getPrivacyPreferences(uid);
