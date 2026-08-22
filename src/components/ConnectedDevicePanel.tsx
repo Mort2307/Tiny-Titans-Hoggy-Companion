@@ -6,11 +6,7 @@ const GOVEE_STATE_URL = "https://openapi.api.govee.com/router/api/v1/device/stat
 const GOVEE_HELP_URL = "https://developer.govee.com/reference/apply-you-govee-api-key";
 const INKBIRD_URL = "https://www.inkbird.com/";
 
-type Props = {
-  enclosure: Enclosure;
-  onChange: (next: Enclosure) => void;
-};
-
+type Props = { enclosure: Enclosure; onChange: (next: Enclosure) => void };
 type GoveeCapability = { type?: string; instance?: string; state?: { value?: unknown } };
 type GoveeDevice = { sku: string; device: string; deviceName?: string; type?: string; capabilities?: GoveeCapability[] };
 type GoveeResponse = { code?: number; message?: string; data?: GoveeDevice[]; payload?: GoveeDevice };
@@ -19,12 +15,8 @@ function getSensorValues(device: GoveeDevice) {
   const result: { temperature?: number; humidity?: number; online?: boolean } = {};
   for (const capability of device.capabilities ?? []) {
     const value = capability.state?.value;
-    if (capability.instance === "sensorTemperature" || capability.instance === "temperature") {
-      if (typeof value === "number") result.temperature = value;
-    }
-    if (capability.instance === "sensorHumidity" || capability.instance === "humidity") {
-      if (typeof value === "number") result.humidity = value;
-    }
+    if ((capability.instance === "sensorTemperature" || capability.instance === "temperature") && typeof value === "number") result.temperature = value;
+    if ((capability.instance === "sensorHumidity" || capability.instance === "humidity") && typeof value === "number") result.humidity = value;
     if (capability.instance === "online") result.online = value === true;
   }
   return result;
@@ -38,13 +30,10 @@ export default function ConnectedDevicePanel({ enclosure, onChange }: Props) {
   const [reading, setReading] = useState<{ temperature?: number; humidity?: number; online?: boolean }>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-
   const connected = enclosure.connectedDevice;
   const selected = useMemo(() => devices.find((device) => device.device === selectedDeviceId), [devices, selectedDeviceId]);
 
-  useEffect(() => {
-    setSelectedDeviceId(enclosure.connectedDevice?.deviceId ?? "");
-  }, [enclosure.connectedDevice?.deviceId]);
+  useEffect(() => { setSelectedDeviceId(enclosure.connectedDevice?.deviceId ?? ""); }, [enclosure.connectedDevice?.deviceId]);
 
   async function goveeRequest(url: string, init?: RequestInit) {
     if (!apiKey.trim()) throw new Error("Enter your Govee API key first. Tiny Titans keeps this key in this browser session and does not save it to the enclosure record.");
@@ -61,9 +50,8 @@ export default function ConnectedDevicePanel({ enclosure, onChange }: Props) {
       const payload = await goveeRequest(GOVEE_DEVICES_URL);
       setDevices(payload.data ?? []);
       setMessage(payload.data?.length ? `${payload.data.length} Govee device${payload.data.length === 1 ? "" : "s"} found.` : "No compatible Govee devices were returned.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to read Govee devices.");
-    } finally { setBusy(false); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to read Govee devices."); }
+    finally { setBusy(false); }
   }
 
   async function readGoveeDevice(device = selected) {
@@ -75,9 +63,8 @@ export default function ConnectedDevicePanel({ enclosure, onChange }: Props) {
       const values = getSensorValues(stateDevice);
       setReading(values);
       setMessage(values.temperature !== undefined || values.humidity !== undefined ? "Live Govee reading received." : "Govee responded, but this device did not expose a readable temperature/humidity value.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to read the Govee device.");
-    } finally { setBusy(false); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to read the Govee device."); }
+    finally { setBusy(false); }
   }
 
   function connectGovee() {
@@ -88,8 +75,7 @@ export default function ConnectedDevicePanel({ enclosure, onChange }: Props) {
   }
 
   function disconnect() {
-    const { connectedDevice: _removed, ...rest } = enclosure;
-    onChange(rest as Enclosure);
+    onChange({ ...enclosure, connectedDevice: undefined });
     setReading(undefined);
     setMessage("Connected device removed from this enclosure.");
   }
