@@ -1,5 +1,5 @@
 import type { CommunityBenchmarkDataset } from "./benchmarkIntelligenceService";
-import type { IntelligenceDataQualityReport } from "./intelligenceDataQualityService";
+import type { DataQualityReport } from "./intelligenceDataQualityService";
 import type { Snake } from "../types/Snake";
 
 export type IntelligenceConfidenceLevel = "high" | "good" | "developing" | "limited";
@@ -7,7 +7,7 @@ export type IntelligenceConfidence = { level: IntelligenceConfidenceLevel; score
 
 function clamp(value: number) { return Math.max(0, Math.min(100, value)); }
 
-export function buildIntelligenceConfidence(snake: Snake, quality: IntelligenceDataQualityReport | null, benchmark: CommunityBenchmarkDataset | null): IntelligenceConfidence {
+export function buildIntelligenceConfidence(snake: Snake, quality: DataQualityReport | null, benchmark: CommunityBenchmarkDataset | null): IntelligenceConfidence {
   const factors: IntelligenceConfidence["factors"] = [];
   const recordCount = (snake.weightHistory?.length ?? 0) + (snake.feedingHistory?.length ?? 0) + (snake.shedHistory?.length ?? 0);
   const recordScore = clamp(recordCount * 3);
