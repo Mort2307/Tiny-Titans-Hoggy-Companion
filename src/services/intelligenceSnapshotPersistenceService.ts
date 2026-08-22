@@ -1,5 +1,5 @@
 import { collection, doc, getDocs, limit, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { db } from "../firebase/config";
 import type { Snake } from "../types/Snake";
 import type { CommunityBenchmarkDataset } from "./benchmarkIntelligenceService";
 import { buildIntelligenceSnapshot, type IntelligenceSnapshot } from "./intelligenceMemoryService";
