@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { publishCommunityDraft } from "../services/communityService";
+import { uploadCommunityMedia } from "../services/communityMediaService";
+import MediaPicker from "../components/MediaPicker";
 import type { CommunityAudience, CommunityCategory, CommunityPriority, KnownIssueStatus } from "../types/community";
 import "../styles/CommunityHub.css";
 
@@ -19,7 +21,7 @@ export default function CommunityManager() {
   const [status, setStatus] = useState<KnownIssueStatus>("Investigating");
   const [workaround, setWorkaround] = useState("");
   const [resolvedVersion, setResolvedVersion] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [media, setMedia] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -42,6 +44,7 @@ export default function CommunityManager() {
     if (!user || !title.trim() || !message.trim()) return;
     setSending(true); setError(""); setDone(false);
     try {
+      const uploadedMedia = media ? await uploadCommunityMedia(user.uid, media) : null;
       await publishCommunityDraft({
         category,
         audience,
@@ -55,9 +58,10 @@ export default function CommunityManager() {
         status: category === "known_issue" ? status : undefined,
         workaround: category === "known_issue" ? workaround.trim() || undefined : undefined,
         resolvedVersion: category === "known_issue" ? resolvedVersion.trim() || undefined : undefined,
-        imageUrl: imageUrl.trim() || undefined,
+        imageUrl: uploadedMedia?.type === "image" ? uploadedMedia.url : undefined,
+        videoUrl: uploadedMedia?.type === "video" ? uploadedMedia.url : undefined,
       }, user.uid);
-      setDone(true); setTitle(""); setMessage(""); setAppVersion(""); setAffectedPlatform(""); setWorkaround(""); setResolvedVersion(""); setImageUrl("");
+      setDone(true); setTitle(""); setMessage(""); setAppVersion(""); setAffectedPlatform(""); setWorkaround(""); setResolvedVersion(""); setMedia(null);
     } catch (publishError) { setError(publishError instanceof Error ? publishError.message : "Unable to publish the community update."); }
     finally { setSending(false); }
   }
@@ -78,7 +82,7 @@ export default function CommunityManager() {
       <label>Message<textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={6000} rows={8} placeholder="Write the official update…" required /></label>
       {needsVersion && <div className="community-manager-grid"><label>App / affected version<input value={appVersion} onChange={(e) => setAppVersion(e.target.value)} placeholder="e.g. 0.9.8" /></label><label>Affected platform<input value={affectedPlatform} onChange={(e) => setAffectedPlatform(e.target.value)} placeholder="e.g. Android / iOS / Web" /></label></div>}
       {category === "known_issue" && <><label>Workaround<input value={workaround} onChange={(e) => setWorkaround(e.target.value)} placeholder="Optional workaround users can try" /></label><label>Resolved version<input value={resolvedVersion} onChange={(e) => setResolvedVersion(e.target.value)} placeholder="Fill this when resolved" /></label></>}
-      <label>Optional image URL<input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" inputMode="url" /></label>
+      <MediaPicker value={media} onChange={setMedia} accept="image-video" label="Optional image or video" helper="Tap Add file to choose media from your device. No URL needed." />
       {done && <div className="community-manager-success">✓ Published successfully. It will now appear in the Community Hub for the selected audience.</div>}
       {error && <div className="community-manager-error">{error}</div>}
       <div className="community-manager-actions"><button type="button" onClick={() => navigate("/community")}>Back to Hub</button><button type="submit" disabled={sending || !title.trim() || !message.trim()}>{sending ? "Publishing…" : "🚀 Publish to Community Hub"}</button></div>
