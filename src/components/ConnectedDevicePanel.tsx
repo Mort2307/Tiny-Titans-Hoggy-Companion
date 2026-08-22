@@ -11,13 +11,9 @@ type Props = {
   onChange: (next: Enclosure) => void;
 };
 
-type GoveeDevice = {
-  sku: string;
-  device: string;
-  deviceName?: string;
-  type?: string;
-  capabilities?: Array<{ type?: string; instance?: string; state?: { value?: unknown } }>;
-};
+type GoveeCapability = { type?: string; instance?: string; state?: { value?: unknown } };
+type GoveeDevice = { sku: string; device: string; deviceName?: string; type?: string; capabilities?: GoveeCapability[] };
+type GoveeResponse = { code?: number; message?: string; data?: GoveeDevice[]; payload?: GoveeDevice };
 
 function getSensorValues(device: GoveeDevice) {
   const result: { temperature?: number; humidity?: number; online?: boolean } = {};
@@ -54,7 +50,7 @@ export default function ConnectedDevicePanel({ enclosure, onChange }: Props) {
     if (!apiKey.trim()) throw new Error("Enter your Govee API key first. Tiny Titans keeps this key in this browser session and does not save it to the enclosure record.");
     const response = await fetch(url, { ...init, headers: { "Content-Type": "application/json", "Govee-API-Key": apiKey.trim(), ...(init?.headers ?? {}) } });
     if (!response.ok) throw new Error(`Govee returned HTTP ${response.status}. Check the API key and device access.`);
-    const payload = await response.json() as { code?: number; message?: string; data?: GoveeDevice[] | { capabilities?: GoveeDevice["capabilities"]; sku?: string; device?: string; deviceName?: string; type?: string } };
+    const payload = await response.json() as GoveeResponse;
     if (payload.code && payload.code !== 200) throw new Error(payload.message || `Govee returned code ${payload.code}.`);
     return payload;
   }
@@ -63,8 +59,8 @@ export default function ConnectedDevicePanel({ enclosure, onChange }: Props) {
     setBusy(true); setMessage("");
     try {
       const payload = await goveeRequest(GOVEE_DEVICES_URL);
-      setDevices(Array.isArray(payload.data) ? payload.data : []);
-      setMessage(Array.isArray(payload.data) && payload.data.length ? `${payload.data.length} Govee device${payload.data.length === 1 ? "" : "s"} found.` : "No compatible Govee devices were returned.");
+      setDevices(payload.data ?? []);
+      setMessage(payload.data?.length ? `${payload.data.length} Govee device${payload.data.length === 1 ? "" : "s"} found.` : "No compatible Govee devices were returned.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to read Govee devices.");
     } finally { setBusy(false); }
@@ -74,8 +70,8 @@ export default function ConnectedDevicePanel({ enclosure, onChange }: Props) {
     if (!device) { setMessage("Choose a Govee device first."); return; }
     setBusy(true); setMessage("");
     try {
-      const payload = await goveeRequest(GOVEE_STATE_URL, { method: "POST", body: JSON.stringify({ requestId: crypto.randomUUID(), payload: { sku: device.sku, device: device.device } }) });
-      const stateDevice = !Array.isArray(payload.data) ? { ...device, ...payload.data } : device;
+      const response = await goveeRequest(GOVEE_STATE_URL, { method: "POST", body: JSON.stringify({ requestId: crypto.randomUUID(), payload: { sku: device.sku, device: device.device } }) });
+      const stateDevice = response.payload ? { ...device, ...response.payload } : device;
       const values = getSensorValues(stateDevice);
       setReading(values);
       setMessage(values.temperature !== undefined || values.humidity !== undefined ? "Live Govee reading received." : "Govee responded, but this device did not expose a readable temperature/humidity value.");
