@@ -1,0 +1,9 @@
+import type { Snake } from "../types/Snake";
+import type { CommunityBenchmarkDataset } from "../services/benchmarkIntelligenceService";
+import type { IntelligenceDataQualityReport } from "../services/intelligenceDataQualityService";
+import { buildIntelligenceConfidence } from "../services/intelligenceConfidenceService";
+
+export default function IntelligenceConfidencePanel({ snake, quality, benchmark }: { snake: Snake; quality: IntelligenceDataQualityReport | null; benchmark: CommunityBenchmarkDataset | null }) {
+  const confidence = buildIntelligenceConfidence(snake, quality, benchmark);
+  return <section className="tt-intelligence-panel tt-intelligence-confidence"><p className="tt-intelligence-kicker">INTELLIGENCE CONFIDENCE</p><h2 className="tt-intelligence-title">{confidence.label}</h2><p className="tt-intelligence-meta">Confidence describes how much supporting evidence Tiny Titans currently has. It is not a probability that an insight is medically correct.</p><div className="tt-intelligence-confidence-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={confidence.score} aria-label={`Intelligence confidence ${confidence.score}%`}><span style={{ width: `${confidence.score}%` }} /></div><p className="tt-intelligence-meta"><strong>{confidence.score}/100 evidence strength</strong></p><div className="tt-intelligence-summary-grid">{confidence.factors.map((factor) => <article key={factor.key} className="tt-intelligence-summary-item"><div className="tt-intelligence-summary-item-header"><strong>{factor.label}</strong><span>{factor.score}/100</span></div><p className="tt-intelligence-meta">{factor.detail}</p></article>)}</div>{confidence.reasons.length > 0 && <details className="tt-intelligence-details"><summary>What would improve confidence?</summary><ul>{confidence.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></details>}</section>;
+}
