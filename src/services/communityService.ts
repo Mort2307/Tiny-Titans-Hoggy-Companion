@@ -11,62 +11,29 @@ function timestampMillis(value: unknown): number {
   return value.toMillis();
 }
 
-/**
- * Firestore rules restrict communityPosts by audience. Every query therefore
- * includes an audience equality filter. Queries are intentionally independent:
- * if a tester/admin audience is not readable yet, public "everyone" updates
- * must still load rather than turning the entire Hub into a permissions error.
- */
 export async function getCommunityPosts(options?: { isTester?: boolean; isAdmin?: boolean }): Promise<CommunityPost[]> {
   const isAdmin = options?.isAdmin === true;
   const isTester = options?.isTester === true;
-
   const audiences: CommunityAudience[] = ["everyone"];
   if (isTester || isAdmin) audiences.push("testers");
   if (isAdmin) audiences.push("admin");
-
   const uniqueAudiences = [...new Set(audiences)];
   const results: PromiseSettledResult<CommunitySnapshot>[] = await Promise.allSettled(
-    uniqueAudiences.map(async (audience): Promise<CommunitySnapshot> =>
-      getDocs(query(postsCollection, where("audience", "==", audience)))
-    )
+    uniqueAudiences.map(async (audience): Promise<CommunitySnapshot> => getDocs(query(postsCollection, where("audience", "==", audience)))
   );
-
-  const readableSnapshots: CommunitySnapshot[] = results.flatMap((result) =>
-    result.status === "fulfilled" ? [result.value] : []
-  );
-
+  const readableSnapshots: CommunitySnapshot[] = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
   const publicResult = results[0];
   if (publicResult?.status === "rejected") throw publicResult.reason;
-
-  const posts: CommunityPost[] = readableSnapshots.flatMap((snapshot) =>
-    snapshot.docs.map((item) => ({
-      id: item.id,
-      ...(item.data() as Omit<CommunityPost, "id">),
-    }))
-  );
-
+  const posts: CommunityPost[] = readableSnapshots.flatMap((snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<CommunityPost, "id">) })));
   return posts.sort((a, b) => timestampMillis(b.publishedAt) - timestampMillis(a.publishedAt));
 }
 
-/**
- * Firestore rejects object fields whose value is `undefined`.
- * Community drafts intentionally contain optional fields, so strip only
- * undefined values before writing while preserving valid falsey values and null.
- */
 function removeUndefinedFields<T extends Record<string, unknown>>(value: T): T {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)
-  ) as T;
+  return Object.fromEntries(Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined)) as T;
 }
 
 export async function publishCommunityPost(input: Omit<CommunityPost, "id" | "publishedAt" | "updatedAt">) {
-  const data = removeUndefinedFields({
-    ...input,
-    publishedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-
+  const data = removeUndefinedFields({ ...input, publishedAt: serverTimestamp(), updatedAt: serverTimestamp() });
   const ref = await addDoc(postsCollection, data);
   return ref.id;
 }
@@ -85,6 +52,7 @@ export type CommunityPostDraft = {
   workaround?: string;
   resolvedVersion?: string;
   imageUrl?: string | null;
+  videoUrl?: string | null;
 };
 
 export async function publishCommunityDraft(draft: CommunityPostDraft, createdBy: string) {
