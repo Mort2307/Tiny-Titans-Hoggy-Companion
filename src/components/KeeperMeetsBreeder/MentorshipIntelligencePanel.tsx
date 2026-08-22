@@ -10,8 +10,10 @@ const evidenceOptions: { key: EvidenceKey; label: string }[] = [
 export default function MentorshipIntelligencePanel({ goal, evidence: liveEvidence, loading = false, sourceLabel = "Live TTHC tracker evidence", onNextStep }: Props) {
   const [manualEvidence, setManualEvidence] = useState<Record<EvidenceKey, boolean>>({ hasWeightRecords: false, hasFeedingRecords: false, hasShedRecords: false, hasGeneticsRecords: false, hasEnclosureData: false });
   const usingLiveEvidence = Boolean(liveEvidence);
-  const evidence = usingLiveEvidence ? { ...manualEvidence, ...liveEvidence } : manualEvidence;
-  const readinessInput = useMemo<MentorshipInsightInput>(() => ({ goal, ...evidence, learningCompleted: liveEvidence?.learningCompleted, learningTotal: liveEvidence?.learningTotal, experienceMonths: liveEvidence?.experienceMonths }), [goal, evidence, liveEvidence?.learningCompleted, liveEvidence?.learningTotal, liveEvidence?.experienceMonths]);
+  const readinessInput = useMemo<MentorshipInsightInput>(() => {
+    const evidence = usingLiveEvidence ? { ...manualEvidence, ...liveEvidence } : manualEvidence;
+    return { goal, ...evidence, learningCompleted: liveEvidence?.learningCompleted, learningTotal: liveEvidence?.learningTotal, experienceMonths: liveEvidence?.experienceMonths };
+  }, [goal, usingLiveEvidence, manualEvidence, liveEvidence]);
   const readiness = useMemo(() => buildMentorshipReadiness(readinessInput), [readinessInput]);
   const message = getAdaptiveMentorshipMessage(goal, readiness);
   const toggle = (key: EvidenceKey) => setManualEvidence((current) => ({ ...current, [key]: !current[key] }));
