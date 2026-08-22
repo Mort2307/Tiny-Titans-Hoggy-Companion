@@ -32,7 +32,6 @@ export function buildIntelligenceSnapshotCacheKey(snake: Snake, benchmark: Commu
     weightHistory: snake.weightHistory ?? [],
     feedingHistory: snake.feedingHistory ?? [],
     shedHistory: snake.shedHistory ?? [],
-    environmentHistory: snake.environmentHistory ?? [],
     healthHistory: snake.healthHistory ?? [],
     notes: snake.notes ?? "",
   });
