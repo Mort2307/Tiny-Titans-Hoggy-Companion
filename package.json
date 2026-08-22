@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "validate:morphs": "node scripts/validate-morph-database.mjs",
+    "validate:morph-sources": "node scripts/validate-morph-source-audit.mjs",
     "validate:learning": "node scripts/validate-learning-content.mjs",
     "validate:routes": "node scripts/check-route-contracts.mjs",
     "validate:route-coverage": "node scripts/check-route-coverage.mjs",
@@ -17,7 +18,7 @@
     "test:overlord": "node scripts/run-overlord-bot.mjs",
     "test:visual-ux": "node scripts/run-visual-ux-bot.mjs",
     "test:production-gate": "node scripts/run-production-gate.mjs",
-    "build": "npm run validate:morphs && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:security && npm run test:intelligence:consent && npm run test:intelligence:journey && tsc -b && vite build",
+    "build": "npm run validate:morphs && npm run validate:morph-sources && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:security && npm run test:intelligence:consent && npm run test:intelligence:journey && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -34,9 +35,10 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@types/node": "^24.13.3",
+    "@playwright/test": "^1.62.1",
+    "@vitejs/plugin-react": "^6.0.4",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.4",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.0",
     "eslint-plugin-react-refresh": "^0.5.3",
