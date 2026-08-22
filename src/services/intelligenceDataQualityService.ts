@@ -3,6 +3,8 @@ import type { Snake } from "../types/Snake";
 export type DataQualitySeverity = "info" | "watch" | "action";
 export type DataQualityIssue = { key: string; severity: DataQualitySeverity; title: string; detail: string };
 export type DataQualityReport = { score: number; label: "Strong" | "Good" | "Developing" | "Needs attention"; issues: DataQualityIssue[]; checkedRecords: number };
+/** Backwards-compatible name used by the intelligence UI. */
+export type IntelligenceDataQualityReport = DataQualityReport;
 
 function parsed(value: unknown): number | undefined {
   if (typeof value !== "string" && !(value instanceof Date)) return undefined;
