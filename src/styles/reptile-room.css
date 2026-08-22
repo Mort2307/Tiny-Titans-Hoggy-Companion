@@ -1,0 +1,44 @@
+.reptile-room-page { max-width: 1180px; }
+.reptile-room-header { display:flex; gap:1rem; justify-content:space-between; align-items:flex-end; margin-bottom:1rem; }
+.reptile-room-eyebrow { margin:0 0 .35rem; font-size:.72rem; letter-spacing:.12em; font-weight:800; opacity:.72; }
+.reptile-room-message,.room-source-note { padding:.8rem 1rem; border:1px solid rgba(245,183,75,.3); border-radius:12px; background:rgba(245,183,75,.08); }
+.reptile-room-summary { display:flex; flex-wrap:wrap; gap:.7rem; margin:1rem 0; }
+.reptile-room-summary span,.reptile-room-summary strong { padding:.55rem .75rem; border-radius:999px; background:rgba(255,255,255,.05); }
+.reptile-room-layout { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; padding:1rem; border-radius:18px; background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.015)); border:1px solid rgba(255,255,255,.08); }
+.vivarium-card { text-align:left; border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:.8rem; background:rgba(10,12,16,.82); color:inherit; cursor:pointer; transition:transform .15s ease,border-color .15s ease; }
+.vivarium-card:hover,.vivarium-card.is-selected { transform:translateY(-2px); border-color:rgba(245,183,75,.65); }
+.vivarium-label { display:block; font-size:.78rem; font-weight:800; margin-bottom:.5rem; opacity:.75; }
+.vivarium-glass { position:relative; display:block; min-height:145px; overflow:hidden; border:2px solid rgba(210,230,235,.22); border-radius:12px; background:linear-gradient(180deg,rgba(160,190,200,.07),rgba(65,75,65,.12)); }
+.vivarium-substrate { position:absolute; left:0; right:0; bottom:0; height:34%; background:linear-gradient(180deg,rgba(140,105,70,.25),rgba(95,65,45,.55)); }
+.vivarium-hide { position:absolute; left:15%; bottom:27%; opacity:.5; transform:rotate(-8deg); }
+.vivarium-snake { position:absolute; left:12%; right:10%; top:47%; font-size:1.15rem; font-weight:900; letter-spacing:.02em; }
+.vivarium-empty { position:absolute; inset:0; display:grid; place-items:center; font-size:.78rem; letter-spacing:.12em; font-weight:900; opacity:.45; }
+.vivarium-card-info,.vivarium-card-meta { display:block; margin-top:.55rem; }
+.vivarium-card-info { font-weight:800; }
+.vivarium-card-meta { font-size:.78rem; opacity:.7; }
+.reptile-room-empty { grid-column:1/-1; padding:2rem; text-align:center; }
+.vivarium-detail-panel { margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,.1); border-radius:18px; background:rgba(255,255,255,.03); }
+.vivarium-detail-heading,.equipment-heading { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
+.room-field { display:grid; gap:.35rem; margin:1rem 0; max-width:420px; }
+.room-field span { font-weight:800; font-size:.82rem; }
+.room-field select { width:100%; }
+.room-source-note { margin:1rem 0; }
+.room-setup-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; margin:1rem 0; }
+.room-setup-grid > div { padding:.8rem; border-radius:12px; background:rgba(255,255,255,.04); }
+.room-setup-grid span,.room-setup-grid strong { display:block; }
+.room-setup-grid span { font-size:.75rem; opacity:.68; margin-bottom:.3rem; }
+.room-detail-actions { display:flex; flex-wrap:wrap; gap:.6rem; margin:1rem 0 1.25rem; }
+.room-detail-actions a { display:inline-flex; padding:.65rem .8rem; border-radius:10px; background:rgba(255,255,255,.06); color:inherit; text-decoration:none; }
+.equipment-maintenance-panel { border-top:1px solid rgba(255,255,255,.08); padding-top:1rem; }
+.equipment-heading p { margin:.25rem 0 0; max-width:720px; opacity:.7; font-size:.86rem; }
+.equipment-count-badge { white-space:nowrap; padding:.55rem .7rem; border-radius:999px; background:rgba(255,170,70,.12); }
+.equipment-list { display:grid; gap:.7rem; margin-top:1rem; }
+.equipment-item { display:grid; grid-template-columns:1.3fr 1fr auto; gap:1rem; align-items:center; padding:.8rem; border-radius:12px; background:rgba(255,255,255,.035); border-left:3px solid rgba(255,255,255,.15); }
+.equipment-upcoming { border-left-color:#d9a441; }
+.equipment-due,.equipment-overdue { border-left-color:#d76b5c; }
+.equipment-item > div > span,.equipment-item > div > small { display:block; opacity:.68; font-size:.78rem; margin-top:.2rem; }
+.equipment-timing { text-align:right; }
+.equipment-actions { display:flex; align-items:center; gap:.5rem; justify-content:flex-end; }
+.equipment-actions button { white-space:nowrap; }
+.equipment-empty { padding:1rem 0; opacity:.75; }
+@media (max-width:700px) { .reptile-room-header,.vivarium-detail-heading,.equipment-heading { align-items:stretch; flex-direction:column; } .equipment-item { grid-template-columns:1fr; } .equipment-timing { text-align:left; } .equipment-actions { justify-content:flex-start; } }
