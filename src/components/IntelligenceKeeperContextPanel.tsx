@@ -1,0 +1,8 @@
+import type { Snake } from "../types/Snake";
+import { buildKeeperContextInsights } from "../services/intelligenceKeeperContextService";
+
+export default function IntelligenceKeeperContextPanel({ snake }: { snake: Snake }) {
+  const insights = buildKeeperContextInsights(snake);
+  if (!insights.length) return null;
+  return <section className="tt-intelligence-panel tt-intelligence-context"><p className="tt-intelligence-kicker">KEEPER CONTEXT</p><h2 className="tt-intelligence-title">What else was recorded around the change?</h2><p className="tt-intelligence-meta">Tiny Titans can surface relevant notes you have already recorded. These are context signals, not explanations of cause.</p><div className="tt-intelligence-summary-grid">{insights.map((insight) => <article key={insight.anomaly.key} className="tt-intelligence-summary-item"><div className="tt-intelligence-summary-item-header"><strong>{insight.anomaly.title}</strong><span>{insight.contextSignals.length ? `${insight.contextSignals.length} context signal${insight.contextSignals.length === 1 ? "" : "s"}` : "No context signal"}</span></div><p className="tt-intelligence-meta">{insight.anomaly.observation}</p>{insight.contextSignals.length > 0 ? <ul>{insight.contextSignals.map((signal) => <li key={signal}>{signal}</li>)}</ul> : <p className="tt-intelligence-meta">No relevant husbandry or keeper-note signal was found in the currently stored records.</p>}<p className="tt-intelligence-meta"><em>These records may help you investigate the timeline, but Tiny Titans does not infer that any signal caused the observed change.</em></p></article>)}</div></section>;
+}
