@@ -19,7 +19,7 @@ export async function getCommunityPosts(options?: { isTester?: boolean; isAdmin?
   if (isAdmin) audiences.push("admin");
   const uniqueAudiences = [...new Set(audiences)];
   const results: PromiseSettledResult<CommunitySnapshot>[] = await Promise.allSettled(
-    uniqueAudiences.map(async (audience): Promise<CommunitySnapshot> => getDocs(query(postsCollection, where("audience", "==", audience)))
+    uniqueAudiences.map(async (audience): Promise<CommunitySnapshot> => getDocs(query(postsCollection, where("audience", "==", audience))))
   );
   const readableSnapshots: CommunitySnapshot[] = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
   const publicResult = results[0];
