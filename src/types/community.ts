@@ -13,6 +13,7 @@ export type CommunityPost = {
   publishedAt?: unknown;
   updatedAt?: unknown;
   imageUrl?: string | null;
+  videoUrl?: string | null;
   appVersion?: string | null;
   platform?: string | null;
   status?: KnownIssueStatus | null;
