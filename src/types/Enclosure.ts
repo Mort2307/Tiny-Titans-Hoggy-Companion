@@ -19,6 +19,14 @@ export type SubstrateMixPart = {
   percentage: number;
 };
 
+export type ConnectedDevice = {
+  provider: "Govee" | "Inkbird" | "Other";
+  deviceId?: string;
+  model?: string;
+  name?: string;
+  connectedAt: string;
+};
+
 export type EnvironmentHistoryEntry = {
   id: string;
   snakeId: string;
@@ -55,6 +63,9 @@ export type Enclosure = {
   heatingType: HeatingType;
   heatingDevice?: string;
   thermostat?: string;
+
+  // Connected environmental devices
+  connectedDevice?: ConnectedDevice;
 
   // Environment
   warmSideTemperature?: number;
