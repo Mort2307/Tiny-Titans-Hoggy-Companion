@@ -5,7 +5,7 @@ const storage = readFileSync("storage.rules", "utf8");
 const permissionGate = readFileSync("src/services/intelligencePermissionGateService.ts", "utf8");
 const accessService = readFileSync("src/services/intelligenceAccessService.ts", "utf8");
 const communityIntelligence = readFileSync("functions/communityIntelligence.js", "utf8");
-const creatorService = readFileSync("src/services/creatorService.ts", "utf8");
+const trackerStats = readFileSync("src/services/trackerStatsService.ts", "utf8");
 
 const checks = [
   ["Firestore rules are version 2", /rules_version\s*=\s*'2'/, firestore],
@@ -33,7 +33,8 @@ const checks = [
   ["Missing consent defaults to denied", /communityHusbandryData\s*===\s*true/, permissionGate],
   ["Access service reads the central permission decision", /getIntelligencePermissionDecision\(preferences\)/, accessService],
   ["Community backend filters non-consenting users", /if \(privacy\.communityHusbandryData !== true\) continue;/, communityIntelligence],
-  ["Creator global aggregation excludes non-consenting users", /communityHusbandryData/, creatorService],
+  ["Creator global aggregation checks current community consent", /privacy\.communityHusbandryData !== true/, trackerStats],
+  ["Creator global aggregation requires a contributing snake profile", /privacy\.communityHusbandryData !== true \|\| snakesSnapshot\.empty/, trackerStats],
 ];
 
 const failures = [];
