@@ -7,6 +7,7 @@
     "dev": "vite",
     "validate:morphs": "node scripts/validate-morph-database.mjs",
     "validate:morph-sources": "node scripts/validate-morph-source-audit.mjs",
+    "validate:app-health": "node scripts/validate-app-health-contracts.mjs",
     "validate:learning": "node scripts/validate-learning-content.mjs",
     "validate:routes": "node scripts/check-route-contracts.mjs",
     "validate:route-coverage": "node scripts/check-route-coverage.mjs",
@@ -18,7 +19,7 @@
     "test:overlord": "node scripts/run-overlord-bot.mjs",
     "test:visual-ux": "node scripts/run-visual-ux-bot.mjs",
     "test:production-gate": "node scripts/run-production-gate.mjs",
-    "build": "npm run validate:morphs && npm run validate:morph-sources && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:security && npm run test:intelligence:consent && npm run test:intelligence:journey && tsc -b && vite build",
+    "build": "npm run validate:morphs && npm run validate:morph-sources && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:security && npm run test:intelligence:consent && npm run test:intelligence:journey && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -27,6 +28,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-globe.gl": "^2.37.0",
+    "react-router-dom": "^6.30.1",
     "recharts": "^3.10.1",
     "vite-plugin-pwa": "^1.3.0"
   },
