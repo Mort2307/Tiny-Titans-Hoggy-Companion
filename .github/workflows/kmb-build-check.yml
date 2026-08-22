@@ -1,0 +1,36 @@
+name: Keeper Meets Breeder Build Check
+
+on:
+  push:
+    branches:
+      - feature/keeper-meets-breeder-reconciled
+  pull_request:
+    branches:
+      - feature/community-ecosystem-safe
+      - master
+
+jobs:
+  kmb-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install application dependencies
+        run: npm install --no-audit --no-fund
+      - name: Lint application
+        run: npm run lint
+      - name: Production build and contract validation
+        run: npm run build
+      - name: Route coverage validation
+        run: node scripts/check-route-coverage.mjs
+      - name: Install Functions dependencies
+        working-directory: functions
+        run: npm install --no-audit --no-fund
+      - name: Check Functions JavaScript syntax
+        working-directory: functions
+        run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
