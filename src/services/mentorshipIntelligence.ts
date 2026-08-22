@@ -50,7 +50,7 @@ export function scoreMentor(goal: MentorshipGoal, mentor: MentorshipProfile): Me
   }
   if (goal === "breeding" || goal === "first-clutch") {
     if ((mentor.breedingYears ?? 0) > 0) signals.push({ label: "Breeding experience", reason: `${mentor.breedingYears} year${mentor.breedingYears === 1 ? "" : "s"} of breeding experience is relevant to this goal.`, weight: Math.min(25, mentor.breedingYears * 5) });
-    if ((mentor.clutchCount ?? 0) > 0) signals.push({ label: "Practical experience", reason: `${mentor.clutchCount} recorded clutch${mentor.clutchCount === 1 ? "" : "es"} indicates hands-on breeding experience.`, weight: Math.min(15, mentor.clutchCount));
+    if ((mentor.clutchCount ?? 0) > 0) signals.push({ label: "Practical experience", reason: `${mentor.clutchCount} recorded clutch${mentor.clutchCount === 1 ? "" : "es"} indicates hands-on breeding experience.`, weight: Math.min(15, mentor.clutchCount) });
   }
   if (mentor.verified) signals.push({ label: "Mentor verified", reason: "The mentor has passed the TTHC verification process.", weight: 10 });
 
