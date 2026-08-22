@@ -29,10 +29,21 @@ const getCommunityBenchmarks = httpsCallable<
   CommunityBenchmarkDataset
 >(functions, "getCommunityBenchmarks");
 
-/**
- * Fetches only anonymised benchmark aggregates. Individual keeper/snake records
- * are never returned by this client service.
- */
+/** Uses the same cohort boundaries as the server benchmark engine. */
+export function getAgeBand(hatchDate?: string, now = new Date()): string | undefined {
+  if (!hatchDate) return undefined;
+  const parsed = Date.parse(hatchDate);
+  if (!Number.isFinite(parsed)) return undefined;
+  const years = (now.getTime() - parsed) / 31557600000;
+  if (years < 0) return undefined;
+  if (years < 0.5) return "juvenile-early";
+  if (years < 1) return "juvenile-late";
+  if (years < 2) return "subadult";
+  if (years < 5) return "adult";
+  return "mature";
+}
+
+/** Fetches only anonymised benchmark aggregates. */
 export async function getCommunityBenchmarkDataset(input: {
   species?: string;
   sex?: string;
