@@ -19,8 +19,8 @@ function timestampMillis(value: unknown): number | null {
 /**
  * Canonical Creator Centre aggregation.
  * Platform activity counts describe the whole app. Tracker/community metrics
- * describe only users who currently have explicit communityHusbandryData consent.
- * This prevents private records from being mixed into the global intelligence dataset.
+ * describe only users who currently have explicit communityHusbandryData consent
+ * and at least one snake profile capable of contributing husbandry records.
  */
 export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}): Promise<GlobalStats> {
   const excludedUserIds = new Set(options.excludedUserIds ?? []);
@@ -37,10 +37,10 @@ export async function getCanonicalGlobalStats(options: GlobalStatsOptions = {}):
     if (excludedUserIds.has(userDoc.id)) return;
     let privacy;
     try { privacy = await getPrivacyPreferences(userDoc.id); } catch { return; }
-    if (privacy.communityHusbandryData !== true) return;
+    if (privacy.communityHusbandryData !== true || snakesSnapshot.empty) return;
     communityContributors += 1;
     snakeProfiles += snakesSnapshot.size;
-    if (snakesSnapshot.size > 0) usersWithData += 1;
+    usersWithData += 1;
 
     await Promise.all(snakesSnapshot.docs.map(async (snakeDoc) => {
       const snake = snakeDoc.data() as Record<string, unknown>;
