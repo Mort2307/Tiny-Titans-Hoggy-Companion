@@ -6,7 +6,7 @@ const permissionLabels: Record<WorkspacePermission, string> = {
   view_genetics: "Morph / genetics", view_enclosure: "Enclosure setup", view_photos: "Photos", view_health: "Health records",
 };
 
-type Props = { goal: string };
+type Props = { goal: string; workspaceId?: string; mentorId?: string };
 
 export default function MentorshipWorkspacePreview({ goal }: Props) {
   const [permissions, setPermissions] = useState(defaultWorkspacePermissions);
