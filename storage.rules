@@ -12,5 +12,6 @@ service firebase.storage {
     match /morph-submissions/{userId}/{submissionId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
     match /issueEvidence/{userId}/{reportId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
     match /morphLibrary/{morphId}/community/{fileName} { allow read: if signedIn(); allow write: if isCreator(); }
+    match /communityMedia/{userId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId && isCreator(); allow read: if signedIn(); }
   }
 }
