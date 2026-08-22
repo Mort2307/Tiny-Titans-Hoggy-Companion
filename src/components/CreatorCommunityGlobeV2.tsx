@@ -13,7 +13,7 @@ type CountryGroup = { country: string; members: CommunityLocationMember[]; areas
 
 const normalise = (value: string) => value.trim().toLocaleLowerCase("en-GB").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-export default function CreatorCommunityGlobeV2({ locations = [] }: CreatorCommunityGlobeProps) {
+export default function CreatorCommunityGlobeV2(_props: CreatorCommunityGlobeProps) {
   const globeRef = useRef<{ controls: () => { autoRotate: boolean; autoRotateSpeed: number; enableZoom: boolean; enablePan: boolean; enableDamping: boolean; dampingFactor: number; rotateSpeed: number; zoomSpeed: number } } | undefined>(undefined);
   const visualRef = useRef<HTMLDivElement | null>(null);
   const [globeSize, setGlobeSize] = useState({ width: 720, height: 520 });
@@ -50,9 +50,9 @@ export default function CreatorCommunityGlobeV2({ locations = [] }: CreatorCommu
   useEffect(() => {
     let active = true;
     setLocationLoading(true);
+    setLocationError(false);
     getCommunityLocationMembers().then((items) => {
       if (!active) return;
-      setLocationError(false);
       setMembers(items);
     }).catch(() => {
       if (active) setLocationError(true);
@@ -60,7 +60,7 @@ export default function CreatorCommunityGlobeV2({ locations = [] }: CreatorCommu
       if (active) setLocationLoading(false);
     });
     return () => { active = false; };
-  }, [locations]);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -113,9 +113,6 @@ export default function CreatorCommunityGlobeV2({ locations = [] }: CreatorCommu
   const selected = selectedKey ? markers.find((marker) => marker.areaId === selectedKey) ?? null : null;
   const totalUsers = new Set(members.map((member) => member.uid)).size;
   const countryCount = countryGroups.length;
-  // Count actual community areas from the consented members rather than relying
-  // on map marker state. This remains correct even if a marker is temporarily
-  // unavailable to the globe renderer.
   const areaKeys = new Set(members.map((member) => `${normalise(member.city)}|${normalise(member.country)}`));
   const areaCount = areaKeys.size;
   const snakeCountsAvailable = members.every((member) => member.snakeCount !== undefined);
@@ -132,7 +129,6 @@ export default function CreatorCommunityGlobeV2({ locations = [] }: CreatorCommu
     if (next.has(areaId)) next.delete(areaId); else next.add(areaId);
     return next;
   });
-
   const expandAll = () => {
     setExpandedCountries(new Set(countryGroups.map((group) => normalise(group.country))));
     setExpandedAreas(new Set(countryGroups.flatMap((group) => Array.from(group.areas.keys()))));
