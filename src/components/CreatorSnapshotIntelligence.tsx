@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { getPrivacyPreferences } from "../services/privacyService";
 import { getGlobalStats, type GlobalStats } from "../services/creatorService";
 
 type UserRecord = Record<string, unknown>;
@@ -11,29 +10,30 @@ const fmt = (value: number) => new Intl.NumberFormat("en-GB").format(value);
 const pct = (value: number, total: number) => total > 0 ? `${Math.round((value / total) * 100)}%` : "—";
 const countBy = (items: UserRecord[], key: string) => items.reduce<Record<string, number>>((acc, item) => { const value = String(item[key] ?? "Unknown").trim() || "Unknown"; acc[value] = (acc[value] ?? 0) + 1; return acc; }, {});
 const topEntries = (record: Record<string, number>, limit = 5) => Object.entries(record).sort((a, b) => b[1] - a[1]).slice(0, limit);
-
 async function countCollection(name: string) { try { return (await getDocs(collection(db, name))).size; } catch { return 0; } }
 
 async function loadSnapshot(): Promise<Snapshot> {
   const [stats, usersSnapshot, mentorsSnapshot, mentorApplications, mentorshipRequests, workspaces, posts, feedback, issues, morphSubmissions, approvedMorphImages, geneticsCalculations] = await Promise.all([
     getGlobalStats(), getDocs(collection(db, "users")), getDocs(collection(db, "mentors")), getDocs(collection(db, "mentorApplications")), getDocs(collection(db, "mentorshipRequests")), getDocs(collection(db, "mentorshipWorkspaces")), countCollection("communityPosts"), countCollection("feedback"), getDocs(collection(db, "issueReports")), getDocs(collection(db, "morphImageSubmissions")), countCollection("approvedMorphImages"), countCollection("geneticsCalculations"),
   ]);
-  const users = usersSnapshot.docs.map((doc) => doc.data() as UserRecord);
+  const users = usersSnapshot.docs.map((item) => item.data() as UserRecord);
   let accepted = 0, declined = 0, unset = 0, location = 0, analytics = 0;
-  await Promise.all(usersSnapshot.docs.map(async (doc) => {
+  await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
     try {
-      const privacy = await getPrivacyPreferences(doc.id);
-      if (privacy.communityHusbandryData === true) accepted += 1; else if (privacy.communityHusbandryData === false) declined += 1; else unset += 1;
+      const privacySnapshot = await getDoc(doc(db, "users", userDoc.id, "settings", "privacy"));
+      if (!privacySnapshot.exists()) { unset += 1; return; }
+      const privacy = privacySnapshot.data() as Record<string, unknown>;
+      if (privacy.communityHusbandryData === true) accepted += 1; else declined += 1;
       if (privacy.communityLocation === true) location += 1;
       if (privacy.anonymousAnalytics === true) analytics += 1;
     } catch { unset += 1; }
   }));
-  const mentorRecords = mentorsSnapshot.docs.map((doc) => doc.data() as UserRecord);
-  const applicationRecords = mentorApplications.docs.map((doc) => doc.data() as UserRecord);
-  const requestRecords = mentorshipRequests.docs.map((doc) => doc.data() as UserRecord);
-  const workspaceRecords = workspaces.docs.map((doc) => doc.data() as UserRecord);
-  const issueRecords = issues.docs.map((doc) => doc.data() as UserRecord);
-  const morphRecords = morphSubmissions.docs.map((doc) => doc.data() as UserRecord);
+  const mentorRecords = mentorsSnapshot.docs.map((item) => item.data() as UserRecord);
+  const applicationRecords = mentorApplications.docs.map((item) => item.data() as UserRecord);
+  const requestRecords = mentorshipRequests.docs.map((item) => item.data() as UserRecord);
+  const workspaceRecords = workspaces.docs.map((item) => item.data() as UserRecord);
+  const issueRecords = issues.docs.map((item) => item.data() as UserRecord);
+  const morphRecords = morphSubmissions.docs.map((item) => item.data() as UserRecord);
   return {
     stats, users, consent: { accepted, declined, unset, location, analytics },
     mentors: { published: mentorRecords.length, accepting: mentorRecords.filter((item) => item.acceptingNewMentees === true).length, applications: applicationRecords.length, pending: applicationRecords.filter((item) => ["pending", "Pending"].includes(String(item.status))).length, requests: requestRecords.length, activeRequests: requestRecords.filter((item) => ["sent", "accepted", "active"].includes(String(item.status))).length, workspaces: workspaceRecords.length, activeWorkspaces: workspaceRecords.filter((item) => String(item.status) === "active").length },
@@ -41,7 +41,6 @@ async function loadSnapshot(): Promise<Snapshot> {
     genetics: { calculations: geneticsCalculations, approvedMorphImages },
   };
 }
-
 function DetailLine({ label, value, note }: { label: string; value: string | number; note?: string }) { return <div className="creator-snapshot-detail-line"><span><strong>{label}</strong>{note && <small>{note}</small>}</span><strong>{typeof value === "number" ? fmt(value) : value}</strong></div>; }
 
 export default function CreatorSnapshotIntelligence() {
