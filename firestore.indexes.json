@@ -1,0 +1,23 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "mentors",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "acceptingNewMentees",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "profileVersion",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
