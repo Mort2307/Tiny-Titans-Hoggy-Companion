@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc, Timestamp } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "../firebase/config";
 
@@ -10,10 +10,12 @@ export interface TitanSupportStats { totalSupporters: number; totalReceivedGbp: 
 
 type FirestoreWallData = Record<string, unknown>;
 type TimestampLike = { toDate: () => Date };
+type TitanSupportStatsPayload = { totalSupporters: number; totalReceivedGbp: number; updatedAt: string | null };
 
 const db = getFirestore(app);
 const functions = getFunctions(app, "europe-west2");
 const reconcileTitanWall = httpsCallable<void, { created: number; checked: number }>(functions, "reconcileTitanWall");
+const getTitanSupportStatsCallable = httpsCallable<void, TitanSupportStatsPayload>(functions, "getTitanSupportStats");
 
 const OFFICIAL_TITAN: TitanWallEntry = { id: "tiny-titans-official", displayName: "Tiny Titans", socialUrl: "https://www.facebook.com/share/1bmTfhZgc1/", tierLabel: "Founder & Creator", amountGbp: 0, supportedAt: null };
 
@@ -45,13 +47,12 @@ function toEntry(item: { id: string; data: () => FirestoreWallData }): TitanWall
 }
 
 export async function getTitanSupportStats(): Promise<TitanSupportStats> {
-  const snapshot = await getDoc(doc(db, "supporterStats", "global"));
-  const data = snapshot.exists() ? snapshot.data() : {};
-  const updatedAt = isTimestampLike(data.updatedAt) ? data.updatedAt.toDate().toISOString() : null;
+  const result = await getTitanSupportStatsCallable();
+  const data = result.data;
   return {
-    totalSupporters: typeof data.totalSupporters === "number" ? data.totalSupporters : 0,
-    totalReceivedGbp: typeof data.totalReceivedGbp === "number" ? data.totalReceivedGbp : 0,
-    updatedAt,
+    totalSupporters: Number.isFinite(data.totalSupporters) ? data.totalSupporters : 0,
+    totalReceivedGbp: Number.isFinite(data.totalReceivedGbp) ? data.totalReceivedGbp : 0,
+    updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : null,
   };
 }
 
