@@ -11,6 +11,7 @@ const sources = {
 
 const checks = [
   ["core tracking is always enabled", /coreTracking:\s*true/, sources.gate],
+  ["basic keeper tracking is always enabled", /basicTracking:\s*true/, sources.gate],
   ["full intelligence follows live consent", /personalIntelligence:\s*optedIn/, sources.gate],
   ["community contribution follows live consent", /communityContribution:\s*optedIn/, sources.gate],
   ["community intelligence follows live consent", /communityIntelligence:\s*optedIn/, sources.gate],
@@ -31,13 +32,13 @@ console.log("INTELLIGENCE END-TO-END JOURNEY CONTRACT REPORT");
 console.table(checks.map(([label, pattern, source]) => ({ check: label, status: pattern.test(source) ? "PASS" : "FAIL" })));
 
 const journey = [
-  ["new/missing preference", "CORE TRACKING", "INTELLIGENCE PAUSED", "CONTRIBUTION BLOCKED"],
-  ["opt-out", "CORE TRACKING", "INTELLIGENCE PAUSED", "CONTRIBUTION BLOCKED"],
-  ["opt-in", "CORE TRACKING", "FULL INTELLIGENCE", "CONTRIBUTION ENABLED"],
-  ["opt-in → opt-out", "CORE TRACKING", "INTELLIGENCE PAUSED", "CONTRIBUTION BLOCKED"],
-  ["opt-out → opt-in", "CORE TRACKING", "FULL INTELLIGENCE", "CONTRIBUTION ENABLED"],
+  ["new/missing preference", "CORE TRACKING", "BASIC ONLY", "INTELLIGENCE PAUSED", "CONTRIBUTION BLOCKED"],
+  ["opt-out", "CORE TRACKING", "BASIC ONLY", "INTELLIGENCE PAUSED", "CONTRIBUTION BLOCKED"],
+  ["opt-in", "CORE TRACKING", "BASIC + INTELLIGENCE", "FULL INTELLIGENCE", "CONTRIBUTION ENABLED"],
+  ["opt-in → opt-out", "CORE TRACKING", "BASIC ONLY", "INTELLIGENCE PAUSED", "CONTRIBUTION BLOCKED"],
+  ["opt-out → opt-in", "CORE TRACKING", "BASIC + INTELLIGENCE", "FULL INTELLIGENCE", "CONTRIBUTION ENABLED"],
 ];
-console.table(journey.map(([transition, tracking, intelligence, contribution]) => ({ transition, tracking, intelligence, contribution })));
+console.table(journey.map(([transition, tracking, basicMode, intelligence, contribution]) => ({ transition, tracking, basicMode, intelligence, contribution })));
 
 if (failures.length) {
   console.error(`Journey contract failures: ${failures.join("; ")}`);
