@@ -57,6 +57,38 @@ service cloud.firestore {
     }
     match /familyInvites/{inviteId} { allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && get(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.ownerUid == request.auth.uid && request.resource.data.targetEmail is string && request.resource.data.status == 'pending'; allow get, list: if signedIn() && (isCreator() || resource.data.ownerUid == request.auth.uid || inviteTargetMatchesCurrentAccount(resource.id)); allow update: if signedIn() && ((resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid) || (inviteTargetMatchesCurrentAccount(resource.id) && request.resource.data.targetEmail == resource.data.targetEmail && request.resource.data.familyId == resource.data.familyId && request.resource.data.status in ['accepted', 'declined'])); allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid; }
     match /familyApprovals/{approvalId} { allow create: if signedIn() && request.resource.data.requesterUid == request.auth.uid && request.resource.data.familyId == userRecord().get('familyId', '') && request.resource.data.status == 'pending'; allow get: if signedIn() && (isCreator() || resource.data.requesterUid == request.auth.uid || get(/databases/$(database)/documents/families/$(resource.data.familyId)).data.ownerUid == request.auth.uid); allow list: if isCreator(); allow update: if signedIn() && get(/databases/$(database)/documents/families/$(resource.data.familyId)).data.ownerUid == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'decidedByUid', 'decidedAt']) && request.resource.data.status in ['approved', 'rejected']; allow delete: if false; }
+
+    match /mentorApplications/{applicationId} {
+      allow create: if signedIn() && request.resource.data.applicantId == request.auth.uid && request.resource.data.status == "submitted" && request.resource.data.mentorRoles.size() > 0 && request.resource.data.specialities.size() > 0 && request.resource.data.experienceYears >= 0 && request.resource.data.experienceYears <= 80 && request.resource.data.conductAccepted == true;
+      allow get: if signedIn() && (isCreator() || resource.data.applicantId == request.auth.uid);
+      allow list: if isCreator();
+      allow update: if isCreator();
+      allow delete: if isCreator();
+    }
+    match /mentors/{mentorId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCreator();
+    }
+    match /mentorshipRequests/{requestId} {
+      allow create: if signedIn() && request.resource.data.requesterId == request.auth.uid && request.resource.data.status == "sent";
+      allow get: if signedIn() && (isCreator() || resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
+      allow list: if signedIn() && (isCreator() || resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid);
+      allow update: if signedIn() && (isCreator() || resource.data.mentorId == request.auth.uid || resource.data.requesterId == request.auth.uid);
+      allow delete: if isCreator();
+    }
+    match /mentorshipWorkspaces/{workspaceId} {
+      allow create: if signedIn() && (isCreator() || request.resource.data.participants.any(p, p.userId == request.auth.uid));
+      allow get: if signedIn() && (isCreator() || resource.data.participants.any(p, p.userId == request.auth.uid));
+      allow list: if isCreator();
+      allow update: if signedIn() && (isCreator() || resource.data.participants.any(p, p.userId == request.auth.uid));
+      allow delete: if isCreator();
+    }
+    match /mentorshipEvents/{eventId} {
+      allow create: if signedIn() && (isCreator() || get(/databases/$(database)/documents/mentorshipWorkspaces/$(request.resource.data.workspaceId)).data.participants.any(p, p.userId == request.auth.uid));
+      allow get, list: if signedIn() && (isCreator() || get(/databases/$(database)/documents/mentorshipWorkspaces/$(resource.data.workspaceId)).data.participants.any(p, p.userId == request.auth.uid));
+      allow update, delete: if isCreator();
+    }
+
     match /sandboxExperiments/{experimentId} { allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.type in ['genetics', 'pairing', 'clutch', 'custom']; allow get: if signedIn() && resource.data.ownerUid == request.auth.uid; allow list: if signedIn() && resource.data.ownerUid == request.auth.uid; allow update: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == request.auth.uid; allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid; }
     match /testerSandboxes/{sandboxId} { allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.syntheticOnly == true && request.resource.data.purpose == "bot-test"; allow get: if signedIn() && resource.data.ownerUid == request.auth.uid; allow update: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == request.auth.uid && request.resource.data.syntheticOnly == true; allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid; allow list: if false; match /{document=**} { allow read, write: if signedIn() && get(/databases/$(database)/documents/testerSandboxes/$(sandboxId)).data.ownerUid == request.auth.uid; } }
     match /geneticsCalculations/{calculationId} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow get, list: if isCreator(); allow update, delete: if isCreator(); }
