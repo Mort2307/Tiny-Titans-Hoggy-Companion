@@ -6,25 +6,39 @@ import type { EquipmentMaintenanceItem, EquipmentMaintenanceStatus } from "../ty
 import BackHomeButton from "../components/BackHomeButton";
 import "../styles/reptile-room.css";
 
-const ROOM_STORAGE_KEY = "tinyTitans.reptileRoom.layout.v1";
-type RoomSlot = { id: string; snakeId: string | null; label: string };
+const ROOM_STORAGE_KEY = "tinyTitans.reptileRoom.layout.v2";
+type RoomSlot = { id: string; snakeId: string | null; label: string; x: number; y: number; w: number; h: number };
+type LayoutPreset = "freeform" | "double-stack" | "rack";
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 function readLayout(): RoomSlot[] {
   try {
     const raw = JSON.parse(localStorage.getItem(ROOM_STORAGE_KEY) || "[]");
     if (!Array.isArray(raw)) return [];
-    return raw.filter((item): item is RoomSlot => Boolean(item && typeof item.id === "string" && (item.snakeId === null || typeof item.snakeId === "string") && typeof item.label === "string"));
-  } catch {
-    return [];
-  }
+    return raw.filter((item): item is RoomSlot => Boolean(
+      item && typeof item.id === "string" && (item.snakeId === null || typeof item.snakeId === "string") &&
+      typeof item.label === "string" && typeof item.x === "number" && typeof item.y === "number" &&
+      typeof item.w === "number" && typeof item.h === "number",
+    ));
+  } catch { return []; }
 }
 
 function saveLayout(layout: RoomSlot[]) {
-  try {
-    localStorage.setItem(ROOM_STORAGE_KEY, JSON.stringify(layout));
-  } catch {
-    // Optional device preference; room data remains in the user's snake records.
-  }
+  try { localStorage.setItem(ROOM_STORAGE_KEY, JSON.stringify(layout)); } catch { /* layout is a local UI preference */ }
+}
+
+function slotSize(snake: Snake | null): { w: number; h: number } {
+  const width = Number(snake?.enclosure?.width) || 50;
+  const height = Number(snake?.enclosure?.height) || 40;
+  return { w: clamp(Math.round(width / 2.5), 18, 30), h: clamp(Math.round(height / 2.5), 18, 28) };
+}
+
+function defaultSlots(snakes: Snake[]): RoomSlot[] {
+  return snakes.map((snake, index) => {
+    const size = slotSize(snake);
+    return { id: `viv-${index + 1}`, snakeId: snake.id, label: `Vivarium ${String(index + 1).padStart(2, "0")}`, x: (index % 3) * 31 + 2, y: Math.floor(index / 3) * 31 + 3, ...size };
+  });
 }
 
 function dueDate(item: EquipmentMaintenanceItem): Date | null {
@@ -47,10 +61,8 @@ function equipmentStatus(item: EquipmentMaintenanceItem, today = new Date()): Eq
 
 function daysUntil(date: Date | null, today = new Date()): number | null {
   if (!date) return null;
-  const start = new Date(today);
-  start.setHours(0, 0, 0, 0);
-  const target = new Date(date);
-  target.setHours(0, 0, 0, 0);
+  const start = new Date(today); start.setHours(0, 0, 0, 0);
+  const target = new Date(date); target.setHours(0, 0, 0, 0);
   return Math.ceil((target.getTime() - start.getTime()) / 86400000);
 }
 
@@ -61,8 +73,13 @@ function statusText(status: EquipmentMaintenanceStatus, days: number | null): st
   return "Service interval not set";
 }
 
-function defaultSlots(snakes: Snake[]): RoomSlot[] {
-  return snakes.map((snake, index) => ({ id: `viv-${index + 1}`, snakeId: snake.id, label: `Vivarium ${String(index + 1).padStart(2, "0")}` }));
+function applyPreset(slots: RoomSlot[], preset: LayoutPreset): RoomSlot[] {
+  return slots.map((slot, index) => {
+    const size = { w: slot.w, h: slot.h };
+    if (preset === "double-stack") return { ...slot, x: 3 + (index % 3) * 32, y: 4 + Math.floor(index / 3) * 43, ...size };
+    if (preset === "rack") return { ...slot, x: 3 + (index % 4) * 24, y: 5 + Math.floor(index / 4) * 31, ...size };
+    return { ...slot, x: clamp(slot.x, 1, 99 - slot.w), y: clamp(slot.y, 1, 99 - slot.h), ...size };
+  });
 }
 
 export default function ReptileRoom() {
@@ -73,6 +90,8 @@ export default function ReptileRoom() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [savingSnakeId, setSavingSnakeId] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(true);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const reload = async () => {
     if (!user) return;
@@ -90,14 +109,10 @@ export default function ReptileRoom() {
       setMessage("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to load your reptile room.");
-    } finally {
-      setLoadingSnakes(false);
-    }
+    } finally { setLoadingSnakes(false); }
   };
 
-  useEffect(() => {
-    if (!loading && !profileLoading && user) void reload();
-  }, [user, loading, profileLoading]);
+  useEffect(() => { if (!loading && !profileLoading && user) void reload(); }, [user, loading, profileLoading]);
 
   const snakeById = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]);
   const assignedSnakeIds = useMemo(() => new Set(slots.map((slot) => slot.snakeId).filter((id): id is string => Boolean(id))), [slots]);
@@ -106,164 +121,126 @@ export default function ReptileRoom() {
   const maintenance = selectedSnake?.enclosure?.equipmentMaintenance ?? [];
   const dueCount = maintenance.filter((item) => ["overdue", "upcoming"].includes(equipmentStatus(item))).length;
 
-  function persist(next: RoomSlot[]) {
-    setSlots(next);
-    saveLayout(next);
-  }
+  function persist(next: RoomSlot[]) { setSlots(next); saveLayout(next); }
 
-  function addVivarium() {
+  function addVivarium(source?: RoomSlot) {
     const nextNumber = slots.length + 1;
-    persist([...slots, { id: `viv-${Date.now()}`, snakeId: null, label: `Vivarium ${String(nextNumber).padStart(2, "0")}` }]);
+    const size = source ? { w: source.w, h: source.h } : { w: 25, h: 24 };
+    const x = source ? clamp(source.x + 8, 1, 99 - size.w) : 4 + (slots.length % 3) * 31;
+    const y = source ? clamp(source.y + source.h + 4, 1, 99 - size.h) : 4 + Math.floor(slots.length / 3) * 31;
+    const next = [...slots, { id: `viv-${Date.now()}`, snakeId: null, label: `Vivarium ${String(nextNumber).padStart(2, "0")}`, x, y, ...size }];
+    persist(next);
+    setSelectedSlotId(next[next.length - 1].id);
   }
 
   function assignSnake(slotId: string, snakeId: string) {
     const targetSnakeId = snakeId || null;
     const existing = slots.find((slot) => slot.snakeId === targetSnakeId && Boolean(targetSnakeId));
-    const next = slots.map((slot) => {
-      if (slot.id === slotId) return { ...slot, snakeId: targetSnakeId };
-      if (existing && slot.id === existing.id) return { ...slot, snakeId: null };
-      return slot;
-    });
-    persist(next);
+    persist(slots.map((slot) => slot.id === slotId ? { ...slot, snakeId: targetSnakeId } : existing && slot.id === existing.id ? { ...slot, snakeId: null } : slot));
   }
+
+  function moveSlot(slotId: string, clientX: number, clientY: number, rect: DOMRect) {
+    const slot = slots.find((item) => item.id === slotId);
+    if (!slot) return;
+    const x = clamp(((clientX - rect.left) / rect.width) * 100 - slot.w / 2, 1, 99 - slot.w);
+    const y = clamp(((clientY - rect.top) / rect.height) * 100 - slot.h / 2, 1, 99 - slot.h);
+    const snap = (value: number) => Math.round(value / 2) * 2;
+    setSlots((current) => current.map((item) => item.id === slotId ? { ...item, x: snap(x), y: snap(y) } : item));
+  }
+
+  function finishDrag() { setDraggingId(null); saveLayout(slots); }
+
+  function handlePointerDown(event: React.PointerEvent<HTMLButtonElement>, slotId: string) {
+    if (!editMode) return;
+    const canvas = event.currentTarget.closest(".reptile-room-canvas") as HTMLElement | null;
+    if (!canvas) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDraggingId(slotId);
+    const onMove = (moveEvent: PointerEvent) => moveSlot(slotId, moveEvent.clientX, moveEvent.clientY, canvas.getBoundingClientRect());
+    const onUp = () => { document.removeEventListener("pointermove", onMove); document.removeEventListener("pointerup", onUp); finishDrag(); };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  }
+
+  function resetLayout() { persist(applyPreset(slots, "double-stack")); setMessage("Room arranged into a double-stack starting layout. You can now drag each vivarium into place."); }
 
   async function recordReplacement(item: EquipmentMaintenanceItem) {
     if (!user || !selectedSnake?.enclosure) return;
-    setSavingSnakeId(selectedSnake.id);
-    setMessage("");
+    setSavingSnakeId(selectedSnake.id); setMessage("");
     const today = new Date().toISOString().slice(0, 10);
     const nextItems = (selectedSnake.enclosure.equipmentMaintenance ?? []).map((entry) => entry.id === item.id ? { ...entry, lastReplacedDate: today } : entry);
     try {
       const updated = await updateUserSnake(user.uid, { ...selectedSnake, enclosure: { ...selectedSnake.enclosure, equipmentMaintenance: nextItems } });
       setSnakes((current) => current.map((snake) => snake.id === updated.id ? updated : snake));
       setMessage(`${item.name} replacement recorded.`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to save the replacement record.");
-    } finally {
-      setSavingSnakeId(null);
-    }
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to save the replacement record."); }
+    finally { setSavingSnakeId(null); }
   }
 
-  if (loading || profileLoading || loadingSnakes) {
-    return <div className="page-container"><BackHomeButton /><h1>🏠 My Reptile Room</h1><div className="tracker-card"><h3>Building your room...</h3><p>Loading your Tiny Titans and their enclosure records.</p></div></div>;
-  }
+  if (loading || profileLoading || loadingSnakes) return <div className="page-container"><BackHomeButton /><h1>🏠 My Reptile Room</h1><div className="tracker-card"><h3>Building your room...</h3><p>Loading your Tiny Titans and their enclosure records.</p></div></div>;
 
   return (
     <div className="page-container reptile-room-page">
       <BackHomeButton />
       <header className="reptile-room-header">
-        <div>
-          <p className="reptile-room-eyebrow">🏠 MY SNAKES • REPTILE ROOM</p>
-          <h1>Build Your Reptile Room</h1>
-          <p className="page-subtitle">Your room is a visual layer over the enclosure records you already maintain. Move a snake between vivariums and its own setup data follows the snake.</p>
-        </div>
-        <button type="button" className="add-snake-button" onClick={addVivarium}>➕ Add Vivarium</button>
+        <div><p className="reptile-room-eyebrow">🏠 MY SNAKES • REPTILE ROOM</p><h1>Build Your Reptile Room</h1><p className="page-subtitle">Build the room you actually own — stacked vivariums, racks, wall builds or a completely custom layout. The physical arrangement belongs to the room; enclosure husbandry still belongs to the snake.</p></div>
+        <div className="room-toolbar"><button type="button" className={`husbandry-button ${editMode ? "is-active" : ""}`} onClick={() => setEditMode((value) => !value)}>{editMode ? "🔒 Finish arranging" : "✋ Arrange room"}</button><button type="button" className="add-snake-button" onClick={() => addVivarium()}>➕ Add Vivarium</button></div>
       </header>
 
       {message && <p className="reptile-room-message" role="status">{message}</p>}
 
       <section className="reptile-room-summary">
-        <strong>{snakes.length} Tiny Titan{snakes.length === 1 ? "" : "s"}</strong>
-        <span>{slots.filter((slot) => slot.snakeId).length} occupied vivarium{slots.filter((slot) => slot.snakeId).length === 1 ? "" : "s"}</span>
-        <span>{slots.filter((slot) => !slot.snakeId).length} empty</span>
-        <span>💡 Setup data follows the snake</span>
+        <strong>{snakes.length} Tiny Titan{snakes.length === 1 ? "" : "s"}</strong><span>{slots.filter((slot) => slot.snakeId).length} occupied</span><span>{slots.filter((slot) => !slot.snakeId).length} empty</span><span>🧠 Snake data follows the snake</span>
       </section>
 
-      <section className="reptile-room-layout" aria-label="Your reptile room">
+      <div className="room-layout-tools" aria-label="Room layout tools">
+        <span>Layout:</span>
+        <button type="button" onClick={() => persist(applyPreset(slots, "freeform"))}>↗️ Freeform</button>
+        <button type="button" onClick={() => persist(applyPreset(slots, "double-stack"))}>▦ Double-stack</button>
+        <button type="button" onClick={() => persist(applyPreset(slots, "rack"))}>▤ Rack</button>
+        <button type="button" onClick={resetLayout}>↺ Reset arrangement</button>
+        <span className="room-layout-hint">Drag vivariums to match your real room. Snap-to-grid keeps things tidy.</span>
+      </div>
+
+      <section className="reptile-room-canvas" aria-label="Your custom reptile room layout">
+        <div className="room-wall-label">YOUR REPTILE ROOM</div>
         {slots.map((slot) => {
           const snake = slot.snakeId ? snakeById.get(slot.snakeId) : null;
           const enclosure = snake?.enclosure;
           const itemCount = enclosure?.equipmentMaintenance?.length ?? 0;
           return (
-            <button type="button" key={slot.id} className={`vivarium-card ${selectedSlotId === slot.id ? "is-selected" : ""}`} onClick={() => setSelectedSlotId(slot.id)}>
+            <button
+              type="button"
+              key={slot.id}
+              className={`vivarium-card ${selectedSlotId === slot.id ? "is-selected" : ""} ${draggingId === slot.id ? "is-dragging" : ""}`}
+              style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }}
+              onClick={() => { if (!draggingId) setSelectedSlotId(slot.id); }}
+              onPointerDown={(event) => handlePointerDown(event, slot.id)}
+              aria-label={`${slot.label}${snake ? `, ${snake.name}` : ", empty"}`}
+            >
               <span className="vivarium-label">{slot.label}</span>
-              <span className="vivarium-glass" aria-hidden="true">
-                <span className="vivarium-substrate" />
-                <span className="vivarium-hide">▰</span>
-                {snake ? <span className="vivarium-snake">〰 {snake.name}</span> : <span className="vivarium-empty">EMPTY VIVARIUM</span>}
-              </span>
-              <span className="vivarium-card-info">{snake ? `${enclosure?.length || "?"} × ${enclosure?.width || "?"} × ${enclosure?.height || "?"} cm` : "Assign a Tiny Titan"}</span>
-              <span className="vivarium-card-meta">{snake ? `${enclosure?.heatingType || "Heating not recorded"} • ${itemCount} equipment item${itemCount === 1 ? "" : "s"}` : "Tap to assign"}</span>
+              <span className="vivarium-glass" aria-hidden="true"><span className="vivarium-substrate" /><span className="vivarium-hide">▰</span>{snake ? <span className="vivarium-snake">〰 {snake.name}</span> : <span className="vivarium-empty">EMPTY</span>}</span>
+              <span className="vivarium-card-info">{snake ? `${enclosure?.length || "?"} × ${enclosure?.width || "?"} × ${enclosure?.height || "?"} cm` : "Empty vivarium"}</span>
+              <span className="vivarium-card-meta">{snake ? `${enclosure?.heatingType || "Heating not recorded"} • ${itemCount} equipment` : "Tap to assign"}</span>
+              {editMode && <span className="vivarium-drag-hint">✋ drag</span>}
             </button>
           );
         })}
-        {!slots.length && (
-          <div className="reptile-room-empty">
-            <strong>Your room is empty.</strong>
-            <p>Add a vivarium to start building the layout.</p>
-            <button type="button" className="add-snake-button" onClick={addVivarium}>➕ Add First Vivarium</button>
-          </div>
-        )}
+        {!slots.length && <div className="reptile-room-empty"><strong>Your room is empty.</strong><p>Add a vivarium, then drag it into the position it occupies in your real room.</p><button type="button" className="add-snake-button" onClick={() => addVivarium()}>➕ Add First Vivarium</button></div>}
       </section>
 
       {selectedSlot && (
         <section className="vivarium-detail-panel">
-          <div className="vivarium-detail-heading">
-            <div><p className="reptile-room-eyebrow">{selectedSlot.label}</p><h2>{selectedSnake ? `${selectedSnake.name}'s Vivarium` : "Empty Vivarium"}</h2></div>
-            <button type="button" className="husbandry-button" onClick={() => setSelectedSlotId(null)}>Close</button>
-          </div>
-
-          <label className="room-field">
-            <span>Assign Tiny Titan</span>
-            <select value={selectedSlot.snakeId ?? ""} onChange={(event) => assignSnake(selectedSlot.id, event.target.value)}>
-              <option value="">— Empty —</option>
-              {snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}{assignedSnakeIds.has(snake.id) && selectedSlot.snakeId !== snake.id ? " (move here)" : ""}</option>)}
-            </select>
-          </label>
-
-          {selectedSnake && (
-            <>
-              <div className="room-source-note">🧠 <strong>Live enclosure record:</strong> these details are read directly from {selectedSnake.name}'s saved enclosure profile. The room does not create a second copy of the setup.</div>
-              <div className="room-setup-grid">
-                <div><span>📐 Size</span><strong>{selectedSnake.enclosure ? `${selectedSnake.enclosure.length} × ${selectedSnake.enclosure.width} × ${selectedSnake.enclosure.height} cm` : "Not recorded"}</strong></div>
-                <div><span>🔥 Heating</span><strong>{selectedSnake.enclosure?.heatingType || "Not recorded"}</strong></div>
-                <div><span>🪵 Substrate</span><strong>{selectedSnake.enclosure?.customSubstrate || selectedSnake.enclosure?.substrate || "Not recorded"}</strong></div>
-                <div><span>🌡️ Warm / cool</span><strong>{selectedSnake.enclosure?.warmSideTemperature ?? "—"}° / {selectedSnake.enclosure?.coolSideTemperature ?? "—"}°C</strong></div>
-                <div><span>💧 Humidity</span><strong>{selectedSnake.enclosure?.humidity ?? "—"}%</strong></div>
-                <div><span>☀️ UVB</span><strong>{selectedSnake.enclosure?.uvbEnabled ? selectedSnake.enclosure.uvbDetails || "Provided" : "Not recorded"}</strong></div>
-              </div>
-
-              <div className="room-detail-actions">
-                <a href={`/snakes/${selectedSnake.id}/enclosure`}>✏️ Open Enclosure Tab</a>
-                <a href={`/snakes/${selectedSnake.id}`}>👁️ Open Snake Profile</a>
-              </div>
-
-              <section className="equipment-maintenance-panel">
-                <div className="equipment-heading">
-                  <div><p className="reptile-room-eyebrow">🔧 EQUIPMENT LIFE & MAINTENANCE</p><h3>Replacement tracker</h3><p>Use the manufacturer's service-life guidance where available. Tiny Titans treats these intervals as reminders, not guarantees.</p></div>
-                  {dueCount > 0 && <span className="equipment-count-badge">⚠️ {dueCount} due / upcoming</span>}
-                </div>
-                {maintenance.length ? (
-                  <div className="equipment-list">
-                    {maintenance.map((item) => {
-                      const status = equipmentStatus(item);
-                      const due = dueDate(item);
-                      const days = daysUntil(due);
-                      return (
-                        <article key={item.id} className={`equipment-item equipment-${status}`}>
-                          <div>
-                            <strong>{item.name}</strong>
-                            <span>{item.kind}{item.manufacturer ? ` • ${item.manufacturer}` : ""}{item.model ? ` • ${item.model}` : ""}</span>
-                            {item.manufacturerServiceLife && <small>Manufacturer guidance: {item.manufacturerServiceLife}</small>}
-                          </div>
-                          <div className="equipment-timing">
-                            <strong>{statusText(status, days)}</strong>
-                            <small>{due ? `Target replacement: ${due.toLocaleDateString()}` : "Set an installed/replacement date and interval in the enclosure record."}</small>
-                          </div>
-                          <div className="equipment-actions">
-                            {item.replacementNotificationsEnabled && <span title="Replacement reminder enabled">🔔</span>}
-                            <button type="button" onClick={() => void recordReplacement(item)} disabled={savingSnakeId === selectedSnake.id}>♻️ Replaced today</button>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="equipment-empty"><strong>No equipment service records yet.</strong><p>Add equipment service-life records to the enclosure profile and they will appear here automatically.</p></div>
-                )}
-              </section>
-            </>
-          )}
+          <div className="vivarium-detail-heading"><div><p className="reptile-room-eyebrow">{selectedSlot.label}</p><h2>{selectedSnake ? `${selectedSnake.name}'s Vivarium` : "Empty Vivarium"}</h2></div><div className="room-detail-actions"><button type="button" className="husbandry-button" onClick={() => addVivarium(selectedSlot)}>⧉ Duplicate position</button><button type="button" className="husbandry-button" onClick={() => setSelectedSlotId(null)}>Close</button></div></div>
+          <label className="room-field"><span>Assign Tiny Titan</span><select value={selectedSlot.snakeId ?? ""} onChange={(event) => assignSnake(selectedSlot.id, event.target.value)}><option value="">— Empty —</option>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}{assignedSnakeIds.has(snake.id) && selectedSlot.snakeId !== snake.id ? " (move here)" : ""}</option>)}</select></label>
+          {selectedSnake && <>
+            <div className="room-source-note">🧠 <strong>Live enclosure record:</strong> these details are read directly from {selectedSnake.name}'s saved enclosure profile. Moving the vivarium never moves or duplicates the snake's husbandry data.</div>
+            <div className="room-setup-grid"><div><span>📐 Size</span><strong>{selectedSnake.enclosure ? `${selectedSnake.enclosure.length} × ${selectedSnake.enclosure.width} × ${selectedSnake.enclosure.height} cm` : "Not recorded"}</strong></div><div><span>🔥 Heating</span><strong>{selectedSnake.enclosure?.heatingType || "Not recorded"}</strong></div><div><span>🪵 Substrate</span><strong>{selectedSnake.enclosure?.customSubstrate || selectedSnake.enclosure?.substrate || "Not recorded"}</strong></div><div><span>🌡️ Warm / cool</span><strong>{selectedSnake.enclosure?.warmSideTemperature ?? "—"}° / {selectedSnake.enclosure?.coolSideTemperature ?? "—"}°C</strong></div><div><span>💧 Humidity</span><strong>{selectedSnake.enclosure?.humidity ?? "—"}%</strong></div><div><span>☀️ UVB</span><strong>{selectedSnake.enclosure?.uvbEnabled ? selectedSnake.enclosure.uvbDetails || "Provided" : "Not recorded"}</strong></div></div>
+            <div className="room-detail-actions"><a href={`/snakes/${selectedSnake.id}/enclosure`}>✏️ Open Enclosure Tab</a><a href={`/snakes/${selectedSnake.id}`}>👁️ Open Snake Profile</a></div>
+            <section className="equipment-maintenance-panel"><div className="equipment-heading"><div><p className="reptile-room-eyebrow">🔧 EQUIPMENT LIFE & MAINTENANCE</p><h3>Replacement tracker</h3><p>Use the manufacturer's service-life guidance where available. Tiny Titans treats these intervals as reminders, not guarantees.</p></div>{dueCount > 0 && <span className="equipment-count-badge">⚠️ {dueCount} due / upcoming</span>}</div>
+              {maintenance.length ? <div className="equipment-list">{maintenance.map((item) => { const status = equipmentStatus(item); const due = dueDate(item); const days = daysUntil(due); return <article key={item.id} className={`equipment-item equipment-${status}`}><div><strong>{item.name}</strong><span>{item.kind}{item.manufacturer ? ` • ${item.manufacturer}` : ""}{item.model ? ` • ${item.model}` : ""}</span>{item.manufacturerServiceLife && <small>Manufacturer guidance: {item.manufacturerServiceLife}</small>}</div><div className="equipment-timing"><strong>{statusText(status, days)}</strong><small>{due ? `Target replacement: ${due.toLocaleDateString()}` : "Set an installed/replacement date and interval in the enclosure record."}</small></div><div className="equipment-actions">{item.replacementNotificationsEnabled && <span title="Replacement reminder enabled">🔔</span>}<button type="button" onClick={() => void recordReplacement(item)} disabled={savingSnakeId === selectedSnake.id}>♻️ Replaced today</button></div></article>; })}</div> : <div className="equipment-empty"><strong>No equipment service records yet.</strong><p>Add equipment service-life records to the enclosure profile and they will appear here automatically.</p></div>}
+            </section>
+          </>}
         </section>
       )}
     </div>
