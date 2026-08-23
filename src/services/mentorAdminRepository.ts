@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { MentorApplicationStatus, MentorRole } from "./mentorNetwork";
 import { publishApprovedMentor } from "./mentorDirectoryRepository";
@@ -10,13 +10,9 @@ export type MentorApplicationRecord = { id: string; applicantId: string; status:
 const applications = collection(db, "mentorApplications");
 
 export async function listMentorApplications(status?: MentorApplicationStatus | MentorApplicationStatus[]) {
-  const q = status
-    ? Array.isArray(status)
-      ? query(applications, where("status", "in", status), orderBy("updatedAt", "desc"))
-      : query(applications, where("status", "==", status), orderBy("updatedAt", "desc"))
-    : query(applications, orderBy("updatedAt", "desc"));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as MentorApplicationRecord));
+  const snapshot = await getDocs(query(applications, orderBy("updatedAt", "desc")));
+  const allowed = status ? new Set(Array.isArray(status) ? status : [status]) : undefined;
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as MentorApplicationRecord)).filter((application) => !allowed || allowed.has(application.status));
 }
 
 function goalsFromSpecialities(specialities: string[]) {
@@ -33,30 +29,10 @@ export async function reviewMentorApplication(applicationId: string, reviewerId:
   const applicationSnapshot = await getDoc(doc(db, "mentorApplications", applicationId));
   if (!applicationSnapshot.exists()) throw new Error("Mentor application no longer exists.");
   const application = applicationSnapshot.data() as MentorApplicationRecord;
-  await updateDoc(doc(db, "mentorApplications", applicationId), {
-    status: decision,
-    review: { reviewerId, decision, note, reviewedAt: new Date().toISOString() },
-    reviewedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  await updateDoc(doc(db, "mentorApplications", applicationId), { status: decision, review: { reviewerId, decision, note, reviewedAt: new Date().toISOString() }, reviewedAt: serverTimestamp(), updatedAt: serverTimestamp() });
   if (decision !== "approved") return;
   const applicantSnapshot = await getDoc(doc(db, "users", application.applicantId));
   const applicant = applicantSnapshot.exists() ? applicantSnapshot.data() : {};
   const displayName = typeof applicant.displayName === "string" && applicant.displayName.trim() ? applicant.displayName : "TTHC Community Mentor";
-  await publishApprovedMentor(applicationId, {
-    id: application.applicantId,
-    userId: application.applicantId,
-    displayName,
-    bio: application.experienceSummary,
-    verification: application.requestedVerification as "community" | "verified" | "educator" | "veterinary",
-    specialities: application.specialities,
-    experienceYears: application.experienceYears,
-    availability: "accepting",
-    mentoringGoals: goalsFromSpecialities(application.specialities),
-    acceptingNewMentees: true,
-    mentorRoles: application.mentorRoles,
-    publishedAt: new Date().toISOString(),
-    publishedBy: reviewerId,
-    profileVersion: 1,
-  });
+  await publishApprovedMentor(applicationId, { id: application.applicantId, userId: application.applicantId, displayName, bio: application.experienceSummary, verification: application.requestedVerification as "community" | "verified" | "educator" | "veterinary", specialities: application.specialities, experienceYears: application.experienceYears, availability: "accepting", mentoringGoals: goalsFromSpecialities(application.specialities), acceptingNewMentees: true, mentorRoles: application.mentorRoles, publishedAt: new Date().toISOString(), publishedBy: reviewerId, profileVersion: 1 });
 }
