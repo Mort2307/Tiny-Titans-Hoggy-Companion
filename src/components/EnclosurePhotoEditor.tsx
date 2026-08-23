@@ -14,6 +14,7 @@ export default function EnclosurePhotoEditor({ snake, onUpdated }: Props) {
   const [message, setMessage] = useState("");
   const photo = snake.enclosure?.roomPhoto;
   const enclosure = snake.enclosure;
+  const dimensions = enclosure ? `${enclosure.length ?? "?"} × ${enclosure.width ?? "?"} × ${enclosure.height ?? "?"} cm` : "Dimensions not recorded";
 
   async function savePhoto(file: File) {
     if (!user || !enclosure) return;
@@ -50,7 +51,7 @@ export default function EnclosurePhotoEditor({ snake, onUpdated }: Props) {
 
   return <div className="room-photo-editor">
     <div className="room-photo-heading"><div><span>📷 Real Vivarium Photo</span><small>Optional. This photo belongs to {snake.name}'s enclosure record and follows the snake if you move them.</small></div>{photo && <button type="button" className="husbandry-button" onClick={() => void removePhoto()} disabled={busy}>Remove photo</button>}</div>
-    {photo ? <div className={`room-photo-preview room-photo-mode-${photo.mode}`}><img src={photo.url} alt={`${snake.name}'s vivarium`} /><div className="room-photo-overlay"><strong>{snake.name}</strong><span>{enclosure.length ?? "?"} × {enclosure.width ?? "?"} × {enclosure.height ?? "?"} cm</span>{photo.mode !== "photo" && <span>🧠 Live Tiny Titans data</span>}</div></div> : <button type="button" className="room-photo-upload" onClick={() => inputRef.current?.click()} disabled={busy}><span>📸</span><strong>Add a photo of this actual vivarium</strong><small>We'll resize it for the room automatically.</small></button>}
+    {photo ? <div className={`room-photo-preview room-photo-mode-${photo.mode}`}><img src={photo.url} alt={`${snake.name}'s vivarium`} /><div className="room-photo-overlay"><strong>{snake.name}</strong><span>{dimensions}</span>{photo.mode !== "photo" && <span>🧠 Live Tiny Titans data</span>}</div></div> : <button type="button" className="room-photo-upload" onClick={() => inputRef.current?.click()} disabled={busy}><span>📸</span><strong>Add a photo of this actual vivarium</strong><small>We'll resize it for the room automatically.</small></button>}
     {photo && <div className="room-photo-controls"><span>Display:</span><button type="button" className={photo.mode === "photo" ? "is-active" : ""} onClick={() => void changeMode("photo")} disabled={busy}>🖼️ Photo</button><button type="button" className={photo.mode === "hybrid" ? "is-active" : ""} onClick={() => void changeMode("hybrid")} disabled={busy}>🧠 Hybrid</button><button type="button" className={photo.mode === "minimal" ? "is-active" : ""} onClick={() => void changeMode("minimal")} disabled={busy}>🏷️ Minimal</button><button type="button" onClick={() => inputRef.current?.click()} disabled={busy}>Replace</button></div>}
     <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void savePhoto(file); }} />
     {message && <small className="room-photo-message" role="status">{message}</small>}
