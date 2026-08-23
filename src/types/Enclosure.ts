@@ -16,10 +16,7 @@ export type SubstrateType =
   | "Sand Mix"
   | "Other";
 
-export type SubstrateMixPart = {
-  material: string;
-  percentage: number;
-};
+export type SubstrateMixPart = { material: string; percentage: number };
 
 export type EnvironmentHistoryEntry = {
   id: string;
@@ -38,23 +35,27 @@ export type EnvironmentHistoryEntry = {
   thermostat?: string;
 };
 
+export type EnclosurePhotoMode = "photo" | "hybrid" | "minimal";
+
+export type EnclosurePhoto = {
+  url: string;
+  mode: EnclosurePhotoMode;
+  updatedAt: string;
+};
+
 export type Enclosure = {
   id: string;
   snakeId: string;
-
   length: number;
   width: number;
   height: number;
-
   enclosureType: string;
   substrate: SubstrateType;
   customSubstrate?: string;
   substrateMix?: SubstrateMixPart[];
-
   heatingType: HeatingType;
   heatingDevice?: string;
   thermostat?: string;
-
   warmSideTemperature?: number;
   coolSideTemperature?: number;
   ambientTemperature?: number;
@@ -62,20 +63,18 @@ export type Enclosure = {
   nightTemperature?: number;
   humidity?: number;
   environmentHistory?: EnvironmentHistoryEntry[];
-
   uvbEnabled: boolean;
   uvbDetails?: string;
   uvbPhotoperiodHours?: number;
-
   hides: number;
   waterBowl: boolean;
   plants?: string[];
   decorations?: string[];
-
   bioactive: boolean;
   cleanupCrew?: string[];
-
   lastCleanedDate?: string;
   equipmentMaintenance?: EquipmentMaintenanceItem[];
   notes?: string;
+  /** Optional real photograph used by the Reptile Room; husbandry data remains on this same snake-owned enclosure record. */
+  roomPhoto?: EnclosurePhoto;
 };
