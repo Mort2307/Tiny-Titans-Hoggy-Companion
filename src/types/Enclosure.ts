@@ -1,3 +1,5 @@
+import type { EquipmentMaintenanceItem } from "./EquipmentMaintenance";
+
 export type HeatingType =
   | "Heat Mat"
   | "CHE"
@@ -14,10 +16,7 @@ export type SubstrateType =
   | "Sand Mix"
   | "Other";
 
-export type SubstrateMixPart = {
-  material: string;
-  percentage: number;
-};
+export type SubstrateMixPart = { material: string; percentage: number };
 
 export type EnvironmentHistoryEntry = {
   id: string;
@@ -36,27 +35,27 @@ export type EnvironmentHistoryEntry = {
   thermostat?: string;
 };
 
+export type EnclosurePhotoMode = "photo" | "hybrid" | "minimal";
+
+export type EnclosurePhoto = {
+  url: string;
+  mode: EnclosurePhotoMode;
+  updatedAt: string;
+};
+
 export type Enclosure = {
   id: string;
   snakeId: string;
-
-  // Size
   length: number;
   width: number;
   height: number;
-
-  // Setup
   enclosureType: string;
   substrate: SubstrateType;
   customSubstrate?: string;
   substrateMix?: SubstrateMixPart[];
-
-  // Heating
   heatingType: HeatingType;
   heatingDevice?: string;
   thermostat?: string;
-
-  // Environment
   warmSideTemperature?: number;
   coolSideTemperature?: number;
   ambientTemperature?: number;
@@ -64,23 +63,18 @@ export type Enclosure = {
   nightTemperature?: number;
   humidity?: number;
   environmentHistory?: EnvironmentHistoryEntry[];
-
-  // Lighting
   uvbEnabled: boolean;
   uvbDetails?: string;
   uvbPhotoperiodHours?: number;
-
-  // Enrichment
   hides: number;
   waterBowl: boolean;
   plants?: string[];
   decorations?: string[];
-
-  // Bioactive
   bioactive: boolean;
   cleanupCrew?: string[];
-
-  // Maintenance
   lastCleanedDate?: string;
+  equipmentMaintenance?: EquipmentMaintenanceItem[];
   notes?: string;
+  /** Optional real photograph used by the Reptile Room; husbandry data remains on this same snake-owned enclosure record. */
+  roomPhoto?: EnclosurePhoto;
 };

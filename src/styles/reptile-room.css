@@ -1,0 +1,85 @@
+.reptile-room-page { max-width:1280px; }
+.reptile-room-header { display:flex; gap:1rem; justify-content:space-between; align-items:flex-end; margin-bottom:1rem; }
+.reptile-room-eyebrow { margin:0 0 .35rem; font-size:.72rem; letter-spacing:.12em; font-weight:800; opacity:.72; }
+.reptile-room-message,.room-source-note { padding:.8rem 1rem; border:1px solid rgba(245,183,75,.3); border-radius:12px; background:rgba(245,183,75,.08); }
+.reptile-room-summary { display:flex; flex-wrap:wrap; gap:.7rem; margin:1rem 0; }
+.reptile-room-summary span,.reptile-room-summary strong { padding:.55rem .75rem; border-radius:999px; background:rgba(255,255,255,.05); }
+.room-toolbar,.room-detail-actions { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; }
+.husbandry-button.is-active { border-color:rgba(245,183,75,.65); box-shadow:0 0 0 1px rgba(245,183,75,.2); }
+.room-layout-tools { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin:1rem 0; padding:.75rem; border:1px solid rgba(255,255,255,.08); border-radius:14px; background:rgba(255,255,255,.03); }
+.room-layout-tools button { padding:.5rem .7rem; border-radius:10px; }
+.room-layout-tools > span:first-child { font-weight:800; }
+.room-layout-hint { flex:1 1 260px; font-size:.78rem; opacity:.65; }
+
+/* The room is a real layout surface. A definite height is required because vivarium cards use percentage heights. */
+.reptile-room-canvas { position:relative; width:100%; height:760px; min-height:760px; overflow:hidden; isolation:isolate; border:1px solid rgba(255,255,255,.1); border-radius:20px; background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(10,12,16,.92)); background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(145deg,rgba(255,255,255,.045),rgba(10,12,16,.92)); background-size:5% 10%,5% 10%,auto; }
+.room-wall-label { position:absolute; left:1.2rem; top:.8rem; z-index:1; font-size:.68rem; letter-spacing:.16em; font-weight:900; opacity:.4; pointer-events:none; }
+.vivarium-card { position:absolute; z-index:2; display:block; min-width:0; min-height:0; box-sizing:border-box; text-align:left; border:1px solid rgba(255,255,255,.13); border-radius:14px; padding:.55rem; background:rgba(10,12,16,.92); color:inherit; cursor:grab; touch-action:none; overflow:hidden; transition:box-shadow .15s ease,border-color .15s ease,transform .15s ease; }
+.vivarium-card:hover,.vivarium-card.is-selected { border-color:rgba(245,183,75,.7); box-shadow:0 8px 28px rgba(0,0,0,.28); }
+.vivarium-card.is-dragging { cursor:grabbing; z-index:20; transform:scale(1.025); box-shadow:0 18px 40px rgba(0,0,0,.4); }
+.vivarium-card.has-room-photo { padding:0; background:#111; border-color:rgba(255,255,255,.2); }
+.vivarium-photo-background { position:absolute; inset:0; z-index:0; background-position:center; background-repeat:no-repeat; background-size:cover; }
+.vivarium-photo-background.room-photo-display-photo { filter:none; }
+.vivarium-photo-background.room-photo-display-hybrid { filter:saturate(.9) brightness(.72); }
+.vivarium-photo-background.room-photo-display-minimal { filter:saturate(.8) brightness(.78); }
+.vivarium-photo-shade { position:absolute; inset:0; z-index:1; pointer-events:none; background:linear-gradient(180deg,rgba(0,0,0,.52) 0%,rgba(0,0,0,.05) 45%,rgba(0,0,0,.62) 100%); }
+.has-room-photo .vivarium-label,.has-room-photo .vivarium-card-info,.has-room-photo .vivarium-card-meta,.has-room-photo .vivarium-drag-hint,.has-room-photo .vivarium-lock-indicator { position:absolute; z-index:2; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.8); }
+.has-room-photo .vivarium-label { left:.6rem; top:.5rem; right:2.5rem; margin:0; }
+.has-room-photo .vivarium-card-info { left:.6rem; bottom:1.65rem; margin:0; }
+.has-room-photo .vivarium-card-meta { left:.6rem; bottom:.55rem; right:.5rem; margin:0; }
+.has-room-photo .vivarium-drag-hint { right:.5rem; top:.5rem; }
+.has-room-photo .vivarium-lock-indicator { right:.5rem; top:1.8rem; }
+.vivarium-label { display:block; font-size:clamp(.52rem,.75vw,.72rem); font-weight:900; margin-bottom:.35rem; opacity:.78; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vivarium-glass { position:relative; display:block; height:42%; min-height:24px; overflow:hidden; border:2px solid rgba(210,230,235,.22); border-radius:9px; background:linear-gradient(180deg,rgba(160,190,200,.07),rgba(65,75,65,.12)); }
+.vivarium-substrate { position:absolute; left:0; right:0; bottom:0; height:34%; background:linear-gradient(180deg,rgba(140,105,70,.25),rgba(95,65,45,.55)); }
+.vivarium-hide { position:absolute; left:15%; bottom:27%; opacity:.5; }
+.vivarium-snake { position:absolute; left:8%; right:5%; top:43%; font-size:clamp(.55rem,1vw,.92rem); font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vivarium-empty { position:absolute; inset:0; display:grid; place-items:center; font-size:clamp(.45rem,.7vw,.62rem); letter-spacing:.1em; font-weight:900; opacity:.45; }
+.vivarium-card-info,.vivarium-card-meta { display:block; margin-top:.35rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vivarium-card-info { font-weight:800; font-size:clamp(.48rem,.72vw,.76rem); }
+.vivarium-card-meta { font-size:clamp(.44rem,.62vw,.66rem); opacity:.65; }
+.vivarium-drag-hint { position:absolute; right:.45rem; top:.4rem; font-size:clamp(.42rem,.58vw,.58rem); opacity:.55; pointer-events:none; }
+.vivarium-lock-indicator { position:absolute; right:.45rem; top:1.65rem; font-size:.7rem; pointer-events:none; }
+.reptile-room-empty { position:absolute; inset:0; display:grid; place-content:center; justify-items:center; padding:2rem; text-align:center; }
+.vivarium-detail-panel { margin-top:1rem; padding:1rem; border:1px solid rgba(255,255,255,.1); border-radius:18px; background:rgba(255,255,255,.03); }
+.vivarium-detail-heading,.equipment-heading { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
+.room-field { display:grid; gap:.35rem; margin:1rem 0; max-width:420px; }
+.room-field span { font-weight:800; font-size:.82rem; }
+.room-field select { width:100%; }
+.room-source-note { margin:1rem 0; }
+.room-setup-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; margin:1rem 0; }
+.room-setup-grid > div { padding:.8rem; border-radius:12px; background:rgba(255,255,255,.04); }
+.room-setup-grid span,.room-setup-grid strong { display:block; }
+.room-setup-grid span { font-size:.75rem; opacity:.68; margin-bottom:.3rem; }
+.room-detail-actions a { display:inline-flex; padding:.65rem .8rem; border-radius:10px; background:rgba(255,255,255,.06); color:inherit; text-decoration:none; }
+.room-photo-editor { margin:1rem 0; padding:1rem; border:1px solid rgba(245,183,75,.18); border-radius:16px; background:rgba(245,183,75,.035); }
+.room-photo-heading { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }
+.room-photo-heading span,.room-photo-heading small { display:block; }
+.room-photo-heading span { font-weight:900; }
+.room-photo-heading small { margin-top:.25rem; opacity:.65; }
+.room-photo-preview { position:relative; min-height:230px; margin-top:.8rem; overflow:hidden; border-radius:14px; background:#111; }
+.room-photo-preview img { display:block; width:100%; height:280px; object-fit:cover; }
+.room-photo-overlay { position:absolute; inset:auto 0 0; display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; padding:.8rem; color:#fff; background:linear-gradient(transparent,rgba(0,0,0,.85)); }
+.room-photo-overlay strong { font-size:1.05rem; }
+.room-photo-overlay span { font-size:.78rem; opacity:.85; }
+.room-photo-upload { width:100%; min-height:150px; display:grid; place-items:center; align-content:center; gap:.3rem; border:1px dashed rgba(245,183,75,.4); border-radius:14px; background:rgba(255,255,255,.025); color:inherit; cursor:pointer; }
+.room-photo-upload span { font-size:2rem; }
+.room-photo-upload small { opacity:.6; }
+.room-photo-controls { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin-top:.7rem; }
+.room-photo-controls button { padding:.5rem .7rem; border-radius:10px; }
+.room-photo-controls button.is-active { border-color:rgba(245,183,75,.7); box-shadow:0 0 0 1px rgba(245,183,75,.2); }
+.room-photo-message { display:block; margin-top:.6rem; opacity:.72; }
+.equipment-maintenance-panel { border-top:1px solid rgba(255,255,255,.08); padding-top:1rem; }
+.equipment-heading p { margin:.25rem 0 0; max-width:720px; opacity:.7; font-size:.86rem; }
+.equipment-count-badge { white-space:nowrap; padding:.55rem .7rem; border-radius:999px; background:rgba(255,170,70,.12); }
+.equipment-list { display:grid; gap:.7rem; margin-top:1rem; }
+.equipment-item { display:grid; grid-template-columns:1.3fr 1fr auto; gap:1rem; align-items:center; padding:.8rem; border-radius:12px; background:rgba(255,255,255,.035); border-left:3px solid rgba(255,255,255,.15); }
+.equipment-upcoming { border-left-color:#d9a441; }
+.equipment-due,.equipment-overdue { border-left-color:#d76b5c; }
+.equipment-item > div > span,.equipment-item > div > small { display:block; opacity:.68; font-size:.78rem; margin-top:.2rem; }
+.equipment-timing { text-align:right; }
+.equipment-actions { display:flex; align-items:center; gap:.5rem; justify-content:flex-end; }
+.equipment-actions button { white-space:nowrap; }
+.equipment-empty { padding:1rem 0; opacity:.75; }
+@media (max-width:850px) { .reptile-room-header,.vivarium-detail-heading,.equipment-heading,.room-photo-heading { align-items:stretch; flex-direction:column; } .room-toolbar { width:100%; } .room-toolbar button { flex:1; } .reptile-room-canvas { height:680px; min-height:680px; } .equipment-item { grid-template-columns:1fr; } .equipment-timing { text-align:left; } .equipment-actions { justify-content:flex-start; } }
+@media (max-width:600px) { .reptile-room-canvas { height:620px; min-height:620px; background-size:10% 12%,10% 12%,auto; } .vivarium-card { padding:.4rem; border-radius:10px; } .room-layout-tools { align-items:stretch; } .room-layout-tools button { flex:1 1 42%; } .room-photo-preview img { height:220px; } }

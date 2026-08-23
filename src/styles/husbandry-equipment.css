@@ -1,0 +1,8 @@
+.equipment-editor { margin:1rem 0; padding:1rem; border:1px solid rgba(255,255,255,.08); border-radius:14px; background:rgba(255,255,255,.025); }
+.equipment-editor-heading { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom:.8rem; }
+.equipment-editor-heading h3 { margin:.15rem 0; }
+.equipment-editor-heading p:last-child { margin:.25rem 0 0; opacity:.7; font-size:.82rem; max-width:650px; }
+.equipment-editor-item { padding:.8rem; margin-top:.75rem; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(0,0,0,.12); }
+.equipment-editor-actions { display:flex; justify-content:space-between; gap:.75rem; align-items:center; margin-top:.65rem; padding-top:.65rem; border-top:1px solid rgba(255,255,255,.06); }
+.equipment-editor-actions label { display:flex; align-items:center; gap:.45rem; font-size:.82rem; }
+@media (max-width:700px) { .equipment-editor-heading,.equipment-editor-actions { flex-direction:column; align-items:stretch; } }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
-const UPDATE_TIMEOUT_MS = 8000;
+const UPDATE_TIMEOUT_MS = 15000;
 
 export function notifyTinyTitansUpdateAvailable() {
   window.__tinyTitansUpdatePending = true;
@@ -33,11 +33,7 @@ export default function AppUpdatePrompt() {
     };
 
     window.addEventListener(UPDATE_EVENT, show);
-
-    // onNeedRefresh can fire before React has mounted this component. Honour
-    // that pending update instead of silently losing the notification.
     if (window.__tinyTitansUpdatePending) show();
-
     return () => window.removeEventListener(UPDATE_EVENT, show);
   }, []);
 
@@ -47,43 +43,54 @@ export default function AppUpdatePrompt() {
     if (updating) return;
     setUpdating(true);
     setUpdateError(false);
+    window.__tinyTitansUpdatePending = false;
 
     try {
       if (!applyPendingTinyTitansUpdate) {
         throw new Error("Tiny Titans update handler is not ready.");
       }
 
-      // The service-worker helper normally reloads the page itself. Keep a
-      // watchdog so a browser/PWA that fails to deliver controllerchange does
-      // not leave the user permanently stuck on the old bundle.
-      let timedOut = false;
+      // updateSW(true) owns the service-worker activation/reload lifecycle.
+      // Do not immediately reload after it resolves: doing so can race
+      // controllerchange and leave the browser between old/new bundles.
+      let reloaded = false;
+      const markReload = () => {
+        reloaded = true;
+      };
+      window.addEventListener("beforeunload", markReload, { once: true });
+
       const watchdog = window.setTimeout(() => {
-        timedOut = true;
-        window.location.reload();
+        if (!reloaded) {
+          console.warn("[Tiny Titans] Update watchdog forcing a clean reload");
+          window.location.reload();
+        }
       }, UPDATE_TIMEOUT_MS);
 
       try {
         await applyPendingTinyTitansUpdate();
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 500));
+        if (!reloaded) window.location.reload();
       } finally {
         window.clearTimeout(watchdog);
-      }
-
-      if (!timedOut) {
-        // updateSW(true) should already have reloaded after skipWaiting. If it
-        // returned without doing so, explicitly reload once the update call
-        // has completed.
-        window.location.reload();
+        window.removeEventListener("beforeunload", markReload);
       }
     } catch (error) {
       console.error("[Tiny Titans] Failed to apply app update", error);
       setUpdating(false);
       setUpdateError(true);
+      window.__tinyTitansUpdatePending = true;
     }
   };
 
   return (
     <div className="tt-update-backdrop" role="presentation">
-      <section className="tt-update-panel" role="alertdialog" aria-modal="true" aria-labelledby="tt-update-title" aria-describedby="tt-update-description">
+      <section
+        className="tt-update-panel"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="tt-update-title"
+        aria-describedby="tt-update-description"
+      >
         <div className="tt-update-logo" aria-hidden="true">🦎</div>
         <p className="tt-update-kicker">TINY TITANS UPDATE</p>
         <h2 id="tt-update-title">A newer Tiny Titans is ready</h2>
@@ -103,7 +110,9 @@ export default function AppUpdatePrompt() {
         {updateError && (
           <small className="tt-update-required">The update could not be applied automatically. Tap Update Now to retry.</small>
         )}
-        {mandatory && !updateError && <small className="tt-update-required">This update is required before Tiny Titans can continue.</small>}
+        {mandatory && !updateError && (
+          <small className="tt-update-required">This update is required before Tiny Titans can continue.</small>
+        )}
       </section>
     </div>
   );
