@@ -40,7 +40,7 @@ service cloud.firestore {
     match /users/{userId}/breedingProjects/{projectId} {
       allow read: if signedIn() && (request.auth.uid == userId || isCreator() || familyViewPermission(userId, 'breeding'));
       allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'create'));
-      allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'edit'));
+      allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'update'));
       allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'delete'));
       match /pairings/{pairingId} { allow read: if signedIn() && (request.auth.uid == userId || isCreator() || familyViewPermission(userId, 'breeding')); allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'create')); allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'edit')); allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'delete')); }
       match /clutches/{clutchId} { allow read: if signedIn() && (request.auth.uid == userId || isCreator() || familyViewPermission(userId, 'breeding')); allow create: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'create')); allow update: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'edit')); allow delete: if signedIn() && (request.auth.uid == userId || isCreator() || familyPermission(userId, 'breeding', 'delete')); }
@@ -69,6 +69,7 @@ service cloud.firestore {
     match /communityPosts/{postId} { allow read: if signedIn() && (resource.data.audience == "everyone" || (resource.data.audience == "testers" && isTester()) || (resource.data.audience == "educator" && isEducator()) || (resource.data.audience == "moderator" && isModerator()) || (resource.data.audience == "admin" && isCreator())); allow create, update, delete: if isCreator(); }
     match /morphSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "creating" && request.resource.data.moderationStatus == "pending" && request.resource.data.submissionComplete == false; allow get: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid); allow list: if isCreator(); allow update, delete: if isCreator(); }
     match /morphImageSubmissions/{submissionId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow get: if signedIn() && (request.auth.uid == resource.data.userId || isCreator()); allow list: if isCreator(); allow update, delete: if isCreator(); }
+    match /{path=**}/morphSubmissions/{submissionId} { allow read: if isCreator(); allow update, delete: if isCreator(); }
     match /approvedMorphImages/{imageId} { allow read: if signedIn(); allow create, update, delete: if isCreator(); }
     match /{document=**} { allow read, write: if false; }
   }
