@@ -7,6 +7,7 @@ import BackHomeButton from "../components/BackHomeButton";
 import "../styles/reptile-room.css";
 
 const ROOM_STORAGE_KEY = "tinyTitans.reptileRoom.layout.v2";
+const ROOM_MAX_LENGTH_PERCENT = 34;
 type RoomSlot = { id: string; snakeId: string | null; label: string; x: number; y: number; w: number; h: number };
 type LayoutPreset = "freeform" | "double-stack" | "rack";
 
@@ -28,15 +29,27 @@ function saveLayout(layout: RoomSlot[]) {
   try { localStorage.setItem(ROOM_STORAGE_KEY, JSON.stringify(layout)); } catch { /* layout is a local UI preference */ }
 }
 
-function slotSize(snake: Snake | null): { w: number; h: number } {
-  const width = Number(snake?.enclosure?.width) || 50;
-  const height = Number(snake?.enclosure?.height) || 40;
-  return { w: clamp(Math.round(width / 2.5), 18, 30), h: clamp(Math.round(height / 2.5), 18, 28) };
+function roomScale(snakes: Snake[]): number {
+  const longest = Math.max(...snakes.map((snake) => Number(snake.enclosure?.length) || 0), 0);
+  return longest > 0 ? ROOM_MAX_LENGTH_PERCENT / longest : 0.22;
+}
+
+function slotSize(snake: Snake | null, scale: number): { w: number; h: number } {
+  const length = Number(snake?.enclosure?.length) || 0;
+  const width = Number(snake?.enclosure?.width) || 0;
+  if (length > 0 && width > 0 && scale > 0) {
+    return {
+      w: clamp(Number((length * scale).toFixed(2)), 8, 60),
+      h: clamp(Number((width * scale).toFixed(2)), 6, 45),
+    };
+  }
+  return { w: 22, h: 16 };
 }
 
 function defaultSlots(snakes: Snake[]): RoomSlot[] {
+  const scale = roomScale(snakes);
   return snakes.map((snake, index) => {
-    const size = slotSize(snake);
+    const size = slotSize(snake, scale);
     return { id: `viv-${index + 1}`, snakeId: snake.id, label: `Vivarium ${String(index + 1).padStart(2, "0")}`, x: (index % 3) * 31 + 2, y: Math.floor(index / 3) * 31 + 3, ...size };
   });
 }
@@ -75,10 +88,9 @@ function statusText(status: EquipmentMaintenanceStatus, days: number | null): st
 
 function applyPreset(slots: RoomSlot[], preset: LayoutPreset): RoomSlot[] {
   return slots.map((slot, index) => {
-    const size = { w: slot.w, h: slot.h };
-    if (preset === "double-stack") return { ...slot, x: 3 + (index % 3) * 32, y: 4 + Math.floor(index / 3) * 43, ...size };
-    if (preset === "rack") return { ...slot, x: 3 + (index % 4) * 24, y: 5 + Math.floor(index / 4) * 31, ...size };
-    return { ...slot, x: clamp(slot.x, 1, 99 - slot.w), y: clamp(slot.y, 1, 99 - slot.h), ...size };
+    if (preset === "double-stack") return { ...slot, x: 3 + (index % 3) * 32, y: 4 + Math.floor(index / 3) * 43 };
+    if (preset === "rack") return { ...slot, x: 3 + (index % 4) * 24, y: 5 + Math.floor(index / 4) * 31 };
+    return { ...slot, x: clamp(slot.x, 1, 99 - slot.w), y: clamp(slot.y, 1, 99 - slot.h) };
   });
 }
 
@@ -101,8 +113,16 @@ export default function ReptileRoom() {
       setSnakes(loaded);
       setSlots((current) => {
         const base = current.length ? current : defaultSlots(loaded);
+        const scale = roomScale(loaded);
         const known = new Set(loaded.map((snake) => snake.id));
-        const cleaned = base.map((slot) => ({ ...slot, snakeId: slot.snakeId && known.has(slot.snakeId) ? slot.snakeId : null }));
+        const cleaned = base.map((slot) => {
+          const snake = slot.snakeId ? loaded.find((item) => item.id === slot.snakeId) : null;
+          return {
+            ...slot,
+            snakeId: slot.snakeId && known.has(slot.snakeId) ? slot.snakeId : null,
+            ...(snake ? slotSize(snake, scale) : {}),
+          };
+        });
         saveLayout(cleaned);
         return cleaned;
       });
@@ -120,12 +140,13 @@ export default function ReptileRoom() {
   const selectedSnake = selectedSlot?.snakeId ? snakeById.get(selectedSlot.snakeId) ?? null : null;
   const maintenance = selectedSnake?.enclosure?.equipmentMaintenance ?? [];
   const dueCount = maintenance.filter((item) => ["overdue", "upcoming"].includes(equipmentStatus(item))).length;
+  const scale = roomScale(snakes);
 
   function persist(next: RoomSlot[]) { setSlots(next); saveLayout(next); }
 
   function addVivarium(source?: RoomSlot) {
     const nextNumber = slots.length + 1;
-    const size = source ? { w: source.w, h: source.h } : { w: 25, h: 24 };
+    const size = source ? { w: source.w, h: source.h } : { w: 22, h: 16 };
     const x = source ? clamp(source.x + 8, 1, 99 - size.w) : 4 + (slots.length % 3) * 31;
     const y = source ? clamp(source.y + source.h + 4, 1, 99 - size.h) : 4 + Math.floor(slots.length / 3) * 31;
     const next = [...slots, { id: `viv-${Date.now()}`, snakeId: null, label: `Vivarium ${String(nextNumber).padStart(2, "0")}`, x, y, ...size }];
@@ -136,7 +157,13 @@ export default function ReptileRoom() {
   function assignSnake(slotId: string, snakeId: string) {
     const targetSnakeId = snakeId || null;
     const existing = slots.find((slot) => slot.snakeId === targetSnakeId && Boolean(targetSnakeId));
-    persist(slots.map((slot) => slot.id === slotId ? { ...slot, snakeId: targetSnakeId } : existing && slot.id === existing.id ? { ...slot, snakeId: null } : slot));
+    const snake = targetSnakeId ? snakeById.get(targetSnakeId) : null;
+    const size = snake ? slotSize(snake, scale) : null;
+    persist(slots.map((slot) => {
+      if (slot.id === slotId) return { ...slot, snakeId: targetSnakeId, ...(size || {}) };
+      if (existing && slot.id === existing.id) return { ...slot, snakeId: null };
+      return slot;
+    }));
   }
 
   function moveSlot(slotId: string, clientX: number, clientY: number, rect: DOMRect) {
@@ -190,7 +217,7 @@ export default function ReptileRoom() {
       {message && <p className="reptile-room-message" role="status">{message}</p>}
 
       <section className="reptile-room-summary">
-        <strong>{snakes.length} Tiny Titan{snakes.length === 1 ? "" : "s"}</strong><span>{slots.filter((slot) => slot.snakeId).length} occupied</span><span>{slots.filter((slot) => !slot.snakeId).length} empty</span><span>🧠 Snake data follows the snake</span>
+        <strong>{snakes.length} Tiny Titan{snakes.length === 1 ? "" : "s"}</strong><span>{slots.filter((slot) => slot.snakeId).length} occupied</span><span>{slots.filter((slot) => !slot.snakeId).length} empty</span><span>🧠 Snake data follows the snake</span><span>📏 Proportional footprint scale</span>
       </section>
 
       <div className="room-layout-tools" aria-label="Room layout tools">
@@ -199,11 +226,11 @@ export default function ReptileRoom() {
         <button type="button" onClick={() => persist(applyPreset(slots, "double-stack"))}>▦ Double-stack</button>
         <button type="button" onClick={() => persist(applyPreset(slots, "rack"))}>▤ Rack</button>
         <button type="button" onClick={resetLayout}>↺ Reset arrangement</button>
-        <span className="room-layout-hint">Drag vivariums to match your real room. Snap-to-grid keeps things tidy.</span>
+        <span className="room-layout-hint">Recorded length × width drives the footprint at one common scale. Height stays part of the enclosure record.</span>
       </div>
 
       <section className="reptile-room-canvas" aria-label="Your custom reptile room layout">
-        <div className="room-wall-label">YOUR REPTILE ROOM</div>
+        <div className="room-wall-label">YOUR REPTILE ROOM • PROPORTIONAL SCALE</div>
         {slots.map((slot) => {
           const snake = slot.snakeId ? snakeById.get(slot.snakeId) : null;
           const enclosure = snake?.enclosure;
