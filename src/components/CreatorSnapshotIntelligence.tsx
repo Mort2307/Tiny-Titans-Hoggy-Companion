@@ -5,11 +5,13 @@ import { getGlobalStats, type GlobalStats } from "../services/creatorService";
 
 type UserRecord = Record<string, unknown>;
 type TileKey = "users" | "snakes" | "husbandry" | "community" | "mentorship" | "learning" | "genetics" | "operations" | "data" | "growth";
+type ConsentState = { community: boolean; location: boolean; analytics: boolean; established: boolean };
 type DrillRecord = { id: string; source: string; kind: string; ownerId?: string; ownerName?: string; title: string; status?: string; category?: string; date?: string; summary?: string; meta: string[] };
 type Snapshot = {
   stats: GlobalStats;
   users: UserRecord[];
   userIds: string[];
+  consentByUser: Record<string, ConsentState>;
   consent: { accepted: number; declined: number; unset: number; location: number; analytics: number };
   mentors: { published: number; accepting: number; applications: number; pending: number; requests: number; activeRequests: number; workspaces: number; activeWorkspaces: number };
   community: { posts: number; feedback: number; issues: number; activeIssues: number; morphSubmissions: number; pendingMorphs: number };
@@ -62,8 +64,8 @@ function ownerId(data: UserRecord) {
   return typeof candidate === "string" && candidate ? candidate : undefined;
 }
 
-function makeRecord(id: string, source: string, kind: string, data: UserRecord, usersById: Map<string, UserRecord>): DrillRecord {
-  const owner = ownerId(data);
+function makeRecord(id: string, source: string, kind: string, data: UserRecord, usersById: Map<string, UserRecord>, explicitOwnerId?: string): DrillRecord {
+  const owner = explicitOwnerId ?? ownerId(data);
   const user = owner ? usersById.get(owner) : undefined;
   const status = text(data.status, "Recorded");
   const category = data.category ?? data.source ?? data.type;
@@ -99,17 +101,23 @@ async function loadSnapshot(): Promise<Snapshot> {
   const users = userDocs.map((item) => item.data);
   const userIds = userDocs.map((item) => item.id);
   const usersById = new Map(userDocs.map((item) => [item.id, item.data]));
-
+  const consentByUser: Record<string, ConsentState> = {};
   let accepted = 0, declined = 0, unset = 0, location = 0, analytics = 0;
+
   await Promise.all(userIds.map(async (uid) => {
     try {
       const privacySnapshot = await getDoc(doc(db, "users", uid, "settings", "privacy"));
-      if (!privacySnapshot.exists()) { unset += 1; return; }
+      if (!privacySnapshot.exists()) { consentByUser[uid] = { community: false, location: false, analytics: false, established: false }; unset += 1; return; }
       const privacy = privacySnapshot.data() as UserRecord;
-      if (privacy.communityHusbandryData === true) accepted += 1; else declined += 1;
-      if (privacy.communityLocation === true) location += 1;
-      if (privacy.anonymousAnalytics === true) analytics += 1;
-    } catch { unset += 1; }
+      const state = { community: privacy.communityHusbandryData === true, location: privacy.communityLocation === true, analytics: privacy.anonymousAnalytics === true, established: true };
+      consentByUser[uid] = state;
+      if (state.community) accepted += 1; else declined += 1;
+      if (state.location) location += 1;
+      if (state.analytics) analytics += 1;
+    } catch {
+      consentByUser[uid] = { community: false, location: false, analytics: false, established: false };
+      unset += 1;
+    }
   }));
 
   const mentorRecords = docs(mentorsSnapshot);
@@ -122,11 +130,12 @@ async function loadSnapshot(): Promise<Snapshot> {
   const morphRecords = docs(morphSubmissions);
   const approvedRecords = docs(approvedMorphImages);
   const geneticsRecords = docs(geneticsCalculations);
+  const communityEligibleUsers = userDocs.filter(({ id }) => consentByUser[id]?.community);
 
   const records: Record<TileKey, DrillRecord[]> = {
-    users: userDocs.map(({ id, data }) => makeRecord(id, "users", "Account", data, usersById)),
-    snakes: [],
-    husbandry: [],
+    users: userDocs.map(({ id, data }) => makeRecord(id, "users", "Account", data, usersById, id)),
+    snakes: communityEligibleUsers.map(({ id, data }) => makeRecord(id, "users", "Contributing keeper", data, usersById, id)),
+    husbandry: communityEligibleUsers.map(({ id, data }) => makeRecord(id, "users", "Husbandry contributor", data, usersById, id)),
     community: [
       ...postRecords.map(({ id, data }) => makeRecord(id, "communityPosts", "Community post", data, usersById)),
       ...feedbackRecords.map(({ id, data }) => makeRecord(id, "feedback", "Feedback", data, usersById)),
@@ -137,7 +146,7 @@ async function loadSnapshot(): Promise<Snapshot> {
       ...requestRecords.map(({ id, data }) => makeRecord(id, "mentorshipRequests", "Mentorship request", data, usersById)),
       ...workspaceRecords.map(({ id, data }) => makeRecord(id, "mentorshipWorkspaces", "Mentorship workspace", data, usersById)),
     ],
-    learning: [],
+    learning: userDocs.map(({ id, data }) => makeRecord(id, "users", "Learning participant", data, usersById, id)),
     genetics: [
       ...geneticsRecords.map(({ id, data }) => makeRecord(id, "geneticsCalculations", "Genetics calculation", data, usersById)),
       ...morphRecords.map(({ id, data }) => makeRecord(id, "morphImageSubmissions", "Morph submission", data, usersById)),
@@ -149,8 +158,8 @@ async function loadSnapshot(): Promise<Snapshot> {
       ...postRecords.map(({ id, data }) => makeRecord(id, "communityPosts", "Community post", data, usersById)),
       ...morphRecords.map(({ id, data }) => makeRecord(id, "morphImageSubmissions", "Morph submission", data, usersById)),
     ],
-    data: [],
-    growth: userDocs.map(({ id, data }) => makeRecord(id, "users", "Account activity", data, usersById)),
+    data: communityEligibleUsers.map(({ id, data }) => makeRecord(id, "users", "Data contributor", data, usersById, id)),
+    growth: userDocs.map(({ id, data }) => makeRecord(id, "users", "Account activity", data, usersById, id)),
   };
 
   const mentorData = mentorRecords.map((item) => item.data);
@@ -164,6 +173,7 @@ async function loadSnapshot(): Promise<Snapshot> {
     stats: { ...stats, geneticsCalculations: geneticsRecords.length || stats.geneticsCalculations },
     users,
     userIds,
+    consentByUser,
     consent: { accepted, declined, unset, location, analytics },
     mentors: {
       published: mentorData.length,
@@ -222,7 +232,7 @@ export default function CreatorSnapshotIntelligence() {
   const activeGrowth = snapshot ? { day: snapshot.stats.activeTodayUsers ?? 0, week: snapshot.stats.activeWeekUsers ?? 0, month: snapshot.stats.activeMonthUsers ?? 0 } : null;
 
   if (!snapshot) return <div className="creator-snapshot-intelligence"><div className="creator-loading">Loading expanded Creator intelligence…</div>{error && <div className="creator-error" role="alert">{error}</div>}</div>;
-  const { stats, consent, mentors, community, genetics } = snapshot;
+  const { stats, consent, consentByUser, mentors, community, genetics } = snapshot;
   const tiles = [
     { key: "users" as const, icon: "👥", value: stats.registeredUsers, label: "Users & Consent", detail: `${consent.accepted} contributors · ${consent.declined} declined · ${consent.unset} not established` },
     { key: "snakes" as const, icon: "🐍", value: stats.snakeProfiles, label: "Snake Population", detail: `${stats.usersWithData ?? 0} contributing keepers · ${stats.engagedUsers ?? 0} keepers with snakes` },
@@ -252,8 +262,8 @@ export default function CreatorSnapshotIntelligence() {
         <DetailLine label="Location sharing ON" value={consent.location} />
         <DetailLine label="Anonymous analytics ON" value={consent.analytics} />
       </>;
-      case "snakes": return <><DetailLine label="Snake profiles" value={stats.snakeProfiles} /><DetailLine label="Keepers with snakes" value={stats.engagedUsers ?? 0} /><DetailLine label="Contributing keepers" value={stats.communityContributors ?? 0} /><DetailLine label="Feeds recorded" value={stats.mealsFed} /><DetailLine label="Weight records" value={stats.weightLogs} /><DetailLine label="Shed cycles" value={stats.shedsLogged} /></>;
-      case "husbandry": return <><DetailLine label="Meals fed" value={stats.mealsFed} /><DetailLine label="Weight records" value={stats.weightLogs} /><DetailLine label="Valid weight records" value={stats.validWeightLogs ?? stats.weightLogs} /><DetailLine label="Shed cycles" value={stats.shedsLogged} /><DetailLine label="Valid shed measurements" value={stats.validShedLogs ?? stats.shedsLogged} /><DetailLine label="Recorded shed length" value={`${(stats.totalShedLengthCm / 100).toFixed(2)} m`} /></>;
+      case "snakes": return <><DetailLine label="Snake profiles" value={stats.snakeProfiles} /><DetailLine label="Keepers with snakes" value={stats.engagedUsers ?? 0} /><DetailLine label="Consent-eligible keepers" value={consent.accepted} /><DetailLine label="Feeds recorded" value={stats.mealsFed} /><DetailLine label="Weight records" value={stats.weightLogs} /><DetailLine label="Shed cycles" value={stats.shedsLogged} /></>;
+      case "husbandry": return <><DetailLine label="Meals fed" value={stats.mealsFed} /><DetailLine label="Weight records" value={stats.weightLogs} /><DetailLine label="Valid weight records" value={stats.validWeightLogs ?? stats.weightLogs} /><DetailLine label="Shed cycles" value={stats.shedsLogged} /><DetailLine label="Valid shed measurements" value={stats.validShedLogs ?? stats.shedsLogged} /><DetailLine label="Recorded shed length" value={`${(stats.totalShedLengthCm / 100).toFixed(2)} m`} /><DetailLine label="Eligible contributors" value={consent.accepted} /></>;
       case "community": return <><DetailLine label="Consent-eligible contributors" value={stats.communityContributors ?? 0} /><DetailLine label="Location sharing enabled" value={consent.location} /><DetailLine label="Community posts" value={community.posts} /><DetailLine label="Community feedback" value={community.feedback} /><DetailLine label="Bug / issue reports" value={community.issues} /><DetailLine label="Morph submissions" value={community.morphSubmissions} /><DetailLine label="Privacy model" value="Explicit consent + city-level" /></>;
       case "mentorship": return <><DetailLine label="Published mentors" value={mentors.published} /><DetailLine label="Accepting new mentees" value={mentors.accepting} /><DetailLine label="Mentor applications" value={mentors.applications} /><DetailLine label="Applications pending" value={mentors.pending} /><DetailLine label="Mentorship requests" value={mentors.requests} /><DetailLine label="Active requests" value={mentors.activeRequests} /><DetailLine label="Workspaces" value={mentors.workspaces} /><DetailLine label="Active workspaces" value={mentors.activeWorkspaces} /></>;
       case "learning": return <><DetailLine label="Activated profiles" value={stats.activatedUsers ?? 0} /><DetailLine label="Incomplete profiles" value={stats.incompleteUserProfiles ?? 0} /><div className="creator-snapshot-subheading">Learning levels</div>{usersByLearning.map(([name, count]) => <DetailLine key={name} label={name} value={count} note={pct(count, stats.registeredUsers)} />)}<div className="creator-snapshot-subheading">Experience</div>{usersByExperience.map(([name, count]) => <DetailLine key={name} label={name} value={count} note={pct(count, stats.registeredUsers)} />)}</>;
@@ -290,14 +300,16 @@ export default function CreatorSnapshotIntelligence() {
     {selectedUser && selectedUserId && <article className="creator-snapshot-record-detail">
       <div className="creator-snapshot-detail-heading"><div><span className="creator-admin-kicker">CREATOR-SAFE ACCOUNT INTELLIGENCE</span><h3>{displayName(selectedUser)}</h3><p>Public application profile and contribution signals only.</p></div><button type="button" onClick={() => setSelectedUserId(null)}>✕</button></div>
       <div className="creator-snapshot-detail-grid">
-        <DetailLine label="Experience" value={displayName({ displayName: selectedUser.experienceLevel }, "Not recorded")} />
-        <DetailLine label="Learning level" value={displayName({ displayName: selectedUser.learningLevel }, "Not recorded")} />
+        <DetailLine label="Experience" value={text(selectedUser.experienceLevel, "Not recorded")} />
+        <DetailLine label="Learning level" value={text(selectedUser.learningLevel, "Not recorded")} />
         <DetailLine label="Account activity" value={text(selectedUser.lastActiveAt ?? selectedUser.lastActive, "Not recorded")} />
         <DetailLine label="Snake profile signal" value={text(selectedUser.snakeCount ?? selectedUser.numberOfSnakes, "Not recorded")} />
         <DetailLine label="Community role" value={text(selectedUser.role, "User")} />
-        <DetailLine label="Community contribution" value={consent.accepted > 0 ? "Controlled by current privacy preference" : "Not established"} />
+        <DetailLine label="Community contribution" value={consentByUser[selectedUserId]?.established ? (consentByUser[selectedUserId].community ? "Enabled" : "Disabled") : "Not established"} />
+        <DetailLine label="Location contribution" value={consentByUser[selectedUserId]?.location ? "Enabled" : "Not enabled"} />
+        <DetailLine label="Anonymous analytics" value={consentByUser[selectedUserId]?.analytics ? "Enabled" : "Not enabled"} />
       </div>
-      <div className="creator-snapshot-safe-note"><strong>Privacy boundary</strong><span>The Creator Centre never needs the account email or Firebase UID to understand engagement and contribution patterns.</span></div>
+      <div className="creator-snapshot-safe-note"><strong>Privacy boundary</strong><span>The Creator Centre uses account-level provenance to understand app engagement without exposing the account email or Firebase UID.</span></div>
     </article>}
   </section>;
 }
