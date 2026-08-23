@@ -6,6 +6,7 @@ import type { EquipmentMaintenanceItem, EquipmentMaintenanceStatus } from "../ty
 import BackHomeButton from "../components/BackHomeButton";
 import EnclosurePhotoEditor from "../components/EnclosurePhotoEditor";
 import "../styles/reptile-room.css";
+import "../styles/reptile-room-v2.css";
 
 const ROOM_STORAGE_PREFIX = "tinyTitans.reptileRoom.layout.v6";
 const ROOM_MAX_LENGTH_PERCENT = 34;
