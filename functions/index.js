@@ -14,6 +14,7 @@ const messaging = getMessaging();
 Object.assign(exports, require("./creatorApproval"));
 Object.assign(exports, require("./communityIntelligence"));
 Object.assign(exports, require("./communityBenchmarks"));
+Object.assign(exports, require("./titanGoals"));
 const creatorTesterInvitation = require("./creatorTesterInvitation");
 Object.assign(exports, { getCreatorTesterInvitation: creatorTesterInvitation.getCreatorTesterInvitation, acceptCreatorTesterInvitation: creatorTesterInvitation.acceptCreatorTesterInvitation, declineCreatorTesterInvitation: creatorTesterInvitation.declineCreatorTesterInvitation });
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");

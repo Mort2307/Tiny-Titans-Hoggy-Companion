@@ -6,13 +6,16 @@ export type WallVisibility = "named" | "anonymous";
 export interface SupporterWallProfile { visibility: WallVisibility; displayName?: string; socialUrl?: string; }
 export interface TitanWallEntry { id: string; displayName: string; socialUrl: string | null; tierLabel: string; amountGbp: number; supportedAt: string | null; }
 export interface TitanWallAdminEntry { id?: string; displayName: string; socialUrl: string; tierLabel: string; amountGbp: number; visibility: WallVisibility; supportedAt: string | null; }
+export interface TitanSupportStats { totalSupporters: number; totalReceivedGbp: number; updatedAt: string | null; }
 
 type FirestoreWallData = Record<string, unknown>;
 type TimestampLike = { toDate: () => Date };
+type TitanSupportStatsPayload = { totalSupporters: number; totalReceivedGbp: number; updatedAt: string | null };
 
 const db = getFirestore(app);
 const functions = getFunctions(app, "europe-west2");
 const reconcileTitanWall = httpsCallable<void, { created: number; checked: number }>(functions, "reconcileTitanWall");
+const getTitanSupportStatsCallable = httpsCallable<void, TitanSupportStatsPayload>(functions, "getTitanSupportStats");
 
 const OFFICIAL_TITAN: TitanWallEntry = { id: "tiny-titans-official", displayName: "Tiny Titans", socialUrl: "https://www.facebook.com/share/1bmTfhZgc1/", tierLabel: "Founder & Creator", amountGbp: 0, supportedAt: null };
 
@@ -40,6 +43,16 @@ function toEntry(item: { id: string; data: () => FirestoreWallData }): TitanWall
     tierLabel: String(data.tierLabel || "Titan Supporter"),
     amountGbp: typeof data.amountGbp === "number" ? data.amountGbp : 0,
     supportedAt,
+  };
+}
+
+export async function getTitanSupportStats(): Promise<TitanSupportStats> {
+  const result = await getTitanSupportStatsCallable();
+  const data = result.data;
+  return {
+    totalSupporters: Number.isFinite(data.totalSupporters) ? data.totalSupporters : 0,
+    totalReceivedGbp: Number.isFinite(data.totalReceivedGbp) ? data.totalReceivedGbp : 0,
+    updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : null,
   };
 }
 
