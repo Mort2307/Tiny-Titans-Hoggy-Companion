@@ -10,9 +10,16 @@
   .my-snakes-view-switch { width: calc(100% - 1rem); max-width: 420px; }
   .my-snakes-view-switch button { flex: 1; min-width: 0; padding: .62rem .55rem; }
   .my-snakes-view-switch button span { font-size: .88rem; }
+  .my-snakes-workspace-room .reptile-room-page { max-width: none; }
+  .my-snakes-workspace-room .reptile-room-canvas { width: 100%; height: 74vh; min-height: 520px; max-height: 820px; }
 }
 
 @media (orientation: landscape) and (max-height: 700px) {
   .my-snakes-workspace-room .reptile-room-page { padding-top: .25rem; }
-  .my-snakes-workspace-room .reptile-room-canvas { min-height: 72vh; height: 72vh; }
+  .my-snakes-workspace-room .reptile-room-canvas { height: 76vh; min-height: 420px; max-height: none; }
+  .my-snakes-view-switch { margin-bottom: .35rem; }
+}
+
+@media (orientation: portrait) and (max-width: 700px) {
+  .my-snakes-workspace-room .reptile-room-canvas { height: 72vh; min-height: 540px; }
 }
