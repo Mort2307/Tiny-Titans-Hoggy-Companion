@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc, Timestamp } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "../firebase/config";
 
@@ -6,6 +6,7 @@ export type WallVisibility = "named" | "anonymous";
 export interface SupporterWallProfile { visibility: WallVisibility; displayName?: string; socialUrl?: string; }
 export interface TitanWallEntry { id: string; displayName: string; socialUrl: string | null; tierLabel: string; amountGbp: number; supportedAt: string | null; }
 export interface TitanWallAdminEntry { id?: string; displayName: string; socialUrl: string; tierLabel: string; amountGbp: number; visibility: WallVisibility; supportedAt: string | null; }
+export interface TitanSupportStats { totalSupporters: number; totalReceivedGbp: number; updatedAt: string | null; }
 
 type FirestoreWallData = Record<string, unknown>;
 type TimestampLike = { toDate: () => Date };
@@ -40,6 +41,17 @@ function toEntry(item: { id: string; data: () => FirestoreWallData }): TitanWall
     tierLabel: String(data.tierLabel || "Titan Supporter"),
     amountGbp: typeof data.amountGbp === "number" ? data.amountGbp : 0,
     supportedAt,
+  };
+}
+
+export async function getTitanSupportStats(): Promise<TitanSupportStats> {
+  const snapshot = await getDoc(doc(db, "supporterStats", "global"));
+  const data = snapshot.exists() ? snapshot.data() : {};
+  const updatedAt = isTimestampLike(data.updatedAt) ? data.updatedAt.toDate().toISOString() : null;
+  return {
+    totalSupporters: typeof data.totalSupporters === "number" ? data.totalSupporters : 0,
+    totalReceivedGbp: typeof data.totalReceivedGbp === "number" ? data.totalReceivedGbp : 0,
+    updatedAt,
   };
 }
 
