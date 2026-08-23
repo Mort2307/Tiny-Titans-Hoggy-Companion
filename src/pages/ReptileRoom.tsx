@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes, updateUserSnake } from "../services/snakeService";
 import { loadReptileRoomLayout, saveReptileRoomLayout, type PersistedRoomSlot } from "../services/reptileRoomLayoutService";
@@ -38,181 +38,20 @@ function statusText(status: EquipmentMaintenanceStatus, days: number | null) { i
 
 export default function ReptileRoom() {
   const { user, loading, profileLoading } = useAuth();
-  const [snakes, setSnakes] = useState<Snake[]>([]);
-  const [slots, setSlots] = useState<RoomSlot[]>([]);
-  const [loadingSnakes, setLoadingSnakes] = useState(true);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
-  const [savingSnakeId, setSavingSnakeId] = useState<string | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [layoutDirty, setLayoutDirty] = useState(false);
-  const [savingLayout, setSavingLayout] = useState(false);
+  const [snakes, setSnakes] = useState<Snake[]>([]); const [slots, setSlots] = useState<RoomSlot[]>([]); const slotsRef = useRef<RoomSlot[]>([]); const [loadingSnakes, setLoadingSnakes] = useState(true); const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null); const [message, setMessage] = useState(""); const [savingSnakeId, setSavingSnakeId] = useState<string | null>(null); const [editMode, setEditMode] = useState(false); const [draggingId, setDraggingId] = useState<string | null>(null); const [layoutDirty, setLayoutDirty] = useState(false); const [savingLayout, setSavingLayout] = useState(false);
+  useEffect(() => { slotsRef.current = slots; }, [slots]);
 
-  async function saveRoom(next: RoomSlot[], successMessage?: string) {
-    if (!user) return;
-    saveLocalLayout(user.uid, next);
-    setSavingLayout(true);
-    try {
-      await saveReptileRoomLayout(user.uid, next);
-      setLayoutDirty(false);
-      if (successMessage) setMessage(successMessage);
-    } catch (error) {
-      setLayoutDirty(true);
-      setMessage(error instanceof Error ? `Layout saved on this device, but account sync failed: ${error.message}` : "Layout saved on this device, but account sync failed.");
-    } finally {
-      setSavingLayout(false);
-    }
-  }
-
-  function commitLayout(next: RoomSlot[], autoSave = true) {
-    setSlots(next);
-    if (user) saveLocalLayout(user.uid, next);
-    setLayoutDirty(true);
-    if (autoSave) void saveRoom(next);
-  }
-
-  const reload = async () => {
-    if (!user) return;
-    setLoadingSnakes(true);
-    try {
-      const loaded = await getUserSnakes(user.uid);
-      let stored: RoomSlot[] | null = null;
-      try { stored = (await loadReptileRoomLayout(user.uid)) as RoomSlot[] | null; } catch { stored = null; }
-      if (!stored) stored = readLocalLayout(user.uid);
-      const base = stored?.length ? stored : defaultSlots(loaded);
-      const next = mergeMissingSnakes(normalizeSlots(base, loaded), loaded);
-      setSnakes(loaded);
-      setSlots(next);
-      saveLocalLayout(user.uid, next);
-      if (!stored && next.length) void saveRoom(next);
-      setSelectedSlotId(null);
-      setEditMode(false);
-      setLayoutDirty(false);
-      setMessage("");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to load your reptile room.");
-    } finally {
-      setLoadingSnakes(false);
-    }
-  };
-
+  async function saveRoom(next: RoomSlot[], successMessage?: string) { if (!user) return; saveLocalLayout(user.uid, next); setSavingLayout(true); try { await saveReptileRoomLayout(user.uid, next); setLayoutDirty(false); if (successMessage) setMessage(successMessage); } catch (error) { setLayoutDirty(true); setMessage(error instanceof Error ? `Layout saved on this device, but account sync failed: ${error.message}` : "Layout saved on this device, but account sync failed."); } finally { setSavingLayout(false); } }
+  function commitLayout(next: RoomSlot[], autoSave = true) { slotsRef.current = next; setSlots(next); if (user) saveLocalLayout(user.uid, next); setLayoutDirty(true); if (autoSave) void saveRoom(next); }
+  const reload = async () => { if (!user) return; setLoadingSnakes(true); try { const loaded = await getUserSnakes(user.uid); let stored: RoomSlot[] | null = null; try { stored = (await loadReptileRoomLayout(user.uid)) as RoomSlot[] | null; } catch { stored = null; } if (!stored) stored = readLocalLayout(user.uid); const base = stored?.length ? stored : defaultSlots(loaded); const next = mergeMissingSnakes(normalizeSlots(base, loaded), loaded); setSnakes(loaded); slotsRef.current = next; setSlots(next); saveLocalLayout(user.uid, next); if (!stored && next.length) void saveRoom(next); setSelectedSlotId(null); setEditMode(false); setLayoutDirty(false); setMessage(""); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to load your reptile room."); } finally { setLoadingSnakes(false); } };
   useEffect(() => { if (!loading && !profileLoading && user) void reload(); }, [user, loading, profileLoading]);
-
-  const snakeById = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]);
-  const assignedSnakeIds = useMemo(() => new Set(slots.map((slot) => slot.snakeId).filter((id): id is string => Boolean(id))), [slots]);
-  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null;
-  const selectedSnake = selectedSlot?.snakeId ? snakeById.get(selectedSlot.snakeId) ?? null : null;
-  const maintenance = selectedSnake?.enclosure?.equipmentMaintenance ?? [];
-  const dueCount = maintenance.filter((item) => ["overdue", "upcoming"].includes(equipmentStatus(item))).length;
-  const groups = useMemo(() => connectedGroups(slots), [slots]);
-  const groupById = useMemo(() => { const map = new Map<string, string[]>(); groups.forEach((group) => group.forEach((id) => map.set(id, group))); return map; }, [groups]);
-  const scale = roomScale(snakes);
-
-  function addVivarium(source?: RoomSlot) {
-    const size = source ? { w: source.w, h: source.h } : { w: 22, h: 16 };
-    const x = source ? clamp(source.x + source.w + 1, 1, 99 - size.w) : 4 + (slots.length % 3) * 31;
-    const y = source ? source.y : 5 + Math.floor(slots.length / 3) * 39;
-    const next = [...slots, { id: `viv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, snakeId: null, label: `Vivarium ${String(slots.length + 1).padStart(2, "0")}`, x, y, ...size }];
-    commitLayout(next);
-    setSelectedSlotId(next[next.length - 1].id);
-  }
-
-  function assignSnake(slotId: string, snakeId: string) {
-    const target = snakeId || null;
-    const existing = target ? slots.find((slot) => slot.snakeId === target) : null;
-    const snake = target ? snakeById.get(target) ?? null : null;
-    const size = snake ? slotSize(snake, scale) : null;
-    const next = slots.map((slot) => slot.id === slotId ? { ...slot, snakeId: target, ...(size ?? {}) } : existing && slot.id === existing.id ? { ...slot, snakeId: null } : slot);
-    commitLayout(next);
-  }
-
-  function moveSlot(slotId: string, clientX: number, clientY: number, rect: DOMRect, detach: boolean) {
-    const moving = slots.find((slot) => slot.id === slotId);
-    if (!moving || !rect.width || !rect.height) return;
-    const x = clamp(((clientX - rect.left) / rect.width) * 100 - moving.w / 2, 1, 99 - moving.w);
-    const y = clamp(((clientY - rect.top) / rect.height) * 100 - moving.h / 2, 1, 99 - moving.h);
-    const group = detach ? [slotId] : groupById.get(slotId) ?? [slotId];
-    const dx = x - moving.x;
-    const dy = y - moving.y;
-    let next = slots.map((slot) => group.includes(slot.id) ? { ...slot, x: clamp(slot.x + dx, 1, 99 - slot.w), y: clamp(slot.y + dy, 1, 99 - slot.h) } : slot);
-    const current = next.find((slot) => slot.id === slotId)!;
-    const snapped = findSnap(current, next.filter((slot) => !group.includes(slot.id)));
-    if (snapped.snapped) {
-      const sx = snapped.x - current.x;
-      const sy = snapped.y - current.y;
-      next = next.map((slot) => group.includes(slot.id) ? { ...slot, x: clamp(slot.x + sx, 1, 99 - slot.w), y: clamp(slot.y + sy, 1, 99 - slot.h) } : slot);
-    }
-    setSlots(next);
-  }
-
-  function handlePointerDown(event: React.PointerEvent<HTMLButtonElement>, slotId: string) {
-    if (!editMode) return;
-    const canvas = event.currentTarget.closest(".reptile-room-canvas") as HTMLElement | null;
-    if (!canvas) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDraggingId(slotId);
-    const start = { x: event.clientX, y: event.clientY };
-    let detached = false;
-    const onMove = (moveEvent: PointerEvent) => {
-      const distance = Math.hypot(moveEvent.clientX - start.x, moveEvent.clientY - start.y);
-      if (!detached && distance >= DETACH_DISTANCE) detached = true;
-      moveSlot(slotId, moveEvent.clientX, moveEvent.clientY, canvas.getBoundingClientRect(), detached);
-    };
-    const onUp = () => {
-      document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
-      setDraggingId(null);
-      setSlots((current) => {
-        const dragged = current.find((slot) => slot.id === slotId);
-        if (!dragged) return current;
-        const group = detached ? [slotId] : groupById.get(slotId) ?? [slotId];
-        const snapped = findSnap(dragged, current.filter((slot) => !group.includes(slot.id)));
-        let next = current;
-        if (snapped.snapped) {
-          const dx = snapped.x - dragged.x;
-          const dy = snapped.y - dragged.y;
-          next = current.map((slot) => group.includes(slot.id) ? { ...slot, x: clamp(slot.x + dx, 1, 99 - slot.w), y: clamp(slot.y + dy, 1, 99 - slot.h) } : slot);
-        }
-        if (user) { saveLocalLayout(user.uid, next); setLayoutDirty(true); void saveRoom(next); }
-        return next;
-      });
-    };
-    document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup", onUp);
-  }
-
-  function resetLayout() {
-    const next = defaultSlots(snakes);
-    commitLayout(next);
-    setMessage("Room reset. Your enclosure data and photos were not changed.");
-  }
-
-  async function recordReplacement(item: EquipmentMaintenanceItem) {
-    if (!user || !selectedSnake?.enclosure) return;
-    setSavingSnakeId(selectedSnake.id);
-    setMessage("");
-    const today = new Date().toISOString().slice(0, 10);
-    const equipmentMaintenance = (selectedSnake.enclosure.equipmentMaintenance ?? []).map((entry) => entry.id === item.id ? { ...entry, lastReplacedDate: today } : entry);
-    try {
-      const updated = await updateUserSnake(user.uid, { ...selectedSnake, enclosure: { ...selectedSnake.enclosure, equipmentMaintenance } });
-      setSnakes((current) => current.map((snake) => snake.id === updated.id ? updated : snake));
-      setMessage(`${item.name} replacement recorded.`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to save the replacement record.");
-    } finally { setSavingSnakeId(null); }
-  }
-
+  const snakeById = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]); const assignedSnakeIds = useMemo(() => new Set(slots.map((slot) => slot.snakeId).filter((id): id is string => Boolean(id))), [slots]); const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null; const selectedSnake = selectedSlot?.snakeId ? snakeById.get(selectedSlot.snakeId) ?? null : null; const maintenance = selectedSnake?.enclosure?.equipmentMaintenance ?? []; const dueCount = maintenance.filter((item) => ["overdue", "upcoming"].includes(equipmentStatus(item))).length; const groups = useMemo(() => connectedGroups(slots), [slots]); const groupById = useMemo(() => { const map = new Map<string, string[]>(); groups.forEach((group) => group.forEach((id) => map.set(id, group))); return map; }, [groups]); const scale = roomScale(snakes);
+  function addVivarium(source?: RoomSlot) { const size = source ? { w: source.w, h: source.h } : { w: 22, h: 16 }; const x = source ? clamp(source.x + source.w + 1, 1, 99 - size.w) : 4 + (slots.length % 3) * 31; const y = source ? source.y : 5 + Math.floor(slots.length / 3) * 39; const next = [...slotsRef.current, { id: `viv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, snakeId: null, label: `Vivarium ${String(slotsRef.current.length + 1).padStart(2, "0")}`, x, y, ...size }]; commitLayout(next); setSelectedSlotId(next[next.length - 1].id); }
+  function assignSnake(slotId: string, snakeId: string) { const current = slotsRef.current; const target = snakeId || null; const existing = target ? current.find((slot) => slot.snakeId === target) : null; const snake = target ? snakeById.get(target) ?? null : null; const size = snake ? slotSize(snake, scale) : null; commitLayout(current.map((slot) => slot.id === slotId ? { ...slot, snakeId: target, ...(size ?? {}) } : existing && slot.id === existing.id ? { ...slot, snakeId: null } : slot)); }
+  function moveSlot(slotId: string, clientX: number, clientY: number, rect: DOMRect, detach: boolean) { const currentSlots = slotsRef.current; const moving = currentSlots.find((slot) => slot.id === slotId); if (!moving || !rect.width || !rect.height) return; const x = clamp(((clientX - rect.left) / rect.width) * 100 - moving.w / 2, 1, 99 - moving.w); const y = clamp(((clientY - rect.top) / rect.height) * 100 - moving.h / 2, 1, 99 - moving.h); const group = detach ? [slotId] : groupById.get(slotId) ?? [slotId]; const dx = x - moving.x; const dy = y - moving.y; let next = currentSlots.map((slot) => group.includes(slot.id) ? { ...slot, x: clamp(slot.x + dx, 1, 99 - slot.w), y: clamp(slot.y + dy, 1, 99 - slot.h) } : slot); const current = next.find((slot) => slot.id === slotId)!; const snapped = findSnap(current, next.filter((slot) => !group.includes(slot.id))); if (snapped.snapped) { const sx = snapped.x - current.x; const sy = snapped.y - current.y; next = next.map((slot) => group.includes(slot.id) ? { ...slot, x: clamp(slot.x + sx, 1, 99 - slot.w), y: clamp(slot.y + sy, 1, 99 - slot.h) } : slot); } slotsRef.current = next; setSlots(next); }
+  function handlePointerDown(event: React.PointerEvent<HTMLButtonElement>, slotId: string) { if (!editMode) return; const canvas = event.currentTarget.closest(".reptile-room-canvas") as HTMLElement | null; if (!canvas) return; event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setDraggingId(slotId); const start = { x: event.clientX, y: event.clientY }; let detached = false; const onMove = (moveEvent: PointerEvent) => { const distance = Math.hypot(moveEvent.clientX - start.x, moveEvent.clientY - start.y); if (!detached && distance >= DETACH_DISTANCE) detached = true; moveSlot(slotId, moveEvent.clientX, moveEvent.clientY, canvas.getBoundingClientRect(), detached); }; const onUp = () => { document.removeEventListener("pointermove", onMove); document.removeEventListener("pointerup", onUp); setDraggingId(null); const current = slotsRef.current; const dragged = current.find((slot) => slot.id === slotId); if (!dragged) return; const group = detached ? [slotId] : groupById.get(slotId) ?? [slotId]; const snapped = findSnap(dragged, current.filter((slot) => !group.includes(slot.id))); let next = current; if (snapped.snapped) { const dx = snapped.x - dragged.x; const dy = snapped.y - dragged.y; next = current.map((slot) => group.includes(slot.id) ? { ...slot, x: clamp(slot.x + dx, 1, 99 - slot.w), y: clamp(slot.y + dy, 1, 99 - slot.h) } : slot); } slotsRef.current = next; setSlots(next); if (user) { saveLocalLayout(user.uid, next); setLayoutDirty(true); void saveRoom(next); } }; document.addEventListener("pointermove", onMove); document.addEventListener("pointerup", onUp); }
+  function resetLayout() { const next = defaultSlots(snakes); commitLayout(next); setMessage("Room reset. Your enclosure data and photos were not changed."); }
+  async function recordReplacement(item: EquipmentMaintenanceItem) { if (!user || !selectedSnake?.enclosure) return; setSavingSnakeId(selectedSnake.id); setMessage(""); const today = new Date().toISOString().slice(0, 10); const equipmentMaintenance = (selectedSnake.enclosure.equipmentMaintenance ?? []).map((entry) => entry.id === item.id ? { ...entry, lastReplacedDate: today } : entry); try { const updated = await updateUserSnake(user.uid, { ...selectedSnake, enclosure: { ...selectedSnake.enclosure, equipmentMaintenance } }); setSnakes((current) => current.map((snake) => snake.id === updated.id ? updated : snake)); setMessage(`${item.name} replacement recorded.`); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to save the replacement record."); } finally { setSavingSnakeId(null); } }
   if (loading || profileLoading || loadingSnakes) return <div className="page-container"><BackHomeButton /><h1>🏠 My Reptile Room</h1><div className="tracker-card"><h3>Building your room…</h3><p>Loading your Tiny Titans and their enclosure records.</p></div></div>;
-
-  return <div className="page-container reptile-room-page">
-    <BackHomeButton />
-    <header className="reptile-room-header"><div><p className="reptile-room-eyebrow">🏠 MY SNAKES • REPTILE ROOM</p><h1>Build Your Reptile Room</h1><p className="page-subtitle">Your real enclosures, your real formation. View the room normally, then choose when you want to arrange it.</p></div><div className="room-toolbar"><a className="husbandry-button" href="/snakes">🐍 Snake Tiles</a><button type="button" className={`husbandry-button ${editMode ? "is-active" : ""}`} onClick={() => setEditMode((value) => !value)}>{editMode ? "🔒 Finish arranging" : "✏️ Arrange room"}</button><button type="button" className="add-snake-button" onClick={() => addVivarium()}>➕ Add Vivarium</button></div></header>
-    {message && <p className="reptile-room-message" role="status">{message}</p>}
-    <section className="reptile-room-summary"><strong>{snakes.length} Tiny Titan{snakes.length === 1 ? "" : "s"}</strong><span>{slots.filter((slot) => slot.snakeId).length} occupied</span><span>{slots.filter((slot) => !slot.snakeId).length} empty</span><span>📐 Proportional scale</span><span>🧲 Magnetic snapping</span><span>☁️ Account saved</span></section>
-    {editMode && <div className="room-layout-tools" aria-label="Room layout tools"><span>Layout:</span><button type="button" onClick={() => commitLayout(applyPreset(slots, "freeform"))}>↗️ Freeform</button><button type="button" onClick={() => commitLayout(applyPreset(slots, "double-stack"))}>▦ Double-stack</button><button type="button" onClick={() => commitLayout(applyPreset(slots, "rack"))}>▤ Rack</button><button type="button" onClick={() => commitLayout(applyPreset(slots, "wall"))}>🧱 Wall</button><button type="button" onClick={resetLayout}>↺ Reset</button><button type="button" className="add-snake-button" onClick={() => void saveRoom(slots, "Reptile Room formation saved.")} disabled={savingLayout}>{savingLayout ? "☁️ Saving…" : "💾 Save formation"}</button><span className={`room-save-state ${layoutDirty ? "is-dirty" : ""}`} role="status">{savingLayout ? "Syncing to your account…" : layoutDirty ? "Unsaved local changes — autosave is active" : "✓ Formation saved"}</span><span className="room-layout-hint">Touching vivariums form a group. Drag a connected vivarium away far enough and it releases cleanly.</span></div>}
-    <section className="reptile-room-canvas" aria-label="Your custom reptile room layout"><div className="room-wall-label">YOUR REPTILE ROOM • PROPORTIONAL SCALE</div>{slots.map((slot) => { const snake = slot.snakeId ? snakeById.get(slot.snakeId) ?? null : null; const enclosure = snake?.enclosure; const itemCount = enclosure?.equipmentMaintenance?.length ?? 0; const photo = enclosure?.roomPhoto; const connected = (groupById.get(slot.id)?.length ?? 1) > 1; return <button type="button" key={slot.id} className={`vivarium-card ${selectedSlotId === slot.id ? "is-selected" : ""} ${draggingId === slot.id ? "is-dragging" : ""} ${photo ? "has-room-photo" : ""} ${connected ? "is-connected" : ""}`} style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }} onClick={() => { if (!draggingId) setSelectedSlotId(slot.id); }} onPointerDown={(event) => handlePointerDown(event, slot.id)} aria-label={`${slot.label}${snake ? `, ${snake.name}` : ", empty"}`}>{photo ? <span className={`vivarium-photo-background room-photo-display-${photo.mode}`} style={{ backgroundImage: `url("${photo.url}")` }} aria-hidden="true" /> : <span className="vivarium-glass" aria-hidden="true"><span className="vivarium-substrate" /><span className="vivarium-hide" /><span className="vivarium-snake">{snake ? `〰 ${snake.name}` : "EMPTY VIVARIUM"}</span></span>}<span className="vivarium-photo-shade" aria-hidden="true" /><span className="vivarium-label">{snake?.name || slot.label}</span><span className="vivarium-card-info">{snake ? `${enclosure?.length || "?"} × ${enclosure?.width || "?"} × ${enclosure?.height || "?"} cm` : "Empty enclosure"}</span><span className="vivarium-card-meta">{snake ? `${enclosure?.heatingType || "Heating not recorded"} • ${itemCount} equipment item${itemCount === 1 ? "" : "s"}` : "Assign a Tiny Titan"}</span>{editMode && <span className="vivarium-drag-hint">✋ drag</span>}{connected && <span className="vivarium-lock-indicator">🧲</span>}</button>; })}{!slots.length && <div className="reptile-room-empty"><strong>Your room is empty.</strong><p>Add a vivarium or a Tiny Titan to start building it.</p><button type="button" className="add-snake-button" onClick={() => addVivarium()}>➕ Add First Vivarium</button></div>}</section>
-    {selectedSlot && <section className="vivarium-detail-panel"><div className="vivarium-detail-heading"><div><p className="reptile-room-eyebrow">{selectedSlot.label}</p><h2>{selectedSnake ? `${selectedSnake.name}'s Vivarium` : "Empty Vivarium"}</h2></div><div className="room-detail-actions"><button type="button" className="husbandry-button" onClick={() => addVivarium(selectedSlot)}>⧉ Duplicate</button><button type="button" className="husbandry-button" onClick={() => setSelectedSlotId(null)}>Close</button></div></div><label className="room-field"><span>Assign Tiny Titan</span><select value={selectedSlot.snakeId ?? ""} onChange={(event) => assignSnake(selectedSlot.id, event.target.value)}><option value="">— Empty —</option>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}{assignedSnakeIds.has(snake.id) && selectedSlot.snakeId !== snake.id ? " (move here)" : ""}</option>)}</select></label>{selectedSnake && <><EnclosurePhotoEditor snake={selectedSnake} onUpdated={(updated) => setSnakes((current) => current.map((snake) => snake.id === updated.id ? updated : snake))} /><div className="room-source-note">🧠 <strong>Live enclosure record:</strong> dimensions, husbandry, equipment and the real vivarium photo belong to {selectedSnake.name}'s enclosure profile. The room only controls its physical position.</div><div className="room-setup-grid"><div><span>📐 Size</span><strong>{selectedSnake.enclosure ? `${selectedSnake.enclosure.length} × ${selectedSnake.enclosure.width} × ${selectedSnake.enclosure.height} cm` : "Not recorded"}</strong></div><div><span>🔥 Heating</span><strong>{selectedSnake.enclosure?.heatingType || "Not recorded"}</strong></div><div><span>🪵 Substrate</span><strong>{selectedSnake.enclosure?.customSubstrate || selectedSnake.enclosure?.substrate || "Not recorded"}</strong></div><div><span>🌡️ Warm / cool</span><strong>{selectedSnake.enclosure?.warmSideTemperature ?? "—"}° / {selectedSnake.enclosure?.coolSideTemperature ?? "—"}°C</strong></div><div><span>💧 Humidity</span><strong>{selectedSnake.enclosure?.humidity ?? "—"}%</strong></div><div><span>☀️ UVB</span><strong>{selectedSnake.enclosure?.uvbEnabled ? selectedSnake.enclosure.uvbDetails || "Provided" : "Not recorded"}</strong></div></div><div className="room-detail-actions"><a href={`/snakes/${selectedSnake.id}/enclosure`}>✏️ Open Enclosure Tab</a><a href={`/snakes/${selectedSnake.id}`}>👁️ Open Snake Profile</a></div><section className="equipment-maintenance-panel"><div className="equipment-heading"><div><p className="reptile-room-eyebrow">🔧 EQUIPMENT LIFE & MAINTENANCE</p><h3>Replacement tracker</h3><p>Use manufacturer's service-life guidance where available. Tiny Titans treats these intervals as reminders, not guarantees.</p></div>{dueCount > 0 && <span className="equipment-count-badge">⚠️ {dueCount} due / upcoming</span>}</div>{maintenance.length ? <div className="equipment-list">{maintenance.map((item) => { const status = equipmentStatus(item); const due = dueDate(item); const days = daysUntil(due); return <article key={item.id} className={`equipment-item equipment-${status}`}><div><strong>{item.name}</strong><span>{item.kind}{item.manufacturer ? ` • ${item.manufacturer}` : ""}{item.model ? ` • ${item.model}` : ""}</span>{item.manufacturerServiceLife && <small>Manufacturer guidance: {item.manufacturerServiceLife}</small>}</div><div className="equipment-timing"><strong>{statusText(status, days)}</strong><small>{due ? `Target replacement: ${due.toLocaleDateString()}` : "Set an installed/replacement date and interval in the enclosure record."}</small></div><div className="equipment-actions">{item.replacementNotificationsEnabled && <span title="Replacement reminder enabled">🔔</span>}<button type="button" onClick={() => void recordReplacement(item)} disabled={savingSnakeId === selectedSnake.id}>♻️ Replaced today</button></div></article>; })}</div> : <div className="equipment-empty"><strong>No equipment service records yet.</strong><p>Add equipment service-life records to the enclosure profile and they will appear here automatically.</p></div>}</section></>}</section>}
-  </div>;
+  return <div className="page-container reptile-room-page"><BackHomeButton /><header className="reptile-room-header"><div><p className="reptile-room-eyebrow">🏠 MY SNAKES • REPTILE ROOM</p><h1>Build Your Reptile Room</h1><p className="page-subtitle">Your real enclosures, your real formation. View the room normally, then choose when you want to arrange it.</p></div><div className="room-toolbar"><a className="husbandry-button" href="/snakes">🐍 Snake Tiles</a><button type="button" className={`husbandry-button ${editMode ? "is-active" : ""}`} onClick={() => setEditMode((value) => !value)}>{editMode ? "🔒 Finish arranging" : "✏️ Arrange room"}</button><button type="button" className="add-snake-button" onClick={() => addVivarium()}>➕ Add Vivarium</button></div></header>{message && <p className="reptile-room-message" role="status">{message}</p>}<section className="reptile-room-summary"><strong>{snakes.length} Tiny Titan{snakes.length === 1 ? "" : "s"}</strong><span>{slots.filter((slot) => slot.snakeId).length} occupied</span><span>{slots.filter((slot) => !slot.snakeId).length} empty</span><span>📐 Proportional scale</span><span>🧲 Magnetic snapping</span><span>☁️ Account saved</span></section>{editMode && <div className="room-layout-tools" aria-label="Room layout tools"><span>Layout:</span><button type="button" onClick={() => commitLayout(applyPreset(slotsRef.current, "freeform"))}>↗️ Freeform</button><button type="button" onClick={() => commitLayout(applyPreset(slotsRef.current, "double-stack"))}>▦ Double-stack</button><button type="button" onClick={() => commitLayout(applyPreset(slotsRef.current, "rack"))}>▤ Rack</button><button type="button" onClick={() => commitLayout(applyPreset(slotsRef.current, "wall"))}>🧱 Wall</button><button type="button" onClick={resetLayout}>↺ Reset</button><button type="button" className="add-snake-button" onClick={() => void saveRoom(slotsRef.current, "Reptile Room formation saved.")} disabled={savingLayout}>{savingLayout ? "☁️ Saving…" : "💾 Save formation"}</button><span className={`room-save-state ${layoutDirty ? "is-dirty" : ""}`} role="status">{savingLayout ? "Syncing to your account…" : layoutDirty ? "Unsaved local changes — autosave is active" : "✓ Formation saved"}</span><span className="room-layout-hint">Touching vivariums form a group. Drag a connected vivarium away far enough and it releases cleanly.</span></div>}<section className="reptile-room-canvas" aria-label="Your custom reptile room layout"><div className="room-wall-label">YOUR REPTILE ROOM • PROPORTIONAL SCALE</div>{slots.map((slot) => { const snake = slot.snakeId ? snakeById.get(slot.snakeId) ?? null : null; const enclosure = snake?.enclosure; const itemCount = enclosure?.equipmentMaintenance?.length ?? 0; const photo = enclosure?.roomPhoto; const connected = (groupById.get(slot.id)?.length ?? 1) > 1; return <button type="button" key={slot.id} className={`vivarium-card ${selectedSlotId === slot.id ? "is-selected" : ""} ${draggingId === slot.id ? "is-dragging" : ""} ${photo ? "has-room-photo" : ""} ${connected ? "is-connected" : ""}`} style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }} onClick={() => { if (!draggingId) setSelectedSlotId(slot.id); }} onPointerDown={(event) => handlePointerDown(event, slot.id)} aria-label={`${slot.label}${snake ? `, ${snake.name}` : ", empty"}`}>{photo ? <span className={`vivarium-photo-background room-photo-display-${photo.mode}`} style={{ backgroundImage: `url("${photo.url}")` }} aria-hidden="true" /> : <span className="vivarium-glass" aria-hidden="true"><span className="vivarium-substrate" /><span className="vivarium-hide" /><span className="vivarium-snake">{snake ? `〰 ${snake.name}` : "EMPTY VIVARIUM"}</span></span>}<span className="vivarium-photo-shade" aria-hidden="true" /><span className="vivarium-label">{snake?.name || slot.label}</span><span className="vivarium-card-info">{snake ? `${enclosure?.length || "?"} × ${enclosure?.width || "?"} × ${enclosure?.height || "?"} cm` : "Empty enclosure"}</span><span className="vivarium-card-meta">{snake ? `${enclosure?.heatingType || "Heating not recorded"} • ${itemCount} equipment item${itemCount === 1 ? "" : "s"}` : "Assign a Tiny Titan"}</span>{editMode && <span className="vivarium-drag-hint">✋ drag</span>}{connected && <span className="vivarium-lock-indicator">🧲</span>}</button>; })}{!slots.length && <div className="reptile-room-empty"><strong>Your room is empty.</strong><p>Add a vivarium or a Tiny Titan to start building it.</p><button type="button" className="add-snake-button" onClick={() => addVivarium()}>➕ Add First Vivarium</button></div>}</section>{selectedSlot && <section className="vivarium-detail-panel"><div className="vivarium-detail-heading"><div><p className="reptile-room-eyebrow">{selectedSlot.label}</p><h2>{selectedSnake ? `${selectedSnake.name}'s Vivarium` : "Empty Vivarium"}</h2></div><div className="room-detail-actions"><button type="button" className="husbandry-button" onClick={() => addVivarium(selectedSlot)}>⧉ Duplicate</button><button type="button" className="husbandry-button" onClick={() => setSelectedSlotId(null)}>Close</button></div></div><label className="room-field"><span>Assign Tiny Titan</span><select value={selectedSlot.snakeId ?? ""} onChange={(event) => assignSnake(selectedSlot.id, event.target.value)}><option value="">— Empty —</option>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}{assignedSnakeIds.has(snake.id) && selectedSlot.snakeId !== snake.id ? " (move here)" : ""}</option>)}</select></label>{selectedSnake && <><EnclosurePhotoEditor snake={selectedSnake} onUpdated={(updated) => setSnakes((current) => current.map((snake) => snake.id === updated.id ? updated : snake))} /><div className="room-source-note">🧠 <strong>Live enclosure record:</strong> dimensions, husbandry, equipment and the real vivarium photo belong to {selectedSnake.name}'s enclosure profile. The room only controls its physical position.</div><div className="room-setup-grid"><div><span>📐 Size</span><strong>{selectedSnake.enclosure ? `${selectedSnake.enclosure.length} × ${selectedSnake.enclosure.width} × ${selectedSnake.enclosure.height} cm` : "Not recorded"}</strong></div><div><span>🔥 Heating</span><strong>{selectedSnake.enclosure?.heatingType || "Not recorded"}</strong></div><div><span>🪵 Substrate</span><strong>{selectedSnake.enclosure?.customSubstrate || selectedSnake.enclosure?.substrate || "Not recorded"}</strong></div><div><span>🌡️ Warm / cool</span><strong>{selectedSnake.enclosure?.warmSideTemperature ?? "—"}° / {selectedSnake.enclosure?.coolSideTemperature ?? "—"}°C</strong></div><div><span>💧 Humidity</span><strong>{selectedSnake.enclosure?.humidity ?? "—"}%</strong></div><div><span>☀️ UVB</span><strong>{selectedSnake.enclosure?.uvbEnabled ? selectedSnake.enclosure.uvbDetails || "Provided" : "Not recorded"}</strong></div></div><div className="room-detail-actions"><a href={`/snakes/${selectedSnake.id}/enclosure`}>✏️ Open Enclosure Tab</a><a href={`/snakes/${selectedSnake.id}`}>👁️ Open Snake Profile</a></div><section className="equipment-maintenance-panel"><div className="equipment-heading"><div><p className="reptile-room-eyebrow">🔧 EQUIPMENT LIFE & MAINTENANCE</p><h3>Replacement tracker</h3><p>Use manufacturer's service-life guidance where available. Tiny Titans treats these intervals as reminders, not guarantees.</p></div>{dueCount > 0 && <span className="equipment-count-badge">⚠️ {dueCount} due / upcoming</span>}</div>{maintenance.length ? <div className="equipment-list">{maintenance.map((item) => { const status = equipmentStatus(item); const due = dueDate(item); const days = daysUntil(due); return <article key={item.id} className={`equipment-item equipment-${status}`}><div><strong>{item.name}</strong><span>{item.kind}{item.manufacturer ? ` • ${item.manufacturer}` : ""}{item.model ? ` • ${item.model}` : ""}</span>{item.manufacturerServiceLife && <small>Manufacturer guidance: {item.manufacturerServiceLife}</small>}</div><div className="equipment-timing"><strong>{statusText(status, days)}</strong><small>{due ? `Target replacement: ${due.toLocaleDateString()}` : "Set an installed/replacement date and interval in the enclosure record."}</small></div><div className="equipment-actions">{item.replacementNotificationsEnabled && <span title="Replacement reminder enabled">🔔</span>}<button type="button" onClick={() => void recordReplacement(item)} disabled={savingSnakeId === selectedSnake.id}>♻️ Replaced today</button></div></article>; })}</div> : <div className="equipment-empty"><strong>No equipment service records yet.</strong><p>Add equipment service-life records to the enclosure profile and they will appear here automatically.</p></div>}</section></>}</section>}</div>;
 }
