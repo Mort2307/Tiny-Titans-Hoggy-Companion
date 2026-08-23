@@ -5,7 +5,31 @@ import type { MentorshipWorkspace, WorkspaceMessage, WorkspacePermission } from 
 
 const collections = { mentors: "mentors", applications: "mentorApplications", requests: "mentorshipRequests", workspaces: "mentorshipWorkspaces", events: "mentorshipEvents" } as const;
 
-export async function saveMentorApplication(application: MentorApplication) { const ref = doc(db, collections.applications, application.id); await setDoc(ref, { ...application, updatedAt: serverTimestamp() }, { merge: true }); return ref; }
+/** Firestore rejects undefined values. Optional application fields are omitted rather than written as undefined. */
+export async function saveMentorApplication(application: MentorApplication) {
+  const ref = doc(db, collections.applications, application.id);
+  const payload: Record<string, unknown> = {
+    id: application.id,
+    applicantId: application.applicantId,
+    status: application.status,
+    mentorRoles: application.mentorRoles,
+    requestedVerification: application.requestedVerification,
+    specialities: application.specialities,
+    experienceYears: application.experienceYears,
+    experienceSummary: application.experienceSummary,
+    conductAccepted: application.conductAccepted,
+    updatedAt: serverTimestamp(),
+  };
+
+  const breedingExperience = application.breedingExperience?.trim();
+  const evidenceNotes = application.evidenceNotes?.trim();
+  if (breedingExperience) payload.breedingExperience = breedingExperience;
+  if (evidenceNotes) payload.evidenceNotes = evidenceNotes;
+
+  await setDoc(ref, payload, { merge: true });
+  return ref;
+}
+
 export async function createMentorshipRequest(request: MentorshipRequest) { const ref = await addDoc(collection(db, collections.requests), { ...request, createdAt: serverTimestamp() }); return ref.id; }
 export function subscribeToUserMentorshipRequests(userId: string, callback: (requests: MentorshipRequest[]) => void) { const q = query(collection(db, collections.requests), where("requesterId", "==", userId), orderBy("createdAt", "desc")); return onSnapshot(q, (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as MentorshipRequest)))); }
 export function subscribeToMentorshipRequest(requestId: string, callback: (request: MentorshipRequest | null) => void) { return onSnapshot(doc(db, collections.requests, requestId), (snapshot) => callback(snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as MentorshipRequest) : null)); }
