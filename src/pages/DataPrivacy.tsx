@@ -44,7 +44,7 @@ export default function DataPrivacy() {
     <section className="personalisation-card">
       <h2>🐍 Basic Keeper Mode</h2>
       <p><strong>Always available.</strong> When Intelligence is off, Tiny Titans still lets you add and manage snakes, record weights, feeding, shedding, behaviour, health and husbandry, use reminders, learning, morphs and breeding tools, and review your own records.</p>
-      <p><strong>Basic means basic:</strong> your records can be displayed as history, latest values and simple totals/counts. Tiny Titans does not interpret them, correlate them, benchmark them, detect patterns or generate smart keeper insights while Intelligence is off.</p>
+      <p><strong>Basic means basic:</strong> with Intelligence off, your records are limited to <strong>basic record history and simple totals</strong>. Tiny Titans does not interpret them, correlate them, benchmark them, detect patterns or generate smart keeper insights while Intelligence is off.</p>
     </section>
 
     <section className="personalisation-card">
