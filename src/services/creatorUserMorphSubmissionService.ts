@@ -1,4 +1,4 @@
-import { collection, collectionGroup, getDocs, orderBy, query, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, orderBy, query, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { UserMorphSubmission, UserMorphSubmissionStatus } from "../types/morphSubmission";
 
