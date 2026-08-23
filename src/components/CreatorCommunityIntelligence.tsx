@@ -53,19 +53,28 @@ export default function CreatorCommunityIntelligence() {
     void refresh();
   }, []);
 
+  useEffect(() => {
+    if (!openTile) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenTile(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [openTile]);
+
   const tiles = useMemo(() => {
     if (!data) return [];
     const { consent, network, activity } = data;
 
     return [
-      { key: "consent" as const, icon: "🔐", value: pct(consent.anyCommunityConsent, consent.registered), label: "Community consent", detail: `${fmt(consent.anyCommunityConsent)} of ${fmt(consent.registered)} users have at least one community-data permission.` },
-      { key: "activity" as const, icon: "⚡", value: fmt(consent.activeWeek), label: "Active this week", detail: `${fmt(consent.activeToday)} today · ${fmt(consent.activeMonth)} this month.` },
-      { key: "network" as const, icon: "🌐", value: fmt(network.mentors), label: "Mentor network", detail: `${fmt(network.verifiedMentors)} verified · ${fmt(network.mentorApplications)} applications.` },
-      { key: "locations" as const, icon: "📍", value: fmt(consent.locations), label: "Visible communities", detail: `${fmt(consent.locations)} consented city/country locations available to the creator globe.` },
-      { key: "engagement" as const, icon: "🐍", value: fmt(consent.contributorsWithSnakes), label: "Contributing keepers", detail: `${pct(consent.contributorsWithSnakes, consent.registered)} of registered users have consent + snake data.` },
-      { key: "operations" as const, icon: "🧰", value: fmt(activity.openBugReports), label: "Community operations", detail: `${fmt(activity.bugReports)} bugs · ${fmt(activity.feedback)} feedback · ${fmt(activity.morphSubmissions)} morph submissions.` },
-      { key: "mentors" as const, icon: "🤝", value: fmt(network.mentorshipRequests), label: "Mentorship pipeline", detail: `${fmt(network.pendingMentorshipRequests)} awaiting action · ${fmt(network.acceptedMentorships)} accepted.` },
-      { key: "contributions" as const, icon: "📚", value: fmt(activity.feedback + activity.morphSubmissions), label: "Community contributions", detail: `${fmt(activity.feedback)} feedback + ${fmt(activity.morphSubmissions)} morph submissions + ${fmt(activity.founderApplications)} founder applications.` },
+      { key: "consent" as const, icon: "🔐", value: pct(consent.anyCommunityConsent, consent.registered), label: "Community consent" },
+      { key: "activity" as const, icon: "⚡", value: fmt(consent.activeWeek), label: "Active this week" },
+      { key: "network" as const, icon: "🌐", value: fmt(network.mentors), label: "Mentor network" },
+      { key: "locations" as const, icon: "📍", value: fmt(consent.locations), label: "Visible communities" },
+      { key: "engagement" as const, icon: "🐍", value: fmt(consent.contributorsWithSnakes), label: "Contributing keepers" },
+      { key: "operations" as const, icon: "🧰", value: fmt(activity.openBugReports), label: "Community operations" },
+      { key: "mentors" as const, icon: "🤝", value: fmt(network.mentorshipRequests), label: "Mentorship pipeline" },
+      { key: "contributions" as const, icon: "📚", value: fmt(activity.feedback + activity.morphSubmissions), label: "Community contributions" },
     ];
   }, [data]);
 
@@ -101,9 +110,9 @@ export default function CreatorCommunityIntelligence() {
       {error && <div className="creator-error" role="alert">{error}</div>}
       {data?.unavailableSources.length ? <div className="creator-warning" role="status"><strong>⚠️ Partial intelligence coverage</strong><span>{fmt(data.unavailableSources.length)} source{data.unavailableSources.length === 1 ? " is" : "s are"} restricted or unavailable. Restricted sources are never silently treated as zero.</span></div> : null}
 
-      {loading && !data ? <div className="creator-loading">Building the global community picture…</div> : <div className="creator-global-grid creator-intelligence-grid">{tiles.map((tile) => <button key={tile.key} type="button" className="creator-global-card creator-global-card-button creator-intelligence-card" onClick={() => setOpenTile(tile.key)}><span>{tile.icon}</span><strong>{tile.value}</strong><label>{tile.label}</label><small>{tile.detail}</small><em>Tap for intelligence →</em></button>)}</div>}
+      {loading && !data ? <div className="creator-loading">Building the global community picture…</div> : <div className="creator-global-grid creator-intelligence-grid">{tiles.map((tile) => <button key={tile.key} type="button" className="creator-global-card creator-global-card-button creator-intelligence-card" onClick={() => setOpenTile(tile.key)} aria-haspopup="dialog" aria-label={`Open ${tile.label} intelligence`}><span>{tile.icon}</span><strong>{tile.value}</strong><label>{tile.label}</label><em>Tap to explore →</em></button>)}</div>}
 
-      {detail && data && <div className="creator-intelligence-detail" role="dialog" aria-modal="true" aria-label={detail.title}><div className="creator-intelligence-detail-inner"><div className="creator-section-heading"><div><span className="creator-admin-kicker">COMMUNITY INTELLIGENCE</span><h3>{detail.title}</h3></div><button type="button" onClick={() => setOpenTile(null)} aria-label="Close intelligence">✕</button></div><p className="creator-intelligence-why"><strong>What this tells you:</strong> {detail.why}</p><div className="creator-intelligence-rows">{detail.rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{fmt(Number(value))}</strong></div>)}</div><div className="creator-intelligence-source-list"><h4>🔎 Data source & eligibility</h4>{data.sources.map((source) => <div key={source.source} className={source.available ? "is-available" : "is-restricted"}><strong>{source.available ? "🟢" : "🟠"} {source.source}</strong><span>{source.reason}</span>{typeof source.count === "number" && <small>{fmt(source.count)} records available</small>}</div>)}</div>{selectedQueueRoute && <Link className="creator-intelligence-action" to={selectedQueueRoute.path} onClick={() => setOpenTile(null)}>{selectedQueueRoute.label}</Link>}<p className="creator-intelligence-note">These figures are live aggregate counts from the current Firebase dataset. Permission categories are intentionally separated so the creator can see exactly why a population is or is not eligible for a particular intelligence feature. No exact addresses, GPS coordinates, private health records or private husbandry notes are displayed here.</p></div></div>}
+      {detail && data && <div className="creator-intelligence-detail" role="dialog" aria-modal="true" aria-label={detail.title} onMouseDown={(event) => { if (event.target === event.currentTarget) setOpenTile(null); }}><div className="creator-intelligence-detail-inner"><div className="creator-section-heading"><div><span className="creator-admin-kicker">COMMUNITY INTELLIGENCE</span><h3>{detail.title}</h3></div><button type="button" onClick={() => setOpenTile(null)} aria-label="Close intelligence">✕</button></div><p className="creator-intelligence-why"><strong>What this tells you:</strong> {detail.why}</p><div className="creator-intelligence-rows">{detail.rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{fmt(Number(value))}</strong></div>)}</div><div className="creator-intelligence-source-list"><h4>🔎 Data source & eligibility</h4>{data.sources.map((source) => <div key={source.source} className={source.available ? "is-available" : "is-restricted"}><strong>{source.available ? "🟢" : "🟠"} {source.source}</strong><span>{source.reason}</span>{typeof source.count === "number" && <small>{fmt(source.count)} records available</small>}</div>)}</div>{selectedQueueRoute && <Link className="creator-intelligence-action" to={selectedQueueRoute.path} onClick={() => setOpenTile(null)}>{selectedQueueRoute.label}</Link>}<p className="creator-intelligence-note">These figures are live aggregate counts from the current Firebase dataset. Permission categories are intentionally separated so the creator can see exactly why a population is or is not eligible for a particular intelligence feature. No exact addresses, GPS coordinates, private health records or private husbandry notes are displayed here.</p></div></div>}
     </section>
   );
 }
