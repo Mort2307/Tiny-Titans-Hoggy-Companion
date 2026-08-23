@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
 import "../styles/mobileNavigation.css";
 
 type NavItem = { to: string; label: string; icon: string };
@@ -31,17 +30,35 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export default function MobileNavigation() {
-  const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
 
-  useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+      setOpen(false);
+    };
+    window.addEventListener("popstate", handleLocationChange);
+    return () => window.removeEventListener("popstate", handleLocationChange);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previous; };
+    return () => {
+      document.body.style.overflow = previous;
+    };
   }, [open]);
+
+  const navigate = (to: string) => {
+    if (to === currentPath) {
+      setOpen(false);
+      return;
+    }
+    window.history.pushState({}, "", to);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
 
   return (
     <>
@@ -57,7 +74,14 @@ export default function MobileNavigation() {
         <strong>Menu</strong>
       </button>
 
-      {open && <button type="button" className="mobile-nav-backdrop" aria-label="Close navigation" onClick={() => setOpen(false)} />}
+      {open && (
+        <button
+          type="button"
+          className="mobile-nav-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setOpen(false)}
+        />
+      )}
 
       <aside
         id="tiny-titans-mobile-navigation"
@@ -69,22 +93,26 @@ export default function MobileNavigation() {
             <span className="mobile-nav-kicker">TINY TITANS</span>
             <strong>Navigation</strong>
           </div>
-          <button type="button" onClick={() => setOpen(false)} aria-label="Close navigation">✕</button>
+          <button type="button" onClick={() => setOpen(false)} aria-label="Close navigation">
+            ✕
+          </button>
         </div>
         <nav className="mobile-nav-scroll" aria-label="Tiny Titans navigation">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) => `mobile-nav-item ${isActive ? "is-active" : ""}`}
-              onClick={() => setOpen(false)}
-            >
-              <span className="mobile-nav-icon" aria-hidden="true">{item.icon}</span>
-              <span>{item.label}</span>
-              <span className="mobile-nav-arrow" aria-hidden="true">›</span>
-            </NavLink>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.to === "/" ? currentPath === "/" : currentPath.startsWith(item.to);
+            return (
+              <button
+                key={item.to}
+                type="button"
+                className={`mobile-nav-item ${isActive ? "is-active" : ""}`}
+                onClick={() => navigate(item.to)}
+              >
+                <span className="mobile-nav-icon" aria-hidden="true">{item.icon}</span>
+                <span>{item.label}</span>
+                <span className="mobile-nav-arrow" aria-hidden="true">›</span>
+              </button>
+            );
+          })}
         </nav>
         <div className="mobile-nav-footer">Swipe/scroll for more · tap any item to navigate</div>
       </aside>
