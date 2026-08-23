@@ -220,10 +220,15 @@ export default function CreatorSnapshotIntelligence() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const reload = () => {
+  const reload = async () => {
     setError("");
     setSelectedRecord(null);
-    void loadSnapshot().then(setSnapshot).catch((err) => setError(err instanceof Error ? err.message : "Creator intelligence could not be loaded."));
+    try {
+      const nextSnapshot = await loadSnapshot();
+      setSnapshot(nextSnapshot);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Creator intelligence could not be loaded.");
+    }
   };
   useEffect(() => { reload(); }, []);
 
