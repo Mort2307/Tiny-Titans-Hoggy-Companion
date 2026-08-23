@@ -1,0 +1,2 @@
+import { Navigate,useParams } from "react-router-dom";
+export default function MentorshipDestination(){const{destination}=useParams();const map:Record<string,string>={mentors:"/community/mentorship/mentors",intelligence:"/community/mentorship/intelligence",become:"/community/mentorship/become-a-mentor",dashboard:"/community/mentorship/mentor-dashboard"};return <Navigate to={map[destination??""]??"/community/mentorship"} replace/>}
