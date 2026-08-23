@@ -7,6 +7,9 @@ type UserRecord = Record<string, unknown>;
 type TileKey = "users" | "snakes" | "husbandry" | "community" | "mentorship" | "learning" | "genetics" | "operations" | "data" | "growth";
 type ConsentState = { community: boolean; location: boolean; analytics: boolean; established: boolean };
 type DrillRecord = { id: string; source: string; kind: string; ownerId?: string; ownerName?: string; title: string; status?: string; category?: string; date?: string; summary?: string; meta: string[] };
+type UserDetailFilter = "all" | "snakes" | "community" | "declined" | "unset" | "location" | "analytics";
+type OperationsDetailFilter = "all" | "posts" | "feedback" | "issues" | "activeIssues" | "morphs";
+type DetailFilter = UserDetailFilter | OperationsDetailFilter;
 type Snapshot = {
   stats: GlobalStats;
   users: UserRecord[];
@@ -45,6 +48,8 @@ const countBy = (items: UserRecord[], key: string) => items.reduce<Record<string
   return acc;
 }, {});
 const topEntries = (record: Record<string, number>, limit = 8) => Object.entries(record).sort((a, b) => b[1] - a[1]).slice(0, limit);
+const normalizedStatus = (value: unknown) => text(value, "").trim().toLowerCase();
+const isClosedIssue = (record: DrillRecord) => ["resolved", "closed", "archived"].includes(normalizedStatus(record.status));
 
 async function safeCollection(name: string, unavailableSources: string[]): Promise<QuerySnapshot<DocumentData> | null> {
   try { return await getDocs(collection(db, name)); }
@@ -168,6 +173,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   const workspaceData = workspaceRecords.map((item) => item.data);
   const issueData = issueRecords.map((item) => item.data);
   const morphData = morphRecords.map((item) => item.data);
+  const issueDrillRecords = records.operations.filter((record) => record.source === "issueReports");
 
   return {
     stats: { ...stats, geneticsCalculations: geneticsRecords.length || stats.geneticsCalculations },
@@ -189,7 +195,7 @@ async function loadSnapshot(): Promise<Snapshot> {
       posts: postRecords.length,
       feedback: feedbackRecords.length,
       issues: issueData.length,
-      activeIssues: issueData.filter((item) => !["Resolved", "Closed", "Archived"].includes(text(item.status, ""))).length,
+      activeIssues: issueDrillRecords.filter((record) => !isClosedIssue(record)).length,
       morphSubmissions: morphData.length,
       pendingMorphs: morphData.filter((item) => ["Pending", "NeedsInfo"].includes(text(item.status, ""))).length,
     },
@@ -218,6 +224,7 @@ export default function CreatorSnapshotIntelligence() {
   const [selected, setSelected] = useState<TileKey | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<DrillRecord | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [detailFilter, setDetailFilter] = useState<DetailFilter | null>(null);
   const [error, setError] = useState("");
 
   const reload = async () => {
@@ -251,21 +258,63 @@ export default function CreatorSnapshotIntelligence() {
     { key: "growth" as const, icon: "📈", value: activeGrowth?.month ?? 0, label: "Adoption & Activity", detail: `${activeGrowth?.day ?? 0} today · ${activeGrowth?.week ?? 0} week · ${activeGrowth?.month ?? 0} month` },
   ];
 
-  const openTile = (key: TileKey) => { setSelected((current) => current === key ? null : key); setSelectedRecord(null); setSelectedUserId(null); };
-  const tileRecords = selected ? snapshot.records[selected] : [];
+  const openTile = (key: TileKey) => {
+    setSelected((current) => current === key ? null : key);
+    setSelectedRecord(null);
+    setSelectedUserId(null);
+    setDetailFilter(null);
+  };
+
+  const selectFilter = (filter: DetailFilter) => {
+    setDetailFilter((current) => current === filter ? null : filter);
+    setSelectedRecord(null);
+    setSelectedUserId(null);
+  };
+
+  const tileRecords = useMemo(() => {
+    if (!selected) return [];
+    const base = snapshot.records[selected];
+    if (!detailFilter) return base;
+    if (selected === "users") {
+      const userRecords = snapshot.records.users;
+      switch (detailFilter as UserDetailFilter) {
+        case "snakes": return snapshot.users.filter((user) => Number(user.snakeCount ?? user.numberOfSnakes ?? 0) > 0).map((user) => userRecords.find((record) => record.id === snapshot.userIds[snapshot.users.indexOf(user)])).filter((record): record is DrillRecord => Boolean(record));
+        case "community": return snapshot.users.filter((_, index) => snapshot.consentByUser[snapshot.userIds[index]]?.community).map((user) => userRecords.find((record) => record.id === snapshot.userIds[snapshot.users.indexOf(user)])).filter((record): record is DrillRecord => Boolean(record));
+        case "declined": return snapshot.users.filter((_, index) => snapshot.consentByUser[snapshot.userIds[index]]?.established && !snapshot.consentByUser[snapshot.userIds[index]]?.community).map((user) => userRecords.find((record) => record.id === snapshot.userIds[snapshot.users.indexOf(user)])).filter((record): record is DrillRecord => Boolean(record));
+        case "unset": return snapshot.users.filter((_, index) => !snapshot.consentByUser[snapshot.userIds[index]]?.established).map((user) => userRecords.find((record) => record.id === snapshot.userIds[snapshot.users.indexOf(user)])).filter((record): record is DrillRecord => Boolean(record));
+        case "location": return snapshot.users.filter((_, index) => snapshot.consentByUser[snapshot.userIds[index]]?.location).map((user) => userRecords.find((record) => record.id === snapshot.userIds[snapshot.userIds.indexOf(snapshot.userIds[index])])).filter((record): record is DrillRecord => Boolean(record));
+        case "analytics": return snapshot.users.filter((_, index) => snapshot.consentByUser[snapshot.userIds[index]]?.analytics).map((user) => userRecords.find((record) => record.id === snapshot.userIds[index])).filter((record): record is DrillRecord => Boolean(record));
+        default: return base;
+      }
+    }
+    if (selected === "operations") {
+      switch (detailFilter as OperationsDetailFilter) {
+        case "posts": return base.filter((record) => record.source === "communityPosts");
+        case "feedback": return base.filter((record) => record.source === "feedback");
+        case "issues": return base.filter((record) => record.source === "issueReports");
+        case "activeIssues": return base.filter((record) => record.source === "issueReports" && !isClosedIssue(record));
+        case "morphs": return base.filter((record) => record.source === "morphImageSubmissions");
+        default: return base;
+      }
+    }
+    return base;
+  }, [detailFilter, selected, snapshot]);
+
   const openRecord = (record: DrillRecord) => { setSelectedRecord(record); setSelectedUserId(record.ownerId ?? null); };
   const selectedUser = selectedUserId ? snapshot.users[snapshot.userIds.indexOf(selectedUserId)] : undefined;
 
   const renderDetails = () => {
+    const userFilter = (filter: UserDetailFilter) => selectFilter(filter);
+    const operationsFilter = (filter: OperationsDetailFilter) => selectFilter(filter);
     switch (selected) {
       case "users": return <>
-        <DetailLine label="Registered accounts" value={stats.registeredUsers} />
-        <DetailLine label="With snake profiles" value={stats.engagedUsers ?? 0} />
-        <DetailLine label="Community consent ON" value={consent.accepted} note={pct(consent.accepted, stats.registeredUsers)} />
-        <DetailLine label="Explicitly declined" value={consent.declined} />
-        <DetailLine label="Preference not established" value={consent.unset} />
-        <DetailLine label="Location sharing ON" value={consent.location} />
-        <DetailLine label="Anonymous analytics ON" value={consent.analytics} />
+        <DetailLine label="Registered accounts" value={stats.registeredUsers} onClick={() => userFilter("all")} />
+        <DetailLine label="With snake profiles" value={stats.engagedUsers ?? 0} onClick={() => userFilter("snakes")} />
+        <DetailLine label="Community consent ON" value={consent.accepted} note={pct(consent.accepted, stats.registeredUsers)} onClick={() => userFilter("community")} />
+        <DetailLine label="Explicitly declined" value={consent.declined} onClick={() => userFilter("declined")} />
+        <DetailLine label="Preference not established" value={consent.unset} onClick={() => userFilter("unset")} />
+        <DetailLine label="Location sharing ON" value={consent.location} onClick={() => userFilter("location")} />
+        <DetailLine label="Anonymous analytics ON" value={consent.analytics} onClick={() => userFilter("analytics")} />
       </>;
       case "snakes": return <><DetailLine label="Snake profiles" value={stats.snakeProfiles} /><DetailLine label="Keepers with snakes" value={stats.engagedUsers ?? 0} /><DetailLine label="Consent-eligible keepers" value={consent.accepted} /><DetailLine label="Feeds recorded" value={stats.mealsFed} /><DetailLine label="Weight records" value={stats.weightLogs} /><DetailLine label="Shed cycles" value={stats.shedsLogged} /></>;
       case "husbandry": return <><DetailLine label="Meals fed" value={stats.mealsFed} /><DetailLine label="Weight records" value={stats.weightLogs} /><DetailLine label="Valid weight records" value={stats.validWeightLogs ?? stats.weightLogs} /><DetailLine label="Shed cycles" value={stats.shedsLogged} /><DetailLine label="Valid shed measurements" value={stats.validShedLogs ?? stats.shedsLogged} /><DetailLine label="Recorded shed length" value={`${(stats.totalShedLengthCm / 100).toFixed(2)} m`} /><DetailLine label="Eligible contributors" value={consent.accepted} /></>;
@@ -273,22 +322,31 @@ export default function CreatorSnapshotIntelligence() {
       case "mentorship": return <><DetailLine label="Published mentors" value={mentors.published} /><DetailLine label="Accepting new mentees" value={mentors.accepting} /><DetailLine label="Mentor applications" value={mentors.applications} /><DetailLine label="Applications pending" value={mentors.pending} /><DetailLine label="Mentorship requests" value={mentors.requests} /><DetailLine label="Active requests" value={mentors.activeRequests} /><DetailLine label="Workspaces" value={mentors.workspaces} /><DetailLine label="Active workspaces" value={mentors.activeWorkspaces} /></>;
       case "learning": return <><DetailLine label="Activated profiles" value={stats.activatedUsers ?? 0} /><DetailLine label="Incomplete profiles" value={stats.incompleteUserProfiles ?? 0} /><div className="creator-snapshot-subheading">Learning levels</div>{usersByLearning.map(([name, count]) => <DetailLine key={name} label={name} value={count} note={pct(count, stats.registeredUsers)} />)}<div className="creator-snapshot-subheading">Experience</div>{usersByExperience.map(([name, count]) => <DetailLine key={name} label={name} value={count} note={pct(count, stats.registeredUsers)} />)}</>;
       case "genetics": return <><DetailLine label="Persisted genetics calculations" value={genetics.calculations} /><DetailLine label="Approved morph images" value={genetics.approvedMorphImages} /><DetailLine label="Morph submissions" value={community.morphSubmissions} /><DetailLine label="Pending morph submissions" value={community.pendingMorphs} /></>;
-      case "operations": return <><DetailLine label="Community posts" value={community.posts} /><DetailLine label="Feedback records" value={community.feedback} /><DetailLine label="Bug / issue reports" value={community.issues} /><DetailLine label="Active issues" value={community.activeIssues} /><DetailLine label="Morph submissions" value={community.morphSubmissions} /></>;
+      case "operations": return <>
+        <DetailLine label="Community posts" value={community.posts} onClick={() => operationsFilter("posts")} />
+        <DetailLine label="Feedback records" value={community.feedback} onClick={() => operationsFilter("feedback")} />
+        <DetailLine label="Bug / issue reports" value={community.issues} onClick={() => operationsFilter("issues")} />
+        <DetailLine label="Active issues" value={community.activeIssues} onClick={() => operationsFilter("activeIssues")} />
+        <DetailLine label="Morph submissions" value={community.morphSubmissions} onClick={() => operationsFilter("morphs")} />
+      </>;
       case "data": return <><DetailLine label="Data-quality candidates" value={stats.dataQualityIssues ?? 0} /><DetailLine label="Invalid weight records" value={stats.invalidWeightLogs ?? 0} /><DetailLine label="Invalid shed records" value={stats.invalidShedLogs ?? 0} /><DetailLine label="Legacy weight candidates" value={stats.legacyWeightCandidates ?? 0} /><DetailLine label="Valid weight coverage" value={pct(stats.validWeightLogs ?? 0, stats.weightLogs)} /></>;
       case "growth": return <><DetailLine label="Active today" value={activeGrowth?.day ?? 0} /><DetailLine label="Active this week" value={activeGrowth?.week ?? 0} /><DetailLine label="Active this month" value={activeGrowth?.month ?? 0} /><DetailLine label="Activated accounts" value={stats.activatedUsers ?? 0} /><DetailLine label="Engaged keepers" value={stats.engagedUsers ?? 0} /></>;
       default: return null;
     }
   };
 
+  const activeFilterLabel = detailFilter === "activeIssues" ? "Active issues" : detailFilter === "snakes" ? "Keepers with snake profiles" : detailFilter === "community" ? "Community consent ON" : detailFilter === "declined" ? "Explicitly declined" : detailFilter === "unset" ? "Preference not established" : detailFilter === "location" ? "Location sharing ON" : detailFilter === "analytics" ? "Anonymous analytics ON" : detailFilter === "posts" ? "Community posts" : detailFilter === "feedback" ? "Feedback records" : detailFilter === "issues" ? "Bug / issue reports" : detailFilter === "morphs" ? "Morph submissions" : detailFilter === "all" ? "All records" : null;
+
   return <section className="creator-snapshot-intelligence" aria-label="Expanded live creator snapshot">
     <div className="creator-intelligence-toolbar"><div><span className="creator-admin-kicker">LIVE TILE INTELLIGENCE</span><p>Every aggregate can be explored down to creator-safe records. Private identifiers, email addresses, exact locations and private husbandry/health data are not displayed.</p></div><button type="button" onClick={reload}>↻ Refresh intelligence</button></div>
     {snapshot.unavailableSources.length > 0 && <div className="creator-intelligence-source-note" role="status">Unavailable sources: {snapshot.unavailableSources.join(", ")}. These are shown as unavailable rather than silently counted as zero.</div>}
     <div className="creator-snapshot-grid">{tiles.map((tile) => <button key={tile.key} type="button" className={`creator-global-card creator-snapshot-tile ${selected === tile.key ? "is-selected" : ""}`} onClick={() => openTile(tile.key)}><span>{tile.icon}</span><strong>{fmt(tile.value)}</strong><label>{tile.label}</label><small>{tile.detail}</small><em>{selected === tile.key ? "Hide intelligence ↑" : "Tap for intelligence →"}</em></button>)}</div>
     {selected && <article className="creator-snapshot-detail">
-      <div className="creator-snapshot-detail-heading"><div><span className="creator-admin-kicker">EXPLORABLE INTELLIGENCE</span><h3>{tiles.find((tile) => tile.key === selected)?.icon} {tiles.find((tile) => tile.key === selected)?.label}</h3><p>Calculated from the current Creator Centre dataset. Tap a record below to inspect its creator-safe provenance.</p></div><button type="button" onClick={() => openTile(selected)}>✕</button></div>
+      <div className="creator-snapshot-detail-heading"><div><span className="creator-admin-kicker">EXPLORABLE INTELLIGENCE</span><h3>{tiles.find((tile) => tile.key === selected)?.icon} {tiles.find((tile) => tile.key === selected)?.label}</h3><p>Calculated from the current Creator Centre dataset. Tap a metric below to filter its creator-safe source records.</p></div><button type="button" onClick={() => openTile(selected)}>✕</button></div>
       <div className="creator-snapshot-detail-grid">{renderDetails()}</div>
+      {detailFilter && <div className="creator-snapshot-source-note" role="status"><strong>{activeFilterLabel}</strong> · {fmt(tileRecords.length)} matching records <button type="button" onClick={() => setDetailFilter(null)}>Clear filter</button></div>}
       {tileRecords.length > 0 && <div className="creator-snapshot-record-section"><div className="creator-snapshot-subheading">Source records · {fmt(tileRecords.length)}</div><div className="creator-snapshot-record-grid">{tileRecords.slice(0, 100).map((record) => <RecordCard key={`${record.source}-${record.id}`} record={record} onOpen={() => openRecord(record)} />)}</div>{tileRecords.length > 100 && <small>Showing the first 100 records. The aggregate count remains the authoritative total.</small>}</div>}
-      {tileRecords.length === 0 && <div className="creator-snapshot-empty">No directly drillable records are available for this tile. The aggregate remains available from the canonical Creator statistics service.</div>}
+      {tileRecords.length === 0 && <div className="creator-snapshot-empty">No directly drillable records are available for this filter. The aggregate remains available from the canonical Creator statistics service.</div>}
     </article>}
     {selectedRecord && <article className="creator-snapshot-record-detail">
       <div className="creator-snapshot-detail-heading"><div><span className="creator-admin-kicker">RECORD PROVENANCE</span><h3>{selectedRecord.kind}: {selectedRecord.title}</h3><p>This view deliberately exposes only Creator-safe application information.</p></div><button type="button" onClick={() => setSelectedRecord(null)}>✕</button></div>
