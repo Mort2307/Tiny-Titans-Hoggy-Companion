@@ -32,9 +32,7 @@ export type ReptileRoomWorkspace = {
 
 const LOCAL_CACHE_PREFIX = "tinyTitans.reptileRooms.v1";
 
-function cacheKey(uid: string) {
-  return `${LOCAL_CACHE_PREFIX}:${uid}`;
-}
+function cacheKey(uid: string) { return `${LOCAL_CACHE_PREFIX}:${uid}`; }
 
 function isSlot(value: unknown): value is ReptileRoomSlot {
   if (!value || typeof value !== "object") return false;
@@ -42,10 +40,10 @@ function isSlot(value: unknown): value is ReptileRoomSlot {
   return typeof item.id === "string"
     && (typeof item.snakeId === "string" || item.snakeId === null)
     && typeof item.label === "string"
-    && Number.isFinite(item.x)
-    && Number.isFinite(item.y)
-    && Number.isFinite(item.w)
-    && Number.isFinite(item.h);
+    && typeof item.x === "number" && Number.isFinite(item.x)
+    && typeof item.y === "number" && Number.isFinite(item.y)
+    && typeof item.w === "number" && Number.isFinite(item.w)
+    && typeof item.h === "number" && Number.isFinite(item.h);
 }
 
 function normalizeRoom(value: unknown): ReptileRoomWorkspace | null {
@@ -75,35 +73,23 @@ function readCache(uid: string): ReptileRoomWorkspace[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     return Array.isArray(parsed) ? parsed.map(normalizeRoom).filter((room): room is ReptileRoomWorkspace => Boolean(room)) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 function writeCache(uid: string, rooms: ReptileRoomWorkspace[]) {
-  try {
-    localStorage.setItem(cacheKey(uid), JSON.stringify(rooms));
-  } catch {
-    // Local cache is optional; Firestore remains authoritative.
-  }
+  try { localStorage.setItem(cacheKey(uid), JSON.stringify(rooms)); } catch { /* optional cache */ }
 }
 
-function roomsCollection(uid: string) {
-  return collection(db, "users", uid, "reptileRooms");
-}
+function roomsCollection(uid: string) { return collection(db, "users", uid, "reptileRooms"); }
 
 export async function loadReptileRooms(uid: string): Promise<ReptileRoomWorkspace[]> {
   const snapshot = await getDocs(roomsCollection(uid));
-  const remote = snapshot.docs
-    .map((item) => normalizeRoom({ id: item.id, ...item.data() }))
-    .filter((room): room is ReptileRoomWorkspace => Boolean(room));
-
+  const remote = snapshot.docs.map((item) => normalizeRoom({ id: item.id, ...item.data() })).filter((room): room is ReptileRoomWorkspace => Boolean(room));
   if (remote.length) {
     remote.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     writeCache(uid, remote);
     return remote;
   }
-
   return readCache(uid);
 }
 
@@ -115,23 +101,14 @@ export async function saveReptileRooms(uid: string, rooms: ReptileRoomWorkspace[
 
 export async function deleteReptileRoom(uid: string, roomId: string): Promise<void> {
   await deleteDoc(doc(roomsCollection(uid), roomId));
-  const cached = readCache(uid).filter((room) => room.id !== roomId);
-  writeCache(uid, cached);
+  writeCache(uid, readCache(uid).filter((room) => room.id !== roomId));
 }
 
 export function migrateLegacyRoom(uid: string, legacySlots: ReptileRoomSlot[]): ReptileRoomWorkspace[] {
   const cached = readCache(uid);
   if (cached.length || !legacySlots.length) return cached;
   const now = new Date().toISOString();
-  const migrated: ReptileRoomWorkspace = {
-    id: "room-main",
-    name: "Main Reptile Room",
-    template: "custom",
-    slots: legacySlots,
-    storedSlots: [],
-    createdAt: now,
-    updatedAt: now,
-  };
+  const migrated: ReptileRoomWorkspace = { id: "room-main", name: "Main Reptile Room", template: "custom", slots: legacySlots, storedSlots: [], createdAt: now, updatedAt: now };
   writeCache(uid, [migrated]);
   return [migrated];
 }
