@@ -8,7 +8,7 @@ Accepted for the architecture/performance-local-first branch.
 
 Tiny Titans currently has Firebase services, Cloud Functions, an event bus and an intelligence kernel. Some calculations and reminders do not require a trusted server, yet server-side scheduling creates unnecessary cost and operational complexity.
 
-The current event bus is already deliberately Firebase-free and the intelligence kernel is already designed as a thin event-to-insight orchestration layer. fileciteturn89file0 fileciteturn88file0
+The existing event bus is deliberately Firebase-free and the intelligence kernel is a thin event-to-insight orchestration layer. This gives the app a suitable boundary for moving deterministic intelligence into the client without coupling UI components directly to persistence.
 
 ## Decision
 
