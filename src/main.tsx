@@ -5,6 +5,7 @@ import { registerSW } from "virtual:pwa-register";
 import "./index.css";
 import "./styles/tiny-titans-modern.css";
 import "./styles/tiny-titans-design-system.css";
+import "./styles/tiny-titans-home-overrides.css";
 import "./styles/selector-scroll.css";
 import "./styles/husbandry-equipment.css";
 
