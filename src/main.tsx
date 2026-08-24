@@ -13,6 +13,7 @@ import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import AppUpdatePrompt, { setTinyTitansUpdateHandler, notifyTinyTitansUpdateAvailable } from "./components/AppUpdatePrompt";
 import { AuthProvider } from "./context/AuthContext";
+import { startTinyTitansLocalIntelligence } from "./services/tinyTitansIntelligenceBootstrap";
 
 const updateServiceWorker = registerSW({
   immediate: true,
@@ -22,6 +23,7 @@ const updateServiceWorker = registerSW({
 });
 
 setTinyTitansUpdateHandler(async () => { await updateServiceWorker(true); });
+startTinyTitansLocalIntelligence();
 
 export function SelectorGrabScrollManager() {
   useEffect(() => {
