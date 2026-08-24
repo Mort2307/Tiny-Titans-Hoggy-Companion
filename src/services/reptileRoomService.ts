@@ -70,6 +70,7 @@ export type ReptileRoomWorkspace = {
   depth?: number;
   height?: number;
   storageCapacity?: number;
+  ceilingVisible?: boolean;
   slots: ReptileRoomSlot[];
   storedSlots: ReptileRoomSlot[];
   objects?: ReptileRoomObject[];
@@ -78,13 +79,14 @@ export type ReptileRoomWorkspace = {
   updatedAt: string;
 };
 
-export const REPTILE_ROOM_VERSION = 2;
+export const REPTILE_ROOM_VERSION = 3;
 const LOCAL_CACHE_PREFIX = "tinyTitans.reptileRooms.v2";
 export const DEFAULT_ROOM = { width: 360, depth: 300, height: 240, storageCapacity: 12 };
 export const DEFAULT_CLEARANCE: ReptileClearance = { front: 30, rear: 5, left: 5, right: 5, top: 10 };
 
 function cacheKey(uid: string) { return `${LOCAL_CACHE_PREFIX}:${uid}`; }
 function numberOr(value: unknown, fallback: number) { return typeof value === "number" && Number.isFinite(value) ? value : fallback; }
+function clampAngle(value: number) { return Math.min(180, Math.max(0, value)); }
 
 function normalizeClearance(value: unknown): Partial<ReptileClearance> {
   if (!value || typeof value !== "object") return {};
@@ -154,7 +156,30 @@ function normalizeObject(value: unknown): ReptileRoomObject | null {
   };
 }
 
-function clampAngle(value: number) { return Math.min(180, Math.max(0, value)); }
+function defaultRoom(now: string): ReptileRoomWorkspace {
+  const { width, depth, height, storageCapacity } = DEFAULT_ROOM;
+  return {
+    id: "room-main",
+    name: "Main Reptile Room",
+    template: "custom",
+    unit: "metric",
+    width,
+    depth,
+    height,
+    storageCapacity,
+    ceilingVisible: false,
+    slots: [],
+    storedSlots: [],
+    objects: [
+      { id: "door-main", kind: "door", label: "Main Door", x: width / 2 - 45, y: 0, z: 0, width: 90, depth: 8, height: 205, rotation: 0, wall: "south", openingType: "swing", swingDirection: "inward-right", swingAngle: 90 },
+      { id: "window-main", kind: "window", label: "Room Window", x: width - 150, y: depth - 8, z: 100, width: 120, depth: 8, height: 80, rotation: 0, wall: "north", sillHeight: 100 },
+      { id: "equipment-station-main", kind: "equipment-station", label: "Equipment Station", x: 20, y: 20, z: 0, width: 90, depth: 50, height: 80, rotation: 0 },
+    ],
+    roomVersion: REPTILE_ROOM_VERSION,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 function normalizeRoom(value: unknown): ReptileRoomWorkspace | null {
   if (!value || typeof value !== "object") return null;
@@ -176,6 +201,7 @@ function normalizeRoom(value: unknown): ReptileRoomWorkspace | null {
     depth: Math.max(100, numberOr(room.depth, DEFAULT_ROOM.depth)),
     height: Math.max(100, numberOr(room.height, DEFAULT_ROOM.height)),
     storageCapacity: Math.max(0, Math.round(numberOr(room.storageCapacity, DEFAULT_ROOM.storageCapacity))),
+    ceilingVisible: room.ceilingVisible !== false,
     slots,
     storedSlots,
     objects,
@@ -205,7 +231,16 @@ export async function loadReptileRooms(uid: string): Promise<ReptileRoomWorkspac
     writeCache(uid, remote);
     return remote;
   }
-  return readCache(uid);
+  const cached = readCache(uid);
+  if (cached.length) return cached;
+  const created = defaultRoom(new Date().toISOString());
+  writeCache(uid, [created]);
+  try {
+    await setDoc(doc(roomsCollection(uid), created.id), created);
+  } catch {
+    // Local cache remains authoritative until the next successful sync.
+  }
+  return [created];
 }
 
 export async function saveReptileRooms(uid: string, rooms: ReptileRoomWorkspace[]): Promise<void> {
@@ -224,20 +259,8 @@ export function migrateLegacyRoom(uid: string, legacySlots: ReptileRoomSlot[]): 
   if (cached.length || !legacySlots.length) return cached;
   const now = new Date().toISOString();
   const migrated: ReptileRoomWorkspace = {
-    id: "room-main",
-    name: "Main Reptile Room",
-    template: "custom",
-    unit: "metric",
-    width: DEFAULT_ROOM.width,
-    depth: DEFAULT_ROOM.depth,
-    height: DEFAULT_ROOM.height,
-    storageCapacity: DEFAULT_ROOM.storageCapacity,
+    ...defaultRoom(now),
     slots: legacySlots.map((slot) => normalizeSlot(slot)!).filter(Boolean),
-    storedSlots: [],
-    objects: [],
-    roomVersion: REPTILE_ROOM_VERSION,
-    createdAt: now,
-    updatedAt: now,
   };
   writeCache(uid, [migrated]);
   return [migrated];
