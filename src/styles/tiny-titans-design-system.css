@@ -1,0 +1,632 @@
+/*
+ * Tiny Titans Design System v2
+ *
+ * Brand language:
+ *   Purple  = identity / structure
+ *   Gold    = action / achievement / emphasis
+ *   Blue    = intelligence / calculated insight
+ *   Teal    = data / ecosystem / live state
+ *
+ * This layer intentionally sits above the legacy CSS so we can modernise the
+ * experience without rewriting every existing feature at once.
+ */
+
+:root {
+  /* Brand */
+  --tt-purple-950: #100719;
+  --tt-purple-900: #160a24;
+  --tt-purple-850: #1d0c30;
+  --tt-purple-800: #26103d;
+  --tt-purple-700: #321352;
+  --tt-purple-600: #471a70;
+  --tt-purple-500: #5f2494;
+  --tt-purple-400: #7430ad;
+  --tt-purple-300: #8e4bc4;
+
+  --tt-gold-700: #b96f00;
+  --tt-gold-600: #d88900;
+  --tt-gold-500: #f0a51a;
+  --tt-gold-400: #ffb83d;
+  --tt-gold-300: #ffd27a;
+
+  --tt-blue-700: #007bb8;
+  --tt-blue-600: #0097d7;
+  --tt-blue-500: #00b7f0;
+  --tt-blue-400: #29c8ff;
+  --tt-blue-300: #77ddff;
+
+  --tt-teal-700: #08756f;
+  --tt-teal-600: #0b9289;
+  --tt-teal-500: #10b8ad;
+  --tt-teal-400: #27d1c4;
+  --tt-teal-300: #76e9e0;
+
+  /* Semantic identity */
+  --tt-bg: var(--tt-purple-950);
+  --tt-bg-elevated: var(--tt-purple-900);
+  --tt-surface: var(--tt-purple-800);
+  --tt-surface-2: var(--tt-purple-700);
+  --tt-surface-3: var(--tt-purple-600);
+  --tt-brand: var(--tt-purple-500);
+  --tt-brand-strong: var(--tt-purple-400);
+  --tt-action: var(--tt-gold-500);
+  --tt-action-strong: var(--tt-gold-400);
+  --tt-intelligence: var(--tt-blue-500);
+  --tt-intelligence-strong: var(--tt-blue-400);
+  --tt-data: var(--tt-teal-500);
+  --tt-data-strong: var(--tt-teal-400);
+
+  /* Text */
+  --tt-text: #f5f2fb;
+  --tt-text-strong: #ffffff;
+  --tt-text-soft: #ded5ec;
+  --tt-muted: #aa9dbd;
+  --tt-muted-strong: #c5b8d5;
+
+  /* Status */
+  --tt-success: #48d597;
+  --tt-warning: var(--tt-gold-400);
+  --tt-danger: #ff5c69;
+  --tt-info: var(--tt-blue-400);
+
+  /* Borders */
+  --tt-border: rgba(142, 75, 196, 0.30);
+  --tt-border-strong: rgba(142, 75, 196, 0.58);
+  --tt-border-action: rgba(240, 165, 26, 0.52);
+  --tt-border-intelligence: rgba(0, 183, 240, 0.46);
+  --tt-border-data: rgba(16, 184, 173, 0.44);
+
+  /* Surfaces */
+  --tt-surface-glass: rgba(29, 12, 48, 0.82);
+  --tt-surface-card: rgba(38, 16, 61, 0.94);
+  --tt-surface-hover: rgba(50, 19, 82, 0.96);
+
+  /* Effects */
+  --tt-shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.26);
+  --tt-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+  --tt-shadow-purple: 0 0 28px rgba(111, 36, 184, 0.18);
+  --tt-shadow-gold: 0 0 24px rgba(240, 165, 26, 0.18);
+  --tt-shadow-blue: 0 0 24px rgba(0, 183, 240, 0.16);
+  --tt-shadow-teal: 0 0 24px rgba(16, 184, 173, 0.14);
+
+  /* Geometry */
+  --tt-radius-xs: 8px;
+  --tt-radius-sm: 11px;
+  --tt-radius-md: 15px;
+  --tt-radius-lg: 20px;
+  --tt-radius-xl: 26px;
+
+  /* Layout */
+  --tt-content: 1480px;
+  --tt-page-padding: clamp(14px, 2.5vw, 30px);
+  --tt-touch-target: 44px;
+
+  /* Motion */
+  --tt-motion-fast: 140ms;
+  --tt-motion-normal: 200ms;
+  --tt-motion-slow: 320ms;
+
+  /* Compatibility aliases used throughout the existing app */
+  --primary: var(--tt-brand);
+  --secondary: var(--tt-action);
+  --accent: var(--tt-intelligence);
+  --background: var(--tt-bg);
+  --surface: var(--tt-surface);
+  --text: var(--tt-text);
+  --muted: var(--tt-muted);
+  --danger: var(--tt-danger);
+  --success: var(--tt-success);
+  --warning: var(--tt-warning);
+  --border: var(--tt-border-intelligence);
+  --border-strong: var(--tt-border-intelligence);
+  --glow-soft: var(--tt-shadow-blue);
+  --glow-medium: 0 0 30px rgba(0, 183, 240, 0.22);
+}
+
+html {
+  background: var(--tt-bg);
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% -10%, rgba(95, 36, 148, 0.24), transparent 32rem),
+    radial-gradient(circle at 92% 4%, rgba(0, 183, 240, 0.075), transparent 28rem),
+    radial-gradient(circle at 50% 115%, rgba(16, 184, 173, 0.055), transparent 30rem),
+    var(--tt-bg);
+  color: var(--tt-text);
+}
+
+/* Keep the app recognisably Tiny Titans without making every element purple. */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--tt-text-strong);
+}
+
+p, span, strong, label {
+  color: inherit;
+}
+
+a {
+  color: var(--tt-text-soft);
+}
+
+a:hover {
+  color: var(--tt-intelligence-strong);
+}
+
+::placeholder {
+  color: rgba(197, 184, 213, 0.55);
+}
+
+/* App shell */
+.app-shell {
+  background: transparent;
+}
+
+.app-content {
+  width: min(var(--tt-content), 100%);
+  padding: var(--tt-page-padding) var(--tt-page-padding) calc(70px + env(safe-area-inset-bottom));
+}
+
+.app-header {
+  background: rgba(16, 7, 25, 0.90);
+  border-bottom: 1px solid var(--tt-border);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.app-header h1 {
+  color: var(--tt-text-strong);
+  text-shadow: 0 0 18px rgba(95, 36, 148, 0.24);
+}
+
+.app-navigation {
+  background: rgba(29, 12, 48, 0.94);
+  border-color: var(--tt-border);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.app-navigation-link {
+  color: var(--tt-muted-strong);
+  border-color: transparent;
+  border-radius: var(--tt-radius-sm);
+}
+
+.app-navigation-link:hover {
+  color: var(--tt-text-strong);
+  background: rgba(95, 36, 148, 0.14);
+  border-color: var(--tt-border);
+  transform: translateX(2px);
+}
+
+.app-navigation-link.active {
+  color: var(--tt-text-strong);
+  background: linear-gradient(135deg, rgba(95, 36, 148, 0.34), rgba(0, 183, 240, 0.08));
+  border-color: var(--tt-border-strong);
+  box-shadow: inset 3px 0 0 var(--tt-intelligence), var(--tt-shadow-purple);
+}
+
+.app-navigation-link.active .app-navigation-label,
+.app-navigation-link.active .app-navigation-icon {
+  color: var(--tt-text-strong);
+}
+
+/* Universal surface language */
+.dashboard-card,
+.tracker-card,
+.snake-card,
+.snake-tile,
+.morph-card,
+.weight-reminder-card,
+.nav-card,
+.welcome-card,
+.weight-records-card,
+.snake-profile-card,
+.form-section,
+.snake-form {
+  background:
+    linear-gradient(145deg, rgba(50, 19, 82, 0.88), rgba(22, 9, 36, 0.96));
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius-lg);
+  box-shadow: var(--tt-shadow-soft);
+  color: var(--tt-text);
+}
+
+.dashboard-card:hover,
+.tracker-card:hover,
+.snake-card:hover,
+.snake-tile:hover,
+.morph-card:hover,
+.weight-reminder-card:hover,
+.nav-card:hover,
+.welcome-card:hover,
+.weight-records-card:hover,
+.snake-profile-card:hover {
+  border-color: var(--tt-border-strong);
+  box-shadow: var(--tt-shadow);
+  transform: translateY(-2px);
+}
+
+.welcome-card h1,
+.welcome-card h2,
+.welcome-card h3,
+.dashboard-card h2,
+.dashboard-card h3,
+.nav-card h3,
+.tracker-card h1,
+.tracker-card h2,
+.tracker-card h3 {
+  color: var(--tt-text-strong);
+}
+
+.welcome-card p,
+.dashboard-card p,
+.nav-card p,
+.tracker-card p,
+small,
+.form-help,
+.helper-text {
+  color: var(--tt-muted);
+}
+
+/* Inputs: calm, readable, touch friendly. */
+input,
+select,
+textarea {
+  background: rgba(16, 7, 25, 0.76) !important;
+  color: var(--tt-text-strong) !important;
+  border: 1px solid var(--tt-border) !important;
+  border-radius: var(--tt-radius-sm) !important;
+  min-height: var(--tt-touch-target);
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid rgba(0, 183, 240, 0.72);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 183, 240, 0.10) !important;
+}
+
+/* Buttons: gold means action; blue means interactive/intelligent. */
+button,
+.add-snake-button,
+.tracker-card button {
+  min-height: var(--tt-touch-target);
+  border: 1px solid var(--tt-border-action);
+  border-radius: var(--tt-radius-sm);
+  background: linear-gradient(135deg, var(--tt-gold-600), var(--tt-gold-500));
+  color: #1a0b00;
+  box-shadow: var(--tt-shadow-gold);
+  font-weight: 800;
+}
+
+button:hover,
+.add-snake-button:hover,
+.tracker-card button:hover {
+  background: linear-gradient(135deg, var(--tt-gold-500), var(--tt-gold-400));
+  border-color: var(--tt-gold-400);
+  color: #160a24;
+  box-shadow: 0 12px 30px rgba(240, 165, 26, 0.24);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
+}
+
+/* Explicit semantic button utilities for newer components. */
+.tt-button--brand {
+  background: linear-gradient(135deg, var(--tt-brand), var(--tt-brand-strong));
+  border-color: var(--tt-border-strong);
+  color: var(--tt-text-strong);
+  box-shadow: var(--tt-shadow-purple);
+}
+
+.tt-button--intelligence {
+  background: linear-gradient(135deg, var(--tt-blue-700), var(--tt-blue-500));
+  border-color: var(--tt-blue-400);
+  color: #04131a;
+  box-shadow: var(--tt-shadow-blue);
+}
+
+.tt-button--data {
+  background: linear-gradient(135deg, var(--tt-teal-700), var(--tt-teal-500));
+  border-color: var(--tt-teal-400);
+  color: #031613;
+  box-shadow: var(--tt-shadow-teal);
+}
+
+.tt-button--ghost {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: var(--tt-border);
+  color: var(--tt-text-soft);
+  box-shadow: none;
+}
+
+/* Reusable Tiny Titans component language. */
+.tt-card {
+  background: linear-gradient(145deg, rgba(50, 19, 82, 0.90), rgba(22, 9, 36, 0.96));
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius-lg);
+  box-shadow: var(--tt-shadow-soft);
+  padding: clamp(18px, 3vw, 26px);
+}
+
+.tt-card--intelligence {
+  border-color: var(--tt-border-intelligence);
+  box-shadow: var(--tt-shadow-blue);
+}
+
+.tt-card--data {
+  border-color: var(--tt-border-data);
+  box-shadow: var(--tt-shadow-teal);
+}
+
+.tt-card--action {
+  border-color: var(--tt-border-action);
+  box-shadow: var(--tt-shadow-gold);
+}
+
+.tt-kicker {
+  margin: 0 0 6px;
+  color: var(--tt-intelligence-strong);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tt-kicker--action { color: var(--tt-action-strong); }
+.tt-kicker--data { color: var(--tt-data-strong); }
+
+.tt-title {
+  margin: 0;
+  color: var(--tt-text-strong);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  letter-spacing: -0.025em;
+}
+
+.tt-muted {
+  color: var(--tt-muted);
+}
+
+.tt-insight {
+  position: relative;
+  overflow: hidden;
+  padding: 18px;
+  border: 1px solid var(--tt-border-intelligence);
+  border-radius: var(--tt-radius-lg);
+  background: linear-gradient(135deg, rgba(0, 183, 240, 0.08), rgba(50, 19, 82, 0.72));
+  box-shadow: var(--tt-shadow-blue);
+}
+
+.tt-insight::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(var(--tt-intelligence), var(--tt-data));
+}
+
+.tt-action-accent {
+  border-left: 3px solid var(--tt-action);
+}
+
+.tt-data-accent {
+  border-left: 3px solid var(--tt-data);
+}
+
+.tt-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.tt-stat {
+  padding: 14px;
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius-md);
+  background: rgba(16, 7, 25, 0.38);
+}
+
+.tt-stat-label {
+  display: block;
+  color: var(--tt-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.tt-stat-value {
+  display: block;
+  margin-top: 4px;
+  color: var(--tt-text-strong);
+  font-size: 1.35rem;
+  font-weight: 850;
+}
+
+.tt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid var(--tt-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--tt-text-soft);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.tt-badge--intelligence { border-color: var(--tt-border-intelligence); color: var(--tt-blue-300); }
+.tt-badge--data { border-color: var(--tt-border-data); color: var(--tt-teal-300); }
+.tt-badge--action { border-color: var(--tt-border-action); color: var(--tt-gold-300); }
+.tt-badge--success { border-color: rgba(72, 213, 151, 0.38); color: #79e6b3; }
+.tt-badge--danger { border-color: rgba(255, 92, 105, 0.40); color: #ff9aa3; }
+
+/* Progressive disclosure: advanced detail stays available without overwhelming beginners. */
+.tt-advanced {
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius-md);
+  background: rgba(16, 7, 25, 0.26);
+}
+
+.tt-advanced > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 14px;
+  color: var(--tt-text-soft);
+  font-weight: 750;
+}
+
+.tt-advanced > summary::-webkit-details-marker { display: none; }
+.tt-advanced > summary::before { content: "+"; display: inline-block; width: 22px; color: var(--tt-intelligence); }
+.tt-advanced[open] > summary::before { content: "−"; }
+.tt-advanced > :not(summary) { padding: 0 14px 14px; }
+
+/* Timeline language */
+.tt-timeline {
+  position: relative;
+  display: grid;
+  gap: 12px;
+}
+
+.tt-timeline::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 9px;
+  width: 1px;
+  background: linear-gradient(var(--tt-brand-strong), rgba(16, 184, 173, 0.25));
+}
+
+.tt-timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.tt-timeline-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border: 2px solid var(--tt-bg);
+  border-radius: 50%;
+  background: var(--tt-intelligence);
+  box-shadow: 0 0 0 3px rgba(0, 183, 240, 0.12);
+  z-index: 1;
+}
+
+.tt-timeline-content {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius-md);
+  background: rgba(38, 16, 61, 0.70);
+}
+
+/* Empty states */
+.tt-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: clamp(24px, 5vw, 42px);
+  border: 1px dashed var(--tt-border-strong);
+  border-radius: var(--tt-radius-lg);
+  background: rgba(29, 12, 48, 0.54);
+  text-align: center;
+}
+
+.tt-empty-state-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 0 12px rgba(95, 36, 148, 0.32));
+}
+
+.tt-empty-state h2,
+.tt-empty-state h3 {
+  margin: 0;
+  color: var(--tt-text-strong);
+}
+
+.tt-empty-state p {
+  max-width: 560px;
+  margin: 0;
+  color: var(--tt-muted);
+  line-height: 1.55;
+}
+
+/* Search / command surfaces */
+.tt-command-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--tt-border);
+  border-radius: 999px;
+  background: rgba(16, 7, 25, 0.72);
+}
+
+.tt-command-search:focus-within {
+  border-color: var(--tt-border-intelligence);
+  box-shadow: var(--tt-shadow-blue);
+}
+
+.tt-command-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Intelligence confidence */
+.tt-confidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--tt-muted);
+  font-size: 0.78rem;
+}
+
+.tt-confidence strong { color: var(--tt-blue-300); }
+
+/* Achievement language */
+.tt-achievement {
+  border-color: var(--tt-border-action);
+  background: linear-gradient(145deg, rgba(240, 165, 26, 0.08), rgba(50, 19, 82, 0.88));
+  box-shadow: var(--tt-shadow-gold);
+}
+
+/* Mobile: preserve generous touch targets and reduce visual density. */
+@media (max-width: 800px) {
+  .app-content {
+    padding: 14px 12px calc(60px + env(safe-area-inset-bottom));
+  }
+
+  .tt-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .tt-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
