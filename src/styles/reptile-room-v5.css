@@ -1,0 +1,110 @@
+.reptile-room-page input[type="text"],
+.reptile-room-page textarea,
+.room-drawer input[type="text"],
+.room-drawer textarea {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.reptile-room-page input[type="text"],
+.room-drawer input[type="text"] {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.reptile-room-page .room-spec-grid label,
+.reptile-room-page .drawer-form label {
+  min-width: 0;
+}
+
+.reptile-room-page .room-spec-grid input,
+.reptile-room-page .drawer-form input,
+.reptile-room-page .drawer-form select,
+.reptile-room-page .drawer-form textarea {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.reptile-room-page .room-spec-grid input:focus,
+.reptile-room-page .drawer-form input:focus,
+.reptile-room-page .drawer-form select:focus,
+.reptile-room-page .drawer-form textarea:focus {
+  outline: none;
+}
+
+.reptile-room-floor {
+  touch-action: none;
+  user-select: none;
+}
+
+.room-vivarium,
+.room-object {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.room-vivarium.is-dragging,
+.room-object.is-dragging {
+  cursor: grabbing;
+  z-index: 30;
+}
+
+.room-object-door {
+  border-style: solid;
+}
+
+.room-object-door::after {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+.room-object-window,
+.room-object-vent {
+  cursor: grab;
+}
+
+.room-drawer {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  right: 0;
+  width: min(460px, 94vw);
+  height: 100dvh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.room-drawer .drawer-form {
+  padding-bottom: 120px;
+}
+
+.room-drawer .drawer-grid {
+  align-items: start;
+}
+
+.room-drawer .asset-actions,
+.room-drawer .storage-actions {
+  flex-wrap: wrap;
+}
+
+.room-storage-drawer .storage-asset {
+  gap: 12px;
+}
+
+.room-storage-drawer .storage-actions select {
+  min-width: 160px;
+}
+
+.room-warning {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .room-drawer {
+    width: 100vw;
+  }
+}
