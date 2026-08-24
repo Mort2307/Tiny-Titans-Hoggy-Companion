@@ -4,7 +4,7 @@ import ReptileRoom3D from "./ReptileRoom3D";
 import "../styles/reptile-room-mode.css";
 
 export default function ReptileRoom() {
-  const [mode, setMode] = useState<"2d" | "3d">("2d");
+  const [mode, setMode] = useState<"2d" | "3d">("3d");
 
   return <div className="reptile-room-mode-shell">
     <div className="reptile-room-mode-toggle" role="group" aria-label="Reptile room view">
