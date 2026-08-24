@@ -11,6 +11,14 @@ export type TinyTitansEventMap = {
   WeightRecorded: { snakeId: string; weightGrams: number; occurredAt: string };
   FeedingRecorded: { snakeId: string; occurredAt: string };
   ShedRecorded: { snakeId: string; status: "Complete" | "Partial" | "Problematic"; occurredAt: string };
+  BehaviourRecorded: {
+    snakeId: string;
+    recordId: string;
+    observation: string;
+    context: string;
+    occurredAt: string;
+    operation: "create" | "update";
+  };
   EnclosureUpdated: { snakeId: string; enclosureId: string; occurredAt: string };
   MorphConfirmed: { snakeId: string; morphId: string; occurredAt: string };
   BreedingProjectCreated: { projectId: string; occurredAt: string };
@@ -45,9 +53,7 @@ class TinyTitansEventBus {
     const listeners = this.listeners.get(event.type);
     if (!listeners) return;
 
-    for (const listener of listeners) {
-      listener(event as TinyTitansEvent<TinyTitansEventName>);
-    }
+    for (const listener of listeners) listener(event as TinyTitansEvent<TinyTitansEventName>);
   }
 
   clear(): void {
