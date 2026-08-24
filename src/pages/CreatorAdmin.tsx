@@ -48,10 +48,10 @@ function toMillis(value: CreatorUser["lastActiveAt"]): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function activityBand(value: CreatorUser["lastActiveAt"]): { label: string; detail: string } {
+function activityBand(value: CreatorUser["lastActiveAt"], now: number | null): { label: string; detail: string } {
   const millis = toMillis(value);
-  if (millis === null) return { label: "No activity signal", detail: "No usable last-active timestamp is recorded." };
-  const days = Math.floor((Date.now() - millis) / 86400000);
+  if (millis === null || now === null) return { label: "No activity signal", detail: "No usable last-active timestamp is recorded." };
+  const days = Math.floor((now - millis) / 86400000);
   if (days <= 0) return { label: "Active today", detail: "Used Tiny Titans within the last day." };
   if (days <= 7) return { label: "Active this week", detail: `${days} day${days === 1 ? "" : "s"} since the latest recorded activity.` };
   if (days <= 30) return { label: "Active this month", detail: `${days} days since the latest recorded activity.` };
@@ -90,6 +90,11 @@ export default function CreatorAdmin() {
   const [search, setSearch] = useState("");
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
 
   async function loadDashboard() {
     if (!user) return;
@@ -171,9 +176,9 @@ export default function CreatorAdmin() {
       if (item.dataCollectionPreferences?.communityHusbandryData === true) husbandryOn += 1;
       if (item.dataCollectionPreferences?.productUpdates === true) productUpdatesOn += 1;
       const millis = toMillis(item.lastActiveAt);
-      if (millis === null) bands.unknown += 1;
+      if (millis === null || now === null) bands.unknown += 1;
       else {
-        const days = Math.floor((Date.now() - millis) / 86400000);
+        const days = Math.floor((now - millis) / 86400000);
         if (days <= 0) bands.today += 1;
         else if (days <= 7) bands.week += 1;
         else if (days <= 30) bands.month += 1;
@@ -182,13 +187,7 @@ export default function CreatorAdmin() {
       }
     }
     return { bands, setupComplete, locationOn, analyticsOn, husbandryOn, productUpdatesOn };
-  }, [users]);
-
-  const optedInLocations = users.flatMap((item) => {
-    const location = item.approximateLocation;
-    if (!location?.visibleToCreator || !location.city || !location.country || item.dataCollectionPreferences?.approximateLocation !== true) return [];
-    return [{ city: location.city, country: location.country }];
-  });
+  }, [users, now]);
 
   if (profile?.role !== "admin") return <Navigate to="/" replace />;
 
@@ -198,7 +197,7 @@ export default function CreatorAdmin() {
     {claimMessage && <div className="creator-success" role="status">{claimMessage}</div>}
     {loading ? <div className="creator-loading">Loading global Tiny Titans intelligence…</div> : <>
       <CreatorCommunityIntelligence />
-      <CreatorCommunityGlobe locations={optedInLocations} />
+      <CreatorCommunityGlobe />
       <section className="creator-admin-section">
         <div className="creator-section-heading"><div><span className="creator-admin-kicker">CREATOR OPERATIONS</span><h2>🧰 Tools & queues</h2><p>Everything you need to run, review and improve Tiny Titans without hunting through tiny links.</p></div></div>
         <div className="creator-global-grid creator-tools-grid">
@@ -228,7 +227,7 @@ export default function CreatorAdmin() {
       </div>
       <div className="creator-user-toolbar"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search account name, profile, experience, city, platform or version…" aria-label="Search users" /><strong>{filteredUsers.length} shown</strong></div>
       {usersLoading ? <div className="creator-loading">Loading registered users…</div> : <div className="creator-list">
-        {filteredUsers.map((item) => { const band = activityBand(item.lastActiveAt); return <button className="creator-user-row" type="button" key={item.uid} onClick={() => { setSelectedUser(item); setClaimMessage(""); }}>
+        {filteredUsers.map((item) => { const band = activityBand(item.lastActiveAt, now); return <button className="creator-user-row" type="button" key={item.uid} onClick={() => { setSelectedUser(item); setClaimMessage(""); }}>
           <span className="creator-user-avatar">{item.displayName?.trim().charAt(0).toUpperCase() || "🐍"}</span>
           <span className="creator-user-main"><strong>{item.displayName || "Unnamed user"}</strong><small>{item.profileType || "user"} · {item.experienceLevel || "experience not set"}</small></span>
           <span className="creator-user-meta"><strong>{band.label}</strong><small>{item.approximateLocation?.city && item.dataCollectionPreferences?.approximateLocation === true ? `${item.approximateLocation.city}, ${item.approximateLocation.country || ""}` : "Location not shared"}</small></span>
@@ -245,7 +244,7 @@ export default function CreatorAdmin() {
     {selectedUser && <div className="creator-user-modal-backdrop" role="presentation" onClick={() => setSelectedUser(null)}><section className="creator-user-modal" role="dialog" aria-modal="true" aria-labelledby="creator-user-title" onClick={(event) => event.stopPropagation()}>
       <div className="creator-section-heading"><div><span className="creator-admin-kicker">CREATOR-SAFE ACCOUNT INTELLIGENCE</span><h2 id="creator-user-title">👤 {selectedUser.displayName || "Unnamed user"}</h2><p>Public app/profile signals only. No private contact details, exact location, health records or private husbandry data are shown.</p></div><button type="button" onClick={() => setSelectedUser(null)}>✕</button></div>
       <div className="creator-user-detail-grid">
-        <div><strong>Engagement</strong><span>{activityBand(selectedUser.lastActiveAt).label}</span></div>
+        <div><strong>Engagement</strong><span>{activityBand(selectedUser.lastActiveAt, now).label}</span></div>
         <div><strong>Latest activity</strong><span>{formatDate(selectedUser.lastActiveAt)}</span></div>
         <div><strong>Account age</strong><span>{formatDate(selectedUser.createdAt)}</span></div>
         <div><strong>Role</strong><span>{selectedUser.role || "user"}</span></div>
@@ -256,11 +255,11 @@ export default function CreatorAdmin() {
         <div><strong>Setup</strong><span>{selectedUser.setupComplete ? "Complete" : "Incomplete"}</span></div>
         <div><strong>Platform</strong><span>{selectedUser.platform || "Not recorded"}</span></div>
         <div><strong>App version</strong><span>{selectedUser.appVersion || "Not recorded"}</span></div>
-        <div><strong>Activity signal</strong><span>{activityBand(selectedUser.lastActiveAt).detail}</span></div>
+        <div><strong>Activity signal</strong><span>{activityBand(selectedUser.lastActiveAt, now).detail}</span></div>
       </div>
       <div className="creator-user-detail-section"><h3>🌍 Community visibility</h3><p>{selectedUser.dataCollectionPreferences?.approximateLocation && selectedUser.approximateLocation?.visibleToCreator && selectedUser.approximateLocation.city && selectedUser.approximateLocation.country ? `${selectedUser.approximateLocation.city}, ${selectedUser.approximateLocation.country}` : "Not shared / consent not enabled"}</p><small>Only approximate city/country is used for the Creator community map.</small></div>
       <div className="creator-user-detail-section"><h3>🔐 Permission matrix</h3><div className="creator-user-permissions"><span>📍 Community location: {selectedUser.dataCollectionPreferences?.approximateLocation ? "ON" : "OFF"}</span><span>📊 Analytics: {selectedUser.dataCollectionPreferences?.analytics ? "ON" : "OFF"}</span><span>🧠 Community husbandry: {selectedUser.dataCollectionPreferences?.communityHusbandryData ? "ON" : "OFF"}</span><span>📢 Product updates: {selectedUser.dataCollectionPreferences?.productUpdates ? "ON" : "OFF"}</span></div><small>OFF means the relevant intelligence layer must exclude that user's data. It is not a missing-data error.</small></div>
-      <div className="creator-user-detail-section"><h3>🧭 Creator interpretation</h3><p>{activityBand(selectedUser.lastActiveAt).label === "Long inactive" ? "This account has gone quiet. Consider a friendly feedback prompt or check whether the user is struggling with onboarding or finding the right features." : activityBand(selectedUser.lastActiveAt).label === "Cooling off" ? "Usage is cooling. This is a useful population for targeted education, feature discovery or a lightweight check-in." : activityBand(selectedUser.lastActiveAt).label === "No activity signal" ? "There is not enough activity data to classify this account yet." : "This account shows recent activity. Use the profile signals and contribution permissions to understand which parts of Tiny Titans are working for them."}</p></div>
+      <div className="creator-user-detail-section"><h3>🧭 Creator interpretation</h3><p>{activityBand(selectedUser.lastActiveAt, now).label === "Long inactive" ? "This account has gone quiet. Consider a friendly feedback prompt or check whether the user is struggling with onboarding or finding the right features." : activityBand(selectedUser.lastActiveAt, now).label === "Cooling off" ? "Usage is cooling. This is a useful population for targeted education, feature discovery or a lightweight check-in." : activityBand(selectedUser.lastActiveAt, now).label === "No activity signal" ? "There is not enough activity data to classify this account yet." : "This account shows recent activity. Use the profile signals and contribution permissions to understand which parts of Tiny Titans are working for them."}</p></div>
       <div className="creator-user-detail-section"><h3>🤖 Creator Tester authorization</h3><p>This uses the existing server-side Creator claim workflow for approved test accounts.</p><button type="button" className="secondary-button" disabled={claimBusy} onClick={() => void grantCreatorTesterClaim(selectedUser)}>{claimBusy ? "Granting Creator access…" : "Grant Creator Tester access"}</button></div>
     </section></div>}
   </section>;
