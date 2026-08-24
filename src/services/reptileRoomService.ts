@@ -35,6 +35,9 @@ export type ReptileFurnitureKind =
   | "window"
   | "vent";
 
+export type ReptileWall = "north" | "east" | "south" | "west";
+export type ReptileDoorType = "swing" | "sliding";
+
 export type ReptileRoomObject = {
   id: string;
   kind: ReptileFurnitureKind;
@@ -45,6 +48,8 @@ export type ReptileRoomObject = {
   depth: number;
   height: number;
   rotation: number;
+  wall?: ReptileWall | null;
+  openingType?: ReptileDoorType;
   notes?: string;
 };
 
@@ -128,6 +133,9 @@ function normalizeObject(value: unknown): ReptileRoomObject | null {
   if (typeof item.id !== "string" || typeof item.kind !== "string" || typeof item.label !== "string") return null;
   const kinds: ReptileFurnitureKind[] = ["rack", "shelving", "workbench", "storage-cabinet", "equipment-station", "quarantine-area", "door", "window", "vent"];
   if (!kinds.includes(item.kind as ReptileFurnitureKind)) return null;
+  const walls: ReptileWall[] = ["north", "east", "south", "west"];
+  const wall = walls.includes(item.wall as ReptileWall) ? item.wall as ReptileWall : null;
+  const openingType: ReptileDoorType = item.openingType === "sliding" ? "sliding" : "swing";
   return {
     id: item.id,
     kind: item.kind as ReptileFurnitureKind,
@@ -138,6 +146,8 @@ function normalizeObject(value: unknown): ReptileRoomObject | null {
     depth: numberOr(item.depth, 45),
     height: numberOr(item.height, 80),
     rotation: numberOr(item.rotation, 0),
+    wall,
+    openingType,
     notes: typeof item.notes === "string" ? item.notes : "",
   };
 }
