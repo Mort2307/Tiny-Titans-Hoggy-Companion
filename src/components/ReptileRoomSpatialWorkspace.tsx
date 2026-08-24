@@ -3,6 +3,7 @@ import type { SpatialRoom, RoomTemplateId } from "../types/ReptileRoomSpatial";
 import { duplicateSpatialRoom, listSpatialRooms, removeSpatialRoom, saveSpatialRoom } from "../services/reptileRoomSpatialService";
 import ReptileRoomSpatialBuilder from "./ReptileRoomSpatialBuilder";
 import ReptileRoomSpatialCanvas from "./ReptileRoomSpatialCanvas";
+import "../styles/reptile-room-spatial-workspace.css";
 
 type Props = { uid: string };
 
