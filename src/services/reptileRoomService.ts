@@ -1,42 +1,17 @@
 import { collection, deleteDoc, doc, getDocs, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 
-export type ReptileRoomTemplate =
-  | "blank"
-  | "hatchling"
-  | "breeding"
-  | "medical"
-  | "brumation"
-  | "bioactive"
-  | "custom";
-
+export type ReptileRoomTemplate = "blank" | "hatchling" | "breeding" | "medical" | "brumation" | "bioactive" | "custom";
 export type ReptileRoomUnit = "metric" | "imperial";
-
-export type VivariumLifecycleStatus =
-  | "active"
-  | "stored"
-  | "empty"
-  | "reserved"
-  | "retired"
-  | "quarantine"
-  | "breeding";
-
+export type VivariumLifecycleStatus = "active" | "stored" | "empty" | "reserved" | "retired" | "quarantine" | "breeding";
 export type VivariumCondition = "excellent" | "good" | "fair" | "needs-repair" | "retired";
 export type VivariumAvailability = "available" | "occupied";
-
-export type ReptileFurnitureKind =
-  | "rack"
-  | "shelving"
-  | "workbench"
-  | "storage-cabinet"
-  | "equipment-station"
-  | "quarantine-area"
-  | "door"
-  | "window"
-  | "vent";
-
+export type ReptileFurnitureKind = "rack" | "shelving" | "workbench" | "storage-cabinet" | "equipment-station" | "quarantine-area" | "door" | "window" | "vent";
 export type ReptileWall = "north" | "east" | "south" | "west";
 export type ReptileDoorType = "swing" | "sliding";
+export type ReptileSwingDirection = "inward-left" | "inward-right" | "outward-left" | "outward-right";
+
+export type ReptileClearance = { front: number; rear: number; left: number; right: number; top: number };
 
 export type ReptileRoomObject = {
   id: string;
@@ -44,12 +19,20 @@ export type ReptileRoomObject = {
   label: string;
   x: number;
   y: number;
+  z: number;
   width: number;
   depth: number;
   height: number;
   rotation: number;
   wall?: ReptileWall | null;
   openingType?: ReptileDoorType;
+  swingDirection?: ReptileSwingDirection;
+  swingAngle?: number;
+  sillHeight?: number;
+  stackGroupId?: string | null;
+  stackIndex?: number;
+  parentAssetId?: string | null;
+  clearance?: Partial<ReptileClearance>;
   notes?: string;
 };
 
@@ -59,6 +42,7 @@ export type ReptileRoomSlot = {
   label: string;
   x: number;
   y: number;
+  z: number;
   w: number;
   h: number;
   depth?: number;
@@ -71,6 +55,10 @@ export type ReptileRoomSlot = {
   notes?: string;
   maintenanceNote?: string;
   photoUrl?: string;
+  stackGroupId?: string | null;
+  stackIndex?: number;
+  parentSlotId?: string | null;
+  clearance?: Partial<ReptileClearance>;
 };
 
 export type ReptileRoomWorkspace = {
@@ -85,29 +73,29 @@ export type ReptileRoomWorkspace = {
   slots: ReptileRoomSlot[];
   storedSlots: ReptileRoomSlot[];
   objects?: ReptileRoomObject[];
+  roomVersion?: number;
   createdAt: string;
   updatedAt: string;
 };
 
+export const REPTILE_ROOM_VERSION = 2;
 const LOCAL_CACHE_PREFIX = "tinyTitans.reptileRooms.v2";
-const DEFAULT_ROOM = { width: 360, depth: 300, height: 240, storageCapacity: 12 };
+export const DEFAULT_ROOM = { width: 360, depth: 300, height: 240, storageCapacity: 12 };
+export const DEFAULT_CLEARANCE: ReptileClearance = { front: 30, rear: 5, left: 5, right: 5, top: 10 };
 
 function cacheKey(uid: string) { return `${LOCAL_CACHE_PREFIX}:${uid}`; }
+function numberOr(value: unknown, fallback: number) { return typeof value === "number" && Number.isFinite(value) ? value : fallback; }
 
-function numberOr(value: unknown, fallback: number) {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+function normalizeClearance(value: unknown): Partial<ReptileClearance> {
+  if (!value || typeof value !== "object") return {};
+  const input = value as Partial<ReptileClearance>;
+  return Object.fromEntries((Object.keys(DEFAULT_CLEARANCE) as Array<keyof ReptileClearance>).filter((key) => typeof input[key] === "number" && Number.isFinite(input[key])).map((key) => [key, Math.max(0, input[key] as number)]));
 }
 
 function isSlot(value: unknown): value is ReptileRoomSlot {
   if (!value || typeof value !== "object") return false;
   const item = value as Partial<ReptileRoomSlot>;
-  return typeof item.id === "string"
-    && (typeof item.snakeId === "string" || item.snakeId === null)
-    && typeof item.label === "string"
-    && typeof item.x === "number" && Number.isFinite(item.x)
-    && typeof item.y === "number" && Number.isFinite(item.y)
-    && typeof item.w === "number" && Number.isFinite(item.w)
-    && typeof item.h === "number" && Number.isFinite(item.h);
+  return typeof item.id === "string" && (typeof item.snakeId === "string" || item.snakeId === null) && typeof item.label === "string" && typeof item.x === "number" && Number.isFinite(item.x) && typeof item.y === "number" && Number.isFinite(item.y) && typeof item.w === "number" && Number.isFinite(item.w) && typeof item.h === "number" && Number.isFinite(item.h);
 }
 
 function normalizeSlot(value: unknown): ReptileRoomSlot | null {
@@ -115,6 +103,7 @@ function normalizeSlot(value: unknown): ReptileRoomSlot | null {
   const item = value as ReptileRoomSlot;
   return {
     ...item,
+    z: numberOr(item.z, 0),
     depth: numberOr(item.depth, item.w),
     height: numberOr(item.height, 30),
     lifecycleStatus: item.lifecycleStatus ?? (item.snakeId ? "active" : "empty"),
@@ -124,6 +113,10 @@ function normalizeSlot(value: unknown): ReptileRoomSlot | null {
     storageNote: typeof item.storageNote === "string" ? item.storageNote : "",
     notes: typeof item.notes === "string" ? item.notes : "",
     maintenanceNote: typeof item.maintenanceNote === "string" ? item.maintenanceNote : "",
+    stackGroupId: typeof item.stackGroupId === "string" ? item.stackGroupId : null,
+    stackIndex: Math.max(0, Math.round(numberOr(item.stackIndex, 0))),
+    parentSlotId: typeof item.parentSlotId === "string" ? item.parentSlotId : null,
+    clearance: normalizeClearance(item.clearance),
   };
 }
 
@@ -136,21 +129,32 @@ function normalizeObject(value: unknown): ReptileRoomObject | null {
   const walls: ReptileWall[] = ["north", "east", "south", "west"];
   const wall = walls.includes(item.wall as ReptileWall) ? item.wall as ReptileWall : null;
   const openingType: ReptileDoorType = item.openingType === "sliding" ? "sliding" : "swing";
+  const swingDirections: ReptileSwingDirection[] = ["inward-left", "inward-right", "outward-left", "outward-right"];
   return {
     id: item.id,
     kind: item.kind as ReptileFurnitureKind,
     label: item.label,
     x: numberOr(item.x, 0),
     y: numberOr(item.y, 0),
-    width: numberOr(item.width, 90),
-    depth: numberOr(item.depth, 45),
-    height: numberOr(item.height, 80),
+    z: numberOr(item.z, 0),
+    width: Math.max(1, numberOr(item.width, 90)),
+    depth: Math.max(1, numberOr(item.depth, 45)),
+    height: Math.max(1, numberOr(item.height, 80)),
     rotation: numberOr(item.rotation, 0),
     wall,
     openingType,
+    swingDirection: swingDirections.includes(item.swingDirection as ReptileSwingDirection) ? item.swingDirection as ReptileSwingDirection : "inward-right",
+    swingAngle: clampAngle(numberOr(item.swingAngle, 90)),
+    sillHeight: Math.max(0, numberOr(item.sillHeight, item.kind === "window" ? 100 : 0)),
+    stackGroupId: typeof item.stackGroupId === "string" ? item.stackGroupId : null,
+    stackIndex: Math.max(0, Math.round(numberOr(item.stackIndex, 0))),
+    parentAssetId: typeof item.parentAssetId === "string" ? item.parentAssetId : null,
+    clearance: normalizeClearance(item.clearance),
     notes: typeof item.notes === "string" ? item.notes : "",
   };
 }
+
+function clampAngle(value: number) { return Math.min(180, Math.max(0, value)); }
 
 function normalizeRoom(value: unknown): ReptileRoomWorkspace | null {
   if (!value || typeof value !== "object") return null;
@@ -159,9 +163,8 @@ function normalizeRoom(value: unknown): ReptileRoomWorkspace | null {
   const slots = Array.isArray(room.slots) ? room.slots.map(normalizeSlot).filter((item): item is ReptileRoomSlot => Boolean(item)) : [];
   const storedSlots = Array.isArray(room.storedSlots) ? room.storedSlots.map(normalizeSlot).filter((item): item is ReptileRoomSlot => Boolean(item)) : [];
   const objects = Array.isArray(room.objects) ? room.objects.map(normalizeObject).filter((item): item is ReptileRoomObject => Boolean(item)) : [];
-  const template: ReptileRoomTemplate = ["blank", "hatchling", "breeding", "medical", "brumation", "bioactive", "custom"].includes(room.template as string)
-    ? room.template as ReptileRoomTemplate
-    : "custom";
+  const templates: ReptileRoomTemplate[] = ["blank", "hatchling", "breeding", "medical", "brumation", "bioactive", "custom"];
+  const template = templates.includes(room.template as ReptileRoomTemplate) ? room.template as ReptileRoomTemplate : "custom";
   const unit: ReptileRoomUnit = room.unit === "imperial" ? "imperial" : "metric";
   const now = new Date().toISOString();
   return {
@@ -169,13 +172,14 @@ function normalizeRoom(value: unknown): ReptileRoomWorkspace | null {
     name: room.name,
     template,
     unit,
-    width: numberOr(room.width, DEFAULT_ROOM.width),
-    depth: numberOr(room.depth, DEFAULT_ROOM.depth),
-    height: numberOr(room.height, DEFAULT_ROOM.height),
-    storageCapacity: numberOr(room.storageCapacity, DEFAULT_ROOM.storageCapacity),
+    width: Math.max(100, numberOr(room.width, DEFAULT_ROOM.width)),
+    depth: Math.max(100, numberOr(room.depth, DEFAULT_ROOM.depth)),
+    height: Math.max(100, numberOr(room.height, DEFAULT_ROOM.height)),
+    storageCapacity: Math.max(0, Math.round(numberOr(room.storageCapacity, DEFAULT_ROOM.storageCapacity))),
     slots,
     storedSlots,
     objects,
+    roomVersion: REPTILE_ROOM_VERSION,
     createdAt: typeof room.createdAt === "string" ? room.createdAt : now,
     updatedAt: typeof room.updatedAt === "string" ? room.updatedAt : now,
   };
@@ -190,10 +194,7 @@ function readCache(uid: string): ReptileRoomWorkspace[] {
   } catch { return []; }
 }
 
-function writeCache(uid: string, rooms: ReptileRoomWorkspace[]) {
-  try { localStorage.setItem(cacheKey(uid), JSON.stringify(rooms)); } catch { /* optional cache */ }
-}
-
+function writeCache(uid: string, rooms: ReptileRoomWorkspace[]) { try { localStorage.setItem(cacheKey(uid), JSON.stringify(rooms)); } catch { /* optional cache */ } }
 function roomsCollection(uid: string) { return collection(db, "users", uid, "reptileRooms"); }
 
 export async function loadReptileRooms(uid: string): Promise<ReptileRoomWorkspace[]> {
@@ -208,7 +209,7 @@ export async function loadReptileRooms(uid: string): Promise<ReptileRoomWorkspac
 }
 
 export async function saveReptileRooms(uid: string, rooms: ReptileRoomWorkspace[]): Promise<void> {
-  const normalized = rooms.map((room) => ({ ...room, updatedAt: new Date().toISOString() }));
+  const normalized = rooms.map((room) => ({ ...room, roomVersion: REPTILE_ROOM_VERSION, updatedAt: new Date().toISOString() }));
   writeCache(uid, normalized);
   await Promise.all(normalized.map((room) => setDoc(doc(roomsCollection(uid), room.id), room)));
 }
@@ -234,6 +235,7 @@ export function migrateLegacyRoom(uid: string, legacySlots: ReptileRoomSlot[]): 
     slots: legacySlots.map((slot) => normalizeSlot(slot)!).filter(Boolean),
     storedSlots: [],
     objects: [],
+    roomVersion: REPTILE_ROOM_VERSION,
     createdAt: now,
     updatedAt: now,
   };
