@@ -4,16 +4,14 @@ import { getCommunityLocationMembers, type CommunityLocationMember } from "../se
 import CreatorSnapshotIntelligence from "./CreatorSnapshotIntelligence";
 import "../styles/creatorCommunityGlobeV2.css";
 
-export type CommunityUserLocation = { city: string; country: string };
-export type CreatorCommunityGlobeProps = { locations?: CommunityUserLocation[] };
-type GeoFeature = { geometry: unknown };
+ type GeoFeature = { geometry: unknown };
 type GeoJson = { features: GeoFeature[] };
 type Marker = { areaId: string; city: string; country: string; lat: number; lng: number; members: CommunityLocationMember[] };
 type CommunityArea = { city: string; members: CommunityLocationMember[] };
 type CountryGroup = { country: string; members: CommunityLocationMember[]; areas: Map<string, CommunityArea> };
 const normalise = (value: string) => value.trim().toLocaleLowerCase("en-GB").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-export default function CreatorCommunityGlobeV2(_props: CreatorCommunityGlobeProps) {
+export default function CreatorCommunityGlobeV2() {
   const globeRef = useRef<{ controls: () => { autoRotate: boolean; autoRotateSpeed: number; enableZoom: boolean; enablePan: boolean; enableDamping: boolean; dampingFactor: number; rotateSpeed: number; zoomSpeed: number } } | undefined>(undefined);
   const visualRef = useRef<HTMLDivElement | null>(null);
   const [globeSize, setGlobeSize] = useState({ width: 720, height: 520 });
