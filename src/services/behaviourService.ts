@@ -3,6 +3,7 @@ import { db } from "../firebase/config";
 import type { BehaviourRecord } from "../types/Behaviour";
 import { resolveDataOwnerUid } from "./familyService";
 import { requestFamilyMutation } from "./familyPermissionsService";
+import { tinyTitansEventBus } from "./tinyTitansEventBus";
 
 function records(uid: string, snakeId: string) { return collection(db, "users", uid, "snakes", snakeId, "behaviours"); }
 
@@ -19,6 +20,19 @@ export async function saveSnakeBehaviourRecord(uid: string, record: BehaviourRec
   const payload = { ...record, lastModifiedBy: uid };
   await requestFamilyMutation({ requesterUid: uid, requesterName: uid, area: "behaviour", action: operation === "create" ? "create" : "edit", title: "Update behaviour record", description: "A family member wants to update a shared behaviour observation.", targetPath: `users/${owner}/snakes/${record.snakeId}/behaviours/${record.id}`, operation, data: payload });
   await setDoc(doc(records(owner, record.snakeId), record.id), payload, { merge: true });
+
+  tinyTitansEventBus.emit({
+    type: "BehaviourRecorded",
+    payload: {
+      snakeId: record.snakeId,
+      recordId: record.id,
+      observation: record.observation,
+      context: record.context,
+      occurredAt: record.date,
+      operation,
+    },
+  });
+
   return payload;
 }
 
