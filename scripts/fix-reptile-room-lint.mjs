@@ -36,6 +36,10 @@ const replacements = [
   [
     '  useEffect(() => { if (selectedObject) setObjectDraft(objectDraftFor(selectedObject, roomUnit)); else setObjectDraft(null); }, [selectedObjectId, selectedObject?.width, selectedObject?.depth, selectedObject?.height, selectedObject?.rotation, selectedObject?.openingType, roomUnit]);',
     '  useEffect(() => { if (selectedObject) setObjectDraft(objectDraftFor(selectedObject, roomUnit)); else setObjectDraft(null); }, [selectedObject, roomUnit]);'
+  ],
+  [
+    '  const updateActiveRoom = useCallback((updater: (room: ReptileRoomWorkspace) => ReptileRoomWorkspace, successMessage?: string) => { const current = rooms.find((item) => item.id === activeRoomId); const room = current; if (!room) return; void persistRooms(rooms.map((item) => item.id === room.id ? updater(room) : item), successMessage); }, [activeRoomId, persistRooms]);',
+    '  const updateActiveRoom = useCallback((updater: (room: ReptileRoomWorkspace) => ReptileRoomWorkspace, successMessage?: string) => { const room = rooms.find((item) => item.id === activeRoomId); if (!room) return; void persistRooms(rooms.map((item) => item.id === room.id ? updater(room) : item), successMessage); }, [activeRoomId, persistRooms, rooms]);'
   ]
 ];
 
