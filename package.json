@@ -21,7 +21,10 @@
     "test:production-gate": "node scripts/run-production-gate.mjs",
     "build": "npm run validate:morphs && npm run validate:morph-sources && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:security && npm run test:intelligence:consent && npm run test:intelligence:journey && tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore,storage",
+    "deploy:app": "npm run build && firebase deploy --only hosting,firestore,storage"
   },
   "dependencies": {
     "firebase": "^12.17.1",
