@@ -48,10 +48,10 @@ function toMillis(value: CreatorUser["lastActiveAt"]): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function activityBand(value: CreatorUser["lastActiveAt"]): { label: string; detail: string } {
+function activityBand(value: CreatorUser["lastActiveAt"], now: number): { label: string; detail: string } {
   const millis = toMillis(value);
   if (millis === null) return { label: "No activity signal", detail: "No usable last-active timestamp is recorded." };
-  const days = Math.floor((Date.now() - millis) / 86400000);
+  const days = Math.floor((now - millis) / 86400000);
   if (days <= 0) return { label: "Active today", detail: "Used Tiny Titans within the last day." };
   if (days <= 7) return { label: "Active this week", detail: `${days} day${days === 1 ? "" : "s"} since the latest recorded activity.` };
   if (days <= 30) return { label: "Active this month", detail: `${days} days since the latest recorded activity.` };
@@ -90,6 +90,7 @@ export default function CreatorAdmin() {
   const [search, setSearch] = useState("");
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
+  const [now] = useState(() => Date.now());
 
   async function loadDashboard() {
     if (!user) return;
@@ -173,7 +174,7 @@ export default function CreatorAdmin() {
       const millis = toMillis(item.lastActiveAt);
       if (millis === null) bands.unknown += 1;
       else {
-        const days = Math.floor((Date.now() - millis) / 86400000);
+        const days = Math.floor((now - millis) / 86400000);
         if (days <= 0) bands.today += 1;
         else if (days <= 7) bands.week += 1;
         else if (days <= 30) bands.month += 1;
@@ -182,7 +183,7 @@ export default function CreatorAdmin() {
       }
     }
     return { bands, setupComplete, locationOn, analyticsOn, husbandryOn, productUpdatesOn };
-  }, [users]);
+  }, [users, now]);
 
   const optedInLocations = users.flatMap((item) => {
     const location = item.approximateLocation;
@@ -228,7 +229,7 @@ export default function CreatorAdmin() {
       </div>
       <div className="creator-user-toolbar"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search account name, profile, experience, city, platform or version…" aria-label="Search users" /><strong>{filteredUsers.length} shown</strong></div>
       {usersLoading ? <div className="creator-loading">Loading registered users…</div> : <div className="creator-list">
-        {filteredUsers.map((item) => { const band = activityBand(item.lastActiveAt); return <button className="creator-user-row" type="button" key={item.uid} onClick={() => { setSelectedUser(item); setClaimMessage(""); }}>
+        {filteredUsers.map((item) => { const band = activityBand(item.lastActiveAt, now); return <button className="creator-user-row" type="button" key={item.uid} onClick={() => { setSelectedUser(item); setClaimMessage(""); }}>
           <span className="creator-user-avatar">{item.displayName?.trim().charAt(0).toUpperCase() || "🐍"}</span>
           <span className="creator-user-main"><strong>{item.displayName || "Unnamed user"}</strong><small>{item.profileType || "user"} · {item.experienceLevel || "experience not set"}</small></span>
           <span className="creator-user-meta"><strong>{band.label}</strong><small>{item.approximateLocation?.city && item.dataCollectionPreferences?.approximateLocation === true ? `${item.approximateLocation.city}, ${item.approximateLocation.country || ""}` : "Location not shared"}</small></span>
@@ -245,7 +246,7 @@ export default function CreatorAdmin() {
     {selectedUser && <div className="creator-user-modal-backdrop" role="presentation" onClick={() => setSelectedUser(null)}><section className="creator-user-modal" role="dialog" aria-modal="true" aria-labelledby="creator-user-title" onClick={(event) => event.stopPropagation()}>
       <div className="creator-section-heading"><div><span className="creator-admin-kicker">CREATOR-SAFE ACCOUNT INTELLIGENCE</span><h2 id="creator-user-title">👤 {selectedUser.displayName || "Unnamed user"}</h2><p>Public app/profile signals only. No private contact details, exact location, health records or private husbandry data are shown.</p></div><button type="button" onClick={() => setSelectedUser(null)}>✕</button></div>
       <div className="creator-user-detail-grid">
-        <div><strong>Engagement</strong><span>{activityBand(selectedUser.lastActiveAt).label}</span></div>
+        <div><strong>Engagement</strong><span>{activityBand(selectedUser.lastActiveAt, now).label}</span></div>
         <div><strong>Latest activity</strong><span>{formatDate(selectedUser.lastActiveAt)}</span></div>
         <div><strong>Account age</strong><span>{formatDate(selectedUser.createdAt)}</span></div>
         <div><strong>Role</strong><span>{selectedUser.role || "user"}</span></div>
