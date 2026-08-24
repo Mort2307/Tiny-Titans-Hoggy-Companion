@@ -1,0 +1,140 @@
+/* Tiny Titans Home: final brand pass. Loaded after legacy Home.css. */
+
+.tt-home {
+  max-width: var(--tt-content);
+  padding: var(--tt-page-padding) var(--tt-page-padding) 56px;
+}
+
+.tt-home-hero {
+  border-color: var(--tt-border-strong);
+  background:
+    radial-gradient(circle at 8% 0, rgba(95, 36, 148, 0.34), transparent 48%),
+    radial-gradient(circle at 92% 0, rgba(0, 183, 240, 0.10), transparent 38%),
+    linear-gradient(145deg, rgba(50, 19, 82, 0.92), rgba(16, 7, 25, 0.96));
+  box-shadow: var(--tt-shadow), var(--tt-shadow-purple);
+}
+
+.tt-home-eyebrow,
+.tt-home-kicker {
+  color: var(--tt-intelligence-strong);
+}
+
+.tt-home-profile {
+  border-color: var(--tt-border-action);
+  background: rgba(16, 7, 25, 0.68);
+}
+
+.tt-home-profile strong,
+.tt-snake-focus-main h3 {
+  color: var(--tt-action-strong);
+}
+
+.tt-home-heading > a,
+.tt-home-heading > span,
+.tt-home-panel a {
+  color: var(--tt-intelligence-strong);
+}
+
+.tt-home-panel {
+  border-color: var(--tt-border);
+  background: linear-gradient(145deg, rgba(50, 19, 82, 0.90), rgba(22, 9, 36, 0.96));
+  box-shadow: var(--tt-shadow-soft);
+}
+
+.tt-home-primary {
+  background: linear-gradient(135deg, var(--tt-gold-600), var(--tt-gold-500));
+  border-color: var(--tt-gold-400);
+  color: #160a24 !important;
+  box-shadow: var(--tt-shadow-gold);
+}
+
+.tt-home-primary:hover {
+  color: #160a24 !important;
+  background: linear-gradient(135deg, var(--tt-gold-500), var(--tt-gold-400));
+}
+
+.tt-snake-focus-main {
+  border-color: var(--tt-border-strong);
+  background:
+    radial-gradient(circle at 0 0, rgba(95, 36, 148, 0.26), transparent 50%),
+    linear-gradient(145deg, rgba(50, 19, 82, 0.88), rgba(16, 7, 25, 0.96));
+  box-shadow: var(--tt-shadow), var(--tt-shadow-purple);
+}
+
+.tt-snake-status {
+  border-color: var(--tt-border-data);
+  background: rgba(16, 184, 173, 0.08);
+  color: var(--tt-data-strong);
+}
+
+.tt-snake-actions a,
+.tt-quick-actions a,
+.tt-tool-grid a {
+  border-color: var(--tt-border);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.tt-snake-actions a:hover,
+.tt-quick-actions a:hover,
+.tt-tool-grid a:hover,
+.tt-home-heading a:hover {
+  border-color: var(--tt-border-intelligence);
+  box-shadow: var(--tt-shadow-blue);
+}
+
+.tt-snake-arrow {
+  border-color: var(--tt-border);
+  background: rgba(38, 16, 61, 0.88);
+  color: var(--tt-intelligence-strong);
+}
+
+.tt-snake-arrow:hover {
+  border-color: var(--tt-border-intelligence);
+  background: rgba(0, 183, 240, 0.08);
+}
+
+.tt-attention-card {
+  border-color: var(--tt-border-action);
+  box-shadow: var(--tt-shadow-gold);
+}
+
+.tt-attention-card > span,
+.tt-attention-card > strong {
+  color: var(--tt-action-strong);
+}
+
+.tt-home-good {
+  border-color: rgba(72, 213, 151, 0.38);
+  box-shadow: 0 0 24px rgba(72, 213, 151, 0.08);
+}
+
+.tt-home-loading {
+  color: var(--tt-intelligence-strong);
+}
+
+.tt-home-stats a {
+  border-color: var(--tt-border);
+  background: rgba(38, 16, 61, 0.74);
+}
+
+.tt-home-stats a:hover {
+  border-color: var(--tt-border-data);
+  box-shadow: var(--tt-shadow-teal);
+}
+
+.tt-home-stats strong {
+  color: var(--tt-action-strong);
+}
+
+.tt-quick-actions a {
+  background: linear-gradient(145deg, rgba(95, 36, 148, 0.18), rgba(0, 183, 240, 0.045));
+}
+
+.tt-home-tools {
+  border-color: var(--tt-border);
+  background: rgba(29, 12, 48, 0.76);
+}
+
+.tt-home-tools summary:hover {
+  color: var(--tt-intelligence-strong);
+}
