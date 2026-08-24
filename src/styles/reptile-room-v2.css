@@ -1,52 +1,99 @@
+.reptile-room-page {
+  --room-gap: 10px;
+  --room-border: rgba(255,255,255,.11);
+  --room-glass: rgba(18,22,24,.88);
+  --room-gold: rgba(245,183,75,.9);
+  max-width: 1400px;
+}
+
+/* V3 room surface: deliberately feels like a room, not a collection of cards. */
 .reptile-room-page .reptile-room-canvas {
   position: relative;
-  min-height: clamp(560px, 72vh, 860px);
+  height: clamp(620px, 74vh, 900px);
+  min-height: 620px;
+  min-width: 0;
   overflow: auto;
-  touch-action: pan-x pan-y;
-  overscroll-behavior: contain;
   isolation: isolate;
+  border: 1px solid var(--room-border);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(245,183,75,.09), transparent 42%),
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(5,8,10,.96));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 18px 55px rgba(0,0,0,.22);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
-.reptile-room-page .room-toolbar,
-.reptile-room-page .room-layout-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.reptile-room-page .room-layout-tools button,
-.reptile-room-page .room-toolbar button,
-.reptile-room-page .room-toolbar a {
-  min-height: 42px;
-  touch-action: manipulation;
-}
-
-.reptile-room-page .vivarium-card {
+.reptile-room-page .reptile-room-canvas::before {
+  content: "";
   position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .55;
+  background-image:
+    linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.reptile-room-page .room-wall-label {
+  position: sticky;
+  left: 18px;
+  top: 14px;
+  z-index: 30;
+  width: max-content;
+  margin-bottom: -28px;
+  padding: .42rem .7rem;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 999px;
+  background: rgba(7,10,12,.72);
+  backdrop-filter: blur(10px);
+  font-size: .64rem;
+  letter-spacing: .14em;
+  font-weight: 900;
+  opacity: .7;
+  pointer-events: none;
+}
+
+/* The cards are the actual enclosures. */
+.reptile-room-page .vivarium-card {
+  box-sizing: border-box;
   min-width: 0;
   min-height: 0;
-  padding: 0.65rem;
+  padding: 0;
+  border: 2px solid rgba(205,220,224,.18);
+  border-radius: 13px;
+  background: var(--room-glass);
+  box-shadow: 0 10px 24px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.035);
   overflow: hidden;
-  cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  transition: box-shadow 120ms ease, transform 120ms ease, outline-color 120ms ease;
+  cursor: grab;
+  transition: box-shadow 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
 
-.reptile-room-page .vivarium-card:active,
+.reptile-room-page .vivarium-card:hover,
+.reptile-room-page .vivarium-card.is-selected {
+  border-color: var(--room-gold);
+  box-shadow: 0 14px 34px rgba(0,0,0,.34), 0 0 0 2px rgba(245,183,75,.08);
+}
+
 .reptile-room-page .vivarium-card.is-dragging {
-  cursor: grabbing;
-  transform: scale(1.012);
   z-index: 100;
+  cursor: grabbing;
+  transform: scale(1.018);
+  box-shadow: 0 22px 50px rgba(0,0,0,.48), 0 0 0 2px rgba(245,183,75,.25);
 }
 
 .reptile-room-page .vivarium-card.is-connected {
-  outline: 2px solid rgba(245, 180, 55, 0.45);
-  outline-offset: -2px;
+  border-color: rgba(245,183,75,.68);
+  box-shadow: 0 0 0 1px rgba(245,183,75,.22), 0 10px 25px rgba(0,0,0,.28);
 }
 
+/* Photo or generated enclosure occupies the entire physical enclosure. */
 .reptile-room-page .vivarium-card .vivarium-photo-background,
 .reptile-room-page .vivarium-card .vivarium-glass,
 .reptile-room-page .vivarium-card .vivarium-photo-shade {
@@ -61,8 +108,50 @@
 }
 
 .reptile-room-page .vivarium-photo-shade {
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.08) 20%, rgba(0, 0, 0, 0.78) 100%);
+  z-index: 1;
   pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,.54), transparent 34%, rgba(0,0,0,.7));
+}
+
+/* A clean fallback enclosure when no real photo exists. */
+.reptile-room-page .vivarium-glass {
+  z-index: 0;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(180,210,218,.08), rgba(70,82,76,.12) 67%, rgba(40,32,23,.3));
+}
+
+.reptile-room-page .vivarium-glass::before {
+  content: "";
+  position: absolute;
+  inset: 8% 4% 28%;
+  border: 1px solid rgba(210,235,240,.12);
+  border-radius: 7px;
+  box-shadow: inset 0 0 22px rgba(180,220,225,.035);
+}
+
+.reptile-room-page .vivarium-substrate {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 29%;
+  background: linear-gradient(180deg, rgba(150,112,74,.2), rgba(74,48,31,.62));
+}
+
+.reptile-room-page .vivarium-snake {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 43%;
+  z-index: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(.62rem, 1vw, .92rem);
+  font-weight: 900;
+  text-shadow: 0 2px 5px rgba(0,0,0,.7);
 }
 
 .reptile-room-page .vivarium-label,
@@ -71,153 +160,160 @@
 .reptile-room-page .vivarium-drag-hint,
 .reptile-room-page .vivarium-lock-indicator {
   position: absolute;
-  z-index: 3;
+  z-index: 5;
+  color: #fff;
+  text-shadow: 0 1px 5px rgba(0,0,0,.85);
 }
 
 .reptile-room-page .vivarium-label {
-  left: 0.7rem;
-  top: 0.55rem;
-  right: 0.7rem;
-  font-weight: 800;
-  text-align: left;
+  left: .7rem;
+  top: .6rem;
+  right: 2.5rem;
+  margin: 0;
+  font-size: clamp(.65rem, .95vw, .9rem);
+  font-weight: 950;
+  letter-spacing: .02em;
 }
 
 .reptile-room-page .vivarium-card-info {
-  left: 0.7rem;
-  right: 0.7rem;
-  bottom: 2.15rem;
-  font-size: clamp(0.62rem, 1.1vw, 0.82rem);
-  text-align: left;
+  left: .7rem;
+  right: .7rem;
+  bottom: 1.8rem;
+  margin: 0;
+  font-size: clamp(.55rem, .78vw, .76rem);
+  font-weight: 850;
 }
 
 .reptile-room-page .vivarium-card-meta {
-  left: 0.7rem;
-  right: 0.7rem;
-  bottom: 0.75rem;
+  left: .7rem;
+  right: .7rem;
+  bottom: .58rem;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: clamp(0.55rem, 0.9vw, 0.72rem);
-  opacity: 0.82;
-  text-align: left;
+  font-size: clamp(.48rem, .64vw, .64rem);
+  opacity: .72;
 }
 
 .reptile-room-page .vivarium-drag-hint {
-  top: 0.55rem;
-  right: 0.55rem;
-  font-size: 0.65rem;
-  opacity: 0.75;
+  top: .58rem;
+  right: .58rem;
+  font-size: .58rem;
+  opacity: .65;
 }
 
 .reptile-room-page .vivarium-lock-indicator {
-  right: 0.55rem;
-  bottom: 0.65rem;
-  font-size: 0.78rem;
+  right: .58rem;
+  bottom: .55rem;
+  font-size: .7rem;
 }
 
-.reptile-room-page .room-layout-hint {
-  flex: 1 1 280px;
-  min-width: 220px;
+/* Details behave like a drawer rather than taking over the room. */
+.reptile-room-page .vivarium-detail-panel {
+  margin-top: 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+  box-shadow: 0 14px 40px rgba(0,0,0,.2);
+}
+
+.reptile-room-page .room-layout-tools {
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 15px;
+  background: rgba(255,255,255,.025);
 }
 
 .reptile-room-page .room-save-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-height: 42px;
-  padding: 0.45rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  opacity: 0.86;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.035);
 }
 
-.reptile-room-page .room-save-state.is-dirty {
-  font-weight: 700;
-}
+/* Phones get a real workspace, not a desktop page squeezed into portrait. */
+@media (max-width: 700px) {
+  .reptile-room-page {
+    max-width: none;
+  }
 
-@media (max-width: 900px) {
+  .reptile-room-page .reptile-room-header {
+    margin-bottom: .75rem;
+  }
+
+  .reptile-room-page .reptile-room-summary {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: .45rem;
+  }
+
+  .reptile-room-page .reptile-room-summary > * {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .reptile-room-page .reptile-room-canvas {
-    min-height: 560px;
-    min-width: 900px;
-    height: min(70vh, 720px);
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    height: min(68vh, 640px);
+    min-height: 500px;
+    min-width: 0;
+    border-radius: 18px;
+    scroll-snap-type: none;
   }
 
-  .reptile-room-page .room-layout-tools {
-    align-items: stretch;
-  }
-
-  .reptile-room-page .room-layout-tools button {
-    flex: 1 1 auto;
+  .reptile-room-page .room-wall-label {
+    left: 10px;
+    top: 10px;
+    font-size: .55rem;
   }
 
   .reptile-room-page .vivarium-card {
-    padding: 0.5rem;
+    border-radius: 10px;
+    border-width: 1.5px;
   }
 
-  .reptile-room-page .vivarium-label,
-  .reptile-room-page .vivarium-card-info,
+  .reptile-room-page .vivarium-label {
+    left: .5rem;
+    top: .45rem;
+    font-size: .65rem;
+  }
+
+  .reptile-room-page .vivarium-card-info {
+    left: .5rem;
+    bottom: 1.55rem;
+    font-size: .52rem;
+  }
+
   .reptile-room-page .vivarium-card-meta {
-    left: 0.55rem;
-    right: 0.55rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .reptile-room-page .reptile-room-canvas {
-    min-height: 540px;
-    min-width: 900px;
-    height: 64vh;
-    max-height: 680px;
-    border-radius: 1rem;
-    overscroll-behavior-x: contain;
+    left: .5rem;
+    bottom: .45rem;
+    font-size: .46rem;
   }
 
-  .reptile-room-page .room-toolbar {
-    width: 100%;
-  }
-
-  .reptile-room-page .room-toolbar > * {
-    flex: 1 1 145px;
-    text-align: center;
+  .reptile-room-page .vivarium-drag-hint {
+    display: none;
   }
 
   .reptile-room-page .room-layout-tools {
+    margin: .7rem 0;
+    padding: .55rem;
     overflow-x: auto;
     flex-wrap: nowrap;
-    padding-bottom: 0.35rem;
     scrollbar-width: thin;
   }
 
-  .reptile-room-page .room-layout-tools button,
-  .reptile-room-page .room-layout-tools .room-save-state {
+  .reptile-room-page .room-layout-tools > * {
     flex: 0 0 auto;
   }
 
   .reptile-room-page .room-layout-hint {
-    flex: 0 0 260px;
-    min-width: 260px;
-  }
-
-  .reptile-room-page .reptile-room-summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .reptile-room-page .vivarium-card-info {
-    font-size: 0.68rem;
-  }
-
-  .reptile-room-page .vivarium-card-meta {
-    font-size: 0.58rem;
+    flex: 0 0 230px;
+    min-width: 230px;
   }
 }
 
 @media (orientation: landscape) and (max-width: 900px) {
   .reptile-room-page .reptile-room-canvas {
-    min-height: 500px;
-    height: 74vh;
-    min-width: 1000px;
+    height: 76vh;
+    min-height: 430px;
   }
 }
