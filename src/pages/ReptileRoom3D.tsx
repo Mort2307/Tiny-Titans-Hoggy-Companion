@@ -17,7 +17,35 @@ const sd=(s:ReptileRoomSlot)=>Math.max(1,s.h);
 const sh=(s:ReptileRoomSlot)=>Math.max(1,s.height??45);
 const cameraYaw=(snapPoint:CameraSnap)=>snapPoint*22;
 const nextRoomAssetId=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
-function Block({width,depth,height,className=""}:{width:number;depth:number;height:number;className?:string}){return <div className={`rr3d-block ${className}`} style={{width,height:depth,"--block-height":`${height}px`,`--block-depth`:`${depth}px`} as React.CSSProperties}><i className="rr3d-block-top"/><i className="rr3d-block-front"/><i className="rr3d-block-side"/></div>}
+function Block({
+  width,
+  depth,
+  height,
+  className = "",
+}: {
+  width: number;
+  depth: number;
+  height: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rr3d-block ${className}`}
+      style={
+        {
+          width,
+          height: depth,
+          "--block-height": `${height}px`,
+          "--block-depth": `${depth}px`,
+        } as React.CSSProperties
+      }
+    >
+      <i className="rr3d-block-top" />
+      <i className="rr3d-block-front" />
+      <i className="rr3d-block-side" />
+    </div>
+  );
+}
 function Vivarium({slot,photo,selected}:{slot:ReptileRoomSlot;photo?:string;selected:boolean}){const w=sw(slot),d=sd(slot),h=sh(slot);return <div className={`rr3d-vivarium ${selected?"is-selected":""}`} style={{width:w,height:d,"--viv-height":`${h}px`} as React.CSSProperties}><Block width={w} depth={d} height={h} className="rr3d-viv-shell"/><div className="rr3d-viv-door" style={{width:Math.max(1,w-8),height:Math.max(1,h-8)}}>{photo?<img src={photo} alt={`${slot.label} enclosure`}/>:<span>EMPTY</span>}<i/></div><div className="rr3d-viv-top" style={{width:w,height:d}}/></div>}
 function Furniture({object,selected}:{object:ReptileRoomObject;selected:boolean}){return <div className={`rr3d-furniture ${selected?"is-selected":""}`} style={{width:object.width,height:object.depth,"--asset-height":`${object.height}px`} as React.CSSProperties}><Block width={object.width} depth={object.depth} height={object.height} className={`kind-${object.kind}`}/>{(object.kind==="rack"||object.kind==="shelving")&&[.2,.42,.64,.86].map(r=><i key={r} className="rr3d-shelf" style={{width:object.width*.9,transform:`translateZ(${object.height*r}px)`}}/>)}{object.kind==="table"&&<i className="rr3d-table-top" style={{width:object.width*.94,height:object.depth*.94,transform:`translateZ(${object.height}px)`}}/>}</div>}
 export default function ReptileRoom3D(){

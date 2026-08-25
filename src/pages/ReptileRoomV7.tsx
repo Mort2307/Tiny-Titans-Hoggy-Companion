@@ -20,7 +20,7 @@ import {
 import { clamp, snapArchitecturalObject, snapNumber, stackZ, worldSize } from "../services/reptileRoomSpatialService";
 import type { Snake } from "../types/Snake";
 import BackHomeButton from "../components/BackHomeButton";
-import "../styles/reptile-room-v7.css";
+import "../styles/reptile-room.css";
 
 const VIV = { width: 60, depth: 40, height: 30 };
 const WALLS: ReptileWall[] = ["north", "east", "south", "west"];
