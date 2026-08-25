@@ -39,9 +39,10 @@ export default function ReptileRoomFirstPerson3D() {
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [roomId, setRoomId] = useState("");
   const [yaw, setYaw] = useState(0);
+  const [pitch, setPitch] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
-  const drag = useRef<{ x: number; yaw: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
 
   const room = useMemo(() => rooms.find((item) => item.id === roomId) ?? rooms[0] ?? null, [rooms, roomId]);
   const slots = room?.slots ?? [];
@@ -53,13 +54,11 @@ export default function ReptileRoomFirstPerson3D() {
   const roomWidth = Math.max(100, room?.width ?? 490);
   const roomDepth = Math.max(100, room?.depth ?? 315);
   const roomHeight = Math.max(100, room?.height ?? 245);
-  // World units are centimetres divided by one fixed calibration constant.
-  // This preserves proportions across every room and every vivarium.
+  // One fixed cm-to-world calibration keeps the room and every vivarium proportional.
   const unit = 1 / 2.25;
   const scaledWidth = roomWidth * unit;
   const scaledDepth = roomDepth * unit;
   const eyeY = 165 * unit;
-  const scaledHeight = roomHeight * unit;
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -71,21 +70,35 @@ export default function ReptileRoomFirstPerson3D() {
   }, [user]);
   useEffect(() => { if (!loading && !profileLoading && user) void load(); }, [loading, profileLoading, user, load]);
 
-  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => { if (event.button !== 0) return; drag.current = { x: event.clientX, yaw }; event.currentTarget.setPointerCapture(event.pointerId); };
-  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => { if (!drag.current) return; setYaw(clamp(drag.current.yaw - (event.clientX - drag.current.x) * 0.16, -110, 110)); };
-  const pointerUp = (event: ReactPointerEvent<HTMLDivElement>) => { drag.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); };
+  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    drag.current = { x: event.clientX, y: event.clientY, yaw, pitch };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    const deltaX = event.clientX - drag.current.x;
+    const deltaY = event.clientY - drag.current.y;
+    setYaw(clamp(drag.current.yaw - deltaX * 0.16, -180, 180));
+    setPitch(clamp(drag.current.pitch + deltaY * 0.12, -55, 55));
+  };
+  const pointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    drag.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+  const centreView = () => { setYaw(0); setPitch(0); };
 
   if (loading || profileLoading) return <div className="rrfp-loading">Loading your room…</div>;
   if (!room) return <div className="rrfp-loading"><h2>No reptile room yet</h2><p>Build your scaled room first, then come back here.</p></div>;
 
   return <main className="reptile-room-first-person">
-    <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · You are standing at the centre of the room.</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={() => setYaw(0)}>Centre view</button></div></header>
+    <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · You are standing at the centre of the room.</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={centreView}>Centre view</button></div></header>
     {notice && <div className="rrfp-notice">{notice}</div>}
     <section className="rrfp-viewport" aria-label="First-person reptile room view" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
       <div className="rrfp-crosshair" aria-hidden="true"><span/></div>
-      <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre · eye height 165 cm</span><span>Drag left / right to look around</span><span>Tap a vivarium to inspect</span></div>
+      <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre · eye height 165 cm</span><span>Drag left / right to look around</span><span>Drag up / down to look up / down</span><span>Tap a vivarium to inspect</span></div>
       <div className="rrfp-camera">
-        <div className="rrfp-world" style={{ transform: `rotateY(${-yaw}deg)` }}>
+        <div className="rrfp-world" style={{ transform: `rotateX(${pitch}deg) rotateY(${-yaw}deg)` }}>
           <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
           {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} onSelect={() => setSelectedId(slot.id)} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
           {objects.map((object) => <FurnitureBox key={object.id} object={object} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
