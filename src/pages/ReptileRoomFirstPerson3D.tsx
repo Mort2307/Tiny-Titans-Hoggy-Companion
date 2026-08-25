@@ -15,10 +15,9 @@ const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 
 function RoomBox({ slot, selected, onSelect, scale, room }: { slot: ReptileRoomSlot; selected: boolean; onSelect: () => void; scale: number; room: Vec3 }) {
   const width = slotWidth(slot) * scale;
-  const depth = slotDepth(slot) * scale;
   const height = slotHeight(slot) * scale;
-  const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * scale;
-  const y = -(height / 2);
+  const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * scale - width / 2;
+  const y = -height;
   const z = (slot.y + slotDepth(slot) / 2 - room.z / 2) * scale;
   const photo = slot.photoUrl;
 
@@ -49,8 +48,8 @@ function RoomBox({ slot, selected, onSelect, scale, room }: { slot: ReptileRoomS
 function FurnitureBox({ object, scale, room }: { object: NonNullable<ReptileRoomWorkspace["objects"]>[number]; scale: number; room: Vec3 }) {
   const width = object.width * scale;
   const height = object.height * scale;
-  const x = (object.x + object.width / 2 - room.x / 2) * scale;
-  const y = -(height / 2);
+  const x = (object.x + object.width / 2 - room.x / 2) * scale - width / 2;
+  const y = -height;
   const z = (object.y + object.depth / 2 - room.z / 2) * scale;
 
   return (
