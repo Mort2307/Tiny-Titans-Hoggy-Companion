@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
-import { loadReptileRooms, type ReptileRoomSlot, type ReptileRoomWorkspace } from "../services/reptileRoomService";
+import { loadReptileRooms, saveReptileRooms, type ReptileRoomSlot, type ReptileRoomWorkspace } from "../services/reptileRoomService";
 import type { Snake } from "../types/Snake";
 import "../styles/reptile-room-first-person.css";
 
@@ -11,15 +11,15 @@ const snakeName = (snake: Snake | undefined) => snake?.name ?? "Unnamed Hoggy";
 const slotWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
 const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.h);
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
+const STACK_GAP_CM = 5;
 
-function RoomBox({ slot, selected, onSelect, unit, room, eyeY }: { slot: ReptileRoomSlot; selected: boolean; onSelect: () => void; unit: number; room: Vec3; eyeY: number }) {
+function RoomBox({ slot, selected, stackMode, onSelect, unit, room, eyeY }: { slot: ReptileRoomSlot; selected: boolean; stackMode: boolean; onSelect: () => void; unit: number; room: Vec3; eyeY: number }) {
   const width = slotWidth(slot) * unit;
-  const depth = slotDepth(slot) * unit;
   const height = slotHeight(slot) * unit;
   const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * unit;
   const z = (slot.y + slotDepth(slot) / 2 - room.z / 2) * unit;
-  const bottom = eyeY - height;
-  return <button type="button" className={`rrfp-vivarium ${selected ? "is-selected" : ""}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${bottom}px,${z}px)` }} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onSelect(); }} aria-label={`Inspect ${slot.label}`} data-depth={depth}>
+  const bottom = eyeY - (slot.z ?? 0) * unit - height;
+  return <button type="button" className={`rrfp-vivarium ${selected ? "is-selected" : ""} ${stackMode ? "is-stack-target" : ""}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${bottom}px,${z}px)` }} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onSelect(); }} aria-label={stackMode ? `Stack selected vivarium on ${slot.label}` : `Inspect ${slot.label}`}>
     <span className="rrfp-vivarium-face">{slot.photoUrl ? <img src={slot.photoUrl} alt="" /> : <span className="rrfp-empty">EMPTY</span>}<span className="rrfp-glass"/><span className="rrfp-door-bar"/><span className="rrfp-label">{slot.label}</span></span>
     <span className="rrfp-vivarium-top"/><span className="rrfp-vivarium-side"/>
   </button>;
@@ -30,7 +30,7 @@ function FurnitureBox({ object, unit, room, eyeY }: { object: NonNullable<Reptil
   const height = object.height * unit;
   const x = (object.x + object.width / 2 - room.x / 2) * unit;
   const z = (object.y + object.depth / 2 - room.z / 2) * unit;
-  return <div className={`rrfp-furniture rrfp-kind-${object.kind}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${eyeY - height}px,${z}px)` }} aria-hidden="true"><span className="rrfp-furniture-face">{object.label}</span><span className="rrfp-furniture-top"/><span className="rrfp-furniture-side"/></div>;
+  return <div className={`rrfp-furniture rrfp-kind-${object.kind}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${eyeY - object.z * unit - height}px,${z}px)` }} aria-hidden="true"><span className="rrfp-furniture-face">{object.label}</span><span className="rrfp-furniture-top"/><span className="rrfp-furniture-side"/></div>;
 }
 
 export default function ReptileRoomFirstPerson3D() {
@@ -41,6 +41,7 @@ export default function ReptileRoomFirstPerson3D() {
   const [yaw, setYaw] = useState(0);
   const [pitch, setPitch] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [stackMode, setStackMode] = useState(false);
   const [notice, setNotice] = useState("");
   const drag = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
 
@@ -54,7 +55,6 @@ export default function ReptileRoomFirstPerson3D() {
   const roomWidth = Math.max(100, room?.width ?? 490);
   const roomDepth = Math.max(100, room?.depth ?? 315);
   const roomHeight = Math.max(100, room?.height ?? 245);
-  // One fixed cm-to-world calibration keeps the room and every vivarium proportional.
   const unit = 1 / 2.25;
   const scaledWidth = roomWidth * unit;
   const scaledDepth = roomDepth * unit;
@@ -70,41 +70,59 @@ export default function ReptileRoomFirstPerson3D() {
   }, [user]);
   useEffect(() => { if (!loading && !profileLoading && user) void load(); }, [loading, profileLoading, user, load]);
 
-  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    drag.current = { x: event.clientX, y: event.clientY, yaw, pitch };
-    event.currentTarget.setPointerCapture(event.pointerId);
+  const updateSlot = useCallback(async (slotId: string, patch: Partial<ReptileRoomSlot>) => {
+    if (!user || !room) return;
+    const nextSlots = room.slots.map((slot) => slot.id === slotId ? { ...slot, ...patch } : slot);
+    const nextRoom = { ...room, slots: nextSlots, updatedAt: new Date().toISOString() };
+    const nextRooms = rooms.map((item) => item.id === room.id ? nextRoom : item);
+    setRooms(nextRooms);
+    try { await saveReptileRooms(user.uid, nextRooms); setNotice("Vivarium position saved."); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "Unable to save vivarium position."); }
+  }, [room, rooms, user]);
+
+  const moveSelected = async (dx: number, dy: number, dz = 0) => {
+    if (!selected || !room) return;
+    const maxX = Math.max(0, roomWidth - slotWidth(selected));
+    const maxY = Math.max(0, roomDepth - slotDepth(selected));
+    const maxZ = Math.max(0, roomHeight - slotHeight(selected));
+    await updateSlot(selected.id, { x: clamp(selected.x + dx, 0, maxX), y: clamp(selected.y + dy, 0, maxY), z: clamp((selected.z ?? 0) + dz, 0, maxZ) });
   };
-  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    const deltaX = event.clientX - drag.current.x;
-    const deltaY = event.clientY - drag.current.y;
-    setYaw(clamp(drag.current.yaw - deltaX * 0.16, -180, 180));
-    setPitch(clamp(drag.current.pitch + deltaY * 0.12, -55, 55));
+
+  const selectSlot = (slotId: string) => {
+    if (stackMode && selectedId && slotId !== selectedId) {
+      const lower = slots.find((slot) => slot.id === slotId);
+      const upper = selected;
+      if (!lower || !upper) return;
+      const maxZ = Math.max(0, roomHeight - slotHeight(upper));
+      const targetZ = (lower.z ?? 0) + slotHeight(lower) + STACK_GAP_CM;
+      if (targetZ > maxZ) { setNotice("That vivarium would exceed the room ceiling."); return; }
+      void updateSlot(upper.id, { x: lower.x, y: lower.y, z: targetZ, stackGroupId: lower.stackGroupId ?? lower.id, stackIndex: (lower.stackIndex ?? 0) + 1, parentSlotId: lower.id });
+      setStackMode(false);
+      setNotice(`${upper.label} stacked on ${lower.label}.`);
+      return;
+    }
+    setSelectedId(slotId);
   };
-  const pointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    drag.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-  };
-  const centreView = () => { setYaw(0); setPitch(0); };
+
+  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => { if (event.button !== 0) return; drag.current = { x: event.clientX, y: event.clientY, yaw, pitch }; event.currentTarget.setPointerCapture(event.pointerId); };
+  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => { if (!drag.current) return; setYaw(clamp(drag.current.yaw - (event.clientX - drag.current.x) * 0.16, -180, 180)); setPitch(clamp(drag.current.pitch + (event.clientY - drag.current.y) * 0.12, -55, 55)); };
+  const pointerUp = (event: ReactPointerEvent<HTMLDivElement>) => { drag.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); };
 
   if (loading || profileLoading) return <div className="rrfp-loading">Loading your room…</div>;
   if (!room) return <div className="rrfp-loading"><h2>No reptile room yet</h2><p>Build your scaled room first, then come back here.</p></div>;
 
   return <main className="reptile-room-first-person">
-    <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · You are standing at the centre of the room.</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={centreView}>Centre view</button></div></header>
+    <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · You are standing at the centre of the room.</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={() => { setYaw(0); setPitch(0); }}>Centre view</button></div></header>
     {notice && <div className="rrfp-notice">{notice}</div>}
     <section className="rrfp-viewport" aria-label="First-person reptile room view" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
       <div className="rrfp-crosshair" aria-hidden="true"><span/></div>
-      <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre · eye height 165 cm</span><span>Drag left / right to look around</span><span>Drag up / down to look up / down</span><span>Tap a vivarium to inspect</span></div>
-      <div className="rrfp-camera">
-        <div className="rrfp-world" style={{ transform: `rotateX(${pitch}deg) rotateY(${-yaw}deg)` }}>
-          <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
-          {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} onSelect={() => setSelectedId(slot.id)} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
-          {objects.map((object) => <FurnitureBox key={object.id} object={object} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
-        </div>
-      </div>
+      <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre · eye height 165 cm</span><span>Drag to look left/right/up/down</span><span>{stackMode ? "STACK MODE · tap a lower vivarium" : "Tap a vivarium to inspect"}</span></div>
+      <div className="rrfp-camera"><div className="rrfp-world" style={{ transform: `rotateX(${pitch}deg) rotateY(${-yaw}deg)` }}>
+        <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
+        {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} stackMode={stackMode && slot.id !== selectedId} onSelect={() => selectSlot(slot.id)} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
+        {objects.map((object) => <FurnitureBox key={object.id} object={object} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
+      </div></div>
     </section>
-    {selected && <aside className="rrfp-inspector" aria-label="Vivarium information"><button type="button" className="rrfp-close" onClick={() => setSelectedId(null)} aria-label="Close vivarium information">×</button><span className="rrfp-inspector-kicker">VIVARIUM</span><h2>{selected.label}</h2><div className="rrfp-inspector-grid"><div><span>Occupant</span><strong>{selectedSnake ? snakeName(selectedSnake) : "Empty"}</strong></div><div><span>Dimensions</span><strong>{slotWidth(selected)} × {slotDepth(selected)} × {slotHeight(selected)} cm</strong></div><div><span>Status</span><strong>{selected.lifecycleStatus ?? (selectedSnake ? "active" : "empty")}</strong></div><div><span>Position</span><strong>{Math.round(selected.x)}, {Math.round(selected.y)}</strong></div></div><p>True room-space dimensions are now used for the first-person view.</p></aside>}
+    {selected && <aside className="rrfp-inspector" aria-label="Vivarium information"><button type="button" className="rrfp-close" onClick={() => { setSelectedId(null); setStackMode(false); }} aria-label="Close vivarium information">×</button><span className="rrfp-inspector-kicker">VIVARIUM</span><h2>{selected.label}</h2><div className="rrfp-inspector-grid"><div><span>Occupant</span><strong>{selectedSnake ? snakeName(selectedSnake) : "Empty"}</strong></div><div><span>Dimensions</span><strong>{slotWidth(selected)} × {slotDepth(selected)} × {slotHeight(selected)} cm</strong></div><div><span>Position</span><strong>X {Math.round(selected.x)} · Y {Math.round(selected.y)} · Z {Math.round(selected.z ?? 0)} cm</strong></div><div><span>Stack</span><strong>{selected.parentSlotId ? "On another vivarium" : "Floor / free-standing"}</strong></div></div><div className="rrfp-editor"><strong>EDIT POSITION</strong><div className="rrfp-move-grid"><button type="button" onClick={() => void moveSelected(0, -5)}>↑ Forward</button><button type="button" onClick={() => void moveSelected(-5, 0)}>← Left</button><button type="button" onClick={() => void moveSelected(5, 0)}>Right →</button><button type="button" onClick={() => void moveSelected(0, 5)}>↓ Back</button><button type="button" onClick={() => void moveSelected(0, 0, 5)}>↑ Raise</button><button type="button" onClick={() => void moveSelected(0, 0, -5)}>↓ Lower</button></div><div className="rrfp-editor-actions"><button type="button" onClick={() => setStackMode((value) => !value)}>{stackMode ? "Cancel stacking" : "Pick up & stack on…"}</button><button type="button" onClick={() => void updateSlot(selected.id, { x: 0, y: 0, z: 0, parentSlotId: null, stackGroupId: null, stackIndex: 0 })}>Move to floor origin</button></div><small>Stacking uses real centimetre dimensions and places the selected vivarium above the lower vivarium with a {STACK_GAP_CM} cm service gap.</small></div></aside>}
   </main>;
 }
