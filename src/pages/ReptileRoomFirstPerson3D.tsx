@@ -13,7 +13,7 @@ const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.depth ?? slot.h ??
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 const STACK_GAP_CM = 0;
 const EYE_HEIGHT_CM = 165;
-const DEFAULT_VIEW_DISTANCE_CM = 122;
+const DEFAULT_VIEW_DISTANCE_CM = 45;
 const CAMERA_PERSPECTIVE_CM = 750;
 const MOVE_STEP_CM = 5;
 
@@ -84,6 +84,7 @@ export default function ReptileRoomFirstPerson3D() {
   const roomHeight = Math.max(100, room?.height ?? 240);
   const roomVec: Vec3 = { x: roomWidth, y: roomHeight, z: roomDepth };
   const eyeY = EYE_HEIGHT_CM;
+
   const cameraTarget = useMemo(() => selected ?? slots.find((slot) => slot.snakeId) ?? slots[0] ?? null, [selected, slots]);
   const cameraPose = useMemo(() => {
     if (!cameraTarget) return { x: 0, z: 0 };
@@ -91,7 +92,12 @@ export default function ReptileRoomFirstPerson3D() {
     const depth = slotDepth(cameraTarget);
     const targetX = cameraTarget.x + width / 2 - roomWidth / 2;
     const targetZ = cameraTarget.y + depth / 2 - roomDepth / 2;
-    return { x: targetX, z: targetZ + depth / 2 + DEFAULT_VIEW_DISTANCE_CM };
+    const desiredZ = targetZ + depth / 2 + DEFAULT_VIEW_DISTANCE_CM;
+    const roomFrontLimit = roomDepth / 2 - 20;
+    const roomBackLimit = -roomDepth / 2 + 20;
+    const cameraZ = clamp(desiredZ, roomBackLimit, roomFrontLimit);
+    const cameraX = clamp(targetX, -roomWidth / 2 + 20, roomWidth / 2 - 20);
+    return { x: cameraX, z: cameraZ };
   }, [cameraTarget, roomWidth, roomDepth]);
 
   const load = useCallback(async () => {
