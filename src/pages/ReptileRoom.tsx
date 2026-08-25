@@ -2,6 +2,7 @@ import { useState } from "react";
 import ReptileRoomV7 from "./ReptileRoomV7";
 import ReptileRoomFirstPerson3DNext from "./ReptileRoomFirstPerson3DNext";
 import "../styles/reptile-room-mode.css";
+import "../styles/reptile-room-camera-fix.css";
 
 export default function ReptileRoom() {
   const [mode, setMode] = useState<"2d" | "3d">("3d");
