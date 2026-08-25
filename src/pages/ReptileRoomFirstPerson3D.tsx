@@ -13,22 +13,24 @@ const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.depth ?? slot.h ??
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 const STACK_GAP_CM = 5;
 const EYE_HEIGHT_CM = 165;
+const VIEW_SCALE = 1.8;
 
-function RoomBox({ slot, selected, stackMode, onSelect, unit, room, eyeY, photo }: { slot: ReptileRoomSlot; selected: boolean; stackMode: boolean; onSelect: () => void; unit: number; room: Vec3; eyeY: number; photo?: string }) {
+function RoomBox({ slot, selected, stackMode, onSelect, unit, room, eyeY }: { slot: ReptileRoomSlot; selected: boolean; stackMode: boolean; onSelect: () => void; unit: number; room: Vec3; eyeY: number }) {
   const width = slotWidth(slot) * unit;
   const depth = slotDepth(slot) * unit;
   const height = slotHeight(slot) * unit;
   const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * unit;
-  const z = (slot.y + depth / unit / 2 - room.z / 2) * unit;
-  const bottom = eyeY - ((slot.z ?? 0) + height / unit) * unit;
+  const z = (slot.y + slotDepth(slot) / 2 - room.z / 2) * unit;
+  const bottom = eyeY - ((slot.z ?? 0) + slotHeight(slot)) * unit;
+  const image = slot.photoUrl;
 
   return <button type="button" className={`rrfp-vivarium ${selected ? "is-selected" : ""} ${stackMode ? "is-stack-target" : ""}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${bottom}px,${z}px)`, ["--rrfp-depth" as string]: `${depth}px` }} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onSelect(); }} aria-label={stackMode ? `Stack selected vivarium on ${slot.label}` : `Inspect ${slot.label}`}>
     <span className="rrfp-vivarium-face">
-      {photo ? <img src={photo} alt={slot.snakeId ? `${slot.label} occupant` : "Vivarium"} /> : <span className="rrfp-empty">EMPTY</span>}
+      {image ? <img src={image} alt={`${slot.label} vivarium`} /> : <span className="rrfp-empty">NO VIVARIUM PHOTO</span>}
+      <span className="rrfp-frame rrfp-frame-top"/><span className="rrfp-frame rrfp-frame-bottom"/><span className="rrfp-frame rrfp-frame-left"/><span className="rrfp-frame rrfp-frame-right"/>
       <span className="rrfp-glass"/><span className="rrfp-door-bar"/><span className="rrfp-label">{slot.label}</span>
     </span>
-    <span className="rrfp-vivarium-top" aria-hidden="true"/>
-    <span className="rrfp-vivarium-side" aria-hidden="true"/>
+    <span className="rrfp-vivarium-top" aria-hidden="true"/><span className="rrfp-vivarium-side" aria-hidden="true"/>
   </button>;
 }
 
@@ -63,7 +65,7 @@ export default function ReptileRoomFirstPerson3D() {
   const roomWidth = Math.max(100, room?.width ?? 490);
   const roomDepth = Math.max(100, room?.depth ?? 315);
   const roomHeight = Math.max(100, room?.height ?? 245);
-  const unit = 1;
+  const unit = VIEW_SCALE;
   const scaledWidth = roomWidth * unit;
   const scaledDepth = roomDepth * unit;
   const eyeY = EYE_HEIGHT_CM * unit;
@@ -125,7 +127,7 @@ export default function ReptileRoomFirstPerson3D() {
       <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre · eye height {EYE_HEIGHT_CM} cm</span><span>Drag to look left/right/up/down</span><span>{stackMode ? "STACK MODE · tap a lower vivarium" : "Tap a vivarium to inspect"}</span></div>
       <div className="rrfp-camera"><div className="rrfp-world" style={{ transform: `rotateX(${pitch}deg) rotateY(${-yaw}deg)` }}>
         <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth, top: eyeY }} />
-        {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} stackMode={stackMode && slot.id !== selectedId} onSelect={() => selectSlot(slot.id)} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} photo={slot.photoUrl ?? (slot.snakeId ? snakeMap.get(slot.snakeId)?.photo : undefined)} />)}
+        {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} stackMode={stackMode && slot.id !== selectedId} onSelect={() => selectSlot(slot.id)} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
         {objects.map((object) => <FurnitureBox key={object.id} object={object} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
       </div></div>
     </section>
