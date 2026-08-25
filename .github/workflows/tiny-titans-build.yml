@@ -9,37 +9,56 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tiny-titans-build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
+
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+
       - name: Install application dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
+
       - name: Lint application
         run: npm run lint
+
       - name: Build application
         run: npm run build
+
       - name: App BOT static route coverage
         run: node scripts/check-route-coverage.mjs
+
       - name: Install browser test runner
         run: npm install --no-save --no-audit --no-fund @playwright/test@1.62.0
+
       - name: Install Chromium for App BOT
         run: npx playwright install --with-deps chromium
+
       - name: Start production preview for App BOT
         run: npm run preview -- --host 127.0.0.1 > /tmp/tiny-titans-preview.log 2>&1 &
+
       - name: App BOT browser route journeys
         run: npx playwright test scripts/app-bot/public-route-journeys.spec.mjs --config=playwright.config.mjs
+
       - name: Upload App BOT evidence
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: app-bot-browser-evidence
           path: |
@@ -47,9 +66,11 @@ jobs:
             test-results/
             /tmp/tiny-titans-preview.log
           if-no-files-found: ignore
+
       - name: Install Functions dependencies
         working-directory: functions
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
+
       - name: Check Functions JavaScript syntax
         working-directory: functions
         run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
