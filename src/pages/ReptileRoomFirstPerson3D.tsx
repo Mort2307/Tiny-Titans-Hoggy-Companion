@@ -16,7 +16,7 @@ const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 function RoomBox({ slot, selected, onSelect, scale, room, eyeHeight }: { slot: ReptileRoomSlot; selected: boolean; onSelect: () => void; scale: number; room: Vec3; eyeHeight: number }) {
   const width = slotWidth(slot) * scale;
   const height = slotHeight(slot) * scale;
-  const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * scale;
+  const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * scale - width / 2;
   const y = eyeHeight - height;
   const z = (slot.y + slotDepth(slot) / 2 - room.z / 2) * scale;
   const photo = slot.photoUrl;
@@ -48,7 +48,7 @@ function RoomBox({ slot, selected, onSelect, scale, room, eyeHeight }: { slot: R
 function FurnitureBox({ object, scale, room, eyeHeight }: { object: NonNullable<ReptileRoomWorkspace["objects"]>[number]; scale: number; room: Vec3; eyeHeight: number }) {
   const width = object.width * scale;
   const height = object.height * scale;
-  const x = (object.x + object.width / 2 - room.x / 2) * scale;
+  const x = (object.x + object.width / 2 - room.x / 2) * scale - width / 2;
   const y = eyeHeight - height;
   const z = (object.y + object.depth / 2 - room.z / 2) * scale;
 
@@ -78,8 +78,8 @@ export default function ReptileRoomFirstPerson3D() {
   const selected = slots.find((slot) => slot.id === selectedId) ?? null;
   const selectedSnake = selected?.snakeId ? snakeMap.get(selected.snakeId) : undefined;
 
-  // The CSS scene is deliberately camera-first: the viewport centre is the player's
-  // eye position, and every room coordinate is transformed relative to that exact point.
+  // The viewport centre is the player's eye position. Room coordinates are transformed
+  // relative to that exact origin, so the user is genuinely standing inside the room.
   const roomWidth = Math.max(100, room?.width ?? 490);
   const roomDepth = Math.max(100, room?.depth ?? 315);
   const roomHeight = Math.max(100, room?.height ?? 245);
@@ -151,9 +151,16 @@ export default function ReptileRoomFirstPerson3D() {
         <div className="rrfp-crosshair" aria-hidden="true"><span /></div>
         <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>POV: room centre</span><span>Drag left / right to look</span><span>Tap a vivarium to inspect</span></div>
 
-        <div className="rrfp-camera" aria-hidden="true">
+        <div className="rrfp-camera">
           <div className="rrfp-world" style={{ transform: `rotateY(${-yaw}deg)` }}>
-            <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
+            <div
+              className="rrfp-floor"
+              style={{
+                width: scaledWidth,
+                height: scaledDepth,
+                transform: `translate(-50%, calc(-50% + ${eyeHeight}px)) rotateX(90deg)`,
+              }}
+            />
             {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} onSelect={() => setSelectedId(slot.id)} scale={scale} eyeHeight={eyeHeight} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
             {objects.map((object) => <FurnitureBox key={object.id} object={object} scale={scale} eyeHeight={eyeHeight} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
           </div>
