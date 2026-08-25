@@ -13,25 +13,35 @@ const slotWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
 const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.h);
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 
+/**
+ * CSS 3D first-person renderer.
+ *
+ * The camera is a fixed point at the exact centre of the viewport. World objects
+ * are expressed relative to the player's eye position; looking around rotates
+ * the world around that point. There is deliberately no room shell, orbit target,
+ * or camera translation involved in the look interaction.
+ */
 function RoomBox({ slot, selected, onSelect, scale, room, eyeHeight }: { slot: ReptileRoomSlot; selected: boolean; onSelect: () => void; scale: number; room: Vec3; eyeHeight: number }) {
   const width = slotWidth(slot) * scale;
+  const depth = slotDepth(slot) * scale;
   const height = slotHeight(slot) * scale;
-  const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * scale - width / 2;
-  const y = eyeHeight - height;
-  const z = (slot.y + slotDepth(slot) / 2 - room.z / 2) * scale;
+  const worldX = (slot.x + slotWidth(slot) / 2 - room.x / 2) * scale;
+  const worldZ = (slot.y + slotDepth(slot) / 2 - room.z / 2) * scale;
+  const bottomY = eyeHeight - height;
   const photo = slot.photoUrl;
 
   return (
     <button
       type="button"
       className={`rrfp-vivarium ${selected ? "is-selected" : ""}`}
-      style={{ width, height, transform: `translate3d(${x}px, ${y}px, ${z}px)` }}
+      style={{ width, height, transform: `translate3d(${worldX - width / 2}px, ${bottomY}px, ${worldZ}px)` }}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => {
         event.stopPropagation();
         onSelect();
       }}
       aria-label={`Inspect ${slot.label}`}
+      data-depth={depth}
     >
       <span className="rrfp-vivarium-face">
         {photo ? <img src={photo} alt="" /> : <span className="rrfp-empty">EMPTY</span>}
@@ -48,12 +58,12 @@ function RoomBox({ slot, selected, onSelect, scale, room, eyeHeight }: { slot: R
 function FurnitureBox({ object, scale, room, eyeHeight }: { object: NonNullable<ReptileRoomWorkspace["objects"]>[number]; scale: number; room: Vec3; eyeHeight: number }) {
   const width = object.width * scale;
   const height = object.height * scale;
-  const x = (object.x + object.width / 2 - room.x / 2) * scale - width / 2;
-  const y = eyeHeight - height;
-  const z = (object.y + object.depth / 2 - room.z / 2) * scale;
+  const worldX = (object.x + object.width / 2 - room.x / 2) * scale;
+  const worldZ = (object.y + object.depth / 2 - room.z / 2) * scale;
+  const bottomY = eyeHeight - height;
 
   return (
-    <div className={`rrfp-furniture rrfp-kind-${object.kind}`} style={{ width, height, transform: `translate3d(${x}px, ${y}px, ${z}px)` }} aria-hidden="true">
+    <div className={`rrfp-furniture rrfp-kind-${object.kind}`} style={{ width, height, transform: `translate3d(${worldX - width / 2}px, ${bottomY}px, ${worldZ}px)` }} aria-hidden="true">
       <span className="rrfp-furniture-face">{object.label}</span>
       <span className="rrfp-furniture-top" />
       <span className="rrfp-furniture-side" />
@@ -78,15 +88,17 @@ export default function ReptileRoomFirstPerson3D() {
   const selected = slots.find((slot) => slot.id === selectedId) ?? null;
   const selectedSnake = selected?.snakeId ? snakeMap.get(selected.snakeId) : undefined;
 
-  // The viewport centre is the player's eye position. Room coordinates are transformed
-  // relative to that exact origin, so the user is genuinely standing inside the room.
   const roomWidth = Math.max(100, room?.width ?? 490);
   const roomDepth = Math.max(100, room?.depth ?? 315);
   const roomHeight = Math.max(100, room?.height ?? 245);
+
+  // One CSS pixel represents the same room-space scale for every axis. The
+  // viewport centre is the player's eye, not a point outside the room.
   const scale = clamp(1.05 - Math.max(roomWidth, roomDepth) / 1800, 0.55, 0.9);
-  const eyeHeight = roomHeight * scale * 0.58;
   const scaledWidth = roomWidth * scale;
   const scaledDepth = roomDepth * scale;
+  const scaledHeight = roomHeight * scale;
+  const eyeHeight = scaledHeight * 0.58;
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -130,7 +142,7 @@ export default function ReptileRoomFirstPerson3D() {
         <div>
           <span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span>
           <h1>{room.name}</h1>
-          <p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · POV locked to the centre of the room.</p>
+          <p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · You are standing at the centre of the room.</p>
         </div>
         <div className="rrfp-header-actions">
           {rooms.length > 1 && <select value={room.id} onChange={(event) => setRoomId(event.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}
@@ -149,18 +161,11 @@ export default function ReptileRoomFirstPerson3D() {
         onPointerCancel={pointerUp}
       >
         <div className="rrfp-crosshair" aria-hidden="true"><span /></div>
-        <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>POV: room centre</span><span>Drag left / right to look</span><span>Tap a vivarium to inspect</span></div>
+        <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre</span><span>Drag left / right to look around</span><span>Tap a vivarium to inspect</span></div>
 
-        <div className="rrfp-camera">
+        <div className="rrfp-camera" aria-hidden="true">
           <div className="rrfp-world" style={{ transform: `rotateY(${-yaw}deg)` }}>
-            <div
-              className="rrfp-floor"
-              style={{
-                width: scaledWidth,
-                height: scaledDepth,
-                transform: `translate(-50%, calc(-50% + ${eyeHeight}px)) rotateX(90deg)`,
-              }}
-            />
+            <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
             {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} onSelect={() => setSelectedId(slot.id)} scale={scale} eyeHeight={eyeHeight} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
             {objects.map((object) => <FurnitureBox key={object.id} object={object} scale={scale} eyeHeight={eyeHeight} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
           </div>
@@ -178,7 +183,7 @@ export default function ReptileRoomFirstPerson3D() {
             <div><span>Status</span><strong>{selected.lifecycleStatus ?? (selectedSnake ? "active" : "empty")}</strong></div>
             <div><span>Position</span><strong>{Math.round(selected.x)}, {Math.round(selected.y)}</strong></div>
           </div>
-          <p>This is the first-person inspection layer. Position and dimension editing can sit directly behind this panel next.</p>
+          <p>This first-person layer keeps the player at the room centre. Position and dimension editing can be added without changing the camera model.</p>
         </aside>
       )}
     </main>
