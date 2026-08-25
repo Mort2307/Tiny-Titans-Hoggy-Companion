@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ReptileRoomV7 from "./ReptileRoomV7";
-import ReptileRoom3D from "./ReptileRoom3D";
+import ReptileRoomFirstPerson3D from "./ReptileRoomFirstPerson3D";
 import "../styles/reptile-room-mode.css";
 
 export default function ReptileRoom() {
@@ -11,6 +11,6 @@ export default function ReptileRoom() {
       <button type="button" className={mode === "2d" ? "is-active" : ""} onClick={() => setMode("2d")} aria-pressed={mode === "2d"}>▦ 2D Builder</button>
       <button type="button" className={mode === "3d" ? "is-active" : ""} onClick={() => setMode("3d")} aria-pressed={mode === "3d"}>🧊 3D Room</button>
     </div>
-    {mode === "2d" ? <ReptileRoomV7 /> : <ReptileRoom3D />}
+    {mode === "2d" ? <ReptileRoomV7 /> : <ReptileRoomFirstPerson3D />}
   </div>;
 }
