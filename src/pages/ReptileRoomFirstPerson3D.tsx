@@ -9,21 +9,22 @@ type Vec3 = { x: number; y: number; z: number };
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const snakeName = (snake: Snake | undefined) => snake?.name ?? "Unnamed Hoggy";
 const slotWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
-const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.h ?? slot.depth ?? slot.w);
+const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.depth ?? slot.h ?? slot.w);
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 const STACK_GAP_CM = 5;
+const EYE_HEIGHT_CM = 165;
 
 function RoomBox({ slot, selected, stackMode, onSelect, unit, room, eyeY, photo }: { slot: ReptileRoomSlot; selected: boolean; stackMode: boolean; onSelect: () => void; unit: number; room: Vec3; eyeY: number; photo?: string }) {
   const width = slotWidth(slot) * unit;
   const depth = slotDepth(slot) * unit;
   const height = slotHeight(slot) * unit;
   const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * unit;
-  const z = (slot.y + slotDepth(slot) / 2 - room.z / 2) * unit;
-  const bottom = eyeY - (slot.z ?? 0) * unit - height;
+  const z = (slot.y + depth / unit / 2 - room.z / 2) * unit;
+  const bottom = eyeY - ((slot.z ?? 0) + height / unit) * unit;
 
   return <button type="button" className={`rrfp-vivarium ${selected ? "is-selected" : ""} ${stackMode ? "is-stack-target" : ""}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${bottom}px,${z}px)`, ["--rrfp-depth" as string]: `${depth}px` }} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onSelect(); }} aria-label={stackMode ? `Stack selected vivarium on ${slot.label}` : `Inspect ${slot.label}`}>
     <span className="rrfp-vivarium-face">
-      {photo ? <img src={photo} alt={slot.snakeId ? `${slot.label} occupant` : ""} /> : <span className="rrfp-empty">EMPTY</span>}
+      {photo ? <img src={photo} alt={slot.snakeId ? `${slot.label} occupant` : "Vivarium"} /> : <span className="rrfp-empty">EMPTY</span>}
       <span className="rrfp-glass"/><span className="rrfp-door-bar"/><span className="rrfp-label">{slot.label}</span>
     </span>
     <span className="rrfp-vivarium-top" aria-hidden="true"/>
@@ -62,12 +63,10 @@ export default function ReptileRoomFirstPerson3D() {
   const roomWidth = Math.max(100, room?.width ?? 490);
   const roomDepth = Math.max(100, room?.depth ?? 315);
   const roomHeight = Math.max(100, room?.height ?? 245);
-  // One CSS pixel represents one centimetre. Every room object uses this same unit,
-  // so a 120 cm vivarium is always twice the visual width of a 60 cm vivarium.
   const unit = 1;
   const scaledWidth = roomWidth * unit;
   const scaledDepth = roomDepth * unit;
-  const eyeY = 165 * unit;
+  const eyeY = EYE_HEIGHT_CM * unit;
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -106,9 +105,7 @@ export default function ReptileRoomFirstPerson3D() {
       const targetZ = (lower.z ?? 0) + slotHeight(lower) + STACK_GAP_CM;
       if (targetZ > maxZ) { setNotice("That vivarium would exceed the room ceiling."); return; }
       void updateSlot(upper.id, { x: lower.x, y: lower.y, z: targetZ, stackGroupId: lower.stackGroupId ?? lower.id, stackIndex: (lower.stackIndex ?? 0) + 1, parentSlotId: lower.id });
-      setStackMode(false);
-      setNotice(`${upper.label} stacked on ${lower.label}.`);
-      return;
+      setStackMode(false); setNotice(`${upper.label} stacked on ${lower.label}.`); return;
     }
     setSelectedId(slotId);
   };
@@ -125,9 +122,9 @@ export default function ReptileRoomFirstPerson3D() {
     {notice && <div className="rrfp-notice">{notice}</div>}
     <section className="rrfp-viewport" aria-label="First-person reptile room view" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
       <div className="rrfp-crosshair" aria-hidden="true"><span/></div>
-      <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre · eye height 165 cm</span><span>Drag to look left/right/up/down</span><span>{stackMode ? "STACK MODE · tap a lower vivarium" : "Tap a vivarium to inspect"}</span></div>
+      <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre · eye height {EYE_HEIGHT_CM} cm</span><span>Drag to look left/right/up/down</span><span>{stackMode ? "STACK MODE · tap a lower vivarium" : "Tap a vivarium to inspect"}</span></div>
       <div className="rrfp-camera"><div className="rrfp-world" style={{ transform: `rotateX(${pitch}deg) rotateY(${-yaw}deg)` }}>
-        <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
+        <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth, top: eyeY }} />
         {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} stackMode={stackMode && slot.id !== selectedId} onSelect={() => selectSlot(slot.id)} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} photo={slot.photoUrl ?? (slot.snakeId ? snakeMap.get(slot.snakeId)?.photo : undefined)} />)}
         {objects.map((object) => <FurnitureBox key={object.id} object={object} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
       </div></div>
