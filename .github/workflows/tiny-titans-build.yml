@@ -2,21 +2,45 @@ name: Tiny Titans CI
 
 on:
   push:
-    branches:
-      - master
-      - chore/lint-zero-hardening
-      - feature/feeding-preparation-notifications
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'functions/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'functions/package.json'
+      - 'functions/package-lock.json'
+      - 'vite.config.*'
+      - 'tsconfig*.json'
+      - 'playwright.config.*'
+      - 'firebase.json'
+      - '.github/workflows/tiny-titans-build.yml'
   pull_request:
-    branches:
-      - master
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'functions/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'functions/package.json'
+      - 'functions/package-lock.json'
+      - 'vite.config.*'
+      - 'tsconfig*.json'
+      - 'playwright.config.*'
+      - 'firebase.json'
+      - '.github/workflows/tiny-titans-build.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# Cancel superseded PR runs so repeated pushes do not consume another full runner.
+# Only one current CI run per PR/branch. New pushes cancel obsolete runs.
 concurrency:
-  group: tiny-titans-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: tiny-titans-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,8 +64,7 @@ jobs:
 
       # npm run build already includes TypeScript, route contracts, route coverage,
       # morph/source validation, app-health, learning, encoding, security and
-      # intelligence contract checks. Keeping these in one job avoids repeating
-      # checkout/setup/install/build work across separate workflows.
+      # intelligence contract checks. Keep them in one runner to avoid duplication.
       - name: Lint
         run: npm run lint
 
