@@ -1,0 +1,3 @@
+/* The 3D room uses centimetres as world units. Keep the camera at human eye height while the floor remains Z=0. */
+.rrfp-camera{top:calc(50% - 165px)!important}
+.rrfp-world{top:165px!important}
