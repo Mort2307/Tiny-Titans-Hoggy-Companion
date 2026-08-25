@@ -200,108 +200,47 @@ export default function ReptileRoomV7() {
 
   function duplicateRoom() {
     if (!room) return;
-    const copy = { ...room, id: id("room"), name: `${room.name} — Planning Copy`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), slots: room.slots.map((slot) => ({ ...slot, id: id("viv"), snakeId: null, label: `${slot.label} plan`, lifecycleStatus: "empty" as VivariumLifecycleStatus, availability: "available" as VivariumAvailability, stackGroupId: null, stackIndex: 0, parentSlotId: null, z: 0 })) };
-    void persist([...rooms, copy], "Room duplicated for planning.");
-    setRoomId(copy.id);
-    setSelected(null);
-  }
-
-  function createRoom() {
-    const next = newRoom(`Reptile Room ${rooms.length + 1}`, template, snakes);
-    void persist([...rooms, next], "New room created.");
-    setRoomId(next.id);
-    setSelected(null);
+    const copy = { ...room, id: id("room"), name: `${room.name} — Planning Copy`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), slots: room.slots.map((slot) => ({ ...slot, id: id("viv"), snakeId: null, label: `${slot.label} plan`, lifecycleStatus: "empty" as VivariumLifecycleStatus, availability: "available" as VivariumAvailability, stackGroupId: null, stackIndex: 0, parentSlotId: null, z: 0 })), storedSlots: room.storedSlots.map((slot) => ({ ...slot, id: id("viv") })), objects: (room.objects ?? []).map((object) => ({ ...object, id: id("obj") })) };
+    void persist([...rooms, copy], "Planning copy created — no snakes were moved."); setRoomId(copy.id); setSelected(null);
   }
 
   async function removeRoom() {
-    if (!room || rooms.length <= 1) return;
+    if (!room || rooms.length <= 1 || !user) return;
     const remaining = rooms.filter((item) => item.id !== room.id);
-    await deleteReptileRoom(user?.uid ?? "", room.id).catch(() => undefined);
-    setRooms(remaining); setRoomId(remaining[0].id); setSelected(null);
-    setNotice("Room deleted.");
+    try { await deleteReptileRoom(user.uid, room.id); setRooms(remaining); setRoomId(remaining[0].id); setSelected(null); setNotice("Room removed."); } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to remove room."); }
   }
 
-  function updateSelectedSlot(patch: Partial<ReptileRoomSlot>) {
-    if (!selectedSlot) return;
-    updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, ...patch } : slot) }));
-  }
+  if (loading || profileLoading) return <div className="page-container"><BackHomeButton /><h1>🏠 Build Your Reptile Room</h1><div className="tracker-card">Loading your room…</div></div>;
+  if (!room) return <div className="page-container"><BackHomeButton /><h1>🏠 Build Your Reptile Room</h1><div className="rr7-empty"><h2>Let's build your first room.</h2><p>Create a real room, then place your vivariums and equipment inside it.</p><button type="button" onClick={() => { const created = newRoom("Main Reptile Room", "custom", snakes); setRooms([created]); setRoomId(created.id); }}>Create Main Reptile Room</button></div></div>;
 
-  function updateSelectedObject(patch: Partial<ReptileRoomObject>) {
-    if (!selectedObject) return;
-    updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selectedObject.id ? { ...object, ...patch } : object) }));
-  }
+  const scale = Math.min(1, 920 / width, 620 / depth);
+  const floorWidth = width * scale;
+  const floorDepth = depth * scale;
+  const highest = Math.max(0, ...slots.map((slot) => slot.z + (slot.height ?? VIV.height)), ...objects.map((object) => object.z + object.height));
+  const selectedLabel = selectedSlot ? (snakesById.get(selectedSlot.snakeId ?? "")?.name ?? selectedSlot.label) : selectedObject?.label ?? "Nothing selected";
 
-  const floorScale = 4;
-  const floorWidth = width * floorScale;
-  const floorDepth = depth * floorScale;
-  const elevationHeight = height * floorScale;
+  return <div className="page-container reptile-room-v7">
+    <BackHomeButton />
+    <header className="rr7-header"><div><span className="rr7-kicker">🏠 MY SNAKES · ROOM BUILDER</span><h1>Build Your Reptile Room</h1><p>Design the physical room, place real vivariums, stack them vertically, add furniture and keep every snake record attached to its vivarium.</p></div><div className="rr7-header-actions"><button type="button" className={editing ? "rr7-primary" : ""} onClick={() => setEditing((value) => !value)}>{editing ? "🔒 Finish arranging" : "✏ Arrange room"}</button><button type="button" className="rr7-primary" onClick={addVivarium}>＋ Vivarium</button></div></header>
+    {notice && <div className="rr7-notice" role="status">{notice}</div>}
 
-  if (loading || profileLoading) return <main className="reptile-room-v7"><div className="rr7-empty">Loading your reptile rooms…</div></main>;
-  if (!user) return <main className="reptile-room-v7"><div className="rr7-empty">Sign in to build and save your reptile rooms.</div></main>;
+    <section className="rr7-workspaces"><div className="rr7-section-title"><div><span>ROOM WORKSPACES</span><h2>{rooms.length} room{rooms.length === 1 ? "" : "s"}</h2></div><div className="rr7-actions"><select value={template} onChange={(event) => setTemplate(event.target.value as ReptileRoomTemplate)}>{templates.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button type="button" onClick={() => { const created = newRoom(templates.find(([value]) => value === template)?.[1] ?? "New Room", template, snakes); void persist([...rooms, created], "Room created."); setRoomId(created.id); setSelected(null); }}>＋ New room</button><button type="button" onClick={duplicateRoom}>⧉ Duplicate</button></div></div><div className="rr7-room-tabs">{rooms.map((item) => <button key={item.id} type="button" className={item.id === room.id ? "is-active" : ""} onClick={() => { setRoomId(item.id); setSelected(null); }}>{item.name}<small>{item.slots.filter((slot) => slot.snakeId).length}/{item.slots.length} occupied</small></button>)}</div></section>
 
-  return (
-    <main className="reptile-room-v7">
-      <div className="rr7-header">
-        <div>
-          <div className="rr7-kicker">TINY TITANS • REPTILE SPACE BUILDER</div>
-          <h1>Build Your Reptile Room</h1>
-          <p>Design a real scaled reptile room around your actual vivariums. Rooms, placements, stacking, storage capacity and architectural objects stay tied to your workspace.</p>
-        </div>
-        <div className="rr7-header-actions"><BackHomeButton /><button onClick={duplicateRoom} disabled={!room}>Duplicate room</button><button onClick={removeRoom} disabled={!room || rooms.length <= 1}>Delete room</button></div>
-      </div>
+    <section className="rr7-spec"><div><span>ROOM</span><input value={room.name} onChange={(event) => setRooms((current) => current.map((item) => item.id === room.id ? { ...item, name: event.target.value } : item))} onBlur={() => void persist(rooms, "Room name saved.")} /></div><label>Units<select value={unit} onChange={(event) => updateRoom((current) => ({ ...current, unit: event.target.value as ReptileRoomUnit }))}><option value="metric">cm</option><option value="imperial">in</option></select></label><label>Width<input type="number" min="50" value={cm(width, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, width: Math.max(50, toCm(Number(event.target.value), unit)) }))} /></label><label>Depth<input type="number" min="50" value={cm(depth, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, depth: Math.max(50, toCm(Number(event.target.value), unit)) }))} /></label><label>Height<input type="number" min="50" value={cm(height, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, height: Math.max(50, toCm(Number(event.target.value), unit)) }))} /></label><div className="rr7-metric"><strong>{slots.length}</strong><span>vivariums</span></div><div className="rr7-metric"><strong>{labelDim(highest, unit)}</strong><span>highest point</span></div><button type="button" className="rr7-danger" disabled={rooms.length <= 1} onClick={() => void removeRoom()}>🗑 Room</button></section>
 
-      {notice && <div className="rr7-notice">{notice}</div>}
+    <section className="rr7-toolbar"><div className="rr7-view"><span>View</span><button type="button" className={view === "floor" ? "is-active" : ""} onClick={() => setView("floor")}>▦ Floor</button><button type="button" className={view === "elevation" ? "is-active" : ""} onClick={() => setView("elevation")}>▥ Elevation</button></div><div><span>Furniture</span>{OBJECTS.map(([kind, label]) => <button key={kind} type="button" onClick={() => addObject(kind)}>＋ {label}</button>)}</div><div className="rr7-save">{saving ? "⟳ Saving…" : "✓ Saved"}</div></section>
 
-      <section className="rr7-workspaces">
-        <div className="rr7-section-title"><div><span>WORKSPACES</span><h2>Rooms</h2></div><div className="rr7-actions"><select value={template} onChange={(event) => setTemplate(event.target.value as ReptileRoomTemplate)}>{templates.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button className="rr7-primary" onClick={createRoom}>Create room</button></div></div>
-        <div className="rr7-room-tabs">{rooms.map((item) => <button key={item.id} className={item.id === room?.id ? "is-active" : ""} onClick={() => { setRoomId(item.id); setSelected(null); }}><strong>{item.name}</strong><small>{item.template} • {labelDim(item.width, item.unit)} × {labelDim(item.depth, item.unit)}</small></button>)}</div>
+    <main className="rr7-builder">
+      <section className="rr7-canvas-card"><div className="rr7-canvas-head"><div><strong>{room.name}</strong><span>{labelDim(width, unit)} × {labelDim(depth, unit)} × {labelDim(height, unit)}</span></div><div><button type="button" onClick={() => updateRoom((current) => ({ ...current, slots: current.slots.map((slot, index) => ({ ...slot, x: clamp(10 + (index % 4) * (slot.w + 8), 0, width - slot.w), y: clamp(10 + Math.floor(index / 4) * (slot.h + 8), 0, depth - slot.h) })) }), "Grid layout applied.")}>▦ Grid</button><button type="button" onClick={() => updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => ({ ...slot, x: 8, y: slot.y })) }), "Wall layout applied.")}>🧱 Wall</button></div></div>
+        {view === "floor" ? <div className="rr7-floor-scroll"><div className="rr7-floor" style={{ width: floorWidth, height: floorDepth }}>
+          <span className="rr7-wall north">NORTH</span><span className="rr7-wall south">SOUTH</span><span className="rr7-wall west">WEST</span><span className="rr7-wall east">EAST</span>
+          {slots.map((slot) => { const selectedSlotNow = selected?.type === "slot" && selected.id === slot.id; const snake = slot.snakeId ? snakesById.get(slot.snakeId) : null; return <button key={slot.id} type="button" className={`rr7-item rr7-viv ${selectedSlotNow ? "is-selected" : ""} ${dragging === slot.id ? "is-dragging" : ""}`} style={{ left: slot.x * scale, top: slot.y * scale, width: slot.w * scale, height: slot.h * scale, zIndex: selectedSlotNow ? 500 : 20 + Math.round(slot.z) }} onPointerDown={(event) => moveSelected(event, "slot", slot.id)} onClick={() => setSelected({ type: "slot", id: slot.id })}><strong>{snake?.name ?? slot.label}</strong><small>{slot.stackGroupId ? `Stack L${(slot.stackIndex ?? 0) + 1}` : "Floor"} · Z {labelDim(slot.z, unit)}</small></button>; })}
+          {objects.map((object) => { const selectedObjectNow = selected?.type === "object" && selected.id === object.id; const size = worldSize(object); return <button key={object.id} type="button" className={`rr7-item rr7-object rr7-${object.kind} ${selectedObjectNow ? "is-selected" : ""}`} style={{ left: object.x * scale, top: object.y * scale, width: size.w * scale, height: size.d * scale, zIndex: selectedObjectNow ? 600 : 100 + Math.round(object.z) }} onPointerDown={(event) => moveSelected(event, "object", object.id)} onClick={() => setSelected({ type: "object", id: object.id })}><strong>{object.kind === "door" ? "🚪" : object.kind === "window" ? "🪟" : object.kind === "vent" ? "🌬" : "▦"}</strong><span>{object.label}</span></button>; })}
+        </div></div> : <div className="rr7-elevation"><div className="rr7-elevation-wall" style={{ width: floorWidth, height: Math.max(360, height * scale) }}>{slots.map((slot) => <button key={slot.id} type="button" className={`rr7-elev-item ${selected?.type === "slot" && selected.id === slot.id ? "is-selected" : ""}`} style={{ left: slot.x * scale, bottom: slot.z * scale, width: slot.w * scale, height: (slot.height ?? VIV.height) * scale }} onClick={() => setSelected({ type: "slot", id: slot.id })}><strong>{snakesById.get(slot.snakeId ?? "")?.name ?? slot.label}</strong><small>Z {labelDim(slot.z, unit)}</small></button>)}</div><p>Elevation makes vertical stacking and real Z heights obvious.</p></div>}
       </section>
 
-      {room && <>
-        <section className="rr7-spec">
-          <div><span>ROOM NAME</span><input value={room.name} onChange={(event) => updateRoom((current) => ({ ...current, name: event.target.value }))} /></div>
-          <label>WIDTH<input type="number" min={100} value={Math.round(cm(room.width, unit) * 10) / 10} onChange={(event) => updateRoom((current) => ({ ...current, width: Math.max(100, toCm(Number(event.target.value) || 100, unit)) }))} /></label>
-          <label>DEPTH<input type="number" min={100} value={Math.round(cm(room.depth, unit) * 10) / 10} onChange={(event) => updateRoom((current) => ({ ...current, depth: Math.max(100, toCm(Number(event.target.value) || 100, unit)) }))} /></label>
-          <label>HEIGHT<input type="number" min={100} value={Math.round(cm(room.height, unit) * 10) / 10} onChange={(event) => updateRoom((current) => ({ ...current, height: Math.max(100, toCm(Number(event.target.value) || 100, unit)) }))} /></label>
-          <label>UNIT<select value={unit} onChange={(event) => updateRoom((current) => ({ ...current, unit: event.target.value as ReptileRoomUnit }))}><option value="metric">cm</option><option value="imperial">in</option></select></label>
-          <div className="rr7-metric"><span>VIVARIUMS</span><strong>{slots.length}</strong></div>
-          <div className="rr7-metric"><span>OBJECTS</span><strong>{objects.length}</strong></div>
-          <button className="rr7-danger" onClick={removeRoom} disabled={rooms.length <= 1}>Delete</button>
-        </section>
-
-        <div className="rr7-toolbar">
-          <div><span>VIEW</span><button className={view === "floor" ? "is-active" : ""} onClick={() => setView("floor")}>Floor plan</button><button className={view === "elevation" ? "is-active" : ""} onClick={() => setView("elevation")}>Elevation</button></div>
-          <div><span>ROOM</span><button className={editing ? "is-active" : ""} onClick={() => setEditing((current) => !current)}>{editing ? "Editing on" : "Editing off"}</button><button onClick={addVivarium}>+ Vivarium</button></div>
-          <div><span>OBJECTS</span>{OBJECTS.map(([kind, label]) => <button key={kind} onClick={() => addObject(kind)}>{label}</button>)}</div>
-          <div className="rr7-save">{saving ? "Saving…" : "Saved"}</div>
-        </div>
-
-        <div className="rr7-builder">
-          <section className="rr7-canvas-card">
-            <div className="rr7-canvas-head"><div><strong>{room.name}</strong><span>{labelDim(room.width, unit)} × {labelDim(room.depth, unit)} × {labelDim(room.height, unit)}</span></div><div className="rr7-view"><span>Grid 25cm</span></div></div>
-            {view === "floor" ? <div className="rr7-floor-scroll"><div className="rr7-floor" style={{ width: floorWidth, height: floorDepth }}>{WALLS.map((wall) => <div key={wall} className={`rr7-wall ${wall}`}>{wall.toUpperCase()}</div>)}{objects.map((object) => <button key={object.id} type="button" className={`rr7-item rr7-object rr7-${object.kind} ${selected?.type === "object" && selected.id === object.id ? "is-selected" : ""} ${dragging === object.id ? "is-dragging" : ""}`} style={{ left: object.x * floorScale, top: object.y * floorScale, width: object.width * floorScale, height: Math.max(20, object.depth * floorScale), zIndex: 20 + object.z }} onPointerDown={(event) => { setSelected({ type: "object", id: object.id }); moveSelected(event, "object", object.id); }}>{object.label}<small>{object.height}cm</small></button>)}{slots.map((slot) => { const snake = slot.snakeId ? snakesById.get(slot.snakeId) : null; return <button key={slot.id} type="button" className={`rr7-item rr7-viv ${selected?.type === "slot" && selected.id === slot.id ? "is-selected" : ""} ${dragging === slot.id ? "is-dragging" : ""}`} style={{ left: slot.x * floorScale, top: slot.y * floorScale, width: slot.w * floorScale, height: slot.h * floorScale, zIndex: 100 + slot.z }} onPointerDown={(event) => { setSelected({ type: "slot", id: slot.id }); moveSelected(event, "slot", slot.id); }}><strong>{snake?.name ?? "Empty vivarium"}</strong><span>{slot.label}</span><small>{slot.lifecycleStatus} • {slot.condition}</small></button>; })}</div></div> : <div className="rr7-elevation"><div className="rr7-elevation-wall" style={{ width: floorWidth, height: elevationHeight }}>{slots.map((slot) => <button key={slot.id} type="button" className={`rr7-elev-item ${selected?.type === "slot" && selected.id === slot.id ? "is-selected" : ""}`} style={{ left: slot.x * floorScale, bottom: slot.z * floorScale, width: slot.w * floorScale, height: slot.height * floorScale }} onClick={() => setSelected({ type: "slot", id: slot.id })}>{slot.label}</button>)}</div><p>Elevation uses the room's real height and vivarium elevation/stack data.</p></div>}
-          </section>
-
-          <aside className="rr7-inspector">
-            {selectedSlot ? <>
-              <div className="rr7-inspector-title"><span>VIVARIUM INSPECTOR</span><h2>{selectedSlot.label}</h2></div>
-              <label>SNAKE<select value={selectedSlot.snakeId ?? ""} onChange={(event) => assignSnake(event.target.value)}><option value="">Unassigned</option>{freeSnakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label>
-              <label>LABEL<input value={selectedSlot.label} onChange={(event) => updateSelectedSlot({ label: event.target.value })} /></label>
-              <div className="rr7-grid"><label>WIDTH<input type="number" value={selectedSlot.w} onChange={(event) => updateSelectedSlot({ w: Math.max(10, Number(event.target.value) || 10) })} /></label><label>DEPTH<input type="number" value={selectedSlot.h} onChange={(event) => updateSelectedSlot({ h: Math.max(10, Number(event.target.value) || 10, ) })} /></label><label>HEIGHT<input type="number" value={selectedSlot.height} onChange={(event) => updateSelectedSlot({ height: Math.max(1, Number(event.target.value) || 1) })} /></label><label>ELEVATION<input type="number" value={selectedSlot.z} onChange={(event) => updateSelectedSlot({ z: Math.max(0, Number(event.target.value) || 0) })} /></label></div>
-              <div className="rr7-stack"><strong>Stacking</strong><small>{selectedSlot.stackGroupId ? `Stack ${selectedSlot.stackIndex + 1}` : "Floor level"}</small><div><button onClick={stackAbove}>Stack above</button><button onClick={unstack}>Unstack</button></div></div>
-              <div className="rr7-actions"><button className="rr7-danger" onClick={removeSelected}>Remove vivarium</button></div>
-            </> : selectedObject ? <>
-              <div className="rr7-inspector-title"><span>ROOM OBJECT</span><h2>{selectedObject.label}</h2></div>
-              <label>LABEL<input value={selectedObject.label} onChange={(event) => updateSelectedObject({ label: event.target.value })} /></label>
-              <div className="rr7-grid"><label>WIDTH<input type="number" value={selectedObject.width} onChange={(event) => updateSelectedObject({ width: Math.max(5, Number(event.target.value) || 5) })} /></label><label>DEPTH<input type="number" value={selectedObject.depth} onChange={(event) => updateSelectedObject({ depth: Math.max(5, Number(event.target.value) || 5) })} /></label><label>HEIGHT<input type="number" value={selectedObject.height} onChange={(event) => updateSelectedObject({ height: Math.max(1, Number(event.target.value) || 1) })} /></label><label>ROTATION<input type="number" value={selectedObject.rotation} onChange={(event) => updateSelectedObject({ rotation: Number(event.target.value) || 0 })} /></label></div>
-              <div className="rr7-stack"><strong>Spatial placement</strong><small>{selectedObject.wall ? `Snapped to ${selectedObject.wall} wall` : "Free placement"}</small><div>{WALLS.map((wall) => <button key={wall} onClick={() => updateSelectedObject({ wall })}>{wall}</button>)}</div></div>
-              <div className="rr7-actions"><button className="rr7-danger" onClick={removeSelected}>Remove object</button></div>
-            </> : <div className="rr7-no-selection">Select a vivarium or room object to inspect its dimensions, placement and spatial controls.</div>}
-          </aside>
-        </div>
-
-        <div className="rr7-footer"><span>Rooms: {rooms.length}</span><span>Vivarium slots: {slots.length}</span><span>Free snakes: {freeSnakes.length}</span><span className={editing ? "" : "rr7-bad"}>{editing ? "Drag mode enabled" : "Drag mode disabled"}</span></div>
-      </>}
+      <aside className="rr7-inspector">{selectedSlot ? <><div className="rr7-inspector-title"><span>🐍 VIVARIUM</span><h2>{selectedLabel}</h2></div><label>Snake<select value={selectedSlot.snakeId ?? ""} onChange={(event) => assignSnake(event.target.value)}><option value="">No snake assigned</option>{freeSnakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label><div className="rr7-grid"><label>Width<input type="number" value={cm(selectedSlot.w, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, w: Math.max(5, toCm(Number(event.target.value), unit)) } : slot) }))} /></label><label>Depth<input type="number" value={cm(selectedSlot.h, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, h: Math.max(5, toCm(Number(event.target.value), unit)), depth: Math.max(5, toCm(Number(event.target.value), unit)) } : slot) }))} /></label><label>Height<input type="number" value={cm(selectedSlot.height ?? VIV.height, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, height: Math.max(5, toCm(Number(event.target.value), unit)) } : slot) }))} /></label><label>Z height<input type="number" value={cm(selectedSlot.z, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, z: Math.max(0, toCm(Number(event.target.value), unit)) } : slot) }))} /></label></div><label>Label<input value={selectedSlot.label} onChange={(event) => updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, label: event.target.value } : slot) }))} /></label><div className="rr7-stack"><strong>Stacking</strong><div><button type="button" onClick={stackAbove}>⬆ Stack above</button><button type="button" onClick={unstack}>↕ Floor</button></div><small>{selectedSlot.stackGroupId ? `Level ${(selectedSlot.stackIndex ?? 0) + 1} · Z ${labelDim(selectedSlot.z, unit)}` : "Floor level"}</small></div><button type="button" className="rr7-danger" onClick={removeSelected}>🗑 Remove vivarium</button></> : selectedObject ? <><div className="rr7-inspector-title"><span>🧱 ROOM OBJECT</span><h2>{selectedObject.label}</h2></div><label>Label<input value={selectedObject.label} onChange={(event) => updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selectedObject.id ? { ...object, label: event.target.value } : object) }))} /></label><div className="rr7-grid"><label>Width<input type="number" value={cm(selectedObject.width, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selectedObject.id ? { ...object, width: Math.max(1, toCm(Number(event.target.value), unit)) } : object) }))} /></label><label>Depth<input type="number" value={cm(selectedObject.depth, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selectedObject.id ? { ...object, depth: Math.max(1, toCm(Number(event.target.value), unit)) } : object) }))} /></label><label>Height<input type="number" value={cm(selectedObject.height, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selectedObject.id ? { ...object, height: Math.max(1, toCm(Number(event.target.value), unit)) } : object) }))} /></label><label>Z height<input type="number" value={cm(selectedObject.z, unit).toFixed(1)} onChange={(event) => updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selectedObject.id ? { ...object, z: Math.max(0, toCm(Number(event.target.value), unit)) } : object) }))} /></label></div>{(selectedObject.kind === "door" || selectedObject.kind === "window" || selectedObject.kind === "vent") && <label>Wall<select value={selectedObject.wall ?? "none"} onChange={(event) => updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selectedObject.id ? { ...object, wall: event.target.value === "none" ? null : event.target.value as ReptileWall } : object) }))}><option value="none">Free standing</option>{WALLS.map((wall) => <option key={wall} value={wall}>{wall}</option>)}</select></label>}<button type="button" className="rr7-danger" onClick={removeSelected}>🗑 Remove object</button></> : <div className="rr7-no-selection"><strong>Select something in the room.</strong><p>Click a vivarium or furniture item to edit its real dimensions, assignment, elevation and placement.</p></div>}</aside>
     </main>
-  );
+    <footer className="rr7-footer"><span>{slots.filter((slot) => slot.snakeId).length} snakes placed</span><span>{objects.length} room objects</span><span>{rooms.reduce((sum, item) => sum + item.storedSlots.length, 0)} stored assets</span><span className={highest > height ? "rr7-bad" : ""}>{highest > height ? "⚠ Asset exceeds room height" : "✓ Geometry within room height"}</span></footer>
+  </div>;
 }
