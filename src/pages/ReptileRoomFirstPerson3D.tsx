@@ -94,7 +94,7 @@ export default function ReptileRoomFirstPerson3D() {
     const targetZ = cameraTarget.y + depth / 2 - roomDepth / 2;
     const desiredZ = targetZ + depth / 2 + DEFAULT_VIEW_DISTANCE_CM;
     return {
-      x: clamp(desiredZ === desiredZ ? targetX : 0, -roomWidth / 2 + 10, roomWidth / 2 - 10),
+      x: clamp(targetX, -roomWidth / 2 + 10, roomWidth / 2 - 10),
       z: clamp(desiredZ, -roomDepth / 2 + 10, roomDepth / 2 - 10),
     };
   }, [cameraTarget, roomWidth, roomDepth]);
@@ -170,7 +170,7 @@ export default function ReptileRoomFirstPerson3D() {
   if (loading || profileLoading) return <div className="rrfp-loading">Loading your room…</div>;
   if (!room) return <div className="rrfp-loading"><h2>No reptile room yet</h2><p>Build your scaled room first, then come back here.</p></div>;
 
-  const worldTransform = `rotateX(${-pitch}deg) rotateY(${-yaw}deg) translate3d(${-cameraPose.x}px,${eyeY}px,${-cameraPose.z}px)`;
+  const worldTransform = `rotateX(${-pitch}deg) rotateY(${-yaw}deg) translate3d(${-cameraPose.x}px,0,${-cameraPose.z}px)`;
 
   return <main className="reptile-room-first-person">
     <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · true 1:1 room scale · eye height {EYE_HEIGHT_CM} cm · viewing distance {DEFAULT_VIEW_DISTANCE_CM} cm</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={() => { setYaw(0); setPitch(0); }}>Centre view</button></div></header>
