@@ -24,18 +24,18 @@ function RoomBox({ slot, selected, stackMode, onSelect, unit, room, eyeY }: { sl
   const bottom = eyeY - ((slot.z ?? 0) + slotHeight(slot)) * unit;
   const image = slot.photoUrl;
 
-  return <button type="button" className={`rrfp-vivarium ${selected ? "is-selected" : ""} ${stackMode ? "is-stack-target" : ""}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${bottom}px,${z}px)`, ["--rrfp-depth" as string]: `${depth}px`, ["--rrfp-width" as string]: `${width}px` }} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onSelect(); }} aria-label={stackMode ? `Stack selected vivarium on ${slot.label}` : `Inspect ${slot.label}`}>
+  return <button type="button" className={`rrfp-vivarium ${selected ? "is-selected" : ""} ${stackMode ? "is-stack-target" : ""}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${bottom}px,${z}px)`, ["--rrfp-depth" as string]: `${depth}px` }} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onSelect(); }} aria-label={stackMode ? `Stack selected vivarium on ${slot.label}` : `Inspect ${slot.label}`}>
     <span className="rrfp-vivarium-cabinet">
       <span className="rrfp-vivarium-face">
-        <span className="rrfp-glass-panel">
-          {image ? <img src={image} alt={`${slot.label} vivarium`} /> : <span className="rrfp-empty">NO VIVARIUM PHOTO</span>}
-          <span className="rrfp-glass-reflection" />
-        </span>
+        <span className="rrfp-glass-panel">{image ? <img src={image} alt={`${slot.label} vivarium`} /> : <span className="rrfp-empty">NO VIVARIUM PHOTO</span>}<span className="rrfp-glass-reflection" /></span>
         <span className="rrfp-frame rrfp-frame-top"/><span className="rrfp-frame rrfp-frame-bottom"/><span className="rrfp-frame rrfp-frame-left"/><span className="rrfp-frame rrfp-frame-right"/>
         <span className="rrfp-door-bar"/><span className="rrfp-handle"/><span className="rrfp-label">{slot.label}</span>
       </span>
-      <span className="rrfp-vivarium-top" aria-hidden="true"/><span className="rrfp-vivarium-side" aria-hidden="true"/>
+      <span className="rrfp-vivarium-back" aria-hidden="true"/>
+      <span className="rrfp-vivarium-top" aria-hidden="true"/>
       <span className="rrfp-vivarium-bottom" aria-hidden="true"/>
+      <span className="rrfp-vivarium-left" aria-hidden="true"/>
+      <span className="rrfp-vivarium-right" aria-hidden="true"/>
     </span>
   </button>;
 }
@@ -67,7 +67,6 @@ export default function ReptileRoomFirstPerson3D() {
   const snakeMap = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]);
   const selected = slots.find((slot) => slot.id === selectedId) ?? null;
   const selectedSnake = selected?.snakeId ? snakeMap.get(selected.snakeId) : undefined;
-
   const roomWidth = Math.max(100, room?.width ?? 490);
   const roomDepth = Math.max(100, room?.depth ?? 315);
   const roomHeight = Math.max(100, room?.height ?? 245);
