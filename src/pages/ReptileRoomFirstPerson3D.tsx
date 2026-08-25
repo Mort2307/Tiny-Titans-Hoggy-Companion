@@ -128,7 +128,7 @@ export default function ReptileRoomFirstPerson3D() {
         <div>
           <span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span>
           <h1>{room.name}</h1>
-          <p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · You are standing in the centre of the room.</p>
+          <p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · POV locked to the centre of the room.</p>
         </div>
         <div className="rrfp-header-actions">
           {rooms.length > 1 && <select value={room.id} onChange={(event) => setRoomId(event.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}
@@ -147,10 +147,13 @@ export default function ReptileRoomFirstPerson3D() {
         onPointerCancel={pointerUp}
       >
         <div className="rrfp-crosshair" aria-hidden="true"><span /></div>
-        <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>Drag left / right to look around</span><span>Tap a vivarium to inspect</span></div>
+        <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>Standing at room centre</span><span>Drag left / right to look around</span><span>Tap a vivarium to inspect</span></div>
 
-        <div className="rrfp-camera" style={{ transform: `translate3d(0, ${eyeHeight}px, 0) rotateY(${yaw}deg)` }}>
-          <div className="rrfp-world">
+        <div className="rrfp-camera">
+          <div
+            className="rrfp-world"
+            style={{ transform: `translate3d(0, ${eyeHeight}px, 0) rotateY(${-yaw}deg)` }}
+          >
             <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
             <div className="rrfp-wall rrfp-wall-back" style={{ width: scaledWidth, height: scaledHeight, transform: `translate3d(0, ${-scaledHeight / 2}px, ${-scaledDepth / 2}px)` }} />
             <div className="rrfp-wall rrfp-wall-front" style={{ width: scaledWidth, height: scaledHeight, transform: `translate3d(0, ${-scaledHeight / 2}px, ${scaledDepth / 2}px) rotateY(180deg)` }} />
