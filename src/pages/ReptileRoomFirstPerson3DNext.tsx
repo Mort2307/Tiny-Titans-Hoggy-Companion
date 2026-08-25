@@ -13,7 +13,6 @@ const slotWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
 const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.depth ?? slot.h ?? slot.w);
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 const EYE_HEIGHT_CM = 165;
-const CAMERA_PERSPECTIVE_CM = 750;
 const MOVE_STEP_CM = 5;
 
 function RoomWalls({ room }: { room: Vec3 }) {
@@ -27,7 +26,9 @@ function RoomWalls({ room }: { room: Vec3 }) {
 }
 
 function RoomBox({ slot, selected, stackMode, onSelect, room }: { slot: ReptileRoomSlot; selected: boolean; stackMode: boolean; onSelect: () => void; room: Vec3 }) {
-  const width = slotWidth(slot); const depth = slotDepth(slot); const height = slotHeight(slot);
+  const width = slotWidth(slot);
+  const depth = slotDepth(slot);
+  const height = slotHeight(slot);
   const x = slot.x + width / 2 - room.x / 2;
   const z = slot.y + depth / 2 - room.z / 2;
   const y = -(slot.z ?? 0) - height;
@@ -69,10 +70,16 @@ export default function ReptileRoomFirstPerson3DNext() {
   const snakeMap = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]);
   const selected = slots.find((slot) => slot.id === selectedId) ?? null;
   const selectedSnake = selected?.snakeId ? snakeMap.get(selected.snakeId) : undefined;
+
+  // Room and vivarium dimensions are all centimetres. No visual scale multiplier is applied.
   const roomWidth = Math.max(100, room?.width ?? 360);
   const roomDepth = Math.max(100, room?.depth ?? 300);
   const roomHeight = Math.max(100, room?.height ?? 240);
   const roomVec: Vec3 = { x: roomWidth, y: roomHeight, z: roomDepth };
+  // Keep the POV inside the room while giving the user a slightly more useful stand-off from the centre.
+  // This is derived from the saved room depth rather than an arbitrary pixel zoom.
+  const cameraForwardCm = clamp(roomDepth * 0.12, 0, 60);
+  const cameraPerspectiveCm = clamp(roomDepth * 2.4, 650, 1200);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -90,7 +97,8 @@ export default function ReptileRoomFirstPerson3DNext() {
     const nextRoom = { ...room, slots: nextSlots, updatedAt: new Date().toISOString() };
     const nextRooms = rooms.map((item) => item.id === room.id ? nextRoom : item);
     setRooms(nextRooms);
-    try { await saveReptileRooms(user.uid, nextRooms); setNotice(successMessage); } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to save vivarium changes."); }
+    try { await saveReptileRooms(user.uid, nextRooms); setNotice(successMessage); }
+    catch (error) { setNotice(error instanceof Error ? error.message : "Unable to save vivarium changes."); }
   }, [room, rooms, user]);
 
   const placeFloor = async () => { if (selected) await updateSlot(selected.id, { z: 0, parentSlotId: null, stackGroupId: null, stackIndex: 0 }, `${selected.label} placed on the floor.`); };
@@ -155,12 +163,12 @@ export default function ReptileRoomFirstPerson3DNext() {
   if (!room) return <div className="rrfp-loading"><h2>No reptile room yet</h2><p>Build your scaled room first, then come back here.</p></div>;
 
   return <main className="reptile-room-first-person">
-    <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · true 1:1 room scale · eye height {EYE_HEIGHT_CM} cm</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={() => { setYaw(0); setPitch(0); }}>Centre view</button></div></header>
+    <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · true 1:1 scale · eye height {EYE_HEIGHT_CM} cm</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={() => { setYaw(0); setPitch(0); }}>Centre view</button></div></header>
     {notice && <div className="rrfp-notice">{notice}</div>}
     <section className="rrfp-viewport" aria-label="First-person reptile room view" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
       <div className="rrfp-crosshair" aria-hidden="true"><span/></div>
-      <div className="rrfp-hud"><strong>FIRST-PERSON · 1:1 SCALE</strong><span>POV: room centre · human eye height {EYE_HEIGHT_CM} cm</span><span>Drag to look left / right / up / down</span><span>{stackMode ? "STACK MODE · tap a lower vivarium" : "Tap a vivarium to inspect"}</span></div>
-      <div className="rrfp-camera" style={{ perspective: `${CAMERA_PERSPECTIVE_CM}px` }}><div className="rrfp-world" style={{ transform: `rotateX(${pitch}deg) rotateY(${-yaw}deg)` }}>
+      <div className="rrfp-hud"><strong>FIRST-PERSON · 1:1 SCALE</strong><span>POV: room centre + {Math.round(cameraForwardCm)} cm forward · eye height {EYE_HEIGHT_CM} cm</span><span>Drag to look left / right / up / down</span><span>{stackMode ? "STACK MODE · tap a lower vivarium" : "Tap a vivarium to inspect"}</span></div>
+      <div className="rrfp-camera" style={{ perspective: `${cameraPerspectiveCm}px` }}><div className="rrfp-world" style={{ transform: `translateZ(${cameraForwardCm}px) rotateX(${pitch}deg) rotateY(${-yaw}deg)` }}>
         <RoomWalls room={roomVec} />
         <div className="rrfp-floor" style={{ width: roomWidth, height: roomDepth, top: 0, transform: "translate(-50%,0) rotateX(90deg)" }} />
         {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} stackMode={stackMode && slot.id !== selectedId} onSelect={() => selectSlot(slot.id)} room={roomVec} />)}
@@ -171,7 +179,7 @@ export default function ReptileRoomFirstPerson3DNext() {
       <button type="button" className="rrfp-close" onClick={() => { setSelectedId(null); setStackMode(false); setEditMode(false); }} aria-label="Close vivarium information">×</button>
       <span className="rrfp-inspector-kicker">VIVARIUM</span><h2>{selected.label}</h2>
       <div className="rrfp-inspector-grid"><div><span>Occupant</span><strong>{selectedSnake ? snakeName(selectedSnake) : "Empty"}</strong></div><div><span>Dimensions</span><strong>{slotWidth(selected)} × {slotDepth(selected)} × {slotHeight(selected)} cm</strong></div><div><span>Position</span><strong>X {Math.round(selected.x)} · Y {Math.round(selected.y)} · Z {Math.round(selected.z ?? 0)} cm</strong></div><div><span>Placement</span><strong>{selected.parentSlotId ? "Stacked" : (selected.z ?? 0) > 0 ? "Raised" : "Floor"}</strong></div></div>
-      {!editMode ? <div className="rrfp-editor"><button type="button" className="rrfp-edit-vivarium" onClick={beginEdit}>✏️ Edit vivarium</button><strong>POSITION</strong><div className="rrfp-move-grid"><button type="button" onClick={() => void moveSelected(0, -MOVE_STEP_CM)}>↑ Forward</button><button type="button" onClick={() => void moveSelected(-MOVE_STEP_CM, 0)}>← Left</button><button type="button" onClick={() => void moveSelected(MOVE_STEP_CM, 0)}>Right →</button><button type="button" onClick={() => void moveSelected(0, MOVE_STEP_CM)}>↓ Back</button><button type="button" onClick={() => void moveSelected(0, 0, MOVE_STEP_CM)}>↑ Raise</button><button type="button" onClick={() => void moveSelected(0, 0, -MOVE_STEP_CM)}>↓ Lower</button></div><div className="rrfp-editor-actions"><button type="button" onClick={() => setStackMode((value) => !value)}>{stackMode ? "Cancel stacking" : "Pick up & stack on…"}</button><button type="button" onClick={() => void placeFloor()}>Snap to floor</button><button type="button" onClick={() => void snapWall()}>Snap to nearest wall</button></div></div> : <div className="rrfp-editor"><strong>EDIT VIVARIUM</strong><div className="rrfp-photo-editor"><span>VIVARIUM PHOTO</span>{selected.photoUrl ? <img src={selected.photoUrl} alt={`${selected.label} preview`} /> : <div className="rrfp-photo-empty">No photo assigned</div>}<div className="rrfp-editor-actions"><button type="button" onClick={() => photoInputRef.current?.click()} disabled={photoBusy}>{photoBusy ? "Uploading…" : selected.photoUrl ? "Replace photo" : "Add photo"}</button>{selected.photoUrl && <button type="button" onClick={() => void removePhoto()} disabled={photoBusy}>Remove photo</button>}</div><input ref={photoInputRef} className="rrfp-hidden-file" type="file" accept="image/*" onChange={handlePhoto} /></div><label>Width (cm)<input type="number" min="1" max={roomWidth} value={editDimensions.width} onChange={(e) => setEditDimensions((current) => ({ ...current, width: Number(e.target.value) }))}/></label><label>Depth (cm)<input type="number" min="1" max={roomDepth} value={editDimensions.depth} onChange={(e) => setEditDimensions((current) => ({ ...current, depth: Number(e.target.value) }))}/></label><label>Height (cm)<input type="number" min="1" max={roomHeight} value={editDimensions.height} onChange={(e) => setEditDimensions((current) => ({ ...current, height: Number(e.target.value) }))}/></label><div className="rrfp-editor-actions"><button type="button" onClick={() => void saveDimensions()}>Save vivarium</button><button type="button" onClick={() => setEditMode(false)}>Cancel</button></div><small>Dimensions and positions are stored in centimetres and constrained to the actual room volume.</small></div>}
+      {!editMode ? <div className="rrfp-editor"><button type="button" className="rrfp-edit-vivarium" onClick={beginEdit}>✏️ Edit vivarium</button><strong>POSITION</strong><div className="rrfp-move-grid"><button type="button" onClick={() => void moveSelected(0, -MOVE_STEP_CM)}>↑ Forward</button><button type="button" onClick={() => void moveSelected(-MOVE_STEP_CM, 0)}>← Left</button><button type="button" onClick={() => void moveSelected(MOVE_STEP_CM, 0)}>Right →</button><button type="button" onClick={() => void moveSelected(0, MOVE_STEP_CM)}>↓ Back</button><button type="button" onClick={() => void moveSelected(0, 0, MOVE_STEP_CM)}>↑ Raise</button><button type="button" onClick={() => void moveSelected(0, 0, -MOVE_STEP_CM)}>↓ Lower</button></div><div className="rrfp-editor-actions"><button type="button" onClick={() => setStackMode((value) => !value)}>{stackMode ? "Cancel stacking" : "Pick up & stack on…"}</button><button type="button" onClick={() => void placeFloor()}>Snap to floor</button><button type="button" onClick={() => void snapWall()}>Snap to nearest wall</button></div></div> : <div className="rrfp-editor"><strong>EDIT VIVARIUM</strong><div className="rrfp-photo-editor"><span>VIVARIUM PHOTO</span>{selected.photoUrl ? <img src={selected.photoUrl} alt={`${selected.label} preview`} /> : <div className="rrfp-photo-empty">No photo assigned</div>}<div className="rrfp-editor-actions"><button type="button" onClick={() => photoInputRef.current?.click()} disabled={photoBusy}>{photoBusy ? "Uploading…" : selected.photoUrl ? "Replace photo" : "Add photo"}</button>{selected.photoUrl && <button type="button" onClick={() => void removePhoto()} disabled={photoBusy}>Remove photo</button>}</div><input ref={photoInputRef} className="rrfp-hidden-file" type="file" accept="image/*" onChange={handlePhoto} /></div><label>Width (cm)<input type="number" min="1" max={roomWidth} value={editDimensions.width} onChange={(e) => setEditDimensions((current) => ({ ...current, width: Number(e.target.value) }))}/></label><label>Depth (cm)<input type="number" min="1" max={roomDepth} value={editDimensions.depth} onChange={(e) => setEditDimensions((current) => ({ ...current, depth: Number(e.target.value) }))}/></label><label>Height (cm)<input type="number" min="1" max={roomHeight} value={editDimensions.height} onChange={(e) => setEditDimensions((current) => ({ ...current, height: Number(e.target.value) }))}/></label><div className="rrfp-editor-actions"><button type="button" onClick={() => void saveDimensions()}>Save vivarium</button><button type="button" onClick={() => setEditMode(false)}>Cancel</button></div><small>Room and vivarium geometry are calculated directly from centimetre dimensions; there is no arbitrary visual scaling.</small></div>}
     </aside>}
   </main>;
 }
