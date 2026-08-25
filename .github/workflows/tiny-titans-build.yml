@@ -1,4 +1,4 @@
-name: Tiny Titans Build Check
+name: Tiny Titans CI
 
 on:
   push:
@@ -9,34 +9,54 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel superseded PR runs so repeated pushes do not consume another full runner.
+concurrency:
+  group: tiny-titans-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  ci:
+    name: Typecheck, lint, contracts, build and browser journeys
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+
       - name: Install application dependencies
-        run: npm install --no-audit --no-fund
-      - name: Lint application
+        run: npm ci --no-audit --no-fund
+
+      # npm run build already includes TypeScript, route contracts, route coverage,
+      # morph/source validation, app-health, learning, encoding, security and
+      # intelligence contract checks. Keeping these in one job avoids repeating
+      # checkout/setup/install/build work across separate workflows.
+      - name: Lint
         run: npm run lint
-      - name: Build application
+
+      - name: Production build and application contracts
         run: npm run build
-      - name: App BOT static route coverage
-        run: node scripts/check-route-coverage.mjs
-      - name: Install browser test runner
-        run: npm install --no-save --no-audit --no-fund @playwright/test@1.62.0
+
       - name: Install Chromium for App BOT
         run: npx playwright install --with-deps chromium
+
       - name: Start production preview for App BOT
         run: npm run preview -- --host 127.0.0.1 > /tmp/tiny-titans-preview.log 2>&1 &
+
       - name: App BOT browser route journeys
         run: npx playwright test scripts/app-bot/public-route-journeys.spec.mjs --config=playwright.config.mjs
+
       - name: Upload App BOT evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -47,9 +67,11 @@ jobs:
             test-results/
             /tmp/tiny-titans-preview.log
           if-no-files-found: ignore
+
       - name: Install Functions dependencies
         working-directory: functions
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
+
       - name: Check Functions JavaScript syntax
         working-directory: functions
         run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
