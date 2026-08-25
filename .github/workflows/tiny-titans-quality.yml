@@ -5,20 +5,15 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
-  workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: tiny-titans-quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   quality:
     name: Typecheck, lint and production build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -31,7 +26,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci
 
       - name: Lint
         run: npm run lint
