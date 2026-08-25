@@ -6,69 +6,31 @@ import type { Snake } from "../types/Snake";
 import "../styles/reptile-room-first-person.css";
 
 type Vec3 = { x: number; y: number; z: number };
-
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const snakeName = (snake: Snake | undefined) => snake?.name ?? "Unnamed Hoggy";
 const slotWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
 const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.h);
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 
-/**
- * CSS 3D first-person renderer.
- *
- * The camera is a fixed point at the exact centre of the viewport. World objects
- * are expressed relative to the player's eye position; looking around rotates
- * the world around that point. There is deliberately no room shell, orbit target,
- * or camera translation involved in the look interaction.
- */
-function RoomBox({ slot, selected, onSelect, scale, room, eyeHeight }: { slot: ReptileRoomSlot; selected: boolean; onSelect: () => void; scale: number; room: Vec3; eyeHeight: number }) {
-  const width = slotWidth(slot) * scale;
-  const depth = slotDepth(slot) * scale;
-  const height = slotHeight(slot) * scale;
-  const worldX = (slot.x + slotWidth(slot) / 2 - room.x / 2) * scale;
-  const worldZ = (slot.y + slotDepth(slot) / 2 - room.z / 2) * scale;
-  const bottomY = eyeHeight - height;
-  const photo = slot.photoUrl;
-
-  return (
-    <button
-      type="button"
-      className={`rrfp-vivarium ${selected ? "is-selected" : ""}`}
-      style={{ width, height, transform: `translate3d(${worldX - width / 2}px, ${bottomY}px, ${worldZ}px)` }}
-      onPointerDown={(event) => event.stopPropagation()}
-      onClick={(event) => {
-        event.stopPropagation();
-        onSelect();
-      }}
-      aria-label={`Inspect ${slot.label}`}
-      data-depth={depth}
-    >
-      <span className="rrfp-vivarium-face">
-        {photo ? <img src={photo} alt="" /> : <span className="rrfp-empty">EMPTY</span>}
-        <span className="rrfp-glass" />
-        <span className="rrfp-door-bar" />
-        <span className="rrfp-label">{slot.label}</span>
-      </span>
-      <span className="rrfp-vivarium-top" />
-      <span className="rrfp-vivarium-side" />
-    </button>
-  );
+function RoomBox({ slot, selected, onSelect, unit, room, eyeY }: { slot: ReptileRoomSlot; selected: boolean; onSelect: () => void; unit: number; room: Vec3; eyeY: number }) {
+  const width = slotWidth(slot) * unit;
+  const depth = slotDepth(slot) * unit;
+  const height = slotHeight(slot) * unit;
+  const x = (slot.x + slotWidth(slot) / 2 - room.x / 2) * unit;
+  const z = (slot.y + slotDepth(slot) / 2 - room.z / 2) * unit;
+  const bottom = eyeY - height;
+  return <button type="button" className={`rrfp-vivarium ${selected ? "is-selected" : ""}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${bottom}px,${z}px)` }} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onSelect(); }} aria-label={`Inspect ${slot.label}`} data-depth={depth}>
+    <span className="rrfp-vivarium-face">{slot.photoUrl ? <img src={slot.photoUrl} alt="" /> : <span className="rrfp-empty">EMPTY</span>}<span className="rrfp-glass"/><span className="rrfp-door-bar"/><span className="rrfp-label">{slot.label}</span></span>
+    <span className="rrfp-vivarium-top"/><span className="rrfp-vivarium-side"/>
+  </button>;
 }
 
-function FurnitureBox({ object, scale, room, eyeHeight }: { object: NonNullable<ReptileRoomWorkspace["objects"]>[number]; scale: number; room: Vec3; eyeHeight: number }) {
-  const width = object.width * scale;
-  const height = object.height * scale;
-  const worldX = (object.x + object.width / 2 - room.x / 2) * scale;
-  const worldZ = (object.y + object.depth / 2 - room.z / 2) * scale;
-  const bottomY = eyeHeight - height;
-
-  return (
-    <div className={`rrfp-furniture rrfp-kind-${object.kind}`} style={{ width, height, transform: `translate3d(${worldX - width / 2}px, ${bottomY}px, ${worldZ}px)` }} aria-hidden="true">
-      <span className="rrfp-furniture-face">{object.label}</span>
-      <span className="rrfp-furniture-top" />
-      <span className="rrfp-furniture-side" />
-    </div>
-  );
+function FurnitureBox({ object, unit, room, eyeY }: { object: NonNullable<ReptileRoomWorkspace["objects"]>[number]; unit: number; room: Vec3; eyeY: number }) {
+  const width = object.width * unit;
+  const height = object.height * unit;
+  const x = (object.x + object.width / 2 - room.x / 2) * unit;
+  const z = (object.y + object.depth / 2 - room.z / 2) * unit;
+  return <div className={`rrfp-furniture rrfp-kind-${object.kind}`} style={{ width, height, transform: `translate3d(${x - width / 2}px,${eyeY - height}px,${z}px)` }} aria-hidden="true"><span className="rrfp-furniture-face">{object.label}</span><span className="rrfp-furniture-top"/><span className="rrfp-furniture-side"/></div>;
 }
 
 export default function ReptileRoomFirstPerson3D() {
@@ -91,101 +53,45 @@ export default function ReptileRoomFirstPerson3D() {
   const roomWidth = Math.max(100, room?.width ?? 490);
   const roomDepth = Math.max(100, room?.depth ?? 315);
   const roomHeight = Math.max(100, room?.height ?? 245);
-
-  // One CSS pixel represents the same room-space scale for every axis. The
-  // viewport centre is the player's eye, not a point outside the room.
-  const scale = clamp(1.05 - Math.max(roomWidth, roomDepth) / 1800, 0.55, 0.9);
-  const scaledWidth = roomWidth * scale;
-  const scaledDepth = roomDepth * scale;
-  const scaledHeight = roomHeight * scale;
-  const eyeHeight = scaledHeight * 0.58;
+  // World units are centimetres divided by one fixed calibration constant.
+  // This preserves proportions across every room and every vivarium.
+  const unit = 1 / 2.25;
+  const scaledWidth = roomWidth * unit;
+  const scaledDepth = roomDepth * unit;
+  const eyeY = 165 * unit;
+  const scaledHeight = roomHeight * unit;
 
   const load = useCallback(async () => {
     if (!user) return;
     try {
       const [loadedRooms, loadedSnakes] = await Promise.all([loadReptileRooms(user.uid), getUserSnakes(user.uid)]);
-      setRooms(loadedRooms);
-      setSnakes(loadedSnakes);
+      setRooms(loadedRooms); setSnakes(loadedSnakes);
       if (loadedRooms.length) setRoomId((current) => loadedRooms.some((item) => item.id === current) ? current : loadedRooms[0].id);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to load your reptile room.");
-    }
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to load your reptile room."); }
   }, [user]);
+  useEffect(() => { if (!loading && !profileLoading && user) void load(); }, [loading, profileLoading, user, load]);
 
-  useEffect(() => {
-    if (!loading && !profileLoading && user) void load();
-  }, [loading, profileLoading, user, load]);
-
-  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    drag.current = { x: event.clientX, yaw };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    const delta = event.clientX - drag.current.x;
-    setYaw(clamp(drag.current.yaw - delta * 0.16, -110, 110));
-  };
-
-  const pointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    drag.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-  };
+  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => { if (event.button !== 0) return; drag.current = { x: event.clientX, yaw }; event.currentTarget.setPointerCapture(event.pointerId); };
+  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => { if (!drag.current) return; setYaw(clamp(drag.current.yaw - (event.clientX - drag.current.x) * 0.16, -110, 110)); };
+  const pointerUp = (event: ReactPointerEvent<HTMLDivElement>) => { drag.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); };
 
   if (loading || profileLoading) return <div className="rrfp-loading">Loading your room…</div>;
   if (!room) return <div className="rrfp-loading"><h2>No reptile room yet</h2><p>Build your scaled room first, then come back here.</p></div>;
 
-  return (
-    <main className="reptile-room-first-person">
-      <header className="rrfp-header">
-        <div>
-          <span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span>
-          <h1>{room.name}</h1>
-          <p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · You are standing at the centre of the room.</p>
+  return <main className="reptile-room-first-person">
+    <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · You are standing at the centre of the room.</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={() => setYaw(0)}>Centre view</button></div></header>
+    {notice && <div className="rrfp-notice">{notice}</div>}
+    <section className="rrfp-viewport" aria-label="First-person reptile room view" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
+      <div className="rrfp-crosshair" aria-hidden="true"><span/></div>
+      <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre · eye height 165 cm</span><span>Drag left / right to look around</span><span>Tap a vivarium to inspect</span></div>
+      <div className="rrfp-camera">
+        <div className="rrfp-world" style={{ transform: `rotateY(${-yaw}deg)` }}>
+          <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
+          {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} onSelect={() => setSelectedId(slot.id)} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
+          {objects.map((object) => <FurnitureBox key={object.id} object={object} unit={unit} eyeY={eyeY} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
         </div>
-        <div className="rrfp-header-actions">
-          {rooms.length > 1 && <select value={room.id} onChange={(event) => setRoomId(event.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}
-          <button type="button" onClick={() => setYaw(0)}>Centre view</button>
-        </div>
-      </header>
-
-      {notice && <div className="rrfp-notice">{notice}</div>}
-
-      <section
-        className="rrfp-viewport"
-        aria-label="First-person reptile room view"
-        onPointerDown={pointerDown}
-        onPointerMove={pointerMove}
-        onPointerUp={pointerUp}
-        onPointerCancel={pointerUp}
-      >
-        <div className="rrfp-crosshair" aria-hidden="true"><span /></div>
-        <div className="rrfp-hud"><strong>FIRST-PERSON</strong><span>👁 POV: room centre</span><span>Drag left / right to look around</span><span>Tap a vivarium to inspect</span></div>
-
-        <div className="rrfp-camera" aria-hidden="true">
-          <div className="rrfp-world" style={{ transform: `rotateY(${-yaw}deg)` }}>
-            <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth }} />
-            {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} onSelect={() => setSelectedId(slot.id)} scale={scale} eyeHeight={eyeHeight} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
-            {objects.map((object) => <FurnitureBox key={object.id} object={object} scale={scale} eyeHeight={eyeHeight} room={{ x: roomWidth, y: roomHeight, z: roomDepth }} />)}
-          </div>
-        </div>
-      </section>
-
-      {selected && (
-        <aside className="rrfp-inspector" aria-label="Vivarium information">
-          <button type="button" className="rrfp-close" onClick={() => setSelectedId(null)} aria-label="Close vivarium information">×</button>
-          <span className="rrfp-inspector-kicker">VIVARIUM</span>
-          <h2>{selected.label}</h2>
-          <div className="rrfp-inspector-grid">
-            <div><span>Occupant</span><strong>{selectedSnake ? snakeName(selectedSnake) : "Empty"}</strong></div>
-            <div><span>Dimensions</span><strong>{slotWidth(selected)} × {slotDepth(selected)} × {slotHeight(selected)} cm</strong></div>
-            <div><span>Status</span><strong>{selected.lifecycleStatus ?? (selectedSnake ? "active" : "empty")}</strong></div>
-            <div><span>Position</span><strong>{Math.round(selected.x)}, {Math.round(selected.y)}</strong></div>
-          </div>
-          <p>This first-person layer keeps the player at the room centre. Position and dimension editing can be added without changing the camera model.</p>
-        </aside>
-      )}
-    </main>
-  );
+      </div>
+    </section>
+    {selected && <aside className="rrfp-inspector" aria-label="Vivarium information"><button type="button" className="rrfp-close" onClick={() => setSelectedId(null)} aria-label="Close vivarium information">×</button><span className="rrfp-inspector-kicker">VIVARIUM</span><h2>{selected.label}</h2><div className="rrfp-inspector-grid"><div><span>Occupant</span><strong>{selectedSnake ? snakeName(selectedSnake) : "Empty"}</strong></div><div><span>Dimensions</span><strong>{slotWidth(selected)} × {slotDepth(selected)} × {slotHeight(selected)} cm</strong></div><div><span>Status</span><strong>{selected.lifecycleStatus ?? (selectedSnake ? "active" : "empty")}</strong></div><div><span>Position</span><strong>{Math.round(selected.x)}, {Math.round(selected.y)}</strong></div></div><p>True room-space dimensions are now used for the first-person view.</p></aside>}
+  </main>;
 }
