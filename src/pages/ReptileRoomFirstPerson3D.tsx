@@ -93,11 +93,10 @@ export default function ReptileRoomFirstPerson3D() {
     const targetX = cameraTarget.x + width / 2 - roomWidth / 2;
     const targetZ = cameraTarget.y + depth / 2 - roomDepth / 2;
     const desiredZ = targetZ + depth / 2 + DEFAULT_VIEW_DISTANCE_CM;
-    const roomFrontLimit = roomDepth / 2 - 20;
-    const roomBackLimit = -roomDepth / 2 + 20;
-    const cameraZ = clamp(desiredZ, roomBackLimit, roomFrontLimit);
-    const cameraX = clamp(targetX, -roomWidth / 2 + 20, roomWidth / 2 - 20);
-    return { x: cameraX, z: cameraZ };
+    return {
+      x: clamp(desiredZ === desiredZ ? targetX : 0, -roomWidth / 2 + 10, roomWidth / 2 - 10),
+      z: clamp(desiredZ, -roomDepth / 2 + 10, roomDepth / 2 - 10),
+    };
   }, [cameraTarget, roomWidth, roomDepth]);
 
   const load = useCallback(async () => {
@@ -171,17 +170,17 @@ export default function ReptileRoomFirstPerson3D() {
   if (loading || profileLoading) return <div className="rrfp-loading">Loading your room…</div>;
   if (!room) return <div className="rrfp-loading"><h2>No reptile room yet</h2><p>Build your scaled room first, then come back here.</p></div>;
 
-  const worldTransform = `rotateX(${-pitch}deg) rotateY(${-yaw}deg) translate3d(${-cameraPose.x}px,0,${-cameraPose.z}px)`;
+  const worldTransform = `rotateX(${-pitch}deg) rotateY(${-yaw}deg) translate3d(${-cameraPose.x}px,${eyeY}px,${-cameraPose.z}px)`;
 
   return <main className="reptile-room-first-person">
     <header className="rrfp-header"><div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · true 1:1 room scale · eye height {EYE_HEIGHT_CM} cm · viewing distance {DEFAULT_VIEW_DISTANCE_CM} cm</p></div><div className="rrfp-header-actions">{rooms.length > 1 && <select value={room.id} onChange={(e) => setRoomId(e.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={() => { setYaw(0); setPitch(0); }}>Centre view</button></div></header>
     {notice && <div className="rrfp-notice">{notice}</div>}
     <section className="rrfp-viewport" aria-label="First-person reptile room view" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
       <div className="rrfp-crosshair" aria-hidden="true"><span/></div>
-      <div className="rrfp-hud"><strong>FIRST-PERSON · 1:1 SCALE</strong><span>POV: {cameraTarget ? `4 ft / ${DEFAULT_VIEW_DISTANCE_CM} cm from ${cameraTarget.label}` : "room centre"} · eye height {EYE_HEIGHT_CM} cm</span><span>Drag to look left / right / up / down</span><span>{stackMode ? "STACK MODE · tap a lower vivarium" : "Tap a vivarium to inspect"}</span></div>
+      <div className="rrfp-hud"><strong>FIRST-PERSON · 1:1 SCALE</strong><span>POV: {cameraTarget ? `45 cm from ${cameraTarget.label}` : "room centre"} · eye height {EYE_HEIGHT_CM} cm</span><span>Drag to look left / right / up / down</span><span>{stackMode ? "STACK MODE · tap a lower vivarium" : "Tap a vivarium to inspect"}</span></div>
       <div className="rrfp-camera" style={{ perspective: `${CAMERA_PERSPECTIVE_CM}px` }}><div className="rrfp-world" style={{ transform: worldTransform }}>
         <RoomWalls room={roomVec} eyeY={eyeY} />
-        <div className="rrfp-floor" style={{ width: roomWidth, height: roomDepth, top: eyeY }} />
+        <div className="rrfp-floor" style={{ width: roomWidth, height: roomDepth, top: eyeY, ["--rrfp-room-width" as string]: `${roomWidth}px`, ["--rrfp-room-depth" as string]: `${roomDepth}px` }} />
         {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} stackMode={stackMode && slot.id !== selectedId} onSelect={() => selectSlot(slot.id)} room={roomVec} eyeY={eyeY} />)}
         {objects.map((object) => <FurnitureBox key={object.id} object={object} room={roomVec} eyeY={eyeY} />)}
       </div></div>
