@@ -7,7 +7,7 @@ import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService
 import { getDashboardIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
 import "./Home.css";
 
-type HomeSnake = { id: string; name: string; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number; behaviourRecords: number };
+type HomeSnake = { id: string; name: string; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number };
 function confidenceLabel(value: SnakeIntelligence["confidence"]): string { return value === "High" ? "High" : value === "Moderate" ? "Moderate" : value === "Low" ? "Low" : "More data needed"; }
 
 function Home() {
@@ -37,8 +37,7 @@ function Home() {
         weightRecords: snake.weightHistory?.length ?? 0,
         feedingRecords: snake.feedingHistory?.length ?? 0,
         shedRecords: snake.shedHistory?.length ?? 0,
-        healthRecords: Array.isArray(snake.healthHistory) ? snake.healthHistory.length : 0,
-        behaviourRecords: Array.isArray(snake.behaviourHistory) ? snake.behaviourHistory.length : 0,
+        healthRecords: snake.healthHistory?.length ?? 0,
       }));
       setSnakes(minimal);
       setSelectedSnakeId((current) => minimal.some((snake) => snake.id === current) ? current : minimal[0]?.id ?? "");
@@ -56,13 +55,12 @@ function Home() {
   const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId) ?? snakes[0], [snakes, selectedSnakeId]);
   const attention = useMemo(() => intelligence.flatMap((item) => item.priority && item.priority.tone === "attention" ? [{ ...item.priority, snakeId: item.snakeId, snakeName: item.snakeName }] : []).slice(0, 3), [intelligence]);
   const coverage = useMemo(() => intelligence.length ? Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length) : 0, [intelligence]);
-  const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + snake.weightRecords + snake.feedingRecords + snake.shedRecords + snake.healthRecords + snake.behaviourRecords, 0), [snakes]);
+  const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + snake.weightRecords + snake.feedingRecords + snake.shedRecords + snake.healthRecords, 0), [snakes]);
   const snapshot = useMemo(() => ({
     weights: snakes.reduce((sum, snake) => sum + snake.weightRecords, 0),
     feedings: snakes.reduce((sum, snake) => sum + snake.feedingRecords, 0),
     sheds: snakes.reduce((sum, snake) => sum + snake.shedRecords, 0),
     health: snakes.reduce((sum, snake) => sum + snake.healthRecords, 0),
-    behaviours: snakes.reduce((sum, snake) => sum + snake.behaviourRecords, 0),
   }), [snakes]);
   const selectedIndex = Math.max(0, snakes.findIndex((snake) => snake.id === selectedSnakeId));
   function moveSnake(direction: -1 | 1) { if (!snakes.length) return; const next = (selectedIndex + direction + snakes.length) % snakes.length; setSelectedSnakeId(snakes[next].id); }
