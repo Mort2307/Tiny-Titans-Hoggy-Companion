@@ -8,6 +8,7 @@ service firebase.storage {
     function canAccessUserFiles(userId) { return signedIn() && (request.auth.uid == userId || (creatorRecord().get('familyId', '') != '' && creatorRecord().get('familyId', '') == firestore.get(/databases/(default)/documents/users/$(userId)).data.get('familyId', '') && firestore.get(/databases/(default)/documents/families/$(creatorRecord().get('familyId', ''))).data.memberUids.hasAll([request.auth.uid, userId])) || isCreator()); }
 
     match /users/{userId}/snakes/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /users/{userId}/reptileRooms/{roomId}/vivariums/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /snakePhotos/{userId}/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /morph-submissions/{userId}/{submissionId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
     match /issueEvidence/{userId}/{reportId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
