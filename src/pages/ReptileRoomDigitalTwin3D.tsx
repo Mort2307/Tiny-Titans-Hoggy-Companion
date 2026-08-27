@@ -75,8 +75,9 @@ export default function ReptileRoomDigitalTwin3D() {
       setLocalObjects((current) => current.map((object) => {
         if (object.id !== selection.id) return object;
         const size = worldSize(object);
+        const height = object.height;
         const moved = { ...object, x: object.x + dx, y: object.y + dy, z: (object.z ?? 0) + dz, wall: null };
-        const bounded = { ...moved, x: clamp(moved.x, 0, Math.max(0, (room.width ?? 0) - size.w)), y: clamp(moved.y, 0, Math.max(0, (room.depth ?? 0) - size.d)), z: clamp(moved.z, 0, Math.max(0, (room.height ?? 0) - size.h)) };
+        const bounded = { ...moved, x: clamp(moved.x, 0, Math.max(0, (room.width ?? 0) - size.w)), y: clamp(moved.y, 0, Math.max(0, (room.depth ?? 0) - size.d)), z: clamp(moved.z, 0, Math.max(0, (room.height ?? 0) - height)) };
         return commit ? snapArchitecturalObject(bounded, room.width ?? 0, room.depth ?? 0) : bounded;
       }));
     } else {
