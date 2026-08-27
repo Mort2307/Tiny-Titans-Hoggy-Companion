@@ -1,22 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
-import { loadReptileRooms, saveReptileRooms, type ReptileFurnitureKind, type ReptileRoomObject, type ReptileRoomSlot, type ReptileRoomWorkspace } from "../services/reptileRoomService";
+import { loadReptileRooms, saveReptileRooms, type ReptileRoomObject, type ReptileRoomSlot, type ReptileRoomWorkspace } from "../services/reptileRoomService";
 import { uploadReptileRoomVivariumPhoto } from "../services/reptileRoomPhotoService";
 import type { Snake } from "../types/Snake";
-import type { Room3DSelection } from "../types/reptileRoom3D";
+import type { Room3DAssetPreset, Room3DSelection } from "../types/reptileRoom3D";
 import Room3D from "../components/reptile-room-3d/Room3D";
 import "../styles/reptile-room-3d-workspace.css";
 
-type Preset = { kind: ReptileFurnitureKind | "vivarium"; label: string; icon: string; width: number; depth: number; height: number };
-const PRESETS: Preset[] = [
-  { kind: "vivarium", label: "Vivarium", icon: "🦎", width: 90, depth: 40, height: 40 },
-  { kind: "rack", label: "Rack", icon: "▤", width: 100, depth: 55, height: 180 },
-  { kind: "shelving", label: "Shelving", icon: "▥", width: 90, depth: 40, height: 160 },
-  { kind: "table", label: "Table", icon: "▱", width: 120, depth: 60, height: 75 },
-  { kind: "storage-cabinet", label: "Storage", icon: "🗄️", width: 90, depth: 50, height: 120 },
-  { kind: "equipment-station", label: "Equipment", icon: "⚡", width: 90, depth: 50, height: 80 },
-];
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 const snap = (v: number, grid = 5) => Math.round(v / grid) * grid;
 const nextId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
@@ -90,18 +81,22 @@ export default function ReptileRoom3D() {
     void persistRooms(roomsRef.current.map((item) => item.id === current.id ? transform(item) : item), message);
   }, [persistRooms, room?.id]);
 
-  const addAsset = (preset: Preset) => {
+  const addAsset = useCallback((preset: Room3DAssetPreset, spawnXcm?: number, spawnYcm?: number) => {
     if (!room) return;
-    const width = room.width ?? 0; const depth = room.depth ?? 0;
-    const x = clamp(snap((width - preset.width) / 2), 0, Math.max(0, width - preset.width));
-    const y = clamp(snap((depth - preset.depth) / 2), 0, Math.max(0, depth - preset.depth));
+    const width = room.width ?? 0;
+    const depth = room.depth ?? 0;
+    const x = clamp(snap(spawnXcm ?? (width - preset.width) / 2), 0, Math.max(0, width - preset.width));
+    const y = clamp(snap(spawnYcm ?? (depth - preset.depth) / 2), 0, Math.max(0, depth - preset.depth));
     if (preset.kind === "vivarium") {
       const slot: ReptileRoomSlot = { id: nextId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0, w: preset.width, h: preset.depth, depth: preset.depth, height: preset.height, lifecycleStatus: "empty", condition: "good", availability: "available", storageLocation: "", storageNote: "", notes: "", maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, photoUrl: "" };
-      updateRoom((current) => ({ ...current, slots: [...current.slots, slot] }), "Vivarium added."); setSelected({ type: "slot", id: slot.id }); return;
+      updateRoom((current) => ({ ...current, slots: [...current.slots, slot] }), "Vivarium added in front of you.");
+      setSelected({ type: "slot", id: slot.id });
+      return;
     }
     const object: ReptileRoomObject = { id: nextId(preset.kind), kind: preset.kind, label: preset.label, x, y, z: 0, width: preset.width, depth: preset.depth, height: preset.height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType: "furniture" };
-    updateRoom((current) => ({ ...current, objects: [...(current.objects ?? []), object] }), `${preset.label} added.`); setSelected({ type: "object", id: object.id });
-  };
+    updateRoom((current) => ({ ...current, objects: [...(current.objects ?? []), object] }), `${preset.label} added in front of you.`);
+    setSelected({ type: "object", id: object.id });
+  }, [room, updateRoom]);
 
   const moveSelection = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, commit: boolean) => {
     const current = roomsRef.current.find((item) => item.id === room?.id); if (!current) return;
@@ -149,17 +144,16 @@ export default function ReptileRoom3D() {
 
   return (
     <main className="rr3d-workspace">
-      <header className="rr3d-workspace-header"><div><span className="rr3d-kicker">🏠 TINY TITANS · 3D DIGITAL TWIN</span><h1>{room.name}</h1><p>{Math.round(room.width ?? 0)} × {Math.round(room.depth ?? 0)} × {Math.round(room.height ?? 0)} cm · {slots.length} vivariums · {(objects.length)} room assets</p></div><div className="rr3d-status">{saving ? "Saving…" : "✓ Saved"}</div></header>
+      <header className="rr3d-workspace-header"><div><span className="rr3d-kicker">🏠 TINY TITANS · 3D DIGITAL TWIN</span><h1>{room.name}</h1><p>{Math.round(room.width ?? 0)} × {Math.round(room.depth ?? 0)} × {Math.round(room.height ?? 0)} cm · {slots.length} vivariums · {objects.length} room assets</p></div><div className="rr3d-status">{saving ? "Saving…" : "✓ Saved"}</div></header>
       {notice && <div className="rr3d-notice">{notice}</div>}
       <div className="rr3d-layout">
         <aside className="rr3d-sidebar">
-          <section><h2>Build</h2><div className="rr3d-asset-grid">{PRESETS.map((preset) => <button key={preset.kind} className="rr3d-asset-button" onClick={() => addAsset(preset)}><b>{preset.icon}</b><span>{preset.label}</span><small>{preset.width} × {preset.depth} × {preset.height} cm</small></button>)}</div></section>
-          <section><h2>Placement</h2><div className="rr3d-nudge-grid"><button onClick={() => nudge(-5, -5)}>↖</button><button onClick={() => nudge(0, -5)}>↑</button><button onClick={() => nudge(5, -5)}>↗</button><button onClick={() => nudge(-5, 0)}>←</button><button onClick={snapSelected}>⌖</button><button onClick={() => nudge(5, 0)}>→</button><button onClick={() => nudge(-5, 5)}>↙</button><button onClick={() => nudge(0, 5)}>↓</button><button onClick={() => nudge(5, 5)}>↘</button></div><div className="rr3d-action-row"><button onClick={snapSelected}>Snap 5 cm</button>{selectedObject && <button onClick={rotateSelected}>Rotate 90°</button>}{selectedSlot && <button className={selectedMagLocked ? "active" : ""} onClick={toggleMagLock}>{selectedMagLocked ? "🔒 Mag-locked" : "🧲 Mag-lock"}</button>}</div><p className="rr3d-help">Drag an asset directly in the 3D room or use the large touch controls. Mag-locked vivariums move as one unit.</p></section>
+          <section><h2>Placement</h2><div className="rr3d-nudge-grid"><button onClick={() => nudge(-5, -5)}>↖</button><button onClick={() => nudge(0, -5)}>↑</button><button onClick={() => nudge(5, -5)}>↗</button><button onClick={() => nudge(-5, 0)}>←</button><button onClick={snapSelected}>⌖</button><button onClick={() => nudge(5, 0)}>→</button><button onClick={() => nudge(-5, 5)}>↙</button><button onClick={() => nudge(0, 5)}>↓</button><button onClick={() => nudge(5, 5)}>↘</button></div><div className="rr3d-action-row"><button onClick={snapSelected}>Snap 5 cm</button>{selectedObject && <button onClick={rotateSelected}>Rotate 90°</button>}{selectedSlot && <button className={selectedMagLocked ? "active" : ""} onClick={toggleMagLock}>{selectedMagLocked ? "🔒 Mag-locked" : "🧲 Mag-lock"}</button>}</div><p className="rr3d-help">Drag an asset to move it. Drag the room background to look around. Mag-locked vivariums move as one unit.</p></section>
           <section><h2>View</h2><div className="rr3d-action-row"><button onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide grid" : "Show grid"}</button><button onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide ceiling" : "Show ceiling"}</button></div></section>
           {selectedSlot && <section><h2>Selected vivarium</h2><div className="rr3d-inspector"><strong>{selectedSlot.label}</strong><span>{vivWidth(selectedSlot)} × {vivDepth(selectedSlot)} × {vivHeight(selectedSlot)} cm</span><span>{selectedSlot.stackGroupId ? "🧲 Magnetic group active" : "Not magnetically locked"}</span><label>Occupant<select value={selectedSlot.snakeId ?? ""} onChange={(event) => assignSnake(event.target.value)}><option value="">Empty vivarium</option>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snakeName(snake)}</option>)}</select></label><label className="rr3d-upload">{photoBusy ? "Uploading…" : "Upload vivarium photo"}<input type="file" accept="image/*" disabled={photoBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadPhoto(file); event.currentTarget.value = ""; }} /></label>{selectedPhoto && <img className="rr3d-photo-preview" src={selectedPhoto} alt={`${selectedSlot.label} photo`} />}</div></section>}
           {selectedObject && <section><h2>Selected asset</h2><div className="rr3d-inspector"><strong>{selectedObject.label}</strong><span>{selectedObject.width} × {selectedObject.depth} × {selectedObject.height} cm</span><span>Position: {Math.round(selectedObject.x)}, {Math.round(selectedObject.y)} cm</span></div></section>}
         </aside>
-        <section className="rr3d-canvas-panel"><Room3D room={room} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} showGrid={showGrid} showCeiling={showCeiling} photoForSlot={photoFor} onSelect={setSelected} onMove={moveSelection} /><div className="rr3d-canvas-help">Click = select / open · Drag = move · Arrows = precise 5 cm placement · 🧲 = move locked vivarium groups together</div></section>
+        <section className="rr3d-canvas-panel"><Room3D room={room} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} showGrid={showGrid} showCeiling={showCeiling} photoForSlot={photoFor} onSelect={setSelected} onMove={moveSelection} onAddAsset={addAsset} /><div className="rr3d-canvas-help">Drag empty room space = look around · Click asset = select · Drag asset = move · Footprints = teleport · Asset menu = spawn directly in front of you</div></section>
       </div>
     </main>
   );
