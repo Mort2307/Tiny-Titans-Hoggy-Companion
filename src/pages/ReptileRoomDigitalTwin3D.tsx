@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
-import { loadReptileRooms, type ReptileFurnitureKind, type ReptileRoomObject, type ReptileRoomWorkspace, type ReptileRoomSlot } from "../services/reptileRoomService";
+import { loadReptileRooms, type ReptileRoomObject, type ReptileRoomWorkspace, type ReptileRoomSlot } from "../services/reptileRoomService";
 import Room3D from "../components/reptile-room-3d/Room3D";
 import { RoomBuildPanel } from "../components/reptile-room-3d/RoomBuildPanel";
 import type { Room3DSelection, Room3DAssetPreset } from "../types/reptileRoom3D";
@@ -10,7 +10,7 @@ import type { Snake } from "../types/Snake";
 
 function createId(prefix: string): string { return `${prefix}-${crypto.randomUUID()}`; }
 
-function makePlacedObject(kind: ReptileFurnitureKind, label: string, width: number, depth: number, height: number, x: number, y: number, assetType: ReptileRoomObject["assetType"] = "furniture"): ReptileRoomObject {
+function makePlacedObject(kind: ReptileRoomObject["kind"], label: string, width: number, depth: number, height: number, x: number, y: number, assetType: ReptileRoomObject["assetType"] = "furniture"): ReptileRoomObject {
   return { id: createId("room-object"), kind, label, x, y, z: 0, width, depth, height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType };
 }
 
@@ -54,17 +54,8 @@ export default function ReptileRoomDigitalTwin3D() {
   const addObject = useCallback((object: ReptileRoomObject) => { setLocalObjects((current) => [...current, object]); setSelectedId(object.id); setSelectedType("object"); }, []);
   const addAssetAtSpawn = useCallback((preset: Room3DAssetPreset, x: number, y: number) => {
     const kind = preset.kind === "vivarium" ? "shelving" : preset.kind;
-    addObject(makePlacedObject(kind, `${preset.label} · ${preset.width} × ${preset.depth} × ${preset.height} cm`, preset.width, preset.depth, preset.height, x, y, preset.kind === "vivarium" ? "vivarium" : "furniture"));
+    addObject(makePlacedObject(kind as ReptileRoomObject["kind"], `${preset.label} · ${preset.width} × ${preset.depth} × ${preset.height} cm`, preset.width, preset.depth, preset.height, x, y, preset.kind === "vivarium" ? "vivarium" : "furniture"));
   }, [addObject]);
-  const addVivarium = useCallback(() => {
-    if (!room) return;
-    const width = 90; const depth = 40;
-    addObject(makePlacedObject("shelving", "Traditional Vivarium · 90 × 40 × 40 cm", width, depth, 40, clamp((room.width ?? 0) / 2 - width / 2, 0, Math.max(0, (room.width ?? 0) - width)), clamp((room.depth ?? 0) / 2 - depth / 2, 0, Math.max(0, (room.depth ?? 0) - depth)), "vivarium"));
-  }, [addObject, room]);
-  const addFurniture = useCallback((kind: ReptileFurnitureKind, label: string, width: number, depth: number, height: number) => {
-    if (!room) return;
-    addObject(makePlacedObject(kind, label, width, depth, height, clamp((room.width ?? 0) / 2 - width / 2, 0, Math.max(0, (room.width ?? 0) - width)), clamp((room.depth ?? 0) / 2 - depth / 2, 0, Math.max(0, (room.depth ?? 0) - depth))));
-  }, [addObject, room]);
 
   const moveSelected = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, dz: number, commit: boolean) => {
     if (!room) return;
@@ -128,7 +119,7 @@ export default function ReptileRoomDigitalTwin3D() {
           <Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} slots={localSlots} selectedId={selectedId} selectedType={selectedType} onSelect={handleSelect} onMove={moveSelected} onAddAsset={addAssetAtSpawn} />
         </div>
         <div style={{ display: "grid", gap: 10 }}>
-          <RoomBuildPanel objects={localObjects} selectedId={selectedId} onAddVivarium={addVivarium} onAddFurniture={addFurniture} onDelete={deleteSelected} onDuplicate={duplicateSelected} />
+          <RoomBuildPanel objects={localObjects} selectedId={selectedId} onDelete={deleteSelected} onDuplicate={duplicateSelected} />
           {(selectedSlot || selectedObject) && <aside aria-label="Selected room asset" style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: 12, background: "rgba(18,21,24,.96)" }}>
             <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
               <button type="button" onClick={() => setInspectorTab("edit")} aria-pressed={inspectorTab === "edit"}>Edit Vivarium</button>
