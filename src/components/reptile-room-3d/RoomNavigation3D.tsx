@@ -55,7 +55,7 @@ export function RoomNavigation3D({ room, activeNodeId, onTeleport }: RoomNavigat
         const hovered = node.id === hoveredNodeId;
         return (
           <group key={node.id} position={[node.xCm / 100, 0, node.zCm / 100]}>
-            {/* The hit target is deliberately larger than the visible footprints, but its centre is exactly the teleport node. */}
+            {/* Large invisible target centred on the exact same world position as the visible footprints. */}
             <mesh
               position={[0, 0.12, 0]}
               onClick={(event) => { event.stopPropagation(); onTeleport(node); }}
@@ -65,7 +65,7 @@ export function RoomNavigation3D({ room, activeNodeId, onTeleport }: RoomNavigat
               <sphereGeometry args={[NAVIGATION_HIT_RADIUS, 16, 12]} />
               <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
-            <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} pointerEvents="none">
+            <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
               <circleGeometry args={[0.18, 24]} />
               <meshStandardMaterial color="#ffffff" transparent opacity={active ? 0.08 : hovered ? 0.13 : 0.04} depthWrite={false} />
             </mesh>
