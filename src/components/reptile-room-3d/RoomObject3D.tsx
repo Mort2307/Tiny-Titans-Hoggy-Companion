@@ -28,6 +28,11 @@ function VivariumPhoto({ url, width, height, depth }: { url: string; width: numb
   return <mesh position={[0, 0, depth / 2 + 0.004]}><planeGeometry args={[width * 0.92, height * 0.82]} /><meshStandardMaterial map={texture} roughness={0.5} transparent /></mesh>;
 }
 
+function setTransformActive(active: boolean) {
+  if (typeof document === "undefined") return;
+  document.documentElement.dataset.rr3dTransforming = active ? "true" : "false";
+}
+
 export function RoomObject3D({ object, selected, onSelect, onMove, isSlot = false, photoUrl }: RoomObject3DProps) {
   const size = dimensions(object);
   const position = useMemo<[number, number, number]>(() => [cmToWorld(object.x + size.width / 2), cmToWorld(object.z + size.height / 2), cmToWorld(object.y + size.depth / 2)], [object.x, object.y, object.z, size.width, size.depth, size.height]);
@@ -45,7 +50,9 @@ export function RoomObject3D({ object, selected, onSelect, onMove, isSlot = fals
     onSelect(object.id);
   };
 
-  const startTransform = () => {
+  const startTransform = (event?: ThreeEvent<PointerEvent>) => {
+    event?.stopPropagation();
+    setTransformActive(true);
     if (!transformObject) return;
     lastTransformRef.current = [transformObject.position.x, transformObject.position.y, transformObject.position.z];
     setTransforming(true);
@@ -69,6 +76,7 @@ export function RoomObject3D({ object, selected, onSelect, onMove, isSlot = fals
     if (transforming && onMove) onMove(0, 0, 0, true);
     lastTransformRef.current = null;
     setTransforming(false);
+    setTransformActive(false);
   };
 
   return <>
