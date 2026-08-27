@@ -16,21 +16,42 @@ const vivDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.depth ?? slot.h);
 const vivHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 40);
 const snakeName = (snake: Snake | undefined) => snake?.name ?? "Unnamed Hoggy";
 
-function getMovedRoom(room: ReptileRoomWorkspace, selection: Room3DSelection, dx: number, dy: number, commit: boolean): ReptileRoomWorkspace {
+function getMovedRoom(room: ReptileRoomWorkspace, selection: Room3DSelection, dx: number, dy: number, dz: number, commit: boolean): ReptileRoomWorkspace {
   if (!selection) return room;
-  const moveSlot = (slot: ReptileRoomSlot, mx: number, my: number): ReptileRoomSlot => ({ ...slot, x: clamp(slot.x + mx, 0, Math.max(0, (room.width ?? 0) - vivWidth(slot))), y: clamp(slot.y + my, 0, Math.max(0, (room.depth ?? 0) - vivDepth(slot))) });
-  const moveObject = (object: ReptileRoomObject, mx: number, my: number): ReptileRoomObject => ({ ...object, x: clamp(object.x + mx, 0, Math.max(0, (room.width ?? 0) - object.width)), y: clamp(object.y + my, 0, Math.max(0, (room.depth ?? 0) - object.depth)) });
+
+  const moveSlot = (slot: ReptileRoomSlot, mx: number, my: number, mz: number): ReptileRoomSlot => ({
+    ...slot,
+    x: clamp(slot.x + mx, 0, Math.max(0, (room.width ?? 0) - vivWidth(slot))),
+    y: clamp(slot.y + my, 0, Math.max(0, (room.depth ?? 0) - vivDepth(slot))),
+    z: clamp((slot.z ?? 0) + mz, 0, Math.max(0, (room.height ?? 0) - vivHeight(slot))),
+  });
+  const moveObject = (object: ReptileRoomObject, mx: number, my: number, mz: number): ReptileRoomObject => ({
+    ...object,
+    x: clamp(object.x + mx, 0, Math.max(0, (room.width ?? 0) - object.width)),
+    y: clamp(object.y + my, 0, Math.max(0, (room.depth ?? 0) - object.depth)),
+    z: clamp((object.z ?? 0) + mz, 0, Math.max(0, (room.height ?? 0) - object.height)),
+  });
+
   if (selection.type === "slot") {
     const selected = room.slots.find((slot) => slot.id === selection.id);
     if (!selected) return room;
     const groupId = selected.stackGroupId;
-    const slots = room.slots.map((slot) => groupId && slot.stackGroupId === groupId ? moveSlot(slot, dx, dy) : slot.id === selected.id ? moveSlot(slot, dx, dy) : slot);
+    const slots = room.slots.map((slot) => groupId && slot.stackGroupId === groupId
+      ? moveSlot(slot, dx, dy, dz)
+      : slot.id === selected.id ? moveSlot(slot, dx, dy, dz) : slot);
     return { ...room, slots, updatedAt: commit ? new Date().toISOString() : room.updatedAt };
   }
+
   const selected = (room.objects ?? []).find((object) => object.id === selection.id);
   if (!selected) return room;
   const groupId = selected.stackGroupId;
-  return { ...room, objects: (room.objects ?? []).map((object) => groupId && object.stackGroupId === groupId ? moveObject(object, dx, dy) : object.id === selected.id ? moveObject(object, dx, dy) : object), updatedAt: commit ? new Date().toISOString() : room.updatedAt };
+  return {
+    ...room,
+    objects: (room.objects ?? []).map((object) => groupId && object.stackGroupId === groupId
+      ? moveObject(object, dx, dy, dz)
+      : object.id === selected.id ? moveObject(object, dx, dy, dz) : object),
+    updatedAt: commit ? new Date().toISOString() : room.updatedAt,
+  };
 }
 
 export default function ReptileRoom3D() {
@@ -98,14 +119,15 @@ export default function ReptileRoom3D() {
     setSelected({ type: "object", id: object.id });
   }, [room, updateRoom]);
 
-  const moveSelection = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, commit: boolean) => {
+  const moveSelection = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, dz: number, commit: boolean) => {
     const current = roomsRef.current.find((item) => item.id === room?.id); if (!current) return;
-    const next = getMovedRoom(current, selection, dx, dy, commit);
-    setRooms((items) => items.map((item) => item.id === next.id ? next : item)); roomsRef.current = roomsRef.current.map((item) => item.id === next.id ? next : item);
+    const next = getMovedRoom(current, selection, dx, dy, dz, commit);
+    setRooms((items) => items.map((item) => item.id === next.id ? next : item));
+    roomsRef.current = roomsRef.current.map((item) => item.id === next.id ? next : item);
     if (commit) void persistRooms(roomsRef.current);
   }, [persistRooms, room?.id]);
 
-  const nudge = (dx: number, dy: number) => { if (!selected) return; moveSelection(selected, dx, dy, true); };
+  const nudge = (dx: number, dy: number) => { if (!selected) return; moveSelection(selected, dx, dy, 0, true); };
 
   const toggleMagLock = () => {
     if (!room || !selected || selected.type !== "slot") return;
@@ -119,8 +141,8 @@ export default function ReptileRoom3D() {
 
   const snapSelected = () => {
     if (!room || !selected) return;
-    if (selected.type === "slot") updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selected.id ? { ...slot, x: snap(slot.x), y: snap(slot.y) } : slot) }), "Snapped to 5 cm grid.");
-    else updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selected.id ? { ...object, x: snap(object.x), y: snap(object.y) } : object) }), "Snapped to 5 cm grid.");
+    if (selected.type === "slot") updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selected.id ? { ...slot, x: snap(slot.x), y: snap(slot.y), z: snap(slot.z ?? 0) } : slot) }), "Snapped to 5 cm grid.");
+    else updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selected.id ? { ...object, x: snap(object.x), y: snap(object.y), z: snap(object.z ?? 0) } : object) }), "Snapped to 5 cm grid.");
   };
 
   const rotateSelected = () => { if (!selectedObject) return; updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selectedObject.id ? { ...object, rotation: (object.rotation + 90) % 360 } : object) }), "Rotated 90°."); };
@@ -148,12 +170,12 @@ export default function ReptileRoom3D() {
       {notice && <div className="rr3d-notice">{notice}</div>}
       <div className="rr3d-layout">
         <aside className="rr3d-sidebar">
-          <section><h2>Placement</h2><div className="rr3d-nudge-grid"><button onClick={() => nudge(-5, -5)}>↖</button><button onClick={() => nudge(0, -5)}>↑</button><button onClick={() => nudge(5, -5)}>↗</button><button onClick={() => nudge(-5, 0)}>←</button><button onClick={snapSelected}>⌖</button><button onClick={() => nudge(5, 0)}>→</button><button onClick={() => nudge(-5, 5)}>↙</button><button onClick={() => nudge(0, 5)}>↓</button><button onClick={() => nudge(5, 5)}>↘</button></div><div className="rr3d-action-row"><button onClick={snapSelected}>Snap 5 cm</button>{selectedObject && <button onClick={rotateSelected}>Rotate 90°</button>}{selectedSlot && <button className={selectedMagLocked ? "active" : ""} onClick={toggleMagLock}>{selectedMagLocked ? "🔒 Mag-locked" : "🧲 Mag-lock"}</button>}</div><p className="rr3d-help">Drag an asset to move it. Drag the room background to look around. Mag-locked vivariums move as one unit.</p></section>
+          <section><h2>Placement</h2><div className="rr3d-nudge-grid"><button onClick={() => nudge(-5, -5)}>↖</button><button onClick={() => nudge(0, -5)}>↑</button><button onClick={() => nudge(5, -5)}>↗</button><button onClick={() => nudge(-5, 0)}>←</button><button onClick={snapSelected}>⌖</button><button onClick={() => nudge(5, 0)}>→</button><button onClick={() => nudge(-5, 5)}>↙</button><button onClick={() => nudge(0, 5)}>↓</button><button onClick={() => nudge(5, 5)}>↘</button></div><div className="rr3d-action-row"><button onClick={snapSelected}>Snap 5 cm</button>{selectedObject && <button onClick={rotateSelected}>Rotate 90°</button>}{selectedSlot && <button className={selectedMagLocked ? "active" : ""} onClick={toggleMagLock}>{selectedMagLocked ? "🔒 Mag-locked" : "🧲 Mag-lock"}</button>}</div><p className="rr3d-help">Drag an asset to move it on X/Y/Z. Drag the room background to look around. Mag-locked vivariums move as one unit.</p></section>
           <section><h2>View</h2><div className="rr3d-action-row"><button onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide grid" : "Show grid"}</button><button onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide ceiling" : "Show ceiling"}</button></div></section>
           {selectedSlot && <section><h2>Selected vivarium</h2><div className="rr3d-inspector"><strong>{selectedSlot.label}</strong><span>{vivWidth(selectedSlot)} × {vivDepth(selectedSlot)} × {vivHeight(selectedSlot)} cm</span><span>{selectedSlot.stackGroupId ? "🧲 Magnetic group active" : "Not magnetically locked"}</span><label>Occupant<select value={selectedSlot.snakeId ?? ""} onChange={(event) => assignSnake(event.target.value)}><option value="">Empty vivarium</option>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snakeName(snake)}</option>)}</select></label><label className="rr3d-upload">{photoBusy ? "Uploading…" : "Upload vivarium photo"}<input type="file" accept="image/*" disabled={photoBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadPhoto(file); event.currentTarget.value = ""; }} /></label>{selectedPhoto && <img className="rr3d-photo-preview" src={selectedPhoto} alt={`${selectedSlot.label} photo`} />}</div></section>}
-          {selectedObject && <section><h2>Selected asset</h2><div className="rr3d-inspector"><strong>{selectedObject.label}</strong><span>{selectedObject.width} × {selectedObject.depth} × {selectedObject.height} cm</span><span>Position: {Math.round(selectedObject.x)}, {Math.round(selectedObject.y)} cm</span></div></section>}
+          {selectedObject && <section><h2>Selected asset</h2><div className="rr3d-inspector"><strong>{selectedObject.label}</strong><span>{selectedObject.width} × {selectedObject.depth} × {selectedObject.height} cm</span><span>Position: {Math.round(selectedObject.x)}, {Math.round(selectedObject.y)}, {Math.round(selectedObject.z ?? 0)} cm</span></div></section>}
         </aside>
-        <section className="rr3d-canvas-panel"><Room3D room={room} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} showGrid={showGrid} showCeiling={showCeiling} photoForSlot={photoFor} onSelect={setSelected} onMove={moveSelection} onAddAsset={addAsset} /><div className="rr3d-canvas-help">Drag empty room space = look around · Click asset = select · Drag asset = move · Footprints = teleport · Asset menu = spawn directly in front of you</div></section>
+        <section className="rr3d-canvas-panel"><Room3D room={room} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} showGrid={showGrid} showCeiling={showCeiling} photoForSlot={photoFor} onSelect={setSelected} onMove={moveSelection} onAddAsset={addAsset} /><div className="rr3d-canvas-help">Drag empty room space = look around · Click asset = select · Drag gizmo = move X/Y/Z · Footprints = teleport · Room Assets = spawn directly in front of you</div></section>
       </div>
     </main>
   );
