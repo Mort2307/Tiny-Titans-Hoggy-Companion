@@ -3,9 +3,8 @@ import { Html } from "@react-three/drei";
 import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { getRoomDimensions3D } from "./room3DScale";
 
-const NODE_SPACING_CM = 100;
+export const ROOM_NAVIGATION_SPACING_CM = 100;
 const FLOOR_EDGE_MARGIN_CM = 45;
-const MIN_NODE_CLEARANCE_CM = 35;
 
 type RoomNavigationNode = {
   id: string;
@@ -25,28 +24,20 @@ function buildAxisPositions(lengthCm: number): number[] {
   if (usableMax <= usableMin) return [0];
 
   const positions: number[] = [];
-  for (let value = usableMin; value <= usableMax + 0.001; value += NODE_SPACING_CM) {
+  for (let value = usableMin; value <= usableMax + 0.001; value += ROOM_NAVIGATION_SPACING_CM) {
     positions.push(Math.round(value));
   }
 
-  if (positions.length === 0) positions.push(0);
+  if (!positions.length) positions.push(0);
   return positions;
 }
 
 export function buildRoomNavigationNodes(room: ReptileRoomWorkspace): RoomNavigationNode[] {
   const { width, depth } = getRoomDimensions3D(room);
-  const widthCm = width * 100;
-  const depthCm = depth * 100;
-  const xPositions = buildAxisPositions(widthCm);
-  const zPositions = buildAxisPositions(depthCm);
+  const xPositions = buildAxisPositions(width * 100);
+  const zPositions = buildAxisPositions(depth * 100);
 
-  return zPositions.flatMap((zCm) =>
-    xPositions.map((xCm) => ({
-      id: `nav-${xCm}-${zCm}`,
-      xCm,
-      zCm,
-    })),
-  );
+  return zPositions.flatMap((zCm) => xPositions.map((xCm) => ({ id: `nav-${xCm}-${zCm}`, xCm, zCm })));
 }
 
 function Footprints({ active, hovered }: { active: boolean; hovered: boolean }) {
@@ -68,13 +59,12 @@ function Footprints({ active, hovered }: { active: boolean; hovered: boolean }) 
 export default function RoomNavigation3D({ room, activeNodeId, onTeleport }: RoomNavigation3DProps) {
   const nodes = useMemo(() => buildRoomNavigationNodes(room), [room]);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const { width, depth } = getRoomDimensions3D(room);
 
   return (
     <group name="room-navigation">
       {nodes.map((node) => {
-        const x = (node.xCm / 100) - width / 2;
-        const z = (node.zCm / 100) - depth / 2;
+        const x = node.xCm / 100;
+        const z = node.zCm / 100;
         const active = node.id === activeNodeId;
         const hovered = node.id === hoveredNodeId;
 
@@ -106,7 +96,6 @@ export default function RoomNavigation3D({ room, activeNodeId, onTeleport }: Roo
           </group>
         );
       })}
-      {nodes.length === 0 && <mesh position={[0, MIN_NODE_CLEARANCE_CM / 100, 0]}><boxGeometry args={[0.01, 0.01, 0.01]} /><meshBasicMaterial transparent opacity={0} /></mesh>}
     </group>
   );
 }
