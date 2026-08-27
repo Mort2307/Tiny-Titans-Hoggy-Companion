@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
 import { ROOM_3D_CAMERA_HEIGHT_RATIO, ROOM_3D_CAMERA_MARGIN_CM } from "../../data/reptileRoomAssets";
@@ -13,8 +13,12 @@ type RoomCamera3DProps = {
   target?: RoomNavigationTarget;
 };
 
+const LOOK_SENSITIVITY = 0.0032;
+const MIN_PITCH = -Math.PI / 2.35;
+const MAX_PITCH = Math.PI / 2.35;
+
 export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
   const { width, depth, height } = getRoomDimensions3D(room);
   const margin = Math.min(cmToWorld(ROOM_3D_CAMERA_MARGIN_CM), width / 4, depth / 4, height / 4);
   const minX = -width / 2 + margin;
@@ -23,14 +27,82 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
   const maxZ = depth / 2 - margin;
   const initialTarget = useMemo(() => buildRoomNavigationNodes(room)[0] ?? { xCm: 0, zCm: 0 }, [room]);
   const destination = target ?? initialTarget;
+  const yawRef = useRef(camera.rotation.y);
+  const pitchRef = useRef(camera.rotation.x);
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    let dragging = false;
+    let pointerId: number | null = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      dragging = true;
+      pointerId = event.pointerId;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      canvas.setPointerCapture?.(event.pointerId);
+      canvas.style.cursor = "grabbing";
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragging || pointerId !== event.pointerId) return;
+      const dx = event.clientX - lastX;
+      const dy = event.clientY - lastY;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      yawRef.current -= dx * LOOK_SENSITIVITY;
+      pitchRef.current = Math.min(MAX_PITCH, Math.max(MIN_PITCH, pitchRef.current - dy * LOOK_SENSITIVITY));
+      camera.rotation.order = "YXZ";
+      camera.rotation.y = yawRef.current;
+      camera.rotation.x = pitchRef.current;
+    };
+
+    const stopDragging = (event: PointerEvent) => {
+      if (pointerId !== event.pointerId) return;
+      dragging = false;
+      pointerId = null;
+      canvas.releasePointerCapture?.(event.pointerId);
+      canvas.style.cursor = "grab";
+    };
+
+    canvas.style.cursor = "grab";
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", stopDragging);
+    canvas.addEventListener("pointercancel", stopDragging);
+    canvas.addEventListener("pointerleave", stopDragging);
+
+    return () => {
+      canvas.style.cursor = "";
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", stopDragging);
+      canvas.removeEventListener("pointercancel", stopDragging);
+      canvas.removeEventListener("pointerleave", stopDragging);
+    };
+  }, [camera, gl]);
 
   useEffect(() => {
     const x = Math.min(maxX, Math.max(minX, cmToWorld(destination.xCm)));
     const z = Math.min(maxZ, Math.max(minZ, cmToWorld(destination.zCm)));
-    const currentLookDirection = camera.getWorldDirection(new Vector3());
+    camera.rotation.order = "YXZ";
+    camera.rotation.y = yawRef.current;
+    camera.rotation.x = pitchRef.current;
     camera.position.set(x, Math.min(height - margin, Math.max(margin, height * ROOM_3D_CAMERA_HEIGHT_RATIO)), z);
-    camera.lookAt(x + currentLookDirection.x, camera.position.y + currentLookDirection.y, z + currentLookDirection.z);
   }, [camera, destination.xCm, destination.zCm, height, margin, maxX, maxZ, minX, minZ]);
 
   return null;
+}
+
+export function getCameraForwardSpawn(camera: { position: Vector3; getWorldDirection: (target: Vector3) => Vector3 }, distanceCm: number, room: ReptileRoomWorkspace) {
+  const direction = camera.getWorldDirection(new Vector3());
+  const distance = cmToWorld(distanceCm);
+  const xWorld = camera.position.x + direction.x * distance;
+  const zWorld = camera.position.z + direction.z * distance;
+  const width = room.width ?? 0;
+  const depth = room.depth ?? 0;
+  return { xCm: xWorld * 100 + width / 2, yCm: zWorld * 100 + depth / 2 };
 }
