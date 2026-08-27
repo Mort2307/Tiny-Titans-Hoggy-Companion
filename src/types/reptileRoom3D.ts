@@ -22,7 +22,7 @@ export type Room3DProps = {
   selectedType?: "slot" | "object" | null;
   photoForSlot?: (slot: ReptileRoomSlot) => string | undefined;
   onSelect?: (selection: Room3DSelection) => void;
-  onMove?: (selection: { type: "slot" | "object"; id: string }, deltaXcm: number, deltaYcm: number, commit: boolean) => void;
+  onMove?: (selection: { type: "slot" | "object"; id: string }, deltaXcm: number, deltaYcm: number, deltaZcm: number, commit: boolean) => void;
   onAddAsset?: (preset: Room3DAssetPreset, spawnXcm: number, spawnYcm: number) => void;
 };
 
