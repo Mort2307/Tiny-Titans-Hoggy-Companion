@@ -9,137 +9,44 @@ import type { Room3DSelection, Room3DAssetPreset } from "../types/reptileRoom3D"
 import { clamp, snapArchitecturalObject, snapNumber, worldSize } from "../services/reptileRoomSpatialService";
 import type { Snake } from "../types/Snake";
 
+const MOVE_STEP_CM = 5;
 function createId(prefix: string): string { return `${prefix}-${crypto.randomUUID()}`; }
 function makePlacedObject(kind: ReptileRoomObject["kind"], label: string, width: number, depth: number, height: number, x: number, y: number, assetType: ReptileRoomObject["assetType"] = "furniture"): ReptileRoomObject { return { id: createId("room-object"), kind, label, x, y, z: 0, width, depth, height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType }; }
 function makeVivarium(width: number, depth: number, height: number, x: number, y: number): ReptileRoomSlot { return { id: createId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0, w: width, h: depth, depth, height, lifecycleStatus: "empty", condition: "good", availability: "available", storageLocation: "", storageNote: "", notes: "", maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, photoUrl: "" }; }
 
 export default function ReptileRoomDigitalTwin3D() {
   const { user, loading, profileLoading } = useAuth();
-  const [rooms, setRooms] = useState<ReptileRoomWorkspace[]>([]);
-  const [snakes, setSnakes] = useState<Snake[]>([]);
-  const [roomId, setRoomId] = useState("");
-  const [showGrid, setShowGrid] = useState(true);
-  const [showCeiling, setShowCeiling] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [localObjects, setLocalObjects] = useState<ReptileRoomObject[]>([]);
-  const [localSlots, setLocalSlots] = useState<ReptileRoomSlot[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<"slot" | "object" | null>(null);
-  const [inspectorTab, setInspectorTab] = useState<"edit" | "occupant">("edit");
-
-  const room = useMemo(() => rooms.find((item) => item.id === roomId) ?? rooms[0] ?? null, [rooms, roomId]);
-  const snakesById = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]);
-  const selectedSlot = selectedType === "slot" ? localSlots.find((slot) => slot.id === selectedId) ?? null : null;
-  const selectedObject = selectedType === "object" ? localObjects.find((object) => object.id === selectedId) ?? null : null;
-  const selectedSnake = selectedSlot?.snakeId ? snakesById.get(selectedSlot.snakeId) : undefined;
-
-  const load = useCallback(async () => {
-    if (!user) return;
-    try {
-      const [loadedRooms, loadedSnakes] = await Promise.all([loadReptileRooms(user.uid), getUserSnakes(user.uid)]);
-      setRooms(loadedRooms); setSnakes(loadedSnakes);
-      if (loadedRooms.length) setRoomId((current) => loadedRooms.some((item) => item.id === current) ? current : loadedRooms[0].id);
-    } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to load your reptile room."); }
-  }, [user]);
-
-  useEffect(() => { if (!loading && !profileLoading && user) void load(); }, [loading, profileLoading, user, load]);
-  useEffect(() => { setLocalObjects(room?.objects ?? []); setLocalSlots(room?.slots ?? []); setSelectedId(null); setSelectedType(null); }, [room?.id]);
-
-  const handleSelect = useCallback((selection: Room3DSelection) => {
-    if (!selection) { setSelectedId(null); setSelectedType(null); return; }
-    setSelectedId(selection.id); setSelectedType(selection.type); setInspectorTab("edit");
-  }, []);
-
+  const [rooms, setRooms] = useState<ReptileRoomWorkspace[]>([]); const [snakes, setSnakes] = useState<Snake[]>([]); const [roomId, setRoomId] = useState(""); const [showGrid, setShowGrid] = useState(true); const [showCeiling, setShowCeiling] = useState(false); const [notice, setNotice] = useState(""); const [localObjects, setLocalObjects] = useState<ReptileRoomObject[]>([]); const [localSlots, setLocalSlots] = useState<ReptileRoomSlot[]>([]); const [selectedId, setSelectedId] = useState<string | null>(null); const [selectedType, setSelectedType] = useState<"slot" | "object" | null>(null); const [inspectorTab, setInspectorTab] = useState<"edit" | "occupant">("edit");
+  const room = useMemo(() => rooms.find((item) => item.id === roomId) ?? rooms[0] ?? null, [rooms, roomId]); const snakesById = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]); const selectedSlot = selectedType === "slot" ? localSlots.find((slot) => slot.id === selectedId) ?? null : null; const selectedObject = selectedType === "object" ? localObjects.find((object) => object.id === selectedId) ?? null : null; const selectedSnake = selectedSlot?.snakeId ? snakesById.get(selectedSlot.snakeId) : undefined; const selectedStackLocked = Boolean(selectedSlot?.stackGroupId || selectedObject?.stackGroupId); const floorOnly = selectedObject?.kind === "table" || selectedObject?.kind === "workbench";
+  const load = useCallback(async () => { if (!user) return; try { const [loadedRooms, loadedSnakes] = await Promise.all([loadReptileRooms(user.uid), getUserSnakes(user.uid)]); setRooms(loadedRooms); setSnakes(loadedSnakes); if (loadedRooms.length) setRoomId((current) => loadedRooms.some((item) => item.id === current) ? current : loadedRooms[0].id); } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to load your reptile room."); } }, [user]);
+  useEffect(() => { if (!loading && !profileLoading && user) void load(); }, [loading, profileLoading, user, load]); useEffect(() => { setLocalObjects(room?.objects ?? []); setLocalSlots(room?.slots ?? []); setSelectedId(null); setSelectedType(null); }, [room?.id]);
+  const handleSelect = useCallback((selection: Room3DSelection) => { if (!selection) { setSelectedId(null); setSelectedType(null); return; } setSelectedId(selection.id); setSelectedType(selection.type); setInspectorTab("edit"); }, []);
   const addObject = useCallback((object: ReptileRoomObject) => { setLocalObjects((current) => [...current, object]); setSelectedId(object.id); setSelectedType("object"); }, []);
-  const spawnAsset = useCallback((preset: Room3DAssetPreset) => {
-    if (!room) return;
-    const camera = (window as Window & { __tinyTitansRoom3DCamera?: import("three").Camera }).__tinyTitansRoom3DCamera;
-    if (!camera) { setNotice("3D camera is still starting — try the asset again in a moment."); return; }
-    const point = getCameraForwardSpawn(camera, 120, room);
-    const width = room.width ?? 0;
-    const depth = room.depth ?? 0;
-    const x = clamp(snapNumber(point.xCm - preset.width / 2), 0, Math.max(0, width - preset.width));
-    const y = clamp(snapNumber(point.yCm - preset.depth / 2), 0, Math.max(0, depth - preset.depth));
-    if (preset.kind === "vivarium") {
-      const slot = makeVivarium(preset.width, preset.depth, preset.height, x, y);
-      setLocalSlots((current) => [...current, slot]); setSelectedId(slot.id); setSelectedType("slot");
-      return;
-    }
-    const object = makePlacedObject(preset.kind as ReptileRoomObject["kind"], preset.label, preset.width, preset.depth, preset.height, x, y, "furniture");
-    addObject(object);
-  }, [room, addObject]);
-
-  const moveSelected = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, dz: number, commit: boolean) => {
-    if (!room) return;
-    if (selection.type === "object") {
-      setLocalObjects((current) => current.map((object) => {
-        if (object.id !== selection.id) return object;
-        const size = worldSize(object);
-        const height = object.height;
-        const moved = { ...object, x: object.x + dx, y: object.y + dy, z: (object.z ?? 0) + dz, wall: null };
-        const bounded = { ...moved, x: clamp(moved.x, 0, Math.max(0, (room.width ?? 0) - size.w)), y: clamp(moved.y, 0, Math.max(0, (room.depth ?? 0) - size.d)), z: clamp(moved.z, 0, Math.max(0, (room.height ?? 0) - height)) };
-        return commit ? snapArchitecturalObject(bounded, room.width ?? 0, room.depth ?? 0) : bounded;
-      }));
-    } else {
-      setLocalSlots((current) => current.map((slot) => {
-        if (slot.id !== selection.id) return slot;
-        const width = slot.w; const depth = slot.depth ?? slot.w; const height = slot.height ?? slot.h;
-        const moved = { ...slot, x: clamp(slot.x + dx, 0, Math.max(0, (room.width ?? 0) - width)), y: clamp(slot.y + dy, 0, Math.max(0, (room.depth ?? 0) - depth)), z: clamp((slot.z ?? 0) + dz, 0, Math.max(0, (room.height ?? 0) - height)) };
-        if (!commit) return moved;
-        return { ...moved, x: snapNumber(moved.x), y: snapNumber(moved.y), z: snapNumber(moved.z) };
-      }));
-    }
-  }, [room]);
-
+  const spawnAsset = useCallback((preset: Room3DAssetPreset) => { if (!room) return; const camera = (window as Window & { __tinyTitansRoom3DCamera?: import("three").Camera }).__tinyTitansRoom3DCamera; if (!camera) { setNotice("3D camera is still starting — try the asset again in a moment."); return; } const point = getCameraForwardSpawn(camera, 120, room); const width = room.width ?? 0; const depth = room.depth ?? 0; const x = clamp(snapNumber(point.xCm - preset.width / 2), 0, Math.max(0, width - preset.width)); const y = clamp(snapNumber(point.yCm - preset.depth / 2), 0, Math.max(0, depth - preset.depth)); if (preset.kind === "vivarium") { const slot = makeVivarium(preset.width, preset.depth, preset.height, x, y); setLocalSlots((current) => [...current, slot]); setSelectedId(slot.id); setSelectedType("slot"); return; } addObject(makePlacedObject(preset.kind as ReptileRoomObject["kind"], preset.label, preset.width, preset.depth, preset.height, x, y, "furniture")); }, [room, addObject]);
+  const moveSelected = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, dz: number, commit: boolean) => { if (!room) return; if (selection.type === "object") setLocalObjects((current) => current.map((object) => { if (object.id !== selection.id) return object; const size = worldSize(object); const floorLocked = object.kind === "table" || object.kind === "workbench"; const moved = { ...object, x: object.x + dx, y: object.y + dy, z: floorLocked ? 0 : (object.z ?? 0) + dz, wall: null }; const bounded = { ...moved, x: clamp(moved.x, 0, Math.max(0, (room.width ?? 0) - size.w)), y: clamp(moved.y, 0, Math.max(0, (room.depth ?? 0) - size.d)), z: clamp(moved.z, 0, Math.max(0, (room.height ?? 0) - object.height)) }; return commit ? snapArchitecturalObject(bounded, room.width ?? 0, room.depth ?? 0) : bounded; })); else setLocalSlots((current) => current.map((slot) => { if (slot.id !== selection.id) return slot; const width = slot.w; const depth = slot.depth ?? slot.w; const height = slot.height ?? slot.h; const moved = { ...slot, x: clamp(slot.x + dx, 0, Math.max(0, (room.width ?? 0) - width)), y: clamp(slot.y + dy, 0, Math.max(0, (room.depth ?? 0) - depth)), z: clamp((slot.z ?? 0) + dz, 0, Math.max(0, (room.height ?? 0) - height)) }; return commit ? { ...moved, x: snapNumber(moved.x), y: snapNumber(moved.y), z: snapNumber(moved.z) } : moved; })); }, [room]);
+  const moveButton = useCallback((dx: number, dy: number, dz: number) => { if (selectedId && selectedType) moveSelected({ type: selectedType, id: selectedId }, dx, dy, dz, true); }, [moveSelected, selectedId, selectedType]);
+  const toggleStackLock = useCallback(() => { if (!selectedId || !selectedType) return; if (selectedType === "object") setLocalObjects((current) => current.map((item) => item.id === selectedId ? { ...item, stackGroupId: item.stackGroupId ? null : item.id, stackIndex: item.stackGroupId ? 0 : (item.stackIndex ?? 0) } : item)); else setLocalSlots((current) => current.map((item) => item.id === selectedId ? { ...item, stackGroupId: item.stackGroupId ? null : item.id, stackIndex: item.stackGroupId ? 0 : (item.stackIndex ?? 0) } : item)); }, [selectedId, selectedType]);
+  const snapToWall = useCallback(() => { if (!room || !selectedId || !selectedType) return; if (selectedType === "object") setLocalObjects((current) => current.map((item) => { if (item.id !== selectedId) return item; const roomWidth = room.width ?? 0; const roomDepth = room.depth ?? 0; const distances = { west: item.x, east: roomWidth - item.x - item.width, north: roomDepth - item.y - item.depth, south: item.y }; const wall = Object.entries(distances).sort((a, b) => a[1] - b[1])[0]?.[0] as "north" | "east" | "south" | "west"; const next = wall === "west" ? { ...item, x: 0 } : wall === "east" ? { ...item, x: Math.max(0, roomWidth - item.width) } : wall === "north" ? { ...item, y: Math.max(0, roomDepth - item.depth) } : { ...item, y: 0 }; return { ...next, wall, x: snapNumber(next.x), y: snapNumber(next.y) }; })); else setLocalSlots((current) => current.map((item) => { if (item.id !== selectedId) return item; const width = item.w; const depth = item.depth ?? item.w; const roomWidth = room.width ?? 0; const roomDepth = room.depth ?? 0; const distances = { west: item.x, east: roomWidth - item.x - width, north: roomDepth - item.y - depth, south: item.y }; const wall = Object.entries(distances).sort((a, b) => a[1] - b[1])[0]?.[0]; const next = wall === "west" ? { ...item, x: 0 } : wall === "east" ? { ...item, x: Math.max(0, roomWidth - width) } : wall === "north" ? { ...item, y: Math.max(0, roomDepth - depth) } : { ...item, y: 0 }; return { ...next, x: snapNumber(next.x), y: snapNumber(next.y) }; })); }, [room, selectedId, selectedType]);
   const deleteSelected = useCallback(() => { if (!selectedId) return; if (selectedType === "slot") setLocalSlots((current) => current.filter((item) => item.id !== selectedId)); else setLocalObjects((current) => current.filter((item) => item.id !== selectedId)); setSelectedId(null); setSelectedType(null); }, [selectedId, selectedType]);
-  const duplicateSelected = useCallback(() => { if (!selectedId || selectedType !== "object") return; const source = localObjects.find((item) => item.id === selectedId); if (!source) return; const copy: ReptileRoomObject = { ...source, id: createId("room-object"), label: `${source.label} · Copy`, x: source.x + 10, y: source.y + 10 }; setLocalObjects((current) => [...current, copy]); setSelectedId(copy.id); setSelectedType("object"); }, [localObjects, selectedId, selectedType]);
-  const openSnakeProfile = useCallback((snakeId: string) => { window.location.assign(`/snakes/${encodeURIComponent(snakeId)}`); }, []);
-  const quickAction = useCallback((action: string) => { if (!selectedSnake) return; const snakeId = encodeURIComponent(selectedSnake.id); const routes: Record<string, string> = { feed: `/feeding?snake=${snakeId}`, shed: `/shed-tracker?snake=${snakeId}`, weight: `/weight-records?snake=${snakeId}` }; const target = routes[action]; if (target) window.location.assign(target); }, [selectedSnake]);
-
-  if (loading || profileLoading) return <div className="rr3d-loading">Loading your 3D digital twin…</div>;
-  if (!room) return <div className="rr3d-loading"><h2>No reptile room yet</h2><p>Build your room in the 2D builder first, then return to the 3D view.</p></div>;
-
-  return (
-    <main style={{ width: "100%", minHeight: "70vh" }}>
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "16px 0" }}>
-        <div><span style={{ opacity: 0.7, fontSize: 12, letterSpacing: "0.08em" }}>🧊 TINY TITANS · 3D DIGITAL TWIN</span><h1 style={{ margin: "4px 0" }}>{room.name}</h1><p style={{ margin: 0, opacity: 0.75 }}>{Math.round(room.width ?? 0)} × {Math.round(room.depth ?? 0)} × {Math.round(room.height ?? 0)} cm</p></div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          {rooms.length > 1 && <select value={room.id} onChange={(event) => setRoomId(event.target.value)} aria-label="Select reptile room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}
-          <button type="button" onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide measurements" : "Show measurements"}</button>
-          <button type="button" onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide ceiling" : "Show ceiling"}</button>
-        </div>
-      </header>
-      {notice && <div className="rr3d-notice">{notice}</div>}
-      <section aria-label="Three-dimensional reptile room digital twin" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 270px", gap: 12, alignItems: "start" }}>
-        <div style={{ width: "100%", height: "min(78vh, 760px)", minHeight: 520, overflow: "hidden", borderRadius: 16 }}>
-          <Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} slots={localSlots} selectedId={selectedId} selectedType={selectedType} onSelect={handleSelect} onMove={moveSelected} />
-        </div>
-        <div style={{ display: "grid", gap: 10 }}>
-          <RoomBuildPanel objects={localObjects} selectedId={selectedId} onDelete={deleteSelected} onDuplicate={duplicateSelected} onSpawn={spawnAsset} />
-          {(selectedSlot || selectedObject) && <aside aria-label="Selected room asset" style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: 12, background: "rgba(18,21,24,.96)" }}>
-            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-              <button type="button" onClick={() => setInspectorTab("edit")} aria-pressed={inspectorTab === "edit"}>Edit Vivarium</button>
-              {selectedSlot && selectedSnake && <button type="button" onClick={() => setInspectorTab("occupant")} aria-pressed={inspectorTab === "occupant"}>View Occupant</button>}
-            </div>
-            {inspectorTab === "edit" && <>
-              <strong style={{ display: "block", marginBottom: 8 }}>{selectedSlot?.label ?? selectedObject?.label}</strong>
-              <small style={{ display: "block", opacity: .65, marginBottom: 10 }}>Drag the selected asset using the three-axis gizmo. X/Z move it around the floor; Y lifts it vertically. Release to snap to the 5 cm grid.</small>
-              {selectedSlot && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Occupant: {selectedSnake?.name ?? "Empty"}</span><span>Size: {selectedSlot.w} × {selectedSlot.depth ?? selectedSlot.h} × {selectedSlot.height ?? selectedSlot.h} cm</span><span>Position: {Math.round(selectedSlot.x)}, {Math.round(selectedSlot.y)}, {Math.round(selectedSlot.z ?? 0)} cm</span></div>}
-              {selectedObject && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Type: {selectedObject.kind}</span><span>Size: {selectedObject.width} × {selectedObject.depth} × {selectedObject.height} cm</span><span>Position: {Math.round(selectedObject.x)}, {Math.round(selectedObject.y)}, {Math.round(selectedObject.z ?? 0)} cm</span></div>}
-            </>}
-            {inspectorTab === "occupant" && selectedSnake && <>
-              <strong style={{ display: "block", marginBottom: 4 }}>{selectedSnake.name}</strong>
-              <button type="button" onClick={() => openSnakeProfile(selectedSnake.id)} style={{ width: "100%", marginBottom: 10 }}>Open full profile</button>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-                <button type="button" onClick={() => quickAction("feed")} title="Log a feed">🍽️ Feed</button>
-                <button type="button" onClick={() => quickAction("shed")} title="Edit the latest shed or log a new cycle">🐍 Shed</button>
-                <button type="button" onClick={() => quickAction("weight")} title="Log weight">⚖️ Weight</button>
-              </div>
-              <small style={{ display: "block", opacity: .6, marginTop: 8 }}>Quick actions jump straight into the relevant tracker for this occupant.</small>
-            </>}
-          </aside>}
-        </div>
-      </section>
-    </main>
-  );
+  const duplicateSelected = useCallback(() => { if (!selectedId || selectedType !== "object") return; const source = localObjects.find((item) => item.id === selectedId); if (!source) return; const copy = { ...source, id: createId("room-object"), label: `${source.label} · Copy`, x: source.x + 10, y: source.y + 10 }; setLocalObjects((current) => [...current, copy]); setSelectedId(copy.id); setSelectedType("object"); }, [localObjects, selectedId, selectedType]);
+  const editVivarium = useCallback(() => { if (!selectedSlot) return; try { window.sessionStorage.setItem("tinyTitans.reptileRoom.editSlot", selectedSlot.id); } catch { /* optional */ } window.location.assign("/reptile-room"); }, [selectedSlot]);
+  const openSnakeProfile = useCallback((snakeId: string) => window.location.assign(`/snakes/${encodeURIComponent(snakeId)}`), []);
+  const quickAction = useCallback((action: string) => { if (!selectedSnake) return; const snakeId = encodeURIComponent(selectedSnake.id); const routes: Record<string, string> = { feed: `/feeding?snake=${snakeId}`, shed: `/shedding?snake=${snakeId}`, weight: `/weights?snake=${snakeId}` }; if (routes[action]) window.location.assign(routes[action]); }, [selectedSnake]);
+  if (loading || profileLoading) return <div className="rr3d-loading">Loading your 3D digital twin…</div>; if (!room) return <div className="rr3d-loading"><h2>No reptile room yet</h2><p>Build your room in the 2D builder first, then return to the 3D view.</p></div>;
+  const controlButton = (label: string, action: () => void, disabled = false) => <button type="button" onClick={action} disabled={disabled} style={{ minWidth: 52, minHeight: 34, padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,.13)", background: disabled ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.07)", color: "inherit", cursor: disabled ? "not-allowed" : "pointer", fontSize: 11 }}>{label}</button>;
+  return <main style={{ width: "100%", minHeight: "70vh" }}>
+    <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "16px 0" }}><div><span style={{ opacity: .7, fontSize: 12, letterSpacing: ".08em" }}>🧊 TINY TITANS · 3D DIGITAL TWIN</span><h1 style={{ margin: "4px 0" }}>{room.name}</h1><p style={{ margin: 0, opacity: .75 }}>{Math.round(room.width ?? 0)} × {Math.round(room.depth ?? 0)} × {Math.round(room.height ?? 0)} cm</p></div><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{rooms.length > 1 && <select value={room.id} onChange={(event) => setRoomId(event.target.value)} aria-label="Select reptile room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}<button type="button" onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide measurements" : "Show measurements"}</button><button type="button" onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide ceiling" : "Show ceiling"}</button></div></header>
+    {notice && <div className="rr3d-notice">{notice}</div>}
+    <section aria-label="Three-dimensional reptile room digital twin" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 285px", gap: 12, alignItems: "start" }}><div style={{ width: "100%", height: "min(78vh, 760px)", minHeight: 520, overflow: "hidden", borderRadius: 16 }}><Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} slots={localSlots} selectedId={selectedId} selectedType={selectedType} photoForSlot={(slot) => slot.photoUrl || undefined} onSelect={handleSelect} onMove={moveSelected} onAddAsset={spawnAsset} /></div>
+      <aside aria-label="3D object controls" style={{ display: "grid", gap: 10, padding: 14, borderRadius: 14, background: "rgba(18,21,24,.96)", border: "1px solid rgba(255,255,255,.12)", color: "#fff" }}><div><strong>Object controls</strong><div style={{ fontSize: 11, opacity: .6, marginTop: 3 }}>5 cm precision · manual movement</div></div>
+        {(selectedSlot || selectedObject) ? <><div style={{ padding: 10, borderRadius: 10, background: "rgba(255,255,255,.04)" }}><strong>{selectedSlot?.label ?? selectedObject?.label}</strong><div style={{ fontSize: 11, opacity: .65, marginTop: 4 }}>{selectedSlot ? `${selectedSlot.w} × ${selectedSlot.depth ?? selectedSlot.w} × ${selectedSlot.height ?? selectedSlot.h} cm` : `${selectedObject?.width} × ${selectedObject?.depth} × ${selectedObject?.height} cm`}</div></div>
+          <div><div style={{ fontSize: 10, opacity: .55, marginBottom: 5 }}>MOVE</div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5 }}>{controlButton("← Left", () => moveButton(-MOVE_STEP_CM, 0, 0))}{controlButton("↑ Forward", () => moveButton(0, -MOVE_STEP_CM, 0))}{controlButton("Right →", () => moveButton(MOVE_STEP_CM, 0, 0))}{controlButton("", () => undefined, true)}{controlButton("↓ Backward", () => moveButton(0, MOVE_STEP_CM, 0))}{controlButton("", () => undefined, true)}</div></div>
+          <div><div style={{ fontSize: 10, opacity: .55, marginBottom: 5 }}>HEIGHT</div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>{controlButton("↑ Up", () => moveButton(0, 0, MOVE_STEP_CM), floorOnly)}{controlButton("↓ Down", () => moveButton(0, 0, -MOVE_STEP_CM), floorOnly)}</div>{floorOnly && <small style={{ display: "block", opacity: .55, marginTop: 5 }}>Floor locked. Objects can be stacked on the work surface.</small>}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>{controlButton(selectedStackLocked ? "🔓 Unlock stack" : "🧲 Stack / Mag lock", toggleStackLock)}{controlButton("🧱 Wall snap", snapToWall)}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>{selectedSlot && controlButton("✏️ Edit Vivarium", editVivarium)}{selectedObject && controlButton("⧉ Duplicate", duplicateSelected)}{selectedSlot && controlButton("🗑 Delete Vivarium", deleteSelected)}{selectedObject && controlButton("🗑 Delete object", deleteSelected)}</div>
+          {selectedSlot && <div style={{ display: "flex", gap: 6 }}><button type="button" onClick={() => setInspectorTab("edit")} aria-pressed={inspectorTab === "edit"}>Edit</button>{selectedSnake && <button type="button" onClick={() => setInspectorTab("occupant")} aria-pressed={inspectorTab === "occupant"}>Occupant</button>}</div>}
+          {selectedSlot && inspectorTab === "occupant" && selectedSnake && <div style={{ padding: 9, borderRadius: 9, background: "rgba(255,255,255,.04)" }}><strong>{selectedSnake.name}</strong><button type="button" onClick={() => openSnakeProfile(selectedSnake.id)} style={{ width: "100%", marginTop: 7 }}>Open profile</button><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 5, marginTop: 6 }}>{controlButton("🍽️ Feed", () => quickAction("feed"))}{controlButton("🐍 Shed", () => quickAction("shed"))}{controlButton("⚖️ Weight", () => quickAction("weight"))}</div></div>}
+        </> : <div style={{ padding: 10, fontSize: 12, opacity: .65 }}>Select a vivarium or room object. Selection uses a slightly enlarged invisible hit volume so furniture is easier to pick.</div>}
+      </aside></section>
+  </main>;
 }
