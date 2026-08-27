@@ -4,15 +4,14 @@ import { getUserSnakes } from "../services/snakeService";
 import { loadReptileRooms, type ReptileRoomObject, type ReptileRoomWorkspace, type ReptileRoomSlot } from "../services/reptileRoomService";
 import Room3D from "../components/reptile-room-3d/Room3D";
 import { RoomBuildPanel } from "../components/reptile-room-3d/RoomBuildPanel";
+import { getCameraForwardSpawn } from "../components/reptile-room-3d/RoomCamera3D";
 import type { Room3DSelection, Room3DAssetPreset } from "../types/reptileRoom3D";
 import { clamp, snapArchitecturalObject, snapNumber, worldSize } from "../services/reptileRoomSpatialService";
 import type { Snake } from "../types/Snake";
 
 function createId(prefix: string): string { return `${prefix}-${crypto.randomUUID()}`; }
-
-function makePlacedObject(kind: ReptileRoomObject["kind"], label: string, width: number, depth: number, height: number, x: number, y: number, assetType: ReptileRoomObject["assetType"] = "furniture"): ReptileRoomObject {
-  return { id: createId("room-object"), kind, label, x, y, z: 0, width, depth, height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType };
-}
+function makePlacedObject(kind: ReptileRoomObject["kind"], label: string, width: number, depth: number, height: number, x: number, y: number, assetType: ReptileRoomObject["assetType"] = "furniture"): ReptileRoomObject { return { id: createId("room-object"), kind, label, x, y, z: 0, width, depth, height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType }; }
+function makeVivarium(width: number, depth: number, height: number, x: number, y: number): ReptileRoomSlot { return { id: createId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0, w: width, h: depth, depth, height, lifecycleStatus: "empty", condition: "good", availability: "available", storageLocation: "", storageNote: "", notes: "", maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, photoUrl: "" }; }
 
 export default function ReptileRoomDigitalTwin3D() {
   const { user, loading, profileLoading } = useAuth();
@@ -52,10 +51,23 @@ export default function ReptileRoomDigitalTwin3D() {
   }, []);
 
   const addObject = useCallback((object: ReptileRoomObject) => { setLocalObjects((current) => [...current, object]); setSelectedId(object.id); setSelectedType("object"); }, []);
-  const addAssetAtSpawn = useCallback((preset: Room3DAssetPreset, x: number, y: number) => {
-    const kind = preset.kind === "vivarium" ? "shelving" : preset.kind;
-    addObject(makePlacedObject(kind as ReptileRoomObject["kind"], `${preset.label} · ${preset.width} × ${preset.depth} × ${preset.height} cm`, preset.width, preset.depth, preset.height, x, y, preset.kind === "vivarium" ? "vivarium" : "furniture"));
-  }, [addObject]);
+  const spawnAsset = useCallback((preset: Room3DAssetPreset) => {
+    if (!room) return;
+    const camera = (window as Window & { __tinyTitansRoom3DCamera?: import("three").Camera }).__tinyTitansRoom3DCamera;
+    if (!camera) { setNotice("3D camera is still starting — try the asset again in a moment."); return; }
+    const point = getCameraForwardSpawn(camera, 120, room);
+    const width = room.width ?? 0;
+    const depth = room.depth ?? 0;
+    const x = clamp(snapNumber(point.xCm - preset.width / 2), 0, Math.max(0, width - preset.width));
+    const y = clamp(snapNumber(point.yCm - preset.depth / 2), 0, Math.max(0, depth - preset.depth));
+    if (preset.kind === "vivarium") {
+      const slot = makeVivarium(preset.width, preset.depth, preset.height, x, y);
+      setLocalSlots((current) => [...current, slot]); setSelectedId(slot.id); setSelectedType("slot");
+      return;
+    }
+    const object = makePlacedObject(preset.kind as ReptileRoomObject["kind"], preset.label, preset.width, preset.depth, preset.height, x, y, "furniture");
+    addObject(object);
+  }, [room, addObject]);
 
   const moveSelected = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, dz: number, commit: boolean) => {
     if (!room) return;
@@ -63,7 +75,7 @@ export default function ReptileRoomDigitalTwin3D() {
       setLocalObjects((current) => current.map((object) => {
         if (object.id !== selection.id) return object;
         const size = worldSize(object);
-        const moved = { ...object, x: object.x + dx, y: object.y + dy, z: object.z + dz, wall: null };
+        const moved = { ...object, x: object.x + dx, y: object.y + dy, z: (object.z ?? 0) + dz, wall: null };
         const bounded = { ...moved, x: clamp(moved.x, 0, Math.max(0, (room.width ?? 0) - size.w)), y: clamp(moved.y, 0, Math.max(0, (room.depth ?? 0) - size.d)), z: clamp(moved.z, 0, Math.max(0, (room.height ?? 0) - size.h)) };
         return commit ? snapArchitecturalObject(bounded, room.width ?? 0, room.depth ?? 0) : bounded;
       }));
@@ -71,34 +83,17 @@ export default function ReptileRoomDigitalTwin3D() {
       setLocalSlots((current) => current.map((slot) => {
         if (slot.id !== selection.id) return slot;
         const width = slot.w; const depth = slot.depth ?? slot.w; const height = slot.height ?? slot.h;
-        const moved = { ...slot, x: clamp(slot.x + dx, 0, Math.max(0, (room.width ?? 0) - width)), y: clamp(slot.y + dy, 0, Math.max(0, (room.depth ?? 0) - depth)), z: clamp(slot.z + dz, 0, Math.max(0, (room.height ?? 0) - height)) };
+        const moved = { ...slot, x: clamp(slot.x + dx, 0, Math.max(0, (room.width ?? 0) - width)), y: clamp(slot.y + dy, 0, Math.max(0, (room.depth ?? 0) - depth)), z: clamp((slot.z ?? 0) + dz, 0, Math.max(0, (room.height ?? 0) - height)) };
         if (!commit) return moved;
         return { ...moved, x: snapNumber(moved.x), y: snapNumber(moved.y), z: snapNumber(moved.z) };
       }));
     }
   }, [room]);
 
-  const deleteSelected = useCallback(() => {
-    if (!selectedId) return;
-    if (selectedType === "slot") setLocalSlots((current) => current.filter((item) => item.id !== selectedId));
-    else setLocalObjects((current) => current.filter((item) => item.id !== selectedId));
-    setSelectedId(null); setSelectedType(null);
-  }, [selectedId, selectedType]);
-
-  const duplicateSelected = useCallback(() => {
-    if (!selectedId || selectedType !== "object") return;
-    const source = localObjects.find((item) => item.id === selectedId); if (!source) return;
-    const copy: ReptileRoomObject = { ...source, id: createId("room-object"), label: `${source.label} · Copy`, x: source.x + 10, y: source.y + 10 };
-    setLocalObjects((current) => [...current, copy]); setSelectedId(copy.id); setSelectedType("object");
-  }, [localObjects, selectedId, selectedType]);
-
+  const deleteSelected = useCallback(() => { if (!selectedId) return; if (selectedType === "slot") setLocalSlots((current) => current.filter((item) => item.id !== selectedId)); else setLocalObjects((current) => current.filter((item) => item.id !== selectedId)); setSelectedId(null); setSelectedType(null); }, [selectedId, selectedType]);
+  const duplicateSelected = useCallback(() => { if (!selectedId || selectedType !== "object") return; const source = localObjects.find((item) => item.id === selectedId); if (!source) return; const copy: ReptileRoomObject = { ...source, id: createId("room-object"), label: `${source.label} · Copy`, x: source.x + 10, y: source.y + 10 }; setLocalObjects((current) => [...current, copy]); setSelectedId(copy.id); setSelectedType("object"); }, [localObjects, selectedId, selectedType]);
   const openSnakeProfile = useCallback((snakeId: string) => { window.location.assign(`/snakes/${encodeURIComponent(snakeId)}`); }, []);
-  const quickAction = useCallback((action: string) => {
-    if (!selectedSnake) return;
-    const snakeId = encodeURIComponent(selectedSnake.id);
-    const routes: Record<string, string> = { feed: `/feeding?snake=${snakeId}`, shed: `/shed-tracker?snake=${snakeId}`, weight: `/weight-records?snake=${snakeId}` };
-    const target = routes[action]; if (target) window.location.assign(target);
-  }, [selectedSnake]);
+  const quickAction = useCallback((action: string) => { if (!selectedSnake) return; const snakeId = encodeURIComponent(selectedSnake.id); const routes: Record<string, string> = { feed: `/feeding?snake=${snakeId}`, shed: `/shed-tracker?snake=${snakeId}`, weight: `/weight-records?snake=${snakeId}` }; const target = routes[action]; if (target) window.location.assign(target); }, [selectedSnake]);
 
   if (loading || profileLoading) return <div className="rr3d-loading">Loading your 3D digital twin…</div>;
   if (!room) return <div className="rr3d-loading"><h2>No reptile room yet</h2><p>Build your room in the 2D builder first, then return to the 3D view.</p></div>;
@@ -116,10 +111,10 @@ export default function ReptileRoomDigitalTwin3D() {
       {notice && <div className="rr3d-notice">{notice}</div>}
       <section aria-label="Three-dimensional reptile room digital twin" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 270px", gap: 12, alignItems: "start" }}>
         <div style={{ width: "100%", height: "min(78vh, 760px)", minHeight: 520, overflow: "hidden", borderRadius: 16 }}>
-          <Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} slots={localSlots} selectedId={selectedId} selectedType={selectedType} onSelect={handleSelect} onMove={moveSelected} onAddAsset={addAssetAtSpawn} />
+          <Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} slots={localSlots} selectedId={selectedId} selectedType={selectedType} onSelect={handleSelect} onMove={moveSelected} />
         </div>
         <div style={{ display: "grid", gap: 10 }}>
-          <RoomBuildPanel objects={localObjects} selectedId={selectedId} onDelete={deleteSelected} onDuplicate={duplicateSelected} />
+          <RoomBuildPanel objects={localObjects} selectedId={selectedId} onDelete={deleteSelected} onDuplicate={duplicateSelected} onSpawn={spawnAsset} />
           {(selectedSlot || selectedObject) && <aside aria-label="Selected room asset" style={{ border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: 12, background: "rgba(18,21,24,.96)" }}>
             <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
               <button type="button" onClick={() => setInspectorTab("edit")} aria-pressed={inspectorTab === "edit"}>Edit Vivarium</button>
@@ -128,8 +123,8 @@ export default function ReptileRoomDigitalTwin3D() {
             {inspectorTab === "edit" && <>
               <strong style={{ display: "block", marginBottom: 8 }}>{selectedSlot?.label ?? selectedObject?.label}</strong>
               <small style={{ display: "block", opacity: .65, marginBottom: 10 }}>Drag the selected asset using the three-axis gizmo. X/Z move it around the floor; Y lifts it vertically. Release to snap to the 5 cm grid.</small>
-              {selectedSlot && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Occupant: {selectedSnake?.name ?? "Empty"}</span><span>Size: {selectedSlot.w} × {selectedSlot.depth ?? selectedSlot.h} × {selectedSlot.height ?? selectedSlot.h} cm</span><span>Position: {Math.round(selectedSlot.x)}, {Math.round(selectedSlot.y)}, {Math.round(selectedSlot.z)} cm</span></div>}
-              {selectedObject && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Type: {selectedObject.assetType === "vivarium" ? "Vivarium" : selectedObject.kind}</span><span>Size: {selectedObject.width} × {selectedObject.depth} × {selectedObject.height} cm</span><span>Position: {Math.round(selectedObject.x)}, {Math.round(selectedObject.y)}, {Math.round(selectedObject.z)} cm</span></div>}
+              {selectedSlot && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Occupant: {selectedSnake?.name ?? "Empty"}</span><span>Size: {selectedSlot.w} × {selectedSlot.depth ?? selectedSlot.h} × {selectedSlot.height ?? selectedSlot.h} cm</span><span>Position: {Math.round(selectedSlot.x)}, {Math.round(selectedSlot.y)}, {Math.round(selectedSlot.z ?? 0)} cm</span></div>}
+              {selectedObject && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Type: {selectedObject.kind}</span><span>Size: {selectedObject.width} × {selectedObject.depth} × {selectedObject.height} cm</span><span>Position: {Math.round(selectedObject.x)}, {Math.round(selectedObject.y)}, {Math.round(selectedObject.z ?? 0)} cm</span></div>}
             </>}
             {inspectorTab === "occupant" && selectedSnake && <>
               <strong style={{ display: "block", marginBottom: 4 }}>{selectedSnake.name}</strong>
