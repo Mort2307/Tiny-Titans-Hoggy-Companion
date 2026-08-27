@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import type { ReptileRoomObject } from "../../services/reptileRoomService";
+import type { Room3DAssetPreset } from "../../types/reptileRoom3D";
 
 type RoomBuildPanelProps = {
   objects: ReptileRoomObject[];
   selectedId: string | null;
   onDelete: () => void;
   onDuplicate: () => void;
+  onSpawn?: (preset: Room3DAssetPreset) => void;
 };
 
 type Preset = [string, string, number, number, number];
@@ -21,29 +23,25 @@ const categories: Category[] = [
   { id: "storage", label: "Storage", icon: "📦", items: [
     ["shelving", "Shelving Unit", 90, 40, 180],
     ["storage-cabinet", "Storage Cabinet", 80, 40, 90],
+    ["rack", "Rack", 100, 55, 180],
   ] },
   { id: "vivariums", label: "Vivariums", icon: "🏠", items: [] },
   { id: "enrichment", label: "Enrichment & Decor", icon: "🌿", items: [] },
   { id: "equipment", label: "Heating & Equipment", icon: "🌡️", items: [] },
 ];
 
-function requestSpawn(preset: Preset) {
-  window.dispatchEvent(new CustomEvent("tinytitans:room3d-spawn", {
-    detail: { kind: preset[0], label: preset[1], width: preset[2], depth: preset[3], height: preset[4] },
-  }));
-}
-
-export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate }: RoomBuildPanelProps) {
+export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate, onSpawn }: RoomBuildPanelProps) {
   const [openCategory, setOpenCategory] = useState<string | null>("vivariums");
   const [minimized, setMinimized] = useState(false);
   const selected = objects.find((item) => item.id === selectedId);
   const counts = useMemo(() => objects.reduce<Record<string, number>>((result, object) => {
-    const category = object.assetType === "vivarium" ? "vivariums" : object.kind === "shelving" || object.kind === "storage-cabinet" ? "storage" : "work";
+    const category = object.assetType === "vivarium" ? "vivariums" : object.kind === "shelving" || object.kind === "storage-cabinet" || object.kind === "rack" ? "storage" : "work";
     result[category] = (result[category] ?? 0) + 1;
     return result;
   }, {}), [objects]);
 
   const buttonProps = { onPointerDown: (event: React.PointerEvent) => event.stopPropagation() };
+  const spawn = (preset: Preset) => onSpawn?.({ kind: preset[0] as Room3DAssetPreset["kind"], label: preset[1], icon: "", width: preset[2], depth: preset[3], height: preset[4] });
 
   return (
     <aside aria-label="3D room build controls" style={{ width: 270, maxWidth: "100%", padding: 14, borderRadius: 14, background: "rgba(22,25,29,.96)", border: "1px solid rgba(255,255,255,.12)", boxSizing: "border-box", pointerEvents: "auto" }}>
@@ -53,7 +51,7 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate }: R
       </div>
 
       {!minimized && <>
-        <div style={{ fontSize: 12, opacity: .7, marginBottom: 12 }}>Choose an asset category, then place true-scale objects into your digital twin. Spawned assets appear in front of you.</div>
+        <div style={{ fontSize: 12, opacity: .7, marginBottom: 12 }}>Choose an asset category, then place true-scale objects into your digital twin. Spawned assets appear directly in front of your current view.</div>
         {categories.map((category) => {
           const open = openCategory === category.id;
           return (
@@ -63,8 +61,8 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate }: R
                 <span style={{ opacity: .6 }}>{counts[category.id] ? `${counts[category.id]} · ` : ""}{open ? "⌃" : "⌄"}</span>
               </button>
               {open && <div style={{ padding: "7px", background: "rgba(255,255,255,.025)" }}>
-                {category.id === "vivariums" && <button type="button" onClick={() => requestSpawn(["vivarium", "Traditional Vivarium", 90, 40, 40])} style={{ width: "100%", minHeight: 42 }} {...buttonProps}>＋ Traditional Vivarium<br /><span style={{ opacity: .65, fontSize: 11 }}>90 × 40 × 40 cm</span></button>}
-                {category.items.length > 0 ? <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{category.items.map(([kind, label, width, depth, height]) => <button key={kind} type="button" onClick={() => requestSpawn([kind, label, width, depth, height])} style={{ fontSize: 11, minHeight: 42 }} {...buttonProps}>{label}<br /><span style={{ opacity: .6 }}>{width}×{depth}×{height}</span></button>)}</div> : category.id !== "vivariums" && <div style={{ padding: 8, fontSize: 11, opacity: .55 }}>Asset library coming next.</div>}
+                {category.id === "vivariums" && <button type="button" onClick={() => spawn(["vivarium", "Traditional Vivarium", 90, 40, 40])} style={{ width: "100%", minHeight: 42 }} {...buttonProps}>＋ Traditional Vivarium<br /><span style={{ opacity: .65, fontSize: 11 }}>90 × 40 × 40 cm</span></button>}
+                {category.items.length > 0 ? <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{category.items.map((preset) => <button key={preset[0]} type="button" onClick={() => spawn(preset)} style={{ fontSize: 11, minHeight: 42 }} {...buttonProps}>{preset[1]}<br /><span style={{ opacity: .6 }}>{preset[2]}×{preset[3]}×{preset[4]} cm</span></button>)}</div> : category.id !== "vivariums" && <div style={{ padding: 8, fontSize: 11, opacity: .55 }}>Asset library coming next.</div>}
               </div>}
             </div>
           );
@@ -72,7 +70,7 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate }: R
 
         {selected && <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.1)" }}>
           <div style={{ fontWeight: 700 }}>{selected.label}</div>
-          <div style={{ fontSize: 12, opacity: .7, margin: "4px 0 10px" }}>{selected.width} × {selected.depth} × {selected.height} cm · X {Math.round(selected.x)} · Z {Math.round(selected.z)}</div>
+          <div style={{ fontSize: 12, opacity: .7, margin: "4px 0 10px" }}>{selected.width} × {selected.depth} × {selected.height} cm · X {Math.round(selected.x)} · Y {Math.round(selected.y)} · Z {Math.round(selected.z ?? 0)}</div>
           <div style={{ display: "flex", gap: 6 }}><button type="button" onClick={onDuplicate} {...buttonProps}>Duplicate</button><button type="button" onClick={onDelete} {...buttonProps}>Delete</button></div>
         </div>}
       </>}
