@@ -5,7 +5,9 @@ import { RoomCamera3D } from "./RoomCamera3D";
 import { RoomShell3D } from "./RoomShell3D";
 import { getRoomDimensions3D } from "./room3DScale";
 
-function RoomScene({ room, showGrid, showCeiling }: Omit<Room3DProps, "className">) {
+type RoomSceneProps = Omit<Room3DProps, "className">;
+
+function RoomScene({ room, showGrid = true, showCeiling = false }: RoomSceneProps) {
   const { width, depth, height } = getRoomDimensions3D(room);
 
   return (
