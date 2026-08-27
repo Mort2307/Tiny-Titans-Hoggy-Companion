@@ -6,6 +6,11 @@ import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { cmToWorld, getRoomDimensions3D } from "./room3DScale";
 import { buildRoomNavigationNodes } from "./RoomNavigation3D";
 
+// Three.js cameras/renderers are intentionally mutable scene-graph objects. The
+// React hooks immutability rule is aimed at React-owned values and cannot model
+// these imperative Three.js APIs correctly, so this component opts out locally.
+/* eslint-disable react-hooks/immutability */
+
 type RoomNavigationTarget = { xCm: number; zCm: number };
 type RoomCamera3DProps = { room: ReptileRoomWorkspace; target?: RoomNavigationTarget };
 
