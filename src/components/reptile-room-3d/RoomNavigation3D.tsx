@@ -3,12 +3,12 @@ import { Html } from "@react-three/drei";
 import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { getRoomDimensions3D } from "./room3DScale";
 
-export const ROOM_NAVIGATION_SPACING_CM = 140;
+export const ROOM_NAVIGATION_SPACING_CM = 100;
 const FLOOR_EDGE_MARGIN_CM = 45;
 
 export type RoomNavigationNode = { id: string; xCm: number; zCm: number };
 
-type RoomNavigation3DProps = { room: ReptileRoomWorkspace; activeNodeId: string; onTeleport: (node: RoomNavigationNode) => void };
+type RoomNavigation3DProps = { room: ReptileRoomWorkspace; activeNodeId: string; onTeleport?: (node: RoomNavigationNode) => void };
 
 function buildAxisPositions(lengthCm: number): number[] {
   const usableMin = -lengthCm / 2 + FLOOR_EDGE_MARGIN_CM;
