@@ -1,10 +1,13 @@
-import type { ReptileRoomWorkspace } from "../services/reptileRoomService";
+import type { ReptileRoomObject, ReptileRoomWorkspace } from "../services/reptileRoomService";
 
 export type Room3DProps = {
   room: ReptileRoomWorkspace;
   className?: string;
   showGrid?: boolean;
   showCeiling?: boolean;
+  objects?: ReptileRoomObject[];
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
 };
 
 export type RoomDimensions3D = {
