@@ -23,7 +23,7 @@ type RoomSceneProps = Omit<Room3DProps, "className"> & {
 
 function RoomScene({ room, showGrid = true, showCeiling = false, objects, slots, selectedId, selectedType, photoForSlot, onSelect, onMove, navigationNode, onTeleport, onAddAsset }: RoomSceneProps) {
   const { width, depth, height } = getRoomDimensions3D(room);
-  const handleMove = (type: "slot" | "object", id: string, dx: number, dy: number, commit: boolean) => onMove?.({ type, id }, dx, dy, commit);
+  const handleMove = (type: "slot" | "object", id: string, dx: number, dy: number, dz: number, commit: boolean) => onMove?.({ type, id }, dx, dy, dz, commit);
 
   return (
     <>
@@ -32,8 +32,8 @@ function RoomScene({ room, showGrid = true, showCeiling = false, objects, slots,
       <hemisphereLight intensity={0.45} groundColor="#202226" color="#f2ead9" />
       <directionalLight position={[width * 0.25, height, depth * 0.15]} intensity={1.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <RoomShell3D room={room} showCeiling={showCeiling} />
-      {slots.map((slot) => <RoomObject3D key={`slot-${slot.id}`} object={slot} isSlot photoUrl={photoForSlot?.(slot)} selected={selectedType === "slot" && selectedId === slot.id} onSelect={(id) => onSelect({ type: "slot", id })} onMove={(dx, dy, commit) => handleMove("slot", slot.id, dx, dy, commit)} />)}
-      {objects.map((object) => <RoomObject3D key={object.id} object={object} selected={selectedType === "object" && selectedId === object.id} onSelect={(id) => onSelect({ type: "object", id })} onMove={(dx, dy, commit) => handleMove("object", object.id, dx, dy, commit)} />)}
+      {slots.map((slot) => <RoomObject3D key={`slot-${slot.id}`} object={slot} isSlot photoUrl={photoForSlot?.(slot)} selected={selectedType === "slot" && selectedId === slot.id} onSelect={(id) => onSelect({ type: "slot", id })} onMove={(dx, dy, dz, commit) => handleMove("slot", slot.id, dx, dy, dz, commit)} />)}
+      {objects.map((object) => <RoomObject3D key={object.id} object={object} selected={selectedType === "object" && selectedId === object.id} onSelect={(id) => onSelect({ type: "object", id })} onMove={(dx, dy, dz, commit) => handleMove("object", object.id, dx, dy, dz, commit)} />)}
       {showGrid && <MeasurementGrid3D room={room} />}
       <RoomNavigation3D room={room} activeNodeId={navigationNode.id} onTeleport={onTeleport} />
       <RoomCamera3D room={room} target={navigationNode} />
