@@ -38,7 +38,7 @@ export function RoomCamera3D({ room }: RoomCamera3DProps) {
       enableDamping
       dampingFactor={0.08}
       minDistance={Math.max(margin * 2, 0.2)}
-      maxDistance={Math.max(minX - maxX, minZ - maxZ) * -1}
+      maxDistance={Math.max(width, depth) * 0.6}
       target={[0, height * 0.5, 0]}
     />
   );
