@@ -1,0 +1,46 @@
+import { Canvas } from "@react-three/fiber";
+import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
+import type { Room3DProps } from "../../types/reptileRoom3D";
+import { MeasurementGrid3D } from "./MeasurementGrid3D";
+import { RoomCamera3D } from "./RoomCamera3D";
+import { RoomShell3D } from "./RoomShell3D";
+import { getRoomDimensions3D } from "./room3DScale";
+
+function RoomScene({ room, showGrid, showCeiling }: Omit<Room3DProps, "className">) {
+  const { width, depth, height } = getRoomDimensions3D(room);
+
+  return (
+    <>
+      <color attach="background" args={["#17191c"]} />
+      <ambientLight intensity={0.55} />
+      <hemisphereLight intensity={0.45} groundColor="#202226" color="#f2ead9" />
+      <directionalLight
+        position={[width * 0.25, height, depth * 0.15]}
+        intensity={1.1}
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
+      <RoomShell3D room={room} showCeiling={showCeiling} />
+      {showGrid && <MeasurementGrid3D room={room} />}
+      <RoomCamera3D room={room} />
+    </>
+  );
+}
+
+export default function Room3D({ room, className, showGrid = true, showCeiling = false }: Room3DProps) {
+  const { width, depth, height } = getRoomDimensions3D(room);
+  const cameraPosition: [number, number, number] = [0, height * 0.55, depth * 0.28];
+
+  return (
+    <div className={className} style={{ width: "100%", height: "100%", minHeight: 480 }}>
+      <Canvas
+        shadows
+        camera={{ position: cameraPosition, fov: 68, near: 0.01, far: Math.max(width, depth, height) * 4 }}
+        dpr={[1, 2]}
+      >
+        <RoomScene room={room} showGrid={showGrid} showCeiling={showCeiling} />
+      </Canvas>
+    </div>
+  );
+}
