@@ -3,6 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import type { ReptileRoomObject, ReptileRoomSlot } from "../../services/reptileRoomService";
 import type { Room3DProps, Room3DSelection } from "../../types/reptileRoom3D";
 import { MeasurementGrid3D } from "./MeasurementGrid3D";
+import { RoomAssetLibrary3D } from "./RoomAssetLibrary3D";
 import { RoomCamera3D } from "./RoomCamera3D";
 import { RoomNavigation3D, buildRoomNavigationNodes } from "./RoomNavigation3D";
 import type { RoomNavigationNode } from "./RoomNavigation3D";
@@ -20,7 +21,7 @@ type RoomSceneProps = Omit<Room3DProps, "className"> & {
   onTeleport: (node: RoomNavigationNode) => void;
 };
 
-function RoomScene({ room, showGrid = true, showCeiling = false, objects, slots, selectedId, selectedType, photoForSlot, onSelect, onMove, navigationNode, onTeleport }: RoomSceneProps) {
+function RoomScene({ room, showGrid = true, showCeiling = false, objects, slots, selectedId, selectedType, photoForSlot, onSelect, onMove, navigationNode, onTeleport, onAddAsset }: RoomSceneProps) {
   const { width, depth, height } = getRoomDimensions3D(room);
   const handleMove = (type: "slot" | "object", id: string, dx: number, dy: number, commit: boolean) => onMove?.({ type, id }, dx, dy, commit);
 
@@ -36,11 +37,12 @@ function RoomScene({ room, showGrid = true, showCeiling = false, objects, slots,
       {showGrid && <MeasurementGrid3D room={room} />}
       <RoomNavigation3D room={room} activeNodeId={navigationNode.id} onTeleport={onTeleport} />
       <RoomCamera3D room={room} target={navigationNode} />
+      <RoomAssetLibrary3D room={room} onAddAsset={onAddAsset} />
     </>
   );
 }
 
-export default function Room3D({ room, className, showGrid = true, showCeiling = false, objects = [], slots = [], selectedId = null, selectedType = null, photoForSlot, onSelect = () => undefined, onMove }: Room3DProps) {
+export default function Room3D({ room, className, showGrid = true, showCeiling = false, objects = [], slots = [], selectedId = null, selectedType = null, photoForSlot, onSelect = () => undefined, onMove, onAddAsset }: Room3DProps) {
   const { width, depth, height } = getRoomDimensions3D(room);
   const cameraPosition: [number, number, number] = [0, Math.max(0.5, height * 0.55), Math.max(0.5, depth * 0.28)];
   const navigationNodes = useMemo(() => buildRoomNavigationNodes(room), [room]);
@@ -57,7 +59,7 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
   return (
     <div className={className} style={{ width: "100%", height: "100%", minHeight: 480 }}>
       <Canvas shadows camera={{ position: cameraPosition, fov: 68, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onPointerMissed={() => onSelect(null)}>
-        <RoomScene room={room} showGrid={showGrid} showCeiling={showCeiling} objects={objects} slots={slots} selectedId={selectedId} selectedType={selectedType} photoForSlot={photoForSlot} onSelect={onSelect} onMove={onMove} navigationNode={navigationNode} onTeleport={setNavigationNode} />
+        <RoomScene room={room} showGrid={showGrid} showCeiling={showCeiling} objects={objects} slots={slots} selectedId={selectedId} selectedType={selectedType} photoForSlot={photoForSlot} onSelect={onSelect} onMove={onMove} navigationNode={navigationNode} onTeleport={setNavigationNode} onAddAsset={onAddAsset} />
       </Canvas>
     </div>
   );
