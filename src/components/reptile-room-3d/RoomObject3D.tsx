@@ -41,17 +41,20 @@ export function RoomObject3D({ object, selected, onSelect, onMove, isSlot = fals
     event.stopPropagation();
     onSelect(object.id);
     if (!onMove) return;
+    event.target.setPointerCapture?.(event.pointerId);
     setDragging(true);
     setDragStart([event.point.x, event.point.z]);
   };
+
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
     if (!dragging || !dragStart || !onMove) return;
     event.stopPropagation();
     const dx = (event.point.x - dragStart[0]) * 100;
     const dy = (event.point.z - dragStart[1]) * 100;
-    if (Math.abs(dx) > 0.25 || Math.abs(dy) > 0.25) onMove(dx, dy, false);
+    if (Math.abs(dx) > 0.15 || Math.abs(dy) > 0.15) onMove(dx, dy, false);
     setDragStart([event.point.x, event.point.z]);
   };
+
   const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     if (dragging && onMove) onMove(0, 0, true);
@@ -59,7 +62,16 @@ export function RoomObject3D({ object, selected, onSelect, onMove, isSlot = fals
     setDragStart(null);
   };
 
-  return <group position={position} rotation={[0, rotationY, 0]} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onClick={(event) => { event.stopPropagation(); onSelect(object.id); }} userData={{ roomObjectId: object.id, isVivarium: isSlot, magLocked: "stackGroupId" in object && Boolean(object.stackGroupId) }}>
+  return <group
+    position={position}
+    rotation={[0, rotationY, 0]}
+    onPointerDown={handlePointerDown}
+    onPointerMove={handlePointerMove}
+    onPointerUp={handlePointerUp}
+    onPointerCancel={handlePointerUp}
+    onClick={(event) => { event.stopPropagation(); onSelect(object.id); }}
+    userData={{ roomObjectId: object.id, isVivarium: isSlot, magLocked: "stackGroupId" in object && Boolean(object.stackGroupId) }}
+  >
     <mesh castShadow receiveShadow><boxGeometry args={[bodyWidth, bodyHeight, bodyDepth]} /><meshStandardMaterial color={selected ? "#d89a32" : isSlot ? "#6d4630" : "#4b5057"} roughness={0.72} transparent={isSlot} opacity={isSlot ? 0.92 : 1} /></mesh>
     {isSlot && <mesh position={[0, 0, bodyDepth / 2 + 0.003]}><boxGeometry args={[bodyWidth * 0.94, bodyHeight * 0.94, 0.006]} /><meshStandardMaterial color="#9fc2cf" metalness={0.08} roughness={0.2} transparent opacity={0.3} /></mesh>}
     {isSlot && photoUrl && <VivariumPhoto url={photoUrl} width={bodyWidth} height={bodyHeight} depth={bodyDepth} />}
