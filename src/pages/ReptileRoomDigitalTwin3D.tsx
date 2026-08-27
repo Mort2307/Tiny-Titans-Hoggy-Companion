@@ -93,7 +93,7 @@ export default function ReptileRoomDigitalTwin3D() {
     setLocalSlots(room?.slots ?? []);
     setSelectedId(null);
     setSelectedType(null);
-  }, [room?.id]);
+  }, [room?.id, room?.objects, room?.slots]);
 
   const persistState = useCallback(async (objects: ReptileRoomObject[], slots: ReptileRoomSlot[], message?: string) => {
     if (!room) return;
