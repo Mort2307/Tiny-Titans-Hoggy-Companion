@@ -1,5 +1,4 @@
 import { Canvas } from "@react-three/fiber";
-import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import type { Room3DProps } from "../../types/reptileRoom3D";
 import { MeasurementGrid3D } from "./MeasurementGrid3D";
 import { RoomCamera3D } from "./RoomCamera3D";
