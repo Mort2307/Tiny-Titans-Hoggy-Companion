@@ -36,19 +36,31 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     let pointerId: number | null = null;
     let lastX = 0;
     let lastY = 0;
+    let pendingStart: number | null = null;
+
+    const isTransforming = () => document.documentElement.dataset.rr3dTransforming === "true";
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0) return;
-      dragging = true;
-      pointerId = event.pointerId;
-      lastX = event.clientX;
-      lastY = event.clientY;
-      canvas.setPointerCapture?.(event.pointerId);
-      canvas.style.cursor = "grabbing";
+      if (isTransforming()) return;
+
+      // TransformControls receives the same DOM pointer event through R3F.
+      // Defer camera activation by one frame so the gizmo can claim the drag first.
+      if (pendingStart !== null) cancelAnimationFrame(pendingStart);
+      pendingStart = requestAnimationFrame(() => {
+        pendingStart = null;
+        if (isTransforming()) return;
+        dragging = true;
+        pointerId = event.pointerId;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        canvas.setPointerCapture?.(event.pointerId);
+        canvas.style.cursor = "grabbing";
+      });
     };
 
     const onPointerMove = (event: PointerEvent) => {
-      if (!dragging || pointerId !== event.pointerId) return;
+      if (!dragging || pointerId !== event.pointerId || isTransforming()) return;
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
       lastX = event.clientX;
@@ -61,6 +73,10 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     };
 
     const stopDragging = (event: PointerEvent) => {
+      if (pendingStart !== null) {
+        cancelAnimationFrame(pendingStart);
+        pendingStart = null;
+      }
       if (pointerId !== event.pointerId) return;
       dragging = false;
       pointerId = null;
@@ -76,7 +92,9 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     canvas.addEventListener("pointerleave", stopDragging);
 
     return () => {
+      if (pendingStart !== null) cancelAnimationFrame(pendingStart);
       canvas.style.cursor = "";
+      canvas.releasePointerCapture?.(pointerId ?? -1);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", stopDragging);
