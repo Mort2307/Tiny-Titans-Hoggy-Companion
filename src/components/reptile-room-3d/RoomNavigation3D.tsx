@@ -54,7 +54,7 @@ export function RoomNavigation3D({ room, activeNodeId, onTeleport }: RoomNavigat
         const hovered = node.id === hoveredNodeId;
         return (
           <group key={node.id} position={[node.xCm / 100, 0, node.zCm / 100]}>
-            <mesh rotation={[-Math.PI / 2, 0, 0]} onClick={(event) => { event.stopPropagation(); onTeleport(node); }} onPointerOver={(event) => { event.stopPropagation(); setHoveredNodeId(node.id); }} onPointerOut={() => setHoveredNodeId(null)}>
+            <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={(event) => { event.stopPropagation(); onTeleport(node); }} onPointerOver={(event) => { event.stopPropagation(); setHoveredNodeId(node.id); }} onPointerOut={() => setHoveredNodeId(null)}>
               <circleGeometry args={[0.18, 24]} />
               <meshStandardMaterial color="#ffffff" transparent opacity={active ? 0.08 : hovered ? 0.13 : 0.04} depthWrite={false} />
             </mesh>
