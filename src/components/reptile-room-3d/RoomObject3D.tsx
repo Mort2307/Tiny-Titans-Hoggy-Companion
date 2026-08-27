@@ -28,7 +28,7 @@ function VivariumPhoto({ url, width, height, depth }: { url: string; width: numb
   if (failed || !url) return null;
   return (
     <Html transform sprite position={[0, 0, depth / 2 + 0.009]} distanceFactor={1} zIndexRange={[1, 0]} style={{ pointerEvents: "none" }}>
-      <img src={url} alt="Vivarium" onError={() => setFailed(true)} draggable={false} style={{ width: `${Math.max(20, width * 1000 * 0.94)}px`, height: `${Math.max(20, height * 1000 * 0.88)}px`, objectFit: "cover", display: "block", borderRadius: "2px", userSelect: "none", WebkitUserDrag: "none" }} />
+      <img src={url} alt="Vivarium" onError={() => setFailed(true)} draggable={false} style={{ width: `${Math.max(20, width * 1000 * 0.94)}px`, height: `${Math.max(20, height * 1000 * 0.88)}px`, objectFit: "cover", display: "block", borderRadius: "2px", userSelect: "none" }} />
     </Html>
   );
 }
