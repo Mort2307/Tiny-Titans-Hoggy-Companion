@@ -5,6 +5,7 @@ import { getRoomDimensions3D } from "./room3DScale";
 
 export const ROOM_NAVIGATION_SPACING_CM = 100;
 const FLOOR_EDGE_MARGIN_CM = 45;
+const NAVIGATION_HIT_RADIUS = 0.32;
 
 export type RoomNavigationNode = {
   id: string;
@@ -54,7 +55,17 @@ export function RoomNavigation3D({ room, activeNodeId, onTeleport }: RoomNavigat
         const hovered = node.id === hoveredNodeId;
         return (
           <group key={node.id} position={[node.xCm / 100, 0, node.zCm / 100]}>
-            <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={(event) => { event.stopPropagation(); onTeleport(node); }} onPointerOver={(event) => { event.stopPropagation(); setHoveredNodeId(node.id); }} onPointerOut={() => setHoveredNodeId(null)}>
+            {/* The hit target is deliberately larger than the visible footprints, but its centre is exactly the teleport node. */}
+            <mesh
+              position={[0, 0.12, 0]}
+              onClick={(event) => { event.stopPropagation(); onTeleport(node); }}
+              onPointerOver={(event) => { event.stopPropagation(); setHoveredNodeId(node.id); }}
+              onPointerOut={() => setHoveredNodeId(null)}
+            >
+              <sphereGeometry args={[NAVIGATION_HIT_RADIUS, 16, 12]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+            </mesh>
+            <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} pointerEvents="none">
               <circleGeometry args={[0.18, 24]} />
               <meshStandardMaterial color="#ffffff" transparent opacity={active ? 0.08 : hovered ? 0.13 : 0.04} depthWrite={false} />
             </mesh>
