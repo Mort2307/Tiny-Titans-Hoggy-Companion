@@ -50,8 +50,7 @@ export function RoomObject3D({ object, selected, onSelect, onMove, isSlot = fals
     onSelect(object.id);
   };
 
-  const startTransform = (event?: ThreeEvent<PointerEvent>) => {
-    event?.stopPropagation();
+  const startTransform = () => {
     setTransformActive(true);
     if (!transformObject) return;
     lastTransformRef.current = [transformObject.position.x, transformObject.position.y, transformObject.position.z];
