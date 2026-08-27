@@ -4,14 +4,14 @@ import { getUserSnakes } from "../services/snakeService";
 import { loadReptileRooms, type ReptileFurnitureKind, type ReptileRoomObject, type ReptileRoomWorkspace, type ReptileRoomSlot } from "../services/reptileRoomService";
 import Room3D from "../components/reptile-room-3d/Room3D";
 import { RoomBuildPanel } from "../components/reptile-room-3d/RoomBuildPanel";
-import type { Room3DSelection } from "../types/reptileRoom3D";
+import type { Room3DSelection, Room3DAssetPreset } from "../types/reptileRoom3D";
 import { clamp, snapArchitecturalObject, snapNumber, worldSize } from "../services/reptileRoomSpatialService";
 import type { Snake } from "../types/Snake";
 
 function createId(prefix: string): string { return `${prefix}-${crypto.randomUUID()}`; }
 
-function makePlacedObject(kind: ReptileFurnitureKind, label: string, width: number, depth: number, height: number, index: number, assetType: ReptileRoomObject["assetType"] = "furniture"): ReptileRoomObject {
-  return { id: createId("room-object"), kind, label, x: 20 + (index % 4) * (width + 10), y: 20 + Math.floor(index / 4) * (depth + 10), z: 0, width, depth, height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType };
+function makePlacedObject(kind: ReptileFurnitureKind, label: string, width: number, depth: number, height: number, x: number, y: number, assetType: ReptileRoomObject["assetType"] = "furniture"): ReptileRoomObject {
+  return { id: createId("room-object"), kind, label, x, y, z: 0, width, depth, height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType };
 }
 
 export default function ReptileRoomDigitalTwin3D() {
@@ -52,26 +52,37 @@ export default function ReptileRoomDigitalTwin3D() {
   }, []);
 
   const addObject = useCallback((object: ReptileRoomObject) => { setLocalObjects((current) => [...current, object]); setSelectedId(object.id); setSelectedType("object"); }, []);
-  const addVivarium = useCallback(() => addObject(makePlacedObject("shelving", "Traditional Vivarium · 90 × 40 × 40 cm", 90, 40, 40, localObjects.length, "vivarium")), [addObject, localObjects.length]);
-  const addFurniture = useCallback((kind: ReptileFurnitureKind, label: string, width: number, depth: number, height: number) => addObject(makePlacedObject(kind, label, width, depth, height, localObjects.length)), [addObject, localObjects.length]);
+  const addAssetAtSpawn = useCallback((preset: Room3DAssetPreset, x: number, y: number) => {
+    const kind = preset.kind === "vivarium" ? "shelving" : preset.kind;
+    addObject(makePlacedObject(kind, `${preset.label} · ${preset.width} × ${preset.depth} × ${preset.height} cm`, preset.width, preset.depth, preset.height, x, y, preset.kind === "vivarium" ? "vivarium" : "furniture"));
+  }, [addObject]);
+  const addVivarium = useCallback(() => {
+    if (!room) return;
+    const width = 90; const depth = 40;
+    addObject(makePlacedObject("shelving", "Traditional Vivarium · 90 × 40 × 40 cm", width, depth, 40, clamp((room.width ?? 0) / 2 - width / 2, 0, Math.max(0, (room.width ?? 0) - width)), clamp((room.depth ?? 0) / 2 - depth / 2, 0, Math.max(0, (room.depth ?? 0) - depth)), "vivarium"));
+  }, [addObject, room]);
+  const addFurniture = useCallback((kind: ReptileFurnitureKind, label: string, width: number, depth: number, height: number) => {
+    if (!room) return;
+    addObject(makePlacedObject(kind, label, width, depth, height, clamp((room.width ?? 0) / 2 - width / 2, 0, Math.max(0, (room.width ?? 0) - width)), clamp((room.depth ?? 0) / 2 - depth / 2, 0, Math.max(0, (room.depth ?? 0) - depth))));
+  }, [addObject, room]);
 
-  const moveSelected = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, commit: boolean) => {
+  const moveSelected = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, dz: number, commit: boolean) => {
     if (!room) return;
     if (selection.type === "object") {
       setLocalObjects((current) => current.map((object) => {
         if (object.id !== selection.id) return object;
         const size = worldSize(object);
-        const moved = { ...object, x: object.x + dx, y: object.y + dy, wall: null };
-        const bounded = { ...moved, x: clamp(moved.x, 0, Math.max(0, (room.width ?? 0) - size.w)), y: clamp(moved.y, 0, Math.max(0, (room.depth ?? 0) - size.d)) };
+        const moved = { ...object, x: object.x + dx, y: object.y + dy, z: object.z + dz, wall: null };
+        const bounded = { ...moved, x: clamp(moved.x, 0, Math.max(0, (room.width ?? 0) - size.w)), y: clamp(moved.y, 0, Math.max(0, (room.depth ?? 0) - size.d)), z: clamp(moved.z, 0, Math.max(0, (room.height ?? 0) - size.h)) };
         return commit ? snapArchitecturalObject(bounded, room.width ?? 0, room.depth ?? 0) : bounded;
       }));
     } else {
       setLocalSlots((current) => current.map((slot) => {
         if (slot.id !== selection.id) return slot;
-        const width = slot.w; const depth = slot.depth ?? slot.h;
-        const moved = { ...slot, x: clamp(slot.x + dx, 0, Math.max(0, (room.width ?? 0) - width)), y: clamp(slot.y + dy, 0, Math.max(0, (room.depth ?? 0) - depth)) };
+        const width = slot.w; const depth = slot.depth ?? slot.w; const height = slot.height ?? slot.h;
+        const moved = { ...slot, x: clamp(slot.x + dx, 0, Math.max(0, (room.width ?? 0) - width)), y: clamp(slot.y + dy, 0, Math.max(0, (room.depth ?? 0) - depth)), z: clamp(slot.z + dz, 0, Math.max(0, (room.height ?? 0) - height)) };
         if (!commit) return moved;
-        return { ...moved, x: snapNumber(moved.x), y: snapNumber(moved.y) };
+        return { ...moved, x: snapNumber(moved.x), y: snapNumber(moved.y), z: snapNumber(moved.z) };
       }));
     }
   }, [room]);
@@ -114,7 +125,7 @@ export default function ReptileRoomDigitalTwin3D() {
       {notice && <div className="rr3d-notice">{notice}</div>}
       <section aria-label="Three-dimensional reptile room digital twin" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 270px", gap: 12, alignItems: "start" }}>
         <div style={{ width: "100%", height: "min(78vh, 760px)", minHeight: 520, overflow: "hidden", borderRadius: 16 }}>
-          <Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} slots={localSlots} selectedId={selectedId} selectedType={selectedType} onSelect={handleSelect} onMove={moveSelected} />
+          <Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} slots={localSlots} selectedId={selectedId} selectedType={selectedType} onSelect={handleSelect} onMove={moveSelected} onAddAsset={addAssetAtSpawn} />
         </div>
         <div style={{ display: "grid", gap: 10 }}>
           <RoomBuildPanel objects={localObjects} selectedId={selectedId} onAddVivarium={addVivarium} onAddFurniture={addFurniture} onDelete={deleteSelected} onDuplicate={duplicateSelected} />
@@ -125,9 +136,9 @@ export default function ReptileRoomDigitalTwin3D() {
             </div>
             {inspectorTab === "edit" && <>
               <strong style={{ display: "block", marginBottom: 8 }}>{selectedSlot?.label ?? selectedObject?.label}</strong>
-              <small style={{ display: "block", opacity: .65, marginBottom: 10 }}>Drag the asset directly in the 3D room. It snaps to a 5 cm grid and magnet-locks architectural objects to nearby walls.</small>
-              {selectedSlot && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Occupant: {selectedSnake?.name ?? "Empty"}</span><span>Size: {selectedSlot.w} × {selectedSlot.depth ?? selectedSlot.h} × {selectedSlot.height ?? selectedSlot.h} cm</span><span>Position: {Math.round(selectedSlot.x)}, {Math.round(selectedSlot.y)}</span></div>}
-              {selectedObject && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Type: {selectedObject.kind}</span><span>Size: {selectedObject.width} × {selectedObject.depth} × {selectedObject.height} cm</span><span>Position: {Math.round(selectedObject.x)}, {Math.round(selectedObject.y)}</span></div>}
+              <small style={{ display: "block", opacity: .65, marginBottom: 10 }}>Drag the selected asset using the three-axis gizmo. X/Z move it around the floor; Y lifts it vertically. Release to snap to the 5 cm grid.</small>
+              {selectedSlot && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Occupant: {selectedSnake?.name ?? "Empty"}</span><span>Size: {selectedSlot.w} × {selectedSlot.depth ?? selectedSlot.h} × {selectedSlot.height ?? selectedSlot.h} cm</span><span>Position: {Math.round(selectedSlot.x)}, {Math.round(selectedSlot.y)}, {Math.round(selectedSlot.z)} cm</span></div>}
+              {selectedObject && <div style={{ display: "grid", gap: 7, fontSize: 12 }}><span>Type: {selectedObject.assetType === "vivarium" ? "Vivarium" : selectedObject.kind}</span><span>Size: {selectedObject.width} × {selectedObject.depth} × {selectedObject.height} cm</span><span>Position: {Math.round(selectedObject.x)}, {Math.round(selectedObject.y)}, {Math.round(selectedObject.z)} cm</span></div>}
             </>}
             {inspectorTab === "occupant" && selectedSnake && <>
               <strong style={{ display: "block", marginBottom: 4 }}>{selectedSnake.name}</strong>
