@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
+import { Vector3 } from "three";
 import { ROOM_3D_CAMERA_HEIGHT_RATIO, ROOM_3D_CAMERA_MARGIN_CM } from "../../data/reptileRoomAssets";
 import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { cmToWorld, getRoomDimensions3D } from "./room3DScale";
@@ -26,7 +27,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
   useEffect(() => {
     const x = Math.min(maxX, Math.max(minX, cmToWorld(destination.xCm)));
     const z = Math.min(maxZ, Math.max(minZ, cmToWorld(destination.zCm)));
-    const currentLookDirection = camera.getWorldDirection({ x: 0, y: 0, z: 0 });
+    const currentLookDirection = camera.getWorldDirection(new Vector3());
     camera.position.set(x, Math.min(height - margin, Math.max(margin, height * ROOM_3D_CAMERA_HEIGHT_RATIO)), z);
     camera.lookAt(x + currentLookDirection.x, camera.position.y + currentLookDirection.y, z + currentLookDirection.z);
   }, [camera, destination.xCm, destination.zCm, height, margin, maxX, maxZ, minX, minZ]);
