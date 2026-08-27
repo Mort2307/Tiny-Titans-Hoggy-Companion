@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Html } from "@react-three/drei";
+import { useEffect, useMemo, useState } from "react";
+import { TextureLoader } from "three";
+import type { Texture } from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { cmToWorld } from "./room3DScale";
@@ -24,12 +25,48 @@ function rotationFor(item: ReptileRoomObject | ReptileRoomSlot): number {
 }
 
 function VivariumPhoto({ url, width, height, depth }: { url: string; width: number; height: number; depth: number }) {
-  const [failed, setFailed] = useState(false);
-  if (failed || !url) return null;
+  const [texture, setTexture] = useState<Texture | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const loader = new TextureLoader();
+    setTexture(null);
+
+    loader.load(
+      url,
+      (loaded) => {
+        if (!alive) {
+          loaded.dispose();
+          return;
+        }
+        loaded.colorSpace = "srgb";
+        loaded.needsUpdate = true;
+        setTexture(loaded);
+      },
+      undefined,
+      () => {
+        if (alive) setTexture(null);
+      },
+    );
+
+    return () => {
+      alive = false;
+    };
+  }, [url]);
+
+  if (!texture || !url) return null;
+
+  // The photo is a real Three.js plane attached to the vivarium's front (+Z)
+  // face. It inherits the vivarium rotation and never billboards toward the camera.
+  const photoWidth = Math.max(0.01, width * 0.90);
+  const photoHeight = Math.max(0.01, height * 0.82);
+  const frontOffset = Math.max(0.004, depth * 0.5 + 0.004);
+
   return (
-    <Html transform sprite position={[0, 0, depth / 2 + 0.009]} distanceFactor={1} zIndexRange={[1, 0]} style={{ pointerEvents: "none" }}>
-      <img src={url} alt="Vivarium" onError={() => setFailed(true)} draggable={false} style={{ width: `${Math.max(20, width * 1000 * 0.94)}px`, height: `${Math.max(20, height * 1000 * 0.88)}px`, objectFit: "cover", display: "block", borderRadius: "2px", userSelect: "none" }} />
-    </Html>
+    <mesh position={[0, 0, frontOffset]} renderOrder={2}>
+      <planeGeometry args={[photoWidth, photoHeight]} />
+      <meshBasicMaterial map={texture} toneMapped={false} transparent opacity={0.98} depthWrite={false} />
+    </mesh>
   );
 }
 
@@ -55,8 +92,12 @@ export function RoomObject3D({ room, object, selected, onSelect, isSlot = false,
   const bodyDepth = Math.max(0.01, cmToWorld(size.depth));
   const select = (event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); onSelect(object.id); };
   return <group position={position} rotation={[0, rotationY, 0]} userData={{ roomObjectId: object.id, isVivarium: isSlot, magLocked: Boolean(object.stackGroupId) }}>
-    <mesh onPointerDown={select} onClick={select} visible={false}><boxGeometry args={[bodyWidth * 1.08, bodyHeight * 1.08, bodyDepth * 1.08]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} /></mesh>
-    {isSlot ? <><mesh castShadow receiveShadow onPointerDown={select} onClick={select}><boxGeometry args={[bodyWidth, bodyHeight, bodyDepth]} /><meshStandardMaterial color={selected ? "#d89a32" : "#6d4630"} roughness={0.72} transparent opacity={photoUrl ? 0.22 : 0.92} /></mesh><mesh position={[0, 0, bodyDepth / 2 + 0.003]} onPointerDown={select} onClick={select}><boxGeometry args={[bodyWidth * 0.96, bodyHeight * 0.96, 0.008]} /><meshStandardMaterial color="#a8c9d5" metalness={0.18} roughness={0.16} transparent opacity={photoUrl ? 0.18 : 0.28} /></mesh>{photoUrl && <VivariumPhoto url={photoUrl} width={bodyWidth} height={bodyHeight} depth={bodyDepth} />}</> : <group onPointerDown={select} onClick={select}><FurnitureModel kind={"kind" in object ? object.kind : "asset"} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} /></group>}
+    <mesh onPointerDown={select} onClick={select} visible={false}><boxGeometry args={[bodyWidth * 1.12, bodyHeight * 1.12, bodyDepth * 1.12]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} /></mesh>
+    {isSlot ? <>
+      <mesh castShadow receiveShadow onPointerDown={select} onClick={select}><boxGeometry args={[bodyWidth, bodyHeight, bodyDepth]} /><meshStandardMaterial color={selected ? "#d89a32" : "#6d4630"} roughness={0.72} transparent opacity={photoUrl ? 0.16 : 0.92} /></mesh>
+      <mesh position={[0, 0, bodyDepth / 2 + 0.002]} onPointerDown={select} onClick={select}><boxGeometry args={[bodyWidth * 0.96, bodyHeight * 0.96, 0.008]} /><meshStandardMaterial color="#a8c9d5" metalness={0.18} roughness={0.16} transparent opacity={photoUrl ? 0.10 : 0.28} /></mesh>
+      {photoUrl && <VivariumPhoto url={photoUrl} width={bodyWidth} height={bodyHeight} depth={bodyDepth} />}
+    </> : <group onPointerDown={select} onClick={select}><FurnitureModel kind={"kind" in object ? object.kind : "asset"} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} /></group>}
     {selected && <mesh position={[0, bodyHeight / 2 + 0.008, 0]}><boxGeometry args={[bodyWidth + 0.012, 0.012, bodyDepth + 0.012]} /><meshStandardMaterial color="#f2bd55" emissive="#7a4d0d" emissiveIntensity={0.6} /></mesh>}
     {isSlot && object.stackGroupId && <mesh position={[0, bodyHeight + 0.025, 0]}><sphereGeometry args={[0.018, 12, 8]} /><meshStandardMaterial color="#e0a63b" emissive="#6d4307" emissiveIntensity={0.7} /></mesh>}
   </group>;
