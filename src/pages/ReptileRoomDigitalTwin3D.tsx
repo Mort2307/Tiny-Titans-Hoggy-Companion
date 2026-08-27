@@ -3,6 +3,7 @@ import { useAuth } from "../context/useAuth";
 import { loadReptileRooms, type ReptileFurnitureKind, type ReptileRoomObject, type ReptileRoomWorkspace } from "../services/reptileRoomService";
 import Room3D from "../components/reptile-room-3d/Room3D";
 import { RoomBuildPanel } from "../components/reptile-room-3d/RoomBuildPanel";
+import type { Room3DSelection } from "../types/reptileRoom3D";
 
 function createId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
@@ -28,6 +29,7 @@ export default function ReptileRoomDigitalTwin3D() {
   const [notice, setNotice] = useState("");
   const [localObjects, setLocalObjects] = useState<ReptileRoomObject[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<"slot" | "object" | null>(null);
 
   const room = useMemo(() => rooms.find((item) => item.id === roomId) ?? rooms[0] ?? null, [rooms, roomId]);
 
@@ -43,11 +45,22 @@ export default function ReptileRoomDigitalTwin3D() {
   }, [user]);
 
   useEffect(() => { if (!loading && !profileLoading && user) void load(); }, [loading, profileLoading, user, load]);
-  useEffect(() => { setLocalObjects(room?.objects ?? []); setSelectedId(null); }, [room?.id]);
+  useEffect(() => { setLocalObjects(room?.objects ?? []); setSelectedId(null); setSelectedType(null); }, [room?.id]);
+
+  const handleSelect = useCallback((selection: Room3DSelection) => {
+    if (!selection) {
+      setSelectedId(null);
+      setSelectedType(null);
+      return;
+    }
+    setSelectedId(selection.id);
+    setSelectedType(selection.type);
+  }, []);
 
   const addObject = useCallback((object: ReptileRoomObject) => {
     setLocalObjects((current) => [...current, object]);
     setSelectedId(object.id);
+    setSelectedType("object");
   }, []);
 
   const addVivarium = useCallback(() => {
@@ -62,6 +75,7 @@ export default function ReptileRoomDigitalTwin3D() {
     if (!selectedId) return;
     setLocalObjects((current) => current.filter((item) => item.id !== selectedId));
     setSelectedId(null);
+    setSelectedType(null);
   }, [selectedId]);
 
   const duplicateSelected = useCallback(() => {
@@ -71,6 +85,7 @@ export default function ReptileRoomDigitalTwin3D() {
     const copy: ReptileRoomObject = { ...source, id: createId("room-object"), label: `${source.label} · Copy`, x: source.x + 10, z: source.z + 10 };
     setLocalObjects((current) => [...current, copy]);
     setSelectedId(copy.id);
+    setSelectedType("object");
   }, [localObjects, selectedId]);
 
   if (loading || profileLoading) return <div className="rr3d-loading">Loading your 3D digital twin…</div>;
@@ -94,7 +109,7 @@ export default function ReptileRoomDigitalTwin3D() {
       {notice && <div className="rr3d-notice">{notice}</div>}
       <section aria-label="Three-dimensional reptile room digital twin" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 270px", gap: 12, alignItems: "start" }}>
         <div style={{ width: "100%", height: "min(78vh, 760px)", minHeight: 520, overflow: "hidden", borderRadius: 16 }}>
-          <Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} selectedId={selectedId} onSelect={setSelectedId} />
+          <Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={localObjects} selectedId={selectedId} selectedType={selectedType} onSelect={handleSelect} />
         </div>
         <RoomBuildPanel objects={localObjects} selectedId={selectedId} onAddVivarium={addVivarium} onAddFurniture={addFurniture} onDelete={deleteSelected} onDuplicate={duplicateSelected} />
       </section>
