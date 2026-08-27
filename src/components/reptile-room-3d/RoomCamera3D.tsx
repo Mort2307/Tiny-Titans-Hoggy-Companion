@@ -7,11 +7,7 @@ import { cmToWorld, getRoomDimensions3D } from "./room3DScale";
 import { buildRoomNavigationNodes } from "./RoomNavigation3D";
 
 type RoomNavigationTarget = { xCm: number; zCm: number };
-
-type RoomCamera3DProps = {
-  room: ReptileRoomWorkspace;
-  target?: RoomNavigationTarget;
-};
+type RoomCamera3DProps = { room: ReptileRoomWorkspace; target?: RoomNavigationTarget };
 
 const LOOK_SENSITIVITY = 0.0032;
 const MIN_PITCH = -Math.PI / 2.35;
@@ -41,11 +37,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     const isTransforming = () => document.documentElement.dataset.rr3dTransforming === "true";
 
     const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
-      if (isTransforming()) return;
-
-      // TransformControls receives the same DOM pointer event through R3F.
-      // Defer camera activation by one frame so the gizmo can claim the drag first.
+      if (event.button !== 0 || isTransforming()) return;
       if (pendingStart !== null) cancelAnimationFrame(pendingStart);
       pendingStart = requestAnimationFrame(() => {
         pendingStart = null;
@@ -65,7 +57,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
       const dy = event.clientY - lastY;
       lastX = event.clientX;
       lastY = event.clientY;
-      yawRef.current -= dx * LOOK_SENSITIVITY;
+      yawRef.current += dx * LOOK_SENSITIVITY;
       pitchRef.current = Math.min(MAX_PITCH, Math.max(MIN_PITCH, pitchRef.current - dy * LOOK_SENSITIVITY));
       camera.rotation.order = "YXZ";
       camera.rotation.y = yawRef.current;
@@ -80,7 +72,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
       if (pointerId !== event.pointerId) return;
       dragging = false;
       pointerId = null;
-      canvas.releasePointerCapture?.(event.pointerId);
+      if (canvas.hasPointerCapture?.(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
       canvas.style.cursor = "grab";
     };
 
@@ -89,17 +81,15 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", stopDragging);
     canvas.addEventListener("pointercancel", stopDragging);
-    canvas.addEventListener("pointerleave", stopDragging);
 
     return () => {
       if (pendingStart !== null) cancelAnimationFrame(pendingStart);
       canvas.style.cursor = "";
-      canvas.releasePointerCapture?.(pointerId ?? -1);
+      if (pointerId !== null && canvas.hasPointerCapture?.(pointerId)) canvas.releasePointerCapture(pointerId);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", stopDragging);
       canvas.removeEventListener("pointercancel", stopDragging);
-      canvas.removeEventListener("pointerleave", stopDragging);
     };
   }, [camera, gl]);
 
