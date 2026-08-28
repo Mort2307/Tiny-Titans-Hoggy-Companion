@@ -10,6 +10,7 @@ export type Room3DAssetPreset = {
   height: number;
   assetType?: ReptileRoomAssetType;
 };
+export type Room3DTransformPatch = Partial<ReptileRoomObject> | (Partial<ReptileRoomSlot> & { rotation?: number });
 export type Room3DProps = {
   room: ReptileRoomWorkspace;
   className?: string;
@@ -23,6 +24,7 @@ export type Room3DProps = {
   photoForSlot?: (slot: ReptileRoomSlot) => string | undefined;
   onSelect?: (selection: Room3DSelection) => void;
   onMove?: (selection: { type: "slot" | "object"; id: string }, deltaXcm: number, deltaYcm: number, deltaZcm: number, commit: boolean) => void;
+  onTransformChange?: (selection: { type: "slot" | "object"; id: string }, patch: Room3DTransformPatch) => void;
   onAddAsset?: (preset: Room3DAssetPreset, spawnXcm: number, spawnYcm: number) => void;
   onTeleport?: (node: { id: string; xCm: number; zCm: number }) => void;
 };
