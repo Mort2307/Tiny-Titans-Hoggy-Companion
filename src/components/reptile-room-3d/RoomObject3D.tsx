@@ -54,57 +54,48 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
 }
 
 function VivariumPhoto({ url, width, height, depth }: { url: string; width: number; height: number; depth: number }) {
-  const [image, setImage] = useState<{ width: number; height: number } | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
     const img = new Image();
-    img.onload = () => active && setImage({ width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
-    img.onerror = () => active && setImage(null);
+    img.onload = () => active && setLoaded(true);
+    img.onerror = () => active && setLoaded(false);
     img.src = url;
     return () => { active = false; };
   }, [url]);
 
   const texture = useMemo(() => {
-    if (!image) return null;
+    if (!loaded) return null;
     const tex = new THREE.TextureLoader().load(url);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = THREE.ClampToEdgeWrapping;
     tex.wrapT = THREE.ClampToEdgeWrapping;
     tex.minFilter = THREE.LinearFilter;
     tex.magFilter = THREE.LinearFilter;
-
-    // The photo is a true glass-door overlay. Fill the complete door while
-    // preserving the source aspect ratio, cropping only the excess edges.
-    const doorAspect = width / height;
-    const imageAspect = image.width / image.height;
-    if (imageAspect > doorAspect) {
-      tex.repeat.set(doorAspect / imageAspect, 1);
-      tex.offset.set((1 - tex.repeat.x) / 2, 0);
-    } else {
-      tex.repeat.set(1, imageAspect / doorAspect);
-      tex.offset.set(0, (1 - tex.repeat.y) / 2);
-    }
     tex.needsUpdate = true;
     return tex;
-  }, [url, image, width, height]);
+  }, [loaded, url]);
 
   if (!texture) return null;
 
+  // The photo is deliberately rendered as a full-size door overlay.
+  // The glass/frame geometry remains the actual enclosure; this plane is only
+  // the user's selected face image and follows the vivarium transform.
   return (
     <mesh
-      position={[0, 0, depth / 2 + 0.028]}
-      renderOrder={10}
+      position={[0, 0, depth / 2 + 0.052]}
+      renderOrder={20}
       userData={{ vivariumFaceImage: true }}
     >
-      <planeGeometry args={[width, height]} />
+      <planeGeometry args={[width * 0.985, height * 0.985]} />
       <meshBasicMaterial
         map={texture}
         transparent
         opacity={0.92}
         toneMapped={false}
         depthWrite={false}
-        depthTest={true}
+        depthTest={false}
       />
     </mesh>
   );
