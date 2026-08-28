@@ -273,6 +273,42 @@
   flex: 1;
 }
 
+.reptile-room-digital-twin__dimension-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.reptile-room-digital-twin__rotation,
+.reptile-room-digital-twin__photo-actions,
+.reptile-room-digital-twin__inspector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.reptile-room-digital-twin__rotation strong { font-size: .76rem; min-width: 36px; text-align: center; }
+
+.reptile-room-digital-twin__photo-button {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--rrdt-line);
+  border-radius: 8px;
+  background: var(--rrdt-panel-raised);
+  color: var(--rrdt-text) !important;
+  cursor: pointer;
+}
+
+.reptile-room-digital-twin__photo-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.reptile-room-digital-twin__delete { border-color: #a94f4f !important; background: #481f23 !important; color: #ffe9e9 !important; }
+
+.reptile-room-digital-twin__mobile-sheet { display: none; }
+
 .reptile-room-digital-twin__snake-photo {
   display: block;
   width: 100%;
@@ -321,6 +357,8 @@
     grid-column: auto;
   }
 
+  .reptile-room-digital-twin__inspector { display: none; }
+
   .reptile-room-digital-twin__viewport {
     order: -1;
     height: clamp(540px, 65vh, 680px);
@@ -336,6 +374,24 @@
     width: 100%;
     justify-content: flex-start;
   }
+
+  .reptile-room-digital-twin__mobile-sheet {
+    display: block;
+    position: fixed;
+    z-index: 100;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: min(72vh, 620px);
+    overflow: auto;
+    padding: 16px;
+    border: 1px solid var(--rrdt-line);
+    border-radius: 16px 16px 0 0;
+    background: var(--rrdt-panel);
+    box-shadow: 0 -16px 40px rgba(0,0,0,.4);
+  }
+
+  .reptile-room-digital-twin__sheet-close { float: right; }
 }
 
 @media (max-width: 520px) {
