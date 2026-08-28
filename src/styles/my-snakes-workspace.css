@@ -5,21 +5,13 @@
 .my-snakes-view-switch button.is-active { background: rgba(245,166,35,.18); box-shadow: inset 0 0 0 1px rgba(245,166,35,.28); }
 .my-snakes-workspace-room .my-snakes-view-switch { margin-bottom: 0; }
 .my-snakes-workspace-room .reptile-room-page { padding-top: .5rem; }
-
-@media (max-width: 700px) {
-  .my-snakes-view-switch { width: calc(100% - 1rem); max-width: 420px; }
-  .my-snakes-view-switch button { flex: 1; min-width: 0; padding: .62rem .55rem; }
-  .my-snakes-view-switch button span { font-size: .88rem; }
-  .my-snakes-workspace-room .reptile-room-page { max-width: none; }
-  .my-snakes-workspace-room .reptile-room-canvas { width: 100%; height: 74vh; min-height: 520px; max-height: 820px; }
-}
-
-@media (orientation: landscape) and (max-height: 700px) {
-  .my-snakes-workspace-room .reptile-room-page { padding-top: .25rem; }
-  .my-snakes-workspace-room .reptile-room-canvas { height: 76vh; min-height: 420px; max-height: none; }
-  .my-snakes-view-switch { margin-bottom: .35rem; }
-}
-
-@media (orientation: portrait) and (max-width: 700px) {
-  .my-snakes-workspace-room .reptile-room-canvas { height: 72vh; min-height: 540px; }
-}
+.my-snakes-room-viewer { width: 100%; min-height: 62vh; }
+.my-snakes-room-viewer-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 auto .65rem; padding: .7rem .85rem; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(15,18,22,.82); }
+.my-snakes-room-viewer-header > div { display: grid; gap: .15rem; min-width: 0; }
+.my-snakes-room-viewer-header strong { font-size: 1rem; }
+.my-snakes-room-viewer-header span { font-size: .76rem; opacity: .68; }
+.my-snakes-room-viewer-header button, .my-snakes-room-viewer-status + button { border: 1px solid rgba(245,166,35,.35); border-radius: 9px; padding: .55rem .8rem; background: rgba(245,166,35,.14); color: inherit; font: inherit; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.my-snakes-room-viewer-canvas { width: 100%; height: min(76vh, 760px); min-height: 480px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: #17191c; box-shadow: 0 14px 40px rgba(0,0,0,.2); }
+.my-snakes-room-viewer-status { display: grid; place-items: center; min-height: 240px; padding: 2rem; text-align: center; opacity: .8; }
+@media (max-width: 700px) { .my-snakes-view-switch { width: calc(100% - 1rem); max-width: 420px; } .my-snakes-view-switch button { flex: 1; min-width: 0; padding: .62rem .55rem; } .my-snakes-view-switch button span { font-size: .88rem; } .my-snakes-workspace-room .reptile-room-page { max-width: none; } .my-snakes-room-viewer-canvas { height: 72vh; min-height: 500px; } .my-snakes-room-viewer-header { align-items: flex-start; } }
+@media (orientation: landscape) and (max-height: 700px) { .my-snakes-workspace-room .reptile-room-page { padding-top: .25rem; } .my-snakes-room-viewer-canvas { height: 76vh; min-height: 420px; } .my-snakes-view-switch { margin-bottom: .35rem; } }
