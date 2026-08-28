@@ -1,4 +1,4 @@
-import type { ReptileRoomObject, ReptileRoomPoint, ReptileRoomSlot, ReptileRoomSocket, ReptileWall } from "./reptileRoomService";
+import type { ReptileRoomObject, ReptileRoomPoint, ReptileRoomSlot, ReptileRoomSocket, ReptileRoomWorkspace, ReptileRoomWall } from "./reptileRoomService";
 
 export const ROOM_SNAP_CM = 5;
 export const WALL_SNAP_CM = 18;
@@ -13,7 +13,7 @@ export function worldSize(object: Pick<ReptileRoomObject, "width" | "depth" | "r
 
 export function pointInRoomPolygon(x: number, z: number, polygon?: ReptileRoomPoint[]): boolean { if (!polygon || polygon.length < 3) return true; let inside = false; for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) { const a = polygon[i], b = polygon[j]; const intersects = a.z > z !== b.z > z && x < ((b.x - a.x) * (z - a.z)) / (b.z - a.z) + a.x; if (intersects) inside = !inside; } return inside; }
 
-export function snapWallObject(object: ReptileRoomObject, wall: ReptileWall, roomWidth: number, roomDepth: number): ReptileRoomObject {
+export function snapWallObject(object: ReptileRoomObject, wall: ReptileRoomObject["wall"], roomWidth: number, roomDepth: number): ReptileRoomObject {
   const next = { ...object, wall }; const horizontal = wall === "north" || wall === "south"; next.rotation = horizontal ? 0 : 90; const size = worldSize(next);
   if (wall === "north") { next.x = clamp(snapNumber(next.x), 0, Math.max(0, roomWidth - size.w)); next.y = 0; }
   else if (wall === "south") { next.x = clamp(snapNumber(next.x), 0, Math.max(0, roomWidth - size.w)); next.y = Math.max(0, roomDepth - size.d); }
@@ -22,7 +22,7 @@ export function snapWallObject(object: ReptileRoomObject, wall: ReptileWall, roo
   return next;
 }
 
-export function snapObjectToWallSegment(object: ReptileRoomObject, wall: ReptileWall, gapCm = 0): ReptileRoomObject {
+export function snapObjectToWallSegment(object: ReptileRoomObject, wall: ReptileRoomWall, gapCm = 0): ReptileRoomObject {
   const dx = wall.end.x - wall.start.x, dz = wall.end.z - wall.start.z, length = Math.hypot(dx, dz);
   if (length <= 0) return object;
   const ux = dx / length, uz = dz / length;
@@ -31,8 +31,8 @@ export function snapObjectToWallSegment(object: ReptileRoomObject, wall: Reptile
   return { ...object, x: snapNumber(wall.start.x + ux * projection - object.width / 2), y: snapNumber(wall.start.z + uz * projection - object.depth / 2), wall: wall.id, rotation: Math.round((Math.atan2(uz, ux) * 180) / Math.PI / 90) * 90, z: Math.max(0, object.z), notes: gapCm ? `${object.notes ?? ""}` : object.notes };
 }
 
-export function nearestWallForObject(object: ReptileRoomObject, roomWidth: number, roomDepth: number): { wall: ReptileWall; distance: number } { const size = worldSize(object); const distances = [{ wall: "north" as ReptileWall, distance: Math.abs(object.y) }, { wall: "south" as ReptileWall, distance: Math.abs(roomDepth - (object.y + size.d)) }, { wall: "west" as ReptileWall, distance: Math.abs(object.x) }, { wall: "east" as ReptileWall, distance: Math.abs(roomWidth - (object.x + size.w)) }]; return distances.sort((a, b) => a.distance - b.distance)[0]; }
-export function snapArchitecturalObject(object: ReptileRoomObject, roomWidth: number, roomDepth: number): ReptileRoomObject { const nearest = nearestWallForObject(object, roomWidth, roomDepth); return nearest.distance <= WALL_SNAP_CM ? snapWallObject(object, nearest.wall, roomWidth, roomDepth) : { ...object, wall: null, x: clamp(snapNumber(object.x), 0, Math.max(0, roomWidth - worldSize(object).w)), y: clamp(snapNumber(object.y), 0, Math.max(0, roomDepth - worldSize(object).d)) }; }
+export function nearestWallForObject(object: ReptileRoomObject, roomWidth: number, roomDepth: number): { wall: ReptileRoomObject["wall"]; distance: number } { const size = worldSize(object); const distances = [{ wall: "north" as const, distance: Math.abs(object.y) }, { wall: "south" as const, distance: Math.abs(roomDepth - (object.y + size.d)) }, { wall: "west" as const, distance: Math.abs(object.x) }, { wall: "east" as const, distance: Math.abs(roomWidth - (object.x + size.w)) }]; return distances.sort((a, b) => a.distance - b.distance)[0]; }
+export function snapArchitecturalObject(object: ReptileRoomObject, roomOrWidth: ReptileRoomWorkspace | number, roomDepth?: number): ReptileRoomObject { const roomWidth = typeof roomOrWidth === "number" ? roomOrWidth : (roomOrWidth.width ?? 0); const depth = typeof roomOrWidth === "number" ? (roomDepth ?? 0) : (roomOrWidth.depth ?? 0); const nearest = nearestWallForObject(object, roomWidth, depth); return nearest.distance <= WALL_SNAP_CM ? snapWallObject(object, nearest.wall, roomWidth, depth) : { ...object, wall: null, x: clamp(snapNumber(object.x), 0, Math.max(0, roomWidth - worldSize(object).w)), y: clamp(snapNumber(object.y), 0, Math.max(0, depth - worldSize(object).d)) }; }
 export function slotRect(slot: ReptileRoomSlot): SpatialRect { return { x: slot.x, y: slot.y, w: slot.w, h: slot.depth ?? slot.w, z: slot.z ?? 0, height: slot.height ?? 30 }; }
 export function objectRect(object: ReptileRoomObject): SpatialRect { const size = worldSize(object); return { x: object.x, y: object.y, w: size.w, h: size.d, z: object.z ?? 0, height: object.height }; }
 export function intersects2D(a: SpatialRect, b: SpatialRect): boolean { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
