@@ -1,33 +1,12 @@
-import { useState } from "react";
-import ReptileRoomV7 from "./ReptileRoomV7";
 import ReptileRoomDigitalTwin3D from "./ReptileRoomDigitalTwin3D";
-import "../styles/reptile-room-mode.css";
 
+/**
+ * Reptile Room is intentionally 3D-first.
+ *
+ * The Digital Twin is the primary room builder and visual source of truth.
+ * The underlying room/spatial services remain shared infrastructure for
+ * persistence, dimensions, placement, snapping, and future intelligence.
+ */
 export default function ReptileRoom() {
-  const [mode, setMode] = useState<"2d" | "3d">("3d");
-
-  return (
-    <div className="reptile-room-mode-shell">
-      <div className="reptile-room-mode-toggle" role="group" aria-label="Reptile room view">
-        <button
-          type="button"
-          className={mode === "2d" ? "is-active" : ""}
-          onClick={() => setMode("2d")}
-          aria-pressed={mode === "2d"}
-        >
-          ▦ 2D Builder
-        </button>
-        <button
-          type="button"
-          className={mode === "3d" ? "is-active" : ""}
-          onClick={() => setMode("3d")}
-          aria-pressed={mode === "3d"}
-        >
-          🧊 3D Digital Twin
-        </button>
-      </div>
-
-      {mode === "2d" ? <ReptileRoomV7 /> : <ReptileRoomDigitalTwin3D />}
-    </div>
-  );
+  return <ReptileRoomDigitalTwin3D />;
 }
