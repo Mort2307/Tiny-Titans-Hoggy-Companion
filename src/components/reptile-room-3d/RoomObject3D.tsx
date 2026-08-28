@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import type * as THREE from "three";
+import * as THREE from "three";
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { cmToWorld } from "./room3DScale";
 
@@ -36,162 +36,35 @@ function FurnitureModel({ kind, width, depth, height, selected }: { kind: string
 
   if (kind === "table" || kind === "oak-table") {
     return <group>
-      <mesh castShadow receiveShadow position={[0, height / 2 - 0.05, 0]}>
-        <boxGeometry args={[width, 0.1, depth]} />
-        <meshStandardMaterial color={colour} roughness={0.66} />
-      </mesh>
-      {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([x, z]) => (
-        <mesh key={`${x}-${z}`} castShadow receiveShadow position={[x * width * 0.39, height * 0.22, z * depth * 0.39]}>
-          <boxGeometry args={[0.07, height * 0.44, 0.07]} />
-          <meshStandardMaterial color={colour} />
-        </mesh>
-      ))}
+      <mesh castShadow receiveShadow position={[0, height / 2 - 0.05, 0]}><boxGeometry args={[width, 0.1, depth]} /><meshStandardMaterial color={colour} roughness={0.66} /></mesh>
+      {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([x, z]) => <mesh key={`${x}-${z}`} castShadow receiveShadow position={[x * width * 0.39, height * 0.22, z * depth * 0.39]}><boxGeometry args={[0.07, height * 0.44, 0.07]} /><meshStandardMaterial color={colour} /></mesh>)}
     </group>;
   }
 
   if (kind === "cabinet" || kind === "teak-corner-unit") {
     return <group>
-      <mesh castShadow receiveShadow position={[0, height / 2, 0]}>
-        <boxGeometry args={[width, height, depth]} />
-        <meshStandardMaterial color={colour} roughness={0.62} />
-      </mesh>
-      <mesh position={[0, height / 2, depth / 2 + 0.008]}>
-        <boxGeometry args={[width * 0.92, height * 0.78, 0.018]} />
-        <meshStandardMaterial color="#6d432c" roughness={0.5} />
-      </mesh>
-      <mesh position={[0, height * 0.5, depth / 2 + 0.022]}>
-        <boxGeometry args={[width * 0.035, 0.035, 0.03]} />
-        <meshStandardMaterial color={accent} metalness={0.35} />
-      </mesh>
+      <mesh castShadow receiveShadow position={[0, height / 2, 0]}><boxGeometry args={[width, height, depth]} /><meshStandardMaterial color={colour} roughness={0.62} /></mesh>
+      <mesh position={[0, height / 2, depth / 2 + 0.008]}><boxGeometry args={[width * 0.92, height * 0.78, 0.018]} /><meshStandardMaterial color="#6d432c" roughness={0.5} /></mesh>
+      <mesh position={[0, height * 0.5, depth / 2 + 0.022]}><boxGeometry args={[width * 0.035, 0.035, 0.03]} /><meshStandardMaterial color={accent} metalness={0.35} /></mesh>
     </group>;
   }
 
   if (kind === "shelving" || kind === "rack") {
     return <group>
-      {[0.08, 0.31, 0.54, 0.77, 0.96].map((level) => (
-        <mesh key={level} castShadow receiveShadow position={[0, height * level, 0]}>
-          <boxGeometry args={[width, 0.045, depth]} />
-          <meshStandardMaterial color={kind === "rack" ? "#3d4248" : colour} roughness={0.7} />
-        </mesh>
-      ))}
-      <mesh position={[-width * 0.45, height / 2, 0]}>
-        <boxGeometry args={[0.045, height, 0.045]} />
-        <meshStandardMaterial color={accent} />
-      </mesh>
-      <mesh position={[width * 0.45, height / 2, 0]}>
-        <boxGeometry args={[0.045, height, 0.045]} />
-        <meshStandardMaterial color={accent} />
-      </mesh>
+      {[0.08, 0.31, 0.54, 0.77, 0.96].map((level) => <mesh key={level} castShadow receiveShadow position={[0, height * level, 0]}><boxGeometry args={[width, 0.045, depth]} /><meshStandardMaterial color={kind === "rack" ? "#3d4248" : colour} roughness={0.7} /></mesh>)}
+      <mesh position={[-width * 0.45, height / 2, 0]}><boxGeometry args={[0.045, height, 0.045]} /><meshStandardMaterial color={accent} /></mesh>
+      <mesh position={[width * 0.45, height / 2, 0]}><boxGeometry args={[0.045, height, 0.045]} /><meshStandardMaterial color={accent} /></mesh>
     </group>;
   }
 
   if (kind === "workbench") {
     return <group>
-      <mesh castShadow receiveShadow position={[0, height - 0.05, 0]}>
-        <boxGeometry args={[width, 0.1, depth]} />
-        <meshStandardMaterial color={colour} />
-      </mesh>
-      {[-1, 1].map((x) => (
-        <mesh key={x} position={[x * width * 0.42, height / 2, -depth * 0.42]}>
-          <boxGeometry args={[0.07, height, 0.07]} />
-          <meshStandardMaterial color={colour} />
-        </mesh>
-      ))}
+      <mesh castShadow receiveShadow position={[0, height - 0.05, 0]}><boxGeometry args={[width, 0.1, depth]} /><meshStandardMaterial color={colour} /></mesh>
+      {[-1, 1].map((x) => <mesh key={x} position={[x * width * 0.42, height / 2, -depth * 0.42]}><boxGeometry args={[0.07, height, 0.07]} /><meshStandardMaterial color={colour} /></mesh>)}
     </group>;
   }
 
-  return <mesh castShadow receiveShadow>
-    <boxGeometry args={[width, height, depth]} />
-    <meshStandardMaterial color={colour} roughness={0.72} />
-  </mesh>;
-}
-
-function VivariumModel({ width, depth, height, selected, photoUrl }: { width: number; depth: number; height: number; selected: boolean; photoUrl?: string }) {
-  const frame = Math.max(Math.min(width, height) * 0.045, 0.025);
-  const wood = "#6b3f20";
-  const trim = selected ? "#d89a32" : wood;
-  const glassWidth = Math.max(0.01, width - frame * 2);
-  const glassHeight = Math.max(0.01, height - frame * 2);
-  const frontZ = depth / 2;
-
-  const woodTexture = useMemo(() => makeWoodTexture(wood), []);
-  useEffect(() => () => woodTexture?.dispose(), [woodTexture]);
-
-  return <group>
-    {/* Back, sides, top and bottom. The front remains an actual opening. */}
-    <mesh castShadow receiveShadow position={[0, 0, -depth / 2 + frame / 2]}>
-      <boxGeometry args={[width, height, frame]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-    <mesh castShadow receiveShadow position={[-width / 2 + frame / 2, 0, 0]}>
-      <boxGeometry args={[frame, height, depth]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-    <mesh castShadow receiveShadow position={[width / 2 - frame / 2, 0, 0]}>
-      <boxGeometry args={[frame, height, depth]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-    <mesh castShadow receiveShadow position={[0, height / 2 - frame / 2, 0]}>
-      <boxGeometry args={[width, frame, depth]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-    <mesh castShadow receiveShadow position={[0, -height / 2 + frame / 2, 0]}>
-      <boxGeometry args={[width, frame, depth]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-
-    {/* Dark interior makes an empty enclosure visibly read as a vivarium. */}
-    <mesh position={[0, 0, -depth / 2 + frame + 0.006]}>
-      <planeGeometry args={[glassWidth, glassHeight]} />
-      <meshStandardMaterial color="#17191b" roughness={0.9} />
-    </mesh>
-
-    {/* Every vivarium gets the same clear glass door. */}
-    <mesh position={[0, 0, frontZ + 0.006]} renderOrder={1}>
-      <planeGeometry args={[glassWidth, glassHeight]} />
-      <meshPhysicalMaterial
-        color="#b8dce2"
-        transparent
-        opacity={0.16}
-        roughness={0.03}
-        metalness={0.05}
-        transmission={0.05}
-        depthWrite={false}
-        side={2}
-      />
-    </mesh>
-
-    {/* The photo is a face layer on the glass, never a replacement for the enclosure. */}
-    {photoUrl && <VivariumPhoto url={photoUrl} width={glassWidth * 0.985} height={glassHeight * 0.985} z={frontZ + 0.018} />}
-
-    {/* Front frame sits above both the glass and its photo. */}
-    <mesh position={[0, height / 2 - frame / 2, frontZ + 0.035]}>
-      <boxGeometry args={[width, frame, frame * 1.6]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-    <mesh position={[0, -height / 2 + frame / 2, frontZ + 0.035]}>
-      <boxGeometry args={[width, frame, frame * 1.6]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-    <mesh position={[-width / 2 + frame / 2, 0, frontZ + 0.035]}>
-      <boxGeometry args={[frame, height, frame * 1.6]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-    <mesh position={[width / 2 - frame / 2, 0, frontZ + 0.035]}>
-      <boxGeometry args={[frame, height, frame * 1.6]} />
-      <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />
-    </mesh>
-
-    {/* Door handle. */}
-    <mesh position={[width * 0.39, 0, frontZ + 0.055]} castShadow>
-      <boxGeometry args={[frame * 0.48, height * 0.18, frame * 0.7]} />
-      <meshStandardMaterial color="#4d5358" metalness={0.75} roughness={0.25} />
-    </mesh>
-    <mesh position={[width * 0.39, 0, frontZ + 0.09]} rotation={[Math.PI / 2, 0, 0]}>
-      <torusGeometry args={[frame * 0.55, frame * 0.16, 12, 24]} />
-      <meshStandardMaterial color="#c4c9cc" metalness={0.8} roughness={0.2} />
-    </mesh>
-  </group>;
+  return <mesh castShadow receiveShadow><boxGeometry args={[width, height, depth]} /><meshStandardMaterial color={colour} roughness={0.72} /></mesh>;
 }
 
 function makeWoodTexture(base: string) {
@@ -214,18 +87,12 @@ function makeWoodTexture(base: string) {
     ctx.stroke();
   }
 
-  const texture = new (requireThree().CanvasTexture)(canvas) as THREE.Texture;
-  texture.colorSpace = requireThree().SRGBColorSpace;
-  texture.wrapS = requireThree().RepeatWrapping;
-  texture.wrapT = requireThree().RepeatWrapping;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(2, 2);
   return texture;
-}
-
-function requireThree() {
-  // Kept behind a function so the component stays compatible with the existing Three/R3F bundle.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require("three") as typeof import("three");
 }
 
 function VivariumPhoto({ url, width, height, z }: { url: string; width: number; height: number; z: number }) {
@@ -233,20 +100,20 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
 
   useEffect(() => {
     let active = true;
-    const loader = new (requireThree().TextureLoader)();
+    const loader = new THREE.TextureLoader();
     loader.setCrossOrigin("anonymous");
     loader.load(
       url,
-      (loaded: THREE.Texture) => {
+      (loaded) => {
         if (!active) {
           loaded.dispose();
           return;
         }
-        loaded.colorSpace = requireThree().SRGBColorSpace;
-        loaded.wrapS = requireThree().ClampToEdgeWrapping;
-        loaded.wrapT = requireThree().ClampToEdgeWrapping;
-        loaded.minFilter = requireThree().LinearFilter;
-        loaded.magFilter = requireThree().LinearFilter;
+        loaded.colorSpace = THREE.SRGBColorSpace;
+        loaded.wrapS = THREE.ClampToEdgeWrapping;
+        loaded.wrapT = THREE.ClampToEdgeWrapping;
+        loaded.minFilter = THREE.LinearFilter;
+        loaded.magFilter = THREE.LinearFilter;
         loaded.needsUpdate = true;
         setTexture(loaded);
       },
@@ -267,8 +134,48 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
 
   return <mesh position={[0, 0, z]} renderOrder={2} userData={{ vivariumFaceImage: true }}>
     <planeGeometry args={[width, height]} />
-    <meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} depthTest={false} side={2} />
+    <meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
   </mesh>;
+}
+
+function VivariumModel({ width, depth, height, selected, photoUrl }: { width: number; depth: number; height: number; selected: boolean; photoUrl?: string }) {
+  const frame = Math.max(Math.min(width, height) * 0.045, 0.025);
+  const wood = "#6b3f20";
+  const trim = selected ? "#d89a32" : wood;
+  const glassWidth = Math.max(0.01, width - frame * 2);
+  const glassHeight = Math.max(0.01, height - frame * 2);
+  const frontZ = depth / 2;
+  const woodTexture = useMemo(() => makeWoodTexture(wood), []);
+
+  useEffect(() => () => woodTexture?.dispose(), [woodTexture]);
+
+  return <group>
+    <mesh castShadow receiveShadow position={[0, 0, -depth / 2 + frame / 2]}><boxGeometry args={[width, height, frame]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+    <mesh castShadow receiveShadow position={[-width / 2 + frame / 2, 0, 0]}><boxGeometry args={[frame, height, depth]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+    <mesh castShadow receiveShadow position={[width / 2 - frame / 2, 0, 0]}><boxGeometry args={[frame, height, depth]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+    <mesh castShadow receiveShadow position={[0, height / 2 - frame / 2, 0]}><boxGeometry args={[width, frame, depth]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+    <mesh castShadow receiveShadow position={[0, -height / 2 + frame / 2, 0]}><boxGeometry args={[width, frame, depth]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+
+    <mesh position={[0, 0, -depth / 2 + frame + 0.006]}>
+      <planeGeometry args={[glassWidth, glassHeight]} />
+      <meshStandardMaterial color="#17191b" roughness={0.9} />
+    </mesh>
+
+    <mesh position={[0, 0, frontZ + 0.006]} renderOrder={1}>
+      <planeGeometry args={[glassWidth, glassHeight]} />
+      <meshPhysicalMaterial color="#b8dce2" transparent opacity={0.16} roughness={0.03} metalness={0.05} transmission={0.05} depthWrite={false} side={THREE.DoubleSide} />
+    </mesh>
+
+    {photoUrl && <VivariumPhoto url={photoUrl} width={glassWidth * 0.985} height={glassHeight * 0.985} z={frontZ + 0.018} />}
+
+    <mesh position={[0, height / 2 - frame / 2, frontZ + 0.035]}><boxGeometry args={[width, frame, frame * 1.6]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+    <mesh position={[0, -height / 2 + frame / 2, frontZ + 0.035]}><boxGeometry args={[width, frame, frame * 1.6]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+    <mesh position={[-width / 2 + frame / 2, 0, frontZ + 0.035]}><boxGeometry args={[frame, height, frame * 1.6]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+    <mesh position={[width / 2 - frame / 2, 0, frontZ + 0.035]}><boxGeometry args={[frame, height, frame * 1.6]} /><meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} /></mesh>
+
+    <mesh position={[width * 0.39, 0, frontZ + 0.055]} castShadow><boxGeometry args={[frame * 0.48, height * 0.18, frame * 0.7]} /><meshStandardMaterial color="#4d5358" metalness={0.75} roughness={0.25} /></mesh>
+    <mesh position={[width * 0.39, 0, frontZ + 0.09]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[frame * 0.55, frame * 0.16, 12, 24]} /><meshStandardMaterial color="#c4c9cc" metalness={0.8} roughness={0.2} /></mesh>
+  </group>;
 }
 
 export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot = false, photoUrl }: RoomObject3DProps) {
@@ -297,9 +204,6 @@ export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot 
     {isSlot
       ? <VivariumModel width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} photoUrl={photoUrl} />
       : <FurnitureModel kind={(object as ReptileRoomObject).kind} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />}
-    {selected && <mesh position={[0, -bodyHeight / 2 + 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[Math.max(bodyWidth, bodyDepth) * 0.43, Math.max(bodyWidth, bodyDepth) * 0.47, 32]} />
-      <meshBasicMaterial color="#d89a32" transparent opacity={0.75} depthWrite={false} />
-    </mesh>}
+    {selected && <mesh position={[0, -bodyHeight / 2 + 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[Math.max(bodyWidth, bodyDepth) * 0.43, Math.max(bodyWidth, bodyDepth) * 0.47, 32]} /><meshBasicMaterial color="#d89a32" transparent opacity={0.75} depthWrite={false} /></mesh>}
   </group>;
 }
