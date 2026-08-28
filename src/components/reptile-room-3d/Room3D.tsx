@@ -70,7 +70,7 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
   const handleTeleport = (node: RoomNavigationNode) => { setNavigationNode(node); onTeleport?.(node); };
   return (
     <div className={className} style={{ position: "relative", width: "100%", height: "100%", minHeight: 480, touchAction: viewerMode ? "none" : undefined }}>
-      <Canvas shadows camera={{ position: cameraPosition, fov: 68, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onCreated={({ camera }) => { (window as Window & { __tinyTitansRoom3DCamera?: Camera }).__tinyTitansRoom3DCamera = camera; }} onPointerMissed={() => onSelect(null)}>
+      <Canvas shadows camera={{ position: cameraPosition, fov: 72, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onCreated={({ camera }) => { (window as Window & { __tinyTitansRoom3DCamera?: Camera }).__tinyTitansRoom3DCamera = camera; }} onPointerMissed={() => onSelect(null)}>
         <RoomScene room={room} showGrid={showGrid} showCeiling={showCeiling} viewerMode={viewerMode} objects={objects} slots={slots} selectedId={selectedId} selectedType={selectedType} photoForSlot={photoForSlot} onSelect={onSelect} onMove={onMove} navigationNode={navigationNode} onTeleport={handleTeleport} />
       </Canvas>
       {!viewerMode && <NavigationPad nodes={navigationNodes} activeNode={navigationNode} onMove={handleTeleport} />}
