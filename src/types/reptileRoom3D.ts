@@ -2,7 +2,7 @@ import type { ReptileFurnitureKind, ReptileRoomObject, ReptileRoomSlot, ReptileR
 
 export type Room3DSelection = { type: "slot" | "object"; id: string } | null;
 export type Room3DAssetPreset = {
-  kind: ReptileFurnitureKind | "vivarium";
+  kind: ReptileFurnitureKind;
   label: string;
   icon?: string;
   width: number;
