@@ -22,6 +22,7 @@
     "build": "npm run validate:morphs && npm run validate:morph-sources && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:security && npm run test:intelligence:consent && npm run test:intelligence:journey && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "storage:cors": "gsutil cors set cors.json gs://tinytitans-hoggy-companion.firebasestorage.app",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore,storage",
     "deploy:app": "npm run build && firebase deploy --only hosting,firestore,storage"
@@ -40,10 +41,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
-    "@playwright/test": "^1.62.1",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.4",
+    "@playwright/test": "^1.62.0",
     "@vitejs/plugin-react": "^6.0.4",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.0",
