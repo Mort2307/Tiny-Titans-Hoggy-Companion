@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useAuth } from "../../context/useAuth";
-import { loadReptileRooms, saveReptileRooms, setRoomFloorPlan, type ReptileRoomPoint, type ReptileRoomSocket, type ReptileRoomWall, type ReptileRoomWorkspace } from "../../services/reptileRoomService";
+import { loadReptileRooms, saveReptileRooms, setRoomFloorPlan, type ReptileRoomPoint, type ReptileRoomSocket, type ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { uploadReptileRoomAsset, type ReptileRoomAssetKind } from "../../services/reptileRoomAssetService";
 
 const panelStyle: CSSProperties = { margin: "0 auto .75rem", padding: ".75rem", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, background: "rgba(15,18,22,.9)", color: "inherit" };
 const inputStyle: CSSProperties = { width: "100%", boxSizing: "border-box", padding: ".42rem", borderRadius: 7, border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.06)", color: "inherit" };
-function roomPoints(room: ReptileRoomWorkspace): ReptileRoomPoint[] { return room.floorPlan?.map((point) => ({ ...point })) ?? [{ x: 0, z: 0 }, { x: room.width ?? 360, z: 0 }, { x: room.width ?? 360, z: room.depth ?? 300 }, { x: 0, z: room.depth ?? 300 }]; }
+function roomPoints(room: ReptileRoomWorkspace): ReptileRoomPoint[] {
+  return room.floorPlan?.map((point) => ({ ...point })) ?? [
+    { x: 0, z: 0 },
+    { x: room.width ?? 360, z: 0 },
+    { x: room.width ?? 360, z: room.depth ?? 300 },
+    { x: 0, z: room.depth ?? 300 },
+  ];
+}
 
 export default function RoomBlueprintPanel() {
   const { user } = useAuth();
@@ -14,16 +21,305 @@ export default function RoomBlueprintPanel() {
   const [wallId, setWallId] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (!user) return; void loadReptileRooms(user.uid).then((rooms) => { const next = rooms[0] ?? null; setRoom(next); setPoints(next ? roomPoints(next) : []); setWallId(next?.walls?.[0]?.id ?? ""); }).catch((error) => setNotice(error instanceof Error ? error.message : "Unable to load room settings.")); }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    void loadReptileRooms(user.uid)
+      .then((rooms) => {
+        const next = rooms[0] ?? null;
+        setRoom(next);
+        setPoints(next ? roomPoints(next) : []);
+        setWallId(next?.walls?.[0]?.id ?? "");
+      })
+      .catch((error) =>
+        setNotice(error instanceof Error ? error.message : "Unable to load room settings."),
+      );
+  }, [user]);
+
   const walls = useMemo(() => room?.walls ?? [], [room]);
-  const save = async (nextRoom: ReptileRoomWorkspace) => { if (!user) return; setBusy(true); try { await saveReptileRooms(user.uid, [nextRoom]); setRoom(nextRoom); setPoints(roomPoints(nextRoom)); setWallId(nextRoom.walls?.[0]?.id ?? wallId); setNotice("Room blueprint saved."); } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to save room blueprint."); } finally { setBusy(false); } };
-  const saveShape = () => { if (!room) return; try { void save(setRoomFloorPlan(room, points)); } catch (error) { setNotice(error instanceof Error ? error.message : "Invalid room shape."); } };
-  const updatePoint = (index: number, key: "x" | "z", value: number) => setPoints((current) => current.map((point, pointIndex) => pointIndex === index ? { ...point, [key]: Number.isFinite(value) ? value : 0 } : point));
-  const addPoint = () => { const last = points[points.length - 1] ?? { x: 0, z: 0 }; setPoints((current) => [...current, { x: last.x + 50, z: last.z }]); };
-  const removePoint = (index: number) => setPoints((current) => current.length > 3 ? current.filter((_, pointIndex) => pointIndex !== index) : current);
-  const addSocket = () => { if (!room) return; const wall = walls.find((item) => item.id === wallId) ?? walls[0]; if (!wall) return; const socket: ReptileRoomSocket = { id: `socket-${crypto.randomUUID()}`, wallId: wall.id, x: (wall.start.x + wall.end.x) / 2, z: (wall.start.z + wall.end.z) / 2, height: 45, outlets: 2, label: "Power socket", switchable: true, enabled: true, circuit: "", maxLoadWatts: 0 }; void save({ ...room, sockets: [...(room.sockets ?? []), socket], updatedAt: new Date().toISOString() }); };
-  const removeSocket = (id: string) => { if (!room) return; void save({ ...room, sockets: (room.sockets ?? []).filter((socket) => socket.id !== id), updatedAt: new Date().toISOString() }); };
-  const upload = async (kind: ReptileRoomAssetKind, file: File) => { if (!user || !room) return; setBusy(true); try { const url = await uploadReptileRoomAsset(user.uid, room.id, kind, file); if (kind === "room-photo") await save({ ...room, roomPhotoUrl: url }); else if (kind === "logo") await save({ ...room, logoUrl: url }); else { const selectedWall = walls.find((wall) => wall.id === wallId) ?? walls[0]; if (selectedWall) await save({ ...room, walls: walls.map((wall) => wall.id === selectedWall.id ? { ...wall, imageUrl: url } : wall) }); } setNotice("Room visual uploaded."); } catch (error) { setNotice(error instanceof Error ? error.message : "Unable to upload room visual."); } finally { setBusy(false); } };
+
+  const save = async (nextRoom: ReptileRoomWorkspace) => {
+    if (!user) return;
+    setBusy(true);
+    try {
+      await saveReptileRooms(user.uid, [nextRoom]);
+      setRoom(nextRoom);
+      setPoints(roomPoints(nextRoom));
+      setWallId(nextRoom.walls?.[0]?.id ?? wallId);
+      setNotice("Room blueprint saved.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to save room blueprint.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveShape = () => {
+    if (!room) return;
+    try {
+      void save(setRoomFloorPlan(room, points));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Invalid room shape.");
+    }
+  };
+
+  const updatePoint = (index: number, key: "x" | "z", value: number) =>
+    setPoints((current) =>
+      current.map((point, pointIndex) =>
+        pointIndex === index
+          ? { ...point, [key]: Number.isFinite(value) ? value : 0 }
+          : point,
+      ),
+    );
+
+  const addPoint = () => {
+    const last = points[points.length - 1] ?? { x: 0, z: 0 };
+    setPoints((current) => [...current, { x: last.x + 50, z: last.z }]);
+  };
+
+  const removePoint = (index: number) =>
+    setPoints((current) =>
+      current.length > 3
+        ? current.filter((_, pointIndex) => pointIndex !== index)
+        : current,
+    );
+
+  const addSocket = () => {
+    if (!room) return;
+    const wall = walls.find((item) => item.id === wallId) ?? walls[0];
+    if (!wall) return;
+
+    const socket: ReptileRoomSocket = {
+      id: `socket-${crypto.randomUUID()}`,
+      wallId: wall.id,
+      x: (wall.start.x + wall.end.x) / 2,
+      z: (wall.start.z + wall.end.z) / 2,
+      height: 45,
+      outlets: 2,
+      label: "Power socket",
+      switchable: true,
+      enabled: true,
+      circuit: "",
+      maxLoadWatts: 0,
+    };
+
+    void save({
+      ...room,
+      sockets: [...(room.sockets ?? []), socket],
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  const removeSocket = (id: string) => {
+    if (!room) return;
+    void save({
+      ...room,
+      sockets: (room.sockets ?? []).filter((socket) => socket.id !== id),
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  const upload = async (kind: ReptileRoomAssetKind, file: File) => {
+    if (!user || !room) return;
+    setBusy(true);
+    try {
+      const url = await uploadReptileRoomAsset(user.uid, room.id, kind, file);
+      if (kind === "room-photo") {
+        await save({ ...room, roomPhotoUrl: url });
+      } else if (kind === "logo") {
+        await save({ ...room, logoUrl: url });
+      } else {
+        const selectedWall = walls.find((wall) => wall.id === wallId) ?? walls[0];
+        if (selectedWall) {
+          await save({
+            ...room,
+            walls: walls.map((wall) =>
+              wall.id === selectedWall.id ? { ...wall, imageUrl: url } : wall,
+            ),
+          });
+        }
+      }
+      setNotice("Room visual uploaded.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to upload room visual.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!room) return null;
-  return <section style={panelStyle} aria-label="Room blueprint and infrastructure"><details open><summary style={{ cursor: "pointer", fontWeight: 800 }}>🏠 Room blueprint · shape · power · realism</summary><div style={{ display: "grid", gap: ".7rem", marginTop: ".75rem" }}><div><strong>Floor plan</strong><div style={{ display: "grid", gap: ".35rem", marginTop: ".4rem" }}>{points.map((point, index) => <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: ".35rem" }}><label>Wall point {index + 1}<input aria-label={`Wall point ${index + 1} X`} type="number" value={point.x} onChange={(event) => updatePoint(index, "x", Number(event.target.value))} style={inputStyle} /></label><label>Z<input aria-label={`Wall point ${index + 1} Z`} type="number" value={point.z} onChange={(event) => updatePoint(index, "z", Number(event.target.value))} style={inputStyle} /></label><button type="button" onClick={() => removePoint(index)} disabled={points.length <= 3} style={{ alignSelf: "end" }}>×</button></div>)}</div><div style={{ display: "flex", gap: ".4rem", marginTop: ".45rem" }}><button type="button" onClick={addPoint}>+ Wall</button><button type="button" onClick={saveShape} disabled={busy}>Save shape</button></div></div><div><strong>🔌 Power sockets</strong><div style={{ display: "flex", gap: ".4rem", marginTop: ".4rem" }}><select value={wallId} onChange={(event) => setWallId(event.target.value)} style={{ ...inputStyle, maxWidth: 260 }}>{walls.map((wall) => <option key={wall.id} value={wall.id}>{wall.id} · {Math.round(Math.hypot(wall.end.x - wall.start.x, wall.end.z - wall.start.z))} cm</option>)}</select><button type="button" onClick={addSocket} disabled={busy}>+ Socket</button></div><div style={{ display: "grid", gap: ".3rem", marginTop: ".4rem" }}>{(room.sockets ?? []).map((socket) => <div key={socket.id} style={{ display: "flex", justifyContent: "space-between", gap: ".5rem", padding: ".35rem .45rem", borderRadius: 7, background: "rgba(255,255,255,.04)" }}><span>🔌 {socket.label} · {socket.height} cm · {socket.outlets} outlets</span><button type="button" onClick={() => removeSocket(socket.id)}>Remove</button></div>)}</div></div><div><strong>📸 Room visuals</strong><div style={{ display: "grid", gap: ".4rem", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", marginTop: ".4rem" }}><label>Room photo<input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload("room-photo", file); }} /></label><label>Logo wall image<input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload("logo", file); }} /></label><label>Wall photo<select value={wallId} onChange={(event) => setWallId(event.target.value)} style={inputStyle}>{walls.map((wall) => <option key={wall.id} value={wall.id}>{wall.id}</option>)}</select><input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload("wall", file); }} /></label></div>{room.roomPhotoUrl && <img src={room.roomPhotoUrl} alt="Uploaded reptile room reference" style={{ maxWidth: 240, maxHeight: 120, objectFit: "cover", borderRadius: 8, marginTop: ".45rem" }} />}</div>{notice && <div role="status" style={{ fontSize: ".82rem", opacity: .78 }}>{notice}</div>}</div></details></section>;
+
+  return (
+    <section style={panelStyle} aria-label="Room blueprint and infrastructure">
+      <details open>
+        <summary style={{ cursor: "pointer", fontWeight: 800 }}>
+          🏠 Room blueprint · shape · power · realism
+        </summary>
+        <div style={{ display: "grid", gap: ".7rem", marginTop: ".75rem" }}>
+          <div>
+            <strong>Floor plan</strong>
+            <div style={{ display: "grid", gap: ".35rem", marginTop: ".4rem" }}>
+              {points.map((point, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr auto",
+                    gap: ".35rem",
+                  }}
+                >
+                  <label>
+                    Wall point {index + 1}
+                    <input
+                      aria-label={`Wall point ${index + 1} X`}
+                      type="number"
+                      value={point.x}
+                      onChange={(event) =>
+                        updatePoint(index, "x", Number(event.target.value))
+                      }
+                      style={inputStyle}
+                    />
+                  </label>
+                  <label>
+                    Z
+                    <input
+                      aria-label={`Wall point ${index + 1} Z`}
+                      type="number"
+                      value={point.z}
+                      onChange={(event) =>
+                        updatePoint(index, "z", Number(event.target.value))
+                      }
+                      style={inputStyle}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => removePoint(index)}
+                    disabled={points.length <= 3}
+                    style={{ alignSelf: "end" }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: ".4rem", marginTop: ".45rem" }}>
+              <button type="button" onClick={addPoint}>+ Wall</button>
+              <button type="button" onClick={saveShape} disabled={busy}>Save shape</button>
+            </div>
+          </div>
+
+          <div>
+            <strong>🔌 Power sockets</strong>
+            <div style={{ display: "flex", gap: ".4rem", marginTop: ".4rem" }}>
+              <select
+                value={wallId}
+                onChange={(event) => setWallId(event.target.value)}
+                style={{ ...inputStyle, maxWidth: 260 }}
+              >
+                {walls.map((wall) => (
+                  <option key={wall.id} value={wall.id}>
+                    {wall.id} · {Math.round(Math.hypot(wall.end.x - wall.start.x, wall.end.z - wall.start.z))} cm
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={addSocket} disabled={busy}>+ Socket</button>
+            </div>
+            <div style={{ display: "grid", gap: ".3rem", marginTop: ".4rem" }}>
+              {(room.sockets ?? []).map((socket) => (
+                <div
+                  key={socket.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: ".5rem",
+                    padding: ".35rem .45rem",
+                    borderRadius: 7,
+                    background: "rgba(255,255,255,.04)",
+                  }}
+                >
+                  <span>🔌 {socket.label} · {socket.height} cm · {socket.outlets} outlets</span>
+                  <button type="button" onClick={() => removeSocket(socket.id)}>Remove</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <strong>📸 Room visuals</strong>
+            <div
+              style={{
+                display: "grid",
+                gap: ".4rem",
+                gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+                marginTop: ".4rem",
+              }}
+            >
+              <label>
+                Room photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void upload("room-photo", file);
+                  }}
+                />
+              </label>
+              <label>
+                Logo wall image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void upload("logo", file);
+                  }}
+                />
+              </label>
+              <label>
+                Wall photo
+                <select
+                  value={wallId}
+                  onChange={(event) => setWallId(event.target.value)}
+                  style={inputStyle}
+                >
+                  {walls.map((wall) => (
+                    <option key={wall.id} value={wall.id}>{wall.id}</option>
+                  ))}
+                </select>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void upload("wall", file);
+                  }}
+                />
+              </label>
+            </div>
+            {room.roomPhotoUrl && (
+              <img
+                src={room.roomPhotoUrl}
+                alt="Uploaded reptile room reference"
+                style={{
+                  maxWidth: 240,
+                  maxHeight: 120,
+                  objectFit: "cover",
+                  borderRadius: 8,
+                  marginTop: ".45rem",
+                }}
+              />
+            )}
+          </div>
+
+          {notice && (
+            <div role="status" style={{ fontSize: ".82rem", opacity: 0.78 }}>
+              {notice}
+            </div>
+          )}
+        </div>
+      </details>
+    </section>
+  );
 }
