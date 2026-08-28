@@ -5,7 +5,6 @@ import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from ".
 import { cmToWorld } from "./room3DScale";
 
 type Room3DMoveHandler = (dx: number, dy: number, dz: number, commit: boolean) => void;
-
 type RoomObject3DProps = { room: ReptileRoomWorkspace; object: ReptileRoomObject | ReptileRoomSlot; selected: boolean; onSelect: (id: string) => void; onMove?: Room3DMoveHandler; isSlot?: boolean; photoUrl?: string };
 
 const woodColour = (kind: string) => kind === "oak-table" || kind === "table" ? "#8b5a2b" : kind === "teak-corner-unit" || kind === "cabinet" ? "#a66a3f" : "#5a3a24";
@@ -30,11 +29,13 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
   const frame = 0.045;
   const trim = selected ? "#d89a32" : "#454c53";
   const side = "#262b2f";
+  const doorWidth = Math.max(0.01, width - frame * 4);
+  const doorHeight = Math.max(0.01, height - frame * 4);
   return <group>
     <mesh position={[0,0,0]} castShadow receiveShadow><boxGeometry args={[width, height, depth]}/><meshStandardMaterial color="#252a2e" roughness={0.72}/></mesh>
-    <mesh position={[0,0,depth/2+0.002]}><boxGeometry args={[width-frame*2,height-frame*2,frame]}/><meshStandardMaterial color="#b9d7df" transparent opacity={0.1} roughness={0.06} metalness={0.08}/></mesh>
-    <mesh position={[0,0,depth/2+0.008]}><boxGeometry args={[width-frame*2,height-frame*2,frame/3]}/><meshStandardMaterial color="#0f1214" transparent opacity={0.16} roughness={0.5}/></mesh>
-    {photoUrl && <VivariumPhoto url={photoUrl} width={width-frame*4} height={height-frame*4} depth={depth}/>} 
+    <mesh position={[0,0,depth/2+0.002]}><boxGeometry args={[doorWidth,doorHeight,frame]}/><meshStandardMaterial color="#b9d7df" transparent opacity={0.1} roughness={0.06} metalness={0.08}/></mesh>
+    {!photoUrl && <mesh position={[0,0,depth/2+0.014]}><planeGeometry args={[doorWidth*0.82,doorHeight*0.82]}/><meshBasicMaterial color="#9db8c0" transparent opacity={0.055} depthWrite={false}/></mesh>}
+    {photoUrl && <VivariumPhoto url={photoUrl} width={doorWidth} height={doorHeight} depth={depth}/>} 
     <mesh position={[0,height/2-frame/2,depth/2+0.035]}><boxGeometry args={[width,frame,frame*2]}/><meshStandardMaterial color={trim} metalness={0.4}/></mesh>
     <mesh position={[0,-height/2+frame/2,depth/2+0.035]}><boxGeometry args={[width,frame,frame*2]}/><meshStandardMaterial color={trim} metalness={0.4}/></mesh>
     <mesh position={[-width/2+frame/2,0,depth/2+0.035]}><boxGeometry args={[frame,height,frame*2]}/><meshStandardMaterial color={trim} metalness={0.4}/></mesh>
@@ -53,7 +54,7 @@ function VivariumPhoto({ url, width, height, depth }: { url: string; width: numb
   useEffect(() => { let active=true; const img=new Image(); img.onload=()=>active&&setLoaded(true); img.onerror=()=>active&&setLoaded(false); img.src=url; return ()=>{active=false;}; },[url]);
   const texture = useMemo(() => { if(!loaded) return null; const tex=new THREE.TextureLoader().load(url); tex.colorSpace=THREE.SRGBColorSpace; tex.wrapS=THREE.ClampToEdgeWrapping; tex.wrapT=THREE.ClampToEdgeWrapping; return tex; },[loaded,url]);
   if(!texture) return null;
-  return <mesh position={[0,0,depth/2+0.02]}><planeGeometry args={[width,height]}/><meshBasicMaterial map={texture} transparent opacity={0.92} toneMapped={false} depthWrite={false}/></mesh>;
+  return <mesh position={[0,0,depth/2+0.021]}><planeGeometry args={[width,height]}/><meshBasicMaterial map={texture} transparent opacity={0.92} toneMapped={false} depthWrite={false}/></mesh>;
 }
 
 export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot=false, photoUrl }: RoomObject3DProps) {
