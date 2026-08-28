@@ -82,7 +82,7 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
     } catch { /* browser may block fullscreen; normal view remains usable */ }
   };
   const cameraPosition: [number, number, number] = [0, Math.max(0.5, height * 0.55), Math.max(0.5, depth * 0.28)];
-  return <div data-rr3d-host={room.id} className={className} style={{ position: "relative", width: "100%", height: "100%", minHeight: isFullscreen ? "100vh" : 430, touchAction: viewerMode ? "none" : undefined, background: "#0c0f11" }}>
+  return <div data-rr3d-host={room.id} className={className} style={{ position: "relative", width: "100%", height: "100%", minHeight: isFullscreen ? "100vh" : 0, touchAction: viewerMode ? "none" : undefined, background: "#0c0f11" }}>
     <Canvas shadows camera={{ position: cameraPosition, fov: 68, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onCreated={({ camera }) => { (window as Window & { __tinyTitansRoom3DCamera?: Camera }).__tinyTitansRoom3DCamera = camera; }} onPointerMissed={() => onSelect(null)}>
       <RoomScene room={room} showGrid={showGrid} showCeiling={showCeiling} viewerMode={viewerMode} objects={objects} slots={slots} selectedId={selectedId} selectedType={selectedType} photoForSlot={photoForSlot} onSelect={onSelect} onMove={onMove} navigationNode={navigationNode} onTeleport={handleTeleport} />
     </Canvas>
