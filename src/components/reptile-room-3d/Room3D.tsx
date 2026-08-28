@@ -10,6 +10,7 @@ import { RoomObject3D } from "./RoomObject3D";
 import { RoomShell3D } from "./RoomShell3D";
 import { getRoomDimensions3D } from "./room3DScale";
 import type { Camera } from "three";
+import "../../styles/reptileRoomDigitalTwinImmersive.css";
 
 type RoomSceneProps = Omit<Room3DProps, "className"> & {
   objects: ReptileRoomObject[];
