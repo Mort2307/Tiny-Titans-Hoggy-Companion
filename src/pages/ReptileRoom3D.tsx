@@ -34,11 +34,11 @@ function getMovedRoom(room: ReptileRoomWorkspace, selection: Room3DSelection, dx
   if (selection.type === "slot") {
     const selected = room.slots.find((slot) => slot.id === selection.id); if (!selected) return room;
     const groupId = selected.stackGroupId;
-    return { ...room, slots: room.slots.map((slot) => groupId && slot.stackGroupId === groupId || slot.id === selected.id ? moveSlot(slot) : slot), updatedAt: commit ? new Date().toISOString() : room.updatedAt };
+    return { ...room, slots: room.slots.map((slot) => (groupId && slot.stackGroupId === groupId) || slot.id === selected.id ? moveSlot(slot) : slot), updatedAt: commit ? new Date().toISOString() : room.updatedAt };
   }
   const selected = (room.objects ?? []).find((object) => object.id === selection.id); if (!selected) return room;
   const groupId = selected.stackGroupId;
-  return { ...room, objects: (room.objects ?? []).map((object) => groupId && object.stackGroupId === groupId || object.id === selected.id ? moveObject(object) : object), updatedAt: commit ? new Date().toISOString() : room.updatedAt };
+  return { ...room, objects: (room.objects ?? []).map((object) => (groupId && object.stackGroupId === groupId) || object.id === selected.id ? moveObject(object) : object), updatedAt: commit ? new Date().toISOString() : room.updatedAt };
 }
 
 export default function ReptileRoom3D() {
@@ -87,8 +87,10 @@ export default function ReptileRoom3D() {
 
   const addAsset = useCallback((preset: Room3DAssetPreset) => {
     if (!room) return;
-    const x = clamp(snap((room.width ?? 0 - preset.width) / 2), 0, Math.max(0, (room.width ?? 0) - preset.width));
-    const y = clamp(snap((room.depth ?? 0 - preset.depth) / 2), 0, Math.max(0, (room.depth ?? 0) - preset.depth));
+    const roomWidth = room.width ?? 0;
+    const roomDepth = room.depth ?? 0;
+    const x = clamp(snap((roomWidth - preset.width) / 2), 0, Math.max(0, roomWidth - preset.width));
+    const y = clamp(snap((roomDepth - preset.depth) / 2), 0, Math.max(0, roomDepth - preset.depth));
     if (preset.kind === "vivarium") {
       const slot: ReptileRoomSlot = { id: nextId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0, w: preset.width, h: preset.depth, depth: preset.depth, height: preset.height, lifecycleStatus: "empty", condition: "good", availability: "available", storageLocation: "", storageNote: "", notes: "", maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, photoUrl: "" };
       updateRoom((current) => ({ ...current, slots: [...current.slots, slot] }), "Vivarium added."); setSelected({ type: "slot", id: slot.id }); return;
@@ -124,8 +126,7 @@ export default function ReptileRoom3D() {
   };
 
   const updateSelectedDimensions = (field: "width" | "depth" | "height", value: number) => {
-    const nextValue = Math.max(1, value);
-    if (!selected) return;
+    const nextValue = Math.max(1, value); if (!selected) return;
     if (selected.type === "slot") updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selected.id ? field === "width" ? { ...slot, w: nextValue } : field === "depth" ? { ...slot, depth: nextValue, h: nextValue } : { ...slot, height: nextValue } : slot) }));
     else updateRoom((current) => ({ ...current, objects: (current.objects ?? []).map((object) => object.id === selected.id ? { ...object, [field]: nextValue } : object) }));
   };
@@ -175,7 +176,7 @@ export default function ReptileRoom3D() {
         </section>}
         <section><h2>View</h2><div className="rr3d-action-row"><button onClick={() => setShowGrid((v) => !v)}>{showGrid ? "Hide grid" : "Show grid"}</button><button onClick={() => setShowCeiling((v) => !v)}>{showCeiling ? "Hide ceiling" : "Show ceiling"}</button></div></section>
       </aside>
-      <section className="rr3d-canvas-panel"><Room3D room={room} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} showGrid={showGrid} showCeiling={showCeiling} photoForSlot={photoFor} onSelect={setSelected} onMove={moveSelection} onAddAsset={addAsset} /><div className="rr3d-canvas-help">Click an object to edit it · Drag to look around · Use the fullscreen button for an immersive view</div></section>
+      <section className="rr3d-canvas-panel"><Room3D room={room} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} showGrid={showGrid} showCeiling={showCeiling} photoForSlot={photoFor} onSelect={setSelected} onMove={moveSelection} onAddAsset={addAsset} /><div className="rr3d-canvas-help">Click an object to edit it · Drag to look around · Use ⛶ Full screen for an immersive view</div></section>
     </div>
   </main>;
 }
