@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
-import { loadReptileRooms, saveReptileRooms, type ReptileRoomObject, type ReptileRoomWorkspace, type ReptileRoomSlot } from "../services/reptileRoomService";
+import {
+  loadReptileRooms,
+  saveReptileRooms,
+  type ReptileRoomObject,
+  type ReptileRoomWorkspace,
+  type ReptileRoomSlot,
+} from "../services/reptileRoomService";
 import Room3D from "../components/reptile-room-3d/Room3D";
 import { getCameraForwardSpawn } from "../components/reptile-room-3d/RoomCamera3D";
 import type { Room3DSelection, Room3DAssetPreset } from "../types/reptileRoom3D";
@@ -27,13 +33,30 @@ function createId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
-function makePlacedObject(kind: Room3DAssetPreset["kind"], label: string, width: number, depth: number, height: number, x: number, y: number, assetType: ReptileRoomObject["assetType"] = "furniture"): ReptileRoomObject {
-  if (kind === "vivarium") throw new Error("Vivarium presets must be created as room slots.");
-  return { id: createId("room-object"), kind, label, x, y, z: 0, width, depth, height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType };
+function makePlacedObject(
+  kind: Exclude<Room3DAssetPreset["kind"], "vivarium">,
+  label: string,
+  width: number,
+  depth: number,
+  height: number,
+  x: number,
+  y: number,
+  assetType: ReptileRoomObject["assetType"] = "furniture",
+): ReptileRoomObject {
+  return {
+    id: createId("room-object"), kind, label, x, y, z: 0, width, depth, height,
+    rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null,
+    clearance: {}, notes: "", assetType,
+  };
 }
 
 function makeVivarium(width: number, depth: number, height: number, x: number, y: number): ReptileRoomSlot {
-  return { id: createId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0, w: width, h: depth, depth, height, lifecycleStatus: "empty", condition: "good", availability: "available", storageLocation: "", storageNote: "", notes: "", maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, photoUrl: "" };
+  return {
+    id: createId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0,
+    w: width, h: depth, depth, height, lifecycleStatus: "empty", condition: "good",
+    availability: "available", storageLocation: "", storageNote: "", notes: "",
+    maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, photoUrl: "",
+  };
 }
 
 function itemFromObject(item: ReptileRoomObject): RoomItem {
@@ -47,7 +70,7 @@ function itemFromSlot(item: ReptileRoomSlot): RoomItem {
 function gapBetween(a: RoomItem, b: RoomItem): number {
   const dx = Math.max(a.x - (b.x + b.width), b.x - (a.x + a.width), 0);
   const dy = Math.max(a.y - (b.y + b.depth), b.y - (a.y + a.depth), 0);
-  const dz = Math.min(Math.abs((a.z + a.height) - b.z), Math.abs((b.z + b.height) - a.z));
+  const dz = Math.min(Math.abs(a.z + a.height - b.z), Math.abs(b.z + b.height - a.z));
   return Math.hypot(dx, dy, dz);
 }
 
@@ -137,7 +160,7 @@ export default function ReptileRoomDigitalTwin3D() {
     const x = clamp(snapNumber(point.xCm - preset.width / 2), 0, Math.max(0, roomWidth - preset.width));
     const y = clamp(snapNumber(point.zCm - preset.depth / 2), 0, Math.max(0, roomDepth - preset.depth));
     if (preset.kind === "vivarium") {
-      const slot: ReptileRoomSlot = { ...makeVivarium(preset.width, preset.depth, preset.height, x, y) };
+      const slot = makeVivarium(preset.width, preset.depth, preset.height, x, y);
       setLocalSlots((current) => [...current, slot]);
       setSelectedId(slot.id);
       setSelectedType("slot");
@@ -150,7 +173,10 @@ export default function ReptileRoomDigitalTwin3D() {
   const createVivariumAtCamera = useCallback(() => {
     if (!room) return;
     const camera = (window as Window & { __tinyTitansRoom3DCamera?: import("three").Camera }).__tinyTitansRoom3DCamera;
-    if (!camera) return setNotice("3D camera is still starting - try again in a moment.");
+    if (!camera) {
+      setNotice("3D camera is still starting - try again in a moment.");
+      return;
+    }
     const point = getCameraForwardSpawn(camera, 120, room);
     const width = 90;
     const depth = 45;
@@ -173,7 +199,10 @@ export default function ReptileRoomDigitalTwin3D() {
       return;
     }
     const camera = (window as Window & { __tinyTitansRoom3DCamera?: import("three").Camera }).__tinyTitansRoom3DCamera;
-    if (!camera) return setNotice("3D camera is still starting - try again in a moment.");
+    if (!camera) {
+      setNotice("3D camera is still starting - try again in a moment.");
+      return;
+    }
     const point = getCameraForwardSpawn(camera, 120, room);
     const width = 90;
     const depth = 45;
@@ -270,20 +299,51 @@ export default function ReptileRoomDigitalTwin3D() {
   if (!room) return <main className="reptile-room-digital-twin"><section><h1>Reptile Room Digital Twin</h1><p>Create your first room to start building.</p></section></main>;
 
   return (
-    <main className="reptile-room-digital-twin">
+    <main className="reptile-room-digital-twin reptile-room-digital-twin--immersive">
       <header className="reptile-room-digital-twin__header">
         <div><span className="eyebrow">TINY TITANS · DIGITAL TWIN</span><h1>{room.name}</h1><p>Build, position and understand your real reptile room in 3D.</p></div>
-        <div className="reptile-room-digital-twin__actions"><button type="button" onClick={saveCurrent}>Save Room</button><button type="button" onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide Grid" : "Show Grid"}</button><button type="button" onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide Ceiling" : "Show Ceiling"}</button></div>
+        <div className="reptile-room-digital-twin__actions">
+          <button type="button" onClick={saveCurrent}>Save Room</button>
+          <button type="button" onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide Grid" : "Show Grid"}</button>
+          <button type="button" onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide Ceiling" : "Show Ceiling"}</button>
+        </div>
       </header>
       {notice && <div className="reptile-room-digital-twin__notice" role="status">{notice}</div>}
       <section className="reptile-room-digital-twin__layout">
-        <aside className="reptile-room-digital-twin__sidebar">
-          <section><h2>Add to Room</h2><button type="button" onClick={createVivariumAtCamera}>＋ Empty Vivarium</button>{snakes.length > 0 && <div><h3>Your Snakes</h3>{snakes.map((snake) => <button key={snake.id} type="button" onClick={() => createSnakeVivarium(snake)}>🐍 {snake.name}</button>)}</div>}</section>
-          <section><h2>Props & Equipment</h2><div className="reptile-room-digital-twin__asset-list">{assetPresets.map((preset) => <button key={`${preset.kind}-${preset.label}`} type="button" onClick={() => spawnAsset(preset)}>{preset.label}<small>{preset.width} × {preset.depth} × {preset.height} cm</small></button>)}</div></section>
-          <section><h2>Room</h2><label>Width<input type="number" value={room.width ?? 0} onChange={(event) => updateRoom({ width: Number(event.target.value) || 0 })} /></label><label>Depth<input type="number" value={room.depth ?? 0} onChange={(event) => updateRoom({ depth: Number(event.target.value) || 0 })} /></label><label>Height<input type="number" value={room.height ?? 0} onChange={(event) => updateRoom({ height: Number(event.target.value) || 0 })} /></label></section>
-        </aside>
-        <section className="reptile-room-digital-twin__viewport"><Room3D room={room} objects={localObjects} slots={localSlots} showGrid={showGrid} showCeiling={showCeiling} onSelect={handleSelect} /><div className="reptile-room-digital-twin__selection"><strong>{selectedLabel}</strong>{(selectedObject || selectedSlot) && <div><button type="button" onClick={() => updateSelectedPosition("x", -MOVE_STEP_CM)}>← X</button><button type="button" onClick={() => updateSelectedPosition("x", MOVE_STEP_CM)}>X →</button><button type="button" onClick={() => updateSelectedPosition("y", -MOVE_STEP_CM)}>↑ Y</button><button type="button" onClick={() => updateSelectedPosition("y", MOVE_STEP_CM)}>Y ↓</button><button type="button" onClick={() => updateSelectedPosition("z", MOVE_STEP_CM)}>Z +</button><button type="button" onClick={() => updateSelectedPosition("z", -MOVE_STEP_CM)}>Z −</button><button type="button" onClick={snapSelected}>Snap</button><button type="button" onClick={autoPlaceSelected}>Auto Place</button><button type="button" onClick={toggleStackLock}>{selectedStackLocked ? "Unlock Stack" : "Lock Stack"}</button></div>}</div></section>
-        <aside className="reptile-room-digital-twin__inspector"><h2>Inspector</h2>{selectedSlot ? <><p><strong>{selectedSlot.label}</strong></p><div role="tablist"><button type="button" onClick={() => setInspectorTab("edit")}>Position</button><button type="button" onClick={() => setInspectorTab("occupant")}>Occupant</button></div>{inspectorTab === "edit" && <div><label>X<input type="number" value={selectedSlot.x} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, x: Number(event.target.value) || 0 } : item))} /></label><label>Y<input type="number" value={selectedSlot.y} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, y: Number(event.target.value) || 0 } : item))} /></label><label>Z<input type="number" value={selectedSlot.z ?? 0} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, z: Number(event.target.value) || 0 } : item))} /></label><label>Width<input type="number" value={selectedSlot.w} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, w: Number(event.target.value) || 0 } : item))} /></label><label>Depth<input type="number" value={selectedSlot.depth ?? 0} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, depth: Number(event.target.value) || 0 } : item))} /></label></div>}{inspectorTab === "occupant" && <div><label>Snake<select value={selectedSlot.snakeId ?? ""} onChange={(event) => { const snakeId = event.target.value || null; const snake = snakeId ? snakesById.get(snakeId) : undefined; setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, snakeId, label: snake?.name ?? "Empty Vivarium", lifecycleStatus: snake ? "occupied" : "empty", photoUrl: "" } : item)); }}>{<option value="">Empty</option>}{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label>{selectedSnake?.imageUrl && <img src={selectedSnake.imageUrl} alt={`${selectedSnake.name} reference`} className="reptile-room-digital-twin__snake-photo" />}</div>}</> : selectedObject ? <div><p><strong>{selectedObject.label}</strong></p><label>X<input type="number" value={selectedObject.x} onChange={(event) => setLocalObjects((current) => current.map((item) => item.id === selectedObject.id ? { ...item, x: Number(event.target.value) || 0 } : item))} /></label><label>Y<input type="number" value={selectedObject.y} onChange={(event) => setLocalObjects((current) => current.map((item) => item.id === selectedObject.id ? { ...item, y: Number(event.target.value) || 0 } : item))} /></label><label>Z<input type="number" value={selectedObject.z ?? 0} onChange={(event) => setLocalObjects((current) => current.map((item) => item.id === selectedObject.id ? { ...item, z: Number(event.target.value) || 0 } : item))} /></label></div> : <p>Select something in the room to edit it.</p>}</aside>
+        <section className="reptile-room-digital-twin__viewport">
+          <Room3D room={room} objects={localObjects} slots={localSlots} showGrid={showGrid} showCeiling={showCeiling} onSelect={handleSelect} />
+          <div className="reptile-room-digital-twin__selection">
+            <strong>{selectedLabel}</strong>
+            {(selectedObject || selectedSlot) && <div>
+              <button type="button" onClick={() => updateSelectedPosition("x", -MOVE_STEP_CM)}>← X</button>
+              <button type="button" onClick={() => updateSelectedPosition("x", MOVE_STEP_CM)}>X →</button>
+              <button type="button" onClick={() => updateSelectedPosition("y", -MOVE_STEP_CM)}>↑ Y</button>
+              <button type="button" onClick={() => updateSelectedPosition("y", MOVE_STEP_CM)}>Y ↓</button>
+              <button type="button" onClick={() => updateSelectedPosition("z", MOVE_STEP_CM)}>Z +</button>
+              <button type="button" onClick={() => updateSelectedPosition("z", -MOVE_STEP_CM)}>Z −</button>
+              <button type="button" onClick={snapSelected}>Snap</button>
+              <button type="button" onClick={autoPlaceSelected}>Auto Place</button>
+              <button type="button" onClick={toggleStackLock}>{selectedStackLocked ? "Unlock Stack" : "Lock Stack"}</button>
+            </div>}
+          </div>
+        </section>
+
+        <details className="reptile-room-digital-twin__controls">
+          <summary>⚙ Room Controls</summary>
+          <div className="reptile-room-digital-twin__controls-body">
+            <section><h2>Add to Room</h2><button type="button" onClick={createVivariumAtCamera}>＋ Empty Vivarium</button>{snakes.length > 0 && <div><h3>Your Snakes</h3>{snakes.map((snake) => <button key={snake.id} type="button" onClick={() => createSnakeVivarium(snake)}>🐍 {snake.name}</button>)}</div>}</section>
+            <section><h2>Props & Equipment</h2><div className="reptile-room-digital-twin__asset-list">{assetPresets.map((preset) => <button key={`${preset.kind}-${preset.label}`} type="button" onClick={() => spawnAsset(preset)}>{preset.label}<small>{preset.width} × {preset.depth} × {preset.height} cm</small></button>)}</div></section>
+            <section><h2>Room</h2><label>Width<input type="number" value={room.width ?? 0} onChange={(event) => updateRoom({ width: Number(event.target.value) || 0 })} /></label><label>Depth<input type="number" value={room.depth ?? 0} onChange={(event) => updateRoom({ depth: Number(event.target.value) || 0 })} /></label><label>Height<input type="number" value={room.height ?? 0} onChange={(event) => updateRoom({ height: Number(event.target.value) || 0 })} /></label></section>
+            <section><h2>Inspector</h2>
+              {selectedSlot ? <>
+                <p><strong>{selectedSlot.label}</strong></p>
+                <div className="reptile-room-digital-twin__tabs" role="tablist"><button type="button" onClick={() => setInspectorTab("edit")}>Position</button><button type="button" onClick={() => setInspectorTab("occupant")}>Occupant</button></div>
+                {inspectorTab === "edit" && <div className="reptile-room-digital-twin__inspector-fields"><label>X<input type="number" value={selectedSlot.x} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, x: Number(event.target.value) || 0 } : item))} /></label><label>Y<input type="number" value={selectedSlot.y} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, y: Number(event.target.value) || 0 } : item))} /></label><label>Z<input type="number" value={selectedSlot.z ?? 0} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, z: Number(event.target.value) || 0 } : item))} /></label><label>Width<input type="number" value={selectedSlot.w} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, w: Number(event.target.value) || 0 } : item))} /></label><label>Depth<input type="number" value={selectedSlot.depth ?? 0} onChange={(event) => setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, depth: Number(event.target.value) || 0 } : item))} /></label></div>}
+                {inspectorTab === "occupant" && <div><label>Snake<select value={selectedSlot.snakeId ?? ""} onChange={(event) => { const snakeId = event.target.value || null; const snake = snakeId ? snakesById.get(snakeId) : undefined; setLocalSlots((current) => current.map((item) => item.id === selectedSlot.id ? { ...item, snakeId, label: snake?.name ?? "Empty Vivarium", lifecycleStatus: snake ? "occupied" : "empty", photoUrl: "" } : item)); }}><option value="">Empty</option>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label>{selectedSnake?.imageUrl && <img src={selectedSnake.imageUrl} alt={`${selectedSnake.name} reference`} className="reptile-room-digital-twin__snake-photo" />}</div>}
+              </> : selectedObject ? <div className="reptile-room-digital-twin__inspector-fields"><p><strong>{selectedObject.label}</strong></p><label>X<input type="number" value={selectedObject.x} onChange={(event) => setLocalObjects((current) => current.map((item) => item.id === selectedObject.id ? { ...item, x: Number(event.target.value) || 0 } : item))} /></label><label>Y<input type="number" value={selectedObject.y} onChange={(event) => setLocalObjects((current) => current.map((item) => item.id === selectedObject.id ? { ...item, y: Number(event.target.value) || 0 } : item))} /></label><label>Z<input type="number" value={selectedObject.z ?? 0} onChange={(event) => setLocalObjects((current) => current.map((item) => item.id === selectedObject.id ? { ...item, z: Number(event.target.value) || 0 } : item))} /></label></div> : <p>Select something in the room to edit it.</p>}
+            </section>
+          </div>
+        </details>
       </section>
     </main>
   );

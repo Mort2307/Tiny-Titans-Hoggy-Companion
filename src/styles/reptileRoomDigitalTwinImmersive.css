@@ -1,0 +1,67 @@
+/* Immersive 3D reptile-room workspace. Loaded only by the digital-twin page. */
+.reptile-room-digital-twin--immersive{position:relative;width:calc(100% + (2 * var(--page-padding)));margin:calc(-1 * var(--page-padding));min-height:100dvh;height:100dvh;overflow:hidden;background:#0c0e11;color:#fff}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__layout{position:absolute;inset:0;width:100%;height:100%;min-height:0;display:block;overflow:hidden}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__viewport{position:absolute;inset:0;width:100%;height:100%;min-height:0;overflow:hidden;border:0;border-radius:0;background:#17191c}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__viewport>div:first-child{width:100%;height:100%;min-height:0}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__viewport canvas{display:block;width:100%!important;height:100%!important}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__header{position:absolute;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));z-index:80;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;pointer-events:none}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__header>div{pointer-events:auto;padding:10px 14px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(10,12,15,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__header h1{margin:2px 0;font-size:clamp(1rem,2vw,1.55rem)}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__header p{margin:0;font-size:.78rem;opacity:.72}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__actions{display:flex;flex-wrap:wrap;gap:7px}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__actions button{min-height:38px;padding:7px 11px;border:1px solid rgba(255,255,255,.18);border-radius:9px;background:rgba(18,21,24,.88);color:#fff;font-size:.8rem;font-weight:800}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__notice{position:absolute;top:82px;left:50%;z-index:85;transform:translateX(-50%);max-width:min(560px,calc(100vw - 24px));padding:9px 14px;border:1px solid rgba(0,174,255,.35);border-radius:10px;background:rgba(8,11,14,.88);color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.3);pointer-events:none}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));z-index:70;transform:translateX(-50%);max-width:min(92vw,900px);padding:8px 10px;border:1px solid rgba(255,255,255,.13);border-radius:12px;background:rgba(10,12,15,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.28);pointer-events:auto;text-align:center}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection strong{display:block;margin-bottom:5px;color:#fff;font-size:.8rem}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection>div{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection button{min-height:34px;padding:5px 9px;border:1px solid rgba(255,255,255,.15);border-radius:7px;background:rgba(18,21,24,.9);color:#fff;font-size:.72rem;font-weight:800}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls{position:absolute;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));z-index:100;width:min(390px,calc(100vw - 24px));max-height:min(78dvh,760px);color:#fff;pointer-events:auto}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls summary{width:fit-content;min-height:44px;margin-left:auto;padding:10px 14px;display:flex;align-items:center;border:1px solid rgba(255,255,255,.18);border-radius:11px;background:rgba(12,15,18,.9);color:#fff;cursor:pointer;list-style:none;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.3);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls summary::-webkit-details-marker{display:none}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls[open] summary{border-color:var(--accent);border-bottom-left-radius:6px;border-bottom-right-radius:6px}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body{max-height:calc(min(78dvh,760px) - 54px);overflow-y:auto;overscroll-behavior:contain;margin-top:6px;padding:12px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(10,12,15,.94);box-shadow:0 18px 45px rgba(0,0,0,.4);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body section{padding:0 0 13px;margin:0 0 13px;border-bottom:1px solid rgba(255,255,255,.08)}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body section:last-child{margin-bottom:0;padding-bottom:0;border-bottom:0}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body h2{margin:0 0 8px;color:#fff;font-size:1rem}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body h3{margin:10px 0 6px;color:#fff;font-size:.84rem;opacity:.8}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body p,.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body strong,.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body label{color:#fff}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body button,.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body input,.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body select{width:100%;min-height:42px;margin-top:6px;padding:8px 10px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:#15181c;color:#fff}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body button{font-weight:800}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body button:hover{border-color:var(--accent)}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body label{display:block;margin:7px 0;font-size:.8rem;font-weight:800}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__asset-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__asset-list button{min-height:54px;margin:0;text-align:left}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__asset-list small{display:block;margin-top:3px;opacity:.55;font-size:.68rem}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__tabs button{margin:0}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__inspector-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__inspector-fields p{grid-column:1/-1}
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__snake-photo{display:block;width:min(140px,100%);aspect-ratio:1;object-fit:cover;margin:10px auto 0;border-radius:10px;border:1px solid rgba(255,255,255,.15)}
+@media(max-width:700px){
+  .reptile-room-digital-twin--immersive{width:calc(100% + (2 * var(--page-padding)));min-height:100dvh;height:100dvh}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__header{top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));align-items:flex-start}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__header>div:first-child{max-width:58vw;padding:7px 9px}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__header h1{font-size:.95rem}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__header p,.reptile-room-digital-twin--immersive .reptile-room-digital-twin__header .eyebrow{display:none}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__actions{max-width:38vw;justify-content:flex-end}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__actions button{min-width:42px;min-height:42px;padding:6px 8px;font-size:.68rem}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__actions button:not(:first-child){font-size:0}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__actions button:nth-child(2)::after{content:"▦";font-size:1rem}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__actions button:nth-child(3)::after{content:"⌂";font-size:1rem}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__notice{top:66px;font-size:.78rem}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls{top:auto;right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));left:max(8px,env(safe-area-inset-left));width:auto;max-height:72dvh}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls summary{width:100%;justify-content:center;margin:0;min-height:48px}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body{max-height:calc(72dvh - 58px);padding:10px}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection{bottom:calc(64px + env(safe-area-inset-bottom));max-width:calc(100vw - 16px)}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection button{min-height:40px;padding:7px 8px}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__asset-list{grid-template-columns:1fr 1fr}
+}
+@media(max-width:420px){
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection>div{max-height:92px;overflow-y:auto}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__inspector-fields{grid-template-columns:1fr}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__inspector-fields p{grid-column:auto}
+}
+@media(max-height:560px) and (orientation:landscape){
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls{max-height:82dvh}
+  .reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls-body{max-height:calc(82dvh - 54px)}
+}
