@@ -11,21 +11,21 @@ function rotationFor(item: ReptileRoomObject | ReptileRoomSlot): number { return
 
 function VivariumPhoto({ url, width, height, depth }: { url: string; width: number; height: number; depth: number }) {
   const [texture, setTexture] = useState<Texture | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
-    const loader = new TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    setTexture(null);
-    loader.load(url, (loaded) => { if (!alive) { loaded.dispose(); return; } loaded.colorSpace = "srgb"; loaded.needsUpdate = true; setTexture(loaded); }, undefined, () => { if (alive) setTexture(null); });
+    setTexture(null); setFailed(false);
+    const loader = new TextureLoader(); loader.setCrossOrigin("anonymous");
+    loader.load(url, (loaded) => { if (!alive) { loaded.dispose(); return; } loaded.colorSpace = "srgb"; loaded.wrapS = loaded.wrapT = 1001; loaded.needsUpdate = true; setTexture(loaded); }, undefined, () => { if (alive) setFailed(true); });
     return () => { alive = false; };
   }, [url]);
   useEffect(() => () => texture?.dispose(), [texture]);
-  if (!texture) return null;
+  if (!texture || failed) return null;
   const frame = Math.min(width, height) * 0.045;
   const glassWidth = Math.max(0.01, width - frame * 2);
   const glassHeight = Math.max(0.01, height - frame * 2);
-  const frontZ = depth / 2 + 0.028;
-  return <group position={[0, 0, frontZ]}><mesh renderOrder={30}><planeGeometry args={[glassWidth, glassHeight]} /><meshBasicMaterial map={texture} toneMapped={false} transparent={false} depthWrite={false} side={2} /></mesh></group>;
+  const frontZ = depth / 2 + 0.045;
+  return <mesh position={[0, 0, frontZ]} renderOrder={50}><planeGeometry args={[glassWidth, glassHeight]} /><meshBasicMaterial map={texture} toneMapped={false} transparent={false} depthWrite={false} depthTest={false} side={2} /></mesh>;
 }
 
 function VivariumFrame({ width, depth, height, selected }: { width: number; depth: number; height: number; selected: boolean }) {
@@ -50,11 +50,20 @@ function VivariumFrame({ width, depth, height, selected }: { width: number; dept
   </group>;
 }
 
-function FurnitureModel({ kind, width, depth, height, selected }: { kind: string; width: number; depth: number; height: number; selected: boolean }) {
-  const colour = selected ? "#d89a32" : "#6a7078"; const accent = selected ? "#f2bd55" : "#3e444b"; const legH = Math.max(0.03, height - 0.055); const legW = Math.max(0.025, Math.min(width, depth) * 0.045);
+function FurnitureModel({ kind, label, width, depth, height, selected }: { kind: string; label: string; width: number; depth: number; height: number; selected: boolean }) {
+  const isOak = /oak/i.test(label);
+  const isTeak = /teak/i.test(label);
+  const isCorner = /corner/i.test(label);
+  const colour = selected ? "#d89a32" : isOak ? "#8a5a2b" : isTeak ? "#6b452d" : "#6a7078";
+  const accent = selected ? "#f2bd55" : isOak ? "#5a3518" : isTeak ? "#40281c" : "#3e444b";
+  const legH = Math.max(0.03, height - 0.055); const legW = Math.max(0.025, Math.min(width, depth) * 0.045);
+  const shelfCount = kind === "rack" ? 5 : 4; const shelfThickness = Math.max(0.025, height * 0.025);
   if (kind === "table" || kind === "workbench") { const topThickness = kind === "workbench" ? 0.075 : 0.055; return <group><mesh castShadow receiveShadow position={[0, height / 2 - topThickness / 2, 0]}><boxGeometry args={[width, topThickness, depth]} /><meshStandardMaterial color={colour} roughness={0.68} /></mesh>{[[-1,-1],[-1,1],[1,-1],[1,1]].map(([x,z]) => <mesh key={`${x}-${z}`} castShadow receiveShadow position={[x*(width/2-legW*1.6),-height/2+legH/2,z*(depth/2-legW*1.6)]}><boxGeometry args={[legW,legH,legW]} /><meshStandardMaterial color={accent} roughness={0.72} /></mesh>)}{kind === "workbench" && <mesh castShadow receiveShadow position={[0,-height*0.12,-depth*0.25]}><boxGeometry args={[width*0.72,height*0.38,depth*0.28]} /><meshStandardMaterial color={accent} roughness={0.78} /></mesh>}</group>; }
   if (kind === "chair") { const backH = height*0.58; return <group><mesh castShadow receiveShadow position={[0,-height*0.05,0]}><boxGeometry args={[width,height*0.08,depth]} /><meshStandardMaterial color={colour} /></mesh>{[[-1,-1],[-1,1],[1,-1],[1,1]].map(([x,z]) => <mesh key={`${x}-${z}`} castShadow position={[x*(width/2-legW*1.5),-height/2+(height*0.42)/2,z*(depth/2-legW*1.5)]}><boxGeometry args={[legW,height*0.42,legW]} /><meshStandardMaterial color={accent} /></mesh>)}<mesh castShadow receiveShadow position={[0,height/2-backH/2,-depth/2+legW/2]}><boxGeometry args={[width*0.88,backH,legW]} /><meshStandardMaterial color={colour} /></mesh></group>; }
-  if (kind === "shelving" || kind === "rack") { const shelfCount = kind === "rack" ? 5 : 4; const shelfThickness = Math.max(0.025,height*0.025); return <group>{[-1,1].flatMap((x) => [-1,1].map((z) => <mesh key={`${x}-${z}`} castShadow position={[x*(width/2-legW/2),0,z*(depth/2-legW/2)]}><boxGeometry args={[legW,height,legW]} /><meshStandardMaterial color={accent} /></mesh>))}{Array.from({length:shelfCount},(_,index)=>{const y=-height/2+shelfThickness/2+index*((height-shelfThickness)/(shelfCount-1)); return <mesh key={index} castShadow receiveShadow position={[0,y,0]}><boxGeometry args={[width-legW*1.8,shelfThickness,depth-legW*1.8]} /><meshStandardMaterial color={colour} roughness={0.7} /></mesh>;})}</group>; }
+  if (kind === "shelving" || kind === "rack") {
+    if (isCorner) return <group rotation={[0, Math.PI / 4, 0]}>{[[-1,-1],[-1,1],[1,-1],[1,1]].map(([x,z]) => <mesh key={`${x}-${z}`} castShadow position={[x*(width/2-legW/2),0,z*(depth/2-legW/2)]}><boxGeometry args={[legW,height,legW]} /><meshStandardMaterial color={accent} /></mesh>)}{Array.from({length:shelfCount},(_,index)=>{const y=-height/2+shelfThickness/2+index*((height-shelfThickness)/(shelfCount-1)); return <group key={index}><mesh castShadow receiveShadow position={[-width*0.22,y,0]}><boxGeometry args={[width*0.56,shelfThickness,depth-legW*1.8]} /><meshStandardMaterial color={colour} roughness={0.7} /></mesh><mesh castShadow receiveShadow position={[0,y,-depth*0.22]}><boxGeometry args={[width*0.56,shelfThickness,depth*0.56]} /><meshStandardMaterial color={colour} roughness={0.7} /></mesh></group>;})}</group>;
+    return <group>{[-1,1].flatMap((x) => [-1,1].map((z) => <mesh key={`${x}-${z}`} castShadow position={[x*(width/2-legW/2),0,z*(depth/2-legW/2)]}><boxGeometry args={[legW,height,legW]} /><meshStandardMaterial color={accent} /></mesh>))}{Array.from({length:shelfCount},(_,index)=>{const y=-height/2+shelfThickness/2+index*((height-shelfThickness)/(shelfCount-1)); return <mesh key={index} castShadow receiveShadow position={[0,y,0]}><boxGeometry args={[width-legW*1.8,shelfThickness,depth-legW*1.8]} /><meshStandardMaterial color={colour} roughness={0.7} /></mesh>;})}</group>;
+  }
   if (kind === "storage-cabinet") return <group><mesh castShadow receiveShadow><boxGeometry args={[width,height,depth]} /><meshStandardMaterial color={colour} roughness={0.72} /></mesh><mesh position={[0,0,depth/2+0.004]}><boxGeometry args={[width*0.88,height*0.82,0.012]} /><meshStandardMaterial color="#30353b" roughness={0.45} /></mesh><mesh position={[0,0,depth/2+0.012]}><boxGeometry args={[0.012,height*0.72,0.012]} /><meshStandardMaterial color={accent} /></mesh><mesh position={[0,0,depth/2+0.014]}><boxGeometry args={[width*0.04,0.04,0.025]} /><meshStandardMaterial color={accent} metalness={0.35} /></mesh></group>;
   if (kind === "equipment-station") return <group><mesh castShadow receiveShadow position={[0,height/2-0.03,0]}><boxGeometry args={[width,0.06,depth]} /><meshStandardMaterial color={colour} /></mesh><mesh castShadow><boxGeometry args={[width*0.78,height*0.78,depth*0.72]} /><meshStandardMaterial color="#454b52" roughness={0.76} /></mesh></group>;
   return <mesh castShadow receiveShadow><boxGeometry args={[width,height,depth]} /><meshStandardMaterial color={colour} roughness={0.72} /></mesh>;
@@ -67,7 +76,7 @@ export function RoomObject3D({ room, object, selected, onSelect, isSlot = false,
   const select = (event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); onSelect(object.id); };
   return <group position={position} rotation={[0,rotationY,0]} userData={{roomObjectId:object.id,isVivarium:isSlot,magLocked:Boolean(object.stackGroupId)}}>
     <mesh onPointerDown={select} onClick={select} visible={false}><boxGeometry args={[bodyWidth*1.08,bodyHeight*1.08,bodyDepth*1.08]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} /></mesh>
-    {isSlot ? <><VivariumFrame width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />{photoUrl ? <VivariumPhoto url={photoUrl} width={bodyWidth} height={bodyHeight} depth={bodyDepth} /> : null}</> : <group onPointerDown={select} onClick={select}><FurnitureModel kind={"kind" in object ? object.kind : "asset"} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} /></group>}
+    {isSlot ? <><VivariumFrame width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />{photoUrl ? <VivariumPhoto url={photoUrl} width={bodyWidth} height={bodyHeight} depth={bodyDepth} /> : null}</> : <group onPointerDown={select} onClick={select}><FurnitureModel kind={"kind" in object ? object.kind : "asset"} label={object.label} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} /></group>}
     {selected && <mesh position={[0,bodyHeight/2+0.008,0]}><boxGeometry args={[bodyWidth+0.012,0.012,bodyDepth+0.012]} /><meshStandardMaterial color="#f2bd55" emissive="#7a4d0d" emissiveIntensity={0.6} /></mesh>}
     {isSlot && object.stackGroupId ? <mesh position={[0,bodyHeight+0.025,0]}><sphereGeometry args={[0.018,12,8]} /><meshStandardMaterial color="#e0a63b" emissive="#6d4307" emissiveIntensity={0.7} /></mesh> : null}
   </group>;
