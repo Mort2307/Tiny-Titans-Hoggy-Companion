@@ -1,21 +1,13 @@
 import type { ReptileFurnitureKind, ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../services/reptileRoomService";
 
 export type Room3DSelection = { type: "slot" | "object"; id: string } | null;
-
-export type Room3DAssetPreset = {
-  kind: ReptileFurnitureKind | "vivarium";
-  label: string;
-  icon: string;
-  width: number;
-  depth: number;
-  height: number;
-};
-
+export type Room3DAssetPreset = { kind: ReptileFurnitureKind | "vivarium"; label: string; icon: string; width: number; depth: number; height: number };
 export type Room3DProps = {
   room: ReptileRoomWorkspace;
   className?: string;
   showGrid?: boolean;
   showCeiling?: boolean;
+  viewerMode?: boolean;
   objects?: ReptileRoomObject[];
   slots?: ReptileRoomSlot[];
   selectedId?: string | null;
@@ -25,12 +17,4 @@ export type Room3DProps = {
   onMove?: (selection: { type: "slot" | "object"; id: string }, deltaXcm: number, deltaYcm: number, deltaZcm: number, commit: boolean) => void;
   onAddAsset?: (preset: Room3DAssetPreset, spawnXcm: number, spawnYcm: number) => void;
 };
-
-export type RoomDimensions3D = {
-  widthCm: number;
-  depthCm: number;
-  heightCm: number;
-  width: number;
-  depth: number;
-  height: number;
-};
+export type RoomDimensions3D = { widthCm: number; depthCm: number; heightCm: number; width: number; depth: number; height: number };
