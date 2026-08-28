@@ -9,7 +9,6 @@ import type { RoomNavigationNode } from "./RoomNavigation3D";
 import { RoomObject3D } from "./RoomObject3D";
 import { RoomShell3D } from "./RoomShell3D";
 import { getRoomDimensions3D } from "./room3DScale";
-import type { Camera } from "three";
 
 type RoomSceneProps = Omit<Room3DProps, "className"> & { objects: ReptileRoomObject[]; slots: ReptileRoomSlot[]; selectedId: string | null; selectedType: "slot" | "object" | null; navigationNode: RoomNavigationNode; onTeleport: (node: RoomNavigationNode) => void; onSelect: (selection: Room3DSelection) => void };
 
@@ -45,40 +44,6 @@ function NavigationPad({ nodes, activeNode, onMove }: { nodes: RoomNavigationNod
   </div>;
 }
 
-function TransformEditor({ object, slot, onChange }: { object: ReptileRoomObject | null; slot: ReptileRoomSlot | null; onChange: (patch: Partial<ReptileRoomObject> | Partial<ReptileRoomSlot>) => void }) {
-  const item = object ?? slot;
-  if (!item) return null;
-  const isSlot = Boolean(slot);
-  const width = isSlot ? slot!.w : object!.width;
-  const depth = isSlot ? (slot!.depth ?? slot!.h) : object!.depth;
-  const height = isSlot ? (slot!.height ?? 45) : object!.height;
-  const rotation = isSlot ? 0 : object!.rotation ?? 0;
-  const inputStyle: CSSProperties = { width: "100%", minWidth: 0, boxSizing: "border-box", height: 32, padding: "0 8px", borderRadius: 7, border: "1px solid rgba(255,255,255,.14)", background: "rgba(8,10,12,.72)", color: "#fff" };
-  const buttonStyle: CSSProperties = { minWidth: 38, height: 32, padding: "0 8px", borderRadius: 7, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.07)", color: "#fff", cursor: "pointer", fontWeight: 800 };
-  const setDimension = (field: "width" | "depth" | "height", value: number) => {
-    const next = Math.max(1, Number.isFinite(value) ? value : 1);
-    if (isSlot) {
-      if (field === "width") onChange({ w: next });
-      else if (field === "depth") onChange({ depth: next, h: next });
-      else onChange({ height: next });
-    } else onChange({ [field]: next });
-  };
-  return <div style={{ position: "absolute", right: 14, bottom: 14, zIndex: 41, width: 238, padding: 12, borderRadius: 12, background: "rgba(18,21,24,.94)", border: "1px solid rgba(255,255,255,.14)", boxShadow: "0 12px 30px rgba(0,0,0,.28)", color: "#fff", pointerEvents: "auto", backdropFilter: "blur(10px)" }} onPointerDown={(event) => event.stopPropagation()}>
-    <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: ".1em", opacity: .7, marginBottom: 8 }}>TRANSFORM · {isSlot ? "VIVARIUM" : "ASSET"}</div>
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-      {(["width", "depth", "height"] as const).map((field) => <label key={field} style={{ fontSize: 10, opacity: .72 }}>{field[0].toUpperCase() + field.slice(1)}<input type="number" min="1" step="0.5" value={Math.round(({ width, depth, height }[field]) * 100) / 100} onChange={(event) => setDimension(field, Number(event.target.value))} style={inputStyle} /></label>)}
-    </div>
-    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 9 }}>
-      <span style={{ fontSize: 11, opacity: .72, minWidth: 54 }}>Rotate</span>
-      <button type="button" aria-label="Rotate left 15 degrees" title="Rotate left 15°" style={buttonStyle} disabled={isSlot} onClick={() => onChange({ rotation: ((rotation - 15) % 360 + 360) % 360 })}>↶</button>
-      <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontVariantNumeric: "tabular-nums" }}>{Math.round(rotation)}°</div>
-      <button type="button" aria-label="Rotate right 15 degrees" title="Rotate right 15°" style={buttonStyle} disabled={isSlot} onClick={() => onChange({ rotation: (rotation + 15) % 360 })}>↷</button>
-      <button type="button" aria-label="Reset rotation" title="Reset rotation" style={{ ...buttonStyle, minWidth: 34 }} disabled={isSlot} onClick={() => onChange({ rotation: 0 })}>0°</button>
-    </div>
-    <div style={{ marginTop: 6, fontSize: 10, opacity: .5 }}>Dimensions are centimetres. Rotation uses 15° steps.</div>
-  </div>;
-}
-
 export default function Room3D({ room, className, showGrid = true, showCeiling = false, viewerMode = false, objects = [], slots = [], selectedId = null, selectedType = null, photoForSlot, onSelect = () => undefined, onMove, onTeleport }: Room3DProps) {
   const { width, depth, height } = getRoomDimensions3D(room);
   const navigationNodes = useMemo(() => buildRoomNavigationNodes(room), [room]);
@@ -94,7 +59,6 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
     } catch { return defaultNode; }
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [, setTransformVersion] = useState(0);
   useEffect(() => {
     setNavigationNode((current) => navigationNodes.find((node) => node.xCm === current.xCm && node.zCm === current.zCm) ?? defaultNode);
   }, [defaultNode, navigationNodes]);
@@ -116,21 +80,12 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
       else await host.requestFullscreen();
     } catch { /* browser may block fullscreen; normal view remains usable */ }
   };
-  const selectedObject = selectedType === "object" ? objects.find((item) => item.id === selectedId) ?? null : null;
-  const selectedSlot = selectedType === "slot" ? slots.find((item) => item.id === selectedId) ?? null : null;
-  const updateTransform = (patch: Partial<ReptileRoomObject> | Partial<ReptileRoomSlot>) => {
-    const target = selectedObject ?? selectedSlot;
-    if (!target) return;
-    Object.assign(target, patch);
-    setTransformVersion((value) => value + 1);
-  };
   const cameraPosition: [number, number, number] = [0, Math.max(0.5, height * 0.55), Math.max(0.5, depth * 0.28)];
   return <div data-rr3d-host={room.id} className={className} style={{ position: "relative", width: "100%", height: "100%", minHeight: isFullscreen ? "100vh" : 0, touchAction: viewerMode ? "none" : undefined, background: "#0c0f11" }}>
-    <Canvas shadows camera={{ position: cameraPosition, fov: 68, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onCreated={({ camera }) => { (window as Window & { __tinyTitansRoom3DCamera?: Camera }).__tinyTitansRoom3DCamera = camera; }} onPointerMissed={() => onSelect(null)}>
+    <Canvas shadows camera={{ position: cameraPosition, fov: 68, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onPointerMissed={() => onSelect(null)}>
       <RoomScene room={room} showGrid={showGrid} showCeiling={showCeiling} viewerMode={viewerMode} objects={objects} slots={slots} selectedId={selectedId} selectedType={selectedType} photoForSlot={photoForSlot} onSelect={onSelect} onMove={onMove} navigationNode={navigationNode} onTeleport={handleTeleport} />
     </Canvas>
     <button type="button" className="rr3d-fullscreen-button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? "Exit full screen" : "Open full screen"} title={isFullscreen ? "Exit full screen" : "Open full screen"}>{isFullscreen ? "⛶ Exit" : "⛶ Full screen"}</button>
     {!viewerMode && <NavigationPad nodes={navigationNodes} activeNode={navigationNode} onMove={handleTeleport} />}
-    {!viewerMode && <TransformEditor object={selectedObject} slot={selectedSlot} onChange={updateTransform} />}
   </div>;
 }
