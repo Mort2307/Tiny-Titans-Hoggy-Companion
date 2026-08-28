@@ -58,32 +58,21 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
   useEffect(() => () => woodTexture?.dispose(), [woodTexture]);
   const woodMaterial = <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />;
   return <group>
-    {/* Enclosure carcass: deliberately no opaque front box, so the door is a real opening. */}
     <mesh castShadow receiveShadow position={[0, 0, -depth / 2 + frame / 2]}><boxGeometry args={[width, height, frame]} />{woodMaterial}</mesh>
     <mesh castShadow receiveShadow position={[-width / 2 + frame / 2, 0, 0]}><boxGeometry args={[frame, height, depth]} />{woodMaterial}</mesh>
     <mesh castShadow receiveShadow position={[width / 2 - frame / 2, 0, 0]}><boxGeometry args={[frame, height, depth]} />{woodMaterial}</mesh>
     <mesh castShadow receiveShadow position={[0, height / 2 - frame / 2, 0]}><boxGeometry args={[width, frame, depth]} />{woodMaterial}</mesh>
     <mesh castShadow receiveShadow position={[0, -height / 2 + frame / 2, 0]}><boxGeometry args={[width, frame, depth]} />{woodMaterial}</mesh>
-
-    {/* Dark interior gives the enclosure depth while leaving the front completely open. */}
     <mesh position={[0, 0, -depth / 2 + frame + 0.006]}><planeGeometry args={[Math.max(0.01, width - frame * 2), Math.max(0.01, height - frame * 2)]}/><meshStandardMaterial color="#17191b" roughness={0.9} /></mesh>
-
-    {/* Actual clear glass door. */}
     <mesh position={[0, 0, frontZ + 0.006]} renderOrder={1}>
       <planeGeometry args={[glassWidth, glassHeight]} />
       <meshPhysicalMaterial color="#b8dce2" transparent opacity={0.16} roughness={0.03} metalness={0.05} transmission={0.05} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
-
-    {/* The user's photo is a face graphic ON the glass, never a replacement for the enclosure. */}
     {photoUrl && <VivariumPhoto url={photoUrl} width={glassWidth * 0.985} height={glassHeight * 0.985} z={frontZ + 0.012} />}
-
-    {/* Front door frame stays above the glass/photo. */}
     <mesh position={[0, height / 2 - frame / 2, frontZ + 0.035]}><boxGeometry args={[width, frame, frame * 1.6]} />{woodMaterial}</mesh>
     <mesh position={[0, -height / 2 + frame / 2, frontZ + 0.035]}><boxGeometry args={[width, frame, frame * 1.6]} />{woodMaterial}</mesh>
     <mesh position={[-width / 2 + frame / 2, 0, frontZ + 0.035]}><boxGeometry args={[frame, height, frame * 1.6]} />{woodMaterial}</mesh>
     <mesh position={[width / 2 - frame / 2, 0, frontZ + 0.035]}><boxGeometry args={[frame, height, frame * 1.6]} />{woodMaterial}</mesh>
-
-    {/* Door handle. */}
     <mesh position={[width * 0.39, 0, frontZ + 0.055]} castShadow><boxGeometry args={[frame * 0.48, height * 0.18, frame * 0.7]} /><meshStandardMaterial color="#4d5358" metalness={0.75} roughness={0.25} /></mesh>
     <mesh position={[width * 0.39, 0, frontZ + 0.09]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[frame * 0.55, frame * 0.16, 12, 24]} /><meshStandardMaterial color="#c4c9cc" metalness={0.8} roughness={0.2} /></mesh>
   </group>;
@@ -116,7 +105,8 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
   </mesh>;
 }
 
-export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot = false, photoUrl }: RoomObject3DProps) {
+export function RoomObject3D(props: RoomObject3DProps) {
+  const { room, object, selected, onSelect, isSlot = false, photoUrl } = props;
   const size = dimensions(object);
   const position = useMemo<[number, number, number]>(() => [cmToWorld(object.x + size.width / 2) - cmToWorld(room.width ?? 0) / 2, cmToWorld((object.z ?? 0) + size.height / 2), cmToWorld(object.y + size.depth / 2) - cmToWorld(room.depth ?? 0) / 2], [object.x, object.y, object.z, room.width, room.depth, size.width, size.depth, size.height]);
   const rotationY = rotationFor(object) * Math.PI / 180;
