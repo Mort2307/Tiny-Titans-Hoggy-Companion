@@ -1,15 +1,17 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
+import * as THREE from "three";
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
-import { cmToWorld } from "../../utils/reptileRoom3D";
-import type { Room3DSelection } from "../../types/reptileRoom3D";
+import { cmToWorld } from "./room3DScale";
+
+type Room3DMoveHandler = (dx: number, dy: number, dz: number, commit: boolean) => void;
 
 type RoomObject3DProps = {
   room: ReptileRoomWorkspace;
   object: ReptileRoomObject | ReptileRoomSlot;
   selected: boolean;
   onSelect: (id: string) => void;
-  onMove?: (id: string, delta: [number, number, number]) => void;
+  onMove?: Room3DMoveHandler;
   isSlot?: boolean;
   photoUrl?: string;
 };
@@ -47,13 +49,19 @@ function VivariumFrame({ width, depth, height, selected }: { width: number; dept
 
 function VivariumPhoto({ url, width, height, depth }: { url: string; width: number; height: number; depth: number }) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  useEffect(() => { let active = true; const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => active && setImage(img); img.onerror = () => active && setImage(null); img.src = url; return () => { active = false; }; }, [url]);
-  if (!image) return null;
-  const texture = useMemo(() => { const loader = new THREE.TextureLoader(); const tex = loader.load(url); tex.colorSpace = THREE.SRGBColorSpace; return tex; }, [url]);
+  useEffect(() => { let active = true; const img = new Image(); img.onload = () => active && setImage(img); img.onerror = () => active && setImage(null); img.src = url; return () => { active = false; }; }, [url]);
+  const texture = useMemo(() => {
+    if (!image) return null;
+    const textureLoader = new THREE.TextureLoader();
+    const tex = textureLoader.load(url);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, [image, url]);
+  if (!texture) return null;
   return <mesh position={[0, 0, depth / 2 + 0.004]}><planeGeometry args={[width * 0.96, height * 0.9]} /><meshBasicMaterial map={texture} transparent opacity={0.96} toneMapped={false} depthWrite={false} /></mesh>;
 }
 
-export function RoomObject3D({ room, object, selected, onSelect, isSlot = false, photoUrl }: RoomObject3DProps) {
+export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot = false, photoUrl }: RoomObject3DProps) {
   const size = dimensions(object);
   const position = useMemo<[number, number, number]>(() => [cmToWorld(object.x + size.width / 2) - cmToWorld(room.width ?? 0) / 2, cmToWorld((object.z ?? 0) + size.height / 2), cmToWorld(object.y + size.depth / 2) - cmToWorld(room.depth ?? 0) / 2], [object.x, object.y, object.z, room.width, room.depth, size.width, size.depth, size.height]);
   const rotationY = rotationFor(object) * Math.PI / 180;
@@ -61,6 +69,7 @@ export function RoomObject3D({ room, object, selected, onSelect, isSlot = false,
   const bodyWidth = Math.max(0.01, cmToWorld(size.width));
   const bodyDepth = Math.max(0.01, cmToWorld(size.depth));
   const select = (event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); onSelect(object.id); };
+  void onMove;
   return <group position={position} rotation={[0, rotationY, 0]} userData={{ roomObjectId: object.id, isVivarium: isSlot, magLocked: Boolean(object.stackGroupId) }}>
     <mesh onPointerDown={select} onClick={select} visible={false}><boxGeometry args={[bodyWidth * 1.08, bodyHeight * 1.08, bodyDepth * 1.08]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} /></mesh>
     {isSlot ? <><VivariumFrame width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />{photoUrl && <VivariumPhoto url={photoUrl} width={bodyWidth} height={bodyHeight} depth={bodyDepth} />}</> : <FurnitureModel kind={(object as ReptileRoomObject).kind} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />}
