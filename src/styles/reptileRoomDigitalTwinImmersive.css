@@ -16,8 +16,8 @@
 .reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection strong{display:block;margin-bottom:5px;color:#fff;font-size:.8rem}
 .reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection>div{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
 .reptile-room-digital-twin--immersive .reptile-room-digital-twin__selection button{min-height:34px;padding:5px 9px;border:1px solid rgba(255,255,255,.15);border-radius:7px;background:rgba(18,21,24,.9);color:#fff;font-size:.72rem;font-weight:800}
-/* Desktop: keep Room Controls visually separated from the Save/Grid/Ceiling action bar. */
-.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls{position:absolute;top:max(82px,calc(env(safe-area-inset-top) + 70px));right:max(12px,env(safe-area-inset-right));z-index:100;width:min(390px,calc(100vw - 24px));max-height:min(78dvh,760px);color:#fff;pointer-events:auto}
+/* Desktop: leave a generous, fixed gap below the top-right camera actions. */
+.reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls{position:absolute;top:max(124px,calc(env(safe-area-inset-top) + 112px));right:max(12px,env(safe-area-inset-right));z-index:100;width:min(390px,calc(100vw - 24px));max-height:min(78dvh,760px);color:#fff;pointer-events:auto}
 .reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls summary{width:fit-content;min-height:44px;margin-left:auto;padding:10px 14px;display:flex;align-items:center;border:1px solid rgba(255,255,255,.18);border-radius:11px;background:rgba(12,15,18,.94);color:#fff;cursor:pointer;list-style:none;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.3);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls summary::-webkit-details-marker{display:none}
 .reptile-room-digital-twin--immersive .reptile-room-digital-twin__controls[open] summary{border-color:var(--accent);border-bottom-left-radius:6px;border-bottom-right-radius:6px}
