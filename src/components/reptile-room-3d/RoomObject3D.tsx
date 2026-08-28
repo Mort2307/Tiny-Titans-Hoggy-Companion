@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
@@ -55,36 +56,12 @@ function makeWoodTexture(base: string) {
 }
 
 function VivariumPhoto({ url, width, height, z }: { url: string; width: number; height: number; z: number }) {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
-  useEffect(() => {
-    let active = true;
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    loader.load(url, (loaded) => {
-      if (!active) { loaded.dispose(); return; }
-      loaded.colorSpace = THREE.SRGBColorSpace;
-      loaded.wrapS = THREE.ClampToEdgeWrapping;
-      loaded.wrapT = THREE.ClampToEdgeWrapping;
-      loaded.minFilter = THREE.LinearFilter;
-      loaded.magFilter = THREE.LinearFilter;
-      loaded.anisotropy = 4;
-      loaded.needsUpdate = true;
-      setTexture(loaded);
-    }, undefined, () => { if (active) setTexture(null); });
-    return () => { active = false; };
-  }, [url]);
-  useEffect(() => () => texture?.dispose(), [texture]);
-  if (!texture) return null;
-  return <group userData={{ vivariumFaceImage: true }}>
-    <mesh position={[0, 0, z]} renderOrder={5}>
-      <planeGeometry args={[width, height]} />
-      <meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
-    </mesh>
-    <mesh position={[0, 0, z + 0.002]} renderOrder={6}>
-      <planeGeometry args={[width, height]} />
-      <meshBasicMaterial color="#ffffff" transparent opacity={0.055} depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
-    </mesh>
-  </group>;
+  const cssWidth = Math.max(1, width * 400);
+  const cssHeight = Math.max(1, height * 400);
+  return <Html transform distanceFactor={400} position={[0, 0, z]} style={{ width: `${cssWidth}px`, height: `${cssHeight}px`, overflow: "hidden", pointerEvents: "none", padding: 0, margin: 0 }}>
+    <img src={url} alt="" draggable={false} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", userSelect: "none", pointerEvents: "none" }} />
+    <span aria-hidden="true" style={{ position: "absolute", inset: 0, display: "block", background: "linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.025) 38%, rgba(255,255,255,0.08))", boxShadow: "inset 0 0 10px rgba(255,255,255,0.12)" }} />
+  </Html>;
 }
 
 function VivariumModel({ width, depth, height, selected, photoUrl }: { width: number; depth: number; height: number; selected: boolean; photoUrl?: string }) {
@@ -103,9 +80,10 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
     <mesh castShadow receiveShadow position={[width / 2 - frame / 2, 0, 0]}><boxGeometry args={[frame, height, depth]} />{woodMaterial}</mesh>
     <mesh castShadow receiveShadow position={[0, height / 2 - frame / 2, 0]}><boxGeometry args={[width, frame, depth]} />{woodMaterial}</mesh>
     <mesh castShadow receiveShadow position={[0, -height / 2 + frame / 2, 0]}><boxGeometry args={[width, frame, depth]} />{woodMaterial}</mesh>
+
     <mesh position={[0, 0, -depth / 2 + frame + 0.006]}><planeGeometry args={[glassWidth, glassHeight]} /><meshStandardMaterial color="#17191b" roughness={0.9} /></mesh>
 
-    {photoUrl ? <VivariumPhoto url={photoUrl} width={glassWidth * 0.985} height={glassHeight * 0.985} z={frontZ + 0.012} /> : <mesh position={[0, 0, frontZ + 0.006]} renderOrder={1}><planeGeometry args={[glassWidth, glassHeight]} /><meshPhysicalMaterial color="#b8dce2" transparent opacity={0.16} roughness={0.03} metalness={0.05} transmission={0.05} depthWrite={false} side={THREE.DoubleSide} /></mesh>}
+    {photoUrl ? <VivariumPhoto url={photoUrl} width={glassWidth * 0.985} height={glassHeight * 0.985} z={frontZ + 0.014} /> : <mesh position={[0, 0, frontZ + 0.006]} renderOrder={1}><planeGeometry args={[glassWidth, glassHeight]} /><meshPhysicalMaterial color="#b8dce2" transparent opacity={0.16} roughness={0.03} metalness={0.05} transmission={0.05} depthWrite={false} side={THREE.DoubleSide} /></mesh>}
 
     <mesh position={[0, height / 2 - frame / 2, frontZ + 0.035]}><boxGeometry args={[width, frame, frame * 1.6]} />{woodMaterial}</mesh>
     <mesh position={[0, -height / 2 + frame / 2, frontZ + 0.035]}><boxGeometry args={[width, frame, frame * 1.6]} />{woodMaterial}</mesh>
