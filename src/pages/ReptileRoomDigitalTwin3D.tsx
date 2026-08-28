@@ -43,10 +43,6 @@ function itemFromSlot(item: ReptileRoomSlot): RoomItem {
   return { type: "slot", id: item.id, x: item.x, y: item.y, z: item.z ?? 0, width: item.w, depth: item.depth ?? item.w, height: item.height ?? item.h, stackGroupId: item.stackGroupId ?? null };
 }
 
-function isFloorOnlyObject(item: ReptileRoomObject | undefined): boolean {
-  return item?.kind === "table" || item?.kind === "workbench";
-}
-
 function gapBetween(a: RoomItem, b: RoomItem): number {
   const dx = Math.max(a.x - (b.x + b.width), b.x - (a.x + a.width), 0);
   const dy = Math.max(a.y - (b.y + b.depth), b.y - (a.y + a.depth), 0);
