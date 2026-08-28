@@ -126,6 +126,11 @@ export default function ReptileRoom3D() {
     if (commit) void persistRooms(roomsRef.current);
   }, [persistRooms, room?.id]);
 
+  const nudge = useCallback((dx: number, dy: number) => {
+    if (!selected) return;
+    moveSelection(selected, dx, dy, 0, true);
+  }, [selected, moveSelection]);
+
   const toggleMagLock = () => {
     if (!room || !selectedSlot) return;
     const target = selectedSlot;
@@ -160,7 +165,7 @@ export default function ReptileRoom3D() {
   const selectedPhoto = selectedSlot ? photoFor(selectedSlot) : undefined;
   return <main className="rr3d-workspace">
     <div className="rr3d-topbar"><div><span className="rr3d-kicker">TINY TITANS</span><h1>Reptile Room</h1><p>{room.name}</p></div><div className="rr3d-actions"><button type="button" onClick={() => void persistRooms(roomsRef.current, "Room saved.")}>Save Room</button><button type="button" onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide Grid" : "Show Grid"}</button><button type="button" onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide Ceiling" : "Show Ceiling"}</button></div></div>
-    <div className="rr3d-canvas-wrap"><Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} selected={selected} onSelect={setSelected} onMove={moveSelection} /><RoomAssetPalette onAdd={addAsset} /></div>
+    <div className="rr3d-canvas-wrap"><Room3D room={room} showGrid={showGrid} showCeiling={showCeiling} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} photoForSlot={photoFor} onSelect={setSelected} onMove={moveSelection} /><RoomAssetPalette onSpawn={addAsset} /></div>
     {selectedItem && <RoomItemEditor item={selectedItem} isSlot={Boolean(selectedSlot)} snakes={snakes} photoUrl={selectedPhoto} photoBusy={photoBusy} onChange={updateSelectedItem} onDelete={deleteSelected} onDuplicate={duplicateSelected} onUploadPhoto={uploadPhoto} onMagLock={selectedSlot ? toggleMagLock : undefined} />}
     {selected && <div className="rr3d-selection-actions"><button type="button" onClick={() => nudge(-5, 0)}>←</button><button type="button" onClick={() => nudge(5, 0)}>→</button><button type="button" onClick={() => nudge(0, -5)}>↑</button><button type="button" onClick={() => nudge(0, 5)}>↓</button><button type="button" onClick={snapSelected}>Snap 5cm</button></div>}
     {notice && <div className="rr3d-notice">{notice}</div>}
