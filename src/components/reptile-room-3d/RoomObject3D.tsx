@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import * as THREE from "three";
+import { Html } from "@react-three/drei";
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { cmToWorld } from "./room3DScale";
 
@@ -56,50 +56,46 @@ function makeWoodTexture(base: string) {
 }
 
 function VivariumPhoto({ url, width, height, z }: { url: string; width: number; height: number; z: number }) {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    setTexture(null);
-
-    loader.load(
-      url,
-      (loaded) => {
-        if (!active) {
-          loaded.dispose();
-          return;
-        }
-        loaded.colorSpace = THREE.SRGBColorSpace;
-        loaded.wrapS = THREE.ClampToEdgeWrapping;
-        loaded.wrapT = THREE.ClampToEdgeWrapping;
-        loaded.minFilter = THREE.LinearFilter;
-        loaded.magFilter = THREE.LinearFilter;
-        loaded.needsUpdate = true;
-        setTexture(loaded);
-      },
-      undefined,
-      () => {
-        if (active) setTexture(null);
-      },
-    );
-
-    return () => {
-      active = false;
-    };
-  }, [url]);
-
-  useEffect(() => () => {
-    texture?.dispose();
-  }, [texture]);
-
-  if (!texture) return null;
-
-  return <mesh position={[0, 0, z]} renderOrder={2} userData={{ vivariumFaceImage: true }}>
-    <planeGeometry args={[width, height]} />
-    <meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
-  </mesh>;
+  return (
+    <Html
+      transform
+      position={[0, 0, z]}
+      distanceFactor={400}
+      center
+      zIndexRange={[20, 10]}
+      style={{
+        width: "100%",
+        height: "100%",
+        padding: 0,
+        margin: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+        background: "transparent",
+      }}
+    >
+      <img
+        src={url}
+        alt=""
+        draggable={false}
+        referrerPolicy="no-referrer"
+        style={{
+          display: "block",
+          width: `${Math.max(1, width * 100)}px`,
+          height: `${Math.max(1, height * 100)}px`,
+          maxWidth: `${Math.max(1, width * 100)}px`,
+          maxHeight: `${Math.max(1, height * 100)}px`,
+          objectFit: "cover",
+          objectPosition: "center",
+          margin: 0,
+          padding: 0,
+          border: 0,
+          opacity: 0.98,
+          pointerEvents: "none",
+          userSelect: "none",
+        }}
+      />
+    </Html>
+  );
 }
 
 function VivariumModel({ width, depth, height, selected, photoUrl }: { width: number; depth: number; height: number; selected: boolean; photoUrl?: string }) {
@@ -110,7 +106,7 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
   const glassHeight = Math.max(0.01, height - frame * 2);
   const frontZ = depth / 2;
   const woodTexture = useMemo(() => makeWoodTexture(wood), []);
-  useEffect(() => () => woodTexture?.dispose(), [woodTexture]);
+  useMemo(() => woodTexture, [woodTexture]);
   const woodMaterial = <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />;
 
   return <group>
@@ -127,7 +123,7 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
 
     <mesh position={[0, 0, frontZ + 0.006]} renderOrder={1}>
       <planeGeometry args={[glassWidth, glassHeight]} />
-      <meshPhysicalMaterial color="#b8dce2" transparent opacity={photoUrl ? 0.035 : 0.16} roughness={0.03} metalness={0.05} transmission={0.05} depthWrite={false} side={THREE.DoubleSide} />
+      <meshPhysicalMaterial color="#b8dce2" transparent opacity={photoUrl ? 0.025 : 0.16} roughness={0.03} metalness={0.05} transmission={0.05} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
 
     {photoUrl && <VivariumPhoto url={photoUrl} width={glassWidth * 0.985} height={glassHeight * 0.985} z={frontZ + 0.012} />}
