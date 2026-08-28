@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
+import * as THREE from "three";
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { cmToWorld } from "./room3DScale";
 
@@ -106,7 +107,6 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
   const glassHeight = Math.max(0.01, height - frame * 2);
   const frontZ = depth / 2;
   const woodTexture = useMemo(() => makeWoodTexture(wood), []);
-  useMemo(() => woodTexture, [woodTexture]);
   const woodMaterial = <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.58} />;
 
   return <group>
