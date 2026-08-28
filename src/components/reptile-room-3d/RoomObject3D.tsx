@@ -35,9 +35,8 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
   const frontZ = depth / 2;
   return <group>
     <mesh position={[0,0,0]} castShadow receiveShadow><boxGeometry args={[width,height,depth]}/><meshStandardMaterial color={body} roughness={0.72}/></mesh>
-    <mesh position={[0,0,frontZ + 0.002]}><boxGeometry args={[doorWidth,doorHeight,Math.max(frame * 0.28,0.008)]}/><meshStandardMaterial color="#b9d7df" transparent opacity={0.14} roughness={0.06} metalness={0.08} /></mesh>
-    {!photoUrl && <mesh position={[0,0,frontZ + 0.014]}><planeGeometry args={[doorWidth * 0.97,doorHeight * 0.97]}/><meshBasicMaterial color="#9db8c0" transparent opacity={0.075} depthWrite={false}/></mesh>}
-    {photoUrl && <VivariumPhoto url={photoUrl} width={doorWidth * 0.97} height={doorHeight * 0.97} depth={depth} />}
+    <mesh position={[0,0,frontZ + 0.004]} renderOrder={1}><planeGeometry args={[doorWidth, doorHeight]}/><meshStandardMaterial color="#a9cbd2" transparent opacity={0.16} roughness={0.04} metalness={0.08} depthWrite={false} /></mesh>
+    {photoUrl ? <VivariumPhoto url={photoUrl} width={doorWidth} height={doorHeight} z={frontZ + 0.009} /> : <mesh position={[0,0,frontZ + 0.009]} renderOrder={2}><planeGeometry args={[doorWidth, doorHeight]}/><meshBasicMaterial color="#9db8c0" transparent opacity={0.075} depthWrite={false}/></mesh>}
     <mesh position={[0,height/2-frame/2,frontZ+0.035]}><boxGeometry args={[width,frame,frame*2]}/><meshStandardMaterial color={trim} metalness={0.4}/></mesh>
     <mesh position={[0,-height/2+frame/2,frontZ+0.035]}><boxGeometry args={[width,frame,frame*2]}/><meshStandardMaterial color={trim} metalness={0.4}/></mesh>
     <mesh position={[-width/2+frame/2,0,frontZ+0.035]}><boxGeometry args={[frame,height,frame*2]}/><meshStandardMaterial color={trim} metalness={0.4}/></mesh>
@@ -51,12 +50,28 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
   </group>;
 }
 
-function VivariumPhoto({ url, width, height, depth }: { url: string; width: number; height: number; depth: number }) {
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => { let active = true; const img = new Image(); img.onload = () => active && setLoaded(true); img.onerror = () => active && setLoaded(false); img.src = url; return () => { active = false; }; }, [url]);
-  const texture = useMemo(() => { if (!loaded) return null; const tex = new THREE.TextureLoader().load(url); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.ClampToEdgeWrapping; tex.wrapT = THREE.ClampToEdgeWrapping; tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter; tex.needsUpdate = true; return tex; }, [loaded, url]);
+function VivariumPhoto({ url, width, height, z }: { url: string; width: number; height: number; z: number }) {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  useEffect(() => {
+    let active = true;
+    setTexture(null);
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+    loader.load(url, (loaded) => {
+      if (!active) { loaded.dispose(); return; }
+      loaded.colorSpace = THREE.SRGBColorSpace;
+      loaded.wrapS = THREE.ClampToEdgeWrapping;
+      loaded.wrapT = THREE.ClampToEdgeWrapping;
+      loaded.minFilter = THREE.LinearFilter;
+      loaded.magFilter = THREE.LinearFilter;
+      loaded.needsUpdate = true;
+      setTexture(loaded);
+    }, undefined, () => { if (active) setTexture(null); });
+    return () => { active = false; };
+  }, [url]);
+  useEffect(() => () => { texture?.dispose(); }, [texture]);
   if (!texture) return null;
-  return <mesh position={[0,0,depth/2+0.055]} renderOrder={20} userData={{vivariumFaceImage:true}}><planeGeometry args={[width,height]}/><meshBasicMaterial map={texture} transparent opacity={0.96} toneMapped={false} depthWrite={false} depthTest={false}/></mesh>;
+  return <mesh position={[0,0,z]} renderOrder={2} userData={{vivariumFaceImage:true}}><planeGeometry args={[width,height]}/><meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} depthTest={false}/></mesh>;
 }
 
 export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot=false, photoUrl }: RoomObject3DProps) {
