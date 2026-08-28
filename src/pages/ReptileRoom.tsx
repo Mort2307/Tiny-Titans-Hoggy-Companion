@@ -1,12 +1,7 @@
 import ReptileRoomDigitalTwin3D from "./ReptileRoomDigitalTwin3D";
+import RoomBlueprintPanel from "../components/reptile-room-3d/RoomBlueprintPanel";
 
-/**
- * Reptile Room is intentionally 3D-first.
- *
- * The Digital Twin is the primary room builder and visual source of truth.
- * The underlying room/spatial services remain shared infrastructure for
- * persistence, dimensions, placement, snapping, and future intelligence.
- */
+/** The 3D Digital Twin is the canonical room builder and visual source of truth. */
 export default function ReptileRoom() {
-  return <ReptileRoomDigitalTwin3D />;
+  return <><RoomBlueprintPanel /><ReptileRoomDigitalTwin3D /></>;
 }
