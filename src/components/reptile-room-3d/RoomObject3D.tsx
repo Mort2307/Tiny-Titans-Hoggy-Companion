@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import * as THREE from "three";
+import { Html } from "@react-three/drei";
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { cmToWorld } from "./room3DScale";
 
@@ -50,13 +50,13 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
 }
 
 function VivariumPhoto({ url, width, height, depth }: { url: string; width: number; height: number; depth: number }) {
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => { let active=true; const img=new Image(); img.onload=()=>active&&setLoaded(true); img.onerror=()=>active&&setLoaded(false); img.src=url; return ()=>{active=false;}; },[url]);
-  const texture = useMemo(() => { if(!loaded) return null; const tex=new THREE.TextureLoader().load(url); tex.colorSpace=THREE.SRGBColorSpace; tex.wrapS=THREE.ClampToEdgeWrapping; tex.wrapT=THREE.ClampToEdgeWrapping; return tex; },[loaded,url]);
-  if(!texture) return null;
-  // The face image deliberately sits beyond the physical glass thickness. This
-  // avoids it being hidden inside the transparent door or z-fighting with it.
-  return <mesh position={[0,0,depth/2+0.032]} renderOrder={2}><planeGeometry args={[width * .985,height * .985]}/><meshBasicMaterial map={texture} transparent opacity={0.96} toneMapped={false} depthWrite={false} depthTest={false} side={THREE.DoubleSide}/></mesh>;
+  // This is still a transformed 3D door-face plane, but uses the browser image
+  // decoder rather than a WebGL texture. Firebase download URLs therefore work
+  // reliably even when a storage bucket has not enabled texture CORS headers.
+  const pixelsPerWorldUnit = 100;
+  return <Html transform position={[0, 0, depth / 2 + 0.034]} scale={0.01} zIndexRange={[2, 0]} style={{ pointerEvents: "none" }}>
+    <img src={url} alt="" draggable={false} style={{ display: "block", width: `${width * pixelsPerWorldUnit * .985}px`, height: `${height * pixelsPerWorldUnit * .985}px`, objectFit: "cover", opacity: .96, pointerEvents: "none" }} />
+  </Html>;
 }
 
 export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot=false, photoUrl }: RoomObject3DProps) {
