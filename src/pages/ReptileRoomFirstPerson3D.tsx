@@ -73,6 +73,7 @@ export default function ReptileRoomFirstPerson3D() {
   const roomDepth = Math.max(100, room?.depth ?? 300);
   const roomHeight = Math.max(100, room?.height ?? 240);
   const roomVec: Vec3 = { x: roomWidth, y: roomHeight, z: roomDepth };
+  const eyeY = EYE_HEIGHT_CM;
   const cameraTarget = useMemo(() => selected ?? slots.find((slot) => slot.snakeId) ?? slots[0] ?? null, [selected, slots]);
   const cameraPose = useMemo(() => {
     if (!cameraTarget) return { x: 0, z: 0 };
