@@ -31,6 +31,9 @@ export type Snake = {
   name: string;
   species: string;
   photo: string;
+  /** Legacy aliases retained for the 3D room renderer and older persisted records. */
+  imageUrl?: string;
+  photoUrl?: string;
   sex: SnakeSex;
   nickname?: string;
   breeder?: string;
