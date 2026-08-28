@@ -97,6 +97,8 @@ export default function ReptileRoomDigitalTwin3D() {
     setLocalSlots(room?.slots ?? []);
     setSelectedId(null);
     setSelectedType(null);
+    // Only a room identity change is a reload; object changes are editor state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id]);
 
   const persistState = useCallback(async (objects: ReptileRoomObject[], slots: ReptileRoomSlot[], message?: string) => {

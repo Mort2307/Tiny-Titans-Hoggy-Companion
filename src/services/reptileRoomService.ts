@@ -26,6 +26,14 @@ export const DEFAULT_CLEARANCE: ReptileClearance = { front: 30, rear: 5, left: 5
 
 function cacheKey(uid: string) { return `${LOCAL_CACHE_PREFIX}:${uid}`; }
 function numberOr(value: unknown, fallback: number) { return typeof value === "number" && Number.isFinite(value) ? value : fallback; }
+// Firestore rejects undefined values. Optional room fields are intentionally
+// represented as undefined in TypeScript, so strip them at this one canonical
+// persistence boundary instead of making every editor special-case them.
+function firestoreSafe<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(firestoreSafe) as T;
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([, item]) => item !== undefined).map(([key, item]) => [key, firestoreSafe(item)])) as T;
+  return value;
+}
 function clampAngle(value: number) { return Math.min(180, Math.max(0, value)); }
 function normalizeClearance(value: unknown): Partial<ReptileClearance> { if (!value || typeof value !== "object") return {}; const input = value as Partial<ReptileClearance>; return Object.fromEntries((Object.keys(DEFAULT_CLEARANCE) as Array<keyof ReptileClearance>).filter((key) => typeof input[key] === "number" && Number.isFinite(input[key])).map((key) => [key, Math.max(0, input[key] as number)])); }
 function isPoint(value: unknown): value is ReptileRoomPoint { return Boolean(value && typeof value === "object" && typeof (value as ReptileRoomPoint).x === "number" && Number.isFinite((value as ReptileRoomPoint).x) && typeof (value as ReptileRoomPoint).z === "number" && Number.isFinite((value as ReptileRoomPoint).z)); }
@@ -46,6 +54,6 @@ function readCache(uid: string): ReptileRoomWorkspace[] { try { const raw = loca
 function writeCache(uid: string, rooms: ReptileRoomWorkspace[]) { try { localStorage.setItem(cacheKey(uid), JSON.stringify(rooms)); } catch { /* optional cache */ } }
 function roomsCollection(uid: string) { return collection(db, "users", uid, "reptileRooms"); }
 export async function loadReptileRooms(uid: string): Promise<ReptileRoomWorkspace[]> { const snapshot = await getDocs(roomsCollection(uid)); const remote = snapshot.docs.map((item) => normalizeRoom({ id: item.id, ...item.data() })).filter((room): room is ReptileRoomWorkspace => Boolean(room)); if (remote.length) { remote.sort((a, b) => a.createdAt.localeCompare(b.createdAt)); writeCache(uid, remote); return remote; } const cached = readCache(uid); if (cached.length) return cached; const created = defaultRoom(new Date().toISOString()); writeCache(uid, [created]); try { await setDoc(doc(roomsCollection(uid), created.id), created); } catch { /* local cache remains available */ } return [created]; }
-export async function saveReptileRooms(uid: string, rooms: ReptileRoomWorkspace[]): Promise<void> { const normalized = rooms.map((room) => ({ ...room, roomVersion: REPTILE_ROOM_VERSION, updatedAt: new Date().toISOString() })); writeCache(uid, normalized); await Promise.all(normalized.map((room) => setDoc(doc(roomsCollection(uid), room.id), room))); }
+export async function saveReptileRooms(uid: string, rooms: ReptileRoomWorkspace[]): Promise<void> { const normalized = rooms.map((room) => ({ ...room, roomVersion: REPTILE_ROOM_VERSION, updatedAt: new Date().toISOString() })); writeCache(uid, normalized); await Promise.all(normalized.map((room) => setDoc(doc(roomsCollection(uid), room.id), firestoreSafe(room)))); }
 export async function deleteReptileRoom(uid: string, roomId: string): Promise<void> { await deleteDoc(doc(roomsCollection(uid), roomId)); writeCache(uid, readCache(uid).filter((room) => room.id !== roomId)); }
 export function migrateLegacyRoom(uid: string, legacySlots: ReptileRoomSlot[]): ReptileRoomWorkspace[] { const cached = readCache(uid); if (cached.length || !legacySlots.length) return cached; const now = new Date().toISOString(); const migrated: ReptileRoomWorkspace = { ...defaultRoom(now), slots: legacySlots.map((slot) => normalizeSlot(slot)!).filter(Boolean) }; writeCache(uid, [migrated]); return [migrated]; }
