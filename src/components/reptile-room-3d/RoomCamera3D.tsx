@@ -13,15 +13,17 @@ const LOOK_SENSITIVITY = 0.0032;
 const MIN_PITCH = -Math.PI / 2.35;
 const MAX_PITCH = Math.PI / 2.35;
 const HUMAN_EYE_HEIGHT_CM = 165;
+const DEFAULT_PITCH = -0.08;
 
 export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
   const { camera, gl } = useThree();
   const { width, depth, height } = getRoomDimensions3D(room);
   const margin = Math.min(cmToWorld(ROOM_3D_CAMERA_MARGIN_CM), width / 4, depth / 4, height / 4);
   const minX = -width / 2 + margin, maxX = width / 2 - margin, minZ = -depth / 2 + margin, maxZ = depth / 2 - margin;
-  const initialTarget = useMemo(() => buildRoomNavigationNodes(room)[0] ?? { xCm: 0, zCm: 0 }, [room]);
+  const initialTarget = useMemo(() => buildRoomNavigationNodes(room).reduce((closest, node) => Math.hypot(node.xCm, node.zCm) < Math.hypot(closest.xCm, closest.zCm) ? node : closest, buildRoomNavigationNodes(room)[0] ?? { id: "nav-centre", xCm: 0, zCm: 0 }), [room]);
   const destination = target ?? initialTarget;
-  const yawRef = useRef(camera.rotation.y), pitchRef = useRef(camera.rotation.x);
+  const yawRef = useRef(0);
+  const pitchRef = useRef(DEFAULT_PITCH);
   const cameraHeight = Math.min(height - margin, Math.max(margin, cmToWorld(Math.min(HUMAN_EYE_HEIGHT_CM, (room.height ?? 240) - 10))));
 
   useEffect(() => {
