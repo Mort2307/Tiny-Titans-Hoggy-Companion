@@ -89,12 +89,15 @@ export default function ReptileRoomDigitalTwin3D() {
   }, [user]);
 
   useEffect(() => { if (!loading && !profileLoading && user) void load(); }, [loading, profileLoading, user, load]);
+  // A save creates a new room object; only reset the working editor when the
+  // user actually changes rooms, otherwise each committed field would clear
+  // the authoritative selection mid-edit.
   useEffect(() => {
     setLocalObjects(room?.objects ?? []);
     setLocalSlots(room?.slots ?? []);
     setSelectedId(null);
     setSelectedType(null);
-  }, [room]);
+  }, [room?.id]);
 
   const persistState = useCallback(async (objects: ReptileRoomObject[], slots: ReptileRoomSlot[], message?: string) => {
     if (!room) return;

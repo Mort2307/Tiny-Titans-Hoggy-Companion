@@ -56,7 +56,7 @@ function VivariumPhoto({ url, width, height, depth }: { url: string; width: numb
   if(!texture) return null;
   // The face image deliberately sits beyond the physical glass thickness. This
   // avoids it being hidden inside the transparent door or z-fighting with it.
-  return <mesh position={[0,0,depth/2+0.032]} renderOrder={2}><planeGeometry args={[width * .985,height * .985]}/><meshBasicMaterial map={texture} transparent opacity={0.96} toneMapped={false} depthWrite={false} depthTest={false}/></mesh>;
+  return <mesh position={[0,0,depth/2+0.032]} renderOrder={2}><planeGeometry args={[width * .985,height * .985]}/><meshBasicMaterial map={texture} transparent opacity={0.96} toneMapped={false} depthWrite={false} depthTest={false} side={THREE.DoubleSide}/></mesh>;
 }
 
 export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot=false, photoUrl }: RoomObject3DProps) {
