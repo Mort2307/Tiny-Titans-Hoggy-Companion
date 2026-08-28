@@ -83,9 +83,7 @@ export default function ReptileRoom3D() {
       const groupId = selectedSlot?.stackGroupId;
       const ids = new Set(room.slots.filter((slot) => groupId ? slot.stackGroupId === groupId : slot.id === selected.id).map((slot) => slot.id));
       updateRoom((current) => ({ ...current, slots: current.slots.filter((slot) => !ids.has(slot.id)) }), groupId ? "Mag-locked vivarium group deleted." : "Vivarium deleted.");
-    } else {
-      updateRoom((current) => ({ ...current, objects: (current.objects ?? []).filter((object) => object.id !== selected.id) }), "Room asset deleted.");
-    }
+    } else updateRoom((current) => ({ ...current, objects: (current.objects ?? []).filter((object) => object.id !== selected.id) }), "Room asset deleted.");
     setSelected(null);
   }, [room, selected, selectedSlot, selectedObject, updateRoom]);
 
@@ -100,16 +98,16 @@ export default function ReptileRoom3D() {
     }
   }, [room, selected, selectedSlot, selectedObject, updateRoom]);
 
-  const addAsset = useCallback((preset: Room3DAssetPreset, spawnXcm?: number, spawnYcm?: number) => {
+  const addAsset = useCallback((preset: Room3DAssetPreset) => {
     if (!room) return;
     const width = room.width ?? 0, depth = room.depth ?? 0;
-    const x = clamp(snap(spawnXcm ?? (width - preset.width) / 2), 0, Math.max(0, width - preset.width));
-    const y = clamp(snap(spawnYcm ?? (depth - preset.depth) / 2), 0, Math.max(0, depth - preset.depth));
+    const x = clamp(snap((width - preset.width) / 2), 0, Math.max(0, width - preset.width));
+    const y = clamp(snap((depth - preset.depth) / 2), 0, Math.max(0, depth - preset.depth));
     if (preset.kind === "vivarium") {
       const slot: ReptileRoomSlot = { id: nextId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0, w: preset.width, h: preset.depth, depth: preset.depth, height: preset.height, lifecycleStatus: "empty", condition: "good", availability: "available", storageLocation: "", storageNote: "", notes: "", maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, photoUrl: "" };
       updateRoom((current) => ({ ...current, slots: [...current.slots, slot] }), "Vivarium added."); setSelected({ type: "slot", id: slot.id }); return;
     }
-    const object: ReptileRoomObject = { id: nextId(preset.kind), kind: preset.kind, label: preset.label, x, y, z: 0, width: preset.width, depth: preset.depth, height: preset.height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType: "furniture" };
+    const object: ReptileRoomObject = { id: nextId(preset.kind), kind: preset.kind, label: preset.label, x, y, z: 0, width: preset.width, depth: preset.depth, height: preset.height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType: preset.assetType ?? "furniture" };
     updateRoom((current) => ({ ...current, objects: [...(current.objects ?? []), object] }), `${preset.label} added.`); setSelected({ type: "object", id: object.id });
   }, [room, updateRoom]);
 
@@ -126,10 +124,7 @@ export default function ReptileRoom3D() {
     if (commit) void persistRooms(roomsRef.current);
   }, [persistRooms, room?.id]);
 
-  const nudge = useCallback((dx: number, dy: number) => {
-    if (!selected) return;
-    moveSelection(selected, dx, dy, 0, true);
-  }, [selected, moveSelection]);
+  const nudge = useCallback((dx: number, dy: number) => { if (selected) moveSelection(selected, dx, dy, 0, true); }, [selected, moveSelection]);
 
   const toggleMagLock = () => {
     if (!room || !selectedSlot) return;
