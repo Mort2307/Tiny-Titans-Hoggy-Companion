@@ -33,7 +33,7 @@ function VivariumModel({ width, depth, height, selected, photoUrl }: { width: nu
   const doorHeight = Math.max(0.01, height - frame * 4);
   return <group>
     <mesh position={[0,0,0]} castShadow receiveShadow><boxGeometry args={[width, height, depth]}/><meshStandardMaterial color="#252a2e" roughness={0.72}/></mesh>
-    <mesh position={[0,0,depth/2+0.002]}><boxGeometry args={[doorWidth,doorHeight,frame]}/><meshStandardMaterial color="#b9d7df" transparent opacity={0.1} roughness={0.06} metalness={0.08}/></mesh>
+    <mesh position={[0,0,depth/2+0.002]} renderOrder={1}><boxGeometry args={[doorWidth,doorHeight,frame]}/><meshStandardMaterial color="#b9d7df" transparent opacity={0.1} roughness={0.06} metalness={0.08} depthWrite={false}/></mesh>
     {!photoUrl && <mesh position={[0,0,depth/2+0.014]}><planeGeometry args={[doorWidth*0.82,doorHeight*0.82]}/><meshBasicMaterial color="#9db8c0" transparent opacity={0.055} depthWrite={false}/></mesh>}
     {photoUrl && <VivariumPhoto url={photoUrl} width={doorWidth} height={doorHeight} depth={depth}/>} 
     <mesh position={[0,height/2-frame/2,depth/2+0.035]}><boxGeometry args={[width,frame,frame*2]}/><meshStandardMaterial color={trim} metalness={0.4}/></mesh>
@@ -54,7 +54,9 @@ function VivariumPhoto({ url, width, height, depth }: { url: string; width: numb
   useEffect(() => { let active=true; const img=new Image(); img.onload=()=>active&&setLoaded(true); img.onerror=()=>active&&setLoaded(false); img.src=url; return ()=>{active=false;}; },[url]);
   const texture = useMemo(() => { if(!loaded) return null; const tex=new THREE.TextureLoader().load(url); tex.colorSpace=THREE.SRGBColorSpace; tex.wrapS=THREE.ClampToEdgeWrapping; tex.wrapT=THREE.ClampToEdgeWrapping; return tex; },[loaded,url]);
   if(!texture) return null;
-  return <mesh position={[0,0,depth/2+0.021]}><planeGeometry args={[width,height]}/><meshBasicMaterial map={texture} transparent opacity={0.92} toneMapped={false} depthWrite={false}/></mesh>;
+  // The face image deliberately sits beyond the physical glass thickness. This
+  // avoids it being hidden inside the transparent door or z-fighting with it.
+  return <mesh position={[0,0,depth/2+0.032]} renderOrder={2}><planeGeometry args={[width * .985,height * .985]}/><meshBasicMaterial map={texture} transparent opacity={0.96} toneMapped={false} depthWrite={false} depthTest={false}/></mesh>;
 }
 
 export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot=false, photoUrl }: RoomObject3DProps) {

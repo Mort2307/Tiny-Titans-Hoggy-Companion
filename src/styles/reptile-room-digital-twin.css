@@ -307,6 +307,26 @@
 .reptile-room-digital-twin__photo-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .reptile-room-digital-twin__delete { border-color: #a94f4f !important; background: #481f23 !important; color: #ffe9e9 !important; }
 
+.reptile-room-digital-twin__face-preview {
+  display: block;
+  width: 100%;
+  max-height: 110px;
+  margin-top: 8px;
+  object-fit: cover;
+  border: 1px solid var(--rrdt-line);
+  border-radius: 8px;
+  background: #0a0e10;
+}
+
+.reptile-room-digital-twin__issue {
+  padding: 7px 8px;
+  border-radius: 7px;
+  font-weight: 700;
+}
+
+.reptile-room-digital-twin__issue--error { border: 1px solid #9e4c4c; background: #3a2021; color: #ffd9d9; }
+.reptile-room-digital-twin__issue--warning { border: 1px solid #8f7530; background: #332b17; color: #f8e7ae; }
+
 .reptile-room-digital-twin__mobile-sheet { display: none; }
 
 .reptile-room-digital-twin__snake-photo {
