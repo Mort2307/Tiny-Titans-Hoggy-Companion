@@ -38,4 +38,4 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
   return null;
 }
 
-export function getCameraForwardSpawn(camera: { position: Vector3; getWorldDirection: (target: Vector3) => Vector3 }, distanceCm: number, room: ReptileRoomWorkspace) { const direction = camera.getWorldDirection(new Vector3()); const distance = cmToWorld(distanceCm); const xWorld = camera.position.x + direction.x * distance; const zWorld = camera.position.z + direction.z * distance; const width = room.width ?? 0; const depth = room.depth ?? 0; return { xCm: xWorld * 100 + width / 2, yCm: zWorld * 100 + depth / 2 }; }
+export function getCameraForwardSpawn(camera: { position: Vector3; getWorldDirection: (target: Vector3) => Vector3 }, distanceCm: number, room: ReptileRoomWorkspace) { const direction = camera.getWorldDirection(new Vector3()); const distance = cmToWorld(distanceCm); const xWorld = camera.position.x + direction.x * distance; const zWorld = camera.position.z + direction.z * distance; const width = room.width ?? 0; const depth = room.depth ?? 0; const xCm = xWorld * 100 + width / 2; const zCm = zWorld * 100 + depth / 2; return { xCm, yCm: zCm, zCm }; }
