@@ -7,6 +7,8 @@ import { cmToWorld } from "./room3DScale";
 type Room3DMoveHandler = (dx: number, dy: number, dz: number, commit: boolean) => void;
 type RoomObject3DProps = { room: ReptileRoomWorkspace; object: ReptileRoomObject | ReptileRoomSlot; selected: boolean; onSelect: (id: string) => void; onMove?: Room3DMoveHandler; isSlot?: boolean; photoUrl?: string };
 
+type SlotWithRotation = ReptileRoomSlot & { rotation?: number };
+
 const woodColour = (kind: string) => kind === "oak-table" || kind === "table" ? "#8b5a2b" : kind === "teak-corner-unit" || kind === "cabinet" ? "#a66a3f" : "#5a3a24";
 
 function dimensions(object: ReptileRoomObject | ReptileRoomSlot) {
@@ -14,7 +16,9 @@ function dimensions(object: ReptileRoomObject | ReptileRoomSlot) {
   return { width: object.w, depth: object.depth ?? object.h, height: object.height ?? 40 };
 }
 
-function rotationFor(object: ReptileRoomObject | ReptileRoomSlot) { return "rotation" in object ? object.rotation ?? 0 : 0; }
+function rotationFor(object: ReptileRoomObject | ReptileRoomSlot) {
+  return "width" in object ? object.rotation ?? 0 : (object as SlotWithRotation).rotation ?? 0;
+}
 
 function FurnitureModel({ kind, width, depth, height, selected }: { kind: string; width: number; depth: number; height: number; selected: boolean }) {
   const colour = woodColour(kind); const accent = selected ? "#d89a32" : "#5b6570";
@@ -58,7 +62,6 @@ function VivariumPhoto({ url, width, height, depth }: { url: string; width: numb
 }
 
 export function RoomObject3D({ room, object, selected, onSelect, onMove, isSlot=false, photoUrl }: RoomObject3DProps) {
-  void onMove;
   const size=dimensions(object);
   const position=useMemo<[number,number,number]>(()=>[cmToWorld(object.x+size.width/2)-cmToWorld(room.width??0)/2,cmToWorld((object.z??0)+size.height/2),cmToWorld(object.y+size.depth/2)-cmToWorld(room.depth??0)/2],[object.x,object.y,object.z,room.width,room.depth,size.width,size.depth,size.height]);
   const rotationY=rotationFor(object)*Math.PI/180; const bodyHeight=Math.max(.01,cmToWorld(size.height)); const bodyWidth=Math.max(.01,cmToWorld(size.width)); const bodyDepth=Math.max(.01,cmToWorld(size.depth));
