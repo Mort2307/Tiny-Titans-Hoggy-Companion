@@ -35,7 +35,7 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
 }
 function VivariumModel({ width, depth, height, selected, photoUrl }: { width: number; depth: number; height: number; selected: boolean; photoUrl?: string }) {
   const frame = Math.max(Math.min(width, height) * 0.046, 0.026); const wood = woodPalette.dark; const trim = selected ? "#e2ad4f" : wood; const glassWidth = Math.max(0.01, width - frame * 2); const glassHeight = Math.max(0.01, height - frame * 2); const frontZ = depth / 2;
-  const woodTexture = useMemo(() => makeWoodTexture(wood), []); useEffect(() => () => woodTexture?.dispose(), [woodTexture]); const frameMaterial = <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.62} metalness={0.02} />;
+  const woodTexture = useMemo(() => makeWoodTexture(wood), [wood]); useEffect(() => () => woodTexture?.dispose(), [woodTexture]); const frameMaterial = <meshStandardMaterial color={trim} map={woodTexture ?? undefined} roughness={0.62} metalness={0.02} />;
   return <group>
     <mesh castShadow receiveShadow position={[0, 0, -depth / 2 + frame / 2]}><boxGeometry args={[width, height, frame]} />{frameMaterial}</mesh>
     <mesh castShadow receiveShadow position={[-width / 2 + frame / 2, 0, 0]}><boxGeometry args={[frame, height, depth]} />{frameMaterial}</mesh>
