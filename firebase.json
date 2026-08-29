@@ -1,8 +1,7 @@
 {
   "functions": {
     "source": "functions",
-    "runtime": "nodejs20",
-    "region": "europe-west2"
+    "runtime": "nodejs20"
   },
   "hosting": {
     "public": "dist",
