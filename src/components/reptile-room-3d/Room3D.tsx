@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 import type { ReptileRoomObject, ReptileRoomSlot } from "../../services/reptileRoomService";
+import { saveReptileRooms } from "../../services/reptileRoomService";
 import { uploadReptileRoomVivariumPhoto } from "../../services/reptileRoomPhotoService";
 import { useAuth } from "../../context/useAuth";
 import type { Room3DProps, Room3DSelection } from "../../types/reptileRoom3D";
@@ -91,6 +92,7 @@ function VivariumQuickLogDock({ slot }: { slot: ReptileRoomSlot }) {
 }
 
 export default function Room3D({ room, className, showGrid = true, showCeiling = false, viewerMode = false, objects = [], slots = [], selectedId = null, selectedType = null, photoForSlot, onSelect = () => undefined, onMove, onTransformChange, onTeleport }: Room3DProps) {
+  const { user } = useAuth();
   const { width, depth, height } = getRoomDimensions3D(room);
   const navigationNodes = useMemo(() => buildRoomNavigationNodes(room), [room]);
   const defaultNode = useMemo(() => !navigationNodes.length ? { id: "nav-centre", xCm: 0, zCm: 0 } : navigationNodes.reduce((closest, node) => Math.hypot(node.xCm, node.zCm) < Math.hypot(closest.xCm, closest.zCm) ? node : closest, navigationNodes[0]), [navigationNodes]);
@@ -98,6 +100,8 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
   const [navigationNode, setNavigationNode] = useState<RoomNavigationNode>(() => { try { const saved = JSON.parse(localStorage.getItem(storageKey) ?? "null") as { xCm?: number; zCm?: number } | null; return navigationNodes.find((node) => node.xCm === saved?.xCm && node.zCm === saved?.zCm) ?? defaultNode; } catch { return defaultNode; } });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [photoOverrides, setPhotoOverrides] = useState<Record<string, string>>({});
+  const [manualSaving, setManualSaving] = useState(false);
+  const [manualSaveMessage, setManualSaveMessage] = useState("");
   const selectedVivarium = !viewerMode && selectedType === "slot" ? slots.find((slot) => slot.id === selectedId) ?? null : null;
   useEffect(() => { setNavigationNode((current) => navigationNodes.find((node) => node.xCm === current.xCm && node.zCm === current.zCm) ?? defaultNode); }, [defaultNode, navigationNodes]);
   useEffect(() => { const onFullscreenChange = () => setIsFullscreen(document.fullscreenElement !== null); document.addEventListener("fullscreenchange", onFullscreenChange); return () => document.removeEventListener("fullscreenchange", onFullscreenChange); }, []);
@@ -105,11 +109,18 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
   const handleTeleport = (node: RoomNavigationNode) => { setNavigationNode(node); try { localStorage.setItem(storageKey, JSON.stringify({ xCm: node.xCm, zCm: node.zCm })); } catch { /* optional */ } onTeleport?.(node); };
   const handlePhotoUrl = (slotId: string, persistedUrl: string) => { setPhotoOverrides((current) => { if (!persistedUrl) { const next = { ...current }; delete next[slotId]; return next; } return { ...current, [slotId]: persistedUrl }; }); };
   const effectivePhotoForSlot = (slot: ReptileRoomSlot) => photoOverrides[slot.id] || photoForSlot?.(slot) || slot.photoUrl || undefined;
+  const handleManualSave = async () => {
+    if (!user) return;
+    setManualSaving(true); setManualSaveMessage("");
+    try { await saveReptileRooms(user.uid, [room]); setManualSaveMessage("Room saved to cloud."); }
+    catch (error) { setManualSaveMessage(error instanceof Error ? error.message : "Room could not be saved to cloud."); }
+    finally { setManualSaving(false); }
+  };
   const toggleFullscreen = async () => { const host = document.querySelector<HTMLElement>(`[data-rr3d-host="${CSS.escape(room.id)}"]`); if (!host) return; try { if (document.fullscreenElement) await document.exitFullscreen(); else await host.requestFullscreen(); } catch { /* normal view remains usable */ } };
   const cameraPosition: [number, number, number] = [0, Math.max(0.5, height * 0.55), Math.max(0.5, depth * 0.28)];
   const canvasReady = ({ camera }: { camera: import("three").Camera }) => { const host = window as Room3DWindow; host.__tinyTitansRoom3DCamera = camera; window.dispatchEvent(new CustomEvent("tiny-titans:room3d-camera-ready")); };
   return <div data-rr3d-host={room.id} className={className} style={{ position: "relative", width: "100%", height: "100%", minHeight: isFullscreen ? "100vh" : 0, touchAction: viewerMode ? "none" : undefined, background: "#0a0d0f" }}>
     <div className="rr3d-stage"><Canvas shadows camera={{ position: cameraPosition, fov: 66, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onCreated={canvasReady} onPointerMissed={() => onSelect(null)}><RoomScene room={room} showGrid={showGrid} showCeiling={showCeiling} viewerMode={viewerMode} objects={objects} slots={slots} selectedId={selectedId} selectedType={selectedType} photoForSlot={effectivePhotoForSlot} onSelect={onSelect} onMove={onMove} navigationNode={navigationNode} onTeleport={handleTeleport} /></Canvas><button type="button" className="rr3d-fullscreen-button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? "Exit full screen" : "Open full screen"} title={isFullscreen ? "Exit full screen" : "Open full screen"}>{isFullscreen ? "⛶ Exit" : "⛶ Full screen"}</button>{!viewerMode && <NavigationPad nodes={navigationNodes} activeNode={navigationNode} onMove={handleTeleport} />}</div>
-    {!viewerMode && selectedVivarium && <aside className="rr3d-edge-tools" aria-label="Selected vivarium tools"><VivariumQuickLogDock slot={selectedVivarium} /><VivariumPhotoDock room={room} slot={{ ...selectedVivarium, photoUrl: photoOverrides[selectedVivarium.id] ?? selectedVivarium.photoUrl }} onPhotoUrl={handlePhotoUrl} onPersistPhoto={(slotId, url) => onTransformChange?.({ type: "slot", id: slotId }, { photoUrl: url })} /></aside>}
+    {!viewerMode && <aside className="rr3d-edge-tools" aria-label="Room controls"><section className="rr3d-room-save-card"><div><div className="rr3d-control-kicker">ROOM STATE</div><strong>Digital twin</strong><small>{manualSaveMessage || "Changes auto-save as you work."}</small></div><button type="button" className="rr3d-save-room-button" onClick={() => void handleManualSave()} disabled={manualSaving}>{manualSaving ? "Saving…" : "Save Room"}</button></section>{selectedVivarium && <VivariumQuickLogDock slot={selectedVivarium} />}{selectedVivarium && <VivariumPhotoDock room={room} slot={{ ...selectedVivarium, photoUrl: photoOverrides[selectedVivarium.id] ?? selectedVivarium.photoUrl }} onPhotoUrl={handlePhotoUrl} onPersistPhoto={(slotId, url) => onTransformChange?.({ type: "slot", id: slotId }, { photoUrl: url })} />}</aside>}
   </div>;
 }
