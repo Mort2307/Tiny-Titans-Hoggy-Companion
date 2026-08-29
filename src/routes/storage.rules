@@ -2,11 +2,17 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function creatorRecord() { return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data; }
+    function isCreator() { return signedIn() && (request.auth.token.admin == true || request.auth.token.creator == true || creatorRecord().role == "admin" || creatorRecord().role == "creator" || creatorRecord().profileType == "creator"); }
+    function canAccessUserFiles(userId) { return signedIn() && (request.auth.uid == userId || (creatorRecord().get('familyId', '') != '' && creatorRecord().get('familyId', '') == firestore.get(/databases/(default)/documents/users/$(userId)).data.get('familyId', '') && firestore.get(/databases/(default)/documents/families/$(creatorRecord().get('familyId', ''))).data.memberUids.hasAll([request.auth.uid, userId])) || isCreator()); }
 
-    match /users/{userId}/snakes/{snakeId}/{fileName} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId;
-    }
-
+    match /users/{userId}/snakes/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /snakePhotos/{userId}/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /users/{userId}/reptileRooms/{roomId}/vivariums/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /users/{userId}/reptileRooms/{roomId}/assets/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /morph-submissions/{userId}/{submissionId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
+    match /issueEvidence/{userId}/{reportId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
+    match /morphLibrary/{morphId}/community/{fileName} { allow read: if signedIn(); allow write: if isCreator(); }
   }
 }
