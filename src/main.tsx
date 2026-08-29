@@ -14,6 +14,7 @@ import "./styles/tiny-titans-professional-hardening.css";
 import "./styles/tiny-titans-final-polish.css";
 import "./styles/tiny-titans-family-professional.css";
 import "./styles/tiny-titans-page-consistency.css";
+import "./styles/tiny-titans-premium-overhaul.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";

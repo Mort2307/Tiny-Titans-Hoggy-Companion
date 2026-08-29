@@ -1,0 +1,796 @@
+/*
+ * Tiny Titans — Premium App-Wide Visual Overhaul
+ *
+ * Visual-only layer. Loaded last so legacy and feature-specific styles remain
+ * intact while every route receives the same calm, professional visual system.
+ * No application logic, intelligence rules, data contracts, or feature flags
+ * are defined here.
+ */
+
+:root {
+  /* Refined brand palette — slightly quieter, still unmistakably Tiny Titans. */
+  --tt-ui-bg: #0c0a0f;
+  --tt-ui-surface: #131017;
+  --tt-ui-surface-raised: #19151e;
+  --tt-ui-surface-soft: #201b26;
+  --tt-ui-surface-elevated: #27212f;
+  --tt-ui-border: rgba(255,255,255,.075);
+  --tt-ui-border-strong: rgba(255,255,255,.125);
+  --tt-ui-text: #f6f3f8;
+  --tt-ui-text-soft: #cbc3d1;
+  --tt-ui-text-muted: #938a9e;
+  --tt-ui-purple: #8c69ab;
+  --tt-ui-purple-strong: #b58bcf;
+  --tt-ui-blue: #69b6d4;
+  --tt-ui-gold: #e2b66d;
+  --tt-ui-success: #58c59d;
+  --tt-ui-warning: #dda861;
+  --tt-ui-danger: #e77676;
+  --tt-ui-info: #70b9d8;
+  --tt-ui-radius-sm: 9px;
+  --tt-ui-radius-md: 13px;
+  --tt-ui-radius-lg: 17px;
+  --tt-ui-radius-xl: 22px;
+  --tt-ui-shadow: 0 18px 50px rgba(0,0,0,.24);
+  --tt-ui-shadow-soft: 0 10px 28px rgba(0,0,0,.16);
+  --tt-ui-focus: 0 0 0 3px rgba(226,182,109,.16);
+  --tt-ui-content-max: 1460px;
+
+  /* Quiet the original v2 design tokens without removing semantic meaning. */
+  --tt-purple-950: #0c0a0f;
+  --tt-purple-900: #15111a;
+  --tt-purple-850: #1b1621;
+  --tt-purple-800: #241d2b;
+  --tt-purple-700: #2e2437;
+  --tt-purple-600: #483757;
+  --tt-purple-500: #654b7d;
+  --tt-purple-400: #80619c;
+  --tt-purple-300: #a083bc;
+
+  --tt-gold-700: #a87533;
+  --tt-gold-600: #c58e43;
+  --tt-gold-500: #e2b66d;
+  --tt-gold-400: #edc580;
+  --tt-gold-300: #f4d7a4;
+
+  --tt-blue-700: #3e829f;
+  --tt-blue-600: #4d99b9;
+  --tt-blue-500: #69b6d4;
+  --tt-blue-400: #86c8e1;
+  --tt-blue-300: #b3deed;
+
+  --tt-teal-700: #176b66;
+  --tt-teal-600: #278781;
+  --tt-teal-500: #49a8a0;
+  --tt-teal-400: #69c2b9;
+  --tt-teal-300: #9bdcd7;
+
+  --tt-bg: var(--tt-purple-950);
+  --tt-bg-elevated: var(--tt-purple-900);
+  --tt-surface: var(--tt-purple-800);
+  --tt-surface-2: var(--tt-purple-700);
+  --tt-surface-3: var(--tt-purple-600);
+  --tt-brand: var(--tt-purple-500);
+  --tt-brand-strong: var(--tt-purple-400);
+  --tt-action: var(--tt-gold-500);
+  --tt-action-strong: var(--tt-gold-400);
+  --tt-intelligence: var(--tt-blue-500);
+  --tt-intelligence-strong: var(--tt-blue-400);
+  --tt-data: var(--tt-teal-500);
+  --tt-data-strong: var(--tt-teal-400);
+  --tt-text: var(--tt-ui-text);
+  --tt-text-strong: #fff;
+  --tt-text-soft: var(--tt-ui-text-soft);
+  --tt-muted: var(--tt-ui-text-muted);
+  --tt-muted-strong: #b9afc0;
+  --tt-success: var(--tt-ui-success);
+  --tt-warning: var(--tt-ui-warning);
+  --tt-danger: var(--tt-ui-danger);
+  --tt-info: var(--tt-ui-info);
+  --tt-border: rgba(140,105,171,.26);
+  --tt-border-strong: rgba(181,139,207,.44);
+  --tt-border-action: rgba(226,182,109,.48);
+  --tt-border-intelligence: rgba(105,182,212,.40);
+  --tt-border-data: rgba(73,168,160,.38);
+  --tt-surface-glass: rgba(20,16,25,.82);
+  --tt-surface-card: rgba(36,29,43,.92);
+  --tt-surface-hover: rgba(46,36,55,.96);
+  --tt-shadow-soft: 0 10px 30px rgba(0,0,0,.18);
+  --tt-shadow: 0 18px 50px rgba(0,0,0,.28);
+  --tt-shadow-purple: 0 0 28px rgba(128,97,156,.12);
+  --tt-shadow-gold: 0 0 24px rgba(226,182,109,.10);
+  --tt-shadow-blue: 0 0 24px rgba(105,182,212,.10);
+  --tt-shadow-teal: 0 0 24px rgba(73,168,160,.09);
+  --tt-content: 1460px;
+}
+
+html {
+  background: var(--tt-ui-bg);
+  color-scheme: dark;
+  scrollbar-color: rgba(181,139,207,.28) transparent;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 5% -12%, rgba(140,105,171,.15), transparent 34rem),
+    radial-gradient(circle at 96% 0%, rgba(105,182,212,.055), transparent 30rem),
+    radial-gradient(circle at 50% 118%, rgba(73,168,160,.04), transparent 34rem),
+    linear-gradient(180deg, #0c0a0f 0%, #0d0b10 100%);
+  color: var(--tt-ui-text);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(181,139,207,.28);
+  color: #fff;
+}
+
+#root,
+.app-shell,
+.app-main {
+  min-height: 100vh;
+}
+
+.app-main {
+  min-width: 0;
+  background: transparent;
+}
+
+.app-content {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--tt-ui-content-max);
+  margin-inline: auto;
+  padding: clamp(18px,2.6vw,30px) clamp(14px,2.8vw,32px) 70px;
+}
+
+.tt-page-frame {
+  min-width: 0;
+  isolation: isolate;
+}
+
+/* ================================================================
+   SHELL + SIDEBAR
+   ================================================================ */
+
+.app-navigation {
+  width: 252px !important;
+  background:
+    linear-gradient(180deg, rgba(26,20,31,.98), rgba(14,11,17,.99)) !important;
+  border-right: 1px solid rgba(181,139,207,.14) !important;
+  box-shadow: 16px 0 42px rgba(0,0,0,.20) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.app-navigation-inner {
+  padding: 18px 12px 26px !important;
+}
+
+.app-navigation-section + .app-navigation-section {
+  margin-top: 16px !important;
+  padding-top: 15px !important;
+  border-top: 1px solid rgba(255,255,255,.055) !important;
+}
+
+.app-navigation-section-label {
+  margin: 0 10px 7px !important;
+  color: rgba(203,195,209,.48) !important;
+  font-size: .62rem !important;
+  font-weight: 850 !important;
+  letter-spacing: .16em !important;
+}
+
+.app-navigation-list {
+  gap: 3px !important;
+}
+
+.app-navigation-link {
+  min-height: 44px !important;
+  padding: 8px 11px !important;
+  border: 1px solid transparent !important;
+  border-radius: 11px !important;
+  background: transparent !important;
+  color: rgba(246,243,248,.72) !important;
+  font-size: .82rem !important;
+  font-weight: 680 !important;
+  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease !important;
+}
+
+.app-navigation-icon {
+  width: 26px !important;
+  color: rgba(203,195,209,.52) !important;
+  font-size: 1rem !important;
+}
+
+.app-navigation-link:hover {
+  transform: translateX(2px);
+  background: rgba(181,139,207,.065) !important;
+  border-color: rgba(181,139,207,.12) !important;
+  color: #fff !important;
+}
+
+.app-navigation-link:hover .app-navigation-icon {
+  color: var(--tt-ui-purple-strong) !important;
+}
+
+.app-navigation-link.active {
+  transform: none;
+  background:
+    linear-gradient(90deg, rgba(140,105,171,.24), rgba(105,182,212,.045)) !important;
+  border-color: rgba(181,139,207,.25) !important;
+  box-shadow:
+    inset 3px 0 0 var(--tt-ui-purple-strong),
+    0 8px 22px rgba(0,0,0,.10) !important;
+  color: #fff !important;
+}
+
+.app-navigation-link.active .app-navigation-icon {
+  color: var(--tt-ui-gold) !important;
+}
+
+.community-unread-dot {
+  background: var(--tt-ui-gold) !important;
+  box-shadow: 0 0 0 3px rgba(226,182,109,.10) !important;
+}
+
+@media (min-width: 801px) {
+  .app-shell .app-header,
+  .app-shell .app-main {
+    margin-left: 252px !important;
+    width: calc(100% - 252px) !important;
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 801px) {
+  .app-navigation { width: 224px !important; }
+  .app-shell .app-header,
+  .app-shell .app-main {
+    margin-left: 224px !important;
+    width: calc(100% - 224px) !important;
+  }
+}
+
+.app-header {
+  min-height: 68px;
+  border-bottom: 1px solid rgba(181,139,207,.12) !important;
+  background: rgba(13,10,16,.86) !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.app-header h1,
+.app-brand-name {
+  color: #fff !important;
+  letter-spacing: -.02em;
+}
+
+.tiny-titans-logo {
+  border: 1px solid rgba(181,139,207,.18);
+  box-shadow: 0 7px 18px rgba(0,0,0,.24) !important;
+}
+
+/* ================================================================
+   TYPOGRAPHY + PAGE RHYTHM
+   ================================================================ */
+
+.tt-page-frame :where(h1,h2,h3,h4,h5,h6) {
+  color: #fff;
+  letter-spacing: -.024em;
+}
+
+.tt-page-frame :where(h1) {
+  line-height: 1.1;
+}
+
+.tt-page-frame :where(h2,h3,h4) {
+  line-height: 1.2;
+}
+
+.tt-page-frame :where(p) {
+  color: var(--tt-ui-text-soft);
+}
+
+.tt-page-frame :where(.page-title,.page-heading,.page-header h1,.section-header h1,.content-header h1) {
+  margin: 0;
+  font-size: clamp(1.55rem,3vw,2.2rem);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+}
+
+.tt-page-frame :where(.page-subtitle,.page-header p,.section-header p,.content-header p) {
+  color: var(--tt-ui-text-muted);
+  line-height: 1.58;
+}
+
+.tt-page-frame :where(.page-header,.section-header,.content-header) {
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.tt-page-frame :where(.page-header,.section-header,.content-header) > :first-child {
+  min-width: 0;
+}
+
+/* Small semantic labels used throughout feature pages. */
+.tt-page-frame :where(.eyebrow,.kicker,.section-kicker,.tt-eyebrow,.tt-kicker) {
+  color: var(--tt-ui-purple-strong);
+  font-size: .68rem;
+  font-weight: 850;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+/* ================================================================
+   UNIVERSAL SURFACES
+   ================================================================ */
+
+.tt-page-frame :where(
+  .card,.panel,.section,.widget,.dashboard-card,.tt-card,.tracker-card,
+  .snake-card,.snake-tile,.morph-card,.weight-history-card,.weight-records-card,
+  .snake-profile-card,.snake-form,.form-section,.form-card,.content-card,
+  .section-card,.data-card,.panel-card,.info-card,.nav-card,.welcome-card,
+  .insight-card,.feature-card,.stat-card,.setting-card,.notice-card
+) {
+  min-width: 0;
+  border: 1px solid var(--tt-ui-border) !important;
+  border-radius: var(--tt-ui-radius-lg) !important;
+  background:
+    linear-gradient(145deg, rgba(39,31,47,.74), rgba(18,14,23,.96)) !important;
+  box-shadow: var(--tt-ui-shadow-soft) !important;
+}
+
+.tt-page-frame :where(
+  .card:hover,.panel:hover,.dashboard-card:hover,.tt-card:hover,
+  .tracker-card:hover,.snake-card:hover,.snake-tile:hover,.morph-card:hover,
+  .snake-profile-card:hover,.feature-card:hover,.setting-card:hover
+) {
+  border-color: rgba(181,139,207,.22) !important;
+}
+
+.tt-page-frame :where(.section-card,.content-card,.form-card,.data-card,.tracker-card,.dashboard-card,.panel-card,.info-card) {
+  padding: clamp(16px,2.2vw,23px);
+}
+
+.tt-page-frame :where(.card-title,.section-title,.panel-title,.widget-title) {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 820;
+  letter-spacing: -.012em;
+}
+
+.tt-page-frame :where(.card-description,.section-description,.helper-text,.form-help) {
+  color: var(--tt-ui-text-muted);
+  line-height: 1.54;
+}
+
+/* Reusable split/stack patterns already used by many pages. */
+.tt-page-frame :where(.tt-stack,.stack) {
+  gap: 16px;
+}
+
+.tt-page-frame :where(.tt-section,.page-section) {
+  margin-block: 26px;
+}
+
+.tt-page-frame :where(.tt-section:first-child,.page-section:first-child) {
+  margin-top: 0;
+}
+
+.tt-page-frame :where(.tt-stat) {
+  border: 1px solid var(--tt-ui-border) !important;
+  border-radius: var(--tt-ui-radius-md) !important;
+  background: rgba(25,21,30,.92) !important;
+}
+
+/* ================================================================
+   INTELLIGENCE / STATUS LANGUAGE
+   ================================================================ */
+
+.tt-page-frame :where(.tt-insight,.intelligence-card,.intelligence-panel,.tt-intelligence-panel) {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(105,182,212,.28) !important;
+  border-radius: var(--tt-ui-radius-lg) !important;
+  background:
+    linear-gradient(135deg, rgba(105,182,212,.075), rgba(39,31,47,.62)) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,.15) !important;
+}
+
+.tt-page-frame :where(.tt-insight,.intelligence-card,.intelligence-panel,.tt-intelligence-panel)::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg,var(--tt-ui-blue),var(--tt-ui-purple));
+}
+
+.tt-page-frame :where(.warning,.notice-warning,.tt-notice-warning,.alert-warning) {
+  border-color: rgba(226,182,109,.30) !important;
+  background: rgba(226,182,109,.055) !important;
+}
+
+.tt-page-frame :where(.success,.notice-success,.tt-notice-success,.alert-success) {
+  border-color: rgba(88,197,157,.28) !important;
+  background: rgba(88,197,157,.055) !important;
+}
+
+.tt-page-frame :where(.danger,.notice-danger,.tt-notice-danger,.alert-danger,.error) {
+  border-color: rgba(231,118,118,.28) !important;
+  background: rgba(231,118,118,.055) !important;
+}
+
+.tt-page-frame :where(.info,.notice-info,.tt-notice-info,.alert-info) {
+  border-color: rgba(112,185,216,.26) !important;
+  background: rgba(112,185,216,.05) !important;
+}
+
+.tt-page-frame :where(.badge,.tag,.chip,.tt-badge) {
+  min-height: 25px;
+  border: 1px solid var(--tt-ui-border-strong);
+  border-radius: 999px;
+  background: rgba(255,255,255,.035);
+  color: var(--tt-ui-text-soft);
+  padding: 4px 9px;
+  font-size: .70rem;
+  font-weight: 780;
+  line-height: 1;
+}
+
+/* ================================================================
+   FORMS + CONTROLS
+   ================================================================ */
+
+.tt-page-frame :where(label) {
+  color: var(--tt-ui-text-soft);
+  font-size: .82rem;
+  font-weight: 720;
+}
+
+.tt-page-frame :where(input,select,textarea) {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--tt-ui-border-strong) !important;
+  border-radius: 10px !important;
+  background: rgba(10,8,13,.64) !important;
+  color: #fff !important;
+}
+
+.tt-page-frame :where(input,select,textarea):hover {
+  border-color: rgba(255,255,255,.20) !important;
+}
+
+.tt-page-frame :where(input,select,textarea):focus {
+  border-color: rgba(226,182,109,.60) !important;
+  outline: none !important;
+  box-shadow: var(--tt-ui-focus) !important;
+}
+
+.tt-page-frame :where(input::placeholder,textarea::placeholder) {
+  color: rgba(203,195,209,.46) !important;
+}
+
+.tt-page-frame :where(.form-group,.field,.form-field) {
+  min-width: 0;
+  margin-bottom: 14px;
+}
+
+.tt-page-frame :where(form) {
+  min-width: 0;
+}
+
+/* Keep familiar semantic accents: gold = action, blue = intelligence, teal = data. */
+.tt-page-frame :where(.primary-action,.add-snake-button,.tt-home-primary,.tt-button--action) {
+  border-color: rgba(226,182,109,.54) !important;
+  background: linear-gradient(135deg,#c18e43,#e2b66d) !important;
+  color: #1b1208 !important;
+  box-shadow: 0 10px 24px rgba(226,182,109,.11) !important;
+}
+
+.tt-page-frame :where(.secondary-action,.tt-button--brand) {
+  border-color: rgba(181,139,207,.36) !important;
+  background: linear-gradient(135deg,#604878,#80619c) !important;
+  color: #fff !important;
+}
+
+.tt-page-frame :where(.intelligence-action,.tt-button--intelligence) {
+  border-color: rgba(134,200,225,.38) !important;
+  background: linear-gradient(135deg,#3e829f,#69b6d4) !important;
+  color: #08141b !important;
+}
+
+.tt-page-frame :where(.data-action,.tt-button--data) {
+  border-color: rgba(105,194,185,.34) !important;
+  background: linear-gradient(135deg,#2f817b,#49a8a0) !important;
+  color: #061311 !important;
+}
+
+.tt-page-frame :where(.ghost-action,.tt-button--ghost) {
+  border-color: var(--tt-ui-border-strong) !important;
+  background: rgba(255,255,255,.025) !important;
+  color: var(--tt-ui-text-soft) !important;
+  box-shadow: none !important;
+}
+
+.tt-page-frame :where(button:not(.icon-button),.btn,.button,a[role="button"]) {
+  border-radius: 10px;
+  font-weight: 760;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+
+.tt-page-frame :where(button:not(.icon-button),.btn,.button,a[role="button"]):hover {
+  transform: translateY(-1px);
+}
+
+.tt-page-frame :where(button:disabled,.btn:disabled,.button:disabled) {
+  transform: none !important;
+  opacity: .56;
+}
+
+/* ================================================================
+   TABS / FILTERS / CATEGORY CONTROLS
+   ================================================================ */
+
+.tt-page-frame :where([role="tablist"],.tabs,.tab-list,.filter-tabs,.category-tabs) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--tt-ui-border);
+  border-radius: 12px;
+  background: rgba(15,12,19,.72);
+}
+
+.tt-page-frame :where([role="tab"],.tab,.filter-tab,.category-tab) {
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--tt-ui-text-muted);
+  font-size: .78rem;
+  font-weight: 760;
+}
+
+.tt-page-frame :where([role="tab"],.tab,.filter-tab,.category-tab):hover {
+  background: rgba(181,139,207,.065);
+  color: #fff;
+}
+
+.tt-page-frame :where([role="tab"][aria-selected="true"],.tab.active,.filter-tab.active,.category-tab.active) {
+  border-color: rgba(181,139,207,.23);
+  background: linear-gradient(135deg,rgba(140,105,171,.20),rgba(105,182,212,.055));
+  color: #fff;
+  box-shadow: inset 0 -2px 0 var(--tt-ui-purple-strong);
+}
+
+/* ================================================================
+   TABLES / LISTS / EMPTY STATES
+   ================================================================ */
+
+.tt-page-frame :where(table) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--tt-ui-border);
+  border-radius: 13px;
+  background: rgba(15,12,19,.52);
+}
+
+.tt-page-frame :where(th,td) {
+  padding: 12px 11px;
+  border-bottom: 1px solid rgba(255,255,255,.055);
+  vertical-align: middle;
+}
+
+.tt-page-frame :where(th) {
+  background: rgba(255,255,255,.022);
+  color: var(--tt-ui-text-muted);
+  font-size: .70rem;
+  font-weight: 830;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.tt-page-frame :where(tbody tr:hover) {
+  background: rgba(181,139,207,.028);
+}
+
+.tt-page-frame :where(tbody tr:last-child td) {
+  border-bottom: 0;
+}
+
+.tt-page-frame :where(.empty-state,.no-results,.empty-card,.tt-empty-state) {
+  display: grid;
+  place-items: center;
+  min-height: 170px;
+  padding: 26px;
+  border: 1px dashed rgba(181,139,207,.22);
+  border-radius: 15px;
+  background: rgba(255,255,255,.012);
+  text-align: center;
+}
+
+.tt-page-frame :where(details) {
+  border: 1px solid var(--tt-ui-border);
+  border-radius: 13px;
+  background: rgba(25,21,30,.74);
+}
+
+.tt-page-frame :where(details + details) {
+  margin-top: 8px;
+}
+
+.tt-page-frame :where(summary) {
+  cursor: pointer;
+  padding: 13px 14px;
+  color: #fff;
+  font-weight: 760;
+}
+
+.tt-page-frame :where(details[open] summary) {
+  border-bottom: 1px solid var(--tt-ui-border);
+}
+
+/* ================================================================
+   SPECIAL PAGE FAMILIES
+   ================================================================ */
+
+/* Academy: preserve its distinctive information architecture while subtly
+   bringing its colours into the calmer premium palette. */
+.academy-v2-page {
+  --accent: var(--tt-ui-gold) !important;
+  --academy-accent-soft: rgba(226,182,109,.10);
+}
+
+.academy-v2-page :where(.academy-v2-hero) {
+  border-color: rgba(181,139,207,.18) !important;
+  background:
+    linear-gradient(135deg,rgba(140,105,171,.15),rgba(105,182,212,.035) 58%,rgba(255,255,255,.012)),
+    #16121b !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,.20) !important;
+}
+
+.academy-v2-page :where(.academy-v2-progress-track i) {
+  background: linear-gradient(90deg,var(--tt-ui-gold),#efc77d) !important;
+}
+
+.academy-v2-page :where(.academy-v2-nav button:hover,.academy-v2-nav button.active) {
+  background: rgba(226,182,109,.065) !important;
+}
+
+.academy-v2-page :where(.academy-v2-nav button.active) {
+  box-shadow: inset 3px 0 var(--tt-ui-gold) !important;
+}
+
+.academy-v2-page :where(.academy-v2-card,.academy-v2-principle,.academy-v2-method,.academy-v2-compare-card) {
+  border-color: rgba(181,139,207,.14) !important;
+}
+
+/* Snake profile / tracker families. */
+.tt-page-frame :where(.snake-profile-photo) {
+  border-color: rgba(181,139,207,.16) !important;
+  background: #17131d !important;
+}
+
+.tt-page-frame :where(.snake-profile-big-value,.tt-stat-value) {
+  color: #fff !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================================================================
+   RESPONSIVE BEHAVIOUR
+   ================================================================ */
+
+@media (max-width: 800px) {
+  .app-navigation {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid rgba(181,139,207,.13) !important;
+    box-shadow: 0 9px 24px rgba(0,0,0,.15) !important;
+  }
+
+  .app-navigation-inner {
+    gap: 10px !important;
+    padding: 8px 10px 10px !important;
+  }
+
+  /* Keep categories visible on mobile so horizontal navigation still feels
+     intentionally grouped rather than like one long mystery strip. */
+  .app-navigation-section,
+  .app-navigation-section + .app-navigation-section {
+    margin: 0 !important;
+    padding: 0 4px !important;
+    border: 0 !important;
+    border-radius: 12px;
+    background: rgba(255,255,255,.012);
+  }
+
+  .app-navigation-section-label {
+    display: block !important;
+    margin: 3px 6px 2px !important;
+    font-size: .56rem !important;
+    letter-spacing: .13em !important;
+    white-space: nowrap;
+  }
+
+  .app-navigation-list {
+    flex-direction: row !important;
+    gap: 4px !important;
+  }
+
+  .app-navigation-link {
+    min-height: 42px !important;
+    padding: 7px 10px !important;
+    border-radius: 10px !important;
+    font-size: .76rem !important;
+  }
+
+  .app-shell .app-header,
+  .app-shell .app-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .app-content {
+    padding: 16px 13px 48px;
+  }
+
+  .tt-page-frame :where(.page-header,.section-header,.content-header) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tt-page-frame :where(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-navigation-inner {
+    gap: 7px !important;
+    padding-inline: 7px !important;
+  }
+
+  .app-navigation-section {
+    padding-inline: 2px !important;
+  }
+
+  .app-navigation-link {
+    padding-inline: 8px !important;
+    font-size: .73rem !important;
+  }
+
+  .tt-page-frame :where(.section-card,.content-card,.form-card,.data-card,.tracker-card,.dashboard-card,.panel-card,.info-card) {
+    padding: 15px !important;
+    border-radius: 14px !important;
+  }
+
+  .tt-page-frame :where([role="tablist"],.tabs,.tab-list,.filter-tabs,.category-tabs) {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .tt-page-frame :where([role="tablist"]::-webkit-scrollbar,.tabs::-webkit-scrollbar,.tab-list::-webkit-scrollbar,.filter-tabs::-webkit-scrollbar,.category-tabs::-webkit-scrollbar) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-navigation-link,
+  .tt-page-frame :where(button,.btn,.button,a[role="button"]) {
+    transition: none !important;
+  }
+}
