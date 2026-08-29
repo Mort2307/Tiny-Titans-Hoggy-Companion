@@ -63,26 +63,39 @@ export function magnetiseObjectToVivarium(object: ReptileRoomObject, slot: Repti
     y: Math.min(Math.max(object.y - anchor.y, -anchor.depth / 2), anchor.depth / 2),
     z: Math.max(0.5, object.z - anchor.z),
     rotation: object.rotation,
+    mode: object.z > anchor.z + anchor.height * 0.65 ? "ceiling" : object.y > anchor.y + anchor.depth * 0.8 ? "wall" : "floor",
   };
 
   return applyVivariumAttachment(object, slot, offset);
 }
 
-export function propagateVivariumMove(room: ReptileRoomWorkspace, movedSlot: ReptileRoomSlot): ReptileRoomWorkspace {
+export function getStoredAttachmentOffset(object: ReptileRoomObject, slot: ReptileRoomSlot): VivariumAttachmentOffset {
+  const dx = object.x - slot.x;
+  const dy = object.y - slot.y;
+  const dz = object.z - slot.z;
+  return {
+    x: dx,
+    y: dy,
+    z: dz,
+    rotation: object.rotation,
+    mode: dz > (slot.height ?? 40) * 0.65 ? "ceiling" : dy > (slot.depth ?? slot.h) * 0.8 ? "wall" : "floor",
+  };
+}
+
+export function reanchorVivariumChildren(room: ReptileRoomWorkspace, vivariumId: string, previousSlot: ReptileRoomSlot | null = null): ReptileRoomWorkspace {
+  const slot = getVivariumSlot(room, vivariumId);
+  if (!slot) return room;
+
+  const previous = previousSlot ?? slot;
   const objects = (room.objects ?? []).map((object) => {
-    const attached = object.parentAssetId === movedSlot.id || object.config?.linkedSlotId === movedSlot.id;
+    const attached = object.parentAssetId === vivariumId || object.config?.linkedSlotId === vivariumId;
     if (!attached) return object;
 
-    const currentOffset = object.config?.linkedSlotId === movedSlot.id
-      ? {
-          x: object.x - (movedSlot.x - 0),
-          y: object.y - (movedSlot.y - 0),
-          z: object.z - (movedSlot.z - 0),
-          rotation: object.rotation,
-        }
-      : getAttachmentOffset(object, movedSlot);
+    const offset = previous === slot
+      ? getStoredAttachmentOffset(object, previous)
+      : getStoredAttachmentOffset(object, previous);
 
-    return applyVivariumAttachment(object, movedSlot, currentOffset);
+    return applyVivariumAttachment(object, slot, offset);
   });
 
   return { ...room, objects };
