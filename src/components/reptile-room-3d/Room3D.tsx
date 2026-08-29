@@ -15,6 +15,7 @@ import { getRoomDimensions3D } from "./room3DScale";
 
 type RoomSceneProps = Omit<Room3DProps, "className"> & { objects: ReptileRoomObject[]; slots: ReptileRoomSlot[]; selectedId: string | null; selectedType: "slot" | "object" | null; navigationNode: RoomNavigationNode; onTeleport: (node: RoomNavigationNode) => void; onSelect: (selection: Room3DSelection) => void };
 type Room3DWindow = Window & { __tinyTitansRoom3DCamera?: import("three").Camera };
+type VivariumPhotoChange = (slotId: string, persistedUrl: string, previewUrl?: string) => void;
 
 function RoomScene({ room, showGrid = true, showCeiling = false, viewerMode = false, objects, slots, selectedId, selectedType, photoForSlot, onSelect, onMove, navigationNode, onTeleport }: RoomSceneProps) {
   const { width, depth, height } = getRoomDimensions3D(room);
@@ -48,7 +49,7 @@ function NavigationPad({ nodes, activeNode, onMove }: { nodes: RoomNavigationNod
   </div>;
 }
 
-function VivariumPhotoDock({ room, slot, onPhotoUrl }: { room: ReptileRoomWorkspace; slot: ReptileRoomSlot; onPhotoUrl: (slotId: string, url: string) => void }) {
+function VivariumPhotoDock({ room, slot, onPhotoUrl }: { room: ReptileRoomWorkspace; slot: ReptileRoomSlot; onPhotoUrl: VivariumPhotoChange }) {
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -61,8 +62,8 @@ function VivariumPhotoDock({ room, slot, onPhotoUrl }: { room: ReptileRoomWorksp
       const url = await uploadReptileRoomVivariumPhoto(user.uid, room.id, slot.id, file);
       const nextRooms = [{ ...room, slots: room.slots.map((item) => item.id === slot.id ? { ...item, photoUrl: url } : item), updatedAt: new Date().toISOString() }];
       await saveReptileRooms(user.uid, nextRooms);
-      onPhotoUrl(slot.id, url);
-      setMessage("Photo applied to the vivarium glass.");
+      onPhotoUrl(slot.id, url, URL.createObjectURL(file));
+      setMessage("Photo applied to the 3D glass door.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Vivarium photo upload failed.");
     } finally {
@@ -76,7 +77,7 @@ function VivariumPhotoDock({ room, slot, onPhotoUrl }: { room: ReptileRoomWorksp
     try {
       const nextRooms = [{ ...room, slots: room.slots.map((item) => item.id === slot.id ? { ...item, photoUrl: "" } : item), updatedAt: new Date().toISOString() }];
       await saveReptileRooms(user.uid, nextRooms);
-      onPhotoUrl(slot.id, "");
+      onPhotoUrl(slot.id, "", "");
       setMessage("Glass photo removed.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to remove the vivarium photo.");
@@ -87,7 +88,7 @@ function VivariumPhotoDock({ room, slot, onPhotoUrl }: { room: ReptileRoomWorksp
   return <div style={{ position: "absolute", right: 14, bottom: 14, zIndex: 40, width: "min(360px, calc(100% - 28px))", padding: 14, borderRadius: 14, border: "1px solid rgba(255,255,255,.14)", background: "rgba(12,10,16,.94)", color: "#fff", boxShadow: "0 14px 38px rgba(0,0,0,.38)", backdropFilter: "blur(12px)" }}>
     <div style={{ fontSize: 10, letterSpacing: ".08em", fontWeight: 850, opacity: .7, textTransform: "uppercase" }}>VIVARIUM GLASS</div>
     <strong style={{ display: "block", marginTop: 3 }}>{slot.label || "Vivarium"}</strong>
-    <p style={{ margin: "6px 0 10px", color: "rgba(255,255,255,.72)", fontSize: 12, lineHeight: 1.45 }}>Each front glass door can use a photo of the real enclosure so your 3D room mirrors your actual setup.</p>
+    <p style={{ margin: "6px 0 10px", color: "rgba(255,255,255,.72)", fontSize: 12, lineHeight: 1.45 }}>The front glass door doubles as the enclosure photo surface, so the 3D room can mirror the real vivarium.</p>
     {selectedPhoto && <img src={selectedPhoto} alt="Vivarium glass preview" style={{ display: "block", width: "100%", aspectRatio: "16/8", objectFit: "cover", borderRadius: 10, border: "1px solid rgba(255,255,255,.12)", marginBottom: 10 }} />}
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       <label style={{ minHeight: 42, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 14px", borderRadius: 9, background: "#f0bb58", color: "#15100a", fontWeight: 850, cursor: busy ? "wait" : "pointer" }}>{busy ? "Working…" : selectedPhoto ? "Replace photo" : "Add enclosure photo"}<input type="file" accept="image/*" disabled={busy} style={{ display: "none" }} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); event.currentTarget.value = ""; }} /></label>
@@ -127,7 +128,16 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
     try { localStorage.setItem(storageKey, JSON.stringify({ xCm: node.xCm, zCm: node.zCm })); } catch { /* storage is optional */ }
     onTeleport?.(node);
   };
-  const handlePhotoUrl = (slotId: string, url: string) => setPhotoOverrides((current) => ({ ...current, [slotId]: url }));
+  const handlePhotoUrl = (slotId: string, _persistedUrl: string, previewUrl?: string) => {
+    setPhotoOverrides((current) => {
+      const previous = current[slotId];
+      if (previous?.startsWith("blob:") && previous !== previewUrl) URL.revokeObjectURL(previous);
+      if (previewUrl) return { ...current, [slotId]: previewUrl };
+      const next = { ...current };
+      delete next[slotId];
+      return next;
+    });
+  };
   const effectivePhotoForSlot = photoForSlot ?? ((slot: ReptileRoomSlot) => photoOverrides[slot.id] || slot.photoUrl || undefined);
   const toggleFullscreen = async () => {
     const host = document.querySelector<HTMLElement>(`[data-rr3d-host="${CSS.escape(room.id)}"]`);
