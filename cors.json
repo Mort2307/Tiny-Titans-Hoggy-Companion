@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://tinytitans-hoggy-companion.web.app",
+      "https://tinytitans-hoggy-companion.firebaseapp.com",
+      "http://localhost:5173",
+      "http://localhost:4173"
+    ],
+    "method": ["GET", "HEAD", "OPTIONS"],
+    "responseHeader": ["Content-Type", "Cache-Control"],
+    "maxAgeSeconds": 3600
+  }
+]
