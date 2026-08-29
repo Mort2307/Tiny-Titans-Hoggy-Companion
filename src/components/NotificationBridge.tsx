@@ -1,12 +1,15 @@
 import { useEffect } from "react";
 import { getMessaging, isSupported, onMessage } from "firebase/messaging";
 import { app } from "../firebase/config";
+import { NOTIFICATION_ENABLED_EVENT } from "../services/notificationService";
 
 export default function NotificationBridge() {
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     let active = true;
-    void (async () => {
+    const subscribe = async () => {
+      unsubscribe?.();
+      unsubscribe = undefined;
       if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
       if (!(await isSupported()) || !active) return;
       const messaging = getMessaging(app);
@@ -20,8 +23,10 @@ export default function NotificationBridge() {
         const popup = new Notification(title, { body, icon: "/favicon.svg", badge: "/favicon.svg", tag: String(data.eventKey || "tiny-titans") });
         popup.onclick = () => { window.focus(); window.location.assign(url); };
       });
-    })();
-    return () => { active = false; unsubscribe?.(); };
+    };
+    void subscribe();
+    window.addEventListener(NOTIFICATION_ENABLED_EVENT, subscribe);
+    return () => { active = false; unsubscribe?.(); window.removeEventListener(NOTIFICATION_ENABLED_EVENT, subscribe); };
   }, []);
   return null;
 }
