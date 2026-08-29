@@ -302,7 +302,48 @@ function SimpleFixture({
   );
 }
 
-function VivariumPhoto({ url, width, height, z }: { url: string; width: number; height: number; z: number }) {
+function makePhotoPlaceholderTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 360;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "rgba(20,30,34,.42)";
+  context.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
+  context.strokeStyle = "rgba(190,225,232,.62)";
+  context.lineWidth = 5;
+  context.setLineDash([16, 12]);
+  context.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
+  context.setLineDash([]);
+  context.fillStyle = "rgba(230,245,247,.92)";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = "800 34px Arial";
+  context.fillText("ADD VIVARIUM PHOTO", canvas.width / 2, canvas.height / 2 - 10);
+  context.font = "600 20px Arial";
+  context.fillStyle = "rgba(210,232,236,.72)";
+  context.fillText("Select this glass to personalise it", canvas.width / 2, canvas.height / 2 + 34);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  return texture;
+}
+
+function VivariumPhoto({
+  url,
+  width,
+  height,
+  z,
+}: {
+  url: string;
+  width: number;
+  height: number;
+  z: number;
+}) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
 
   useEffect(() => {
@@ -324,28 +365,6 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
         loaded.minFilter = THREE.LinearFilter;
         loaded.magFilter = THREE.LinearFilter;
         loaded.anisotropy = 8;
-
-        const image = loaded.image as { width?: number; height?: number } | undefined;
-        const imageWidth = Number(image?.width ?? 0);
-        const imageHeight = Number(image?.height ?? 0);
-        const imageAspect = imageWidth > 0 && imageHeight > 0 ? imageWidth / imageHeight : 0;
-        const planeAspect = width > 0 && height > 0 ? width / height : 0;
-
-        if (imageAspect > 0 && planeAspect > 0) {
-          if (imageAspect > planeAspect) {
-            const visibleWidth = planeAspect / imageAspect;
-            loaded.repeat.set(visibleWidth, 1);
-            loaded.offset.set((1 - visibleWidth) / 2, 0);
-          } else if (imageAspect < planeAspect) {
-            const visibleHeight = imageAspect / planeAspect;
-            loaded.repeat.set(1, visibleHeight);
-            loaded.offset.set(0, (1 - visibleHeight) / 2);
-          } else {
-            loaded.repeat.set(1, 1);
-            loaded.offset.set(0, 0);
-          }
-        }
-
         loaded.needsUpdate = true;
         setTexture(loaded);
       },
@@ -358,28 +377,11 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
     return () => {
       active = false;
     };
-  }, [url, width, height]);
+  }, [url]);
 
   useEffect(() => () => texture?.dispose(), [texture]);
 
-  if (!texture) {
-    return (
-      <mesh
-        position={[0, 0, z]}
-        renderOrder={3}
-        userData={{ vivariumFaceImage: true }}
-      >
-        <planeGeometry args={[width, height]} />
-        <meshBasicMaterial
-          color="#2a302f"
-          toneMapped={false}
-          depthWrite={false}
-          depthTest
-          side={THREE.FrontSide}
-        />
-      </mesh>
-    );
-  }
+  if (!texture) return null;
 
   return (
     <mesh
@@ -393,7 +395,7 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
         toneMapped={false}
         depthWrite={false}
         depthTest
-        side={THREE.FrontSide}
+        side={THREE.DoubleSide}
       />
     </mesh>
   );
@@ -405,18 +407,28 @@ function VivariumModel({
   height,
   selected,
   photoUrl,
+  onSelectGlass,
 }: {
   width: number;
   depth: number;
   height: number;
   selected: boolean;
   photoUrl?: string;
+  onSelectGlass: () => void;
 }) {
   const frame = Math.max(Math.min(width, height) * 0.046, 0.026);
   const glassWidth = Math.max(0.01, width - frame * 2);
   const glassHeight = Math.max(0.01, height - frame * 2);
   const frontZ = depth / 2;
   const trim = selected ? "#e2ad4f" : wood.dark;
+  const placeholderTexture = useMemo(() => makePhotoPlaceholderTexture(), []);
+
+  useEffect(() => () => placeholderTexture?.dispose(), [placeholderTexture]);
+
+  const stopAndSelectGlass = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    onSelectGlass();
+  };
 
   return (
     <group>
@@ -454,13 +466,41 @@ function VivariumModel({
           side={THREE.DoubleSide}
         />
       </mesh>
+      <mesh
+        position={[0, 0, frontZ + 0.008]}
+        renderOrder={2}
+        onPointerDown={stopAndSelectGlass}
+        onClick={stopAndSelectGlass}
+        userData={{ vivariumGlassHitArea: true }}
+      >
+        <planeGeometry args={[glassWidth, glassHeight]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
       {photoUrl ? (
         <VivariumPhoto
           url={photoUrl}
           width={glassWidth * 0.985}
           height={glassHeight * 0.985}
-          z={frontZ + 0.012}
+          z={frontZ + 0.014}
         />
+      ) : placeholderTexture ? (
+        <mesh
+          position={[0, 0, frontZ + 0.012]}
+          renderOrder={2}
+          userData={{ vivariumPhotoPlaceholder: true }}
+          onPointerDown={stopAndSelectGlass}
+          onClick={stopAndSelectGlass}
+        >
+          <planeGeometry args={[glassWidth * 0.985, glassHeight * 0.985]} />
+          <meshBasicMaterial
+            map={placeholderTexture}
+            transparent
+            opacity={0.72}
+            depthWrite={false}
+            depthTest
+            side={THREE.DoubleSide}
+          />
+        </mesh>
       ) : null}
       <mesh position={[0, height / 2 - frame / 2, frontZ + 0.026]}>
         <boxGeometry args={[width, frame, frame * 1.5]} />
@@ -490,7 +530,14 @@ function VivariumModel({
   );
 }
 
-export function RoomObject3D({ room, object, selected, onSelect, isSlot = false, photoUrl }: RoomObject3DProps) {
+export function RoomObject3D({
+  room,
+  object,
+  selected,
+  onSelect,
+  isSlot = false,
+  photoUrl,
+}: RoomObject3DProps) {
   const size = dimensions(object);
   const position = useMemo<[number, number, number]>(
     () => [
@@ -500,16 +547,19 @@ export function RoomObject3D({ room, object, selected, onSelect, isSlot = false,
     ],
     [object.x, object.y, object.z, room.width, room.depth, size.width, size.depth, size.height],
   );
-  const rotationY = rotationFor(object) * Math.PI / 180;
+  const rotationY = (rotationFor(object) * Math.PI) / 180;
   const bodyHeight = Math.max(0.01, cmToWorld(size.height));
   const bodyWidth = Math.max(0.01, cmToWorld(size.width));
   const bodyDepth = Math.max(0.01, cmToWorld(size.depth));
+
   const select = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     onSelect(object.id);
   };
+
   const kind = isSlot ? "vivarium" : (object as ReptileRoomObject).kind;
   const preset = !isSlot ? getRoomAssetPreset((object as ReptileRoomObject).assetId) : undefined;
+  const selectGlass = () => onSelect(object.id);
 
   return (
     <group
@@ -522,22 +572,46 @@ export function RoomObject3D({ room, object, selected, onSelect, isSlot = false,
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       {isSlot ? (
-        <VivariumModel width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} photoUrl={photoUrl} />
+        <VivariumModel
+          width={bodyWidth}
+          depth={bodyDepth}
+          height={bodyHeight}
+          selected={selected}
+          photoUrl={photoUrl}
+          onSelectGlass={selectGlass}
+        />
       ) : preset ? (
-        <SimpleFixture kind={kind} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />
+        <SimpleFixture
+          kind={kind}
+          width={bodyWidth}
+          depth={bodyDepth}
+          height={bodyHeight}
+          selected={selected}
+        />
       ) : (
-        <FurnitureModel kind={kind} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />
+        <FurnitureModel
+          kind={kind}
+          width={bodyWidth}
+          depth={bodyDepth}
+          height={bodyHeight}
+          selected={selected}
+        />
       )}
-      {selected ? (
+      {selected && (
         <>
           <mesh position={[0, 0, 0]}>
             <boxGeometry args={[bodyWidth * 1.02, bodyHeight * 1.02, bodyDepth * 1.02]} />
             <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             <Edges color="#e2ad4f" lineWidth={2.5} />
           </mesh>
-          <pointLight position={[0, bodyHeight * 0.45, 0]} intensity={0.28} distance={Math.max(bodyWidth, bodyDepth) * 2.5} color="#e2ad4f" />
+          <pointLight
+            position={[0, bodyHeight * 0.45, 0]}
+            intensity={0.28}
+            distance={Math.max(bodyWidth, bodyDepth) * 2.5}
+            color="#e2ad4f"
+          />
         </>
-      ) : null}
+      )}
     </group>
   );
 }
@@ -599,11 +673,19 @@ function FurnitureModel({
         ))}
         <mesh position={[-width * 0.45, height / 2, 0]}>
           <boxGeometry args={[0.045, height, 0.045]} />
-          <meshStandardMaterial color={selected ? "#e2ad4f" : wood.metal} metalness={0.55} roughness={0.28} />
+          <meshStandardMaterial
+            color={selected ? "#e2ad4f" : wood.metal}
+            metalness={0.55}
+            roughness={0.28}
+          />
         </mesh>
         <mesh position={[width * 0.45, height / 2, 0]}>
           <boxGeometry args={[0.045, height, 0.045]} />
-          <meshStandardMaterial color={selected ? "#e2ad4f" : wood.metal} metalness={0.55} roughness={0.28} />
+          <meshStandardMaterial
+            color={selected ? "#e2ad4f" : wood.metal}
+            metalness={0.55}
+            roughness={0.28}
+          />
         </mesh>
       </group>
     );
