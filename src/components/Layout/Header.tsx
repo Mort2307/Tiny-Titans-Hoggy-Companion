@@ -17,7 +17,10 @@ function Header() {
         />
       </Link>
 
-      <span className="app-brand-name" aria-label="Tiny Titans">Tiny Titans</span>
+      <div className="app-brand-lockup">
+        <span className="app-brand-name" aria-label="Tiny Titans">Tiny Titans</span>
+        <span className="app-brand-tagline">Hoggy Companion</span>
+      </div>
     </header>
   );
 }
