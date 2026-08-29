@@ -9,6 +9,7 @@ import "./styles/tiny-titans-home-overrides.css";
 import "./styles/selector-scroll.css";
 import "./styles/husbandry-equipment.css";
 import "./styles/reptile-room-digital-twin.css";
+import "./styles/tiny-titans-professional-ui.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
