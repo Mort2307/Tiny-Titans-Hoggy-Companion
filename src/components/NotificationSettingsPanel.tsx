@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { disableNotifications, enableNotifications, getNotificationPermissionState, getNotificationSettings, saveNotificationSettings } from "../services/notificationService";
 import type { NotificationPermissionState, NotificationSettings } from "../types/Notifications";
-import NotificationTestPanel from "./NotificationTestPanel";
-import "../styles/notificationTest.css";
 
 const defaultSettings: NotificationSettings = { enabled: false, feedingPreparationEnabled: false, feedingPreparationDaysBefore: 0, feedingPreparationTime: "08:00", feedingRemindersEnabled: true, weightRemindersEnabled: true, weightReminderTime: "09:00", healthRemindersEnabled: true, healthReminderFollowUpEnabled: true, medicationMissedFollowUpMinutes: 60, healthFollowUpLeadDays: 1 };
 
@@ -13,25 +11,86 @@ export default function NotificationSettingsPanel() {
   const [permission, setPermission] = useState<NotificationPermissionState>(getNotificationPermissionState());
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
   useEffect(() => { if (!user) return; void getNotificationSettings(user.uid).then(setSettings).catch(() => undefined); }, [user]);
-  async function handleEnable() { if (!user || busy) return; setBusy(true); setMessage(""); try { const result = await enableNotifications(user.uid); setPermission(result); if (result === "granted") { setSettings(await getNotificationSettings(user.uid)); setMessage("Notifications are enabled on this device."); } else if (result === "denied") setMessage("Notifications are blocked by your browser/device. Tiny Titans will not keep asking."); else setMessage("This browser or installed app does not support background notifications."); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to enable notifications."); } finally { setBusy(false); } }
-  async function handleDisable() { if (!user || busy) return; setBusy(true); setMessage(""); try { await disableNotifications(user.uid); setSettings((current) => ({ ...current, enabled: false })); setMessage("Notifications are disabled for Tiny Titans on this device."); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to disable notifications."); } finally { setBusy(false); } }
-  async function save(next: NotificationSettings) { if (!user || busy) return; setBusy(true); setMessage(""); try { setSettings(await saveNotificationSettings(user.uid, next)); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to save notification preferences."); } finally { setBusy(false); } }
+
+  async function handleEnable() {
+    if (!user || busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const result = await enableNotifications(user.uid);
+      setPermission(result);
+      if (result === "granted") {
+        setSettings(await getNotificationSettings(user.uid));
+        setMessage("Notifications are enabled on this device.");
+      } else if (result === "denied") {
+        setMessage("Notifications are blocked by your browser/device. Change the Tiny Titans notification permission in browser settings.");
+      } else {
+        setMessage("This browser or installed app does not support background notifications.");
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to enable notifications.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDisable() {
+    if (!user || busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await disableNotifications(user.uid);
+      setSettings((current) => ({ ...current, enabled: false }));
+      setMessage("Notifications are disabled for Tiny Titans on this device.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to disable notifications.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function save(next: NotificationSettings) {
+    if (!user || busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      setSettings(await saveNotificationSettings(user.uid, next));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to save notification preferences.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const locked = busy || !settings.enabled;
-  return <section className="personalisation-card">
-    <h2>🔔 Notifications</h2>
-    <p>One notification engine now connects every supported reminder system: feeding, feeding preparation, weight tracking, medication, vet/health follow-ups and Family events.</p>
-    <p><strong>Permission:</strong> {permission === "granted" ? "Enabled" : permission === "denied" ? "Blocked" : permission === "unsupported" ? "Not supported" : "Not enabled"}</p>
-    {permission === "granted" && settings.enabled ? <button className="account-button" type="button" onClick={() => void handleDisable()} disabled={busy}>{busy ? "Saving…" : "Disable Notifications"}</button> : <button className="account-button" type="button" onClick={() => void handleEnable()} disabled={busy || permission === "denied"}>{busy ? "Enabling…" : "Enable Notifications"}</button>}
-    <label style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "16px" }}><input type="checkbox" checked={settings.feedingRemindersEnabled} onChange={(event) => void save({ ...settings, feedingRemindersEnabled: event.target.checked })} disabled={locked} /><span><strong>Feeding reminders</strong> — notify when a scheduled feed is due</span></label>
-    <label style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "12px" }}><input type="checkbox" checked={settings.feedingPreparationEnabled} onChange={(event) => void save({ ...settings, feedingPreparationEnabled: event.target.checked })} disabled={locked} /><span><strong>Feeding preparation reminders</strong></span></label>
-    <div style={{ display: "grid", gap: "10px", marginTop: "14px" }}><label htmlFor="global-feeding-prep-days">Default preparation lead time</label><select id="global-feeding-prep-days" value={settings.feedingPreparationDaysBefore} onChange={(event) => void save({ ...settings, feedingPreparationDaysBefore: Number(event.target.value) })} disabled={locked || !settings.feedingPreparationEnabled}>{Array.from({ length: 31 }, (_, days) => <option key={days} value={days}>{days === 0 ? "On feeding day" : `${days} day${days === 1 ? "" : "s"} before feeding`}</option>)}</select><label htmlFor="global-feeding-prep-time">Default preparation reminder time</label><input id="global-feeding-prep-time" type="time" value={settings.feedingPreparationTime} onChange={(event) => void save({ ...settings, feedingPreparationTime: event.target.value })} disabled={locked || !settings.feedingPreparationEnabled} /></div>
-    <label style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "16px" }}><input type="checkbox" checked={settings.weightRemindersEnabled} onChange={(event) => void save({ ...settings, weightRemindersEnabled: event.target.checked })} disabled={locked} /><span><strong>Weight reminders</strong> — follow each snake's configured weighing frequency</span></label>
-    <div style={{ display: "grid", gap: "10px", marginTop: "10px" }}><label htmlFor="weight-reminder-time">Weight reminder time</label><input id="weight-reminder-time" type="time" value={settings.weightReminderTime} onChange={(event) => void save({ ...settings, weightReminderTime: event.target.value })} disabled={locked || !settings.weightRemindersEnabled} /></div>
-    <label style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "16px" }}><input type="checkbox" checked={settings.healthRemindersEnabled} onChange={(event) => void save({ ...settings, healthRemindersEnabled: event.target.checked })} disabled={locked} /><span><strong>Health, medication & vet reminders</strong></span></label>
-    <label style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "12px" }}><input type="checkbox" checked={settings.healthReminderFollowUpEnabled} onChange={(event) => void save({ ...settings, healthReminderFollowUpEnabled: event.target.checked })} disabled={locked || !settings.healthRemindersEnabled} /><span><strong>Follow up when a medication dose or health appointment is not recorded</strong></span></label>
-    <div style={{ display: "grid", gap: "10px", marginTop: "14px" }}><label htmlFor="medication-missed-follow-up">Medication follow-up after</label><select id="medication-missed-follow-up" value={settings.medicationMissedFollowUpMinutes} onChange={(event) => void save({ ...settings, medicationMissedFollowUpMinutes: Number(event.target.value) })} disabled={locked || !settings.healthRemindersEnabled || !settings.healthReminderFollowUpEnabled}><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option><option value="240">4 hours</option><option value="720">12 hours</option></select><small>When a scheduled dose is due, Tiny Titans sends the initial notification. If the dose is still not recorded after this window, it sends one explicit follow-up.</small><label htmlFor="health-follow-up-lead-days">Vet / health follow-up reminder</label><select id="health-follow-up-lead-days" value={settings.healthFollowUpLeadDays} onChange={(event) => void save({ ...settings, healthFollowUpLeadDays: Number(event.target.value) })} disabled={locked || !settings.healthRemindersEnabled || !settings.healthReminderFollowUpEnabled}><option value="0">On the day</option><option value="1">1 day before</option><option value="2">2 days before</option><option value="3">3 days before</option><option value="7">7 days before</option><option value="14">14 days before</option></select><small>Applies to vet rechecks, wound reviews, treatment reviews and other health records with a follow-up date.</small></div>
-    <NotificationTestPanel />
-    {permission === "denied" && <p><small>Your browser has blocked notifications. Change the Tiny Titans notification permission in your browser/device settings, then return here.</small></p>}{message && <p className="personalisation-saved">{message}</p>}
-  </section>;
+  return (
+    <div className="tt-notification-settings">
+      <div className="tt-notification-status-row">
+        <div>
+          <span className="tt-notification-status-dot" aria-hidden="true" />
+          <strong>{permission === "granted" && settings.enabled ? "Ready to receive reminders" : "Notifications not active"}</strong>
+        </div>
+        <span className="tt-notification-permission">{permission === "granted" ? "Permission granted" : permission === "denied" ? "Blocked" : permission === "unsupported" ? "Unsupported" : "Needs setup"}</span>
+      </div>
+
+      <div className="tt-notification-enable-row">
+        <div><strong>Device notifications</strong><p>Allow Tiny Titans to alert you even when the app is not the page you are looking at.</p></div>
+        {permission === "granted" && settings.enabled ? <button className="tt-settings-control-button secondary" type="button" onClick={() => void handleDisable()} disabled={busy}>{busy ? "Saving…" : "Disable"}</button> : <button className="tt-settings-control-button" type="button" onClick={() => void handleEnable()} disabled={busy || permission === "denied"}>{busy ? "Enabling…" : "Enable notifications"}</button>}
+      </div>
+
+      <div className="tt-notification-setting-group">
+        <div className="tt-notification-setting-row"><div><strong>🍽️ Feeding reminders</strong><p>Alert when a scheduled feeding is due.</p></div><input type="checkbox" checked={settings.feedingRemindersEnabled} onChange={(event) => void save({ ...settings, feedingRemindersEnabled: event.target.checked })} disabled={locked} aria-label="Feeding reminders" /></div>
+        <div className="tt-notification-setting-row"><div><strong>🥩 Feeding preparation</strong><p>Prepare prey ahead of the next scheduled meal.</p></div><input type="checkbox" checked={settings.feedingPreparationEnabled} onChange={(event) => void save({ ...settings, feedingPreparationEnabled: event.target.checked })} disabled={locked} aria-label="Feeding preparation reminders" /></div>
+        {settings.feedingPreparationEnabled && <div className="tt-notification-inline-fields"><label>Preparation lead time<select value={settings.feedingPreparationDaysBefore} onChange={(event) => void save({ ...settings, feedingPreparationDaysBefore: Number(event.target.value) })} disabled={locked}>{Array.from({ length: 31 }, (_, days) => <option key={days} value={days}>{days === 0 ? "Same day" : `${days} day${days === 1 ? "" : "s"} before`}</option>)}</select></label><label>Preparation time<input type="time" value={settings.feedingPreparationTime} onChange={(event) => void save({ ...settings, feedingPreparationTime: event.target.value })} disabled={locked} /></label></div>}
+        <div className="tt-notification-setting-row"><div><strong>⚖️ Weight reminders</strong><p>Follow each snake's weekly, fortnightly, three-week or monthly cadence.</p></div><input type="checkbox" checked={settings.weightRemindersEnabled} onChange={(event) => void save({ ...settings, weightRemindersEnabled: event.target.checked })} disabled={locked} aria-label="Weight reminders" /></div>
+        {settings.weightRemindersEnabled && <div className="tt-notification-inline-fields single"><label>Weight reminder time<input type="time" value={settings.weightReminderTime} onChange={(event) => void save({ ...settings, weightReminderTime: event.target.value })} disabled={locked} /></label></div>}
+        <div className="tt-notification-setting-row"><div><strong>🩺 Health, medication & vet</strong><p>Keep treatment and follow-up deadlines from disappearing into the void.</p></div><input type="checkbox" checked={settings.healthRemindersEnabled} onChange={(event) => void save({ ...settings, healthRemindersEnabled: event.target.checked })} disabled={locked} aria-label="Health reminders" /></div>
+        {settings.healthRemindersEnabled && <div className="tt-notification-inline-fields"><label>Missed medication follow-up<select value={settings.medicationMissedFollowUpMinutes} onChange={(event) => void save({ ...settings, medicationMissedFollowUpMinutes: Number(event.target.value) })} disabled={locked}><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option><option value="240">4 hours</option><option value="720">12 hours</option></select></label><label>Health follow-up lead<select value={settings.healthFollowUpLeadDays} onChange={(event) => void save({ ...settings, healthFollowUpLeadDays: Number(event.target.value) })} disabled={locked}><option value="0">Same day</option><option value="1">1 day before</option><option value="2">2 days before</option><option value="3">3 days before</option><option value="7">7 days before</option><option value="14">14 days before</option></select></label></div>}
+      </div>
+
+      {message && <div className="tt-notification-settings-message" role={message.includes("enabled") || message.includes("disabled") ? "status" : "alert"}>{message}</div>}
+    </div>
+  );
 }
