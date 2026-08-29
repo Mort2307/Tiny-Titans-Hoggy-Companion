@@ -22,9 +22,7 @@
   --tt-ui-focus: 0 0 0 3px rgba(245, 182, 66, 0.18);
 }
 
-html {
-  background: var(--tt-ui-bg);
-}
+html { background: var(--tt-ui-bg); }
 
 body {
   background:
@@ -35,17 +33,9 @@ body {
 }
 
 #root,
-.app-shell {
-  min-height: 100vh;
-}
-
-.app-shell {
-  background: transparent;
-}
-
-.app-main {
-  min-width: 0;
-}
+.app-shell { min-height: 100vh; }
+.app-shell { background: transparent; }
+.app-main { min-width: 0; }
 
 .app-content {
   box-sizing: border-box;
@@ -68,10 +58,7 @@ body {
   -webkit-backdrop-filter: blur(16px);
 }
 
-.logo-link {
-  display: inline-flex;
-  flex: 0 0 auto;
-}
+.logo-link { display: inline-flex; flex: 0 0 auto; }
 
 .tiny-titans-logo {
   width: 44px;
@@ -89,7 +76,6 @@ body {
   line-height: 1;
 }
 
-/* Reusable professional surfaces */
 .card,
 .panel,
 .section,
@@ -115,13 +101,8 @@ textarea {
 button,
 input,
 select,
-textarea {
-  font: inherit;
-}
-
-button {
-  min-height: 42px;
-}
+textarea { font: inherit; }
+button { min-height: 42px; }
 
 button:focus-visible,
 a:focus-visible,
@@ -143,15 +124,11 @@ textarea {
 }
 
 input::placeholder,
-textarea::placeholder {
-  color: var(--tt-ui-text-muted);
-}
+textarea::placeholder { color: var(--tt-ui-text-muted); }
 
 input:hover,
 select:hover,
-textarea:hover {
-  border-color: rgba(255, 255, 255, 0.19);
-}
+textarea:hover { border-color: rgba(255, 255, 255, 0.19); }
 
 label {
   color: var(--tt-ui-text-soft);
@@ -173,9 +150,7 @@ a[role="button"]:hover,
 .btn:hover,
 .button:hover,
 .tt-button:hover,
-.tt-home-primary:hover {
-  transform: translateY(-1px);
-}
+.tt-home-primary:hover { transform: translateY(-1px); }
 
 button:disabled,
 .btn:disabled,
@@ -185,28 +160,22 @@ button:disabled,
   transform: none !important;
 }
 
-/* Remove the "everything glows" effect without removing brand personality. */
 .card:hover,
 .panel:hover,
 .widget:hover,
 .dashboard-card:hover,
 .tt-card:hover,
 .tt-home-panel:hover,
-.tt-home-stats a:hover {
-  box-shadow: var(--tt-ui-shadow-soft) !important;
-}
+.tt-home-stats a:hover { box-shadow: var(--tt-ui-shadow-soft) !important; }
 
 [class*="glow"],
-[class*="neon"] {
-  text-shadow: none;
-}
+[class*="neon"] { text-shadow: none; }
 
 hr {
   border: 0;
   border-top: 1px solid var(--tt-ui-border);
 }
 
-/* Page rhythm */
 main > h1,
 main > h2,
 .page-title,
@@ -218,11 +187,8 @@ main > h2,
 
 main p,
 .card p,
-.panel p {
-  color: var(--tt-ui-text-soft);
-}
+.panel p { color: var(--tt-ui-text-soft); }
 
-/* Home: make the first screen feel like a calm product dashboard. */
 .tt-home {
   max-width: none !important;
   padding: 12px 0 44px !important;
@@ -246,22 +212,12 @@ main p,
   background: var(--tt-ui-surface-raised) !important;
 }
 
-.tt-home-section {
-  margin-bottom: 28px !important;
-}
-
-.tt-home-heading {
-  margin-bottom: 11px !important;
-}
-
-.tt-home-heading h2 {
-  letter-spacing: -0.02em;
-}
+.tt-home-section { margin-bottom: 28px !important; }
+.tt-home-heading { margin-bottom: 11px !important; }
+.tt-home-heading h2 { letter-spacing: -0.02em; }
 
 .tt-home-panel,
-.tt-snake-focus-main {
-  background: var(--tt-ui-surface) !important;
-}
+.tt-snake-focus-main { background: var(--tt-ui-surface) !important; }
 
 .tt-snake-focus-main {
   background: linear-gradient(135deg, rgba(111, 36, 184, 0.12), rgba(255, 255, 255, 0.015)), var(--tt-ui-surface) !important;
@@ -288,7 +244,6 @@ main p,
   background: var(--tt-ui-surface-soft) !important;
 }
 
-/* Common data tables and dense lists: crisp containment on small screens. */
 table {
   width: 100%;
   border-collapse: separate;
@@ -304,47 +259,24 @@ table th {
 }
 
 table td,
-table th {
-  border-bottom: 1px solid var(--tt-ui-border);
-}
+table th { border-bottom: 1px solid var(--tt-ui-border); }
 
-overflow-auto,
-.overflow-auto {
-  scrollbar-width: thin;
-}
+.overflow-auto { scrollbar-width: thin; }
+[class*="grid"] { min-width: 0; }
 
-/* Keep dense grids from producing tiny cards. */
-[class*="grid"] {
-  min-width: 0;
-}
-
-/* Compact, deliberate scrollbar treatment. */
-* {
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
-}
+* { scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
 
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.24);
-}
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.24); }
 
 @media (max-width: 1100px) {
-  .app-content {
-    padding: 20px 20px 44px;
-  }
+  .app-content { padding: 20px 20px 44px; }
 }
 
 @media (max-width: 800px) {
@@ -359,40 +291,23 @@ overflow-auto,
     border-radius: 11px;
   }
 
-  .app-brand-name {
-    font-size: 0.95rem;
-  }
-
-  .app-content {
-    padding: 16px 14px 40px;
-  }
-
-  .tt-home {
-    padding-top: 4px !important;
-  }
-
-  .tt-home-hero {
-    padding: 19px !important;
-  }
+  .app-brand-name { font-size: 0.95rem; }
+  .app-content { padding: 16px 14px 40px; }
+  .tt-home { padding-top: 4px !important; }
+  .tt-home-hero { padding: 19px !important; }
 }
 
 @media (max-width: 560px) {
-  .app-content {
-    padding-inline: 11px;
-  }
+  .app-content { padding-inline: 11px; }
 
   .tt-home-hero,
   .tt-home-panel,
-  .tt-snake-focus-main {
-    border-radius: 13px !important;
-  }
+  .tt-snake-focus-main { border-radius: 13px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   button,
   a,
   .tt-button,
-  .tt-home-primary {
-    transition: none !important;
-  }
+  .tt-home-primary { transition: none !important; }
 }
