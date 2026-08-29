@@ -5,7 +5,7 @@ import { loadReptileRooms, type ReptileRoomSlot } from "../services/reptileRoomS
 import { VivariumBuilder3D } from "../components/reptile-room-3d/VivariumBuilder3D";
 
 export default function ReptileRoom3DEditor() {
-  const { roomId = "", vivariumId = "" } = useParams();
+  const { id: vivariumId = "" } = useParams();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [slot, setSlot] = useState<ReptileRoomSlot | null>(null);
@@ -13,18 +13,15 @@ export default function ReptileRoom3DEditor() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (authLoading || !user || !roomId || !vivariumId) return;
+    if (authLoading || !user || !vivariumId) return;
     let cancelled = false;
     const load = async () => {
       setLoading(true);
       setError("");
       try {
         const rooms = await loadReptileRooms(user.uid);
-        const room = rooms.find((item) => item.id === roomId);
-        const found = room?.objects?.find((item) => item.id === vivariumId);
-        if (!found || found.type !== "vivarium") {
-          throw new Error("Vivarium not found in this room.");
-        }
+        const found = rooms.flatMap((room) => room.objects ?? []).find((item) => item.id === vivariumId && item.type === "vivarium");
+        if (!found) throw new Error("Vivarium not found in your reptile rooms.");
         const next: ReptileRoomSlot = {
           ...found,
           id: found.id,
@@ -43,7 +40,7 @@ export default function ReptileRoom3DEditor() {
     };
     void load();
     return () => { cancelled = true; };
-  }, [authLoading, user, roomId, vivariumId]);
+  }, [authLoading, user, vivariumId]);
 
   if (authLoading || loading) return <div className="page-loading">Loading vivarium builder…</div>;
   if (error || !slot) return <div className="page-error">{error || "Vivarium not found."}</div>;
@@ -51,7 +48,7 @@ export default function ReptileRoom3DEditor() {
   return (
     <VivariumBuilder3D
       slot={slot}
-      onClose={() => navigate(`/reptile-room/${roomId}`)}
+      onClose={() => navigate("/reptile-room")}
       onSaved={() => undefined}
     />
   );
