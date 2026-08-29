@@ -10,6 +10,7 @@ import "./styles/selector-scroll.css";
 import "./styles/husbandry-equipment.css";
 import "./styles/reptile-room-digital-twin.css";
 import "./styles/tiny-titans-professional-ui.css";
+import "./styles/tiny-titans-professional-hardening.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
