@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { getReptileRoom } from "../services/reptileRoomService";
-import type { ReptileRoomSlot, ReptileRoomWorkspace } from "../services/reptileRoomService";
+import { loadReptileRooms } from "../services/reptileRoomService";
+import type { ReptileRoomSlot } from "../services/reptileRoomService";
 import { VivariumBuilder3D } from "../components/reptile-room-3d/VivariumBuilder3D";
 
 export default function ReptileVivarium3DEditor() {
@@ -18,8 +18,8 @@ export default function ReptileVivarium3DEditor() {
 
     async function load() {
       try {
-        const room = await getReptileRoom(user.uid);
-        const allSlots = [...(room?.slots ?? []), ...(room?.storedSlots ?? [])];
+        const rooms = await loadReptileRooms(user.uid);
+        const allSlots = rooms.flatMap((room) => [...room.slots, ...room.storedSlots]);
         const found = allSlots.find((item) => item.id === id) ?? null;
         if (!cancelled) {
           if (!found) setError("This vivarium could not be found in your Reptile Room.");
