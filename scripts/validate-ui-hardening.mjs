@@ -4,8 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const read = (file) => fs.readFile(path.join(root, file), "utf8");
 
-const [main, hardening, contract] = await Promise.all([
+const [main, ui, hardening, contract] = await Promise.all([
   read("src/main.tsx"),
+  read("src/styles/tiny-titans-professional-ui.css"),
   read("src/styles/tiny-titans-professional-hardening.css"),
   read("docs/visual-design-contract.json").then(JSON.parse),
 ]);
@@ -20,7 +21,7 @@ const requiredTokens = [
   "--tt-ui-success", "--tt-ui-warning", "--tt-ui-danger", "--tt-ui-focus",
 ];
 for (const token of requiredTokens) {
-  if (!hardening.includes(token) && !main.includes(token)) throw new Error(`UI hardening contract: expected token ${token} is missing.`);
+  if (!ui.includes(token) && !hardening.includes(token) && !main.includes(token)) throw new Error(`UI hardening contract: expected token ${token} is missing.`);
 }
 
 const requiredSafeguards = [
