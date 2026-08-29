@@ -12,20 +12,22 @@ const LOOK_SENSITIVITY = 0.0032;
 const MIN_PITCH = -Math.PI / 2.35;
 const MAX_PITCH = Math.PI / 2.35;
 const DEFAULT_USER_HEIGHT_CM = 165;
-const MIN_USER_HEIGHT_CM = 120;
-const MAX_USER_HEIGHT_CM = 220;
+const MIN_USER_HEIGHT_CM = 50;
+const MAX_USER_HEIGHT_CM = 250;
 const DEFAULT_PITCH = -0.08;
 const USER_HEIGHT_STORAGE_KEY = "tinyTitans.rr3d.userHeightCm";
 const CAMERA_FOV = 72;
 
 type Room3DWindow = Window & { __tinyTitansRoom3DCamera?: import("three").Camera };
 
+function clampUserHeight(value: number) {
+  return Math.min(MAX_USER_HEIGHT_CM, Math.max(MIN_USER_HEIGHT_CM, Math.round(value)));
+}
+
 function readUserHeight() {
   try {
     const stored = Number(localStorage.getItem(USER_HEIGHT_STORAGE_KEY));
-    if (Number.isFinite(stored)) {
-      return Math.min(MAX_USER_HEIGHT_CM, Math.max(MIN_USER_HEIGHT_CM, Math.round(stored)));
-    }
+    if (Number.isFinite(stored)) return clampUserHeight(stored);
   } catch {
     // Optional persistence only.
   }
@@ -89,9 +91,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     host.__tinyTitansRoom3DCamera = camera;
     window.dispatchEvent(new CustomEvent("tiny-titans:room3d-camera-ready"));
     return () => {
-      if (host.__tinyTitansRoom3DCamera === camera) {
-        delete host.__tinyTitansRoom3DCamera;
-      }
+      if (host.__tinyTitansRoom3DCamera === camera) delete host.__tinyTitansRoom3DCamera;
     };
   }, [camera]);
 
@@ -108,7 +108,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
       zIndex: "46",
       display: "grid",
       gap: "6px",
-      minWidth: "150px",
+      minWidth: "170px",
       padding: "9px 10px",
       border: "1px solid rgba(255,255,255,.14)",
       borderRadius: "10px",
@@ -133,7 +133,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     const row = document.createElement("div");
     Object.assign(row.style, {
       display: "grid",
-      gridTemplateColumns: "1fr 58px",
+      gridTemplateColumns: "1fr 72px",
       gap: "7px",
       alignItems: "center",
     });
@@ -153,11 +153,12 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     number.max = String(MAX_USER_HEIGHT_CM);
     number.step = "1";
     number.value = String(userHeightCm);
+    number.inputMode = "numeric";
     number.setAttribute("aria-label", "Keeper camera height");
     Object.assign(number.style, {
-      width: "58px",
+      width: "72px",
       boxSizing: "border-box",
-      padding: "5px 6px",
+      padding: "6px 7px",
       border: "1px solid rgba(255,255,255,.15)",
       borderRadius: "7px",
       background: "#101316",
@@ -175,20 +176,56 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
       textAlign: "right",
     });
 
-    const applyHeight = (raw: string) => {
+    let draftValue = String(userHeightCm);
+
+    const commitHeight = (raw: string) => {
       const numeric = Number(raw);
-      if (!Number.isFinite(numeric)) return;
-      const next = Math.min(MAX_USER_HEIGHT_CM, Math.max(MIN_USER_HEIGHT_CM, Math.round(numeric)));
+      if (!Number.isFinite(numeric)) {
+        number.value = String(userHeightCm);
+        draftValue = String(userHeightCm);
+        return;
+      }
+      const next = clampUserHeight(numeric);
       setUserHeightCm(next);
       range.value = String(next);
       number.value = String(next);
       valueText.textContent = `${next} cm`;
+      draftValue = String(next);
     };
 
-    const onRangeInput = () => applyHeight(range.value);
-    const onNumberInput = () => applyHeight(number.value);
+    const onRangeInput = () => {
+      const next = clampUserHeight(Number(range.value));
+      setUserHeightCm(next);
+      number.value = String(next);
+      valueText.textContent = `${next} cm`;
+      draftValue = String(next);
+    };
+
+    const onNumberInput = () => {
+      draftValue = number.value;
+      valueText.textContent = draftValue ? `${draftValue} cm` : "Enter height";
+    };
+
+    const onNumberBlur = () => commitHeight(draftValue);
+    const onNumberKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        commitHeight(draftValue);
+        number.blur();
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        number.value = String(userHeightCm);
+        draftValue = String(userHeightCm);
+        valueText.textContent = `${userHeightCm} cm`;
+        number.blur();
+      }
+    };
+
     range.addEventListener("input", onRangeInput);
     number.addEventListener("input", onNumberInput);
+    number.addEventListener("blur", onNumberBlur);
+    number.addEventListener("keydown", onNumberKeyDown);
     control.addEventListener("pointerdown", (event) => event.stopPropagation());
     control.addEventListener("click", (event) => event.stopPropagation());
 
@@ -199,6 +236,8 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     return () => {
       range.removeEventListener("input", onRangeInput);
       number.removeEventListener("input", onNumberInput);
+      number.removeEventListener("blur", onNumberBlur);
+      number.removeEventListener("keydown", onNumberKeyDown);
       control.remove();
     };
   }, [gl, userHeightCm]);
@@ -263,10 +302,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
       lastX = event.clientX;
       lastY = event.clientY;
       yawRef.current += dx * LOOK_SENSITIVITY;
-      pitchRef.current = Math.min(
-        MAX_PITCH,
-        Math.max(MIN_PITCH, pitchRef.current - dy * LOOK_SENSITIVITY),
-      );
+      pitchRef.current = Math.min(MAX_PITCH, Math.max(MIN_PITCH, pitchRef.current - dy * LOOK_SENSITIVITY));
       camera.rotation.order = "YXZ";
       camera.rotation.y = yawRef.current;
       camera.rotation.x = pitchRef.current;
@@ -280,9 +316,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
       if (pointerId !== event.pointerId) return;
       dragging = false;
       pointerId = null;
-      if (canvas.hasPointerCapture?.(event.pointerId)) {
-        canvas.releasePointerCapture(event.pointerId);
-      }
+      if (canvas.hasPointerCapture?.(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
       canvas.style.cursor = "grab";
     };
 
@@ -295,9 +329,7 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     return () => {
       if (pendingStart !== null) cancelAnimationFrame(pendingStart);
       canvas.style.cursor = "";
-      if (pointerId !== null && canvas.hasPointerCapture?.(pointerId)) {
-        canvas.releasePointerCapture(pointerId);
-      }
+      if (pointerId !== null && canvas.hasPointerCapture?.(pointerId)) canvas.releasePointerCapture(pointerId);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", stopDragging);
