@@ -21,6 +21,14 @@ Object.assign(exports, {
   declineCreatorTesterInvitation: creatorTesterInvitation.declineCreatorTesterInvitation,
 });
 
+// Notification delivery is intentionally explicit here so the scheduler and
+// callable endpoints are actually deployed as Firebase Cloud Functions.
+Object.assign(exports, require("./notificationTest"));
+const familyNotifications = require("./familyNotifications");
+exports.sendAllKeeperReminderNotifications = familyNotifications.sendAllKeeperReminderNotifications;
+const equipmentNotifications = require("./equipmentNotifications");
+exports.sendEquipmentReplacementNotifications = equipmentNotifications.sendEquipmentReplacementNotifications;
+
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 const PRICE_TIERS = Object.freeze({
@@ -195,9 +203,3 @@ exports.queueFamilyInvitationEmail = onDocumentCreated({ region: "europe-west2",
     createdAt: FieldValue.serverTimestamp(),
   });
 });
-
-// Scheduled push-notification jobs are intentionally not exported here.
-// Keeper reminders and equipment maintenance remain in-app data and can be
-// evaluated when the user opens Tiny Titans. This prevents an always-running
-// 5-minute/ daily server workload while the no-Cloud-Functions migration is
-// completed.
