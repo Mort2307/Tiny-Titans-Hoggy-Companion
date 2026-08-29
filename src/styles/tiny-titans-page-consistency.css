@@ -1,0 +1,20 @@
+/* Tiny Titans — cross-page consistency layer */
+:where(.page-container,.page-shell,.content-container,.main-content){width:min(1180px,100%);margin-inline:auto;min-width:0}
+:where(.page-container,.page-shell) :where(.page-header,.section-header,.content-header){display:flex;align-items:flex-start;justify-content:space-between;gap:18px;min-width:0;margin-bottom:22px}
+:where(.page-container,.page-shell) :where(.page-header h1,.page-title,.section-header h1){margin:0;font-size:clamp(1.55rem,3vw,2.15rem);line-height:1.1;letter-spacing:-.025em}
+:where(.page-container,.page-shell) :where(.page-header p,.page-subtitle,.section-header p){margin:7px 0 0;color:var(--tt-ui-text-soft,#bdb6c6);line-height:1.55;max-width:760px}
+:where(.page-container,.page-shell) :where(.welcome-card,.section-card,.content-card,.form-card,.data-card,.tracker-card,.dashboard-card,.panel-card,.info-card){min-width:0;border:1px solid var(--tt-ui-border,#ffffff14);border-radius:16px;background:rgba(255,255,255,.018);box-shadow:0 12px 38px rgba(0,0,0,.12);padding:clamp(16px,2vw,22px)}
+:where(.page-container,.page-shell) :where(.section-card,.content-card,.form-card,.data-card,.tracker-card,.dashboard-card,.panel-card,.info-card)+:where(.section-card,.content-card,.form-card,.data-card,.tracker-card,.dashboard-card,.panel-card,.info-card){margin-top:14px}
+:where(.page-container,.page-shell) :where(.card-title,.section-title){font-size:1rem;font-weight:800;letter-spacing:-.01em;margin:0 0 8px}
+:where(.page-container,.page-shell) :where(.card-description,.section-description,.helper-text){color:var(--tt-ui-text-soft,#bdb6c6);line-height:1.5}
+:where(.page-container,.page-shell) :where(.empty-state,.no-results,.empty-card){display:grid;place-items:center;text-align:center;min-height:180px;padding:26px;border:1px dashed var(--tt-ui-border,#ffffff22);border-radius:16px;background:rgba(255,255,255,.012);color:var(--tt-ui-text-soft,#bdb6c6)}
+:where(.page-container,.page-shell) :where(.form-group,.field,.form-field){min-width:0;margin-bottom:14px}
+:where(.page-container,.page-shell) :where(label){display:block;margin-bottom:7px;font-size:.86rem;font-weight:750;color:var(--tt-ui-text-soft,#c9c3cf)}
+:where(.page-container,.page-shell) :where(input,select,textarea){min-width:0;max-width:100%;border:1px solid var(--tt-ui-border,#ffffff18);border-radius:10px;background:rgba(0,0,0,.18);color:inherit;padding:10px 12px;outline:none}
+:where(.page-container,.page-shell) :where(input,select,textarea):focus{border-color:rgba(240,187,88,.7);box-shadow:0 0 0 3px rgba(240,187,88,.1)}
+:where(.page-container,.page-shell) :where(button,.button,.btn){min-height:44px;border-radius:10px;font-weight:750}
+:where(.page-container,.page-shell) :where(table){width:100%;border-collapse:collapse}
+:where(.page-container,.page-shell) :where(th,td){padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;overflow-wrap:anywhere}
+:where(.page-container,.page-shell) :where(th){font-size:.78rem;text-transform:uppercase;letter-spacing:.055em;color:var(--tt-ui-text-muted,#918999);font-weight:800}
+@media(max-width:700px){:where(.page-container,.page-shell){padding-inline:10px}:where(.page-container,.page-shell) :where(.page-header,.section-header,.content-header){flex-direction:column}:where(.page-container,.page-shell) :where(.page-header h1,.page-title,.section-header h1){font-size:1.5rem}:where(.page-container,.page-shell) :where(.welcome-card,.section-card,.content-card,.form-card,.data-card,.tracker-card,.dashboard-card,.panel-card,.info-card){padding:15px;border-radius:14px}:where(.page-container,.page-shell) :where(table){display:block;overflow-x:auto}}
+@media(prefers-reduced-motion:reduce){:where(.page-container,.page-shell) *{scroll-behavior:auto!important}}
