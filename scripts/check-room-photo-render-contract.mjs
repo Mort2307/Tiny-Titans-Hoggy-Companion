@@ -28,14 +28,34 @@ assert(
   "The 3D renderer must receive the slot-scoped image URL.",
 );
 assert(
+  "Every vivarium has scalable glass",
+  /function VivariumModel\([\s\S]*?glassWidth[\s\S]*?glassHeight/.test(object),
+  "Vivarium glass must be derived from each enclosure's width and height.",
+);
+assert(
+  "Glass is clickable",
+  /vivariumGlassHitArea/.test(object) && /onSelectGlass/.test(object),
+  "The vivarium glass surface must be its own selectable interaction target.",
+);
+assert(
+  "Empty glass exposes photo action",
+  /vivariumPhotoPlaceholder/.test(object) && /ADD VIVARIUM PHOTO/.test(object),
+  "Every vivarium without a photo must expose the scalable glass photo placeholder.",
+);
+assert(
   "Photo mesh is tagged",
   /userData=\{\{ vivariumFaceImage: true \}\}/.test(object),
   "Vivarium face photo meshes must be identifiable for rendering hardening.",
 );
 assert(
-  "Build transform hardens photo depth",
-  /name: "tiny-titans-room-photo-depth-fix"/.test(vite) && /depthTest=\{true\}/.test(vite) && /side=\{THREE\.FrontSide\}/.test(vite),
-  "Vite must convert the legacy depth-disabled vivarium photo material into a depth-tested front-facing surface.",
+  "Photo is depth-tested and double-sided",
+  /map=\{texture\}[\s\S]*?depthTest[\s\S]*?side=\{THREE\.DoubleSide\}/.test(object),
+  "The photo must stay attached to the 3D glass while remaining visible from either side.",
+);
+assert(
+  "No temporary photo build transform",
+  !/tiny-titans-room-photo-depth-fix/.test(vite),
+  "Photo rendering must be correct in the component source without a Vite transform hack.",
 );
 
 const failed = checks.filter((check) => !check.condition);
