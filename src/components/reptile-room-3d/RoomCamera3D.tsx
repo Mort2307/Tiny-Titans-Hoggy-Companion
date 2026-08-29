@@ -185,8 +185,10 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
       valueText.textContent = `${next} cm`;
     };
 
-    range.addEventListener("input", () => applyHeight(range.value));
-    number.addEventListener("input", () => applyHeight(number.value));
+    const onRangeInput = () => applyHeight(range.value);
+    const onNumberInput = () => applyHeight(number.value);
+    range.addEventListener("input", onRangeInput);
+    number.addEventListener("input", onNumberInput);
     control.addEventListener("pointerdown", (event) => event.stopPropagation());
     control.addEventListener("click", (event) => event.stopPropagation());
 
@@ -195,8 +197,8 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     stage.appendChild(control);
 
     return () => {
-      range.removeEventListener("input", () => applyHeight(range.value));
-      number.removeEventListener("input", () => applyHeight(number.value));
+      range.removeEventListener("input", onRangeInput);
+      number.removeEventListener("input", onNumberInput);
       control.remove();
     };
   }, [gl, userHeightCm]);
@@ -207,30 +209,26 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
     if (!stage) return undefined;
 
     const syncViewport = () => {
-      if (camera instanceof PerspectiveCamera) {
-        const rect = stage.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          camera.aspect = rect.width / rect.height;
-          camera.fov = CAMERA_FOV;
-          camera.near = 0.01;
-          camera.far = Math.max(width, depth, height) * 5;
-          camera.updateProjectionMatrix();
-        }
-      }
-      gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      gl.setSize(stage.clientWidth, stage.clientHeight, false);
+      if (!(camera instanceof PerspectiveCamera)) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      camera.aspect = rect.width / rect.height;
+      camera.fov = CAMERA_FOV;
+      camera.near = 0.01;
+      camera.far = Math.max(width, depth, height) * 5;
+      camera.updateProjectionMatrix();
     };
 
     syncViewport();
     const observer = new ResizeObserver(syncViewport);
-    observer.observe(stage);
+    observer.observe(canvas);
     window.addEventListener("resize", syncViewport);
 
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", syncViewport);
     };
-  }, [camera, depth, gl, height, width]);
+  }, [camera, gl, height, width, depth]);
 
   useEffect(() => {
     const canvas = gl.domElement;
