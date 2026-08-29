@@ -3,6 +3,9 @@ import Header from "./Header";
 import Navigation from "./Navigation";
 import AdaptiveGuideBar from "../AdaptiveGuideBar";
 import CreatorTesterInvitationBanner from "../CreatorTesterInvitationBanner";
+import TitanQuickActions from "../TitanQuickActions";
+import CreatorCommandBar from "../CreatorCommandBar";
+import CreatorStatusBar from "../CreatorStatusBar";
 
 function Layout() {
   return (
@@ -14,6 +17,9 @@ function Layout() {
         <div className="app-content">
           <AdaptiveGuideBar />
           <CreatorTesterInvitationBanner />
+          <CreatorCommandBar />
+          <CreatorStatusBar />
+          <TitanQuickActions />
           <div className="tt-page-frame">
             <Outlet />
           </div>
