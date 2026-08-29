@@ -21,7 +21,7 @@ function RoomScene({ room, showGrid = true, showCeiling = false, viewerMode = fa
     <hemisphereLight intensity={0.45} groundColor="#202226" color="#f2ead9" />
     <directionalLight position={[width * 0.25, height, depth * 0.15]} intensity={1.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
     <RoomShell3D room={room} showCeiling={showCeiling} />
-    {slots.map((slot) => <RoomObject3D key={`slot-${slot.id}`} room={room} object={slot} isSlot photoUrl={photoForSlot?.(slot)} selected={!viewerMode && selectedType === "slot" && selectedId === slot.id} onSelect={(id) => onSelect({ type: "slot", id })} onMove={(dx, dy, dz, commit) => handleMove("slot", slot.id, dx, dy, dz, commit)} />)}
+    {slots.map((slot) => <RoomObject3D key={`slot-${slot.id}`} room={room} object={slot} isSlot photoUrl={photoForSlot?.(slot) ?? slot.photoUrl} selected={!viewerMode && selectedType === "slot" && selectedId === slot.id} onSelect={(id) => onSelect({ type: "slot", id })} onMove={(dx, dy, dz, commit) => handleMove("slot", slot.id, dx, dy, dz, commit)} />)}
     {objects.map((object) => <RoomObject3D key={object.id} room={room} object={object} selected={!viewerMode && selectedType === "object" && selectedId === object.id} onSelect={(id) => onSelect({ type: "object", id })} onMove={(dx, dy, dz, commit) => handleMove("object", object.id, dx, dy, dz, commit)} />)}
     {showGrid && !viewerMode && <MeasurementGrid3D room={room} />}
     {!viewerMode && <RoomNavigation3D room={room} activeNodeId={navigationNode.id} onTeleport={onTeleport} />}
