@@ -15,16 +15,16 @@ const snakeName = (snake: Snake | undefined) => snake?.name ?? "Unnamed Hoggy";
 const vivWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
 const vivDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.depth ?? slot.h);
 const vivHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
-type SlotTransform = ReptileRoomSlot & { rotation?: number };
+type SlotTransform = ReptileRoomSlot & { rotation?: number; parentAssetId?: string | null };
 const slotRotation = (slot: ReptileRoomSlot | null) => slot ? (slot as SlotTransform).rotation ?? 0 : 0;
+const slotParentAssetId = (slot: ReptileRoomSlot | null) => slot ? (slot as SlotTransform).parentAssetId ?? null : null;
 
 type NodeRef = { type: "slot" | "object"; id: string };
 const entityGroup = (room: ReptileRoomWorkspace, node: NodeRef) => node.type === "slot" ? room.slots.find((item) => item.id === node.id)?.stackGroupId ?? null : (room.objects ?? []).find((item) => item.id === node.id)?.stackGroupId ?? null;
-const entityParent = (room: ReptileRoomWorkspace, node: NodeRef) => node.type === "slot" ? room.slots.find((item) => item.id === node.id)?.parentAssetId ?? null : (room.objects ?? []).find((item) => item.id === node.id)?.parentAssetId ?? null;
 
 function getMovementMembers(room: ReptileRoomWorkspace, selection: NodeRef): NodeRef[] {
   const result = new Map<string, NodeRef>();
-  const add = (node: NodeRef) => { const key = `${node.type}:${node.id}`; if (result.has(key)) return; result.set(key, node); };
+  const add = (node: NodeRef) => { const key = `${node.type}:${node.id}`; if (!result.has(key)) result.set(key, node); };
   add(selection);
   const selectedGroup = entityGroup(room, selection);
   if (selectedGroup) {
@@ -39,7 +39,8 @@ function getMovementMembers(room: ReptileRoomWorkspace, selection: NodeRef): Nod
       current.forEach((node) => {
         const group = entityGroup(room, node);
         room.slots.forEach((slot) => {
-          if (slot.parentAssetId === node.id || (group && slot.stackGroupId === group)) { const before = result.size; add({ type: "slot", id: slot.id }); changed ||= result.size !== before; }
+          const parent = slotParentAssetId(slot);
+          if (parent === node.id || (group && slot.stackGroupId === group)) { const before = result.size; add({ type: "slot", id: slot.id }); changed ||= result.size !== before; }
         });
         (room.objects ?? []).forEach((object) => {
           if (object.parentAssetId === node.id || (group && object.stackGroupId === group)) { const before = result.size; add({ type: "object", id: object.id }); changed ||= result.size !== before; }
@@ -53,26 +54,11 @@ function getMovementMembers(room: ReptileRoomWorkspace, selection: NodeRef): Nod
 function getMovedRoom(room: ReptileRoomWorkspace, selection: Room3DSelection, dx: number, dy: number, dz: number, commit: boolean): ReptileRoomWorkspace {
   if (!selection) return room;
   const members = getMovementMembers(room, selection);
-  const moveSlot = (slot: ReptileRoomSlot): ReptileRoomSlot => ({
-    ...slot,
-    x: clamp(slot.x + dx, 0, Math.max(0, (room.width ?? 0) - vivWidth(slot))),
-    y: clamp(slot.y + dy, 0, Math.max(0, (room.depth ?? 0) - vivDepth(slot))),
-    z: clamp(slot.z + dz, 0, Math.max(0, (room.height ?? 0) - vivHeight(slot))),
-  });
-  const moveObject = (object: ReptileRoomObject): ReptileRoomObject => ({
-    ...object,
-    x: clamp(object.x + dx, 0, Math.max(0, (room.width ?? 0) - object.width)),
-    y: clamp(object.y + dy, 0, Math.max(0, (room.depth ?? 0) - object.depth)),
-    z: clamp(object.z + dz, 0, Math.max(0, (room.height ?? 0) - object.height)),
-  });
+  const moveSlot = (slot: ReptileRoomSlot): ReptileRoomSlot => ({ ...slot, x: clamp(slot.x + dx, 0, Math.max(0, (room.width ?? 0) - vivWidth(slot))), y: clamp(slot.y + dy, 0, Math.max(0, (room.depth ?? 0) - vivDepth(slot))), z: clamp(slot.z + dz, 0, Math.max(0, (room.height ?? 0) - vivHeight(slot))) });
+  const moveObject = (object: ReptileRoomObject): ReptileRoomObject => ({ ...object, x: clamp(object.x + dx, 0, Math.max(0, (room.width ?? 0) - object.width)), y: clamp(object.y + dy, 0, Math.max(0, (room.depth ?? 0) - object.depth)), z: clamp(object.z + dz, 0, Math.max(0, (room.height ?? 0) - object.height)) });
   const slotIds = new Set(members.filter((item) => item.type === "slot").map((item) => item.id));
   const objectIds = new Set(members.filter((item) => item.type === "object").map((item) => item.id));
-  return {
-    ...room,
-    slots: room.slots.map((slot) => slotIds.has(slot.id) ? moveSlot(slot) : slot),
-    objects: (room.objects ?? []).map((object) => objectIds.has(object.id) ? moveObject(object) : object),
-    updatedAt: commit ? new Date().toISOString() : room.updatedAt,
-  };
+  return { ...room, slots: room.slots.map((slot) => slotIds.has(slot.id) ? moveSlot(slot) : slot), objects: (room.objects ?? []).map((object) => objectIds.has(object.id) ? moveObject(object) : object), updatedAt: commit ? new Date().toISOString() : room.updatedAt };
 }
 
 const ASSETS: Room3DAssetPreset[] = [
@@ -134,12 +120,11 @@ export default function ReptileRoom3D() {
 
   const addAsset = useCallback((preset: Room3DAssetPreset) => {
     if (!room) return;
-    const roomWidth = room.width ?? 0;
-    const roomDepth = room.depth ?? 0;
+    const roomWidth = room.width ?? 0; const roomDepth = room.depth ?? 0;
     const x = clamp(snap((roomWidth - preset.width) / 2), 0, Math.max(0, roomWidth - preset.width));
     const y = clamp(snap((roomDepth - preset.depth) / 2), 0, Math.max(0, roomDepth - preset.depth));
     if (preset.kind === "vivarium") {
-      const slot: ReptileRoomSlot = { id: nextId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0, w: preset.width, h: preset.depth, depth: preset.depth, height: preset.height, lifecycleStatus: "empty", condition: "good", availability: "available", storageLocation: "", storageNote: "", notes: "", maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, parentAssetId: null, photoUrl: "" };
+      const slot: ReptileRoomSlot = { id: nextId("viv"), snakeId: null, label: "Empty Vivarium", x, y, z: 0, w: preset.width, h: preset.depth, depth: preset.depth, height: preset.height, lifecycleStatus: "empty", condition: "good", availability: "available", storageLocation: "", storageNote: "", notes: "", maintenanceNote: "", stackGroupId: null, stackIndex: 0, parentSlotId: null, photoUrl: "" };
       updateRoom((current) => ({ ...current, slots: [...current.slots, slot] }), "Vivarium added."); setSelected({ type: "slot", id: slot.id }); return;
     }
     const object: ReptileRoomObject = { id: nextId(preset.kind), kind: preset.kind as ReptileFurnitureKind, label: preset.label, x, y, z: 0, width: preset.width, depth: preset.depth, height: preset.height, rotation: 0, wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType: preset.assetType ?? "furniture" };
@@ -149,42 +134,35 @@ export default function ReptileRoom3D() {
   const moveSelection = useCallback((selection: { type: "slot" | "object"; id: string }, dx: number, dy: number, dz: number, commit: boolean) => {
     const current = roomsRef.current.find((item) => item.id === room?.id); if (!current) return;
     const next = getMovedRoom(current, selection, dx, dy, dz, commit);
-    setRooms((items) => items.map((item) => item.id === next.id ? next : item));
-    roomsRef.current = roomsRef.current.map((item) => item.id === next.id ? next : item);
+    setRooms((items) => items.map((item) => item.id === next.id ? next : item)); roomsRef.current = roomsRef.current.map((item) => item.id === next.id ? next : item);
     if (commit) void persistRooms(roomsRef.current);
   }, [persistRooms, room?.id]);
 
-  const moveBy = (dx: number, dy: number, dz: number, label: string) => { if (selected) moveSelection(selected, dx, dy, dz, true); if (selected) setNotice(`${label} 5 cm.`); };
+  const moveBy = (dx: number, dy: number, dz: number, label: string) => { if (selected) { moveSelection(selected, dx, dy, dz, true); setNotice(`${label} 5 cm.`); } };
 
   const snapSelected = () => {
     if (!room || !selected) return;
-    const apply = (current: ReptileRoomWorkspace) => {
-      const members = getMovementMembers(current, selected);
-      const ids = new Set(members.map((item) => `${item.type}:${item.id}`));
-      const snapSlot = (slot: ReptileRoomSlot) => ids.has(`slot:${slot.id}`) ? { ...slot, x: snap(slot.x), y: snap(slot.y), z: snap(slot.z) } : slot;
-      const snapObject = (object: ReptileRoomObject) => ids.has(`object:${object.id}`) ? { ...object, x: snap(object.x), y: snap(object.y), z: snap(object.z) } : object;
-      return { ...current, slots: current.slots.map(snapSlot), objects: (current.objects ?? []).map(snapObject) };
-    };
-    updateRoom(apply, "Snapped to 5 cm grid.");
+    updateRoom((current) => {
+      const members = getMovementMembers(current, selected); const ids = new Set(members.map((item) => `${item.type}:${item.id}`));
+      return { ...current, slots: current.slots.map((slot) => ids.has(`slot:${slot.id}`) ? { ...slot, x: snap(slot.x), y: snap(slot.y), z: snap(slot.z) } : slot), objects: (current.objects ?? []).map((object) => ids.has(`object:${object.id}`) ? { ...object, x: snap(object.x), y: snap(object.y), z: snap(object.z) } : object) };
+    }, "Snapped to 5 cm grid.");
   };
 
   const snapToWall = () => {
     if (!room || !selected) return;
     updateRoom((current) => {
-      const apply = (x: number, y: number, width: number, depth: number, rotation: number) => {
-        const quarterTurn = Math.round(((rotation % 360) + 360) % 360 / 90) % 2;
-        const w = quarterTurn ? depth : width;
-        const d = quarterTurn ? width : depth;
-        const candidates = [
+      const nearestWall = (x: number, y: number, width: number, depth: number, rotation: number) => {
+        const quarterTurn = Math.round((((rotation % 360) + 360) % 360) / 90) % 2;
+        const w = quarterTurn ? depth : width; const d = quarterTurn ? width : depth;
+        return [
           { distance: x, x: 0, y },
-          { distance: Math.max(0, (current.width ?? 0) - (x + w)), x: Math.max(0, (current.width ?? 0) - w), y },
+          { distance: Math.max(0, (current.width ?? 0) - x - w), x: Math.max(0, (current.width ?? 0) - w), y },
           { distance: y, x, y: 0 },
-          { distance: Math.max(0, (current.depth ?? 0) - (y + d)), x, y: Math.max(0, (current.depth ?? 0) - d) },
-        ];
-        return candidates.sort((a, b) => a.distance - b.distance)[0];
+          { distance: Math.max(0, (current.depth ?? 0) - y - d), x, y: Math.max(0, (current.depth ?? 0) - d) },
+        ].sort((a, b) => a.distance - b.distance)[0];
       };
-      if (selected.type === "slot") return { ...current, slots: current.slots.map((slot) => slot.id === selected.id ? { ...slot, ...apply(slot.x, slot.y, vivWidth(slot), vivDepth(slot), slotRotation(slot)), x: snap(apply(slot.x, slot.y, vivWidth(slot), vivDepth(slot), slotRotation(slot)).x), y: snap(apply(slot.x, slot.y, vivWidth(slot), vivDepth(slot), slotRotation(slot)).y) } : slot) };
-      return { ...current, objects: (current.objects ?? []).map((object) => object.id === selected.id ? { ...object, ...apply(object.x, object.y, object.width, object.depth, object.rotation), x: snap(apply(object.x, object.y, object.width, object.depth, object.rotation).x), y: snap(apply(object.x, object.y, object.width, object.depth, object.rotation).y) } : object) };
+      if (selected.type === "slot") return { ...current, slots: current.slots.map((slot) => { if (slot.id !== selected.id) return slot; const p = nearestWall(slot.x, slot.y, vivWidth(slot), vivDepth(slot), slotRotation(slot)); return { ...slot, x: snap(p.x), y: snap(p.y) }; }) };
+      return { ...current, objects: (current.objects ?? []).map((object) => { if (object.id !== selected.id) return object; const p = nearestWall(object.x, object.y, object.width, object.depth, object.rotation); return { ...object, x: snap(p.x), y: snap(p.y) }; }) };
     }, "Snapped to nearest wall.");
   };
 
@@ -192,16 +170,16 @@ export default function ReptileRoom3D() {
     if (!room || !selectedSlot) { setNotice("Select a vivarium to use Stack snap."); return; }
     const shelves = objects.filter((object) => object.kind === "shelving" || object.kind === "rack");
     if (!shelves.length) { setNotice("Add a Shelving or Reptile Rack asset first."); return; }
-    const best = shelves.map((shelf) => {
-      const levels = [0.08, 0.31, 0.54, 0.77, 0.96].map((ratio) => shelf.z + shelf.height * ratio).filter((z) => z + vivHeight(selectedSlot) <= (room.height ?? 0) + 0.01);
-      const level = levels.sort((a, b) => Math.abs(a - selectedSlot.z) - Math.abs(b - selectedSlot.z))[0];
-      if (level === undefined) return null;
+    const options = shelves.flatMap((shelf) => [0.08, 0.31, 0.54, 0.77, 0.96].map((ratio) => {
+      const level = shelf.z + shelf.height * ratio;
+      if (level + vivHeight(selectedSlot) > (room.height ?? 0) + 0.01) return null;
       const x = clamp(snap(shelf.x + (shelf.width - vivWidth(selectedSlot)) / 2), 0, Math.max(0, (room.width ?? 0) - vivWidth(selectedSlot)));
       const y = clamp(snap(shelf.y + (shelf.depth - vivDepth(selectedSlot)) / 2), 0, Math.max(0, (room.depth ?? 0) - vivDepth(selectedSlot)));
       return { shelf, level, x, y, distance: Math.hypot(x - selectedSlot.x, y - selectedSlot.y) + Math.abs(level - selectedSlot.z) };
-    }).filter(Boolean).sort((a, b) => (a?.distance ?? Infinity) - (b?.distance ?? Infinity))[0];
+    })).filter((item): item is { shelf: ReptileRoomObject; level: number; x: number; y: number; distance: number } => item !== null).sort((a, b) => a.distance - b.distance);
+    const best = options[0];
     if (!best) { setNotice("No shelf level has enough vertical clearance for this vivarium."); return; }
-    updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, x: best.x, y: best.y, z: best.level, parentAssetId: best.shelf.id, parentSlotId: null } : slot) }), `Vivarium snapped to ${best.shelf.label}.`);
+    updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? ({ ...slot, x: best.x, y: best.y, z: best.level, parentAssetId: best.shelf.id, parentSlotId: null } as SlotTransform) : slot) }), `Vivarium snapped to ${best.shelf.label}.`);
   };
 
   const magnetLockSelected = () => {
@@ -209,7 +187,7 @@ export default function ReptileRoom3D() {
     const candidates = slots.filter((slot) => slot.id !== selectedSlot.id);
     if (!candidates.length) { setNotice("Add another vivarium before using magnet lock."); return; }
     const nearest = candidates.reduce((best, slot) => Math.hypot(slot.x - selectedSlot.x, slot.y - selectedSlot.y) + Math.abs(slot.z - selectedSlot.z) * 0.5 < Math.hypot(best.x - selectedSlot.x, best.y - selectedSlot.y) + Math.abs(best.z - selectedSlot.z) * 0.5 ? slot : best, candidates[0]);
-    const groupIds = new Set([selectedSlot.stackGroupId, nearest.stackGroupId].filter(Boolean) as string[]);
+    const groupIds = new Set([selectedSlot.stackGroupId, nearest.stackGroupId].filter((id): id is string => Boolean(id)));
     const groupId = groupIds.values().next().value ?? nextId("mag");
     updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => groupIds.has(slot.stackGroupId ?? "") || slot.id === selectedSlot.id || slot.id === nearest.id ? { ...slot, stackGroupId: groupId } : slot) }), `${selectedSlot.label} magnet-locked to ${nearest.label}.`);
   };
@@ -222,21 +200,21 @@ export default function ReptileRoom3D() {
   };
 
   const unstackSelected = () => {
-    if (!selectedSlot?.parentAssetId) { setNotice("This vivarium is not attached to shelving."); return; }
-    updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, parentAssetId: null, stackIndex: 0 } : slot) }), "Vivarium removed from shelving lock.");
+    if (!selectedSlot || !slotParentAssetId(selectedSlot)) { setNotice("This vivarium is not attached to shelving."); return; }
+    updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? ({ ...slot, parentAssetId: null, stackIndex: 0 } as SlotTransform) : slot) }), "Vivarium removed from shelving lock.");
   };
 
   const deleteSelected = () => {
     if (!room || !selected) return;
     const label = selected.type === "slot" ? selectedSlot?.label : selectedObject?.label; if (!label || !window.confirm(`Delete ${label}? This cannot be undone.`)) return;
     if (selected.type === "slot") { const group = selectedSlot?.stackGroupId; updateRoom((current) => ({ ...current, slots: current.slots.filter((slot) => group ? slot.stackGroupId !== group : slot.id !== selected.id) }), group ? "Mag-locked vivarium group deleted." : "Vivarium deleted."); }
-    else updateRoom((current) => ({ ...current, objects: (current.objects ?? []).filter((object) => object.id !== selected.id), slots: current.slots.map((slot) => slot.parentAssetId === selected.id ? { ...slot, parentAssetId: null } : slot) }), "Room asset deleted.");
+    else updateRoom((current) => ({ ...current, objects: (current.objects ?? []).filter((object) => object.id !== selected.id), slots: current.slots.map((slot) => slotParentAssetId(slot) === selected.id ? ({ ...slot, parentAssetId: null } as SlotTransform) : slot) }), "Room asset deleted.");
     setSelected(null);
   };
 
   const duplicateSelected = () => {
     if (!room || !selected) return;
-    if (selected.type === "slot" && selectedSlot) { const copy = { ...selectedSlot, id: nextId("viv"), label: `${selectedSlot.label} Copy`, x: clamp(selectedSlot.x + 10, 0, Math.max(0, (room.width ?? 0) - vivWidth(selectedSlot))), stackGroupId: null, stackIndex: 0, parentAssetId: null }; updateRoom((current) => ({ ...current, slots: [...current.slots, copy] }), "Vivarium duplicated."); setSelected({ type: "slot", id: copy.id }); }
+    if (selected.type === "slot" && selectedSlot) { const copy = { ...selectedSlot, id: nextId("viv"), label: `${selectedSlot.label} Copy`, x: clamp(selectedSlot.x + 10, 0, Math.max(0, (room.width ?? 0) - vivWidth(selectedSlot))), stackGroupId: null, stackIndex: 0, parentAssetId: null } as SlotTransform; updateRoom((current) => ({ ...current, slots: [...current.slots, copy] }), "Vivarium duplicated."); setSelected({ type: "slot", id: copy.id }); }
     else if (selectedObject) { const copy = { ...selectedObject, id: nextId(selectedObject.kind), label: `${selectedObject.label} Copy`, x: clamp(selectedObject.x + 10, 0, Math.max(0, (room.width ?? 0) - selectedObject.width)), stackGroupId: null, stackIndex: 0, parentAssetId: null }; updateRoom((current) => ({ ...current, objects: [...(current.objects ?? []), copy] }), "Asset duplicated."); setSelected({ type: "object", id: copy.id }); }
   };
 
@@ -273,8 +251,7 @@ export default function ReptileRoom3D() {
 
   const uploadPhoto = async (file: File) => {
     if (!user || !room || !selectedSlot) return;
-    setPhotoBusy(true);
-    const previewUrl = URL.createObjectURL(file);
+    setPhotoBusy(true); const previewUrl = URL.createObjectURL(file);
     try {
       const url = await uploadReptileRoomVivariumPhoto(user.uid, room.id, selectedSlot.id, file);
       setPhotoPreviewUrls((current) => { const previous = current[selectedSlot.id]; if (previous) URL.revokeObjectURL(previous); return { ...current, [selectedSlot.id]: previewUrl }; });
@@ -316,16 +293,8 @@ export default function ReptileRoom3D() {
       <aside className="rr3d-sidebar">
         <section><h2>Room Assets</h2><div className="rr3d-asset-grid">{ASSETS.map((preset) => <button key={preset.label} type="button" className="rr3d-asset-button" onClick={() => addAsset(preset)}><b>{preset.icon}</b><span>{preset.label}</span><small>{preset.width} × {preset.depth} × {preset.height} cm</small></button>)}</div></section>
         {selectedDimensions && <section className="rr3d-selected-editor"><div className="rr3d-editor-heading"><div><span className="rr3d-kicker">SELECTED {selectedSlot ? "VIVARIUM" : "ASSET"}</span><h2>{selectedSlot?.label ?? selectedObject?.label}</h2></div><button type="button" className="rr3d-delete-button" onClick={deleteSelected}>🗑 Delete</button></div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7, marginBottom: 10 }}>
-            {movementButton("Up", 0, 0, 5, "↑")}{movementButton("Down", 0, 0, -5, "↓")}{movementButton("Left", -5, 0, 0, "←")}{movementButton("Right", 5, 0, 0, "→")}{movementButton("Forward", 0, -5, 0, "↟")}{movementButton("Backward", 0, 5, 0, "↡")}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7, marginBottom: 12 }}>
-            <button type="button" onClick={snapToWall}>🧲 Snap to wall</button><button type="button" onClick={snapSelected}>⌖ Snap 5 cm</button>
-            {selectedSlot && <button type="button" onClick={stackSnapSelected}>▤ Stack snap</button>}
-            {selectedSlot && <button type="button" onClick={magnetLockSelected}>🧲 Vivarium magnet lock</button>}
-            {selectedSlot?.stackGroupId && <button type="button" onClick={unlockMagnet}>🔓 Unlock magnet</button>}
-            {selectedSlot?.parentAssetId && <button type="button" onClick={unstackSelected}>↥ Unstack from shelving</button>}
-          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7, marginBottom: 10 }}>{movementButton("Up", 0, 0, 5, "↑")}{movementButton("Down", 0, 0, -5, "↓")}{movementButton("Left", -5, 0, 0, "←")}{movementButton("Right", 5, 0, 0, "→")}{movementButton("Forward", 0, -5, 0, "↟")}{movementButton("Backward", 0, 5, 0, "↡")}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 7, marginBottom: 12 }}><button type="button" onClick={snapToWall}>🧲 Snap to wall</button><button type="button" onClick={snapSelected}>⌖ Snap 5 cm</button>{selectedSlot && <button type="button" onClick={stackSnapSelected}>▤ Stack snap</button>}{selectedSlot && <button type="button" onClick={magnetLockSelected}>🧲 Vivarium magnet lock</button>}{selectedSlot?.stackGroupId && <button type="button" onClick={unlockMagnet}>🔓 Unlock magnet</button>}{slotParentAssetId(selectedSlot) && <button type="button" onClick={unstackSelected}>↥ Unstack from shelving</button>}</div>
           <div className="rr3d-editor-grid"><label>Width (cm)<input type="number" min="1" value={selectedDimensions.width} onChange={(e) => updateSelectedDimensions("width", Number(e.target.value))} /></label><label>Depth (cm)<input type="number" min="1" value={selectedDimensions.depth} onChange={(e) => updateSelectedDimensions("depth", Number(e.target.value))} /></label><label>Height (cm)<input type="number" min="1" value={selectedDimensions.height} onChange={(e) => updateSelectedDimensions("height", Number(e.target.value))} /></label><label>X (cm)<input type="number" value={Math.round(selectedDimensions.x)} onChange={(e) => updateSelectedPosition("x", Number(e.target.value))} /></label><label>Y (cm)<input type="number" value={Math.round(selectedDimensions.y)} onChange={(e) => updateSelectedPosition("y", Number(e.target.value))} /></label><label>Z (cm)<input type="number" value={Math.round(selectedDimensions.z)} onChange={(e) => updateSelectedPosition("z", Number(e.target.value))} /></label></div>
           <div className="rr3d-rotation-editor"><span>Rotation</span><button type="button" onClick={() => updateSelectedRotation(-15)} aria-label="Rotate left 15 degrees">↶</button><strong>{Math.round(selectedRotation)}°</strong><button type="button" onClick={() => updateSelectedRotation(15)} aria-label="Rotate right 15 degrees">↷</button><button type="button" onClick={resetSelectedRotation}>Reset</button></div>
           <div className="rr3d-action-row"><button type="button" onClick={duplicateSelected}>Duplicate</button></div>
