@@ -149,7 +149,7 @@ function SimpleFixture({
           <boxGeometry args={[width, height, depth]} />
           <meshStandardMaterial color="#20262a" roughness={0.58} metalness={0.18} />
         </mesh>
-        {Array.from({ length: 6 }, (_, index) => (
+        {Array.from({ length: 6 }).map((_, index) => (
           <mesh key={index} position={[(index - 2.5) * width * 0.12, 0, depth / 2 + 0.01]}>
             <circleGeometry args={[Math.min(width, height) * 0.07, 16]} />
             <meshStandardMaterial color="#0d1113" />
@@ -317,12 +317,35 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
           loaded.dispose();
           return;
         }
+
         loaded.colorSpace = THREE.SRGBColorSpace;
         loaded.wrapS = THREE.ClampToEdgeWrapping;
         loaded.wrapT = THREE.ClampToEdgeWrapping;
         loaded.minFilter = THREE.LinearFilter;
         loaded.magFilter = THREE.LinearFilter;
         loaded.anisotropy = 8;
+
+        const image = loaded.image as { width?: number; height?: number } | undefined;
+        const imageWidth = Number(image?.width ?? 0);
+        const imageHeight = Number(image?.height ?? 0);
+        const imageAspect = imageWidth > 0 && imageHeight > 0 ? imageWidth / imageHeight : 0;
+        const planeAspect = width > 0 && height > 0 ? width / height : 0;
+
+        if (imageAspect > 0 && planeAspect > 0) {
+          if (imageAspect > planeAspect) {
+            const visibleWidth = planeAspect / imageAspect;
+            loaded.repeat.set(visibleWidth, 1);
+            loaded.offset.set((1 - visibleWidth) / 2, 0);
+          } else if (imageAspect < planeAspect) {
+            const visibleHeight = imageAspect / planeAspect;
+            loaded.repeat.set(1, visibleHeight);
+            loaded.offset.set(0, (1 - visibleHeight) / 2);
+          } else {
+            loaded.repeat.set(1, 1);
+            loaded.offset.set(0, 0);
+          }
+        }
+
         loaded.needsUpdate = true;
         setTexture(loaded);
       },
@@ -335,7 +358,7 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
     return () => {
       active = false;
     };
-  }, [url]);
+  }, [url, width, height]);
 
   useEffect(() => () => texture?.dispose(), [texture]);
 
@@ -467,6 +490,58 @@ function VivariumModel({
   );
 }
 
+export function RoomObject3D({ room, object, selected, onSelect, isSlot = false, photoUrl }: RoomObject3DProps) {
+  const size = dimensions(object);
+  const position = useMemo<[number, number, number]>(
+    () => [
+      cmToWorld(object.x + size.width / 2) - cmToWorld(room.width ?? 0) / 2,
+      cmToWorld((object.z ?? 0) + size.height / 2),
+      cmToWorld(object.y + size.depth / 2) - cmToWorld(room.depth ?? 0) / 2,
+    ],
+    [object.x, object.y, object.z, room.width, room.depth, size.width, size.depth, size.height],
+  );
+  const rotationY = rotationFor(object) * Math.PI / 180;
+  const bodyHeight = Math.max(0.01, cmToWorld(size.height));
+  const bodyWidth = Math.max(0.01, cmToWorld(size.width));
+  const bodyDepth = Math.max(0.01, cmToWorld(size.depth));
+  const select = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    onSelect(object.id);
+  };
+  const kind = isSlot ? "vivarium" : (object as ReptileRoomObject).kind;
+  const preset = !isSlot ? getRoomAssetPreset((object as ReptileRoomObject).assetId) : undefined;
+
+  return (
+    <group
+      position={position}
+      rotation={[0, rotationY, 0]}
+      userData={{ roomObjectId: object.id, isVivarium: isSlot, magLocked: Boolean(object.stackGroupId) }}
+    >
+      <mesh onPointerDown={select} onClick={select} visible={false}>
+        <boxGeometry args={[bodyWidth * 1.04, bodyHeight * 1.04, bodyDepth * 1.04]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      {isSlot ? (
+        <VivariumModel width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} photoUrl={photoUrl} />
+      ) : preset ? (
+        <SimpleFixture kind={kind} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />
+      ) : (
+        <FurnitureModel kind={kind} width={bodyWidth} depth={bodyDepth} height={bodyHeight} selected={selected} />
+      )}
+      {selected ? (
+        <>
+          <mesh position={[0, 0, 0]}>
+            <boxGeometry args={[bodyWidth * 1.02, bodyHeight * 1.02, bodyDepth * 1.02]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+            <Edges color="#e2ad4f" lineWidth={2.5} />
+          </mesh>
+          <pointLight position={[0, bodyHeight * 0.45, 0]} intensity={0.28} distance={Math.max(bodyWidth, bodyDepth) * 2.5} color="#e2ad4f" />
+        </>
+      ) : null}
+    </group>
+  );
+}
+
 function FurnitureModel({
   kind,
   width,
@@ -539,91 +614,5 @@ function FurnitureModel({
       <boxGeometry args={[width, height, depth]} />
       <meshStandardMaterial color={colour} map={texture ?? undefined} roughness={0.73} metalness={0.02} />
     </mesh>
-  );
-}
-
-export function RoomObject3D({
-  room,
-  object,
-  selected,
-  onSelect,
-  isSlot = false,
-  photoUrl,
-}: RoomObject3DProps) {
-  const size = dimensions(object);
-  const position = useMemo<[number, number, number]>(
-    () => [
-      cmToWorld(object.x + size.width / 2) - cmToWorld(room.width ?? 0) / 2,
-      cmToWorld((object.z ?? 0) + size.height / 2),
-      cmToWorld(object.y + size.depth / 2) - cmToWorld(room.depth ?? 0) / 2,
-    ],
-    [object.x, object.y, object.z, room.width, room.depth, size.width, size.depth, size.height],
-  );
-
-  const rotationY = (rotationFor(object) * Math.PI) / 180;
-  const bodyHeight = Math.max(0.01, cmToWorld(size.height));
-  const bodyWidth = Math.max(0.01, cmToWorld(size.width));
-  const bodyDepth = Math.max(0.01, cmToWorld(size.depth));
-  const kind = isSlot ? "vivarium" : (object as ReptileRoomObject).kind;
-  const preset = !isSlot ? getRoomAssetPreset((object as ReptileRoomObject).assetId) : undefined;
-
-  const select = (event: ThreeEvent<PointerEvent>) => {
-    event.stopPropagation();
-    onSelect(object.id);
-  };
-
-  return (
-    <group
-      position={position}
-      rotation={[0, rotationY, 0]}
-      userData={{ roomObjectId: object.id, isVivarium: isSlot, magLocked: Boolean(object.stackGroupId) }}
-    >
-      <mesh onPointerDown={select} onClick={select} visible={false}>
-        <boxGeometry args={[bodyWidth * 1.04, bodyHeight * 1.04, bodyDepth * 1.04]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
-
-      {isSlot ? (
-        <VivariumModel
-          width={bodyWidth}
-          depth={bodyDepth}
-          height={bodyHeight}
-          selected={selected}
-          photoUrl={photoUrl}
-        />
-      ) : preset ? (
-        <SimpleFixture
-          kind={kind}
-          width={bodyWidth}
-          depth={bodyDepth}
-          height={bodyHeight}
-          selected={selected}
-        />
-      ) : (
-        <FurnitureModel
-          kind={kind}
-          width={bodyWidth}
-          depth={bodyDepth}
-          height={bodyHeight}
-          selected={selected}
-        />
-      )}
-
-      {selected ? (
-        <>
-          <mesh position={[0, 0, 0]}>
-            <boxGeometry args={[bodyWidth * 1.02, bodyHeight * 1.02, bodyDepth * 1.02]} />
-            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-            <Edges color="#e2ad4f" lineWidth={2.5} />
-          </mesh>
-          <pointLight
-            position={[0, bodyHeight * 0.45, 0]}
-            intensity={0.28}
-            distance={Math.max(bodyWidth, bodyDepth) * 2.5}
-            color="#e2ad4f"
-          />
-        </>
-      ) : null}
-    </group>
   );
 }
