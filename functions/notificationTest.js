@@ -11,7 +11,7 @@ const TESTS = Object.freeze({
   feed: { title: "🧪 Test feed reminder — Tiny Titans", body: "This is a live feeding reminder test. Your Tiny Titans notification pipeline is working.", url: "/feeding" },
   weight: { title: "🧪 Test weight reminder — Tiny Titans", body: "This is a live weight reminder test. Your Tiny Titans notification pipeline is working.", url: "/weights" },
   shed: { title: "🧪 Test shed reminder — Tiny Titans", body: "This is a live shedding reminder test. Your Tiny Titans notification pipeline is working.", url: "/shedding" },
-  health: { title: "🧪 Test health reminder — Tiny Titans", body: "This is a live health reminder test. Your Tiny Titans notification pipeline is working.", url: "/health" },
+  health: { title: "🧪 Test health reminder — Tiny Titans", body: "This is a live health / medication reminder test. Your Tiny Titans notification pipeline is working.", url: "/health" },
   general: { title: "🧪 Tiny Titans notification test", body: "Live notification delivery is working on this device.", url: "/settings" },
 });
 
@@ -76,7 +76,9 @@ async function sendTestPush(targetUid, eventKey, test) {
     const batch = tokenDocs.slice(index, index + 500);
     const response = await messaging.sendEachForMulticast({
       tokens: batch.map((item) => item.data().token),
-      data: { title: test.title, body: test.body, eventKey, url: test.url },
+      notification: { title: test.title, body: test.body },
+      data: { title: test.title, body: test.body, eventKey, url: test.url, notificationTest: "true" },
+      webpush: { fcmOptions: { link: test.url } },
     });
     sent += response.successCount;
     invalid += response.failureCount;
@@ -90,6 +92,29 @@ async function sendTestPush(targetUid, eventKey, test) {
   return { sent, invalid };
 }
 
+exports.getNotificationTestUsers = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 30 }, async (request) => {
+  const requesterUid = request.auth?.uid;
+  if (!requesterUid) throw new HttpsError("unauthenticated", "You must be signed in.");
+
+  const requesterSnapshot = await db.collection("users").doc(requesterUid).get();
+  const requesterProfile = requesterSnapshot.data() || {};
+  if (!authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator authorization is required to view notification test targets.");
+
+  const users = [];
+  let pageToken;
+  do {
+    const page = await adminAuth.listUsers(1000, pageToken);
+    page.users.forEach((user) => {
+      if (user.disabled || !user.email) return;
+      users.push({ uid: user.uid, email: user.email.toLowerCase(), displayName: user.displayName || user.email.split("@")[0] });
+    });
+    pageToken = page.pageToken;
+  } while (pageToken);
+
+  users.sort((a, b) => a.email.localeCompare(b.email));
+  return { users, count: users.length };
+});
+
 exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const requesterUid = request.auth?.uid;
   if (!requesterUid) throw new HttpsError("unauthenticated", "You must be signed in to send a Tiny Titans notification test.");
@@ -101,11 +126,10 @@ exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB"
   const kind = String(request.data?.kind || "general").trim().toLowerCase();
   const test = TESTS[kind];
   if (!test) throw new HttpsError("invalid-argument", "Unknown notification test type.");
-  if (targetUserId && targetUserId !== requesterUid && !authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator authorization is required to target another user.");
-  if (targetEmail && !authorisedAsTester(request, requesterProfile)) {
-    const requesterEmail = String(request.auth.token?.email || requesterProfile.email || "").trim().toLowerCase();
-    if (!requesterEmail || requesterEmail !== targetEmail.toLowerCase()) throw new HttpsError("permission-denied", "Creator authorization is required to target another user.");
-  }
+
+  const authorized = authorisedAsTester(request, requesterProfile);
+  if (targetUserId && targetUserId !== requesterUid && !authorized) throw new HttpsError("permission-denied", "Creator authorization is required to target another user.");
+  if (targetEmail && targetEmail.toLowerCase() !== String(request.auth.token?.email || requesterProfile.email || "").toLowerCase() && !authorized) throw new HttpsError("permission-denied", "Creator authorization is required to target another user.");
 
   let targetSnapshot;
   try {
