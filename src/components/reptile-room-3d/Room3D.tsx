@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { Canvas } from "@react-three/fiber";
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { saveReptileRooms } from "../../services/reptileRoomService";
@@ -98,6 +99,25 @@ function VivariumPhotoDock({ room, slot, onPhotoUrl }: { room: ReptileRoomWorksp
   </div>;
 }
 
+function VivariumQuickLogDock({ slot }: { slot: ReptileRoomSlot }) {
+  const navigate = useNavigate();
+  const snakeId = slot.snakeId;
+  const go = (path: string) => navigate(path);
+  const buttonStyle: CSSProperties = { flex: "1 1 0", minWidth: 0, minHeight: 46, padding: "0 10px", borderRadius: 10, border: "1px solid rgba(255,255,255,.13)", background: "rgba(255,255,255,.055)", color: "#fff", fontWeight: 850, cursor: snakeId ? "pointer" : "not-allowed", opacity: snakeId ? 1 : .55 };
+  return <>
+    <style>{`.reptile-room-digital-twin:has(.rr3d-quick-log) .reptile-room-digital-twin__sidebar > section:nth-child(2){display:none}`}</style>
+    <div className="rr3d-quick-log" style={{ position: "absolute", left: "50%", bottom: 14, transform: "translateX(-50%)", zIndex: 45, width: "min(460px, calc(100% - 28px))", padding: 13, borderRadius: 14, border: "1px solid rgba(255,255,255,.14)", background: "rgba(12,10,16,.94)", color: "#fff", boxShadow: "0 14px 38px rgba(0,0,0,.38)", backdropFilter: "blur(12px)" }}>
+      <div style={{ fontSize: 10, letterSpacing: ".08em", fontWeight: 850, opacity: .7, textTransform: "uppercase" }}>QUICK LOG</div>
+      <strong style={{ display: "block", marginTop: 3 }}>{slot.label || "Vivarium"}</strong>
+      {snakeId ? <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <button type="button" style={buttonStyle} onClick={() => go(`/snakes/${encodeURIComponent(snakeId)}/feeding`)}>🍽️ Log Feed</button>
+        <button type="button" style={buttonStyle} onClick={() => go(`/snakes/${encodeURIComponent(snakeId)}/shedding`)}>🐍 Log Shed</button>
+        <button type="button" style={buttonStyle} onClick={() => go(`/snakes/${encodeURIComponent(snakeId)}/weights`)}>⚖️ Log Weight</button>
+      </div> : <p style={{ margin: "7px 0 0", color: "rgba(255,255,255,.68)", fontSize: 12 }}>Assign a snake to this vivarium to enable keeper quick-log actions.</p>}
+    </div>
+  </>;
+}
+
 export default function Room3D({ room, className, showGrid = true, showCeiling = false, viewerMode = false, objects = [], slots = [], selectedId = null, selectedType = null, photoForSlot, onSelect = () => undefined, onMove, onTeleport }: Room3DProps) {
   const { width, depth, height } = getRoomDimensions3D(room);
   const navigationNodes = useMemo(() => buildRoomNavigationNodes(room), [room]);
@@ -138,7 +158,6 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
       return next;
     });
   };
-  // A local blob preview always wins immediately after upload; the persisted Storage URL remains the source after reload.
   const effectivePhotoForSlot = (slot: ReptileRoomSlot) => photoOverrides[slot.id] || photoForSlot?.(slot) || slot.photoUrl || undefined;
   const toggleFullscreen = async () => {
     const host = document.querySelector<HTMLElement>(`[data-rr3d-host="${CSS.escape(room.id)}"]`);
@@ -160,6 +179,7 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
     </Canvas>
     <button type="button" className="rr3d-fullscreen-button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? "Exit full screen" : "Open full screen"} title={isFullscreen ? "Exit full screen" : "Open full screen"}>{isFullscreen ? "⛶ Exit" : "⛶ Full screen"}</button>
     {!viewerMode && <NavigationPad nodes={navigationNodes} activeNode={navigationNode} onMove={handleTeleport} />}
-    {selectedVivarium && !photoForSlot && <VivariumPhotoDock room={room} slot={{ ...selectedVivarium, photoUrl: photoOverrides[selectedVivarium.id] ?? selectedVivarium.photoUrl }} onPhotoUrl={handlePhotoUrl} />}
+    {selectedVivarium && <VivariumQuickLogDock slot={selectedVivarium} />}
+    {selectedVivarium && <VivariumPhotoDock room={room} slot={{ ...selectedVivarium, photoUrl: photoOverrides[selectedVivarium.id] ?? selectedVivarium.photoUrl }} onPhotoUrl={handlePhotoUrl} />}
   </div>;
 }
