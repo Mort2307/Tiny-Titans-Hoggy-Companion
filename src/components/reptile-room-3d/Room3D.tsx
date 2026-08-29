@@ -14,7 +14,6 @@ import { RoomShell3D } from "./RoomShell3D";
 import { getRoomDimensions3D } from "./room3DScale";
 
 type RoomSceneProps = Omit<Room3DProps, "className"> & { objects: ReptileRoomObject[]; slots: ReptileRoomSlot[]; selectedId: string | null; selectedType: "slot" | "object" | null; navigationNode: RoomNavigationNode; onTeleport: (node: RoomNavigationNode) => void; onSelect: (selection: Room3DSelection) => void };
-
 type Room3DWindow = Window & { __tinyTitansRoom3DCamera?: import("three").Camera };
 
 function RoomScene({ room, showGrid = true, showCeiling = false, viewerMode = false, objects, slots, selectedId, selectedType, photoForSlot, onSelect, onMove, navigationNode, onTeleport }: RoomSceneProps) {
@@ -139,8 +138,13 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
     } catch { /* browser may block fullscreen; normal view remains usable */ }
   };
   const cameraPosition: [number, number, number] = [0, Math.max(0.5, height * 0.55), Math.max(0.5, depth * 0.28)];
+  const canvasReady = ({ camera }: { camera: import("three").Camera }) => {
+    const host = window as Room3DWindow;
+    host.__tinyTitansRoom3DCamera = camera;
+    window.dispatchEvent(new CustomEvent("tiny-titans:room3d-camera-ready"));
+  };
   return <div data-rr3d-host={room.id} className={className} style={{ position: "relative", width: "100%", height: "100%", minHeight: isFullscreen ? "100vh" : 0, touchAction: viewerMode ? "none" : undefined, background: "#0c0f11" }}>
-    <Canvas shadows camera={{ position: cameraPosition, fov: 68, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onPointerMissed={() => onSelect(null)}>
+    <Canvas shadows camera={{ position: cameraPosition, fov: 68, near: 0.01, far: Math.max(width, depth, height) * 4 }} dpr={[1, 2]} onCreated={canvasReady} onPointerMissed={() => onSelect(null)}>
       <RoomScene room={room} showGrid={showGrid} showCeiling={showCeiling} viewerMode={viewerMode} objects={objects} slots={slots} selectedId={selectedId} selectedType={selectedType} photoForSlot={effectivePhotoForSlot} onSelect={onSelect} onMove={onMove} navigationNode={navigationNode} onTeleport={handleTeleport} />
     </Canvas>
     <button type="button" className="rr3d-fullscreen-button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? "Exit full screen" : "Open full screen"} title={isFullscreen ? "Exit full screen" : "Open full screen"}>{isFullscreen ? "⛶ Exit" : "⛶ Full screen"}</button>
