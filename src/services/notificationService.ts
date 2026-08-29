@@ -1,14 +1,12 @@
 import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
 import { deleteToken, getMessaging, getToken, isSupported } from "firebase/messaging";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { app, db } from "../firebase/config";
 import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationPermissionState, type NotificationSettings } from "../types/Notifications";
 
 const SETTINGS_FIELD = "notificationSettings";
 
-function validTime(value: unknown, fallback: string): string {
-  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback;
-}
-
+function validTime(value: unknown, fallback: string): string { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback; }
 function settingsFor(value: unknown): NotificationSettings {
   if (!value || typeof value !== "object") return { ...DEFAULT_NOTIFICATION_SETTINGS };
   const raw = value as Partial<NotificationSettings>;
@@ -92,4 +90,24 @@ export async function disableNotifications(uid: string): Promise<void> {
 export async function removeNotificationToken(uid: string, token: string): Promise<void> {
   const tokenId = await tokenDocumentId(token);
   await deleteDoc(doc(db, "users", uid, "notificationTokens", tokenId));
+}
+
+export type NotificationTestKind = "feed" | "weight" | "shed" | "health" | "general";
+export type NotificationTestResult = {
+  eventKey: string;
+  targetUid: string;
+  kind: NotificationTestKind;
+  title: string;
+  body: string;
+  url: string;
+  status: "sent" | "no-delivery";
+  sentCount: number;
+  invalidTokenCount: number;
+};
+
+export async function sendNotificationTest(options: { kind: NotificationTestKind; targetUserId?: string; targetEmail?: string }): Promise<NotificationTestResult> {
+  const functions = getFunctions(app, "europe-west2");
+  const callable = httpsCallable<typeof options, NotificationTestResult>(functions, "sendNotificationTest");
+  const response = await callable(options);
+  return response.data;
 }
