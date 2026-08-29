@@ -138,7 +138,8 @@ export default function Room3D({ room, className, showGrid = true, showCeiling =
       return next;
     });
   };
-  const effectivePhotoForSlot = photoForSlot ?? ((slot: ReptileRoomSlot) => photoOverrides[slot.id] || slot.photoUrl || undefined);
+  // A local blob preview always wins immediately after upload; the persisted Storage URL remains the source after reload.
+  const effectivePhotoForSlot = (slot: ReptileRoomSlot) => photoOverrides[slot.id] || photoForSlot?.(slot) || slot.photoUrl || undefined;
   const toggleFullscreen = async () => {
     const host = document.querySelector<HTMLElement>(`[data-rr3d-host="${CSS.escape(room.id)}"]`);
     if (!host) return;
