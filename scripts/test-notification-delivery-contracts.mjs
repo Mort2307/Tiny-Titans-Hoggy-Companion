@@ -25,6 +25,8 @@ const files = {
   "src/services/notificationService.ts": read("src/services/notificationService.ts"),
   "src/components/NotificationBridge.tsx": read("src/components/NotificationBridge.tsx"),
   "src/components/NotificationSettingsPanel.tsx": read("src/components/NotificationSettingsPanel.tsx"),
+  "src/components/NotificationTestPanel.tsx": read("src/components/NotificationTestPanel.tsx"),
+  "src/pages/Settings.tsx": read("src/pages/Settings.tsx"),
   "src/pages/WeightRecords.tsx": read("src/pages/WeightRecords.tsx"),
 };
 
