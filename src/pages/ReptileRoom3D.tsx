@@ -54,8 +54,10 @@ export default function ReptileRoom3D() {
   const [showGrid, setShowGrid] = useState(true);
   const [showCeiling, setShowCeiling] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoPreviewUrls, setPhotoPreviewUrls] = useState<Record<string, string>>({});
   const roomsRef = useRef(rooms);
   useEffect(() => { roomsRef.current = rooms; }, [rooms]);
+  useEffect(() => () => { Object.values(photoPreviewUrls).forEach((url) => URL.revokeObjectURL(url)); }, [photoPreviewUrls]);
 
   const room = useMemo(() => rooms.find((item) => item.id === roomId) ?? rooms[0] ?? null, [rooms, roomId]);
   const slots = room?.slots ?? [];
@@ -161,12 +163,22 @@ export default function ReptileRoom3D() {
   const uploadPhoto = async (file: File) => {
     if (!user || !room || !selectedSlot) return;
     setPhotoBusy(true);
-    try { const url = await uploadReptileRoomVivariumPhoto(user.uid, room.id, selectedSlot.id, file); await persistRooms(roomsRef.current.map((item) => item.id === room.id ? { ...item, slots: item.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, photoUrl: url } : slot) } : item), "Vivarium face image selected."); }
-    catch (error) { setNotice(error instanceof Error ? error.message : "Vivarium photo upload failed."); }
+    const previewUrl = URL.createObjectURL(file);
+    try {
+      const url = await uploadReptileRoomVivariumPhoto(user.uid, room.id, selectedSlot.id, file);
+      setPhotoPreviewUrls((current) => { const previous = current[selectedSlot.id]; if (previous) URL.revokeObjectURL(previous); return { ...current, [selectedSlot.id]: previewUrl }; });
+      await persistRooms(roomsRef.current.map((item) => item.id === room.id ? { ...item, slots: item.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, photoUrl: url } : slot) } : item), "Vivarium face image selected.");
+    } catch (error) { URL.revokeObjectURL(previewUrl); setNotice(error instanceof Error ? error.message : "Vivarium photo upload failed."); }
     finally { setPhotoBusy(false); }
   };
 
-  const removePhoto = () => { if (selectedSlot) updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, photoUrl: "" } : slot) }), "Vivarium face image removed."); };
+  const removePhoto = () => {
+    if (!selectedSlot) return;
+    const preview = photoPreviewUrls[selectedSlot.id];
+    if (preview) URL.revokeObjectURL(preview);
+    setPhotoPreviewUrls((current) => { const next = { ...current }; delete next[selectedSlot.id]; return next; });
+    updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, photoUrl: "" } : slot) }), "Vivarium face image removed.");
+  };
 
   const useSnakePhoto = () => {
     if (!selectedSlot) return;
@@ -175,7 +187,7 @@ export default function ReptileRoom3D() {
     updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, photoUrl: url } : slot) }), "Snake enclosure photo applied to vivarium glass.");
   };
 
-  const photoFor = useCallback((slot: ReptileRoomSlot) => slot.photoUrl || undefined, []);
+  const photoFor = useCallback((slot: ReptileRoomSlot) => photoPreviewUrls[slot.id] || slot.photoUrl || undefined, [photoPreviewUrls]);
   const assignSnake = (snakeId: string) => { if (!selectedSlot) return; const snake = snakeMap.get(snakeId); updateRoom((current) => ({ ...current, slots: current.slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, snakeId: snakeId || null, label: snake ? `${snakeName(snake)}'s Vivarium` : "Empty Vivarium", lifecycleStatus: snakeId ? "active" : "empty", availability: snakeId ? "occupied" : "available" } : slot) }), snake ? `${snakeName(snake)} assigned.` : "Vivarium cleared."); };
 
   if (loading || profileLoading) return <div className="rr3d-loading">Loading your reptile room…</div>;
