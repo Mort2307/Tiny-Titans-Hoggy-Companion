@@ -15,6 +15,8 @@ const MAX_PITCH = Math.PI / 2.35;
 const HUMAN_EYE_HEIGHT_CM = 165;
 const DEFAULT_PITCH = -0.08;
 
+type Room3DWindow = Window & { __tinyTitansRoom3DCamera?: import("three").Camera };
+
 export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
   const { camera, gl } = useThree();
   const { width, depth, height } = getRoomDimensions3D(room);
@@ -25,6 +27,15 @@ export function RoomCamera3D({ room, target }: RoomCamera3DProps) {
   const yawRef = useRef(0);
   const pitchRef = useRef(DEFAULT_PITCH);
   const cameraHeight = Math.min(height - margin, Math.max(margin, cmToWorld(Math.min(HUMAN_EYE_HEIGHT_CM, (room.height ?? 240) - 10))));
+
+  useEffect(() => {
+    const host = window as Room3DWindow;
+    host.__tinyTitansRoom3DCamera = camera;
+    window.dispatchEvent(new CustomEvent("tiny-titans:room3d-camera-ready"));
+    return () => {
+      if (host.__tinyTitansRoom3DCamera === camera) delete host.__tinyTitansRoom3DCamera;
+    };
+  }, [camera]);
 
   useEffect(() => {
     const canvas = gl.domElement; let dragging = false; let pointerId: number | null = null; let lastX = 0; let lastY = 0; let pendingStart: number | null = null;
