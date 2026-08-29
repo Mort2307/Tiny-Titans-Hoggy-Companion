@@ -6,13 +6,6 @@ import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { cmToWorld, getRoomDimensions3D } from "./room3DScale";
 import { buildRoomNavigationNodes } from "./RoomNavigation3D";
 
-/*
- * Three.js cameras and WebGL canvas elements are intentionally mutable runtime
- * objects. The React immutability rule cannot distinguish those imperative
- * APIs from ordinary React state, so this component scopes that one rule off.
- */
-/* eslint-disable react-hooks/immutability */
-
 type RoomNavigationTarget = { xCm: number; zCm: number };
 type RoomCamera3DProps = { room: ReptileRoomWorkspace; target?: RoomNavigationTarget };
 const LOOK_SENSITIVITY = 0.0032;
