@@ -15,10 +15,11 @@ export default function ReptileVivarium3DEditor() {
   useEffect(() => {
     if (loading || profileLoading || !user || !id) return;
     let cancelled = false;
+    const uid = user.uid;
 
     async function load() {
       try {
-        const rooms = await loadReptileRooms(user.uid);
+        const rooms = await loadReptileRooms(uid);
         const allSlots = rooms.flatMap((room) => [...room.slots, ...room.storedSlots]);
         const found = allSlots.find((item) => item.id === id) ?? null;
         if (!cancelled) {
@@ -35,7 +36,7 @@ export default function ReptileVivarium3DEditor() {
   }, [id, loading, profileLoading, user]);
 
   if (loading || profileLoading || (!slot && !error)) {
-    return <div className="page-container"><div className="tracker-card">Loading 3D vivarium editor…</div></div>;
+    return <div className="page-container"><div className="tracker-card">Loading 3D vivarium editor...</div></div>;
   }
 
   if (error || !slot) {
