@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { ReptileRoomObject, ReptileRoomSlot } from "../../services/reptileRoomService";
 import type { RoomAssetConfig } from "../../types/reptileRoom3D";
 import { getRoomAssetPreset } from "../../data/reptileRoomAssetCatalog";
+import "../../styles/reptile-room-3d-fullscreen.css";
 
 type Props = { object: ReptileRoomObject; slots: ReptileRoomSlot[]; onPatch: (patch: { config?: RoomAssetConfig; label?: string }) => void };
 const num = (value: number | undefined, fallback: number) => value ?? fallback;
