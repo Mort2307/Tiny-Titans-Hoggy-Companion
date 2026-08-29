@@ -15,34 +15,28 @@ export default function ReptileRoom3DEditor() {
   useEffect(() => {
     if (authLoading || !user || !vivariumId) return;
     let cancelled = false;
+    const uid = user.uid;
+
     const load = async () => {
       setLoading(true);
       setError("");
       try {
-        const rooms = await loadReptileRooms(user.uid);
-        const found = rooms.flatMap((room) => room.objects ?? []).find((item) => item.id === vivariumId && item.type === "vivarium");
-        if (!found) throw new Error("Vivarium not found in your reptile rooms.");
-        const next: ReptileRoomSlot = {
-          ...found,
-          id: found.id,
-          label: found.label ?? "Vivarium",
-          w: found.w,
-          h: found.h,
-          depth: found.depth,
-          height: found.height,
-        };
-        if (!cancelled) setSlot(next);
+        const rooms = await loadReptileRooms(uid);
+        const found = rooms.flatMap((room) => [...room.slots, ...room.storedSlots]).find((item) => item.id === vivariumId) ?? null;
+        if (!found) throw new Error("Vivarium not found in your Reptile Room.");
+        if (!cancelled) setSlot(found);
       } catch (reason) {
         if (!cancelled) setError(reason instanceof Error ? reason.message : "Unable to load vivarium.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
+
     void load();
     return () => { cancelled = true; };
   }, [authLoading, user, vivariumId]);
 
-  if (authLoading || loading) return <div className="page-loading">Loading vivarium builder…</div>;
+  if (authLoading || loading) return <div className="page-loading">Loading vivarium builder...</div>;
   if (error || !slot) return <div className="page-error">{error || "Vivarium not found."}</div>;
 
   return (
