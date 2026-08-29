@@ -1,27 +1,53 @@
 .app-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 15px;
+  gap: 12px;
+  padding: 10px 22px;
 }
 
 .logo-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
+  border-radius: 12px;
 }
 
 .tiny-titans-logo {
-  width: 70px;
-  height: 70px;
+  width: 44px;
+  height: 44px;
   object-fit: cover;
-  border-radius: 50%;
+  border-radius: 12px;
   cursor: pointer;
+}
+
+.app-brand-lockup {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  line-height: 1.1;
 }
 
 .app-brand-name {
   color: #f7f3fb;
-  font-size: clamp(1.25rem, 2vw, 1.7rem);
-  font-weight: 850;
-  letter-spacing: -0.02em;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+.app-brand-tagline {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.67rem;
+  font-weight: 650;
+  letter-spacing: 0.075em;
   line-height: 1;
+  text-transform: uppercase;
+}
+
+@media (max-width: 800px) {
+  .app-header { padding: 8px 14px; }
+  .tiny-titans-logo { width: 40px; height: 40px; border-radius: 11px; }
+  .app-brand-tagline { display: none; }
 }
