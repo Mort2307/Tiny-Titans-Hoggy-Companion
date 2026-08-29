@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { ReptileRoomObject, ReptileRoomSlot } from "../../services/reptileRoomService";
-import type { Room3DAssetPreset, RoomAssetConfig } from "../../types/reptileRoom3D";
+import type { RoomAssetConfig } from "../../types/reptileRoom3D";
 import { getRoomAssetPreset } from "../../data/reptileRoomAssetCatalog";
 
 type Props = { object: ReptileRoomObject; slots: ReptileRoomSlot[]; onPatch: (patch: { config?: RoomAssetConfig; label?: string }) => void };
