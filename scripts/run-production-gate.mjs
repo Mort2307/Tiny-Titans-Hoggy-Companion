@@ -3,7 +3,13 @@ import { execFileSync } from "node:child_process";
 const commands = [
   ["Lint", ["run", "lint"]],
   ["BOT contract suite", ["run", "test:bot:contracts"]],
+  ["UI hardening contract", ["run", "validate:ui-hardening"]],
+  ["Morph database validation", ["run", "validate:morphs"]],
+  ["Learning content validation", ["run", "validate:learning"]],
+  ["Route contract", ["run", "validate:routes"]],
   ["Security contracts", ["run", "validate:security"]],
+  ["Intelligence consent contracts", ["run", "validate:intelligence-consent"]],
+  ["Intelligence journey contracts", ["run", "validate:intelligence-journey"]],
   ["Production build", ["run", "build"]],
 ];
 
