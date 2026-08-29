@@ -1,0 +1,398 @@
+:root {
+  --tt-ui-bg: #0b0910;
+  --tt-ui-surface: #121019;
+  --tt-ui-surface-raised: #17131f;
+  --tt-ui-surface-soft: #1c1724;
+  --tt-ui-border: rgba(255, 255, 255, 0.085);
+  --tt-ui-border-strong: rgba(255, 255, 255, 0.13);
+  --tt-ui-text: #f7f5f9;
+  --tt-ui-text-soft: #c9c3cf;
+  --tt-ui-text-muted: #968e9f;
+  --tt-ui-purple: #9b5bd1;
+  --tt-ui-purple-strong: #b978eb;
+  --tt-ui-blue: #4fb7ef;
+  --tt-ui-gold: #f0bb58;
+  --tt-ui-success: #54c79a;
+  --tt-ui-danger: #ef7070;
+  --tt-ui-radius-sm: 9px;
+  --tt-ui-radius-md: 12px;
+  --tt-ui-radius-lg: 16px;
+  --tt-ui-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+  --tt-ui-shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.14);
+  --tt-ui-focus: 0 0 0 3px rgba(245, 182, 66, 0.18);
+}
+
+html {
+  background: var(--tt-ui-bg);
+}
+
+body {
+  background:
+    radial-gradient(circle at 15% -10%, rgba(111, 36, 184, 0.14), transparent 34rem),
+    radial-gradient(circle at 100% 0%, rgba(0, 174, 255, 0.06), transparent 30rem),
+    var(--tt-ui-bg);
+  color: var(--tt-ui-text);
+}
+
+#root,
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-shell {
+  background: transparent;
+}
+
+.app-main {
+  min-width: 0;
+}
+
+.app-content {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1380px;
+  margin-inline: auto;
+  padding: 22px 28px 56px;
+}
+
+.app-header {
+  min-height: 68px;
+  box-sizing: border-box;
+  padding: 10px 22px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: rgba(12, 10, 16, 0.9);
+  border-bottom: 1px solid var(--tt-ui-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.logo-link {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.tiny-titans-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.22);
+}
+
+.app-brand-name {
+  color: var(--tt-ui-text);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+
+/* Reusable professional surfaces */
+.card,
+.panel,
+.section,
+.widget,
+.dashboard-card,
+.tt-card,
+.tt-home-panel,
+.tt-snake-focus-main,
+.tt-home-hero,
+.tt-attention-card {
+  border-color: var(--tt-ui-border) !important;
+  box-shadow: var(--tt-ui-shadow-soft) !important;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-height: 42px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--tt-ui-gold) !important;
+  outline-offset: 2px;
+  box-shadow: var(--tt-ui-focus);
+}
+
+input,
+select,
+textarea {
+  color: var(--tt-ui-text);
+  background: #100d15;
+  border: 1px solid var(--tt-ui-border-strong);
+  border-radius: var(--tt-ui-radius-sm);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--tt-ui-text-muted);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(255, 255, 255, 0.19);
+}
+
+label {
+  color: var(--tt-ui-text-soft);
+  font-weight: 650;
+}
+
+button:not(.icon-button),
+a[role="button"],
+.btn,
+.button,
+.tt-button,
+.tt-home-primary {
+  border-radius: var(--tt-ui-radius-sm);
+  transition: transform 140ms ease, border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+button:not(.icon-button):hover,
+a[role="button"]:hover,
+.btn:hover,
+.button:hover,
+.tt-button:hover,
+.tt-home-primary:hover {
+  transform: translateY(-1px);
+}
+
+button:disabled,
+.btn:disabled,
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Remove the "everything glows" effect without removing brand personality. */
+.card:hover,
+.panel:hover,
+.widget:hover,
+.dashboard-card:hover,
+.tt-card:hover,
+.tt-home-panel:hover,
+.tt-home-stats a:hover {
+  box-shadow: var(--tt-ui-shadow-soft) !important;
+}
+
+[class*="glow"],
+[class*="neon"] {
+  text-shadow: none;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--tt-ui-border);
+}
+
+/* Page rhythm */
+main > h1,
+main > h2,
+.page-title,
+.page-heading,
+.section-title {
+  color: var(--tt-ui-text);
+  letter-spacing: -0.025em;
+}
+
+main p,
+.card p,
+.panel p {
+  color: var(--tt-ui-text-soft);
+}
+
+/* Home: make the first screen feel like a calm product dashboard. */
+.tt-home {
+  max-width: none !important;
+  padding: 12px 0 44px !important;
+}
+
+.tt-home-hero {
+  padding: 24px !important;
+  border-radius: var(--tt-ui-radius-lg) !important;
+  background:
+    linear-gradient(135deg, rgba(111, 36, 184, 0.16), rgba(0, 174, 255, 0.04) 55%, rgba(255, 255, 255, 0.015)),
+    var(--tt-ui-surface) !important;
+}
+
+.tt-home-hero h1 {
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em;
+}
+
+.tt-home-profile {
+  border-color: var(--tt-ui-border) !important;
+  background: var(--tt-ui-surface-raised) !important;
+}
+
+.tt-home-section {
+  margin-bottom: 28px !important;
+}
+
+.tt-home-heading {
+  margin-bottom: 11px !important;
+}
+
+.tt-home-heading h2 {
+  letter-spacing: -0.02em;
+}
+
+.tt-home-panel,
+.tt-snake-focus-main {
+  background: var(--tt-ui-surface) !important;
+}
+
+.tt-snake-focus-main {
+  background: linear-gradient(135deg, rgba(111, 36, 184, 0.12), rgba(255, 255, 255, 0.015)), var(--tt-ui-surface) !important;
+}
+
+.tt-snake-arrow {
+  background: var(--tt-ui-surface) !important;
+  border-color: var(--tt-ui-border) !important;
+}
+
+.tt-home-stats a,
+.tt-snake-actions a,
+.tt-quick-actions a,
+.tt-tool-grid a {
+  border-color: var(--tt-ui-border) !important;
+  background: var(--tt-ui-surface-raised) !important;
+}
+
+.tt-home-stats a:hover,
+.tt-snake-actions a:hover,
+.tt-quick-actions a:hover,
+.tt-tool-grid a:hover {
+  border-color: rgba(155, 91, 209, 0.48) !important;
+  background: var(--tt-ui-surface-soft) !important;
+}
+
+/* Common data tables and dense lists: crisp containment on small screens. */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table th {
+  color: var(--tt-ui-text-soft);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+table td,
+table th {
+  border-bottom: 1px solid var(--tt-ui-border);
+}
+
+overflow-auto,
+.overflow-auto {
+  scrollbar-width: thin;
+}
+
+/* Keep dense grids from producing tiny cards. */
+[class*="grid"] {
+  min-width: 0;
+}
+
+/* Compact, deliberate scrollbar treatment. */
+* {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+@media (max-width: 1100px) {
+  .app-content {
+    padding: 20px 20px 44px;
+  }
+}
+
+@media (max-width: 800px) {
+  .app-header {
+    min-height: 60px;
+    padding: 8px 14px;
+  }
+
+  .tiny-titans-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .app-brand-name {
+    font-size: 0.95rem;
+  }
+
+  .app-content {
+    padding: 16px 14px 40px;
+  }
+
+  .tt-home {
+    padding-top: 4px !important;
+  }
+
+  .tt-home-hero {
+    padding: 19px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-content {
+    padding-inline: 11px;
+  }
+
+  .tt-home-hero,
+  .tt-home-panel,
+  .tt-snake-focus-main {
+    border-radius: 13px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  a,
+  .tt-button,
+  .tt-home-primary {
+    transition: none !important;
+  }
+}
