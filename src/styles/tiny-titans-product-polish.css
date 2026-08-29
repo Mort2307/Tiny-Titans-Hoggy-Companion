@@ -1,0 +1,22 @@
+/* Tiny Titans — polished product layer */
+.tt-quick-dock {
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  margin:0 0 18px; padding:7px;
+  border:1px solid rgba(255,255,255,.065); border-radius:14px;
+  background:rgba(20,16,25,.70); box-shadow:0 8px 24px rgba(0,0,0,.10);
+}
+.tt-quick-dock__label { padding:0 7px; color:rgba(203,195,209,.42); font-size:.62rem; font-weight:850; letter-spacing:.13em; }
+.tt-quick-dock a { display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:6px 10px; border:1px solid rgba(255,255,255,.055); border-radius:9px; background:rgba(255,255,255,.018); color:#d9d1df; text-decoration:none; font-size:.76rem; font-weight:760; }
+.tt-quick-dock a:hover { border-color:rgba(181,139,207,.28); background:rgba(181,139,207,.07); color:#fff; }
+.tt-page-frame :where(.page-container,.page-shell) > h1:first-child { margin-top:0; }
+.tt-page-frame :where(.page-container,.page-shell) > .page-subtitle { margin-top:-10px; margin-bottom:18px; }
+.tt-page-frame :where(.tracker-card,.dashboard-card,.panel,.card,.content-card,.section-card) + :where(.tracker-card,.dashboard-card,.panel,.card,.content-card,.section-card) { margin-top:12px; }
+.tt-page-frame :where(form) > label { margin-bottom:12px; }
+.tt-page-frame :where(input,select,textarea) { transition:border-color .16s ease, background .16s ease, box-shadow .16s ease; }
+.tt-page-frame :where(input,select,textarea):focus { background:#15111b !important; }
+@media(max-width:700px){
+  .tt-quick-dock { overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; }
+  .tt-quick-dock::-webkit-scrollbar{display:none;}
+  .tt-quick-dock__label{position:sticky;left:0;background:rgba(20,16,25,.96);z-index:1;}
+  .tt-quick-dock a{flex:0 0 auto;}
+}
