@@ -19,6 +19,7 @@ import "./styles/tiny-titans-product-polish.css";
 import "./styles/tiny-titans-creator-command.css";
 import "./styles/tiny-titans-creator-status.css";
 import "./styles/tiny-titans-command.css";
+import "./styles/reptile-room-3d-mobile.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
