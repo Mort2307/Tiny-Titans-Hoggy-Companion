@@ -7,7 +7,7 @@ const JPEG_QUALITY = 0.84;
 async function compressImage(file: File): Promise<Blob> {
   if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
   let bitmap: ImageBitmap;
-  try { bitmap = await createImageBitmap(file); } catch { throw new Error("Tiny Titans could not decode that image. JPG or PNG photos are recommended."); }
+  try { bitmap = await createImageBitmap(file); } catch (error) { throw new Error("Tiny Titans could not decode that image. JPG or PNG photos are recommended.", { cause: error }); }
   const scale = Math.min(1, MAX_DIMENSION / Math.max(1, Math.max(bitmap.width, bitmap.height)));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -38,7 +38,7 @@ export async function uploadReptileRoomVivariumPhoto(uid: string, roomId: string
     const url = await getDownloadURL(storageRef);
     return `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
   } catch (error) {
-    throw new Error(storageErrorMessage(error, "upload"));
+    throw new Error(storageErrorMessage(error, "upload"), { cause: error });
   }
 }
 
@@ -49,6 +49,6 @@ export async function deleteReptileRoomVivariumPhoto(uid: string, roomId: string
   } catch (error) {
     const code = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code) : "";
     if (code.includes("storage/object-not-found")) return;
-    throw new Error(storageErrorMessage(error, "removal"));
+    throw new Error(storageErrorMessage(error, "removal"), { cause: error });
   }
 }
