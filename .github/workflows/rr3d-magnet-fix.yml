@@ -1,0 +1,76 @@
+name: RR3D Vivarium Magnet Fix
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    if: ${{ !contains(github.event.head_commit.message, 'auto-fix: vivarium magnet') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Patch room attachment wiring
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path('src/pages/ReptileRoom3D.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          old_entity = 'const entityGroup = (room: ReptileRoomWorkspace, node: NodeRef) => node.type === "slot" ? room.slots.find((item) => item.id === node.id)?.stackGroupId ?? null : (room.objects ?? []).find((item) => item.id === node.id)?.stackGroupId ?? null;'
+          new_entity = '''const entityGroup = (room: ReptileRoomWorkspace, node: NodeRef) => {\n  if (node.type === "slot") {\n    const slot = room.slots.find((item) => item.id === node.id);\n    return slot?.stackGroupId ?? `viv-group-${node.id}`;\n  }\n  const object = (room.objects ?? []).find((item) => item.id === node.id);\n  return object?.stackGroupId ?? (object?.config?.linkedSlotId ? `viv-group-${object.config.linkedSlotId}` : null);\n};'''
+          if old_entity in text:
+              text = text.replace(old_entity, new_entity, 1)
+
+          old_members = re.search(r'function getMovementMembers\(room: ReptileRoomWorkspace, selection: NodeRef\): NodeRef\[\] \{.*?\n\}', text, re.S)
+          new_members = '''function getMovementMembers(room: ReptileRoomWorkspace, selection: NodeRef): NodeRef[] {\n  const result = new Map<string, NodeRef>();\n  const add = (node: NodeRef) => {\n    const key = `${node.type}:${node.id}`;\n    if (!result.has(key)) result.set(key, node);\n  };\n  add(selection);\n\n  if (selection.type === "object") {\n    const object = (room.objects ?? []).find((item) => item.id === selection.id);\n    if (object?.parentAssetId || object?.config?.linkedSlotId) return [...result.values()];\n  }\n\n  const selectedGroup = entityGroup(room, selection);\n  if (!selectedGroup) return [...result.values()];\n\n  room.slots.forEach((slot) => {\n    if (entityGroup(room, { type: "slot", id: slot.id }) === selectedGroup) add({ type: "slot", id: slot.id });\n  });\n  (room.objects ?? []).forEach((object) => {\n    if (entityGroup(room, { type: "object", id: object.id }) === selectedGroup) add({ type: "object", id: object.id });\n  });\n  return [...result.values()];\n}'''
+          if old_members:
+              text = text[:old_members.start()] + new_members + text[old_members.end():]
+
+          old_object = 'stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "", assetType: preset.assetType ?? "equipment", assetId: preset.assetId, intelligenceRole: preset.intelligenceRole, config: inheritedConfig'
+          new_object = 'stackGroupId: selectedSlotBeforeAdd ? `viv-group-${selectedSlotBeforeAdd.id}` : null, stackIndex: 0, parentAssetId: selectedSlotBeforeAdd?.id ?? null, clearance: {}, notes: "", assetType: preset.assetType ?? "equipment", assetId: preset.assetId, intelligenceRole: preset.intelligenceRole, config: inheritedConfig'
+          if old_object in text:
+              text = text.replace(old_object, new_object, 1)
+
+          path.write_text(text, encoding='utf-8')
+
+          test = path.read_text(encoding='utf-8')
+          required = [
+              '`viv-group-${node.id}`',
+              'object?.config?.linkedSlotId',
+              'selectedSlotBeforeAdd ? `viv-group-${selectedSlotBeforeAdd.id}`',
+          ]
+          missing = [item for item in required if item not in test]
+          if missing:
+              raise SystemExit(f'Patch verification failed: {missing}')
+
+      - name: Verify build
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Commit verified fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/ReptileRoom3D.tsx
+          if git diff --cached --quiet; then
+            echo "No vivarium magnet changes required."
+            exit 0
+          fi
+          git commit -m "auto-fix: vivarium magnet"
+          git push
