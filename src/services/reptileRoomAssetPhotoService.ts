@@ -26,7 +26,7 @@ async function compressImage(file: File): Promise<Blob> {
 export async function uploadReptileRoomAssetPhoto(uid: string, objectId: string, file: File): Promise<string> {
   if (!uid || !objectId) throw new Error("A signed-in room owner is required to upload an asset photo.");
   const blob = await compressImage(file);
-  const storageRef = ref(storage, `users/${uid}/reptileRoomAssets/${objectId}.jpg`);
+  const storageRef = ref(storage, `users/${uid}/reptileRooms/${objectId}/assets/${objectId}.jpg`);
   await uploadBytes(storageRef, blob, {
     contentType: "image/jpeg",
     customMetadata: { uploadedBy: uid, objectId, source: "reptile-room-3d-asset" },
