@@ -1,0 +1,26 @@
+/* Tiny Titans — Enclosure Intelligence formatting correction.
+ * Presentation only. Keeps inline sentence content inline so punctuation remains attached.
+ */
+
+/* The explanatory completeness sentence is prose, not a metric value. */
+.app-content .husbandry-enclosure-score > p strong,
+.app-content .husbandry-enclosure-note p strong,
+.app-content .husbandry-callout strong,
+.app-content .husbandry-muted strong {
+  display: inline !important;
+  margin: 0 !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: inherit;
+  vertical-align: baseline;
+}
+
+/* Never allow normal prose punctuation to become its own visual block. */
+.app-content .husbandry-panel p strong::after {
+  white-space: normal;
+}
+
+/* Keep enclosure score cards as metric blocks; only their explanatory paragraph is prose. */
+.app-content .husbandry-enclosure-score > div strong {
+  display: block;
+}
