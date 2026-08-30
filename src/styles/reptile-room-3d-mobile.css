@@ -3,8 +3,8 @@
 /* Mobile 3D workspace: camera gestures belong to the canvas, not the document. */
 @media(max-width:850px){
   html:has(.rr3d-workspace),body:has(.rr3d-workspace){overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-y:none!important}
-  .rr3d-workspace{position:relative!important;width:100%!important;height:auto!important;min-height:100dvh!important;margin:0!important;padding:0!important;overflow:visible!important;background:#141d21!important;box-sizing:border-box!important;overscroll-behavior:none!important}
-  .rr3d-workspace-header{position:absolute!important;top:0!important;left:0!important;right:0!important;z-index:80!important;margin:0!important;padding:8px 10px!important;align-items:center!important;background:linear-gradient(180deg,rgba(8,11,13,.86),rgba(8,11,13,.42),transparent)!important;backdrop-filter:blur(8px);border:0!important;pointer-events:none!important}
+  .rr3d-workspace{position:relative!important;width:100%!important;height:auto!important;min-height:100dvh!important;margin:0!important;padding:0!important;overflow:visible!important;background:#1d282d!important;box-sizing:border-box!important;overscroll-behavior:none!important}
+  .rr3d-workspace-header{position:absolute!important;top:0!important;left:0!important;right:0!important;z-index:80!important;margin:0!important;padding:8px 10px!important;align-items:center!important;background:linear-gradient(180deg,rgba(8,11,13,.78),rgba(8,11,13,.30),transparent)!important;backdrop-filter:blur(8px);border:0!important;pointer-events:none!important}
   .rr3d-workspace-header>div:first-child{min-width:0!important;pointer-events:auto!important}
   .rr3d-kicker,.rr3d-control-kicker{font-size:.5rem!important;white-space:nowrap!important;writing-mode:horizontal-tb!important;transform:none!important}
   .rr3d-workspace h1{font-size:1rem!important;margin:.08rem 0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;text-shadow:0 2px 8px rgba(0,0,0,.85);writing-mode:horizontal-tb!important;transform:none!important}
@@ -14,13 +14,13 @@
   /* Camera drags, pinches and orbit gestures must never scroll or bounce the page. */
   .rr3d-layout,.rr3d-canvas-panel,.rr3d-stage,.rr3d-stage>canvas{overscroll-behavior:contain!important;-webkit-user-select:none!important;user-select:none!important}
   .rr3d-canvas-panel,.rr3d-canvas-panel>div:first-child,.rr3d-stage{touch-action:none!important}
-  .rr3d-stage>canvas{touch-action:none!important;overscroll-behavior:none!important;filter:brightness(2.02) saturate(1.1) contrast(1.06)!important}
+  .rr3d-stage>canvas{touch-action:none!important;overscroll-behavior:none!important;filter:brightness(2.5) saturate(1.12) contrast(1.07)!important}
 
   .rr3d-layout{display:block!important;position:relative!important;width:100%!important;height:auto!important;min-height:100dvh!important;margin:0!important;padding:0!important;overflow:visible!important}
   .rr3d-sidebar{display:none!important}
-  .rr3d-canvas-panel{position:relative!important;inset:auto!important;width:100%!important;height:100dvh!important;min-width:0!important;min-height:560px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#172126!important;isolation:isolate!important}
+  .rr3d-canvas-panel{position:relative!important;inset:auto!important;width:100%!important;height:100dvh!important;min-width:0!important;min-height:560px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#1e2b30!important;isolation:isolate!important}
   .rr3d-canvas-panel>div:first-child{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}
-  .rr3d-canvas-panel>div:first-child>.rr3d-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.28),transparent 58%),radial-gradient(circle at 28% 68%,rgba(255,224,185,.14),transparent 42%),#172126!important}
+  .rr3d-canvas-panel>div:first-child>.rr3d-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:radial-gradient(circle at 50% 36%,rgba(255,255,255,.34),transparent 55%),radial-gradient(circle at 26% 68%,rgba(255,224,185,.19),transparent 40%),#1e2b30!important}
 
   .rr3d-navigation-pad{display:none!important}
   .rr3d-camera-direction-pad,.my-snakes-camera-direction-pad{z-index:90!important}
