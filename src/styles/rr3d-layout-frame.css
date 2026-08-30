@@ -1,10 +1,32 @@
 /* Frame-aware Reptile Room desktop layout. Keep the existing purple page chrome visible. */
+
+/*
+ * The app shell normally caps .app-content at 1460px. The 3D room is a
+ * workspace-style page and needs to use the full charcoal area available
+ * beside the persistent navigation. This override is scoped to pages that
+ * actually contain the stable Room Builder, so no other route is widened.
+ */
 @media (min-width: 1051px) {
+  .app-content:has(.stable-rr3d) {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+    padding-left: clamp(10px, 1.2vw, 18px) !important;
+    padding-right: clamp(10px, 1.2vw, 18px) !important;
+  }
+
+  .tt-page-frame:has(.stable-rr3d) {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    min-width: 0;
+  }
+
   .stable-rr3d {
     width: 100%;
     max-width: none;
     box-sizing: border-box;
-    padding: 8px 18px 12px;
+    padding: 8px 0 12px;
     overflow: visible;
   }
 
@@ -54,8 +76,8 @@
 
 @media (min-width: 1500px) {
   .stable-rr3d {
-    padding-left: 24px;
-    padding-right: 24px;
+    padding-left: 4px;
+    padding-right: 4px;
   }
 
   .stable-rr3d-layout {
@@ -72,8 +94,8 @@
 
 @media (min-width: 1900px) {
   .stable-rr3d {
-    padding-left: 28px;
-    padding-right: 28px;
+    padding-left: 6px;
+    padding-right: 6px;
   }
 
   .stable-rr3d-layout {
