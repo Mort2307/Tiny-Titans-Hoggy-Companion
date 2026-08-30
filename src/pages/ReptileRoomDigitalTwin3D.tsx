@@ -6,7 +6,7 @@ import Room3D from "../components/reptile-room-3d/Room3D";
 import { CameraDirectionPad } from "../components/reptile-room-3d/ReptileRoomPOVViewer";
 import { getCameraForwardSpawn } from "../components/reptile-room-3d/RoomCamera3D";
 import { RoomAssetInspector } from "../components/reptile-room-3d/RoomAssetInspector";
-import type { Room3DAssetPreset, Room3DSelection, Room3DTransformPatch, RoomAssetConfig } from "../types/reptileRoom3D";
+import type { Room3DAssetPreset, Room3DSelection, Room3DTransformPatch } from "../types/reptileRoom3D";
 import { clamp, snapArchitecturalObject, snapNumber } from "../services/reptileRoomSpatialService";
 import type { Snake } from "../types/Snake";
 
@@ -16,9 +16,6 @@ type RotatableSlot = ReptileRoomSlot & { rotation?: number };
 
 const idFor = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 const cameraFromWindow = () => (window as Window & { __tinyTitansRoom3DCamera?: import("three").Camera }).__tinyTitansRoom3DCamera;
-const vivWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
-const vivDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.depth ?? slot.h);
-const vivHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? DEFAULT_VIVARIUM.height);
 
 function makeObject(preset: Room3DAssetPreset, room: ReptileRoomWorkspace): ReptileRoomObject {
   const width = Math.max(1, preset.width);
@@ -94,7 +91,6 @@ export default function ReptileRoomDigitalTwin3D() {
   const selectedObject = selected?.type === "object" ? objects.find((item) => item.id === selected.id) ?? null : null;
   const selectedSlot = selected?.type === "slot" ? slots.find((item) => item.id === selected.id) ?? null : null;
   const selectedSnake = selectedSlot?.snakeId ? snakesById.get(selectedSlot.snakeId) : undefined;
-  const selectedLocked = Boolean(selectedObject?.stackGroupId || selectedSlot?.stackGroupId);
 
   const load = useCallback(async () => {
     if (!user) return;
