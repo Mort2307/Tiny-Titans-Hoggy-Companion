@@ -19,7 +19,7 @@ export function RoomAssetLibraryPanel({ onAddAsset }: Props) {
 
   return <details className="rr3d-library-dropdown">
     <summary className="rr3d-library-dropdown-summary">
-      <span className="rr3d-library-dropdown-title"><span className="rr3d-kicker">KEEPER TOOLKIT</span><strong>Assets & equipment</strong></span>
+      <span className="rr3d-library-dropdown-title"><span className="rr3d-kicker">KEEPER TOOLKIT</span><strong>Assets & equipment</strong><small>Click here to browse</small></span>
       <span className="rr3d-library-dropdown-meta"><span>{totalAssets}</span><span aria-hidden="true">⌄</span></span>
     </summary>
     <section className="rr3d-library-panel">
