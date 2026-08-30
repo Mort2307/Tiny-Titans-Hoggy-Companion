@@ -1,0 +1,85 @@
+/* Tiny Titans — final formatting guardrails
+ * Presentation only. Never change intelligence, data, permissions or keeper-entered values.
+ */
+
+/* Form controls: inputs are full width; checkboxes/radios are intrinsic controls. */
+.app-content :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.app-content :where(input[type="checkbox"],input[type="radio"]){
+  width:18px!important;
+  min-width:18px!important;
+  max-width:18px!important;
+  height:18px;
+  min-height:18px!important;
+  margin:0;
+  padding:0;
+  flex:0 0 18px;
+  accent-color:#b985df;
+}
+.app-content :where(label){
+  min-width:0;
+}
+
+/* Consistent checkbox rows anywhere in the app. */
+.app-content :where(.setup-check,.check-row,.checkbox-row,.radio-row){
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  min-width:0;
+}
+.app-content :where(.setup-check > span,.check-row > span,.checkbox-row > span,.radio-row > span){
+  min-width:0;
+}
+
+/* Shed Tracker — retained-area selector gets a clean, aligned grid. */
+.tt-tracker-form fieldset:has(input[type="checkbox"]){
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px 12px;
+  align-items:start;
+}
+.tt-tracker-form fieldset:has(input[type="checkbox"]) label{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-width:0;
+  margin:0;
+  white-space:nowrap;
+  line-height:1.35;
+}
+.tt-tracker-form fieldset:has(input[type="checkbox"]) label input[type="checkbox"]{
+  flex:0 0 18px;
+}
+
+/* Data & Privacy / intelligence presentation: status and explanation are visually distinct. */
+.personalisation-card .setup-check{
+  padding:12px 13px;
+  border:1px solid rgba(181,139,207,.13);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+}
+.personalisation-card .setup-check strong,
+.personalisation-card .setup-check small{
+  display:block;
+}
+.personalisation-card .setup-check small{
+  margin-top:4px;
+  line-height:1.5;
+}
+
+/* Prevent labels/status fragments from being squeezed into individual characters. */
+.tt-tracker-form label,.personalisation-card label,.setup-check{
+  overflow-wrap:normal;
+  word-break:normal;
+  hyphens:none;
+}
+
+/* Quick-action copy follows one consistent product vocabulary. */
+.tt-quick-dock a{white-space:nowrap;}
+
+@media(max-width:560px){
+  .tt-tracker-form fieldset:has(input[type="checkbox"]){grid-template-columns:1fr;}
+}
