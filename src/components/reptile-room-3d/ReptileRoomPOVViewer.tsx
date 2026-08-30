@@ -8,6 +8,19 @@ type Props = {
   onOpenVivariumBuilder?: (slotId: string) => void;
 };
 
+function readCachedRoom(userId: string): ReptileRoomWorkspace | null {
+  try {
+    const raw = window.localStorage.getItem(`tinyTitans.reptileRooms.v2:${userId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    const candidate = parsed.find((item): item is ReptileRoomWorkspace => Boolean(item && typeof item === "object" && typeof (item as ReptileRoomWorkspace).id === "string" && typeof (item as ReptileRoomWorkspace).name === "string"));
+    return candidate ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default function ReptileRoomPOVViewer({ onEdit, onOpenVivariumBuilder }: Props) {
   const { user, loading, profileLoading } = useAuth();
   const [room, setRoom] = useState<ReptileRoomWorkspace | null>(null);
@@ -15,10 +28,22 @@ export default function ReptileRoomPOVViewer({ onEdit, onOpenVivariumBuilder }: 
 
   const load = useCallback(async () => {
     if (!user) return;
+    setError("");
+    const cached = readCachedRoom(user.uid);
+    if (cached) setRoom(cached);
+
     try {
       const rooms = await loadReptileRooms(user.uid);
-      setRoom(rooms[0] ?? null);
+      if (rooms.length > 0) {
+        setRoom(rooms[0]);
+        return;
+      }
+      if (!cached) setRoom(null);
     } catch (caught) {
+      if (cached) {
+        setRoom(cached);
+        return;
+      }
       setError(caught instanceof Error ? caught.message : "Unable to load your reptile room.");
     }
   }, [user]);
