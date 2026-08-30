@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { REPTILE_ROOM_ASSET_CATEGORIES } from "../../data/reptileRoomAssetCatalog";
 import type { Room3DAssetPreset } from "../../types/reptileRoom3D";
+import "../../styles/room-asset-library-dropdown.css";
 
 type Props = { onAddAsset: (preset: Room3DAssetPreset) => void };
 
