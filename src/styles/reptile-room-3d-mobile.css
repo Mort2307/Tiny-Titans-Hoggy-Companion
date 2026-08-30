@@ -1,49 +1,49 @@
 :root{--rr3d-mobile-safe-bottom:env(safe-area-inset-bottom,0px)}
 @media(max-width:850px){
-  .rr3d-workspace{min-height:100dvh;padding:0!important;overflow-x:hidden;background:#0d1114}
-  .rr3d-workspace-header{position:sticky;top:0;z-index:80;margin:0;padding:10px 12px;align-items:center;background:rgba(13,17,20,.94);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08)}
-  .rr3d-workspace-header>div:first-child{min-width:0}
-  .rr3d-kicker{font-size:.55rem}
-  .rr3d-workspace h1{font-size:1.08rem;margin:.12rem 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rr3d-workspace{min-height:100dvh;padding:0!important;overflow:hidden!important;background:#0d1114}
+  .rr3d-workspace-header{position:absolute!important;top:0;left:0;right:0;z-index:80;margin:0;padding:8px 10px;align-items:center;background:linear-gradient(180deg,rgba(8,11,13,.82),rgba(8,11,13,.34),transparent);backdrop-filter:blur(8px);border:0;pointer-events:none}
+  .rr3d-workspace-header>div:first-child{min-width:0;pointer-events:auto}
+  .rr3d-kicker{font-size:.5rem}
+  .rr3d-workspace h1{font-size:1rem;margin:.08rem 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 8px rgba(0,0,0,.8)}
   .rr3d-workspace-header p{display:none}
-  .rr3d-status{font-size:.61rem;padding:6px 8px;max-width:42vw;overflow:hidden;text-overflow:ellipsis}
-  .rr3d-notice{position:sticky;top:56px;z-index:75;margin:0 8px 8px;font-size:.7rem}
-  .rr3d-layout{display:block!important;min-height:calc(100dvh - 56px)}
+  .rr3d-status{display:none}
+  .rr3d-notice{display:none!important}
+  .rr3d-layout{display:block!important;position:relative;width:100%;height:100dvh;min-height:100dvh;margin:0!important;padding:0!important}
   .rr3d-sidebar{display:none!important}
-  .rr3d-canvas-panel{position:relative;order:initial;width:100%;height:calc(100dvh - 56px)!important;min-height:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden}
-  .rr3d-canvas-panel>div:first-child{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;padding:0!important;min-height:0!important;overflow:hidden!important}
-  .rr3d-canvas-panel>div:first-child>.rr3d-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;border:0!important;border-radius:0!important;overflow:hidden!important}
-  .rr3d-stage>canvas{width:100%!important;height:100%!important;display:block!important;touch-action:none}
+  .rr3d-canvas-panel{position:absolute!important;inset:0!important;order:initial;width:100%!important;height:100dvh!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#101518;isolation:isolate}
+  .rr3d-canvas-panel>div:first-child{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;padding:0!important;margin:0!important;min-height:0!important;overflow:hidden!important}
+  .rr3d-canvas-panel>div:first-child>.rr3d-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.08),transparent 64%),#11171a}
+  .rr3d-stage>canvas{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;touch-action:none;filter:brightness(1.18) saturate(1.06);}
   .rr3d-canvas-help{display:none!important}
-  .rr3d-edge-tools{position:absolute!important;left:8px;right:8px;bottom:calc(8px + var(--rr3d-mobile-safe-bottom));z-index:70;width:auto!important;min-width:0!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;pointer-events:none}
+  .rr3d-edge-tools{position:absolute!important;left:8px!important;right:8px!important;bottom:calc(7px + var(--rr3d-mobile-safe-bottom))!important;z-index:70!important;width:auto!important;min-width:0!important;display:grid!important;grid-template-columns:1fr!important;gap:6px!important;pointer-events:none!important;max-height:25dvh!important}
   .rr3d-edge-tools>*{pointer-events:auto;min-width:0}
-  .rr3d-room-save-card{min-width:0;padding:9px 10px;border-radius:12px;background:rgba(20,24,27,.9);backdrop-filter:blur(12px)}
-  .rr3d-room-save-card strong{font-size:.72rem}
-  .rr3d-room-save-card small{font-size:.55rem}
-  .rr3d-save-room-button{min-height:40px;padding:0 10px;font-size:.64rem}
-  .rr3d-glass-dock,.rr3d-quick-log-dock{padding:10px;border-radius:12px;background:rgba(17,21,24,.92);backdrop-filter:blur(14px);max-height:32dvh;overflow:auto;-webkit-overflow-scrolling:touch}
+  .rr3d-room-save-card{min-width:0;padding:7px 9px;border-radius:10px;background:rgba(14,18,21,.78);backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.28)}
+  .rr3d-room-save-card strong{font-size:.68rem}
+  .rr3d-room-save-card small{font-size:.52rem}
+  .rr3d-save-room-button{min-height:36px;padding:0 9px;font-size:.6rem}
+  .rr3d-glass-dock,.rr3d-quick-log-dock{padding:8px;border-radius:10px;background:rgba(14,18,21,.88);backdrop-filter:blur(12px);max-height:18dvh;overflow:auto;-webkit-overflow-scrolling:touch}
   .rr3d-glass-dock p{display:none}
-  .rr3d-glass-preview{height:72px;aspect-ratio:auto;margin-bottom:7px}
-  .rr3d-glass-empty{min-height:70px;margin-bottom:7px}
-  .rr3d-primary-action{min-height:38px}
-  .rr3d-quick-grid{gap:5px;margin-top:7px}
-  .rr3d-navigation-pad{left:10px!important;bottom:calc(112px + var(--rr3d-mobile-safe-bottom))!important;z-index:76!important}
-  .rr3d-navigation-grid{grid-template-columns:40px 40px 40px!important;grid-template-rows:38px 38px!important;gap:5px!important}
-  .rr3d-fullscreen-button{top:10px!important;left:10px!important;min-height:38px!important;padding:7px 10px!important;font-size:.66rem!important;z-index:76!important}
-  .rr3d-selected-editor{position:absolute!important;left:8px!important;right:8px!important;bottom:calc(8px + var(--rr3d-mobile-safe-bottom))!important;z-index:77!important;max-height:48dvh!important;overflow:auto!important;padding:10px!important;border-radius:12px!important;background:rgba(17,21,24,.96)!important;backdrop-filter:blur(14px)!important;box-shadow:0 18px 45px rgba(0,0,0,.45)!important}
+  .rr3d-glass-preview{height:54px;aspect-ratio:auto;margin-bottom:5px}
+  .rr3d-glass-empty{min-height:52px;margin-bottom:5px}
+  .rr3d-primary-action{min-height:34px}
+  .rr3d-quick-grid{gap:4px;margin-top:5px}
+  .rr3d-navigation-pad{left:8px!important;bottom:calc(94px + var(--rr3d-mobile-safe-bottom))!important;z-index:76!important}
+  .rr3d-navigation-grid{grid-template-columns:38px 38px 38px!important;grid-template-rows:36px 36px!important;gap:4px!important}
+  .rr3d-fullscreen-button{top:8px!important;left:auto!important;right:8px!important;min-height:36px!important;padding:6px 9px!important;font-size:.62rem!important;z-index:76!important}
+  .rr3d-selected-editor{position:absolute!important;left:8px!important;right:8px!important;bottom:calc(7px + var(--rr3d-mobile-safe-bottom))!important;z-index:77!important;max-height:30dvh!important;overflow:auto!important;padding:8px!important;border-radius:10px!important;background:rgba(12,16,19,.94)!important;backdrop-filter:blur(14px)!important;box-shadow:0 14px 36px rgba(0,0,0,.48)!important}
   .rr3d-editor-grid{grid-template-columns:repeat(3,1fr)!important}
-  .rr3d-editor-grid input{min-height:40px;font-size:.76rem}
-  .rr3d-rotation-editor{grid-template-columns:auto 40px minmax(48px,1fr) 40px auto!important}
+  .rr3d-editor-grid input{min-height:38px;font-size:.72rem}
+  .rr3d-rotation-editor{grid-template-columns:auto 36px minmax(44px,1fr) 36px auto!important}
   .rr3d-action-row{display:grid!important;grid-template-columns:repeat(2,1fr)!important}
-  .rr3d-action-row button{min-height:42px!important}
-  .rr3d-upload-button{min-height:42px;width:100%}
+  .rr3d-action-row button{min-height:40px!important}
+  .rr3d-upload-button{min-height:40px;width:100%}
 }
 @media(max-width:560px){
-  .rr3d-workspace-header{padding:8px 10px}
-  .rr3d-status{display:none}
-  .rr3d-canvas-panel{height:calc(100dvh - 49px)!important}
-  .rr3d-edge-tools{grid-template-columns:1fr!important;bottom:calc(6px + var(--rr3d-mobile-safe-bottom));}
-  .rr3d-glass-dock,.rr3d-quick-log-dock{max-height:24dvh}
-  .rr3d-navigation-pad{bottom:calc(122px + var(--rr3d-mobile-safe-bottom))!important}
-  .rr3d-fullscreen-button{top:7px!important;left:7px!important}
+  .rr3d-workspace-header{padding:7px 9px}
+  .rr3d-canvas-panel{height:100dvh!important}
+  .rr3d-edge-tools{bottom:calc(5px + var(--rr3d-mobile-safe-bottom))!important;max-height:22dvh!important}
+  .rr3d-glass-dock,.rr3d-quick-log-dock{max-height:16dvh}
+  .rr3d-navigation-pad{bottom:calc(82px + var(--rr3d-mobile-safe-bottom))!important}
+  .rr3d-fullscreen-button{top:7px!important;right:7px!important}
+  .rr3d-selected-editor{bottom:calc(5px + var(--rr3d-mobile-safe-bottom))!important;max-height:27dvh!important}
 }
