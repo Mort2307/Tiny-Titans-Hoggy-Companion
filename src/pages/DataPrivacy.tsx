@@ -53,15 +53,15 @@ export default function DataPrivacy() {
       <label className="setup-check">
         <input type="checkbox" checked={intelligenceEnabled} onChange={(event) => void save({ ...preferences, communityHusbandryData: event.target.checked })} disabled={saving} />
         <span>
-          <strong>{intelligenceEnabled ? "Titan Intelligence is active" : "Enable Titan Intelligence"}</strong>
-          <small>{intelligenceEnabled ? "Advanced individual intelligence and eligible community contribution are enabled while your consent remains on." : "Unlock advanced individual intelligence and community knowledge by choosing to contribute eligible husbandry data."}</small>
+          <strong>{intelligenceEnabled ? "Titan Intelligence: Active." : "Titan Intelligence: Inactive."}</strong>
+          <small>{intelligenceEnabled ? "Advanced individual intelligence and eligible community contribution are enabled while your consent remains on." : "Enable Titan Intelligence to unlock advanced individual intelligence and community knowledge by choosing to contribute eligible husbandry data."}</small>
         </span>
       </label>
       <div className="setup-help">
         <strong>{intelligenceEnabled ? "What you unlock" : "What stays locked"}</strong>
         <p>{intelligenceEnabled ? "Intelligent trends, correlations, anomaly detection, individual benchmarking, intelligence memory/timeline and community intelligence can operate while your consent is enabled." : "Smart trends, correlations, anomaly detection, benchmarking, intelligence memory/timeline and community intelligence remain paused. Your basic records are not deleted or restricted."}</p>
       </div>
-      <button className="account-button account-button--highlight" type="button" onClick={() => navigate("/account/intelligence")}>🧠 {intelligenceEnabled ? "Open Intelligence Dashboard" : "View Intelligence &amp; Why Opt In"} →</button>
+      <button className="account-button account-button--highlight" type="button" onClick={() => navigate("/account/intelligence")}>🧠 {intelligenceEnabled ? "Open Intelligence Dashboard" : "View Intelligence & Why Opt In"} →</button>
     </section>
 
     <section className="personalisation-card"><h2>📊 Anonymous product analytics</h2><p>Optional aggregated usage and feature-performance information used to improve Tiny Titans. This is separate from Titan Intelligence.</p><label className="setup-check"><input type="checkbox" checked={preferences.anonymousAnalytics} onChange={(event) => void save({ ...preferences, anonymousAnalytics: event.target.checked })} disabled={saving} /><span><strong>Allow anonymous product analytics</strong><small>You can switch this off later.</small></span></label></section>
