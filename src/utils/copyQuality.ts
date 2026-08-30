@@ -44,6 +44,7 @@ const UI_TAGS = new Set([
 ]);
 
 const PROSE_TAGS = new Set(["BLOCKQUOTE", "FIGCAPTION", "P", "SMALL"]);
+const CAMEL_CASE_UI_TAGS = new Set(["A", "BUTTON", "LABEL", "SUMMARY", "STRONG", "EM", "SPAN", "SMALL"]);
 
 function isSkipped(element: Element): boolean {
   if (SKIP_TAGS.has(element.tagName)) return true;
@@ -61,10 +62,8 @@ function repairSpacing(value: string, element: Element): string {
   // Missing spaces after common inline punctuation: "Date:10/08" -> "Date: 10/08"
   text = text.replace(/([,;:])([A-Za-z])/g, "$1 $2");
 
-  // Repair common camel-case UI copy such as "WeightRecords" -> "Weight Records".
-  // Restrict this to UI elements where labels/titles are expected rather than
-  // arbitrary keeper-entered notes or descriptions.
-  if (["A", "BUTTON", "LABEL", "SUMMARY", "STRONG", "EM"].includes(element.tagName)) {
+  // Repair joined UI words such as "WeightRecords" and "activeAdvanced".
+  if (CAMEL_CASE_UI_TAGS.has(element.tagName)) {
     text = text.replace(/([a-z]{3,})([A-Z][a-z]{2,})/g, "$1 $2");
   }
 
@@ -83,8 +82,6 @@ function looksLikeUnpunctuatedSentence(text: string): boolean {
   const words = trimmed.split(/\s+/).filter(Boolean);
   if (words.length < 8) return false;
 
-  // Require normal prose language so headings such as "Keeper Records Growth"
-  // are not silently converted into sentences.
   return /\b(?:the|and|or|but|to|of|for|with|your|you|is|are|can|will|has|have|from|into|this|that|when|where|keep|record|use)\b/i.test(trimmed);
 }
 
