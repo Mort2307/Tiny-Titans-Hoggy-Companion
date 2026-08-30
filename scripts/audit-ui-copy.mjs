@@ -43,13 +43,20 @@ function addIssue(file, index, kind, value) {
 function inspectFile(file) {
   const source = fs.readFileSync(file, "utf8");
 
-  // Deterministic spacing problems that can be caught without understanding
-  // the surrounding React/JavaScript expression.
+  // Deterministic punctuation/spacing problems in source text.
   for (const match of source.matchAll(/([.!?…])([A-Za-z])/g)) {
     const index = match.index ?? 0;
     const surrounding = source.slice(Math.max(0, index - 90), Math.min(source.length, index + 90));
     if (/https?:\/\//.test(surrounding)) continue;
     addIssue(file, index, "punctuation-without-space", match[0]);
+  }
+
+  // Joined words in quoted UI copy: "WeightRecords" or "activeAdvanced".
+  // This is advisory because source strings can be intentionally technical.
+  for (const match of source.matchAll(/(["'`])([^"'`\n]{2,})\1/g)) {
+    const text = match[2];
+    const joined = text.match(/[a-z]{3,}[A-Z][a-z]{2,}/);
+    if (joined) addIssue(file, (match.index ?? 0) + match[0].indexOf(joined[0]), "joined-ui-copy", joined[0]);
   }
 
   // Sentence-like source strings that do not have terminal punctuation.
