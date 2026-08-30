@@ -1,0 +1,56 @@
+/* Stable 3D room mobile controls: one compact camera pad, clear workspace, no duplicate overlay. */
+@media (max-width: 780px) {
+  body:has(.stable-rr3d) .stable-rr3d-camera-pad {
+    display: none !important;
+  }
+
+  body:has(.stable-rr3d) .stable-rr3d-viewport .rr3d-navigation-pad {
+    display: block !important;
+    position: absolute !important;
+    left: 10px !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 10px !important;
+    z-index: 80 !important;
+    width: auto !important;
+    color: #fff !important;
+    pointer-events: auto !important;
+    user-select: none !important;
+  }
+
+  body:has(.stable-rr3d) .stable-rr3d-viewport .rr3d-navigation-pad .rr3d-control-kicker {
+    margin-bottom: 4px !important;
+    font-size: .5rem !important;
+    letter-spacing: .13em !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,.8) !important;
+  }
+
+  body:has(.stable-rr3d) .stable-rr3d-viewport .rr3d-navigation-pad .rr3d-navigation-grid {
+    display: grid !important;
+    grid-template-columns: 34px 34px 34px !important;
+    grid-template-rows: 30px 30px !important;
+    gap: 4px !important;
+  }
+
+  body:has(.stable-rr3d) .stable-rr3d-viewport .rr3d-navigation-pad button {
+    width: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+    background: rgba(13,17,20,.88) !important;
+    box-shadow: 0 5px 16px rgba(0,0,0,.24) !important;
+  }
+
+  body:has(.stable-rr3d) .stable-rr3d-viewport .rr3d-stage > canvas {
+    filter: brightness(3) saturate(1.12) contrast(1.07) !important;
+  }
+
+  body:has(.stable-rr3d) .stable-rr3d-viewport {
+    background: #1a2429 !important;
+  }
+}
