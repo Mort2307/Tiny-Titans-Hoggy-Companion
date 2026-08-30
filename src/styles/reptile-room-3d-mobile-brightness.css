@@ -1,0 +1,31 @@
+/* Permanent mobile Reptile Room visibility boost. Keep the 3D scene usable on darker screens. */
+@media (max-width: 850px) {
+  .rr3d-stage,
+  .stable-rr3d-viewport {
+    position: relative !important;
+    isolation: isolate !important;
+  }
+
+  .rr3d-stage > canvas,
+  .stable-rr3d-viewport canvas {
+    filter: brightness(10) saturate(1.12) contrast(1.08) !important;
+  }
+
+  .rr3d-stage::after,
+  .stable-rr3d-viewport::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 16%, rgba(255, 247, 224, 0.26), transparent 34%),
+      radial-gradient(circle at 30% 55%, rgba(255, 222, 177, 0.14), transparent 40%),
+      radial-gradient(circle at 72% 58%, rgba(214, 237, 244, 0.12), transparent 40%);
+    mix-blend-mode: screen;
+  }
+
+  .stable-rr3d-viewport::after {
+    border-radius: inherit;
+  }
+}
