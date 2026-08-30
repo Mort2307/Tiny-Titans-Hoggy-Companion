@@ -1,23 +1,24 @@
-/* Frame-aware Reptile Room desktop layout. Mobile retains the dedicated mobile layout. */
+/* Frame-aware Reptile Room desktop layout. Keep the existing purple page chrome visible. */
 @media (min-width: 1051px) {
   .stable-rr3d {
     width: 100%;
     max-width: none;
     box-sizing: border-box;
-    padding: 8px 10px 12px;
+    padding: 8px 18px 12px;
+    overflow: visible;
   }
 
   .stable-rr3d-layout {
     width: 100%;
     max-width: none;
     box-sizing: border-box;
-    grid-template-columns: minmax(270px, 21vw) minmax(0, 1fr) minmax(310px, 24vw);
-    gap: clamp(8px, 0.8vw, 14px);
+    grid-template-columns: minmax(260px, 20vw) minmax(0, 1fr) minmax(320px, 23vw);
+    gap: clamp(10px, 0.9vw, 16px);
     align-items: stretch;
     min-width: 0;
-    padding: 6px 10px;
-    border-left: 2px solid rgba(157, 94, 255, 0.72);
-    border-right: 2px solid rgba(157, 94, 255, 0.72);
+    padding: 6px 0;
+    border: 0;
+    margin: 0;
   }
 
   .stable-rr3d-sidebar,
@@ -33,6 +34,7 @@
   }
 
   .stable-rr3d-viewport {
+    width: 100%;
     overflow: hidden;
   }
 
@@ -44,33 +46,46 @@
   }
 
   .stable-rr3d-inspector-content {
+    width: 100%;
     min-width: 0;
     overflow: visible;
   }
 }
 
 @media (min-width: 1500px) {
+  .stable-rr3d {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
   .stable-rr3d-layout {
-    grid-template-columns: minmax(300px, 21vw) minmax(0, 1fr) minmax(340px, 23vw);
-    gap: clamp(10px, 0.8vw, 14px);
+    grid-template-columns: minmax(300px, 20vw) minmax(0, 1fr) minmax(340px, 22vw);
+    gap: clamp(12px, 0.9vw, 18px);
   }
 
   .stable-rr3d-sidebar,
   .stable-rr3d-viewport,
   .stable-rr3d-inspector {
-    height: clamp(540px, 59vh, 760px);
+    height: clamp(540px, 64vh, 820px);
   }
 }
 
 @media (min-width: 1900px) {
+  .stable-rr3d {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
   .stable-rr3d-layout {
-    grid-template-columns: 360px minmax(0, 1fr) 430px;
-    gap: 16px;
+    grid-template-columns: 350px minmax(0, 1fr) 420px;
+    gap: 18px;
   }
 
   .stable-rr3d-sidebar,
   .stable-rr3d-viewport,
   .stable-rr3d-inspector {
-    height: clamp(560px, 58vh, 760px);
+    height: calc(100dvh - 128px);
+    min-height: 680px;
+    max-height: 900px;
   }
 }
