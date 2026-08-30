@@ -20,6 +20,10 @@
   .rr3d-canvas-panel>div:first-child>.rr3d-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.08),transparent 64%),#11171a!important}
   .rr3d-stage>canvas{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;display:block!important;touch-action:none!important;filter:brightness(1.18) saturate(1.06)}
 
+  /* The shared camera-relative cross-pad is the only mobile directional UI. */
+  .rr3d-navigation-pad{display:none!important}
+  .rr3d-camera-direction-pad,.my-snakes-camera-direction-pad{z-index:90!important}
+
   /* Floating controls remain inside the viewport; the page can still scroll
      once the controls/editor extend below the initial screen. */
   .rr3d-edge-tools{position:absolute!important;left:8px!important;right:8px!important;bottom:calc(7px + var(--rr3d-mobile-safe-bottom))!important;z-index:70!important;width:auto!important;min-width:0!important;display:grid!important;grid-template-columns:1fr!important;gap:6px!important;pointer-events:none!important;max-height:none!important;overflow:visible!important}
@@ -35,8 +39,6 @@
   .rr3d-primary-action{min-height:34px!important}
   .rr3d-quick-grid{gap:4px!important;margin-top:4px!important}
 
-  .rr3d-navigation-pad{left:8px!important;bottom:calc(88px + var(--rr3d-mobile-safe-bottom))!important;z-index:76!important}
-  .rr3d-navigation-grid{grid-template-columns:38px 38px 38px!important;grid-template-rows:36px 36px!important;gap:4px!important}
   .rr3d-fullscreen-button{top:8px!important;left:auto!important;right:8px!important;min-height:36px!important;padding:6px 9px!important;font-size:.62rem!important;z-index:76!important}
 
   .rr3d-selected-editor{position:absolute!important;left:8px!important;right:8px!important;bottom:calc(7px + var(--rr3d-mobile-safe-bottom))!important;z-index:77!important;max-height:34dvh!important;overflow:auto!important;padding:8px!important;border-radius:10px!important;background:rgba(12,16,19,.95)!important;backdrop-filter:blur(14px)!important;box-shadow:0 14px 36px rgba(0,0,0,.5)!important}
@@ -53,7 +55,6 @@
   .rr3d-canvas-panel{height:100dvh!important;min-height:560px!important}
   .rr3d-edge-tools{bottom:calc(5px + var(--rr3d-mobile-safe-bottom))!important}
   .rr3d-glass-dock,.rr3d-quick-log-dock{max-height:30dvh!important}
-  .rr3d-navigation-pad{bottom:calc(76px + var(--rr3d-mobile-safe-bottom))!important}
   .rr3d-fullscreen-button{top:7px!important;right:7px!important}
   .rr3d-selected-editor{bottom:calc(5px + var(--rr3d-mobile-safe-bottom))!important;max-height:30dvh!important}
 }
@@ -65,6 +66,5 @@
   .rr3d-room-save-card{padding:6px 8px!important}
   .rr3d-room-save-card small{display:none!important}
   .rr3d-glass-dock,.rr3d-quick-log-dock{max-height:28dvh!important}
-  .rr3d-navigation-pad{left:6px!important;bottom:calc(68px + var(--rr3d-mobile-safe-bottom))!important}
   .rr3d-selected-editor{left:6px!important;right:6px!important;max-height:28dvh!important}
 }
