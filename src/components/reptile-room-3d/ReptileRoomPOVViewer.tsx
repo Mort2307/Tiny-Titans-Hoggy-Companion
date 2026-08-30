@@ -12,23 +12,33 @@ export default function ReptileRoomPOVViewer({ onEdit, onOpenVivariumBuilder }: 
   const { user, loading, profileLoading } = useAuth();
   const [room, setRoom] = useState<ReptileRoomWorkspace | null>(null);
   const [error, setError] = useState("");
+  const [roomLoadComplete, setRoomLoadComplete] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
+    setRoomLoadComplete(false);
+    setError("");
     try {
       const rooms = await loadReptileRooms(user.uid);
       setRoom(rooms[0] ?? null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to load your reptile room.");
+      setRoom(null);
+    } finally {
+      setRoomLoadComplete(true);
     }
   }, [user]);
 
   useEffect(() => {
-    if (!loading && !profileLoading) void load();
-  }, [loading, profileLoading, load]);
+    if (!loading && !profileLoading && user) void load();
+  }, [loading, profileLoading, user, load]);
 
-  if (!user || loading || profileLoading) {
-    return <section className="my-snakes-room-viewer"><div className="my-snakes-room-viewer-status">Loading your reptile room...</div></section>;
+  if (!user || loading || profileLoading || !roomLoadComplete) {
+    return (
+      <section className="my-snakes-room-viewer">
+        <div className="my-snakes-room-viewer-status">Loading your reptile room...</div>
+      </section>
+    );
   }
 
   if (error) {
@@ -36,7 +46,12 @@ export default function ReptileRoomPOVViewer({ onEdit, onOpenVivariumBuilder }: 
   }
 
   if (!room) {
-    return <section className="my-snakes-room-viewer"><div className="my-snakes-room-viewer-status">No reptile room has been created yet.</div><button type="button" onClick={onEdit}>Build your room</button></section>;
+    return (
+      <section className="my-snakes-room-viewer">
+        <div className="my-snakes-room-viewer-status">No reptile room has been created yet.</div>
+        <button type="button" onClick={onEdit}>Build your room</button>
+      </section>
+    );
   }
 
   const vivariums = room.slots ?? [];
