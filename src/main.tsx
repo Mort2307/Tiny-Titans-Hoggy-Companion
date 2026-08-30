@@ -26,6 +26,7 @@ import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import AppUpdatePrompt, { setTinyTitansUpdateHandler, notifyTinyTitansUpdateAvailable } from "./components/AppUpdatePrompt";
 import { AuthProvider } from "./context/AuthContext";
+import { CopyQualityGuard } from "./utils/copyQuality";
 
 const updateServiceWorker = registerSW({
   immediate: true,
@@ -95,4 +96,4 @@ export function MobileReptileRoomToolsManager() {
   return null;
 }
 
-createRoot(document.getElementById("root")!).render(<StrictMode><AuthProvider><SelectorGrabScrollManager /><MobileReptileRoomToolsManager /><AppUpdatePrompt /><AppErrorBoundary><App /></AppErrorBoundary></AuthProvider></StrictMode>);
+createRoot(document.getElementById("root")!).render(<StrictMode><AuthProvider><SelectorGrabScrollManager /><MobileReptileRoomToolsManager /><CopyQualityGuard /><AppUpdatePrompt /><AppErrorBoundary><App /></AppErrorBoundary></AuthProvider></StrictMode>);
