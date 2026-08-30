@@ -74,6 +74,9 @@ function Navigation() {
       label: "Care",
       links: [
         ["/husbandry", "✦", "Husbandry & Care"],
+        ["/weights", "⚖️", "Weight Records"],
+        ["/feeding", "🍽️", "Feeding Tracker"],
+        ["/shedding", "🐍", "Shed Intelligence"],
         ["/behaviour", "◉", "Behaviour Journal"],
         ["/health", "+", "Health & Vet"],
         ["/enclosure-intelligence", "⌘", "Enclosure Intelligence"],
@@ -114,7 +117,7 @@ function Navigation() {
 
   const renderLink = ([to, icon, label]: NavigationLink) => (
     <li className="app-navigation-item" key={to}>
-      <NavLink to={to} className="app-navigation-link">
+      <NavLink to={to} end={to === "/"} className="app-navigation-link">
         <span className="app-navigation-icon" aria-hidden="true">{icon}</span>
         <span className="app-navigation-label">{label}</span>
         {to === "/community" && communityUnreadCount > 0 && (
