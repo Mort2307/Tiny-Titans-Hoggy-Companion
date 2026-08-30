@@ -1,0 +1,76 @@
+/* Frame-aware Reptile Room desktop layout. Mobile retains the dedicated mobile layout. */
+@media (min-width: 1051px) {
+  .stable-rr3d {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    padding: 8px 10px 12px;
+  }
+
+  .stable-rr3d-layout {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    grid-template-columns: minmax(270px, 21vw) minmax(0, 1fr) minmax(310px, 24vw);
+    gap: clamp(8px, 0.8vw, 14px);
+    align-items: stretch;
+    min-width: 0;
+    padding: 6px 10px;
+    border-left: 2px solid rgba(157, 94, 255, 0.72);
+    border-right: 2px solid rgba(157, 94, 255, 0.72);
+  }
+
+  .stable-rr3d-sidebar,
+  .stable-rr3d-viewport,
+  .stable-rr3d-inspector {
+    min-width: 0;
+    min-height: 0;
+    height: clamp(500px, 60vh, 740px);
+  }
+
+  .stable-rr3d-sidebar {
+    overflow: auto;
+  }
+
+  .stable-rr3d-viewport {
+    overflow: hidden;
+  }
+
+  .stable-rr3d-inspector {
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+  }
+
+  .stable-rr3d-inspector-content {
+    min-width: 0;
+    overflow: visible;
+  }
+}
+
+@media (min-width: 1500px) {
+  .stable-rr3d-layout {
+    grid-template-columns: minmax(300px, 21vw) minmax(0, 1fr) minmax(340px, 23vw);
+    gap: clamp(10px, 0.8vw, 14px);
+  }
+
+  .stable-rr3d-sidebar,
+  .stable-rr3d-viewport,
+  .stable-rr3d-inspector {
+    height: clamp(540px, 59vh, 760px);
+  }
+}
+
+@media (min-width: 1900px) {
+  .stable-rr3d-layout {
+    grid-template-columns: 360px minmax(0, 1fr) 430px;
+    gap: 16px;
+  }
+
+  .stable-rr3d-sidebar,
+  .stable-rr3d-viewport,
+  .stable-rr3d-inspector {
+    height: clamp(560px, 58vh, 760px);
+  }
+}
