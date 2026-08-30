@@ -1,0 +1,271 @@
+/* Tiny Titans — Enclosure Intelligence page polish.
+ * Presentation only. The existing enclosure/environment intelligence remains the source of truth.
+ */
+
+.husbandry-page{
+  width:100%;
+  max-width:1240px;
+  margin:0 auto;
+  padding:8px 0 48px;
+}
+
+.husbandry-page .husbandry-hero{
+  align-items:center;
+  margin:10px 0 16px;
+  padding:22px 24px;
+  border:1px solid rgba(191,139,231,.22);
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(166,107,210,.17),rgba(105,182,212,.055) 58%,rgba(226,182,109,.035));
+  box-shadow:0 16px 40px rgba(0,0,0,.16);
+}
+
+.husbandry-page .husbandry-hero h1{
+  font-size:clamp(1.65rem,3vw,2.25rem);
+  letter-spacing:-.03em;
+}
+
+.husbandry-page .husbandry-eyebrow{
+  color:#bf8be7;
+  letter-spacing:.13em;
+  font-size:.68rem;
+}
+
+.husbandry-page .husbandry-hero p,
+.husbandry-page .husbandry-muted,
+.husbandry-page .husbandry-panel p,
+.husbandry-page .husbandry-panel li{
+  line-height:1.58;
+}
+
+.husbandry-page .husbandry-badge{
+  padding:8px 11px;
+  border-color:rgba(226,182,109,.25);
+  background:rgba(226,182,109,.055);
+  color:#f0ca88;
+  font-size:.76rem;
+}
+
+.husbandry-page .husbandry-panel{
+  margin-bottom:16px;
+  padding:20px;
+  border:1px solid rgba(198,171,220,.15);
+  border-radius:16px;
+  background:linear-gradient(145deg,rgba(36,29,46,.80),rgba(17,13,22,.96));
+  box-shadow:0 12px 30px rgba(0,0,0,.13);
+}
+
+.husbandry-page .husbandry-section-heading{
+  margin-bottom:16px;
+}
+
+.husbandry-page .husbandry-selector{
+  display:grid;
+  grid-template-columns:auto minmax(220px,360px);
+  align-items:center;
+  gap:10px 14px;
+  padding:15px 18px;
+  border-radius:14px;
+  background:rgba(20,16,25,.72);
+}
+
+.husbandry-page .husbandry-selector label{
+  font-size:.82rem;
+  font-weight:800;
+}
+
+.husbandry-page .husbandry-selector select{
+  width:100%;
+  max-width:none;
+  min-height:44px;
+  margin:0;
+  border:1px solid rgba(198,171,220,.22);
+  border-radius:11px;
+  background:rgba(10,8,13,.76);
+}
+
+.husbandry-page .husbandry-selector p{
+  grid-column:1 / -1;
+  margin:0;
+  font-size:.8rem;
+}
+
+.husbandry-page .husbandry-enclosure-score{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+
+.husbandry-page .husbandry-enclosure-score > div{
+  padding:14px;
+  border:1px solid rgba(198,171,220,.11);
+  border-radius:13px;
+  background:rgba(255,255,255,.022);
+}
+
+.husbandry-page .husbandry-enclosure-score span{
+  display:block;
+  color:#978da1;
+  font-size:.7rem;
+  font-weight:760;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+.husbandry-page .husbandry-enclosure-score strong{
+  display:block;
+  margin-top:5px;
+  color:#f0ca88;
+  font-size:1.15rem;
+}
+
+.husbandry-page .husbandry-enclosure-score p{
+  grid-column:1 / -1;
+  margin:0!important;
+  padding:10px 12px;
+  border-left:3px solid #a66bd2;
+  border-radius:0 10px 10px 0;
+  background:rgba(166,107,210,.045);
+  font-size:.79rem;
+}
+
+.husbandry-page .husbandry-enclosure-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:18px!important;
+}
+
+.husbandry-page .husbandry-enclosure-tile{
+  min-width:0;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:4px 9px;
+  align-content:start;
+  padding:14px;
+  border:1px solid rgba(198,171,220,.12);
+  border-radius:13px;
+  background:rgba(255,255,255,.02);
+  color:#f7f4f8;
+  text-align:left;
+  transition:transform 140ms ease,border-color 140ms ease,background-color 140ms ease,box-shadow 140ms ease;
+}
+
+.husbandry-page .husbandry-enclosure-tile:hover{
+  transform:translateY(-1px);
+  border-color:rgba(191,139,231,.28);
+  background:rgba(166,107,210,.045);
+  box-shadow:0 10px 24px rgba(0,0,0,.12);
+}
+
+.husbandry-page .husbandry-enclosure-tile > span{
+  grid-row:1 / span 2;
+  font-size:1.05rem;
+}
+
+.husbandry-page .husbandry-enclosure-tile strong,
+.husbandry-page .husbandry-enclosure-tile b,
+.husbandry-page .husbandry-enclosure-tile small,
+.husbandry-page .husbandry-enclosure-tile em{
+  min-width:0;
+}
+
+.husbandry-page .husbandry-enclosure-tile strong{font-size:.78rem;color:#d0c7d5;}
+.husbandry-page .husbandry-enclosure-tile b{font-size:.92rem;color:#fff;overflow-wrap:anywhere;}
+.husbandry-page .husbandry-enclosure-tile small{font-size:.72rem;color:#978da1;line-height:1.4;}
+.husbandry-page .husbandry-enclosure-tile em{grid-column:2;font-size:.67rem;font-style:normal;color:#e2b66d;}
+
+.husbandry-page .husbandry-enclosure-note{
+  margin-top:14px;
+  padding:14px 16px;
+  border:1px solid rgba(105,182,212,.15);
+  border-radius:13px;
+  background:linear-gradient(135deg,rgba(105,182,212,.045),rgba(166,107,210,.035));
+}
+.husbandry-page .husbandry-enclosure-note strong{color:#69b6d4;}
+.husbandry-page .husbandry-enclosure-note p{margin:7px 0 0;font-size:.84rem;}
+
+.husbandry-page .husbandry-grid--four .husbandry-metric--button{
+  min-width:0;
+  min-height:164px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  padding:15px;
+  border:1px solid rgba(198,171,220,.12);
+  border-radius:14px;
+  background:rgba(255,255,255,.02);
+}
+
+.husbandry-page .husbandry-metric--button > span{font-size:.78rem;color:#d0c7d5;font-weight:760;}
+.husbandry-page .husbandry-metric--button > strong{margin-top:10px;font-size:1.15rem;color:#fff;}
+.husbandry-page .husbandry-metric--button > em{margin-top:9px;font-size:.72rem;}
+.husbandry-page .husbandry-metric--button > small{margin-top:5px;font-size:.69rem;color:#978da1;}
+.husbandry-page .husbandry-metric--button > b{margin-top:auto;padding-top:12px;color:#e2b66d;font-size:.68rem;}
+
+.husbandry-page .husbandry-growth-grid{
+  gap:10px;
+  margin-top:14px;
+}
+.husbandry-page .husbandry-growth-grid article{
+  min-width:0;
+  padding:14px;
+  border:1px solid rgba(198,171,220,.11);
+  border-radius:13px;
+  background:rgba(255,255,255,.018);
+}
+.husbandry-page .husbandry-growth-grid strong{font-size:1.05rem;color:#e2b66d;overflow-wrap:anywhere;}
+
+.husbandry-page .husbandry-callout{
+  border-radius:13px;
+  line-height:1.55;
+}
+
+.husbandry-page .husbandry-links a{
+  border-color:rgba(198,171,220,.13);
+  background:rgba(255,255,255,.018);
+  transition:background-color 140ms ease,border-color 140ms ease,transform 140ms ease;
+}
+.husbandry-page .husbandry-links a:hover{
+  transform:translateY(-1px);
+  border-color:rgba(191,139,231,.26);
+  background:rgba(166,107,210,.045);
+}
+
+.husbandry-page .husbandry-modal-backdrop{padding:16px;}
+.husbandry-page .husbandry-modal{
+  width:min(720px,100%);
+  max-height:min(88vh,820px);
+  padding:22px;
+  border:1px solid rgba(191,139,231,.23);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(36,29,46,.99),rgba(13,10,16,.995));
+  box-shadow:0 30px 90px rgba(0,0,0,.52);
+}
+.husbandry-page .husbandry-modal .husbandry-form-grid{gap:12px;}
+.husbandry-page .husbandry-modal label{min-width:0;}
+.husbandry-page .husbandry-modal-actions{margin-top:20px;padding-top:14px;border-top:1px solid rgba(198,171,220,.10);}
+
+@media(max-width:1000px){
+  .husbandry-page .husbandry-enclosure-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+
+@media(max-width:850px){
+  .husbandry-page .husbandry-enclosure-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .husbandry-page .husbandry-selector{grid-template-columns:1fr;}
+  .husbandry-page .husbandry-selector p{grid-column:1;}
+}
+
+@media(max-width:560px){
+  .husbandry-page{padding-bottom:32px;}
+  .husbandry-page .husbandry-hero{padding:18px;}
+  .husbandry-page .husbandry-panel{padding:16px;}
+  .husbandry-page .husbandry-enclosure-score{grid-template-columns:1fr;}
+  .husbandry-page .husbandry-enclosure-score p{grid-column:1;}
+  .husbandry-page .husbandry-enclosure-grid{grid-template-columns:1fr;}
+  .husbandry-page .husbandry-growth-grid{grid-template-columns:1fr 1fr;}
+}
+
+@media(max-width:420px){
+  .husbandry-page .husbandry-growth-grid{grid-template-columns:1fr;}
+}
