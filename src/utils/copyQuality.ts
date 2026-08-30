@@ -48,7 +48,7 @@ const PROSE_TAGS = new Set(["BLOCKQUOTE", "FIGCAPTION", "P", "SMALL"]);
 function isSkipped(element: Element): boolean {
   if (SKIP_TAGS.has(element.tagName)) return true;
   if (element.hasAttribute("data-copy-quality-skip")) return true;
-  if (element.isContentEditable) return true;
+  if (element instanceof HTMLElement && element.isContentEditable) return true;
   return Boolean(element.closest("[data-copy-quality-skip], [contenteditable='true']"));
 }
 
