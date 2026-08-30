@@ -27,6 +27,7 @@ import "./styles/tiny-titans-layout-final.css";
 import "./styles/tiny-titans-final-formatting.css";
 import "./styles/tiny-titans-enclosure-intelligence-polish.css";
 import "./styles/tiny-titans-enclosure-formatting.css";
+import "./styles/reptile-room-3d-builder-mobile-overrides.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
