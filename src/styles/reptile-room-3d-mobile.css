@@ -14,24 +14,24 @@
   /* Camera drags, pinches and orbit gestures must never scroll or bounce the page. */
   .rr3d-layout,.rr3d-canvas-panel,.rr3d-stage,.rr3d-stage>canvas{overscroll-behavior:contain!important;-webkit-user-select:none!important;user-select:none!important}
   .rr3d-canvas-panel,.rr3d-canvas-panel>div:first-child,.rr3d-stage{touch-action:none!important}
-  .rr3d-stage>canvas{touch-action:none!important;overscroll-behavior:none!important;filter:brightness(1.42) saturate(1.08) contrast(1.03)!important}
+  .rr3d-stage>canvas{touch-action:none!important;overscroll-behavior:none!important;filter:brightness(1.72) saturate(1.08) contrast(1.04)!important}
 
   .rr3d-layout{display:block!important;position:relative!important;width:100%!important;height:auto!important;min-height:100dvh!important;margin:0!important;padding:0!important;overflow:visible!important}
   .rr3d-sidebar{display:none!important}
-  .rr3d-canvas-panel{position:relative!important;inset:auto!important;width:100%!important;height:100dvh!important;min-width:0!important;min-height:560px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#101518!important;isolation:isolate!important}
+  .rr3d-canvas-panel{position:relative!important;inset:auto!important;width:100%!important;height:100dvh!important;min-width:0!important;min-height:560px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#121a1e!important;isolation:isolate!important}
   .rr3d-canvas-panel>div:first-child{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}
-  .rr3d-canvas-panel>div:first-child>.rr3d-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.15),transparent 62%),#11171a!important}
+  .rr3d-canvas-panel>div:first-child>.rr3d-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.22),transparent 60%),#12191c!important}
 
   .rr3d-navigation-pad{display:none!important}
   .rr3d-camera-direction-pad,.my-snakes-camera-direction-pad{z-index:90!important}
 
   .rr3d-edge-tools{position:absolute!important;left:8px!important;right:8px!important;bottom:calc(7px + var(--rr3d-mobile-safe-bottom))!important;z-index:70!important;width:auto!important;min-width:0!important;display:grid!important;grid-template-columns:1fr!important;gap:6px!important;pointer-events:none!important;max-height:none!important;overflow:visible!important}
   .rr3d-edge-tools>*{pointer-events:auto;min-width:0}
-  .rr3d-room-save-card{min-width:0!important;padding:7px 9px!important;border-radius:10px!important;background:rgba(14,18,21,.78)!important;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.28)}
+  .rr3d-room-save-card{min-width:0!important;padding:7px 9px!important;border-radius:10px!important;background:rgba(18,22,25,.76)!important;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.28)}
   .rr3d-room-save-card strong{font-size:.68rem!important;white-space:nowrap!important}
   .rr3d-room-save-card small{font-size:.52rem!important}
   .rr3d-save-room-button{min-height:36px!important;padding:0 9px!important;font-size:.6rem!important}
-  .rr3d-glass-dock,.rr3d-quick-log-dock{padding:8px!important;border-radius:10px!important;background:rgba(14,18,21,.92)!important;backdrop-filter:blur(12px);max-height:30dvh!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important}
+  .rr3d-glass-dock,.rr3d-quick-log-dock{padding:8px!important;border-radius:10px!important;background:rgba(18,22,25,.90)!important;backdrop-filter:blur(12px);max-height:30dvh!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important}
   .rr3d-glass-dock p{display:none!important}
   .rr3d-glass-preview{height:48px!important;aspect-ratio:auto!important;margin-bottom:4px!important}
   .rr3d-glass-empty{min-height:44px!important;margin-bottom:4px!important}
