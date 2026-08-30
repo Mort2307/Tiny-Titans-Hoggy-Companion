@@ -50,4 +50,49 @@ export function SelectorGrabScrollManager() {
   return null;
 }
 
-createRoot(document.getElementById("root")!).render(<StrictMode><AuthProvider><SelectorGrabScrollManager /><AppUpdatePrompt /><AppErrorBoundary><App /></AppErrorBoundary></AuthProvider></StrictMode>);
+export function MobileReptileRoomToolsManager() {
+  useEffect(() => {
+    const isMobile = () => window.matchMedia("(max-width: 850px)").matches;
+    const sync = () => {
+      document.querySelectorAll<HTMLElement>(".rr3d-workspace").forEach((workspace) => {
+        let launcher = workspace.querySelector<HTMLButtonElement>(".tt-mobile-room-tools-launcher");
+        if (!launcher) {
+          launcher = document.createElement("button");
+          launcher.type = "button";
+          launcher.className = "tt-mobile-room-tools-launcher";
+          launcher.setAttribute("aria-controls", "rr3d-mobile-tools-panel");
+          launcher.setAttribute("aria-expanded", "false");
+          launcher.textContent = "TITANS TOOLS";
+          workspace.appendChild(launcher);
+        }
+        const sidebar = workspace.querySelector<HTMLElement>(".rr3d-sidebar");
+        if (!sidebar) return;
+        sidebar.id = "rr3d-mobile-tools-panel";
+        const open = sidebar.classList.contains("tt-mobile-room-tools-open");
+        launcher.classList.toggle("is-open", open);
+        launcher.setAttribute("aria-expanded", String(open));
+        launcher.textContent = open ? "CLOSE TOOLS" : "TITANS TOOLS";
+      });
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!isMobile()) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const launcher = target.closest<HTMLButtonElement>(".tt-mobile-room-tools-launcher");
+      if (!launcher) return;
+      const workspace = launcher.closest<HTMLElement>(".rr3d-workspace");
+      const sidebar = workspace?.querySelector<HTMLElement>(".rr3d-sidebar");
+      if (!sidebar) return;
+      sidebar.classList.toggle("tt-mobile-room-tools-open");
+      sync();
+    };
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener("click", onClick, true);
+    sync();
+    return () => { observer.disconnect(); document.removeEventListener("click", onClick, true); document.querySelectorAll(".tt-mobile-room-tools-launcher").forEach((element) => element.remove()); };
+  }, []);
+  return null;
+}
+
+createRoot(document.getElementById("root")!).render(<StrictMode><AuthProvider><SelectorGrabScrollManager /><MobileReptileRoomToolsManager /><AppUpdatePrompt /><AppErrorBoundary><App /></AppErrorBoundary></AuthProvider></StrictMode>);
