@@ -1,6 +1,6 @@
-import ReptileRoom3D from "../../pages/ReptileRoom3D";
+import ReptileRoomDigitalTwin3D from "../../pages/ReptileRoomDigitalTwin3D";
 
-/** Canonical room-builder shell: preserve the full editor surface including dimensions, rotation and vivarium photo controls. */
+/** Stable canonical room-builder shell. The dedicated vivarium editor remains a separate route. */
 export default function RoomEditorShell3D() {
-  return <ReptileRoom3D />;
+  return <ReptileRoomDigitalTwin3D />;
 }
