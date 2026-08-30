@@ -20,328 +20,71 @@
   color: var(--rrdt-text);
 }
 
-.reptile-room-digital-twin__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 0 0 10px;
+.reptile-room-digital-twin__header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin:0 0 10px; }
+.reptile-room-digital-twin__header h1 { margin:3px 0 2px; color:var(--rrdt-text); font-size:clamp(1.35rem,2.2vw,2rem); line-height:1.1; }
+.reptile-room-digital-twin__header p,.reptile-room-digital-twin__header .eyebrow { margin:0; color:var(--rrdt-muted); }
+.reptile-room-digital-twin__header .eyebrow { font-size:.64rem; letter-spacing:.14em; font-weight:900; color:var(--rrdt-gold); }
+.reptile-room-digital-twin__header p { font-size:.74rem; }
+.reptile-room-digital-twin__actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; flex:0 0 auto; }
+.reptile-room-digital-twin__actions button,.reptile-room-digital-twin__sidebar button,.reptile-room-digital-twin__selection button,.reptile-room-digital-twin__inspector button { min-height:34px; padding:6px 9px; border:1px solid var(--rrdt-line); border-radius:8px; background:var(--rrdt-panel-raised); color:var(--rrdt-text); font:inherit; font-size:.72rem; cursor:pointer; }
+.reptile-room-digital-twin__actions button:hover,.reptile-room-digital-twin__sidebar button:hover,.reptile-room-digital-twin__selection button:hover,.reptile-room-digital-twin__inspector button:hover { border-color:var(--rrdt-gold); }
+.reptile-room-digital-twin__notice { margin:0 0 9px; padding:8px 10px; border:1px solid #67551e; border-radius:8px; background:#2a2415; color:#eadba9; font-size:.74rem; }
+.reptile-room-digital-twin__layout { display:grid; grid-template-columns:minmax(210px,235px) minmax(0,1fr) minmax(245px,275px); gap:10px; align-items:stretch; min-width:0; }
+.reptile-room-digital-twin__sidebar,.reptile-room-digital-twin__inspector { min-width:0; display:flex; flex-direction:column; gap:8px; }
+.reptile-room-digital-twin__sidebar>section,.reptile-room-digital-twin__inspector { padding:9px; border:1px solid var(--rrdt-line); border-radius:10px; background:var(--rrdt-panel); box-shadow:0 8px 24px rgba(0,0,0,.16); }
+.reptile-room-digital-twin__sidebar h2,.reptile-room-digital-twin__inspector h2 { margin:0 0 7px; color:var(--rrdt-text); font-size:.78rem; }
+.reptile-room-digital-twin__sidebar h3 { margin:9px 0 5px; color:var(--rrdt-muted); font-size:.68rem; }
+.reptile-room-digital-twin__sidebar label,.reptile-room-digital-twin__inspector label { display:flex; flex-direction:column; gap:3px; margin-top:6px; color:var(--rrdt-muted); font-size:.65rem; }
+.reptile-room-digital-twin__sidebar input,.reptile-room-digital-twin__sidebar select,.reptile-room-digital-twin__inspector input,.reptile-room-digital-twin__inspector select { width:100%; min-width:0; box-sizing:border-box; padding:7px; border:1px solid var(--rrdt-line); border-radius:7px; background:#0d1215; color:var(--rrdt-text); font-size:.72rem; }
+.reptile-room-digital-twin__sidebar>section>button,.reptile-room-digital-twin__sidebar>section>div>button { width:100%; margin-bottom:4px; text-align:left; }
+.reptile-room-digital-twin__asset-list { display:grid; grid-template-columns:1fr; gap:4px; }
+.reptile-room-digital-twin__asset-list button { display:flex; align-items:center; justify-content:space-between; gap:5px; }
+.reptile-room-digital-twin__asset-list small { color:var(--rrdt-muted); font-size:.55rem; white-space:nowrap; }
+
+/* The viewport is deliberately independent of the natural height of Room3D. */
+.reptile-room-digital-twin__viewport { position:relative; min-width:0; height:clamp(620px,72vh,780px); min-height:620px; display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--rrdt-line); border-radius:14px; background:#0a0e10; box-shadow:0 16px 40px rgba(0,0,0,.28); }
+.reptile-room-digital-twin__viewport>div:first-child { position:relative!important; flex:1 1 auto!important; width:100%!important; height:auto!important; min-width:0!important; min-height:0!important; overflow:hidden!important; }
+.reptile-room-digital-twin__viewport>div:first-child>canvas { display:block!important; width:100%!important; height:100%!important; }
+.reptile-room-digital-twin__selection { position:relative; z-index:50; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:42px; padding:6px 9px; border-top:1px solid var(--rrdt-line); background:rgba(15,20,23,.96); box-sizing:border-box; }
+.reptile-room-digital-twin__selection strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--rrdt-text); font-size:.7rem; }
+.reptile-room-digital-twin__selection>div { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px; }
+.reptile-room-digital-twin__selection button { min-height:29px; padding:4px 7px; font-size:.62rem; }
+.reptile-room-digital-twin__inspector { align-self:start; max-height:clamp(620px,72vh,780px); overflow:auto; }
+.reptile-room-digital-twin__inspector p { margin:4px 0; color:var(--rrdt-muted); font-size:.7rem; }
+.reptile-room-digital-twin__inspector [role="tablist"] { display:flex; gap:4px; margin:7px 0; }
+.reptile-room-digital-twin__inspector [role="tablist"] button { flex:1; }
+.reptile-room-digital-twin__snake-photo { display:block; width:100%; max-height:180px; margin-top:8px; object-fit:cover; border-radius:8px; }
+
+/* Shared camera-relative directional pad used by the My Snakes viewer. */
+.reptile-room-digital-twin__camera-pad { position:absolute; left:12px; bottom:12px; z-index:90; display:grid; gap:5px; padding:7px; border:1px solid rgba(255,255,255,.12); border-radius:13px; background:rgba(10,14,16,.62); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); box-shadow:0 12px 26px rgba(0,0,0,.28); pointer-events:auto; }
+.reptile-room-digital-twin__camera-pad .camera-direction-title { padding:0 4px 2px; color:rgba(244,247,248,.6); font-size:.58rem; font-weight:900; letter-spacing:.09em; text-transform:uppercase; text-align:center; writing-mode:horizontal-tb!important; transform:none!important; white-space:nowrap; }
+.reptile-room-digital-twin__camera-pad .camera-direction-grid { display:grid; grid-template-columns:repeat(3,42px); grid-template-rows:38px 38px; gap:4px; }
+.reptile-room-digital-twin__camera-pad .camera-direction-grid>span { display:block; }
+.reptile-room-digital-twin__camera-pad .camera-direction-grid button { width:42px!important; height:38px!important; margin:0!important; padding:0!important; touch-action:manipulation; }
+
+@media (max-width:1050px) {
+  .reptile-room-digital-twin__layout { grid-template-columns:minmax(190px,220px) minmax(0,1fr); }
+  .reptile-room-digital-twin__inspector { grid-column:1/-1; max-height:none; }
+  .reptile-room-digital-twin__viewport { height:clamp(580px,68vh,720px); min-height:580px; }
 }
 
-.reptile-room-digital-twin__header h1 {
-  margin: 3px 0 2px;
-  color: var(--rrdt-text);
-  font-size: clamp(1.35rem, 2.2vw, 2rem);
-  line-height: 1.1;
+@media (max-width:760px) {
+  .reptile-room-digital-twin { padding:8px; }
+  .reptile-room-digital-twin__header { flex-direction:column; }
+  .reptile-room-digital-twin__actions { width:100%; justify-content:flex-start; }
+  .reptile-room-digital-twin__layout { grid-template-columns:1fr; }
+  .reptile-room-digital-twin__sidebar,.reptile-room-digital-twin__inspector { grid-column:auto; }
+  .reptile-room-digital-twin__viewport { order:-1; height:clamp(540px,65vh,680px); min-height:540px; }
+  .reptile-room-digital-twin__selection { align-items:flex-start; flex-direction:column; }
+  .reptile-room-digital-twin__selection>div { width:100%; justify-content:flex-start; }
+  .reptile-room-digital-twin__camera-pad { left:8px; bottom:8px; }
+  .reptile-room-digital-twin__camera-pad .camera-direction-grid { grid-template-columns:repeat(3,38px); grid-template-rows:34px 34px; }
+  .reptile-room-digital-twin__camera-pad .camera-direction-grid button { width:38px!important; height:34px!important; font-size:16px!important; }
 }
 
-.reptile-room-digital-twin__header p,
-.reptile-room-digital-twin__header .eyebrow {
-  margin: 0;
-  color: var(--rrdt-muted);
-}
-
-.reptile-room-digital-twin__header .eyebrow {
-  font-size: .64rem;
-  letter-spacing: .14em;
-  font-weight: 900;
-  color: var(--rrdt-gold);
-}
-
-.reptile-room-digital-twin__header p {
-  font-size: .74rem;
-}
-
-.reptile-room-digital-twin__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-  flex: 0 0 auto;
-}
-
-.reptile-room-digital-twin__actions button,
-.reptile-room-digital-twin__sidebar button,
-.reptile-room-digital-twin__selection button,
-.reptile-room-digital-twin__inspector button {
-  min-height: 34px;
-  padding: 6px 9px;
-  border: 1px solid var(--rrdt-line);
-  border-radius: 8px;
-  background: var(--rrdt-panel-raised);
-  color: var(--rrdt-text);
-  font: inherit;
-  font-size: .72rem;
-  cursor: pointer;
-}
-
-.reptile-room-digital-twin__actions button:hover,
-.reptile-room-digital-twin__sidebar button:hover,
-.reptile-room-digital-twin__selection button:hover,
-.reptile-room-digital-twin__inspector button:hover {
-  border-color: var(--rrdt-gold);
-}
-
-.reptile-room-digital-twin__notice {
-  margin: 0 0 9px;
-  padding: 8px 10px;
-  border: 1px solid #67551e;
-  border-radius: 8px;
-  background: #2a2415;
-  color: #eadba9;
-  font-size: .74rem;
-}
-
-.reptile-room-digital-twin__layout {
-  display: grid;
-  grid-template-columns: minmax(210px, 235px) minmax(0, 1fr) minmax(245px, 275px);
-  gap: 10px;
-  align-items: stretch;
-  min-width: 0;
-}
-
-.reptile-room-digital-twin__sidebar,
-.reptile-room-digital-twin__inspector {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.reptile-room-digital-twin__sidebar > section,
-.reptile-room-digital-twin__inspector {
-  padding: 9px;
-  border: 1px solid var(--rrdt-line);
-  border-radius: 10px;
-  background: var(--rrdt-panel);
-  box-shadow: 0 8px 24px rgba(0,0,0,.16);
-}
-
-.reptile-room-digital-twin__sidebar h2,
-.reptile-room-digital-twin__inspector h2 {
-  margin: 0 0 7px;
-  color: var(--rrdt-text);
-  font-size: .78rem;
-}
-
-.reptile-room-digital-twin__sidebar h3 {
-  margin: 9px 0 5px;
-  color: var(--rrdt-muted);
-  font-size: .68rem;
-}
-
-.reptile-room-digital-twin__sidebar label,
-.reptile-room-digital-twin__inspector label {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-top: 6px;
-  color: var(--rrdt-muted);
-  font-size: .65rem;
-}
-
-.reptile-room-digital-twin__sidebar input,
-.reptile-room-digital-twin__sidebar select,
-.reptile-room-digital-twin__inspector input,
-.reptile-room-digital-twin__inspector select {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 7px;
-  border: 1px solid var(--rrdt-line);
-  border-radius: 7px;
-  background: #0d1215;
-  color: var(--rrdt-text);
-  font-size: .72rem;
-}
-
-.reptile-room-digital-twin__sidebar > section > button,
-.reptile-room-digital-twin__sidebar > section > div > button {
-  width: 100%;
-  margin-bottom: 4px;
-  text-align: left;
-}
-
-.reptile-room-digital-twin__asset-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 4px;
-}
-
-.reptile-room-digital-twin__asset-list button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 5px;
-}
-
-.reptile-room-digital-twin__asset-list small {
-  color: var(--rrdt-muted);
-  font-size: .55rem;
-  white-space: nowrap;
-}
-
-/* The viewport is deliberately independent of the natural height of Room3D.
-   This is the critical anti-letterbox rule. */
-.reptile-room-digital-twin__viewport {
-  position: relative;
-  min-width: 0;
-  height: clamp(620px, 72vh, 780px);
-  min-height: 620px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--rrdt-line);
-  border-radius: 14px;
-  background: #0a0e10;
-  box-shadow: 0 16px 40px rgba(0,0,0,.28);
-}
-
-/* Room3D is the first child. Give it all remaining camera space. */
-.reptile-room-digital-twin__viewport > div:first-child {
-  position: relative !important;
-  flex: 1 1 auto !important;
-  width: 100% !important;
-  height: auto !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-}
-
-.reptile-room-digital-twin__viewport > div:first-child > canvas {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.reptile-room-digital-twin__selection {
-  position: relative;
-  z-index: 50;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 42px;
-  padding: 6px 9px;
-  border-top: 1px solid var(--rrdt-line);
-  background: rgba(15,20,23,.96);
-  box-sizing: border-box;
-}
-
-.reptile-room-digital-twin__selection strong {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--rrdt-text);
-  font-size: .7rem;
-}
-
-.reptile-room-digital-twin__selection > div {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-}
-
-.reptile-room-digital-twin__selection button {
-  min-height: 29px;
-  padding: 4px 7px;
-  font-size: .62rem;
-}
-
-.reptile-room-digital-twin__inspector {
-  align-self: start;
-  max-height: clamp(620px, 72vh, 780px);
-  overflow: auto;
-}
-
-.reptile-room-digital-twin__inspector p {
-  margin: 4px 0;
-  color: var(--rrdt-muted);
-  font-size: .7rem;
-}
-
-.reptile-room-digital-twin__inspector [role="tablist"] {
-  display: flex;
-  gap: 4px;
-  margin: 7px 0;
-}
-
-.reptile-room-digital-twin__inspector [role="tablist"] button {
-  flex: 1;
-}
-
-.reptile-room-digital-twin__snake-photo {
-  display: block;
-  width: 100%;
-  max-height: 180px;
-  margin-top: 8px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-@media (max-width: 1050px) {
-  .reptile-room-digital-twin__layout {
-    grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
-  }
-
-  .reptile-room-digital-twin__inspector {
-    grid-column: 1 / -1;
-    max-height: none;
-  }
-
-  .reptile-room-digital-twin__viewport {
-    height: clamp(580px, 68vh, 720px);
-    min-height: 580px;
-  }
-}
-
-@media (max-width: 760px) {
-  .reptile-room-digital-twin {
-    padding: 8px;
-  }
-
-  .reptile-room-digital-twin__header {
-    flex-direction: column;
-  }
-
-  .reptile-room-digital-twin__actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .reptile-room-digital-twin__layout {
-    grid-template-columns: 1fr;
-  }
-
-  .reptile-room-digital-twin__sidebar,
-  .reptile-room-digital-twin__inspector {
-    grid-column: auto;
-  }
-
-  .reptile-room-digital-twin__viewport {
-    order: -1;
-    height: clamp(540px, 65vh, 680px);
-    min-height: 540px;
-  }
-
-  .reptile-room-digital-twin__selection {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .reptile-room-digital-twin__selection > div {
-    width: 100%;
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 520px) {
-  .reptile-room-digital-twin__viewport {
-    height: 560px;
-    min-height: 560px;
-    border-radius: 10px;
-  }
+@media (max-width:520px) {
+  .reptile-room-digital-twin__viewport { height:560px; min-height:560px; border-radius:10px; }
+  .reptile-room-digital-twin__camera-pad { left:6px; bottom:6px; }
+  .reptile-room-digital-twin__camera-pad .camera-direction-grid { grid-template-columns:repeat(3,36px); grid-template-rows:34px 34px; }
+  .reptile-room-digital-twin__camera-pad .camera-direction-grid button { width:36px!important; height:34px!important; }
 }
