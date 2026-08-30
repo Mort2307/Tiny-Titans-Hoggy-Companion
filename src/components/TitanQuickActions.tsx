@@ -3,16 +3,16 @@ import { Link, useLocation } from "react-router-dom";
 type Action = { to: string; label: string; icon: string };
 
 function actionsForPath(path: string): Action[] {
-  if (path.startsWith("/weights")) return [{ to: "/weights", label: "Log weight", icon: "⚖️" }, { to: "/feeding", label: "Log feeding", icon: "🍽️" }, { to: "/shedding", label: "Record shed", icon: "🐍" }];
-  if (path.startsWith("/feeding")) return [{ to: "/feeding", label: "Log feeding", icon: "🍽️" }, { to: "/weights", label: "Log weight", icon: "⚖️" }, { to: "/shedding", label: "Record shed", icon: "🐍" }];
-  if (path.startsWith("/shedding")) return [{ to: "/shedding", label: "Record shed", icon: "🐍" }, { to: "/weights", label: "Log weight", icon: "⚖️" }, { to: "/feeding", label: "Log feeding", icon: "🍽️" }];
-  if (path.startsWith("/behaviour")) return [{ to: "/behaviour", label: "Log behaviour", icon: "◉" }, { to: "/weights", label: "Log weight", icon: "⚖️" }, { to: "/feeding", label: "Log feeding", icon: "🍽️" }];
-  if (path.startsWith("/health")) return [{ to: "/health", label: "Add health record", icon: "+" }, { to: "/weights", label: "Log weight", icon: "⚖️" }, { to: "/behaviour", label: "Log behaviour", icon: "◉" }];
-  if (path.startsWith("/husbandry") || path.startsWith("/enclosure-intelligence")) return [{ to: "/enclosure-intelligence", label: "Open environment", icon: "🏠" }, { to: "/weights", label: "Log weight", icon: "⚖️" }, { to: "/feeding", label: "Log feeding", icon: "🍽️" }];
-  if (path.startsWith("/breeding")) return [{ to: "/breeding", label: "Breeding workspace", icon: "🥚" }, { to: "/calculator", label: "Genetics calculator", icon: "∑" }, { to: "/morph-library", label: "Morph library", icon: "🧬" }];
-  if (path.startsWith("/learn") || path.startsWith("/knowledge-base") || path.startsWith("/challenge")) return [{ to: "/challenge", label: "Continue challenge", icon: "◆" }, { to: "/knowledge-base", label: "Knowledge base", icon: "▤" }, { to: "/morph-library", label: "Morph library", icon: "🧬" }];
-  if (path.startsWith("/morph-library") || path === "/calculator") return [{ to: "/morph-library", label: "Morph library", icon: "🧬" }, { to: "/calculator", label: "Genetics calculator", icon: "∑" }, { to: "/breeding", label: "Breeding planner", icon: "🥚" }];
-  return [{ to: "/weights", label: "Log weight", icon: "⚖️" }, { to: "/feeding", label: "Log feeding", icon: "🍽️" }, { to: "/shedding", label: "Record shed", icon: "🐍" }, { to: "/snakes/new", label: "Add snake", icon: "+" }];
+  if (path.startsWith("/weights")) return [{ to: "/weights", label: "Log Weight", icon: "⚖️" }, { to: "/feeding", label: "Log Feeding", icon: "🍽️" }, { to: "/shedding", label: "Record Shed", icon: "🐍" }];
+  if (path.startsWith("/feeding")) return [{ to: "/feeding", label: "Log Feeding", icon: "🍽️" }, { to: "/weights", label: "Log Weight", icon: "⚖️" }, { to: "/shedding", label: "Record Shed", icon: "🐍" }];
+  if (path.startsWith("/shedding")) return [{ to: "/shedding", label: "Record Shed", icon: "🐍" }, { to: "/weights", label: "Log Weight", icon: "⚖️" }, { to: "/feeding", label: "Log Feeding", icon: "🍽️" }];
+  if (path.startsWith("/behaviour")) return [{ to: "/behaviour", label: "Log Behaviour", icon: "◉" }, { to: "/weights", label: "Log Weight", icon: "⚖️" }, { to: "/feeding", label: "Log Feeding", icon: "🍽️" }];
+  if (path.startsWith("/health")) return [{ to: "/health", label: "Add Health Record", icon: "+" }, { to: "/weights", label: "Log Weight", icon: "⚖️" }, { to: "/behaviour", label: "Log Behaviour", icon: "◉" }];
+  if (path.startsWith("/husbandry") || path.startsWith("/enclosure-intelligence")) return [{ to: "/enclosure-intelligence", label: "Open Environment", icon: "🏠" }, { to: "/weights", label: "Log Weight", icon: "⚖️" }, { to: "/feeding", label: "Log Feeding", icon: "🍽️" }];
+  if (path.startsWith("/breeding")) return [{ to: "/breeding", label: "Breeding Workspace", icon: "🥚" }, { to: "/calculator", label: "Genetics Calculator", icon: "∑" }, { to: "/morph-library", label: "Morph Library", icon: "🧬" }];
+  if (path.startsWith("/learn") || path.startsWith("/knowledge-base") || path.startsWith("/challenge")) return [{ to: "/challenge", label: "Continue Challenge", icon: "◆" }, { to: "/knowledge-base", label: "Knowledge Base", icon: "▤" }, { to: "/morph-library", label: "Morph Library", icon: "🧬" }];
+  if (path.startsWith("/morph-library") || path === "/calculator") return [{ to: "/morph-library", label: "Morph Library", icon: "🧬" }, { to: "/calculator", label: "Genetics Calculator", icon: "∑" }, { to: "/breeding", label: "Breeding Planner", icon: "🥚" }];
+  return [{ to: "/weights", label: "Log Weight", icon: "⚖️" }, { to: "/feeding", label: "Log Feeding", icon: "🍽️" }, { to: "/shedding", label: "Record Shed", icon: "🐍" }, { to: "/snakes/new", label: "Add Snake", icon: "+" }];
 }
 
 export default function TitanQuickActions() {
