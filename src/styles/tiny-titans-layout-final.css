@@ -1,0 +1,33 @@
+/* Tiny Titans — final routed-page presentation layer.
+ * Presentation only. Intelligence and application behaviour are untouched.
+ */
+:root{--tt-layout-max:1240px;--tt-layout-gap:18px;--tt-layout-radius:16px;--tt-layout-text:#f5f1f7;--tt-layout-soft:#d1c8d7;--tt-layout-muted:#978da1;--tt-layout-purple:#b985df;--tt-layout-gold:#e2b66d}
+
+/* Every routed page lives inside .tt-page-frame. Keep normal pages readable and left-aligned. */
+.app-content>.tt-page-frame{width:100%;min-width:0}
+.app-content>.tt-page-frame>.page-container,.app-content>.tt-page-frame>.page-shell{width:100%;max-width:var(--tt-layout-max);margin-inline:auto;min-height:auto;align-items:stretch;text-align:left}
+.app-content>.tt-page-frame>.page-container>h1:first-of-type,.app-content>.tt-page-frame>.page-shell>h1:first-of-type{margin:0 0 7px;text-align:left;color:var(--tt-layout-text)!important;font-size:clamp(1.55rem,2.8vw,2.2rem);line-height:1.08}
+.app-content>.tt-page-frame>.page-container>.page-subtitle,.app-content>.tt-page-frame>.page-shell>.page-subtitle{margin:0 0 18px;color:var(--tt-layout-muted);text-align:left;line-height:1.55}
+.app-content>.tt-page-frame>.page-container>.back-home-button,.app-content>.tt-page-frame>.page-shell>.back-home-button{align-self:flex-start}
+
+/* Consistent page section rhythm. */
+.app-content>.tt-page-frame :where(.page-header,.section-header,.content-header,.tt-page-header){margin-bottom:20px;gap:16px}
+.app-content>.tt-page-frame :where(.page-header h1,.section-header h1,.content-header h1,.tt-page-header h1){margin:0;line-height:1.08}
+.app-content>.tt-page-frame :where(.page-header p,.section-header p,.content-header p,.tt-page-header p){color:var(--tt-layout-muted);line-height:1.55}
+
+/* Common grid rhythm, without forcing pages into one geometry. */
+.app-content>.tt-page-frame :where(.grid,.card-grid,.cards-grid,.feature-grid,.stats-grid,.dashboard-grid,.nav-grid,.snake-grid){min-width:0;gap:var(--tt-layout-gap)}
+.app-content>.tt-page-frame :where(.form-group,.field,.form-field){min-width:0}
+
+/* Better readable defaults for normal page copy. */
+.app-content>.tt-page-frame :where(p){max-width:78ch;line-height:1.58}
+.app-content>.tt-page-frame :where(label){line-height:1.35}
+
+/* Tables stay usable instead of collapsing into tiny text on phones. */
+.app-content>.tt-page-frame :where(table){width:100%;max-width:100%;overflow:hidden}
+
+@media(max-width:700px){
+  .app-content>.tt-page-frame>.page-container,.app-content>.tt-page-frame>.page-shell{padding-inline:0}
+  .app-content>.tt-page-frame :where(.page-header,.section-header,.content-header,.tt-page-header){margin-bottom:17px}
+  .app-content>.tt-page-frame>.page-container>h1:first-of-type,.app-content>.tt-page-frame>.page-shell>h1:first-of-type{font-size:1.52rem}
+}
