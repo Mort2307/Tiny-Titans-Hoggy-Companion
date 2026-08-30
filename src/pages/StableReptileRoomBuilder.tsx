@@ -194,7 +194,7 @@ export default function StableReptileRoomBuilder() {
         const url = await uploadReptileRoomVivariumPhoto(user.uid, room.id, selectedSlot.id, file);
         replaceRoom({ ...room, slots: slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, photoUrl: url } : slot) }, "Vivarium photo saved.");
       } else if (selected.type === "object" && selectedObject) {
-        const url = await uploadReptileRoomAsset(user.uid, room.id, selectedObject.id, file);
+        const url = await uploadReptileRoomAsset(user.uid, room.id, "room-photo", file);
         replaceRoom({ ...room, objects: objects.map((item) => item.id === selectedObject.id ? { ...item, config: { ...(item.config ?? {}), photoUrl: url } as ReptileRoomAssetConfig } : item) }, "Asset photo saved.");
       }
     } catch (error) {
@@ -229,13 +229,13 @@ export default function StableReptileRoomBuilder() {
       </section>
 
       <aside className="stable-rr3d-inspector stable-rr3d-desktop-inspector">
-        <Inspector selectedObject={selectedObject} selectedSlot={selectedSlot} snakes={snakes} snakesById={snakesById} inspectorTab={inspectorTab} setInspectorTab={setInspectorTab} updateSelected={updateSelected} updateRoom={updateRoom} selected={selected} deleteSelected={deleteSelected} duplicateSelected={duplicateSelected} uploadPhoto={uploadPhoto} photoBusy={photoBusy} setNotice={setNotice} />
+        <Inspector selectedObject={selectedObject} selectedSlot={selectedSlot} snakes={snakes} snakesById={snakesById} inspectorTab={inspectorTab} setInspectorTab={setInspectorTab} updateSelected={updateSelected} selected={selected} deleteSelected={deleteSelected} duplicateSelected={duplicateSelected} uploadPhoto={uploadPhoto} photoBusy={photoBusy} />
       </aside>
     </section>
 
     {mobilePanel && <div className="stable-rr3d-mobile-sheet" role="dialog" aria-modal="true" aria-label={mobilePanel === "library" ? "Keeper Toolkit" : "Asset inspector"}>
       <div className="stable-rr3d-mobile-sheet-backdrop" onClick={() => setMobilePanel(null)} />
-      <div className="stable-rr3d-mobile-sheet-panel"><div className="stable-rr3d-mobile-sheet-head"><strong>{mobilePanel === "library" ? "Keeper Toolkit" : "Inspector"}</strong><button type="button" onClick={() => setMobilePanel(null)} aria-label="Close">×</button></div>{mobilePanel === "library" ? <><RoomAssetLibraryPanel onAddAsset={addAsset} /><section className="stable-rr3d-snake-list"><div className="stable-rr3d-section-head"><h2>Your Snakes</h2><span>{snakes.length}</span></div>{snakes.map((snake) => <button key={snake.id} type="button" onClick={() => addSnakeVivarium(snake)}>🐍 {snake.name}<small>Add/select vivarium</small></button>)}</section></> : <Inspector selectedObject={selectedObject} selectedSlot={selectedSlot} snakes={snakes} snakesById={snakesById} inspectorTab={inspectorTab} setInspectorTab={setInspectorTab} updateSelected={updateSelected} updateRoom={updateRoom} selected={selected} deleteSelected={deleteSelected} duplicateSelected={duplicateSelected} uploadPhoto={uploadPhoto} photoBusy={photoBusy} setNotice={setNotice} />}</div>
+      <div className="stable-rr3d-mobile-sheet-panel"><div className="stable-rr3d-mobile-sheet-head"><strong>{mobilePanel === "library" ? "Keeper Toolkit" : "Inspector"}</strong><button type="button" onClick={() => setMobilePanel(null)} aria-label="Close">×</button></div>{mobilePanel === "library" ? <><RoomAssetLibraryPanel onAddAsset={addAsset} /><section className="stable-rr3d-snake-list"><div className="stable-rr3d-section-head"><h2>Your Snakes</h2><span>{snakes.length}</span></div>{snakes.map((snake) => <button key={snake.id} type="button" onClick={() => addSnakeVivarium(snake)}>🐍 {snake.name}<small>Add/select vivarium</small></button>)}</section></> : <Inspector selectedObject={selectedObject} selectedSlot={selectedSlot} snakes={snakes} snakesById={snakesById} inspectorTab={inspectorTab} setInspectorTab={setInspectorTab} updateSelected={updateSelected} selected={selected} deleteSelected={deleteSelected} duplicateSelected={duplicateSelected} uploadPhoto={uploadPhoto} photoBusy={photoBusy} />}</div>
     </div>}
   </main>;
 }
@@ -248,13 +248,11 @@ function Inspector(props: {
   inspectorTab: "edit" | "occupant";
   setInspectorTab: (tab: "edit" | "occupant") => void;
   updateSelected: (patch: Room3DTransformPatch) => void;
-  updateRoom: (patch: Partial<ReptileRoomWorkspace>) => void;
   selected: Room3DSelection;
   deleteSelected: () => void;
   duplicateSelected: () => void;
   uploadPhoto: (file: File) => Promise<void>;
   photoBusy: boolean;
-  setNotice: (message: string) => void;
 }) {
   const { selectedObject, selectedSlot } = props;
   if (!selectedObject && !selectedSlot) return <div className="stable-rr3d-empty-inspector"><strong>Select an asset or vivarium</strong><span>Dimensions, placement, photo and intelligent configuration will appear here.</span></div>;
@@ -266,14 +264,12 @@ function Inspector(props: {
   const photoUrl = selectedObject?.config?.photoUrl ?? selectedSlot?.photoUrl ?? "";
   return <div className="stable-rr3d-inspector-content">
     <div className="stable-rr3d-inspector-title"><div><span>SELECTED</span><h2>{entity?.label}</h2></div><button type="button" onClick={props.deleteSelected}>Delete</button></div>
-    <div className="stable-rr3d-editor-grid">
-      {(["width", "depth", "height"] as const).map((field) => <label key={field}>{field[0].toUpperCase() + field.slice(1)} cm<input type="number" min="1" value={field === "width" ? width : field === "depth" ? depth : height} onChange={(event) => props.updateSelected(field === "width" ? { width: Math.max(1, toNumber(event.target.value, 1)) } : field === "depth" ? { depth: Math.max(1, toNumber(event.target.value, 1)) } : { height: Math.max(1, toNumber(event.target.value, 1)) })} /></label>)}
-    </div>
+    <div className="stable-rr3d-editor-grid">{(["width", "depth", "height"] as const).map((field) => <label key={field}>{field[0].toUpperCase() + field.slice(1)} cm<input type="number" min="1" value={field === "width" ? width : field === "depth" ? depth : height} onChange={(event) => props.updateSelected(field === "width" ? { width: Math.max(1, toNumber(event.target.value, 1)) } : field === "depth" ? { depth: Math.max(1, toNumber(event.target.value, 1)) } : { height: Math.max(1, toNumber(event.target.value, 1)) })} /></label>)}</div>
     <div className="stable-rr3d-editor-grid"><label>X cm<input type="number" value={Math.round(entity?.x ?? 0)} onChange={(event) => props.updateSelected({ x: Math.max(0, toNumber(event.target.value)) })} /></label><label>Y cm<input type="number" value={Math.round(entity?.y ?? 0)} onChange={(event) => props.updateSelected({ y: Math.max(0, toNumber(event.target.value)) })} /></label><label>Z cm<input type="number" value={Math.round(entity?.z ?? 0)} onChange={(event) => props.updateSelected({ z: Math.max(0, toNumber(event.target.value)) })} /></label></div>
     <div className="stable-rr3d-rotation"><span>Rotation</span><button type="button" onClick={() => props.updateSelected({ rotation: rotation - 15 })}>↶</button><strong>{Math.round(rotation)}°</strong><button type="button" onClick={() => props.updateSelected({ rotation: rotation + 15 })}>↷</button><button type="button" onClick={() => props.updateSelected({ rotation: 0 })}>Reset</button></div>
     <div className="stable-rr3d-inspector-actions"><button type="button" onClick={props.duplicateSelected}>Duplicate</button></div>
-    {selectedSlot && <><div className="stable-rr3d-tabs"><button type="button" aria-pressed={props.inspectorTab === "edit"} onClick={() => props.setInspectorTab("edit")}>Position</button><button type="button" aria-pressed={props.inspectorTab === "occupant"} onClick={() => props.setInspectorTab("occupant")}>Occupant</button></div>{props.inspectorTab === "occupant" && <label className="stable-rr3d-smart-field">Snake<select value={selectedSlot.snakeId ?? ""} onChange={(event) => { const snakeId = event.target.value || null; const snake = snakeId ? props.snakesById.get(snakeId) : undefined; props.updateSelected({ snakeId, label: snake ? `${snake.name}'s Vivarium` : "Empty Vivarium", lifecycleStatus: snake ? "occupied" : "empty", availability: snake ? "occupied" : "available" }); }}>{<option value="">Empty vivarium</option>}{props.snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label>}</>}
-    <div className="stable-rr3d-photo"><div><strong>Reference photo</strong><small>Choose from your device gallery. The image is stored with this asset.</small></div>{photoUrl && <img src={photoUrl} alt={`${entity?.label} reference`} />}{<label className="stable-rr3d-photo-button">{photoBusy ? "Uploading…" : photoUrl ? "Replace photo" : "Choose photo"}<input type="file" accept="image/*" disabled={photoBusy} onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ""; if (file) void props.uploadPhoto(file); }} /></label>}</div>
+    {selectedSlot && <div className="stable-rr3d-tabs"><button type="button" aria-pressed={props.inspectorTab === "edit"} onClick={() => props.setInspectorTab("edit")}>Position</button><button type="button" aria-pressed={props.inspectorTab === "occupant"} onClick={() => props.setInspectorTab("occupant")}>Occupant</button>{props.inspectorTab === "occupant" && <label className="stable-rr3d-smart-field">Snake<select value={selectedSlot.snakeId ?? ""} onChange={(event) => { const snakeId = event.target.value || null; const snake = snakeId ? props.snakesById.get(snakeId) : undefined; props.updateSelected({ snakeId, label: snake ? `${snake.name}'s Vivarium` : "Empty Vivarium", lifecycleStatus: snake ? "occupied" : "empty", availability: snake ? "occupied" : "available" }); }}>{<option value="">Empty vivarium</option>}{props.snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label>}</div>}
+    <div className="stable-rr3d-photo"><div><strong>Reference photo</strong><small>Choose from your device gallery. The image is stored with this asset.</small></div>{photoUrl && <img src={photoUrl} alt={`${entity?.label} reference`} />}{<label className="stable-rr3d-photo-button">{props.photoBusy ? "Uploading…" : photoUrl ? "Replace photo" : "Choose photo"}<input type="file" accept="image/*" disabled={props.photoBusy} onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ""; if (file) void props.uploadPhoto(file); }} /></label>}</div>
     {selectedObject && <RoomAssetInspector object={selectedObject} slots={selectedSlot ? [selectedSlot] : []} onPatch={(patch) => { props.updateSelected({ ...(patch.label !== undefined ? { label: patch.label } : {}), ...(patch.config ? { config: patch.config } : {}) }); }} />}
   </div>;
 }
