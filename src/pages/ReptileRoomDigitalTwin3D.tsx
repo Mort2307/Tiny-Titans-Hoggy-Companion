@@ -8,6 +8,7 @@ import { getCameraForwardSpawn } from "../components/reptile-room-3d/RoomCamera3
 import { RoomAssetInspector } from "../components/reptile-room-3d/RoomAssetInspector";
 import type { Room3DAssetPreset, Room3DSelection, Room3DTransformPatch } from "../types/reptileRoom3D";
 import { clamp, snapArchitecturalObject, snapNumber } from "../services/reptileRoomSpatialService";
+import { uploadReptileRoomAsset } from "../services/reptileRoomAssetService";
 import type { Snake } from "../types/Snake";
 
 const MOVE_STEP_CM = 5;
@@ -85,8 +86,8 @@ export default function ReptileRoomDigitalTwin3D() {
   const [inspectorTab, setInspectorTab] = useState<"edit" | "occupant">("edit");
 
   const room = useMemo(() => rooms.find((entry) => entry.id === roomId) ?? rooms[0] ?? null, [rooms, roomId]);
-  const objects = room?.objects ?? [];
-  const slots = room?.slots ?? [];
+  const objects = useMemo(() => room?.objects ?? [], [room?.objects]);
+  const slots = useMemo(() => room?.slots ?? [], [room?.slots]);
   const snakesById = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]);
   const selectedObject = selected?.type === "object" ? objects.find((item) => item.id === selected.id) ?? null : null;
   const selectedSlot = selected?.type === "slot" ? slots.find((item) => item.id === selected.id) ?? null : null;
@@ -217,6 +218,20 @@ export default function ReptileRoomDigitalTwin3D() {
     if (room) await persistRoom({ ...room, objects, slots }, "Room changes saved.");
   }, [objects, persistRoom, room, slots]);
 
+  const uploadSelectedObjectPhoto = useCallback(async (file: File) => {
+    if (!user || !room || !selectedObject) return;
+    setNotice("Uploading reference photo…");
+    try {
+      const url = await uploadReptileRoomAsset(user.uid, room.id, "room-photo", file);
+      const nextObject = { ...selectedObject, config: { ...(selectedObject.config ?? {}), photoUrl: url } as ReptileRoomObject["config"] };
+      const nextRoom = { ...room, objects: objects.map((item) => item.id === selectedObject.id ? nextObject : item) };
+      setRooms((current) => current.map((entry) => entry.id === room.id ? nextRoom : entry));
+      await persistRoom(nextRoom, "Reference photo added.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to upload the reference photo.");
+    }
+  }, [objects, persistRoom, room, selectedObject, user]);
+
   const nudge = useCallback((axis: "x" | "y" | "z", delta: number) => {
     if (!selected || !room) return;
     const source = selected.type === "object" ? objects.find((item) => item.id === selected.id) : slots.find((item) => item.id === selected.id);
@@ -284,7 +299,10 @@ export default function ReptileRoomDigitalTwin3D() {
           <div className="rr3d-editor-grid"><label>Width cm<input type="number" min="1" value={selectedObject.width} onChange={(event) => updateSelected({ width: Math.max(1, Number(event.target.value) || 1) })} /></label><label>Depth cm<input type="number" min="1" value={selectedObject.depth} onChange={(event) => updateSelected({ depth: Math.max(1, Number(event.target.value) || 1) })} /></label><label>Height cm<input type="number" min="1" value={selectedObject.height} onChange={(event) => updateSelected({ height: Math.max(1, Number(event.target.value) || 1) })} /></label></div>
           <div className="rr3d-editor-grid"><label>X cm<input type="number" value={selectedObject.x} onChange={(event) => updateSelected({ x: Number(event.target.value) || 0 })} /></label><label>Y cm<input type="number" value={selectedObject.y} onChange={(event) => updateSelected({ y: Number(event.target.value) || 0 })} /></label><label>Z cm<input type="number" value={selectedObject.z} onChange={(event) => updateSelected({ z: Number(event.target.value) || 0 })} /></label></div>
           <div className="rr3d-rotation-editor"><span>Rotation</span><button type="button" onClick={() => updateSelected({ rotation: selectedObject.rotation - 15 })}>−</button><strong>{Math.round(selectedObject.rotation)}°</strong><button type="button" onClick={() => updateSelected({ rotation: selectedObject.rotation + 15 })}>+</button><span /></div>
-          <label>Reference photo URL<input type="url" placeholder="https://…" value={selectedObject.config?.photoUrl ?? ""} onChange={(event) => updateSelected({ config: { ...(selectedObject.config ?? {}), photoUrl: event.target.value || undefined } as ReptileRoomObject["config"] })} /></label>
+          <div className="rr3d-photo-picker">
+            <span>Reference photo</span>
+            <label className="rr3d-photo-picker__button">{selectedObject.config?.photoUrl ? "Replace photo" : "Choose photo"}<input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ""; if (file) void uploadSelectedObjectPhoto(file); }} hidden /></label>
+          </div>
           {selectedObject.config?.photoUrl && <img src={selectedObject.config.photoUrl} alt={`${selectedObject.label} reference`} className="rr3d-photo-preview" />}
           <RoomAssetInspector object={selectedObject} slots={slots} onPatch={({ config, label }) => updateSelected({ ...(label !== undefined ? { label } : {}), ...(config ? { config } : {}) })} />
         </>}
