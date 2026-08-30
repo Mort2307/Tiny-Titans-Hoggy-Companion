@@ -1,36 +1,35 @@
 .app-navigation {
   position: fixed;
   inset: 0 auto 0 0;
-  width: 238px;
+  width: 248px;
   box-sizing: border-box;
-  background: rgba(13, 10, 20, 0.96);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 10px 0 32px rgba(0, 0, 0, 0.18);
+  background: linear-gradient(180deg, rgba(22, 17, 29, 0.98) 0%, rgba(11, 9, 15, 0.995) 100%);
+  border-right: 1px solid rgba(198, 171, 220, 0.13);
+  box-shadow: 14px 0 40px rgba(0, 0, 0, 0.22);
   z-index: 1000;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: rgba(198, 171, 220, 0.18) transparent;
 }
 
 .app-navigation-inner {
   width: 100%;
   min-height: 100%;
   box-sizing: border-box;
-  padding: 16px 11px 24px;
+  padding: 18px 12px 28px;
 }
 
 .app-navigation-section + .app-navigation-section {
-  margin-top: 15px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.065);
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
 }
 
 .app-navigation-section-label {
-  margin: 0 10px 6px;
-  color: rgba(255, 255, 255, 0.42);
+  margin: 0 10px 7px;
+  color: rgba(208, 199, 213, 0.42);
   font-size: 0.63rem;
-  font-weight: 800;
+  font-weight: 850;
   letter-spacing: 0.14em;
   line-height: 1.2;
   text-transform: uppercase;
@@ -44,7 +43,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: 3px;
   box-sizing: border-box;
 }
 
@@ -65,25 +64,26 @@
   justify-content: flex-start;
   gap: 10px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 11px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(247, 244, 248, 0.70);
   text-decoration: none;
-  font-size: 0.82rem;
-  font-weight: 650;
-  line-height: 1.2;
+  font-size: 0.81rem;
+  font-weight: 680;
+  line-height: 1.25;
   white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
 .app-navigation-icon {
-  width: 25px;
+  width: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.52);
+  color: rgba(208, 199, 213, 0.50);
   font-size: 1rem;
   line-height: 1;
   flex-shrink: 0;
@@ -101,48 +101,48 @@
   margin-left: auto;
   flex: 0 0 8px;
   border-radius: 50%;
-  background: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  background: #e77b7b;
+  box-shadow: 0 0 0 3px rgba(231, 123, 123, 0.10);
 }
 
 @media (hover: hover) {
-  .app-navigation-link {
-    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
-  }
-
   .app-navigation-link:hover {
     color: #fff;
-    background: rgba(255, 255, 255, 0.055);
-    border-color: rgba(255, 255, 255, 0.07);
+    background: rgba(166, 107, 210, 0.075);
+    border-color: rgba(198, 171, 220, 0.13);
+    transform: translateX(1px);
   }
 
   .app-navigation-link:hover .app-navigation-icon {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(240, 202, 136, 0.88);
   }
 }
 
 .app-navigation-link.active {
   color: #fff;
-  background: linear-gradient(90deg, rgba(111, 36, 184, 0.42), rgba(0, 174, 255, 0.11));
-  border-color: rgba(163, 104, 223, 0.3);
-  box-shadow: inset 3px 0 0 #9a55d5;
+  background: linear-gradient(90deg, rgba(166, 107, 210, 0.20), rgba(105, 182, 212, 0.035));
+  border-color: rgba(191, 139, 231, 0.22);
+  box-shadow: inset 3px 0 0 #bf8be7, 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
-.app-navigation-link.active .app-navigation-label,
+.app-navigation-link.active .app-navigation-label {
+  font-weight: 760;
+}
+
 .app-navigation-link.active .app-navigation-icon {
-  color: #fff;
+  color: #f0ca88;
 }
 
 .app-navigation-link:focus-visible {
-  outline: 2px solid #f5b642;
+  outline: 2px solid #f0ca88;
   outline-offset: 2px;
 }
 
 @media (min-width: 801px) {
   .app-shell .app-header,
   .app-shell .app-main {
-    margin-left: 238px;
-    width: calc(100% - 238px);
+    margin-left: 248px;
+    width: calc(100% - 248px);
   }
 
   .app-shell .app-content {
@@ -152,13 +152,13 @@
 
 @media (max-width: 1100px) and (min-width: 801px) {
   .app-navigation {
-    width: 214px;
+    width: 220px;
   }
 
   .app-shell .app-header,
   .app-shell .app-main {
-    margin-left: 214px;
-    width: calc(100% - 214px);
+    margin-left: 220px;
+    width: calc(100% - 220px);
   }
 }
 
@@ -169,8 +169,8 @@
     width: 100%;
     max-height: none;
     border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.16);
+    border-bottom: 1px solid rgba(198, 171, 220, 0.12);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
     overflow: hidden;
   }
 
@@ -178,7 +178,7 @@
     min-height: 0;
     padding: 8px 10px 10px;
     display: flex;
-    gap: 8px;
+    gap: 7px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
@@ -214,15 +214,15 @@
   .app-navigation-link {
     width: auto;
     min-height: 42px;
-    padding: 8px 11px;
+    padding: 8px 10px;
     justify-content: center;
     border-radius: 10px;
-    font-size: 0.8rem;
+    font-size: 0.79rem;
   }
 
   .app-navigation-icon {
     width: auto;
-    font-size: 0.95rem;
+    font-size: 0.94rem;
   }
 
   .community-unread-dot {
@@ -241,13 +241,13 @@
 
 @media (max-width: 400px) {
   .app-navigation-inner {
-    padding-inline: 8px;
+    padding-inline: 7px;
   }
 
   .app-navigation-link {
     min-height: 42px;
-    padding-inline: 9px;
-    font-size: 0.77rem;
+    padding-inline: 8px;
+    font-size: 0.75rem;
   }
 }
 
