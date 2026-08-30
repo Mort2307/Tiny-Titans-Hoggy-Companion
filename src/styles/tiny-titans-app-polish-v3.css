@@ -1,0 +1,226 @@
+/* Tiny Titans — App Polish v3
+ * Final visual authority loaded after the existing theme layers.
+ * Presentation only: no husbandry, genetics, intelligence or account logic.
+ */
+:root{
+  --tt-v3-bg:#0b0910;
+  --tt-v3-surface:#15111b;
+  --tt-v3-surface-2:#1b1622;
+  --tt-v3-surface-3:#241d2e;
+  --tt-v3-border:rgba(198,171,220,.14);
+  --tt-v3-border-strong:rgba(198,171,220,.25);
+  --tt-v3-text:#f7f4f8;
+  --tt-v3-soft:#d0c7d5;
+  --tt-v3-muted:#978da1;
+  --tt-v3-purple:#a66bd2;
+  --tt-v3-purple-strong:#bf8be7;
+  --tt-v3-gold:#e2b66d;
+  --tt-v3-gold-strong:#f0ca88;
+  --tt-v3-blue:#69b6d4;
+  --tt-v3-teal:#55afa7;
+  --tt-v3-success:#63c89f;
+  --tt-v3-danger:#e77b7b;
+  --tt-v3-radius:15px;
+  --tt-v3-radius-sm:11px;
+  --tt-v3-max:1460px;
+}
+
+html{background:var(--tt-v3-bg);}
+body{
+  background:
+    radial-gradient(circle at 5% -12%,rgba(166,107,210,.11),transparent 32rem),
+    radial-gradient(circle at 96% 0%,rgba(105,182,212,.045),transparent 28rem),
+    linear-gradient(180deg,#0b0910 0%,#0d0b11 100%);
+  color:var(--tt-v3-text);
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+}
+
+.app-content{
+  width:min(var(--tt-v3-max),100%);
+  margin-inline:auto;
+  box-sizing:border-box;
+}
+
+/* Clean, repeatable type hierarchy. */
+.app-content :where(h1,h2,h3,h4,h5,h6){
+  margin-top:0;
+  color:var(--tt-v3-text)!important;
+  font-weight:800;
+  letter-spacing:-.025em;
+  line-height:1.18;
+  text-wrap:balance;
+}
+.app-content :where(h1){font-size:clamp(1.55rem,2.8vw,2.2rem);line-height:1.08;}
+.app-content :where(h2){font-size:clamp(1.05rem,1.8vw,1.3rem);}
+.app-content :where(h3){font-size:1rem;}
+.app-content :where(p){color:var(--tt-v3-soft);line-height:1.58;text-wrap:pretty;}
+.app-content :where(small){color:var(--tt-v3-muted);line-height:1.45;}
+.app-content :where(.tt-eyebrow,.tt-kicker,.eyebrow,.kicker,.section-kicker){
+  color:var(--tt-v3-purple-strong)!important;
+  font-size:.68rem;
+  font-weight:850;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+/* Consistent page header rhythm. */
+.app-content :where(.page-header,.section-header,.content-header,.tt-page-header){
+  margin-bottom:22px;
+  gap:16px;
+}
+.app-content :where(.page-header p,.section-header p,.content-header p,.tt-page-header p){
+  max-width:820px;
+  margin-top:7px;
+  color:var(--tt-v3-muted);
+}
+.app-content :where(.page-actions,.tt-page-actions){display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* One surface language across legacy and newer components. */
+.app-content :where(
+  .card,.panel,.section,.widget,.dashboard-card,.tracker-card,.nav-card,
+  .welcome-card,.morph-card,.snake-card,.snake-tile,.snake-profile-card,
+  .weight-records-card,.weight-reminder-card,.form-section,.form-card,
+  .section-card,.content-card,.data-card,.panel-card,.info-card,.setting-card,
+  .feature-card,.stat-card,.tt-card
+){
+  min-width:0;
+  border:1px solid var(--tt-v3-border)!important;
+  border-radius:var(--tt-v3-radius)!important;
+  background:linear-gradient(145deg,rgba(36,29,46,.82),rgba(17,13,22,.97))!important;
+  box-shadow:0 12px 32px rgba(0,0,0,.16)!important;
+}
+.app-content :where(
+  .card,.panel,.section,.widget,.dashboard-card,.tracker-card,.nav-card,
+  .welcome-card,.morph-card,.snake-card,.snake-tile,.snake-profile-card,
+  .weight-records-card,.weight-reminder-card,.form-section,.form-card,
+  .section-card,.content-card,.data-card,.panel-card,.info-card,.setting-card,
+  .feature-card,.stat-card,.tt-card
+){padding:clamp(16px,2vw,22px);}
+
+/* Calm interaction states. */
+.app-content :where(a){color:var(--tt-v3-soft);text-decoration:none;}
+.app-content :where(a:hover){color:var(--tt-v3-purple-strong);}
+.app-content :where(button,input,select,textarea){font:inherit;}
+.app-content :where(button,input,select,textarea){-webkit-tap-highlight-color:transparent;}
+.app-content :where(input,select,textarea){
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+  min-height:44px;
+  padding:.68rem .82rem;
+  border:1px solid var(--tt-v3-border-strong)!important;
+  border-radius:var(--tt-v3-radius-sm)!important;
+  background:rgba(10,8,13,.72)!important;
+  color:var(--tt-v3-text)!important;
+  line-height:1.35;
+}
+.app-content :where(input,select,textarea)::placeholder{color:rgba(208,199,213,.43);}
+.app-content :where(input,select,textarea):hover{border-color:rgba(198,171,220,.36)!important;}
+.app-content :where(input,select,textarea):focus-visible{
+  border-color:rgba(226,182,109,.62)!important;
+  outline:2px solid rgba(226,182,109,.14);
+  outline-offset:1px;
+  box-shadow:0 0 0 3px rgba(226,182,109,.07)!important;
+}
+.app-content :where(button,[role="button"]){
+  min-height:42px;
+  border-radius:var(--tt-v3-radius-sm);
+  font-weight:760;
+  cursor:pointer;
+  transition:transform 140ms ease,background-color 140ms ease,border-color 140ms ease,box-shadow 140ms ease,filter 140ms ease;
+}
+.app-content :where(button:not(:disabled),[role="button"]):hover{filter:brightness(1.045);}
+.app-content :where(button:not(:disabled),[role="button"]):active{transform:translateY(1px);}
+.app-content :where(button:disabled){opacity:.55;cursor:not-allowed;transform:none!important;}
+.app-content :where(button:focus-visible,[role="button"]:focus-visible){outline:2px solid var(--tt-v3-gold-strong);outline-offset:2px;}
+
+/* Primary/secondary semantic contrast. */
+.app-content :where(.secondary,.button-secondary,.btn-secondary){
+  background:rgba(255,255,255,.035)!important;
+  border-color:rgba(255,255,255,.10)!important;
+  color:var(--tt-v3-soft)!important;
+  box-shadow:none!important;
+}
+.app-content :where(.danger,.button-danger,.btn-danger){
+  background:rgba(231,123,123,.07)!important;
+  border-color:rgba(231,123,123,.28)!important;
+  color:#ffd1d1!important;
+}
+.app-content :where(.tt-button--brand){background:linear-gradient(135deg,var(--tt-v3-purple),#8756b2)!important;border-color:rgba(191,139,231,.42)!important;color:#fff!important;}
+.app-content :where(.tt-button--intelligence){background:linear-gradient(135deg,#347e9f,var(--tt-v3-blue))!important;border-color:rgba(134,200,225,.42)!important;color:#06141b!important;}
+.app-content :where(.tt-button--data){background:linear-gradient(135deg,#28756f,var(--tt-v3-teal))!important;border-color:rgba(105,194,185,.42)!important;color:#061512!important;}
+.app-content :where(.tt-button--ghost){background:rgba(255,255,255,.025)!important;border-color:var(--tt-v3-border)!important;color:var(--tt-v3-soft)!important;box-shadow:none!important;}
+
+/* Navigation and shell: tidy, quiet, obvious active state. */
+.app-navigation{
+  background:linear-gradient(180deg,rgba(26,20,32,.98),rgba(13,10,16,.99))!important;
+  border-right:1px solid rgba(198,171,220,.12)!important;
+  box-shadow:12px 0 38px rgba(0,0,0,.18)!important;
+}
+.app-navigation-link{
+  min-height:44px!important;
+  border:1px solid transparent!important;
+  border-radius:11px!important;
+  color:rgba(247,244,248,.72)!important;
+  font-size:.82rem!important;
+  font-weight:680!important;
+}
+.app-navigation-link:hover{background:rgba(166,107,210,.055)!important;border-color:rgba(198,171,220,.12)!important;color:#fff!important;}
+.app-navigation-link.active{background:linear-gradient(90deg,rgba(166,107,210,.20),rgba(105,182,212,.035))!important;border-color:rgba(191,139,231,.21)!important;box-shadow:inset 3px 0 0 var(--tt-v3-purple-strong),0 8px 22px rgba(0,0,0,.09)!important;color:#fff!important;}
+.app-navigation-link.active .app-navigation-icon{color:var(--tt-v3-gold)!important;}
+.app-header{background:rgba(12,10,15,.88)!important;border-bottom:1px solid rgba(198,171,220,.11)!important;backdrop-filter:blur(16px);}
+
+/* Data tables and repeated lists. */
+.app-content :where(table){width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--tt-v3-border);border-radius:14px;background:rgba(18,14,23,.70);}
+.app-content :where(th,td){padding:.72rem .78rem;border-bottom:1px solid rgba(255,255,255,.055);text-align:left;}
+.app-content :where(th){color:var(--tt-v3-muted);background:rgba(255,255,255,.02);font-size:.72rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase;}
+.app-content tr:last-child :where(th,td){border-bottom:0;}
+
+/* Status surfaces. */
+.app-content :where(.success,.success-message,.success-state,.alert-success){border-color:rgba(99,200,159,.26)!important;background:rgba(99,200,159,.045)!important;}
+.app-content :where(.warning,.warning-message,.warning-state,.alert-warning){border-color:rgba(226,182,109,.26)!important;background:rgba(226,182,109,.045)!important;}
+.app-content :where(.error,.error-message,.error-state,.alert-error){border-color:rgba(231,123,123,.28)!important;background:rgba(231,123,123,.045)!important;}
+.app-content :where(.empty-state,.loading-state,.no-results,.empty-card){border:1px dashed var(--tt-v3-border-strong);border-radius:var(--tt-v3-radius);background:rgba(20,16,25,.50);color:var(--tt-v3-muted);}
+
+/* Better spacing for common page grids without altering layout intent. */
+.app-content :where(.grid,.card-grid,.cards-grid,.feature-grid,.stats-grid){gap:var(--tt-v3-gap,18px);min-width:0;}
+.app-content :where(.form-group,.field,.form-field){min-width:0;margin-bottom:14px;}
+.app-content :where(label){color:var(--tt-v3-soft);font-weight:720;}
+
+/* Tracker reconciliation with the core brand. */
+.tt-tracker-page{color:var(--tt-v3-text);}
+.tt-tracker-header,.tt-tracker-panel,.tt-tracker-stat,.tt-tracker-nav{border-color:rgba(198,171,220,.15);}
+.tt-tracker-header,.tt-tracker-panel,.tt-tracker-stat,.tt-tracker-nav{background:linear-gradient(145deg,rgba(36,29,46,.80),rgba(17,13,22,.96));}
+.tt-tracker-eyebrow{color:var(--tt-v3-gold)!important;}
+.tt-tracker-nav a:hover,.tt-tracker-nav button:hover,.tt-tracker-nav .active{border-color:rgba(226,182,109,.24);background:rgba(226,182,109,.07);}
+.tt-tracker-actions button,.tt-tracker-button{border-color:rgba(226,182,109,.31);background:rgba(226,182,109,.10);}
+.tt-tracker-button.secondary{background:rgba(255,255,255,.035);}
+.tt-tracker-button.danger{background:rgba(231,123,123,.07);}
+
+/* My Snakes: polished without changing the room or snake functionality. */
+.my-snakes-page-header{margin-bottom:16px;}
+.my-snakes-add-action{border:1px solid rgba(191,139,231,.34)!important;background:rgba(166,107,210,.10)!important;color:var(--tt-v3-text)!important;}
+.my-snakes-view-switch{border-color:rgba(198,171,220,.14)!important;background:rgba(18,14,23,.92)!important;box-shadow:0 8px 24px rgba(0,0,0,.12)!important;}
+.my-snakes-view-switch button.is-active{border-color:rgba(191,139,231,.22)!important;background:rgba(166,107,210,.10)!important;color:#fff!important;}
+
+/* Child/beginner-facing learning surfaces stay friendly and readable; no language replacement. */
+.learning-card,.challenge-card,.child-learning-card,.family-learning-card{line-height:1.6;}
+.learning-card p,.challenge-card p,.child-learning-card p,.family-learning-card p{max-width:70ch;}
+
+/* Reduce accidental visual noise from legacy glow classes. */
+[class*="neon"],[class*="glow"]{text-shadow:none;}
+
+@media(max-width:900px){
+  .app-content{padding-inline:14px;}
+}
+@media(max-width:700px){
+  .app-content{padding:14px 12px 44px;}
+  .app-content :where(.page-header,.section-header,.content-header,.tt-page-header){flex-direction:column;align-items:stretch;margin-bottom:18px;}
+  .app-content :where(.page-header h1,.section-header h1,.content-header h1,.tt-page-header h1){font-size:1.52rem;}
+  .app-content :where(button,input,select,textarea){min-height:44px;}
+  .app-content :where(th,td){padding:.65rem .55rem;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,:before,:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+}
