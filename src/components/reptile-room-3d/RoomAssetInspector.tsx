@@ -6,6 +6,7 @@ import type { RoomAssetConfig } from "../../types/reptileRoom3D";
 import { useAuth } from "../../context/useAuth";
 import { getRoomAssetPreset } from "../../data/reptileRoomAssetCatalog";
 import "../../styles/reptile-room-3d-fullscreen.css";
+import "../../styles/reptile-room-asset-photo.css";
 
 type Props = { object: ReptileRoomObject; slots: ReptileRoomSlot[]; onPatch: (patch: { config?: RoomAssetConfig; label?: string }) => void };
 const num = (value: number | undefined, fallback: number) => value ?? fallback;
