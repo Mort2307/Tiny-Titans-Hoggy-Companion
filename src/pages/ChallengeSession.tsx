@@ -7,6 +7,19 @@ import type { LearningBank, QuizQuestion } from "../types/Learning";
 import ChallengeActivity from "../components/learning/ChallengeActivity";
 import "../styles/LearnTopic.css";
 
+function randomizeAnswerPositions(question: QuizQuestion): QuizQuestion {
+  const indexedOptions = question.options.map((option, index) => ({ option, index }));
+  for (let i = indexedOptions.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indexedOptions[i], indexedOptions[j]] = [indexedOptions[j], indexedOptions[i]];
+  }
+  return {
+    ...question,
+    options: indexedOptions.map((item) => item.option),
+    correctIndex: indexedOptions.findIndex((item) => item.index === question.correctIndex),
+  };
+}
+
 export default function ChallengeSession() {
   const { id = "" } = useParams();
   const { user } = useAuth();
@@ -24,7 +37,8 @@ export default function ChallengeSession() {
 
   const start = () => {
     const current = getLearningProgress(user?.uid);
-    setQuestions(selectQuestions(topic, current, 5));
+    const selectedQuestions = selectQuestions(topic, current, 5).map(randomizeAnswerPositions);
+    setQuestions(selectedQuestions);
     setAnswers([]); setIndex(0); setSelected(null); setFinished(false); setBankMasteredThisRound(false);
   };
 
