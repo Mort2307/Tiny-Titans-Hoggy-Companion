@@ -80,6 +80,173 @@
 /* Quick-action copy follows one consistent product vocabulary. */
 .tt-quick-dock a{white-space:nowrap;}
 
+/* --------------------------------------------------------------------------
+   BREEDING PLANNER — polished workspace presentation
+   -------------------------------------------------------------------------- */
+.breeding-page{
+  width:min(100%,1240px)!important;
+  max-width:1240px!important;
+  margin-inline:auto!important;
+  color:var(--tt-v3-text,#f7f4f8);
+}
+.breeding-page .breeding-hero{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(260px,340px);
+  gap:18px;
+  align-items:stretch;
+  margin:10px 0 18px;
+  padding:22px;
+  border:1px solid rgba(198,171,220,.16);
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(166,107,210,.16),rgba(105,182,212,.055) 55%,rgba(226,182,109,.045));
+  box-shadow:0 14px 34px rgba(0,0,0,.15);
+}
+.breeding-page .breeding-eyebrow{
+  margin:0 0 7px;
+  color:var(--tt-v3-gold,#e2b66d)!important;
+  font-size:.68rem;
+  font-weight:850;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.breeding-page .breeding-hero h1{margin:0 0 7px;color:var(--tt-v3-text,#f7f4f8)!important;}
+.breeding-page .breeding-hero p{margin:0;max-width:74ch;color:var(--tt-v3-soft,#d0c7d5);line-height:1.58;}
+.breeding-page .breeding-callout{
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:5px;
+  padding:16px 17px;
+  border:1px solid rgba(226,182,109,.20);
+  border-left:3px solid var(--tt-v3-gold,#e2b66d);
+  border-radius:14px;
+  background:rgba(226,182,109,.045);
+}
+.breeding-page .breeding-callout strong{color:var(--tt-v3-gold-strong,#f0ca88);font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;}
+.breeding-page .breeding-callout div{color:var(--tt-v3-text,#f7f4f8);font-weight:760;line-height:1.4;}
+.breeding-page .breeding-intelligence{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:18px;
+}
+.breeding-page .breeding-stat{
+  min-width:0;
+  padding:14px 15px;
+  border:1px solid rgba(198,171,220,.13);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(36,29,46,.78),rgba(17,13,22,.96));
+  box-shadow:0 8px 22px rgba(0,0,0,.12);
+  color:var(--tt-v3-muted,#978da1);
+  font-size:.75rem;
+  font-weight:760;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.breeding-page .breeding-stat strong{display:block;margin-top:5px;color:var(--tt-v3-gold-strong,#f0ca88);font-size:1.38rem;line-height:1.05;letter-spacing:-.02em;}
+.breeding-page .breeding-layout{
+  display:grid;
+  grid-template-columns:minmax(235px,.7fr) minmax(0,1.9fr);
+  gap:16px;
+  align-items:start;
+}
+.breeding-page .breeding-stack{display:grid;gap:14px;min-width:0;}
+.breeding-page .breeding-card{
+  min-width:0;
+  padding:18px;
+  border:1px solid rgba(198,171,220,.13);
+  border-radius:15px;
+  background:linear-gradient(145deg,rgba(36,29,46,.80),rgba(17,13,22,.96));
+  box-shadow:0 12px 30px rgba(0,0,0,.14);
+  color:var(--tt-v3-text,#f7f4f8);
+}
+.breeding-page .breeding-card h2,.breeding-page .breeding-card h3{margin-top:0;color:var(--tt-v3-text,#f7f4f8);}
+.breeding-page .breeding-card p{line-height:1.58;}
+.breeding-page .breeding-project{
+  width:100%;
+  box-sizing:border-box;
+  text-align:left;
+  padding:13px 14px;
+  margin:0 0 8px;
+  border:1px solid rgba(198,171,220,.12);
+  border-radius:12px;
+  background:rgba(255,255,255,.018);
+  color:var(--tt-v3-text,#f7f4f8);
+  cursor:pointer;
+  transition:transform 140ms ease,border-color 140ms ease,background-color 140ms ease;
+}
+.breeding-page .breeding-project:hover{border-color:rgba(166,107,210,.38);background:rgba(166,107,210,.055);transform:translateY(-1px);}
+.breeding-page .breeding-project.is-active{border-color:rgba(191,139,231,.38);box-shadow:inset 3px 0 var(--tt-v3-purple-strong,#bf8be7);background:rgba(166,107,210,.09);outline:none;}
+.breeding-page .breeding-project strong{display:block;color:#fff;line-height:1.35;}
+.breeding-page .breeding-project small{display:block;margin-top:4px;color:var(--tt-v3-muted,#978da1);line-height:1.4;}
+.breeding-page .breeding-form{display:grid;gap:12px;}
+.breeding-page .breeding-form label{display:grid;gap:6px;color:var(--tt-v3-soft,#d0c7d5);font-size:.82rem;font-weight:740;}
+.breeding-page .breeding-form :where(input,select,textarea){min-height:44px;box-sizing:border-box;}
+.breeding-page .breeding-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.breeding-page .breeding-actions button{flex:0 1 auto;}
+.breeding-page .breeding-grid,.breeding-page .breeding-grid-wide{min-width:0;}
+.breeding-page .breeding-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.breeding-page .breeding-grid-wide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.breeding-page .breeding-mini{
+  min-width:0;
+  padding:13px;
+  border:1px solid rgba(105,182,212,.13);
+  border-radius:12px;
+  background:linear-gradient(145deg,rgba(105,182,212,.055),rgba(255,255,255,.015));
+}
+.breeding-page .breeding-mini strong{display:block;color:var(--tt-v3-gold-strong,#f0ca88);font-size:1.12rem;}
+.breeding-page .breeding-outcome{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:11px 0;
+  border-bottom:1px solid rgba(255,255,255,.055);
+}
+.breeding-page .breeding-outcome:last-child{border-bottom:0;}
+.breeding-page .breeding-outcome > :first-child{min-width:0;}
+.breeding-page .breeding-outcome strong{color:#fff;line-height:1.35;}
+.breeding-page .breeding-badge{display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:5px 9px;border:1px solid rgba(105,182,212,.22);border-radius:999px;background:rgba(105,182,212,.055);color:var(--tt-v3-blue,#69b6d4);font-size:.78rem;font-weight:820;white-space:nowrap;}
+.breeding-page .breeding-timeline{display:grid;gap:0;}
+.breeding-page .breeding-timeline-item{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.055);}
+.breeding-page .breeding-timeline-item:last-child{border-bottom:0;}
+.breeding-page .breeding-hatchling{
+  min-width:0;
+  padding:14px;
+  border:1px solid rgba(198,171,220,.12);
+  border-radius:13px;
+  background:rgba(255,255,255,.018);
+}
+.breeding-page .breeding-hatchling.is-holdback{border-color:rgba(226,182,109,.34);box-shadow:inset 3px 0 rgba(226,182,109,.85);}
+.breeding-page .breeding-muted{color:var(--tt-v3-muted,#978da1);}
+.breeding-page .breeding-project-management{width:min(100%,520px);margin-top:10px;}
+.breeding-page .breeding-project-management summary{min-height:44px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:8px 12px;border:1px solid rgba(198,171,220,.12);border-radius:12px;background:rgba(255,255,255,.025);color:var(--tt-v3-soft,#d0c7d5);font-weight:800;cursor:pointer;list-style:none;}
+.breeding-page .breeding-project-management summary:hover{border-color:rgba(191,139,231,.30);background:rgba(166,107,210,.055);}
+.breeding-page .breeding-project-management-panel{display:grid;gap:9px;margin-top:8px;padding:13px;border:1px solid rgba(198,171,220,.12);border-radius:13px;background:rgba(20,16,25,.76);box-shadow:0 10px 22px rgba(0,0,0,.14);text-align:left;}
+.breeding-page .breeding-project-management-panel label{font-size:.82rem;font-weight:750;color:var(--tt-v3-soft,#d0c7d5);}
+.breeding-page .breeding-danger-button{min-height:44px;padding:8px 13px;border:1px solid rgba(231,123,123,.30);border-radius:11px;background:rgba(231,123,123,.07);color:#ffd1d1;font-weight:800;cursor:pointer;}
+.breeding-page .breeding-danger-button:hover:not(:disabled){background:rgba(231,123,123,.15);border-color:rgba(231,123,123,.48);}
+.breeding-page :where(.breeding-card,.breeding-stat,.breeding-project,.breeding-hatchling,.breeding-callout) :where(a){color:var(--tt-v3-blue,#69b6d4);}
+
+@media(max-width:980px){
+  .breeding-page .breeding-intelligence{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .breeding-page .breeding-layout{grid-template-columns:1fr;}
+}
+@media(max-width:700px){
+  .breeding-page .breeding-hero{grid-template-columns:1fr;padding:18px;}
+  .breeding-page .breeding-intelligence{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .breeding-page .breeding-grid,.breeding-page .breeding-grid-wide{grid-template-columns:1fr;}
+  .breeding-page .breeding-outcome{align-items:flex-start;}
+  .breeding-page .breeding-timeline-item{grid-template-columns:1fr;gap:4px;}
+}
+@media(max-width:560px){
+  .breeding-page .breeding-intelligence{grid-template-columns:1fr;}
+  .breeding-page .breeding-actions{flex-direction:column;}
+  .breeding-page .breeding-actions button,.breeding-page .breeding-danger-button{width:100%;}
+  .breeding-page .breeding-project-header{flex-direction:column;}
+}
+
 @media(max-width:560px){
   .tt-tracker-form fieldset:has(input[type="checkbox"]){grid-template-columns:1fr;}
 }
