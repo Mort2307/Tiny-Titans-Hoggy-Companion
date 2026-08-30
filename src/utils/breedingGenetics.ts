@@ -18,8 +18,14 @@ export function toBreedingParent(snake: Snake): ParentGenetics {
   };
 }
 
+const PROBABILITY_EPSILON = 0.000001;
+
 export function calculateBreedingGenetics(female: Snake, male: Snake): GeneticsCalculation {
-  return calculateGenetics(toBreedingParent(female), toBreedingParent(male));
+  const calculation = calculateGenetics(toBreedingParent(female), toBreedingParent(male));
+  if (!Number.isFinite(calculation.totalProbability) || Math.abs(calculation.totalProbability - 1) > PROBABILITY_EPSILON) {
+    throw new Error("Breeding forecast failed its probability-integrity check. No incomplete genetic forecast was shown.");
+  }
+  return calculation;
 }
 
 export type BreedingGeneticsSnapshot = GeneticsCalculation & {
