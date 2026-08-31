@@ -13,17 +13,21 @@ function MyAccount() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const auth = getAuth(app);
-  const [livePrivacy, setLivePrivacy] = useState<PrivacyPreferences | null>(profile?.dataCollectionPreferences ?? null);
+  const [livePrivacy, setLivePrivacy] = useState<PrivacyPreferences | null>(null);
+  const [privacyLoading, setPrivacyLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     if (!user) {
       setLivePrivacy(null);
+      setPrivacyLoading(false);
       return () => { active = false; };
     }
+    setPrivacyLoading(true);
     void getPrivacyPreferences(user.uid)
       .then((preferences) => { if (active) setLivePrivacy(preferences); })
-      .catch(() => { if (active) setLivePrivacy(profile?.dataCollectionPreferences ?? null); });
+      .catch(() => { if (active) setLivePrivacy(profile?.dataCollectionPreferences ?? null); })
+      .finally(() => { if (active) setPrivacyLoading(false); });
     return () => { active = false; };
   }, [user, profile?.dataCollectionPreferences]);
 
@@ -55,8 +59,8 @@ function MyAccount() {
     {profile?.profileType === "educator" && <div className="account-section"><h2>Education</h2><button type="button" className="account-button" onClick={() => navigate("/educator")}>🧑‍🏫 Educator Centre</button></div>}
     <div className="account-section"><h2>Community &amp; Support</h2><button type="button" className="account-button account-button--highlight" onClick={() => navigate("/my-issue-reports")}>💬 My Reports &amp; Conversations<span className="account-button-subtext">View bug reports and feedback, then reply directly to the Tiny Titans team.</span></button><button type="button" className="account-button" onClick={() => navigate("/report-bug")}>🐛 Report a Bug<span className="account-button-subtext">Report a reproducible problem so the Creator QA system can investigate it.</span></button><button type="button" className="account-button" onClick={() => navigate("/feedback")}>💡 Send Feedback<span className="account-button-subtext">Ideas, suggestions and general feedback are kept separate from bug reports.</span></button><button type="button" className="account-button" onClick={() => navigate("/founder")}>👑 Become a Founder</button><button type="button" className="account-button" onClick={handleSupport} disabled={!supportConfigured}>☕ Support Tiny Titans on {SUPPORT_PLATFORM_NAME}{!supportConfigured ? " (link coming soon)" : ""}</button>{profile?.role === "admin" && <button type="button" className="account-button" onClick={() => navigate("/creator")}>🛠️ Creator / Admin Centre</button>}</div>
     <TitanRecognitionChoice alwaysShow />
-    <div className="account-section"><h2>🧠 Tiny Titans Intelligence</h2><div className="account-detail"><span>Intelligence contribution</span><strong>{livePrivacy ? (intelligenceEnabled ? "Active" : "Not enabled") : "Checking…"}</strong></div><p className="account-button-subtext">{!livePrivacy ? "Reading your current privacy choice…" : intelligenceEnabled ? "You're helping build the anonymised Tiny Titans knowledge base and have access to the full intelligence layer." : "Core tracking still works normally. Enable optional husbandry contribution to unlock the full intelligence experience."}</p><button type="button" className="account-button account-button--highlight" onClick={() => navigate("/account/intelligence")}>🧠 {intelligenceEnabled ? "View My Contribution" : "Explore Full Intelligence"}<span className="account-button-subtext">See your contribution, what it helps improve and manage participation.</span></button></div>
-    <div className="account-section"><h2>🔐 Data &amp; Privacy</h2><div className="account-detail"><span>Community location</span><strong>{livePrivacy ? (locationEnabled ? "Enabled" : "Not enabled") : "Checking…"}</strong></div><div className="account-detail"><span>Anonymous analytics</span><strong>{livePrivacy ? (analyticsEnabled ? "Enabled" : "Not enabled") : "Checking…"}</strong></div><div className="account-detail"><span>Product updates</span><strong>{livePrivacy ? (updatesEnabled ? "Enabled" : "Not enabled") : "Checking…"}</strong></div><p className="account-button-subtext">These optional permissions are separate from core Tiny Titans tracking and can be changed at any time.</p><button type="button" className="account-button account-button--highlight" onClick={() => navigate("/account/data-privacy")}>🔐 Manage Data Collection Permissions</button></div>
+    <div className="account-section"><h2>🧠 Tiny Titans Intelligence</h2><div className="account-detail"><span>Intelligence contribution</span><strong>{privacyLoading ? "Checking…" : intelligenceEnabled ? "Active" : "Not enabled"}</strong></div><p className="account-button-subtext">{privacyLoading ? "Reading your current privacy choice…" : intelligenceEnabled ? "You're helping build the anonymised Tiny Titans knowledge base and have access to the full intelligence layer." : "Core tracking still works normally. Enable optional husbandry contribution to unlock the full intelligence experience."}</p><button type="button" className="account-button account-button--highlight" onClick={() => navigate("/account/intelligence")}>🧠 {intelligenceEnabled ? "View My Contribution" : "Explore Full Intelligence"}<span className="account-button-subtext">See your contribution, what it helps improve and manage participation.</span></button></div>
+    <div className="account-section"><h2>🔐 Data &amp; Privacy</h2><div className="account-detail"><span>Community location</span><strong>{privacyLoading ? "Checking…" : locationEnabled ? "Enabled" : "Not enabled"}</strong></div><div className="account-detail"><span>Anonymous analytics</span><strong>{privacyLoading ? "Checking…" : analyticsEnabled ? "Enabled" : "Not enabled"}</strong></div><div className="account-detail"><span>Product updates</span><strong>{privacyLoading ? "Checking…" : updatesEnabled ? "Enabled" : "Not enabled"}</strong></div><p className="account-button-subtext">These optional permissions are separate from core Tiny Titans tracking and can be changed at any time.</p><button type="button" className="account-button account-button--highlight" onClick={() => navigate("/account/data-privacy")}>🔐 Manage Data Collection Permissions</button></div>
     <div className="account-section"><h2>Account</h2><button type="button" className="account-button" onClick={() => navigate("/account/settings")}>⚙️ Settings</button><button type="button" className="account-button" onClick={() => navigate("/account/personalise")}>✏️ Personalise Experience</button><button type="button" className="account-button" onClick={() => navigate("/account/security")}>🔐 Security</button><button type="button" className="account-button logout-button" onClick={handleLogout}>🚪 Log Out</button></div>
   </div></section>;
 }
