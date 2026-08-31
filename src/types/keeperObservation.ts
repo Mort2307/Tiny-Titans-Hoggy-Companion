@@ -1,7 +1,10 @@
+import type { BehaviourPrimaryCategory } from "../data/behaviourTaxonomy";
+
 export type KeeperObservationStatus = "pending" | "under-review" | "approved" | "rejected" | "archived";
 export type KeeperObservationMediaKind = "video" | "image";
 export type KeeperObservationConfidence = "unsure" | "fairly-confident" | "very-confident";
-export type KeeperObservationCategory = "feeding" | "defensive" | "exploration" | "reproductive" | "shedding" | "respiratory" | "digestive" | "environmental" | "other";
+export type KeeperObservationCategory = BehaviourPrimaryCategory;
+export type KeeperObservationCreditMode = "anonymous" | "credited";
 
 export interface KeeperObservationMedia {
   id: string;
@@ -17,11 +20,14 @@ export interface KeeperObservationMedia {
 export interface KeeperObservation {
   id: string;
   userId: string;
+  contributorDisplayName?: string;
+  contributorCreditMode?: KeeperObservationCreditMode;
   snakeId?: string;
   snakeName?: string;
   species: string;
   title: string;
   category: KeeperObservationCategory;
+  subcategory?: string;
   observedBehaviour: string;
   description: string;
   observedAt: string;
@@ -35,6 +41,7 @@ export interface KeeperObservation {
     handlingRecently?: boolean;
     shedStage?: string;
     enclosureChangeRecently?: boolean;
+    interpretation?: string;
   };
   media: KeeperObservationMedia[];
   educationalConsent: boolean;
