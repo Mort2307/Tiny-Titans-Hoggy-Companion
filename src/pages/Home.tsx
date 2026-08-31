@@ -6,6 +6,7 @@ import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
 import { getDashboardIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
+import "../styles/home-contribution-layout.css";
 import "./Home.css";
 
 type HomeSnake = { id: string; name: string; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number };
