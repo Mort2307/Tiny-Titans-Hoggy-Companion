@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { getPrivacyPreferences } from "../services/privacyService";
-import { getUserSnakes } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import "../styles/contribution-pulse.css";
 
