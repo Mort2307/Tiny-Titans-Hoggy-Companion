@@ -5,6 +5,9 @@ const { getAuth } = require("firebase-admin/auth");
 const db = getFirestore();
 const auth = getAuth();
 const MIN_CONTRIBUTORS = 5;
+const PUBLIC_CACHE_TTL_MS = 60_000;
+let publicContributionCache = null;
+let publicContributionCacheAt = 0;
 
 function number(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -138,4 +141,72 @@ exports.getCommunityIntelligenceSnapshot = onCall({ region: "europe-west2", memo
     morphs: sorted(morphCounts),
     generatedAt: new Date().toISOString(),
   };
+});
+
+async function calculatePublicContributionSnapshot() {
+  const users = await db.collection("users").get();
+  let contributors = 0;
+  let snakes = 0;
+  let weightLogs = 0;
+  let feedingLogs = 0;
+  let shedLogs = 0;
+
+  for (const userDoc of users.docs) {
+    const privacy = (await userDoc.ref.collection("settings").doc("privacy").get()).data() || {};
+    if (privacy.communityHusbandryData !== true) continue;
+
+    const snakeSnapshot = await userDoc.ref.collection("snakes").get();
+    if (snakeSnapshot.empty) continue;
+    contributors += 1;
+    snakes += snakeSnapshot.size;
+
+    await Promise.all(snakeSnapshot.docs.map(async (snakeDoc) => {
+      const [weights, feedings, sheds] = await Promise.all([
+        snakeDoc.ref.collection("weights").get(),
+        snakeDoc.ref.collection("feedings").get(),
+        snakeDoc.ref.collection("sheds").get(),
+      ]);
+      weightLogs += weights.docs.filter((doc) => !doc.data()?.deletedAt).length;
+      feedingLogs += feedings.docs.filter((doc) => !doc.data()?.deletedAt).length;
+      shedLogs += sheds.docs.filter((doc) => !doc.data()?.deletedAt).length;
+    }));
+  }
+
+  const generatedAt = new Date().toISOString();
+  if (contributors < MIN_CONTRIBUTORS) {
+    return { available: false, minimumContributors: MIN_CONTRIBUTORS, contributors: 0, generatedAt };
+  }
+
+  return {
+    available: true,
+    minimumContributors: MIN_CONTRIBUTORS,
+    contributors,
+    snakes,
+    weightLogs,
+    feedingLogs,
+    shedLogs,
+    totalRecords: weightLogs + feedingLogs + shedLogs,
+    generatedAt,
+  };
+}
+
+/**
+ * Signed-in users may see aggregate community contribution volume only.
+ * No individual account, snake, location or record-level information is returned.
+ * Detailed statistics remain protected by the minimum cohort threshold.
+ */
+exports.getPublicCommunityContributionSnapshot = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  const now = Date.now();
+  if (publicContributionCache && now - publicContributionCacheAt < PUBLIC_CACHE_TTL_MS) return publicContributionCache;
+
+  try {
+    const snapshot = await calculatePublicContributionSnapshot();
+    publicContributionCache = snapshot;
+    publicContributionCacheAt = Date.now();
+    return snapshot;
+  } catch (error) {
+    console.error("Public contribution snapshot failed", error);
+    throw new HttpsError("internal", "Unable to load the community contribution tracker.");
+  }
 });
