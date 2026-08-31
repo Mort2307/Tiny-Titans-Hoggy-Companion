@@ -1,7 +1,7 @@
 import { addDoc, collection, getDocs, limit, orderBy, query, updateDoc, doc, where } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { db, storage } from "../firebase/config";
-import type { KeeperObservation, KeeperObservationMedia } from "../types/keeperObservation";
+import type { KeeperObservation, KeeperObservationMedia, KeeperObservationCreditMode } from "../types/keeperObservation";
 
 export const MAX_OBSERVATION_MEDIA_BYTES = 100 * 1024 * 1024;
 export const MAX_OBSERVATION_MEDIA_ITEMS = 4;
@@ -9,7 +9,7 @@ export const ALLOWED_OBSERVATION_VIDEO_TYPES = ["video/mp4", "video/webm", "vide
 export const ALLOWED_OBSERVATION_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
 function isAllowedMedia(file: File) { return [...ALLOWED_OBSERVATION_VIDEO_TYPES, ...ALLOWED_OBSERVATION_IMAGE_TYPES].includes(file.type as never); }
-export function validateObservationMedia(files: File[]) { if (!files.length) throw new Error("Add at least one photo or short video to support this observation."); if (files.length > MAX_OBSERVATION_MEDIA_ITEMS) throw new Error(`You can add up to ${MAX_OBSERVATION_MEDIA_ITEMS} media files.`); for (const file of files) { if (!isAllowedMedia(file)) throw new Error(`${file.name} is not a supported image or video format.`); if (file.size > MAX_OBSERVATION_MEDIA_BYTES) throw new Error(`${file.name} is larger than 100 MB. Please trim or compress it first.`); } }
+export function validateObservationMedia(files: File[]) { if (!files.length) throw new Error("Add at least one photo or video to support this observation."); if (files.length > MAX_OBSERVATION_MEDIA_ITEMS) throw new Error(`You can add up to ${MAX_OBSERVATION_MEDIA_ITEMS} media files.`); for (const file of files) { if (!isAllowedMedia(file)) throw new Error(`${file.name} is not a supported image or video format.`); if (file.size > MAX_OBSERVATION_MEDIA_BYTES) throw new Error(`${file.name} is larger than 100 MB. Please trim or compress it first.`); } }
 
 export async function uploadObservationMedia(uid: string, observationId: string, files: File[], onProgress?: (percent: number) => void): Promise<KeeperObservationMedia[]> {
   validateObservationMedia(files); const results: KeeperObservationMedia[] = [];
@@ -18,9 +18,18 @@ export async function uploadObservationMedia(uid: string, observationId: string,
 }
 function getVideoDuration(file: File): Promise<number | undefined> { return new Promise((resolve) => { const url = URL.createObjectURL(file); const video = document.createElement("video"); video.preload = "metadata"; video.onloadedmetadata = () => { const duration = Number.isFinite(video.duration) ? video.duration : undefined; URL.revokeObjectURL(url); resolve(duration); }; video.onerror = () => { URL.revokeObjectURL(url); resolve(undefined); }; video.src = url; }); }
 
-export async function createKeeperObservation(input: Omit<KeeperObservation, "id" | "media" | "submittedAt" | "updatedAt" | "status"> & { media?: KeeperObservationMedia[] }) { if (!input.educationalConsent) throw new Error("Educational use permission is required before submitting an observation."); if (!input.title.trim() || !input.observedBehaviour.trim()) throw new Error("Give the observation a clear title and observed behaviour."); if (!input.description.trim()) throw new Error("Describe what you actually observed, including relevant context."); const now = new Date().toISOString(); const record = { ...input, title: input.title.trim(), observedBehaviour: input.observedBehaviour.trim(), description: input.description.trim(), media: input.media ?? [], status: "pending" as const, submittedAt: now, updatedAt: now }; const created = await addDoc(collection(db, "keeperObservations"), record); return created.id; }
+export async function createKeeperObservation(input: Omit<KeeperObservation, "id" | "media" | "submittedAt" | "updatedAt" | "status"> & { media?: KeeperObservationMedia[] }) {
+  if (!input.educationalConsent) throw new Error("Educational use permission is required before submitting an observation.");
+  if (!input.title.trim() || !input.observedBehaviour.trim()) throw new Error("Give the observation a clear title and observed behaviour.");
+  if (!input.description.trim()) throw new Error("Describe what you actually observed, including relevant context.");
+  if (!input.category) throw new Error("Choose a behaviour category.");
+  const creditMode: KeeperObservationCreditMode = input.contributorCreditMode === "credited" && input.anonymousDisplay === false ? "credited" : "anonymous";
+  const record = { ...input, contributorCreditMode: creditMode, contributorDisplayName: creditMode === "credited" ? input.contributorDisplayName?.trim() || undefined : undefined, anonymousDisplay: creditMode === "anonymous", title: input.title.trim(), observedBehaviour: input.observedBehaviour.trim(), description: input.description.trim(), media: input.media ?? [], status: "pending" as const, submittedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const created = await addDoc(collection(db, "keeperObservations"), record); return created.id;
+}
 export async function finaliseKeeperObservation(observationId: string, media: KeeperObservationMedia[]) { await updateDoc(doc(db, "keeperObservations", observationId), { media, updatedAt: new Date().toISOString() }); }
 export async function getApprovedKeeperObservations(maxItems = 60): Promise<KeeperObservation[]> { const snapshot = await getDocs(query(collection(db, "keeperObservations"), where("status", "==", "approved"), limit(maxItems))); return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as KeeperObservation)).filter((item) => item.educationalConsent).sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()); }
 export async function getCreatorKeeperObservations(maxItems = 200): Promise<KeeperObservation[]> { const snapshot = await getDocs(query(collection(db, "keeperObservations"), orderBy("submittedAt", "desc"), limit(maxItems))); return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as KeeperObservation)); }
+export async function getUserKeeperObservations(uid: string, maxItems = 100): Promise<KeeperObservation[]> { const snapshot = await getDocs(query(collection(db, "keeperObservations"), where("userId", "==", uid), limit(maxItems))); return snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as KeeperObservation)).sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()); }
 export async function reviewKeeperObservation(input: { observationId: string; status: KeeperObservation["status"]; reviewerUid: string; reviewerNotes: string }) { await updateDoc(doc(db, "keeperObservations", input.observationId), { status: input.status, reviewerNotes: input.reviewerNotes.trim(), reviewedAt: new Date().toISOString(), reviewedByUid: input.reviewerUid, updatedAt: new Date().toISOString() }); }
 export async function resolveObservationMediaUrl(path: string) { return getDownloadURL(ref(storage, path)); }
