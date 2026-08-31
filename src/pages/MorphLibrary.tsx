@@ -8,47 +8,579 @@ import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
 import { getApprovedMorphImages } from "../services/creatorService";
 import { submitMorphImageV2, type MorphCreditMode } from "../services/morphSubmissionServiceV2";
 import { createUserMorphSubmission } from "../services/morphUserSubmissionService";
-import { getPreferredRegionalMorphName, getRegionalAliases, getMorphTerminologyAudit, type MorphRegion } from "../data/morphRegionalTerminology";
+import {
+  getPreferredRegionalMorphName,
+  getRegionalAliases,
+  getMorphTerminologyAudit,
+  type MorphRegion,
+} from "../data/morphRegionalTerminology";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
-function asReferenceEntry(entry: MasterMorphDefinition): MorphReferenceEntry { return entry as MorphReferenceEntry; }
-type ApprovedMorphImage = { id?: string; morphId?: string; imageUrl: string; creditName?: string; creditSocial?: string; creditMode?: MorphCreditMode; approvedAt?: unknown; };
+function asReferenceEntry(entry: MasterMorphDefinition): MorphReferenceEntry {
+  return entry as MorphReferenceEntry;
+}
+
+type ApprovedMorphImage = {
+  id?: string;
+  morphId?: string;
+  imageUrl: string;
+  creditName?: string;
+  creditSocial?: string;
+  creditMode?: MorphCreditMode;
+  approvedAt?: unknown;
+};
 
 function CommunityMorphGallery({ morphId, morphName }: { morphId: string; morphName: string }) {
-  const navigate = useNavigate(); const [images, setImages] = useState<ApprovedMorphImage[]>([]); const [loadedMorphId, setLoadedMorphId] = useState<string | null>(null); const [error, setError] = useState(""); const [selectedImage, setSelectedImage] = useState<ApprovedMorphImage | null>(null); const galleryRef = useRef<HTMLDivElement>(null); const loading = loadedMorphId !== morphId;
-  useEffect(() => { let cancelled = false; void getApprovedMorphImages(morphId).then((result) => { if (!cancelled) { setImages((result as ApprovedMorphImage[]).filter((image) => Boolean(image?.imageUrl))); setError(""); setLoadedMorphId(morphId); } }).catch((loadError) => { if (!cancelled) { setError(loadError instanceof Error ? loadError.message : "We couldn't load the community images."); setLoadedMorphId(morphId); } }); return () => { cancelled = true; }; }, [morphId]);
-  function moveGallery(direction: "left" | "right") { galleryRef.current?.scrollBy({ left: direction === "right" ? 320 : -320, behavior: "smooth" }); }
-  return <section className="morph-detail__section morph-community-gallery"><div className="morph-community-gallery__header"><div><h3>Community examples</h3><p>Approved reference photographs submitted by Tiny Titans keepers.</p></div>{!loading && !error && images.length > 0 && <span className="morph-community-gallery__count">{images.length} {images.length === 1 ? "example" : "examples"}</span>}</div>{loading ? <p className="morph-community-gallery__state">Loading approved {morphName} examples…</p> : error ? <p className="morph-community-gallery__state" role="alert">{error}</p> : images.length === 0 ? <button type="button" className="morph-community-gallery__state morph-community-gallery__state--clickable" onClick={() => navigate("/morph-library?submitMorphImage=1&morphId=" + encodeURIComponent(morphId))}><strong>No community examples have been approved for {morphName} yet.</strong><span>Be the first to contribute →</span></button> : <div className="morph-community-gallery__viewport"><button type="button" className="morph-community-gallery__nav" onClick={() => moveGallery("left")} aria-label="Previous community image">‹</button><div className="morph-community-gallery__scroller" ref={galleryRef} tabIndex={0}>{images.map((image, index) => <button key={image.id ?? `${image.imageUrl}-${index}`} type="button" className="morph-community-gallery__card" onClick={() => setSelectedImage(image)}><img src={image.imageUrl} alt={`${morphName} community example ${index + 1}`} loading={index < 2 ? "eager" : "lazy"} />{(image.creditName || image.creditSocial) && <span className="morph-community-gallery__credit">{image.creditName || image.creditSocial}</span>}</button>)}</div><button type="button" className="morph-community-gallery__nav" onClick={() => moveGallery("right")} aria-label="Next community image">›</button></div>}{selectedImage && <div className="morph-community-gallery__lightbox" role="presentation" onMouseDown={() => setSelectedImage(null)}><button type="button" className="morph-community-gallery__lightbox-close" onClick={() => setSelectedImage(null)} aria-label="Close image">×</button><img src={selectedImage.imageUrl} alt={`${morphName} community example`} onMouseDown={(event) => event.stopPropagation()} />{(selectedImage.creditName || selectedImage.creditSocial) && <p>Credit: {selectedImage.creditName || selectedImage.creditSocial}</p>}</div>}</section>;
+  const navigate = useNavigate();
+  const [images, setImages] = useState<ApprovedMorphImage[]>([]);
+  const [loadedMorphId, setLoadedMorphId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [selectedImage, setSelectedImage] = useState<ApprovedMorphImage | null>(null);
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const loading = loadedMorphId !== morphId;
+
+  useEffect(() => {
+    let cancelled = false;
+    void getApprovedMorphImages(morphId)
+      .then((result) => {
+        if (cancelled) return;
+        setImages((result as ApprovedMorphImage[]).filter((image) => Boolean(image?.imageUrl)));
+        setError("");
+        setLoadedMorphId(morphId);
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        setError(loadError instanceof Error ? loadError.message : "We couldn't load the community images.");
+        setLoadedMorphId(morphId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [morphId]);
+
+  function moveGallery(direction: "left" | "right") {
+    galleryRef.current?.scrollBy({
+      left: direction === "right" ? 320 : -320,
+      behavior: "smooth",
+    });
+  }
+
+  return (
+    <section className="morph-detail__section morph-community-gallery">
+      <div className="morph-community-gallery__header">
+        <div>
+          <h3>Community examples</h3>
+          <p>Approved reference photographs submitted by Tiny Titans keepers.</p>
+        </div>
+        {!loading && !error && images.length > 0 && (
+          <span className="morph-community-gallery__count">
+            {images.length} {images.length === 1 ? "example" : "examples"}
+          </span>
+        )}
+      </div>
+      {loading ? (
+        <p className="morph-community-gallery__state">Loading approved {morphName} examples…</p>
+      ) : error ? (
+        <p className="morph-community-gallery__state" role="alert">{error}</p>
+      ) : images.length === 0 ? (
+        <button
+          type="button"
+          className="morph-community-gallery__state morph-community-gallery__state--clickable"
+          onClick={() => navigate(`/morph-library?submitMorphImage=1&morphId=${encodeURIComponent(morphId)}`)}
+        >
+          <strong>No community examples have been approved for {morphName} yet.</strong>
+          <span>Be the first to contribute →</span>
+        </button>
+      ) : (
+        <div className="morph-community-gallery__viewport">
+          <button type="button" className="morph-community-gallery__nav" onClick={() => moveGallery("left")} aria-label="Previous community image">‹</button>
+          <div className="morph-community-gallery__scroller" ref={galleryRef} tabIndex={0}>
+            {images.map((image, index) => (
+              <button
+                key={image.id ?? `${image.imageUrl}-${index}`}
+                type="button"
+                className="morph-community-gallery__card"
+                onClick={() => setSelectedImage(image)}
+              >
+                <img
+                  src={image.imageUrl}
+                  alt={`${morphName} community example ${index + 1}`}
+                  loading={index < 2 ? "eager" : "lazy"}
+                />
+                {(image.creditName || image.creditSocial) && (
+                  <span className="morph-community-gallery__credit">{image.creditName || image.creditSocial}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="morph-community-gallery__nav" onClick={() => moveGallery("right")} aria-label="Next community image">›</button>
+        </div>
+      )}
+      {selectedImage && (
+        <div className="morph-community-gallery__lightbox" role="presentation" onMouseDown={() => setSelectedImage(null)}>
+          <button type="button" className="morph-community-gallery__lightbox-close" onClick={() => setSelectedImage(null)} aria-label="Close image">×</button>
+          <img
+            src={selectedImage.imageUrl}
+            alt={`${morphName} community example`}
+            onMouseDown={(event) => event.stopPropagation()}
+          />
+          {(selectedImage.creditName || selectedImage.creditSocial) && (
+            <p>Credit: {selectedImage.creditName || selectedImage.creditSocial}</p>
+          )}
+        </div>
+      )}
+    </section>
+  );
 }
 
 function MorphDetail({ morph, region, onClose }: { morph: MorphReferenceEntry; region: MorphRegion; onClose: () => void }) {
-  const typedMorph = morph as MasterMorphDefinition; const displayName = getPreferredRegionalMorphName(typedMorph, region); const aliases = getRegionalAliases(typedMorph, region); const contains = morph.contains ?? morph.components?.map((component) => component.morphId) ?? [];
-  return <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}><article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="morph-detail-title" onMouseDown={(event) => event.stopPropagation()}><button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close morph details">×</button><div className="morph-detail__eyebrow">TINY TITANS · MORPH DATABASE</div><h2 id="morph-detail-title">{displayName}</h2>{displayName !== morph.name && <p><strong>Canonical identity:</strong> {morph.name}</p>}<div className="morph-detail__badges"><span>{morph.kind}</span><span>{morph.inheritance}</span><span>{morph.verification}</span></div>{aliases.length > 0 && <section className="morph-detail__section"><h3>🌎 Regional terminology</h3><p>{aliases.map((alias) => `${alias.name} · ${alias.status}`).join(" · ")}</p></section>}<p className="morph-detail__description">{morph.description ?? "No description has been added yet."}</p><CommunityMorphGallery morphId={morph.geneId} morphName={displayName} />{contains.length > 0 && <section className="morph-detail__section"><h3>Contains</h3><div className="morph-detail__contains">{contains.map((item) => <span key={item}>{item}</span>)}</div></section>}{morph.components && morph.components.length > 0 && <section className="morph-detail__section"><h3>Genetic components</h3><ul>{morph.components.map((component) => <li key={`${component.morphId}-${component.copies ?? 1}`}><strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}</li>)}</ul></section>}<section className="morph-detail__section"><h3>Genetics notes</h3><p>{morph.educationalNotes ?? "No additional genetics notes have been published for this entry yet."}</p></section><section className="morph-detail__section morph-detail__source"><strong>Reference</strong><span>{morph.sourceLabel ?? "Tiny Titans canonical database"}</span>{morph.sourceUrl ? <a href={morph.sourceUrl} target="_blank" rel="noreferrer">Open source reference →</a> : <span className="morph-detail__source-note">Canonical entry maintained by Tiny Titans.</span>}</section></article></div>;
+  const typedMorph = morph as MasterMorphDefinition;
+  const displayName = getPreferredRegionalMorphName(typedMorph, region);
+  const aliases = getRegionalAliases(typedMorph, region);
+  const contains = morph.contains ?? morph.components?.map((component) => component.morphId) ?? [];
+
+  return (
+    <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}>
+      <article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="morph-detail-title" onMouseDown={(event) => event.stopPropagation()}>
+        <button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close morph details">×</button>
+        <div className="morph-detail__eyebrow">TINY TITANS · MORPH DATABASE</div>
+        <h2 id="morph-detail-title">{displayName}</h2>
+        {displayName !== morph.name && <p><strong>Canonical identity:</strong> {morph.name}</p>}
+        <div className="morph-detail__badges">
+          <span>{morph.kind}</span>
+          <span>{morph.inheritance}</span>
+          <span>{morph.verification}</span>
+        </div>
+        {aliases.length > 0 && (
+          <section className="morph-detail__section">
+            <h3>🌎 Regional terminology</h3>
+            <p>{aliases.map((alias) => `${alias.name} · ${alias.status}`).join(" · ")}</p>
+          </section>
+        )}
+        <p className="morph-detail__description">{morph.description ?? "No description has been added yet."}</p>
+        <CommunityMorphGallery morphId={morph.geneId} morphName={displayName} />
+        {contains.length > 0 && (
+          <section className="morph-detail__section">
+            <h3>Contains</h3>
+            <div className="morph-detail__contains">{contains.map((item) => <span key={item}>{item}</span>)}</div>
+          </section>
+        )}
+        {morph.components && morph.components.length > 0 && (
+          <section className="morph-detail__section">
+            <h3>Genetic components</h3>
+            <ul>
+              {morph.components.map((component) => (
+                <li key={`${component.morphId}-${component.copies ?? 1}`}>
+                  <strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <section className="morph-detail__section">
+          <h3>Genetics notes</h3>
+          <p>{morph.educationalNotes ?? "No additional genetics notes have been published for this entry yet."}</p>
+        </section>
+        <section className="morph-detail__section morph-detail__source">
+          <strong>Reference</strong>
+          <span>{morph.sourceLabel ?? "Tiny Titans canonical database"}</span>
+          {morph.sourceUrl ? (
+            <a href={morph.sourceUrl} target="_blank" rel="noreferrer">Open source reference →</a>
+          ) : (
+            <span className="morph-detail__source-note">Canonical entry maintained by Tiny Titans.</span>
+          )}
+        </section>
+      </article>
+    </div>
+  );
 }
 
 function MorphImageSubmissionDialog({ entries, onClose, initialMorphId }: { entries: MorphReferenceEntry[]; onClose: () => void; initialMorphId?: string }) {
-  const fileRef = useRef<HTMLInputElement>(null); const initialMorph = initialMorphId ? entries.find((entry) => entry.geneId === initialMorphId) ?? null : null; const [selectedMorph, setSelectedMorph] = useState<MorphReferenceEntry | null>(initialMorph); const [morphSearch, setMorphSearch] = useState(""); const [morphMenuOpen, setMorphMenuOpen] = useState(false); const [description, setDescription] = useState(""); const [observedTraits, setObservedTraits] = useState(""); const [proofDetails, setProofDetails] = useState(""); const [proofReference, setProofReference] = useState(""); const [photoRequirementsConfirmed, setPhotoRequirementsConfirmed] = useState(false); const [factualAccuracyConfirmed, setFactualAccuracyConfirmed] = useState(false); const [creditMode, setCreditMode] = useState<MorphCreditMode>("anonymous"); const [creditName, setCreditName] = useState(""); const [creditSocial, setCreditSocial] = useState(""); const [image, setImage] = useState<File | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [sent, setSent] = useState(false);
-  useEffect(() => { if (initialMorphId) setSelectedMorph(entries.find((entry) => entry.geneId === initialMorphId) ?? null); }, [initialMorphId, entries]);
-  const morphOptions = useMemo(() => { const needle = normalise(morphSearch); if (!needle) return entries.slice(0, 80); return entries.filter((entry) => [entry.name, ...(entry.aliases ?? []), ...(entry.contains ?? [])].map(normalise).some((value) => value.includes(needle))).slice(0, 80); }, [entries, morphSearch]);
-  async function handleSubmit(event: React.FormEvent) { event.preventDefault(); setError(""); if (!selectedMorph || !image || !photoRequirementsConfirmed || !factualAccuracyConfirmed) { setError("Select a morph, add a compliant photograph and confirm the evidence requirements."); return; } setBusy(true); try { await submitMorphImageV2({ morphId: selectedMorph.geneId, morphName: selectedMorph.name, description, observedTraits, proofDetails, proofReference, photoRequirementsConfirmed, factualAccuracyConfirmed, creditMode, creditName, creditSocial, image }); setSent(true); } catch (submitError) { setError(submitError instanceof Error ? submitError.message : "We couldn't submit the morph image."); } finally { setBusy(false); } }
-  return <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}><article className="morph-detail" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}><button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close">×</button>{sent ? <><div className="morph-detail__eyebrow">🐍 SUBMISSION RECEIVED</div><h2>Thanks — it is in review.</h2><p className="morph-detail__description">Your image has been linked to the canonical Morph Library entry and sent to Creator review.</p><button type="button" onClick={onClose}>Done</button></> : <form onSubmit={(event) => void handleSubmit(event)}><div className="morph-detail__eyebrow">🐍 MORPH IMAGE SUBMISSION</div><h2>Submit a morph image</h2><section className="morph-detail__section"><h3>🧬 Select the canonical morph</h3><div className="morph-selector"><button type="button" className="morph-selector__trigger" onClick={() => setMorphMenuOpen((open) => !open)}>{selectedMorph?.name ?? "Select a morph…"}</button>{morphMenuOpen && <div className="morph-selector__menu"><input autoFocus value={morphSearch} onChange={(event) => setMorphSearch(event.target.value)} placeholder="Search morphs or aliases…" />{morphOptions.map((entry) => <button key={entry.geneId} type="button" onClick={() => { setSelectedMorph(entry); setMorphMenuOpen(false); }}>{entry.name}<small>{entry.kind} · {entry.inheritance}</small></button>)}</div>}</div></section><label>What are we looking at?<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} required /></label><label>Known genetic information<textarea value={observedTraits} onChange={(event) => setObservedTraits(event.target.value)} rows={2} /></label><label>Evidence / proof<textarea value={proofDetails} onChange={(event) => setProofDetails(event.target.value)} rows={3} required /></label><label>Proof reference<input value={proofReference} onChange={(event) => setProofReference(event.target.value)} /></label><label className="morph-submit-check"><input type="checkbox" checked={photoRequirementsConfirmed} onChange={(event) => setPhotoRequirementsConfirmed(event.target.checked)} /><span>Photo is clear, full-body and unfiltered.</span></label><label className="morph-submit-check"><input type="checkbox" checked={factualAccuracyConfirmed} onChange={(event) => setFactualAccuracyConfirmed(event.target.checked)} /><span>I have provided evidence supporting the identification.</span></label><input ref={fileRef} className="morph-submit-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={(event) => setImage(event.target.files?.[0] ?? null)} required /><button type="button" className="morph-submit-photo-button" onClick={() => fileRef.current?.click()}>📷 {image ? "Change photo" : "Add photo"}</button><section className="morph-detail__section"><h3>Credit</h3><div className="morph-detail__badges">{(["name", "social", "anonymous"] as MorphCreditMode[]).map((mode) => <button key={mode} type="button" className={creditMode === mode ? "is-active" : ""} onClick={() => setCreditMode(mode)}>{mode === "name" ? "Name" : mode === "social" ? "Social" : "Anonymous"}</button>)}</div>{creditMode === "name" && <input value={creditName} onChange={(event) => setCreditName(event.target.value)} placeholder="Name" required />}{creditMode === "social" && <input value={creditSocial} onChange={(event) => setCreditSocial(event.target.value)} placeholder="@handle" required /></section>{error && <p role="alert">{error}</p>}<button type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit for review"}</button></form>}</article></div>;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const initialMorph = initialMorphId ? entries.find((entry) => entry.geneId === initialMorphId) ?? null : null;
+  const [selectedMorph, setSelectedMorph] = useState<MorphReferenceEntry | null>(initialMorph);
+  const [morphSearch, setMorphSearch] = useState("");
+  const [morphMenuOpen, setMorphMenuOpen] = useState(false);
+  const [description, setDescription] = useState("");
+  const [observedTraits, setObservedTraits] = useState("");
+  const [proofDetails, setProofDetails] = useState("");
+  const [proofReference, setProofReference] = useState("");
+  const [photoRequirementsConfirmed, setPhotoRequirementsConfirmed] = useState(false);
+  const [factualAccuracyConfirmed, setFactualAccuracyConfirmed] = useState(false);
+  const [creditMode, setCreditMode] = useState<MorphCreditMode>("anonymous");
+  const [creditName, setCreditName] = useState("");
+  const [creditSocial, setCreditSocial] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (initialMorphId) {
+      setSelectedMorph(entries.find((entry) => entry.geneId === initialMorphId) ?? null);
+    }
+  }, [initialMorphId, entries]);
+
+  const morphOptions = useMemo(() => {
+    const needle = normalise(morphSearch);
+    if (!needle) return entries.slice(0, 80);
+    return entries
+      .filter((entry) => [entry.name, ...(entry.aliases ?? []), ...(entry.contains ?? [])].map(normalise).some((value) => value.includes(needle)))
+      .slice(0, 80);
+  }, [entries, morphSearch]);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    if (!selectedMorph || !image || !photoRequirementsConfirmed || !factualAccuracyConfirmed) {
+      setError("Select a morph, add a compliant photograph and confirm the evidence requirements.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await submitMorphImageV2({
+        morphId: selectedMorph.geneId,
+        morphName: selectedMorph.name,
+        description,
+        observedTraits,
+        proofDetails,
+        proofReference,
+        photoRequirementsConfirmed,
+        factualAccuracyConfirmed,
+        creditMode,
+        creditName,
+        creditSocial,
+        image,
+      });
+      setSent(true);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "We couldn't submit the morph image.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}>
+      <article className="morph-detail" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+        <button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close">×</button>
+        {sent ? (
+          <>
+            <div className="morph-detail__eyebrow">🐍 SUBMISSION RECEIVED</div>
+            <h2>Thanks — it is in review.</h2>
+            <p className="morph-detail__description">Your image has been linked to the canonical Morph Library entry and sent to Creator review.</p>
+            <button type="button" onClick={onClose}>Done</button>
+          </>
+        ) : (
+          <form onSubmit={(event) => void handleSubmit(event)}>
+            <div className="morph-detail__eyebrow">🐍 MORPH IMAGE SUBMISSION</div>
+            <h2>Submit a morph image</h2>
+            <section className="morph-detail__section">
+              <h3>🧬 Select the canonical morph</h3>
+              <div className="morph-selector">
+                <button type="button" className="morph-selector__trigger" onClick={() => setMorphMenuOpen((open) => !open)}>
+                  {selectedMorph?.name ?? "Select a morph…"}
+                </button>
+                {morphMenuOpen && (
+                  <div className="morph-selector__menu">
+                    <input autoFocus value={morphSearch} onChange={(event) => setMorphSearch(event.target.value)} placeholder="Search morphs or aliases…" />
+                    {morphOptions.map((entry) => (
+                      <button
+                        key={entry.geneId}
+                        type="button"
+                        onClick={() => {
+                          setSelectedMorph(entry);
+                          setMorphMenuOpen(false);
+                        }}
+                      >
+                        {entry.name}
+                        <small>{entry.kind} · {entry.inheritance}</small>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+            <label>What are we looking at?<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} required /></label>
+            <label>Known genetic information<textarea value={observedTraits} onChange={(event) => setObservedTraits(event.target.value)} rows={2} /></label>
+            <label>Evidence / proof<textarea value={proofDetails} onChange={(event) => setProofDetails(event.target.value)} rows={3} required /></label>
+            <label>Proof reference<input value={proofReference} onChange={(event) => setProofReference(event.target.value)} /></label>
+            <label className="morph-submit-check">
+              <input type="checkbox" checked={photoRequirementsConfirmed} onChange={(event) => setPhotoRequirementsConfirmed(event.target.checked)} />
+              <span>Photo is clear, full-body and unfiltered.</span>
+            </label>
+            <label className="morph-submit-check">
+              <input type="checkbox" checked={factualAccuracyConfirmed} onChange={(event) => setFactualAccuracyConfirmed(event.target.checked)} />
+              <span>I have provided evidence supporting the identification.</span>
+            </label>
+            <input ref={fileRef} className="morph-submit-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={(event) => setImage(event.target.files?.[0] ?? null)} required />
+            <button type="button" className="morph-submit-photo-button" onClick={() => fileRef.current?.click()}>📷 {image ? "Change photo" : "Add photo"}</button>
+            <section className="morph-detail__section">
+              <h3>Credit</h3>
+              <div className="morph-detail__badges">
+                {(["name", "social", "anonymous"] as MorphCreditMode[]).map((mode) => (
+                  <button key={mode} type="button" className={creditMode === mode ? "is-active" : ""} onClick={() => setCreditMode(mode)}>
+                    {mode === "name" ? "Name" : mode === "social" ? "Social" : "Anonymous"}
+                  </button>
+                ))}
+              </div>
+              {creditMode === "name" && <input value={creditName} onChange={(event) => setCreditName(event.target.value)} placeholder="Name" required />}
+              {creditMode === "social" && <input value={creditSocial} onChange={(event) => setCreditSocial(event.target.value)} placeholder="@handle" required />}
+            </section>
+            {error && <p role="alert">{error}</p>}
+            <button type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit for review"}</button>
+          </form>
+        )}
+      </article>
+    </div>
+  );
 }
 
 function NewMorphSubmissionDialog({ onClose }: { onClose: () => void }) {
-  const { user } = useAuth(); const [name, setName] = useState(""); const [region, setRegion] = useState<"uk" | "usa" | "europe" | "australia" | "other">("uk"); const [category, setCategory] = useState<"single-gene" | "super-form" | "combination" | "polygenic" | "line-bred" | "regional-name" | "unknown">("unknown"); const [description, setDescription] = useState(""); const [knownGenetics, setKnownGenetics] = useState(""); const [source, setSource] = useState(""); const [sourceUrl, setSourceUrl] = useState(""); const [busy, setBusy] = useState(false); const [sent, setSent] = useState(false); const [error, setError] = useState("");
-  async function submit(event: React.FormEvent) { event.preventDefault(); if (!user) { setError("You must be signed in to submit a morph."); return; } setBusy(true); setError(""); try { await createUserMorphSubmission(user.uid, { submittedName: name, region, category, description, knownGenetics, sourceOrBreeder: source, sourceUrl }); setSent(true); } catch (submitError) { setError(submitError instanceof Error ? submitError.message : "Unable to submit this morph."); } finally { setBusy(false); } }
-  return <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}><article className="morph-detail" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}><button className="morph-detail__close" type="button" onClick={onClose}>×</button>{sent ? <><div className="morph-detail__eyebrow">🧬 USER SUBMITTED MORPH</div><h2>Thanks — {name} is now in review.</h2><p className="morph-detail__description">It will remain clearly marked as user-submitted until Tiny Titans verifies whether it is a new genetic identity, regional name, combination or breeder-specific term.</p><button type="button" onClick={onClose}>Done</button></> : <form onSubmit={(event) => void submit(event)}><div className="morph-detail__eyebrow">🧬 USER SUBMITTED MORPH</div><h2>Can't find a morph?</h2><p className="morph-detail__description">Submit the name you encountered. Don't worry if it is regional or unfamiliar — Tiny Titans will resolve it against the canonical genetics database during review.</p><label>Morph name<input value={name} onChange={(event) => setName(event.target.value)} required placeholder="e.g. Phoenix Firebelly" /></label><label>Where did you encounter this terminology?<select value={region} onChange={(event) => setRegion(event.target.value as typeof region)}><option value="uk">🇬🇧 UK</option><option value="usa">🇺🇸 USA</option><option value="europe">🇪🇺 Europe</option><option value="australia">🇦🇺 Australia</option><option value="other">🌎 Other</option></select></label><label>What kind of thing is it?<select value={category} onChange={(event) => setCategory(event.target.value as typeof category)}><option value="single-gene">Single gene</option><option value="super-form">Super form</option><option value="combination">Combination</option><option value="polygenic">Polygenic / line-bred</option><option value="regional-name">Regional name / alias</option><option value="unknown">Not sure</option></select></label><label>What do you know about it?<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} required placeholder="Where you saw it, how it was described, phenotype, etc." /></label><label>Known genetics (optional)<textarea value={knownGenetics} onChange={(event) => setKnownGenetics(event.target.value)} rows={3} placeholder="Parents, known genes, breeder information…" /></label><label>Breeder / source (optional)<input value={source} onChange={(event) => setSource(event.target.value)} /></label><label>Source URL (optional)<input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} /></label>{error && <p role="alert">{error}</p>}<button type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit morph for review"}</button></form>}</article></div>;
+  const { user } = useAuth();
+  const [name, setName] = useState("");
+  const [region, setRegion] = useState<"uk" | "usa" | "europe" | "australia" | "other">("uk");
+  const [category, setCategory] = useState<"single-gene" | "super-form" | "combination" | "polygenic" | "line-bred" | "regional-name" | "unknown">("unknown");
+  const [description, setDescription] = useState("");
+  const [knownGenetics, setKnownGenetics] = useState("");
+  const [source, setSource] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!user) {
+      setError("You must be signed in to submit a morph.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await createUserMorphSubmission(user.uid, {
+        submittedName: name,
+        region,
+        category,
+        description,
+        knownGenetics,
+        sourceOrBreeder: source,
+        sourceUrl,
+      });
+      setSent(true);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unable to submit this morph.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}>
+      <article className="morph-detail" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+        <button className="morph-detail__close" type="button" onClick={onClose}>×</button>
+        {sent ? (
+          <>
+            <div className="morph-detail__eyebrow">🧬 USER SUBMITTED MORPH</div>
+            <h2>Thanks — {name} is now in review.</h2>
+            <p className="morph-detail__description">It will remain clearly marked as user-submitted until Tiny Titans verifies whether it is a new genetic identity, regional name, combination or breeder-specific term.</p>
+            <button type="button" onClick={onClose}>Done</button>
+          </>
+        ) : (
+          <form onSubmit={(event) => void submit(event)}>
+            <div className="morph-detail__eyebrow">🧬 USER SUBMITTED MORPH</div>
+            <h2>Can't find a morph?</h2>
+            <p className="morph-detail__description">Submit the name you encountered. Don't worry if it is regional or unfamiliar — Tiny Titans will resolve it against the canonical genetics database during review.</p>
+            <label>Morph name<input value={name} onChange={(event) => setName(event.target.value)} required placeholder="e.g. Phoenix Firebelly" /></label>
+            <label>Where did you encounter this terminology?
+              <select value={region} onChange={(event) => setRegion(event.target.value as typeof region)}>
+                <option value="uk">🇬🇧 UK</option><option value="usa">🇺🇸 USA</option><option value="europe">🇪🇺 Europe</option><option value="australia">🇦🇺 Australia</option><option value="other">🌎 Other</option>
+              </select>
+            </label>
+            <label>What kind of thing is it?
+              <select value={category} onChange={(event) => setCategory(event.target.value as typeof category)}>
+                <option value="single-gene">Single gene</option><option value="super-form">Super form</option><option value="combination">Combination</option><option value="polygenic">Polygenic / line-bred</option><option value="regional-name">Regional name / alias</option><option value="unknown">Not sure</option>
+              </select>
+            </label>
+            <label>What do you know about it?<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} required placeholder="Where you saw it, how it was described, phenotype, etc." /></label>
+            <label>Known genetics (optional)<textarea value={knownGenetics} onChange={(event) => setKnownGenetics(event.target.value)} rows={3} placeholder="Parents, known genes, breeder information…" /></label>
+            <label>Breeder / source (optional)<input value={source} onChange={(event) => setSource(event.target.value)} /></label>
+            <label>Source URL (optional)<input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} /></label>
+            {error && <p role="alert">{error}</p>}
+            <button type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit morph for review"}</button>
+          </form>
+        )}
+      </article>
+    </div>
+  );
 }
 
 export default function MorphLibrary() {
-  const [query, setQuery] = useState(""); const [filter, setFilter] = useState<"all" | "gene" | "combination" | "polygenic" | "line-bred">("all"); const [region, setRegion] = useState<MorphRegion>("global"); const [selected, setSelected] = useState<MorphReferenceEntry | null>(null); const [showImageSubmission, setShowImageSubmission] = useState(false); const [showNewMorphSubmission, setShowNewMorphSubmission] = useState(false); const [imageSubmissionMorphId, setImageSubmissionMorphId] = useState<string>(""); const [approvedImagesByMorph, setApprovedImagesByMorph] = useState<Record<string, ApprovedMorphImage>>({}); const [approvedImagesLoading, setApprovedImagesLoading] = useState(true); const [searchParams, setSearchParams] = useSearchParams(); const submissionRequested = searchParams.get("submitMorphImage") === "1"; const requestedMorphId = searchParams.get("morphId") ?? "";
-  const entries = useMemo<MorphReferenceEntry[]>(() => { const byName = new Map<string, MorphReferenceEntry>(); [...masterMorphs, ...reptifitMorphCatalog].forEach((entry) => { const key = normalise(entry.name); if (!byName.has(key)) byName.set(key, asReferenceEntry(entry)); }); return Array.from(byName.values()).sort((a, b) => getPreferredRegionalMorphName(a as MasterMorphDefinition, region).localeCompare(getPreferredRegionalMorphName(b as MasterMorphDefinition, region))); }, [region]);
-  const filtered = useMemo(() => { const needle = normalise(query); return entries.filter((entry) => { const typed = entry as MasterMorphDefinition; const regional = getRegionalAliases(typed, region).map((item) => item.name); const searchable = [entry.name, ...(entry.aliases ?? []), ...regional, ...(entry.contains ?? [])].map(normalise); const searchMatch = !needle || searchable.some((value) => value.includes(needle)); const typeMatch = filter === "all" || (filter === "gene" && (entry.kind === "Gene" || entry.kind === "Super")) || (filter === "combination" && entry.kind === "Combination") || (filter === "polygenic" && entry.inheritance === "Polygenic") || (filter === "line-bred" && entry.inheritance === "Line-bred"); return searchMatch && typeMatch; }); }, [entries, filter, query, region]);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "gene" | "combination" | "polygenic" | "line-bred">("all");
+  const [region, setRegion] = useState<MorphRegion>("global");
+  const [selected, setSelected] = useState<MorphReferenceEntry | null>(null);
+  const [showImageSubmission, setShowImageSubmission] = useState(false);
+  const [showNewMorphSubmission, setShowNewMorphSubmission] = useState(false);
+  const [imageSubmissionMorphId, setImageSubmissionMorphId] = useState<string>("");
+  const [approvedImagesByMorph, setApprovedImagesByMorph] = useState<Record<string, ApprovedMorphImage>>({});
+  const [approvedImagesLoading, setApprovedImagesLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const submissionRequested = searchParams.get("submitMorphImage") === "1";
+  const requestedMorphId = searchParams.get("morphId") ?? "";
+
+  const entries = useMemo<MorphReferenceEntry[]>(() => {
+    const byName = new Map<string, MorphReferenceEntry>();
+    [...masterMorphs, ...reptifitMorphCatalog].forEach((entry) => {
+      const key = normalise(entry.name);
+      if (!byName.has(key)) byName.set(key, asReferenceEntry(entry));
+    });
+    return Array.from(byName.values()).sort((a, b) =>
+      getPreferredRegionalMorphName(a as MasterMorphDefinition, region).localeCompare(
+        getPreferredRegionalMorphName(b as MasterMorphDefinition, region),
+      ),
+    );
+  }, [region]);
+
+  const filtered = useMemo(() => {
+    const needle = normalise(query);
+    return entries.filter((entry) => {
+      const typed = entry as MasterMorphDefinition;
+      const regional = getRegionalAliases(typed, region).map((item) => item.name);
+      const searchable = [entry.name, ...(entry.aliases ?? []), ...regional, ...(entry.contains ?? [])].map(normalise);
+      const searchMatch = !needle || searchable.some((value) => value.includes(needle));
+      const typeMatch =
+        filter === "all" ||
+        (filter === "gene" && (entry.kind === "Gene" || entry.kind === "Super")) ||
+        (filter === "combination" && entry.kind === "Combination") ||
+        (filter === "polygenic" && entry.inheritance === "Polygenic") ||
+        (filter === "line-bred" && entry.inheritance === "Line-bred");
+      return searchMatch && typeMatch;
+    });
+  }, [entries, filter, query, region]);
+
   const audit = useMemo(() => getMorphTerminologyAudit(masterMorphs), []);
-  useEffect(() => { let cancelled = false; setApprovedImagesLoading(true); void getApprovedMorphImages().then((result) => { if (cancelled) return; const next: Record<string, ApprovedMorphImage> = {}; (result as ApprovedMorphImage[]).forEach((image) => { if (image.morphId && image.imageUrl && !next[image.morphId]) next[image.morphId] = image; }); setApprovedImagesByMorph(next); setApprovedImagesLoading(false); }).catch(() => { if (!cancelled) setApprovedImagesLoading(false); }); return () => { cancelled = true; }; }, []);
-  useEffect(() => { if (submissionRequested) { setImageSubmissionMorphId(requestedMorphId); setShowImageSubmission(true); } }, [submissionRequested, requestedMorphId]);
-  const closeImageSubmission = () => { setShowImageSubmission(false); setImageSubmissionMorphId(""); if (submissionRequested) setSearchParams({}, { replace: true }); };
-  return <main className="page-container morph-library-page"><BackHomeButton /><header className="morph-library__header"><div className="morph-library__eyebrow">🐍 TINY TITANS · WESTERN HOGNOSE</div><h1>Morph Library</h1><p>Canonical genetics, recognised combinations, regional terminology and reference-backed community examples in one place.</p><div className="morph-library__filters" role="group" aria-label="Morph regions">{(["global", "uk", "usa", "europe", "australia"] as MorphRegion[]).map((value) => <button key={value} type="button" className={region === value ? "is-active" : ""} onClick={() => setRegion(value)}>{value === "global" ? "🌎 Global" : value === "uk" ? "🇬🇧 UK" : value === "usa" ? "🇺🇸 USA" : value === "europe" ? "🇪🇺 Europe" : "🇦🇺 Australia"}</button>)}<button type="button" className={region === "global" ? "is-active" : ""} onClick={() => setRegion("global")}>All</button></div><div className="weight-record-actions"><button type="button" onClick={() => setShowNewMorphSubmission(true)}>🧬 Can't find a morph? Submit it</button><button type="button" onClick={() => { setImageSubmissionMorphId(""); setShowImageSubmission(true); }}>📷 Submit a morph image</button></div><div className="morph-library__source-strip"><span><strong>Reference sources:</strong></span><a href="https://hognose-morphs.com/morphs/all" target="_blank" rel="noreferrer">Hognose Morphs</a><a href="https://www.morphmarket.com/morphpedia/hognose-snakes/" target="_blank" rel="noreferrer">MorphMarket Morphpedia</a><a href="https://www.reptifit.nl/en/collection" target="_blank" rel="noreferrer">Reptifit</a></div><small>{entries.length} combined library records · {audit.mapped} terminology records mapped · {audit.needsReview} catalogue records awaiting regional comparison{approvedImagesLoading ? " · Loading approved examples…" : ` · ${Object.keys(approvedImagesByMorph).length} records with approved community imagery`}</small></header><div className="morph-library__controls"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search morphs, aliases, regional names or components…" aria-label="Search morph library" /><div className="morph-library__filters" role="group" aria-label="Morph type filters">{(["all", "gene", "combination", "polygenic", "line-bred"] as const).map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>{value === "all" ? "All" : value.replace("-", " ")}</button>)}</div></div><div className="morph-library__count">Showing <strong>{filtered.length}</strong> of <strong>{entries.length}</strong> records · {region === "global" ? "Canonical names" : "Regional display terminology"}</div><div className="morph-grid morph-library__grid">{filtered.map((morph) => { const displayName = getPreferredRegionalMorphName(morph as MasterMorphDefinition, region); const aliases = getRegionalAliases(morph as MasterMorphDefinition, region); const approvedImage = approvedImagesByMorph[morph.geneId]; return <article className="morph-card morph-card--library" key={morph.geneId}><div className="morph-card__media">{approvedImage ? <div className="morph-card__image-wrap"><img src={approvedImage.imageUrl} alt={`${displayName} approved community example`} loading="lazy" />{(approvedImage.creditName || approvedImage.creditSocial) && <span className="morph-card__credit">Credit: {approvedImage.creditName || approvedImage.creditSocial}</span>}</div> : <div className="morph-card__image-empty"><span className="morph-card__image-icon">📷</span><strong>No approved image yet</strong><span>Add the first reviewed example.</span><button type="button" className="morph-card__image-submit" onClick={() => { setImageSubmissionMorphId(morph.geneId); setShowImageSubmission(true); }}>Submit image</button></div>}</div><div className="morph-card__body"><div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div><div className="morph-card__classification"><span>{morph.inheritance === "Incomplete Dominant" ? "Incomplete dominant" : morph.inheritance}</span>{morph.hetPossible && <span>Het-capable</span>}</div><h2>{displayName}</h2>{displayName !== morph.name && <p className="morph-card__canonical">Canonical: {morph.name}</p>}{aliases.length > 0 && <p className="morph-card__contains">Also known as: {aliases.slice(0, 2).map((item) => item.name).join(", ")}</p>}{morph.contains && morph.contains.length > 0 ? <p className="morph-card__contains">Contains: {morph.contains.join(" + ")}</p> : <p className="morph-card__description">{morph.description ?? "Reference entry."}</p>}<div className="morph-card__footer"><span className="morph-card__source">Source: {morph.sourceLabel ?? "Tiny Titans canonical database"}</span>{morph.sourceUrl && <a href={morph.sourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Reference ↗</a>}</div><button type="button" className="morph-card__open" onClick={() => setSelected(morph)}>Open genetics record <span aria-hidden="true">→</span></button></div></article>; })}</div>{filtered.length === 0 && <div className="welcome-card"><h2>No matching morphs</h2><p>Try another regional name or submit the missing terminology for review.</p><button type="button" onClick={() => setShowNewMorphSubmission(true)}>Submit missing morph</button></div>}{selected && <MorphDetail morph={selected} region={region} onClose={() => setSelected(null)} />}{showImageSubmission && <MorphImageSubmissionDialog entries={entries} initialMorphId={imageSubmissionMorphId} onClose={closeImageSubmission} />}{showNewMorphSubmission && <NewMorphSubmissionDialog onClose={() => setShowNewMorphSubmission(false)} />}</main>;
+
+  useEffect(() => {
+    let cancelled = false;
+    setApprovedImagesLoading(true);
+    void getApprovedMorphImages()
+      .then((result) => {
+        if (cancelled) return;
+        const next: Record<string, ApprovedMorphImage> = {};
+        (result as ApprovedMorphImage[]).forEach((image) => {
+          if (image.morphId && image.imageUrl && !next[image.morphId]) next[image.morphId] = image;
+        });
+        setApprovedImagesByMorph(next);
+        setApprovedImagesLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setApprovedImagesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (submissionRequested) {
+      setImageSubmissionMorphId(requestedMorphId);
+      setShowImageSubmission(true);
+    }
+  }, [submissionRequested, requestedMorphId]);
+
+  const closeImageSubmission = () => {
+    setShowImageSubmission(false);
+    setImageSubmissionMorphId("");
+    if (submissionRequested) setSearchParams({}, { replace: true });
+  };
+
+  return (
+    <main className="page-container morph-library-page">
+      <BackHomeButton />
+      <header className="morph-library__header">
+        <div className="morph-library__eyebrow">🐍 TINY TITANS · WESTERN HOGNOSE</div>
+        <h1>Morph Library</h1>
+        <p>Canonical genetics, recognised combinations, regional terminology and reference-backed community examples in one place.</p>
+        <div className="morph-library__filters" role="group" aria-label="Morph regions">
+          {(["global", "uk", "usa", "europe", "australia"] as MorphRegion[]).map((value) => (
+            <button key={value} type="button" className={region === value ? "is-active" : ""} onClick={() => setRegion(value)}>
+              {value === "global" ? "🌎 Global" : value === "uk" ? "🇬🇧 UK" : value === "usa" ? "🇺🇸 USA" : value === "europe" ? "🇪🇺 Europe" : "🇦🇺 Australia"}
+            </button>
+          ))}
+          <button type="button" className={region === "global" ? "is-active" : ""} onClick={() => setRegion("global")}>All</button>
+        </div>
+        <div className="weight-record-actions">
+          <button type="button" onClick={() => setShowNewMorphSubmission(true)}>🧬 Can't find a morph? Submit it</button>
+          <button type="button" onClick={() => { setImageSubmissionMorphId(""); setShowImageSubmission(true); }}>📷 Submit a morph image</button>
+        </div>
+        <div className="morph-library__source-strip">
+          <span><strong>Reference sources:</strong></span>
+          <a href="https://hognose-morphs.com/morphs/all" target="_blank" rel="noreferrer">Hognose Morphs</a>
+          <a href="https://www.morphmarket.com/morphpedia/hognose-snakes/" target="_blank" rel="noreferrer">MorphMarket Morphpedia</a>
+          <a href="https://www.reptifit.nl/en/collection" target="_blank" rel="noreferrer">Reptifit</a>
+        </div>
+        <small>
+          {entries.length} combined library records · {audit.mapped} terminology records mapped · {audit.needsReview} catalogue records awaiting regional comparison
+          {approvedImagesLoading ? " · Loading approved examples…" : ` · ${Object.keys(approvedImagesByMorph).length} records with approved community imagery`}
+        </small>
+      </header>
+      <div className="morph-library__controls">
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search morphs, aliases, regional names or components…" aria-label="Search morph library" />
+        <div className="morph-library__filters" role="group" aria-label="Morph type filters">
+          {(["all", "gene", "combination", "polygenic", "line-bred"] as const).map((value) => (
+            <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>
+              {value === "all" ? "All" : value.replace("-", " ")}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="morph-library__count">Showing <strong>{filtered.length}</strong> of <strong>{entries.length}</strong> records · {region === "global" ? "Canonical names" : "Regional display terminology"}</div>
+      <div className="morph-grid morph-library__grid">
+        {filtered.map((morph) => {
+          const displayName = getPreferredRegionalMorphName(morph as MasterMorphDefinition, region);
+          const aliases = getRegionalAliases(morph as MasterMorphDefinition, region);
+          const approvedImage = approvedImagesByMorph[morph.geneId];
+          return (
+            <article className="morph-card morph-card--library" key={morph.geneId}>
+              <div className="morph-card__media">
+                {approvedImage ? (
+                  <div className="morph-card__image-wrap">
+                    <img src={approvedImage.imageUrl} alt={`${displayName} approved community example`} loading="lazy" />
+                    {(approvedImage.creditName || approvedImage.creditSocial) && <span className="morph-card__credit">Credit: {approvedImage.creditName || approvedImage.creditSocial}</span>}
+                  </div>
+                ) : (
+                  <div className="morph-card__image-empty">
+                    <span className="morph-card__image-icon">📷</span>
+                    <strong>No approved image yet</strong>
+                    <span>Add the first reviewed example.</span>
+                    <button type="button" className="morph-card__image-submit" onClick={() => { setImageSubmissionMorphId(morph.geneId); setShowImageSubmission(true); }}>Submit image</button>
+                  </div>
+                )}
+              </div>
+              <div className="morph-card__body">
+                <div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div>
+                <div className="morph-card__classification"><span>{morph.inheritance === "Incomplete Dominant" ? "Incomplete dominant" : morph.inheritance}</span>{morph.hetPossible && <span>Het-capable</span>}</div>
+                <h2>{displayName}</h2>
+                {displayName !== morph.name && <p className="morph-card__canonical">Canonical: {morph.name}</p>}
+                {aliases.length > 0 && <p className="morph-card__contains">Also known as: {aliases.slice(0, 2).map((item) => item.name).join(", ")}</p>}
+                {morph.contains && morph.contains.length > 0 ? <p className="morph-card__contains">Contains: {morph.contains.join(" + ")}</p> : <p className="morph-card__description">{morph.description ?? "Reference entry."}</p>}
+                <div className="morph-card__footer">
+                  <span className="morph-card__source">Source: {morph.sourceLabel ?? "Tiny Titans canonical database"}</span>
+                  {morph.sourceUrl && <a href={morph.sourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>Reference ↗</a>}
+                </div>
+                <button type="button" className="morph-card__open" onClick={() => setSelected(morph)}>Open genetics record <span aria-hidden="true">→</span></button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      {filtered.length === 0 && <div className="welcome-card"><h2>No matching morphs</h2><p>Try another regional name or submit the missing terminology for review.</p><button type="button" onClick={() => setShowNewMorphSubmission(true)}>Submit missing morph</button></div>}
+      {selected && <MorphDetail morph={selected} region={region} onClose={() => setSelected(null)} />}
+      {showImageSubmission && <MorphImageSubmissionDialog entries={entries} initialMorphId={imageSubmissionMorphId} onClose={closeImageSubmission} />}
+      {showNewMorphSubmission && <NewMorphSubmissionDialog onClose={() => setShowNewMorphSubmission(false)} />}
+    </main>
+  );
 }
