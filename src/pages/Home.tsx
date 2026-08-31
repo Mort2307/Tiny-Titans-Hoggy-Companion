@@ -6,7 +6,6 @@ import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
 import { getDashboardIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
-import "../styles/home-contribution-layout.css";
 import "./Home.css";
 
 type HomeSnake = { id: string; name: string; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number };
@@ -33,20 +32,10 @@ function Home() {
       if (!active) return;
       setIntelligenceAccess(hasAccess);
       setAccessChecked(true);
-      const minimal = records.map((snake) => ({
-        id: snake.id,
-        name: snake.name,
-        weightRecords: snake.weightHistory?.length ?? 0,
-        feedingRecords: snake.feedingHistory?.length ?? 0,
-        shedRecords: snake.shedHistory?.length ?? 0,
-        healthRecords: snake.healthHistory?.length ?? 0,
-      }));
+      const minimal = records.map((snake) => ({ id: snake.id, name: snake.name, weightRecords: snake.weightHistory?.length ?? 0, feedingRecords: snake.feedingHistory?.length ?? 0, shedRecords: snake.shedHistory?.length ?? 0, healthRecords: snake.healthHistory?.length ?? 0 }));
       setSnakes(minimal);
       setSelectedSnakeId((current) => minimal.some((snake) => snake.id === current) ? current : minimal[0]?.id ?? "");
-      if (!hasAccess) {
-        setIntelligence([]);
-        return;
-      }
+      if (!hasAccess) { setIntelligence([]); return; }
       const insights = await getDashboardIntelligence(user.uid, minimal.map((snake) => snake.id));
       if (active) setIntelligence(insights);
     }).catch(() => { if (!active) return; setSnakes([]); setIntelligence([]); setIntelligenceAccess(false); setAccessChecked(true); }).finally(() => { if (active) setLoadingIntelligence(false); });
@@ -58,12 +47,7 @@ function Home() {
   const attention = useMemo(() => intelligence.flatMap((item) => item.priority && item.priority.tone === "attention" ? [{ ...item.priority, snakeId: item.snakeId, snakeName: item.snakeName }] : []).slice(0, 3), [intelligence]);
   const coverage = useMemo(() => intelligence.length ? Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length) : 0, [intelligence]);
   const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + snake.weightRecords + snake.feedingRecords + snake.shedRecords + snake.healthRecords, 0), [snakes]);
-  const snapshot = useMemo(() => ({
-    weights: snakes.reduce((sum, snake) => sum + snake.weightRecords, 0),
-    feedings: snakes.reduce((sum, snake) => sum + snake.feedingRecords, 0),
-    sheds: snakes.reduce((sum, snake) => sum + snake.shedRecords, 0),
-    health: snakes.reduce((sum, snake) => sum + snake.healthRecords, 0),
-  }), [snakes]);
+  const snapshot = useMemo(() => ({ weights: snakes.reduce((sum, snake) => sum + snake.weightRecords, 0), feedings: snakes.reduce((sum, snake) => sum + snake.feedingRecords, 0), sheds: snakes.reduce((sum, snake) => sum + snake.shedRecords, 0), health: snakes.reduce((sum, snake) => sum + snake.healthRecords, 0) }), [snakes]);
   const selectedIndex = Math.max(0, snakes.findIndex((snake) => snake.id === selectedSnakeId));
   function moveSnake(direction: -1 | 1) { if (!snakes.length) return; const next = (selectedIndex + direction + snakes.length) % snakes.length; setSelectedSnakeId(snakes[next].id); }
 
@@ -73,9 +57,9 @@ function Home() {
         <p className="tt-home-eyebrow">TINY TITANS · YOUR KEEPER COMMAND CENTRE</p>
         <h1>Good day, {displayName} 👋</h1>
         <p>One calm place for what matters now. Tiny Titans learns from the records you create rather than throwing every feature at you at once.</p>
+        <ContributionPulse />
       </div>
       <div className="tt-home-profile"><span>{experience} keeper</span><strong>{snakes.length} {snakes.length === 1 ? "Tiny Titan" : "Tiny Titans"}</strong><small>{learningLabel} learning mode</small></div>
-      <div className="tt-home-hero-contributions"><ContributionPulse enabled={intelligenceAccess} snakeCount={snakes.length} weightRecords={snapshot.weights} feedingRecords={snapshot.feedings} shedRecords={snapshot.sheds} /></div>
     </section>
     <PwaInstallCard />
     <TitanGoalTracker compact />
