@@ -1,35 +1,29 @@
 import { httpsCallable } from "firebase/functions";
-import { doc, getDoc } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
 import { app } from "../firebase/config";
+import { getFamilyForUser, type FamilyAccount } from "./familyService";
 import type { FamilyAccessMode, FamilyPermissions } from "./familyPermissionsService";
-import type { FamilyAccount } from "./familyService";
 import { defaultAdultPermissions, ownerPermissions } from "./familyPermissionsService";
 
 const familyFunctions = getFunctions(app, "europe-west2");
 
-function inferredMode(data: Record<string, unknown> | null): FamilyAccessMode {
-  const explicit = data?.accessMode;
-  if (explicit === "full" || explicit === "review" || explicit === "sandbox") return explicit;
-  const permissions = (data?.permissions ?? {}) as Record<string, unknown>;
-  const keys = ["snakes", "weights", "feeding", "sheds", "behaviour", "health", "breeding", "genetics"].flatMap((area) => ["create", "edit", "delete"].map((action) => `${area}.${action}`));
-  if (keys.every((key) => permissions[key] === "allow")) return "full";
-  if (keys.every((key) => permissions[key] === "deny")) return "sandbox";
-  return "review";
-}
-
-type ManagerResponse = {
-  family: FamilyAccount | null;
-  modes: Record<string, FamilyAccessMode>;
-};
-
-export async function getFamilyManagerData(_uid: string): Promise<ManagerResponse> {
-  const callable = httpsCallable<void, ManagerResponse>(familyFunctions, "getFamilyManagerDataSecure");
-  return (await callable()).data;
+export async function getFamilyManagerData(uid: string): Promise<{ family: FamilyAccount | null; modes: Record<string, FamilyAccessMode> }> {
+  const family = await getFamilyForUser(uid);
+  if (!family || family.ownerUid !== uid) return { family, modes: {} };
+  const callable = httpsCallable<void, { modes: Record<string, FamilyAccessMode> }>(familyFunctions, "getFamilyManagerDataSecure");
+  try {
+    const result = await callable();
+    return { family, modes: result.data.modes ?? {} };
+  } catch {
+    return { family, modes: {} };
+  }
 }
 
 export async function setFamilyMemberAccessMode(ownerUid: string, memberUid: string, mode: FamilyAccessMode): Promise<void> {
-  if (!ownerUid) throw new Error("Family Head account is required.");
+  const family = await getFamilyForUser(ownerUid);
+  if (!family || family.ownerUid !== ownerUid) throw new Error("Only the Family Head can change family permissions.");
+  if (memberUid === ownerUid) throw new Error("The Family Head always has Full Permission.");
+  if (!family.memberUids.includes(memberUid)) throw new Error("That account is not a member of your family.");
   const callable = httpsCallable<{ memberUid: string; mode: FamilyAccessMode }, { success: boolean }>(familyFunctions, "setFamilyMemberAccessModeSecure");
   await callable({ memberUid, mode });
 }
