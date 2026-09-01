@@ -184,7 +184,6 @@ export default function ContributionDashboard() {
       items.push({ id: `obs-${String(item.id)}`, icon: "🔭", category: "Behaviour Observatory", title: String(data.title || data.behaviourName || data.observationTitle || data.primaryCategory || "Behaviour observation"), detail: String(data.description || data.observation || "Keeper observation submitted to Tiny Titans."), status: statusOf(item.status), date: data.createdAt || data.submittedAt || data.updatedAt, link: "/behaviour-observatory" });
     });
     morphSubmissions.forEach((item) => {
-      const data = item as UserMorphSubmission & Record<string, unknown>;
       items.push({ id: `morph-${item.id}`, icon: "🧬", category: "Morph terminology", title: String(item.submittedName || "Morph terminology submission"), detail: String(item.description || "Morph Library contribution submitted for review."), status: statusOf(item.status), date: item.createdAt, link: "/morph-library" });
     });
     morphImageSubmissions.forEach((item) => {
