@@ -50,7 +50,7 @@ export default function FamilyJoin() {
   if (!user) return null;
   if (loading) return <main className="page-container family-join-page"><BackHomeButton /><section className="family-join-card"><p className="family-join-kicker">Tiny Titans Family</p><h1>Loading family join…</h1></section></main>;
   return <main className="page-container family-join-page"><BackHomeButton />
-    <section className="family-join-hero"><div><p className="family-join-kicker">👨‍👩‍👧 FAMILY CONNECTION</p><h1>Join a Tiny Titans Family</h1><p>Use a short code instead of relying on email links. The code only starts a request — the Family Owner still controls the final approval.</p></div><Link className="family-join-button family-join-button--secondary" to="/account/family">← Back to Family</Link></section>
+    <section className="family-join-hero"><div><p className="family-join-kicker">👨‍👩‍👧 FAMILY CONNECTION</p><h1>Join a Tiny Titans Family</h1><p>Use a short code instead of relying on email links. The code only starts a request — the Family Owner still controls the final approval.</p></div><Link className="family-join-button family-join-button--secondary" to="/account/family/manage">← Manage Family</Link></section>
     {message && <div className="family-join-message" role="status">{message}</div>}{error && <div className="family-join-error" role="alert">{error}</div>}
     {isOwner ? <>
       <section className="family-join-card family-join-owner"><div className="family-join-section-head"><div><p className="family-join-kicker">🔐 FAMILY OWNER</p><h2>Your secure join code</h2></div><span>{familyFull ? "Family full" : `${Math.max(0, (family?.memberUids.length || 1) - 1)} / 2 member places used`}</span></div>
