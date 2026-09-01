@@ -17,10 +17,7 @@ function MyAccount() {
 
   useEffect(() => {
     let active = true;
-    if (!user) {
-      setLivePrivacy(null);
-      return () => { active = false; };
-    }
+    if (!user) { setLivePrivacy(null); return () => { active = false; }; }
     setLivePrivacy(null);
     void getPrivacyPreferences(user.uid)
       .then((preferences) => { if (active) setLivePrivacy(preferences); })
