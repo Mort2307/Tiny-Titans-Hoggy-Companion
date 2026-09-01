@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
+import { useAuth } from "../context/useAuth";
 import { getFamilyForUser } from "../services/familyService";
 import { type FamilyApproval } from "../services/familyPermissionsService";
 import { decideFamilyApprovalSecure, getFamilyApprovalsSecure } from "../services/familyReviewService";
 import "../styles/family-manager.css";
 function formatDate(value: unknown): string { if (!value) return "Unknown date"; try { const date = typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function" ? value.toDate() : new Date(String(value)); return Number.isNaN(date.getTime()) ? "Unknown date" : new Intl.DateTimeFormat(undefined,{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(date); } catch { return "Unknown date"; } }
 function pretty(value: unknown): string { try { return JSON.stringify(value,null,2); } catch { return String(value); } }
-export default function FamilyReview() { const { user } = require("../context/useAuth").useAuth(); const [approvals,setApprovals]=useState<FamilyApproval[]>([]); const [selected,setSelected]=useState(""); const [isHead,setIsHead]=useState(false); const [loading,setLoading]=useState(true); const [busy,setBusy]=useState(""); const [message,setMessage]=useState(""); const [error,setError]=useState("");
+export default function FamilyReview() { const { user } = useAuth(); const [approvals,setApprovals]=useState<FamilyApproval[]>([]); const [selected,setSelected]=useState(""); const [isHead,setIsHead]=useState(false); const [loading,setLoading]=useState(true); const [busy,setBusy]=useState(""); const [message,setMessage]=useState(""); const [error,setError]=useState("");
   async function load(){if(!user)return;setLoading(true);setError("");try{const family=await getFamilyForUser(user.uid);const owner=Boolean(family&&family.ownerUid===user.uid);setIsHead(owner);setApprovals(owner?await getFamilyApprovalsSecure():[]);}catch(reason){setError(reason instanceof Error?reason.message:"Unable to load Family Review.");}finally{setLoading(false);}}
   useEffect(()=>{void load();},[user]);
   async function decide(approvalId:string,status:"approved"|"rejected"){setBusy(approvalId);setError("");setMessage("");try{await decideFamilyApprovalSecure(approvalId,status);setApprovals(current=>current.map(item=>item.id===approvalId?{...item,status}:item));setSelected("");setMessage(status==="approved"?"Change approved and applied to the real family record.":"Change rejected. The real family record was left unchanged.");}catch(reason){setError(reason instanceof Error?reason.message:"Unable to decide this family change.");}finally{setBusy("");}}
