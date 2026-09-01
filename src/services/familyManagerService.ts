@@ -1,10 +1,12 @@
 import { httpsCallable } from "firebase/functions";
 import { doc, getDoc } from "firebase/firestore";
-import { db, functions } from "../firebase/config";
+import { getFunctions } from "firebase/functions";
+import { app, db } from "../firebase/config";
 import { getFamilyForUser, type FamilyAccount } from "./familyService";
 import type { FamilyAccessMode, FamilyPermissions } from "./familyPermissionsService";
 import { defaultAdultPermissions, ownerPermissions } from "./familyPermissionsService";
 
+const familyFunctions = getFunctions(app, "europe-west2");
 const permissionRef = (familyId: string, uid: string) => doc(db, "families", familyId, "permissions", uid);
 
 function inferredMode(data: Record<string, unknown> | null): FamilyAccessMode {
@@ -29,7 +31,7 @@ export async function getFamilyManagerData(uid: string): Promise<{ family: Famil
 }
 
 export async function setFamilyMemberAccessMode(ownerUid: string, memberUid: string, mode: FamilyAccessMode): Promise<void> {
-  const callable = httpsCallable<{ memberUid: string; mode: FamilyAccessMode }, { success: boolean }>(functions(), "setFamilyMemberAccessModeSecure");
+  const callable = httpsCallable<{ memberUid: string; mode: FamilyAccessMode }, { success: boolean }>(familyFunctions, "setFamilyMemberAccessModeSecure");
   await callable({ memberUid, mode });
 }
 
