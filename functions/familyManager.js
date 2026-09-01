@@ -40,6 +40,29 @@ function safeFamilyRecordPath(path, ownerUid) {
   return false;
 }
 
+exports.getFamilyManagerDataSecure = onCall({ region: "europe-west2" }, async (request) => {
+  const uid = requireUid(request);
+  const family = await getFamily(uid);
+  assertOwner(family, uid, "Only the Family Head can access Family Manager.");
+  const members = Array.isArray(family.data.memberUids) ? family.data.memberUids.filter((value) => typeof value === "string" && value !== uid) : [];
+  const modes = {};
+  for (const memberUid of members) {
+    const permissionSnap = await db.collection("families").doc(family.id).collection("permissions").doc(memberUid).get();
+    const data = permissionSnap.exists ? permissionSnap.data() || {} : {};
+    const explicit = data.accessMode;
+    if (["full", "review", "sandbox"].includes(explicit)) {
+      modes[memberUid] = explicit;
+      continue;
+    }
+    const permissions = data.permissions && typeof data.permissions === "object" ? data.permissions : {};
+    const keys = AREAS.flatMap((area) => ["create", "edit", "delete"].map((action) => `${area}.${action}`));
+    if (keys.every((key) => permissions[key] === "allow")) modes[memberUid] = "full";
+    else if (keys.every((key) => permissions[key] === "deny")) modes[memberUid] = "sandbox";
+    else modes[memberUid] = "review";
+  }
+  return { familyId: family.id, modes };
+});
+
 exports.setFamilyMemberAccessModeSecure = onCall({ region: "europe-west2" }, async (request) => {
   const ownerUid = requireUid(request);
   const memberUid = String(request.data?.memberUid || "");
@@ -50,7 +73,7 @@ exports.setFamilyMemberAccessModeSecure = onCall({ region: "europe-west2" }, asy
   assertOwner(family, ownerUid, "Only the Family Head can change family permissions.");
   const members = Array.isArray(family.data.memberUids) ? family.data.memberUids : [];
   if (!members.includes(memberUid)) throw new HttpsError("not-found", "That account is not a member of your family.");
-  await family.data && db.collection("families").doc(family.id).collection("permissions").doc(memberUid).set({ familyId: family.id, memberUid, accessMode: mode, permissions: permissionsForMode(mode), updatedAt: FieldValue.serverTimestamp(), updatedByUid: ownerUid }, { merge: true });
+  await db.collection("families").doc(family.id).collection("permissions").doc(memberUid).set({ familyId: family.id, memberUid, accessMode: mode, permissions: permissionsForMode(mode), updatedAt: FieldValue.serverTimestamp(), updatedByUid: ownerUid }, { merge: true });
   await db.collection("familyHistory").add({ familyId: family.id, actorUid: ownerUid, targetUid: memberUid, eventType: "permission_mode_changed", summary: `Permission mode changed to ${mode}.`, details: { mode }, createdAt: FieldValue.serverTimestamp() });
   return { success: true, familyId: family.id, memberUid, mode };
 });
@@ -82,11 +105,9 @@ exports.decideFamilyApprovalSecure = onCall({ region: "europe-west2" }, async (r
     const approval = approvalSnap.data() || {};
     if (String(approval.familyId || "") !== family.id) throw new HttpsError("permission-denied", "That approval does not belong to your family.");
     if (approval.status !== "pending") throw new HttpsError("failed-precondition", "That approval has already been decided.");
-
     const payload = approval.payload || {};
     const paths = Array.isArray(payload.paths) ? payload.paths.filter((path) => typeof path === "string") : (payload.targetPath ? [String(payload.targetPath)] : []);
     if (!paths.length || paths.length > 100 || !paths.every((path) => safeFamilyRecordPath(path, ownerUid))) throw new HttpsError("failed-precondition", "This approval targets a protected or invalid family record.");
-
     if (status === "approved") {
       if (payload.operation === "delete" || payload.operation === "deleteTree") {
         for (const path of paths) tx.delete(db.doc(path));
@@ -95,18 +116,8 @@ exports.decideFamilyApprovalSecure = onCall({ region: "europe-west2" }, async (r
         tx.set(db.doc(paths[0]), data, { merge: payload.operation === "update" });
       }
     }
-
     tx.update(approvalRef, { status, decidedByUid: ownerUid, decidedAt: FieldValue.serverTimestamp() });
-    tx.set(db.collection("familyHistory").doc(), {
-      familyId: family.id,
-      actorUid: ownerUid,
-      targetUid: String(approval.requesterUid || ""),
-      eventType: `approval_${status}`,
-      summary: `${status === "approved" ? "Approved" : "Rejected"}: ${String(approval.title || "Family change")}`,
-      details: { approvalId, area: approval.area || null, action: approval.action || null, operation: payload.operation || null, before: payload.before || null, proposed: payload.data || {} },
-      createdAt: FieldValue.serverTimestamp(),
-    });
-
+    tx.set(db.collection("familyHistory").doc(), { familyId: family.id, actorUid: ownerUid, targetUid: String(approval.requesterUid || ""), eventType: `approval_${status}`, summary: `${status === "approved" ? "Approved" : "Rejected"}: ${String(approval.title || "Family change")}`, details: { approvalId, area: approval.area || null, action: approval.action || null, operation: payload.operation || null, before: payload.before || null, proposed: payload.data || {} }, createdAt: FieldValue.serverTimestamp() });
     return { success: true, status, requesterUid: String(approval.requesterUid || "") };
   });
 });
