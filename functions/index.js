@@ -12,6 +12,7 @@ const adminAuth = getAuth();
 
 Object.assign(exports, require("./creatorApproval"));
 Object.assign(exports, require("./communityIntelligence"));
+Object.assign(exports, require("./publicContributions"));
 Object.assign(exports, require("./communityBenchmarks"));
 Object.assign(exports, require("./titanGoals"));
 const creatorTesterInvitation = require("./creatorTesterInvitation");
@@ -21,8 +22,6 @@ Object.assign(exports, {
   declineCreatorTesterInvitation: creatorTesterInvitation.declineCreatorTesterInvitation,
 });
 
-// Notification delivery is intentionally explicit here so the scheduler and
-// callable endpoints are actually deployed as Firebase Cloud Functions.
 Object.assign(exports, require("./notificationTest"));
 const familyNotifications = require("./familyNotifications");
 exports.sendAllKeeperReminderNotifications = familyNotifications.sendAllKeeperReminderNotifications;
@@ -158,20 +157,11 @@ exports.stripeWebhook = onRequest({ region: "europe-west2", secrets: [STRIPE_SEC
   }
 });
 
-/**
- * Queue a tightly-scoped Tiny Titans family invitation email.
- *
- * The Firebase Trigger Email extension watches the `mail` collection and
- * performs the actual SMTP delivery. This function deliberately creates the
- * mail document server-side so clients cannot use the mail collection to send
- * arbitrary messages from the Tiny Titans sender address.
- */
 exports.queueFamilyInvitationEmail = onDocumentCreated({ region: "europe-west2", document: "familyInvites/{inviteId}" }, async (event) => {
   const snapshot = event.data;
   if (!snapshot) return;
   const invite = snapshot.data() || {};
   if (invite.status !== "pending") return;
-
   const targetEmail = String(invite.targetEmail || "").trim().toLowerCase();
   const familyId = String(invite.familyId || "").trim();
   const inviteId = String(event.params.inviteId || "").trim();
@@ -179,7 +169,6 @@ exports.queueFamilyInvitationEmail = onDocumentCreated({ region: "europe-west2",
     console.warn("Family invitation email skipped: incomplete invitation", { inviteId, familyId, targetEmail: Boolean(targetEmail) });
     return;
   }
-
   const ownerUid = String(invite.ownerUid || "").trim();
   const ownerSnapshot = ownerUid ? await db.collection("users").doc(ownerUid).get() : null;
   const owner = ownerSnapshot?.data() || {};
@@ -191,15 +180,5 @@ exports.queueFamilyInvitationEmail = onDocumentCreated({ region: "europe-west2",
   const safeInviteUrl = inviteUrl.replace(/&/g, "&amp;").replace(/\"/g, "&quot;");
   const html = `<!doctype html><html><body style="margin:0;background:#111315;font-family:Arial,sans-serif;color:#f3f1e8"><div style="max-width:620px;margin:32px auto;padding:0 20px"><div style="background:#1b1f20;border:1px solid #3a3f3f;border-radius:18px;padding:32px"><div style="font-size:28px;font-weight:800;margin-bottom:8px">🐍 Tiny Titans</div><div style="font-size:14px;color:#d5aa4b;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Family invitation</div><h1 style="font-size:28px;margin:24px 0 12px">You're invited to join a Tiny Titans family</h1><p style="font-size:16px;line-height:1.6;color:#d8d7cf">${safeOwnerName} has invited you to share a family reptile record in Tiny Titans.</p><p style="font-size:15px;line-height:1.6;color:#c6c5be">Sign in or create your Tiny Titans account using the invited email address, then use the button below to accept the invitation.</p><p style="margin:28px 0"><a href="${safeInviteUrl}" style="display:inline-block;background:#d5aa4b;color:#111315;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:12px">Accept Family Invitation</a></p><p style="font-size:13px;line-height:1.5;color:#9f9e98">If you were not expecting this invitation, you can safely ignore this email.</p></div><p style="text-align:center;font-size:12px;color:#777872;margin:18px 0">Tiny Titans Hoggy Companion</p></div></body></html>`;
   const text = `Tiny Titans Family Invitation\n\n${ownerName} has invited you to join a Tiny Titans family.\n\nSign in or create your Tiny Titans account using the invited email address, then open this link to accept the invitation:\n${inviteUrl}\n\nIf you were not expecting this invitation, you can safely ignore this email.`;
-
-  await db.collection("mail").add({
-    to: targetEmail,
-    from: "Tiny Titans <tinytitans.exotics@gmail.com>",
-    replyTo: "tinytitans.exotics@gmail.com",
-    message: { subject, text, html },
-    type: "family-invitation",
-    familyInviteId: inviteId,
-    familyId,
-    createdAt: FieldValue.serverTimestamp(),
-  });
+  await db.collection("mail").add({ to: targetEmail, from: "Tiny Titans <tinytitans.exotics@gmail.com>", replyTo: "tinytitans.exotics@gmail.com", message: { subject, text, html }, type: "family-invitation", familyInviteId: inviteId, familyId, createdAt: FieldValue.serverTimestamp() });
 });
