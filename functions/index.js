@@ -22,6 +22,8 @@ Object.assign(exports, {
   declineCreatorTesterInvitation: creatorTesterInvitation.declineCreatorTesterInvitation,
 });
 
+// Notification delivery is intentionally explicit here so the scheduler and
+// callable endpoints are actually deployed as Firebase Cloud Functions.
 Object.assign(exports, require("./notificationTest"));
 const familyNotifications = require("./familyNotifications");
 exports.sendAllKeeperReminderNotifications = familyNotifications.sendAllKeeperReminderNotifications;
