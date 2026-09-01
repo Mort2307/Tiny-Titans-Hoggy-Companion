@@ -61,6 +61,7 @@ export default function CreatorLanding() {
       </section>
       <section className="creator-landing-command-grid" aria-label="Creator command centre">
         <Link className="creator-command-card creator-command-primary" to="/creator/issues"><span className="creator-command-icon">🐛</span><div><small>ACTIVE QUEUE</small><strong>{bugCount} Bug Reports</strong><p>Review reports, evidence, severity and creator decisions.</p></div><span className="creator-command-arrow">→</span></Link>
+        <Link className="creator-command-card" to="/creator/morph-library"><span className="creator-command-icon">🖼️</span><div><small>MORPH LIBRARY · CREATOR</small><strong>Morph Library Editor</strong><p>Crop, swap, move, reassign, re-credit or remove approved morph imagery.</p></div><span className="creator-command-arrow">→</span></Link>
         <Link className="creator-command-card" to="/creator/submissions"><span className="creator-command-icon">🧬</span><div><small>CONTENT PIPELINE</small><strong>Morph Submissions</strong><p>Keep the community morph database accurate and evidence-led.</p></div><span className="creator-command-arrow">→</span></Link>
         <Link className="creator-command-card" to="/creator/observations"><span className="creator-command-icon">🐍</span><div><small>BEHAVIOUR INTELLIGENCE</small><strong>Keeper Observations</strong><p>Review community behaviour footage and context before anything reaches the public catalogue.</p></div><span className="creator-command-arrow">→</span></Link>
         <Link className="creator-command-card" to="/creator/community"><span className="creator-command-icon">📢</span><div><small>COMMUNITY OPS</small><strong>Publish & Moderate</strong><p>Manage official updates, releases and known issues.</p></div><span className="creator-command-arrow">→</span></Link>
@@ -71,7 +72,7 @@ export default function CreatorLanding() {
         <section className="dashboard-grid creator-tool-grid" aria-label="Creator tools">{tools.map(([icon, title, to, description]) => <article className="dashboard-card creator-tool-card" key={to}><div className="dashboard-card-icon" aria-hidden="true">{icon}</div><p className="creator-tool-kicker">CREATOR TOOL</p><h2>{title}</h2><p>{description}</p><Link className="primary-button" to={to}>Open tool →</Link></article>)}</section>
       </section>
       <CreatorMorphCorrections />
-      <section className="creator-landing-footer-card"><div><span aria-hidden="true">⚡</span><div><strong>Creator Centre is the control room.</strong><p>Use the command cards for daily work; use the specialist tools when you need deeper diagnostics or administration.</p></div></div><Link className="secondary-button" to="/creator/issues?filter=archived">View archived reports</Link></section>
+      <section className="creator-landing-footer-card"><div><span aria-hidden="true">⚡</span><div><strong>Creator Centre is the control room.</strong><p>Use the command cards for daily work; use the specialist tools when you need deeper diagnostics or administration.</p></div></div><Link className="secondary-button" to="/creator/issues?filter=archived">View archived reports</Link></div></section>
     </main>
   );
 }
