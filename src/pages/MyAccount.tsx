@@ -13,7 +13,7 @@ function MyAccount() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const auth = getAuth(app);
-  const [livePrivacy, setLivePrivacy] = useState<PrivacyPreferences | null>(profile?.dataCollectionPreferences ?? null);
+  const [livePrivacy, setLivePrivacy] = useState<PrivacyPreferences | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -21,11 +21,12 @@ function MyAccount() {
       setLivePrivacy(null);
       return () => { active = false; };
     }
+    setLivePrivacy(null);
     void getPrivacyPreferences(user.uid)
       .then((preferences) => { if (active) setLivePrivacy(preferences); })
-      .catch(() => { if (active) setLivePrivacy(profile?.dataCollectionPreferences ?? null); });
+      .catch(() => { if (active) setLivePrivacy(null); });
     return () => { active = false; };
-  }, [user, profile?.dataCollectionPreferences]);
+  }, [user]);
 
   async function handleLogout() {
     try { await signOut(auth); navigate("/login", { replace: true }); }
@@ -38,7 +39,7 @@ function MyAccount() {
   const learningLevel = profile?.learningLevel === "explorer" ? "Explorer" : profile?.learningLevel === "learner" ? "Learner" : profile?.learningLevel === "student" ? "Student" : "Adult";
   const experience = profile?.experienceLevel === "pro" ? "Advanced" : profile?.experienceLevel === "intermediate" ? "Intermediate" : "Beginner";
   const supportConfigured = isSupportConfigured();
-  const privacyPreferences = livePrivacy ?? profile?.dataCollectionPreferences;
+  const privacyPreferences = livePrivacy;
   const locationEnabled = Boolean(privacyPreferences?.communityLocation);
   const analyticsEnabled = Boolean(privacyPreferences?.anonymousAnalytics);
   const updatesEnabled = Boolean(privacyPreferences?.productUpdates);
