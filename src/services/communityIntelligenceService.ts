@@ -22,9 +22,15 @@ export type PublicContributionSnapshot = {
   available: boolean;
   contributors: number;
   totalRecords: number;
+  publicCommunityRecords?: number;
   behaviourContributions: number;
   morphContributions: number;
   communityContributions: number;
+  intelligenceContributions?: number;
+  intelligenceWeightRecords?: number;
+  intelligenceFeedingRecords?: number;
+  intelligenceShedRecords?: number;
+  intelligenceContributingKeepers?: number;
   generatedAt: string;
 };
 
