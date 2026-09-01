@@ -34,7 +34,7 @@ const checks = [
   ["public global snapshot is signed-in only", /if \(!request\.auth\?\.uid\) throw new HttpsError\("unauthenticated"/, sources.publicContribution],
   ["public global snapshot counts public contributions without a threshold", /const totalRecords = behaviourContributions \+ morphContributions \+ communityContributions/, sources.publicContribution],
   ["public global feed uses public attribution", /contributor:\s*publicAttribution/, sources.publicContribution],
-  ["public global snapshot does not expose raw user identifiers", !/feed\.push\(\{[\s\S]*userId:/, sources.publicContribution],
+  ["public global snapshot does not expose raw user identifiers", (source) => !/feed\.push\(\{[\s\S]*userId:/.test(source), sources.publicContribution],
   ["benchmark access is consent guarded", /canUseFullIntelligence\(privacy\) \? benchmark : null/, sources.benchmarkGuard],
   ["community benchmark cannot bypass contribution guard", /assertCommunityContributionAllowed\(privacy\)/, sources.benchmarkGuard],
   ["snapshot persistence fingerprints source data", /buildIntelligenceSnapshotCacheKey\(snake, benchmark\)/, sources.persistence],
@@ -42,9 +42,10 @@ const checks = [
   ["privacy defaults contribution off", /communityHusbandryData:\s*false/, sources.privacy],
 ];
 
-const failures = checks.filter(([, pattern, source]) => pattern instanceof RegExp ? (pattern.test(source) === false) : pattern.test(source)).map(([label]) => label);
+const evaluate = (pattern, source) => pattern instanceof RegExp ? pattern.test(source) : pattern(source);
+const failures = checks.filter(([, pattern, source]) => !evaluate(pattern, source)).map(([label]) => label);
 console.log("INTELLIGENCE END-TO-END JOURNEY CONTRACT REPORT");
-console.table(checks.map(([label, pattern, source]) => ({ check: label, status: pattern instanceof RegExp ? (pattern.test(source) ? "PASS" : "FAIL") : (pattern.test(source) ? "FAIL" : "PASS") })));
+console.table(checks.map(([label, pattern, source]) => ({ check: label, status: evaluate(pattern, source) ? "PASS" : "FAIL" })));
 
 const journey = [
   ["new/missing preference", "CORE TRACKING", "BASIC ONLY", "INTELLIGENCE PAUSED", "CONTRIBUTION BLOCKED"],
