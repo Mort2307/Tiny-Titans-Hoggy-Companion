@@ -86,16 +86,14 @@ export default function CreatorAdmin() {
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(false);
   const [error, setError] = useState("");
-  const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | "morph-editor" | null>(null);
+  const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | "morph-editor" | null>(() => new URLSearchParams(window.location.search).get("tool") === "morph-editor" ? "morph-editor" : null);
   const [selectedUser, setSelectedUser] = useState<CreatorUser | null>(null);
   const [search, setSearch] = useState("");
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
   const [now, setNow] = useState<number | null>(null);
 
-  useEffect(() => {
-    setNow(Date.now());
-  }, []);
+  useEffect(() => { setNow(Date.now()); }, []);
 
   async function loadDashboard() {
     if (!user) return;
@@ -103,43 +101,26 @@ export default function CreatorAdmin() {
     setError("");
     try {
       const data = await fetchDashboardData();
-      setStats(data.canonicalStats);
-      setMorphPending(data.morphPending);
-      setBugPending(data.bugPending);
-      setFeedbackNew(data.feedbackNew);
+      setStats(data.canonicalStats); setMorphPending(data.morphPending); setBugPending(data.bugPending); setFeedbackNew(data.feedbackNew);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   async function loadUsers() {
     if (!user) return;
-    setUsersLoading(true);
-    setError("");
-    try {
-      setUsers(await fetchUsersData());
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "User overview could not be loaded.");
-    } finally {
-      setUsersLoading(false);
-    }
+    setUsersLoading(true); setError("");
+    try { setUsers(await fetchUsersData()); }
+    catch (loadError) { setError(loadError instanceof Error ? loadError.message : "User overview could not be loaded."); }
+    finally { setUsersLoading(false); }
   }
 
   async function grantCreatorTesterClaim(target: CreatorUser) {
     if (!target.uid) return;
-    setClaimBusy(true);
-    setClaimMessage("");
-    setError("");
-    try {
-      await setCreatorClaim({ uid: target.uid, enabled: true });
-      setClaimMessage(`Creator authorization granted to ${target.displayName || "the selected account"}. Refresh that account's ID token before running Creator Tester.`);
-    } catch (claimError) {
-      setError(claimError instanceof Error ? claimError.message : "Creator authorization could not be granted.");
-    } finally {
-      setClaimBusy(false);
-    }
+    setClaimBusy(true); setClaimMessage(""); setError("");
+    try { await setCreatorClaim({ uid: target.uid, enabled: true }); setClaimMessage(`Creator authorization granted to ${target.displayName || "the selected account"}. Refresh that account's ID token before running Creator Tester.`); }
+    catch (claimError) { setError(claimError instanceof Error ? claimError.message : "Creator authorization could not be granted."); }
+    finally { setClaimBusy(false); }
   }
 
   useEffect(() => {
@@ -165,11 +146,7 @@ export default function CreatorAdmin() {
 
   const userInsights = useMemo(() => {
     const bands = { today: 0, week: 0, month: 0, cooling: 0, inactive: 0, unknown: 0 };
-    let setupComplete = 0;
-    let locationOn = 0;
-    let analyticsOn = 0;
-    let husbandryOn = 0;
-    let productUpdatesOn = 0;
+    let setupComplete = 0; let locationOn = 0; let analyticsOn = 0; let husbandryOn = 0; let productUpdatesOn = 0;
     for (const item of users) {
       if (item.setupComplete) setupComplete += 1;
       if (item.dataCollectionPreferences?.approximateLocation === true) locationOn += 1;
@@ -178,14 +155,7 @@ export default function CreatorAdmin() {
       if (item.dataCollectionPreferences?.productUpdates === true) productUpdatesOn += 1;
       const millis = toMillis(item.lastActiveAt);
       if (millis === null || now === null) bands.unknown += 1;
-      else {
-        const days = Math.floor((now - millis) / 86400000);
-        if (days <= 0) bands.today += 1;
-        else if (days <= 7) bands.week += 1;
-        else if (days <= 30) bands.month += 1;
-        else if (days <= 90) bands.cooling += 1;
-        else bands.inactive += 1;
-      }
+      else { const days = Math.floor((now - millis) / 86400000); if (days <= 0) bands.today += 1; else if (days <= 7) bands.week += 1; else if (days <= 30) bands.month += 1; else if (days <= 90) bands.cooling += 1; else bands.inactive += 1; }
     }
     return { bands, setupComplete, locationOn, analyticsOn, husbandryOn, productUpdatesOn };
   }, [users, now]);
