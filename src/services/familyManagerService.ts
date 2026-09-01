@@ -31,6 +31,10 @@ export async function getFamilyManagerData(uid: string): Promise<{ family: Famil
 }
 
 export async function setFamilyMemberAccessMode(ownerUid: string, memberUid: string, mode: FamilyAccessMode): Promise<void> {
+  const family = await getFamilyForUser(ownerUid);
+  if (!family || family.ownerUid !== ownerUid) throw new Error("Only the Family Head can change family permissions.");
+  if (memberUid === ownerUid) throw new Error("The Family Head always has Full Permission.");
+  if (!family.memberUids.includes(memberUid)) throw new Error("That account is not a member of your family.");
   const callable = httpsCallable<{ memberUid: string; mode: FamilyAccessMode }, { success: boolean }>(familyFunctions, "setFamilyMemberAccessModeSecure");
   await callable({ memberUid, mode });
 }
