@@ -1,89 +1,257 @@
-import { useEffect, useState } from "react";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { getPrivacyPreferences } from "../services/privacyService";
+import { getUserFeedback, getUserIssueReports } from "../services/creatorService";
+import { getUserKeeperObservations } from "../services/keeperObservationService";
+import { getUserSnakes } from "../services/snakeService";
+import { getPublicCommunityContributionFeed, type PublicContributionEntry } from "../services/communityIntelligenceService";
 import { useAuth } from "../context/useAuth";
+import type { PrivacyPreferences } from "../types/privacy";
+import type { Feedback } from "../types/feedback";
+import type { ReportIssue } from "../types/reportIssue";
+import type { KeeperObservation } from "../types/keeperObservation";
+import type { Snake } from "../types/Snake";
 import "../styles/contribution-pulse.css";
 
-type PublicSnapshot = {
-  available: boolean;
-  minimumContributors: number;
-  contributors?: number;
-  snakes?: number;
-  weightLogs?: number;
-  feedingLogs?: number;
-  shedLogs?: number;
-  totalRecords?: number;
-  generatedAt?: string;
+type ModalMode = "personal" | "global" | null;
+
+type PersonalContribution = {
+  id: string;
+  category: string;
+  title: string;
+  snippet: string;
+  status?: string;
+  link?: string;
 };
 
-type ContributionPulseProps = {
-  enabled: boolean;
-  snakeCount: number;
-  weightRecords: number;
-  feedingRecords: number;
-  shedRecords: number;
-};
+function safeCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
 
-export default function ContributionPulse({ enabled, snakeCount, weightRecords, feedingRecords, shedRecords }: ContributionPulseProps) {
+function normaliseStatus(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function contributionDate(value: unknown): number {
+  if (!value) return 0;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") {
+    return value.toMillis();
+  }
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatContributionDate(value: unknown): string {
+  const millis = contributionDate(value);
+  if (!millis) return "Date not recorded";
+  return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(millis);
+}
+
+export default function ContributionPulse() {
   const { user } = useAuth();
-  const [global, setGlobal] = useState<PublicSnapshot | null>(null);
-  const [loadingGlobal, setLoadingGlobal] = useState(true);
-  const [liveEnabled, setLiveEnabled] = useState(enabled);
+  const [observations, setObservations] = useState<KeeperObservation[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [bugs, setBugs] = useState<ReportIssue[]>([]);
+  const [snakes, setSnakes] = useState<Snake[]>([]);
+  const [privacy, setPrivacy] = useState<PrivacyPreferences | null>(null);
+  const [globalFeed, setGlobalFeed] = useState<PublicContributionEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<ModalMode>(null);
+
+  const load = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const [nextObservations, nextFeedback, nextBugs, nextPrivacy, nextSnakes, nextGlobal] = await Promise.all([
+      getUserKeeperObservations(user.uid).catch(() => [] as KeeperObservation[]),
+      getUserFeedback(user.uid).catch(() => [] as Feedback[]),
+      getUserIssueReports(user.uid).catch(() => [] as ReportIssue[]),
+      getPrivacyPreferences(user.uid).catch(() => null),
+      getUserSnakes(user.uid).catch(() => [] as Snake[]),
+      getPublicCommunityContributionFeed().catch(() => ({ entries: [] })),
+    ]);
+    setObservations(nextObservations);
+    setFeedback(nextFeedback);
+    setBugs(nextBugs);
+    setPrivacy(nextPrivacy);
+    setSnakes(nextSnakes);
+    setGlobalFeed(nextGlobal.entries ?? []);
+    setLoading(false);
+  }, [user]);
 
   useEffect(() => {
-    let active = true;
-    if (!user) {
-      setLoadingGlobal(false);
-      return () => { active = false; };
-    }
+    void load();
+    const refresh = () => { void load(); };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("community-contribution-changed", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("community-contribution-changed", refresh);
+    };
+  }, [load]);
 
-    setLiveEnabled(enabled);
-    void getPrivacyPreferences(user.uid)
-      .then((privacy) => { if (active) setLiveEnabled(privacy.communityHusbandryData === true); })
-      .catch(() => undefined);
+  const personalCounts = useMemo(() => {
+    const weights = snakes.reduce((total, snake) => total + safeCount(snake.weightHistory?.length), 0);
+    const feedings = snakes.reduce((total, snake) => total + safeCount(snake.feedingHistory?.length), 0);
+    const sheds = snakes.reduce((total, snake) => total + safeCount(snake.shedHistory?.length), 0);
+    return {
+      contributions: observations.length + feedback.length + bugs.length,
+      observations: observations.length,
+      feedback: feedback.length,
+      bugs: bugs.length,
+      intelligenceRecords: privacy?.communityHusbandryData === true ? weights + feedings + sheds : 0,
+      snakes: snakes.length,
+    };
+  }, [observations, feedback, bugs, snakes, privacy]);
 
-    const functions = getFunctions(undefined, "europe-west2");
-    const callable = httpsCallable<void, PublicSnapshot>(functions, "getPublicCommunityContributionSnapshot");
-    setLoadingGlobal(true);
-    void callable()
-      .then((result) => { if (active) setGlobal(result.data); })
-      .catch(() => { if (active) setGlobal(null); })
-      .finally(() => { if (active) setLoadingGlobal(false); });
+  const personalItems = useMemo<PersonalContribution[]>(() => {
+    const items: PersonalContribution[] = [];
+    observations.forEach((item) => {
+      const data = item as KeeperObservation & Record<string, unknown>;
+      items.push({
+        id: `observation-${String(item.id)}`,
+        category: "Behaviour Observatory",
+        title: String(data.title || data.behaviourName || data.observationTitle || data.primaryCategory || "Behaviour observation"),
+        snippet: String(data.description || data.observation || "Keeper-submitted observation."),
+        status: normaliseStatus(item.status),
+        link: "/behaviour-observatory",
+      });
+    });
+    feedback.forEach((item) => {
+      const data = item as Feedback & Record<string, unknown>;
+      items.push({
+        id: `feedback-${String(data.id || data.createdAt || items.length)}`,
+        category: "Feedback",
+        title: String(data.subject || data.title || "Feedback sent to Tiny Titans"),
+        snippet: String(data.message || data.description || "Feedback contribution."),
+        status: normaliseStatus(data.status),
+        link: "/feedback",
+      });
+    });
+    bugs.forEach((item) => {
+      const data = item as ReportIssue & Record<string, unknown>;
+      items.push({
+        id: `bug-${String(data.id || data.createdAt || items.length)}`,
+        category: "Bug report",
+        title: String(data.title || data.subject || "Bug report"),
+        snippet: String(data.description || data.details || "Issue reported to Tiny Titans."),
+        status: normaliseStatus(data.status),
+        link: "/my-issue-reports",
+      });
+    });
+    return items.slice(0, 80);
+  }, [observations, feedback, bugs]);
 
-    return () => { active = false; };
-  }, [user, enabled]);
+  const personalDisplayItems = personalItems.length
+    ? personalItems
+    : [
+        { id: "empty", category: "Community", title: "No contributions recorded yet", snippet: "Your future observations, feedback and community contributions will appear here." },
+      ];
 
-  const personalRecords = weightRecords + feedingRecords + shedRecords;
+  function closeModal() {
+    setModal(null);
+  }
 
-  return <section className="contribution-pulse" aria-label="Tiny Titans contribution tracker">
-    <div className="contribution-pulse-heading">
-      <div>
-        <span>🌍 TINY TITANS CONTRIBUTION PULSE</span>
-        <strong>{liveEnabled ? "You're contributing" : "Your contribution is off"}</strong>
-      </div>
-      <a href="/account/intelligence">View contribution →</a>
-    </div>
+  return (
+    <>
+      <section className="contribution-pulse" aria-label="Tiny Titans contribution tracker">
+        <div className="contribution-pulse-heading">
+          <div>
+            <span>🌍 TINY TITANS CONTRIBUTION PULSE</span>
+            <strong>{loading ? "Loading contribution activity…" : "See the community growing"}</strong>
+          </div>
+          <Link to="/make-contribution">＋ Make a Contribution</Link>
+        </div>
 
-    <div className="contribution-pulse-grid">
-      <article className={`contribution-pulse-card ${liveEnabled ? "is-active" : "is-muted"}`}>
-        <small>YOUR CONTRIBUTION</small>
-        <strong>{liveEnabled ? personalRecords : "—"}</strong>
-        <span>{liveEnabled ? "eligible weight, feeding & shed records" : "enable Intelligence to contribute eligible records"}</span>
-        <div className="contribution-pulse-mini"><b>{snakeCount}</b> {snakeCount === 1 ? "snake" : "snakes"} tracked</div>
-      </article>
+        <div className="contribution-pulse-grid">
+          <button
+            type="button"
+            className={`contribution-pulse-card contribution-pulse-card--button ${personalCounts.contributions || personalCounts.intelligenceRecords ? "is-active" : "is-muted"}`}
+            onClick={() => setModal("personal")}
+          >
+            <small>YOUR CONTRIBUTION</small>
+            <strong>{loading ? "…" : personalCounts.contributions + personalCounts.intelligenceRecords}</strong>
+            <span>eligible contributions and Intelligence records</span>
+            <div className="contribution-pulse-mini"><b>{personalCounts.snakes}</b> {personalCounts.snakes === 1 ? "snake" : "snakes"} tracked · Click to view yours →</div>
+          </button>
 
-      <article className="contribution-pulse-card global-card">
-        <small>GLOBAL COMMUNITY</small>
-        {loadingGlobal ? <strong className="is-loading">…</strong> : global?.available ? <>
-          <strong>{global.totalRecords ?? 0}</strong>
-          <span>eligible records contributing to Tiny Titans</span>
-          <div className="contribution-pulse-mini"><b>{global.contributors ?? 0}</b> contributing keepers · <b>{global.snakes ?? 0}</b> snakes</div>
-        </> : <>
-          <strong>Building</strong>
-          <span>The global tracker activates once enough contributing keepers are represented to protect privacy.</span>
-          <div className="contribution-pulse-mini">🔒 Minimum cohort: {global?.minimumContributors ?? 5} contributing keepers</div>
-        </>}
-      </article>
-    </div>
-  </section>;
+          <button
+            type="button"
+            className="contribution-pulse-card contribution-pulse-card--button global-card"
+            onClick={() => setModal("global")}
+          >
+            <small>GLOBAL COMMUNITY</small>
+            <strong>{loading ? "…" : globalFeed.length || "—"}</strong>
+            <span>recent public community contributions</span>
+            <div className="contribution-pulse-mini">Click to explore keeper contributions →</div>
+          </button>
+        </div>
+      </section>
+
+      {modal && (
+        <div className="contribution-pulse-modal-backdrop" role="presentation" onMouseDown={closeModal}>
+          <section
+            className="contribution-pulse-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contribution-pulse-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="contribution-pulse-modal-head">
+              <div>
+                <span>{modal === "personal" ? "YOUR CONTRIBUTIONS" : "GLOBAL TINY TITANS"}</span>
+                <h2 id="contribution-pulse-modal-title">
+                  {modal === "personal" ? "Your contribution history" : "What the community is contributing"}
+                </h2>
+              </div>
+              <button type="button" onClick={closeModal} aria-label="Close contribution details">×</button>
+            </div>
+
+            {modal === "personal" ? (
+              <div className="contribution-pulse-list">
+                {personalDisplayItems.map((item) => (
+                  <article key={item.id} className="contribution-pulse-list-item">
+                    <div>
+                      <span>{item.category}</span>
+                      <h3>{item.title}</h3>
+                      <p>{item.snippet.slice(0, 220)}{item.snippet.length > 220 ? "…" : ""}</p>
+                      {item.status && <small>Status: {item.status}</small>}
+                    </div>
+                    {item.link && <Link to={item.link} onClick={closeModal}>Open →</Link>}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="contribution-pulse-list">
+                {globalFeed.length ? globalFeed.map((item) => (
+                  <article key={`${item.source}-${item.id}`} className="contribution-pulse-list-item">
+                    <div>
+                      <span>{item.contributor}</span>
+                      <h3>{item.category} · {item.title}</h3>
+                      <p>{item.snippet}</p>
+                      <small>{item.source} · {formatContributionDate(item.createdAt)}</small>
+                    </div>
+                  </article>
+                )) : (
+                  <div className="contribution-pulse-empty">
+                    <strong>🌱 The public contribution feed is quiet right now.</strong>
+                    <p>Once keepers make approved, publicly attributable contributions, they'll appear here. Anonymous contributions remain anonymous.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="contribution-pulse-modal-foot">
+              <Link to={modal === "personal" ? "/account/contributions" : "/community"} onClick={closeModal}>
+                {modal === "personal" ? "Open My Contributions →" : "Explore Community →"}
+              </Link>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
+  );
 }
