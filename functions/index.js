@@ -13,6 +13,7 @@ const adminAuth = getAuth();
 Object.assign(exports, require("./creatorApproval"));
 Object.assign(exports, require("./communityIntelligence"));
 Object.assign(exports, require("./publicContributions"));
+Object.assign(exports, require("./familyJoinCodes"));
 Object.assign(exports, require("./communityBenchmarks"));
 Object.assign(exports, require("./titanGoals"));
 const creatorTesterInvitation = require("./creatorTesterInvitation");
@@ -21,9 +22,6 @@ Object.assign(exports, {
   acceptCreatorTesterInvitation: creatorTesterInvitation.acceptCreatorTesterInvitation,
   declineCreatorTesterInvitation: creatorTesterInvitation.declineCreatorTesterInvitation,
 });
-
-// Notification delivery is intentionally explicit here so the scheduler and
-// callable endpoints are actually deployed as Firebase Cloud Functions.
 Object.assign(exports, require("./notificationTest"));
 const familyNotifications = require("./familyNotifications");
 exports.sendAllKeeperReminderNotifications = familyNotifications.sendAllKeeperReminderNotifications;
@@ -39,16 +37,8 @@ const PRICE_TIERS = Object.freeze({
   legendary: { priceId: "price_1U4EDx3zyS86a3ryxlW1Scz8", amount: 40, label: "Legendary Titan" },
   broken: { priceId: "price_1U4EEf3zyS86a3ryLupeschV", amount: 100, label: "You Just Broke Me" },
 });
-const ALLOWED_ORIGINS = new Set([
-  "https://tinytitans-hoggy-companion.web.app",
-  "https://tinytitans-hoggy-companion.firebaseapp.com",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-]);
-function getAllowedOrigin(request) {
-  const origin = request.rawRequest?.headers?.origin || "";
-  return ALLOWED_ORIGINS.has(origin) ? origin : "https://tinytitans-hoggy-companion.web.app";
-}
+const ALLOWED_ORIGINS = new Set(["https://tinytitans-hoggy-companion.web.app", "https://tinytitans-hoggy-companion.firebaseapp.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
+function getAllowedOrigin(request) { const origin = request.rawRequest?.headers?.origin || ""; return ALLOWED_ORIGINS.has(origin) ? origin : "https://tinytitans-hoggy-companion.web.app"; }
 
 exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
@@ -118,16 +108,7 @@ exports.createTitanCheckout = onCall({ region: "europe-west2", secrets: [STRIPE_
   try {
     const stripe = new Stripe(STRIPE_SECRET_KEY.value());
     const origin = getAllowedOrigin(request);
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: [{ price: tier.priceId, quantity: 1 }],
-      customer_email: request.auth.token.email || undefined,
-      client_reference_id: request.auth.uid,
-      metadata: { uid: request.auth.uid, tier: tierKey, label: tier.label, amount_gbp: String(tier.amount) },
-      success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/become-a-titan?payment=cancelled`,
-      billing_address_collection: "auto",
-    });
+    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [{ price: tier.priceId, quantity: 1 }], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label: tier.label, amount_gbp: String(tier.amount) }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto" });
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");
     return { url: session.url };
   } catch (error) {
@@ -167,10 +148,7 @@ exports.queueFamilyInvitationEmail = onDocumentCreated({ region: "europe-west2",
   const targetEmail = String(invite.targetEmail || "").trim().toLowerCase();
   const familyId = String(invite.familyId || "").trim();
   const inviteId = String(event.params.inviteId || "").trim();
-  if (!targetEmail || !familyId || !inviteId) {
-    console.warn("Family invitation email skipped: incomplete invitation", { inviteId, familyId, targetEmail: Boolean(targetEmail) });
-    return;
-  }
+  if (!targetEmail || !familyId || !inviteId) return;
   const ownerUid = String(invite.ownerUid || "").trim();
   const ownerSnapshot = ownerUid ? await db.collection("users").doc(ownerUid).get() : null;
   const owner = ownerSnapshot?.data() || {};
