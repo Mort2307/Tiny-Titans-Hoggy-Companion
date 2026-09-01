@@ -24,7 +24,7 @@ function Navigation() {
     { label: "Care", links: [["/husbandry", "✦", "Husbandry & Care"], ["/weights", "⚖️", "Weight Records"], ["/feeding", "🍽️", "Feeding Tracker"], ["/shedding", "🐍", "Shed Intelligence"], ["/behaviour", "◉", "Behaviour Journal"], ["/health", "+", "Health & Vet"], ["/enclosure-intelligence", "⌘", "Enclosure Intelligence"]] },
     { label: "Genetics & Breeding", links: [["/morph-library", "🧬", "Morph Library"], ["/calculator", "∑", "Genetics Calculator"], ["/breeding", "🥚", "Breeding Planner"], ["/breeding/academy", "▣", "Breeding Academy"]] },
     { label: "Learn & Community", links: [["/keeper-handbook", "📖", "Keeper Behaviour Handbook"], ["/behaviour-observatory", "🔭", "Behaviour Observatory"], ["/make-contribution", "＋", "Make a Contribution"], ["/knowledge-base", "▤", "Knowledge Base"], ["/challenge", "◆", "Titans Challenge"], ["/community", "◌", "Community Hub"], ["/community/mentorship", "↔", "Mentorship"], ["/community/wall-of-titans", "★", "Wall of Titans"]] },
-    { label: "Account", links: [["/account", "●", "My Account"], ["/account/family", "👨‍👩‍👧", "My Family"], ["/account/family/join", "🔐", "Family Join Code"], ["/become-a-titan", "✦", "Become a Titan"]] },
+    { label: "Account", links: [["/account", "●", "My Account"], ["/account/family", "👨‍👩‍👧", "My Family"], ["/become-a-titan", "✦", "Become a Titan"]] },
   ];
   const restricted: NavigationSection[] = [];
   if (educatorAuthorized) restricted.push({ label: "Educator", links: [["/educator", "▣", "Educator Centre"]] });
