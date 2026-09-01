@@ -15,6 +15,7 @@ Object.assign(exports, require("./communityIntelligence"));
 Object.assign(exports, require("./publicContributions"));
 Object.assign(exports, require("./familyJoinCodes"));
 Object.assign(exports, require("./familyManager"));
+Object.assign(exports, require("./familyManagerResolve"));
 Object.assign(exports, require("./communityBenchmarks"));
 Object.assign(exports, require("./titanGoals"));
 const creatorTesterInvitation = require("./creatorTesterInvitation");
