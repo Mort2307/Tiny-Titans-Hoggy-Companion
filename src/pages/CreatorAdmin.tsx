@@ -7,6 +7,7 @@ import { getCreatorFeedback, getCreatorReports, getGlobalStats, getMorphImageSub
 import { getCanonicalReportIssueStatus, isActiveReportIssueStatus } from "../services/reportLifecycle";
 import CreatorCommunityGlobe from "../components/CreatorCommunityGlobeV2";
 import CreatorCommunityIntelligence from "../components/CreatorCommunityIntelligence";
+import CreatorMorphLibraryEditor from "../components/CreatorMorphLibraryEditor";
 import { app, db } from "../firebase/config";
 import PageBackButton from "../components/PageBackButton";
 import "../styles/CreatorTools.css";
@@ -85,7 +86,7 @@ export default function CreatorAdmin() {
   const [loading, setLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(false);
   const [error, setError] = useState("");
-  const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | null>(null);
+  const [panel, setPanel] = useState<"users" | "snakes" | "trackers" | "morph-editor" | null>(null);
   const [selectedUser, setSelectedUser] = useState<CreatorUser | null>(null);
   const [search, setSearch] = useState("");
   const [claimBusy, setClaimBusy] = useState(false);
@@ -201,6 +202,7 @@ export default function CreatorAdmin() {
       <section className="creator-admin-section">
         <div className="creator-section-heading"><div><span className="creator-admin-kicker">CREATOR OPERATIONS</span><h2>🧰 Tools & queues</h2><p>Everything you need to run, review and improve Tiny Titans without hunting through tiny links.</p></div></div>
         <div className="creator-global-grid creator-tools-grid">
+          <button type="button" className="creator-global-card creator-feature-tile" onClick={() => setPanel("morph-editor")}><span>🖼️</span><strong>Morph Library Editor</strong><label>Approved image maintenance</label><small>Search a morph, crop images, swap incorrect assignments, move images and edit contributor credit.</small><span className="creator-feature-tile-cta">Open Morph Library Editor →</span></button>
           <Link className="creator-global-card creator-feature-tile" to="/creator/submissions"><span>🧬</span><strong>{morphPending} Morph Submissions</strong><label>Submission Review</label><small>Inspect uploaded photographs, proof and genetics notes before approval.</small><span className="creator-feature-tile-cta">Open Submission Review →</span></Link>
           <Link className="creator-global-card creator-feature-tile" to="/creator/issues"><span>🐛</span><strong>{bugPending} Bug Reports</strong><label>Bug Report Review</label><small>Review community bugs, severity, reproduction information, attachments, platform and app version.</small><span className="creator-feature-tile-cta">Open Bug Reports →</span></Link>
           <Link className="creator-global-card creator-feature-tile" to="/creator/issues"><span>💬</span><strong>{feedbackNew} Feedback</strong><label>Feedback Review</label><small>Review ideas, suggestions, usability feedback and creator decisions in a dedicated queue.</small><span className="creator-feature-tile-cta">Open Feedback →</span></Link>
@@ -214,6 +216,8 @@ export default function CreatorAdmin() {
         <div className="creator-actions"><button className="secondary-button" type="button" onClick={() => setPanel("users")}>👥 Browse Users</button><button className="secondary-button" type="button" onClick={() => setPanel("trackers")}>📈 Tracker Analytics</button><button className="secondary-button" type="button" onClick={() => setPanel("snakes")}>🐍 Snake Overview</button></div>
       </section>
     </>}
+
+    {panel === "morph-editor" && <section className="creator-admin-section" id="creator-morph-library-editor"><div className="creator-section-heading"><div><span className="creator-admin-kicker">SPECIALIST TOOL</span><h2>🖼️ Morph Library Editor</h2><p>Maintain approved community imagery without changing the canonical genetics database.</p></div><button type="button" onClick={() => setPanel(null)}>✕ Close editor</button></div><CreatorMorphLibraryEditor /></section>}
 
     {panel === "users" && <section className="creator-admin-section">
       <div className="creator-section-heading"><div><span className="creator-admin-kicker">GLOBAL USER OVERVIEW</span><h2>👥 Users</h2><p>Tap an account to see creator-safe usage, permissions and engagement signals. Private contact details and private tracker records are intentionally excluded.</p></div><button type="button" onClick={() => void loadUsers()} disabled={usersLoading}>{usersLoading ? "Loading…" : "↻ Refresh users"}</button></div>
