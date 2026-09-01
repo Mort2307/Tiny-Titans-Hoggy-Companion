@@ -105,7 +105,7 @@ exports.getCommunityIntelligenceSnapshot = onCall({ region: "europe-west2", memo
     }
   }
 
-  // Small cohorts are deliberately withheld to reduce re-identification risk.
+  // Small cohorts are deliberately withheld for analytical community intelligence.
   if (contributors < MIN_CONTRIBUTORS) {
     return {
       available: false,
@@ -139,3 +139,10 @@ exports.getCommunityIntelligenceSnapshot = onCall({ region: "europe-west2", memo
     generatedAt: new Date().toISOString(),
   };
 });
+
+// Keep the protected analytical snapshot above separate from the public
+// contribution feed. These exports are re-exposed by functions/index.js via
+// the existing communityIntelligence module export wiring.
+const publicContributions = require("./publicContributions");
+exports.getPublicCommunityContributionSnapshotV2 = publicContributions.getPublicCommunityContributionSnapshotV2;
+exports.getPublicCommunityContributionFeedV2 = publicContributions.getPublicCommunityContributionFeedV2;
