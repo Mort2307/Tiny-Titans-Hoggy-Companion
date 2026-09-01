@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import CreatorMorphCorrections from "../components/CreatorMorphCorrections";
-import CreatorMorphLibraryEditor from "../components/CreatorMorphLibraryEditor";
 import { getCreatorReports } from "../services/creatorService";
 import { isActiveReportIssueStatus } from "../services/reportLifecycle";
 import type { ReportIssue } from "../types/reportIssue";
 
 const tools = [
   ["🧬", "Morph Submission Review", "/creator/submissions", "Review and moderate morph submissions."],
+  ["🖼️", "Morph Library Editor", "/creator/morph-library", "Repair approved morph images, swap image assignments, crop, move, edit credits and remove incorrect imagery."],
   ["🐍", "Keeper Observation Review", "/creator/observations", "Review behaviour footage, context and educational-use consent before public inclusion."],
   ["📢", "Community Manager", "/creator/community", "Publish updates, known issues, tester notices and releases."],
   ["🛡️", "Creator Privacy Data", "/creator/privacy-data", "Review consent-controlled creator data and privacy tools."],
@@ -71,7 +71,6 @@ export default function CreatorLanding() {
         <section className="dashboard-grid creator-tool-grid" aria-label="Creator tools">{tools.map(([icon, title, to, description]) => <article className="dashboard-card creator-tool-card" key={to}><div className="dashboard-card-icon" aria-hidden="true">{icon}</div><p className="creator-tool-kicker">CREATOR TOOL</p><h2>{title}</h2><p>{description}</p><Link className="primary-button" to={to}>Open tool →</Link></article>)}</section>
       </section>
       <CreatorMorphCorrections />
-      <CreatorMorphLibraryEditor />
       <section className="creator-landing-footer-card"><div><span aria-hidden="true">⚡</span><div><strong>Creator Centre is the control room.</strong><p>Use the command cards for daily work; use the specialist tools when you need deeper diagnostics or administration.</p></div></div><Link className="secondary-button" to="/creator/issues?filter=archived">View archived reports</Link></section>
     </main>
   );
