@@ -46,6 +46,7 @@ async function assertCreator(uid) {
 function creditMethods(item) {
   if (Array.isArray(item?.contributorCreditMethods)) return item.contributorCreditMethods;
   if (item?.contributorCreditMethod) return [item.contributorCreditMethod];
+  if (item?.creditType) return [item.creditType];
   return [];
 }
 
@@ -59,11 +60,11 @@ function publicAttribution(item, fallbackName = "Anonymous keeper") {
     if (profileName) parts.push(profileName);
   }
   if (methods.includes("name")) {
-    const name = String(item?.contributorCreditName || "").trim();
+    const name = String(item?.contributorCreditName || item?.creditName || "").trim();
     if (name) parts.push(name);
   }
   if (methods.includes("social")) {
-    const social = String(item?.contributorCreditSocial || "").trim();
+    const social = String(item?.contributorCreditSocial || item?.creditSocial || "").trim();
     if (social) parts.push(social);
   }
   return parts.length ? parts.join(" · ") : fallbackName;
@@ -244,6 +245,22 @@ async function calculatePublicContributionFeed() {
       contributor: publicAttribution(item),
       createdAt: isoDate(item.createdAt || item.submittedAt || item.updatedAt),
       source: "Behaviour Observatory",
+    });
+  }
+
+  const morphSnapshot = await db.collection("morphImageSubmissions").where("status", "==", "Approved").limit(100).get();
+  for (const doc of morphSnapshot.docs) {
+    const item = doc.data() || {};
+    const morphName = String(item.morphName || item.morphId || "Morph evidence").trim();
+    const description = String(item.description || item.proofDetails || "Keeper-submitted Morph Library evidence.").trim().slice(0, 180);
+    feed.push({
+      id: doc.id,
+      category: "Morph Library",
+      title: morphName,
+      snippet: description,
+      contributor: publicAttribution(item),
+      createdAt: isoDate(item.approvedAt || item.reviewedAt || item.submittedAt),
+      source: "Morph Library",
     });
   }
 
