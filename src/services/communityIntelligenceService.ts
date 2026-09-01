@@ -30,6 +30,7 @@ export type PublicContributionSnapshot = {
   intelligenceWeightRecords?: number;
   intelligenceFeedingRecords?: number;
   intelligenceShedRecords?: number;
+  intelligenceHealthRecords?: number;
   intelligenceContributingKeepers?: number;
   generatedAt: string;
 };
