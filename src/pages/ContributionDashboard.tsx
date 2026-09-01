@@ -8,13 +8,14 @@ import { getUserSnakes } from "../services/snakeService";
 import { getUserFeedback, getUserIssueReports, type FounderApplication } from "../services/creatorService";
 import { getUserKeeperObservations } from "../services/keeperObservationService";
 import { getUserMorphSubmissions } from "../services/morphUserSubmissionService";
-import { getPublicCommunityContributionSnapshot, type PublicContributionSnapshot } from "../services/communityIntelligenceService";
+import { getPublicCommunityContributionFeed, getPublicCommunityContributionSnapshot, type PublicContributionEntry, type PublicContributionSnapshot } from "../services/communityIntelligenceService";
 import type { Snake } from "../types/Snake";
 import type { PrivacyPreferences } from "../types/privacy";
 import type { Feedback } from "../types/feedback";
 import type { ReportIssue } from "../types/reportIssue";
 import type { KeeperObservation } from "../types/keeperObservation";
 import type { MorphImageSubmission, UserMorphSubmission } from "../types/morphSubmission";
+import "../styles/contribution-dashboard.css";
 
 const EMPTY: PrivacyPreferences = {
   consentVersion: "",
@@ -24,17 +25,54 @@ const EMPTY: PrivacyPreferences = {
   productUpdates: false,
 };
 
-type ContributionCard = {
+type PersonalEvent = {
+  id: string;
+  icon: string;
+  category: string;
+  title: string;
+  detail: string;
+  status?: string;
+  date?: unknown;
+  link?: string;
+};
+
+type Category = {
   icon: string;
   title: string;
+  description: string;
   count: number;
-  subtitle: string;
-  detail: string;
-  to?: string;
+  submitted?: number;
+  approved?: number;
+  open?: number;
+  link?: string;
 };
 
 function safeNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function statusOf(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "Recorded";
+}
+
+function dateMillis(value: unknown): number {
+  if (!value) return 0;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") {
+    return value.toMillis();
+  }
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatDate(value: unknown): string {
+  const millis = dateMillis(value);
+  if (!millis) return "Date not recorded";
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(millis);
+}
+
+function isApproved(value: unknown): boolean {
+  return ["approved", "accepted", "published", "complete", "completed"].includes(String(value ?? "").trim().toLowerCase());
 }
 
 async function getUserMorphImageSubmissions(uid: string): Promise<MorphImageSubmission[]> {
@@ -49,22 +87,6 @@ async function getUserFounderApplications(uid: string): Promise<FounderApplicati
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<FounderApplication, "id">) }));
 }
 
-function ContributionCardView({ item }: { item: ContributionCard }) {
-  const body = (
-    <article className="personalisation-card" style={{ height: "100%", boxSizing: "border-box" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-        <span style={{ fontSize: "1.8rem" }} aria-hidden="true">{item.icon}</span>
-        <strong style={{ fontSize: "2rem", lineHeight: 1 }}>{item.count}</strong>
-      </div>
-      <h3 style={{ margin: "10px 0 5px" }}>{item.title}</h3>
-      <p style={{ margin: 0, opacity: .8, fontWeight: 700 }}>{item.subtitle}</p>
-      <p style={{ marginBottom: item.to ? "12px" : 0, opacity: .68, lineHeight: 1.5 }}>{item.detail}</p>
-      {item.to && <span style={{ color: "var(--tt-accent)", fontWeight: 900 }}>Open contribution →</span>}
-    </article>
-  );
-  return item.to ? <Link to={item.to} style={{ color: "inherit", textDecoration: "none" }}>{body}</Link> : body;
-}
-
 export default function ContributionDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -77,6 +99,7 @@ export default function ContributionDashboard() {
   const [morphImageSubmissions, setMorphImageSubmissions] = useState<MorphImageSubmission[]>([]);
   const [founderApplications, setFounderApplications] = useState<FounderApplication[]>([]);
   const [globalSnapshot, setGlobalSnapshot] = useState<PublicContributionSnapshot | null>(null);
+  const [globalFeed, setGlobalFeed] = useState<PublicContributionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -88,7 +111,6 @@ export default function ContributionDashboard() {
       setLoading(false);
       return () => { active = false; };
     }
-
     setLoading(true);
     void Promise.all([
       getPrivacyPreferences(user.uid).catch(() => EMPTY),
@@ -100,7 +122,8 @@ export default function ContributionDashboard() {
       getUserMorphImageSubmissions(user.uid).catch(() => [] as MorphImageSubmission[]),
       getUserFounderApplications(user.uid).catch(() => [] as FounderApplication[]),
       getPublicCommunityContributionSnapshot().catch(() => null),
-    ]).then(([privacy, loadedSnakes, loadedFeedback, loadedIssues, loadedObservations, loadedMorphSubmissions, loadedMorphImages, loadedFounders, snapshot]) => {
+      getPublicCommunityContributionFeed().catch(() => ({ entries: [] as PublicContributionEntry[] })),
+    ]).then(([privacy, loadedSnakes, loadedFeedback, loadedIssues, loadedObservations, loadedMorphSubmissions, loadedMorphImages, loadedFounders, snapshot, feed]) => {
       if (!active) return;
       setPreferences(privacy);
       setSnakes(loadedSnakes);
@@ -111,12 +134,12 @@ export default function ContributionDashboard() {
       setMorphImageSubmissions(loadedMorphImages);
       setFounderApplications(loadedFounders);
       setGlobalSnapshot(snapshot);
+      setGlobalFeed(feed.entries ?? []);
     }).catch((loadError) => {
       if (active) setError(loadError instanceof Error ? loadError.message : "Contribution data could not be loaded.");
     }).finally(() => {
       if (active) setLoading(false);
     });
-
     return () => { active = false; };
   }, [user]);
 
@@ -125,70 +148,75 @@ export default function ContributionDashboard() {
     const feedings = snakes.reduce((total, snake) => total + (snake.feedingHistory?.length ?? 0), 0);
     const sheds = snakes.reduce((total, snake) => total + (snake.shedHistory?.length ?? 0), 0);
     const health = snakes.reduce((total, snake) => total + (snake.healthHistory?.length ?? 0), 0);
-    const morphLibrary = morphSubmissions.length + morphImageSubmissions.length;
-    const communityContributions = observations.length + morphLibrary + feedback.length + issues.length + founderApplications.length;
-    const contributablePersonalRecords = weights + feedings + sheds + health;
-    const intelligenceRecords = preferences.communityHusbandryData ? contributablePersonalRecords : 0;
-
+    const morphNames = morphSubmissions.length;
+    const morphImages = morphImageSubmissions.length;
+    const publicCommunity = observations.filter((item) => isApproved(item.status)).length + morphImages + morphNames;
+    const productImprovements = feedback.length + issues.length;
+    const trackerRecords = weights + feedings + sheds + health;
+    const intelligenceRecords = preferences.communityHusbandryData ? trackerRecords : 0;
+    const submittedContributions = observations.length + morphNames + morphImages + feedback.length + issues.length + founderApplications.length;
     return {
       snakes: snakes.length,
       weights,
       feedings,
       sheds,
       health,
-      morphLibrary,
+      morphNames,
+      morphImages,
+      morphLibrary: morphNames + morphImages,
       observations: observations.length,
+      approvedObservations: observations.filter((item) => isApproved(item.status)).length,
       feedback: feedback.length,
       issues: issues.length,
       founders: founderApplications.length,
-      communityContributions,
-      contributablePersonalRecords,
+      publicCommunity,
+      productImprovements,
+      trackerRecords,
       intelligenceRecords,
+      submittedContributions,
     };
-  }, [snakes, morphSubmissions, morphImageSubmissions, observations, feedback, issues, founderApplications, preferences.communityHusbandryData]);
+  }, [snakes, observations, morphSubmissions, morphImageSubmissions, feedback, issues, founderApplications, preferences.communityHusbandryData]);
 
-  const contributionCards = useMemo<ContributionCard[]>(() => [
-    {
-      icon: "🧬",
-      title: "Morph Library",
-      count: counts.morphLibrary,
-      subtitle: "Your contributions",
-      detail: "Morph terminology/name submissions and morph image submissions are counted together here.",
-      to: "/morph-library",
-    },
-    {
-      icon: "🔭",
-      title: "Behaviour Observatory",
-      count: counts.observations,
-      subtitle: "Your contributions",
-      detail: "Keeper observations submitted for review and community learning.",
-      to: "/behaviour-observatory?submit=1",
-    },
-    {
-      icon: "💬",
-      title: "Feedback",
-      count: counts.feedback,
-      subtitle: "Your contributions",
-      detail: "Ideas, suggestions and feedback you've sent to Tiny Titans.",
-      to: "/feedback",
-    },
-    {
-      icon: "🐛",
-      title: "Bug Reports",
-      count: counts.issues,
-      subtitle: "Your contributions",
-      detail: "Problems you've reported that help us improve the app.",
-      to: "/report-bug",
-    },
-    {
-      icon: "🏆",
-      title: "Founder Applications",
-      count: counts.founders,
-      subtitle: "Your contributions",
-      detail: "Founder/support applications are included when your account has one recorded.",
-      to: "/founder",
-    },
-  ], [counts]);
+  const events = useMemo<PersonalEvent[]>(() => {
+    const items: PersonalEvent[] = [];
+    observations.forEach((item) => {
+      const data = item as KeeperObservation & Record<string, unknown>;
+      items.push({ id: `obs-${String(item.id)}`, icon: "🔭", category: "Behaviour Observatory", title: String(data.title || data.behaviourName || data.observationTitle || data.primaryCategory || "Behaviour observation"), detail: String(data.description || data.observation || "Keeper observation submitted to Tiny Titans."), status: statusOf(item.status), date: data.createdAt || data.submittedAt || data.updatedAt, link: "/behaviour-observatory" });
+    });
+    morphSubmissions.forEach((item) => {
+      const data = item as UserMorphSubmission & Record<string, unknown>;
+      items.push({ id: `morph-${item.id}`, icon: "🧬", category: "Morph terminology", title: String(item.submittedName || "Morph terminology submission"), detail: String(item.description || "Morph Library contribution submitted for review."), status: statusOf(item.status), date: item.createdAt, link: "/morph-library" });
+    });
+    morphImageSubmissions.forEach((item) => {
+      const data = item as MorphImageSubmission & Record<string, unknown>;
+      items.push({ id: `morph-image-${item.id}`, icon: "🖼️", category: "Morph image", title: String(data.morphName || data.morphId || "Morph image submission"), detail: String(data.description || "Community reference image submitted to the Morph Library."), status: statusOf(data.status), date: data.createdAt || data.submittedAt || data.approvedAt, link: "/morph-library" });
+    });
+    feedback.forEach((item) => {
+      const data = item as Feedback & Record<string, unknown>;
+      items.push({ id: `feedback-${String(data.id || items.length)}`, icon: "💡", category: "Feedback", title: String(data.subject || data.title || "Feedback to Tiny Titans"), detail: String(data.message || data.description || "Product feedback contribution."), status: statusOf(data.status), date: data.createdAt || data.updatedAt, link: "/feedback" });
+    });
+    issues.forEach((item) => {
+      const data = item as ReportIssue & Record<string, unknown>;
+      items.push({ id: `bug-${String(data.id || items.length)}`, icon: "🐛", category: "Bug report", title: String(data.title || data.subject || "Bug report"), detail: String(data.description || data.details || "Bug report helping Tiny Titans improve."), status: statusOf(data.status), date: data.createdAt || data.updatedAt, link: "/my-issue-reports" });
+    });
+    founderApplications.forEach((item) => {
+      const data = item as FounderApplication & Record<string, unknown>;
+      items.push({ id: `founder-${String(data.id || items.length)}`, icon: "🏆", category: "Founder", title: "Founder application", detail: "Your Founder/support contribution to Tiny Titans.", status: statusOf(data.status), date: data.createdAt || data.submittedAt, link: "/founder" });
+    });
+    if (counts.intelligenceRecords > 0) {
+      items.push({ id: "intelligence", icon: "🧠", category: "Community Intelligence", title: `${counts.intelligenceRecords} private tracker records contributing`, detail: `${counts.weights} weight, ${counts.feedings} feeding, ${counts.sheds} shed and ${counts.health} health records are eligible for anonymised aggregate analysis because you enabled optional husbandry contribution.`, status: "Enabled by you", link: "/account/data-privacy" });
+    }
+    return items.sort((a, b) => dateMillis(b.date) - dateMillis(a.date));
+  }, [observations, morphSubmissions, morphImageSubmissions, feedback, issues, founderApplications, counts]);
+
+  const categories = useMemo<Category[]>(() => [
+    { icon: "🧬", title: "Morph Library", count: counts.morphLibrary, submitted: counts.morphLibrary, approved: morphSubmissions.filter((item) => isApproved(item.status)).length + morphImageSubmissions.filter((item) => isApproved(item.status)).length, description: "Morph names, terminology, evidence and approved reference images.", link: "/morph-library" },
+    { icon: "🔭", title: "Behaviour Observatory", count: counts.observations, submitted: counts.observations, approved: counts.approvedObservations, description: "Real-world behaviour observations shared for learning and pattern recognition.", link: "/behaviour-observatory" },
+    { icon: "💡", title: "Feedback & Ideas", count: counts.feedback, submitted: counts.feedback, open: feedback.filter((item) => !isApproved((item as Feedback & Record<string, unknown>).status)).length, description: "Ideas and product feedback that help shape Tiny Titans." , link: "/feedback" },
+    { icon: "🐛", title: "Bug Reports", count: counts.issues, submitted: counts.issues, open: issues.filter((item) => !isApproved((item as ReportIssue & Record<string, unknown>).status)).length, description: "Problems, diagnostics and reproducible reports that improve reliability.", link: "/my-issue-reports" },
+    { icon: "🏆", title: "Founder / Support", count: counts.founders, submitted: counts.founders, description: "Founder applications and support activity associated with your account.", link: "/founder" },
+    { icon: "🐍", title: "Keeper Records", count: counts.trackerRecords, description: "Private weight, feeding, shed and health history — tracked separately from public contributions.", link: "/snakes" },
+  ], [counts, morphSubmissions, morphImageSubmissions, feedback, issues]);
 
   async function toggleContribution() {
     if (!user || saving) return;
@@ -206,9 +234,7 @@ export default function ContributionDashboard() {
         ...(preferences.country ? { country: preferences.country } : {}),
       });
       setPreferences(await getPrivacyPreferences(user.uid));
-      setMessage(next
-        ? "Intelligence contribution is now active. Your eligible personal records may be used in anonymised aggregate analysis."
-        : "Intelligence contribution is now off. Your personal records remain in your account and are not newly contributed to the intelligence layer.");
+      setMessage(next ? "Optional Intelligence contribution is active." : "Optional Intelligence contribution is now off.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Your contribution choice could not be saved.");
     } finally {
@@ -217,72 +243,86 @@ export default function ContributionDashboard() {
   }
 
   if (loading) {
-    return <main className="page-container"><section className="personalisation-shell"><p className="personalisation-eyebrow">Tiny Titans Community</p><h1>🌍 Contribution Dashboard</h1><div className="personalisation-card"><p>Loading your contribution activity…</p></div></section></main>;
+    return <main className="page-container contribution-dashboard-page"><div className="contribution-dashboard-loading">Loading your contribution centre…</div></main>;
   }
-
   if (!user) return null;
 
-  return <main className="page-container"><section className="personalisation-shell">
+  const publicRecords = safeNumber(globalSnapshot?.publicCommunityRecords);
+  const intelligenceRecords = safeNumber(globalSnapshot?.intelligenceContributions);
+  const totalGlobal = safeNumber(globalSnapshot?.totalRecords);
+  const globalKeepers = safeNumber(globalSnapshot?.contributors);
+
+  return <main className="page-container contribution-dashboard-page">
     <button className="personalisation-back" type="button" onClick={() => navigate(-1)}>← Back</button>
-    <p className="personalisation-eyebrow">Tiny Titans Community</p>
-    <h1>🌍 Your Contribution</h1>
-    <p>One place for everything you contribute to Tiny Titans — from Morph Library evidence and behaviour observations to feedback, bug reports and optional anonymised Intelligence data.</p>
+    <header className="contribution-dashboard-hero">
+      <div><p className="contribution-dashboard-eyebrow">TINY TITANS · CONTRIBUTION CENTRE</p><h1>🌍 Your contribution, properly tracked.</h1><p>See what you have submitted, what has been accepted, what is still under review, which private records are contributing to Intelligence, and how the wider Tiny Titans community is growing.</p></div>
+      <div className="contribution-dashboard-hero-actions"><Link className="contribution-dashboard-button contribution-dashboard-button--primary" to="/make-contribution">＋ Make a Contribution</Link><Link className="contribution-dashboard-button" to="/account/data-privacy">🔐 Privacy controls</Link></div>
+    </header>
 
     {error && <div className="setup-error" role="alert">{error}</div>}
+    {message && <div className="contribution-dashboard-note" role="status">✓ {message}</div>}
+    <p className="contribution-dashboard-note"><strong>Important:</strong> public/community contributions and private Keeper tracker records are deliberately separated. Your individual weight, feeding, shed and health records are not displayed in the global feed. They only enter aggregate Intelligence totals when you explicitly opt in.</p>
 
-    <section className="personalisation-card" style={{ background: "linear-gradient(135deg,rgba(111,36,184,.18),rgba(0,174,255,.08),rgba(245,182,66,.06))" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "12px" }}>
-        <div><span style={{ display: "block", opacity: .72, fontWeight: 800 }}>YOUR CONTRIBUTIONS</span><strong style={{ display: "block", fontSize: "2.5rem", marginTop: "4px" }}>{counts.communityContributions}</strong><small>submitted community contributions</small></div>
-        <div><span style={{ display: "block", opacity: .72, fontWeight: 800 }}>GLOBAL COMMUNITY CONTRIBUTIONS</span><strong style={{ display: "block", fontSize: "2.5rem", marginTop: "4px" }}>{safeNumber(globalSnapshot?.totalRecords)}</strong><small>recorded across the shared public contribution layer</small></div>
-        <div><span style={{ display: "block", opacity: .72, fontWeight: 800 }}>CONTRIBUTING KEEPERS</span><strong style={{ display: "block", fontSize: "2.5rem", marginTop: "4px" }}>{safeNumber(globalSnapshot?.contributors)}</strong><small>keepers represented in the global total</small></div>
-      </div>
+    <section className="contribution-dashboard-summary" aria-label="Contribution totals">
+      <div className="contribution-dashboard-stat"><small>YOUR SUBMISSIONS</small><strong>{counts.submittedContributions}</strong><span>community and product-improvement contributions recorded against your account</span></div>
+      <div className="contribution-dashboard-stat"><small>PUBLIC / COMMUNITY</small><strong>{publicRecords}</strong><span>approved community records visible through public contribution workflows</span></div>
+      <div className="contribution-dashboard-stat"><small>GLOBAL TOTAL</small><strong>{totalGlobal}</strong><span>public contributions plus consented Intelligence records</span></div>
+      <div className="contribution-dashboard-stat"><small>CONTRIBUTING KEEPERS</small><strong>{globalKeepers}</strong><span>keepers represented in the aggregate global contribution system</span></div>
     </section>
 
-    <section className="personalisation-card">
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "14px", flexWrap: "wrap" }}>
-        <div><h2>📚 Community contribution categories</h2><p style={{ marginBottom: 0, opacity: .72 }}>These are the things you can actively contribute for other keepers to learn from or for Tiny Titans to improve.</p></div>
-        <Link className="personalisation-link" to="/make-contribution">＋ See everything I can contribute →</Link>
+    <div className="contribution-dashboard-columns">
+      <div className="contribution-dashboard-panel">
+        <div className="contribution-dashboard-section-head"><div><h2>📚 Your contribution categories</h2><p>Every major contribution source is separated so you can see exactly what you have put into Tiny Titans.</p></div><Link to="/make-contribution">Contribute →</Link></div>
+        <div className="contribution-dashboard-category-grid">{categories.map((category) => <article className="contribution-dashboard-category" key={category.title}>
+          <div className="contribution-dashboard-category-head"><span className="contribution-dashboard-category-icon" aria-hidden="true">{category.icon}</span><strong className="contribution-dashboard-category-count">{category.count}</strong></div>
+          <h3>{category.title}</h3><p>{category.description}</p>
+          {(category.submitted !== undefined || category.approved !== undefined || category.open !== undefined) && <div className="contribution-dashboard-status-line">{category.submitted !== undefined && <span className="contribution-dashboard-chip">Submitted {category.submitted}</span>}{category.approved !== undefined && <span className="contribution-dashboard-chip contribution-dashboard-chip--good">Approved {category.approved}</span>}{category.open !== undefined && <span className={`contribution-dashboard-chip ${category.open > 0 ? "contribution-dashboard-chip--warn" : ""}`}>Open {category.open}</span>}</div>}
+          {category.link && <Link className="personalisation-link" to={category.link}>Open category →</Link>}
+        </article>)}</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "12px", marginTop: "16px" }}>
-        {contributionCards.map((item) => <ContributionCardView key={item.title} item={item} />)}
+
+      <div className="contribution-dashboard-panel">
+        <div className="contribution-dashboard-section-head"><div><h2>🌎 Global contribution breakdown</h2><p>Aggregate figures are intentionally separated from identifiable keeper records.</p></div><Link to="/community">Community →</Link></div>
+        <div className="contribution-dashboard-global-breakdown">
+          <div className="contribution-dashboard-global-breakdown-row"><span>🔭 Behaviour contributions</span><strong>{safeNumber(globalSnapshot?.behaviourContributions)}</strong></div>
+          <div className="contribution-dashboard-global-breakdown-row"><span>🧬 Morph contributions</span><strong>{safeNumber(globalSnapshot?.morphContributions)}</strong></div>
+          <div className="contribution-dashboard-global-breakdown-row"><span>📢 Other community contributions</span><strong>{safeNumber(globalSnapshot?.communityContributions)}</strong></div>
+          <div className="contribution-dashboard-global-breakdown-row"><span>🧠 Intelligence records</span><strong>{intelligenceRecords}</strong></div>
+        </div>
+        <div className="contribution-dashboard-matrix"><div><strong>{safeNumber(globalSnapshot?.intelligenceWeightRecords)}</strong><span>Weight records contributed</span></div><div><strong>{safeNumber(globalSnapshot?.intelligenceFeedingRecords)}</strong><span>Feeding records contributed</span></div><div><strong>{safeNumber(globalSnapshot?.intelligenceShedRecords)}</strong><span>Shed records contributed</span></div></div>
+        <div className="contribution-dashboard-footer"><strong>What is private?</strong> Individual Intelligence records are never put into the public activity feed. The global tracker only receives aggregate counts from consenting keepers.</div>
       </div>
+    </div>
+
+    <div className="contribution-dashboard-columns" style={{ marginTop: "15px" }}>
+      <div className="contribution-dashboard-panel">
+        <div className="contribution-dashboard-section-head"><div><h2>🧾 Your contribution ledger</h2><p>Newest activity first, with status and links back to the relevant workflow.</p></div></div>
+        {events.length === 0 ? <div className="contribution-dashboard-empty">No contribution events have been recorded yet. Your future submissions will appear here.</div> : <div className="contribution-dashboard-ledger">{events.map((event) => <article className="contribution-dashboard-ledger-item" key={event.id}>
+          <span className="contribution-dashboard-ledger-icon" aria-hidden="true">{event.icon}</span><div><h3>{event.category} · {event.title}</h3><p>{event.detail.slice(0, 240)}{event.detail.length > 240 ? "…" : ""}</p><div className="contribution-dashboard-ledger-meta">{event.status ?? "Recorded"}{event.date ? ` · ${formatDate(event.date)}` : ""}</div></div>{event.link && <Link to={event.link}>Open →</Link>}
+        </article>)}</div>}
+      </div>
+
+      <div className="contribution-dashboard-panel">
+        <div className="contribution-dashboard-section-head"><div><h2>🌍 Global activity feed</h2><p>Recent publicly shareable contribution activity. Attribution shown here follows each contributor’s chosen credit mode.</p></div></div>
+        {globalFeed.length === 0 ? <div className="contribution-dashboard-empty">No public activity is available yet. Aggregate Intelligence can still be active without exposing individual records.</div> : <div className="contribution-dashboard-global-feed">{globalFeed.slice(0, 40).map((item) => <article className="contribution-dashboard-global-item" key={`${item.source}-${item.id}`}><span>{item.source} · {item.contributor}</span><h3>{item.category} · {item.title}</h3><p>{item.snippet}</p><small>{formatDate(item.createdAt)}</small></article>)}</div>}
+      </div>
+    </div>
+
+    <section className="contribution-dashboard-panel" style={{ marginTop: "15px" }}>
+      <div className="contribution-dashboard-section-head"><div><h2>🧠 Optional Intelligence contribution</h2><p>{preferences.communityHusbandryData ? "ACTIVE — your eligible private tracker history contributes to anonymised aggregate Intelligence." : "OFF — your private tracker history remains outside the Intelligence layer until you explicitly opt in."}</p></div><button className="contribution-dashboard-button contribution-dashboard-button--primary" type="button" onClick={() => void toggleContribution()} disabled={saving}>{saving ? "Saving…" : preferences.communityHusbandryData ? "Stop contributing" : "Enable contribution"}</button></div>
+      <div className="contribution-dashboard-matrix"><div><strong>{counts.weights}</strong><span>Private weight records</span></div><div><strong>{counts.feedings}</strong><span>Private feeding records</span></div><div><strong>{counts.sheds}</strong><span>Private shed records</span></div><div><strong>{counts.health}</strong><span>Private health records</span></div><div><strong>{counts.trackerRecords}</strong><span>Total private tracker records</span></div><div><strong>{counts.intelligenceRecords}</strong><span>Currently contributed to Intelligence</span></div></div>
+      <div className="contribution-dashboard-footer"><strong>{preferences.communityHusbandryData ? "Your choice is active." : "Your records are private by default."}</strong> This setting controls whether eligible tracker history is included in anonymised aggregate Intelligence. It does not publish your individual logs.</div>
     </section>
 
-    <section className="personalisation-card">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "flex-start" }}>
-        <div><h2>🧠 Optional Intelligence contribution</h2><p>{preferences.communityHusbandryData ? "ACTIVE — eligible personal husbandry records can be used in anonymised aggregate analysis." : "OFF — your personal husbandry records stay in your account unless you enable this optional contribution."}</p></div>
-        <button className="personalisation-save" type="button" onClick={() => void toggleContribution()} disabled={saving}>{saving ? "Saving…" : preferences.communityHusbandryData ? "Stop contributing" : "Enable contribution"}</button>
+    <section className="contribution-dashboard-panel" style={{ marginTop: "15px" }}>
+      <div className="contribution-dashboard-section-head"><div><h2>🔐 Privacy, attribution & participation</h2><p>Your contribution identity and your data participation are separate choices.</p></div><Link to="/account/data-privacy">Manage privacy →</Link></div>
+      <div className="contribution-dashboard-privacy">
+        <div className="contribution-dashboard-privacy-row"><span>Community location</span><strong>{preferences.communityLocation ? "Enabled" : "Not enabled"}</strong></div>
+        <div className="contribution-dashboard-privacy-row"><span>Anonymous analytics</span><strong>{preferences.anonymousAnalytics ? "Enabled" : "Not enabled"}</strong></div>
+        <div className="contribution-dashboard-privacy-row"><span>Optional husbandry / Intelligence</span><strong>{preferences.communityHusbandryData ? "Contributing" : "Private"}</strong></div>
+        <div className="contribution-dashboard-privacy-row"><span>Product updates</span><strong>{preferences.productUpdates ? "Enabled" : "Not enabled"}</strong></div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: "10px", marginTop: "14px" }}>
-        <div style={{ padding: "14px", borderRadius: "13px", background: "rgba(255,255,255,.05)" }}><strong style={{ fontSize: "1.5rem", display: "block" }}>{counts.weights}</strong><span>Weight records</span></div>
-        <div style={{ padding: "14px", borderRadius: "13px", background: "rgba(255,255,255,.05)" }}><strong style={{ fontSize: "1.5rem", display: "block" }}>{counts.feedings}</strong><span>Feeding records</span></div>
-        <div style={{ padding: "14px", borderRadius: "13px", background: "rgba(255,255,255,.05)" }}><strong style={{ fontSize: "1.5rem", display: "block" }}>{counts.sheds}</strong><span>Shed records</span></div>
-        <div style={{ padding: "14px", borderRadius: "13px", background: "rgba(255,255,255,.05)" }}><strong style={{ fontSize: "1.5rem", display: "block" }}>{counts.health}</strong><span>Health records</span></div>
-      </div>
-      <p style={{ marginBottom: 0, marginTop: "14px", opacity: .7 }}>{preferences.communityHusbandryData ? `${counts.intelligenceRecords} eligible personal records are currently included in your optional Intelligence contribution.` : `${counts.contributablePersonalRecords} personal tracker records are available to contribute if you choose to opt in.`}</p>
+      <div className="contribution-dashboard-footer"><strong>Global does not mean identifiable.</strong> Public community submissions may show chosen attribution. Anonymous submissions still count globally. Private tracker data remains private and only contributes to aggregate Intelligence when opted in.</div>
     </section>
-
-    <section className="personalisation-card">
-      <h2>🐍 Your personal tracker activity</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: "10px" }}>
-        <div style={{ padding: "14px", borderRadius: "13px", background: "rgba(255,255,255,.05)" }}><strong style={{ fontSize: "1.6rem", display: "block" }}>{counts.snakes}</strong><span>Snakes tracked</span></div>
-        <div style={{ padding: "14px", borderRadius: "13px", background: "rgba(255,255,255,.05)" }}><strong style={{ fontSize: "1.6rem", display: "block" }}>{counts.weights}</strong><span>Weight records</span></div>
-        <div style={{ padding: "14px", borderRadius: "13px", background: "rgba(255,255,255,.05)" }}><strong style={{ fontSize: "1.6rem", display: "block" }}>{counts.feedings}</strong><span>Feeding records</span></div>
-        <div style={{ padding: "14px", borderRadius: "13px", background: "rgba(255,255,255,.05)" }}><strong style={{ fontSize: "1.6rem", display: "block" }}>{counts.sheds}</strong><span>Shed records</span></div>
-      </div>
-      <p style={{ opacity: .68, marginBottom: 0 }}>These are records stored in your personal trackers. They are separate from your community contribution total unless you explicitly enable the optional Intelligence contribution above.</p>
-    </section>
-
-    <section className="personalisation-card">
-      <h2>🔒 Privacy and contribution boundaries</h2>
-      <ul>
-        <li>Your community contribution total counts things you actively submit or share through a community workflow.</li>
-        <li>Private tracker records are not automatically turned into community contributions.</li>
-        <li>Optional Intelligence participation can be switched off at any time.</li>
-        <li>Anonymous community contributions can still count towards the global total without exposing your identity.</li>
-      </ul>
-      {message && <p className="personalisation-saved" role="status">✓ {message}</p>}
-      <button className="personalisation-link" type="button" onClick={() => navigate("/account/data-privacy")}>Manage all Data &amp; Privacy choices →</button>
-    </section>
-  </section></main>;
+  </main>;
 }
