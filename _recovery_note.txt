@@ -1,0 +1,1 @@
+Temporary integration branch marker. Existing source branches and backups are preserved; this file is used only to keep the reconciliation branch identifiable during direct repository recovery.
