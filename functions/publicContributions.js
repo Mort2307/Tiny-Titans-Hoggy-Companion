@@ -56,14 +56,58 @@ function contributorKey(item, documentId) {
 async function getPublicDocuments() {
   return Promise.all([
     db.collection("keeperObservations").where("status", "==", "approved").get(),
-    db.collection("morphImageSubmissions").where("status", "==", "Approved").get(),
-    db.collectionGroup("morphSubmissions").where("status", "==", "approved").get(),
+    db.collection("morphImageSubmissions").get(),
+    db.collectionGroup("morphSubmissions").get(),
     db.collection("communityContent").where("visibility", "==", "community").get(),
   ]);
 }
 
+async function calculateConsentEligibleIntelligence() {
+  const users = await db.collection("users").get();
+  const contributingKeepers = new Set();
+  let weightRecords = 0;
+  let feedingRecords = 0;
+  let shedRecords = 0;
+
+  await Promise.all(users.docs.map(async (userDoc) => {
+    const privacy = (await userDoc.ref.collection("settings").doc("privacy").get()).data() || {};
+    if (privacy.communityHusbandryData !== true) return;
+
+    const snakeSnapshot = await userDoc.ref.collection("snakes").get();
+    let userEligibleRecords = 0;
+
+    await Promise.all(snakeSnapshot.docs.map(async (snakeDoc) => {
+      const [weights, feedings, sheds] = await Promise.all([
+        snakeDoc.ref.collection("weights").get(),
+        snakeDoc.ref.collection("feedings").get(),
+        snakeDoc.ref.collection("sheds").get(),
+      ]);
+
+      const validWeights = weights.docs.filter((item) => !item.data()?.deletedAt).length;
+      const validFeedings = feedings.docs.filter((item) => !item.data()?.deletedAt).length;
+      const validSheds = sheds.docs.filter((item) => !item.data()?.deletedAt).length;
+
+      weightRecords += validWeights;
+      feedingRecords += validFeedings;
+      shedRecords += validSheds;
+      userEligibleRecords += validWeights + validFeedings + validSheds;
+    }));
+
+    if (userEligibleRecords > 0) contributingKeepers.add(userDoc.id);
+  }));
+
+  return {
+    contributingKeepers: contributingKeepers.size,
+    weightRecords,
+    feedingRecords,
+    shedRecords,
+    totalRecords: weightRecords + feedingRecords + shedRecords,
+  };
+}
+
 async function calculatePublicSnapshot() {
   const [behaviourDocs, morphDocs, morphNameDocs, communityDocs] = await getPublicDocuments();
+  const intelligence = await calculateConsentEligibleIntelligence();
   const contributors = new Set();
   let behaviourContributions = 0;
   let morphContributions = 0;
@@ -77,12 +121,17 @@ async function calculatePublicSnapshot() {
   }
   for (const doc of morphDocs.docs) {
     const item = doc.data() || {};
+    const status = String(item.status || "").toLowerCase();
+    if (status !== "approved") continue;
+    if (item.visibility && !["community", "public"].includes(String(item.visibility).toLowerCase())) continue;
     morphContributions += 1;
     contributors.add(contributorKey(item, doc.id));
   }
   for (const doc of morphNameDocs.docs) {
     const item = doc.data() || {};
-    if (item.visibility && !["community", "public"].includes(item.visibility)) continue;
+    const status = String(item.status || "").toLowerCase();
+    if (status && status !== "approved") continue;
+    if (item.visibility && !["community", "public"].includes(String(item.visibility).toLowerCase())) continue;
     morphContributions += 1;
     contributors.add(contributorKey(item, doc.id));
   }
@@ -93,8 +142,23 @@ async function calculatePublicSnapshot() {
     contributors.add(contributorKey(item, doc.id));
   }
 
-  const totalRecords = behaviourContributions + morphContributions + communityContributions;
-  return { available: true, contributors: contributors.size, totalRecords, behaviourContributions, morphContributions, communityContributions, generatedAt: new Date().toISOString() };
+  const publicCommunityRecords = behaviourContributions + morphContributions + communityContributions;
+  const totalRecords = publicCommunityRecords + intelligence.totalRecords;
+  return {
+    available: true,
+    contributors: contributors.size + intelligence.contributingKeepers,
+    totalRecords,
+    publicCommunityRecords,
+    behaviourContributions,
+    morphContributions,
+    communityContributions,
+    intelligenceContributions: intelligence.totalRecords,
+    intelligenceWeightRecords: intelligence.weightRecords,
+    intelligenceFeedingRecords: intelligence.feedingRecords,
+    intelligenceShedRecords: intelligence.shedRecords,
+    intelligenceContributingKeepers: intelligence.contributingKeepers,
+    generatedAt: new Date().toISOString(),
+  };
 }
 
 async function calculatePublicFeed() {
@@ -107,11 +171,16 @@ async function calculatePublicFeed() {
   }
   for (const doc of morphDocs.docs) {
     const item = doc.data() || {};
+    const status = String(item.status || "").toLowerCase();
+    if (status !== "approved") continue;
+    if (item.visibility && !["community", "public"].includes(String(item.visibility).toLowerCase())) continue;
     feed.push({ id: doc.id, category: "Morph Library", title: String(item.morphName || item.morphId || item.submittedName || "Morph evidence"), snippet: String(item.description || item.proofDetails || "Keeper-submitted Morph Library evidence.").slice(0, 180), contributor: publicAttribution(item), createdAt: isoDate(item.approvedAt || item.reviewedAt || item.submittedAt || item.createdAt), source: "Morph Library" });
   }
   for (const doc of morphNameDocs.docs) {
     const item = doc.data() || {};
-    if (item.visibility && !["community", "public"].includes(item.visibility)) continue;
+    const status = String(item.status || "").toLowerCase();
+    if (status && status !== "approved") continue;
+    if (item.visibility && !["community", "public"].includes(String(item.visibility).toLowerCase())) continue;
     feed.push({ id: doc.id, category: "Morph Library", title: String(item.submittedName || item.morphName || "Morph contribution"), snippet: String(item.description || item.knownGenetics || "Keeper-submitted Morph Library contribution.").slice(0, 180), contributor: publicAttribution(item, "Anonymous keeper"), createdAt: isoDate(item.reviewedAt || item.updatedAt || item.createdAt), source: "Morph Library" });
   }
   for (const doc of communityDocs.docs) {
@@ -119,21 +188,47 @@ async function calculatePublicFeed() {
     if (item.moderationStatus !== "approved") continue;
     feed.push({ id: doc.id, category: String(item.type || "Community"), title: String(item.title || "Community contribution"), snippet: String(item.description || "Community contribution shared with Tiny Titans.").slice(0, 180), contributor: publicAttribution(item, "Anonymous keeper"), createdAt: isoDate(item.createdAt || item.updatedAt), source: "Community Hub" });
   }
+
+  const intelligence = await calculateConsentEligibleIntelligence();
+  if (intelligence.totalRecords > 0) {
+    feed.push({
+      id: "community-intelligence-aggregate",
+      category: "Tiny Titans Intelligence",
+      title: `${intelligence.totalRecords} eligible keeper records contributing globally`,
+      snippet: `${intelligence.weightRecords} weight, ${intelligence.feedingRecords} feeding and ${intelligence.shedRecords} shed records are contributing to community intelligence from ${intelligence.contributingKeepers} consenting keepers. Individual records remain private.`,
+      contributor: `${intelligence.contributingKeepers} consenting keepers`,
+      createdAt: new Date().toISOString(),
+      source: "Community Intelligence",
+    });
+  }
+
   return feed.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 100);
 }
 
-exports.getPublicCommunityContributionSnapshotV2 = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+exports.getPublicCommunityContributionSnapshotV2 = onCall({ region: "europe-west2", memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const now = Date.now();
   if (snapshotCache && now - snapshotCacheAt < PUBLIC_CACHE_TTL_MS) return snapshotCache;
-  try { snapshotCache = await calculatePublicSnapshot(); snapshotCacheAt = Date.now(); return snapshotCache; }
-  catch (error) { console.error("Public contribution snapshot failed", error); throw new HttpsError("internal", "Unable to load the community contribution tracker."); }
+  try {
+    snapshotCache = await calculatePublicSnapshot();
+    snapshotCacheAt = Date.now();
+    return snapshotCache;
+  } catch (error) {
+    console.error("Public contribution snapshot failed", error);
+    throw new HttpsError("internal", "Unable to load the community contribution tracker.");
+  }
 });
 
-exports.getPublicCommunityContributionFeedV2 = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+exports.getPublicCommunityContributionFeedV2 = onCall({ region: "europe-west2", memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const now = Date.now();
   if (feedCache && now - feedCacheAt < PUBLIC_CACHE_TTL_MS) return { entries: feedCache, generatedAt: new Date(feedCacheAt).toISOString() };
-  try { feedCache = await calculatePublicFeed(); feedCacheAt = Date.now(); return { entries: feedCache, generatedAt: new Date().toISOString() }; }
-  catch (error) { console.error("Public contribution feed failed", error); throw new HttpsError("internal", "Unable to load the public contribution feed."); }
+  try {
+    feedCache = await calculatePublicFeed();
+    feedCacheAt = Date.now();
+    return { entries: feedCache, generatedAt: new Date().toISOString() };
+  } catch (error) {
+    console.error("Public contribution feed failed", error);
+    throw new HttpsError("internal", "Unable to load the public contribution feed.");
+  }
 });
