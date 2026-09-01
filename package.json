@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "validate:morphs": "node scripts/validate-morph-database.mjs",
+    "validate:morph-taxonomy": "node scripts/validate-hognose-morph-taxonomy.mjs",
     "validate:morph-sources": "node scripts/validate-morph-source-audit.mjs",
     "validate:app-health": "node scripts/validate-app-health-contracts.mjs",
     "validate:learning": "node scripts/validate-learning-content.mjs",
@@ -26,7 +27,7 @@
     "test:overlord": "node scripts/run-overlord-bot.mjs",
     "test:visual-ux": "node scripts/run-visual-ux-bot.mjs",
     "test:production-gate": "node scripts/run-production-gate.mjs",
-    "build": "npm run validate:morphs && npm run validate:morph-sources && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:copy-quality && npm run validate:security && npm run validate:ui-hardening && npm run validate:observatory && npm run test:intelligence:consent && npm run test:intelligence:journey && npm run test:notifications && npm run test:room-photo && tsc -b && vite build",
+    "build": "npm run validate:morphs && npm run validate:morph-taxonomy && npm run validate:morph-sources && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:copy-quality && npm run validate:security && npm run validate:ui-hardening && npm run validate:observatory && npm run test:intelligence:consent && npm run test:intelligence:journey && npm run test:notifications && npm run test:room-photo && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
@@ -57,6 +58,7 @@
     "eslint-plugin-react-hooks": "^7.1.0",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "playwright": "^1.62.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.65.0"
   }
