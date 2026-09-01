@@ -5,12 +5,14 @@ const requiredPages = [
   'Home', 'MySnakes', 'SnakeProfile', 'SnakeTimeline', 'FeedingTracker', 'ShedTracker',
   'HealthTracker', 'BehaviourTracker', 'MorphLibrary', 'MorphEvidenceAudit', 'Calculator',
   'BreedingPlanner', 'BreedingReadinessIntelligence', 'CommunityHub', 'WallOfTitans',
-  'LearningHub', 'AdaptiveLearningHub', 'LearnAchievements', 'DataPrivacy', 'FamilyAccount',
+  'LearningHub', 'AdaptiveLearningHub', 'LearnAchievements', 'DataPrivacy', 'FamilyManager',
+  'FamilyReview', 'FamilyHistory',
 ];
 const requiredRoutes = [
   '/', '/snakes', '/morph-library', '/morph-library/evidence', '/calculator', '/feeding',
   '/shedding', '/weights', '/health', '/behaviour', '/husbandry', '/breeding', '/community',
   '/learn', '/adaptive-learning', '/learn/achievements', '/account/data-privacy', '/account/family',
+  '/account/family/manage', '/account/family/review', '/account/family/history',
 ];
 const failures = [];
 for (const page of requiredPages) {
