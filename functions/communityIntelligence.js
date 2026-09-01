@@ -50,10 +50,13 @@ function creditMethods(item) {
   return [];
 }
 
+function hasPublicCredit(item) {
+  return creditMethods(item).some((method) => ["profile", "name", "social", "anonymous"].includes(method));
+}
+
 function publicAttribution(item, fallbackName = "Anonymous keeper") {
   const methods = creditMethods(item);
-  if (methods.includes("anonymous")) return "Anonymous keeper";
-
+  if (methods.includes("anonymous")) return fallbackName;
   const parts = [];
   if (methods.includes("profile")) {
     const profileName = String(item?.contributorCreditProfileName || item?.contributorProfileName || "").trim();
@@ -73,7 +76,6 @@ function publicAttribution(item, fallbackName = "Anonymous keeper") {
 exports.getCommunityIntelligenceSnapshot = onCall({ region: "europe-west2", memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   await assertCreator(request.auth.uid);
-
   const users = await db.collection("users").get();
   let contributors = 0;
   let snakes = 0;
@@ -86,28 +88,23 @@ exports.getCommunityIntelligenceSnapshot = onCall({ region: "europe-west2", memo
   let totalShedLengthCm = 0;
   const morphCounts = new Map();
   const speciesCounts = new Map();
-
   for (const userDoc of users.docs) {
     const privacy = (await userDoc.ref.collection("settings").doc("privacy").get()).data() || {};
     if (privacy.communityHusbandryData !== true) continue;
-
     const snakeSnapshot = await userDoc.ref.collection("snakes").get();
     if (snakeSnapshot.empty) continue;
     contributors += 1;
     snakes += snakeSnapshot.size;
-
     for (const snakeDoc of snakeSnapshot.docs) {
       const snake = snakeDoc.data() || {};
       const species = typeof snake.species === "string" ? snake.species.trim() : "";
       if (species) speciesCounts.set(species, (speciesCounts.get(species) || 0) + 1);
-
       const morphs = Array.isArray(snake.morphs) ? snake.morphs : [];
       for (const morph of morphs) {
         if (typeof morph !== "string" || !morph.trim()) continue;
         const key = morph.trim();
         morphCounts.set(key, (morphCounts.get(key) || 0) + 1);
       }
-
       const weights = await snakeDoc.ref.collection("weights").get();
       for (const weightDoc of weights.docs) {
         const item = weightDoc.data() || {};
@@ -120,10 +117,8 @@ exports.getCommunityIntelligenceSnapshot = onCall({ region: "europe-west2", memo
           totalKg += converted;
         }
       }
-
       const feedings = await snakeDoc.ref.collection("feedings").get();
       feedingLogs += feedings.docs.filter((doc) => !doc.data()?.deletedAt).length;
-
       const sheds = await snakeDoc.ref.collection("sheds").get();
       for (const shedDoc of sheds.docs) {
         const shed = shedDoc.data() || {};
@@ -137,58 +132,48 @@ exports.getCommunityIntelligenceSnapshot = onCall({ region: "europe-west2", memo
       }
     }
   }
-
   const sorted = (map) => Array.from(map.entries()).filter(([, count]) => count >= MIN_CONTRIBUTORS).sort((a, b) => b[1] - a[1]).slice(0, 25).map(([label, count]) => ({ label, count }));
   return { available: true, minimumContributors: MIN_CONTRIBUTORS, contributors, snakes, weightLogs, validWeights, averageWeightKg: validWeights ? totalKg / validWeights : null, feedingLogs, shedLogs, validSheds, averageShedLengthCm: validSheds ? totalShedLengthCm / validSheds : null, species: sorted(speciesCounts), morphs: sorted(morphCounts), generatedAt: new Date().toISOString() };
 });
 
 async function calculatePublicContributionSnapshot() {
-  const users = await db.collection("users").get();
-  let contributors = 0;
-  let snakes = 0;
-  let weightLogs = 0;
-  let feedingLogs = 0;
-  let shedLogs = 0;
-
-  for (const userDoc of users.docs) {
-    const privacy = (await userDoc.ref.collection("settings").doc("privacy").get()).data() || {};
-    if (privacy.communityHusbandryData !== true) continue;
-
-    const snakeSnapshot = await userDoc.ref.collection("snakes").get();
-    if (snakeSnapshot.empty) continue;
-    contributors += 1;
-    snakes += snakeSnapshot.size;
-
-    await Promise.all(snakeSnapshot.docs.map(async (snakeDoc) => {
-      const [weights, feedings, sheds] = await Promise.all([snakeDoc.ref.collection("weights").get(), snakeDoc.ref.collection("feedings").get(), snakeDoc.ref.collection("sheds").get()]);
-      weightLogs += weights.docs.filter((doc) => !doc.data()?.deletedAt).length;
-      feedingLogs += feedings.docs.filter((doc) => !doc.data()?.deletedAt).length;
-      shedLogs += sheds.docs.filter((doc) => !doc.data()?.deletedAt).length;
-    }));
+  const [observationSnapshot, morphSnapshot, communitySnapshot] = await Promise.all([
+    db.collection("keeperObservations").where("status", "==", "approved").get(),
+    db.collection("morphImageSubmissions").where("status", "==", "Approved").get(),
+    db.collection("communityContent").where("visibility", "==", "community").get(),
+  ]);
+  const contributors = new Set();
+  let behaviourContributions = 0;
+  let morphContributions = 0;
+  let communityContributions = 0;
+  for (const doc of observationSnapshot.docs) {
+    const item = doc.data() || {};
+    if (!hasPublicCredit(item)) continue;
+    behaviourContributions += 1;
+    contributors.add(String(item.userId || doc.id));
   }
-
-  const morphSnapshot = await db.collection("morphImageSubmissions").where("status", "==", "Approved").get();
-  const publicMorphContributions = morphSnapshot.docs.filter((doc) => {
-    const methods = creditMethods(doc.data() || {});
-    return methods.includes("profile") || methods.includes("name") || methods.includes("social") || methods.includes("anonymous");
-  }).length;
-
-  const communitySnapshot = await db.collection("communityContent").where("visibility", "==", "community").get();
-  const approvedCommunityContributions = communitySnapshot.docs.filter((doc) => doc.data()?.moderationStatus === "approved").length;
-
-  const generatedAt = new Date().toISOString();
+  for (const doc of morphSnapshot.docs) {
+    const item = doc.data() || {};
+    if (!hasPublicCredit(item)) continue;
+    morphContributions += 1;
+    contributors.add(String(item.userId || doc.id));
+  }
+  for (const doc of communitySnapshot.docs) {
+    const item = doc.data() || {};
+    if (item.moderationStatus !== "approved") continue;
+    communityContributions += 1;
+    contributors.add(String(item.userId || item.creatorUid || doc.id));
+  }
+  const totalRecords = behaviourContributions + morphContributions + communityContributions;
   return {
     available: true,
-    minimumContributors: MIN_CONTRIBUTORS,
-    contributors,
-    snakes,
-    weightLogs,
-    feedingLogs,
-    shedLogs,
-    morphContributions: publicMorphContributions,
-    communityContributions: approvedCommunityContributions,
-    totalRecords: weightLogs + feedingLogs + shedLogs + publicMorphContributions + approvedCommunityContributions,
-    generatedAt,
+    contributors: contributors.size,
+    totalRecords,
+    behaviourContributions,
+    morphContributions,
+    communityContributions,
+    generatedAt: new Date().toISOString(),
+    _contract: "aggregate community contribution volume only; no UID, snake name, notes, dates, photos, or coordinates",
   };
 }
 
@@ -209,36 +194,24 @@ exports.getPublicCommunityContributionSnapshot = onCall({ region: "europe-west2"
 
 async function calculatePublicContributionFeed() {
   const feed = [];
-
   const observationSnapshot = await db.collection("keeperObservations").limit(100).get();
   for (const doc of observationSnapshot.docs) {
     const item = doc.data() || {};
-    if (item.status !== "approved") continue;
-    const title = String(item.title || item.behaviourName || item.observationTitle || item.primaryCategory || "Behaviour observation").trim();
-    const category = String(item.primaryCategory || item.category || "Behaviour").trim();
-    const snippet = String(item.description || item.observation || item.notes || "Keeper-submitted behaviour observation.").trim().slice(0, 180);
-    const methods = creditMethods(item);
-    const attributed = methods.includes("profile") || methods.includes("name") || methods.includes("social") || methods.includes("anonymous");
-    if (!attributed) continue;
-    feed.push({ id: doc.id, category, title, snippet, contributor: publicAttribution(item), createdAt: isoDate(item.createdAt || item.submittedAt || item.updatedAt), source: "Behaviour Observatory" });
+    if (item.status !== "approved" || !hasPublicCredit(item)) continue;
+    feed.push({ id: doc.id, category: String(item.primaryCategory || item.category || "Behaviour").trim(), title: String(item.title || item.behaviourName || item.observationTitle || "Behaviour observation").trim(), snippet: String(item.description || item.observation || item.notes || "Keeper-submitted behaviour observation.").trim().slice(0, 180), contributor: publicAttribution(item), createdAt: isoDate(item.createdAt || item.submittedAt || item.updatedAt), source: "Behaviour Observatory" });
   }
-
   const morphSnapshot = await db.collection("morphImageSubmissions").where("status", "==", "Approved").limit(100).get();
   for (const doc of morphSnapshot.docs) {
     const item = doc.data() || {};
-    const morphName = String(item.morphName || item.morphId || "Morph evidence").trim();
-    const description = String(item.description || item.proofDetails || "Keeper-submitted Morph Library evidence.").trim().slice(0, 180);
-    feed.push({ id: doc.id, category: "Morph Library", title: morphName, snippet: description, contributor: publicAttribution(item), createdAt: isoDate(item.approvedAt || item.reviewedAt || item.submittedAt), source: "Morph Library" });
+    if (!hasPublicCredit(item)) continue;
+    feed.push({ id: doc.id, category: "Morph Library", title: String(item.morphName || item.morphId || "Morph evidence").trim(), snippet: String(item.description || item.proofDetails || "Keeper-submitted Morph Library evidence.").trim().slice(0, 180), contributor: publicAttribution(item), createdAt: isoDate(item.approvedAt || item.reviewedAt || item.submittedAt), source: "Morph Library" });
   }
-
   const communitySnapshot = await db.collection("communityContent").where("visibility", "==", "community").limit(100).get();
   for (const doc of communitySnapshot.docs) {
     const item = doc.data() || {};
     if (item.moderationStatus !== "approved") continue;
-    const creatorName = String(item.creatorName || "").trim();
-    feed.push({ id: doc.id, category: String(item.type || "Community").trim(), title: String(item.title || "Community contribution").trim(), snippet: String(item.description || "Community contribution shared with Tiny Titans.").trim().slice(0, 180), contributor: creatorName || "Community keeper", createdAt: isoDate(item.createdAt || item.updatedAt), source: "Community Hub" });
+    feed.push({ id: doc.id, category: String(item.type || "Community").trim(), title: String(item.title || "Community contribution").trim(), snippet: String(item.description || "Community contribution shared with Tiny Titans.").trim().slice(0, 180), contributor: String(item.creatorName || item.contributorName || "Community keeper").trim(), createdAt: isoDate(item.createdAt || item.updatedAt), source: "Community Hub" });
   }
-
   return feed.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 60);
 }
 
