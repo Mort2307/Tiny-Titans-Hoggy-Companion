@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
-import { getFamilyForUser, removeFamilyMember, type FamilyAccount, type FamilyMember } from "../services/familyService";
+import { removeFamilyMember, type FamilyAccount, type FamilyMember } from "../services/familyService";
 import { getFamilyManagerData, setFamilyMemberAccessMode } from "../services/familyManagerService";
 import type { FamilyAccessMode } from "../services/familyPermissionsService";
 import "../styles/family-manager.css";
@@ -130,7 +130,6 @@ export default function FamilyManager() {
   return (
     <main className="page-container family-manager-page">
       <BackHomeButton />
-
       <header className="family-manager-hero">
         <div>
           <p className="family-manager-kicker">FAMILY MANAGER</p>
@@ -138,8 +137,8 @@ export default function FamilyManager() {
           <p>Every family member can have their own access level. Permissions are controlled by the Family Head and recorded in family history.</p>
         </div>
         <div className="family-manager-hero-actions">
-          <Link className="family-manager-button" to="/account/family/manage?view=review">Family Review</Link>
-          <Link className="family-manager-button" to="/account/family/manage?view=history">Family History</Link>
+          <Link className="family-manager-button" to="/account/family/review">Family Review</Link>
+          <Link className="family-manager-button" to="/account/family/history">Family History</Link>
         </div>
       </header>
 
@@ -159,10 +158,7 @@ export default function FamilyManager() {
           <div className="family-manager-member-list">
             <button type="button" className="family-manager-member family-manager-member--head">
               <span className="family-manager-avatar">👑</span>
-              <span>
-                <strong>You</strong>
-                <small>Family Head · Full Permission</small>
-              </span>
+              <span><strong>You</strong><small>Family Head · Full Permission</small></span>
             </button>
 
             {members.map((member) => (
@@ -175,9 +171,7 @@ export default function FamilyManager() {
                 <span className="family-manager-avatar">{member.role === "child" ? "🧒" : "👤"}</span>
                 <span>
                   <strong>{member.displayName}</strong>
-                  <small>
-                    {memberLabel(member)} · {modesByUid[member.uid] === "full" ? "Full" : modesByUid[member.uid] === "sandbox" ? "Sandbox" : "Moderate"}
-                  </small>
+                  <small>{memberLabel(member)} · {modesByUid[member.uid] === "full" ? "Full" : modesByUid[member.uid] === "sandbox" ? "Sandbox" : "Moderate"}</small>
                 </span>
               </button>
             ))}
@@ -212,7 +206,10 @@ export default function FamilyManager() {
 
               <div className="family-manager-mode-list">
                 {modes.map((mode) => (
-                  <label className={`family-manager-mode ${activeMode === mode.id ? "is-selected" : ""}`} key={mode.id}>
+                  <label
+                    className={`family-manager-mode ${activeMode === mode.id ? "is-selected" : ""}`}
+                    key={mode.id}
+                  >
                     <input
                       type="checkbox"
                       checked={activeMode === mode.id}
@@ -236,11 +233,11 @@ export default function FamilyManager() {
               </div>
 
               <div className="family-manager-quick-grid">
-                <Link to="/account/family/manage?view=review" className="family-manager-quick">
+                <Link to="/account/family/review" className="family-manager-quick">
                   <strong>📝 Review pending edits</strong>
                   <span>Approve or reject proposed changes.</span>
                 </Link>
-                <Link to="/account/family/manage?view=history" className="family-manager-quick">
+                <Link to="/account/family/history" className="family-manager-quick">
                   <strong>📚 View family history</strong>
                   <span>See permission and review activity.</span>
                 </Link>
@@ -261,13 +258,7 @@ export default function FamilyManager() {
             <div key={mode.id}>
               <span>{mode.icon}</span>
               <strong>{mode.title}</strong>
-              <small>
-                {mode.id === "full"
-                  ? "Real edits happen immediately."
-                  : mode.id === "review"
-                    ? "Real edits wait for Family Head approval."
-                    : "No real edits. Learning only."}
-              </small>
+              <small>{mode.id === "full" ? "Real edits happen immediately." : mode.id === "review" ? "Real edits wait for Family Head approval." : "No real edits. Learning only."}</small>
             </div>
           ))}
         </div>
