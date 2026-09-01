@@ -18,6 +18,18 @@ export type CommunityIntelligenceSnapshot = {
   generatedAt: string;
 };
 
+export type PublicContributionSnapshot = {
+  available: boolean;
+  minimumContributors: number;
+  contributors: number;
+  snakes: number;
+  weightLogs: number;
+  feedingLogs: number;
+  shedLogs: number;
+  totalRecords: number;
+  generatedAt: string;
+};
+
 export type PublicContributionEntry = {
   id: string;
   category: string;
@@ -39,6 +51,12 @@ function functions() {
 
 export async function getCommunityIntelligenceSnapshot(): Promise<CommunityIntelligenceSnapshot> {
   const callable = httpsCallable<void, CommunityIntelligenceSnapshot>(functions(), "getCommunityIntelligenceSnapshot");
+  const result = await callable();
+  return result.data;
+}
+
+export async function getPublicCommunityContributionSnapshot(): Promise<PublicContributionSnapshot> {
+  const callable = httpsCallable<void, PublicContributionSnapshot>(functions(), "getPublicCommunityContributionSnapshot");
   const result = await callable();
   return result.data;
 }
