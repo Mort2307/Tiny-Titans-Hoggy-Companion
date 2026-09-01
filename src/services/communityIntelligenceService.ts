@@ -18,9 +18,47 @@ export type CommunityIntelligenceSnapshot = {
   generatedAt: string;
 };
 
+export type PublicContributionSnapshot = {
+  available: boolean;
+  contributors: number;
+  totalRecords: number;
+  behaviourContributions: number;
+  morphContributions: number;
+  communityContributions: number;
+  generatedAt: string;
+};
+
+export type PublicContributionEntry = {
+  id: string;
+  category: string;
+  title: string;
+  snippet: string;
+  contributor: string;
+  createdAt: string;
+  source: string;
+};
+
+export type PublicContributionFeed = {
+  entries: PublicContributionEntry[];
+  generatedAt: string;
+};
+
+function functions() { return getFunctions(undefined, "europe-west2"); }
+
 export async function getCommunityIntelligenceSnapshot(): Promise<CommunityIntelligenceSnapshot> {
-  const functions = getFunctions(undefined, "europe-west2");
-  const callable = httpsCallable<void, CommunityIntelligenceSnapshot>(functions, "getCommunityIntelligenceSnapshot");
+  const callable = httpsCallable<void, CommunityIntelligenceSnapshot>(functions(), "getCommunityIntelligenceSnapshot");
+  const result = await callable();
+  return result.data;
+}
+
+export async function getPublicCommunityContributionSnapshot(): Promise<PublicContributionSnapshot> {
+  const callable = httpsCallable<void, PublicContributionSnapshot>(functions(), "getPublicCommunityContributionSnapshotV2");
+  const result = await callable();
+  return result.data;
+}
+
+export async function getPublicCommunityContributionFeed(): Promise<PublicContributionFeed> {
+  const callable = httpsCallable<void, PublicContributionFeed>(functions(), "getPublicCommunityContributionFeedV2");
   const result = await callable();
   return result.data;
 }
