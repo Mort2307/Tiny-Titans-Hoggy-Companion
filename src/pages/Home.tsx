@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
+import ContributionPulse from "../components/ContributionPulse";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
@@ -32,20 +33,10 @@ function Home() {
       if (!active) return;
       setIntelligenceAccess(hasAccess);
       setAccessChecked(true);
-      const minimal = records.map((snake) => ({
-        id: snake.id,
-        name: snake.name,
-        weightRecords: snake.weightHistory?.length ?? 0,
-        feedingRecords: snake.feedingHistory?.length ?? 0,
-        shedRecords: snake.shedHistory?.length ?? 0,
-        healthRecords: snake.healthHistory?.length ?? 0,
-      }));
+      const minimal = records.map((snake) => ({ id: snake.id, name: snake.name, weightRecords: snake.weightHistory?.length ?? 0, feedingRecords: snake.feedingHistory?.length ?? 0, shedRecords: snake.shedHistory?.length ?? 0, healthRecords: snake.healthHistory?.length ?? 0 }));
       setSnakes(minimal);
       setSelectedSnakeId((current) => minimal.some((snake) => snake.id === current) ? current : minimal[0]?.id ?? "");
-      if (!hasAccess) {
-        setIntelligence([]);
-        return;
-      }
+      if (!hasAccess) { setIntelligence([]); return; }
       const insights = await getDashboardIntelligence(user.uid, minimal.map((snake) => snake.id));
       if (active) setIntelligence(insights);
     }).catch(() => { if (!active) return; setSnakes([]); setIntelligence([]); setIntelligenceAccess(false); setAccessChecked(true); }).finally(() => { if (active) setLoadingIntelligence(false); });
@@ -57,17 +48,12 @@ function Home() {
   const attention = useMemo(() => intelligence.flatMap((item) => item.priority && item.priority.tone === "attention" ? [{ ...item.priority, snakeId: item.snakeId, snakeName: item.snakeName }] : []).slice(0, 3), [intelligence]);
   const coverage = useMemo(() => intelligence.length ? Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length) : 0, [intelligence]);
   const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + snake.weightRecords + snake.feedingRecords + snake.shedRecords + snake.healthRecords, 0), [snakes]);
-  const snapshot = useMemo(() => ({
-    weights: snakes.reduce((sum, snake) => sum + snake.weightRecords, 0),
-    feedings: snakes.reduce((sum, snake) => sum + snake.feedingRecords, 0),
-    sheds: snakes.reduce((sum, snake) => sum + snake.shedRecords, 0),
-    health: snakes.reduce((sum, snake) => sum + snake.healthRecords, 0),
-  }), [snakes]);
+  const snapshot = useMemo(() => ({ weights: snakes.reduce((sum, snake) => sum + snake.weightRecords, 0), feedings: snakes.reduce((sum, snake) => sum + snake.feedingRecords, 0), sheds: snakes.reduce((sum, snake) => sum + snake.shedRecords, 0), health: snakes.reduce((sum, snake) => sum + snake.healthRecords, 0) }), [snakes]);
   const selectedIndex = Math.max(0, snakes.findIndex((snake) => snake.id === selectedSnakeId));
   function moveSnake(direction: -1 | 1) { if (!snakes.length) return; const next = (selectedIndex + direction + snakes.length) % snakes.length; setSelectedSnakeId(snakes[next].id); }
 
   return <main className="dashboard tt-home">
-    <section className="tt-home-hero"><div><p className="tt-home-eyebrow">TINY TITANS · YOUR KEEPER COMMAND CENTRE</p><h1>Good day, {displayName} 👋</h1><p>One calm place for what matters now. Tiny Titans learns from the records you create rather than throwing every feature at you at once.</p></div><div className="tt-home-profile"><span>{experience} keeper</span><strong>{snakes.length} {snakes.length === 1 ? "Tiny Titan" : "Tiny Titans"}</strong><small>{learningLabel} learning mode</small></div></section>
+    <section className="tt-home-hero"><div className="tt-home-hero-copy"><p className="tt-home-eyebrow">TINY TITANS · YOUR KEEPER COMMAND CENTRE</p><h1>Good day, {displayName} 👋</h1><p>One calm place for what matters now. Tiny Titans learns from the records you create rather than throwing every feature at you at once.</p><ContributionPulse /></div><div className="tt-home-profile"><span>{experience} keeper</span><strong>{snakes.length} {snakes.length === 1 ? "Tiny Titan" : "Tiny Titans"}</strong><small>{learningLabel} learning mode</small></div></section>
     <PwaInstallCard />
     <TitanGoalTracker compact />
     <section className="tt-home-section"><div className="tt-home-heading"><div><p className="tt-home-kicker">🐍 YOUR CURRENT TITAN</p><h2>What should you look at first?</h2></div><Link to="/snakes">View all snakes →</Link></div>{loadingIntelligence ? <div className="tt-home-panel tt-home-loading">🧠 Checking your intelligence access…</div> : snakes.length === 0 ? <div className="tt-home-panel"><h3>No Tiny Titans yet</h3><p>Add your first snake and Home will become personalised around its records.</p><Link className="tt-home-primary" to="/snakes/new">➕ Add your first snake</Link></div> : <div className="tt-snake-focus"><button type="button" className="tt-snake-arrow" onClick={() => moveSnake(-1)} aria-label="Previous snake">‹</button><div className="tt-snake-focus-main"><div><span className="tt-home-kicker">SELECTED SNAKE</span><h3>{snakes[selectedIndex]?.name}</h3></div><div className="tt-snake-status">{intelligenceAccess ? (selectedIntelligence?.priority?.tone === "attention" ? "🟠 Worth checking" : "🟢 Tracking normally") : "📋 Basic tracking"}</div><p>{intelligenceAccess ? (selectedIntelligence?.summary ?? "Tiny Titans is building this snake's individual baseline.") : `${selectedSnake?.name} has ${selectedSnake?.weightRecords ?? 0} weight records, ${selectedSnake?.feedingRecords ?? 0} feeding records and ${selectedSnake?.shedRecords ?? 0} shed records. Your complete records remain available; advanced intelligent analysis is simply paused.`}</p><div className="tt-snake-actions"><Link to={`/snakes/${snakes[selectedIndex]?.id}/master-record`}>📋 Master Record</Link><Link to={`/snakes/${snakes[selectedIndex]?.id}/husbandry`}>🌡️ Husbandry</Link><Link to={`/snakes/${snakes[selectedIndex]?.id}/weights`}>⚖️ Weight</Link><Link to={`/snakes/${snakes[selectedIndex]?.id}/feeding`}>🍽️ Feeding</Link></div></div><button type="button" className="tt-snake-arrow" onClick={() => moveSnake(1)} aria-label="Next snake">›</button></div>}</section>
