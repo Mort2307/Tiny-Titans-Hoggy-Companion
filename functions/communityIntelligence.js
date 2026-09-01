@@ -8,17 +8,24 @@ const MIN_CONTRIBUTORS = 5;
 const PUBLIC_CACHE_TTL_MS = 60_000;
 let publicContributionCache = null;
 let publicContributionCacheAt = 0;
+let publicContributionFeedCache = null;
+let publicContributionFeedCacheAt = 0;
 
 function number(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function timestampMillis(value) {
-  if (!value) return null;
+  if (!value) return 0;
   if (typeof value?.toMillis === "function") return value.toMillis();
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const parsed = Date.parse(String(value));
-  return Number.isFinite(parsed) ? parsed : null;
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isoDate(value) {
+  const millis = timestampMillis(value);
+  return millis > 0 ? new Date(millis).toISOString() : new Date().toISOString();
 }
 
 function kg(value, unit) {
@@ -34,6 +41,32 @@ async function assertCreator(uid) {
   const profile = (await db.collection("users").doc(uid).get()).data() || {};
   if (profile.role === "admin" || profile.profileType === "creator") return;
   throw new HttpsError("permission-denied", "Creator authorization is required.");
+}
+
+function creditMethods(item) {
+  if (Array.isArray(item?.contributorCreditMethods)) return item.contributorCreditMethods;
+  if (item?.contributorCreditMethod) return [item.contributorCreditMethod];
+  return [];
+}
+
+function publicAttribution(item, fallbackName = "Anonymous keeper") {
+  const methods = creditMethods(item);
+  if (methods.includes("anonymous")) return "Anonymous keeper";
+
+  const parts = [];
+  if (methods.includes("profile")) {
+    const profileName = String(item?.contributorCreditProfileName || item?.contributorProfileName || "").trim();
+    if (profileName) parts.push(profileName);
+  }
+  if (methods.includes("name")) {
+    const name = String(item?.contributorCreditName || "").trim();
+    if (name) parts.push(name);
+  }
+  if (methods.includes("social")) {
+    const social = String(item?.contributorCreditSocial || "").trim();
+    if (social) parts.push(social);
+  }
+  return parts.length ? parts.join(" · ") : fallbackName;
 }
 
 /**
@@ -108,17 +141,6 @@ exports.getCommunityIntelligenceSnapshot = onCall({ region: "europe-west2", memo
     }
   }
 
-  // Small cohorts are deliberately withheld to reduce re-identification risk.
-  if (contributors < MIN_CONTRIBUTORS) {
-    return {
-      available: false,
-      reason: "insufficient-cohort-size",
-      minimumContributors: MIN_CONTRIBUTORS,
-      contributors: 0,
-      generatedAt: new Date().toISOString(),
-    };
-  }
-
   const sorted = (map) => Array.from(map.entries())
     .filter(([, count]) => count >= MIN_CONTRIBUTORS)
     .sort((a, b) => b[1] - a[1])
@@ -173,10 +195,6 @@ async function calculatePublicContributionSnapshot() {
   }
 
   const generatedAt = new Date().toISOString();
-  if (contributors < MIN_CONTRIBUTORS) {
-    return { available: false, minimumContributors: MIN_CONTRIBUTORS, contributors: 0, generatedAt };
-  }
-
   return {
     available: true,
     minimumContributors: MIN_CONTRIBUTORS,
@@ -190,16 +208,10 @@ async function calculatePublicContributionSnapshot() {
   };
 }
 
-/**
- * Signed-in users may see aggregate community contribution volume only.
- * No individual account, snake, location or record-level information is returned.
- * Detailed statistics remain protected by the minimum cohort threshold.
- */
 exports.getPublicCommunityContributionSnapshot = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const now = Date.now();
   if (publicContributionCache && now - publicContributionCacheAt < PUBLIC_CACHE_TTL_MS) return publicContributionCache;
-
   try {
     const snapshot = await calculatePublicContributionSnapshot();
     publicContributionCache = snapshot;
@@ -208,5 +220,65 @@ exports.getPublicCommunityContributionSnapshot = onCall({ region: "europe-west2"
   } catch (error) {
     console.error("Public contribution snapshot failed", error);
     throw new HttpsError("internal", "Unable to load the community contribution tracker.");
+  }
+});
+
+async function calculatePublicContributionFeed() {
+  const feed = [];
+
+  const observationSnapshot = await db.collection("keeperObservations").limit(100).get();
+  for (const doc of observationSnapshot.docs) {
+    const item = doc.data() || {};
+    if (item.status !== "approved") continue;
+    const title = String(item.title || item.behaviourName || item.observationTitle || item.primaryCategory || "Behaviour observation").trim();
+    const category = String(item.primaryCategory || item.category || "Behaviour").trim();
+    const snippet = String(item.description || item.observation || item.notes || "Keeper-submitted behaviour observation.").trim().slice(0, 180);
+    const methods = creditMethods(item);
+    const attributed = methods.includes("profile") || methods.includes("name") || methods.includes("social") || methods.includes("anonymous");
+    if (!attributed) continue;
+    feed.push({
+      id: doc.id,
+      category,
+      title,
+      snippet,
+      contributor: publicAttribution(item),
+      createdAt: isoDate(item.createdAt || item.submittedAt || item.updatedAt),
+      source: "Behaviour Observatory",
+    });
+  }
+
+  const communitySnapshot = await db.collection("communityContent").where("visibility", "==", "community").limit(100).get();
+  for (const doc of communitySnapshot.docs) {
+    const item = doc.data() || {};
+    if (item.moderationStatus !== "approved") continue;
+    const creatorName = String(item.creatorName || "").trim();
+    feed.push({
+      id: doc.id,
+      category: String(item.type || "Community").trim(),
+      title: String(item.title || "Community contribution").trim(),
+      snippet: String(item.description || "Community contribution shared with Tiny Titans.").trim().slice(0, 180),
+      contributor: creatorName || "Community keeper",
+      createdAt: isoDate(item.createdAt || item.updatedAt),
+      source: "Community Hub",
+    });
+  }
+
+  return feed
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, 60);
+}
+
+exports.getPublicCommunityContributionFeed = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  const now = Date.now();
+  if (publicContributionFeedCache && now - publicContributionFeedCacheAt < PUBLIC_CACHE_TTL_MS) return { entries: publicContributionFeedCache, generatedAt: new Date(publicContributionFeedCacheAt).toISOString() };
+  try {
+    const entries = await calculatePublicContributionFeed();
+    publicContributionFeedCache = entries;
+    publicContributionFeedCacheAt = now;
+    return { entries, generatedAt: new Date().toISOString() };
+  } catch (error) {
+    console.error("Public contribution feed failed", error);
+    throw new HttpsError("internal", "Unable to load the public contribution feed.");
   }
 });
