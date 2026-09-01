@@ -49,7 +49,7 @@ function publicAttribution(item, fallback = "Anonymous keeper") {
 }
 
 function contributorKey(item, documentId) {
-  const uid = String(item?.userId || item?.creatorUid || item?.submittedBy || "").trim();
+  const uid = String(item?.userId || item?.creatorUid || item?.submittedBy || item?.uid || "").trim();
   return uid || `anonymous:${documentId}`;
 }
 
@@ -68,6 +68,7 @@ async function calculateConsentEligibleIntelligence() {
   let weightRecords = 0;
   let feedingRecords = 0;
   let shedRecords = 0;
+  let healthRecords = 0;
 
   await Promise.all(users.docs.map(async (userDoc) => {
     const privacy = (await userDoc.ref.collection("settings").doc("privacy").get()).data() || {};
@@ -86,11 +87,16 @@ async function calculateConsentEligibleIntelligence() {
       const validWeights = weights.docs.filter((item) => !item.data()?.deletedAt).length;
       const validFeedings = feedings.docs.filter((item) => !item.data()?.deletedAt).length;
       const validSheds = sheds.docs.filter((item) => !item.data()?.deletedAt).length;
+      const snake = snakeDoc.data() || {};
+      const validHealth = Array.isArray(snake.healthHistory)
+        ? snake.healthHistory.filter((item) => !(item && typeof item === "object" && item.deletedAt)).length
+        : 0;
 
       weightRecords += validWeights;
       feedingRecords += validFeedings;
       shedRecords += validSheds;
-      userEligibleRecords += validWeights + validFeedings + validSheds;
+      healthRecords += validHealth;
+      userEligibleRecords += validWeights + validFeedings + validSheds + validHealth;
     }));
 
     if (userEligibleRecords > 0) contributingKeepers.add(userDoc.id);
@@ -101,7 +107,8 @@ async function calculateConsentEligibleIntelligence() {
     weightRecords,
     feedingRecords,
     shedRecords,
-    totalRecords: weightRecords + feedingRecords + shedRecords,
+    healthRecords,
+    totalRecords: weightRecords + feedingRecords + shedRecords + healthRecords,
   };
 }
 
@@ -143,10 +150,13 @@ async function calculatePublicSnapshot() {
   }
 
   const publicCommunityRecords = behaviourContributions + morphContributions + communityContributions;
+  const publicIdentifiedContributors = new Set(Array.from(contributors).filter((key) => !String(key).startsWith("anonymous:")));
+  const uniqueContributorCount = publicIdentifiedContributors.size + intelligence.contributingKeepers;
+  const anonymousPublicContributors = Array.from(contributors).filter((key) => String(key).startsWith("anonymous:")).length;
   const totalRecords = publicCommunityRecords + intelligence.totalRecords;
   return {
     available: true,
-    contributors: contributors.size + intelligence.contributingKeepers,
+    contributors: uniqueContributorCount + anonymousPublicContributors,
     totalRecords,
     publicCommunityRecords,
     behaviourContributions,
@@ -156,6 +166,7 @@ async function calculatePublicSnapshot() {
     intelligenceWeightRecords: intelligence.weightRecords,
     intelligenceFeedingRecords: intelligence.feedingRecords,
     intelligenceShedRecords: intelligence.shedRecords,
+    intelligenceHealthRecords: intelligence.healthRecords,
     intelligenceContributingKeepers: intelligence.contributingKeepers,
     generatedAt: new Date().toISOString(),
   };
@@ -195,7 +206,7 @@ async function calculatePublicFeed() {
       id: "community-intelligence-aggregate",
       category: "Tiny Titans Intelligence",
       title: `${intelligence.totalRecords} eligible keeper records contributing globally`,
-      snippet: `${intelligence.weightRecords} weight, ${intelligence.feedingRecords} feeding and ${intelligence.shedRecords} shed records are contributing to community intelligence from ${intelligence.contributingKeepers} consenting keepers. Individual records remain private.`,
+      snippet: `${intelligence.weightRecords} weight, ${intelligence.feedingRecords} feeding, ${intelligence.shedRecords} shed and ${intelligence.healthRecords} health records are contributing to community intelligence from ${intelligence.contributingKeepers} consenting keepers. Individual records remain private.`,
       contributor: `${intelligence.contributingKeepers} consenting keepers`,
       createdAt: new Date().toISOString(),
       source: "Community Intelligence",
