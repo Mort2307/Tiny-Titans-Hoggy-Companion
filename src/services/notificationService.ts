@@ -9,6 +9,15 @@ const NOTIFICATION_ENABLED_EVENT = "tiny-titans-notifications-enabled";
 // Public Web Push/VAPID key for the Tiny Titans Firebase project.
 const VAPID_KEY = "BEpw4KCfLyPQq_HGcc2xG6tbaPoYpTaKLW2iMNqUXswa-beCul3CdgrIV5a5jx7ajA4jHywtDy6srnMiW_2lyuI";
 
+export type NotificationDeviceStatus = {
+  supported: boolean;
+  permission: NotificationPermissionState;
+  settingsEnabled: boolean;
+  registered: boolean;
+  serviceWorkerReady: boolean;
+  tokenCount: number;
+};
+
 function validTime(value: unknown, fallback: string): string { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback; }
 function settingsFor(value: unknown): NotificationSettings {
   if (!value || typeof value !== "object") return { ...DEFAULT_NOTIFICATION_SETTINGS };
@@ -38,7 +47,7 @@ export function getNotificationPermissionState(): NotificationPermissionState { 
 export async function getNotificationSettings(uid: string): Promise<NotificationSettings> { if (!uid) return { ...DEFAULT_NOTIFICATION_SETTINGS }; const snapshot = await getDoc(doc(db, "users", uid)); return settingsFor(snapshot.data()?.[SETTINGS_FIELD]); }
 export async function saveNotificationSettings(uid: string, settings: NotificationSettings): Promise<NotificationSettings> { const next = settingsFor(settings); await setDoc(doc(db, "users", uid), { [SETTINGS_FIELD]: next, updatedAt: serverTimestamp() }, { merge: true }); return next; }
 async function tokenDocumentId(token: string): Promise<string> { const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)); return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(""); }
-async function registerMessagingWorker(): Promise<ServiceWorkerRegistration> { if (!("serviceWorker" in navigator)) throw new Error("This browser does not support service workers."); return navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/firebase-messaging/" }); }
+async function registerMessagingWorker(): Promise<ServiceWorkerRegistration> { if (!("serviceWorker" in navigator)) throw new Error("This browser does not support service workers."); const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/firebase-messaging/" }); await navigator.serviceWorker.ready; return registration; }
 async function registerCurrentDeviceToken(uid: string): Promise<boolean> {
   if (!uid || typeof window === "undefined" || !("serviceWorker" in navigator) || !(await isSupported())) return false;
   const serviceWorkerRegistration = await registerMessagingWorker();
@@ -46,7 +55,7 @@ async function registerCurrentDeviceToken(uid: string): Promise<boolean> {
   const token = await getToken(messaging, { serviceWorkerRegistration, vapidKey: VAPID_KEY });
   if (!token) return false;
   const tokenId = await tokenDocumentId(token);
-  await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), { token, enabled: true, platform: navigator.platform || "unknown", userAgent: navigator.userAgent, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), { token, enabled: true, platform: navigator.platform || "unknown", userAgent: navigator.userAgent, registrationScope: serviceWorkerRegistration.scope, updatedAt: serverTimestamp() }, { merge: true });
   return true;
 }
 export async function hasRegisteredNotificationDevice(uid: string): Promise<boolean> {
@@ -58,6 +67,18 @@ export async function hasRegisteredNotificationDevice(uid: string): Promise<bool
     console.warn("Tiny Titans: notification device check failed", error);
     return false;
   }
+}
+export async function getNotificationDeviceStatus(uid: string): Promise<NotificationDeviceStatus> {
+  const permission = getNotificationPermissionState();
+  const settings = await getNotificationSettings(uid);
+  const supported = typeof window !== "undefined" && "serviceWorker" in navigator && (await isSupported().catch(() => false));
+  let serviceWorkerReady = false;
+  if (supported) {
+    try { const registration = await registerMessagingWorker(); serviceWorkerReady = Boolean(registration.active || registration.waiting || registration.installing); } catch (error) { console.warn("Tiny Titans: notification service worker check failed", error); }
+  }
+  let tokenCount = 0;
+  try { const snapshot = await getDocs(collection(db, "users", uid, "notificationTokens")); tokenCount = snapshot.docs.filter((item) => item.data().enabled === true && typeof item.data().token === "string" && item.data().token.length > 0).length; } catch (error) { console.warn("Tiny Titans: notification token count failed", error); }
+  return { supported, permission, settingsEnabled: settings.enabled, registered: tokenCount > 0, serviceWorkerReady, tokenCount };
 }
 export async function refreshNotificationRegistration(uid: string): Promise<boolean> {
   if (!uid || typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return false;
