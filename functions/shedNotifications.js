@@ -4,42 +4,39 @@ const { getMessaging } = require("firebase-admin/messaging");
 
 const db = getFirestore();
 const messaging = getMessaging();
+const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
+const NOTIFICATION_ICON = `${PUBLIC_ORIGIN}/favicon.svg`;
+const NOTIFICATION_BADGE = `${PUBLIC_ORIGIN}/favicon.svg`;
 
 function londonNow() {
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
   const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
   return { date: `${value.year}-${value.month}-${value.day}`, minutes: Number(value.hour) * 60 + Number(value.minute) };
 }
-
 function dateDifference(targetDate, currentDate) {
   const target = new Date(`${targetDate}T00:00:00Z`).getTime();
   const current = new Date(`${currentDate}T00:00:00Z`).getTime();
   return Math.round((target - current) / 86400000);
 }
-
 function timeInWindow(target, currentMinutes, windowMinutes = 5) {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(target || ""))) return false;
   const [hours, minutes] = target.split(":").map(Number);
   const targetMinutes = hours * 60 + minutes;
   return currentMinutes >= targetMinutes && currentMinutes < targetMinutes + windowMinutes;
 }
-
 async function sendShedPush(uid, eventKey, title, body, url) {
   const userRef = db.collection("users").doc(uid);
   const profile = await userRef.get();
   const settings = profile.data()?.notificationSettings || {};
   if (settings.enabled !== true || settings.shedRemindersEnabled === false) return 0;
-
   const eventRef = userRef.collection("notificationEvents").doc(eventKey);
   if ((await eventRef.get()).exists) return 0;
-
   const tokenSnapshot = await userRef.collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokenSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
   if (!tokenDocs.length) {
     await eventRef.set({ type: "shed", status: "no-delivery", title, body, url, read: false, createdAt: FieldValue.serverTimestamp() });
     return 0;
   }
-
   await eventRef.set({ type: "shed", status: "sending", title, body, url, read: false, createdAt: FieldValue.serverTimestamp() });
   let sent = 0;
   let invalid = 0;
@@ -49,7 +46,7 @@ async function sendShedPush(uid, eventKey, title, body, url) {
       tokens: batch.map((item) => item.data().token),
       notification: { title, body },
       data: { title, body, eventKey, url, notificationType: "shed" },
-      webpush: { fcmOptions: { link: url } },
+      webpush: { notification: { icon: NOTIFICATION_ICON, badge: NOTIFICATION_BADGE }, fcmOptions: { link: url } },
     });
     sent += response.successCount;
     invalid += response.failureCount;
@@ -61,40 +58,31 @@ async function sendShedPush(uid, eventKey, title, body, url) {
   await eventRef.set({ status: sent > 0 ? "sent" : "failed", sentCount: sent, invalidTokenCount: invalid, sentAt: FieldValue.serverTimestamp() }, { merge: true });
   return sent;
 }
-
 exports.sendShedCycleReminderNotifications = onSchedule({ schedule: "*/5 * * * *", timeZone: "Europe/London", region: "europe-west2", memory: "256MiB", timeoutSeconds: 180 }, async () => {
   const now = londonNow();
   const users = await db.collection("users").get();
   let evaluated = 0;
   let sent = 0;
-
   for (const userDocument of users.docs) {
     const uid = userDocument.id;
     const settings = userDocument.data().notificationSettings || {};
     if (settings.enabled !== true || settings.shedRemindersEnabled === false) continue;
-
     const reminderDays = Number.isFinite(Number(settings.shedReminderDays)) ? Math.max(1, Math.min(30, Math.round(Number(settings.shedReminderDays)))) : 3;
     const reminderTime = String(settings.shedReminderTime || "09:00");
     if (!timeInWindow(reminderTime, now.minutes)) continue;
-
     const snakes = await userDocument.ref.collection("snakes").get();
     for (const snakeDocument of snakes.docs) {
       evaluated += 1;
       const snake = snakeDocument.data();
       const snakeName = String(snake.name || "your snake");
       const shedSnapshot = await snakeDocument.ref.collection("sheds").get();
-      const activeRecords = shedSnapshot.docs
-        .map((document) => ({ ...document.data(), id: document.id }))
-        .filter((record) => record.currentStage && record.currentStage !== "Complete" && !record.completedAt && !record.deletedAt)
-        .sort((a, b) => String(b.cycleStartedAt || b.date || "").localeCompare(String(a.cycleStartedAt || a.date || "")));
+      const activeRecords = shedSnapshot.docs.map((document) => ({ ...document.data(), id: document.id })).filter((record) => record.currentStage && record.currentStage !== "Complete" && !record.completedAt && !record.deletedAt).sort((a, b) => String(b.cycleStartedAt || b.date || "").localeCompare(String(a.cycleStartedAt || a.date || "")));
       const active = activeRecords[0];
       if (!active) continue;
-
       const started = String(active.cycleStartedAt || active.date || "").trim();
       if (!/^\d{4}-\d{2}-\d{2}$/.test(started)) continue;
       const activeDays = dateDifference(started, now.date);
       if (activeDays < reminderDays) continue;
-
       const stage = String(active.currentStage || "Blue");
       const stageLabel = stage === "Clear" ? "Clear phase" : "Blue phase";
       const eventKey = `shed-checkin-${snakeDocument.id}-${String(active.id)}-${started}-${now.date}`;
@@ -103,6 +91,5 @@ exports.sendShedCycleReminderNotifications = onSchedule({ schedule: "*/5 * * * *
       sent += await sendShedPush(uid, eventKey, title, body, `/shedding/${snakeDocument.id}`);
     }
   }
-
   console.log(`Tiny Titans: shed reminder run complete — evaluated ${evaluated} snakes, sent ${sent} notifications.`);
 });
