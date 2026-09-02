@@ -9,7 +9,8 @@ const checks = [
   ["Canonical output presentation", read("src/components/ResultCard.tsx").includes("getCanonicalOffspringPresentation")],
   ["Reversal engine", read("src/utils/geneticsReversal.ts").includes("export function reverseMorph")],
   ["Reversal panel resolver", read("src/components/MorphReversalPanel.tsx").includes("reverseMorph")],
-  ["Theme-ready reversal styling", read("src/styles/calculator.css").includes(".morph-reversal-panel") && read("src/styles/calculator.css").includes("var(--accent)")],
+  ["Dedicated reversal theme", read("src/components/MorphReversalTheme.css").includes(".morph-reversal-panel") && read("src/components/MorphReversalTheme.css").includes("var(--accent)")],
+  ["Build gate", read("package.json").includes("validate:genetics-calculator-v2")],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
