@@ -78,10 +78,7 @@ function stateLabel(inheritance: InheritanceType, copies: 0 | 1 | 2): string {
 }
 
 function routeState(inheritance: InheritanceType, copies: 0 | 1 | 2): ReverseParentState {
-  return {
-    copies,
-    label: stateLabel(inheritance, copies),
-  };
+  return { copies, label: stateLabel(inheritance, copies) };
 }
 
 function buildRoutes(inheritance: InheritanceType, targetCopies: 1 | 2): ReverseParentRoute[] {
@@ -92,17 +89,12 @@ function buildRoutes(inheritance: InheritanceType, targetCopies: 1 | 2): Reverse
     for (const father of [0, 1, 2] as const) {
       const probability = childProbability(mother, father, targetCopies);
       if (probability <= EPSILON) continue;
-
-      // Sex does not alter a simple autosomal locus route, so collapse mirrored pairs.
       const pairKey = `${Math.min(mother, father)}:${Math.max(mother, father)}`;
       if (seen.has(pairKey)) continue;
       seen.add(pairKey);
-
-      const a = routeState(inheritance, mother);
-      const b = routeState(inheritance, father);
       routes.push({
-        mother: a,
-        father: b,
+        mother: routeState(inheritance, mother),
+        father: routeState(inheritance, father),
         childProbability: probability,
       });
     }
@@ -154,20 +146,54 @@ function buildTreeFromDefinition(definition: MorphDefinition, copies = 1, visite
   };
 }
 
-function resolveTarget(query: string): { target?: MorphDefinition; displayName: string; recognised: boolean; alternateNames: string[]; components: MorphComponent[] } {
+function signature(definition: MorphDefinition): string {
+  return Array.from(aggregateComponents(expandMorphToComponents(definition)).entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([geneId, copies]) => `${geneId}:${copies}`)
+    .join("|");
+}
+
+function getCanonicalCombination(definition: MorphDefinition): { canonical: MorphDefinition; alternateNames: string[] } {
+  const matches = getCombinations()
+    .filter((candidate) => signature(candidate) === signature(definition))
+    .sort((a, b) => {
+      const verificationRank = (value: MorphDefinition["verification"]): number => {
+        if (value === "Confirmed") return 0;
+        if (value === "Recognised") return 1;
+        if (value === "Unverified") return 2;
+        return 3;
+      };
+      return (
+        verificationRank(a.verification) - verificationRank(b.verification) ||
+        (b.components?.length ?? 0) - (a.components?.length ?? 0) ||
+        a.name.localeCompare(b.name)
+      );
+    });
+
+  return {
+    canonical: matches[0] ?? definition,
+    alternateNames: matches.slice(1).map((candidate) => candidate.name),
+  };
+}
+
+function resolveTarget(query: string): {
+  target?: MorphDefinition;
+  displayName: string;
+  recognised: boolean;
+  alternateNames: string[];
+  components: MorphComponent[];
+} {
   const exact = findMorph(query);
   if (exact) {
-    const components = expandMorphToComponents(exact);
-    const sameSignature = getCombinations()
-      .filter((candidate) => candidate.geneId !== exact.geneId)
-      .filter((candidate) => JSON.stringify(signature(candidate)) === JSON.stringify(signature(exact)))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const canonicalised = exact.kind === "Combination" || exact.isCombination
+      ? getCanonicalCombination(exact)
+      : { canonical: exact, alternateNames: [] };
     return {
-      target: exact,
-      displayName: exact.name,
-      recognised: Boolean(exact.isCombination || exact.kind === "Combination"),
-      alternateNames: sameSignature.map((candidate) => candidate.name),
-      components,
+      target: canonicalised.canonical,
+      displayName: canonicalised.canonical.name,
+      recognised: Boolean(canonicalised.canonical.isCombination || canonicalised.canonical.kind === "Combination"),
+      alternateNames: canonicalised.alternateNames,
+      components: canonicalised.canonical.components ?? [],
     };
   }
 
@@ -176,23 +202,6 @@ function resolveTarget(query: string): { target?: MorphDefinition; displayName: 
     const resolved = resolveMorphSelection(parts);
     if (resolved.components.length === 0) {
       return { displayName: query.trim(), recognised: false, alternateNames: [], components: [] };
-    }
-
-    const existing = getCombinations().find(
-      (candidate) => JSON.stringify(signature(candidate)) === JSON.stringify(componentSignature(resolved.components)),
-    );
-
-    if (existing) {
-      return {
-        target: existing,
-        displayName: existing.name,
-        recognised: true,
-        alternateNames: getCombinations()
-          .filter((candidate) => candidate.geneId !== existing.geneId)
-          .filter((candidate) => JSON.stringify(signature(candidate)) === JSON.stringify(signature(existing)))
-          .map((candidate) => candidate.name),
-        components: existing.components ?? [],
-      };
     }
 
     const virtualTarget: MorphDefinition = {
@@ -210,6 +219,18 @@ function resolveTarget(query: string): { target?: MorphDefinition; displayName: 
       description: "A calculated component combination not yet assigned a dedicated database name.",
     };
 
+    const matches = getCombinations().filter((candidate) => signature(candidate) === signature(virtualTarget));
+    if (matches.length > 0) {
+      const canonicalised = getCanonicalCombination(matches[0]);
+      return {
+        target: canonicalised.canonical,
+        displayName: canonicalised.canonical.name,
+        recognised: true,
+        alternateNames: canonicalised.alternateNames,
+        components: canonicalised.canonical.components ?? [],
+      };
+    }
+
     return {
       target: virtualTarget,
       displayName: resolved.displayName,
@@ -220,21 +241,6 @@ function resolveTarget(query: string): { target?: MorphDefinition; displayName: 
   }
 
   return { displayName: query.trim(), recognised: false, alternateNames: [], components: [] };
-}
-
-function componentSignature(definition: MorphDefinition): string {
-  return signatureFromComponents(expandMorphToComponents(definition));
-}
-
-function signature(definition: MorphDefinition): string {
-  return componentSignature(definition);
-}
-
-function signatureFromComponents(components: MorphComponent[]): string {
-  return Array.from(aggregateComponents(components).entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([geneId, copies]) => `${geneId}:${copies}`)
-    .join("|");
 }
 
 export function reverseMorph(query: string): MorphReversalResult | null {
