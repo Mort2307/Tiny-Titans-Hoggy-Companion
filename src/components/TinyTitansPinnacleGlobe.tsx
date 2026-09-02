@@ -12,7 +12,6 @@ type GlobeArea = PublicCommunityLocation & { isSelf: boolean; kind: "community" 
 type MoonGeo = { lat: number; lng: number; altitude: number; distanceKm: number; illumination: number };
 type MoonObject = Group & { userData: { labelTexture?: Texture; moonMesh?: Mesh; label?: Sprite } };
 
-const SIDEREAL_MONTH_DAYS = 27.321661;
 const MOON_MEAN_DISTANCE_KM = 384400;
 const MOON_ORBIT_VISUAL_RADIUS = 2.35;
 const J2000_NOON_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
@@ -49,10 +48,10 @@ function getMoonGeo(now = Date.now()): MoonGeo {
 }
 
 function makeMoonLabelTexture(): CanvasTexture {
-  const canvas = document.createElement("canvas"); canvas.width = 256; canvas.height = 72;
+  const canvas = document.createElement("canvas"); canvas.width = 256; canvas.height = 64;
   const ctx = canvas.getContext("2d"); if (!ctx) return new CanvasTexture(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = "rgba(0,0,0,0.76)"; ctx.strokeStyle = "rgba(245,182,66,0.82)"; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.roundRect(4, 7, 248, 58, 15); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#F5B642"; ctx.font = "800 27px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("📍 Nana Farm", 128, 36);
+  ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = "rgba(0,0,0,0.78)"; ctx.strokeStyle = "rgba(245,182,66,0.88)"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(5, 7, 246, 50, 13); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#F5B642"; ctx.font = "800 24px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("📍 Nana Farm", 128, 32);
   const texture = new CanvasTexture(canvas); texture.needsUpdate = true; return texture;
 }
 
@@ -62,7 +61,7 @@ function createMoonObject(): MoonObject {
   group.add(moonMesh);
   const labelTexture = makeMoonLabelTexture();
   const label = new Sprite(new SpriteMaterial({ map: labelTexture, transparent: true, depthTest: true, depthWrite: false }));
-  label.scale.set(0.52, 0.15, 1); label.position.set(0, 0.2, 0); group.add(label);
+  label.scale.set(0.34, 0.085, 1); label.position.set(0, 0.17, 0); group.add(label);
   group.userData.labelTexture = labelTexture; group.userData.moonMesh = moonMesh; group.userData.label = label; return group;
 }
 
