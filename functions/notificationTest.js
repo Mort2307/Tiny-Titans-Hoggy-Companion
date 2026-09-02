@@ -7,6 +7,7 @@ const db = getFirestore();
 const adminAuth = getAuth();
 const messaging = getMessaging();
 const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
+const ICON_URL = `${PUBLIC_ORIGIN}/favicon.svg`;
 
 const TESTS = Object.freeze({
   feed: { title: "🧪 Test feed reminder — Tiny Titans", body: "This is a live feeding reminder test. Your Tiny Titans notification pipeline is working.", url: "/feeding" },
@@ -76,28 +77,34 @@ async function sendTestPush(targetUid, eventKey, test) {
     createdAt: FieldValue.serverTimestamp(),
   });
 
-  if (!tokenDocs.length) return { sent: 0, invalid: 0 };
+  if (!tokenDocs.length) return { sent: 0, invalid: 0, failures: [] };
 
   let sent = 0;
   let invalid = 0;
+  const failures = [];
   for (let index = 0; index < tokenDocs.length; index += 500) {
     const batch = tokenDocs.slice(index, index + 500);
     const response = await messaging.sendEachForMulticast({
       tokens: batch.map((item) => item.data().token),
       notification: { title: test.title, body: test.body },
       data: { title: test.title, body: test.body, eventKey, url: test.url, notificationTest: "true" },
-      webpush: { fcmOptions: { link } },
+      webpush: { headers: { Urgency: "high" }, fcmOptions: { link }, notification: { icon: ICON_URL, badge: ICON_URL, tag: eventKey } },
     });
     sent += response.successCount;
     invalid += response.failureCount;
+    response.responses.forEach((result, responseIndex) => {
+      if (result.success) return;
+      const code = result.error?.code || "messaging/unknown";
+      failures.push({ tokenId: batch[responseIndex].id, code, message: result.error?.message || "FCM delivery failed." });
+    });
     await Promise.all(response.responses.map(async (result, responseIndex) => {
       const code = result.error?.code || "";
       if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete();
     }));
   }
 
-  await eventRef.set({ status: sent > 0 ? "sent" : "failed", sentCount: sent, invalidTokenCount: invalid, sentAt: FieldValue.serverTimestamp() }, { merge: true });
-  return { sent, invalid };
+  await eventRef.set({ status: sent > 0 ? "sent" : "failed", sentCount: sent, invalidTokenCount: invalid, failures, sentAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { sent, invalid, failures };
 }
 
 exports.getNotificationTestUsers = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 30 }, async (request) => {
@@ -136,5 +143,5 @@ exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB"
 
   const eventKey = makeEventKey(kind, target.id);
   const result = await sendTestPush(target.id, eventKey, test);
-  return { eventKey, targetUid: target.id, kind, title: test.title, body: test.body, url: test.url, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid };
+  return { eventKey, targetUid: target.id, kind, title: test.title, body: test.body, url: test.url, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid, failures: result.failures };
 });
