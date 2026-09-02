@@ -11,7 +11,7 @@ import "../styles/CreatorTools.css";
 
 function when(value: unknown): string {
   if (!value) return "Unknown date";
-  const date = typeof value === "object' && value !== null && "toDate" in value && typeof value.toDate === "function" ? value.toDate() : new Date(String(value));
+  const date = typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function" ? value.toDate() : new Date(String(value));
   return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleString("en-GB");
 }
 
