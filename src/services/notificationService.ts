@@ -6,7 +6,8 @@ import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationPermissionState, type N
 
 const SETTINGS_FIELD = "notificationSettings";
 const NOTIFICATION_ENABLED_EVENT = "tiny-titans-notifications-enabled";
-const VAPID_KEY = String(import.meta.env.VITE_FIREBASE_VAPID_KEY || "").trim();
+// Public Web Push/VAPID key for the Tiny Titans Firebase project.
+const VAPID_KEY = "BEpw4KCfLyPQq_HGcc2xG6tbaPoYpTaKLW2iMNqUXswa-beCul3CdgrIV5a5jx7ajA4jHywtDy6srnMiW_2lyuI";
 
 function validTime(value: unknown, fallback: string): string { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback; }
 function settingsFor(value: unknown): NotificationSettings {
@@ -26,8 +27,7 @@ async function registerCurrentDeviceToken(uid: string): Promise<boolean> {
   if (!uid || typeof window === "undefined" || !("serviceWorker" in navigator) || !(await isSupported())) return false;
   const serviceWorkerRegistration = await registerMessagingWorker();
   const messaging = getMessaging(app);
-  const options = VAPID_KEY ? { serviceWorkerRegistration, vapidKey: VAPID_KEY } : { serviceWorkerRegistration };
-  const token = await getToken(messaging, options);
+  const token = await getToken(messaging, { serviceWorkerRegistration, vapidKey: VAPID_KEY });
   if (!token) return false;
   const tokenId = await tokenDocumentId(token);
   await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), { token, enabled: true, platform: navigator.platform || "unknown", userAgent: navigator.userAgent, updatedAt: serverTimestamp() }, { merge: true });
