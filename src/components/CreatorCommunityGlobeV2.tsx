@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Globe from "react-globe.gl";
-import { getCommunityLocationMembers, type CommunityLocationMember } from "../services/communityLocationService";
 import CreatorSnapshotIntelligence from "./CreatorSnapshotIntelligence";
+import { getCommunityLocationMembers, type CommunityLocationMember } from "../services/communityLocationService";
+import { EARTH_BUMP_TEXTURE_URL, EARTH_DAY_TEXTURE_URL, EARTH_STAR_TEXTURE_URL, type EarthDayNightMaterial, loadEarthDayNightMaterial, updateEarthSun } from "../services/earthDayNight";
 import "../styles/creatorCommunityGlobeV2.css";
 
- type GeoFeature = { geometry: unknown };
+type GeoFeature = { geometry: unknown };
 type GeoJson = { features: GeoFeature[] };
 type Marker = { areaId: string; city: string; country: string; lat: number; lng: number; members: CommunityLocationMember[] };
 type CommunityArea = { city: string; members: CommunityLocationMember[] };
@@ -22,6 +23,7 @@ export default function CreatorCommunityGlobeV2() {
   const [mapLoading, setMapLoading] = useState(true);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState(false);
+  const [earthMaterial, setEarthMaterial] = useState<EarthDayNightMaterial | null>(null);
   const [expandedCountries, setExpandedCountries] = useState<Set<string>>(new Set());
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set());
 
@@ -62,6 +64,26 @@ export default function CreatorCommunityGlobeV2() {
       .finally(() => { if (active) setMapLoading(false); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void loadEarthDayNightMaterial().then((material) => {
+      if (!active) { material.dispose(); return; }
+      setEarthMaterial(material);
+    }).catch((error) => console.warn("Tiny Titans: Creator Earth renderer could not be loaded", error));
+    return () => {
+      active = false;
+      setEarthMaterial((current) => { current?.dispose(); return null; });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!earthMaterial) return;
+    const updateSun = () => updateEarthSun(earthMaterial);
+    updateSun();
+    const timer = window.setInterval(updateSun, 10000);
+    return () => window.clearInterval(timer);
+  }, [earthMaterial]);
 
   useEffect(() => {
     const controls = globeRef.current?.controls();
@@ -119,7 +141,7 @@ export default function CreatorCommunityGlobeV2() {
     <div className="creator-globe-stats"><div><strong>{totalUsers}</strong><span>represented users</span></div><div><strong>{countryCount}</strong><span>countries</span></div><div><strong>{areaCount}</strong><span>community areas</span></div><div><strong>{totalSnakes ?? "—"}</strong><span>{totalSnakes === undefined ? "snake count not available" : "tracked snakes"}</span></div></div>
     <div className="creator-globe-panel">
       <div ref={visualRef} className="creator-globe-visual" aria-label="Interactive Tiny Titans community globe">
-        <Globe ref={globeRef as never} width={globeSize.width} height={globeSize.height} backgroundColor="rgba(0,0,0,0)" showAtmosphere atmosphereColor="#00AEFF" atmosphereAltitude={0.16} globeImageUrl="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg" bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png" polygonsData={countries} polygonGeoJsonGeometry="geometry" polygonCapColor={() => "rgba(111,36,184,0.15)"} polygonSideColor={() => "rgba(0,174,255,0.08)"} polygonStrokeColor={() => "rgba(245,182,66,0.25)"} polygonAltitude={0.002} pointsData={markers} pointLat="lat" pointLng="lng" pointAltitude={0.035} pointRadius={(item) => Math.min(0.8, 0.25 + ((item as Marker).members.length * 0.04))} pointColor={() => "#F5B642"} pointLabel={(item) => { const marker = item as Marker; return `${marker.city} area, ${marker.country} · ${marker.members.length} Titan${marker.members.length === 1 ? "" : "s"}`; }} onPointClick={(item) => { const marker = item as Marker; setSelectedKey(marker.areaId); setAutoRotate(false); }} enablePointerInteraction />
+        <Globe ref={globeRef as never} width={globeSize.width} height={globeSize.height} backgroundColor="rgba(0,0,0,0)" backgroundImageUrl={EARTH_STAR_TEXTURE_URL} globeMaterial={earthMaterial ?? undefined} globeImageUrl={earthMaterial ? undefined : EARTH_DAY_TEXTURE_URL} bumpImageUrl={EARTH_BUMP_TEXTURE_URL} showAtmosphere atmosphereColor="#00AEFF" atmosphereAltitude={0.16} polygonsData={countries} polygonGeoJsonGeometry="geometry" polygonCapColor={() => "rgba(111,36,184,0.15)"} polygonSideColor={() => "rgba(0,174,255,0.08)"} polygonStrokeColor={() => "rgba(245,182,66,0.25)"} polygonAltitude={0.002} pointsData={markers} pointLat="lat" pointLng="lng" pointAltitude={0.035} pointRadius={(item) => Math.min(0.8, 0.25 + ((item as Marker).members.length * 0.04))} pointColor={() => "#F5B642"} pointLabel={(item) => { const marker = item as Marker; return `${marker.city} area, ${marker.country} · ${marker.members.length} Titan${marker.members.length === 1 ? "" : "s"}`; }} onPointClick={(item) => { const marker = item as Marker; setSelectedKey(marker.areaId); setAutoRotate(false); }} enablePointerInteraction />
         {mapLoading && <div className="creator-globe-loading">Loading the world map…</div>}<div className="creator-globe-drag-hint">Drag to rotate · pinch to zoom · tap an area for details</div>
       </div>
       <aside className="creator-globe-summary"><div className="creator-globe-summary-title">🌎 Community by location</div><div className="creator-location-controls"><button type="button" className="creator-tool-button" onClick={expandAll}>Expand all</button><button type="button" className="creator-tool-button" onClick={collapseAll}>Collapse all</button></div>
