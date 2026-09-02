@@ -7,6 +7,7 @@ import {
   type MorphComponent,
 } from "../data/morphs";
 import { expandMorphToComponents, resolveMorphSelection } from "./morphResolver";
+import { calculatorNamedCombinations, componentSignature, findCalculatorNamedCombination } from "../data/geneticsComboRegistry";
 
 export type ReverseParentState = {
   copies: 0 | 1 | 2;
@@ -24,7 +25,7 @@ export type ReverseLocusRequirement = {
   name: string;
   inheritance: InheritanceType;
   copies: 1 | 2;
-  expressedState: "Het" | "Visual" | "Super";
+  expressedState: "Het" | "Visual" | "Super" | "Trait";
   routes: ReverseParentRoute[];
 };
 
@@ -51,9 +52,7 @@ export type MorphReversalResult = {
 const EPSILON = 0.000001;
 
 function mutationAlleleProbability(copies: 0 | 1 | 2): number {
-  if (copies === 0) return 0;
-  if (copies === 1) return 0.5;
-  return 1;
+  return copies / 2;
 }
 
 function childProbability(mother: 0 | 1 | 2, father: 0 | 1 | 2, target: 0 | 1 | 2): number {
@@ -71,10 +70,14 @@ function stateLabel(inheritance: InheritanceType, copies: 0 | 1 | 2): string {
   if (copies === 0) return "Clear";
   if (inheritance === "Recessive") return copies === 2 ? "Visual" : "Het";
   if (inheritance === "Incomplete Dominant") return copies === 2 ? "Super" : "Visual";
-  if (inheritance === "Dominant") return copies === 2 ? "Visual" : "Het";
-  if (inheritance === "Polygenic") return "Trait present";
-  if (inheritance === "Line-bred") return "Line-bred trait";
-  return copies === 2 ? "Visual" : "Present";
+  if (inheritance === "Dominant") return "Visual";
+  if (inheritance === "Polygenic") return "Trait";
+  if (inheritance === "Line-bred") return "Trait";
+  return "Trait";
+}
+
+function supportsMendelianRoutes(inheritance: InheritanceType): boolean {
+  return inheritance === "Recessive" || inheritance === "Incomplete Dominant" || inheritance === "Dominant";
 }
 
 function routeState(inheritance: InheritanceType, copies: 0 | 1 | 2): ReverseParentState {
@@ -82,6 +85,8 @@ function routeState(inheritance: InheritanceType, copies: 0 | 1 | 2): ReversePar
 }
 
 function buildRoutes(inheritance: InheritanceType, targetCopies: 1 | 2): ReverseParentRoute[] {
+  if (!supportsMendelianRoutes(inheritance)) return [];
+
   const routes: ReverseParentRoute[] = [];
   const seen = new Set<string>();
 
@@ -100,10 +105,10 @@ function buildRoutes(inheritance: InheritanceType, targetCopies: 1 | 2): Reverse
     }
   }
 
-  return routes.sort((a, b) => {
-    if (b.childProbability !== a.childProbability) return b.childProbability - a.childProbability;
-    return a.mother.copies + a.father.copies - (b.mother.copies + b.father.copies);
-  });
+  return routes.sort((a, b) =>
+    b.childProbability - a.childProbability
+    || (a.mother.copies + a.father.copies) - (b.mother.copies + b.father.copies),
+  );
 }
 
 function aggregateComponents(components: MorphComponent[]): Map<string, number> {
@@ -122,58 +127,44 @@ function buildTreeFromDefinition(definition: MorphDefinition, copies = 1, visite
   for (const component of definition.components ?? []) {
     const referenced = getMorphByGeneId(component.morphId);
     const componentCopies = (component.copies ?? 1) * copies;
-
     if (!referenced || nextVisited.has(component.morphId)) {
-      children.push({
-        id: component.morphId,
-        name: referenced?.name ?? component.morphId,
-        kind: referenced?.kind ?? "Unknown",
-        copies: componentCopies,
-        children: [],
-      });
+      children.push({ id: component.morphId, name: referenced?.name ?? component.morphId, kind: referenced?.kind ?? "Unknown", copies: componentCopies, children: [] });
       continue;
     }
-
     children.push(buildTreeFromDefinition(referenced, componentCopies, nextVisited));
   }
 
-  return {
-    id: definition.geneId,
-    name: definition.name,
-    kind: definition.kind,
-    copies,
-    children,
-  };
+  return { id: definition.geneId, name: definition.name, kind: definition.kind, copies, children };
 }
 
 function signature(definition: MorphDefinition): string {
-  return Array.from(aggregateComponents(expandMorphToComponents(definition)).entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([geneId, copies]) => `${geneId}:${copies}`)
-    .join("|");
+  return componentSignature(expandMorphToComponents(definition));
+}
+
+function getAllRecognisedCombinations(): MorphDefinition[] {
+  const all = [...getCombinations(), ...calculatorNamedCombinations];
+  const bySignature = new Map<string, MorphDefinition[]>();
+  for (const candidate of all) {
+    const key = signature(candidate);
+    const group = bySignature.get(key) ?? [];
+    if (!group.some((entry) => entry.geneId === candidate.geneId)) group.push(candidate);
+    bySignature.set(key, group);
+  }
+  return [...bySignature.values()].flat();
+}
+
+function sortCombinations(a: MorphDefinition, b: MorphDefinition): number {
+  const verificationRank = (value: MorphDefinition["verification"]): number => value === "Confirmed" ? 0 : value === "Recognised" ? 1 : value === "Unverified" ? 2 : 3;
+  return verificationRank(a.verification) - verificationRank(b.verification)
+    || (b.components?.length ?? 0) - (a.components?.length ?? 0)
+    || a.name.localeCompare(b.name);
 }
 
 function getCanonicalCombination(definition: MorphDefinition): { canonical: MorphDefinition; alternateNames: string[] } {
-  const matches = getCombinations()
+  const matches = getAllRecognisedCombinations()
     .filter((candidate) => signature(candidate) === signature(definition))
-    .sort((a, b) => {
-      const verificationRank = (value: MorphDefinition["verification"]): number => {
-        if (value === "Confirmed") return 0;
-        if (value === "Recognised") return 1;
-        if (value === "Unverified") return 2;
-        return 3;
-      };
-      return (
-        verificationRank(a.verification) - verificationRank(b.verification) ||
-        (b.components?.length ?? 0) - (a.components?.length ?? 0) ||
-        a.name.localeCompare(b.name)
-      );
-    });
-
-  return {
-    canonical: matches[0] ?? definition,
-    alternateNames: matches.slice(1).map((candidate) => candidate.name),
-  };
+    .sort(sortCombinations);
+  return { canonical: matches[0] ?? definition, alternateNames: matches.slice(1).map((candidate) => candidate.name) };
 }
 
 function resolveTarget(query: string): {
@@ -183,6 +174,18 @@ function resolveTarget(query: string): {
   alternateNames: string[];
   components: MorphComponent[];
 } {
+  const named = findCalculatorNamedCombination(query);
+  if (named) {
+    const canonicalised = getCanonicalCombination(named);
+    return {
+      target: canonicalised.canonical,
+      displayName: canonicalised.canonical.name,
+      recognised: true,
+      alternateNames: canonicalised.alternateNames,
+      components: canonicalised.canonical.components ?? [],
+    };
+  }
+
   const exact = findMorph(query);
   if (exact) {
     const canonicalised = exact.kind === "Combination" || exact.isCombination
@@ -200,9 +203,7 @@ function resolveTarget(query: string): {
   const parts = query.split("+").map((part) => part.trim()).filter(Boolean);
   if (parts.length > 1) {
     const resolved = resolveMorphSelection(parts);
-    if (resolved.components.length === 0) {
-      return { displayName: query.trim(), recognised: false, alternateNames: [], components: [] };
-    }
+    if (resolved.components.length === 0) return { displayName: query.trim(), recognised: false, alternateNames: [], components: [] };
 
     const virtualTarget: MorphDefinition = {
       geneId: `virtual:${resolved.components.map((component) => `${component.morphId}-${component.copies ?? 1}`).join("+")}`,
@@ -218,25 +219,13 @@ function resolveTarget(query: string): {
       verification: "Recognised",
       description: "A calculated component combination not yet assigned a dedicated database name.",
     };
-
-    const matches = getCombinations().filter((candidate) => signature(candidate) === signature(virtualTarget));
-    if (matches.length > 0) {
-      const canonicalised = getCanonicalCombination(matches[0]);
-      return {
-        target: canonicalised.canonical,
-        displayName: canonicalised.canonical.name,
-        recognised: true,
-        alternateNames: canonicalised.alternateNames,
-        components: canonicalised.canonical.components ?? [],
-      };
-    }
-
+    const canonicalised = getCanonicalCombination(virtualTarget);
     return {
-      target: virtualTarget,
-      displayName: resolved.displayName,
-      recognised: false,
-      alternateNames: [],
-      components: resolved.components,
+      target: canonicalised.canonical,
+      displayName: canonicalised.canonical.name,
+      recognised: getAllRecognisedCombinations().some((candidate) => signature(candidate) === signature(virtualTarget)),
+      alternateNames: canonicalised.alternateNames,
+      components: canonicalised.canonical.components ?? virtualTarget.components ?? [],
     };
   }
 
@@ -246,7 +235,6 @@ function resolveTarget(query: string): {
 export function reverseMorph(query: string): MorphReversalResult | null {
   const clean = query.trim();
   if (!clean) return null;
-
   const resolved = resolveTarget(clean);
   if (!resolved.target || resolved.components.length === 0) return null;
 
@@ -256,14 +244,14 @@ export function reverseMorph(query: string): MorphReversalResult | null {
   for (const [geneId, copiesValue] of loci) {
     const definition = getMorphByGeneId(geneId);
     if (!definition || !definition.isGene) continue;
-
     const copies = Math.max(1, Math.min(2, copiesValue)) as 1 | 2;
+    const nonMendelian = !supportsMendelianRoutes(definition.inheritance);
     underlyingLoci.push({
       geneId,
       name: definition.name,
       inheritance: definition.inheritance,
       copies,
-      expressedState: stateLabel(definition.inheritance, copies) as "Het" | "Visual" | "Super",
+      expressedState: nonMendelian ? "Trait" : stateLabel(definition.inheritance, copies) as "Het" | "Visual" | "Super",
       routes: buildRoutes(definition.inheritance, copies),
     });
   }
@@ -274,6 +262,8 @@ export function reverseMorph(query: string): MorphReversalResult | null {
     copies,
   }));
 
+  const hasNonMendelian = underlyingLoci.some((locus) => !supportsMendelianRoutes(locus.inheritance));
+
   return {
     query: clean,
     canonicalName: resolved.displayName,
@@ -283,6 +273,8 @@ export function reverseMorph(query: string): MorphReversalResult | null {
     underlyingLoci,
     tree: buildTreeFromDefinition(resolved.target),
     alternateNames: resolved.alternateNames,
-    caveat: "This is a genetic reconstruction, not a claim of unique parentage. A combo phenotype can have multiple valid breeding routes; every listed locus must be satisfied for the whole phenotype.",
+    caveat: hasNonMendelian
+      ? "Genetic reconstruction only. Mendelian parent routes are shown only for supported single-locus inheritance; polygenic, line-bred and unresolved traits are not assigned artificial probabilities. A combination name does not create a new gene."
+      : "Genetic reconstruction only. A combo phenotype can have multiple valid breeding routes; each listed locus must be satisfied for the complete phenotype. This does not establish unique historical parentage.",
   };
 }
