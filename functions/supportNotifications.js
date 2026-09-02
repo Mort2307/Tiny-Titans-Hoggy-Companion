@@ -18,19 +18,34 @@ async function displayName(uid) {
   return String(snap.data()?.displayName || "Anonymous user").trim() || "Anonymous user";
 }
 
+function isInvalidTokenCode(code) {
+  return code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token";
+}
+
 async function emit(uid, payload) {
   if (!uid) return;
   const eventRef = await db.collection("users").doc(uid).collection("notificationEvents").add({ ...payload, read: false, createdAt: FieldValue.serverTimestamp() });
   const tokenSnapshot = await db.collection("users").doc(uid).collection("notificationTokens").where("enabled", "==", true).get().catch(() => null);
-  const tokens = tokenSnapshot ? tokenSnapshot.docs.map((snap) => String(snap.data().token || "")).filter(Boolean) : [];
-  if (!tokens.length) return;
+  const tokenDocs = tokenSnapshot ? tokenSnapshot.docs.filter((snap) => typeof snap.data().token === "string" && snap.data().token.length > 0) : [];
+  if (!tokenDocs.length) return;
+
   try {
-    const response = await getMessaging().sendEachForMulticast({
-      tokens,
-      notification: { title: payload.title, body: payload.body },
-      data: { eventKey: eventRef.id, title: payload.title, body: payload.body, url: payload.url || "/" },
-    });
-    await Promise.all(response.responses.map((result, index) => result.success ? null : tokenSnapshot.docs[index].ref.update({ enabled: false }).catch(() => undefined)));
+    for (let index = 0; index < tokenDocs.length; index += 500) {
+      const batch = tokenDocs.slice(index, index + 500);
+      const response = await getMessaging().sendEachForMulticast({
+        tokens: batch.map((snap) => snap.data().token),
+        notification: { title: payload.title, body: payload.body },
+        data: { eventKey: eventRef.id, title: payload.title, body: payload.body, url: payload.url || "/" },
+        webpush: {
+          fcmOptions: { link: `https://tinytitans-hoggy-companion.web.app${payload.url || "/"}` },
+          notification: { icon: "/favicon.svg", badge: "/favicon.svg", tag: eventRef.id },
+        },
+      });
+      await Promise.all(response.responses.map((result, responseIndex) => {
+        if (!result.success && isInvalidTokenCode(result.error?.code || "")) return batch[responseIndex].ref.delete().catch(() => undefined);
+        return null;
+      }));
+    }
   } catch (error) {
     console.warn("Tiny Titans: support push delivery failed", error);
   }
