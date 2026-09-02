@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
@@ -27,7 +27,7 @@ export default function FamilyManager() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     setError("");
@@ -41,11 +41,9 @@ export default function FamilyManager() {
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    void load();
   }, [user]);
+
+  useEffect(() => { void load(); }, [load]);
 
   async function changeMode(memberUid: string, mode: FamilyAccessMode) {
     if (!user) return;
