@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
-import { useAuth } from "../context/useAuth";
 import { createFamily, getFamilyForUser, type FamilyAccount } from "../services/familyService";
 import { decideFamilyJoinRequest, generateFamilyJoinCode, getFamilyJoinCode, getFamilyJoinRequests, requestFamilyJoinByCode, revokeFamilyJoinCode, type FamilyJoinRequest } from "../services/familyJoinCodeService";
 import "../styles/family-join.css";
@@ -41,7 +40,7 @@ export default function FamilyJoin() {
 
   const familyFull = Boolean(family && family.memberUids.length >= 4);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     setError("");
@@ -63,9 +62,9 @@ export default function FamilyJoin() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user]);
 
-  useEffect(() => { void refresh(); }, [user]);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   async function startFamily() {
     if (!user || !profile) return;
