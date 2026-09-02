@@ -18,15 +18,20 @@ async function sendPush(uid, eventKey, title, body, url, type = "reminder") {
   const tokenSnapshot = await userRef.collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokenSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
   if (!tokenDocs.length) {
-    await eventRef.set({ type, status: "no-delivery", title, body, url, createdAt: FieldValue.serverTimestamp() });
+    await eventRef.set({ type, status: "no-delivery", title, body, url, read: false, createdAt: FieldValue.serverTimestamp() });
     return { sent: 0, invalid: 0 };
   }
-  await eventRef.set({ type, status: "sending", title, body, url, createdAt: FieldValue.serverTimestamp() });
+  await eventRef.set({ type, status: "sending", title, body, url, read: false, createdAt: FieldValue.serverTimestamp() });
   let sent = 0;
   let invalid = 0;
   for (let index = 0; index < tokenDocs.length; index += 500) {
     const batch = tokenDocs.slice(index, index + 500);
-    const response = await messaging.sendEachForMulticast({ tokens: batch.map((item) => item.data().token), data: { title, body, eventKey, url } });
+    const response = await messaging.sendEachForMulticast({
+      tokens: batch.map((item) => item.data().token),
+      notification: { title, body },
+      data: { title, body, eventKey, url, notificationType: type },
+      webpush: { fcmOptions: { link: `https://tinytitans-hoggy-companion.web.app${url.startsWith("/") ? url : `/${url}`}` } },
+    });
     sent += response.successCount;
     invalid += response.failureCount;
     await Promise.all(response.responses.map(async (result, responseIndex) => {
@@ -43,6 +48,20 @@ async function findUserByEmail(email) {
   if (!normalised) return null;
   const snapshot = await db.collection("users").where("email", "==", normalised).limit(1).get();
   return snapshot.empty ? null : snapshot.docs[0];
+}
+
+async function getDisplayName(uid, fallback = "A family member") {
+  const userId = String(uid || "").trim();
+  if (!userId) return fallback;
+  try {
+    const snapshot = await db.collection("users").doc(userId).get();
+    const data = snapshot.data() || {};
+    const name = String(data.displayName || data.name || data.username || "").trim();
+    return name || fallback;
+  } catch (error) {
+    console.warn("Tiny Titans: unable to resolve notification display name", { uid: userId, error });
+    return fallback;
+  }
 }
 
 function londonNow() {
@@ -95,9 +114,12 @@ exports.sendFamilyApprovalNotification = onDocumentCreated({ document: "familyAp
   if (!approval || approval.status !== "pending" || !approval.familyId) return;
   const family = await db.collection("families").doc(String(approval.familyId)).get();
   const ownerUid = String(family.data()?.ownerUid || "");
-  if (!ownerUid || ownerUid === String(approval.requesterUid || "")) return;
-  const requesterName = String(approval.requesterName || "A family member");
-  await sendPush(ownerUid, `family-approval-${event.params.approvalId}`, "🔐 Tiny Titans Approval Needed", `${requesterName} needs your approval for: ${String(approval.title || "a family change")}.`, "/account/family", "family");
+  if (!ownerUid) return;
+  const requesterUid = String(approval.requesterUid || "").trim();
+  if (!requesterUid || requesterUid === ownerUid) return;
+  const requesterName = await getDisplayName(requesterUid, String(approval.requesterName || "A family member").trim() || "A family member");
+  const action = String(approval.title || "a family change");
+  await sendPush(ownerUid, `family-approval-${event.params.approvalId}`, "🔐 Tiny Titans Approval Needed", `${requesterName} needs your approval for: ${action}.`, "/account/family", "family");
 });
 
 exports.sendFamilyApprovalDecisionNotification = onDocumentUpdated({ document: "familyApprovals/{approvalId}", region: "europe-west2" }, async (event) => {
@@ -147,7 +169,6 @@ exports.sendAllKeeperReminderNotifications = onSchedule({ schedule: "*/5 * * * *
       const snakeName = String(snake.name || "your snake");
       evaluated += 1;
 
-      // 1. Scheduled feeding reminders + optional preparation reminders.
       const feeding = snake.feedingSchedule || {};
       if (feeding.enabled === true && feeding.notificationsEnabled !== false && settings.feedingRemindersEnabled !== false && feeding.nextFeedingDate) {
         const daysUntil = dateDifference(String(feeding.nextFeedingDate), now.date);
@@ -161,12 +182,11 @@ exports.sendAllKeeperReminderNotifications = onSchedule({ schedule: "*/5 * * * *
           sent += delivery.sent;
         }
         if (prepEnabled && daysUntil === prepDays && timeInWindow(prepTime, now.minutes)) {
-          const delivery = await sendPush(uid, `feeding-prep-${snakeId}-${eventDate}-${prepDays}`, `🥩 Feeding preparation — ${snakeName}`, `Prepare ${snakeName}'s feed. Feeding is scheduled for ${eventDate}.`, "/feeding-preparation", "feeding-preparation");
+          const delivery = await sendPush(uid, `feeding-prep-${snakeId}-${eventDate}-${prepDays}`, `🥩 Feeding preparation — ${snakeName}`, `Prepare ${snakeName}'s feed. Feeding is scheduled for ${eventDate}.`, "/feeding/preparation", "feeding-preparation");
           sent += delivery.sent;
         }
       }
 
-      // 2. Weight reminders use the exact frequency configured by the keeper.
       const weightTracking = snake.weightTracking || {};
       if (weightTracking.enabled === true && settings.weightRemindersEnabled !== false) {
         const lastDate = String(snake.lastWeighedDate || "").trim();
@@ -174,16 +194,15 @@ exports.sendAllKeeperReminderNotifications = onSchedule({ schedule: "*/5 * * * *
           const nextDate = addDays(lastDate, weightIntervalDays(weightTracking.frequency));
           const daysUntil = dateDifference(nextDate, now.date);
           if (daysUntil === 0 && timeInWindow(String(settings.weightReminderTime || "09:00"), now.minutes)) {
-            const delivery = await sendPush(uid, `weight-due-${snakeId}-${nextDate}`, `⚖️ Weigh-in due — ${snakeName}`, `${snakeName} is due for their scheduled weight record today.`, `/weight/${snakeId}`, "weight");
+            const delivery = await sendPush(uid, `weight-due-${snakeId}-${nextDate}`, `⚖️ Weigh-in due — ${snakeName}`, `${snakeName} is due for their scheduled weight record today.`, `/weights/${snakeId}`, "weight");
             sent += delivery.sent;
           } else if (daysUntil === -1 && timeInWindow(String(settings.weightReminderTime || "09:00"), now.minutes)) {
-            const delivery = await sendPush(uid, `weight-overdue-${snakeId}-${nextDate}`, `⚖️ Weight overdue — ${snakeName}`, `${snakeName}'s scheduled weigh-in was missed yesterday.`, `/weight/${snakeId}`, "weight");
+            const delivery = await sendPush(uid, `weight-overdue-${snakeId}-${nextDate}`, `⚖️ Weight overdue — ${snakeName}`, `${snakeName}'s scheduled weigh-in was missed yesterday.`, `/weights/${snakeId}`, "weight");
             sent += delivery.sent;
           }
         }
       }
 
-      // 3. Health, medication and vet follow-up reminders are kept in the same engine.
       if (settings.healthRemindersEnabled !== false) {
         const healthSnapshot = await snakeDocument.ref.collection("health").get();
         for (const healthDocument of healthSnapshot.docs) {
@@ -211,17 +230,14 @@ exports.sendAllKeeperReminderNotifications = onSchedule({ schedule: "*/5 * * * *
 
           const followUpDate = String(record.followUpDate || "").trim();
           if (followUpDate && settings.healthReminderFollowUpEnabled !== false) {
-            const followUp = Date.parse(`${followUpDate}T09:00:00`);
-            if (Number.isFinite(followUp)) {
-              const daysUntil = dateDifference(followUpDate, now.date);
-              const leadDays = Number(settings.healthFollowUpLeadDays || 1);
-              if (daysUntil <= leadDays && daysUntil >= 0 && timeInWindow("09:00", now.minutes)) {
-                const eventKey = `health-followup-${snakeId}-${healthDocument.id}-${followUpDate}`.replace(/[^a-zA-Z0-9_-]/g, "-");
-                const title = record.eventType === "Vet Visit" ? `🩺 Vet follow-up — ${snakeName}` : `🩺 Health follow-up — ${snakeName}`;
-                const body = daysUntil === 0 ? `${String(record.title || "Health follow-up")} is due today.` : `${String(record.title || "Health follow-up")} is due in ${daysUntil} day${daysUntil === 1 ? "" : "s"}.`;
-                const delivery = await sendPush(uid, eventKey, title, body, `/health/${snakeId}`, "health-followup");
-                sent += delivery.sent;
-              }
+            const daysUntil = dateDifference(followUpDate, now.date);
+            const leadDays = Number(settings.healthFollowUpLeadDays || 1);
+            if (daysUntil <= leadDays && daysUntil >= 0 && timeInWindow("09:00", now.minutes)) {
+              const eventKey = `health-followup-${snakeId}-${healthDocument.id}-${followUpDate}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+              const title = record.eventType === "Vet Visit" ? `🩺 Vet follow-up — ${snakeName}` : `🩺 Health follow-up — ${snakeName}`;
+              const body = daysUntil === 0 ? `${String(record.title || "Health follow-up")} is due today.` : `${String(record.title || "Health follow-up")} is due in ${daysUntil} day${daysUntil === 1 ? "" : "s"}.`;
+              const delivery = await sendPush(uid, eventKey, title, body, `/health/${snakeId}`, "health-followup");
+              sent += delivery.sent;
             }
           }
         }
