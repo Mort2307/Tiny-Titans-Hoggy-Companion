@@ -2,7 +2,7 @@ import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firest
 import { db } from "../firebase/config";
 import type { PrivacyPreferences } from "../types/privacy";
 
-export const PRIVACY_CONSENT_VERSION = "2026-08-20-privacy-community-husbandry-v3";
+export const PRIVACY_CONSENT_VERSION = "2026-09-02-community-location-v4";
 
 const DEFAULT_PRIVACY: PrivacyPreferences = {
   consentVersion: "",
@@ -34,10 +34,13 @@ export async function savePrivacyPreferences(
 
 export async function clearCommunityLocation(uid: string): Promise<void> {
   if (!uid) throw new Error("Privacy preferences require an authenticated user.");
-  await updateDoc(doc(db, "users", uid, "settings", "privacy"), {
-    communityLocation: false,
-    city: null,
-    country: null,
-    consentUpdatedAt: serverTimestamp(),
-  });
+  await Promise.all([
+    updateDoc(doc(db, "users", uid, "settings", "privacy"), {
+      communityLocation: false,
+      city: null,
+      country: null,
+      consentUpdatedAt: serverTimestamp(),
+    }),
+    updateDoc(doc(db, "users", uid), { approximateLocation: null, updatedAt: serverTimestamp() }),
+  ]);
 }
