@@ -6,6 +6,7 @@ const { getMessaging } = require("firebase-admin/messaging");
 const db = getFirestore();
 const adminAuth = getAuth();
 const messaging = getMessaging();
+const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
 
 const TESTS = Object.freeze({
   feed: { title: "🧪 Test feed reminder — Tiny Titans", body: "This is a live feeding reminder test. Your Tiny Titans notification pipeline is working.", url: "/feeding" },
@@ -51,10 +52,16 @@ function makeEventKey(kind, targetUid) {
   return `notification-test-${safeKind}-${Date.now()}-${random}-${targetUid.slice(0, 10)}`;
 }
 
+function publicUrl(path) {
+  const clean = String(path || "/").startsWith("/") ? String(path || "/") : `/${String(path || "/")}`;
+  return `${PUBLIC_ORIGIN}${clean}`;
+}
+
 async function sendTestPush(targetUid, eventKey, test) {
   const userRef = db.collection("users").doc(targetUid);
   const tokensSnapshot = await userRef.collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokensSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
+  const link = publicUrl(test.url);
 
   const eventRef = userRef.collection("notificationEvents").doc(eventKey);
   await eventRef.set({
@@ -64,6 +71,7 @@ async function sendTestPush(targetUid, eventKey, test) {
     title: test.title,
     body: test.body,
     url: test.url,
+    read: false,
     requestedAt: FieldValue.serverTimestamp(),
     createdAt: FieldValue.serverTimestamp(),
   });
@@ -78,7 +86,7 @@ async function sendTestPush(targetUid, eventKey, test) {
       tokens: batch.map((item) => item.data().token),
       notification: { title: test.title, body: test.body },
       data: { title: test.title, body: test.body, eventKey, url: test.url, notificationTest: "true" },
-      webpush: { fcmOptions: { link: test.url } },
+      webpush: { fcmOptions: { link } },
     });
     sent += response.successCount;
     invalid += response.failureCount;
@@ -98,63 +106,35 @@ exports.getNotificationTestUsers = onCall({ region: "europe-west2", memory: "256
 
   const requesterSnapshot = await db.collection("users").doc(requesterUid).get();
   const requesterProfile = requesterSnapshot.data() || {};
-  if (!authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator authorization is required to view notification test targets.");
+  if (!authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator or Creator Tester authorization is required.");
 
   const users = [];
-  let pageToken;
-  do {
-    const page = await adminAuth.listUsers(1000, pageToken);
-    page.users.forEach((user) => {
-      if (user.disabled || !user.email) return;
-      users.push({ uid: user.uid, email: user.email.toLowerCase(), displayName: user.displayName || user.email.split("@")[0] });
-    });
-    pageToken = page.pageToken;
-  } while (pageToken);
-
-  users.sort((a, b) => a.email.localeCompare(b.email));
+  const snapshot = await db.collection("users").limit(100).get();
+  for (const userDocument of snapshot.docs) {
+    const data = userDocument.data() || {};
+    const email = String(data.email || "").trim();
+    if (!email) continue;
+    users.push({ uid: userDocument.id, email, displayName: String(data.displayName || data.name || email.split("@")[0] || "Tiny Titans user") });
+  }
+  users.sort((a, b) => a.displayName.localeCompare(b.displayName));
   return { users, count: users.length };
 });
 
 exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
   const requesterUid = request.auth?.uid;
-  if (!requesterUid) throw new HttpsError("unauthenticated", "You must be signed in to send a Tiny Titans notification test.");
-
+  if (!requesterUid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const requesterSnapshot = await db.collection("users").doc(requesterUid).get();
   const requesterProfile = requesterSnapshot.data() || {};
-  const targetUserId = String(request.data?.targetUserId || "").trim();
-  const targetEmail = String(request.data?.targetEmail || "").trim();
-  const kind = String(request.data?.kind || "general").trim().toLowerCase();
+  if (!authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator or Creator Tester authorization is required.");
+
+  const kind = String(request.data?.kind || "");
   const test = TESTS[kind];
-  if (!test) throw new HttpsError("invalid-argument", "Unknown notification test type.");
+  if (!test) throw new HttpsError("invalid-argument", "Invalid notification test type.");
 
-  const authorized = authorisedAsTester(request, requesterProfile);
-  if (targetUserId && targetUserId !== requesterUid && !authorized) throw new HttpsError("permission-denied", "Creator authorization is required to target another user.");
-  if (targetEmail && targetEmail.toLowerCase() !== String(request.auth.token?.email || requesterProfile.email || "").toLowerCase() && !authorized) throw new HttpsError("permission-denied", "Creator authorization is required to target another user.");
+  const target = await resolveTargetUser(request.data?.targetUserId, request.data?.targetEmail, requesterUid);
+  if (!target.exists) throw new HttpsError("not-found", "The target Tiny Titans user could not be found.");
 
-  let targetSnapshot;
-  try {
-    targetSnapshot = await resolveTargetUser(targetUserId, targetEmail, requesterUid);
-  } catch (error) {
-    if (error instanceof HttpsError) throw error;
-    console.error("Notification test target resolution failed", error);
-    throw new HttpsError("internal", "Unable to resolve the notification test target.");
-  }
-  if (!targetSnapshot?.exists) throw new HttpsError("not-found", "The notification target could not be found.");
-
-  const targetUid = targetSnapshot.id;
-  const eventKey = makeEventKey(kind, targetUid);
-  const result = await sendTestPush(targetUid, eventKey, test);
-  await db.collection("notificationTestAudit").add({ requesterUid, targetUid, kind, eventKey, sentCount: result.sent, invalidTokenCount: result.invalid, createdAt: FieldValue.serverTimestamp() });
-
-  return {
-    eventKey,
-    targetUid,
-    kind,
-    title: test.title,
-    body: test.body,
-    url: test.url,
-    status: result.sent > 0 ? "sent" : "no-delivery",
-    sentCount: result.sent,
-    invalidTokenCount: result.invalid,
-  };
+  const eventKey = makeEventKey(kind, target.id);
+  const result = await sendTestPush(target.id, eventKey, test);
+  return { eventKey, targetUid: target.id, kind, title: test.title, body: test.body, url: test.url, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid };
 });
