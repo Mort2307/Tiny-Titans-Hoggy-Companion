@@ -33,6 +33,9 @@ const SIDEREAL_MONTH_DAYS = 27.321661;
 const J2000_NOON_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 const MOON_ECCENTRICITY = 0.0549;
 const MOON_INCLINATION_DEG = 5.145;
+// Orient the educational orbit diagram so the Nana Farm marker begins on the UK-facing side.
+// The Moon still advances continuously using its real geocentric lunar longitude.
+const UK_FACING_ORBIT_OFFSET_DEG = -32;
 
 function normaliseDegrees(value: number): number {
   return ((value % 360) + 360) % 360;
@@ -144,7 +147,7 @@ function drawMoonSystem(canvas: HTMLCanvasElement, model: MoonModel): void {
   context.stroke();
   context.restore();
 
-  const theta = toRadians(model.orbitAngleDeg);
+  const theta = toRadians(model.orbitAngleDeg + UK_FACING_ORBIT_OFFSET_DEG);
   const moonX = cx + Math.cos(theta) * orbitWidth * model.orbitRadius;
   const moonY = cy + Math.sin(theta) * orbitHeight * model.orbitRadius;
 
@@ -208,7 +211,7 @@ function drawMoonSystem(canvas: HTMLCanvasElement, model: MoonModel): void {
   context.fillStyle = "rgba(245, 245, 238, 0.78)";
   context.font = "700 9px system-ui, sans-serif";
   context.fillText("EARTH", cx - 17, cy + 32);
-  context.fillText("MOON", moonX - 12, moonY + 19);
+  context.fillText("Nana Farm", moonX - 26, moonY + 21);
 }
 
 function MoonOrbitWidget() {
@@ -226,10 +229,10 @@ function MoonOrbitWidget() {
     if (canvasRef.current) drawMoonSystem(canvasRef.current, model);
   }, [model]);
 
-  return <div className="tt-pinnacle-moon-widget" aria-label={`Real-time Earth and Moon orbit. ${model.phaseName}, ${Math.round(model.illumination * 100)} percent illuminated. Lunar distance ${model.distanceKm.toLocaleString("en-GB")} kilometres.`}>
+  return <div className="tt-pinnacle-moon-widget" aria-label={`Real-time Earth and Moon orbit. Nana Farm marker. ${model.phaseName}, ${Math.round(model.illumination * 100)} percent illuminated. Lunar distance ${model.distanceKm.toLocaleString("en-GB")} kilometres.`}>
     <canvas ref={canvasRef} width={240} height={156} aria-hidden="true" />
     <div className="tt-pinnacle-moon-copy">
-      <strong>🌙 For Mum</strong>
+      <strong>🌙 Nana Farm</strong>
       <span>{model.phaseName}</span>
       <small>{Math.round(model.illumination * 100)}% illuminated</small>
       <small>{model.distanceKm.toLocaleString("en-GB")} km · {SIDEREAL_MONTH_DAYS} d orbit</small>
