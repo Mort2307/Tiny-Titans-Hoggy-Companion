@@ -27,6 +27,7 @@ Object.assign(exports, {
 });
 Object.assign(exports, require("./notificationTest"));
 Object.assign(exports, require("./supportNotifications"));
+Object.assign(exports, require("./communityNotifications"));
 const familyNotifications = require("./familyNotifications");
 exports.sendAllKeeperReminderNotifications = familyNotifications.sendAllKeeperReminderNotifications;
 const equipmentNotifications = require("./equipmentNotifications");
