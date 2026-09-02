@@ -10,6 +10,7 @@ const adminAuth = getAuth();
 const messaging = getMessaging();
 const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
 const ICON_URL = `${PUBLIC_ORIGIN}/favicon.svg`;
+const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 
 const TESTS = Object.freeze({
   feed: { title: "🧪 Test feed reminder — Tiny Titans", body: "This is a live feeding reminder test. Your Tiny Titans notification pipeline is working.", url: "/feeding" },
@@ -19,9 +20,9 @@ const TESTS = Object.freeze({
   general: { title: "🧪 Tiny Titans notification test", body: "Live notification delivery is working on this device.", url: "/settings" },
 });
 
-function authorisedAsTester(request, profile) {
-  const claims = request.auth?.token || {};
-  return claims.admin === true || claims.creator === true || claims.creatorTester === true || profile.role === "admin" || profile.profileType === "creator";
+function authorisedAsTester(request) {
+  const email = String(request.auth?.token?.email || "").trim().toLowerCase();
+  return email === OWNER_EMAIL;
 }
 
 async function resolveTargetUser(targetUserId, targetEmail, requesterUid) {
@@ -90,11 +91,8 @@ async function sendTestPush(targetUid, eventKey, test) {
 }
 
 exports.getNotificationTestUsers = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 30 }, async (request) => {
-  const requesterUid = request.auth?.uid;
-  if (!requesterUid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  const requesterSnapshot = await db.collection("users").doc(requesterUid).get();
-  const requesterProfile = requesterSnapshot.data() || {};
-  if (!authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator or Creator Tester authorization is required.");
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!authorisedAsTester(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can run notification tests.");
   const users = [];
   const snapshot = await db.collection("users").limit(100).get();
   for (const userDocument of snapshot.docs) {
@@ -108,15 +106,12 @@ exports.getNotificationTestUsers = onCall({ region: "europe-west2", memory: "256
 });
 
 exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
-  const requesterUid = request.auth?.uid;
-  if (!requesterUid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  const requesterSnapshot = await db.collection("users").doc(requesterUid).get();
-  const requesterProfile = requesterSnapshot.data() || {};
-  if (!authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator or Creator Tester authorization is required.");
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!authorisedAsTester(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can run notification tests.");
   const kind = String(request.data?.kind || "");
   const test = TESTS[kind];
   if (!test) throw new HttpsError("invalid-argument", "Invalid notification test type.");
-  const target = await resolveTargetUser(request.data?.targetUserId, request.data?.targetEmail, requesterUid);
+  const target = await resolveTargetUser(request.data?.targetUserId, request.data?.targetEmail, request.auth.uid);
   if (!target.exists) throw new HttpsError("not-found", "The target Tiny Titans user could not be found.");
   const eventKey = makeEventKey(kind, target.id);
   const result = await sendTestPush(target.id, eventKey, test);
