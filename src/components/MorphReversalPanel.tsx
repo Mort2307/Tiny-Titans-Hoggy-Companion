@@ -5,13 +5,9 @@ import { normaliseSearch, rankMorphSearch } from "../utils/searchRelevance";
 import { reverseMorph, type MorphReversalResult, type ReverseTreeNode } from "../utils/geneticsReversal";
 import "./MorphReversalTheme.css";
 
-type MorphReversalPanelProps = {
-  morphs: MorphDefinition[];
-};
+type MorphReversalPanelProps = { morphs: MorphDefinition[] };
 
-function formatCopies(copies: number): string {
-  return `×${copies}`;
-}
+function formatCopies(copies: number): string { return `×${copies}`; }
 
 function TreeNode({ node, depth = 0 }: { node: ReverseTreeNode; depth?: number }) {
   return (
@@ -38,38 +34,23 @@ function ReversalResults({ result, onReverseComponent }: { result: MorphReversal
         <span className={`morph-reversal-status ${result.recognised ? "is-recognised" : "is-calculated"}`}>{result.recognised ? "Recognised" : "Calculated"}</span>
       </div>
 
-      {result.alternateNames.length > 0 && (
-        <div className="morph-reversal-callout">
-          <strong>Also recognised as:</strong><span>{result.alternateNames.join(" · ")}</span>
-        </div>
-      )}
+      {result.alternateNames.length > 0 && <div className="morph-reversal-callout"><strong>Also recognised as:</strong><span>{result.alternateNames.join(" · ")}</span></div>}
 
       <section className="morph-reversal-section">
         <div className="morph-reversal-section-heading"><div><span className="morph-reversal-eyebrow">DIRECT BUILD</span><h4>What the named morph contains</h4></div></div>
         <div className="morph-reversal-chip-grid">
-          {result.directComponents.map((component) => (
-            <button key={`${component.morphId}-${component.copies}`} type="button" className="morph-reversal-chip" onClick={() => onReverseComponent(component.name)} title={`Reverse ${component.name} further`}>
-              <span>{component.name}</span><strong>{formatCopies(component.copies)}</strong><small>Reverse ↩</small>
-            </button>
-          ))}
+          {result.directComponents.map((component) => <button key={`${component.morphId}-${component.copies}`} type="button" className="morph-reversal-chip" onClick={() => onReverseComponent(component.name)} title={`Reverse ${component.name} further`}><span>{component.name}</span><strong>{formatCopies(component.copies)}</strong><small>Reverse ↩</small></button>)}
         </div>
       </section>
 
       <section className="morph-reversal-section">
         <div className="morph-reversal-section-heading"><div><span className="morph-reversal-eyebrow">UNDERLYING LOCI</span><h4>Actual genetic requirements</h4></div></div>
         <div className="morph-reversal-locus-grid">
-          {result.underlyingLoci.map((locus) => (
-            <article key={locus.geneId} className="morph-reversal-locus-card">
-              <div className="morph-reversal-locus-header"><div><strong>{locus.name}</strong><small>{locus.inheritance}</small></div><span>{formatCopies(locus.copies)}</span></div>
-              <div className="morph-reversal-state">Required state: <strong>{locus.expressedState}</strong></div>
-              <div className="morph-reversal-routes">
-                <span className="morph-reversal-eyebrow">VALID ONE-GENERATION ROUTES</span>
-                {locus.routes.map((route) => (
-                  <div key={`${route.mother.copies}-${route.father.copies}`} className="morph-reversal-route"><span>{route.mother.label}</span><span className="morph-reversal-route-x">×</span><span>{route.father.label}</span><strong>{Number(route.childProbability.toFixed(4))}%</strong></div>
-                ))}
-              </div>
-            </article>
-          ))}
+          {result.underlyingLoci.map((locus) => <article key={locus.geneId} className="morph-reversal-locus-card">
+            <div className="morph-reversal-locus-header"><div><strong>{locus.name}</strong><small>{locus.inheritance}</small></div><span>{formatCopies(locus.copies)}</span></div>
+            <div className="morph-reversal-state">Required state: <strong>{locus.expressedState}</strong></div>
+            <div className="morph-reversal-routes"><span className="morph-reversal-eyebrow">VALID ONE-GENERATION ROUTES</span>{locus.routes.map((route) => <div key={`${route.mother.copies}-${route.father.copies}`} className="morph-reversal-route"><span>{route.mother.label}</span><span className="morph-reversal-route-x">×</span><span>{route.father.label}</span><strong>{Number(route.childProbability.toFixed(4))}%</strong></div>)}</div>
+          </article>)}
         </div>
       </section>
 
@@ -157,29 +138,14 @@ export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) 
     setResult(resolved);
   }
 
-  function handlePickerSelect(name: string) {
-    setQuery(name);
-    resolve(name);
-  }
-
-  function reverseComponent(name: string) {
-    setQuery(name);
-    resolve(name);
-  }
-
-  function clearFreeType() {
-    clearStateForEdit("");
-    inputRef.current?.focus();
-  }
+  function handlePickerSelect(name: string) { setQuery(name); resolve(name); }
+  function reverseComponent(name: string) { setQuery(name); resolve(name); }
+  function clearFreeType() { clearStateForEdit(""); inputRef.current?.focus(); }
 
   return (
     <section className="calculator-results morph-reversal-panel">
       <div className="calculator-results-header">
-        <div>
-          <span className="calculator-kicker">REVERSE GENETICS LAB</span>
-          <h2>Morph Reversal</h2>
-          <p>Choose from the complete recognised library, search it, or type a morph/combination freely and reverse it into its genetic construction.</p>
-        </div>
+        <div><span className="calculator-kicker">REVERSE GENETICS LAB</span><h2>Morph Reversal</h2><p>Choose from the complete recognised library, search it, or type a morph/combination freely and reverse it into its genetic construction.</p></div>
         <span className="morph-reversal-lab-badge">↩ Build backwards</span>
       </div>
 
@@ -190,67 +156,35 @@ export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) 
             <button id="morph-reversal-picker" type="button" className="morph-reversal-picker-trigger" aria-expanded={pickerOpen} aria-controls="morph-reversal-picker-panel" onClick={() => setPickerOpen((open) => !open)}>
               <span>{query || "Select a recognised morph or combination"}</span><span aria-hidden="true">{pickerOpen ? "▴" : "▾"}</span>
             </button>
-            {pickerOpen && (
-              <div id="morph-reversal-picker-panel" className="morph-reversal-picker-panel">
-                <div className="morph-reversal-picker-search-wrap">
-                  <input
-                    className="morph-reversal-picker-search"
-                    value={pickerQuery}
-                    onChange={(event) => setPickerQuery(event.target.value)}
-                    placeholder="Search all recognised morphs..."
-                    type="search"
-                    autoComplete="off"
-                    autoFocus
-                    aria-label="Search all recognised morphs"
-                  />
-                  {pickerQuery && <button type="button" className="morph-reversal-picker-clear" onClick={() => setPickerQuery("")} aria-label="Clear morph library search">×</button>}
-                </div>
-                <div className="morph-reversal-picker-options" role="listbox" aria-label="Recognised morph library">
-                  {pickerResults.map((morph) => (
-                    <button key={morph.geneId} type="button" role="option" onMouseDown={(event) => event.preventDefault()} onClick={() => handlePickerSelect(morph.name)}>
-                      <span><strong>{morph.name}</strong><small>{morph.kind}{morph.aliases?.length ? ` · ${morph.aliases.join(", ")}` : ""}</small></span>
-                    </button>
-                  ))}
-                  {!pickerResults.length && <p className="genetics-dropdown-empty">No recognised genetics match that search.</p>}
-                </div>
+            {pickerOpen && <div id="morph-reversal-picker-panel" className="morph-reversal-picker-panel">
+              <div className="morph-reversal-picker-search-wrap">
+                <input className="morph-reversal-picker-search" value={pickerQuery} onChange={(event) => setPickerQuery(event.target.value)} placeholder="Search all recognised morphs..." type="search" autoComplete="off" autoFocus aria-label="Search all recognised morphs" />
+                {pickerQuery && <button type="button" className="morph-reversal-picker-search-clear" onClick={() => setPickerQuery("")} aria-label="Clear morph library search">×</button>}
               </div>
-            )}
+              <div className="morph-reversal-suggestions" role="listbox" aria-label="Recognised morph library">
+                {pickerResults.map((morph) => <button key={morph.geneId} type="button" role="option" onMouseDown={(event) => event.preventDefault()} onClick={() => handlePickerSelect(morph.name)}><strong>{morph.name}</strong><small>{morph.kind}{morph.aliases?.length ? ` · ${morph.aliases.join(", ")}` : ""}</small></button>)}
+                {!pickerResults.length && <p className="genetics-dropdown-empty">No recognised genetics match that search.</p>}
+              </div>
+            </div>}
           </div>
         </div>
 
-        <div className="morph-reversal-freetype">
+        <div className="morph-reversal-free-type">
           <label htmlFor="morph-reversal-input">Free-type / exact name</label>
           <div className="morph-reversal-input-wrap">
-            <input
-              ref={inputRef}
-              id="morph-reversal-input"
-              value={query}
-              onChange={(event) => clearStateForEdit(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") { event.preventDefault(); resolve(); }
-                if (event.key === "Escape") { setPickerOpen(false); }
-              }}
-              placeholder="Type a morph or combination name..."
-              autoComplete="off"
-              spellCheck={false}
-              aria-label="Free-type morph or combination name"
-            />
-            {query && <button type="button" className="morph-reversal-input-clear" onClick={clearFreeType} aria-label="Clear free-type morph name">×</button>}
+            <div className="morph-reversal-free-input-wrap">
+              <input ref={inputRef} id="morph-reversal-input" value={query} onChange={(event) => clearStateForEdit(event.target.value)} onFocus={() => setError(null)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); resolve(); } if (event.key === "Escape") setPickerOpen(false); }} placeholder="Type a morph or combination name..." autoComplete="off" spellCheck={false} aria-label="Free-type morph or combination name" />
+              {query && <button type="button" className="morph-reversal-free-clear" onClick={clearFreeType} aria-label="Clear free-type morph name">×</button>}
+            </div>
             <button type="button" onClick={() => resolve()} className="morph-reversal-resolve-button">Reverse</button>
           </div>
-          <p className="morph-reversal-input-help">The library above is for recognised entries; this field remains fully editable so you can type, delete, paste, or alter a name before reversing it.</p>
+          <p className="morph-reversal-input-help">The library above is for recognised entries; this field stays fully editable so you can type, delete, paste, or alter a name before reversing it.</p>
         </div>
 
         {error && <div className="calculator-note-warning morph-reversal-error" role="alert">{error}</div>}
       </div>
 
-      {result ? <ReversalResults result={result} onReverseComponent={reverseComponent} /> : (
-        <div className="calculator-empty morph-reversal-empty">
-          <div className="calculator-empty-icon">↩️</div>
-          <h3>Put a morph name into the lab</h3>
-          <p>Use the full library selector or free-type a single gene, Super form, or recognised combination.</p>
-        </div>
-      )}
+      {result ? <ReversalResults result={result} onReverseComponent={reverseComponent} /> : <div className="calculator-empty morph-reversal-empty"><div className="calculator-empty-icon">↩️</div><h3>Put a morph name into the lab</h3><p>Use the full library selector or free-type a single gene, Super form, or recognised combination.</p></div>}
     </section>
   );
 }
