@@ -17,7 +17,7 @@ function cleanLocation(location) {
   if (!location || typeof location !== "object") return null;
   const city = String(location.city || "").trim();
   const country = String(location.country || "").trim();
-  if (!city || !country || location.visibleToCreator !== true) return null;
+  if (!city || !country) return null;
   const latitude = Number(location.latitude);
   const longitude = Number(location.longitude);
   if (isValidCoordinate(latitude, -90, 90) && isValidCoordinate(longitude, -180, 180) && !(latitude === 0 && longitude === 0)) {
@@ -35,6 +35,7 @@ function cleanLocation(location) {
 }
 
 async function geocode(city, country) {
+  if (!city || !country) return null;
   const params = new URLSearchParams({ name: `${city}, ${country}`, count: "10", language: "en", format: "json" });
   const response = await fetch(`${GEO_URL}?${params.toString()}`);
   if (!response.ok) throw new Error(`Geocoding failed with ${response.status}`);
@@ -58,14 +59,20 @@ async function geocode(city, country) {
 }
 
 async function resolveMembership(uid) {
+  const userRef = db.collection("users").doc(uid);
   const [userSnapshot, privacySnapshot] = await Promise.all([
-    db.collection("users").doc(uid).get(),
-    db.collection("users").doc(uid).collection("settings").doc("privacy").get(),
+    userRef.get(),
+    userRef.collection("settings").doc("privacy").get(),
   ]);
-  if (!userSnapshot.exists || !privacySnapshot.exists || privacySnapshot.data()?.communityLocation !== true) return null;
+  if (!userSnapshot.exists) return null;
   const data = userSnapshot.data() || {};
+  const privacy = privacySnapshot.exists ? (privacySnapshot.data() || {}) : {};
+  const legacy = data.dataCollectionPreferences || {};
+  const locationConsent = privacySnapshot.exists ? privacy.communityLocation === true : legacy.approximateLocation === true;
+  if (!locationConsent) return null;
   const rawLocation = data.approximateLocation;
-  return cleanLocation(rawLocation) || await geocode(String(rawLocation?.city || ""), String(rawLocation?.country || ""));
+  if (!rawLocation || typeof rawLocation !== "object") return null;
+  return cleanLocation(rawLocation) || await geocode(String(rawLocation.city || ""), String(rawLocation.country || ""));
 }
 
 async function updateMembership(uid) {
@@ -112,6 +119,33 @@ async function updateMembership(uid) {
   });
   return next;
 }
+
+function toPublicArea(snapshot) {
+  const data = snapshot.data() || {};
+  const memberCount = Number(data.memberCount || 0);
+  if (!snapshot.exists || !data.city || !data.country || !Number.isFinite(memberCount) || memberCount <= 0 || !isValidCoordinate(data.latitude, -90, 90) || !isValidCoordinate(data.longitude, -180, 180)) return null;
+  return {
+    areaId: String(data.areaId || snapshot.id),
+    city: String(data.city),
+    country: String(data.country),
+    ...(data.countryCode ? { countryCode: String(data.countryCode) } : {}),
+    latitude: Number(Number(data.latitude).toFixed(2)),
+    longitude: Number(Number(data.longitude).toFixed(2)),
+    memberCount: Math.floor(memberCount),
+  };
+}
+
+exports.getCommunityLocationAreas = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  try {
+    // Home receives aggregate areas only: never user documents, UIDs, names or keeper records.
+    const snapshot = await db.collection("communityLocationAreas").get();
+    return { success: true, areas: snapshot.docs.map(toPublicArea).filter(Boolean) };
+  } catch (error) {
+    console.error("Community location area read failed", error);
+    throw new HttpsError("internal", "Unable to load the Tiny Titans community globe.");
+  }
+});
 
 exports.syncCommunityLocationMembership = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
