@@ -8,6 +8,7 @@ const db = getFirestore();
 const messaging = getMessaging();
 const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
 const ICON_URL = `${PUBLIC_ORIGIN}/favicon.svg`;
+const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 
 const SUBMISSION_TESTS = Object.freeze([
   { kind: "bug", label: "Bug report", description: "Tests the Creator bug/error notification path.", title: "🐛 TEST — Bug report", body: "Error: Synthetic test error from the Submission Notification BOT. No real bug was submitted." },
@@ -21,16 +22,14 @@ const SUBMISSION_TESTS = Object.freeze([
   { kind: "feature", label: "Feature request", description: "Tests feature request notification delivery.", title: "💡 TEST — Feature request", body: "Synthetic feature request from the Submission Notification BOT." },
 ]);
 
-function authorisedAsTester(request, profile) {
-  const claims = request.auth?.token || {};
-  return claims.admin === true || claims.creator === true || claims.creatorTester === true || profile.role === "admin" || profile.profileType === "creator";
+function authorisedAsTester(request) {
+  return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL;
 }
 
 async function requireTester(request) {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  const snapshot = await db.collection("users").doc(uid).get();
-  if (!authorisedAsTester(request, snapshot.data() || {})) throw new HttpsError("permission-denied", "Creator or Creator Tester authorization is required.");
+  if (!authorisedAsTester(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can run submission notification tests.");
   return uid;
 }
 
@@ -143,7 +142,8 @@ exports.markSubmissionNotificationTestOpened = onCall({ region: "europe-west2" }
   await itemRef.update({ status: "opened", openedAt: FieldValue.serverTimestamp(), readAt: FieldValue.serverTimestamp() });
   if (item.eventKey) await db.collection("users").doc(uid).collection("notificationEvents").doc(item.eventKey).set({ read: true, openedAt: FieldValue.serverTimestamp() }, { merge: true });
   if (!item.openedAt) await bundle.runRef.update({ openedCount: FieldValue.increment(1) });
-  return publicRun(runId, uid, (await getRunBundle(uid, runId)).run, (await getRunBundle(uid, runId)).items);
+  const refreshed = await getRunBundle(uid, runId);
+  return publicRun(runId, uid, refreshed.run, refreshed.items);
 });
 
 exports.markSubmissionNotificationTestAccepted = onCall({ region: "europe-west2" }, async (request) => {
