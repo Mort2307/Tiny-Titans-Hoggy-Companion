@@ -27,6 +27,9 @@ const checks = [
   ["Bub's Daddy signature", comboRegistry.includes('geneId: "bubs-daddy"') && comboRegistry.includes('copies: 2 },\n      { morphId: "arctic", type: "Gene", copies: 2 }')],
   ["Super Daddy signature", comboRegistry.includes('geneId: "super-daddy"') && comboRegistry.includes('copies: 2 },\n      { morphId: "arctic", type: "Gene", copies: 2 },\n      { morphId: "conda", type: "Gene", copies: 2 }')],
   ["Super Arctic Super Conda distinct from Super Daddy", comboRegistry.includes('geneId: "super-arctic-super-conda"') && comboRegistry.includes("it is not Super Daddy without Albino")],
+  ["Moonstone Conda signature", comboRegistry.includes('geneId: "moonstone-conda"') && comboRegistry.includes('name: "Moonstone Conda"') && comboRegistry.includes('{ morphId: "arctic", type: "Gene", copies: 2 }') && comboRegistry.includes('{ morphId: "conda", type: "Gene", copies: 1 }') && comboRegistry.includes('{ morphId: "lavender", type: "Gene", copies: 2 }')],
+  ["Moonstone Conda alternate name", comboRegistry.includes('"Moonbeam"')],
+  ["Grey Fog Lavender signature", comboRegistry.includes('geneId: "grey-fog-lavender"') && comboRegistry.includes('name: "Grey Fog Lavender"') && comboRegistry.includes('{ morphId: "arctic", type: "Gene", copies: 1 }') && comboRegistry.includes('{ morphId: "conda", type: "Gene", copies: 1 }') && comboRegistry.includes('{ morphId: "lavender", type: "Gene", copies: 2 }')],
   ["Dedicated reversal theme", read("src/components/MorphReversalTheme.css").includes(".morph-reversal-panel") && read("src/components/MorphReversalTheme.css").includes("var(--accent)")],
   ["Build gate", read("package.json").includes("validate:genetics-calculator-v2")],
 ];
