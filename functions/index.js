@@ -12,6 +12,7 @@ const adminAuth = getAuth();
 
 Object.assign(exports, require("./creatorApproval"));
 Object.assign(exports, require("./communityIntelligence"));
+Object.assign(exports, require("./communityLocations"));
 Object.assign(exports, require("./publicContributions"));
 Object.assign(exports, require("./familyJoinCodes"));
 Object.assign(exports, require("./familyManager"));
