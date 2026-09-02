@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import { getMessaging, isSupported, onMessage } from "firebase/messaging";
 import { app } from "../firebase/config";
-import { NOTIFICATION_ENABLED_EVENT } from "../services/notificationService";
+import { NOTIFICATION_ENABLED_EVENT, refreshNotificationRegistration } from "../services/notificationService";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function NotificationBridge() {
+  const { user } = useAuth();
+
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     let active = true;
@@ -13,6 +16,7 @@ export default function NotificationBridge() {
       if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
       if (!(await isSupported()) || !active) return;
       const messaging = getMessaging(app);
+      if (user?.uid) void refreshNotificationRegistration(user.uid);
       unsubscribe = onMessage(messaging, (payload) => {
         const data = payload.data || {};
         const notification = payload.notification || {};
@@ -27,6 +31,6 @@ export default function NotificationBridge() {
     void subscribe();
     window.addEventListener(NOTIFICATION_ENABLED_EVENT, subscribe);
     return () => { active = false; unsubscribe?.(); window.removeEventListener(NOTIFICATION_ENABLED_EVENT, subscribe); };
-  }, []);
+  }, [user?.uid]);
   return null;
 }
