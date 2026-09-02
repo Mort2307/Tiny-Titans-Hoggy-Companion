@@ -6,6 +6,8 @@ import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationPermissionState, type N
 
 const SETTINGS_FIELD = "notificationSettings";
 const NOTIFICATION_ENABLED_EVENT = "tiny-titans-notifications-enabled";
+const VAPID_KEY = String(import.meta.env.VITE_FIREBASE_VAPID_KEY || "").trim();
+
 function validTime(value: unknown, fallback: string): string { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback; }
 function settingsFor(value: unknown): NotificationSettings {
   if (!value || typeof value !== "object") return { ...DEFAULT_NOTIFICATION_SETTINGS };
@@ -20,14 +22,27 @@ export async function getNotificationSettings(uid: string): Promise<Notification
 export async function saveNotificationSettings(uid: string, settings: NotificationSettings): Promise<NotificationSettings> { const next = settingsFor(settings); await setDoc(doc(db, "users", uid), { [SETTINGS_FIELD]: next, updatedAt: serverTimestamp() }, { merge: true }); return next; }
 async function tokenDocumentId(token: string): Promise<string> { const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)); return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(""); }
 async function registerMessagingWorker(): Promise<ServiceWorkerRegistration> { if (!("serviceWorker" in navigator)) throw new Error("This browser does not support service workers."); return navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/firebase-messaging/" }); }
+async function registerCurrentDeviceToken(uid: string): Promise<boolean> {
+  if (!uid || typeof window === "undefined" || !("serviceWorker" in navigator) || !(await isSupported())) return false;
+  const serviceWorkerRegistration = await registerMessagingWorker();
+  const messaging = getMessaging(app);
+  const options = VAPID_KEY ? { serviceWorkerRegistration, vapidKey: VAPID_KEY } : { serviceWorkerRegistration };
+  const token = await getToken(messaging, options);
+  if (!token) return false;
+  const tokenId = await tokenDocumentId(token);
+  await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), { token, enabled: true, platform: navigator.platform || "unknown", userAgent: navigator.userAgent, updatedAt: serverTimestamp() }, { merge: true });
+  return true;
+}
+export async function refreshNotificationRegistration(uid: string): Promise<boolean> {
+  if (!uid || typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return false;
+  try { return await registerCurrentDeviceToken(uid); } catch (error) { console.warn("Tiny Titans: notification registration refresh failed", error); return false; }
+}
 export async function enableNotifications(uid: string): Promise<NotificationPermissionState> {
   if (!uid) throw new Error("You must be signed in to enable notifications.");
   if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) return "unsupported";
   let permission = Notification.permission; if (permission === "default") permission = await Notification.requestPermission(); if (permission !== "granted") return permission;
   if (!(await isSupported())) return "unsupported";
-  const serviceWorkerRegistration = await registerMessagingWorker(); const messaging = getMessaging(app); const token = await getToken(messaging, { serviceWorkerRegistration });
-  if (!token) throw new Error("Tiny Titans could not register this device for notifications.");
-  const tokenId = await tokenDocumentId(token); await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), { token, enabled: true, platform: navigator.platform || "unknown", userAgent: navigator.userAgent, updatedAt: serverTimestamp() }, { merge: true });
+  const registered = await registerCurrentDeviceToken(uid); if (!registered) throw new Error("Tiny Titans could not register this device for notifications.");
   await saveNotificationSettings(uid, { ...(await getNotificationSettings(uid)), enabled: true });
   window.dispatchEvent(new Event(NOTIFICATION_ENABLED_EVENT));
   return "granted";
