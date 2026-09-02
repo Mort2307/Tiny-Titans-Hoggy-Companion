@@ -5,14 +5,13 @@ import { storage } from "../firebase/config";
 import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
 import { correctMorphImageSubmission } from "../services/morphImageCorrectionService";
 import { getApprovedMorphImages, getMorphImageSubmissions } from "../services/creatorService";
+import { getCreatorUserDisplayNames } from "../services/creatorUserDirectoryService";
 import type { ApprovedMorphImage, MorphImageSubmission } from "../types/morphSubmission";
 import "../styles/CreatorTools.css";
 
 function when(value: unknown): string {
   if (!value) return "Unknown date";
-  const date = typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function"
-    ? value.toDate()
-    : new Date(String(value));
+  const date = typeof value === "object' && value !== null && "toDate" in value && typeof value.toDate === "function" ? value.toDate() : new Date(String(value));
   return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleString("en-GB");
 }
 
@@ -21,6 +20,7 @@ export default function CreatorMorphCorrections() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<MorphImageSubmission[]>([]);
   const [approved, setApproved] = useState<ApprovedMorphImage[]>([]);
+  const [submitterNames, setSubmitterNames] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<MorphImageSubmission | null>(null);
   const [target, setTarget] = useState<MasterMorphDefinition | null>(null);
   const [queryText, setQueryText] = useState("");
@@ -46,6 +46,7 @@ export default function CreatorMorphCorrections() {
       const [submissions, approvedImages] = await Promise.all([getMorphImageSubmissions(), getApprovedMorphImages()]);
       setItems(submissions.filter((item) => ["Pending", "NeedsInfo", "Approved"].includes(item.status)));
       setApproved(approvedImages);
+      setSubmitterNames(await getCreatorUserDisplayNames(submissions.map((item) => item.userId)));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to load morph image corrections.");
     } finally {
@@ -121,6 +122,7 @@ export default function CreatorMorphCorrections() {
               <button type="button" className="creator-list-card creator-global-card-button" key={item.id} onClick={() => { setSelected(item); setTarget(null); setQueryText(""); setError(""); }}>
                 <strong>{item.morphName}</strong>
                 <span>{item.status} · Submitted {when(item.submittedAt)}</span>
+                <span>👤 {submitterNames[item.userId] || "Anonymous user"}</span>
                 <span>{item.description}</span>
               </button>
             ))}
@@ -134,12 +136,13 @@ export default function CreatorMorphCorrections() {
             <div className="creator-section-heading">
               <p className="creator-admin-kicker">MORPH CORRECTION</p>
               <h2 id="morph-correction-title">Correct this image's canonical identity</h2>
-              <p>Current identity: <strong>{selected.morphName}</strong>. Choose the correct canonical library entry below.</p>
+              <p>Current identity: <strong>{selected.morphName}</strong>. Submitted by <strong>{submitterNames[selected.userId] || "Anonymous user"}</strong>.</p>
             </div>
             {imageUrl && <div className="creator-submission-preview"><img src={imageUrl} alt={`Submitted ${selected.morphName}`} /></div>}
             <div className="creator-user-detail-grid">
               <div><strong>Current morph</strong><span>{selected.morphName}</span></div>
               <div><strong>Submission status</strong><span>{selected.status}</span></div>
+              <div><strong>Submitted by</strong><span>{submitterNames[selected.userId] || "Anonymous user"}</span></div>
               <div><strong>Contributor credit</strong><span>{selected.creditType === "name" ? selected.creditName || "Name supplied" : selected.creditType === "social" ? selected.creditSocial || "Social supplied" : "Anonymous"}</span></div>
             </div>
             <div className="creator-user-detail-section">
