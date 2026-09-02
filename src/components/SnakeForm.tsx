@@ -5,7 +5,7 @@ import type { WeightRecord } from "../types/Weight";
 import MultiSelectDropdown from "./MultiSelectDropdown";
 import HetSelector from "./HetSelector";
 import TinyTitansDateInput from "./TinyTitansDateInput";
-import { getMasterHetGenes, masterMorphs } from "../data/masterMorphDatabase";
+import { getMasterHetGenes, getMasterVisualMorphs } from "../data/masterMorphDatabase";
 import { getDateDuration } from "../utils/dateDuration";
 import { compressImage } from "../utils/imageCompression";
 import { useUnits } from "../context/UnitContextValue";
@@ -18,7 +18,7 @@ type SnakeFormProps = {
   saving?: boolean;
 };
 
-const masterVisualMorphOptions = masterMorphs;
+const masterVisualMorphOptions = getMasterVisualMorphs();
 const masterHetOptions = getMasterHetGenes();
 
 export default function SnakeForm({ form, updateField, onSave, editing, saving = false }: SnakeFormProps) {
