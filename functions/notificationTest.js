@@ -122,3 +122,5 @@ exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB"
   const result = await sendTestPush(target.id, eventKey, test);
   return { eventKey, targetUid: target.id, kind, title: test.title, body: test.body, url: test.url, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid, failures: result.failures };
 });
+
+Object.assign(exports, require("./submissionNotificationTest"));
