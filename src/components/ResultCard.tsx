@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { MorphDefinition } from "../data/morphs";
 import type { OffspringResult } from "../types/genetics";
 import { getCanonicalOffspringPresentation } from "../utils/geneticsPresentation";
@@ -9,6 +10,7 @@ type ResultCardProps = {
 
 export default function ResultCard({ result, morphs }: ResultCardProps) {
   const presentation = getCanonicalOffspringPresentation(result, morphs);
+  const reversalUrl = `/calculator?mode=reversal&morph=${encodeURIComponent(presentation.name)}`;
 
   return (
     <article className="genetics-result-card">
@@ -75,9 +77,16 @@ export default function ResultCard({ result, morphs }: ResultCardProps) {
         </div>
       )}
 
-      {presentation.alternateRecognisedCombinations.length > 0 && (
-        <div className="genetics-combination-note">
-          <strong>Also recognised as:</strong> {presentation.alternateRecognisedCombinations.map((morph) => morph.name).join(" · ")}
+      {(presentation.recognisedCombination || presentation.alternateRecognisedCombinations.length > 0) && (
+        <div className="genetics-combination-actions">
+          <Link to={reversalUrl} className="genetics-reverse-link">
+            ↩ Reverse this morph
+          </Link>
+          {presentation.alternateRecognisedCombinations.length > 0 && (
+            <span className="genetics-combination-note">
+              <strong>Also recognised as:</strong> {presentation.alternateRecognisedCombinations.map((morph) => morph.name).join(" · ")}
+            </span>
+          )}
         </div>
       )}
     </article>
