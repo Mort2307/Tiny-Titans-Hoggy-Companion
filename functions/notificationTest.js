@@ -1,3 +1,5 @@
+require("./notificationBranding");
+
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
@@ -29,13 +31,10 @@ async function resolveTargetUser(targetUserId, targetEmail, requesterUid) {
     if (!snapshot.exists) throw new HttpsError("not-found", "The target Tiny Titans user could not be found.");
     return snapshot;
   }
-
   const email = String(targetEmail || "").trim().toLowerCase();
   if (!email) return db.collection("users").doc(requesterUid).get();
-
   const byProfileEmail = await db.collection("users").where("email", "==", email).limit(1).get();
   if (!byProfileEmail.empty) return byProfileEmail.docs[0];
-
   try {
     const authUser = await adminAuth.getUserByEmail(email);
     const profile = await db.collection("users").doc(authUser.uid).get();
@@ -43,7 +42,6 @@ async function resolveTargetUser(targetUserId, targetEmail, requesterUid) {
   } catch (error) {
     if (error?.code !== "auth/user-not-found") throw error;
   }
-
   throw new HttpsError("not-found", "No Tiny Titans account was found for that email address.");
 }
 
@@ -52,33 +50,18 @@ function makeEventKey(kind, targetUid) {
   const random = Math.random().toString(36).slice(2, 10);
   return `notification-test-${safeKind}-${Date.now()}-${random}-${targetUid.slice(0, 10)}`;
 }
-
 function publicUrl(path) {
   const clean = String(path || "/").startsWith("/") ? String(path || "/") : `/${String(path || "/")}`;
   return `${PUBLIC_ORIGIN}${clean}`;
 }
-
 async function sendTestPush(targetUid, eventKey, test) {
   const userRef = db.collection("users").doc(targetUid);
   const tokensSnapshot = await userRef.collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokensSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
   const link = publicUrl(test.url);
-
   const eventRef = userRef.collection("notificationEvents").doc(eventKey);
-  await eventRef.set({
-    type: "notification-test",
-    kind: "test",
-    status: tokenDocs.length ? "sending" : "no-delivery",
-    title: test.title,
-    body: test.body,
-    url: test.url,
-    read: false,
-    requestedAt: FieldValue.serverTimestamp(),
-    createdAt: FieldValue.serverTimestamp(),
-  });
-
+  await eventRef.set({ type: "notification-test", kind: "test", status: tokenDocs.length ? "sending" : "no-delivery", title: test.title, body: test.body, url: test.url, read: false, requestedAt: FieldValue.serverTimestamp(), createdAt: FieldValue.serverTimestamp() });
   if (!tokenDocs.length) return { sent: 0, invalid: 0, failures: [] };
-
   let sent = 0;
   let invalid = 0;
   const failures = [];
@@ -102,7 +85,6 @@ async function sendTestPush(targetUid, eventKey, test) {
       if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete();
     }));
   }
-
   await eventRef.set({ status: sent > 0 ? "sent" : "failed", sentCount: sent, invalidTokenCount: invalid, failures, sentAt: FieldValue.serverTimestamp() }, { merge: true });
   return { sent, invalid, failures };
 }
@@ -110,11 +92,9 @@ async function sendTestPush(targetUid, eventKey, test) {
 exports.getNotificationTestUsers = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 30 }, async (request) => {
   const requesterUid = request.auth?.uid;
   if (!requesterUid) throw new HttpsError("unauthenticated", "You must be signed in.");
-
   const requesterSnapshot = await db.collection("users").doc(requesterUid).get();
   const requesterProfile = requesterSnapshot.data() || {};
   if (!authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator or Creator Tester authorization is required.");
-
   const users = [];
   const snapshot = await db.collection("users").limit(100).get();
   for (const userDocument of snapshot.docs) {
@@ -133,14 +113,11 @@ exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB"
   const requesterSnapshot = await db.collection("users").doc(requesterUid).get();
   const requesterProfile = requesterSnapshot.data() || {};
   if (!authorisedAsTester(request, requesterProfile)) throw new HttpsError("permission-denied", "Creator or Creator Tester authorization is required.");
-
   const kind = String(request.data?.kind || "");
   const test = TESTS[kind];
   if (!test) throw new HttpsError("invalid-argument", "Invalid notification test type.");
-
   const target = await resolveTargetUser(request.data?.targetUserId, request.data?.targetEmail, requesterUid);
   if (!target.exists) throw new HttpsError("not-found", "The target Tiny Titans user could not be found.");
-
   const eventKey = makeEventKey(kind, target.id);
   const result = await sendTestPush(target.id, eventKey, test);
   return { eventKey, targetUid: target.id, kind, title: test.title, body: test.body, url: test.url, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid, failures: result.failures };
