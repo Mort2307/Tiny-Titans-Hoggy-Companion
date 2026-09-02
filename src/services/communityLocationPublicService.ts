@@ -1,5 +1,6 @@
-import { collection, doc, getDoc, getDocs, onSnapshot, type Unsubscribe } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { doc, getDoc } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { app, db } from "../firebase/config";
 import { getPrivacyPreferences } from "./privacyService";
 
 export type PublicCommunityLocation = {
@@ -16,38 +17,32 @@ export type OwnCommunityLocation = PublicCommunityLocation & {
   optedIn: boolean;
 };
 
-function hasValidCoordinates(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
+type AreaResponse = { success: boolean; areas?: PublicCommunityLocation[] };
+
+const functions = getFunctions(app, "europe-west2");
+const getCommunityLocationAreas = httpsCallable<undefined, AreaResponse>(functions, "getCommunityLocationAreas");
+
+function isValidCoordinate(value: unknown, min: number, max: number): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
 }
 
-function mapPublicLocation(id: string, value: Record<string, unknown>): PublicCommunityLocation | null {
-  const city = String(value.city ?? "").trim();
-  const country = String(value.country ?? "").trim();
-  const latitude = value.latitude;
-  const longitude = value.longitude;
-  const memberCount = Number(value.memberCount ?? 0);
-  if (!city || !country || !hasValidCoordinates(latitude) || !hasValidCoordinates(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 || !(latitude !== 0 || longitude !== 0) || !Number.isFinite(memberCount) || memberCount <= 0) return null;
-  return {
-    areaId: String(value.areaId ?? id),
-    city,
-    country,
-    countryCode: typeof value.countryCode === "string" ? value.countryCode : undefined,
-    latitude,
-    longitude,
-    memberCount: Math.floor(memberCount),
-  };
+function isValidPublicLocation(location: PublicCommunityLocation): boolean {
+  return Boolean(location.areaId && location.city && location.country)
+    && isValidCoordinate(location.latitude, -90, 90)
+    && isValidCoordinate(location.longitude, -180, 180)
+    && !(location.latitude === 0 && location.longitude === 0)
+    && Number.isInteger(location.memberCount) && location.memberCount > 0;
 }
 
 export async function getPublicCommunityLocations(): Promise<PublicCommunityLocation[]> {
-  const snapshot = await getDocs(collection(db, "communityLocationAreas"));
-  return snapshot.docs.map((item) => mapPublicLocation(item.id, item.data() as Record<string, unknown>)).filter((item): item is PublicCommunityLocation => item !== null);
-}
-
-export function subscribeToPublicCommunityLocations(onChange: (locations: PublicCommunityLocation[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onSnapshot(collection(db, "communityLocationAreas"), (snapshot) => {
-    const locations = snapshot.docs.map((item) => mapPublicLocation(item.id, item.data() as Record<string, unknown>)).filter((item): item is PublicCommunityLocation => item !== null);
-    onChange(locations);
-  }, (error) => onError?.(error));
+  const response = await getCommunityLocationAreas(undefined);
+  const areas = Array.isArray(response.data.areas) ? response.data.areas : [];
+  return areas.filter(isValidPublicLocation).map((location) => ({
+    ...location,
+    latitude: Number(location.latitude.toFixed(2)),
+    longitude: Number(location.longitude.toFixed(2)),
+    memberCount: Math.floor(location.memberCount),
+  }));
 }
 
 export async function getOwnCommunityLocation(uid: string): Promise<OwnCommunityLocation | null> {
@@ -59,7 +54,19 @@ export async function getOwnCommunityLocation(uid: string): Promise<OwnCommunity
   if (!privacy.communityLocation || !userSnapshot.exists()) return null;
   const location = userSnapshot.data().approximateLocation as Record<string, unknown> | undefined;
   if (!location) return null;
-  const mapped = mapPublicLocation(String(location.areaId ?? ""), location);
-  if (!mapped) return null;
-  return { ...mapped, optedIn: true };
+  const city = String(location.city ?? "").trim();
+  const country = String(location.country ?? "").trim();
+  const latitude = Number(location.latitude);
+  const longitude = Number(location.longitude);
+  if (!city || !country || !isValidCoordinate(latitude, -90, 90) || !isValidCoordinate(longitude, -180, 180) || (latitude === 0 && longitude === 0)) return null;
+  return {
+    areaId: String(location.areaId ?? `legacy-${city.toLocaleLowerCase("en-GB")}-${country.toLocaleLowerCase("en-GB")}`),
+    city,
+    country,
+    countryCode: typeof location.countryCode === "string" ? location.countryCode : undefined,
+    latitude: Number(latitude.toFixed(2)),
+    longitude: Number(longitude.toFixed(2)),
+    memberCount: 1,
+    optedIn: true,
+  };
 }
