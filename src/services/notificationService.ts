@@ -14,9 +14,25 @@ function settingsFor(value: unknown): NotificationSettings {
   if (!value || typeof value !== "object") return { ...DEFAULT_NOTIFICATION_SETTINGS };
   const raw = value as Partial<NotificationSettings>;
   const days = Number(raw.feedingPreparationDaysBefore);
+  const shedDays = Number(raw.shedReminderDays);
   const missedMinutes = Number(raw.medicationMissedFollowUpMinutes);
   const healthFollowUpLeadDays = Number(raw.healthFollowUpLeadDays);
-  return { enabled: raw.enabled === true, feedingPreparationEnabled: raw.feedingPreparationEnabled !== false, feedingPreparationDaysBefore: Number.isFinite(days) && days >= 0 && days <= 30 ? Math.round(days) : DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationDaysBefore, feedingPreparationTime: validTime(raw.feedingPreparationTime, DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationTime), feedingRemindersEnabled: raw.feedingRemindersEnabled !== false, weightRemindersEnabled: raw.weightRemindersEnabled !== false, weightReminderTime: validTime(raw.weightReminderTime, DEFAULT_NOTIFICATION_SETTINGS.weightReminderTime), healthRemindersEnabled: raw.healthRemindersEnabled !== false, healthReminderFollowUpEnabled: raw.healthReminderFollowUpEnabled !== false, medicationMissedFollowUpMinutes: Number.isFinite(missedMinutes) && missedMinutes >= 5 && missedMinutes <= 1440 ? Math.round(missedMinutes) : DEFAULT_NOTIFICATION_SETTINGS.medicationMissedFollowUpMinutes, healthFollowUpLeadDays: Number.isFinite(healthFollowUpLeadDays) && healthFollowUpLeadDays >= 0 && healthFollowUpLeadDays <= 30 ? Math.round(healthFollowUpLeadDays) : DEFAULT_NOTIFICATION_SETTINGS.healthFollowUpLeadDays };
+  return {
+    enabled: raw.enabled === true,
+    feedingPreparationEnabled: raw.feedingPreparationEnabled !== false,
+    feedingPreparationDaysBefore: Number.isFinite(days) && days >= 0 && days <= 30 ? Math.round(days) : DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationDaysBefore,
+    feedingPreparationTime: validTime(raw.feedingPreparationTime, DEFAULT_NOTIFICATION_SETTINGS.feedingPreparationTime),
+    feedingRemindersEnabled: raw.feedingRemindersEnabled !== false,
+    weightRemindersEnabled: raw.weightRemindersEnabled !== false,
+    weightReminderTime: validTime(raw.weightReminderTime, DEFAULT_NOTIFICATION_SETTINGS.weightReminderTime),
+    shedRemindersEnabled: raw.shedRemindersEnabled !== false,
+    shedReminderDays: Number.isFinite(shedDays) && shedDays >= 1 && shedDays <= 30 ? Math.round(shedDays) : DEFAULT_NOTIFICATION_SETTINGS.shedReminderDays,
+    shedReminderTime: validTime(raw.shedReminderTime, DEFAULT_NOTIFICATION_SETTINGS.shedReminderTime),
+    healthRemindersEnabled: raw.healthRemindersEnabled !== false,
+    healthReminderFollowUpEnabled: raw.healthReminderFollowUpEnabled !== false,
+    medicationMissedFollowUpMinutes: Number.isFinite(missedMinutes) && missedMinutes >= 5 && missedMinutes <= 1440 ? Math.round(missedMinutes) : DEFAULT_NOTIFICATION_SETTINGS.medicationMissedFollowUpMinutes,
+    healthFollowUpLeadDays: Number.isFinite(healthFollowUpLeadDays) && healthFollowUpLeadDays >= 0 && healthFollowUpLeadDays <= 30 ? Math.round(healthFollowUpLeadDays) : DEFAULT_NOTIFICATION_SETTINGS.healthFollowUpLeadDays,
+  };
 }
 export function getNotificationPermissionState(): NotificationPermissionState { if (typeof window === "undefined" || !("Notification" in window)) return "unsupported"; return Notification.permission; }
 export async function getNotificationSettings(uid: string): Promise<NotificationSettings> { if (!uid) return { ...DEFAULT_NOTIFICATION_SETTINGS }; const snapshot = await getDoc(doc(db, "users", uid)); return settingsFor(snapshot.data()?.[SETTINGS_FIELD]); }
@@ -32,6 +48,16 @@ async function registerCurrentDeviceToken(uid: string): Promise<boolean> {
   const tokenId = await tokenDocumentId(token);
   await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), { token, enabled: true, platform: navigator.platform || "unknown", userAgent: navigator.userAgent, updatedAt: serverTimestamp() }, { merge: true });
   return true;
+}
+export async function hasRegisteredNotificationDevice(uid: string): Promise<boolean> {
+  if (!uid) return false;
+  try {
+    const snapshot = await getDocs(collection(db, "users", uid, "notificationTokens"));
+    return snapshot.docs.some((item) => item.data().enabled === true && typeof item.data().token === "string" && item.data().token.length > 0);
+  } catch (error) {
+    console.warn("Tiny Titans: notification device check failed", error);
+    return false;
+  }
 }
 export async function refreshNotificationRegistration(uid: string): Promise<boolean> {
   if (!uid || typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return false;
