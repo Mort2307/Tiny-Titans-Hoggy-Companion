@@ -38,11 +38,22 @@ export default function NotificationTestPanel() {
 
   const selectedTarget = users.find((item) => item.uid === targetUid);
 
+  async function ensureSelfDeviceRegistered() {
+    if (!user || targetUid) return;
+    if (getNotificationPermissionState() !== "granted") {
+      const permission = await enableNotifications(user.uid);
+      if (permission !== "granted") throw new Error("Tiny Titans notifications are not enabled for this browser.");
+      return;
+    }
+    const registered = await enableNotifications(user.uid);
+    if (!registered) throw new Error("Tiny Titans could not register this browser for push notifications. Reload the app and try Enable notifications again.");
+  }
+
   async function run(kind: NotificationTestKind) {
     if (!user || busy) return;
     setBusy(kind); setMessage(""); setLastResult(null);
     try {
-      if (Notification.permission !== "granted" && selectedTarget?.uid === user.uid) await enableNotifications(user.uid);
+      await ensureSelfDeviceRegistered();
       const result = await sendNotificationTest({ kind, ...(targetUid ? { targetUserId: targetUid } : {}) });
       setLastResult(result);
       if (result.status === "sent") setMessage(`✅ ${result.title} sent to ${selectedTarget?.email || (result.targetUid === user.uid ? "this account" : result.targetUid)}. Firebase accepted ${result.sentCount} device delivery${result.sentCount === 1 ? "" : "ies"}.`);
@@ -56,7 +67,7 @@ export default function NotificationTestPanel() {
     if (!user || busy) return;
     setBusy("full"); setMessage(""); setLastResult(null);
     try {
-      if (Notification.permission !== "granted" && selectedTarget?.uid === user.uid) await enableNotifications(user.uid);
+      await ensureSelfDeviceRegistered();
       const results: NotificationTestResult[] = [];
       for (const test of TESTS) results.push(await sendNotificationTest({ kind: test.kind, ...(targetUid ? { targetUserId: targetUid } : {}) }));
       const sent = results.reduce((total, result) => total + result.sentCount, 0);
@@ -72,7 +83,7 @@ export default function NotificationTestPanel() {
   return <section className="tt-notification-test">
     <div className="tt-notification-test-header"><div><p className="tt-notification-test-eyebrow">Delivery diagnostics</p><h3>🧪 Notification Test Centre</h3><p>Send a real FCM notification through the same delivery pipeline used by live Tiny Titans reminders.</p></div><span className="tt-notification-test-badge">LIVE DELIVERY</span></div>
     <div className="tt-notification-target"><label htmlFor="notification-test-target">Target account</label><select id="notification-test-target" value={targetUid} onChange={(event) => setTargetUid(event.target.value)} disabled={Boolean(busy) || loadingUsers} autoComplete="off"><option value="">This account — {user?.email || "signed-in user"}</option>{users.filter((item) => item.uid !== user?.uid).map((item) => <option key={item.uid} value={item.uid}>{item.displayName} — {item.email}</option>)}</select><small>{loadingUsers ? "Loading registered Tiny Titans users…" : users.length ? `${users.length} registered account${users.length === 1 ? "" : "s"} available to authorised test users.` : "Other accounts appear here for authorised Creator / Creator Tester / Admin users."}</small></div>
-    <div className="tt-notification-device"><span>Browser notification permission</span><strong>{permission.toUpperCase()}</strong>{permission !== "granted" && !targetUid && <small>Sending a self-test will request permission and register this device automatically.</small>}</div>
+    <div className="tt-notification-device"><span>Browser notification permission</span><strong>{permission.toUpperCase()}</strong>{permission !== "granted" && !targetUid && <small>Sending a self-test will request permission and register this device automatically.</small>}{permission === "granted" && !targetUid && <small>Self-tests refresh this browser's FCM registration before sending.</small>}</div>
     <div className="tt-notification-test-grid">{TESTS.map((test) => <button key={test.kind} type="button" className="tt-notification-test-button" onClick={(event) => { event.preventDefault(); void run(test.kind); }} disabled={Boolean(busy)}><strong>{busy === test.kind ? "Sending…" : `${test.icon} ${test.label}`}</strong><span>{test.description}</span></button>)}</div>
     <button type="button" className="tt-notification-full-test" onClick={(event) => { event.preventDefault(); void runFullTest(); }} disabled={Boolean(busy)}>{busy === "full" ? "Running full delivery test…" : "🧪 Run Full Notification Test"}</button>
     {message && <div className={`tt-notification-test-result ${message.startsWith("✅") ? "success" : "warning"}`} role={message.startsWith("✅") ? "status" : "alert"}>{message}</div>}
