@@ -3,6 +3,12 @@ import { useAuth } from "../context/useAuth";
 import { acceptCreatorTesterInvitation, declineCreatorTesterInvitation, getCreatorTesterInvitation, type CreatorTesterInvitation as Invitation } from "../services/creatorTesterInvitationService";
 import "../styles/creatorTesterInvitation.css";
 
+const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
+
+function isOwnerEmail(email: unknown): boolean {
+  return String(email || "").trim().toLowerCase() === OWNER_EMAIL;
+}
+
 export default function CreatorTesterInvitation() {
   const { user } = useAuth();
   const [invitation, setInvitation] = useState<Invitation | null>(null);
@@ -12,7 +18,11 @@ export default function CreatorTesterInvitation() {
 
   useEffect(() => {
     let active = true;
-    if (!user) return () => undefined;
+    if (!user || !isOwnerEmail(user.email)) {
+      setLoading(false);
+      setInvitation(null);
+      return () => { active = false; };
+    }
     void getCreatorTesterInvitation()
       .then((result) => { if (active) setInvitation(result); })
       .catch(() => { if (active) setInvitation(null); })
@@ -20,7 +30,7 @@ export default function CreatorTesterInvitation() {
     return () => { active = false; };
   }, [user]);
 
-  if (!user || loading || !invitation || invitation.status !== "pending") return null;
+  if (!user || !isOwnerEmail(user.email) || loading || !invitation || invitation.status !== "pending") return null;
 
   async function accept() {
     if (busy) return;
@@ -49,15 +59,15 @@ export default function CreatorTesterInvitation() {
     <section className="creator-tester-invitation" role="dialog" aria-modal="true" aria-labelledby="creator-tester-invitation-title">
       <div className="creator-tester-invitation__eyebrow">🐍 TINY TITANS · CREATOR QA</div>
       <div className="creator-tester-invitation__icon" aria-hidden="true">🤖</div>
-      <h2 id="creator-tester-invitation-title">You've been invited to become a Creator Tester</h2>
-      <p>Tiny Titans has invited this account to help test Creator and community features. Accepting gives you access to the dedicated Tester Centre — it does <strong>not</strong> grant access to the private Creator Centre.</p>
+      <h2 id="creator-tester-invitation-title">Creator Tester invitation</h2>
+      <p>This account has a Tiny Titans Creator Tester invitation. Accepting activates the private Tester Centre for the Tiny Titans owner account.</p>
       <div className="creator-tester-invitation__features"><span>🧪 QA testing</span><span>🔎 Diagnostics</span><span>🧬 Morph testing</span><span>🐛 Bug testing</span></div>
       {message && <div className="creator-tester-invitation__error" role="alert">{message}</div>}
       <div className="creator-tester-invitation__actions">
         <button type="button" className="creator-tester-invitation__secondary" onClick={() => void decline()} disabled={busy}>{busy ? "Please wait…" : "Not now"}</button>
         <button type="button" className="creator-tester-invitation__primary" onClick={() => void accept()} disabled={busy}>{busy ? "Activating…" : "Accept Creator Tester Access"}</button>
       </div>
-      <small>Access is controlled server-side by Tiny Titans Creator/Admin permissions.</small>
+      <small>Access is restricted to tinytitans.exotics@gmail.com and enforced server-side.</small>
     </section>
   </div>;
 }
