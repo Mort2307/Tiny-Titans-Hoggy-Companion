@@ -31,6 +31,8 @@ const familyNotifications = require("./familyNotifications");
 exports.sendAllKeeperReminderNotifications = familyNotifications.sendAllKeeperReminderNotifications;
 const equipmentNotifications = require("./equipmentNotifications");
 exports.sendEquipmentReplacementNotifications = equipmentNotifications.sendEquipmentReplacementNotifications;
+const shedNotifications = require("./shedNotifications");
+exports.sendShedCycleReminderNotifications = shedNotifications.sendShedCycleReminderNotifications;
 
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
