@@ -62,18 +62,25 @@ export async function getPublicCommunityLocations(): Promise<PublicCommunityLoca
   try {
     const response = await getCommunityLocationAreas(undefined);
     const areas = Array.isArray(response.data.areas) ? response.data.areas : [];
-    return areas.filter(isValidPublicLocation).map((location) => ({
+    const validAreas = areas.filter(isValidPublicLocation).map((location) => ({
       ...location,
       latitude: Number(location.latitude.toFixed(2)),
       longitude: Number(location.longitude.toFixed(2)),
       memberCount: Math.floor(location.memberCount),
     }));
-  } catch (error) {
-    // Creator-only fallback keeps the homepage usable during a Functions/index migration.
-    // Only aggregated city-level coordinates are returned to the caller.
+    if (validAreas.length > 0) return validAreas;
+
+    // A successful callable with an empty index still needs to recover on Creator/admin builds.
+    // The fallback is city-level only and respects the same explicit community-location consent.
     try {
-      const members = await getCommunityLocationMembers();
-      return aggregateCreatorFallback(members);
+      return aggregateCreatorFallback(await getCommunityLocationMembers());
+    } catch (fallbackError) {
+      console.warn("Tiny Titans: empty public location index and Creator fallback unavailable", fallbackError);
+      return [];
+    }
+  } catch (error) {
+    try {
+      return aggregateCreatorFallback(await getCommunityLocationMembers());
     } catch (fallbackError) {
       console.warn("Tiny Titans: public community location feed failed", { error, fallbackError });
       throw error;
