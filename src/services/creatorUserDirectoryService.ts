@@ -1,18 +1,27 @@
-import { doc, getDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 
+/**
+ * Resolve creator-visible user IDs to profile display names.
+ * UIDs remain internal stable identifiers and are not intended for Creator-facing rendering.
+ */
 export async function getCreatorUserDisplayNames(userIds: string[]): Promise<Record<string, string>> {
-  const uniqueIds = [...new Set(userIds.filter(Boolean))];
-  const entries = await Promise.all(uniqueIds.map(async (uid) => {
-    try {
-      const snapshot = await getDoc(doc(db, "users", uid));
-      if (!snapshot.exists()) return [uid, "Anonymous user"] as const;
-      const data = snapshot.data();
+  const uniqueIds = [...new Set(userIds.map((uid) => String(uid || "").trim()).filter(Boolean))];
+  if (uniqueIds.length === 0) return {};
+
+  try {
+    const snapshot = await getDocs(collection(db, "users"));
+    const wanted = new Set(uniqueIds);
+    const names: Record<string, string> = {};
+    for (const document of snapshot.docs) {
+      if (!wanted.has(document.id)) continue;
+      const data = document.data();
       const displayName = typeof data.displayName === "string" ? data.displayName.trim() : "";
-      return [uid, displayName || "Anonymous user"] as const;
-    } catch {
-      return [uid, "Anonymous user"] as const;
+      names[document.id] = displayName || "Anonymous user";
     }
-  }));
-  return Object.fromEntries(entries);
+    for (const uid of uniqueIds) names[uid] = names[uid] || "Anonymous user";
+    return names;
+  } catch {
+    return Object.fromEntries(uniqueIds.map((uid) => [uid, "Anonymous user"]));
+  }
 }
