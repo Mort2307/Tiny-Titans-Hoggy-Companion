@@ -1,6 +1,7 @@
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { PrivacyPreferences } from "../types/privacy";
+import { syncCommunityLocationMembership } from "./communityLocationSyncService";
 
 export const PRIVACY_CONSENT_VERSION = "2026-09-02-community-location-v4";
 
@@ -50,6 +51,9 @@ export async function savePrivacyPreferences(
     consentVersion: PRIVACY_CONSENT_VERSION,
     consentUpdatedAt: serverTimestamp(),
   }, { merge: true });
+  if (typeof next.communityLocation === "boolean") {
+    await syncCommunityLocationMembership();
+  }
 }
 
 export async function clearCommunityLocation(uid: string): Promise<void> {
@@ -64,4 +68,5 @@ export async function clearCommunityLocation(uid: string): Promise<void> {
     }, { merge: true }),
     updateDoc(doc(db, "users", uid), { approximateLocation: null, updatedAt: serverTimestamp() }),
   ]);
+  await syncCommunityLocationMembership();
 }
