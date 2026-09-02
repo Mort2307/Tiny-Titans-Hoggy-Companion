@@ -15,6 +15,14 @@ function when(value: unknown): string {
   return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleString("en-GB");
 }
 
+function definedUserIds(values: Array<string | undefined>): string[] {
+  return values.filter((uid): uid is string => typeof uid === "string" && uid.trim().length > 0);
+}
+
+function displayNameFor(map: Record<string, string>, userId: string | undefined): string {
+  return userId ? map[userId] || "Anonymous user" : "Anonymous user";
+}
+
 export default function CreatorMorphCorrections() {
   const { user, profile } = useAuth();
   const [open, setOpen] = useState(false);
@@ -46,7 +54,7 @@ export default function CreatorMorphCorrections() {
       const [submissions, approvedImages] = await Promise.all([getMorphImageSubmissions(), getApprovedMorphImages()]);
       setItems(submissions.filter((item) => ["Pending", "NeedsInfo", "Approved"].includes(item.status)));
       setApproved(approvedImages);
-      setSubmitterNames(await getCreatorUserDisplayNames(submissions.map((item) => item.userId)));
+      setSubmitterNames(await getCreatorUserDisplayNames(definedUserIds(submissions.map((item) => item.userId))));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to load morph image corrections.");
     } finally {
@@ -122,7 +130,7 @@ export default function CreatorMorphCorrections() {
               <button type="button" className="creator-list-card creator-global-card-button" key={item.id} onClick={() => { setSelected(item); setTarget(null); setQueryText(""); setError(""); }}>
                 <strong>{item.morphName}</strong>
                 <span>{item.status} · Submitted {when(item.submittedAt)}</span>
-                <span>👤 {submitterNames[item.userId] || "Anonymous user"}</span>
+                <span>👤 {displayNameFor(submitterNames, item.userId)}</span>
                 <span>{item.description}</span>
               </button>
             ))}
@@ -136,13 +144,13 @@ export default function CreatorMorphCorrections() {
             <div className="creator-section-heading">
               <p className="creator-admin-kicker">MORPH CORRECTION</p>
               <h2 id="morph-correction-title">Correct this image's canonical identity</h2>
-              <p>Current identity: <strong>{selected.morphName}</strong>. Submitted by <strong>{submitterNames[selected.userId] || "Anonymous user"}</strong>.</p>
+              <p>Current identity: <strong>{selected.morphName}</strong>. Submitted by <strong>{displayNameFor(submitterNames, selected.userId)}</strong>.</p>
             </div>
             {imageUrl && <div className="creator-submission-preview"><img src={imageUrl} alt={`Submitted ${selected.morphName}`} /></div>}
             <div className="creator-user-detail-grid">
               <div><strong>Current morph</strong><span>{selected.morphName}</span></div>
               <div><strong>Submission status</strong><span>{selected.status}</span></div>
-              <div><strong>Submitted by</strong><span>{submitterNames[selected.userId] || "Anonymous user"}</span></div>
+              <div><strong>Submitted by</strong><span>{displayNameFor(submitterNames, selected.userId)}</span></div>
               <div><strong>Contributor credit</strong><span>{selected.creditType === "name" ? selected.creditName || "Name supplied" : selected.creditType === "social" ? selected.creditSocial || "Social supplied" : "Anonymous"}</span></div>
             </div>
             <div className="creator-user-detail-section">
