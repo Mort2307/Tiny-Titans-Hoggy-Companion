@@ -11,6 +11,7 @@ import { getUserSnakes } from "../services/snakeService";
 import { recordGeneticsCalculation } from "../services/geneticsTrackingService";
 import { useAuth } from "../context/useAuth";
 import "../styles/calculator.css";
+import "../components/MorphReversalTheme.css";
 
 const EMPTY_PARENT: ParentSelection = { morphs: [], hets: [] };
 const TRACKING_STORAGE_PREFIX = "tiny-titans-genetics-tracked:";
@@ -73,8 +74,8 @@ export default function Calculator() {
 
   useEffect(() => {
     if (snakesLoading || !snakes.length || preloadedPairing || (!requestedMaleId && !requestedFemaleId)) return;
-    const male = requestedMaleId ? snakes.find((snake) => snake.id === requestedMaleId) : undefined;
-    const female = requestedFemaleId ? snakes.find((snake) => snake.id === requestedFemaleId) : undefined;
+    const male = requestedMaleId ? snakes.find((snake) => snake.id === requestedMaleId && snake.sex === "Male") : undefined;
+    const female = requestedFemaleId ? snakes.find((snake) => snake.id === requestedFemaleId && snake.sex === "Female") : undefined;
     if (male || female) {
       if (female) setMother(snakeToSelection(female));
       if (male) setFather(snakeToSelection(male));
@@ -163,7 +164,7 @@ export default function Calculator() {
         <>
           <div className="calculator-info-strip">
             <span>🧬 Recognised genetics only</span>
-            <span>🐍 Saved snakes loaded from your account</span>
+            <span>🐍 Saved snakes loaded by sex</span>
             <span>📊 Multi-gene outcomes calculated by the genetics engine</span>
             <span>🧪 Sandbox keeps experiments separate</span>
           </div>
@@ -174,8 +175,8 @@ export default function Calculator() {
           {!effectiveSnakesLoading && effectiveSnakes.length === 0 && <div className="calculator-note">No saved snakes were found. You can still build both parents manually from the recognised database.</div>}
 
           <div className="calculator-parents">
-            <ParentSelector title="Female / Mother" parent={mother} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setMother} />
-            <ParentSelector title="Male / Father" parent={father} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setFather} />
+            <ParentSelector title="Female / Mother" sex="Female" parent={mother} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setMother} />
+            <ParentSelector title="Male / Father" sex="Male" parent={father} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setFather} />
           </div>
 
           <section className="calculator-results">
@@ -188,14 +189,24 @@ export default function Calculator() {
               {hasSelection && <strong className="calculator-probability-total">100%</strong>}
             </div>
 
-            {!hasSelection && <div className="calculator-empty"><div className="calculator-empty-icon">🧬</div><h3>Build your pairing</h3><p>Pick one of your snakes, then fine-tune its genetics with the dropdowns, or create both parents entirely manually.</p></div>}
+            {!hasSelection && <div className="calculator-empty"><div className="calculator-empty-icon">🧬</div><h3>Build your pairing</h3><p>Pick a saved female and male independently, then fine-tune their genetics manually.</p></div>}
             {hasSelection && result.offspring.length === 0 && <div className="calculator-empty"><h3>No calculable recognised outcome</h3><p>The selected data does not currently resolve into a breeding calculation.</p></div>}
             {result.offspring.length > 0 && <div className="calculator-result-grid">{result.offspring.map((offspring) => <ResultCard key={offspring.id} result={offspring} morphs={allMorphs} />)}</div>}
             {result.hasUnresolvedGenetics && <div className="calculator-note calculator-note-warning">Some recorded genetics could not be resolved confidently and were not silently treated as confirmed.</div>}
           </section>
         </>
       ) : (
-        <MorphReversalPanel morphs={allMorphs} />
+        <div className="calculator-reversal-stage">
+          <div className="calculator-reversal-hero">
+            <div>
+              <span className="calculator-kicker">REVERSE GENETICS LAB</span>
+              <h2>Break a morph back down.</h2>
+              <p>Enter a recognised combo, Super form, or multi-gene phenotype and inspect exactly what the current genetics library says it contains.</p>
+            </div>
+            <span className="morph-reversal-lab-badge">↩ Morph Reversal</span>
+          </div>
+          <MorphReversalPanel morphs={allMorphs} />
+        </div>
       )}
     </main>
   );
