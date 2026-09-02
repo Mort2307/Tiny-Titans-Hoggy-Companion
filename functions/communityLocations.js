@@ -135,6 +135,20 @@ function toPublicArea(snapshot) {
   };
 }
 
+function isCreatorRequest(request) {
+  if (!request.auth?.uid) return false;
+  const claims = request.auth.token || {};
+  return claims.admin === true || claims.creator === true || claims.superAdmin === true;
+}
+
+async function commitInBatches(operations) {
+  for (let index = 0; index < operations.length; index += 400) {
+    const batch = db.batch();
+    operations.slice(index, index + 400).forEach((operation) => operation(batch));
+    await batch.commit();
+  }
+}
+
 exports.getCommunityLocationAreas = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   try {
@@ -155,6 +169,81 @@ exports.syncCommunityLocationMembership = onCall({ region: "europe-west2" }, asy
   } catch (error) {
     console.error("Community location membership sync failed", { uid: request.auth.uid, error });
     throw new HttpsError("internal", "Unable to synchronise community location.");
+  }
+});
+
+exports.rebuildCommunityLocationIndex = onCall({ region: "europe-west2", timeoutSeconds: 300 }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!isCreatorRequest(request)) throw new HttpsError("permission-denied", "Creator authorization is required.");
+
+  try {
+    const usersSnapshot = await db.collection("users").get();
+    const resolved = await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
+      try {
+        const location = await resolveMembership(userDoc.id);
+        return { uid: userDoc.id, location };
+      } catch (error) {
+        console.warn("Community location rebuild could not resolve user", { uid: userDoc.id, error });
+        return { uid: userDoc.id, location: null };
+      }
+    }));
+
+    const areas = new Map();
+    const memberships = new Map();
+    for (const item of resolved) {
+      if (!item.location) continue;
+      const location = item.location;
+      const existing = areas.get(location.areaId);
+      areas.set(location.areaId, {
+        areaId: location.areaId,
+        city: location.city,
+        country: location.country,
+        ...(location.countryCode ? { countryCode: location.countryCode } : {}),
+        latitude: location.latitude,
+        longitude: location.longitude,
+        precision: "city",
+        memberCount: (existing?.memberCount || 0) + 1,
+      });
+      memberships.set(item.uid, { areaId: location.areaId });
+    }
+
+    const [currentAreas, currentMemberships] = await Promise.all([
+      db.collection("communityLocationAreas").get(),
+      db.collection("communityLocationMemberships").get(),
+    ]);
+
+    const areaOperations = [];
+    currentAreas.docs.forEach((snapshot) => {
+      if (!areas.has(snapshot.id)) areaOperations.push((batch) => batch.delete(snapshot.ref));
+    });
+    areas.forEach((area, areaId) => {
+      areaOperations.push((batch) => batch.set(db.collection("communityLocationAreas").doc(areaId), {
+        ...area,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true }));
+    });
+
+    const membershipOperations = [];
+    currentMemberships.docs.forEach((snapshot) => {
+      if (!memberships.has(snapshot.id)) membershipOperations.push((batch) => batch.delete(snapshot.ref));
+    });
+    memberships.forEach((membership, uid) => {
+      membershipOperations.push((batch) => batch.set(db.collection("communityLocationMemberships").doc(uid), {
+        ...membership,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true }));
+    });
+
+    await commitInBatches([...areaOperations, ...membershipOperations]);
+    return {
+      success: true,
+      representedUsers: memberships.size,
+      areas: areas.size,
+      usersScanned: usersSnapshot.size,
+    };
+  } catch (error) {
+    console.error("Community location index rebuild failed", error);
+    throw new HttpsError("internal", "Unable to rebuild the community location index.");
   }
 });
 
