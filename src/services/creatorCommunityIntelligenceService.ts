@@ -1,6 +1,7 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getPrivacyPreferences } from "./privacyService";
+import { resolveCommunityLocation } from "./communityLocationResolver";
 
 export type ConsentCensus = {
   registered: number;
@@ -12,6 +13,7 @@ export type ConsentCensus = {
   location: number;
   locationOff: number;
   locationUnknown: number;
+  locationInvalid: number;
   productUpdates: number;
   productUpdatesUnknown: number;
   communityHusbandry: number;
@@ -65,9 +67,7 @@ export type CreatorCommunityIntelligence = {
 
 type AnyRecord = Record<string, unknown>;
 
-function truthy(record: AnyRecord, key: string): boolean {
-  return record[key] === true;
-}
+function truthy(record: AnyRecord, key: string): boolean { return record[key] === true; }
 
 function timestampMillis(value: unknown): number | null {
   if (!value) return null;
@@ -84,19 +84,37 @@ function statusOpen(status: unknown): boolean {
   return !["Resolved", "Closed", "Archived", "Rejected", "Declined", "cancelled", "completed"].includes(String(status));
 }
 
-async function safeCollection(path: string, unavailableSources: string[]) {
+function hasValidCoordinates(location: AnyRecord | undefined): boolean {
+  const latitude = location?.latitude;
+  const longitude = location?.longitude;
+  return typeof latitude === "number" && Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+    && typeof longitude === "number" && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
+    && !(latitude === 0 && longitude === 0);
+}
+
+async function isMapEligibleLocation(location: AnyRecord | undefined): Promise<boolean> {
+  if (!location?.visibleToCreator) return false;
+  const city = String(location.city ?? "").trim();
+  const country = String(location.country ?? "").trim();
+  if (!city || !country) return false;
+  if (hasValidCoordinates(location)) return true;
   try {
-    return await getDocs(collection(db, path));
+    await resolveCommunityLocation(city, country);
+    return true;
   } catch {
-    unavailableSources.push(path);
-    return null;
+    return false;
   }
+}
+
+async function safeCollection(path: string, unavailableSources: string[]) {
+  try { return await getDocs(collection(db, path)); }
+  catch { unavailableSources.push(path); return null; }
 }
 
 const emptyResult = (unavailableSources: string[]): CreatorCommunityIntelligence => ({
   consent: {
     registered: 0, setupComplete: 0, incomplete: 0, analytics: 0, analyticsOff: 0, analyticsUnknown: 0,
-    location: 0, locationOff: 0, locationUnknown: 0, productUpdates: 0, productUpdatesUnknown: 0,
+    location: 0, locationOff: 0, locationUnknown: 0, locationInvalid: 0, productUpdates: 0, productUpdatesUnknown: 0,
     communityHusbandry: 0, communityHusbandryOff: 0, communityHusbandryUnknown: 0,
     anyCommunityConsent: 0, contributorsWithSnakes: 0, activeToday: 0, activeWeek: 0, activeMonth: 0, locations: 0,
   },
@@ -110,12 +128,8 @@ const emptyResult = (unavailableSources: string[]): CreatorCommunityIntelligence
 export async function getCreatorCommunityIntelligence(): Promise<CreatorCommunityIntelligence> {
   const unavailableSources: string[] = [];
   let usersSnapshot;
-  try {
-    usersSnapshot = await getDocs(collection(db, "users"));
-  } catch {
-    unavailableSources.push("users");
-    return emptyResult(unavailableSources);
-  }
+  try { usersSnapshot = await getDocs(collection(db, "users")); }
+  catch { unavailableSources.push("users"); return emptyResult(unavailableSources); }
 
   const results = await Promise.all([
     safeCollection("mentors", unavailableSources),
@@ -138,6 +152,7 @@ export async function getCreatorCommunityIntelligence(): Promise<CreatorCommunit
   let analyticsUnknown = 0;
   let location = 0;
   let locationUnknown = 0;
+  let locationInvalid = 0;
   let productUpdates = 0;
   let productUpdatesUnknown = 0;
   let communityHusbandry = 0;
@@ -153,18 +168,19 @@ export async function getCreatorCommunityIntelligence(): Promise<CreatorCommunit
   await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
     const user = userDoc.data() as AnyRecord;
     let privacy: Awaited<ReturnType<typeof getPrivacyPreferences>> | null = null;
-    try {
-      privacy = await getPrivacyPreferences(userDoc.id);
-      privacyReadable += 1;
-    } catch {
-      unavailableSources.push("users/{uid}/settings/privacy");
-    }
+    try { privacy = await getPrivacyPreferences(userDoc.id); privacyReadable += 1; }
+    catch { unavailableSources.push("users/{uid}/settings/privacy"); }
 
     if (truthy(user, "setupComplete")) setupComplete += 1;
 
     if (privacy) {
       if (privacy.anonymousAnalytics === true) analytics += 1;
-      if (privacy.communityLocation === true) location += 1;
+      if (privacy.communityLocation === true) {
+        location += 1;
+        const approx = user.approximateLocation as AnyRecord | undefined;
+        if (await isMapEligibleLocation(approx)) locations += 1;
+        else locationInvalid += 1;
+      }
       if (privacy.productUpdates === true) productUpdates += 1;
       if (privacy.communityHusbandryData === true) communityHusbandry += 1;
       if (privacy.anonymousAnalytics === true || privacy.communityLocation === true || privacy.communityHusbandryData === true) anyCommunityConsent += 1;
@@ -177,9 +193,6 @@ export async function getCreatorCommunityIntelligence(): Promise<CreatorCommunit
           if (!unavailableSources.includes("users/{uid}/snakes")) unavailableSources.push("users/{uid}/snakes");
         }
       }
-
-      const approx = user.approximateLocation as AnyRecord | undefined;
-      if (privacy.communityLocation === true && truthy(approx ?? {}, "visibleToCreator") && String(approx?.city ?? "").trim() && String(approx?.country ?? "").trim()) locations += 1;
     } else {
       analyticsUnknown += 1;
       locationUnknown += 1;
@@ -207,6 +220,7 @@ export async function getCreatorCommunityIntelligence(): Promise<CreatorCommunit
     { source: "users", available: true, reason: "Registered-account aggregate is available to Creator Centre.", count: usersSnapshot.size },
     { source: "users/{uid}/settings/privacy", available: privacyReadable === usersSnapshot.size, reason: privacyReadable === usersSnapshot.size ? "Privacy records are readable for the registered population." : `${privacyReadable} of ${usersSnapshot.size} privacy records were readable; restricted records are shown as unknown, not opted-out.`, count: privacyReadable },
     { source: "users/{uid}/snakes", available: !unavailableSources.includes("users/{uid}/snakes"), reason: unavailableSources.includes("users/{uid}/snakes") ? "One or more snake subcollections were restricted or unavailable." : "Snake profile availability is readable for eligible community contributors." },
+    { source: "community locations", available: true, reason: "Location coverage uses the same city/country plus valid-coordinate or geocodable-location rules as the community globe.", count: locations },
     { source: "mentors", available: Boolean(mentorsSnapshot), reason: mentorsSnapshot ? "Mentor records available." : "Mentor collection is restricted or unavailable.", count: mentors.length },
     { source: "mentorApplications", available: Boolean(mentorApplicationsSnapshot), reason: mentorApplicationsSnapshot ? "Mentor application records available." : "Mentor applications are restricted or unavailable.", count: mentorApplications.length },
     { source: "mentorshipRequests", available: Boolean(requestsSnapshot), reason: requestsSnapshot ? "Mentorship request records available." : "Mentorship requests are restricted or unavailable.", count: requests.length },
@@ -227,6 +241,7 @@ export async function getCreatorCommunityIntelligence(): Promise<CreatorCommunit
       location,
       locationOff: Math.max(0, usersSnapshot.size - location - locationUnknown),
       locationUnknown,
+      locationInvalid,
       productUpdates,
       productUpdatesUnknown,
       communityHusbandry,
