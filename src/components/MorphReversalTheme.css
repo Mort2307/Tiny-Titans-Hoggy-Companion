@@ -109,17 +109,118 @@
   background: var(--surface-elevated, var(--surface));
 }
 
-.morph-reversal-search-row {
+.morph-reversal-search-row,
+.morph-reversal-free-type {
   display: grid;
   gap: 7px;
 }
 
-.morph-reversal-search-row label {
+.morph-reversal-free-type {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.morph-reversal-search-row label,
+.morph-reversal-free-type label {
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   opacity: 0.7;
+}
+
+.morph-reversal-picker-wrap {
+  position: relative;
+}
+
+.morph-reversal-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.morph-reversal-picker-trigger:hover,
+.morph-reversal-picker-trigger:focus-visible {
+  border-color: rgba(0, 174, 255, 0.42);
+  outline: none;
+}
+
+.morph-reversal-picker-trigger > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.morph-reversal-picker-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 7px);
+  left: 0;
+  right: 0;
+  padding: 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated, var(--surface));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+
+.morph-reversal-picker-search-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.morph-reversal-picker-search {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 38px 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+}
+
+.morph-reversal-picker-search:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+.morph-reversal-picker-search-clear,
+.morph-reversal-free-clear {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.morph-reversal-picker-search-clear {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 38px;
+  height: 42px;
+  font-size: 1.1rem;
+  opacity: 0.65;
+}
+
+.morph-reversal-picker-search-clear:hover,
+.morph-reversal-free-clear:hover {
+  opacity: 1;
 }
 
 .morph-reversal-input-wrap {
@@ -128,10 +229,16 @@
   gap: 8px;
 }
 
+.morph-reversal-free-input-wrap {
+  position: relative;
+  min-width: 0;
+}
+
 .morph-reversal-input-wrap input {
   min-height: 48px;
   min-width: 0;
-  padding: 10px 13px;
+  width: 100%;
+  padding: 10px 38px 10px 13px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   background: var(--background);
@@ -142,6 +249,16 @@
 .morph-reversal-input-wrap input:focus-visible {
   outline: 2px solid var(--secondary);
   outline-offset: 2px;
+}
+
+.morph-reversal-free-clear {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 38px;
+  height: 48px;
+  font-size: 1.15rem;
+  opacity: 0.65;
 }
 
 .morph-reversal-resolve-button {
@@ -158,9 +275,10 @@
 .morph-reversal-suggestions {
   display: grid;
   gap: 5px;
-  margin-top: 9px;
-  max-height: 280px;
+  max-height: 360px;
   overflow-y: auto;
+  padding-right: 2px;
+  overscroll-behavior: contain;
 }
 
 .morph-reversal-suggestions button {
