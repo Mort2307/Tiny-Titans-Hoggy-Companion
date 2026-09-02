@@ -9,20 +9,13 @@ import type { GeneticsCalculatorResult } from "../types/genetics";
 import { calculateGenetics } from "../utils/geneticsCalculator";
 import { getUserSnakes } from "../services/snakeService";
 import { recordGeneticsCalculation } from "../services/geneticsTrackingService";
+import { useAuth } from "../context/useAuth";
 import "../styles/calculator.css";
 
 const EMPTY_PARENT: ParentSelection = { morphs: [], hets: [] };
 const TRACKING_STORAGE_PREFIX = "tiny-titans-genetics-tracked:";
 type CalculatorMode = "pairing" | "reversal";
 
-/**
- * Selector safety net.
- *
- * The genetics database can contain entries from multiple catalogue/reference
- * sources. Those sources must not leak duplicate options into a user-facing
- * selector. Prefer the first canonical record and dedupe by both stable ID
- * and display name so even legacy/variant records cannot render twice.
- */
 function uniqueMorphOptions<T extends { geneId: string; name: string }>(options: T[]): T[] {
   const seenIds = new Set<string>();
   const seenNames = new Set<string>();
