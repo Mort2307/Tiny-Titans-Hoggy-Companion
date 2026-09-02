@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -31,8 +31,8 @@ export default function BehaviourObservatory() {
   const [files, setFiles] = useState<File[]>([]);
   const [form, setForm] = useState({ snakeId: "", title: "", category: "movement" as KeeperObservationCategory, subcategory: "", observedBehaviour: "", description: "", interpretation: "", beforeEvent: [] as string[], afterEvent: "", observedAt: new Date().toISOString().slice(0, 10), confidence: "unsure" as KeeperObservationConfidence, feedingMethod: "", temperatureC: "", humidityPercent: "", handlingRecently: false, shedStage: "", enclosureChangeRecently: false, credit: "credited" as "credited" | "anonymous", educationalConsent: false });
 
-  async function load() { setLoading(true); try { const [items, ownSnakes] = await Promise.all([getApprovedKeeperObservations(), user ? getUserSnakes(user.uid) : Promise.resolve([])]); setObservations(items); setSnakes(ownSnakes); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load the Behaviour Observatory."); } finally { setLoading(false); } }
-  useEffect(() => { void load(); }, [user]);
+  const load = useCallback(async () => { setLoading(true); try { const [items, ownSnakes] = await Promise.all([getApprovedKeeperObservations(), user ? getUserSnakes(user.uid) : Promise.resolve([])]); setObservations(items); setSnakes(ownSnakes); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load the Behaviour Observatory."); } finally { setLoading(false); } }, [user]);
+  useEffect(() => { void load(); }, [load]);
   useEffect(() => { let cancelled = false; void Promise.all(observations.flatMap((item) => item.media.map(async (media) => [media.id, await resolveObservationMediaUrl(media.path).catch(() => "")] as const))).then((entries) => { if (!cancelled) setMediaUrls(Object.fromEntries(entries)); }); return () => { cancelled = true; }; }, [observations]);
 
   const searchItems = useMemo<UniversalSearchItem[]>(() => [
