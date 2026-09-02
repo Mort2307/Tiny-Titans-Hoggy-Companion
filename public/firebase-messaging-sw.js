@@ -3,6 +3,20 @@
  * It is registered explicitly by notificationService.ts and therefore does not
  * take over the application shell or interfere with the Workbox PWA worker.
  */
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || "/", self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      const existing = windowClients.find((client) => "focus" in client);
+      if (existing) return existing.navigate(targetUrl).then(() => existing.focus());
+      return clients.openWindow(targetUrl);
+    })
+  );
+});
+
 importScripts(
   "https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging-compat.js"
@@ -33,31 +47,11 @@ messaging.onBackgroundMessage((payload) => {
   const title = data.title || "Tiny Titans";
   const body = data.body || "You have a Tiny Titans reminder.";
   const url = data.url || "/";
-
-  eventWaitShowNotification(title, body, data.eventKey || "tiny-titans-notification", url);
-});
-
-function eventWaitShowNotification(title, body, tag, url) {
   self.registration.showNotification(title, {
     body,
     icon: "/favicon.svg",
     badge: "/favicon.svg",
-    tag,
+    tag: data.eventKey || "tiny-titans-notification",
     data: { url },
   });
-}
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const targetUrl = new URL(event.notification.data?.url || "/", self.location.origin).href;
-
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-      const existing = windowClients.find((client) => "focus" in client);
-      if (existing) {
-        return existing.navigate(targetUrl).then(() => existing.focus());
-      }
-      return clients.openWindow(targetUrl);
-    })
-  );
 });
