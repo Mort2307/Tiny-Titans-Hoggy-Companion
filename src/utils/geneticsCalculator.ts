@@ -9,6 +9,7 @@ import {
   getMorphByGeneId,
   getCombinations,
   type MorphDefinition,
+  type MorphComponent,
 } from "../data/morphs";
 
 import {
@@ -210,10 +211,10 @@ function getHetComponents(loci: Map<string, number>): OffspringComponent[] {
   return components.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function componentSignature(components: Array<{ geneId: string; copies: number }>): Iterable<[string, number]> {
+function componentSignature(components: MorphComponent[]): Iterable<[string, number]> {
   const totals = new Map<string, number>();
   for (const component of components) {
-    totals.set(component.geneId, (totals.get(component.geneId) ?? 0) + component.copies);
+    totals.set(component.morphId, (totals.get(component.morphId) ?? 0) + component.copies);
   }
   return totals.entries();
 }
