@@ -12,6 +12,9 @@ export type NotificationSettings = {
   feedingRemindersEnabled: boolean;
   weightRemindersEnabled: boolean;
   weightReminderTime: string;
+  shedRemindersEnabled: boolean;
+  shedReminderDays: number;
+  shedReminderTime: string;
   healthRemindersEnabled: boolean;
   healthReminderFollowUpEnabled: boolean;
   medicationMissedFollowUpMinutes: number;
@@ -26,6 +29,9 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   feedingRemindersEnabled: true,
   weightRemindersEnabled: true,
   weightReminderTime: "09:00",
+  shedRemindersEnabled: true,
+  shedReminderDays: 3,
+  shedReminderTime: "09:00",
   healthRemindersEnabled: true,
   healthReminderFollowUpEnabled: true,
   medicationMissedFollowUpMinutes: 60,
