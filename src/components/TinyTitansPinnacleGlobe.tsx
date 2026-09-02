@@ -21,6 +21,85 @@ type GlobeRef = {
 
 type GlobeArea = PublicCommunityLocation & { isSelf: boolean };
 
+type MoonPhase = {
+  fraction: number;
+  illumination: number;
+  name: string;
+};
+
+const SYNODIC_MONTH_MS = 29.530588853 * 86_400_000;
+const NEW_MOON_EPOCH_MS = Date.UTC(2000, 0, 6, 18, 14);
+
+function getMoonPhase(now = Date.now()): MoonPhase {
+  const fraction = (((now - NEW_MOON_EPOCH_MS) / SYNODIC_MONTH_MS) % 1 + 1) % 1;
+  const illumination = 0.5 * (1 - Math.cos(2 * Math.PI * fraction));
+  const name = fraction < 0.0625 ? "New Moon" : fraction < 0.1875 ? "Waxing Crescent" : fraction < 0.3125 ? "First Quarter" : fraction < 0.4375 ? "Waxing Gibbous" : fraction < 0.5625 ? "Full Moon" : fraction < 0.6875 ? "Waning Gibbous" : fraction < 0.8125 ? "Third Quarter" : fraction < 0.9375 ? "Waning Crescent" : "New Moon";
+  return { fraction, illumination, name };
+}
+
+function drawMoon(canvas: HTMLCanvasElement, phase: MoonPhase): void {
+  const size = 128;
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  const image = context.createImageData(size, size);
+  const radius = size * 0.42;
+  const center = size / 2;
+  const sunAngle = 2 * Math.PI * phase.fraction;
+  const sunX = Math.sin(sunAngle);
+  const sunZ = Math.cos(sunAngle);
+  const craters = [
+    [-0.24, -0.17, 0.10, 0.06], [0.17, -0.25, 0.075, 0.08], [0.25, 0.15, 0.12, 0.065],
+    [-0.08, 0.26, 0.065, 0.05], [-0.31, 0.13, 0.055, 0.07], [0.03, 0.03, 0.045, 0.09],
+  ];
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const nx = (x - center) / radius;
+      const ny = (y - center) / radius;
+      const rr = nx * nx + ny * ny;
+      const index = (y * size + x) * 4;
+      if (rr > 1) continue;
+      const nz = Math.sqrt(Math.max(0, 1 - rr));
+      const light = nx * sunX + nz * sunZ;
+      const lit = Math.max(0, light);
+      let surface = 0.72 + 0.28 * lit;
+      for (const [cx, cy, cr, shade] of craters) {
+        const dx = nx - cx;
+        const dy = ny - cy;
+        if (dx * dx + dy * dy < cr * cr) surface *= 1 - shade;
+      }
+      const edge = Math.min(1, (1 - rr) * 18);
+      const value = Math.round(210 * surface);
+      image.data[index] = value;
+      image.data[index + 1] = value;
+      image.data[index + 2] = value;
+      image.data[index + 3] = Math.round(edge * (0.85 + 0.15 * lit) * 255);
+    }
+  }
+  context.putImageData(image, 0, 0);
+}
+
+function MoonPhaseWidget() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [phase, setPhase] = useState<MoonPhase>(() => getMoonPhase());
+
+  useEffect(() => {
+    const update = () => setPhase(getMoonPhase());
+    const timer = window.setInterval(update, 3_600_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (canvasRef.current) drawMoon(canvasRef.current, phase);
+  }, [phase]);
+
+  return <div className="tt-pinnacle-moon-widget" aria-label={`Current Moon phase: ${phase.name}, ${Math.round(phase.illumination * 100)} percent illuminated`}>
+    <canvas ref={canvasRef} width={128} height={128} aria-hidden="true" />
+    <div><strong>🌙 For Mum</strong><span>{phase.name}</span><small>{Math.round(phase.illumination * 100)}% illuminated</small></div>
+  </div>;
+}
+
 export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
   const globeRef = useRef<GlobeRef | undefined>(undefined);
   const [areas, setAreas] = useState<PublicCommunityLocation[]>([]);
@@ -29,6 +108,7 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
   const [material, setMaterial] = useState<EarthDayNightMaterial | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationError, setLocationError] = useState(false);
+  const [syncError, setSyncError] = useState(false);
   const [isReducedMotion, setIsReducedMotion] = useState(false);
 
   useEffect(() => {
@@ -43,9 +123,15 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
     let active = true;
     setLoading(true);
     setLocationError(false);
+    setSyncError(false);
     void (async () => {
       try {
-        await syncCommunityLocationMembership().catch(() => undefined);
+        try {
+          await syncCommunityLocationMembership();
+        } catch (error) {
+          console.warn("Tiny Titans: community location membership sync unavailable", error);
+          if (active) setSyncError(true);
+        }
         const [publicAreas, own] = await Promise.all([
           getPublicCommunityLocations(),
           getOwnCommunityLocation(uid),
@@ -79,7 +165,7 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
     if (!material) return;
     const updateSun = () => updateEarthSun(material);
     updateSun();
-    const timer = window.setInterval(updateSun, 10000);
+    const timer = window.setInterval(updateSun, 10_000);
     return () => window.clearInterval(timer);
   }, [material]);
 
@@ -111,22 +197,25 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
     return Array.from(byId.values()).map((area) => ({ ...area, isSelf: ownLocation?.areaId === area.areaId }));
   }, [areas, ownLocation]);
 
+  const representedAreaCount = globeAreas.length;
+  const representedTitanCount = globeAreas.reduce((sum, area) => sum + Math.max(0, area.memberCount), 0);
   const selected = selectedAreaId ? globeAreas.find((area) => area.areaId === selectedAreaId) ?? null : null;
 
-  return <section className="tt-pinnacle-globe-section" aria-label="Tiny Titans community globe">
+  return <section className="tt-pinnacle-globe-section" aria-label="Globally Represented Titans">
     <div className="tt-pinnacle-globe-heading">
       <div>
         <p className="tt-home-kicker">🌎 THE TINY TITANS WORLD</p>
-        <h2>A community, around the world.</h2>
-        <p>See where Tiny Titans is represented without exposing where anyone lives.</p>
+        <h2>Globally Represented Titans</h2>
+        <p>See where Tiny Titans is represented using city-level community areas only. Exact addresses and household locations are never shown.</p>
       </div>
+      <MoonPhaseWidget />
     </div>
     <div className="tt-pinnacle-globe-shell">
       <div className="tt-pinnacle-globe-space">
         <Globe
           ref={globeRef as never}
           width={900}
-          height={620}
+          height={520}
           backgroundColor="rgba(0,0,0,0)"
           backgroundImageUrl={EARTH_STAR_TEXTURE_URL}
           globeMaterial={material ?? undefined}
@@ -156,8 +245,10 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
             if (ownLocation) globeRef.current?.pointOfView({ lat: ownLocation.latitude, lng: ownLocation.longitude, altitude: 2.05 }, 0);
           }}
         />
-        {loading && <div className="tt-pinnacle-status">Loading the world…</div>}
-        {!loading && locationError && <div className="tt-pinnacle-status tt-pinnacle-status-warning">The community globe could not refresh right now.</div>}
+        {loading && <div className="tt-pinnacle-status">Loading the global representation…</div>}
+        {!loading && locationError && <div className="tt-pinnacle-status tt-pinnacle-status-warning">The global location feed could not be loaded.</div>}
+        {!loading && !locationError && representedAreaCount === 0 && <div className="tt-pinnacle-location-empty"><strong>No community areas are indexed yet.</strong><span>{syncError ? "Your location service could not synchronise just now. The public map will remain privacy-safe and will retry when the page is refreshed." : ownLocation ? "Your community area is ready, but no aggregate areas are currently available." : "Share your city-level community area in Data & Privacy to add your Titan to the world map."}</span></div>}
+        {!loading && !locationError && representedAreaCount > 0 && <div className="tt-pinnacle-map-count">{representedAreaCount} community area{representedAreaCount === 1 ? "" : "s"} · {representedTitanCount} represented Titan{representedTitanCount === 1 ? "" : "s"}</div>}
         <div className="tt-pinnacle-controls-hint">Drag to explore · pinch or wheel to zoom</div>
       </div>
       {selected && <aside className="tt-pinnacle-location-card" aria-live="polite">
@@ -167,7 +258,7 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
         <h3>{selected.city}</h3>
         <strong>{selected.memberCount} Titan{selected.memberCount === 1 ? "" : "s"}</strong>
         <p>{selected.country}</p>
-        {selected.isSelf ? <div className="tt-pinnacle-privacy-note"><b>🔐 Your exact location is not shown.</b><span>This marker represents the area you entered in Tiny Titans. It is not a live GPS position, home address or exact pinpoint.</span></div> : <small>Approximate community area only. No names, profiles or personal keeper data are shown here.</small>}
+        <small>Approximate community area only. No names, profiles, exact coordinates or home addresses are shown here.</small>
       </aside>}
     </div>
     {!selected && <p className="tt-pinnacle-footnote"><span className="tt-pinnacle-legend-self">✦</span> marks your community area. Other markers show aggregated community presence only.</p>}
