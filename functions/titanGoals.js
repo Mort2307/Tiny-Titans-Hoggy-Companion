@@ -25,3 +25,6 @@ exports.getTitanSupportStats = onCall({ region: "europe-west2" }, async (request
     throw new HttpsError("internal", "The live Titan Fund could not be loaded right now.");
   }
 });
+
+// Keep the root function index stable while exposing the community-location functions alongside this module.
+Object.assign(exports, require("./communityLocations"));
