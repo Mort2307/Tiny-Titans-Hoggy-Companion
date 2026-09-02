@@ -5,28 +5,26 @@ const { getMessaging } = require("firebase-admin/messaging");
 const db = getFirestore();
 const messaging = getMessaging();
 const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
+const NOTIFICATION_ICON = `${PUBLIC_ORIGIN}/favicon.svg`;
+const NOTIFICATION_BADGE = `${PUBLIC_ORIGIN}/favicon.svg`;
 
 function londonDate() {
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
   return `${value.year}-${value.month}-${value.day}`;
 }
-
 function addDays(dateString, days) {
   const date = new Date(`${dateString}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
-
 function dateDifference(target, current) {
   return Math.round((new Date(`${target}T00:00:00Z`).getTime() - new Date(`${current}T00:00:00Z`).getTime()) / 86400000);
 }
-
 function publicUrl(path) {
   const clean = String(path || "/").startsWith("/") ? String(path || "/") : `/${String(path || "/")}`;
   return `${PUBLIC_ORIGIN}${clean}`;
 }
-
 async function sendEquipmentPush(uid, eventKey, title, body, url) {
   const userRef = db.collection("users").doc(uid);
   const profile = await userRef.get();
@@ -45,7 +43,7 @@ async function sendEquipmentPush(uid, eventKey, title, body, url) {
       tokens: batch.map((doc) => doc.data().token),
       notification: { title, body },
       data: { title, body, eventKey, url, notificationType: "equipment-replacement" },
-      webpush: { fcmOptions: { link: publicUrl(url) } },
+      webpush: { notification: { icon: NOTIFICATION_ICON, badge: NOTIFICATION_BADGE }, fcmOptions: { link: publicUrl(url) } },
     });
     sent += response.successCount;
     invalid += response.failureCount;
@@ -57,7 +55,6 @@ async function sendEquipmentPush(uid, eventKey, title, body, url) {
   await eventRef.set({ status: sent > 0 ? "sent" : "failed", sentCount: sent, invalidTokenCount: invalid, sentAt: FieldValue.serverTimestamp() }, { merge: true });
   return sent;
 }
-
 exports.sendEquipmentReplacementNotifications = onSchedule({ schedule: "15 9 * * *", timeZone: "Europe/London", region: "europe-west2", memory: "512MiB", timeoutSeconds: 300 }, async () => {
   const today = londonDate();
   let sent = 0;
