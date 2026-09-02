@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { MorphDefinition } from "../data/morphs";
 import { normaliseSearch } from "../utils/searchRelevance";
 import { reverseMorph, type MorphReversalResult, type ReverseTreeNode } from "../utils/geneticsReversal";
+import "./MorphReversalTheme.css";
 
 type MorphReversalPanelProps = {
   morphs: MorphDefinition[];
