@@ -4,6 +4,7 @@ const { getMessaging } = require("firebase-admin/messaging");
 
 const db = getFirestore();
 const messaging = getMessaging();
+const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
 
 function londonDate() {
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
@@ -21,6 +22,11 @@ function dateDifference(target, current) {
   return Math.round((new Date(`${target}T00:00:00Z`).getTime() - new Date(`${current}T00:00:00Z`).getTime()) / 86400000);
 }
 
+function publicUrl(path) {
+  const clean = String(path || "/").startsWith("/") ? String(path || "/") : `/${String(path || "/")}`;
+  return `${PUBLIC_ORIGIN}${clean}`;
+}
+
 async function sendEquipmentPush(uid, eventKey, title, body, url) {
   const userRef = db.collection("users").doc(uid);
   const profile = await userRef.get();
@@ -29,19 +35,26 @@ async function sendEquipmentPush(uid, eventKey, title, body, url) {
   const eventRef = userRef.collection("notificationEvents").doc(eventKey);
   if ((await eventRef.get()).exists) return 0;
   const tokens = (await userRef.collection("notificationTokens").where("enabled", "==", true).get()).docs.filter((doc) => typeof doc.data().token === "string" && doc.data().token);
-  await eventRef.set({ type: "equipment-replacement", status: "sending", title, body, url, createdAt: FieldValue.serverTimestamp() });
-  if (!tokens.length) { await eventRef.set({ status: "no-delivery" }, { merge: true }); return 0; }
+  await eventRef.set({ type: "equipment-replacement", status: tokens.length ? "sending" : "no-delivery", title, body, url, read: false, createdAt: FieldValue.serverTimestamp() });
+  if (!tokens.length) return 0;
   let sent = 0;
+  let invalid = 0;
   for (let index = 0; index < tokens.length; index += 500) {
     const batch = tokens.slice(index, index + 500);
-    const response = await messaging.sendEachForMulticast({ tokens: batch.map((doc) => doc.data().token), data: { title, body, eventKey, url } });
+    const response = await messaging.sendEachForMulticast({
+      tokens: batch.map((doc) => doc.data().token),
+      notification: { title, body },
+      data: { title, body, eventKey, url, notificationType: "equipment-replacement" },
+      webpush: { fcmOptions: { link: publicUrl(url) } },
+    });
     sent += response.successCount;
+    invalid += response.failureCount;
     await Promise.all(response.responses.map(async (result, responseIndex) => {
       const code = result.error?.code || "";
       if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") await batch[responseIndex].ref.delete();
     }));
   }
-  await eventRef.set({ status: sent > 0 ? "sent" : "failed", sentCount: sent, sentAt: FieldValue.serverTimestamp() }, { merge: true });
+  await eventRef.set({ status: sent > 0 ? "sent" : "failed", sentCount: sent, invalidTokenCount: invalid, sentAt: FieldValue.serverTimestamp() }, { merge: true });
   return sent;
 }
 
