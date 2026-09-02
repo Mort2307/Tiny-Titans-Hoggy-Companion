@@ -66,9 +66,11 @@ function createMoonObject(): MoonObject {
   group.userData.labelTexture = labelTexture; group.userData.moonMesh = moonMesh; group.userData.label = label; return group;
 }
 
-function updateMoonObject(object: MoonObject, data: MoonGeo): void {
-  const mesh = object.userData.moonMesh; if (!mesh) return;
-  const material = mesh.material as MeshPhongMaterial; const shade = 0.28 + data.illumination * 0.72; material.color.setRGB(shade, shade * 0.985, shade * 0.92);
+function updateMoonObject(object: object, data: object): void {
+  const moonObject = object as MoonObject;
+  const moonData = data as MoonGeo;
+  const mesh = moonObject.userData.moonMesh; if (!mesh) return;
+  const material = mesh.material as MeshPhongMaterial; const shade = 0.28 + moonData.illumination * 0.72; material.color.setRGB(shade, shade * 0.985, shade * 0.92);
 }
 
 export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
