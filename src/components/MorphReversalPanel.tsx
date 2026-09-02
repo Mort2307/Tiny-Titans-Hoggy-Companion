@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { MorphDefinition } from "../data/morphs";
 import { normaliseSearch } from "../utils/searchRelevance";
 import { reverseMorph, type MorphReversalResult, type ReverseTreeNode } from "../utils/geneticsReversal";
@@ -126,7 +127,9 @@ function ReversalResults({ result, onReverseComponent }: { result: MorphReversal
 }
 
 export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) {
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedMorph = searchParams.get("morph")?.trim() ?? "";
+  const [query, setQuery] = useState(requestedMorph);
   const [result, setResult] = useState<MorphReversalResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,6 +163,11 @@ export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) 
       .map(({ morph }) => morph);
   }, [options, query]);
 
+  useEffect(() => {
+    if (!requestedMorph || requestedMorph === query) return;
+    setQuery(requestedMorph);
+  }, [requestedMorph, query]);
+
   function resolve(value = query) {
     const clean = value.trim();
     if (!clean) {
@@ -176,9 +184,24 @@ export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) 
     }
 
     setQuery(resolved.canonicalName);
+    setSearchParams((current) => {
+      current.set("mode", "reversal");
+      current.set("morph", resolved.canonicalName);
+      return current;
+    }, { replace: true });
     setError(null);
     setResult(resolved);
   }
+
+  useEffect(() => {
+    if (requestedMorph) {
+      const resolved = reverseMorph(requestedMorph);
+      if (resolved) {
+        setResult(resolved);
+        setQuery(resolved.canonicalName);
+      }
+    }
+  }, [requestedMorph]);
 
   function reverseComponent(name: string) {
     setQuery(name);
