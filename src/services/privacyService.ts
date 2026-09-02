@@ -23,9 +23,23 @@ export async function getPrivacyPreferences(uid: string): Promise<PrivacyPrefere
   if (!uid) throw new Error("Privacy preferences require an authenticated user.");
   const privacyRef = doc(db, "users", uid, "settings", "privacy");
   const snapshot = await getDoc(privacyRef);
+
+  // Backward compatibility: some older accounts have a privacy document from a
+  // previous consent version, but the canonical communityLocation field was
+  // never written. In that case, preserve the user's legacy location consent.
   if (snapshot.exists()) {
-    const data = snapshot.data() as Partial<PrivacyPreferences>;
-    return { ...DEFAULT_PRIVACY, ...data, consentVersion: typeof data.consentVersion === "string" ? data.consentVersion : "" };
+    const data = snapshot.data() as Partial<PrivacyPreferences> & { approximateLocation?: unknown };
+    const userSnapshot = await getDoc(doc(db, "users", uid));
+    const legacy = (userSnapshot.data()?.dataCollectionPreferences ?? {}) as LegacyPreferences;
+    const hasCanonicalCommunityLocation = Object.prototype.hasOwnProperty.call(data, "communityLocation");
+    return {
+      ...DEFAULT_PRIVACY,
+      ...data,
+      communityLocation: hasCanonicalCommunityLocation
+        ? data.communityLocation === true
+        : legacy.approximateLocation === true,
+      consentVersion: typeof data.consentVersion === "string" ? data.consentVersion : "",
+    };
   }
 
   // Backward-compatible read-through for accounts created before the canonical privacy document existed.
