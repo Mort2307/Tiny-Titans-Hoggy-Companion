@@ -88,7 +88,7 @@ exports.sendShedCycleReminderNotifications = onSchedule({ schedule: "*/5 * * * *
 
       const started = String(active.cycleStartedAt || active.date || "").trim();
       if (!/^\d{4}-\d{2}-\d{2}$/.test(started)) continue;
-      const activeDays = dateDifference(now.date, started) * -1;
+      const activeDays = dateDifference(started, now.date);
       if (activeDays < reminderDays) continue;
 
       const stage = String(active.currentStage || "Blue");
