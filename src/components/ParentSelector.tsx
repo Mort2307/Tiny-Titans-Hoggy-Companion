@@ -93,7 +93,7 @@ function MultiSelectDropdown({ label, options, selected, onToggle, searchPlaceho
 
 export default function ParentSelector({ title, sex, parent, snakes, morphOptions, hetOptions, onChange }: ParentSelectorProps) {
   const allowedSnakes = useMemo(
-    () => snakes.filter((snake) => snake.sex === sex),
+    () => snakes.filter((snake) => String(snake.sex).trim().toLowerCase() === sex.toLowerCase()),
     [snakes, sex],
   );
   const selectedSnake = allowedSnakes.find((snake) => snake.id === parent.snakeId);
@@ -130,7 +130,7 @@ export default function ParentSelector({ title, sex, parent, snakes, morphOption
   return (
     <section className="genetics-parent-selector">
       <div className="genetics-parent-heading"><div><h3>{title}</h3><p>{sex}-only saved snakes, or build the genetics manually.</p></div></div>
-      <div className="genetics-snake-select-wrap"><label htmlFor={`${title}-snake-select`}>Saved {sex} Snake</label><select id={`${title}-snake-select`} className="genetics-snake-select" value={parent.snakeId ?? ""} onChange={(event) => handleSnakeChange(event.target.value)}><option value="">Manual genetics</option>{allowedSnakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name} · {snake.sex} · {snake.morphs.length ? snake.morphs.join(", ") : "Normal"}</option>)}</select></div>
+      <div className="genetics-snake-select-wrap"><label htmlFor={`${title}-snake-select`}>Saved {sex} Snake</label><select id={`${title}-snake-select`} className="genetics-snake-select" value={selectedSnake?.id ?? ""} onChange={(event) => handleSnakeChange(event.target.value)}><option value="">Manual genetics</option>{allowedSnakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name} · {snake.sex} · {snake.morphs.length ? snake.morphs.join(", ") : "Normal"}</option>)}</select></div>
       {selectedSnake && <div className="genetics-snake-summary"><strong>{selectedSnake.name}</strong><span>{selectedSnake.sex}</span><span>{selectedSnake.morphs.length ? selectedSnake.morphs.join(" · ") : "Normal"}</span>{selectedSnake.hets.length > 0 && <span>{normaliseSnakeHets(selectedSnake.hets).map((het) => `${het.percentage} Het ${canonicalMorph(het.gene)?.name ?? het.gene}`).join(" · ")}</span>}</div>}
       <div className="genetics-selector-group"><h4>Visual Morphs & Confirmed Phenotypes</h4><MultiSelectDropdown label="Select visual morphs" options={morphOptions} selected={parent.morphs} onToggle={toggleMorph} searchPlaceholder="Search exact morph or gene..." />{selectedMorphNames.length > 0 && <div className="genetics-selected-tags">{selectedMorphNames.map((name) => <span key={name} className="genetics-selection-chip genetics-selection-chip-visual">{name}</span>)}</div>}</div>
       <div className="genetics-selector-group">
