@@ -5,7 +5,7 @@ import type { WeightRecord } from "../types/Weight";
 import MultiSelectDropdown from "./MultiSelectDropdown";
 import HetSelector from "./HetSelector";
 import TinyTitansDateInput from "./TinyTitansDateInput";
-import { morphs } from "../data/morphs";
+import { getMasterHetGenes, masterMorphs } from "../data/masterMorphDatabase";
 import { getDateDuration } from "../utils/dateDuration";
 import { compressImage } from "../utils/imageCompression";
 import { useUnits } from "../context/UnitContextValue";
@@ -17,6 +17,9 @@ type SnakeFormProps = {
   editing: boolean;
   saving?: boolean;
 };
+
+const masterVisualMorphOptions = masterMorphs;
+const masterHetOptions = getMasterHetGenes();
 
 export default function SnakeForm({ form, updateField, onSave, editing, saving = false }: SnakeFormProps) {
   const { isImperial, weightUnit } = useUnits();
@@ -46,7 +49,7 @@ export default function SnakeForm({ form, updateField, onSave, editing, saving =
     <h3>⚖️ Weight Tracking</h3><label htmlFor="starting-weight">Starting Weight ({weightUnit})</label><input id="starting-weight" type="number" inputMode="decimal" min="0" step="any" placeholder={isImperial ? "e.g. 2" : "e.g. 50.74"} value={toDisplayWeight(form.startingWeight)} onChange={(e) => { const value = toStoredWeight(e.target.value); updateField("startingWeight", value); if (value !== null && !form.startingWeightDate) updateField("startingWeightDate", new Date().toISOString().split("T")[0]); }} disabled={saving} />
     <TinyTitansDateInput id="starting-weight-date" label="Starting Weight Date" value={form.startingWeightDate} onChange={(value) => updateField("startingWeightDate", value)} disabled={saving} /><label htmlFor="current-weight">Current Weight ({weightUnit})</label><input id="current-weight" type="number" inputMode="decimal" min="0" step="any" placeholder={isImperial ? "e.g. 3.2" : "e.g. 90.25"} value={toDisplayWeight(form.weight)} onChange={(e) => updateField("weight", toStoredWeight(e.target.value))} disabled={saving} />
     <TinyTitansDateInput id="last-weighed-date" label="Last Weighed Date" value={form.lastWeighedDate} onChange={(value) => updateField("lastWeighedDate", value)} disabled={saving} />
-    <h3>🧬 Visual Morphs</h3><MultiSelectDropdown title="Select Morphs" options={morphs} selected={form.morphs} setSelected={(value) => updateField("morphs", value)} /><label htmlFor="custom-morph">Custom Morph</label><input id="custom-morph" value={form.customMorph} onChange={(e) => updateField("customMorph", e.target.value)} disabled={saving} /><h3>🧬 Hets</h3><HetSelector options={morphs} selected={form.hets} setSelected={(value) => updateField("hets", value)} /><label htmlFor="custom-hets">Additional Genetics Notes</label><textarea id="custom-hets" value={form.customHets} onChange={(e) => updateField("customHets", e.target.value)} disabled={saving} /><label htmlFor="snake-notes">Notes</label><textarea id="snake-notes" value={form.notes} onChange={(e) => updateField("notes", e.target.value)} disabled={saving} />
+    <h3>🧬 Visual Morphs</h3><MultiSelectDropdown title="Select Morphs" options={masterVisualMorphOptions} selected={form.morphs} setSelected={(value) => updateField("morphs", value)} /><label htmlFor="custom-morph">Custom Morph</label><input id="custom-morph" value={form.customMorph} onChange={(e) => updateField("customMorph", e.target.value)} disabled={saving} /><h3>🧬 Hets</h3><HetSelector options={masterHetOptions} selected={form.hets} setSelected={(value) => updateField("hets", value)} /><label htmlFor="custom-hets">Additional Genetics Notes</label><textarea id="custom-hets" value={form.customHets} onChange={(e) => updateField("customHets", e.target.value)} disabled={saving} /><label htmlFor="snake-notes">Notes</label><textarea id="snake-notes" value={form.notes} onChange={(e) => updateField("notes", e.target.value)} disabled={saving} />
     <button type="submit" className="save-snake-button" disabled={saving || processingPhoto}>{processingPhoto ? "⏳ Processing Photo..." : saving ? "💾 Saving..." : "💾 Save Snake"}</button>
   </form>;
 }
