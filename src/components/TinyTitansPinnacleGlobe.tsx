@@ -53,7 +53,6 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
         if (!active) return;
         setAreas(publicAreas);
         setOwnLocation(own);
-        if (own) setSelectedAreaId(own.areaId);
       } catch (error) {
         console.warn("Tiny Titans: community globe feed unavailable", error);
         if (active) setLocationError(true);
@@ -142,7 +141,7 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
           pointAltitude={0.035}
           pointRadius={(item) => (item as GlobeArea).isSelf ? 0.38 : Math.min(0.3, 0.19 + ((item as GlobeArea).memberCount * 0.018))}
           pointColor={(item) => (item as GlobeArea).isSelf ? "#F5B642" : "#4CD7FF"}
-          pointLabel={(item) => { const area = item as GlobeArea; return `${area.city} · ${area.country} · ${area.memberCount} Titan${area.memberCount === 1 ? "" : "s"}`; }}
+          pointLabel={(item) => { const area = item as GlobeArea; return `${area.isSelf ? "Your community area · " : ""}${area.city} · ${area.country} · ${area.memberCount} Titan${area.memberCount === 1 ? "" : "s"}`; }}
           onPointClick={(item) => { const area = item as GlobeArea; setSelectedAreaId(area.areaId); const controls = globeRef.current?.controls(); if (controls) controls.autoRotate = false; }}
           ringsData={globeAreas.filter((area) => area.isSelf)}
           ringLat="latitude"
