@@ -6,6 +6,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 const calculator = read("src/pages/Calculator.tsx");
 const app = read("src/App.tsx");
 const selector = read("src/components/ParentSelector.tsx");
+const engine = read("src/utils/geneticsCalculator.ts");
 const reversal = read("src/utils/geneticsReversal.ts");
 const comboRegistry = read("src/data/geneticsComboRegistry.ts");
 const comboActivation = read("src/data/expandGeneticsComboRegistry.ts");
@@ -18,6 +19,7 @@ const checks = [
   ["Named combinations are activated at runtime", app.includes('import "./data/expandGeneticsComboRegistry";') && comboActivation.includes("morphs.push(combination)")],
   ["Female saved snakes are sex-filtered", selector.includes('snakes.filter((snake) => snake.sex === sex)')],
   ["Correct-sex query preload", calculator.includes('snake.id === requestedFemaleId && snake.sex === "Female"') && calculator.includes('snake.id === requestedMaleId && snake.sex === "Male"')],
+  ["Calculator engine resolves combinations", engine.includes("function getAllRecognisedCombinations") && engine.includes("getCombinations()") && !engine.includes("return [];\n}\n\nfunction matchesCombination")],
   ["Reversal engine", reversal.includes("export function reverseMorph")],
   ["Reversal panel resolver", read("src/components/MorphReversalPanel.tsx").includes("reverseMorph")],
   ["Reversal avoids fake non-Mendelian probabilities", reversal.includes("supportsMendelianRoutes") && reversal.includes("return []")],
