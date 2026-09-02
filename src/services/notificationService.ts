@@ -6,7 +6,6 @@ import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationPermissionState, type N
 
 const SETTINGS_FIELD = "notificationSettings";
 const NOTIFICATION_ENABLED_EVENT = "tiny-titans-notifications-enabled";
-// Public Web Push/VAPID key for the Tiny Titans Firebase project.
 const VAPID_KEY = "BEpw4KCfLyPQq_HGcc2xG6tbaPoYpTaKLW2iMNqUXswa-beCul3CdgrIV5a5jx7ajA4jHywtDy6srnMiW_2lyuI";
 
 export type NotificationDeviceStatus = {
@@ -17,6 +16,8 @@ export type NotificationDeviceStatus = {
   serviceWorkerReady: boolean;
   tokenCount: number;
 };
+
+export type NotificationFailure = { tokenId: string; code: string; message: string };
 
 function validTime(value: unknown, fallback: string): string { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback; }
 function settingsFor(value: unknown): NotificationSettings {
@@ -60,22 +61,14 @@ async function registerCurrentDeviceToken(uid: string): Promise<boolean> {
 }
 export async function hasRegisteredNotificationDevice(uid: string): Promise<boolean> {
   if (!uid) return false;
-  try {
-    const snapshot = await getDocs(collection(db, "users", uid, "notificationTokens"));
-    return snapshot.docs.some((item) => item.data().enabled === true && typeof item.data().token === "string" && item.data().token.length > 0);
-  } catch (error) {
-    console.warn("Tiny Titans: notification device check failed", error);
-    return false;
-  }
+  try { const snapshot = await getDocs(collection(db, "users", uid, "notificationTokens")); return snapshot.docs.some((item) => item.data().enabled === true && typeof item.data().token === "string" && item.data().token.length > 0); } catch (error) { console.warn("Tiny Titans: notification device check failed", error); return false; }
 }
 export async function getNotificationDeviceStatus(uid: string): Promise<NotificationDeviceStatus> {
   const permission = getNotificationPermissionState();
   const settings = await getNotificationSettings(uid);
   const supported = typeof window !== "undefined" && "serviceWorker" in navigator && (await isSupported().catch(() => false));
   let serviceWorkerReady = false;
-  if (supported) {
-    try { const registration = await registerMessagingWorker(); serviceWorkerReady = Boolean(registration.active || registration.waiting || registration.installing); } catch (error) { console.warn("Tiny Titans: notification service worker check failed", error); }
-  }
+  if (supported) { try { const registration = await registerMessagingWorker(); serviceWorkerReady = Boolean(registration.active || registration.waiting || registration.installing); } catch (error) { console.warn("Tiny Titans: notification service worker check failed", error); } }
   let tokenCount = 0;
   try { const snapshot = await getDocs(collection(db, "users", uid, "notificationTokens")); tokenCount = snapshot.docs.filter((item) => item.data().enabled === true && typeof item.data().token === "string" && item.data().token.length > 0).length; } catch (error) { console.warn("Tiny Titans: notification token count failed", error); }
   return { supported, permission, settingsEnabled: settings.enabled, registered: tokenCount > 0, serviceWorkerReady, tokenCount };
@@ -97,12 +90,12 @@ export async function enableNotifications(uid: string): Promise<NotificationPerm
 export async function disableNotifications(uid: string): Promise<void> {
   if (!uid) return;
   try { if (await isSupported()) await deleteToken(getMessaging(app)); } catch (error) { console.warn("Tiny Titans: local notification token could not be removed", error); }
-  try { const tokenSnapshot = await getDocs(collection(db, "users", uid, "notificationTokens")); await Promise.all(tokenSnapshot.docs.map((tokenDoc) => deleteDoc(tokenDoc.ref))); } catch (error) { console.warn("Tiny Titans: notification token records could not be cleaned up", error); }
+  try { const tokenSnapshot = await getDocs(collection(db, uid, "notificationTokens")); await Promise.all(tokenSnapshot.docs.map((tokenDoc) => deleteDoc(tokenDoc.ref))); } catch (error) { console.warn("Tiny Titans: notification token records could not be cleaned up", error); }
   const settings = await getNotificationSettings(uid); await saveNotificationSettings(uid, { ...settings, enabled: false });
   if ("serviceWorker" in navigator) { const registrations = await navigator.serviceWorker.getRegistrations(); await Promise.all(registrations.filter((registration) => registration.active?.scriptURL.includes("firebase-messaging-sw.js")).map((registration) => registration.unregister())); }
 }
 export async function removeNotificationToken(uid: string, token: string): Promise<void> { const tokenId = await tokenDocumentId(token); await deleteDoc(doc(db, "users", uid, "notificationTokens", tokenId)); }
 export type NotificationTestKind = "feed" | "weight" | "shed" | "health" | "general";
-export type NotificationTestResult = { eventKey: string; targetUid: string; kind: NotificationTestKind; title: string; body: string; url: string; status: "sent" | "no-delivery"; sentCount: number; invalidTokenCount: number; };
+export type NotificationTestResult = { eventKey: string; targetUid: string; kind: NotificationTestKind; title: string; body: string; url: string; status: "sent" | "no-delivery"; sentCount: number; invalidTokenCount: number; failures?: NotificationFailure[]; };
 export async function sendNotificationTest(options: { kind: NotificationTestKind; targetUserId?: string; targetEmail?: string }): Promise<NotificationTestResult> { const functions = getFunctions(app, "europe-west2"); const callable = httpsCallable<typeof options, NotificationTestResult>(functions, "sendNotificationTest"); const response = await callable(options); return response.data; }
 export { NOTIFICATION_ENABLED_EVENT };
