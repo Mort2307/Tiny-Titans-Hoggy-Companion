@@ -68,7 +68,10 @@ async function resolveMembership(uid) {
   const data = userSnapshot.data() || {};
   const privacy = privacySnapshot.exists ? (privacySnapshot.data() || {}) : {};
   const legacy = data.dataCollectionPreferences || {};
-  const locationConsent = privacySnapshot.exists ? privacy.communityLocation === true : legacy.approximateLocation === true;
+  const hasCanonicalConsent = Object.prototype.hasOwnProperty.call(privacy, "communityLocation");
+  const locationConsent = hasCanonicalConsent
+    ? privacy.communityLocation === true
+    : legacy.approximateLocation === true;
   if (!locationConsent) return null;
   const rawLocation = data.approximateLocation;
   if (!rawLocation || typeof rawLocation !== "object") return null;
@@ -208,15 +211,11 @@ exports.getCommunityLocationAreas = onCall({ region: "europe-west2", timeoutSeco
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   try {
     let snapshot = await db.collection("communityLocationAreas").get();
-
-    // The public collection is deliberately aggregate-only. If it is empty, rebuild it from
-    // the consented user records so the homepage can recover even after a migration or cleanup.
     if (snapshot.empty) {
       const rebuild = await rebuildLocationIndex();
       console.info("Community location index self-healed from public feed", { ...rebuild, uid: request.auth.uid });
       snapshot = await db.collection("communityLocationAreas").get();
     }
-
     return { success: true, areas: snapshot.docs.map(toPublicArea).filter(Boolean) };
   } catch (error) {
     console.error("Community location area read failed", error);
