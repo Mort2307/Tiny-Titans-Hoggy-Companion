@@ -191,7 +191,7 @@ function resolveTarget(query: string): { target?: MorphDefinition; displayName: 
           .filter((candidate) => candidate.geneId !== existing.geneId)
           .filter((candidate) => JSON.stringify(signature(candidate)) === JSON.stringify(signature(existing)))
           .map((candidate) => candidate.name),
-        components: expandMorphToComponents(existing),
+        components: existing.components ?? [],
       };
     }
 
@@ -262,7 +262,7 @@ export function reverseMorph(query: string): MorphReversalResult | null {
     });
   }
 
-  const directComponents = Array.from(aggregateComponents(resolved.components).entries()).map(([morphId, copies]) => ({
+  const directComponents = Array.from(aggregateComponents(resolved.target.components ?? resolved.components).entries()).map(([morphId, copies]) => ({
     morphId,
     name: getMorphByGeneId(morphId)?.name ?? morphId,
     copies,
