@@ -13,7 +13,7 @@ type MoonGeo = { lat: number; lng: number; altitude: number; distanceKm: number;
 type MoonObject = Group & { userData: { labelTexture?: Texture; moonMesh?: Mesh; label?: Sprite } };
 
 const MOON_MEAN_DISTANCE_KM = 384400;
-const MOON_ORBIT_VISUAL_RADIUS = 2.35;
+const MOON_ORBIT_VISUAL_RADIUS = 3.0;
 const J2000_NOON_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
 const normaliseDegrees = (value: number): number => ((value % 360) + 360) % 360;
 const toRadians = (degrees: number): number => degrees * Math.PI / 180;
@@ -41,7 +41,7 @@ function getMoonGeo(now = Date.now()): MoonGeo {
   const z = Math.cos(beta) * Math.sin(lambda) * Math.sin(obliquity) + Math.sin(beta) * Math.cos(obliquity);
   const rightAscension = Math.atan2(y, x);
   const declination = Math.asin(Math.max(-1, Math.min(1, z)));
-  const altitude = Math.max(0.25, (moon.distanceKm / MOON_MEAN_DISTANCE_KM) * MOON_ORBIT_VISUAL_RADIUS - 1);
+  const altitude = Math.max(0.5, (moon.distanceKm / MOON_MEAN_DISTANCE_KM) * MOON_ORBIT_VISUAL_RADIUS - 1);
   const illumination = 0.5 * (1 - Math.cos(toRadians(moon.elongation)));
   const celestialLongitude = normaliseDegrees(rightAscension * 180 / Math.PI);
   return { lat: declination * 180 / Math.PI, lng: celestialLongitude > 180 ? celestialLongitude - 360 : celestialLongitude, altitude, distanceKm: moon.distanceKm, illumination };
@@ -62,6 +62,7 @@ function createMoonObject(): MoonObject {
   const labelTexture = makeMoonLabelTexture();
   const label = new Sprite(new SpriteMaterial({ map: labelTexture, transparent: true, depthTest: true, depthWrite: false }));
   label.scale.set(0.34, 0.085, 1); label.position.set(0, 0.17, 0); group.add(label);
+  group.scale.setScalar(9);
   group.userData.labelTexture = labelTexture; group.userData.moonMesh = moonMesh; group.userData.label = label; return group;
 }
 
