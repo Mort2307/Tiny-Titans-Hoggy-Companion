@@ -12,12 +12,32 @@ const DEFAULT_PRIVACY: PrivacyPreferences = {
   productUpdates: false,
 };
 
+type LegacyPreferences = {
+  approximateLocation?: unknown;
+  analytics?: unknown;
+  productUpdates?: unknown;
+};
+
 export async function getPrivacyPreferences(uid: string): Promise<PrivacyPreferences> {
   if (!uid) throw new Error("Privacy preferences require an authenticated user.");
-  const snapshot = await getDoc(doc(db, "users", uid, "settings", "privacy"));
-  if (!snapshot.exists()) return DEFAULT_PRIVACY;
-  const data = snapshot.data() as Partial<PrivacyPreferences>;
-  return { ...DEFAULT_PRIVACY, ...data, consentVersion: typeof data.consentVersion === "string" ? data.consentVersion : "" };
+  const privacyRef = doc(db, "users", uid, "settings", "privacy");
+  const snapshot = await getDoc(privacyRef);
+  if (snapshot.exists()) {
+    const data = snapshot.data() as Partial<PrivacyPreferences>;
+    return { ...DEFAULT_PRIVACY, ...data, consentVersion: typeof data.consentVersion === "string" ? data.consentVersion : "" };
+  }
+
+  // Backward-compatible read-through for accounts created before the canonical privacy document existed.
+  const userSnapshot = await getDoc(doc(db, "users", uid));
+  if (!userSnapshot.exists()) return DEFAULT_PRIVACY;
+  const legacy = userSnapshot.data().dataCollectionPreferences as LegacyPreferences | undefined;
+  if (!legacy) return DEFAULT_PRIVACY;
+  return {
+    ...DEFAULT_PRIVACY,
+    communityLocation: legacy.approximateLocation === true,
+    anonymousAnalytics: legacy.analytics === true,
+    productUpdates: legacy.productUpdates === true,
+  };
 }
 
 export async function savePrivacyPreferences(
@@ -35,12 +55,13 @@ export async function savePrivacyPreferences(
 export async function clearCommunityLocation(uid: string): Promise<void> {
   if (!uid) throw new Error("Privacy preferences require an authenticated user.");
   await Promise.all([
-    updateDoc(doc(db, "users", uid, "settings", "privacy"), {
+    setDoc(doc(db, "users", uid, "settings", "privacy"), {
       communityLocation: false,
       city: null,
       country: null,
+      consentVersion: PRIVACY_CONSENT_VERSION,
       consentUpdatedAt: serverTimestamp(),
-    }),
+    }, { merge: true }),
     updateDoc(doc(db, "users", uid), { approximateLocation: null, updatedAt: serverTimestamp() }),
   ]);
 }
