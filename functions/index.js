@@ -9,6 +9,7 @@ const Stripe = require("stripe");
 initializeApp();
 const db = getFirestore();
 const adminAuth = getAuth();
+const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 
 Object.assign(exports, require("./creatorApproval"));
 Object.assign(exports, require("./communityIntelligence"));
@@ -46,61 +47,49 @@ const PRICE_TIERS = Object.freeze({
 });
 const ALLOWED_ORIGINS = new Set(["https://tinytitans-hoggy-companion.web.app", "https://tinytitans-hoggy-companion.firebaseapp.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
 function getAllowedOrigin(request) { const origin = request.rawRequest?.headers?.origin || ""; return ALLOWED_ORIGINS.has(origin) ? origin : "https://tinytitans-hoggy-companion.web.app"; }
+function isOwnerRequest(request) { return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL; }
 
 exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  const callerSnapshot = await db.collection("users").doc(request.auth.uid).get();
-  const callerData = callerSnapshot.data() || {};
-  const callerClaims = request.auth.token || {};
-  const callerAuthorized = callerClaims.admin === true || callerClaims.creator === true || callerData.role === "admin" || callerData.profileType === "creator";
-  if (!callerAuthorized) throw new HttpsError("permission-denied", "Creator authorization is required.");
+  if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can manage Creator access.");
   const targetUid = String(request.data?.uid || "").trim();
   const enabled = request.data?.enabled !== false;
   if (!targetUid) throw new HttpsError("invalid-argument", "A target user ID is required.");
-  if (targetUid === request.auth.uid && !enabled) throw new HttpsError("failed-precondition", "The current Creator cannot remove their own Creator access.");
+  if (enabled && targetUid !== request.auth.uid) throw new HttpsError("permission-denied", "Creator and Tester access are owner-only and cannot be granted to another account.");
   try {
-    if (enabled) {
-      const invitation = await creatorTesterInvitation.createCreatorTesterInvitation(request.auth.uid, targetUid);
-      if (callerData.profileType === "creator" && callerClaims.creator !== true) {
-        const callerAuthUser = await adminAuth.getUser(request.auth.uid);
-        await adminAuth.setCustomUserClaims(request.auth.uid, { ...(callerAuthUser.customClaims || {}), creator: true });
-      }
-      await db.collection("users").doc(targetUid).set({ isTester: false, testerType: "creator", testerInvitationStatus: "pending", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "invite_creator_tester", createdAt: FieldValue.serverTimestamp() });
-      return { success: true, uid: targetUid, creator: false, creatorTester: false, isTester: false, invitation: true, invitationStatus: invitation.status };
-    }
     const target = await adminAuth.getUser(targetUid);
     const nextClaims = { ...(target.customClaims || {}) };
-    delete nextClaims.creatorTester;
+    if (!enabled) {
+      delete nextClaims.creatorTester;
+      delete nextClaims.tester;
+      delete nextClaims.creator;
+      delete nextClaims.admin;
+      await adminAuth.setCustomUserClaims(targetUid, nextClaims);
+      await db.collection("users").doc(targetUid).set({ isTester: false, testerType: null, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_privileged_access", createdAt: FieldValue.serverTimestamp() });
+      return { success: true, uid: targetUid, creator: false, creatorTester: false, isTester: false };
+    }
+    nextClaims.creator = true;
+    nextClaims.tester = true;
     await adminAuth.setCustomUserClaims(targetUid, nextClaims);
-    await db.collection("users").doc(targetUid).set({ isTester: false, testerType: null, testerInvitationStatus: "revoked", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection("users").doc(targetUid).collection("creatorTesterInvitations").doc("creator-tester").set({ status: "revoked", revokedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_creator_tester", createdAt: FieldValue.serverTimestamp() });
-    return { success: true, uid: targetUid, creator: nextClaims.creator === true, creatorTester: false, isTester: false, invitation: false, invitationStatus: "revoked" };
+    await db.collection("users").doc(targetUid).set({ isTester: true, testerType: "creator", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "grant_owner_privileged_access", createdAt: FieldValue.serverTimestamp() });
+    return { success: true, uid: targetUid, creator: true, creatorTester: true, isTester: true };
   } catch (error) {
-    console.error("Creator claim/invitation update failed", error);
+    console.error("Creator claim update failed", error);
     if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Unable to update Creator Tester authorization.");
+    throw new HttpsError("internal", "Unable to update privileged access.");
   }
 });
 
 exports.ensureCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  const uid = request.auth.uid;
-  const profileSnapshot = await db.collection("users").doc(uid).get();
-  const profile = profileSnapshot.data() || {};
-  const existingClaims = request.auth.token || {};
-  const profileAuthorizesCreator = profile.profileType === "creator" || profile.role === "admin";
-  const claimAlreadyPresent = existingClaims.creator === true || existingClaims.admin === true || existingClaims.creatorTester === true;
-  if (!profileAuthorizesCreator && !claimAlreadyPresent) throw new HttpsError("permission-denied", "Creator authorization is required.");
+  if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can use Creator access.");
   try {
-    const authUser = await adminAuth.getUser(uid);
-    const nextClaims = { ...(authUser.customClaims || {}) };
-    if (profile.role === "admin" || nextClaims.admin === true) nextClaims.admin = true;
-    else if (profile.profileType === "creator" || nextClaims.creator === true) nextClaims.creator = true;
-    else if (nextClaims.creatorTester === true) nextClaims.creatorTester = true;
-    await adminAuth.setCustomUserClaims(uid, nextClaims);
-    return { success: true, uid, creator: nextClaims.creator === true, admin: nextClaims.admin === true, creatorTester: nextClaims.creatorTester === true, refreshRequired: true };
+    const authUser = await adminAuth.getUser(request.auth.uid);
+    const nextClaims = { ...(authUser.customClaims || {}), creator: true, tester: true, admin: true };
+    await adminAuth.setCustomUserClaims(request.auth.uid, nextClaims);
+    return { success: true, uid: request.auth.uid, creator: true, admin: true, creatorTester: nextClaims.creatorTester === true, refreshRequired: true };
   } catch (error) {
     console.error("Creator claim synchronisation failed", error);
     throw new HttpsError("internal", "Unable to synchronise Creator authorization.");
