@@ -73,11 +73,9 @@ export async function getCommunityLocationMembers(): Promise<CommunityLocationMe
     if (!preferences?.communityLocation) return null;
 
     const location = data.approximateLocation as AnyRecord | undefined;
-    if (location?.visibleToCreator !== true) return null;
-
     const city = String(location?.city ?? "").trim();
     const country = String(location?.country ?? "").trim();
-    if (!city || !country) return null;
+    if (!location || !city || !country) return null;
 
     const canonical = await buildCanonicalLocation(location, city, country);
     if (!canonical) return null;
