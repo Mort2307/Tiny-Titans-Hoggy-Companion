@@ -78,23 +78,14 @@ export default function SubmissionNotificationTestBot() {
     return () => window.clearInterval(timer);
   }, [countdown]);
 
-  useEffect(() => {
-    if (!run || run.status !== "running" || countdown !== 0 || busy) return;
-    const last = run.items[run.items.length - 1];
-    const hasPending = run.items.some((item) => !item.acceptedAt && item.status !== "failed");
-    if (!last || !hasPending || last.status !== "accepted") return;
-    if (run.items.some((item) => item.status === "sent" || item.status === "opened")) return;
-  }, [run, countdown, busy]);
-
   async function start() {
-    setBusy(true); setError(""); setMessage(""); setRun(null);
+    setBusy(true); setError(""); setMessage(""); setRun(null); setCountdown(0);
     try {
       const created = await startSubmissionNotificationTest(Math.max(0, Math.min(10, delayMinutes)));
-      setRun(created);
       const next = await sendNextSubmissionNotificationTest(created.id);
-      setRun((current) => current ? { ...current, items: current.items.map((item) => item.id === next.item.id ? next.item : item) } : current);
+      setRun((current) => current ? current : { ...created, items: created.items.map((item) => item.id === next.item.id ? next.item : item) });
       setMessage("Test run started. Waiting for the first Tiny Titans notification.");
-      navigate(`/creator/tester?submissionNotifications=1&submissionNotificationRun=${encodeURIComponent(created.id)}`, { replace: true });
+      navigate(`/creator/tester?submissionNotifications=1&submissionNotificationRun=${encodeURIComponent(created.id)}&submissionNotificationItem=${encodeURIComponent(next.item.id)}`, { replace: true });
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : "Unable to start the submission notification test.");
     } finally { setBusy(false); }
@@ -108,9 +99,7 @@ export default function SubmissionNotificationTestBot() {
       setRun(next);
       setMessage("Accepted. The bot has recorded this notification as successfully received.");
       const index = next.items.findIndex((item) => item.id === currentItem.id);
-      if (index >= 0 && index < next.items.length - 1) {
-        setCountdown(next.delayMinutes * 60);
-      }
+      if (index >= 0 && index < next.items.length - 1) setCountdown(next.delayMinutes * 60);
     } catch (acceptError) {
       setError(acceptError instanceof Error ? acceptError.message : "Unable to record notification acceptance.");
     } finally { setBusy(false); }
@@ -118,18 +107,19 @@ export default function SubmissionNotificationTestBot() {
 
   useEffect(() => {
     if (!run || run.status !== "running" || countdown !== 0 || busy) return;
-    const activeItems = run.items;
-    const last = activeItems[activeItems.length - 1];
-    if (!last || !last.acceptedAt) return;
-    if (activeItems.some((item) => item.status === "sent" || item.status === "opened") && !activeItems.every((item) => item.acceptedAt || item.status === "failed")) return;
-    if (activeItems.every((item) => item.acceptedAt)) return;
-    const nextPending = activeItems.find((item) => !item.acceptedAt && item.status === "pending");
+    const nextPending = run.items.find((item) => item.status === "pending");
     if (!nextPending) return;
+    const previousUnaccepted = run.items.some((item) => item.order < nextPending.order && !item.acceptedAt && item.status !== "failed");
+    if (previousUnaccepted) return;
+    const unanswered = run.items.some((item) => (item.status === "sent" || item.status === "opened") && !item.acceptedAt);
+    if (unanswered) return;
+
     let cancelled = false;
     setBusy(true);
     void sendNextSubmissionNotificationTest(run.id).then((response) => {
       if (cancelled) return;
       setRun((current) => current ? { ...current, items: current.items.map((item) => item.id === response.item.id ? response.item : item) } : current);
+      navigate(`/creator/tester?submissionNotifications=1&submissionNotificationRun=${encodeURIComponent(run.id)}&submissionNotificationItem=${encodeURIComponent(response.item.id)}`, { replace: true });
       setMessage(`Next notification sent: ${response.item.label}. Click it when it arrives.`);
       setBusy(false);
     }).catch((sendError) => {
@@ -139,7 +129,7 @@ export default function SubmissionNotificationTestBot() {
       }
     });
     return () => { cancelled = true; };
-  }, [run, countdown, busy]);
+  }, [run, countdown, busy, navigate]);
 
   async function finish() {
     if (!run || !lastItemAccepted || busy) return;
