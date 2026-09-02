@@ -40,35 +40,29 @@ export default function SubmissionNotificationTestBot() {
   const openedCount = run?.summary?.opened ?? run?.items.filter((item) => item.openedAt).length ?? 0;
   const lastItemAccepted = Boolean(run && run.items.length && run.items[run.items.length - 1].acceptedAt);
 
-  const refreshRun = async (id = runId) => {
-    if (!id) return;
-    try {
-      const next = await getSubmissionNotificationTestRun(id);
-      setRun(next);
-      setDelayMinutes(next.delayMinutes);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Unable to load the notification test run.");
-    }
-  };
-
   useEffect(() => {
     if (!user || !runId) return;
-    void refreshRun(runId);
-  }, [user, runId]);
-
-  useEffect(() => {
-    if (!user || !runId || !itemId) return;
     let cancelled = false;
-    void markSubmissionNotificationTestOpened(runId, itemId)
-      .then((next) => {
-        if (!cancelled) {
-          setRun(next);
-          setMessage("Notification opened and read by the tester. Now press ACCEPT NOTIFICATION.");
-        }
-      })
-      .catch((openError) => {
-        if (!cancelled) setError(openError instanceof Error ? openError.message : "Unable to record notification opening.");
-      });
+
+    const loadRun = async () => {
+      try {
+        // When opened from a notification, mark that exact item as opened/read first.
+        // This deliberately replaces the old parallel getRun + markOpened requests,
+        // which could race and overwrite the fresh "opened" state with stale "sent" data.
+        const next = itemId
+          ? await markSubmissionNotificationTestOpened(runId, itemId)
+          : await getSubmissionNotificationTestRun(runId);
+
+        if (cancelled) return;
+        setRun(next);
+        setDelayMinutes(next.delayMinutes);
+        if (itemId) setMessage("Notification opened and read by the tester. Now press ACCEPT NOTIFICATION.");
+      } catch (loadError) {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load the notification test run.");
+      }
+    };
+
+    void loadRun();
     return () => { cancelled = true; };
   }, [user, runId, itemId]);
 
