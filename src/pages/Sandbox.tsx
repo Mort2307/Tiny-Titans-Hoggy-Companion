@@ -46,8 +46,8 @@ export default function Sandbox() {
     <div className="calculator-info-strip"><span>🧬 Genetics experiments</span><span>🥚 Hypothetical pairings</span><span>🛡️ Real data protected</span><span>🎓 Learn by experimenting</span></div>
     <section className="calculator-card" style={{ marginBottom: 20 }}><label className="calculator-kicker" htmlFor="sandbox-title">EXPERIMENT NAME</label><input id="sandbox-title" value={title} onChange={(event) => setTitle(event.target.value)} className="account-input" placeholder="e.g. What if Lilith × Mort?" /></section>
     <div className="calculator-parents">
-      <ParentSelector title="Female / Mother" parent={mother} snakes={[]} morphOptions={visualOptions} hetOptions={hetOptions} onChange={setMother} />
-      <ParentSelector title="Male / Father" parent={father} snakes={[]} morphOptions={visualOptions} hetOptions={hetOptions} onChange={setFather} />
+      <ParentSelector title="Female / Mother" sex="Female" parent={mother} snakes={[]} morphOptions={visualOptions} hetOptions={hetOptions} onChange={setMother} />
+      <ParentSelector title="Male / Father" sex="Male" parent={father} snakes={[]} morphOptions={visualOptions} hetOptions={hetOptions} onChange={setFather} />
     </div>
     <section className="calculator-results">
       <div className="calculator-results-header"><div><span className="calculator-kicker">SANDBOX PREDICTION</span><h2>Possible Offspring</h2><p>{hasSelection ? `${result.offspring.length} outcome${result.offspring.length === 1 ? "" : "s"} calculated.` : "Build a hypothetical pairing above."}</p></div></div>
