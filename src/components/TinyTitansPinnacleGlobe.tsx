@@ -21,82 +21,220 @@ type GlobeRef = {
 
 type GlobeArea = PublicCommunityLocation & { isSelf: boolean };
 
-type MoonPhase = {
-  fraction: number;
+type MoonModel = {
+  orbitAngleDeg: number;
+  orbitRadius: number;
   illumination: number;
-  name: string;
+  phaseName: string;
+  distanceKm: number;
 };
 
-const SYNODIC_MONTH_MS = 29.530588853 * 86_400_000;
-const NEW_MOON_EPOCH_MS = Date.UTC(2000, 0, 6, 18, 14);
+const SIDEREAL_MONTH_DAYS = 27.321661;
+const J2000_NOON_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+const MOON_ECCENTRICITY = 0.0549;
+const MOON_INCLINATION_DEG = 5.145;
 
-function getMoonPhase(now = Date.now()): MoonPhase {
-  const fraction = (((now - NEW_MOON_EPOCH_MS) / SYNODIC_MONTH_MS) % 1 + 1) % 1;
-  const illumination = 0.5 * (1 - Math.cos(2 * Math.PI * fraction));
-  const name = fraction < 0.0625 ? "New Moon" : fraction < 0.1875 ? "Waxing Crescent" : fraction < 0.3125 ? "First Quarter" : fraction < 0.4375 ? "Waxing Gibbous" : fraction < 0.5625 ? "Full Moon" : fraction < 0.6875 ? "Waning Gibbous" : fraction < 0.8125 ? "Third Quarter" : fraction < 0.9375 ? "Waning Crescent" : "New Moon";
-  return { fraction, illumination, name };
+function normaliseDegrees(value: number): number {
+  return ((value % 360) + 360) % 360;
 }
 
-function drawMoon(canvas: HTMLCanvasElement, phase: MoonPhase): void {
-  const size = 128;
-  canvas.width = size;
-  canvas.height = size;
+function toRadians(degrees: number): number {
+  return degrees * Math.PI / 180;
+}
+
+function getMoonModel(now = Date.now()): MoonModel {
+  const daysSinceJ2000 = (now - J2000_NOON_MS) / 86_400_000;
+  const T = daysSinceJ2000 / 36_525;
+
+  // Low-precision geocentric lunar elements: enough for a faithful live
+  // Earth/Moon display, without pretending to be a full Horizons ephemeris.
+  const meanLongitude = normaliseDegrees(218.3164477 + 481267.88123421 * T);
+  const meanElongation = normaliseDegrees(297.8501921 + 445267.1114034 * T);
+  const sunMeanAnomaly = normaliseDegrees(357.5291092 + 35999.0502909 * T);
+  const moonMeanAnomaly = normaliseDegrees(134.9633964 + 477198.8675055 * T);
+  const argumentLatitude = normaliseDegrees(93.2720950 + 483202.0175233 * T);
+
+  const M = toRadians(moonMeanAnomaly);
+  const D = toRadians(meanElongation);
+  const F = toRadians(argumentLatitude);
+  const Ms = toRadians(sunMeanAnomaly);
+
+  const eclipticLongitude = normaliseDegrees(
+    meanLongitude
+      + 6.289 * Math.sin(M)
+      + 1.274 * Math.sin(2 * D - M)
+      + 0.658 * Math.sin(2 * D)
+      + 0.214 * Math.sin(2 * M)
+      - 0.186 * Math.sin(Ms)
+      - 0.059 * Math.sin(2 * D - 2 * M)
+      - 0.057 * Math.sin(2 * D - Ms - M)
+      + 0.053 * Math.sin(2 * D + M)
+      + 0.046 * Math.sin(2 * D - Ms)
+      + 0.041 * Math.sin(Ms - M)
+      - 0.035 * Math.sin(D)
+      - 0.031 * Math.sin(Ms + M)
+      - 0.015 * Math.sin(2 * F - 2 * D)
+      + 0.011 * Math.sin(M - 4 * D),
+  );
+  const distanceKm =
+    385000.56
+      - 20905.355 * Math.cos(M)
+      - 3699.111 * Math.cos(2 * D - M)
+      - 2955.968 * Math.cos(2 * D)
+      - 569.925 * Math.cos(2 * M)
+      + 246.158 * Math.cos(2 * M - 2 * D)
+      - 205.435 * Math.cos(Ms - 2 * D)
+      - 170.733 * Math.cos(M + 2 * D)
+      - 152.137 * Math.cos(Ms + M - 2 * D);
+
+  const illumination = 0.5 * (1 - Math.cos(D));
+  const phaseFraction = normaliseDegrees(meanElongation) / 360;
+  const phaseName = phaseFraction < 0.0625 || phaseFraction >= 0.9375
+    ? "New Moon"
+    : phaseFraction < 0.1875
+      ? "Waxing Crescent"
+      : phaseFraction < 0.3125
+        ? "First Quarter"
+        : phaseFraction < 0.4375
+          ? "Waxing Gibbous"
+          : phaseFraction < 0.5625
+            ? "Full Moon"
+            : phaseFraction < 0.6875
+              ? "Waning Gibbous"
+              : phaseFraction < 0.8125
+                ? "Third Quarter"
+                : "Waning Crescent";
+
+  return {
+    orbitAngleDeg: eclipticLongitude,
+    orbitRadius: Math.max(0.88, Math.min(1.12, distanceKm / 384400)),
+    illumination,
+    phaseName,
+    distanceKm: Math.round(distanceKm),
+  };
+}
+
+function drawMoonSystem(canvas: HTMLCanvasElement, model: MoonModel): void {
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  const width = 240;
+  const height = 156;
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
   const context = canvas.getContext("2d");
   if (!context) return;
-  const image = context.createImageData(size, size);
-  const radius = size * 0.42;
-  const center = size / 2;
-  const sunAngle = 2 * Math.PI * phase.fraction;
-  const sunX = Math.sin(sunAngle);
-  const sunZ = Math.cos(sunAngle);
-  const craters = [
-    [-0.24, -0.17, 0.10, 0.06], [0.17, -0.25, 0.075, 0.08], [0.25, 0.15, 0.12, 0.065],
-    [-0.08, 0.26, 0.065, 0.05], [-0.31, 0.13, 0.055, 0.07], [0.03, 0.03, 0.045, 0.09],
-  ];
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const nx = (x - center) / radius;
-      const ny = (y - center) / radius;
-      const rr = nx * nx + ny * ny;
-      const index = (y * size + x) * 4;
-      if (rr > 1) continue;
-      const nz = Math.sqrt(Math.max(0, 1 - rr));
-      const light = nx * sunX + nz * sunZ;
-      const lit = Math.max(0, light);
-      let surface = 0.72 + 0.28 * lit;
-      for (const [cx, cy, cr, shade] of craters) {
-        const dx = nx - cx;
-        const dy = ny - cy;
-        if (dx * dx + dy * dy < cr * cr) surface *= 1 - shade;
-      }
-      const edge = Math.min(1, (1 - rr) * 18);
-      const value = Math.round(210 * surface);
-      image.data[index] = value;
-      image.data[index + 1] = value;
-      image.data[index + 2] = value;
-      image.data[index + 3] = Math.round(edge * (0.85 + 0.15 * lit) * 255);
-    }
-  }
-  context.putImageData(image, 0, 0);
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  context.clearRect(0, 0, width, height);
+
+  const cx = width / 2;
+  const cy = height / 2;
+  const orbitWidth = 88;
+  const orbitHeight = orbitWidth * Math.cos(toRadians(MOON_INCLINATION_DEG));
+
+  context.save();
+  context.translate(cx, cy);
+  context.rotate(toRadians(-23.44));
+  context.scale(1, 0.42);
+  context.beginPath();
+  context.arc(0, 0, orbitWidth, 0, Math.PI * 2);
+  context.strokeStyle = "rgba(122, 194, 255, 0.34)";
+  context.lineWidth = 1.2;
+  context.setLineDash([4, 5]);
+  context.stroke();
+  context.restore();
+
+  const theta = toRadians(model.orbitAngleDeg);
+  const moonX = cx + Math.cos(theta) * orbitWidth * model.orbitRadius;
+  const moonY = cy + Math.sin(theta) * orbitHeight * model.orbitRadius;
+
+  const earthGlow = context.createRadialGradient(cx, cy, 8, cx, cy, 36);
+  earthGlow.addColorStop(0, "rgba(92, 200, 255, 0.35)");
+  earthGlow.addColorStop(1, "rgba(92, 200, 255, 0)");
+  context.fillStyle = earthGlow;
+  context.beginPath();
+  context.arc(cx, cy, 36, 0, Math.PI * 2);
+  context.fill();
+
+  const earth = context.createRadialGradient(cx - 7, cy - 8, 3, cx, cy, 20);
+  earth.addColorStop(0, "#78d7ff");
+  earth.addColorStop(0.5, "#257da8");
+  earth.addColorStop(1, "#0d3046");
+  context.fillStyle = earth;
+  context.beginPath();
+  context.arc(cx, cy, 19, 0, Math.PI * 2);
+  context.fill();
+  context.strokeStyle = "rgba(255,255,255,0.15)";
+  context.stroke();
+
+  context.fillStyle = "rgba(83, 209, 133, 0.72)";
+  context.beginPath();
+  context.ellipse(cx - 5, cy - 3, 7, 4, -0.25, 0, Math.PI * 2);
+  context.fill();
+  context.beginPath();
+  context.ellipse(cx + 7, cy + 5, 5, 3, 0.35, 0, Math.PI * 2);
+  context.fill();
+
+  const moonRadius = 8.5;
+  const moonLightAngle = toRadians(90 + normaliseDegrees(model.orbitAngleDeg));
+  const moonLightX = Math.cos(moonLightAngle);
+  const moonLightY = Math.sin(moonLightAngle);
+  const moonGradient = context.createRadialGradient(
+    moonX - moonLightX * 3,
+    moonY - moonLightY * 3,
+    1,
+    moonX,
+    moonY,
+    moonRadius * 1.2,
+  );
+  moonGradient.addColorStop(0, "#fffbe9");
+  moonGradient.addColorStop(Math.max(0.35, model.illumination), "#d6d0bc");
+  moonGradient.addColorStop(1, "#625f57");
+  context.fillStyle = moonGradient;
+  context.shadowColor = "rgba(245, 242, 220, 0.36)";
+  context.shadowBlur = 10;
+  context.beginPath();
+  context.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+  context.fill();
+  context.shadowBlur = 0;
+
+  context.fillStyle = "rgba(75, 72, 64, 0.24)";
+  [[-2, -3, 1.6], [3, -2, 1.3], [2, 3, 1.5], [-3, 3, 1.1]].forEach(([dx, dy, r]) => {
+    context.beginPath();
+    context.arc(moonX + dx, moonY + dy, r, 0, Math.PI * 2);
+    context.fill();
+  });
+
+  context.fillStyle = "rgba(245, 245, 238, 0.78)";
+  context.font = "700 9px system-ui, sans-serif";
+  context.fillText("EARTH", cx - 17, cy + 32);
+  context.fillText("MOON", moonX - 12, moonY + 19);
 }
 
-function MoonPhaseWidget() {
+function MoonOrbitWidget() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [phase, setPhase] = useState<MoonPhase>(() => getMoonPhase());
+  const [model, setModel] = useState<MoonModel>(() => getMoonModel());
 
   useEffect(() => {
-    const update = () => setPhase(getMoonPhase());
-    const timer = window.setInterval(update, 3_600_000);
+    const update = () => setModel(getMoonModel());
+    update();
+    const timer = window.setInterval(update, 30_000);
     return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
-    if (canvasRef.current) drawMoon(canvasRef.current, phase);
-  }, [phase]);
+    if (canvasRef.current) drawMoonSystem(canvasRef.current, model);
+  }, [model]);
 
-  return <div className="tt-pinnacle-moon-widget" aria-label={`Current Moon phase: ${phase.name}, ${Math.round(phase.illumination * 100)} percent illuminated`}>
-    <canvas ref={canvasRef} width={128} height={128} aria-hidden="true" />
-    <div><strong>🌙 For Mum</strong><span>{phase.name}</span><small>{Math.round(phase.illumination * 100)}% illuminated</small></div>
+  return <div className="tt-pinnacle-moon-widget" aria-label={`Real-time Earth and Moon orbit. ${model.phaseName}, ${Math.round(model.illumination * 100)} percent illuminated. Lunar distance ${model.distanceKm.toLocaleString("en-GB")} kilometres.`}>
+    <canvas ref={canvasRef} width={240} height={156} aria-hidden="true" />
+    <div className="tt-pinnacle-moon-copy">
+      <strong>🌙 For Mum</strong>
+      <span>{model.phaseName}</span>
+      <small>{Math.round(model.illumination * 100)}% illuminated</small>
+      <small>{model.distanceKm.toLocaleString("en-GB")} km · {SIDEREAL_MONTH_DAYS} d orbit</small>
+      <small>5.145° inclination · e={MOON_ECCENTRICITY}</small>
+    </div>
   </div>;
 }
 
@@ -208,7 +346,7 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
         <h2>Globally Represented Titans</h2>
         <p>See where Tiny Titans is represented using city-level community areas only. Exact addresses and household locations are never shown.</p>
       </div>
-      <MoonPhaseWidget />
+      <MoonOrbitWidget />
     </div>
     <div className="tt-pinnacle-globe-shell">
       <div className="tt-pinnacle-globe-space">
