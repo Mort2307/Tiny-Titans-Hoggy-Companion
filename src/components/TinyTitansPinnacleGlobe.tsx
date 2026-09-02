@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Globe from "react-globe.gl";
-import * as THREE from "three";
 import { getOwnCommunityLocation, getPublicCommunityLocations, type PublicCommunityLocation } from "../services/communityLocationPublicService";
 import { syncCommunityLocationMembership } from "../services/communityLocationSyncService";
+import { EARTH_BUMP_TEXTURE_URL, EARTH_DAY_TEXTURE_URL, EARTH_STAR_TEXTURE_URL, type EarthDayNightMaterial, loadEarthDayNightMaterial, updateEarthSun } from "../services/earthDayNight";
 import "../styles/tinyTitansPinnacleGlobe.css";
 
 type GlobeRef = {
@@ -21,71 +21,12 @@ type GlobeRef = {
 
 type GlobeArea = PublicCommunityLocation & { isSelf: boolean };
 
-type DayNightMaterial = THREE.ShaderMaterial & {
-  uniforms: {
-    dayTexture: { value: THREE.Texture };
-    nightTexture: { value: THREE.Texture };
-    sunDirection: { value: THREE.Vector3 };
-  };
-};
-
-const DAY_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg";
-const NIGHT_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg";
-const BUMP_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png";
-const STAR_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png";
-
-function solarCoordinates(date: Date): { lat: number; lng: number } {
-  const yearStart = Date.UTC(date.getUTCFullYear(), 0, 1);
-  const dayOfYear = Math.floor((date.getTime() - yearStart) / 86400000) + 1;
-  const utcMinutes = date.getUTCHours() * 60 + date.getUTCMinutes() + date.getUTCSeconds() / 60;
-  const gamma = (2 * Math.PI / 365) * (dayOfYear - 1 + (utcMinutes - 720) / 1440);
-  const equationOfTime = 229.18 * (0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma));
-  const declination = 0.006918 - 0.399912 * Math.cos(gamma) + 0.070257 * Math.sin(gamma) - 0.006758 * Math.cos(2 * gamma) + 0.000907 * Math.sin(2 * gamma) - 0.002697 * Math.cos(3 * gamma) + 0.00148 * Math.sin(3 * gamma);
-  const subsolarLongitude = (720 - utcMinutes - equationOfTime) / 4;
-  return { lat: declination * 180 / Math.PI, lng: subsolarLongitude };
-}
-
-function geoToVector(lat: number, lng: number): THREE.Vector3 {
-  const latRad = lat * Math.PI / 180;
-  const lngRad = lng * Math.PI / 180;
-  return new THREE.Vector3(Math.cos(latRad) * Math.sin(lngRad), Math.sin(latRad), Math.cos(latRad) * Math.cos(lngRad)).normalize();
-}
-
-const dayNightShader = {
-  vertexShader: `
-    varying vec3 vWorldNormal;
-    varying vec2 vUv;
-    void main() {
-      vWorldNormal = normalize(mat3(modelMatrix) * normal);
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: `
-    uniform sampler2D dayTexture;
-    uniform sampler2D nightTexture;
-    uniform vec3 sunDirection;
-    varying vec3 vWorldNormal;
-    varying vec2 vUv;
-
-    void main() {
-      float intensity = dot(normalize(vWorldNormal), normalize(sunDirection));
-      float dayFactor = smoothstep(-0.13, 0.16, intensity);
-      vec4 dayColor = texture2D(dayTexture, vUv);
-      vec4 nightColor = texture2D(nightTexture, vUv);
-      vec3 twilightColor = mix(nightColor.rgb, dayColor.rgb, smoothstep(-0.26, -0.03, intensity));
-      vec3 finalColor = mix(twilightColor, dayColor.rgb, dayFactor);
-      gl_FragColor = vec4(finalColor, 1.0);
-    }
-  `,
-};
-
 export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
   const globeRef = useRef<GlobeRef | undefined>(undefined);
   const [areas, setAreas] = useState<PublicCommunityLocation[]>([]);
   const [ownLocation, setOwnLocation] = useState<PublicCommunityLocation | null>(null);
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
-  const [material, setMaterial] = useState<DayNightMaterial | null>(null);
+  const [material, setMaterial] = useState<EarthDayNightMaterial | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationError, setLocationError] = useState(false);
   const [isReducedMotion, setIsReducedMotion] = useState(false);
@@ -124,38 +65,20 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
   }, [uid]);
 
   useEffect(() => {
-    const loader = new THREE.TextureLoader();
     let active = true;
-    void Promise.all([
-      loader.loadAsync(DAY_TEXTURE_URL),
-      loader.loadAsync(NIGHT_TEXTURE_URL),
-    ]).then(([dayTexture, nightTexture]) => {
-      if (!active) return;
-      dayTexture.colorSpace = THREE.SRGBColorSpace;
-      nightTexture.colorSpace = THREE.SRGBColorSpace;
-      const nextMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-          dayTexture: { value: dayTexture },
-          nightTexture: { value: nightTexture },
-          sunDirection: { value: geoToVector(0, 0) },
-        },
-        vertexShader: dayNightShader.vertexShader,
-        fragmentShader: dayNightShader.fragmentShader,
-        side: THREE.FrontSide,
-      }) as DayNightMaterial;
+    void loadEarthDayNightMaterial().then((nextMaterial) => {
+      if (!active) { nextMaterial.dispose(); return; }
       setMaterial(nextMaterial);
     }).catch((error) => console.warn("Tiny Titans: Earth surface textures could not be loaded", error));
     return () => {
       active = false;
+      setMaterial((current) => { current?.dispose(); return null; });
     };
   }, []);
 
   useEffect(() => {
     if (!material) return;
-    const updateSun = () => {
-      const sun = solarCoordinates(new Date());
-      material.uniforms.sunDirection.value.copy(geoToVector(sun.lat, sun.lng));
-    };
+    const updateSun = () => updateEarthSun(material);
     updateSun();
     const timer = window.setInterval(updateSun, 10000);
     return () => window.clearInterval(timer);
@@ -190,8 +113,6 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
   }, [areas, ownLocation]);
 
   const selected = selectedAreaId ? globeAreas.find((area) => area.areaId === selectedAreaId) ?? null : null;
-  const totalAreas = globeAreas.length;
-  const totalRepresented = areas.reduce((sum, area) => sum + area.memberCount, 0);
 
   return <section className="tt-pinnacle-globe-section" aria-label="Tiny Titans community globe">
     <div className="tt-pinnacle-globe-heading">
@@ -200,7 +121,6 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
         <h2>A community, around the world.</h2>
         <p>See where Tiny Titans is represented without exposing where anyone lives.</p>
       </div>
-      <div className="tt-pinnacle-globe-meta"><span>{totalAreas} areas</span><span>{totalRepresented} Titans represented</span></div>
     </div>
     <div className="tt-pinnacle-globe-shell">
       <div className="tt-pinnacle-globe-space">
@@ -209,10 +129,10 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
           width={900}
           height={620}
           backgroundColor="rgba(0,0,0,0)"
-          backgroundImageUrl={STAR_TEXTURE_URL}
+          backgroundImageUrl={EARTH_STAR_TEXTURE_URL}
           globeMaterial={material ?? undefined}
-          globeImageUrl={material ? undefined : DAY_TEXTURE_URL}
-          bumpImageUrl={BUMP_TEXTURE_URL}
+          globeImageUrl={material ? undefined : EARTH_DAY_TEXTURE_URL}
+          bumpImageUrl={EARTH_BUMP_TEXTURE_URL}
           showAtmosphere
           atmosphereColor="#5cc8ff"
           atmosphereAltitude={0.17}
