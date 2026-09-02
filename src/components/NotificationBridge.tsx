@@ -10,16 +10,27 @@ export default function NotificationBridge() {
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     let active = true;
+    let refreshBusy = false;
+
+    const refresh = async () => {
+      if (!user?.uid || refreshBusy || typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
+      refreshBusy = true;
+      try {
+        const settings = await getNotificationSettings(user.uid);
+        if (settings.enabled) await refreshNotificationRegistration(user.uid);
+      } finally {
+        refreshBusy = false;
+      }
+    };
+
     const subscribe = async () => {
       unsubscribe?.();
       unsubscribe = undefined;
       if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
       if (!(await isSupported()) || !active) return;
+      await refresh();
+      if (!active) return;
       const messaging = getMessaging(app);
-      if (user?.uid) {
-        const settings = await getNotificationSettings(user.uid).catch(() => null);
-        if (settings?.enabled) void refreshNotificationRegistration(user.uid);
-      }
       unsubscribe = onMessage(messaging, (payload) => {
         const data = payload.data || {};
         const notification = payload.notification || {};
@@ -31,9 +42,25 @@ export default function NotificationBridge() {
         popup.onclick = () => { window.focus(); window.location.assign(url); };
       });
     };
+
     void subscribe();
+    const onResume = () => { void refresh(); };
     window.addEventListener(NOTIFICATION_ENABLED_EVENT, subscribe);
-    return () => { active = false; unsubscribe?.(); window.removeEventListener(NOTIFICATION_ENABLED_EVENT, subscribe); };
+    window.addEventListener("focus", onResume);
+    window.addEventListener("online", onResume);
+    document.addEventListener("visibilitychange", onResume);
+    const interval = window.setInterval(onResume, 15 * 60 * 1000);
+
+    return () => {
+      active = false;
+      unsubscribe?.();
+      window.removeEventListener(NOTIFICATION_ENABLED_EVENT, subscribe);
+      window.removeEventListener("focus", onResume);
+      window.removeEventListener("online", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+      window.clearInterval(interval);
+    };
   }, [user?.uid]);
+
   return null;
 }
