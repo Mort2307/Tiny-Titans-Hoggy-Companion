@@ -79,7 +79,7 @@ export default function ResultCard({ result, morphs }: ResultCardProps) {
 
       {(presentation.recognisedCombination || presentation.alternateRecognisedCombinations.length > 0) && (
         <div className="genetics-combination-actions">
-          <Link to={reversalUrl} className="genetics-reverse-link">
+          <Link to={reversalUrl} className="calculator-back-button">
             ↩ Reverse this morph
           </Link>
           {presentation.alternateRecognisedCombinations.length > 0 && (
