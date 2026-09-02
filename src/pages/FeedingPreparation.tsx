@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import TinyTitansDateInput from "../components/TinyTitansDateInput";
 import { useAuth } from "../context/useAuth";
@@ -13,13 +13,15 @@ const defaultNotifications: NotificationSettings = DEFAULT_NOTIFICATION_SETTINGS
 
 export default function FeedingPreparation() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading, profileLoading } = useAuth();
+  const routeSnakeId = searchParams.get("snakeId")?.trim() || "";
   const [snakes, setSnakes] = useState<Snake[]>([]); const [selectedSnakeId, setSelectedSnakeId] = useState(""); const [schedule, setSchedule] = useState<FeedingSchedule | null>(null); const [loadedScheduleKey, setLoadedScheduleKey] = useState<string | null>(null); const [notifications, setNotifications] = useState<NotificationSettings>(defaultNotifications); const [permission, setPermission] = useState(getNotificationPermissionState()); const [saving, setSaving] = useState(false); const [loadingPage, setLoadingPage] = useState(true); const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (loading || profileLoading || !user) return;
-    void Promise.all([getUserSnakes(user.uid), getNotificationSettings(user.uid)]).then(([loadedSnakes, loadedNotifications]) => { const valid = loadedSnakes.filter((snake) => Boolean(snake?.id)); setSnakes(valid); setSelectedSnakeId((current) => valid.some((snake) => snake.id === current) ? current : valid[0]?.id ?? ""); setNotifications(loadedNotifications); setPermission(getNotificationPermissionState()); }).catch((error) => setMessage(error instanceof Error ? error.message : "Unable to load feeding preparation settings.")).finally(() => setLoadingPage(false));
-  }, [user, loading, profileLoading]);
+    void Promise.all([getUserSnakes(user.uid), getNotificationSettings(user.uid)]).then(([loadedSnakes, loadedNotifications]) => { const valid = loadedSnakes.filter((snake) => Boolean(snake?.id)); setSnakes(valid); setSelectedSnakeId((current) => routeSnakeId && valid.some((snake) => snake.id === routeSnakeId) ? routeSnakeId : valid.some((snake) => snake.id === current) ? current : valid[0]?.id ?? ""); setNotifications(loadedNotifications); setPermission(getNotificationPermissionState()); }).catch((error) => setMessage(error instanceof Error ? error.message : "Unable to load feeding preparation settings.")).finally(() => setLoadingPage(false));
+  }, [user, loading, profileLoading, routeSnakeId]);
 
   const scheduleKey = user && selectedSnakeId ? `${user.uid}:${selectedSnakeId}` : null;
 
