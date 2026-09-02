@@ -82,8 +82,12 @@ exports.sendShedCycleReminderNotifications = onSchedule({ schedule: "*/5 * * * *
       evaluated += 1;
       const snake = snakeDocument.data();
       const snakeName = String(snake.name || "your snake");
-      const shedHistory = Array.isArray(snake.shedHistory) ? snake.shedHistory : [];
-      const active = shedHistory.find((record) => record && record.currentStage && record.currentStage !== "Complete" && !record.completedAt && !record.deletedAt);
+      const shedSnapshot = await snakeDocument.ref.collection("sheds").get();
+      const activeRecords = shedSnapshot.docs
+        .map((document) => ({ ...document.data(), id: document.id }))
+        .filter((record) => record.currentStage && record.currentStage !== "Complete" && !record.completedAt && !record.deletedAt)
+        .sort((a, b) => String(b.cycleStartedAt || b.date || "").localeCompare(String(a.cycleStartedAt || a.date || "")));
+      const active = activeRecords[0];
       if (!active) continue;
 
       const started = String(active.cycleStartedAt || active.date || "").trim();
@@ -93,7 +97,7 @@ exports.sendShedCycleReminderNotifications = onSchedule({ schedule: "*/5 * * * *
 
       const stage = String(active.currentStage || "Blue");
       const stageLabel = stage === "Clear" ? "Clear phase" : "Blue phase";
-      const eventKey = `shed-checkin-${snakeDocument.id}-${started}-${now.date}`;
+      const eventKey = `shed-checkin-${snakeDocument.id}-${String(active.id)}-${started}-${now.date}`;
       const title = `🐍 Shed cycle check-in — ${snakeName}`;
       const body = `${snakeName} has been in an active shedding cycle for ${activeDays} day${activeDays === 1 ? "" : "s"} (${stageLabel}). Have a look and record the next stage when ready.`;
       sent += await sendShedPush(uid, eventKey, title, body, `/shedding/${snakeDocument.id}`);
