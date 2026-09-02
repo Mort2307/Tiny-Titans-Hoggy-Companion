@@ -1,6 +1,7 @@
 import { doc, getDoc } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app, db } from "../firebase/config";
+import { resolveCommunityLocation } from "./communityLocationResolver";
 import { getPrivacyPreferences } from "./privacyService";
 
 export type PublicCommunityLocation = {
@@ -56,17 +57,27 @@ export async function getOwnCommunityLocation(uid: string): Promise<OwnCommunity
   if (!location) return null;
   const city = String(location.city ?? "").trim();
   const country = String(location.country ?? "").trim();
-  const latitude = Number(location.latitude);
-  const longitude = Number(location.longitude);
-  if (!city || !country || !isValidCoordinate(latitude, -90, 90) || !isValidCoordinate(longitude, -180, 180) || (latitude === 0 && longitude === 0)) return null;
-  return {
-    areaId: String(location.areaId ?? `legacy-${city.toLocaleLowerCase("en-GB")}-${country.toLocaleLowerCase("en-GB")}`),
-    city,
-    country,
-    countryCode: typeof location.countryCode === "string" ? location.countryCode : undefined,
-    latitude: Number(latitude.toFixed(2)),
-    longitude: Number(longitude.toFixed(2)),
-    memberCount: 1,
-    optedIn: true,
-  };
+  if (!city || !country) return null;
+
+  const storedLatitude = Number(location.latitude);
+  const storedLongitude = Number(location.longitude);
+  if (isValidCoordinate(storedLatitude, -90, 90) && isValidCoordinate(storedLongitude, -180, 180) && !(storedLatitude === 0 && storedLongitude === 0)) {
+    return {
+      areaId: String(location.areaId ?? `legacy-${city.toLocaleLowerCase("en-GB")}-${country.toLocaleLowerCase("en-GB")}`),
+      city,
+      country,
+      countryCode: typeof location.countryCode === "string" ? location.countryCode : undefined,
+      latitude: Number(storedLatitude.toFixed(2)),
+      longitude: Number(storedLongitude.toFixed(2)),
+      memberCount: 1,
+      optedIn: true,
+    };
+  }
+
+  try {
+    const resolved = await resolveCommunityLocation(city, country);
+    return { ...resolved, memberCount: 1, optedIn: true };
+  } catch {
+    return null;
+  }
 }
