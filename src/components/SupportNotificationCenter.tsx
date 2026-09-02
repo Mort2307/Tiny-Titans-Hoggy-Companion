@@ -1,4 +1,4 @@
-import { collection, doc, limit, onSnapshot, query, updateDoc } from "firebase/firestore";
+import { collection, doc, limit, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -12,7 +12,7 @@ export default function SupportNotificationCenter() {
   const { user } = useAuth(); const navigate = useNavigate(); const location = useLocation(); const [items, setItems] = useState<SupportNotification[]>([]);
   useEffect(() => {
     if (!user) { setItems([]); return; }
-    const q = query(collection(db, "users", user.uid, "notificationEvents"), limit(50));
+    const q = query(collection(db, "users", user.uid, "notificationEvents"), orderBy("createdAt", "desc"), limit(50));
     return onSnapshot(q, (snap) => {
       const unread = snap.docs
         .map((item) => ({ id: item.id, ...(item.data() as Omit<SupportNotification, "id">) }))
