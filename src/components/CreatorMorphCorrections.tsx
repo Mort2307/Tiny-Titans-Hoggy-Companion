@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getDownloadURL, ref } from "firebase/storage";
 import { useAuth } from "../context/useAuth";
 import { storage } from "../firebase/config";
@@ -38,7 +38,7 @@ export default function CreatorMorphCorrections() {
       .slice(0, 30);
   }, [queryText]);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     if (profile?.role !== "admin") return;
     setLoading(true);
     setError("");
@@ -51,9 +51,9 @@ export default function CreatorMorphCorrections() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [profile?.role]);
 
-  useEffect(() => { if (open) void refresh(); }, [open, profile?.role]);
+  useEffect(() => { if (open) void refresh(); }, [open, refresh]);
 
   useEffect(() => {
     if (!selected) {
