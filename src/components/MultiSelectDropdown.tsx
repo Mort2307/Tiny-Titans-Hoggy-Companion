@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { MorphDefinition } from "../data/morphs";
 import { normaliseSearch, rankMorphSearch } from "../utils/searchRelevance";
+import "./MorphSelectorTheme.css";
 
 type MultiSelectDropdownProps = {
   title: string;
@@ -31,9 +32,6 @@ export default function MultiSelectDropdown({ title, options, selected, setSelec
 
   const morphByCanonicalValue = useMemo(() => {
     const map = new Map<string, MorphDefinition>();
-
-    // Canonical IDs and exact display names are authoritative. Aliases are
-    // lookup-only and must never overwrite an exact morph identity.
     for (const morph of morphOptions) {
       map.set(canonicalKey(morph.geneId), morph);
     }
