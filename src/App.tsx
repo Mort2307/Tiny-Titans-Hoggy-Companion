@@ -5,6 +5,7 @@ import "./styles/mobileNavigation.css";
 import AppRouter from "./routes/AppRouter";
 import ExplainThis from "./components/ExplainThis/ExplainThis";
 import NotificationBridge from "./components/NotificationBridge";
+import NotificationOnboarding from "./components/NotificationOnboarding";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <AppRouter />
       <ExplainThis />
       <NotificationBridge />
+      <NotificationOnboarding />
     </>
   );
 }
