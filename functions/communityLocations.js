@@ -135,15 +135,6 @@ function toPublicArea(snapshot) {
   };
 }
 
-async function isCreatorRequest(request) {
-  if (!request.auth?.uid) return false;
-  const claims = request.auth.token || {};
-  if (claims.admin === true || claims.creator === true || claims.superAdmin === true) return true;
-  const profileSnapshot = await db.collection("users").doc(request.auth.uid).get();
-  const profile = profileSnapshot.exists ? (profileSnapshot.data() || {}) : {};
-  return profile.role === "admin" || profile.profileType === "creator";
-}
-
 async function rebuildLocationIndex() {
   const usersSnapshot = await db.collection("users").get();
   const resolved = await Promise.all(usersSnapshot.docs.map(async (userDoc) => {
@@ -213,16 +204,16 @@ async function rebuildLocationIndex() {
   return { representedUsers: memberships.size, areas: areas.size, usersScanned: usersSnapshot.size };
 }
 
-exports.getCommunityLocationAreas = onCall({ region: "europe-west2" }, async (request) => {
+exports.getCommunityLocationAreas = onCall({ region: "europe-west2", timeoutSeconds: 300 }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   try {
     let snapshot = await db.collection("communityLocationAreas").get();
 
-    // One-time self-healing for the Creator account: historical consented users may pre-date
-    // the aggregate index. The public endpoint still returns aggregate areas only.
-    if (snapshot.empty && await isCreatorRequest(request)) {
+    // The public collection is deliberately aggregate-only. If it is empty, rebuild it from
+    // the consented user records so the homepage can recover even after a migration or cleanup.
+    if (snapshot.empty) {
       const rebuild = await rebuildLocationIndex();
-      console.info("Community location index self-healed from homepage", { ...rebuild, uid: request.auth.uid });
+      console.info("Community location index self-healed from public feed", { ...rebuild, uid: request.auth.uid });
       snapshot = await db.collection("communityLocationAreas").get();
     }
 
@@ -246,8 +237,12 @@ exports.syncCommunityLocationMembership = onCall({ region: "europe-west2" }, asy
 
 exports.rebuildCommunityLocationIndex = onCall({ region: "europe-west2", timeoutSeconds: 300 }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  if (!await isCreatorRequest(request)) throw new HttpsError("permission-denied", "Creator authorization is required.");
-
+  const claims = request.auth.token || {};
+  if (!(claims.admin === true || claims.creator === true || claims.superAdmin === true)) {
+    const profileSnapshot = await db.collection("users").doc(request.auth.uid).get();
+    const profile = profileSnapshot.exists ? (profileSnapshot.data() || {}) : {};
+    if (!(profile.role === "admin" || profile.profileType === "creator")) throw new HttpsError("permission-denied", "Creator authorization is required.");
+  }
   try {
     const result = await rebuildLocationIndex();
     return { success: true, ...result };
