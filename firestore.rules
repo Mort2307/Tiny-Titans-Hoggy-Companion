@@ -3,16 +3,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function ownerAccount() { return signedIn() && request.auth.token.email == 'tinytitans.exotics@gmail.com'; }
     function userRecord() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function hasCapability(capability) { return signedIn() && (request.auth.token.admin == true || request.auth.token[capability] == true || userRecord().role == "admin" || userRecord().role == capability || (capability == "tester" && userRecord().isTester == true)); }
-    function isCreator() { return hasCapability("creator"); }
-    function isTester() { return hasCapability("tester"); }
-    function isEducator() { return hasCapability("educator"); }
-    function isModerator() { return hasCapability("moderator"); }
+    function hasCapability(capability) { return signedIn() && (request.auth.token.admin == true || request.auth.token[capability] == true); }
+    function isCreator() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.creator == true); }
+    function isTester() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.tester == true); }
+    function isEducator() { return hasCapability('educator'); }
+    function isModerator() { return hasCapability('moderator'); }
     function familyMemberOf(userId) { return signedIn() && request.auth.uid != userId && userRecord().get('familyId', '') != '' && userRecord().get('familyId', '') == get(/databases/$(database)/documents/users/$(userId)).data.get('familyId', '') && get(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))).data.memberUids.hasAll([request.auth.uid, userId]); }
     function canAccessUserData(userId) { return signedIn() && (request.auth.uid == userId || familyMemberOf(userId) || isCreator()); }
     function familyPermission(userId, area, action) { return familyMemberOf(userId) && (!exists(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))/permissions/$(request.auth.uid)) || get(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))/permissions/$(request.auth.uid)).data.get('permissions', {}).get(area + '.' + action, 'allow') == 'allow'); }
-    function familyViewPermission(userId, area) { return familyMemberOf(userId) && (!exists(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))/permissions/$(request.auth.uid)) || get(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))/permissions/$(request.auth.uid)).data.get('permissions', {}).get(area + '.view', 'allow') != 'deny'); }
+    function familyViewPermission(userId, area) { return familyMemberOf(userId) && (!exists(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))/permissions/$(request.auth.uid)) || get(/databases/$(database)/documents/families/$(request.auth.uid)).data.get('permissions', {}).get(area + '.view', 'allow') != 'deny'); }
     function inviteTargetMatchesCurrentAccount(inviteId) { return signedIn() && (get(/databases/$(database)/documents/familyInvites/$(inviteId)).data.get('targetEmail', '') == request.auth.token.email || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('email', '') == get(/databases/$(database)/documents/familyInvites/$(inviteId)).data.get('targetEmail', '')); }
     function canBindAcceptedFamilyProfile() { return signedIn() && request.resource.data.get('familyId', '') != '' && get(/databases/$(database)/documents/families/$(request.resource.data.get('familyId', ''))).data.memberUids.hasAll([request.auth.uid]) && get(/databases/$(database)/documents/families/$(request.resource.data.get('familyId', ''))).data.get('ownerUid', '') != request.auth.uid; }
 
@@ -60,12 +61,7 @@ service cloud.firestore {
     match /mentorshipRequests/{requestId} { allow create: if signedIn() && request.resource.data.requesterId == request.auth.uid && request.resource.data.status == "sent"; allow get, list: if signedIn() && (isCreator() || resource.data.requesterId == request.auth.uid || resource.data.mentorId == request.auth.uid); allow update: if signedIn() && (isCreator() || resource.data.mentorId == request.auth.uid || resource.data.requesterId == request.auth.uid); allow delete: if isCreator(); }
     match /mentorshipWorkspaces/{workspaceId} { allow create: if signedIn() && (isCreator() || request.resource.data.participants.any(p, p.userId == request.auth.uid)); allow get: if signedIn() && (isCreator() || resource.data.participants.any(p, p.userId == request.auth.uid)); allow list: if false; allow update: if signedIn() && (isCreator() || resource.data.participants.any(p, p.userId == request.auth.uid)); allow delete: if isCreator(); }
     match /mentorshipEvents/{eventId} { allow create: if isCreator(); allow get, list: if isCreator(); allow update, delete: if isCreator(); }
-    match /keeperObservations/{observationId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "pending" && request.resource.data.educationalConsent == true;
-      allow get, list: if signedIn() && ((resource.data.status == "approved" && resource.data.educationalConsent == true) || resource.data.userId == request.auth.uid || isCreator());
-      allow update: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid && resource.data.status == "pending" && request.resource.data.status == "pending" && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['media', 'updatedAt']));
-      allow delete: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid && resource.data.status == "pending");
-    }
+    match /keeperObservations/{observationId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "pending" && request.resource.data.educationalConsent == true; allow get, list: if signedIn() && ((resource.data.status == "approved" && resource.data.educationalConsent == true) || resource.data.userId == request.auth.uid || isCreator()); allow update: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid && resource.data.status == "pending" && request.resource.data.status == "pending" && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['media', 'updatedAt'])); allow delete: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid && resource.data.status == "pending"); }
     match /{document=**} { allow read, write: if false; }
   }
 }
