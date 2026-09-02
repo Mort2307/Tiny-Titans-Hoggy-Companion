@@ -1,0 +1,130 @@
+/* =========================================================
+   TINY TITANS — MORPH + HET SELECTORS
+   Crisp dark-purple surfaces with restrained cyan/gold accents.
+========================================================= */
+
+.multi-select {
+  color: #f3f7fb;
+}
+
+.multi-select-button {
+  background: var(--surface) !important;
+  color: #f3f7fb !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18) !important;
+}
+
+.multi-select-button:hover,
+.multi-select-button:focus-visible {
+  background: rgba(0, 174, 255, 0.06) !important;
+  color: #ffffff !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(0, 174, 255, 0.12), 0 0 12px rgba(0, 174, 255, 0.16) !important;
+}
+
+.multi-select-button span,
+.multi-select-button .multi-select-arrow {
+  color: inherit !important;
+}
+
+.multi-select-menu {
+  background: #1d0a2f !important;
+  border: 1px solid var(--border-strong) !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45), 0 0 18px rgba(0, 174, 255, 0.08) !important;
+}
+
+.multi-select-search {
+  background: var(--background) !important;
+  color: #f3f7fb !important;
+  border-color: var(--border) !important;
+}
+
+.multi-select-search::placeholder {
+  color: rgba(214, 169, 74, 0.65) !important;
+}
+
+.multi-select-option {
+  background: transparent !important;
+  color: #f3f7fb !important;
+  border: 1px solid transparent !important;
+}
+
+.multi-select-option span,
+.multi-select-label {
+  color: #f3f7fb !important;
+}
+
+.multi-select-option:hover {
+  background: rgba(0, 174, 255, 0.10) !important;
+  border-color: rgba(0, 174, 255, 0.20) !important;
+}
+
+.multi-select-option.selected {
+  background: rgba(0, 174, 255, 0.14) !important;
+  border-color: rgba(0, 174, 255, 0.34) !important;
+}
+
+.multi-select-option.disabled {
+  opacity: 0.42;
+}
+
+.multi-select-check {
+  background: #17062a !important;
+  border-color: rgba(0, 174, 255, 0.55) !important;
+  color: #ffffff !important;
+}
+
+.multi-select-option.selected .multi-select-check {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #10212b !important;
+  box-shadow: 0 0 8px rgba(0, 174, 255, 0.28) !important;
+}
+
+.selected-tags {
+  gap: 6px;
+}
+
+.selected-tag {
+  background: rgba(0, 174, 255, 0.10) !important;
+  border-color: rgba(0, 174, 255, 0.46) !important;
+  color: #f3f7fb !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+
+.selected-tag button,
+.selected-tag button:hover {
+  background: transparent !important;
+  color: #f3f7fb !important;
+}
+
+.selected-tag button:hover {
+  color: var(--accent) !important;
+}
+
+.het-option {
+  background: rgba(255, 255, 255, 0.018) !important;
+  border: 1px solid rgba(0, 174, 255, 0.06) !important;
+}
+
+.het-gene-name {
+  color: var(--secondary) !important;
+}
+
+.het-percentage-options .multi-select-option {
+  background: rgba(20, 0, 34, 0.45) !important;
+}
+
+.het-percentage-options .multi-select-option:hover {
+  background: rgba(0, 174, 255, 0.10) !important;
+}
+
+.het-percentage-options .multi-select-option.selected {
+  background: rgba(0, 174, 255, 0.15) !important;
+}
+
+@media (max-width: 560px) {
+  .multi-select-menu {
+    padding: 10px !important;
+  }
+}
