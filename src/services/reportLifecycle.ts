@@ -6,9 +6,9 @@ import {
 
 export const REPORT_LIFECYCLE: Record<CanonicalReportIssueStatus, readonly CanonicalReportIssueStatus[]> = {
   Draft: ["Submitted"],
-  Submitted: ["Under Review", "Rejected", "Duplicate", "Won't Fix"],
-  "Under Review": ["Confirmed", "Rejected", "Duplicate", "Won't Fix"],
-  Confirmed: ["In Progress", "Rejected", "Duplicate", "Won't Fix"],
+  Submitted: ["Under Review", "Confirmed", "Resolved", "Rejected", "Duplicate", "Won't Fix"],
+  "Under Review": ["Confirmed", "In Progress", "Resolved", "Rejected", "Duplicate", "Won't Fix"],
+  Confirmed: ["In Progress", "Resolved", "Rejected", "Duplicate", "Won't Fix"],
   "In Progress": ["Resolved", "Rejected", "Duplicate", "Won't Fix"],
   Resolved: ["Verified", "In Progress"],
   Verified: ["In Progress"],
