@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { MorphDefinition } from "../data/morphs";
-import { normaliseSearch } from "../utils/searchRelevance";
+import { normaliseSearch, rankMorphSearch } from "../utils/searchRelevance";
 import { reverseMorph, type MorphReversalResult, type ReverseTreeNode } from "../utils/geneticsReversal";
 import "./MorphReversalTheme.css";
 
@@ -132,6 +132,7 @@ export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) 
   const [query, setQuery] = useState(requestedMorph);
   const [result, setResult] = useState<MorphReversalResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const options = useMemo(
     () => morphs.filter(
@@ -145,22 +146,8 @@ export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) 
 
   const searchResults = useMemo(() => {
     const needle = normaliseSearch(query);
-    if (!needle) return options.slice(0, 8);
-
-    return options
-      .map((morph) => {
-        const name = normaliseSearch(morph.name);
-        const aliases = (morph.aliases ?? []).map(normaliseSearch);
-        const exact = name === needle || aliases.includes(needle);
-        const prefix = name.startsWith(needle) || aliases.some((alias) => alias.startsWith(needle));
-        const contains = name.includes(needle) || aliases.some((alias) => alias.includes(needle));
-        const score = exact ? 0 : prefix ? 1 : contains ? 2 : 9;
-        return { morph, score };
-      })
-      .filter(({ score }) => score < 9)
-      .sort((a, b) => a.score - b.score || a.morph.name.localeCompare(b.morph.name))
-      .slice(0, 10)
-      .map(({ morph }) => morph);
+    if (!needle) return options.slice(0, 12);
+    return rankMorphSearch(options, query, "strict").slice(0, 12);
   }, [options, query]);
 
   useEffect(() => {
@@ -184,6 +171,7 @@ export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) 
     }
 
     setQuery(resolved.canonicalName);
+    setSearchOpen(false);
     setSearchParams((current) => {
       current.set("mode", "reversal");
       current.set("morph", resolved.canonicalName);
@@ -226,25 +214,42 @@ export default function MorphReversalPanel({ morphs }: MorphReversalPanelProps) 
             <input
               id="morph-reversal-input"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") resolve();
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSearchOpen(true);
+                setResult(null);
+                setError(null);
               }}
-              placeholder="e.g. Platinum, Arctic Super Conda, Snow"
+              onFocus={() => setSearchOpen(true)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  resolve();
+                }
+                if (event.key === "Escape") setSearchOpen(false);
+              }}
+              placeholder="Search or type a morph name..."
               autoComplete="off"
+              role="combobox"
+              aria-expanded={searchOpen}
+              aria-controls="morph-reversal-suggestions"
+              aria-autocomplete="list"
             />
             <button type="button" onClick={() => resolve()} className="morph-reversal-resolve-button">Reverse</button>
           </div>
         </div>
 
-        {query.trim() && searchResults.length > 0 && !result && (
-          <div className="morph-reversal-suggestions" aria-label="Matching recognised morphs">
+        {searchOpen && (
+          <div id="morph-reversal-suggestions" className="morph-reversal-suggestions" role="listbox" aria-label="Matching recognised morphs">
             {searchResults.map((morph) => (
-              <button key={morph.geneId} type="button" onClick={() => resolve(morph.name)}>
+              <button key={morph.geneId} type="button" role="option" onMouseDown={(event) => event.preventDefault()} onClick={() => resolve(morph.name)}>
                 <strong>{morph.name}</strong>
                 <small>{morph.kind}{morph.aliases?.length ? ` · ${morph.aliases.join(", ")}` : ""}</small>
               </button>
             ))}
+            {!searchResults.length && (
+              <p className="genetics-dropdown-empty">No matching recognised genetics. You can still free-type a name and press Reverse.</p>
+            )}
           </div>
         )}
 
