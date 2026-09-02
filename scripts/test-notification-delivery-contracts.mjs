@@ -6,6 +6,11 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const checks = [
   ["functions/index.js exports keeper scheduler", /sendAllKeeperReminderNotifications\s*=\s*familyNotifications\.sendAllKeeperReminderNotifications/],
   ["functions/index.js exports equipment scheduler", /sendEquipmentReplacementNotifications\s*=\s*equipmentNotifications\.sendEquipmentReplacementNotifications/],
+  ["functions/index.js registers Community Hub notifications", /Object\.assign\(exports, require\("\.\/communityNotifications"\)\)/],
+  ["Community Hub notification trigger exists", /onDocumentCreated\(\{ region: "europe-west2", document: "communityPosts\/{postId}" \}/],
+  ["Community Hub notification audience routing exists", /eligibleUserUids\(audience\)/],
+  ["Community Hub release notifications exist", /category === "release"/],
+  ["Community Hub update notifications exist", /category === "update"/],
   ["notification test callable is exported", /Object\.assign\(exports, require\("\.\/notificationTest"\)\)/],
   ["notification test callable is defined", /exports\.sendNotificationTest\s*=\s*onCall/],
   ["feed test exists", /feed:\s*\{/],
@@ -20,6 +25,7 @@ const checks = [
 ];
 const files = {
   "functions/index.js": read("functions/index.js"),
+  "functions/communityNotifications.js": read("functions/communityNotifications.js"),
   "functions/notificationTest.js": read("functions/notificationTest.js"),
   "public/firebase-messaging-sw.js": read("public/firebase-messaging-sw.js"),
   "src/services/notificationService.ts": read("src/services/notificationService.ts"),
