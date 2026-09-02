@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { getMessaging, isSupported, onMessage } from "firebase/messaging";
 import { app } from "../firebase/config";
 import { getNotificationSettings, NOTIFICATION_ENABLED_EVENT, refreshNotificationRegistration } from "../services/notificationService";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function NotificationBridge() {
   const { user } = useAuth();
