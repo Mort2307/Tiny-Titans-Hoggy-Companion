@@ -214,7 +214,7 @@ function getHetComponents(loci: Map<string, number>): OffspringComponent[] {
 function componentSignature(components: MorphComponent[]): Iterable<[string, number]> {
   const totals = new Map<string, number>();
   for (const component of components) {
-    totals.set(component.morphId, (totals.get(component.morphId) ?? 0) + component.copies);
+    totals.set(component.morphId, (totals.get(component.morphId) ?? 0) + (component.copies ?? 1));
   }
   return totals.entries();
 }
