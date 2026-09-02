@@ -6,6 +6,7 @@ import CreatorTesterInvitationBanner from "../CreatorTesterInvitationBanner";
 import TitanQuickActions from "../TitanQuickActions";
 import CreatorCommandBar from "../CreatorCommandBar";
 import CreatorStatusBar from "../CreatorStatusBar";
+import SupportNotificationCenter from "../SupportNotificationCenter";
 
 function Layout() {
   return (
@@ -20,6 +21,7 @@ function Layout() {
           <CreatorCommandBar />
           <CreatorStatusBar />
           <TitanQuickActions />
+          <SupportNotificationCenter />
           <div className="tt-page-frame">
             <Outlet />
           </div>
