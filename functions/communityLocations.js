@@ -210,12 +210,11 @@ async function rebuildLocationIndex() {
 exports.getCommunityLocationAreas = onCall({ region: "europe-west2", timeoutSeconds: 300 }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   try {
-    let snapshot = await db.collection("communityLocationAreas").get();
-    if (snapshot.empty) {
-      const rebuild = await rebuildLocationIndex();
-      console.info("Community location index self-healed from public feed", { ...rebuild, uid: request.auth.uid });
-      snapshot = await db.collection("communityLocationAreas").get();
-    }
+    // The aggregate index is rebuilt from the current user/privacy records before each public read.
+    // This makes the globe authoritative even when older accounts or missed triggers left the index stale.
+    const rebuild = await rebuildLocationIndex();
+    console.info("Community location index refreshed for public feed", { ...rebuild, uid: request.auth.uid });
+    const snapshot = await db.collection("communityLocationAreas").get();
     return { success: true, areas: snapshot.docs.map(toPublicArea).filter(Boolean) };
   } catch (error) {
     console.error("Community location area read failed", error);
