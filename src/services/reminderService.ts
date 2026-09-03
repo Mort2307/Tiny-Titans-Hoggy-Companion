@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { Reminder, ReminderInput, ReminderKind } from "../types/Reminder";
 
@@ -34,6 +34,16 @@ function nextSchedule(input: ReminderInput, occurrenceDate: string, phase: "lead
   return { occurrenceDate, phase, at: zonedTimeToUtc(notificationDate, input.time, input.timezone).toISOString() };
 }
 
+function legacyFlagFor(kind: ReminderKind): string | null {
+  return ({ weight: "weightRemindersEnabled", feeding: "feedingRemindersEnabled", shedding: "shedRemindersEnabled", health: "healthRemindersEnabled", husbandry: null, custom: null } as Record<ReminderKind, string | null>)[kind];
+}
+
+async function handOffLegacyStream(uid: string, kind: ReminderKind) {
+  const field = legacyFlagFor(kind);
+  if (!field) return;
+  await setDoc(doc(db, "users", uid), { notificationSettings: { [field]: false }, updatedAt: serverTimestamp() }, { merge: true });
+}
+
 export function defaultReminderInput(kind: ReminderKind, snakeId: string | null = null): ReminderInput {
   const definition = ({ weight: "Weight check", feeding: "Feeding check", shedding: "Shed check", health: "Health check", husbandry: "Husbandry check", custom: "Custom reminder" } as Record<ReminderKind, string>)[kind];
   const now = new Date();
@@ -43,10 +53,11 @@ export function defaultReminderInput(kind: ReminderKind, snakeId: string | null 
 
 function withSchedule(input: ReminderInput): Omit<Reminder, "id" | "createdAt" | "updatedAt"> {
   const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(input.frequencyDays) || 1)));
-  const leadUpDays = Math.max(1, Math.min(30, Math.round(Number(input.leadUpDays) || 1)));
-  const safeInput = { ...input, frequencyDays, leadUpDays };
-  const schedule = nextSchedule(safeInput, input.startDate, input.leadUpEnabled && leadUpDays > 0 ? "lead-up" : "due");
-  return { ...safeInput, frequencyDays, leadUpDays, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lastNotifiedAt: null, lastCompletedAt: null };
+  const leadUpEnabled = Boolean(input.leadUpEnabled) && frequencyDays > 1;
+  const leadUpDays = Math.min(Math.max(1, Math.round(Number(input.leadUpDays) || 1)), Math.min(30, frequencyDays - 1));
+  const safeInput = { ...input, frequencyDays, leadUpEnabled, leadUpDays };
+  const schedule = nextSchedule(safeInput, input.startDate, leadUpEnabled ? "lead-up" : "due");
+  return { ...safeInput, frequencyDays, leadUpEnabled, leadUpDays, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lastNotifiedAt: null, lastCompletedAt: null };
 }
 
 export async function listReminders(uid: string): Promise<Reminder[]> {
@@ -60,6 +71,7 @@ export async function createReminder(uid: string, input: ReminderInput): Promise
   const ref = doc(remindersCollection(uid));
   const next = withSchedule(input);
   await setDoc(ref, { ...next, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  await handOffLegacyStream(uid, input.kind);
   return { id: ref.id, ...next };
 }
 
@@ -67,14 +79,22 @@ export async function updateReminder(uid: string, reminderId: string, input: Rem
   if (!uid || !reminderId) throw new Error("A valid reminder is required.");
   const next = withSchedule(input);
   await updateDoc(doc(db, "users", uid, "reminders", reminderId), { ...next, updatedAt: serverTimestamp() });
+  await handOffLegacyStream(uid, input.kind);
 }
 
 export async function setReminderPaused(uid: string, reminder: Reminder, paused: boolean): Promise<void> {
   const ref = doc(db, "users", uid, "reminders", reminder.id);
-  if (paused) { await updateDoc(ref, { status: "paused", updatedAt: serverTimestamp() }); return; }
-  const input: ReminderInput = { ...reminder, status: "active" };
-  const schedule = nextSchedule(input, reminder.nextOccurrenceDate || reminder.startDate, reminder.nextPhase || "due");
-  await updateDoc(ref, { status: "active", nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, updatedAt: serverTimestamp() });
+  if (paused) { await updateDoc(ref, { status: "paused", lockedUntil: null, updatedAt: serverTimestamp() }); return; }
+  const input: ReminderInput = { ...reminder, status: "active", leadUpEnabled: reminder.leadUpEnabled && reminder.frequencyDays > 1 };
+  let occurrenceDate = reminder.nextOccurrenceDate || reminder.startDate;
+  let phase = reminder.nextPhase || "due";
+  let schedule = nextSchedule(input, occurrenceDate, phase);
+  if (new Date(schedule.at).getTime() <= Date.now()) {
+    occurrenceDate = addCalendarDays(occurrenceDate, Math.max(1, reminder.frequencyDays));
+    phase = input.leadUpEnabled ? "lead-up" : "due";
+    schedule = nextSchedule(input, occurrenceDate, phase);
+  }
+  await updateDoc(ref, { status: "active", nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lockedUntil: null, updatedAt: serverTimestamp() });
 }
 
 export async function deleteReminder(uid: string, reminderId: string): Promise<void> {
