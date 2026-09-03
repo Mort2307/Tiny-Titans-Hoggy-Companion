@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
 const UPDATE_TIMEOUT_MS = 15000;
+const UPDATE_CHECK_INTERVAL_MS = 60000;
 
 export function notifyTinyTitansUpdateAvailable() {
   window.__tinyTitansUpdatePending = true;
@@ -37,6 +38,95 @@ export default function AppUpdatePrompt() {
     return () => window.removeEventListener(UPDATE_EVENT, show);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    let registration: ServiceWorkerRegistration | null = null;
+    let intervalId: number | undefined;
+
+    const showWaitingWorker = () => {
+      if (cancelled || !registration) return;
+
+      // A waiting worker during the very first PWA install is not an update.
+      // Only surface the prompt when this page is already controlled by a SW.
+      if (navigator.serviceWorker.controller && registration.waiting) {
+        notifyTinyTitansUpdateAvailable();
+      }
+    };
+
+    const watchInstallingWorker = (worker: ServiceWorker) => {
+      const onStateChange = () => {
+        if (worker.state === "installed") showWaitingWorker();
+      };
+      worker.addEventListener("statechange", onStateChange);
+      return () => worker.removeEventListener("statechange", onStateChange);
+    };
+
+    const setup = async () => {
+      if (!("serviceWorker" in navigator)) return;
+
+      try {
+        registration = await navigator.serviceWorker.getRegistration();
+        if (!registration || cancelled) return;
+
+        const onUpdateFound = () => {
+          if (registration?.installing) {
+            cleanupInstalling = watchInstallingWorker(registration.installing);
+          }
+        };
+
+        let cleanupInstalling: (() => void) | null = null;
+        registration.addEventListener("updatefound", onUpdateFound);
+        showWaitingWorker();
+
+        const checkForUpdate = async () => {
+          if (cancelled || !registration) return;
+          if (document.visibilityState !== "visible" || !navigator.onLine) return;
+
+          showWaitingWorker();
+          try {
+            await registration.update();
+          } catch (error) {
+            console.debug("[Tiny Titans] Service-worker update check failed", error);
+          }
+          showWaitingWorker();
+        };
+
+        void checkForUpdate();
+        intervalId = window.setInterval(() => void checkForUpdate(), UPDATE_CHECK_INTERVAL_MS);
+
+        const onFocusOrOnline = () => void checkForUpdate();
+        const onVisibilityChange = () => {
+          if (document.visibilityState === "visible") void checkForUpdate();
+        };
+
+        window.addEventListener("focus", onFocusOrOnline);
+        window.addEventListener("online", onFocusOrOnline);
+        document.addEventListener("visibilitychange", onVisibilityChange);
+
+        const cleanup = () => {
+          registration?.removeEventListener("updatefound", onUpdateFound);
+          cleanupInstalling?.();
+          window.removeEventListener("focus", onFocusOrOnline);
+          window.removeEventListener("online", onFocusOrOnline);
+          document.removeEventListener("visibilitychange", onVisibilityChange);
+        };
+
+        (setup as typeof setup & { cleanup?: () => void }).cleanup = cleanup;
+      } catch (error) {
+        console.debug("[Tiny Titans] Service-worker update monitor unavailable", error);
+      }
+    };
+
+    const setupWithCleanup = setup as typeof setup & { cleanup?: () => void };
+    void setup();
+
+    return () => {
+      cancelled = true;
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+      setupWithCleanup.cleanup?.();
+    };
+  }, []);
+
   if (!open) return null;
 
   const updateNow = async () => {
@@ -50,9 +140,6 @@ export default function AppUpdatePrompt() {
         throw new Error("Tiny Titans update handler is not ready.");
       }
 
-      // updateSW(true) owns the service-worker activation/reload lifecycle.
-      // Do not immediately reload after it resolves: doing so can race
-      // controllerchange and leave the browser between old/new bundles.
       let reloaded = false;
       const markReload = () => {
         reloaded = true;
