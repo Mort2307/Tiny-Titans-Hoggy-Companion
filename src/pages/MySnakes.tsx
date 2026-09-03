@@ -6,6 +6,7 @@ import "../styles/my-snakes-workspace.css";
 
 type WorkspaceView = "snakes" | "room";
 const STORAGE_KEY = "tinyTitans.mySnakes.view";
+
 function readView(): WorkspaceView {
   try {
     return window.localStorage.getItem(STORAGE_KEY) === "room" ? "room" : "snakes";
@@ -38,7 +39,7 @@ export default function MySnakes() {
           <p>Manage your animals, records and reptile room from one place.</p>
         </div>
         <div className="tt-page-actions">
-          <Link className="tt-button my-snakes-add-action" to="/add-snake">+ Add Snake</Link>
+          <Link className="tt-button my-snakes-add-action" to="/snakes/new">+ Add Snake</Link>
         </div>
       </header>
 
