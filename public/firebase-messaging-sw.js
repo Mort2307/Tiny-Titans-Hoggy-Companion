@@ -33,6 +33,7 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+const TINY_TITANS_LOGO = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=3";
 
 messaging.onBackgroundMessage((payload) => {
   const data = payload.data || {};
@@ -49,8 +50,8 @@ messaging.onBackgroundMessage((payload) => {
   const url = data.url || "/";
   self.registration.showNotification(title, {
     body,
-    icon: "/favicon.svg",
-    badge: "/favicon.svg",
+    icon: TINY_TITANS_LOGO,
+    badge: TINY_TITANS_LOGO,
     tag: data.eventKey || "tiny-titans-notification",
     data: { url },
   });
