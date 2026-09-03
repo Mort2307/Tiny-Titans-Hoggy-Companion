@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
@@ -33,7 +33,6 @@ export default function ReminderTypePage() {
   const kind = rawKind as ReminderKind;
   const definition = DEFINITIONS.get(kind);
   const { user, loading, profileLoading } = useAuth();
-  const navigate = useNavigate();
   const [snakes, setSnakes] = useState<SnakeOption[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -75,7 +74,6 @@ export default function ReminderTypePage() {
     setEditingId(reminder.id);
     setForm({ id: reminder.id, kind: reminder.kind, title: reminder.title, description: reminder.description ?? "", snakeId: reminder.snakeId ?? null, snakeName: reminder.snakeName ?? null, frequencyDays: reminder.frequencyDays, time: reminder.time, startDate: reminder.nextOccurrenceDate || reminder.startDate, timezone: reminder.timezone, leadUpEnabled: reminder.leadUpEnabled, leadUpDays: reminder.leadUpDays, status: reminder.status });
     setMessage("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function save() {
@@ -98,15 +96,11 @@ export default function ReminderTypePage() {
         leadUpDays: Math.max(1, Math.min(30, Math.round(Number(form.leadUpDays) || 1))),
         status: "active",
       };
-      if (editingId) {
-        await updateReminder(user.uid, editingId, next);
-        setMessage("✅ Reminder updated.");
-      } else {
-        await createReminder(user.uid, next);
-        setMessage("✅ Recurring reminder created.");
-      }
+      if (editingId) await updateReminder(user.uid, editingId, next);
+      else await createReminder(user.uid, next);
       setReminders((await listReminders(user.uid)).filter((reminder) => reminder.kind === kind));
-      if (!editingId) resetForm();
+      setMessage(editingId ? "✅ Reminder updated." : "✅ Recurring reminder created.");
+      resetForm();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save this reminder.");
     } finally { setBusy(false); }
