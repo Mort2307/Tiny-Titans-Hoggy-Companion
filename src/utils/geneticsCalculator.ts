@@ -1,8 +1,16 @@
 // ============================================================
 // TINY TITANS — GENETICS CALCULATOR ENGINE
 // ============================================================
+// SINGLE SOURCE OF TRUTH FOR Mendelian offspring inheritance.
 //
-// SINGLE SOURCE OF TRUTH FOR OFFSPRING INHERITANCE
+// Design rules:
+// • Recessive visual gene = 2 copies.
+// • Recessive het = 1 copy, but its parent probability may be
+//   100%, 66% or 50%.
+// • Incomplete-dominant visual = 1 copy.
+// • Incomplete-dominant Super = 2 copies.
+// • Dominant visual = 1 or 2 copies; neither is a het.
+// • Combination morphs are phenotype names, never independent loci.
 // ============================================================
 
 import {
@@ -11,20 +19,12 @@ import {
   type MorphDefinition,
   type MorphComponent,
 } from "../data/morphs";
-
 import {
   getGeneId,
   resolveStrictMorph,
 } from "./geneticsIdentity";
-
-import {
-  expandMorphToComponents,
-} from "./morphResolver";
-
-import {
-  calculatorNamedCombinations,
-} from "../data/geneticsComboRegistry";
-
+import { expandMorphToComponents } from "./morphResolver";
+import { calculatorNamedCombinations } from "../data/geneticsComboRegistry";
 import type {
   GeneticsCalculatorInput,
   GeneticsCalculatorResult,
@@ -33,11 +33,15 @@ import type {
   ParentGenetics,
   BreedingSummary,
   HetResult,
+  HetPercentage,
 } from "../types/genetics";
 
 type AlleleState = {
   geneId: string;
+  /** Known allele copies when the parent's genotype is certain. */
   copies: 0 | 1 | 2;
+  /** Probability that a gamete from this parent carries the mutation. */
+  mutationAlleleProbability: number;
 };
 
 type ParentLocus = {
@@ -63,6 +67,33 @@ function getDefinition(geneId: string): MorphDefinition | undefined {
   return getMorphByGeneId(geneId);
 }
 
+function clampProbability(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+function getHetProbabilityAsParentAlleleProbability(percentage: HetPercentage): number {
+  // A het is one mutant allele in two, so:
+  // 100% het -> 0.5 mutant gamete probability
+  // 66% het  -> (2/3) × 0.5 = 1/3
+  // 50% het  -> 0.5 × 0.5 = 1/4
+  if (percentage === "66%") return 1 / 3;
+  if (percentage === "50%") return 1 / 4;
+  return 1 / 2;
+}
+
+function getVisualGeneCopies(morph: MorphDefinition): 0 | 1 | 2 {
+  if (morph.inheritance === "Recessive") return 2;
+  return 1;
+}
+
+function createKnownState(geneId: string, copies: 0 | 1 | 2): AlleleState {
+  return {
+    geneId,
+    copies,
+    mutationAlleleProbability: copies === 0 ? 0 : copies === 1 ? 0.5 : 1,
+  };
+}
+
 function getParentAlleleStates(parent: ParentGenetics): Map<string, AlleleState> {
   const states = new Map<string, AlleleState>();
 
@@ -76,24 +107,50 @@ function getParentAlleleStates(parent: ParentGenetics): Map<string, AlleleState>
       const definition = getDefinition(geneId);
       if (!definition || !definition.isGene || definition.kind !== "Gene") continue;
 
-      const copies = Math.min(2, Math.max(0, component.copies ?? 1)) as 0 | 1 | 2;
+      // expandMorphToComponents supplies a default ×1 for a standalone gene.
+      // For a visually selected recessive gene that default is NOT the true
+      // genotype: a visual recessive must be homozygous (×2).
+      const isStandaloneVisualGene =
+        morph.kind === "Gene" &&
+        morph.isGene &&
+        morph.geneId === geneId &&
+        (!morph.components || morph.components.length === 0);
+
+      const copies = isStandaloneVisualGene
+        ? getVisualGeneCopies(morph)
+        : Math.min(2, Math.max(0, component.copies ?? 1)) as 0 | 1 | 2;
+
       const existing = states.get(geneId);
-      if (!existing) states.set(geneId, { geneId, copies });
-      else existing.copies = Math.min(2, existing.copies + copies) as 0 | 1 | 2;
+      if (!existing) states.set(geneId, createKnownState(geneId, copies));
+      else {
+        const mergedCopies = Math.min(2, existing.copies + copies) as 0 | 1 | 2;
+        states.set(geneId, createKnownState(geneId, mergedCopies));
+      }
     }
   }
 
-  for (const value of parent.hets) {
-    const geneId = getGeneId(value);
+  for (const entry of parent.hets) {
+    const geneId = getGeneId(entry);
     if (!geneId) continue;
 
     const morph = getDefinition(geneId);
     if (!morph || !morph.isGene || morph.kind !== "Gene" || !morph.hetPossible) continue;
 
+    const percentage = parent.hetPercentages?.[geneId] ?? "100%";
+    const alleleProbability = getHetProbabilityAsParentAlleleProbability(percentage);
     const existing = states.get(geneId);
+
+    // A visual copy count always wins over a het record for the same locus.
     if (existing && existing.copies === 2) continue;
-    if (!existing) states.set(geneId, { geneId, copies: 1 });
-    else existing.copies = Math.max(existing.copies, 1) as 0 | 1 | 2;
+
+    // A known het means exactly one copy if confirmed 100%; 50/66 are
+    // probability states, so keep a representative copy count of 0/1 only
+    // for debugging while using the mathematically correct transmission rate.
+    states.set(geneId, {
+      geneId,
+      copies: 1,
+      mutationAlleleProbability: clampProbability(alleleProbability),
+    });
   }
 
   return states;
@@ -105,20 +162,14 @@ function buildLoci(input: GeneticsCalculatorInput): ParentLocus[] {
   const geneIds = new Set([...mother.keys(), ...father.keys()]);
   return [...geneIds].map((geneId) => ({
     geneId,
-    mother: mother.get(geneId) ?? { geneId, copies: 0 },
-    father: father.get(geneId) ?? { geneId, copies: 0 },
+    mother: mother.get(geneId) ?? createKnownState(geneId, 0),
+    father: father.get(geneId) ?? createKnownState(geneId, 0),
   }));
 }
 
-function getMutationAlleleProbability(copies: 0 | 1 | 2): number {
-  if (copies === 0) return 0;
-  if (copies === 1) return 0.5;
-  return 1;
-}
-
 function calculateLocus(locus: ParentLocus): LocusOutcome[] {
-  const motherMutation = getMutationAlleleProbability(locus.mother.copies);
-  const fatherMutation = getMutationAlleleProbability(locus.father.copies);
+  const motherMutation = clampProbability(locus.mother.mutationAlleleProbability);
+  const fatherMutation = clampProbability(locus.father.mutationAlleleProbability);
   const outcomes = new Map<0 | 1 | 2, number>();
 
   const normalNormal = (1 - motherMutation) * (1 - fatherMutation);
@@ -160,7 +211,6 @@ function mergeInternalOutcomes(outcomes: InternalOutcome[]): InternalOutcome[] {
 
 function combineLocusOutcomes(loci: ParentLocus[]): InternalOutcome[] {
   let outcomes: InternalOutcome[] = [{ loci: new Map(), probability: 100 }];
-
   for (const locus of loci) {
     const locusOutcomes = calculateLocus(locus);
     const next: InternalOutcome[] = [];
@@ -175,15 +225,22 @@ function combineLocusOutcomes(loci: ParentLocus[]): InternalOutcome[] {
     }
     outcomes = mergeInternalOutcomes(next);
   }
-
   return outcomes;
 }
 
 function getLocusState(morph: MorphDefinition, copies: number): "Clear" | "Het" | "Visual" | "Super" {
   if (copies <= 0) return "Clear";
-  if (morph.inheritance === "Recessive") return copies >= 2 ? "Visual" : "Het";
-  if (morph.inheritance === "Incomplete Dominant") return copies >= 2 ? "Super" : "Visual";
-  return copies >= 2 ? "Visual" : "Het";
+  switch (morph.inheritance) {
+    case "Recessive":
+      return copies >= 2 ? "Visual" : "Het";
+    case "Incomplete Dominant":
+      return copies >= 2 ? "Super" : "Visual";
+    case "Dominant":
+      // One copy already expresses a dominant trait; it is never a het.
+      return "Visual";
+    default:
+      return "Clear";
+  }
 }
 
 function buildComponent(geneId: string, copies: number): OffspringComponent | undefined {
@@ -196,8 +253,7 @@ function getVisualComponents(loci: Map<string, number>): OffspringComponent[] {
   const components: OffspringComponent[] = [];
   for (const [geneId, copies] of loci) {
     const component = buildComponent(geneId, copies);
-    if (!component) continue;
-    if (component.state === "Visual" || component.state === "Super") components.push(component);
+    if (component?.state === "Visual" || component?.state === "Super") components.push(component);
   }
   return components.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -263,23 +319,13 @@ function buildFallbackName(visualComponents: OffspringComponent[]): string {
   }).join(" + ");
 }
 
-function getHetProbability(percentage: number): 50 | 66 | 100 | undefined {
-  if (Math.abs(percentage - 100) < PROBABILITY_EPSILON) return 100;
-  if (Math.abs(percentage - 66.6666667) < 0.1) return 66;
-  if (Math.abs(percentage - 50) < PROBABILITY_EPSILON) return 50;
-  return undefined;
-}
-
-function getPossibleHetComponents(loci: Map<string, number>, probability: number): OffspringComponent[] {
-  const components: OffspringComponent[] = [];
-  for (const [geneId, copies] of loci) {
-    const morph = getDefinition(geneId);
-    if (!morph || !morph.hetPossible || copies !== 0) continue;
-    const component = buildComponent(geneId, 1);
-    if (component) components.push(component);
-  }
-  void probability;
-  return components;
+function getPossibleHetComponents(loci: Map<string, number>): OffspringComponent[] {
+  // Exact Mendelian outcomes have a known genotype. A copy-0 offspring is
+  // CLEAR, not "Possible Het", and we must not manufacture carrier claims.
+  // Future uncertain-data modelling can add probability-based carrier states
+  // without corrupting these exact outcomes.
+  void loci;
+  return [];
 }
 
 function buildResultId(visualComponents: OffspringComponent[], hetComponents: OffspringComponent[], possibleHetComponents: OffspringComponent[]): string {
@@ -292,7 +338,7 @@ function buildResultId(visualComponents: OffspringComponent[], hetComponents: Of
 function buildOffspringResult(outcome: InternalOutcome): OffspringResult {
   const visualComponents = getVisualComponents(outcome.loci);
   const hetComponents = getHetComponents(outcome.loci);
-  const possibleHetComponents = getPossibleHetComponents(outcome.loci, outcome.probability);
+  const possibleHetComponents = getPossibleHetComponents(outcome.loci);
   const combination = getCombinationForLoci(outcome.loci);
   return {
     id: buildResultId(visualComponents, hetComponents, possibleHetComponents),
@@ -324,7 +370,7 @@ function mergeOffspringResults(results: OffspringResult[]): OffspringResult[] {
 }
 
 function ensureNormalResult(results: OffspringResult[]): OffspringResult[] {
-  const normal = results.find((result) => result.visualComponents.length === 0 && result.hetComponents.length === 0);
+  const normal = results.find((result) => result.visualComponents.length === 0 && result.hetComponents.length === 0 && result.possibleHetComponents.length === 0);
   if (normal) normal.name = "Normal";
   return results;
 }
@@ -355,14 +401,23 @@ export function getBreedingSummary(result: GeneticsCalculatorResult): BreedingSu
       underlyingComponents: [...offspring.visualComponents],
     }));
 
-  const hetOutcomes: HetResult[] = [];
+  const hetByGene = new Map<string, { name: string; percentage: number }>();
   for (const offspring of result.offspring) {
     for (const component of offspring.hetComponents) {
-      const percentage = getHetProbability(offspring.percentage);
-      if (percentage === undefined) continue;
-      hetOutcomes.push({ geneId: component.geneId, name: component.name, percentage, certainty: "Confirmed" });
+      const existing = hetByGene.get(component.geneId);
+      if (!existing) hetByGene.set(component.geneId, { name: component.name, percentage: offspring.percentage });
+      else existing.percentage += offspring.percentage;
     }
   }
+
+  const hetOutcomes: HetResult[] = [...hetByGene.entries()]
+    .map(([geneId, value]) => ({
+      geneId,
+      name: value.name,
+      percentage: value.percentage,
+      certainty: value.percentage >= 99.999999 ? "Confirmed" as const : "Possible" as const,
+    }))
+    .sort((a, b) => b.percentage - a.percentage || a.name.localeCompare(b.name));
 
   return {
     outcomeCount: result.offspring.length,
@@ -376,8 +431,8 @@ export function getBreedingSummary(result: GeneticsCalculatorResult): BreedingSu
 export function calculateSingleGene(geneId: string, motherCopies: 0 | 1 | 2, fatherCopies: 0 | 1 | 2): LocusOutcome[] {
   return calculateLocus({
     geneId,
-    mother: { geneId, copies: motherCopies },
-    father: { geneId, copies: fatherCopies },
+    mother: createKnownState(geneId, motherCopies),
+    father: createKnownState(geneId, fatherCopies),
   });
 }
 
