@@ -21,6 +21,10 @@ function formatStatus(status: string) {
   return "⏳ Waiting";
 }
 
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
+
 export default function SubmissionNotificationTestBot() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -43,16 +47,9 @@ export default function SubmissionNotificationTestBot() {
   useEffect(() => {
     if (!user || !runId) return;
     let cancelled = false;
-
     const loadRun = async () => {
       try {
-        // When opened from a notification, mark that exact item as opened/read first.
-        // This deliberately replaces the old parallel getRun + markOpened requests,
-        // which could race and overwrite the fresh "opened" state with stale "sent" data.
-        const next = itemId
-          ? await markSubmissionNotificationTestOpened(runId, itemId)
-          : await getSubmissionNotificationTestRun(runId);
-
+        const next = itemId ? await markSubmissionNotificationTestOpened(runId, itemId) : await getSubmissionNotificationTestRun(runId);
         if (cancelled) return;
         setRun(next);
         setDelayMinutes(next.delayMinutes);
@@ -61,7 +58,6 @@ export default function SubmissionNotificationTestBot() {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load the notification test run.");
       }
     };
-
     void loadRun();
     return () => { cancelled = true; };
   }, [user, runId, itemId]);
@@ -77,7 +73,8 @@ export default function SubmissionNotificationTestBot() {
     try {
       const created = await startSubmissionNotificationTest(Math.max(0, Math.min(10, delayMinutes)));
       const next = await sendNextSubmissionNotificationTest(created.id);
-      setRun((current) => current ? current : { ...created, items: created.items.map((item) => item.id === next.item.id ? next.item : item) });
+      const nextRun = { ...created, items: created.items.map((item) => item.id === next.item.id ? next.item : item) };
+      setRun(nextRun);
       setMessage("Test run started. Waiting for the first Tiny Titans notification.");
       navigate(`/creator/tester?submissionNotifications=1&submissionNotificationRun=${encodeURIComponent(created.id)}&submissionNotificationItem=${encodeURIComponent(next.item.id)}`, { replace: true });
     } catch (startError) {
@@ -85,45 +82,40 @@ export default function SubmissionNotificationTestBot() {
     } finally { setBusy(false); }
   }
 
+  async function sendNext(runState: SubmissionNotificationTestRun) {
+    const pending = runState.items.find((item) => item.status === "pending");
+    if (!pending) return false;
+    const response = await sendNextSubmissionNotificationTest(runState.id);
+    setRun((current) => current ? { ...current, items: current.items.map((item) => item.id === response.item.id ? response.item : item) } : current);
+    navigate(`/creator/tester?submissionNotifications=1&submissionNotificationRun=${encodeURIComponent(runState.id)}&submissionNotificationItem=${encodeURIComponent(response.item.id)}`, { replace: true });
+    setMessage(`Next notification sent: ${response.item.label}. Click it when it arrives.`);
+    return true;
+  }
+
   async function acceptCurrent() {
     if (!run || !currentItem || currentItem.acceptedAt || busy) return;
     setBusy(true); setError("");
     try {
-      const next = await markSubmissionNotificationTestAccepted(run.id, currentItem.id);
-      setRun(next);
-      setMessage("Accepted. The bot has recorded this notification as successfully received.");
-      const index = next.items.findIndex((item) => item.id === currentItem.id);
-      if (index >= 0 && index < next.items.length - 1) setCountdown(next.delayMinutes * 60);
+      const acceptedRun = await markSubmissionNotificationTestAccepted(run.id, currentItem.id);
+      setRun(acceptedRun);
+      const pending = acceptedRun.items.find((item) => item.status === "pending");
+      if (!pending) {
+        setMessage("✅ Accepted. That was the final notification. Review the tally below and finish the run.");
+        return;
+      }
+      const delaySeconds = acceptedRun.delayMinutes * 60;
+      if (delaySeconds > 0) {
+        setCountdown(delaySeconds);
+        setMessage(`✅ Accepted. Next notification will be sent in ${acceptedRun.delayMinutes} minute${acceptedRun.delayMinutes === 1 ? "" : "s"}.`);
+        setBusy(false);
+        await sleep(delaySeconds * 1000);
+        setBusy(true);
+      }
+      await sendNext(acceptedRun);
     } catch (acceptError) {
       setError(acceptError instanceof Error ? acceptError.message : "Unable to record notification acceptance.");
     } finally { setBusy(false); }
   }
-
-  useEffect(() => {
-    if (!run || run.status !== "running" || countdown !== 0 || busy) return;
-    const nextPending = run.items.find((item) => item.status === "pending");
-    if (!nextPending) return;
-    const previousUnaccepted = run.items.some((item) => item.order < nextPending.order && !item.acceptedAt && item.status !== "failed");
-    if (previousUnaccepted) return;
-    const unanswered = run.items.some((item) => (item.status === "sent" || item.status === "opened") && !item.acceptedAt);
-    if (unanswered) return;
-
-    let cancelled = false;
-    setBusy(true);
-    void sendNextSubmissionNotificationTest(run.id).then((response) => {
-      if (cancelled) return;
-      setRun((current) => current ? { ...current, items: current.items.map((item) => item.id === response.item.id ? response.item : item) } : current);
-      navigate(`/creator/tester?submissionNotifications=1&submissionNotificationRun=${encodeURIComponent(run.id)}&submissionNotificationItem=${encodeURIComponent(response.item.id)}`, { replace: true });
-      setMessage(`Next notification sent: ${response.item.label}. Click it when it arrives.`);
-      setBusy(false);
-    }).catch((sendError) => {
-      if (!cancelled) {
-        setError(sendError instanceof Error ? sendError.message : "Unable to send the next submission notification.");
-        setBusy(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [run, countdown, busy, navigate]);
 
   async function finish() {
     if (!run || !lastItemAccepted || busy) return;
@@ -138,7 +130,7 @@ export default function SubmissionNotificationTestBot() {
   }
 
   return <main className="page-container submission-notification-test"><PageBackButton fallbackPath="/creator/tester" label="Back to Tester Centre" /><header className="snt-hero"><div><span>PRIVATE QA · NOTIFICATION PIPELINE</span><h1>📨 Submission Notification BOT</h1><p>One controlled sweep across every user submission notification. The bot records what it sent, what you actually opened/read, and what you explicitly accepted.</p></div></header>
-    <section className="snt-panel"><div className="snt-panel-title"><div><span>TEST CONTROL</span><h2>Run the full submission sweep</h2></div><span className="snt-safety">🔒 No real user submissions created</span></div><p>Choose 0–10 minutes between notifications. The bot sends one test at a time and waits for you to open and accept it before continuing.</p><div className="snt-controls"><label>Delay between notifications<select value={delayMinutes} onChange={(event) => setDelayMinutes(Number(event.target.value))} disabled={Boolean(run && run.status === "running")}>{Array.from({ length: 11 }, (_, value) => <option key={value} value={value}>{value === 0 ? "Immediately" : `${value} minute${value === 1 ? "" : "s"}`}</option>)}</select></label><button className="snt-primary" type="button" onClick={() => void start()} disabled={busy || Boolean(run && run.status === "running")}>▶ Start Full Sweep</button></div></section>
+    <section className="snt-panel"><div className="snt-panel-title"><div><span>TEST CONTROL</span><h2>Run the full submission sweep</h2></div><span className="snt-safety">🔒 No real user submissions created</span></div><p>Choose 0–10 minutes between notifications. After each ACCEPT, the next pending notification is sent automatically — no page refresh.</p><div className="snt-controls"><label>Delay between notifications<select value={delayMinutes} onChange={(event) => setDelayMinutes(Number(event.target.value))} disabled={Boolean(run && run.status === "running")}>{Array.from({ length: 11 }, (_, value) => <option key={value} value={value}>{value === 0 ? "Immediately" : `${value} minute${value === 1 ? "" : "s"}`}</option>)}</select></label><button className="snt-primary" type="button" onClick={() => void start()} disabled={busy || Boolean(run && run.status === "running")}>▶ Start Full Sweep</button></div></section>
     {run && <><section className="snt-stats"><div><strong>{run.itemCount}</strong><span>Planned</span></div><div><strong>{sentCount}</strong><span>Sent</span></div><div><strong>{openedCount}</strong><span>Opened / read</span></div><div><strong>{acceptedCount}</strong><span>Accepted</span></div></section>
       {run.status === "running" && <section className="snt-panel snt-live"><div className="snt-panel-title"><div><span>LIVE RUN</span><h2>{currentItem ? currentItem.label : "Waiting for the next notification"}</h2></div><span className="snt-safety">{currentItem ? formatStatus(currentItem.status) : "Waiting"}</span></div><p>{currentItem?.description || "The bot has sent a notification and is waiting for the click/read action."}</p>{currentItem?.acceptedAt ? <div className="snt-success-box">✅ This notification has been accepted successfully.</div> : currentItem?.openedAt ? <button type="button" className="snt-accept" onClick={() => void acceptCurrent()} disabled={busy}>✅ ACCEPT NOTIFICATION</button> : <div className="snt-waiting">📱 Wait for the notification, then click it. The bot will mark it opened/read automatically.</div>}{countdown > 0 && <div className="snt-countdown">Next notification in <strong>{Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}</strong></div>}</section>}
       <section className="snt-panel"><div className="snt-panel-title"><div><span>SUBMISSION COVERAGE</span><h2>Every submission notification</h2></div></div><div className="snt-list">{run.items.map((item) => <article key={item.id} className={`snt-item ${item.status}`}><div><strong>{item.label}</strong><span>{item.description}</span></div><div><b>{formatStatus(item.status)}</b>{item.failureMessage && <small>{item.failureMessage}</small>}</div></article>)}</div></section>
