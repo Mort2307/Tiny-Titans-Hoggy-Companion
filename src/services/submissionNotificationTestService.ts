@@ -1,5 +1,6 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "../firebase/config";
+import type { NotificationTestTarget } from "./notificationService";
 
 export type SubmissionNotificationTestKind =
   | "bug"
@@ -19,6 +20,9 @@ export type SubmissionNotificationTestItem = {
   label: string;
   description: string;
   status: "pending" | "sent" | "opened" | "accepted" | "failed";
+  targetUid: string;
+  targetName: string;
+  targetEmail: string;
   eventKey?: string;
   sentCount?: number;
   failureCount?: number;
@@ -32,6 +36,10 @@ export type SubmissionNotificationTestRun = {
   ownerUid: string;
   delayMinutes: number;
   status: "running" | "complete" | "incomplete";
+  targetUid: string;
+  targetName: string;
+  targetEmail: string;
+  selectedKinds: SubmissionNotificationTestKind[];
   createdAt?: unknown;
   completedAt?: unknown;
   itemCount: number;
@@ -54,8 +62,17 @@ async function call<TInput, TOutput>(name: string, input: TInput): Promise<TOutp
   return result.data;
 }
 
-export function startSubmissionNotificationTest(delayMinutes: number) {
-  return call<{ delayMinutes: number }, SubmissionNotificationTestRun>("startSubmissionNotificationTest", { delayMinutes });
+export async function getSubmissionNotificationTestTargets(): Promise<NotificationTestTarget[]> {
+  const response = await call<void, { users: NotificationTestTarget[] }>("getNotificationTestUsers", undefined);
+  return response.users || [];
+}
+
+export function startSubmissionNotificationTest(options: {
+  delayMinutes: number;
+  targetUserId: string;
+  selectedKinds: SubmissionNotificationTestKind[];
+}) {
+  return call<typeof options, SubmissionNotificationTestRun>("startSubmissionNotificationTest", options);
 }
 
 export function sendNextSubmissionNotificationTest(runId: string) {
