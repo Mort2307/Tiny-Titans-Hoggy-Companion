@@ -21,6 +21,7 @@ const SUBMISSION_TESTS = Object.freeze([
   { kind: "community", label: "Community contribution", description: "Tests wider community contribution notification delivery.", title: "🌍 TEST — Community contribution", body: "Synthetic community contribution from the Submission Notification BOT." },
   { kind: "feature", label: "Feature request", description: "Tests feature request notification delivery.", title: "💡 TEST — Feature request", body: "Synthetic feature request from the Submission Notification BOT." },
 ]);
+const TEST_BY_KIND = new Map(SUBMISSION_TESTS.map((test) => [test.kind, test]));
 
 function authorisedAsTester(request) {
   return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL;
@@ -31,13 +32,6 @@ async function requireTester(request) {
   if (!uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   if (!authorisedAsTester(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can run submission notification tests.");
   return uid;
-}
-
-function timestampValue(value) {
-  if (typeof value?.toMillis === "function") return value.toMillis();
-  if (typeof value === "number") return value;
-  const parsed = Date.parse(String(value || ""));
-  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function makeRunId(uid) {
@@ -60,12 +54,37 @@ async function getRunBundle(uid, runId) {
   return { runRef, run: runSnapshot.data() || {}, items: itemsSnapshot.docs.map(itemSnapshot) };
 }
 
+async function resolveTargetUser(targetUserId, requesterUid) {
+  const targetUid = String(targetUserId || "").trim() || requesterUid;
+  const snapshot = await db.collection("users").doc(targetUid).get();
+  if (!snapshot.exists) throw new HttpsError("not-found", "The target Tiny Titans user could not be found.");
+  const data = snapshot.data() || {};
+  return {
+    uid: snapshot.id,
+    name: String(data.displayName || data.name || data.email || "Tiny Titans user"),
+    email: String(data.email || ""),
+  };
+}
+
+function normaliseSelectedKinds(value) {
+  const requested = Array.isArray(value) ? value.map((kind) => String(kind).trim()) : [];
+  const selected = [...new Set(requested)].filter((kind) => TEST_BY_KIND.has(kind));
+  if (!selected.length) throw new HttpsError("invalid-argument", "Choose at least one submission notification to test.");
+  if (selected.length > SUBMISSION_TESTS.length) throw new HttpsError("invalid-argument", "Too many submission notification types were selected.");
+  if (selected.length !== requested.length) throw new HttpsError("invalid-argument", "One or more selected submission notification types are invalid.");
+  return selected;
+}
+
 function publicRun(runId, uid, run, items) {
   return {
     id: runId,
     ownerUid: uid,
     delayMinutes: Number(run.delayMinutes || 0),
     status: run.status || "running",
+    targetUid: String(run.targetUid || uid),
+    targetName: String(run.targetName || "Tiny Titans user"),
+    targetEmail: String(run.targetEmail || ""),
+    selectedKinds: Array.isArray(run.selectedKinds) ? run.selectedKinds : items.map((item) => item.kind),
     createdAt: run.createdAt || null,
     completedAt: run.completedAt || null,
     itemCount: Number(run.itemCount || items.length),
@@ -78,13 +97,16 @@ exports.startSubmissionNotificationTest = onCall({ region: "europe-west2", memor
   const uid = await requireTester(request);
   const requestedDelay = Number(request.data?.delayMinutes ?? 0);
   const delayMinutes = Number.isFinite(requestedDelay) ? Math.max(0, Math.min(10, Math.floor(requestedDelay))) : 0;
+  const selectedKinds = normaliseSelectedKinds(request.data?.selectedKinds);
+  const target = await resolveTargetUser(request.data?.targetUserId, uid);
   const runId = makeRunId(uid);
   const runRef = db.collection("users").doc(uid).collection("notificationSubmissionTestRuns").doc(runId);
-  await runRef.set({ status: "running", delayMinutes, itemCount: SUBMISSION_TESTS.length, sentCount: 0, openedCount: 0, acceptedCount: 0, createdAt: FieldValue.serverTimestamp() });
+  await runRef.set({ status: "running", delayMinutes, targetUid: target.uid, targetName: target.name, targetEmail: target.email, selectedKinds, itemCount: selectedKinds.length, sentCount: 0, openedCount: 0, acceptedCount: 0, createdAt: FieldValue.serverTimestamp() });
   const batch = db.batch();
-  SUBMISSION_TESTS.forEach((test, index) => {
+  selectedKinds.forEach((kind, index) => {
+    const test = TEST_BY_KIND.get(kind);
     const itemRef = runRef.collection("items").doc(`item-${String(index + 1).padStart(2, "0")}`);
-    batch.set(itemRef, { order: index + 1, kind: test.kind, label: test.label, description: test.description, status: "pending", sentCount: 0, failureCount: 0 });
+    batch.set(itemRef, { order: index + 1, kind: test.kind, label: test.label, description: test.description, targetUid: target.uid, targetName: target.name, targetEmail: target.email, status: "pending", sentCount: 0, failureCount: 0 });
   });
   await batch.commit();
   const bundle = await getRunBundle(uid, runId);
@@ -100,17 +122,19 @@ exports.sendNextSubmissionNotificationTest = onCall({ region: "europe-west2", me
   const items = [...bundle.items].sort((a, b) => Number(a.order) - Number(b.order));
   const next = items.find((item) => item.status === "pending");
   if (!next) throw new HttpsError("failed-precondition", "There are no pending submission notification tests left. Use LAST ONE to finish the run.");
-  const test = SUBMISSION_TESTS.find((item) => item.kind === next.kind);
+  const test = TEST_BY_KIND.get(next.kind);
   if (!test) throw new HttpsError("internal", `No notification definition exists for ${next.kind}.`);
 
+  const targetUid = String(bundle.run.targetUid || next.targetUid || uid);
   const eventKey = `submission-sweep-${runId}-${next.id}`;
   const url = botUrl(runId, next.id);
-  const eventRef = db.collection("users").doc(uid).collection("notificationEvents").doc(eventKey);
-  const tokenSnapshot = await db.collection("users").doc(uid).collection("notificationTokens").where("enabled", "==", true).get();
+  const userRef = db.collection("users").doc(targetUid);
+  const eventRef = userRef.collection("notificationEvents").doc(eventKey);
+  const tokenSnapshot = await userRef.collection("notificationTokens").where("enabled", "==", true).get();
   const tokenDocs = tokenSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
-  await bundle.runRef.collection("items").doc(next.id).update({ status: tokenDocs.length ? "sent" : "failed", eventKey, sentCount: 0, failureCount: 0, failureMessage: tokenDocs.length ? null : "No enabled notification token is registered for this device." });
-  await eventRef.set({ type: "notification-test", kind: "submission-sweep", sourceKind: next.kind, testRunId: runId, testItemId: next.id, title: test.title, body: test.body, url, read: false, createdAt: FieldValue.serverTimestamp() });
-  if (!tokenDocs.length) return { runId, item: { ...next, status: "failed", eventKey, failureCount: 1, failureMessage: "No enabled notification token is registered for this device." } };
+  await bundle.runRef.collection("items").doc(next.id).update({ status: tokenDocs.length ? "sent" : "failed", eventKey, sentCount: 0, failureCount: 0, failureMessage: tokenDocs.length ? null : "No enabled notification token is registered for the target device." });
+  await eventRef.set({ type: "notification-test", kind: "submission-sweep", sourceKind: next.kind, testRunId: runId, testItemId: next.id, title: test.title, body: test.body, url, read: false, targetUid, createdAt: FieldValue.serverTimestamp() });
+  if (!tokenDocs.length) return { runId, item: { ...next, status: "failed", eventKey, failureCount: 1, failureMessage: "No enabled notification token is registered for the target device." } };
 
   try {
     const response = await messaging.sendEachForMulticast({
@@ -138,10 +162,9 @@ exports.markSubmissionNotificationTestOpened = onCall({ region: "europe-west2" }
   const item = bundle.items.find((entry) => entry.id === itemId);
   if (!item) throw new HttpsError("not-found", "That notification test item could not be found.");
   if (item.openedAt) return publicRun(runId, uid, bundle.run, bundle.items);
-  const itemRef = bundle.runRef.collection("items").doc(itemId);
-  await itemRef.update({ status: "opened", openedAt: FieldValue.serverTimestamp(), readAt: FieldValue.serverTimestamp() });
-  if (item.eventKey) await db.collection("users").doc(uid).collection("notificationEvents").doc(item.eventKey).set({ read: true, openedAt: FieldValue.serverTimestamp() }, { merge: true });
-  if (!item.openedAt) await bundle.runRef.update({ openedCount: FieldValue.increment(1) });
+  await bundle.runRef.collection("items").doc(itemId).update({ status: "opened", openedAt: FieldValue.serverTimestamp(), readAt: FieldValue.serverTimestamp() });
+  if (item.eventKey) await db.collection("users").doc(item.targetUid || bundle.run.targetUid || uid).collection("notificationEvents").doc(item.eventKey).set({ read: true, openedAt: FieldValue.serverTimestamp() }, { merge: true });
+  await bundle.runRef.update({ openedCount: FieldValue.increment(1) });
   const refreshed = await getRunBundle(uid, runId);
   return publicRun(runId, uid, refreshed.run, refreshed.items);
 });
