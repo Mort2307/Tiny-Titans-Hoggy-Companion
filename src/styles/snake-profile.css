@@ -221,9 +221,26 @@
 
 .snake-profile-mini-chart {
   width: 100%;
-  height: 70px;
+  height: 86px;
+  min-height: 0;
   margin-top: 10px;
   overflow: hidden;
+}
+
+.snake-profile-mini-chart .weight-chart-container,
+.snake-profile-mini-chart .weight-chart-empty {
+  width: 100%;
+  height: 100%;
+}
+
+.snake-profile-mini-chart .weight-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  text-align: center;
 }
 
 .snake-profile-card-notes {
@@ -297,6 +314,10 @@
   .snake-profile-quickbar {
     margin-inline: -1px;
     width: calc(100% + 2px);
+  }
+
+  .snake-profile-mini-chart {
+    height: 92px;
   }
 }
 
