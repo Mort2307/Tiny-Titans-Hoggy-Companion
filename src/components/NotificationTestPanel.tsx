@@ -40,20 +40,20 @@ export default function NotificationTestPanel() {
   const selectedTargetCount = selectedTargetUids.length;
   const eventCount = selectedKinds.length * count * selectedTargetCount;
   const permission = getNotificationPermissionState();
-  const currentTarget: NotificationTestTarget | null = user ? {
-    uid: user.uid,
-    email: user.email || "",
-    displayName: "This account",
-    notificationSettingsEnabled: true,
-    deviceReady: false,
-    tokenCount: 0,
-    lastTokenUpdatedAt: null,
-  } : null;
   const directory = useMemo(() => {
+    const currentTarget: NotificationTestTarget | null = user ? {
+      uid: user.uid,
+      email: user.email || "",
+      displayName: "This account",
+      notificationSettingsEnabled: true,
+      deviceReady: false,
+      tokenCount: 0,
+      lastTokenUpdatedAt: null,
+    } : null;
     const combined = currentTarget && !targets.some((target) => target.uid === currentTarget.uid) ? [currentTarget, ...targets] : targets;
     const term = search.trim().toLowerCase();
     return combined.filter((target) => !term || `${target.displayName} ${target.email}`.toLowerCase().includes(term));
-  }, [currentTarget, targets, search]);
+  }, [user, targets, search]);
 
   function toggleKind(kind: NotificationTestKind) {
     setSelectedKinds((current) => current.includes(kind) ? current.filter((item) => item !== kind) : [...current, kind]);
