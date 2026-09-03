@@ -44,14 +44,7 @@ export type SubmissionNotificationTestRun = {
   completedAt?: unknown;
   itemCount: number;
   items: SubmissionNotificationTestItem[];
-  summary?: {
-    expected: number;
-    sent: number;
-    opened: number;
-    accepted: number;
-    passed: number;
-    broken: number;
-  };
+  summary?: { expected: number; sent: number; opened: number; accepted: number; passed: number; broken: number };
 };
 
 const functions = getFunctions(app, "europe-west2");
@@ -67,11 +60,7 @@ export async function getSubmissionNotificationTestTargets(): Promise<Notificati
   return response.users || [];
 }
 
-export function startSubmissionNotificationTest(options: {
-  delayMinutes: number;
-  targetUserId: string;
-  selectedKinds: SubmissionNotificationTestKind[];
-}) {
+export function startSubmissionNotificationTest(options: { delayMinutes: number; targetUserId: string; selectedKinds: SubmissionNotificationTestKind[] }) {
   return call<typeof options, SubmissionNotificationTestRun>("startSubmissionNotificationTest", options);
 }
 
