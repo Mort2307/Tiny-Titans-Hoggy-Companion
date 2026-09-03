@@ -4,7 +4,7 @@ import type { MorphDefinition } from "../data/morphs";
 // display names and aliases are presentation/input only.
 
 export type HetPercentage = 50 | 66 | 100 | "50%" | "66%" | "100%";
-export type GeneticHetPercentage = 50 | 66 | 100;
+export type GeneticHetPercentage = number;
 
 export type Het = {
   /** Stable genetic identity. Legacy consumers may still call this `gene`. */
@@ -17,8 +17,10 @@ export type Het = {
 export type ParentGenetics = {
   /** Canonical stable gene IDs for visual/confirmed genetics. */
   morphs: string[];
-  /** Canonical stable gene IDs for known hets. */
+  /** Canonical stable gene IDs for known/possible hets. */
   hets: string[];
+  /** Per-gene confidence for the corresponding het entry. */
+  hetPercentages?: Record<string, HetPercentage>;
 };
 
 export type GeneCopyState = 0 | 1 | 2;
