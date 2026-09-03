@@ -6,7 +6,7 @@ import ParentSelector, { snakeToSelection, type ParentSelection } from "../compo
 import ResultCard from "../components/ResultCard";
 import MorphReversalPanel from "../components/MorphReversalPanel";
 import type { Snake } from "../types/Snake";
-import type { GeneticsCalculatorResult } from "../types/genetics";
+import type { GeneticsCalculatorResult, ParentGenetics } from "../types/genetics";
 import { calculateGenetics } from "../utils/geneticsCalculator";
 import { getUserSnakes } from "../services/snakeService";
 import { recordGeneticsCalculation } from "../services/geneticsTrackingService";
@@ -29,6 +29,17 @@ function uniqueMorphOptions<T extends { geneId: string; name: string }>(options:
     seenNames.add(name);
     return true;
   });
+}
+
+function toParentGenetics(selection: ParentSelection): ParentGenetics {
+  const hetPercentages = Object.fromEntries(
+    selection.hets.map((het) => [het.gene, het.percentage]),
+  );
+  return {
+    morphs: [...selection.morphs],
+    hets: selection.hets.map((het) => het.gene),
+    hetPercentages,
+  };
 }
 
 export default function Calculator() {
@@ -99,9 +110,12 @@ export default function Calculator() {
     [],
   );
 
+  const femaleGenetics = useMemo(() => toParentGenetics(mother), [mother]);
+  const maleGenetics = useMemo(() => toParentGenetics(father), [father]);
+
   const result: GeneticsCalculatorResult = useMemo(
-    () => calculateGenetics({ female: { morphs: mother.morphs, hets: mother.hets.map((het) => het.gene) }, male: { morphs: father.morphs, hets: father.hets.map((het) => het.gene) } }),
-    [mother, father],
+    () => calculateGenetics({ female: femaleGenetics, male: maleGenetics }),
+    [femaleGenetics, maleGenetics],
   );
 
   const hasSelection = mother.morphs.length > 0 || mother.hets.length > 0 || father.morphs.length > 0 || father.hets.length > 0;
