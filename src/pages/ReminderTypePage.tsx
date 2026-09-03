@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
@@ -32,11 +32,13 @@ export default function ReminderTypePage() {
   const { kind: rawKind } = useParams<{ kind: string }>();
   const kind = rawKind as ReminderKind;
   const definition = DEFINITIONS.get(kind);
+  const [searchParams] = useSearchParams();
+  const requestedSnakeId = searchParams.get("snakeId");
   const { user, loading, profileLoading } = useAuth();
   const [snakes, setSnakes] = useState<SnakeOption[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<ReminderInput>(() => defaultReminderInput(kind));
+  const [form, setForm] = useState<ReminderInput>(() => defaultReminderInput(kind, requestedSnakeId));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [loadingData, setLoadingData] = useState(true);
@@ -48,12 +50,13 @@ export default function ReminderTypePage() {
     void Promise.all([getUserSnakes(user.uid), listReminders(user.uid)]).then(([loadedSnakes, loadedReminders]) => {
       if (!active) return;
       const nextSnakes = loadedSnakes.map((snake) => ({ id: snake.id, name: snake.name }));
+      const contextualSnakeId = requestedSnakeId && nextSnakes.some((snake) => snake.id === requestedSnakeId) ? requestedSnakeId : nextSnakes[0]?.id ?? null;
       setSnakes(nextSnakes);
       setReminders(loadedReminders.filter((reminder) => reminder.kind === kind));
-      setForm((current) => ({ ...current, kind, snakeId: current.snakeId ?? nextSnakes[0]?.id ?? null, snakeName: nextSnakes.find((snake) => snake.id === current.snakeId)?.name ?? current.snakeName }));
+      setForm((current) => current.snakeId ? { ...current, kind } : buildInput(kind, contextualSnakeId, nextSnakes));
     }).catch((error) => setMessage(error instanceof Error ? error.message : "Unable to load reminders.")).finally(() => { if (active) setLoadingData(false); });
     return () => { active = false; };
-  }, [user, loading, profileLoading, kind, definition]);
+  }, [user, loading, profileLoading, kind, definition, requestedSnakeId]);
 
   const activeReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "active"), [reminders]);
   const pausedReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "paused"), [reminders]);
@@ -66,7 +69,8 @@ export default function ReminderTypePage() {
 
   function resetForm() {
     setEditingId(null);
-    setForm(buildInput(kind, snakes[0]?.id ?? null, snakes));
+    const contextualSnakeId = requestedSnakeId && snakes.some((snake) => snake.id === requestedSnakeId) ? requestedSnakeId : snakes[0]?.id ?? null;
+    setForm(buildInput(kind, contextualSnakeId, snakes));
     setMessage("");
   }
 
