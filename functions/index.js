@@ -20,6 +20,7 @@ Object.assign(exports, require("./familyManager"));
 Object.assign(exports, require("./familyManagerResolve"));
 Object.assign(exports, require("./communityBenchmarks"));
 Object.assign(exports, require("./titanGoals"));
+Object.assign(exports, require("./reminders"));
 const creatorTesterInvitation = require("./creatorTesterInvitation");
 Object.assign(exports, {
   getCreatorTesterInvitation: creatorTesterInvitation.getCreatorTesterInvitation,
