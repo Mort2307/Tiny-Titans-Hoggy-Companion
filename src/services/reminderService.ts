@@ -48,7 +48,9 @@ export function defaultReminderInput(kind: ReminderKind, snakeId: string | null 
   const definition = ({ weight: "Weight check", feeding: "Feeding check", shedding: "Shed check", health: "Health check", husbandry: "Husbandry check", custom: "Custom reminder" } as Record<ReminderKind, string>)[kind];
   const now = new Date();
   const startDate = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-  return { kind, title: definition, description: "", snakeId, snakeName: null, frequencyDays: 7, time: "09:00", startDate, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/London", leadUpEnabled: false, leadUpDays: 1, status: "active" };
+  const requestedSnakeId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("snakeId") : null;
+  const selectedSnakeId = snakeId ?? requestedSnakeId;
+  return { kind, title: definition, description: "", snakeId: selectedSnakeId, snakeName: null, frequencyDays: 7, time: "09:00", startDate, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/London", leadUpEnabled: false, leadUpDays: 1, status: "active" };
 }
 
 function withSchedule(input: ReminderInput): Omit<Reminder, "id" | "createdAt" | "updatedAt"> {
