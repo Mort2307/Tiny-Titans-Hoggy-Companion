@@ -76,7 +76,7 @@ export default function SubmissionNotificationTestBot() {
       if (active) setTargets([]);
     }).finally(() => { if (active) setLoadingTargets(false); });
     return () => { active = false; };
-  }, [user, targetUid]);
+  }, [user]);
 
   useEffect(() => {
     if (!user || !runId) return;
