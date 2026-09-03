@@ -18,10 +18,10 @@ function WeightMiniChart({ history }: WeightMiniChartProps) {
   return (
     <div className="weight-chart-container">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+        <LineChart data={data} margin={{ top: 6, right: 6, left: 0, bottom: 16 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={{ fontSize: 9 }} tickMargin={2} />
-          <YAxis tick={{ fontSize: 9 }} width={34} domain={["auto", "auto"]} tickFormatter={(value) => `${Number(value).toFixed(1)}${weightUnit}`} />
+          <XAxis dataKey="date" tick={{ fontSize: 9 }} tickMargin={4} />
+          <YAxis tick={{ fontSize: 9 }} width={38} domain={["auto", "auto"]} tickFormatter={(value) => `${Number(value).toFixed(1)}${weightUnit}`} />
           <Tooltip formatter={(value) => [`${Number(value ?? 0).toFixed(1)} ${weightUnit}`, "Weight"]} />
           <Line type="monotone" dataKey="weight" strokeWidth={2.5} dot={{ r: 2.5 }} activeDot={{ r: 4 }} />
         </LineChart>
