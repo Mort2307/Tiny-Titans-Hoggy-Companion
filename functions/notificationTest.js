@@ -11,18 +11,27 @@ const messaging = getMessaging();
 const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
 const ICON_URL = `${PUBLIC_ORIGIN}/favicon.svg`;
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
+const MAX_COUNT = 20;
+const MAX_TARGETS = 20;
+const MAX_EVENTS = 100;
 
 const TESTS = Object.freeze({
   feed: { title: "🧪 Test feed reminder — Tiny Titans", body: "This is a live feeding reminder test. Your Tiny Titans notification pipeline is working.", url: "/feeding" },
   weight: { title: "🧪 Test weight reminder — Tiny Titans", body: "This is a live weight reminder test. Your Tiny Titans notification pipeline is working.", url: "/weights" },
-  shed: { title: "🧪 Test shed reminder — Tiny Titans", body: "This is a live shedding reminder test. Your Tiny Titans notification pipeline is working.", url: "/shedding" },
+  shed: { title: "🧪 Test shed reminder — Tiny Titans", body: "This is a live shedding notification test. Your Tiny Titans notification pipeline is working.", url: "/shedding" },
   health: { title: "🧪 Test health reminder — Tiny Titans", body: "This is a live health / medication reminder test. Your Tiny Titans notification pipeline is working.", url: "/health" },
-  general: { title: "🧪 Tiny Titans notification test", body: "Live notification delivery is working on this device.", url: "/settings" },
+  general: { title: "🧪 Tiny Titans notification test", body: "Live notification delivery is working on this device.", url: "/account/settings" },
 });
 
 function authorisedAsTester(request) {
   const email = String(request.auth?.token?.email || "").trim().toLowerCase();
   return email === OWNER_EMAIL;
+}
+
+function requireTester(request) {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!authorisedAsTester(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can run notification tests.");
+  return request.auth.uid;
 }
 
 async function resolveTargetUser(targetUserId, targetEmail, requesterUid) {
@@ -46,15 +55,17 @@ async function resolveTargetUser(targetUserId, targetEmail, requesterUid) {
   throw new HttpsError("not-found", "No Tiny Titans account was found for that email address.");
 }
 
-function makeEventKey(kind, targetUid) {
+function makeEventKey(kind, targetUid, sequence = 0) {
   const safeKind = kind.replace(/[^a-z0-9-]/g, "-");
   const random = Math.random().toString(36).slice(2, 10);
-  return `notification-test-${safeKind}-${Date.now()}-${random}-${targetUid.slice(0, 10)}`;
+  return `notification-test-${safeKind}-${Date.now()}-${sequence}-${random}-${targetUid.slice(0, 10)}`;
 }
+
 function publicUrl(path) {
   const clean = String(path || "/").startsWith("/") ? String(path || "/") : `/${String(path || "/")}`;
   return `${PUBLIC_ORIGIN}${clean}`;
 }
+
 async function sendTestPush(targetUid, eventKey, test) {
   const userRef = db.collection("users").doc(targetUid);
   const tokensSnapshot = await userRef.collection("notificationTokens").where("enabled", "==", true).get();
@@ -90,32 +101,90 @@ async function sendTestPush(targetUid, eventKey, test) {
   return { sent, invalid, failures };
 }
 
-exports.getNotificationTestUsers = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 30 }, async (request) => {
-  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  if (!authorisedAsTester(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can run notification tests.");
-  const users = [];
+async function getTargetDirectory() {
   const snapshot = await db.collection("users").limit(100).get();
-  for (const userDocument of snapshot.docs) {
+  const users = await Promise.all(snapshot.docs.map(async (userDocument) => {
     const data = userDocument.data() || {};
     const email = String(data.email || "").trim();
-    if (!email) continue;
-    users.push({ uid: userDocument.id, email, displayName: String(data.displayName || data.name || email.split("@")[0] || "Tiny Titans user") });
-  }
-  users.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    if (!email) return null;
+    const tokenSnapshot = await userDocument.ref.collection("notificationTokens").where("enabled", "==", true).get();
+    const tokenDocs = tokenSnapshot.docs.filter((item) => typeof item.data().token === "string" && item.data().token.length > 0);
+    const lastUpdated = tokenDocs.reduce((latest, item) => Math.max(latest, item.data().updatedAt?.toMillis?.() || 0), 0);
+    return {
+      uid: userDocument.id,
+      email,
+      displayName: String(data.displayName || data.name || email.split("@")[0] || "Tiny Titans user"),
+      notificationSettingsEnabled: data.notificationSettings?.enabled === true,
+      deviceReady: tokenDocs.length > 0,
+      tokenCount: tokenDocs.length,
+      lastTokenUpdatedAt: lastUpdated || null,
+    };
+  }));
+  return users.filter(Boolean).sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+exports.getNotificationTestUsers = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 30 }, async (request) => {
+  requireTester(request);
+  const users = await getTargetDirectory();
   return { users, count: users.length };
 });
 
 exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
-  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  if (!authorisedAsTester(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can run notification tests.");
+  const requesterUid = requireTester(request);
   const kind = String(request.data?.kind || "");
   const test = TESTS[kind];
   if (!test) throw new HttpsError("invalid-argument", "Invalid notification test type.");
-  const target = await resolveTargetUser(request.data?.targetUserId, request.data?.targetEmail, request.auth.uid);
+  const target = await resolveTargetUser(request.data?.targetUserId, request.data?.targetEmail, requesterUid);
   if (!target.exists) throw new HttpsError("not-found", "The target Tiny Titans user could not be found.");
   const eventKey = makeEventKey(kind, target.id);
   const result = await sendTestPush(target.id, eventKey, test);
   return { eventKey, targetUid: target.id, kind, title: test.title, body: test.body, url: test.url, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid, failures: result.failures };
+});
+
+exports.sendNotificationTestBatch = onCall({ region: "europe-west2", memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
+  const requesterUid = requireTester(request);
+  const requestedKinds = Array.isArray(request.data?.kinds) ? request.data.kinds.map((kind) => String(kind)) : [];
+  const kinds = [...new Set(requestedKinds)].filter((kind) => Object.prototype.hasOwnProperty.call(TESTS, kind));
+  if (!kinds.length) throw new HttpsError("invalid-argument", "Choose at least one notification route to test.");
+  const requestedCount = Number(request.data?.count ?? 1);
+  const count = Number.isFinite(requestedCount) ? Math.max(1, Math.min(MAX_COUNT, Math.floor(requestedCount))) : 1;
+  const requestedTargets = Array.isArray(request.data?.targetUserIds) ? request.data.targetUserIds.map((uid) => String(uid).trim()).filter(Boolean) : [];
+  const uniqueTargetIds = [...new Set(requestedTargets)];
+  if (uniqueTargetIds.length > MAX_TARGETS) throw new HttpsError("invalid-argument", `You can target up to ${MAX_TARGETS} users per test run.`);
+  const targetIds = uniqueTargetIds.length ? uniqueTargetIds : [requesterUid];
+  const eventCount = kinds.length * count * targetIds.length;
+  if (eventCount > MAX_EVENTS) throw new HttpsError("invalid-argument", `That test would create ${eventCount} notification events. Reduce the number of routes, targets or repetitions; the limit is ${MAX_EVENTS} events per run.`);
+
+  const targets = [];
+  for (const targetId of targetIds) {
+    const snapshot = await db.collection("users").doc(targetId).get();
+    if (!snapshot.exists) throw new HttpsError("not-found", `Target user ${targetId} could not be found.`);
+    targets.push(snapshot);
+  }
+
+  const results = [];
+  let sequence = 0;
+  for (const target of targets) {
+    for (const kind of kinds) {
+      const test = TESTS[kind];
+      for (let repetition = 1; repetition <= count; repetition += 1) {
+        sequence += 1;
+        const eventKey = makeEventKey(kind, target.id, sequence);
+        try {
+          const result = await sendTestPush(target.id, eventKey, test);
+          results.push({ sequence, targetUid: target.id, targetName: String(target.data()?.displayName || target.data()?.name || target.data()?.email || target.id), kind, repetition, eventKey, title: test.title, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid, failures: result.failures });
+        } catch (error) {
+          results.push({ sequence, targetUid: target.id, targetName: String(target.data()?.displayName || target.data()?.name || target.data()?.email || target.id), kind, repetition, eventKey, title: test.title, status: "failed", sentCount: 0, invalidTokenCount: 0, failures: [{ tokenId: "batch", code: error?.code || "unknown", message: error?.message || "Notification test failed." }] });
+        }
+      }
+    }
+  }
+  const sent = results.reduce((sum, result) => sum + Number(result.sentCount || 0), 0);
+  const noDelivery = results.filter((result) => result.status === "no-delivery").length;
+  const failed = results.filter((result) => result.status === "failed").length;
+  const invalid = results.reduce((sum, result) => sum + Number(result.invalidTokenCount || 0), 0);
+  const status = failed > 0 ? (sent > 0 ? "partial" : "failed") : sent > 0 ? (noDelivery > 0 ? "partial" : "sent") : "no-delivery";
+  return { status, requestedEvents: eventCount, attemptedEvents: results.length, sentCount: sent, noDeliveryCount: noDelivery, failedCount: failed, invalidTokenCount: invalid, results, targetCount: targetIds.length, routeCount: kinds.length, repetitionCount: count };
 });
 
 Object.assign(exports, require("./submissionNotificationTest"));
