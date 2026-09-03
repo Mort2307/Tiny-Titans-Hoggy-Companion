@@ -39,7 +39,20 @@ import { CopyQualityGuard } from "./utils/copyQuality";
 const updateServiceWorker = registerSW({
   immediate: true,
   onNeedRefresh() { notifyTinyTitansUpdateAvailable(); },
-  onRegisteredSW(_swUrl, registration) { if (!registration) return; window.setInterval(() => { void registration.update(); }, 60 * 60 * 1000); },
+  onRegisteredSW(_swUrl, registration) {
+    if (!registration) return;
+
+    const checkForUpdate = () => {
+      if (document.visibilityState !== "visible" || !navigator.onLine) return;
+      void registration.update().catch(() => undefined);
+    };
+
+    window.setTimeout(checkForUpdate, 10 * 1000);
+    window.setInterval(checkForUpdate, 5 * 60 * 1000);
+    window.addEventListener("focus", checkForUpdate);
+    window.addEventListener("online", checkForUpdate);
+    document.addEventListener("visibilitychange", checkForUpdate);
+  },
   onOfflineReady() {},
 });
 
