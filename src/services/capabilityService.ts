@@ -36,10 +36,19 @@ export async function getCapabilities(
   const currentUser = auth.currentUser;
   if (!currentUser) return capabilities;
 
+  // Creator/Tester access is explicitly tied to the authenticated Tiny Titans
+  // owner account. This keeps the private QA tools reachable even when a
+  // previously-issued ID token has not yet picked up the corresponding claims.
+  const ownerByAuthEmail = isOwnerEmail(currentUser.email);
+  if (ownerByAuthEmail) {
+    capabilities.add("creator");
+    capabilities.add("tester");
+  }
+
   try {
     const tokenResult = await getIdTokenResult(currentUser, forceRefresh);
     const claims = tokenResult.claims as Record<string, unknown>;
-    const owner = isOwnerEmail(currentUser.email) || isOwnerEmail(claims.email);
+    const owner = ownerByAuthEmail || isOwnerEmail(claims.email);
 
     if (owner && claims.admin === true) {
       capabilities.add("admin");
