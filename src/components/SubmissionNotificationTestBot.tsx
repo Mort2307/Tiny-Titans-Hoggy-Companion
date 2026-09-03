@@ -70,13 +70,13 @@ export default function SubmissionNotificationTestBot() {
     void getSubmissionNotificationTestTargets().then((items) => {
       if (!active) return;
       setTargets(items);
-      if (!targetUid) setTargetUid(items.find((item) => item.uid === user.uid)?.uid || items[0]?.uid || user.uid);
+      setTargetUid((currentTargetUid) => currentTargetUid || items.find((item) => item.uid === user.uid)?.uid || items[0]?.uid || user.uid);
     }).catch((loadError) => {
       console.warn("Tiny Titans submission tester targets could not be loaded", loadError);
       if (active) setTargets([]);
     }).finally(() => { if (active) setLoadingTargets(false); });
     return () => { active = false; };
-  }, [user, targetUid]);
+  }, [user]);
 
   useEffect(() => {
     if (!user || !runId) return;
