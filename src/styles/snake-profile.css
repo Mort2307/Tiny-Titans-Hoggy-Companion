@@ -1,8 +1,12 @@
 /* =========================================================
    SNAKE PROFILE
-   Profile-first hierarchy: identity + quick actions first,
-   long-form intelligence/reporting second.
+   Responsive profile-first hierarchy for PC, tablet and mobile.
 ========================================================= */
+
+.snake-profile-page,
+.snake-profile-page * {
+  box-sizing: border-box;
+}
 
 .snake-profile-page {
   width: 100%;
@@ -10,23 +14,28 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overflow-x: clip;
 }
 
 .snake-profile-heading {
   width: 100%;
+  min-width: 0;
   margin: 0;
   color: var(--tt-text-strong);
   font-size: clamp(1.7rem, 4vw, 2.35rem);
+  line-height: 1.15;
   letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
 }
 
 .snake-profile-hero {
   width: 100%;
+  min-width: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
-  gap: 22px;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: clamp(16px, 2.5vw, 22px);
   align-items: stretch;
-  padding: clamp(18px, 3vw, 26px);
+  padding: clamp(16px, 3vw, 26px);
   border: 1px solid var(--tt-border);
   border-radius: var(--tt-radius-lg);
   background: linear-gradient(145deg, rgba(50, 16, 79, 0.96), rgba(25, 3, 42, 0.96));
@@ -36,6 +45,7 @@
 .snake-profile-photo {
   width: 100%;
   min-width: 0;
+  max-width: 320px;
   overflow: hidden;
   border-radius: 18px;
   border: 1px solid var(--tt-border);
@@ -75,10 +85,19 @@
 }
 
 .snake-profile-identity h2 {
+  min-width: 0;
   margin: 0;
   color: var(--tt-text-strong);
   font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1.15;
   letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+.snake-profile-identity-subtitle,
+.snake-profile-genetics-line {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .snake-profile-identity-subtitle {
@@ -88,6 +107,7 @@
 }
 
 .snake-profile-badges {
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -98,6 +118,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 32px;
+  max-width: 100%;
   padding: 6px 10px;
   border: 1px solid var(--tt-border);
   border-radius: 999px;
@@ -105,9 +126,12 @@
   color: var(--tt-text-strong);
   font-size: 0.8rem;
   font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .snake-profile-badge strong {
+  flex: 0 0 auto;
   color: var(--tt-accent);
   margin-right: 4px;
 }
@@ -118,6 +142,10 @@
   line-height: 1.5;
 }
 
+.snake-profile-genetics-line + .snake-profile-genetics-line {
+  margin-top: 5px;
+}
+
 .snake-profile-genetics-line strong {
   color: var(--tt-text-strong);
 }
@@ -126,6 +154,7 @@
   position: relative;
   z-index: 4;
   width: 100%;
+  min-width: 0;
   display: flex;
   align-items: stretch;
   gap: 8px;
@@ -179,6 +208,7 @@
 
 .snake-profile-overview-grid {
   width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
@@ -186,9 +216,11 @@
 
 .snake-profile-card {
   width: 100%;
+  min-width: 0;
   min-height: 165px;
   padding: 20px;
   text-align: left;
+  overflow: hidden;
 }
 
 .snake-profile-card-icon {
@@ -198,15 +230,21 @@
 }
 
 .snake-profile-card h2 {
+  min-width: 0;
   margin: 0 0 10px;
   color: var(--tt-text-strong);
   font-size: 1rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .snake-profile-card p {
+  min-width: 0;
   margin: 5px 0 0;
   color: var(--tt-muted);
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .snake-profile-card p strong,
@@ -222,6 +260,7 @@
 .snake-profile-mini-chart {
   width: 100%;
   height: 86px;
+  min-width: 0;
   min-height: 0;
   margin-top: 10px;
   overflow: hidden;
@@ -231,6 +270,7 @@
 .snake-profile-mini-chart .weight-chart-empty {
   width: 100%;
   height: 100%;
+  min-width: 0;
 }
 
 .snake-profile-mini-chart .weight-chart-empty {
@@ -238,9 +278,11 @@
   align-items: center;
   justify-content: center;
   margin: 0;
+  padding: 0 4px;
   font-size: 0.72rem;
   line-height: 1.3;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .snake-profile-card-notes {
@@ -254,18 +296,21 @@
 
 .snake-profile-intelligence {
   width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
   margin-top: 8px;
   padding-top: 22px;
   border-top: 1px solid var(--tt-border);
+  overflow-wrap: anywhere;
 }
 
 .snake-profile-intelligence-heading {
   margin: 0 0 4px;
   color: var(--tt-text-strong);
   font-size: 1.05rem;
+  line-height: 1.3;
   letter-spacing: -0.015em;
 }
 
@@ -279,7 +324,17 @@
   margin-top: 12px;
 }
 
-@media (min-width: 1000px) {
+@media (min-width: 1020px) {
+  .snake-profile-overview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .snake-profile-card-notes {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 1280px) {
   .snake-profile-hero {
     grid-template-columns: 240px minmax(0, 1fr);
   }
@@ -291,18 +346,31 @@
   .snake-profile-card-notes {
     grid-column: span 2;
   }
+
+  .snake-profile-quickbar {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
-@media (max-width: 760px) {
+@media (min-width: 821px) and (max-width: 1279px) {
+  .snake-profile-quickbar {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+@media (max-width: 820px) {
   .snake-profile-hero {
     grid-template-columns: 1fr;
   }
 
   .snake-profile-photo {
-    max-width: 320px;
     justify-self: center;
   }
+}
 
+@media (max-width: 700px) {
   .snake-profile-overview-grid {
     grid-template-columns: 1fr;
   }
@@ -311,13 +379,56 @@
     grid-column: auto;
   }
 
-  .snake-profile-quickbar {
-    margin-inline: -1px;
-    width: calc(100% + 2px);
+  .snake-profile-card {
+    min-height: 150px;
+    padding: 17px;
   }
 
   .snake-profile-mini-chart {
     height: 92px;
+  }
+}
+
+@media (max-width: 480px) {
+  .snake-profile-page {
+    gap: 14px;
+  }
+
+  .snake-profile-hero {
+    padding: 14px;
+    gap: 14px;
+    border-radius: 16px;
+  }
+
+  .snake-profile-photo {
+    width: min(100%, 240px);
+  }
+
+  .snake-profile-badges {
+    gap: 6px;
+    margin-top: 14px;
+  }
+
+  .snake-profile-badge {
+    min-height: 30px;
+    padding: 5px 8px;
+    font-size: 0.76rem;
+  }
+
+  .snake-profile-quickbar {
+    gap: 6px;
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  .snake-profile-quickbar button {
+    min-width: 88px;
+    min-height: 46px;
+    padding: 7px 10px;
+  }
+
+  .snake-profile-card {
+    padding: 15px;
   }
 }
 
