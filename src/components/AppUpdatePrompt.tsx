@@ -67,7 +67,7 @@ export default function AppUpdatePrompt() {
       if (!("serviceWorker" in navigator)) return;
 
       try {
-        registration = await navigator.serviceWorker.getRegistration();
+        registration = (await navigator.serviceWorker.getRegistration()) ?? null;
         if (!registration || cancelled) return;
 
         const onUpdateFound = () => {
