@@ -13,6 +13,8 @@ const comboActivation = read("src/data/expandGeneticsComboRegistry.ts");
 const reversalPanel = read("src/components/MorphReversalPanel.tsx");
 const reversalCss = read("src/components/MorphReversalTheme.css");
 const resultCard = read("src/components/ResultCard.tsx");
+const geneticsTypes = read("src/types/genetics.ts");
+const morphDatabase = read("src/data/morphs.ts");
 
 function normaliseWhitespace(value) {
   return value.replace(/\s+/g, " ").trim();
@@ -34,6 +36,17 @@ function getNamedCombinationSignature(source, geneId) {
 function matchesNamedCombination(source, geneId, expectedSignature) {
   return getNamedCombinationSignature(source, geneId) === expectedSignature;
 }
+
+function getCoreGeneBlock(source, geneId) {
+  const match = source.match(
+    new RegExp(`geneId:\\s*"${geneId}"[\\s\\S]*?(?=\\n\\s*\\{\\n\\s*geneId:|\\n\\s*// ={20,})`, "m"),
+  );
+  return match?.[0] ?? "";
+}
+
+const sableBlock = getCoreGeneBlock(morphDatabase, "sable");
+const arcticBlock = getCoreGeneBlock(morphDatabase, "arctic");
+const condaBlock = getCoreGeneBlock(morphDatabase, "conda");
 
 const checks = [
   ["Calculator mode switch", calculator.includes("Morph Reversal") && calculator.includes("switchMode")],
@@ -61,6 +74,18 @@ const checks = [
   ["Grey Fog Lavender signature", matchesNamedCombination(comboRegistry, "grey-fog-lavender", "arctic:1|conda:1|lavender:2") && comboRegistry.includes('name: "Grey Fog Lavender"')],
   ["Dedicated reversal theme", reversalCss.includes(".morph-reversal-panel") && reversalCss.includes("var(--accent)")],
   ["Build gate", read("package.json").includes("validate:genetics-calculator-v2")],
+
+  // Genetics correctness contracts.
+  ["Sable is explicitly recessive", sableBlock.includes('inheritance: "Recessive"') && sableBlock.includes("hetPossible: true")],
+  ["Arctic is explicitly incomplete dominant", arcticBlock.includes('inheritance: "Incomplete Dominant"') && arcticBlock.includes("hetPossible: false")],
+  ["Conda is explicitly incomplete dominant", condaBlock.includes('inheritance: "Incomplete Dominant"') && condaBlock.includes("hetPossible: false")],
+  ["Visual standalone recessives resolve to two copies", engine.includes("const isStandaloneVisualGene") && engine.includes('morph.inheritance === "Recessive"') && engine.includes("return 2")],
+  ["Dominant one-copy animals are visual, not het", engine.includes('case "Dominant":') && engine.includes('return "Visual"') && engine.includes("One copy already expresses a dominant trait")],
+  ["100/66/50 het confidence affects gamete probability", engine.includes('percentage === "66%"') && engine.includes('percentage === "50%"') && engine.includes("1 / 3") && engine.includes("1 / 4")],
+  ["Calculator preserves het percentages", calculator.includes("hetPercentages") && geneticsTypes.includes("hetPercentages?: Record<string, HetPercentage>")],
+  ["Exact outcomes do not invent possible hets", engine.includes("Exact Mendelian outcomes have a known genotype") && /function getPossibleHetComponents[\s\S]*?return \[\];/.test(engine)],
+  ["Breeding summary supports non-50/66/100 probabilities", geneticsTypes.includes("export type GeneticHetPercentage = number") && engine.includes("percentage: value.percentage")],
+  ["No legacy mutation-probability copies shortcut remains", !engine.includes("function getMutationAlleleProbability") && engine.includes("mutationAlleleProbability")],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
