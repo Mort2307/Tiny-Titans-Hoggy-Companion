@@ -20,6 +20,17 @@ function getLocalParts(date, timezone) {
   return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
 }
 
+function localDateKey(date, timezone) {
+  const parts = getLocalParts(date, timezone);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function daysBetween(dateA, dateB) {
+  const a = new Date(`${dateA}T00:00:00Z`).getTime();
+  const b = new Date(`${dateB}T00:00:00Z`).getTime();
+  return Math.round((b - a) / 86400000);
+}
+
 function zonedTimeToUtc(dateKey, time, timezone) {
   const [year, month, day] = dateKey.split("-").map(Number);
   const [hour, minute] = time.split(":").map(Number);
@@ -33,43 +44,49 @@ function zonedTimeToUtc(dateKey, time, timezone) {
   return new Date(guess);
 }
 
-function scheduleFor(reminder, occurrenceDate, phase) {
+function scheduleFor(reminder, occurrenceDate, phase, notificationDateOverride) {
   const leadStart = reminder.leadUpEnabled === true && Number(reminder.leadUpDays) > 0 ? addCalendarDays(occurrenceDate, -Number(reminder.leadUpDays)) : occurrenceDate;
-  const date = phase === "lead-up" ? leadStart : occurrenceDate;
+  const date = notificationDateOverride || (phase === "lead-up" ? leadStart : occurrenceDate);
   return zonedTimeToUtc(date, String(reminder.time || "09:00"), String(reminder.timezone || "Europe/London")).toISOString();
-}
-
-function firstSchedule(reminder) {
-  const occurrenceDate = String(reminder.nextOccurrenceDate || reminder.startDate || "").trim();
-  const phase = reminder.leadUpEnabled === true && Number(reminder.leadUpDays) > 0 ? "lead-up" : "due";
-  return { at: scheduleFor(reminder, occurrenceDate, phase), occurrenceDate, phase };
 }
 
 function advanceSchedule(reminder) {
   const occurrenceDate = String(reminder.nextOccurrenceDate || reminder.startDate || "");
-  const phase = reminder.nextPhase === "lead-up" && reminder.leadUpEnabled === true && Number(reminder.leadUpDays) > 0 ? "lead-up" : "due";
+  const timezone = String(reminder.timezone || "Europe/London");
+  const frequencyDays = Math.max(1, Number(reminder.frequencyDays) || 1);
+  const leadUpDays = Math.max(1, Math.min(30, Number(reminder.leadUpDays) || 1));
+  const phase = reminder.nextPhase === "lead-up" && reminder.leadUpEnabled === true && leadUpDays < frequencyDays ? "lead-up" : "due";
+
   if (phase === "lead-up") {
-    const leadStart = addCalendarDays(occurrenceDate, -Number(reminder.leadUpDays));
-    const currentLeadDate = String(reminder.nextNotificationAt || "").slice(0, 10);
-    const nextLeadDate = addCalendarDays(currentLeadDate || leadStart, 1);
-    const occurrenceLeadStart = addCalendarDays(occurrenceDate, -Number(reminder.leadUpDays));
-    if (nextLeadDate < occurrenceDate) return { occurrenceDate, phase: "lead-up", at: scheduleFor(reminder, occurrenceDate, "lead-up") .replace(/^.*$/, zonedTimeToUtc(nextLeadDate, String(reminder.time || "09:00"), String(reminder.timezone || "Europe/London")).toISOString()) };
-    return { occurrenceDate, phase: "due", at: scheduleFor(reminder, occurrenceDate, "due"), _unused: occurrenceLeadStart };
+    const currentLocalDate = localDateKey(new Date(reminder.nextNotificationAt), timezone);
+    const nextLocalDate = addCalendarDays(currentLocalDate, 1);
+    const leadStartDate = addCalendarDays(occurrenceDate, -leadUpDays);
+    if (nextLocalDate < occurrenceDate) {
+      const safeNextDate = nextLocalDate < leadStartDate ? leadStartDate : nextLocalDate;
+      return { occurrenceDate, phase: "lead-up", at: scheduleFor(reminder, occurrenceDate, "lead-up", safeNextDate) };
+    }
+    return { occurrenceDate, phase: "due", at: scheduleFor(reminder, occurrenceDate, "due") };
   }
-  const nextOccurrenceDate = addCalendarDays(occurrenceDate, Math.max(1, Number(reminder.frequencyDays) || 1));
-  const nextPhase = reminder.leadUpEnabled === true && Number(reminder.leadUpDays) > 0 ? "lead-up" : "due";
-  return { occurrenceDate: nextOccurrenceDate, phase: nextPhase, at: scheduleFor({ ...reminder, nextOccurrenceDate }, nextOccurrenceDate, nextPhase) };
+
+  const nextOccurrenceDate = addCalendarDays(occurrenceDate, frequencyDays);
+  const nextPhase = reminder.leadUpEnabled === true && leadUpDays < frequencyDays ? "lead-up" : "due";
+  return { occurrenceDate: nextOccurrenceDate, phase: nextPhase, at: scheduleFor(reminder, nextOccurrenceDate, nextPhase) };
 }
 
 function notificationText(reminder) {
   const title = String(reminder.title || "Tiny Titans reminder").trim() || "Tiny Titans reminder";
   const target = reminder.snakeName ? ` · ${reminder.snakeName}` : "";
-  const phase = reminder.nextPhase === "lead-up" ? "coming up" : "due today";
-  const body = reminder.nextPhase === "lead-up" ? `${title}${target} is coming up. Your scheduled reminder is in ${Math.max(1, Number(reminder.leadUpDays) || 1)} day${Number(reminder.leadUpDays) === 1 ? "" : "s"}.` : `${title}${target} is due now. Open Tiny Titans when you're ready to take care of it.`;
-  return { title: `🔔 ${title}`, body, phase };
+  if (reminder.nextPhase === "lead-up") {
+    const timezone = String(reminder.timezone || "Europe/London");
+    const currentDate = localDateKey(new Date(reminder.nextNotificationAt), timezone);
+    const occurrenceDate = String(reminder.nextOccurrenceDate || currentDate);
+    const remainingDays = Math.max(1, daysBetween(currentDate, occurrenceDate));
+    return { title: `🔔 ${title}`, body: `${title}${target} is coming up. ${remainingDays} day${remainingDays === 1 ? "" : "s"} to go.`, phase: "coming-up" };
+  }
+  return { title: `🔔 ${title}`, body: `${title}${target} is due today. Open Tiny Titans when you're ready to take care of it.`, phase: "due" };
 }
 
-async function claimReminder(ref, data, nowIso) {
+async function claimReminder(ref, nowIso) {
   const lockUntil = new Date(Date.now() + LOCK_MINUTES * 60 * 1000).toISOString();
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
@@ -97,7 +114,7 @@ async function sendReminderPush(uid, reminderId, reminder) {
   const eventRef = userRef.collection("notificationEvents").doc(eventKey);
   const existing = await eventRef.get();
   if (existing.exists) return { sent: 0, invalid: 0, duplicate: true, text };
-  const url = reminder.kind === "weight" && reminder.snakeId ? `/weights/${reminder.snakeId}` : reminder.kind === "feeding" && reminder.snakeId ? `/feeding/${reminder.snakeId}` : reminder.kind === "shedding" && reminder.snakeId ? `/shedding/${reminder.snakeId}` : reminder.kind === "health" && reminder.snakeId ? `/health/${reminder.snakeId}` : "/reminders";
+  const url = reminder.kind === "weight" && reminder.snakeId ? `/weights/${reminder.snakeId}` : reminder.kind === "feeding" && reminder.snakeId ? `/feeding/${reminder.snakeId}` : reminder.kind === "shedding" && reminder.snakeId ? `/shedding/${reminder.snakeId}` : reminder.kind === "health" && reminder.snakeId ? `/health/${reminder.snakeId}` : reminder.kind === "husbandry" && reminder.snakeId ? `/husbandry/${reminder.snakeId}` : "/reminders";
   await eventRef.set({ type: "reminder", reminderId, phase: reminder.nextPhase || "due", title: text.title, body: text.body, url, read: false, createdAt: FieldValue.serverTimestamp() });
   let sent = 0;
   let invalid = 0;
@@ -133,7 +150,7 @@ exports.runRecurringReminderEngine = onSchedule({ schedule: "*/15 * * * *", time
     const usersIndex = segments.indexOf("users");
     const uid = usersIndex >= 0 ? segments[usersIndex + 1] : "";
     if (!uid) continue;
-    const claimed = await claimReminder(document.ref, data, nowIso);
+    const claimed = await claimReminder(document.ref, nowIso);
     if (!claimed) continue;
     processed += 1;
     try {
