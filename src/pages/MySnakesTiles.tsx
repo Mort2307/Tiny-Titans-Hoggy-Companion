@@ -173,10 +173,6 @@ export default function MySnakesTiles() {
   const baselineCount = snakes.filter((snake) => getHoggieInsight(snake).status === "info").length;
   const pageLoading = loading || profileLoading || (Boolean(user) && loadingSnakes);
 
-  function openProfile(snakeId: string) {
-    navigate(`/snakes/${encodeURIComponent(snakeId)}`);
-  }
-
   function moveCustomSnake(sourceId: string, targetId: string) {
     if (!sourceId || sourceId === targetId) return;
 
