@@ -259,11 +259,11 @@
 
 .snake-profile-mini-chart {
   width: 100%;
-  height: 86px;
+  height: 106px;
   min-width: 0;
   min-height: 0;
   margin-top: 10px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .snake-profile-mini-chart .weight-chart-container,
@@ -271,6 +271,7 @@
   width: 100%;
   height: 100%;
   min-width: 0;
+  overflow: visible;
 }
 
 .snake-profile-mini-chart .weight-chart-empty {
@@ -385,7 +386,7 @@
   }
 
   .snake-profile-mini-chart {
-    height: 92px;
+    height: 112px;
   }
 }
 
@@ -429,6 +430,10 @@
 
   .snake-profile-card {
     padding: 15px;
+  }
+
+  .snake-profile-mini-chart {
+    height: 118px;
   }
 }
 
