@@ -42,6 +42,8 @@ export default function AppUpdatePrompt() {
     let cancelled = false;
     let registration: ServiceWorkerRegistration | null = null;
     let intervalId: number | undefined;
+    let cleanupRegistration: (() => void) | null = null;
+    let cleanupInstalling: (() => void) | null = null;
 
     const showWaitingWorker = () => {
       if (cancelled || !registration) return;
@@ -69,12 +71,12 @@ export default function AppUpdatePrompt() {
         if (!registration || cancelled) return;
 
         const onUpdateFound = () => {
-          if (registration?.installing) {
-            cleanupInstalling = watchInstallingWorker(registration.installing);
-          }
+          cleanupInstalling?.();
+          cleanupInstalling = registration?.installing
+            ? watchInstallingWorker(registration.installing)
+            : null;
         };
 
-        let cleanupInstalling: (() => void) | null = null;
         registration.addEventListener("updatefound", onUpdateFound);
         showWaitingWorker();
 
@@ -103,27 +105,25 @@ export default function AppUpdatePrompt() {
         window.addEventListener("online", onFocusOrOnline);
         document.addEventListener("visibilitychange", onVisibilityChange);
 
-        const cleanup = () => {
+        cleanupRegistration = () => {
           registration?.removeEventListener("updatefound", onUpdateFound);
           cleanupInstalling?.();
+          cleanupInstalling = null;
           window.removeEventListener("focus", onFocusOrOnline);
           window.removeEventListener("online", onFocusOrOnline);
           document.removeEventListener("visibilitychange", onVisibilityChange);
         };
-
-        (setup as typeof setup & { cleanup?: () => void }).cleanup = cleanup;
       } catch (error) {
         console.debug("[Tiny Titans] Service-worker update monitor unavailable", error);
       }
     };
 
-    const setupWithCleanup = setup as typeof setup & { cleanup?: () => void };
     void setup();
 
     return () => {
       cancelled = true;
       if (intervalId !== undefined) window.clearInterval(intervalId);
-      setupWithCleanup.cleanup?.();
+      cleanupRegistration?.();
     };
   }, []);
 
