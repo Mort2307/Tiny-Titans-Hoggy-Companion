@@ -31,6 +31,8 @@ const speciesAwarePrefixes = [
   "/knowledge-base",
   "/challenge",
   "/community",
+  "/account",
+  "/become-a-titan",
   "/educator",
   "/creator",
 ];
