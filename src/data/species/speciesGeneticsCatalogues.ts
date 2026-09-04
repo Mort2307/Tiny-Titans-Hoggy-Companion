@@ -9,15 +9,20 @@ function trait(
   sourcePath: string,
   options: { aliases?: string[]; hetPossible?: boolean; kind?: MasterMorphDefinition["kind"]; description?: string } = {},
 ): MasterMorphDefinition {
+  const kind = options.kind ?? (
+    inheritance === "Polygenic" ? "Polygenic" :
+    inheritance === "Line-bred" ? "Line-bred" :
+    "Gene"
+  );
   return {
     geneId: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     name,
     aliases: options.aliases ?? [],
-    kind: options.kind ?? "Gene",
-    isGene: (options.kind ?? "Gene") === "Gene",
-    category: "Species trait",
+    kind,
+    isGene: kind === "Gene",
+    category: kind === "Gene" ? "Species gene" : kind,
     inheritance,
-    hetPossible: options.hetPossible ?? inheritance === "Recessive",
+    hetPossible: kind === "Gene" ? (options.hetPossible ?? inheritance === "Recessive") : false,
     verification: "Recognised",
     description: options.description ?? `Species-specific ${name} trait documented for this species in MorphMarket's trait knowledge base.`,
     educationalNotes: "Species-scoped reference entry. Individual lineage and breeder documentation still determine whether a particular animal is proven for the trait.",
@@ -26,8 +31,8 @@ function trait(
   };
 }
 
-const bySource = (sourcePath: string, rows: Array<[string, InheritanceType, string[]?, boolean?]>): MasterMorphDefinition[] =>
-  rows.map(([name, inheritance, aliases, hetPossible]) => trait(name, inheritance, sourcePath, { aliases, hetPossible }));
+const bySource = (sourcePath: string, rows: Array<[string, InheritanceType, string[]?, boolean?, MasterMorphDefinition["kind"]?]>): MasterMorphDefinition[] =>
+  rows.map(([name, inheritance, aliases, hetPossible, kind]) => trait(name, inheritance, sourcePath, { aliases, hetPossible, kind }));
 
 export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]> = {
   "Pantherophis guttatus": [
@@ -48,8 +53,7 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Tessera", "Dominant"],
       ["Masque", "Incomplete Dominant"],
       ["Halo", "Incomplete Dominant"],
-      ["Green Blotch", "Unknown"],
-      ["Tequila Sunrise", "Polygenic", ["TS"], false],
+      ["Tequila Sunrise", "Polygenic", ["TS"], false, "Polygenic"],
     ]),
   ],
 
@@ -98,9 +102,9 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Hypo", "Recessive", ["Hypomelanistic"]],
       ["Albino", "Recessive", ["Amelanistic", "Amel"]],
       ["Axanthic", "Recessive"],
-      ["Tiger", "Polygenic"],
+      ["Tiger", "Polygenic", [], false, "Polygenic"],
       ["Genetic Stripe", "Recessive"],
-      ["Stonewashed", "Polygenic"],
+      ["Stonewashed", "Polygenic", [], false, "Polygenic"],
     ]),
   ],
 
@@ -117,12 +121,12 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Granite", "Incomplete Dominant"],
       ["Patternless", "Incomplete Dominant"],
       ["Splatter", "Recessive"],
-      ["Holloway Reduced Pattern", "Line-bred", ["HRP"], false],
-      ["Stockwell Nuclear", "Line-bred", [], false],
-      ["Thermo Nuclear", "Line-bred", [], false],
-      ["Cal Flame", "Line-bred", [], false],
-      ["Extreme Red Dodoma Flame", "Line-bred", [], false],
-      ["P3 Anery", "Line-bred", [], false],
+      ["Holloway Reduced Pattern", "Line-bred", ["HRP"], false, "Line-bred"],
+      ["Stockwell Nuclear", "Line-bred", [], false, "Line-bred"],
+      ["Thermo Nuclear", "Line-bred", [], false, "Line-bred"],
+      ["Cal Flame", "Line-bred", [], false, "Line-bred"],
+      ["Extreme Red Dodoma Flame", "Line-bred", [], false, "Line-bred"],
+      ["P3 Anery", "Line-bred", [], false, "Line-bred"],
     ]),
   ],
 
@@ -162,7 +166,7 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Golden Child", "Incomplete Dominant"],
       ["Platinum", "Recessive"],
       ["Sunfire", "Incomplete Dominant"],
-      ["Dwarf", "Line-bred", [], false],
+      ["Dwarf", "Line-bred", [], false, "Line-bred"],
       ["Super Tiger", "Incomplete Dominant"],
       ["Calico", "Recessive"],
     ]),
@@ -186,9 +190,7 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Leucistic", "Recessive", ["Lucy"]],
       ["Erythristic", "Recessive"],
       ["Banana", "Incomplete Dominant"],
-      ["Mojave 50 50", "Unknown"],
       ["Peanut Butter", "Recessive"],
-      ["Joker", "Unknown"],
       ["Long Beach Hypermelanistic", "Incomplete Dominant", ["Grease King"]],
     ]),
   ],
