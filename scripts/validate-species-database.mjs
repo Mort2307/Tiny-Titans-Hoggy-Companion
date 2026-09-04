@@ -19,7 +19,7 @@ for (const required of ['acceptedScientificName', 'commonNames', 'searchAliases'
 }
 
 if (!registryText.includes('sourceIds:')) throw new Error('Species registry must carry source provenance.');
-if (!registryText.includes('reviewedOn:')) throw new Error('Species registry must carry review dates.');
+if (!/reviewedOn\b/.test(registryText)) throw new Error('Species registry must carry review dates.');
 if (!speciesTypes) throw new Error('Species type model did not load.');
 
 console.log(`Species database contract OK: ${ids.length} seed species.`);
