@@ -314,13 +314,13 @@ export const morphs: MorphDefinition[] = [
     kind: "Gene",
     isGene: true,
     category: "Morph",
-    inheritance: "Recessive",
+    inheritance: "Dominant",
     hetPossible: true,
     verification: "Recognised",
     description:
       "A recognised Western Hognose colour mutation.",
     educationalNotes:
-      "Keep separate from visual line-bred colour traits.",
+      "Keep separate from visual line-bred colour traits. Current breeder/reference evidence describes Cinnamon as dominant with variable expression; do not infer it from appearance alone.",
   },
 
   {
