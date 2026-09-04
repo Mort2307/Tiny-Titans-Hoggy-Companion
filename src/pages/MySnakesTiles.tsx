@@ -239,7 +239,7 @@ export default function MySnakesTiles() {
       </div>
 
       <div className="hoggie-sort-bar">
-        <label htmlFor="hoggie-sort">↕ Sort My Hoggies</label>
+        <label htmlFor="hoggie-sort">↕ Sort My Titans</label>
         <select id="hoggie-sort" value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
           <option value="name-asc">Name A–Z</option>
           <option value="name-desc">Name Z–A</option>
