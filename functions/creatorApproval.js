@@ -23,7 +23,6 @@ function invitationManagerAuthorized(request) {
 exports.reconcileCreatorClaim = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   if (!ownerAccount(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can use Creator access.");
-
   try {
     const user = await adminAuth.getUser(request.auth.uid);
     const existingClaims = user.customClaims || {};
@@ -47,18 +46,13 @@ exports.setCreatorClaim = onCall({ region: "europe-west2" }, async (request) => 
     const existingClaims = target.customClaims || {};
     const nextClaims = { ...existingClaims };
     if (!enabled) {
-      delete nextClaims.creatorTester;
-      delete nextClaims.tester;
-      delete nextClaims.creator;
-      delete nextClaims.admin;
+      delete nextClaims.creatorTester; delete nextClaims.tester; delete nextClaims.creator; delete nextClaims.admin;
       await adminAuth.setCustomUserClaims(targetUid, nextClaims);
       await db.collection("users").doc(targetUid).set({ isTester: false, testerType: null, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_privileged_access", createdAt: FieldValue.serverTimestamp() });
       return { success: true, uid: targetUid, creator: false, creatorTester: false, isTester: false };
     }
-    nextClaims.creator = true;
-    nextClaims.tester = true;
-    nextClaims.admin = true;
+    nextClaims.creator = true; nextClaims.tester = true; nextClaims.admin = true;
     await adminAuth.setCustomUserClaims(targetUid, nextClaims);
     await db.collection("users").doc(targetUid).set({ isTester: true, testerType: "creator", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "grant_owner_privileged_access", createdAt: FieldValue.serverTimestamp() });
@@ -117,21 +111,52 @@ exports.approveMorphImageSubmission = onCall(
     const sourceStoragePath = String(submission.attachment?.path || "").trim();
     if (!morphId || !morphName) throw new HttpsError("failed-precondition", "This submission has no canonical Morph Library selection. It must be resolved before approval.");
     if (!sourceStoragePath || !sourceStoragePath.startsWith("morph-submissions/")) throw new HttpsError("failed-precondition", "The submitted image file could not be located safely.");
+    const publishToMorphLibrary = submission.allowMorphLibraryLink !== false;
     const approvedPath = `morphLibrary/${morphId}/community/${submissionId}.jpg`;
     try {
       const sourceFile = bucket.file(sourceStoragePath);
       const [exists] = await sourceFile.exists();
       if (!exists) throw new HttpsError("not-found", "The submitted image is no longer available in temporary storage.");
-      const destinationFile = bucket.file(approvedPath);
-      await sourceFile.copy(destinationFile);
-      await destinationFile.setMetadata({ contentType: "image/jpeg", metadata: { sourceSubmissionId: submissionId, approvedBy: request.auth.uid } });
-      const approvedRef = db.collection("approvedMorphImages").doc();
-      await approvedRef.set({ morphId, morphName, imageUrl: null, storagePath: approvedPath, sourceStoragePath, creditType: submission.creditType || "anonymous", creditName: submission.creditName || null, creditSocial: submission.creditSocial || null, sourceSubmissionId: submissionId, approvedAt: FieldValue.serverTimestamp(), approvedBy: request.auth.uid });
-      await submissionRef.update({ status: "Approved", morphId, morphName, reviewedAt: FieldValue.serverTimestamp(), reviewedBy: request.auth.uid, approvedImageId: approvedRef.id });
+
+      let approvedImageId = null;
+      let responseStoragePath = "";
+      if (publishToMorphLibrary) {
+        const destinationFile = bucket.file(approvedPath);
+        await sourceFile.copy(destinationFile);
+        await destinationFile.setMetadata({ contentType: "image/jpeg", metadata: { sourceSubmissionId: submissionId, approvedBy: request.auth.uid } });
+        const approvedRef = db.collection("approvedMorphImages").doc();
+        await approvedRef.set({
+          speciesId: submission.speciesId || null,
+          speciesName: submission.speciesName || null,
+          morphId,
+          morphName,
+          imageUrl: null,
+          storagePath: approvedPath,
+          sourceStoragePath,
+          creditType: submission.creditType || "anonymous",
+          creditName: submission.creditName || null,
+          creditSocial: submission.creditSocial || null,
+          sourceSubmissionId: submissionId,
+          approvedAt: FieldValue.serverTimestamp(),
+          approvedBy: request.auth.uid,
+        });
+        approvedImageId = approvedRef.id;
+        responseStoragePath = approvedPath;
+      }
+
+      await submissionRef.update({
+        status: "Approved",
+        morphId,
+        morphName,
+        reviewedAt: FieldValue.serverTimestamp(),
+        reviewedBy: request.auth.uid,
+        approvedImageId,
+        morphLibraryLinked: publishToMorphLibrary,
+      });
       await sourceFile.delete().catch(() => undefined);
-      return { success: true, approvedImageId: approvedRef.id, morphId, morphName, storagePath: approvedPath };
+      return { success: true, published: publishToMorphLibrary, approvedImageId, morphId, morphName, storagePath: responseStoragePath };
     } catch (error) {
-      await bucket.file(approvedPath).delete().catch(() => undefined);
+      if (publishToMorphLibrary) await bucket.file(approvedPath).delete().catch(() => undefined);
       if (error instanceof HttpsError) throw error;
       console.error("Morph image approval failed", error);
       throw new HttpsError("internal", "Unable to approve the morph image submission. The submission has not been marked approved.");
