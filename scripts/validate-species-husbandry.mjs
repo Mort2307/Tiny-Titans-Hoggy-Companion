@@ -50,7 +50,7 @@ const ids = declarations.map(({ id }) => id);
 const duplicates = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 if (duplicates.length) errors.push(`Duplicate species IDs: ${duplicates.join(', ')}`);
 
-const expectedSpeciesCount = 101;
+const expectedSpeciesCount = 100;
 if (new Set(ids).size !== expectedSpeciesCount) {
   errors.push(`Expected exactly ${expectedSpeciesCount} unique snake species; discovered ${new Set(ids).size}.`);
 }
