@@ -14,6 +14,7 @@ export default function SpeciesContextBar({ compact = false, label = "Species co
   const knowledge = selectedSpecies?.knowledge;
   const geneticsMapped = isSpeciesGeneticsMapped(selectedSpeciesId);
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
+  const husbandryMapped = Boolean(knowledge?.husbandry);
 
   return (
     <section className={`tt-species-context ${compact ? "tt-species-context--compact" : ""}`} aria-label="Species context">
@@ -26,9 +27,12 @@ export default function SpeciesContextBar({ compact = false, label = "Species co
         <SpeciesSelector id="global-species-context" value={selectedSpeciesId} onChange={setSelectedSpeciesId} label="Select your species" />
       </div>
       {showGeneticsStatus && (
-        <div className={`tt-species-context__status ${geneticsMapped ? "is-mapped" : "is-pending"}`}>
+        <div className={`tt-species-context__status ${geneticsMapped && husbandryMapped ? "is-mapped" : "is-pending"}`}>
           <span>{geneticsMapped ? "🧬 Genetics mapped" : "🧬 Genetics catalogue pending"}</span>
-          <small>{knowledge?.husbandry ? `${speciesName} · ${knowledge.husbandry.evidenceLevel} husbandry evidence` : `${speciesName} · husbandry evidence not yet mapped`}</small>
+          <small>
+            {husbandryMapped ? `${speciesName} · ${knowledge?.husbandry?.evidenceLevel ?? "unknown"} husbandry evidence` : `${speciesName} · species-specific husbandry not mapped`}
+          </small>
+          {!husbandryMapped && <small className="tt-species-context__warning">Numeric care thresholds and husbandry recommendations must not be borrowed from another species.</small>}
         </div>
       )}
     </section>
