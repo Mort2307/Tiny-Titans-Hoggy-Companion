@@ -1,17 +1,20 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const srcRoot = path.join(root, "src");
-const routerPath = path.join(srcRoot, "routes", "AppRouter.tsx");
-const router = fs.readFileSync(routerPath, "utf8");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const srcRoot = path.join(root, 'src');
+const routerPath = path.join(srcRoot, 'routes', 'AppRouter.tsx');
+const lazyPagesPath = path.join(srcRoot, 'routes', 'lazyPages.tsx');
+const router = fs.readFileSync(routerPath, 'utf8');
+const lazyPages = fs.existsSync(lazyPagesPath) ? fs.readFileSync(lazyPagesPath, 'utf8') : '';
+const routeModuleSource = `${router}\n${lazyPages}`;
 const errors = [];
 
 function walk(directory) {
   const files = [];
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith(".")) continue;
+    if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name.startsWith('.')) continue;
     const full = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...walk(full));
     else if (/\.(tsx?|jsx?)$/.test(entry.name)) files.push(full);
@@ -27,54 +30,53 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
   routes.push({ route, component, redirect });
 }
 
-if (!routes.length) errors.push("No application routes were detected in AppRouter.tsx.");
+if (!routes.length) errors.push('No application routes were detected in AppRouter.tsx.');
 
-// A route's top-level element may be a page, a redirect, or a local guard/wrapper
-// containing the actual page (for example CreatorRouteGuard -> CreatorAdmin).
-// Validate that the top-level component is genuinely imported locally rather than
-// assuming every route element must be a direct ../pages import.
 const importedComponents = new Set();
+for (const match of routeModuleSource.matchAll(/(?:export\s+const|import\s+)?\s*([A-Za-z][A-Za-z0-9]*)\s*(?:=|from)\s*(?:lazy\([^)]*import\(|["'])/g)) {
+  importedComponents.add(match[1]);
+}
 for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
   importedComponents.add(match[1]);
 }
 
 for (const route of routes) {
-  if (route.component && !importedComponents.has(route.component) && route.component !== "Navigate") {
-    errors.push(`Route ${route.route} references <${route.component}> but that component is not imported locally in AppRouter.tsx.`);
+  if (route.component && !importedComponents.has(route.component) && route.component !== 'Navigate') {
+    errors.push(`Route ${route.route} references <${route.component}> but that component is not imported or registered locally.`);
   }
 }
 
 function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function routeToRegex(route) {
   const tokens = route.split(/(:[^/]+|\*)/g);
   const pattern = tokens.map((token) => {
-    if (token === "*") return ".*";
-    if (/^:[^/]+$/.test(token)) return "[^/]+";
+    if (token === '*') return '.*';
+    if (/^:[^/]+$/.test(token)) return '[^/]+';
     return escapeRegex(token);
-  }).join("");
+  }).join('');
   return new RegExp(`^${pattern}$`);
 }
 
 const routePatterns = routes
-  .filter(({ route }) => route !== "*")
+  .filter(({ route }) => route !== '*')
   .map(({ route }) => ({ route, regex: routeToRegex(route) }));
 
 function normaliseDynamicPath(value) {
-  return value.replace(/\$\{[^}]+\}/g, ":dynamic");
+  return value.replace(/\$\{[^}]+\}/g, ':dynamic');
 }
 
 function isKnownPath(value) {
-  if (!value.startsWith("/")) return true;
-  const clean = normaliseDynamicPath(value).split(/[?#]/, 1)[0].replace(/\/$/, "") || "/";
+  if (!value.startsWith('/')) return true;
+  const clean = normaliseDynamicPath(value).split(/[?#]/, 1)[0].replace(/\/$/, '') || '/';
   return routePatterns.some(({ regex }) => regex.test(clean));
 }
 
 for (const file of sourceFiles) {
-  const text = fs.readFileSync(file, "utf8");
-  const relative = path.relative(root, file).replaceAll(path.sep, "/");
+  const text = fs.readFileSync(file, 'utf8');
+  const relative = path.relative(root, file).replaceAll(path.sep, '/');
 
   for (const match of text.matchAll(/\bnavigate\(\s*(?:"([^"]+)"|'([^']+)'|`([^`]+)`)/g)) {
     const target = match[1] ?? match[2] ?? match[3];
@@ -83,7 +85,7 @@ for (const file of sourceFiles) {
 
   for (const match of text.matchAll(/\bhref=["']([^"']+)["']/g)) {
     const target = match[1];
-    if (target.startsWith("/") && !isKnownPath(target)) errors.push(`${relative}: href="${target}" does not match any declared application route.`);
+    if (target.startsWith('/') && !isKnownPath(target)) errors.push(`${relative}: href="${target}" does not match any declared application route.`);
   }
 }
 
@@ -92,7 +94,7 @@ for (const redirect of routes.filter((route) => route.redirect)) {
 }
 
 if (errors.length) {
-  console.error("\nTiny Titans route contract check FAILED:\n");
+  console.error('\nTiny Titans route contract check FAILED:\n');
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
