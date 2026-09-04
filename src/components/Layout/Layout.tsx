@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Navigation from "./Navigation";
 import AdaptiveGuideBar from "../AdaptiveGuideBar";
@@ -7,27 +7,61 @@ import TitanQuickActions from "../TitanQuickActions";
 import CreatorCommandBar from "../CreatorCommandBar";
 import CreatorStatusBar from "../CreatorStatusBar";
 import SupportNotificationCenter from "../SupportNotificationCenter";
+import SpeciesContextBar from "../SpeciesContextBar";
+import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
+import { SpeciesContextProvider } from "../../context/SpeciesContext";
+
+const speciesAwarePrefixes = [
+  "/snakes",
+  "/reptile-room",
+  "/reminders",
+  "/husbandry",
+  "/weights",
+  "/feeding",
+  "/shedding",
+  "/behaviour",
+  "/health",
+  "/enclosure-intelligence",
+  "/morph-library",
+  "/calculator",
+  "/breeding",
+  "/keeper-handbook",
+  "/behaviour-observatory",
+  "/make-contribution",
+  "/knowledge-base",
+  "/challenge",
+  "/community",
+  "/educator",
+  "/creator",
+];
 
 function Layout() {
+  const location = useLocation();
+  const speciesAware = speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
+
   return (
-    <div className="app-shell">
-      <a className="skip-link" href="#main-content">Skip to main content</a>
-      <Header />
-      <Navigation />
-      <main id="main-content" className="app-main" tabIndex={-1}>
-        <div className="app-content">
-          <AdaptiveGuideBar />
-          <CreatorTesterInvitationBanner />
-          <CreatorCommandBar />
-          <CreatorStatusBar />
-          <TitanQuickActions />
-          <SupportNotificationCenter />
-          <div className="tt-page-frame">
-            <Outlet />
+    <SpeciesContextProvider>
+      <div className="app-shell">
+        <a className="skip-link" href="#main-content">Skip to main content</a>
+        <Header />
+        <Navigation />
+        <main id="main-content" className="app-main" tabIndex={-1}>
+          <div className="app-content">
+            <AdaptiveGuideBar />
+            <CreatorTesterInvitationBanner />
+            <CreatorCommandBar />
+            <CreatorStatusBar />
+            <TitanQuickActions />
+            <SupportNotificationCenter />
+            <div className="tt-page-frame">
+              {speciesAware && <SpeciesContextBar />}
+              <Outlet />
+              <TinyTitansEvidenceNotice />
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </SpeciesContextProvider>
   );
 }
 
