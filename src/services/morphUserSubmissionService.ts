@@ -8,7 +8,8 @@ function submissionCollection(uid: string) {
 }
 
 export type CreateMorphSubmissionInput = {
-  speciesId: string;
+  /** Optional during migration; existing terminology submissions are Hognose-originated. */
+  speciesId?: string;
   submittedName: string;
   region: UserMorphSubmission["region"];
   category: MorphSubmissionCategory;
@@ -20,7 +21,8 @@ export type CreateMorphSubmissionInput = {
 
 export async function createUserMorphSubmission(uid: string, input: CreateMorphSubmissionInput): Promise<UserMorphSubmission> {
   if (!uid) throw new Error("You must be signed in to submit a morph.");
-  const species = findSnakeSpecies(input.speciesId);
+  const speciesId = input.speciesId?.trim() || "heterodon-nasicus";
+  const species = findSnakeSpecies(speciesId);
   if (!species) throw new Error("Please select a recognised snake species before submitting a morph.");
   const submittedName = input.submittedName.trim();
   if (submittedName.length < 2) throw new Error("Please provide the morph name.");
