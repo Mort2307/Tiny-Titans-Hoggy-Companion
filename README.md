@@ -1,4 +1,4 @@
-# Tiny Titans Hoggy Companion
+# Tiny Titans Reptile Companion
 
 ## Final Master Build Gate
 
