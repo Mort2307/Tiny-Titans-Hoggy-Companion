@@ -5,6 +5,8 @@ import type { WeightRecord } from "../types/Weight";
 import MultiSelectDropdown from "./MultiSelectDropdown";
 import HetSelector from "./HetSelector";
 import TinyTitansDateInput from "./TinyTitansDateInput";
+import SpeciesSelector from "./SpeciesSelector";
+import { findSnakeSpecies } from "../data/species/speciesRegistry";
 import { getMasterHetGenes, getMasterVisualMorphs } from "../data/masterMorphDatabase";
 import { getDateDuration } from "../utils/dateDuration";
 import { compressImage } from "../utils/imageCompression";
@@ -26,6 +28,7 @@ export default function SnakeForm({ form, updateField, onSave, editing, saving =
   const [processingPhoto, setProcessingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const selectedSpeciesId = findSnakeSpecies(form.species)?.id ?? "heterodon-nasicus";
   const toDisplayWeight = (grams: number | null) => grams == null ? "" : String(isImperial ? grams / 28.349523125 : grams);
   const toStoredWeight = (value: string) => { if (!value) return null; const number = Number(value); return Number.isFinite(number) ? isImperial ? number * 28.349523125 : number : null; };
 
@@ -42,7 +45,7 @@ export default function SnakeForm({ form, updateField, onSave, editing, saving =
 
   return <form className="snake-form" onSubmit={handleSubmit} noValidate>
     <h2>{editing ? "✏️ Edit Snake" : "🐍 Add Snake"}</h2>{saving && <div className="date-duration-display" role="status">💾 Saving your snake to Tiny Titans...</div>}{submitAttempted && !saving && !form.name.trim() && <div className="date-duration-display" role="alert">⚠️ Please enter a snake name before saving.</div>}
-    <h3>🐍 Basic Information</h3><label htmlFor="snake-name">Snake Name</label><input id="snake-name" value={form.name} onChange={(e) => updateField("name", e.target.value)} required disabled={saving} /><label htmlFor="snake-species">Species</label><input id="snake-species" value={form.species} onChange={(e) => updateField("species", e.target.value)} disabled={saving} />
+    <h3>🐍 Basic Information</h3><label htmlFor="snake-name">Snake Name</label><input id="snake-name" value={form.name} onChange={(e) => updateField("name", e.target.value)} required disabled={saving} /><SpeciesSelector id="snake-species" value={selectedSpeciesId} onChange={(speciesId) => { const species = findSnakeSpecies(speciesId); if (species) updateField("species", species.commonNames[0] ?? species.acceptedScientificName); }} disabled={saving} />
     <label>Photo</label><label htmlFor="snake-photo" className="snake-photo-picker">{processingPhoto ? "⏳ Processing photo..." : form.photo ? "📷 Change Photo" : "📷 Add Photo"}</label><input id="snake-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoChange} disabled={processingPhoto || saving} style={{ display: "none" }} />{photoError && <div className="date-duration-display" role="alert">⚠️ {photoError}</div>}{form.photo && !processingPhoto && <><img src={form.photo} alt={form.name || "Snake preview"} className="snake-form-photo" /><button type="button" className="snake-photo-remove" onClick={() => updateField("photo", "")} disabled={saving}>Remove Photo</button></>}
     <label htmlFor="snake-sex">Sex</label><select id="snake-sex" value={form.sex} onChange={(e) => updateField("sex", e.target.value)} disabled={saving}><option value="Unknown">Unknown</option><option value="Male">Male</option><option value="Female">Female</option></select>
     <h3>📅 Dates & Timeline</h3><TinyTitansDateInput id="hatch-date" label="Hatch Date" value={form.hatchDate} onChange={(value) => updateField("hatchDate", value)} disabled={saving} />{form.hatchDate && <div className="date-duration-display">🎂 Age: <strong>{getDateDuration(form.hatchDate)}</strong></div>}<TinyTitansDateInput id="arrival-date" label="Arrival Date" value={form.arrivalDate} onChange={(value) => updateField("arrivalDate", value)} disabled={saving} />{form.arrivalDate && <div className="date-duration-display">🏠 Time with you: <strong>{getDateDuration(form.arrivalDate)}</strong></div>}
