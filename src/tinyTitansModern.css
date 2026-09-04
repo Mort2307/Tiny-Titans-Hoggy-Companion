@@ -1,11 +1,6 @@
-/* Tiny Titans compatibility entrypoint.
-   The canonical brand system lives in src/styles/tiny-titans-modern.css.
-   This file intentionally reuses that system so the legacy import cannot
-   overwrite the Tiny Titans purple / electric-cyan / orange-gold palette. */
-
+/* Tiny Titans compatibility entrypoint. Keep the canonical design system centralised. */
 @import "./styles/tiny-titans-modern.css";
 
-/* Compatibility aliases for older intelligence components. */
 .tt-intelligence-shell {
   width: 100%;
   margin: 18px 0;
@@ -16,27 +11,18 @@
   box-shadow: var(--tt-shadow-soft);
   color: var(--tt-text);
   text-align: left;
+  contain: layout paint;
 }
 
 .tt-intelligence-shell .tt-intelligence-title,
 .tt-intelligence-shell h1,
 .tt-intelligence-shell h2,
-.tt-intelligence-shell h3 {
-  color: var(--tt-text-strong);
-}
-
+.tt-intelligence-shell h3 { color: var(--tt-text-strong); }
 .tt-intelligence-shell .tt-intelligence-subtitle,
-.tt-intelligence-shell .tt-intelligence-meta {
-  color: var(--tt-muted);
-}
-
+.tt-intelligence-shell .tt-intelligence-meta { color: var(--tt-muted); }
 .tt-intelligence-shell .tt-badge.accent,
-.tt-intelligence-shell .tt-intelligence-bar > span {
-  background: var(--tt-accent);
-}
+.tt-intelligence-shell .tt-intelligence-bar > span { background: var(--tt-accent); }
 
 @media (max-width: 760px) {
-  .tt-intelligence-shell {
-    padding: 16px;
-  }
+  .tt-intelligence-shell { padding: 16px; }
 }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getGenes, morphs as morphDatabase } from "../data/morphs";
-import { calculatorNamedCombinations } from "../data/geneticsComboRegistry";
 import ParentSelector, { snakeToSelection, type ParentSelection } from "../components/ParentSelector";
 import ResultCard from "../components/ResultCard";
 import MorphReversalPanel from "../components/MorphReversalPanel";
@@ -10,6 +9,7 @@ import type { GeneticsCalculatorResult, ParentGenetics } from "../types/genetics
 import { calculateGenetics } from "../utils/geneticsCalculator";
 import { getUserSnakes } from "../services/snakeService";
 import { recordGeneticsCalculation } from "../services/geneticsTrackingService";
+import { loadExpandedMorphDatabase } from "../data/loadExpandedMorphDatabase";
 import { useAuth } from "../context/useAuth";
 import "../styles/calculator.css";
 import "../components/MorphReversalTheme.css";
@@ -25,21 +25,13 @@ function uniqueMorphOptions<T extends { geneId: string; name: string }>(options:
     const id = option.geneId.trim().toLowerCase();
     const name = option.name.trim().toLowerCase().replace(/\s+/g, " ");
     if (seenIds.has(id) || seenNames.has(name)) return false;
-    seenIds.add(id);
-    seenNames.add(name);
-    return true;
+    seenIds.add(id); seenNames.add(name); return true;
   });
 }
 
 function toParentGenetics(selection: ParentSelection): ParentGenetics {
-  const hetPercentages = Object.fromEntries(
-    selection.hets.map((het) => [het.gene, het.percentage]),
-  );
-  return {
-    morphs: [...selection.morphs],
-    hets: selection.hets.map((het) => het.gene),
-    hetPercentages,
-  };
+  const hetPercentages = Object.fromEntries(selection.hets.map((het) => [het.gene, het.percentage]));
+  return { morphs: [...selection.morphs], hets: selection.hets.map((het) => het.gene), hetPercentages };
 }
 
 export default function Calculator() {
@@ -53,27 +45,27 @@ export default function Calculator() {
   const [mother, setMother] = useState<ParentSelection>(EMPTY_PARENT);
   const [father, setFather] = useState<ParentSelection>(EMPTY_PARENT);
   const [preloadedPairing, setPreloadedPairing] = useState(false);
+  const [expandedRegistryReady, setExpandedRegistryReady] = useState(false);
   const requestedMaleId = searchParams.get("male");
   const requestedFemaleId = searchParams.get("female");
 
   useEffect(() => setMode(requestedMode), [requestedMode]);
 
   useEffect(() => {
+    let cancelled = false;
+    void loadExpandedMorphDatabase().then(() => { if (!cancelled) setExpandedRegistryReady(true); }).catch(() => { if (!cancelled) setExpandedRegistryReady(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     if (loading || profileLoading || !user) return;
     let cancelled = false;
-    void getUserSnakes(user.uid)
-      .then((loaded) => {
-        if (!cancelled) {
-          setSnakes(loaded);
-          setSnakesError(null);
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) setSnakesError(error instanceof Error ? error.message : "Unable to load your snakes.");
-      })
-      .finally(() => {
-        if (!cancelled) setSnakesLoading(false);
-      });
+    setSnakesLoading(true);
+    void getUserSnakes(user.uid).then((loaded) => {
+      if (!cancelled) { setSnakes(loaded); setSnakesError(null); }
+    }).catch((error: unknown) => {
+      if (!cancelled) setSnakesError(error instanceof Error ? error.message : "Unable to load your snakes.");
+    }).finally(() => { if (!cancelled) setSnakesLoading(false); });
     return () => { cancelled = true; };
   }, [user, loading, profileLoading]);
 
@@ -81,43 +73,25 @@ export default function Calculator() {
     if (snakesLoading || !snakes.length || preloadedPairing || (!requestedMaleId && !requestedFemaleId)) return;
     const male = requestedMaleId ? snakes.find((snake) => snake.id === requestedMaleId && snake.sex === "Male") : undefined;
     const female = requestedFemaleId ? snakes.find((snake) => snake.id === requestedFemaleId && snake.sex === "Female") : undefined;
-    if (male || female) {
-      if (female) setMother(snakeToSelection(female));
-      if (male) setFather(snakeToSelection(male));
-      setPreloadedPairing(true);
-    }
+    if (female) setMother(snakeToSelection(female));
+    if (male) setFather(snakeToSelection(male));
+    if (male || female) setPreloadedPairing(true);
   }, [snakes, snakesLoading, requestedMaleId, requestedFemaleId, preloadedPairing]);
 
   const effectiveSnakesLoading = loading || profileLoading || (Boolean(user) && snakesLoading);
   const effectiveSnakes = user ? snakes : [];
   const allMorphs = useMemo(() => {
     const seen = new Set<string>();
-    return [...morphDatabase, ...calculatorNamedCombinations].filter((morph) => {
+    return [...morphDatabase].filter((morph) => {
       const key = `${morph.geneId.toLowerCase()}:${morph.name.toLowerCase()}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+      if (seen.has(key)) return false; seen.add(key); return true;
     });
-  }, []);
-
-  const recognisedVisualOptions = useMemo(
-    () => uniqueMorphOptions(morphDatabase.filter((morph) => morph.verification !== "Unverified" && morph.verification !== "Disputed" && (morph.kind === "Gene" || morph.kind === "Super" || morph.kind === "Combination"))),
-    [],
-  );
-
-  const hetOptions = useMemo(
-    () => uniqueMorphOptions(getGenes().filter((morph) => morph.hetPossible === true && morph.verification !== "Unverified" && morph.verification !== "Disputed")),
-    [],
-  );
-
+  }, [expandedRegistryReady]);
+  const recognisedVisualOptions = useMemo(() => uniqueMorphOptions(morphDatabase.filter((morph) => morph.verification !== "Unverified" && morph.verification !== "Disputed" && (morph.kind === "Gene" || morph.kind === "Super" || morph.kind === "Combination"))), [expandedRegistryReady]);
+  const hetOptions = useMemo(() => uniqueMorphOptions(getGenes().filter((morph) => morph.hetPossible === true && morph.verification !== "Unverified" && morph.verification !== "Disputed")), [expandedRegistryReady]);
   const femaleGenetics = useMemo(() => toParentGenetics(mother), [mother]);
   const maleGenetics = useMemo(() => toParentGenetics(father), [father]);
-
-  const result: GeneticsCalculatorResult = useMemo(
-    () => calculateGenetics({ female: femaleGenetics, male: maleGenetics }),
-    [femaleGenetics, maleGenetics],
-  );
-
+  const result: GeneticsCalculatorResult = useMemo(() => calculateGenetics({ female: femaleGenetics, male: maleGenetics }), [femaleGenetics, maleGenetics]);
   const hasSelection = mother.morphs.length > 0 || mother.hets.length > 0 || father.morphs.length > 0 || father.hets.length > 0;
 
   useEffect(() => {
@@ -126,77 +100,20 @@ export default function Calculator() {
     const trackingKey = `${TRACKING_STORAGE_PREFIX}${user.uid}:${JSON.stringify(trackingPayload)}`;
     if (sessionStorage.getItem(trackingKey) === "1") return;
     const timer = window.setTimeout(() => {
-      void recordGeneticsCalculation({ uid: user.uid, femaleMorphIds: mother.morphs, femaleHetGenes: mother.hets.map((het) => het.gene), maleMorphIds: father.morphs, maleHetGenes: father.hets.map((het) => het.gene), outcomeCount: result.offspring.length, unresolved: result.hasUnresolvedGenetics })
-        .then(() => sessionStorage.setItem(trackingKey, "1"))
-        .catch((error) => console.warn("Tiny Titans: genetics calculation tracking failed", error));
+      void recordGeneticsCalculation({ uid: user.uid, femaleMorphIds: mother.morphs, femaleHetGenes: mother.hets.map((het) => het.gene), maleMorphIds: father.morphs, maleHetGenes: father.hets.map((het) => het.gene), outcomeCount: result.offspring.length, unresolved: result.hasUnresolvedGenetics }).then(() => sessionStorage.setItem(trackingKey, "1")).catch((error) => console.warn("Tiny Titans: genetics calculation tracking failed", error));
     }, 800);
     return () => window.clearTimeout(timer);
   }, [user, hasSelection, mother, father, result, mode]);
 
-  function clearCalculator() {
-    setMother({ ...EMPTY_PARENT });
-    setFather({ ...EMPTY_PARENT });
-    setPreloadedPairing(false);
-  }
-
-  function switchMode(nextMode: CalculatorMode) {
-    setMode(nextMode);
-    const params = new URLSearchParams(searchParams);
-    if (nextMode === "reversal") params.set("mode", "reversal");
-    else params.delete("mode");
-    setSearchParams(params, { replace: true });
-  }
+  function clearCalculator() { setMother({ ...EMPTY_PARENT }); setFather({ ...EMPTY_PARENT }); setPreloadedPairing(false); }
+  function switchMode(nextMode: CalculatorMode) { setMode(nextMode); const params = new URLSearchParams(searchParams); if (nextMode === "reversal") params.set("mode", "reversal"); else params.delete("mode"); setSearchParams(params, { replace: true }); }
 
   return (
     <main className="calculator-page">
-      <div className="calculator-navigation">
-        <Link to="/breeding" className="calculator-back-button">← Back to Breeding Planner</Link>
-        <Link to="/sandbox" className="calculator-back-button">🧪 Open Safe Sandbox</Link>
-      </div>
-      <header className="calculator-header">
-        <div>
-          <span className="calculator-kicker">TINY TITANS · BREEDING LAB</span>
-          <h1>Genetics Calculator</h1>
-          <p>Calculate pairings forward, or reverse a recognised morph backwards into its genetic construction.</p>
-        </div>
-        {mode === "pairing" && hasSelection && <button type="button" onClick={clearCalculator} className="calculator-clear-button">Clear pairing</button>}
-      </header>
-      <div className="calculator-mode-switch" role="tablist" aria-label="Genetics calculator mode">
-        <button type="button" role="tab" aria-selected={mode === "pairing"} className={`calculator-mode-tab ${mode === "pairing" ? "active" : ""}`} onClick={() => switchMode("pairing")}>
-          <span>🧬</span><span><strong>Pairing Calculator</strong><small>Parents → offspring</small></span>
-        </button>
-        <button type="button" role="tab" aria-selected={mode === "reversal"} className={`calculator-mode-tab ${mode === "reversal" ? "active" : ""}`} onClick={() => switchMode("reversal")}>
-          <span>↩️</span><span><strong>Morph Reversal</strong><small>Combo → construction</small></span>
-        </button>
-      </div>
-
-      {mode === "pairing" ? (
-        <>
-          <div className="calculator-info-strip">
-            <span>🧬 Recognised genetics only</span><span>🐍 Saved snakes loaded by sex</span><span>📊 Multi-gene outcomes calculated by the genetics engine</span><span>🧪 Sandbox keeps experiments separate</span>
-          </div>
-          {preloadedPairing && <div className="calculator-note" role="status">🧬 Pairing loaded from Breeding Planner — both parents and their recorded genetics have been pre-filled. You can still fine-tune either parent before calculating.</div>}
-          {snakesError && <div className="calculator-error">{snakesError}</div>}
-          {effectiveSnakesLoading && <div className="calculator-loading">Loading your logged snakes and their genetics…</div>}
-          {!effectiveSnakesLoading && effectiveSnakes.length === 0 && <div className="calculator-note">No saved snakes were found. You can still build both parents manually from the recognised database.</div>}
-          <div className="calculator-parents">
-            <ParentSelector title="Female / Mother" sex="Female" parent={mother} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setMother} />
-            <ParentSelector title="Male / Father" sex="Male" parent={father} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setFather} />
-          </div>
-          <section className="calculator-results">
-            <div className="calculator-results-header"><div><span className="calculator-kicker">OFFSPRING PREDICTION</span><h2>Possible Offspring</h2><p>{hasSelection ? `${result.offspring.length} genetic outcome${result.offspring.length === 1 ? "" : "s"} calculated.` : "Select both parents to calculate the pairing."}</p></div>{hasSelection && <strong className="calculator-probability-total">100%</strong>}</div>
-            {!hasSelection && <div className="calculator-empty"><div className="calculator-empty-icon">🧬</div><h3>Build your pairing</h3><p>Pick a saved female and male independently, then fine-tune their genetics manually.</p></div>}
-            {hasSelection && result.offspring.length === 0 && <div className="calculator-empty"><h3>No calculable recognised outcome</h3><p>The selected data does not currently resolve into a breeding calculation.</p></div>}
-            {result.offspring.length > 0 && <div className="calculator-result-grid">{result.offspring.map((offspring) => <ResultCard key={offspring.id} result={offspring} morphs={allMorphs} />)}</div>}
-            {result.hasUnresolvedGenetics && <div className="calculator-note calculator-note-warning">Some recorded genetics could not be resolved confidently and were not silently treated as confirmed.</div>}
-          </section>
-        </>
-      ) : (
-        <div className="calculator-reversal-stage">
-          <div className="calculator-reversal-hero"><div><span className="calculator-kicker">REVERSE GENETICS LAB</span><h2>Break a morph back down.</h2><p>Enter a recognised combo, Super form, or multi-gene phenotype and inspect exactly what the current genetics library says it contains.</p></div><span className="morph-reversal-lab-badge">↩ Morph Reversal</span></div>
-          <MorphReversalPanel morphs={allMorphs} />
-        </div>
-      )}
+      <div className="calculator-navigation"><Link to="/breeding" className="calculator-back-button">← Back to Breeding Planner</Link><Link to="/sandbox" className="calculator-back-button">🧪 Open Safe Sandbox</Link></div>
+      <header className="calculator-header"><div><span className="calculator-kicker">TINY TITANS · BREEDING LAB</span><h1>Genetics Calculator</h1><p>Calculate pairings forward, or reverse a recognised morph backwards into its genetic construction.</p></div>{mode === "pairing" && hasSelection && <button type="button" onClick={clearCalculator} className="calculator-clear-button">Clear pairing</button>}</header>
+      <div className="calculator-mode-switch" role="tablist" aria-label="Genetics calculator mode"><button type="button" role="tab" aria-selected={mode === "pairing"} className={`calculator-mode-tab ${mode === "pairing" ? "active" : ""}`} onClick={() => switchMode("pairing")}><span>🧬</span><span><strong>Pairing Calculator</strong><small>Parents → offspring</small></span></button><button type="button" role="tab" aria-selected={mode === "reversal"} className={`calculator-mode-tab ${mode === "reversal" ? "active" : ""}`} onClick={() => switchMode("reversal")}><span>↩️</span><span><strong>Morph Reversal</strong><small>Combo → construction</small></span></button></div>
+      {mode === "pairing" ? <><div className="calculator-info-strip"><span>🧬 Recognised genetics only</span><span>🐍 Saved snakes loaded by sex</span><span>📊 Multi-gene outcomes calculated by the genetics engine</span><span>🧪 Sandbox keeps experiments separate</span></div>{!expandedRegistryReady && <div className="calculator-loading">Preparing the expanded genetics library…</div>}{preloadedPairing && <div className="calculator-note" role="status">🧬 Pairing loaded from Breeding Planner — both parents and their recorded genetics have been pre-filled.</div>}{snakesError && <div className="calculator-error">{snakesError}</div>}{effectiveSnakesLoading && <div className="calculator-loading">Loading your logged snakes and their genetics…</div>}{!effectiveSnakesLoading && effectiveSnakes.length === 0 && <div className="calculator-note">No saved snakes were found. You can still build both parents manually from the recognised database.</div>}<div className="calculator-parents"><ParentSelector title="Female / Mother" sex="Female" parent={mother} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setMother} /><ParentSelector title="Male / Father" sex="Male" parent={father} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setFather} /></div><section className="calculator-results"><div className="calculator-results-header"><div><span className="calculator-kicker">OFFSPRING PREDICTION</span><h2>Possible Offspring</h2><p>{hasSelection ? `${result.offspring.length} genetic outcome${result.offspring.length === 1 ? "" : "s"} calculated.` : "Select both parents to calculate the pairing."}</p></div>{hasSelection && <strong className="calculator-probability-total">100%</strong>}</div>{!hasSelection && <div className="calculator-empty"><div className="calculator-empty-icon">🧬</div><h3>Build your pairing</h3><p>Pick a saved female and male independently, then fine-tune their genetics manually.</p></div>}{hasSelection && result.offspring.length === 0 && <div className="calculator-empty"><h3>No calculable recognised outcome</h3><p>The selected data does not currently resolve into a breeding calculation.</p></div>}{result.offspring.length > 0 && <div className="calculator-result-grid">{result.offspring.map((offspring) => <ResultCard key={offspring.id} result={offspring} morphs={allMorphs} />)}</div>}{result.hasUnresolvedGenetics && <div className="calculator-note calculator-note-warning">Some recorded genetics could not be resolved confidently and were not silently treated as confirmed.</div>}</section></> : <div className="calculator-reversal-stage"><div className="calculator-reversal-hero"><div><span className="calculator-kicker">REVERSE GENETICS LAB</span><h2>Break a morph back down.</h2><p>Enter a recognised combo, Super form, or multi-gene phenotype and inspect exactly what the current genetics library says it contains.</p></div><span className="morph-reversal-lab-badge">↩ Morph Reversal</span></div><MorphReversalPanel morphs={allMorphs} /></div>}
     </main>
   );
 }

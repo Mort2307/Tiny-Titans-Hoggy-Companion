@@ -150,43 +150,43 @@
   color: var(--tt-text-strong);
 }
 
+/*
+   Keeper actions are deliberate navigation tiles rather than a horizontal
+   scroller. Every important record is reachable in one tap with no hunting
+   or scroll-to-find interaction.
+*/
 .snake-profile-quickbar {
-  position: relative;
-  z-index: 4;
   width: 100%;
   min-width: 0;
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  padding: 10px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: thin;
-  border: 1px solid var(--tt-border);
-  border-radius: 16px;
-  background: rgba(27, 5, 48, 0.94);
-  box-shadow: var(--tt-shadow-soft);
-}
-
-.snake-profile-quickbar::-webkit-scrollbar {
-  height: 5px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .snake-profile-quickbar button {
-  flex: 0 0 auto;
-  min-width: 92px;
-  min-height: 48px;
-  padding: 8px 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 76px;
+  padding: 10px 8px;
   border: 1px solid var(--tt-border);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.025);
+  border-radius: 14px;
+  background: rgba(27, 5, 48, 0.9);
   color: var(--tt-text-strong);
-  box-shadow: none;
-  white-space: nowrap;
+  box-shadow: var(--tt-shadow-soft);
+  white-space: normal;
+  font-size: 1.2rem;
+  line-height: 1.05;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 
 .snake-profile-quickbar button:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: var(--tt-border-strong);
+}
+
+.snake-profile-quickbar button:focus-visible {
+  outline: 2px solid var(--tt-accent);
+  outline-offset: 2px;
 }
 
 .snake-profile-quickbar button.snake-profile-quick-primary {
@@ -200,10 +200,12 @@
 
 .snake-profile-quick-label {
   display: block;
-  margin-top: 3px;
-  font-size: 0.72rem;
+  margin-top: 7px;
+  font-size: 0.74rem;
+  font-weight: 750;
   color: inherit;
-  opacity: 0.88;
+  opacity: 0.92;
+  line-height: 1.2;
 }
 
 .snake-profile-overview-grid {
@@ -349,17 +351,11 @@
   .snake-profile-card-notes {
     grid-column: span 2;
   }
-
-  .snake-profile-quickbar {
-    flex-wrap: wrap;
-    overflow-x: visible;
-  }
 }
 
 @media (min-width: 821px) and (max-width: 1279px) {
   .snake-profile-quickbar {
-    flex-wrap: wrap;
-    overflow-x: visible;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -370,6 +366,10 @@
 
   .snake-profile-photo {
     justify-self: center;
+  }
+
+  .snake-profile-quickbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -419,15 +419,18 @@
   }
 
   .snake-profile-quickbar {
-    gap: 6px;
-    padding: 8px;
-    border-radius: 14px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
   }
 
   .snake-profile-quickbar button {
-    min-width: 88px;
-    min-height: 46px;
-    padding: 7px 10px;
+    min-height: 70px;
+    padding: 8px 5px;
+    border-radius: 12px;
+  }
+
+  .snake-profile-quick-label {
+    font-size: 0.68rem;
   }
 
   .snake-profile-card {
