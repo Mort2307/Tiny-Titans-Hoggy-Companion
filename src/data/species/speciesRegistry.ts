@@ -5,6 +5,7 @@ import { SPECIES_EXPANSION_BATCH_3, SPECIES_EXPANSION_BATCH_3_SOURCES } from './
 import { SPECIES_EXPANSION_BATCH_4 } from './speciesExpansionBatch4';
 import { SPECIES_EXPANSION_BATCH_5 } from './speciesExpansionBatch5';
 import { SPECIES_EXPANSION_BATCH_6 } from './speciesExpansionBatch6';
+import { SPECIES_EXPANSION_BATCH_7 } from './speciesExpansionBatch7';
 import type { SnakeSpeciesRecord } from './speciesTypes';
 
 Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES);
@@ -16,6 +17,7 @@ const ALL_SPECIES: SnakeSpeciesRecord[] = [
   ...SPECIES_EXPANSION_BATCH_4,
   ...SPECIES_EXPANSION_BATCH_5,
   ...SPECIES_EXPANSION_BATCH_6,
+  ...SPECIES_EXPANSION_BATCH_7,
 ];
 export const INITIAL_SNAKE_SPECIES = ALL_SPECIES;
 export const SNAKE_SPECIES_BY_ID = Object.fromEntries(ALL_SPECIES.map((species) => [species.id, species])) as Record<string, SnakeSpeciesRecord>;
