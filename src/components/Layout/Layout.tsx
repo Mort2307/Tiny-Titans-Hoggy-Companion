@@ -8,6 +8,7 @@ import CreatorCommandBar from "../CreatorCommandBar";
 import CreatorStatusBar from "../CreatorStatusBar";
 import SupportNotificationCenter from "../SupportNotificationCenter";
 import SpeciesContextBar from "../SpeciesContextBar";
+import SpeciesContextRouteSync from "../SpeciesContextRouteSync";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
@@ -43,6 +44,7 @@ function Layout() {
 
   return (
     <SpeciesContextProvider>
+      <SpeciesContextRouteSync />
       <div className="app-shell">
         <a className="skip-link" href="#main-content">Skip to main content</a>
         <Header />
