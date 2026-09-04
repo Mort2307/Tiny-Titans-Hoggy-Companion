@@ -1,5 +1,3 @@
-import "./data/expandMorphDatabase";
-import "./data/expandGeneticsComboRegistry";
 import "./tinyTitansModern.css";
 import "./styles/mobileNavigation.css";
 import AppRouter from "./routes/AppRouter";
