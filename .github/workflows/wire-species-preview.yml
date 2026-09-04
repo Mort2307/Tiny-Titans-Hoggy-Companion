@@ -1,0 +1,62 @@
+name: Wire Creator Species Preview
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/pages/CreatorAdmin.tsx'
+      - 'src/pages/CreatorSpeciesPreview.tsx'
+      - 'src/styles/CreatorSpeciesPreview.css'
+      - '.github/workflows/wire-species-preview.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    if: ${{ !contains(github.event.head_commit.message, '[species-preview-wired]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Wire Creator tile and preview styles
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          admin = Path('src/pages/CreatorAdmin.tsx')
+          source = admin.read_text(encoding='utf-8')
+          marker = 'to="/creator/species-preview"'
+          if marker not in source:
+              anchor = '<button type="button" className="creator-global-card creator-feature-tile" onClick={() => setPanel("morph-editor")}>'
+              tile = '<Link className="creator-global-card creator-feature-tile" to="/creator/species-preview"><span>🐍</span><strong>Species Preview Lab</strong><label>Species Intelligence QA</label><small>Preview every species currently in the registry and verify taxonomy, husbandry, feeding, breeding and safety data follow the selected species.</small><span className="creator-feature-tile-cta">Open Species Preview Lab →</span></Link>\n          '
+              if anchor not in source:
+                  raise SystemExit('Creator Admin insertion anchor not found; refusing to modify file.')
+              source = source.replace(anchor, tile + anchor, 1)
+              admin.write_text(source, encoding='utf-8')
+
+          preview = Path('src/pages/CreatorSpeciesPreview.tsx')
+          preview_source = preview.read_text(encoding='utf-8')
+          css_import = 'import "../styles/CreatorSpeciesPreview.css";'
+          if css_import not in preview_source:
+              anchor = 'import "../styles/CreatorTools.css";'
+              if anchor not in preview_source:
+                  raise SystemExit('Species Preview CSS import anchor not found; refusing to modify file.')
+              preview_source = preview_source.replace(anchor, anchor + '\n' + css_import, 1)
+              preview.write_text(preview_source, encoding='utf-8')
+          PY
+
+      - name: Commit wiring changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet; then
+            echo 'No wiring changes required.'
+            exit 0
+          fi
+          git add src/pages/CreatorAdmin.tsx src/pages/CreatorSpeciesPreview.tsx
+          git commit -m 'Wire Creator Species Preview tile [species-preview-wired]'
+          git push
