@@ -4,6 +4,9 @@ const router = fs.readFileSync('src/routes/AppRouter.tsx', 'utf8');
 const morphLibrary = fs.readFileSync('src/pages/MorphLibrary.tsx', 'utf8');
 const creatorSubmissions = fs.readFileSync('src/pages/CreatorSubmissions.tsx', 'utf8');
 const submissionService = fs.readFileSync('src/services/morphSubmissionServiceV2.ts', 'utf8');
+const userSubmissionService = fs.readFileSync('src/services/morphUserSubmissionService.ts', 'utf8');
+const submissionTypes = fs.readFileSync('src/types/morphSubmission.ts', 'utf8');
+const speciesSelector = fs.readFileSync('src/components/SpeciesSelector.tsx', 'utf8');
 
 const requiredRoutes = [
   '/morph-library',
@@ -21,9 +24,16 @@ const requiredContracts = [
   ['Morph Library imports createUserMorphSubmission', morphLibrary.includes('createUserMorphSubmission')],
   ['Morph Library passes canonical morphId to image submission', /morphId:\s*selectedMorph\.geneId/.test(morphLibrary)],
   ['Morph Library passes canonical morphName to image submission', /morphName:\s*selectedMorph\.name/.test(morphLibrary)],
-  ['Submission service persists morphId', submissionService.includes('morphId,')],
-  ['Submission service persists morphName', submissionService.includes('morphName,')],
+  ['Submission service accepts species context', submissionService.includes('speciesId?: string')],
+  ['Submission service validates species context', submissionService.includes('findSnakeSpecies(speciesId)')],
+  ['Submission service persists speciesId', submissionService.includes('speciesId: species.id')],
+  ['Submission service persists speciesName', submissionService.includes('speciesName: species.acceptedScientificName')],
+  ['User terminology service accepts species context', userSubmissionService.includes('speciesId?: string')],
+  ['User terminology service persists species context', userSubmissionService.includes('speciesName: species.acceptedScientificName')],
+  ['Submission type stores speciesId', submissionTypes.includes('speciesId: string')],
+  ['Species selector reads the canonical species registry', speciesSelector.includes('INITIAL_SNAKE_SPECIES')],
   ['Creator submissions loads both photo and terminology queues', creatorSubmissions.includes('Promise.all([getMorphImageSubmissions(), getAllUserMorphSubmissions()])')],
+  ['Creator submissions displays species context', creatorSubmissions.includes('displaySpecies(item.speciesId, item.speciesName)')],
   ['Creator submissions validates photo approval', creatorSubmissions.includes('validateMorphSubmissionForApproval')],
   ['Creator submissions guards approval transition', creatorSubmissions.includes('canTransitionMorphSubmission')],
 ];
@@ -39,4 +49,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Tiny Titans submission contracts passed: ${requiredRoutes.length} routes and ${requiredContracts.length} submission/linkage contracts checked.`);
+console.log(`Tiny Titans submission contracts passed: ${requiredRoutes.length} routes and ${requiredContracts.length} species/submission linkage contracts checked.`);
