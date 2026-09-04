@@ -17,6 +17,7 @@ export type MorphImageSubmission = {
   proofReference?: string;
   photoRequirementsConfirmed: boolean;
   factualAccuracyConfirmed: boolean;
+  allowMorphLibraryLink?: boolean;
   creditType: MorphSubmissionCredit;
   creditName?: string;
   creditSocial?: string;
