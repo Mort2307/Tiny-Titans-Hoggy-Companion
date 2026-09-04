@@ -1,6 +1,6 @@
 import SpeciesSelector from "./SpeciesSelector";
 import { useSpeciesContext } from "../context/SpeciesContext";
-import { isSpeciesGeneticsMapped } from "../data/species/speciesGenetics";
+import { getSpeciesGeneticsStatus } from "../data/species/speciesGenetics";
 import "../styles/species-context.css";
 
 type SpeciesContextBarProps = {
@@ -12,9 +12,11 @@ type SpeciesContextBarProps = {
 export default function SpeciesContextBar({ compact = false, label = "Species context", showGeneticsStatus = true }: SpeciesContextBarProps) {
   const { selectedSpeciesId, selectedSpecies, setSelectedSpeciesId } = useSpeciesContext();
   const knowledge = selectedSpecies?.knowledge;
-  const geneticsMapped = isSpeciesGeneticsMapped(selectedSpeciesId);
+  const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
   const husbandryMapped = Boolean(knowledge?.husbandry);
+  const geneticsLabel = geneticsStatus === "mapped" ? "🧬 Full genetics catalogue" : geneticsStatus === "partial" ? "🧬 Genetics partially catalogued" : "🧬 Genetics catalogue pending";
+  const overallReady = geneticsStatus === "mapped" && husbandryMapped;
 
   return (
     <section className={`tt-species-context ${compact ? "tt-species-context--compact" : ""}`} aria-label="Species context">
@@ -27,11 +29,12 @@ export default function SpeciesContextBar({ compact = false, label = "Species co
         <SpeciesSelector id="global-species-context" value={selectedSpeciesId} onChange={setSelectedSpeciesId} label="Select your species" />
       </div>
       {showGeneticsStatus && (
-        <div className={`tt-species-context__status ${geneticsMapped && husbandryMapped ? "is-mapped" : "is-pending"}`}>
-          <span>{geneticsMapped ? "🧬 Genetics mapped" : "🧬 Genetics catalogue pending"}</span>
+        <div className={`tt-species-context__status ${overallReady ? "is-mapped" : "is-pending"}`}>
+          <span>{geneticsLabel}</span>
           <small>
             {husbandryMapped ? `${speciesName} · ${knowledge?.husbandry?.evidenceLevel ?? "unknown"} husbandry evidence` : `${speciesName} · species-specific husbandry not mapped`}
           </small>
+          {geneticsStatus === "partial" && <small className="tt-species-context__warning">The current genetics entries are species-specific but not yet exhaustive. Predictive breeding calculations remain locked until the species engine is fully verified.</small>}
           {!husbandryMapped && <small className="tt-species-context__warning">Numeric care thresholds and husbandry recommendations must not be borrowed from another species.</small>}
         </div>
       )}
