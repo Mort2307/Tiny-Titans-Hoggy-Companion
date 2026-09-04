@@ -1,0 +1,1 @@
+This directory now contains a modular species expansion layer. New records are composed from the canonical registry plus source-backed expansion data so future species batches do not require rewriting the full registry file.
