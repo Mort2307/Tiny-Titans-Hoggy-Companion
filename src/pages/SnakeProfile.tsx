@@ -14,6 +14,7 @@ import WeightMiniChart from "../components/WeightMiniChart";
 import IntelligencePanel from "../components/IntelligencePanel";
 import ExplainableIntelligenceSummary from "../components/ExplainableIntelligenceSummary";
 import IntelligenceDataQualityPanel from "../components/IntelligenceDataQualityPanel";
+import SnakeProfileSmartSummary from "../components/SnakeProfileSmartSummary";
 import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import "../styles/snake-profile.css";
@@ -160,9 +161,11 @@ function SnakeProfile() {
         <button type="button" className="snake-profile-card snake-profile-card-notes" onClick={openSnakeEditor}><div className="snake-profile-card-icon">📝</div><h2>Notes</h2><p>{snake.notes || "No notes added"}</p></button>
       </section>
 
+      <SnakeProfileSmartSummary snake={snake} />
+
       <section className="snake-profile-intelligence" aria-labelledby="snake-profile-intelligence-heading">
-        <h2 id="snake-profile-intelligence-heading" className="snake-profile-intelligence-heading">Tiny Titans Intelligence &amp; Data Quality</h2>
-        <p className="snake-profile-intelligence-subtitle">Long-form analysis lives here so your snake profile and everyday actions stay immediately accessible.</p>
+        <h2 id="snake-profile-intelligence-heading" className="snake-profile-intelligence-heading">Tiny Titans Community &amp; Advanced Intelligence</h2>
+        <p className="snake-profile-intelligence-subtitle">Optional community benchmarking and longer-form interpretation live here, while personal review actions stay above.</p>
         {intelligenceAccess === false && <section className="tt-intelligence-panel tt-intelligence-locked"><p className="tt-intelligence-kicker">TINY TITANS INTELLIGENCE</p><h2 className="tt-intelligence-title">Full Intelligence is optional</h2><p className="tt-intelligence-meta">Your personal tracking still works normally. Advanced Tiny Titans Intelligence is available when you choose to contribute eligible husbandry data anonymously to the growing Tiny Titans knowledge base.</p><p className="tt-intelligence-meta"><strong>Your choice:</strong> optional husbandry data sharing is currently off.</p><button type="button" className="tt-intelligence-action" onClick={() => navigate("/account/data-privacy")}>Enable Intelligence in Data &amp; Privacy →</button></section>}
         {intelligenceAccess && <IntelligenceDataQualityPanel snake={snake} />}
         {intelligenceAccess && benchmarkLoading && <section className="tt-intelligence-panel" aria-live="polite"><p className="tt-intelligence-kicker">TINY TITANS INTELLIGENCE</p><h2 className="tt-intelligence-title">Building your comparison…</h2><p className="tt-intelligence-meta">Checking the consent-filtered age-aware community cohort.</p></section>}
