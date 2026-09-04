@@ -25,8 +25,8 @@ export default function SpeciesMorphLibrary() {
   const [selected, setSelected] = useState<MasterMorphDefinition | null>(null);
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
-
   const entries = useMemo(() => getSpeciesVisualMorphs(selectedSpeciesId), [selectedSpeciesId]);
+
   const filtered = useMemo(() => {
     const needle = normalise(query);
     return entries
@@ -39,15 +39,19 @@ export default function SpeciesMorphLibrary() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [entries, filter, query]);
 
+  const statusLabel = geneticsStatus === "mapped"
+    ? "🟢 Full species genetics catalogue"
+    : geneticsStatus === "partial"
+      ? "🟡 Species genetics partially catalogued"
+      : "🟠 Species genetics catalogue pending";
+
   return (
     <main className="page-container morph-library-page">
       <BackHomeButton />
       <header className="morph-library__header">
         <div className="morph-library__eyebrow">🧬 TINY TITANS · SPECIES GENETICS</div>
         <h1>{speciesName} Morph Library</h1>
-        <p>
-          This library is driven by the selected species context. Tiny Titans will never display another species' genetics as a substitute.
-        </p>
+        <p>This library is driven by the selected species context. Tiny Titans will never display another species' genetics as a substitute.</p>
         <div className="morph-library__filters" role="group" aria-label="Morph type">
           {(["all", "gene", "combination", "polygenic", "line-bred"] as Filter[]).map((value) => (
             <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>
@@ -60,32 +64,39 @@ export default function SpeciesMorphLibrary() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${speciesName} genetics…`} />
         </label>
         <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}>
-          <strong>{geneticsStatus === "mapped" ? "🟢 Species genetics mapped" : "🟠 Species genetics catalogue pending"}</strong>
-          <span>{filtered.length} species-scoped entries available</span>
+          <strong>{statusLabel}</strong>
+          <span>{filtered.length} species-scoped entries currently published</span>
         </div>
       </header>
 
       {geneticsStatus === "baseline-only" ? (
         <section className="morph-library__empty tracker-card">
           <h2>🧬 No reviewed morph catalogue yet for {speciesName}</h2>
-          <p>
-            Tiny Titans knows this species, but its recognised genetics catalogue has not yet been independently sourced and reviewed. The library therefore shows no Hognose, Ball Python, or other unrelated species genetics here.
-          </p>
+          <p>Tiny Titans knows this species, but its recognised genetics catalogue has not yet been independently sourced and reviewed. The library therefore shows no Hognose, Ball Python, or other unrelated species genetics here.</p>
           <p><strong>This is intentional intelligence.</strong> An incomplete species catalogue is safer than false cross-species information.</p>
         </section>
       ) : (
-        <section className="morph-library-grid" aria-live="polite">
-          {filtered.map((morph) => (
-            <button key={morph.geneId} type="button" className="morph-card" onClick={() => setSelected(morph)}>
-              <span className="morph-card__name">{morph.name}</span>
-              <span className="morph-card__meta">{morph.kind} · {morph.inheritance}</span>
-              {morph.aliases && morph.aliases.length > 0 && <span className="morph-card__aliases">Also: {morph.aliases.join(", ")}</span>}
-            </button>
-          ))}
-        </section>
+        <>
+          {geneticsStatus === "partial" && (
+            <section className="tracker-card" aria-label="Catalogue coverage notice">
+              <h2>🧠 Curated species catalogue</h2>
+              <p>These are verified species-specific entries currently published by Tiny Titans. This list is <strong>not yet an exhaustive trait index</strong>; missing names must not be inferred from another species.</p>
+              <p>Predictive breeding calculations remain locked until the species-specific inheritance engine has been independently verified.</p>
+            </section>
+          )}
+          <section className="morph-library-grid" aria-live="polite">
+            {filtered.map((morph) => (
+              <button key={morph.geneId} type="button" className="morph-card" onClick={() => setSelected(morph)}>
+                <span className="morph-card__name">{morph.name}</span>
+                <span className="morph-card__meta">{morph.kind} · {morph.inheritance}</span>
+                {morph.aliases && morph.aliases.length > 0 && <span className="morph-card__aliases">Also: {morph.aliases.join(", ")}</span>}
+              </button>
+            ))}
+          </section>
+        </>
       )}
 
-      {geneticsStatus === "mapped" && filtered.length === 0 && (
+      {geneticsStatus !== "baseline-only" && filtered.length === 0 && (
         <section className="tracker-card"><h2>No matching morphs</h2><p>Try another search or clear the type filter.</p></section>
       )}
 
