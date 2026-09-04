@@ -3,11 +3,12 @@ import { INITIAL_SNAKE_SPECIES as BASE_SPECIES } from './speciesRegistryBase';
 import { SPECIES_EXPANSION_CORE, SPECIES_EXPANSION_SOURCES } from './speciesExpansionCore';
 import { SPECIES_EXPANSION_BATCH_3, SPECIES_EXPANSION_BATCH_3_SOURCES } from './speciesExpansionBatch3';
 import { SPECIES_EXPANSION_BATCH_4 } from './speciesExpansionBatch4';
+import { SPECIES_EXPANSION_BATCH_5 } from './speciesExpansionBatch5';
 import type { SnakeSpeciesRecord } from './speciesTypes';
 
 Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES);
 
-const ALL_SPECIES: SnakeSpeciesRecord[] = [...BASE_SPECIES, ...SPECIES_EXPANSION_CORE, ...SPECIES_EXPANSION_BATCH_3, ...SPECIES_EXPANSION_BATCH_4];
+const ALL_SPECIES: SnakeSpeciesRecord[] = [...BASE_SPECIES, ...SPECIES_EXPANSION_CORE, ...SPECIES_EXPANSION_BATCH_3, ...SPECIES_EXPANSION_BATCH_4, ...SPECIES_EXPANSION_BATCH_5];
 export const INITIAL_SNAKE_SPECIES = ALL_SPECIES;
 export const SNAKE_SPECIES_BY_ID = Object.fromEntries(ALL_SPECIES.map((species) => [species.id, species])) as Record<string, SnakeSpeciesRecord>;
 
