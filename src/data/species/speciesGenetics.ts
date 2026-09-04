@@ -62,62 +62,53 @@ const normalTrait = (speciesName: string): MasterMorphDefinition => ({
 });
 
 const MORPHMARKET = "https://www.morphmarket.com/";
+const BALL_PYTHON_SOURCE = `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`;
+const BALL_PYTHON_SOURCE_LABEL = "MorphMarket Ball Python trait index";
 
 /**
- * Ball Python has one of the deepest established captive trait catalogues.
- * These are species-scoped recognised traits; combinations are deliberately
- * left to the Ball Python calculator workstream rather than pretending that
- * every combo is an independent gene.
- *
- * Source principle: MorphMarket maintains species-specific trait indexes and
- * identifies traits by species because the same name can represent different
- * genetics in different species.
+ * Conservative first-pass Ball Python trait catalogue. These are recognised
+ * species traits, not an exhaustive list of every named combination. We do
+ * not promote an uncertain trade name into the breeding engine.
  */
 const BALL_PYTHON_TRAITS: MasterMorphDefinition[] = [
-  trait("Albino", "Recessive", { aliases: ["Amelanistic", "Amel"], hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Axanthic", "Recessive", { aliases: ["Anery"], hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Clown", "Recessive", { hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Desert Ghost", "Recessive", { aliases: ["DG"], hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Ghost", "Recessive", { aliases: ["Hypo"], hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Genetic Stripe", "Recessive", { aliases: ["G Stripe"], hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Lavender Albino", "Recessive", { aliases: ["Lavender", "Lav Albino"], hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Piebald", "Recessive", { aliases: ["Pied"], hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Puzzle", "Recessive", { hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Tri-Stripe", "Recessive", { aliases: ["Tristripe", "Tri Stripe"], hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Ultramel", "Recessive", { hetPossible: true, sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Banana", "Incomplete Dominant", { aliases: ["Coral Glow"], sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Bamboo", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Black Pastel", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Butter", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Cinnamon", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Fire", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Lesser", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Mojave", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Mystic", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Orange Dream", "Incomplete Dominant", { aliases: ["OD"], sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Pastel", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Phantom", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Pinstripe", "Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Spider", "Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Spotnose", "Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Enchi", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("GHI", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("HRA", "Incomplete Dominant", { aliases: ["Het Red Axanthic"], sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Mahogany", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Red Stripe", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Yellow Belly", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Champagne", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Cypress", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Gravel", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Hazard", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Huffman", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Leopard", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Lori", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Mimosa", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Mystic Potion", "Incomplete Dominant", { aliases: ["Mystic / Mojave"] }),
-  trait("Sable", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Special", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
-  trait("Yellow Head", "Incomplete Dominant", { sourceUrl: `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`, sourceLabel: "MorphMarket Ball Python trait index" }),
+  trait("Albino", "Recessive", { aliases: ["Amelanistic", "Amel"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Axanthic", "Recessive", { aliases: ["Anery"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Clown", "Recessive", { hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Desert Ghost", "Recessive", { aliases: ["DG"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Ghost", "Recessive", { aliases: ["Hypo"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Genetic Stripe", "Recessive", { aliases: ["G Stripe"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Lavender Albino", "Recessive", { aliases: ["Lavender", "Lav Albino"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Piebald", "Recessive", { aliases: ["Pied"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Puzzle", "Recessive", { hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Tri-Stripe", "Recessive", { aliases: ["Tristripe", "Tri Stripe"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Ultramel", "Recessive", { hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Banana", "Incomplete Dominant", { aliases: ["Coral Glow"], sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Bamboo", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Black Pastel", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Butter", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Cinnamon", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Fire", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Lesser", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Mojave", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Mystic", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Orange Dream", "Incomplete Dominant", { aliases: ["OD"], sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Pastel", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Phantom", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Enchi", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("GHI", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Mahogany", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Red Stripe", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Yellow Belly", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Champagne", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Cypress", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Gravel", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Huffman", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Leopard", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Lori", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Special", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Pinstripe", "Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Spider", "Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Spotnose", "Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
 ];
 
 /**
@@ -155,7 +146,8 @@ export function getSpeciesVisualMorphs(speciesId: string | null | undefined): Ma
   const species = getSpeciesRecord(speciesId);
   if (!species) return [];
   const mapped = SPECIES_CATALOGUES[species.acceptedScientificName];
-  return mapped?.length ? [normalTrait(species.commonNames[0] ?? species.acceptedScientificName), ...mapped] : [normalTrait(species.commonNames[0] ?? species.acceptedScientificName)];
+  const speciesName = species.commonNames[0] ?? species.acceptedScientificName;
+  return mapped?.length ? [normalTrait(speciesName), ...mapped] : [normalTrait(speciesName)];
 }
 
 export function getSpeciesHetGenes(speciesId: string | null | undefined): MasterMorphDefinition[] {
@@ -168,8 +160,9 @@ export function getSpeciesHetGenes(speciesId: string | null | undefined): Master
 
 export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
   if (isHognose(speciesId)) return getMasterCalculatorMorphs();
-  // Ball Python traits above are recognition entries only until their exact
-  // inheritance/evidence records are wired into a species-specific calculator.
+  // Ball Python recognition is intentionally separate from calculator maths.
+  // A species-specific calculator must consume a species-specific inheritance
+  // engine before these traits become predictive breeding inputs.
   return [];
 }
 
