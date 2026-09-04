@@ -86,9 +86,9 @@ export default function Calculator() {
       const key = `${morph.geneId.toLowerCase()}:${morph.name.toLowerCase()}`;
       if (seen.has(key)) return false; seen.add(key); return true;
     });
-  }, [expandedRegistryReady]);
-  const recognisedVisualOptions = useMemo(() => uniqueMorphOptions(morphDatabase.filter((morph) => morph.verification !== "Unverified" && morph.verification !== "Disputed" && (morph.kind === "Gene" || morph.kind === "Super" || morph.kind === "Combination"))), [expandedRegistryReady]);
-  const hetOptions = useMemo(() => uniqueMorphOptions(getGenes().filter((morph) => morph.hetPossible === true && morph.verification !== "Unverified" && morph.verification !== "Disputed")), [expandedRegistryReady]);
+  }, []);
+  const recognisedVisualOptions = useMemo(() => uniqueMorphOptions(morphDatabase.filter((morph) => morph.verification !== "Unverified" && morph.verification !== "Disputed" && (morph.kind === "Gene" || morph.kind === "Super" || morph.kind === "Combination"))), []);
+  const hetOptions = useMemo(() => uniqueMorphOptions(getGenes().filter((morph) => morph.hetPossible === true && morph.verification !== "Unverified" && morph.verification !== "Disputed")), []);
   const femaleGenetics = useMemo(() => toParentGenetics(mother), [mother]);
   const maleGenetics = useMemo(() => toParentGenetics(father), [father]);
   const result: GeneticsCalculatorResult = useMemo(() => calculateGenetics({ female: femaleGenetics, male: maleGenetics }), [femaleGenetics, maleGenetics]);
