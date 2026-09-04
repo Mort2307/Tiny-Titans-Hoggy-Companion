@@ -7,7 +7,7 @@ import HetSelector from "./HetSelector";
 import TinyTitansDateInput from "./TinyTitansDateInput";
 import SpeciesSelector from "./SpeciesSelector";
 import { findSnakeSpecies } from "../data/species/speciesRegistry";
-import { getSpeciesHetGenes, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
+import { getSpeciesHetGenes, getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { getDateDuration } from "../utils/dateDuration";
 import { compressImage } from "../utils/imageCompression";
 import { useUnits } from "../context/UnitContextValue";
@@ -30,7 +30,7 @@ export default function SnakeForm({ form, updateField, onSave, editing, saving =
   const speciesDisplayName = speciesRecord?.commonNames[0] ?? speciesRecord?.acceptedScientificName ?? "this species";
   const visualMorphOptions = getSpeciesVisualMorphs(selectedSpeciesId);
   const hetOptions = getSpeciesHetGenes(selectedSpeciesId);
-  const geneticsMapped = visualMorphOptions.length > 0 || hetOptions.length > 0;
+  const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const toDisplayWeight = (grams: number | null) => grams == null ? "" : String(isImperial ? grams / 28.349523125 : grams);
   const toStoredWeight = (value: string) => { if (!value) return null; const number = Number(value); return Number.isFinite(number) ? isImperial ? number * 28.349523125 : number : null; };
 
@@ -63,8 +63,8 @@ export default function SnakeForm({ form, updateField, onSave, editing, saving =
     <h3>⚖️ Weight Tracking</h3><label htmlFor="starting-weight">Starting Weight ({weightUnit})</label><input id="starting-weight" type="number" inputMode="decimal" min="0" step="any" placeholder={isImperial ? "e.g. 2" : "e.g. 50.74"} value={toDisplayWeight(form.startingWeight)} onChange={(e) => { const value = toStoredWeight(e.target.value); updateField("startingWeight", value); if (value !== null && !form.startingWeightDate) updateField("startingWeightDate", new Date().toISOString().split("T")[0]); }} disabled={saving} />
     <TinyTitansDateInput id="starting-weight-date" label="Starting Weight Date" value={form.startingWeightDate} onChange={(value) => updateField("startingWeightDate", value)} disabled={saving} /><label htmlFor="current-weight">Current Weight ({weightUnit})</label><input id="current-weight" type="number" inputMode="decimal" min="0" step="any" placeholder={isImperial ? "e.g. 3.2" : "e.g. 90.25"} value={toDisplayWeight(form.weight)} onChange={(e) => updateField("weight", toStoredWeight(e.target.value))} disabled={saving} />
     <TinyTitansDateInput id="last-weighed-date" label="Last Weighed Date" value={form.lastWeighedDate} onChange={(value) => updateField("lastWeighedDate", value)} disabled={saving} />
-    <h3>🧬 Visual Morphs</h3>{geneticsMapped ? <MultiSelectDropdown title={`Select ${speciesDisplayName} morphs`} options={visualMorphOptions} selected={form.morphs} setSelected={(value) => updateField("morphs", value)} /> : <div className="date-duration-display">🧬 Species-specific morph data is not mapped yet for {speciesDisplayName}. You can record verified genetics in the custom field without being shown Hognose genes.</div>}<label htmlFor="custom-morph">Custom Morph / Genetics</label><input id="custom-morph" value={form.customMorph} onChange={(e) => updateField("customMorph", e.target.value)} disabled={saving} />
-    <h3>🧬 Hets</h3>{geneticsMapped ? <HetSelector options={hetOptions} selected={form.hets} setSelected={(value) => updateField("hets", value)} /> : <div className="date-duration-display">🧬 No species-specific het catalogue is mapped yet for {speciesDisplayName}.</div>}<label htmlFor="custom-hets">Additional Genetics Notes</label><textarea id="custom-hets" value={form.customHets} onChange={(e) => updateField("customHets", e.target.value)} disabled={saving} /><label htmlFor="snake-notes">Notes</label><textarea id="snake-notes" value={form.notes} onChange={(e) => updateField("notes", e.target.value)} disabled={saving} />
+    <h3>🧬 Visual Morphs</h3><MultiSelectDropdown title={`Select ${speciesDisplayName} morphs`} options={visualMorphOptions} selected={form.morphs} setSelected={(value) => updateField("morphs", value)} />{geneticsStatus === "baseline-only" && <div className="date-duration-display">🧬 {speciesDisplayName} currently has a species-scoped baseline phenotype entry. No Hognose genes are substituted. Add verified species genetics through Custom Morph / Genetics until the species catalogue is expanded.</div>}<label htmlFor="custom-morph">Custom Morph / Genetics</label><input id="custom-morph" value={form.customMorph} onChange={(e) => updateField("customMorph", e.target.value)} disabled={saving} />
+    <h3>🧬 Hets</h3>{hetOptions.length > 0 ? <HetSelector options={hetOptions} selected={form.hets} setSelected={(value) => updateField("hets", value)} /> : <div className="date-duration-display">🧬 No recognised recessive carrier genes are currently catalogued for {speciesDisplayName}. Do not invent a het from appearance alone; use Additional Genetics Notes for verified lineage information.</div>}<label htmlFor="custom-hets">Additional Genetics Notes</label><textarea id="custom-hets" value={form.customHets} onChange={(e) => updateField("customHets", e.target.value)} disabled={saving} /><label htmlFor="snake-notes">Notes</label><textarea id="snake-notes" value={form.notes} onChange={(e) => updateField("notes", e.target.value)} disabled={saving} />
     <button type="submit" className="save-snake-button" disabled={saving || processingPhoto}>{processingPhoto ? "⏳ Processing Photo..." : saving ? "💾 Saving..." : "💾 Save Snake"}</button>
   </form>;
 }
