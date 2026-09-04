@@ -8,18 +8,18 @@ function Header() {
       <Link
         to="/"
         className="logo-link"
-        aria-label="Tiny Titans home"
+        aria-label="Tiny Titans Reptile Companion home"
       >
         <img
           src={logo}
-          alt="Tiny Titans"
+          alt="Tiny Titans Reptile Companion"
           className="tiny-titans-logo"
         />
       </Link>
 
       <div className="app-brand-lockup">
         <span className="app-brand-name" aria-label="Tiny Titans">Tiny Titans</span>
-        <span className="app-brand-tagline">Hoggy Companion</span>
+        <span className="app-brand-tagline">Reptile Companion</span>
       </div>
     </header>
   );
