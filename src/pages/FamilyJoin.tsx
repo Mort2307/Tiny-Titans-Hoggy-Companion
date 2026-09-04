@@ -246,6 +246,7 @@ export default function FamilyJoin() {
   }
 
   if (!family) return null;
+  const currentFamily = family;
 
   return (
     <main className="page-container family-join-page">
@@ -266,7 +267,7 @@ export default function FamilyJoin() {
             <p className="family-join-kicker">SHARE THIS CODE</p>
             <h2>Your secure Family Code</h2>
           </div>
-          <span>{familyFull ? "Family full" : `${Math.max(0, family.memberUids.length - 1)} / 3 member places used`}</span>
+          <span>{familyFull ? "Family full" : `${Math.max(0, currentFamily.memberUids.length - 1)} / 3 member places used`}</span>
         </div>
         <p>This code identifies your family for a join request. It does not reveal account data and does not bypass your approval.</p>
         {activeCode && !familyFull ? <div className="family-join-code-wrap"><strong>{activeCode}</strong><small>Expires {expiryLabel}</small></div> : <div className="family-join-empty">{familyFull ? "This family already has four accounts." : "No active join code."}</div>}
