@@ -6,7 +6,7 @@ import {
 } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
-import type { InheritanceType, SnakeSpeciesRecord } from "./speciesTypes";
+import type { SnakeSpeciesRecord } from "./speciesTypes";
 
 /**
  * Species genetics is deliberately separate from taxonomy and husbandry.
@@ -21,32 +21,6 @@ import type { InheritanceType, SnakeSpeciesRecord } from "./speciesTypes";
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
-
-const trait = (
-  name: string,
-  inheritance: InheritanceType,
-  options: {
-    aliases?: string[];
-    hetPossible?: boolean;
-    description?: string;
-    sourceUrl?: string;
-    sourceLabel?: string;
-  } = {},
-): MasterMorphDefinition => ({
-  geneId: normalise(name).replace(/[^a-z0-9]+/g, "-"),
-  name,
-  aliases: options.aliases ?? [],
-  kind: "Gene",
-  isGene: true,
-  category: "Species gene",
-  inheritance,
-  hetPossible: options.hetPossible ?? inheritance === "Recessive",
-  verification: "Recognised",
-  description: options.description ?? `Recognised ${name} trait for this species.`,
-  educationalNotes: "Species-scoped catalogue entry. Confirm individual lineage and documentation before treating a genetic claim as proven.",
-  sourceUrl: options.sourceUrl,
-  sourceLabel: options.sourceLabel,
-});
 
 const normalTrait = (speciesName: string): MasterMorphDefinition => ({
   geneId: "normal",
@@ -66,53 +40,69 @@ const MORPHMARKET = "https://www.morphmarket.com/";
 const BALL_PYTHON_SOURCE = `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`;
 const BALL_PYTHON_SOURCE_LABEL = "MorphMarket Ball Python trait index";
 
+const ballPythonTrait = (name: string, inheritance: MasterMorphDefinition["inheritance"], options: { aliases?: string[]; hetPossible?: boolean } = {}): MasterMorphDefinition => ({
+  geneId: normalise(name).replace(/[^a-z0-9]+/g, "-"),
+  name,
+  aliases: options.aliases ?? [],
+  kind: "Gene",
+  isGene: true,
+  category: "Species gene",
+  inheritance,
+  hetPossible: options.hetPossible ?? inheritance === "Recessive",
+  verification: "Recognised",
+  description: `Recognised ${name} trait for Python regius.`,
+  educationalNotes: "Species-scoped catalogue entry. Confirm individual lineage and documentation before treating a genetic claim as proven.",
+  sourceUrl: BALL_PYTHON_SOURCE,
+  sourceLabel: BALL_PYTHON_SOURCE_LABEL,
+});
+
 const BALL_PYTHON_TRAITS: MasterMorphDefinition[] = [
-  trait("Albino", "Recessive", { aliases: ["Amelanistic", "Amel"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Axanthic", "Recessive", { aliases: ["Anery"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Clown", "Recessive", { hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Desert Ghost", "Recessive", { aliases: ["DG"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Ghost", "Recessive", { aliases: ["Hypo"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Genetic Stripe", "Recessive", { aliases: ["G Stripe"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Lavender Albino", "Recessive", { aliases: ["Lavender", "Lav Albino"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Piebald", "Recessive", { aliases: ["Pied"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Puzzle", "Recessive", { hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Tri-Stripe", "Recessive", { aliases: ["Tristripe", "Tri Stripe"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Ultramel", "Recessive", { hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Banana", "Incomplete Dominant", { aliases: ["Coral Glow"], sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Bamboo", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Black Pastel", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Butter", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Cinnamon", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Fire", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Lesser", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Mojave", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Mystic", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Orange Dream", "Incomplete Dominant", { aliases: ["OD"], sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Pastel", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Phantom", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Enchi", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("GHI", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Mahogany", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Red Stripe", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Yellow Belly", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Champagne", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Cypress", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Gravel", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Huffman", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Leopard", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Lori", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Special", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Pinstripe", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Spider", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Spotnose", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Ashen", "Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Citron", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Enhancer", "Recessive", { hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Jolt", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Raven", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Honey", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Scaleless Head", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Axanthic (MJ)", "Recessive", { aliases: ["Markus Jayne Axanthic"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  ballPythonTrait("Albino", "Recessive", { aliases: ["Amelanistic", "Amel"] }),
+  ballPythonTrait("Axanthic", "Recessive", { aliases: ["Anery"] }),
+  ballPythonTrait("Clown", "Recessive"),
+  ballPythonTrait("Desert Ghost", "Recessive", { aliases: ["DG"] }),
+  ballPythonTrait("Ghost", "Recessive", { aliases: ["Hypo"] }),
+  ballPythonTrait("Genetic Stripe", "Recessive", { aliases: ["G Stripe"] }),
+  ballPythonTrait("Lavender Albino", "Recessive", { aliases: ["Lavender", "Lav Albino"] }),
+  ballPythonTrait("Piebald", "Recessive", { aliases: ["Pied"] }),
+  ballPythonTrait("Puzzle", "Recessive"),
+  ballPythonTrait("Tri-Stripe", "Recessive", { aliases: ["Tristripe", "Tri Stripe"] }),
+  ballPythonTrait("Ultramel", "Recessive"),
+  ballPythonTrait("Banana", "Incomplete Dominant", { aliases: ["Coral Glow"] }),
+  ballPythonTrait("Bamboo", "Incomplete Dominant"),
+  ballPythonTrait("Black Pastel", "Incomplete Dominant"),
+  ballPythonTrait("Butter", "Incomplete Dominant"),
+  ballPythonTrait("Cinnamon", "Incomplete Dominant"),
+  ballPythonTrait("Fire", "Incomplete Dominant"),
+  ballPythonTrait("Lesser", "Incomplete Dominant"),
+  ballPythonTrait("Mojave", "Incomplete Dominant"),
+  ballPythonTrait("Mystic", "Incomplete Dominant"),
+  ballPythonTrait("Orange Dream", "Incomplete Dominant", { aliases: ["OD"] }),
+  ballPythonTrait("Pastel", "Incomplete Dominant"),
+  ballPythonTrait("Phantom", "Incomplete Dominant"),
+  ballPythonTrait("Enchi", "Incomplete Dominant"),
+  ballPythonTrait("GHI", "Incomplete Dominant"),
+  ballPythonTrait("Mahogany", "Incomplete Dominant"),
+  ballPythonTrait("Red Stripe", "Incomplete Dominant"),
+  ballPythonTrait("Yellow Belly", "Incomplete Dominant"),
+  ballPythonTrait("Champagne", "Incomplete Dominant"),
+  ballPythonTrait("Cypress", "Incomplete Dominant"),
+  ballPythonTrait("Gravel", "Incomplete Dominant"),
+  ballPythonTrait("Huffman", "Incomplete Dominant"),
+  ballPythonTrait("Leopard", "Incomplete Dominant"),
+  ballPythonTrait("Lori", "Incomplete Dominant"),
+  ballPythonTrait("Special", "Incomplete Dominant"),
+  ballPythonTrait("Pinstripe", "Dominant"),
+  ballPythonTrait("Spider", "Dominant"),
+  ballPythonTrait("Spotnose", "Dominant"),
+  ballPythonTrait("Ashen", "Dominant"),
+  ballPythonTrait("Citron", "Incomplete Dominant"),
+  ballPythonTrait("Enhancer", "Recessive"),
+  ballPythonTrait("Jolt", "Incomplete Dominant"),
+  ballPythonTrait("Raven", "Incomplete Dominant"),
+  ballPythonTrait("Honey", "Incomplete Dominant"),
+  ballPythonTrait("Scaleless Head", "Incomplete Dominant"),
+  ballPythonTrait("Axanthic (MJ)", "Recessive", { aliases: ["Markus Jayne Axanthic"] }),
 ];
 
 const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = {
