@@ -43,7 +43,7 @@ function isChromium() {
 
 function browserHelpText() {
   if (isIosSafari()) {
-    return <>On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong> → <strong>Add</strong>. Tiny Titans will then appear on your Home Screen and open as its own app.</>;
+    return <>On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong> → <strong>Add</strong>. Tiny Titans Reptile Companion will then appear on your Home Screen and open as its own app.</>;
   }
 
   if (isIos()) {
@@ -55,22 +55,22 @@ function browserHelpText() {
   }
 
   if (isAndroid() && isFirefox()) {
-    return <>Firefox on Android: tap the browser menu <strong>⋮</strong> → <strong>Add to Home screen</strong> → confirm <strong>Add</strong>. If Firefox offers an install option for Tiny Titans, use that instead.</>;
+    return <>Firefox on Android: tap the browser menu <strong>⋮</strong> → <strong>Add to Home screen</strong> → confirm <strong>Add</strong>. If Firefox offers an install option for Tiny Titans Reptile Companion, use that instead.</>;
   }
 
   if (isAndroid() && isChromium()) {
-    return <>Android: tap the browser menu <strong>⋮</strong> → choose <strong>Install app</strong> or <strong>Add to Home screen</strong> → confirm. The exact wording can vary between Chrome, Edge and other Chromium browsers.</>;
+    return <>Android: tap the browser menu <strong>⋮</strong> → choose <strong>Install app</strong> or <strong>Add to Home screen</strong> → confirm. Browser wording varies slightly, but the installed app is Tiny Titans Reptile Companion.</>;
   }
 
   if (isEdge()) {
-    return <>Microsoft Edge: open the <strong>⋯</strong> menu → <strong>Apps</strong> → <strong>Install Tiny Titans</strong> (or <strong>Install this site as an app</strong>).</>;
+    return <>Microsoft Edge: open the <strong>⋯</strong> menu → <strong>Apps</strong> → <strong>Install Tiny Titans Reptile Companion</strong> (or <strong>Install this site as an app</strong>).</>;
   }
 
   if (isFirefox()) {
-    return <>Firefox on desktop does not always provide the web-app install prompt. For a desktop shortcut, use your browser's <strong>Bookmarks/Shortcuts</strong> option, or open Tiny Titans in a Chromium-based browser such as Edge or Chrome for full PWA installation.</>;
+    return <>Firefox on desktop does not always provide the web-app install prompt. For a desktop shortcut, use your browser's <strong>Bookmarks/Shortcuts</strong> option, or open Tiny Titans Reptile Companion in a Chromium-based browser such as Edge or Chrome for full PWA installation.</>;
   }
 
-  return <>Open your browser's menu and look for <strong>Install app</strong>, <strong>Install Tiny Titans</strong>, or <strong>Add to Home Screen</strong>. Browser wording varies slightly, but the option is normally inside the main menu or Share menu.</>;
+  return <>Open your browser's menu and look for <strong>Install app</strong>, <strong>Install Tiny Titans Reptile Companion</strong>, or <strong>Add to Home Screen</strong>. Browser wording varies slightly, but the option is normally inside the main menu or Share menu.</>;
 }
 
 export default function PwaInstallCard() {
@@ -125,19 +125,19 @@ export default function PwaInstallCard() {
     setInstallPrompt(null);
   };
 
-  return <section className="pwa-install-card" aria-label="Install Tiny Titans">
+  return <section className="pwa-install-card" aria-label="Install Tiny Titans Reptile Companion">
     <div className="pwa-install-icon">🐍</div>
     <div className="pwa-install-copy">
-      <p className="section-eyebrow">TINY TITANS APP</p>
-      <h3>Install Tiny Titans</h3>
-      <p>Install Tiny Titans for quick access, its own app window and automatic updates.</p>
+      <p className="section-eyebrow">TINY TITANS REPTILE COMPANION</p>
+      <h3>Install Tiny Titans Reptile Companion</h3>
+      <p>Install Tiny Titans Reptile Companion for quick access, its own app window and automatic updates.</p>
       {browserHelp && <div className="pwa-install-help" role="status">
-        <strong>📲 How to add Tiny Titans to your device</strong>
+        <strong>📲 How to add Tiny Titans Reptile Companion to your device</strong>
         <p>{browserHelpText()}</p>
       </div>}
     </div>
     <button type="button" className="pwa-install-button" onClick={() => void install()}>
-      📲 Install Tiny Titans
+      📲 Install Tiny Titans Reptile Companion
     </button>
   </section>;
 }
