@@ -1,15 +1,14 @@
 import { useMemo, useState } from "react";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
-import type { MasterMorphDefinition } from "../data/masterMorphDatabase";
 import BackHomeButton from "../components/BackHomeButton";
 import "../styles/morphLibrary.css";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
-
+type SpeciesMorphEntry = ReturnType<typeof getSpeciesVisualMorphs>[number];
 type Filter = "all" | "gene" | "combination" | "polygenic" | "line-bred";
 
-function matchesFilter(morph: MasterMorphDefinition, filter: Filter): boolean {
+function matchesFilter(morph: SpeciesMorphEntry, filter: Filter): boolean {
   if (filter === "all") return true;
   if (filter === "gene") return morph.kind === "Gene" || morph.kind === "Super";
   if (filter === "combination") return morph.kind === "Combination";
@@ -22,7 +21,7 @@ export default function SpeciesMorphLibrary() {
   const { selectedSpeciesId, selectedSpecies } = useSpeciesContext();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [selected, setSelected] = useState<MasterMorphDefinition | null>(null);
+  const [selected, setSelected] = useState<SpeciesMorphEntry | null>(null);
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const entries = useMemo(() => getSpeciesVisualMorphs(selectedSpeciesId), [selectedSpeciesId]);
