@@ -117,13 +117,17 @@ function isCalculatorEligible(morph: MasterMorphDefinition): boolean {
   if (morph.verification === "Disputed" || morph.verification === "Unverified") return false;
   if (morph.kind === "Gene") return morph.isGene && hasConfirmedEvidence(morph);
   if (morph.kind === "Super") {
-    return Boolean(morph.components?.length) && morph.components.every((component) => {
+    const components = morph.components;
+    if (!components?.length) return false;
+    return components.every((component) => {
       const base = resolveMasterMorph(component.morphId);
       return Boolean(base && base.kind === "Gene" && base.isGene && hasConfirmedEvidence(base));
     });
   }
   if (morph.kind === "Combination") {
-    return Boolean(morph.components?.length) && morph.components.every((component) => {
+    const components = morph.components;
+    if (!components?.length) return false;
+    return components.every((component) => {
       const base = resolveMasterMorph(component.morphId);
       return Boolean(base && isCalculatorEligible(base));
     }) && morph.evidenceStatus === "confirmed";
