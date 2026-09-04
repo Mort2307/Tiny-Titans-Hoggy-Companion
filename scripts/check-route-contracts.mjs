@@ -8,7 +8,6 @@ const routerPath = path.join(srcRoot, 'routes', 'AppRouter.tsx');
 const lazyPagesPath = path.join(srcRoot, 'routes', 'lazyPages.tsx');
 const router = fs.readFileSync(routerPath, 'utf8');
 const lazyPages = fs.existsSync(lazyPagesPath) ? fs.readFileSync(lazyPagesPath, 'utf8') : '';
-const routeModuleSource = `${router}\n${lazyPages}`;
 const errors = [];
 
 function walk(directory) {
@@ -33,10 +32,10 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
 if (!routes.length) errors.push('No application routes were detected in AppRouter.tsx.');
 
 const importedComponents = new Set();
-for (const match of routeModuleSource.matchAll(/(?:export\s+const|import\s+)?\s*([A-Za-z][A-Za-z0-9]*)\s*(?:=|from)\s*(?:lazy\([^)]*import\(|["'])/g)) {
+for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
   importedComponents.add(match[1]);
 }
-for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
+for (const match of lazyPages.matchAll(/export\s+const\s+([A-Za-z][A-Za-z0-9]*)\s*=\s*lazy\s*\(/g)) {
   importedComponents.add(match[1]);
 }
 
