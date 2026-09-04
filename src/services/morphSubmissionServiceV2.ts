@@ -20,10 +20,26 @@ export interface MorphSubmissionInputV2 {
   image: File;
 }
 
+const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
+const MAX_FIELD_LENGTH = 4000;
+const ALLOWED_INPUT_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 const slugify = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
 
+function validateText(value: string, label: string, required = false): string {
+  const trimmed = value.trim();
+  if (required && !trimmed) throw new Error(`${label} is required.`);
+  if (trimmed.length > MAX_FIELD_LENGTH) throw new Error(`${label} is too long. Please keep it under ${MAX_FIELD_LENGTH} characters.`);
+  return trimmed;
+}
+
 async function prepareImage(file: File): Promise<Blob> {
-  if (!file || !file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+  if (!file) throw new Error("Please choose an image file.");
+  if (!ALLOWED_INPUT_TYPES.has(file.type)) {
+    throw new Error("Please choose a JPG, PNG or WebP image. HEIC/HEIF is not accepted because browser image decoding is inconsistent.");
+  }
+  if (file.size > MAX_IMAGE_BYTES) throw new Error("That image is too large. Please choose an image under 12 MB.");
+
   try {
     const bitmap = await createImageBitmap(file);
     const maxDimension = 1800;
@@ -37,8 +53,15 @@ async function prepareImage(file: File): Promise<Blob> {
     context.imageSmoothingQuality = "high";
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
-    return await new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Unable to compress the image.")), "image/jpeg", 0.84));
-  } catch {
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error("Unable to compress the image.")),
+        "image/jpeg",
+        0.84,
+      );
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unable to prepare the image.") throw error;
     throw new Error("Tiny Titans could not read this image. Please choose a normal camera/gallery image such as JPG, PNG or WebP.");
   }
 }
@@ -46,46 +69,55 @@ async function prepareImage(file: File): Promise<Blob> {
 export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise<{ submissionId: string }> {
   const user = auth.currentUser;
   if (!user) throw new Error("You must be signed in to submit a morph image.");
+
   const morphId = input.morphId.trim();
   const morphName = input.morphName.trim();
   if (!morphId || !morphName) throw new Error("Please select a morph from the Morph Library.");
-  const description = input.description.trim();
-  const proofDetails = input.proofDetails.trim();
-  if (!description) throw new Error("Please describe the animal and why you believe it matches this morph.");
+
+  const description = validateText(input.description, "Animal description", true);
+  const observedTraits = validateText(input.observedTraits, "Known genetic information");
+  const proofDetails = validateText(input.proofDetails, "Evidence / proof", true);
+  const proofReference = validateText(input.proofReference ?? "", "Proof reference");
+
   if (!input.image) throw new Error("Please add the primary morph photograph.");
-  if (!proofDetails) throw new Error("Proof of the confirmed morph is required for factual accuracy.");
   if (!input.factualAccuracyConfirmed) throw new Error("Please confirm that the morph identification is supported by factual evidence.");
   if (!input.photoRequirementsConfirmed) throw new Error("Please confirm that the primary photograph meets the Morph Library photo requirements.");
   if (input.creditMode === "name" && !input.creditName?.trim()) throw new Error("Please enter the name you want displayed, or choose another credit option.");
   if (input.creditMode === "social" && !input.creditSocial?.trim()) throw new Error("Please enter the social handle/link you want displayed, or choose another credit option.");
 
+  const creditName = validateText(input.creditName ?? "", "Credit name");
+  const creditSocial = validateText(input.creditSocial ?? "", "Credit social");
   const compressed = await prepareImage(input.image);
+
   const submissionRef = doc(collection(db, "morphImageSubmissions"));
   const storagePath = `morph-submissions/${user.uid}/${submissionRef.id}/${slugify(morphName) || "morph"}.jpg`;
   const storageRef = ref(storage, storagePath);
   let uploaded = false;
+
   try {
-    await uploadBytes(storageRef, compressed, { contentType: "image/jpeg" });
+    await uploadBytes(storageRef, compressed, { contentType: "image/jpeg", customMetadata: { morphId, contributorUid: user.uid } });
     uploaded = true;
     const imageUrl = await getDownloadURL(storageRef);
+
     await setDoc(submissionRef, {
       userId: user.uid,
       morphId,
       morphName,
       description,
-      observedTraits: input.observedTraits.trim(),
+      observedTraits,
       proofDetails,
-      proofReference: input.proofReference?.trim() || null,
+      proofReference: proofReference || null,
       photoRequirementsConfirmed: true,
       factualAccuracyConfirmed: true,
       creditType: input.creditMode,
-      creditName: input.creditMode === "name" ? input.creditName?.trim() : null,
-      creditSocial: input.creditMode === "social" ? input.creditSocial?.trim() : null,
-      attachment: { path: storagePath, type: "image", sizeBytes: compressed.size },
+      creditName: input.creditMode === "name" ? creditName : null,
+      creditSocial: input.creditMode === "social" ? creditSocial : null,
+      attachment: { path: storagePath, type: "image", sizeBytes: compressed.size, originalType: input.image.type, originalSizeBytes: input.image.size },
       imageUrl,
       status: "Pending",
       submittedAt: serverTimestamp(),
     });
+
     return { submissionId: submissionRef.id };
   } catch (error) {
     if (uploaded) await deleteObject(storageRef).catch(() => undefined);
