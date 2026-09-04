@@ -37,7 +37,7 @@ const speciesAwarePrefixes = [
 
 function Layout() {
   const location = useLocation();
-  const speciesAware = speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
+  const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
 
   return (
     <SpeciesContextProvider>
