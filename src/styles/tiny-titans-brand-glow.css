@@ -1,0 +1,90 @@
+/* Tiny Titans — visible brand glow layer */
+
+/* Logo: visible cyan + gold halo without animation cost */
+.logo-link {
+  box-shadow:
+    0 0 0 1px rgba(245, 182, 66, 0.24),
+    0 0 22px rgba(0, 174, 255, 0.22),
+    0 0 42px rgba(111, 36, 184, 0.28),
+    0 12px 30px rgba(0, 0, 0, 0.28) !important;
+}
+
+.logo-link::before {
+  border-color: rgba(0, 174, 255, 0.42) !important;
+  box-shadow:
+    0 0 14px rgba(0, 174, 255, 0.24),
+    0 0 30px rgba(0, 174, 255, 0.16) !important;
+}
+
+.tiny-titans-logo {
+  filter:
+    drop-shadow(0 0 8px rgba(245, 182, 66, 0.26))
+    drop-shadow(0 0 18px rgba(0, 174, 255, 0.20));
+}
+
+/* Cards: unmistakable but restrained cyan/gold edge glow */
+.dashboard-card,
+.tracker-card,
+.snake-tile,
+.nav-card,
+.welcome-card,
+.weight-records-card,
+.snake-profile-card,
+.form-section {
+  box-shadow:
+    0 0 0 1px rgba(245, 182, 66, 0.05),
+    0 0 18px rgba(0, 174, 255, 0.13),
+    0 0 34px rgba(111, 36, 184, 0.13),
+    0 14px 34px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* Stronger action presence */
+.add-snake-button {
+  box-shadow:
+    0 0 12px rgba(0, 174, 255, 0.34),
+    0 0 28px rgba(0, 174, 255, 0.18),
+    0 10px 24px rgba(0, 0, 0, 0.20) !important;
+}
+
+.tracker-card button {
+  box-shadow:
+    0 0 12px rgba(245, 182, 66, 0.30),
+    0 0 26px rgba(245, 182, 66, 0.14),
+    0 10px 24px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Icon tiles carry the brand glow too */
+.dashboard-icon,
+.nav-card-icon {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 12px rgba(0, 174, 255, 0.20),
+    0 0 26px rgba(111, 36, 184, 0.20),
+    0 10px 24px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Mobile still gets the visual treatment — no hover dependency. */
+@media (max-width: 700px) {
+  .logo-link {
+    box-shadow:
+      0 0 0 1px rgba(245, 182, 66, 0.20),
+      0 0 18px rgba(0, 174, 255, 0.18),
+      0 0 30px rgba(111, 36, 184, 0.22),
+      0 10px 24px rgba(0, 0, 0, 0.24) !important;
+  }
+
+  .dashboard-card,
+  .tracker-card,
+  .snake-tile,
+  .nav-card,
+  .welcome-card,
+  .weight-records-card,
+  .snake-profile-card,
+  .form-section {
+    box-shadow:
+      0 0 0 1px rgba(245, 182, 66, 0.04),
+      0 0 14px rgba(0, 174, 255, 0.10),
+      0 0 24px rgba(111, 36, 184, 0.10),
+      0 10px 26px rgba(0, 0, 0, 0.20) !important;
+  }
+}
