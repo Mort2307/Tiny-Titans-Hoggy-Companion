@@ -1,5 +1,6 @@
 import { addDoc, collection, getDocs, orderBy, query, serverTimestamp, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { findSnakeSpecies } from "../data/species/speciesRegistry";
 import type { MorphSubmissionCategory, UserMorphSubmission, UserMorphSubmissionStatus } from "../types/morphSubmission";
 
 function submissionCollection(uid: string) {
@@ -7,6 +8,7 @@ function submissionCollection(uid: string) {
 }
 
 export type CreateMorphSubmissionInput = {
+  speciesId: string;
   submittedName: string;
   region: UserMorphSubmission["region"];
   category: MorphSubmissionCategory;
@@ -18,6 +20,8 @@ export type CreateMorphSubmissionInput = {
 
 export async function createUserMorphSubmission(uid: string, input: CreateMorphSubmissionInput): Promise<UserMorphSubmission> {
   if (!uid) throw new Error("You must be signed in to submit a morph.");
+  const species = findSnakeSpecies(input.speciesId);
+  if (!species) throw new Error("Please select a recognised snake species before submitting a morph.");
   const submittedName = input.submittedName.trim();
   if (submittedName.length < 2) throw new Error("Please provide the morph name.");
   if (!input.description.trim()) throw new Error("Please describe where the morph name came from or what is known about it.");
@@ -25,6 +29,8 @@ export async function createUserMorphSubmission(uid: string, input: CreateMorphS
   const now = new Date().toISOString();
   const payload = {
     userId: uid,
+    speciesId: species.id,
+    speciesName: species.acceptedScientificName,
     submittedName,
     region: input.region,
     category: input.category,
