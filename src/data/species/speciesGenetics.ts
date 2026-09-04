@@ -18,7 +18,7 @@ import type { InheritanceType, SnakeSpeciesRecord } from "./speciesTypes";
  * so the UI never falls back to Hognose genetics.
  */
 
-export type SpeciesGeneticsStatus = "mapped" | "baseline-only";
+export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
 
@@ -38,9 +38,9 @@ const trait = (
   aliases: options.aliases ?? [],
   kind: "Gene",
   isGene: true,
-  category: "Species trait",
+  category: "Species gene",
   inheritance,
-  hetPossible: options.hetPossible ?? false,
+  hetPossible: options.hetPossible ?? inheritance === "Recessive",
   verification: "Recognised",
   description: options.description ?? `Recognised ${name} trait for this species.`,
   educationalNotes: "Species-scoped catalogue entry. Confirm individual lineage and documentation before treating a genetic claim as proven.",
@@ -66,11 +66,6 @@ const MORPHMARKET = "https://www.morphmarket.com/";
 const BALL_PYTHON_SOURCE = `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`;
 const BALL_PYTHON_SOURCE_LABEL = "MorphMarket Ball Python trait index";
 
-/**
- * Conservative Ball Python base-gene catalogue. The library should show only
- * species-scoped entries; predictive calculator math remains blocked until a
- * species-specific inheritance engine is implemented and validated.
- */
 const BALL_PYTHON_TRAITS: MasterMorphDefinition[] = [
   trait("Albino", "Recessive", { aliases: ["Amelanistic", "Amel"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
   trait("Axanthic", "Recessive", { aliases: ["Anery"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
@@ -118,7 +113,6 @@ const BALL_PYTHON_TRAITS: MasterMorphDefinition[] = [
   trait("Honey", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
   trait("Scaleless Head", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
   trait("Axanthic (MJ)", "Recessive", { aliases: ["Markus Jayne Axanthic"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Atomic", "Recessive", { aliases: ["Eclipse"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
 ];
 
 const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = {
@@ -161,11 +155,12 @@ export function getSpeciesHetGenes(speciesId: string | null | undefined): Master
 
 export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
   if (isHognose(speciesId)) return getMasterCalculatorMorphs();
-  // A species-specific calculator must consume a species-specific inheritance
-  // engine before these traits become predictive breeding inputs.
   return [];
 }
 
 export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): SpeciesGeneticsStatus {
-  return isSpeciesGeneticsMapped(speciesId) ? "mapped" : "baseline-only";
+  if (!speciesId) return "baseline-only";
+  if (isHognose(speciesId)) return "mapped";
+  const species = getSpeciesRecord(speciesId);
+  return species && SPECIES_CATALOGUES[species.acceptedScientificName] ? "partial" : "baseline-only";
 }
