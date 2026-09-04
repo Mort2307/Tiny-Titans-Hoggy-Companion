@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-
 import type { Snake } from "../types/Snake";
+import { findSnakeSpecies } from "../data/species/speciesRegistry";
+import { useSpeciesContext } from "../context/SpeciesContext";
 
 type SnakeTileProps = {
   id: string;
@@ -15,6 +16,7 @@ type SnakeTileProps = {
 
 function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", onSelect, selected = false }: SnakeTileProps) {
   const navigate = useNavigate();
+  const { setSelectedSpeciesId } = useSpeciesContext();
 
   function getSexIcon() {
     if (sex === "Male") return "♂️";
@@ -23,8 +25,12 @@ function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", 
   }
 
   function openTile() {
-    if (onSelect && snake) {
-      onSelect({ ...snake, id: String(snake.id ?? id).trim() });
+    const normalisedSnake = snake ? { ...snake, id: String(snake.id ?? id).trim() } : undefined;
+    const species = normalisedSnake ? findSnakeSpecies(normalisedSnake.species) : undefined;
+    if (species) setSelectedSpeciesId(species.id);
+
+    if (onSelect && normalisedSnake) {
+      onSelect(normalisedSnake);
       return;
     }
     navigate(clickDestination === "weight" ? `/weights/${id}` : `/snakes/${id}`);
