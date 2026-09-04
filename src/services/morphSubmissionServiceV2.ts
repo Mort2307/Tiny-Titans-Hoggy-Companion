@@ -17,6 +17,7 @@ export interface MorphSubmissionInputV2 {
   image: File;
   factualAccuracyConfirmed: boolean;
   photoRequirementsConfirmed: boolean;
+  allowMorphLibraryLink: boolean;
   creditMode: MorphCreditMode;
   creditName?: string;
   creditSocial?: string;
@@ -110,6 +111,7 @@ export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise
       proofReference: proofReference || null,
       photoRequirementsConfirmed: true,
       factualAccuracyConfirmed: true,
+      allowMorphLibraryLink: input.allowMorphLibraryLink === true,
       creditType: input.creditMode,
       creditName: input.creditMode === 'name' ? creditName : null,
       creditSocial: input.creditMode === 'social' ? creditSocial : null,
