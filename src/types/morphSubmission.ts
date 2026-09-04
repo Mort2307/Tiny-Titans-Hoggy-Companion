@@ -6,6 +6,8 @@ export type MorphSubmissionStatus = "Pending" | "Approved" | "Rejected" | "Needs
 export type MorphImageSubmission = {
   id: string;
   userId?: string;
+  speciesId: string;
+  speciesName?: string;
   morphId?: string;
   morphName: string;
   description: string;
@@ -33,6 +35,8 @@ export type MorphImageSubmission = {
 
 export type ApprovedMorphImage = {
   id: string;
+  speciesId?: string;
+  speciesName?: string;
   morphId: string;
   morphName: string;
   imageUrl: string;
@@ -53,6 +57,8 @@ export type UserMorphSubmissionStatus = "pending" | "under-review" | "approved" 
 export type UserMorphSubmission = {
   id: string;
   userId: string;
+  speciesId: string;
+  speciesName?: string;
   submittedName: string;
   region: "global" | "uk" | "usa" | "europe" | "australia" | "other";
   category: MorphSubmissionCategory;
