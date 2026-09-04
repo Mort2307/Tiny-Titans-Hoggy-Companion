@@ -1,6 +1,8 @@
-import { auth, db, storage } from '../firebase';
+import { auth, db, storage } from '../firebase/config';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+
+export type MorphCreditMode = 'name' | 'social' | 'anonymous';
 
 export interface MorphSubmissionInputV2 {
   morphId: string;
@@ -12,7 +14,7 @@ export interface MorphSubmissionInputV2 {
   image: File;
   factualAccuracyConfirmed: boolean;
   photoRequirementsConfirmed: boolean;
-  creditMode: 'name' | 'social' | 'anonymous';
+  creditMode: MorphCreditMode;
   creditName?: string;
   creditSocial?: string;
 }
