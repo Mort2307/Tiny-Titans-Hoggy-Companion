@@ -26,6 +26,8 @@ import type {
   WeightRecord,
 } from "../types/Weight";
 
+import type { MorphSubmissionInputV2 } from "../services/morphSubmissionServiceV2";
+
 import SnakeForm from "../components/SnakeForm";
 
 import SaveProgress, {
@@ -38,6 +40,8 @@ import {
   getUserSnake,
   saveUserSnake,
 } from "../services/snakeService";
+
+import { submitMorphImageV2 } from "../services/morphSubmissionServiceV2";
 
 import {
   migrateSnake,
@@ -256,7 +260,7 @@ function SnakeEdit() {
     setForm((previous) => ({ ...previous, [field]: value }));
   }
 
-  async function saveSnake() {
+  async function saveSnake(morphLibrarySubmission?: MorphSubmissionInputV2) {
     if (saveLock.current) {
       console.log("Tiny Titans: save already locked");
       return;
@@ -289,9 +293,16 @@ function SnakeEdit() {
       pathname: location.pathname,
       parameterId,
       resolvedRouteId: routeId,
+      morphLibrarySubmission: morphLibrarySubmission ? { morphId: morphLibrarySubmission.morphId, speciesId: morphLibrarySubmission.speciesId } : null,
     });
 
     try {
+      if (morphLibrarySubmission) {
+        setSaveStage("preparing");
+        console.log("Tiny Titans: submitting Morph Library photo for review");
+        await submitMorphImageV2(morphLibrarySubmission);
+      }
+
       if (isNew) {
         setSaveStage("preparing");
 
@@ -399,7 +410,7 @@ function SnakeEdit() {
     } catch (error) {
       const details = getFirebaseErrorDetails(error);
       console.error("=========================================");
-      console.error("Tiny Titans: FAILED TO SAVE SNAKE");
+      console.error("Tiny Titans: FAILED TO SAVE SNAKE OR SUBMIT MORPH PHOTO");
       console.error("Firebase error code:", details.code);
       console.error("Firebase error message:", details.message);
       console.error("Full error:", error);
@@ -443,7 +454,8 @@ function SnakeEdit() {
       <SnakeForm
         form={form}
         updateField={updateField}
-        onSave={saveSnake}
+        onSave={() => saveSnake()}
+        onMorphLibrarySubmit={async (submission) => saveSnake(submission)}
         editing={!isNew}
         saving={saving}
       />
