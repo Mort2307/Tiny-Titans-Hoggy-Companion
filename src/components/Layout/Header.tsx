@@ -18,8 +18,9 @@ function Header() {
       </Link>
 
       <div className="app-brand-lockup">
-        <span className="app-brand-name" aria-label="Tiny Titans">Tiny Titans</span>
-        <span className="app-brand-tagline">Reptile Companion</span>
+        <span className="app-brand-name" aria-label="Tiny Titans Reptile Companion">
+          Tiny Titans Reptile Companion
+        </span>
       </div>
     </header>
   );
