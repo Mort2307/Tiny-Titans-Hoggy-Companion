@@ -1,0 +1,605 @@
+/* =========================================================
+   TINY TITANS — LOGO-INSPIRED BRAND THEME
+   Visual-only cascade layer. Loaded last so feature styles remain
+   untouched while the application gains one coherent brand language.
+========================================================= */
+
+:root {
+  /* Core logo palette */
+  --tt-brand-purple: #6f24b8;
+  --tt-brand-purple-deep: #140022;
+  --tt-brand-purple-surface: #26083d;
+  --tt-brand-gold: #f5b642;
+  --tt-brand-cyan: #00aeff;
+  --tt-brand-cyan-soft: rgba(0, 174, 255, 0.18);
+  --tt-brand-gold-soft: rgba(245, 182, 66, 0.14);
+  --tt-brand-white: #fffaf0;
+
+  /* Softer supporting surfaces */
+  --tt-surface-1: rgba(38, 8, 61, 0.96);
+  --tt-surface-2: rgba(49, 12, 76, 0.94);
+  --tt-surface-3: rgba(20, 0, 34, 0.88);
+  --tt-surface-elevated: rgba(65, 18, 96, 0.94);
+  --tt-border-soft: rgba(245, 182, 66, 0.20);
+  --tt-border-cyan: rgba(0, 174, 255, 0.34);
+
+  /* Brand effects */
+  --tt-shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.22);
+  --tt-shadow-card: 0 16px 34px rgba(0, 0, 0, 0.24);
+  --tt-shadow-cyan: 0 10px 26px rgba(0, 174, 255, 0.12);
+  --tt-shadow-gold: 0 10px 26px rgba(245, 182, 66, 0.10);
+  --tt-radius-sm: 12px;
+  --tt-radius-md: 18px;
+  --tt-radius-lg: 24px;
+
+  /* A little more personality without turning the app into a toy */
+  --tt-title-letter-spacing: 0.01em;
+}
+
+/* =========================================================
+   APP CANVAS
+========================================================= */
+
+html {
+  background: var(--tt-brand-purple-deep);
+}
+
+body {
+  background:
+    radial-gradient(circle at 10% -10%, rgba(111, 36, 184, 0.30), transparent 34%),
+    radial-gradient(circle at 95% 0%, rgba(0, 174, 255, 0.09), transparent 26%),
+    linear-gradient(180deg, #170025 0%, #12001f 55%, #0e0018 100%);
+  color: var(--tt-brand-white);
+}
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+}
+
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.18;
+  background:
+    radial-gradient(circle at 18% 24%, rgba(245, 182, 66, 0.12) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 82% 68%, rgba(0, 174, 255, 0.10) 0 1px, transparent 1.5px);
+  background-size: 44px 44px, 58px 58px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+.app-main,
+.app-content {
+  background: transparent;
+}
+
+.app-content {
+  padding-top: 10px;
+}
+
+/* =========================================================
+   HEADER / LOGO STAGE
+========================================================= */
+
+.app-header {
+  position: relative;
+  padding: 16px 16px 10px;
+}
+
+.app-header::after {
+  content: "";
+  width: min(720px, 82vw);
+  height: 1px;
+  margin-top: 16px;
+  background: linear-gradient(90deg, transparent, rgba(245, 182, 66, 0.28), rgba(0, 174, 255, 0.30), transparent);
+}
+
+.logo-link {
+  position: relative;
+  padding: 8px;
+  border-radius: 26px;
+  background: linear-gradient(145deg, rgba(111, 36, 184, 0.28), rgba(20, 0, 34, 0.18));
+  box-shadow: var(--tt-shadow-soft), 0 0 0 1px rgba(245, 182, 66, 0.08);
+}
+
+.logo-link::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 29px;
+  pointer-events: none;
+  border: 1px solid rgba(0, 174, 255, 0.18);
+  box-shadow: 0 0 26px rgba(0, 174, 255, 0.10);
+}
+
+.tiny-titans-logo {
+  border-radius: 20px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+}
+
+.logo-link:hover .tiny-titans-logo {
+  transform: scale(1.015);
+  filter: drop-shadow(0 0 16px rgba(0, 174, 255, 0.24));
+}
+
+.app-header h1 {
+  margin: 12px 0 4px;
+  letter-spacing: var(--tt-title-letter-spacing);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.32), 0 0 12px rgba(245, 182, 66, 0.14);
+}
+
+/* =========================================================
+   PAGE TITLES / SECTION HEADERS
+========================================================= */
+
+.page-container > h1,
+.page-container > h2,
+.page-container > h3,
+.main-content > h1,
+.main-content > h2,
+.main-content > h3,
+.app-content > h1,
+.app-content > h2,
+.app-content > h3 {
+  letter-spacing: var(--tt-title-letter-spacing);
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.24);
+}
+
+.page-container > h1::after,
+.page-container > h2::after,
+.main-content > h1::after,
+.main-content > h2::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 3px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--tt-brand-gold), var(--tt-brand-cyan));
+  box-shadow: 0 0 14px rgba(0, 174, 255, 0.16);
+}
+
+/* =========================================================
+   SHARED CARD LANGUAGE
+========================================================= */
+
+.dashboard-card,
+.tracker-card,
+.snake-card,
+.snake-tile,
+.morph-card,
+.weight-reminder-card,
+.nav-card,
+.welcome-card,
+.weight-records-card,
+.snake-profile-card,
+.form-section {
+  position: relative;
+  background:
+    linear-gradient(150deg, rgba(65, 18, 96, 0.48), transparent 40%),
+    radial-gradient(circle at 100% 0%, rgba(0, 174, 255, 0.07), transparent 32%),
+    var(--tt-surface-1);
+  border: 1px solid var(--tt-border-soft);
+  border-radius: var(--tt-radius-lg);
+  box-shadow: var(--tt-shadow-card), var(--tt-shadow-cyan);
+}
+
+.dashboard-card::before,
+.tracker-card::before,
+.snake-tile::before,
+.nav-card::before,
+.welcome-card::before,
+.weight-records-card::before,
+.snake-profile-card::before,
+.form-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 182, 66, 0.26), transparent);
+  pointer-events: none;
+}
+
+.dashboard-card:hover,
+.tracker-card:hover,
+.snake-tile:hover,
+.nav-card:hover,
+.welcome-card:hover,
+.weight-records-card:hover,
+.snake-profile-card:hover,
+.form-section:hover {
+  transform: translateY(-2px);
+  border-color: var(--tt-border-cyan);
+  box-shadow: var(--tt-shadow-card), 0 14px 30px rgba(0, 174, 255, 0.10);
+}
+
+/* Keep interactive cards feeling tappable without over-animating the app. */
+.snake-tile,
+.nav-card,
+.dashboard-card {
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+/* =========================================================
+   WELCOME / DASHBOARD
+========================================================= */
+
+.welcome-card {
+  padding: clamp(24px, 4vw, 34px);
+  margin-bottom: 22px;
+  background:
+    radial-gradient(circle at 50% -30%, rgba(245, 182, 66, 0.13), transparent 42%),
+    linear-gradient(135deg, rgba(111, 36, 184, 0.22), transparent 58%),
+    var(--tt-surface-1);
+}
+
+.welcome-card h1,
+.welcome-card h2,
+.welcome-card h3 {
+  font-weight: 800;
+}
+
+.dashboard,
+.nav-grid,
+.snake-grid {
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+
+.dashboard-grid,
+.nav-grid {
+  gap: 18px;
+}
+
+.dashboard-card,
+.nav-card {
+  overflow: hidden;
+}
+
+.dashboard-card {
+  min-height: 190px;
+  padding: 26px;
+}
+
+.nav-card {
+  min-height: 164px;
+  padding: 24px;
+}
+
+.dashboard-icon,
+.nav-card-icon {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(111, 36, 184, 0.52), rgba(20, 0, 34, 0.36));
+  border: 1px solid rgba(0, 174, 255, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 24px rgba(0, 0, 0, 0.18);
+  font-size: 34px;
+}
+
+.nav-card h3,
+.dashboard-card h2,
+.dashboard-card h3 {
+  letter-spacing: 0.01em;
+}
+
+/* =========================================================
+   SNAKE CARDS / PROFILE VISUALS
+========================================================= */
+
+.snake-grid {
+  gap: 16px;
+}
+
+.snake-tile {
+  padding: 12px;
+  background:
+    linear-gradient(155deg, rgba(111, 36, 184, 0.18), transparent 44%),
+    var(--tt-surface-1);
+}
+
+.snake-tile img,
+.snake-placeholder {
+  border-radius: 16px;
+}
+
+.snake-tile img {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.snake-placeholder {
+  background:
+    radial-gradient(circle at 50% 25%, rgba(0, 174, 255, 0.10), transparent 34%),
+    var(--tt-surface-3);
+  border: 1px solid rgba(245, 182, 66, 0.12);
+}
+
+.snake-tile:active,
+.nav-card:active,
+.dashboard-card:active {
+  transform: translateY(0) scale(0.995);
+}
+
+/* =========================================================
+   FORMS / INPUTS
+========================================================= */
+
+input,
+select,
+textarea {
+  border: 1px solid rgba(0, 174, 255, 0.24);
+  border-radius: var(--tt-radius-sm);
+  background:
+    linear-gradient(180deg, rgba(38, 8, 61, 0.92), rgba(20, 0, 34, 0.94));
+  color: var(--tt-brand-white);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(0, 174, 255, 0.38);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--tt-brand-cyan);
+  background:
+    linear-gradient(180deg, rgba(49, 12, 76, 0.96), rgba(20, 0, 34, 0.96));
+  box-shadow: 0 0 0 3px rgba(0, 174, 255, 0.09), 0 0 16px rgba(0, 174, 255, 0.12);
+}
+
+::placeholder {
+  color: rgba(255, 250, 240, 0.42);
+}
+
+/* Native selects should remain legible on dark browsers. */
+select option {
+  background: #1d0630;
+  color: #fffaf0;
+}
+
+/* =========================================================
+   BUTTON SYSTEM
+========================================================= */
+
+button,
+.button,
+a[role="button"] {
+  border-radius: 14px;
+  font-weight: 750;
+  letter-spacing: 0.005em;
+  transition: transform 140ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+button:hover,
+.button:hover,
+a[role="button"]:hover {
+  transform: translateY(-1px);
+}
+
+button:active,
+.button:active,
+a[role="button"]:active {
+  transform: translateY(0) scale(0.985);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--tt-brand-gold);
+  outline-offset: 3px;
+}
+
+.tracker-card button {
+  border: 1px solid rgba(245, 182, 66, 0.55);
+  background: linear-gradient(135deg, #f5b642, #e7a92f);
+  color: #20042f;
+  box-shadow: var(--tt-shadow-gold);
+}
+
+.tracker-card button:hover {
+  border-color: rgba(0, 174, 255, 0.72);
+  background: linear-gradient(135deg, #00aeff, #008fd2);
+  color: #07111a;
+}
+
+.add-snake-button {
+  border: 1px solid rgba(0, 174, 255, 0.58);
+  background: linear-gradient(135deg, #00aeff, #0784c1);
+  color: #08111a;
+  box-shadow: 0 10px 24px rgba(0, 174, 255, 0.14);
+}
+
+.add-snake-button:hover {
+  background: linear-gradient(135deg, #f5b642, #e7a92f);
+  border-color: rgba(245, 182, 66, 0.72);
+  box-shadow: 0 12px 26px rgba(245, 182, 66, 0.14);
+}
+
+/* =========================================================
+   BADGES / PILLS / SMALL STATUS UI
+========================================================= */
+
+[class*="badge"],
+[class*="pill"],
+[class*="chip"],
+[class*="tag"],
+[class*="status"] {
+  border-radius: 999px;
+}
+
+/* Only style obvious compact UI markers; avoid imposing appearance on
+   full-size status panels. */
+.badge,
+.pill,
+.chip,
+.tag {
+  border: 1px solid rgba(0, 174, 255, 0.22);
+  background: rgba(0, 174, 255, 0.08);
+  color: var(--tt-brand-white);
+  padding: 5px 10px;
+}
+
+/* =========================================================
+   TABLES / LISTS
+========================================================= */
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid rgba(245, 182, 66, 0.16);
+  border-radius: 18px;
+  background: rgba(38, 8, 61, 0.72);
+}
+
+thead th {
+  background: linear-gradient(180deg, rgba(111, 36, 184, 0.30), rgba(111, 36, 184, 0.16));
+  color: var(--tt-brand-gold);
+  font-weight: 800;
+}
+
+td,
+th {
+  border-bottom: 1px solid rgba(0, 174, 255, 0.10);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+tbody tr:hover td {
+  background: rgba(0, 174, 255, 0.045);
+}
+
+/* =========================================================
+   LOADING / FEEDBACK
+========================================================= */
+
+.loading-screen-full {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(111, 36, 184, 0.22), transparent 38%),
+    radial-gradient(circle at 50% 50%, rgba(0, 174, 255, 0.08), transparent 48%),
+    var(--tt-brand-purple-deep);
+}
+
+.loading-card {
+  border: 1px solid rgba(245, 182, 66, 0.28);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(111, 36, 184, 0.24), transparent 54%),
+    rgba(38, 8, 61, 0.96);
+  box-shadow: var(--tt-shadow-card), 0 0 28px rgba(0, 174, 255, 0.10);
+}
+
+/* =========================================================
+   MOBILE REFINEMENT
+========================================================= */
+
+@media (max-width: 700px) {
+  .app-header {
+    padding: 10px 10px 6px;
+  }
+
+  .logo-link {
+    padding: 6px;
+    border-radius: 22px;
+  }
+
+  .tiny-titans-logo {
+    border-radius: 17px;
+  }
+
+  .app-header::after {
+    margin-top: 12px;
+    width: min(92vw, 520px);
+  }
+
+  .dashboard,
+  .nav-grid,
+  .snake-grid {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .dashboard-grid,
+  .nav-grid,
+  .snake-grid {
+    gap: 13px;
+  }
+
+  .dashboard-card {
+    min-height: 170px;
+    padding: 20px;
+  }
+
+  .nav-card {
+    min-height: 146px;
+    padding: 20px 16px;
+  }
+
+  .dashboard-icon,
+  .nav-card-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 17px;
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .welcome-card {
+    padding: 22px 18px;
+    border-radius: 20px;
+  }
+
+  .app-content {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .dashboard-card:hover,
+  .tracker-card:hover,
+  .snake-tile:hover,
+  .nav-card:hover,
+  .welcome-card:hover,
+  .weight-records-card:hover,
+  .snake-profile-card:hover,
+  .form-section:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-card,
+  .tracker-card,
+  .snake-tile,
+  .nav-card,
+  .welcome-card,
+  .weight-records-card,
+  .snake-profile-card,
+  .form-section,
+  button,
+  .button,
+  a[role="button"],
+  input,
+  select,
+  textarea,
+  .tiny-titans-logo {
+    transition: none !important;
+  }
+}
