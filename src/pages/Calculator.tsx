@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getGenes, morphs as morphDatabase } from "../data/morphs";
+import { masterMorphs, getMasterCalculatorMorphs, getMasterHetGenes } from "../data/masterMorphDatabase";
 import { calculatorNamedCombinations } from "../data/geneticsComboRegistry";
 import ParentSelector, { snakeToSelection, type ParentSelection } from "../components/ParentSelector";
 import ResultCard from "../components/ResultCard";
@@ -92,7 +92,7 @@ export default function Calculator() {
   const effectiveSnakes = user ? snakes : [];
   const allMorphs = useMemo(() => {
     const seen = new Set<string>();
-    return [...morphDatabase, ...calculatorNamedCombinations].filter((morph) => {
+    return [...masterMorphs, ...calculatorNamedCombinations].filter((morph) => {
       const key = `${morph.geneId.toLowerCase()}:${morph.name.toLowerCase()}`;
       if (seen.has(key)) return false;
       seen.add(key);
@@ -101,12 +101,12 @@ export default function Calculator() {
   }, []);
 
   const recognisedVisualOptions = useMemo(
-    () => uniqueMorphOptions(morphDatabase.filter((morph) => morph.verification !== "Unverified" && morph.verification !== "Disputed" && (morph.kind === "Gene" || morph.kind === "Super" || morph.kind === "Combination"))),
+    () => uniqueMorphOptions(getMasterCalculatorMorphs()),
     [],
   );
 
   const hetOptions = useMemo(
-    () => uniqueMorphOptions(getGenes().filter((morph) => morph.hetPossible === true && morph.verification !== "Unverified" && morph.verification !== "Disputed")),
+    () => uniqueMorphOptions(getMasterHetGenes()),
     [],
   );
 
@@ -173,12 +173,12 @@ export default function Calculator() {
       {mode === "pairing" ? (
         <>
           <div className="calculator-info-strip">
-            <span>🧬 Recognised genetics only</span><span>🐍 Saved snakes loaded by sex</span><span>📊 Multi-gene outcomes calculated by the genetics engine</span><span>🧪 Sandbox keeps experiments separate</span>
+            <span>🧬 Evidence-gated genetics only</span><span>🐍 Saved snakes loaded by sex</span><span>📊 Multi-gene outcomes calculated by the genetics engine</span><span>🧪 Sandbox keeps experiments separate</span>
           </div>
           {preloadedPairing && <div className="calculator-note" role="status">🧬 Pairing loaded from Breeding Planner — both parents and their recorded genetics have been pre-filled. You can still fine-tune either parent before calculating.</div>}
           {snakesError && <div className="calculator-error">{snakesError}</div>}
           {effectiveSnakesLoading && <div className="calculator-loading">Loading your logged snakes and their genetics…</div>}
-          {!effectiveSnakesLoading && effectiveSnakes.length === 0 && <div className="calculator-note">No saved snakes were found. You can still build both parents manually from the recognised database.</div>}
+          {!effectiveSnakesLoading && effectiveSnakes.length === 0 && <div className="calculator-note">No saved snakes were found. You can still build both parents manually from the evidence-gated database.</div>}
           <div className="calculator-parents">
             <ParentSelector title="Female / Mother" sex="Female" parent={mother} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setMother} />
             <ParentSelector title="Male / Father" sex="Male" parent={father} snakes={effectiveSnakes} morphOptions={recognisedVisualOptions} hetOptions={hetOptions} onChange={setFather} />
