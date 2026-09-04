@@ -64,7 +64,7 @@ const cared = (
   lighting: string,
   climbing: boolean,
   enrichment: string[],
-  prey: string[],
+  prey: string[] | string,
   feedingNotes: string,
   safetyNotes: string,
   sourceIds: string[],
@@ -85,7 +85,7 @@ const cared = (
       enclosure: { habitatType: lifestyle, substrate: substrates, hides, climbing, water, ventilation, lighting, enrichment },
       cohabitation: { recommendation: 'generally-single', rationale: 'Single housing is the conservative pet default outside managed breeding.' }
     },
-    feeding: { evidenceLevel: 'moderate', dietaryGuild: 'carnivore', preyCategories: prey, notes: feedingNotes },
+    feeding: { evidenceLevel: 'moderate', dietaryGuild: 'carnivore', preyCategories: Array.isArray(prey) ? prey : [prey], notes: feedingNotes },
     breeding: { evidenceLevel: 'moderate', seasonalCycling: 'Seasonal environmental cues may be relevant in established breeding programmes.', notes: 'Condition adults first and use locality/taxon-specific breeding references.' },
     safety: { medicallySignificantVenom: false, rearFangedOrVenomDelivery: false, handlingNotes: safetyNotes },
     sourceIds, reviewedOn
