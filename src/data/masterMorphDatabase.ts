@@ -136,11 +136,14 @@ export function getMasterHetGenes(): MasterMorphDefinition[] {
 }
 
 export function getMasterVisualMorphs(): MasterMorphDefinition[] {
-  return masterMorphs.filter(isCalculatorEligible);
+  return masterMorphs.filter((morph) =>
+    (morph.kind === "Gene" || morph.kind === "Super" || morph.kind === "Combination" || morph.kind === "Line-bred" || morph.kind === "Polygenic") &&
+    !morph.isProject && morph.verification !== "Disputed" && morph.verification !== "Unverified"
+  );
 }
 
 export function getMasterCalculatorMorphs(): MasterMorphDefinition[] {
-  return getMasterVisualMorphs();
+  return masterMorphs.filter(isCalculatorEligible);
 }
 
 export function getMorphEvidence(morph: MasterMorphDefinition): {
