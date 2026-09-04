@@ -1,5 +1,6 @@
 import type { MasterMorphDefinition } from "../masterMorphDatabase";
-import type { InheritanceType } from "./speciesTypes";
+
+type InheritanceType = MasterMorphDefinition["inheritance"];
 
 const morphMarket = "https://www.morphmarket.com/morphpedia/";
 
