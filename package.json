@@ -1,5 +1,5 @@
 {
-  "name": "tinytitans-hoggy-companion",
+  "name": "tinytitans-reptile-companion",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -58,6 +58,12 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@playwright/test": "^1.62.1",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "5.2.0",
+    "@playwright/test": "^1.62.1",
+    "@eslint/js": "^10.0.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.4",
