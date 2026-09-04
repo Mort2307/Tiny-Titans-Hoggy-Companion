@@ -30,6 +30,7 @@ import "./styles/tiny-titans-enclosure-intelligence-polish.css";
 import "./styles/tiny-titans-enclosure-formatting.css";
 import "./styles/reptile-room-3d-builder-mobile-overrides.css";
 import "./styles/tiny-titans-brand-theme.css";
+import "./styles/tiny-titans-brand-glow.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
