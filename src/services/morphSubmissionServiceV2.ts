@@ -1,10 +1,12 @@
 import { auth, db, storage } from '../firebase/config';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { findSnakeSpecies } from '../data/species/speciesRegistry';
 
 export type MorphCreditMode = 'name' | 'social' | 'anonymous';
 
 export interface MorphSubmissionInputV2 {
+  speciesId: string;
   morphId: string;
   morphName: string;
   description: string;
@@ -62,6 +64,9 @@ export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise
   const user = auth.currentUser;
   if (!user) throw new Error('You must be signed in to submit a morph image.');
 
+  const species = findSnakeSpecies(input.speciesId);
+  if (!species) throw new Error('Please select a recognised snake species before submitting a morph image.');
+
   const morphId = input.morphId.trim();
   const morphName = input.morphName.trim();
   if (!morphId || !morphName) throw new Error('Please select a morph from the Morph Library.');
@@ -87,12 +92,14 @@ export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise
   let uploaded = false;
 
   try {
-    await uploadBytes(storageRef, compressed, { contentType: 'image/jpeg', customMetadata: { morphId, contributorUid: user.uid } });
+    await uploadBytes(storageRef, compressed, { contentType: 'image/jpeg', customMetadata: { speciesId: species.id, morphId, contributorUid: user.uid } });
     uploaded = true;
     const imageUrl = await getDownloadURL(storageRef);
 
     await setDoc(submissionRef, {
       userId: user.uid,
+      speciesId: species.id,
+      speciesName: species.acceptedScientificName,
       morphId,
       morphName,
       description,
