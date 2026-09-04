@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 
 const router = fs.readFileSync('src/routes/AppRouter.tsx', 'utf8');
+const lazyPagesPath = 'src/routes/lazyPages.tsx';
+const lazyPages = fs.existsSync(lazyPagesPath) ? fs.readFileSync(lazyPagesPath, 'utf8') : '';
+const routeModuleSource = `${router}\n${lazyPages}`;
 const requiredPages = [
   'Home', 'MySnakes', 'SnakeProfile', 'SnakeTimeline', 'FeedingTracker', 'ShedTracker',
   'HealthTracker', 'BehaviourTracker', 'MorphLibrary', 'MorphEvidenceAudit', 'Calculator',
@@ -17,7 +20,7 @@ const requiredRoutes = [
 const failures = [];
 for (const page of requiredPages) {
   if (!fs.existsSync(`src/pages/${page}.tsx`)) failures.push(`Missing required page file: ${page}.tsx`);
-  if (!router.includes(`import ${page} from`)) failures.push(`Router does not import required page: ${page}`);
+  if (!routeModuleSource.includes(`../pages/${page}`)) failures.push(`Route module does not load required page: ${page}`);
 }
 for (const route of requiredRoutes) {
   if (!router.includes(`path="${route}"`)) failures.push(`Required route missing: ${route}`);
