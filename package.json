@@ -34,6 +34,7 @@
     "test:visual-ux": "node scripts/run-visual-ux-bot.mjs",
     "test:production-gate": "node scripts/run-production-gate.mjs",
     "test": "npm run test:bot:contracts && npm run test:intelligence:consent && npm run test:intelligence:journey && npm run test:notifications && npm run test:room-photo",
+    "audit": "npm audit --audit-level=high",
     "build": "npm run validate:morphs && npm run validate:morph-taxonomy && npm run validate:morph-sources && npm run validate:morph-integrity && npm run validate:species && npm run validate:species-husbandry && npm run validate:submissions && npm run validate:breeding-bridge && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:encoding && npm run validate:copy-quality && npm run validate:security && npm run validate:ui-hardening && npm run validate:observatory && npm run validate:genetics-calculator-v2 && npm run test:intelligence:consent && npm run test:intelligence:journey && npm run test:notifications && npm run test:room-photo && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -45,7 +46,7 @@
   "dependencies": {
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
-    "firebase": "^12.17.1",
+    "firebase": "^12.18.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-globe.gl": "^2.37.0",
@@ -56,7 +57,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.4",
@@ -67,6 +68,6 @@
     "globals": "^17.7.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.65.0",
-    "vite": "^8.2.0"
+    "vite": "^8.2.2"
   }
 }
