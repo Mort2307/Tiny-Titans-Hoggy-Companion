@@ -1,5 +1,5 @@
 import { auth, db, storage } from '../firebase';
-import { collection, deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 export interface MorphSubmissionInputV2 {
