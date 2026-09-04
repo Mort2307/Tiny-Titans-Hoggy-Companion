@@ -1,8 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Snake } from "../types/Snake";
 import type { WeightRecord } from "../types/Weight";
+import type { FeedingRecord } from "../types/Feeding";
 import { useUnits } from "../context/UnitContextValue";
+import { useAuth } from "../context/useAuth";
+import { getSnakeFeedings } from "../services/feedingService";
 
 type Tone = "neutral" | "watch" | "attention";
 type Category = "weight" | "feeding" | "shedding" | "husbandry" | "behaviour" | "health" | "data";
@@ -19,10 +22,10 @@ function label(tone: Tone) { return tone === "attention" ? "Action worth taking"
 function icon(tone: Tone) { return tone === "attention" ? "🔴" : tone === "watch" ? "🟠" : "⚪"; }
 function route(category: Category, id: string) { return category === "weight" ? `/weights/${id}` : category === "feeding" ? `/feeding/${id}` : category === "shedding" ? `/shedding/${id}` : category === "husbandry" ? `/husbandry/${id}` : category === "behaviour" ? `/behaviour/${id}` : category === "health" ? `/health/${id}` : `/snakes/${id}/edit`; }
 
-function buildSignals(snake: Snake, now: Date): Signal[] {
+function buildSignals(snake: Snake, now: Date, canonicalFeedings?: FeedingRecord[]): Signal[] {
   const result: Signal[] = [];
   const ws = weights(snake.weightHistory ?? []);
-  const fs = [...(snake.feedingHistory ?? [])].filter((r) => dateMs(r.date) !== null).sort((a, b) => b.date.localeCompare(a.date));
+  const fs = [...(canonicalFeedings ?? snake.feedingHistory ?? [])].filter((r) => dateMs(r.date) !== null).sort((a, b) => b.date.localeCompare(a.date));
   const ss = [...(snake.shedHistory ?? [])].filter((r) => dateMs(r.date) !== null).sort((a, b) => b.date.localeCompare(a.date));
   if (ss[0] && (ss[0].status === "Problematic" || ss[0].status === "Partial")) result.push({ id: "shed-status", category: "shedding", tone: "attention", confidence: ss.length >= 2 ? "Moderate" : "Low", title: "Latest shed record needs reviewing", reason: `${snake.name}'s latest shed is marked ${ss[0].status.toLowerCase()}. Tiny Titans is surfacing the recorded outcome rather than assuming a cause.`, actionLabel: "Review Shed", route: route("shedding", snake.id) });
   if (ws.length >= 3) { const latest = ws[ws.length - 1].grams; const previous = ws[ws.length - 2].grams; const change = previous ? ((latest - previous) / previous) * 100 : 0; if (change <= -5) result.push({ id: "weight-change", category: "weight", tone: "watch", confidence: ws.length >= 5 ? "High" : "Moderate", title: "Recent weight change is worth checking", reason: `The latest recorded weight is ${Math.abs(change).toFixed(1)}% lower than the previous record. A single change can have many explanations, so Tiny Titans recommends checking the records first.`, actionLabel: "Review Weight", route: route("weight", snake.id) }); }
@@ -41,9 +44,29 @@ function completeness(snake: Snake) { const checks = [Boolean(snake.name && snak
 
 export default function SnakeProfileSmartSummary({ snake }: { snake: Snake }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { formatWeight } = useUnits();
+  const [canonicalFeedings, setCanonicalFeedings] = useState<FeedingRecord[] | null>(null);
   const now = useMemo(() => new Date(), []);
-  const data = useMemo(() => { const ws = weights(snake.weightHistory ?? []); const fs = [...(snake.feedingHistory ?? [])].filter((r) => dateMs(r.date) !== null).sort((a, b) => b.date.localeCompare(a.date)); const ss = [...(snake.shedHistory ?? [])].filter((r) => dateMs(r.date) !== null).sort((a, b) => b.date.localeCompare(a.date)); const current = ws.length ? ws[ws.length - 1].grams : snake.weight; const previous = ws.length >= 2 ? ws[ws.length - 2].grams : null; const delta = current !== null && previous !== null ? current - previous : null; const signals = buildSignals(snake, now); const priority = [...signals].sort((a, b) => { const rank = (tone: Tone) => tone === "attention" ? 3 : tone === "watch" ? 2 : 1; const conf = (value: Signal["confidence"]) => value === "High" ? 4 : value === "Moderate" ? 3 : value === "Low" ? 2 : 1; return rank(b.tone) - rank(a.tone) || conf(b.confidence) - conf(a.confidence); })[0]; return { ws, fs, ss, current, delta, signals, reviewCount: signals.filter((s) => s.tone !== "neutral").length, priority, coverage: completeness(snake), feedMedian: median(intervals(fs)), shedMedian: median(intervals(ss)) }; }, [snake, now]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCanonicalFeedings() {
+      if (!user?.uid || !snake.id) return;
+      try {
+        const records = await getSnakeFeedings(user.uid, snake.id);
+        if (!cancelled) setCanonicalFeedings(records);
+      } catch (error) {
+        console.warn("Tiny Titans: using embedded feeding history for profile snapshot", error);
+        if (!cancelled) setCanonicalFeedings([]);
+      }
+    }
+    setCanonicalFeedings(null);
+    void loadCanonicalFeedings();
+    return () => { cancelled = true; };
+  }, [user?.uid, snake.id]);
+
+  const data = useMemo(() => { const ws = weights(snake.weightHistory ?? []); const fs = [...(canonicalFeedings ?? snake.feedingHistory ?? [])].filter((r) => dateMs(r.date) !== null).sort((a, b) => b.date.localeCompare(a.date)); const ss = [...(snake.shedHistory ?? [])].filter((r) => dateMs(r.date) !== null).sort((a, b) => b.date.localeCompare(a.date)); const current = ws.length ? ws[ws.length - 1].grams : snake.weight; const previous = ws.length >= 2 ? ws[ws.length - 2].grams : null; const delta = current !== null && previous !== null ? current - previous : null; const signals = buildSignals(snake, now, canonicalFeedings ?? undefined); const priority = [...signals].sort((a, b) => { const rank = (tone: Tone) => tone === "attention" ? 3 : tone === "watch" ? 2 : 1; const conf = (value: Signal["confidence"]) => value === "High" ? 4 : value === "Moderate" ? 3 : value === "Low" ? 2 : 1; return rank(b.tone) - rank(a.tone) || conf(b.confidence) - conf(a.confidence); })[0]; return { ws, fs, ss, current, delta, signals, reviewCount: signals.filter((s) => s.tone !== "neutral").length, priority, coverage: completeness(snake), feedMedian: median(intervals(fs)), shedMedian: median(intervals(ss)) }; }, [snake, now, canonicalFeedings]);
   const lastFeed = data.fs[0]?.date ?? snake.lastMealDate ?? null;
   const lastShed = data.ss[0]?.date ?? null;
   const highest = data.ws.length ? Math.max(...data.ws.map((r) => r.grams)) : null;
