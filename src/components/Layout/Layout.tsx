@@ -10,6 +10,7 @@ import SupportNotificationCenter from "../SupportNotificationCenter";
 import SpeciesContextBar from "../SpeciesContextBar";
 import SpeciesContextRouteSync from "../SpeciesContextRouteSync";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
+import SpeciesAwareMorphLibrary from "../../pages/SpeciesAwareMorphLibrary";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
 const speciesAwarePrefixes = [
@@ -41,6 +42,7 @@ const speciesAwarePrefixes = [
 function Layout() {
   const location = useLocation();
   const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
+  const isSpeciesAwareMorphLibrary = location.pathname === "/morph-library";
 
   return (
     <SpeciesContextProvider>
@@ -59,7 +61,7 @@ function Layout() {
             <SupportNotificationCenter />
             <div className="tt-page-frame">
               {speciesAware && <SpeciesContextBar />}
-              <Outlet />
+              {isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary /> : <Outlet />}
               <TinyTitansEvidenceNotice />
             </div>
           </div>
