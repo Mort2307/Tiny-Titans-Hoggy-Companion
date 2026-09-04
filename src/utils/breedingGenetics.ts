@@ -1,7 +1,8 @@
 import type { Snake } from "../types/Snake";
 import { getMasterCalculatorMorphs, getMasterHetGenes } from "../data/masterMorphDatabase";
 import { resolveStrictMorph } from "./geneticsIdentity";
-import { calculateGenetics, type GeneticsCalculatorResult } from "./geneticsCalculator";
+import { calculateGenetics } from "./geneticsCalculator";
+import type { GeneticsCalculatorResult } from "../types/genetics";
 import type { GeneticsCalculation, ParentGenetics } from "./geneticsEngine";
 
 const PROBABILITY_EPSILON = 0.000001;
