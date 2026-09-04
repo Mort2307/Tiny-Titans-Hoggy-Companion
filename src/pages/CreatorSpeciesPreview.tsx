@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { INITIAL_SNAKE_SPECIES } from "../data/species/speciesRegistry";
 import type { NumericRange, SnakeSpeciesRecord } from "../data/species/speciesTypes";
 import "../styles/CreatorTools.css";
+import "../styles/CreatorSpeciesPreview.css";
 
 function rangeText(range?: NumericRange): string {
   if (!range) return "Not yet published";
