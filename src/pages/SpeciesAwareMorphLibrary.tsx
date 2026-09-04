@@ -1,5 +1,4 @@
 import { useSpeciesContext } from "../context/SpeciesContext";
-import { getSpeciesGeneticsStatus } from "../data/species/speciesGenetics";
 import MorphLibrary from "./MorphLibrary";
 import SpeciesMorphLibrary from "./SpeciesMorphLibrary";
 
@@ -12,7 +11,6 @@ import SpeciesMorphLibrary from "./SpeciesMorphLibrary";
  */
 export default function SpeciesAwareMorphLibrary() {
   const { selectedSpeciesId } = useSpeciesContext();
-  const status = getSpeciesGeneticsStatus(selectedSpeciesId);
 
   if (selectedSpeciesId === "heterodon-nasicus") return <MorphLibrary />;
   return <SpeciesMorphLibrary />;
