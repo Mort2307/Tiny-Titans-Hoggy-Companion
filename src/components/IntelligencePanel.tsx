@@ -8,15 +8,15 @@ function confidenceLabel(value: SnakeIntelligence["confidence"]): string {
   return value === "High" ? "High · Reliable pattern" : value === "Moderate" ? "Moderate · Pattern developing" : value === "Low" ? "Low · More data needed" : "More data needed";
 }
 function toneLabel(value: SnakeInsight["tone"]): string { return value === "attention" ? "Worth reviewing" : value === "positive" ? "Positive pattern" : "Recorded pattern"; }
-function categoryLabel(value: SnakeInsight["category"]): string { return value === "weight" ? "Weight" : value === "feeding" ? "Feeding" : value === "shedding" ? "Shed" : value === "husbandry" ? "Husbandry" : value === "behaviour" ? "Behaviour" : value === "health" ? "Health" : "Profile"; }
-function categoryRoute(category: SnakeInsight["category"], snakeId: string): string | null {
+function categoryLabel(value: SnakeInsight["category"]): string { return value === "weight" ? "Weight" : value === "feeding" ? "Feeding" : value === "shedding" ? "Shed" : value === "behaviour" ? "Behaviour" : value === "health" ? "Health" : value === "activity" ? "Timeline" : "Profile"; }
+function categoryRoute(category: SnakeInsight["category"], snakeId: string): string {
   if (category === "weight") return `/weights/${snakeId}`;
   if (category === "feeding") return `/feeding/${snakeId}`;
   if (category === "shedding") return `/shedding/${snakeId}`;
   if (category === "behaviour") return `/behaviour/${snakeId}`;
   if (category === "health") return `/health/${snakeId}`;
-  if (category === "data") return `/snakes/${snakeId}/edit`;
-  return `/husbandry/${snakeId}`;
+  if (category === "activity") return `/snakes/${snakeId}/timeline`;
+  return `/snakes/${snakeId}/edit`;
 }
 
 type IntelligencePanelProps = { intelligence: SnakeIntelligence; compact?: boolean };
