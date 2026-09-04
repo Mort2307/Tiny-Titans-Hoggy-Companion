@@ -5,6 +5,7 @@ import {
   type MasterMorphDefinition,
 } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
+import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import type { InheritanceType, SnakeSpeciesRecord } from "./speciesTypes";
 
 /**
@@ -66,9 +67,9 @@ const BALL_PYTHON_SOURCE = `${MORPHMARKET}all/c/reptiles/pythons/ball-pythons`;
 const BALL_PYTHON_SOURCE_LABEL = "MorphMarket Ball Python trait index";
 
 /**
- * Conservative first-pass Ball Python trait catalogue. These are recognised
- * species traits, not an exhaustive list of every named combination. We do
- * not promote an uncertain trade name into the breeding engine.
+ * Conservative Ball Python base-gene catalogue. The library should show only
+ * species-scoped entries; predictive calculator math remains blocked until a
+ * species-specific inheritance engine is implemented and validated.
  */
 const BALL_PYTHON_TRAITS: MasterMorphDefinition[] = [
   trait("Albino", "Recessive", { aliases: ["Amelanistic", "Amel"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
@@ -106,22 +107,22 @@ const BALL_PYTHON_TRAITS: MasterMorphDefinition[] = [
   trait("Leopard", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
   trait("Lori", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
   trait("Special", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Pinstripe", "Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Spider", "Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
-  trait("Spotnose", "Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Pinstripe", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Spider", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Spotnose", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Ashen", "Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Citron", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Enhancer", "Recessive", { hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Jolt", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Raven", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Honey", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Scaleless Head", "Incomplete Dominant", { sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Axanthic (MJ)", "Recessive", { aliases: ["Markus Jayne Axanthic"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
+  trait("Atomic", "Recessive", { aliases: ["Eclipse"], hetPossible: true, sourceUrl: BALL_PYTHON_SOURCE, sourceLabel: BALL_PYTHON_SOURCE_LABEL }),
 ];
 
-/**
- * Species-specific catalogues currently curated beyond Hognose. Keys are
- * accepted scientific names, which keeps the mapping resilient to common-name
- * aliases and prevents a morphology catalogue being attached to the wrong
- * species ID.
- *
- * This registry is intentionally explicit: we never apply a genus/family-wide
- * genetics list to every member because the same trait name can mean different
- * genetics between species.
- */
 const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = {
+  ...SPECIES_GENETICS_CATALOGUES,
   "Python regius": BALL_PYTHON_TRAITS,
 };
 
@@ -160,7 +161,6 @@ export function getSpeciesHetGenes(speciesId: string | null | undefined): Master
 
 export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
   if (isHognose(speciesId)) return getMasterCalculatorMorphs();
-  // Ball Python recognition is intentionally separate from calculator maths.
   // A species-specific calculator must consume a species-specific inheritance
   // engine before these traits become predictive breeding inputs.
   return [];
