@@ -6,7 +6,8 @@ import { findSnakeSpecies } from '../data/species/speciesRegistry';
 export type MorphCreditMode = 'name' | 'social' | 'anonymous';
 
 export interface MorphSubmissionInputV2 {
-  speciesId: string;
+  /** Optional during the migration window; legacy Morph Library entries are Hognose genetics. */
+  speciesId?: string;
   morphId: string;
   morphName: string;
   description: string;
@@ -64,7 +65,8 @@ export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise
   const user = auth.currentUser;
   if (!user) throw new Error('You must be signed in to submit a morph image.');
 
-  const species = findSnakeSpecies(input.speciesId);
+  const speciesId = input.speciesId?.trim() || 'heterodon-nasicus';
+  const species = findSnakeSpecies(speciesId);
   if (!species) throw new Error('Please select a recognised snake species before submitting a morph image.');
 
   const morphId = input.morphId.trim();
