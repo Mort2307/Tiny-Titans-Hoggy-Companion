@@ -61,7 +61,6 @@ export default function Calculator() {
   const geneticsMapped = isSpeciesGeneticsMapped(selectedSpeciesId);
 
   useEffect(() => setMode(requestedMode), [requestedMode]);
-
   useEffect(() => {
     setMother({ ...EMPTY_PARENT });
     setFather({ ...EMPTY_PARENT });
@@ -88,10 +87,10 @@ export default function Calculator() {
   }, [user, loading, profileLoading]);
 
   const speciesSnakes = useMemo(() => snakes.filter((snake) => {
-    const matchesId = snake.species.trim().toLowerCase() === selectedSpeciesId.toLowerCase();
-    const matchesName = selectedSpecies?.commonNames.some((name) => snake.species.trim().toLowerCase() === name.trim().toLowerCase()) ?? false;
-    const matchesScientific = snake.species.trim().toLowerCase() === (selectedSpecies?.acceptedScientificName ?? "").toLowerCase();
-    return matchesId || matchesName || matchesScientific;
+    const value = snake.species.trim().toLowerCase();
+    return value === selectedSpeciesId.toLowerCase()
+      || (selectedSpecies?.commonNames.some((name) => value === name.trim().toLowerCase()) ?? false)
+      || value === (selectedSpecies?.acceptedScientificName ?? "").toLowerCase();
   }), [snakes, selectedSpeciesId, selectedSpecies]);
 
   useEffect(() => {
@@ -122,7 +121,6 @@ export default function Calculator() {
     () => uniqueMorphOptions(getSpeciesCalculatorMorphs(selectedSpeciesId)),
     [selectedSpeciesId],
   );
-
   const hetOptions = useMemo(
     () => uniqueMorphOptions(getSpeciesHetGenes(selectedSpeciesId)),
     [selectedSpeciesId],
@@ -130,12 +128,10 @@ export default function Calculator() {
 
   const femaleGenetics = useMemo(() => toParentGenetics(mother), [mother]);
   const maleGenetics = useMemo(() => toParentGenetics(father), [father]);
-
-  const result: GeneticsCalculatorResult = useMemo(
-    () => geneticsMapped ? calculateGenetics({ female: femaleGenetics, male: maleGenetics }) : { offspring: [], hasUnresolvedGenetics: false },
-    [femaleGenetics, maleGenetics, geneticsMapped],
-  );
-
+  const result: GeneticsCalculatorResult = useMemo(() => {
+    if (!geneticsMapped) return { input: { female: femaleGenetics, male: maleGenetics }, offspring: [], hasUnresolvedGenetics: false };
+    return calculateGenetics({ female: femaleGenetics, male: maleGenetics });
+  }, [femaleGenetics, maleGenetics, geneticsMapped]);
   const hasSelection = geneticsMapped && (mother.morphs.length > 0 || mother.hets.length > 0 || father.morphs.length > 0 || father.hets.length > 0);
 
   useEffect(() => {
@@ -156,7 +152,6 @@ export default function Calculator() {
     setFather({ ...EMPTY_PARENT });
     setPreloadedPairing(false);
   }
-
   function switchMode(nextMode: CalculatorMode) {
     setMode(nextMode);
     const params = new URLSearchParams(searchParams);
