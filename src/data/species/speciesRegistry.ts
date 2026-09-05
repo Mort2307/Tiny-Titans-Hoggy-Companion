@@ -9,13 +9,14 @@ import { SPECIES_EXPANSION_BATCH_7 } from './speciesExpansionBatch7';
 import { SPECIES_EXPANSION_BATCH_8 } from './speciesExpansionBatch8';
 import { SPECIES_EXPANSION_BATCH_9 } from './speciesExpansionBatch9';
 import { SPECIES_RESEARCH_SOURCES } from './speciesResearchSources';
+import { SPECIES_SPECIALIST_SOURCES } from './speciesSpecialistSources';
 import { enhanceVenomousSpecies } from './speciesVenomousEnhancement';
 import { completeSpeciesHusbandry } from './speciesHusbandryCompletion';
 import { ensureSpeciesHusbandryEvidence } from './speciesEvidence';
 import { applySpeciesResearchOverrides } from './speciesResearchOverrides';
 import type { SnakeSpeciesRecord } from './speciesTypes';
 
-Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES, SPECIES_RESEARCH_SOURCES);
+Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES, SPECIES_RESEARCH_SOURCES, SPECIES_SPECIALIST_SOURCES);
 
 const RAW_SPECIES: SnakeSpeciesRecord[] = [
   ...BASE_SPECIES,
