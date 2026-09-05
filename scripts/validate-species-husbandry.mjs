@@ -51,7 +51,7 @@ const uniqueCount = new Set(ids).size;
 const duplicates = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 if (duplicates.length) errors.push(`Duplicate species IDs: ${duplicates.join(', ')}`);
 
-const expectedSpeciesCount = 112;
+const expectedSpeciesCount = 113;
 if (uniqueCount !== expectedSpeciesCount) {
   errors.push(`Expected exactly ${expectedSpeciesCount} unique snake species; discovered ${uniqueCount}.`);
 }
