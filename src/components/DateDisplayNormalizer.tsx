@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { formatDateForUser, parseUserDate } from "../utils/dateDisplay";
 
-const ISO_DATE_PATTERN = /\b\d{4}-\d{2}-\d{2}\b/g;
+const ISO_DATE_PATTERN = /\b\d{4}-\d{2}-\d{4}\b/g;
 const SLASH_DATE_PATTERN = /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g;
 const DISPLAY_CLASS = "tt-date-user-display";
 const DATE_INPUT_SELECTOR = "input[type='date'], input[id*='date'], input[placeholder*='DD/MM/YYYY']";
@@ -51,7 +51,7 @@ function positionDisplay(input: SupportedDateInput, display: HTMLSpanElement) {
 }
 
 function syncDateInput(input: SupportedDateInput) {
-  const display = input.parentElement?.querySelector<HTMLSpanElement>(`.${DISPLAY_CLASS}`);
+  const display = input.parentElement?.querySelector<HTMLSpanElement>(`.${DISPLAY_CLASS}[data-for-date-input='true']`);
   if (!display) return;
   const formatted = formatDateLikeText(input.value);
   display.textContent = formatted || "DD-MM-YYYY";
@@ -73,6 +73,7 @@ function enhanceDateInput(input: HTMLInputElement) {
   input.dataset.ttDateFormatEnhanced = "1";
   const display = document.createElement("span");
   display.className = DISPLAY_CLASS;
+  display.dataset.forDateInput = "true";
   display.setAttribute("aria-hidden", "true");
   Object.assign(display.style, {
     position: "absolute",
@@ -90,6 +91,7 @@ function enhanceDateInput(input: HTMLInputElement) {
   input.style.color = "transparent";
   input.style.caretColor = "transparent";
   input.style.textShadow = "none";
+  input.style.webkitTextFillColor = "transparent";
   input.style.position = "relative";
   syncDateInput(input);
 }
@@ -103,6 +105,27 @@ export default function DateDisplayNormalizer() {
   useEffect(() => {
     enhanceDateInputs();
     formatTextNodes(document.body);
+
+    const styleId = "tt-date-display-normalizer-style";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+        input[data-tt-date-format-enhanced='1'][type='date']::-webkit-datetime-edit,
+        input[data-tt-date-format-enhanced='1'][type='date']::-webkit-datetime-edit-fields-wrapper,
+        input[data-tt-date-format-enhanced='1'][type='date']::-webkit-datetime-edit-text,
+        input[data-tt-date-format-enhanced='1'][type='date']::-webkit-datetime-edit-month-field,
+        input[data-tt-date-format-enhanced='1'][type='date']::-webkit-datetime-edit-day-field,
+        input[data-tt-date-format-enhanced='1'][type='date']::-webkit-datetime-edit-year-field {
+          color: transparent !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+        input[data-tt-date-format-enhanced='1'][type='date']::-webkit-calendar-picker-indicator {
+          opacity: 1;
+        }
+      `;
+      document.head.appendChild(style);
+    }
 
     const handleDateEvent = (event: Event) => {
       const target = event.target;
