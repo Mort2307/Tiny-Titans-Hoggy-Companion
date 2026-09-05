@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Snake } from "../types/Snake";
+import "../styles/snake-profile-review-guide.css";
 
 type ReviewArea = {
   id: "shed" | "weight" | "feeding" | "enclosure" | "health" | "behaviour" | "master";
@@ -55,19 +56,23 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
     }
 
     const currentWeight = latestWeight?.weight ?? snake.weight;
-    if (currentWeight === undefined || currentWeight === null || !weightCount || ageDays(latestWeight?.date) !== null && (ageDays(latestWeight?.date) ?? 0) > 30) {
+    const weightAge = ageDays(latestWeight?.date);
+    if (currentWeight === undefined || currentWeight === null || !weightCount || weightAge !== null && weightAge > 30) {
       areas.push({ id: "weight", label: "Weight", icon: "⚖️", reason: weightCount ? "The weight record is getting stale, so a current measurement would improve the trend picture." : "No usable weight history is available yet, so Tiny Titans cannot establish this snake's personal weight baseline.", fields: "Measurement, date, unit, and body length in cm when known; repeated measurements are especially valuable for trend analysis.", route: `/weights/${snake.id}` });
     }
 
-    if (!feedingCount || ageDays(latestFeeding?.date) !== null && (ageDays(latestFeeding?.date) ?? 0) > 45) {
+    const feedingAge = ageDays(latestFeeding?.date);
+    if (!feedingCount || feedingAge !== null && feedingAge > 45) {
       areas.push({ id: "feeding", label: "Feeding", icon: "🍽️", reason: feedingCount ? "The feeding history is stale, so the next actual meal will help re-establish the personal feeding pattern." : "No feeding history is available yet, so Tiny Titans cannot learn this snake's individual response or rhythm.", fields: "Actual prey type, prey category, quantity, size, individual or total prey mass, response, feeding method, and useful meal notes.", route: `/feeding/${snake.id}` });
     }
 
-    if (!shedCount || latestShed?.status === "Partial" || latestShed?.status === "Problematic" || ageDays(latestShed?.date) !== null && (ageDays(latestShed?.date) ?? 0) > 120) {
+    const shedAge = ageDays(latestShed?.date);
+    if (!shedCount || latestShed?.status === "Partial" || latestShed?.status === "Problematic" || shedAge !== null && shedAge > 120) {
       areas.push({ id: "shed", label: "Shed", icon: "🐍", reason: latestShed?.status === "Partial" || latestShed?.status === "Problematic" ? `The latest shed is recorded as ${latestShed.status.toLowerCase()}, so the exact outcome is worth reviewing.` : shedCount ? "The shed record is getting stale, so a current shed event will improve the individual rhythm picture." : "No shed history is available yet, so Tiny Titans cannot establish this snake's individual shed rhythm.", fields: "Shed date, complete/partial/problematic outcome, retained eye caps or tail tip, and notes about the shed or surrounding conditions.", route: `/shedding/${snake.id}` });
     }
 
-    if (!snake.enclosure || !latestEnvironment || (ageDays(latestEnvironment.recordedAt) ?? 0) > 30) {
+    const environmentAge = ageDays(latestEnvironment?.recordedAt);
+    if (!snake.enclosure || !latestEnvironment || environmentAge !== null && environmentAge > 30) {
       areas.push({ id: "enclosure", label: "Enclosure", icon: "🏠", reason: snake.enclosure ? "The environment record is getting stale, so a current reading/setup check would improve context." : "No current enclosure/environment record is linked, limiting husbandry context around this snake.", fields: "Enclosure dimensions, warm/cool temperatures, humidity, substrate, hides, water, ventilation, lighting/UVB, enrichment, and relevant setup changes.", route: `/husbandry/${snake.id}` });
     }
 
