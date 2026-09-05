@@ -1,6 +1,7 @@
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { SPECIES_SOURCES } from "../data/species/speciesSources";
 import type { EvidenceScope, SourcedNumericRange } from "../data/species/speciesTypes";
+import type { ReactNode } from "react";
 import HusbandryCare from "./HusbandryCare";
 import "../styles/husbandry-care.css";
 
@@ -10,32 +11,16 @@ function evidenceLabel(basis: EvidenceScope["basis"]): string {
   return basis.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function rangeEvidence(range: SourcedNumericRange | undefined): JSX.Element | null {
-  if (!range) return null;
-  const sourceNames = range.evidence.sourceIds
-    .map((id) => SPECIES_SOURCES[id]?.title)
-    .filter(Boolean);
-  return (
-    <div className="husbandry-evidence-note">
-      <strong>Evidence basis: {evidenceLabel(range.evidence.basis)}</strong>
-      <span>{range.evidence.scope}</span>
-      <span>{range.evidence.caveat}</span>
-      {sourceNames.length > 0 && <span>Sources: {sourceNames.join(" · ")}</span>}
-    </div>
-  );
+function rangeEvidence(range: SourcedNumericRange | undefined): ReactNode {
+  if (!range?.evidence) return null;
+  const sourceNames = range.evidence.sourceIds.map((id) => SPECIES_SOURCES[id]?.title).filter(Boolean);
+  return <div className="husbandry-evidence-note"><strong>Evidence basis: {evidenceLabel(range.evidence.basis)}</strong><span>{range.evidence.scope}</span><span>{range.evidence.caveat}</span>{sourceNames.length > 0 && <span>Sources: {sourceNames.join(" · ")}</span>}</div>;
 }
 
-function frameworkEvidence(evidence: EvidenceScope | undefined): JSX.Element | null {
+function frameworkEvidence(evidence: EvidenceScope | undefined): ReactNode {
   if (!evidence) return null;
   const sourceNames = evidence.sourceIds.map((id) => SPECIES_SOURCES[id]?.title).filter(Boolean);
-  return (
-    <div className="husbandry-evidence-note">
-      <strong>Evidence basis: {evidenceLabel(evidence.basis)}</strong>
-      <span>{evidence.scope}</span>
-      <span>{evidence.caveat}</span>
-      {sourceNames.length > 0 && <span>Sources: {sourceNames.join(" · ")}</span>}
-    </div>
-  );
+  return <div className="husbandry-evidence-note"><strong>Evidence basis: {evidenceLabel(evidence.basis)}</strong><span>{evidence.scope}</span><span>{evidence.caveat}</span>{sourceNames.length > 0 && <span>Sources: {sourceNames.join(" · ")}</span>}</div>;
 }
 
 export default function SpeciesSafeHusbandryCare() {
