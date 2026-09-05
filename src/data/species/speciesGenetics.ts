@@ -13,16 +13,16 @@ export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
 const normalTrait = (speciesName: string): MasterMorphDefinition => ({
   geneId: "normal",
-  name: "Normal / Wild Type",
-  aliases: ["Normal", "Wild Type", "Wildtype", "Wild"],
+  name: "Wild Type / Unclassified",
+  aliases: ["Normal", "Wild Type", "Wildtype", "Wild", "Unclassified"],
   kind: "Gene",
   isGene: false,
   category: "Baseline phenotype",
   inheritance: "Unknown",
   hetPossible: false,
   verification: "Recognised",
-  description: `Normal / wild-type phenotype reference for ${speciesName}.`,
-  educationalNotes: "Normal / wild type is a phenotype reference, not a mutant genetic locus and cannot be treated as a breeding gene.",
+  description: `Baseline wild-type / unclassified phenotype reference for ${speciesName}. Community photographs may document unusual colour, pattern or morphology for later expert review; this entry does not imply a genetic morph.`,
+  educationalNotes: "Baseline reference only. A visible difference is not automatically a genetic morph. Community submissions can document unusual animals for Creator review and future evidence gathering.",
 });
 
 const BALL_PYTHON_SOURCE = "https://www.morphmarket.com/all/c/reptiles/pythons/ball-pythons";
