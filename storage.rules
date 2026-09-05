@@ -11,12 +11,16 @@ service firebase.storage {
     match /snakePhotos/{userId}/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /users/{userId}/reptileRooms/{roomId}/vivariums/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /users/{userId}/reptileRooms/{roomId}/assets/{fileName} { allow read, write: if canAccessUserFiles(userId); }
-    match /morph-submissions/{userId}/{submissionId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
+    match /morph-submissions/{userId}/{submissionId}/{fileName} {
+      allow write: if signedIn() && request.auth.uid == userId && request.resource.size <= 25 * 1024 * 1024 && request.resource.contentType.matches('^(image/(jpeg|png|webp|heic|heif)|video/(mp4|webm|quicktime))$');
+      allow read: if signedIn() && (request.auth.uid == userId || isCreator());
+    }
     match /issueEvidence/{userId}/{reportId}/{fileName} { allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
     match /keeper-observations/{userId}/{observationId}/{fileName} {
       allow write: if signedIn() && request.auth.uid == userId && request.resource.size <= 100 * 1024 * 1024 && request.resource.contentType.matches('^(video/(mp4|webm|quicktime)|image/(jpeg|png|webp))$');
       allow read: if signedIn() && (request.auth.uid == userId || isCreator());
     }
+    match /morphLibrary/{speciesId}/{morphId}/community/{fileName} { allow read: if signedIn(); allow write: if isCreator(); }
     match /morphLibrary/{morphId}/community/{fileName} { allow read: if signedIn(); allow write: if isCreator(); }
   }
 }
