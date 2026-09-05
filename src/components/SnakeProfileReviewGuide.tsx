@@ -143,7 +143,7 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
       : orderedAreas.length ? "watch" : coverage < 70 ? "watch" : "clear";
     const statusLabel = tone === "attention" ? "Action worth taking" : tone === "watch" ? "Worth checking" : "Record looks healthy";
 
-    return { areas: orderedAreas, coverage, tone, statusLabel, diet };
+    return { areas: orderedAreas, coverage, tone, statusLabel };
   }, [snake]);
 
   const quickLinks = [
