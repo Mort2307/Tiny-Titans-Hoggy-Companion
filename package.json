@@ -26,6 +26,7 @@
     "validate:ui-hardening": "node scripts/validate-ui-hardening.mjs",
     "validate:observatory": "node scripts/validate-behaviour-observatory.mjs",
     "validate:genetics-calculator-v2": "node scripts/validate-genetics-calculator-v2.mjs",
+    "monitor:species-sources": "node scripts/check-species-source-health.mjs",
     "test:intelligence:consent": "node scripts/test-intelligence-consent-contracts.mjs",
     "test:intelligence:journey": "node scripts/test-intelligence-journey-contracts.mjs",
     "validate:intelligence-consent": "npm run test:intelligence:consent",
