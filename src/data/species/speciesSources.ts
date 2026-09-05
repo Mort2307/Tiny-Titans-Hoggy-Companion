@@ -2,7 +2,7 @@ import type { SourceCitation } from './speciesTypes';
 
 const reviewedOn = '2026-09-05';
 
-export const SPECIES_SOURCES: Record<string, SourceCitation> = {
+const SOURCE_CATALOGUE: Record<string, SourceCitation> = {
   reptileDatabase2026: { id: 'reptileDatabase2026', title: 'The Reptile Database', publisher: 'Uetz, Freed, Aguilar, Reyes, Kudera & Hošek (eds.)', url: 'https://www.reptile-database.org/', accessedOn: reviewedOn, evidenceLevel: 'high', notes: 'Taxonomic authority/reference; not a captive-husbandry authority by itself.' },
   merckReptileHusbandry2025: { id: 'merckReptileHusbandry2025', title: 'Management and Husbandry of Reptiles', publisher: 'Merck Veterinary Manual', url: 'https://www.merckvetmanual.com/exotic-and-laboratory-animals/reptiles/management-and-husbandry-of-reptiles', accessedOn: reviewedOn, evidenceLevel: 'high', notes: 'Peer-reviewed veterinary reference. Group/table guidance is shown with its actual scope and never silently relabelled species-specific.' },
   reptifilesChildrensPython2026: { id: 'reptifilesChildrensPython2026', title: "Children's Python Care Sheet", publisher: 'ReptiFiles', url: 'https://reptifiles.com/childrens-python-care-sheet/', accessedOn: reviewedOn, evidenceLevel: 'moderate', notes: "Species-specific keeper guidance for Antaresia childreni." },
@@ -33,3 +33,25 @@ export const SPECIES_SOURCES: Record<string, SourceCitation> = {
   zamenisSitulaCaptive2019: { id: 'zamenisSitulaCaptive2019', title: 'Captive Breeding of Zamenis situla and Elaphe sauromates', publisher: 'Published captive study', url: 'https://www.researchgate.net/publication/337936037_CAPTIVE_BREEDING_OF_TWO_COLUBRID_SPECIES_-_Zamenis_situla_AND_Elaphe_sauromates_SERPENTES_COLUBRIDAE_AND_THEIR_REPRODUCTIVE_BIOLOGY_IN_THE_CRIMEA', accessedOn: reviewedOn, evidenceLevel: 'moderate', notes: 'Published captive conditions are retained as study conditions, not universal species targets.' },
   herpetonStilettoSnake2026: { id: 'herpetonStilettoSnake2026', title: 'Small-scaled Stiletto Snake Care Guide', publisher: 'Herpeton Academy', url: 'https://academy.herpeton.net/en/caresheets/snakes/atractaspis-microlepidota/', accessedOn: reviewedOn, evidenceLevel: 'limited', notes: 'Specialist keeper reference; not cross-applied to other taxa.' },
 };
+
+const unresolvedSources = new Set<string>();
+
+const unresolvedSource = (id: string): SourceCitation => ({
+  id,
+  title: `Unresolved source record: ${id}`,
+  publisher: 'Tiny Titans source-audit placeholder',
+  url: '#',
+  accessedOn: reviewedOn,
+  evidenceLevel: 'limited',
+  notes: 'FAIL-SAFE PLACEHOLDER ONLY. This source record is referenced by species data but is missing from the curated source catalogue. It must not be treated as evidence until the source is restored and validated.',
+});
+
+export const SPECIES_SOURCES: Record<string, SourceCitation> = new Proxy(SOURCE_CATALOGUE, {
+  get(target, property, receiver) {
+    if (typeof property !== 'string' || property in target) return Reflect.get(target, property, receiver);
+    unresolvedSources.add(property);
+    return unresolvedSource(property);
+  },
+});
+
+export const getUnresolvedSpeciesSourceIds = (): string[] => [...unresolvedSources].sort();
