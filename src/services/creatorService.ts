@@ -11,7 +11,7 @@ import { getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 
 export type FounderApplication = { id: string; uid: string; email: string; displayName: string; reason: string; experience: string; contribution: string; status: "Pending" | "Approved" | "Declined"; createdAt?: unknown; updatedAt?: unknown };
 export type CommunityUserLocation = { city: string; country: string };
-export type GlobalStats = { registeredUsers: number; activeUsers: number; onlineUsers?: number; activeTodayUsers?: number; activeWeekUsers?: number; activeMonthUsers?: number; activatedUsers?: number; engagedUsers?: number; usersWithData?: number; incompleteUserProfiles?: number; communityContributors?: number; snakeProfiles: number; mealsFed: number; weightLogs: number; validWeightLogs?: number; invalidWeightLogs?: number; legacyWeightCandidates?: number; totalWeightKg: number; totalWeightLb: number; shedsLogged: number; validShedLogs?: number; invalidShedLogs?: number; totalShedLengthCm: number; totalShedLengthIn?: number; geneticsCalculations: number; dataQualityIssues?: number };
+export type GlobalStats = { registeredUsers: number; activeUsers: number; onlineUsers?: number; activeTodayUsers?: number; activeWeekUsers?: number; activeMonthUsers?: number; activatedUsers?: number; engagedUsers?: number; usersWithData?: number; incompleteUserProfiles?: number; communityContributors?: number; snakeProfiles: number; mealsFed: number; weightLogs: number; validWeightLogs?: number; invalidWeightLogs?: number; legacyWeightCandidates?: number; totalWeightKg: number; totalWeightLb: number; shedsLogged: number; validShedLogs?: number; invalidShedLogs?: number; totalShedLengthCm: number; validShedLengthCm?: number; totalShedLengthIn?: number; geneticsCalculations: number; dataQualityIssues?: number };
 
 export async function submitFounderApplication(input: Omit<FounderApplication, "id" | "status" | "createdAt" | "updatedAt">) { const ref = await addDoc(collection(db, "founderApplications"), { ...input, status: "Pending", createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); return ref.id; }
 export async function submitFeedback(input: Omit<Feedback, "id" | "createdAt" | "updatedAt">) { if (!input.userId) throw new Error("You must be signed in to send feedback."); if (!input.title.trim() || !input.message.trim()) throw new Error("Please provide a title and feedback message."); const ref = await addDoc(collection(db, "feedback"), { ...input, status: input.status ?? "New", title: input.title.trim(), message: input.message.trim(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); return ref.id; }
@@ -44,8 +44,8 @@ function resolveSpeciesMorph(submission: MorphImageSubmission) {
   if (speciesId) {
     const speciesMorphs = getSpeciesVisualMorphs(speciesId);
     const exact = speciesMorphs.find((entry) => entry.geneId === requestedId || normaliseMorphIdentity(entry.name) === requestedName || (entry.aliases ?? []).some((alias) => normaliseMorphIdentity(alias) === requestedName));
-    if (exact && exact.name !== "Normal / Wild Type") return exact;
-    if (!exact) return null;
+    if (exact) return exact;
+    return null;
   }
   return requestedId ? resolveMasterMorph(requestedId) ?? resolveMasterMorph(submission.morphName) : resolveMasterMorph(submission.morphName);
 }
@@ -54,6 +54,7 @@ export async function approveMorphImageSubmission(submission: MorphImageSubmissi
   if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval.");
   const resolvedMorph = resolveSpeciesMorph(submission);
   if (!resolvedMorph) throw new Error(`Could not match “${submission.morphName}” to a canonical Morph Library entry for the selected species. Check the species and morph before approving.`);
+  if (submission.speciesId && resolvedMorph.geneId !== submission.morphId) throw new Error("The submitted morph does not match the selected species' canonical morph ID. Do not approve cross-species imagery.");
   const functions = getFunctions(undefined, "europe-west2");
   const approveCallable = httpsCallable<{ submissionId: string }, { success: boolean; published: boolean; approvedImageId: string | null; morphId: string; morphName: string; storagePath: string }>(functions, "approveMorphImageSubmission");
   try {
