@@ -10,6 +10,7 @@ import { SPECIES_EXPANSION_BATCH_8 } from './speciesExpansionBatch8';
 import { SPECIES_EXPANSION_BATCH_9 } from './speciesExpansionBatch9';
 import { enhanceVenomousSpecies } from './speciesVenomousEnhancement';
 import { completeSpeciesHusbandry } from './speciesHusbandryCompletion';
+import { ensureSpeciesHusbandryEvidence } from './speciesEvidence';
 import type { SnakeSpeciesRecord } from './speciesTypes';
 
 Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES);
@@ -26,8 +27,11 @@ const RAW_SPECIES: SnakeSpeciesRecord[] = [
   ...SPECIES_EXPANSION_BATCH_9,
 ];
 
-/** Every registered species leaves this boundary with an explicit husbandry object. */
-const ALL_SPECIES: SnakeSpeciesRecord[] = RAW_SPECIES.map(completeSpeciesHusbandry).map(enhanceVenomousSpecies);
+/** Every registered species leaves this boundary with explicit husbandry and evidence metadata. */
+const ALL_SPECIES: SnakeSpeciesRecord[] = RAW_SPECIES
+  .map(completeSpeciesHusbandry)
+  .map(ensureSpeciesHusbandryEvidence)
+  .map(enhanceVenomousSpecies);
 
 export const INITIAL_SNAKE_SPECIES = ALL_SPECIES;
 export const SNAKE_SPECIES_BY_ID = Object.fromEntries(ALL_SPECIES.map((species) => [species.id, species])) as Record<string, SnakeSpeciesRecord>;
