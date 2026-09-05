@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { formatDateForUser, parseUserDate } from "../utils/dateDisplay";
 
-const ISO_DATE_PATTERN = /\b\d{4}-\d{2}-\d{4}\b/g;
+const ISO_DATE_PATTERN = /\b\d{4}-\d{2}-\d{2}\b/g;
 const SLASH_DATE_PATTERN = /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g;
 const DISPLAY_CLASS = "tt-date-user-display";
 const DATE_INPUT_SELECTOR = "input[type='date'], input[id*='date'], input[placeholder*='DD/MM/YYYY']";
