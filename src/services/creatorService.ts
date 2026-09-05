@@ -7,6 +7,7 @@ import type { Feedback } from "../types/feedback";
 import type { ApprovedMorphImage, MorphImageSubmission, MorphSubmissionStatus } from "../types/morphSubmission";
 import { getCanonicalGlobalStats } from "./trackerStatsService";
 import { resolveMasterMorph } from "../data/masterMorphDatabase";
+import { getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 
 export type FounderApplication = { id: string; uid: string; email: string; displayName: string; reason: string; experience: string; contribution: string; status: "Pending" | "Approved" | "Declined"; createdAt?: unknown; updatedAt?: unknown };
 export type CommunityUserLocation = { city: string; country: string };
@@ -34,10 +35,25 @@ export async function getGlobalStats(): Promise<GlobalStats> { return getCanonic
 export async function getCommunityUserLocations(): Promise<CommunityUserLocation[]> { const snapshot = await getDocs(collection(db, "users")); return snapshot.docs.map((item) => item.data().approximateLocation as Partial<CommunityUserLocation> & { visibleToCreator?: boolean } | undefined).filter((location): location is CommunityUserLocation & { visibleToCreator?: boolean } => Boolean(location?.visibleToCreator && location.city?.trim() && location.country?.trim())).map((location) => ({ city: location.city.trim(), country: location.country.trim() })); }
 export async function getMorphImageSubmissions(): Promise<MorphImageSubmission[]> { const snapshot = await getDocs(query(collection(db, "morphImageSubmissions"), orderBy("submittedAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<MorphImageSubmission, "id">) })); }
 export async function updateMorphSubmissionStatus(submissionId: string, status: MorphSubmissionStatus, reviewerUid?: string, rejectionReason?: string) { await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status, reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: rejectionReason ?? null }); }
+
+const normaliseMorphIdentity = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+function resolveSpeciesMorph(submission: MorphImageSubmission) {
+  const speciesId = submission.speciesId?.trim();
+  const requestedId = submission.morphId?.trim();
+  const requestedName = normaliseMorphIdentity(submission.morphName);
+  if (speciesId) {
+    const speciesMorphs = getSpeciesVisualMorphs(speciesId);
+    const exact = speciesMorphs.find((entry) => entry.geneId === requestedId || normaliseMorphIdentity(entry.name) === requestedName || (entry.aliases ?? []).some((alias) => normaliseMorphIdentity(alias) === requestedName));
+    if (exact && exact.name !== "Normal / Wild Type") return exact;
+    if (!exact) return null;
+  }
+  return requestedId ? resolveMasterMorph(requestedId) ?? resolveMasterMorph(submission.morphName) : resolveMasterMorph(submission.morphName);
+}
+
 export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage | null> {
   if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval.");
-  const resolvedMorph = submission.morphId ? resolveMasterMorph(submission.morphId) ?? resolveMasterMorph(submission.morphName) : resolveMasterMorph(submission.morphName);
-  if (!resolvedMorph) throw new Error(`Could not match “${submission.morphName}” to a canonical Morph Library entry. Check the morph name before approving.`);
+  const resolvedMorph = resolveSpeciesMorph(submission);
+  if (!resolvedMorph) throw new Error(`Could not match “${submission.morphName}” to a canonical Morph Library entry for the selected species. Check the species and morph before approving.`);
   const functions = getFunctions(undefined, "europe-west2");
   const approveCallable = httpsCallable<{ submissionId: string }, { success: boolean; published: boolean; approvedImageId: string | null; morphId: string; morphName: string; storagePath: string }>(functions, "approveMorphImageSubmission");
   try {
@@ -50,4 +66,4 @@ export async function approveMorphImageSubmission(submission: MorphImageSubmissi
 }
 export async function deleteApprovedMorphImage(approvedImageId: string, reason: string): Promise<void> { const functions = getFunctions(undefined, "europe-west2"); const removeCallable = httpsCallable<{ approvedImageId: string; reason: string }, { success: boolean }>(functions, "deleteApprovedMorphImage"); await removeCallable({ approvedImageId, reason }); }
 export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) { if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined); await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null }); }
-export async function getApprovedMorphImages(morphId?: string): Promise<ApprovedMorphImage[]> { const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc"))); const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) })); const filtered = morphId ? images.filter((image) => image.morphId === morphId) : images; return Promise.all(filtered.map(async (image) => { if (image.imageUrl) return image; if (!image.storagePath) return image; try { return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) }; } catch (error) { console.warn("Approved morph image URL could not be resolved", image.storagePath, error); return image; } })); }
+export async function getApprovedMorphImages(morphId?: string, speciesId?: string): Promise<ApprovedMorphImage[]> { const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc"))); const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) })); const filtered = images.filter((image) => (!morphId || image.morphId === morphId) && (!speciesId || image.speciesId === speciesId)); return Promise.all(filtered.map(async (image) => { if (image.imageUrl) return image; if (!image.storagePath) return image; try { return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) }; } catch (error) { console.warn("Approved morph image URL could not be resolved", image.storagePath, error); return image; } })); }
