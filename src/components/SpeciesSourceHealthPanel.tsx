@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { SPECIES_SOURCES } from '../data/species/speciesSources';
 import { localSourceHealth, sourceHealthLabel, type SourceHealthManifest, type SourceHealthRecord } from '../data/species/sourceHealth';
 import type { SnakeSpeciesRecord } from '../data/species/speciesTypes';
+import '../styles/species-source-health.css';
 
 type Props = { species: SnakeSpeciesRecord };
 
