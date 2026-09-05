@@ -22,42 +22,10 @@ function matchesFilter(morph: SpeciesMorphEntry, filter: Filter): boolean {
   return true;
 }
 
-function SpeciesCommunityGallery({ speciesId, morphId, morphName }: { speciesId: string; morphId: string; morphName: string }) {
-  const [images, setImages] = useState<ApprovedMorphImage[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    void getApprovedMorphImages(morphId, speciesId)
-      .then((result) => {
-        if (!cancelled) setImages(result.filter((image) => Boolean(image.imageUrl)));
-      })
-      .catch(() => {
-        if (!cancelled) setImages([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [morphId, speciesId]);
-
-  return (
-    <section className="morph-detail__section morph-community-gallery">
-      <div className="morph-community-gallery__header">
-        <div><h3>📷 Community examples</h3><p>Approved keeper photographs linked to this exact species and morph.</p></div>
-        {!loading && images.length > 0 && <span className="morph-community-gallery__count">{images.length} {images.length === 1 ? "example" : "examples"}</span>}
-      </div>
-      {loading ? <p className="morph-community-gallery__state">Loading approved {morphName} examples…</p> : images.length === 0 ? <p className="morph-community-gallery__state">No approved community examples for {morphName} yet.</p> : <div className="morph-community-gallery__scroller" tabIndex={0}>{images.map((image, index) => <figure className="morph-community-gallery__card" key={image.id ?? `${image.imageUrl}-${index}`}><img src={image.imageUrl} alt={`${morphName} community example ${index + 1}`} loading={index < 2 ? "eager" : "lazy"} />{(image.creditName || image.creditSocial) && <figcaption className="morph-community-gallery__credit">{image.creditName || image.creditSocial}</figcaption>}</figure>)}</div>}
-    </section>
-  );
-}
-
 export default function SpeciesMorphLibrary() {
   const { selectedSpeciesId, selectedSpecies } = useSpeciesContext();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [selected, setSelected] = useState<SpeciesMorphEntry | null>(null);
   const [showImageSubmission, setShowImageSubmission] = useState(false);
   const [imageSubmissionMorphId, setImageSubmissionMorphId] = useState("");
   const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
