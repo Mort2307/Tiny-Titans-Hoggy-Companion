@@ -3,6 +3,7 @@ import BackHomeButton from "../components/BackHomeButton";
 import "../styles/make-contribution.css";
 
 const choices = [
+  { icon: "🐍", title: "Submit a Species", text: "Submit taxonomy, ecology, husbandry, feeding, breeding, evidence and species imagery for Creator review. Nothing is published automatically.", to: "/submit-species" },
   { icon: "🧬", title: "Morph Library", text: "Submit a morph name, evidence or image for Creator review and help keep the genetics library accurate.", to: "/morph-library" },
   { icon: "🐍", title: "Behaviour Observatory", text: "Share a real behaviour observation, photo or video with context so other keepers can learn from it.", to: "/behaviour-observatory?submit=1" },
   { icon: "📖", title: "Keeper Behaviour Handbook", text: "Explore the teaching library first, then contribute observations that could strengthen future guidance.", to: "/keeper-handbook" },
