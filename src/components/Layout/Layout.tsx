@@ -11,6 +11,9 @@ import SpeciesContextBar from "../SpeciesContextBar";
 import SpeciesContextRouteSync from "../SpeciesContextRouteSync";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
 import SpeciesAwareMorphLibrary from "../../pages/SpeciesAwareMorphLibrary";
+import SpeciesMorphDetail from "../../pages/SpeciesMorphDetail";
+import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
+import SpeciesSafeEnclosureIntelligence from "../../pages/SpeciesSafeEnclosureIntelligence";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
 const speciesAwarePrefixes = [
@@ -43,6 +46,9 @@ function Layout() {
   const location = useLocation();
   const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isSpeciesAwareMorphLibrary = location.pathname === "/morph-library";
+  const morphGalleryMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
+  const morphDetailMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/?$/);
+  const isEnclosureIntelligence = location.pathname === "/enclosure-intelligence" || location.pathname.startsWith("/enclosure-intelligence/");
 
   return (
     <SpeciesContextProvider>
@@ -61,7 +67,11 @@ function Layout() {
             <SupportNotificationCenter />
             <div className="tt-page-frame">
               {speciesAware && <SpeciesContextBar />}
-              {isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary /> : <Outlet />}
+              {isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
+                : morphGalleryMatch ? <SpeciesMorphGallery />
+                  : morphDetailMatch ? <SpeciesMorphDetail />
+                    : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence />
+                      : <Outlet />}
               <TinyTitansEvidenceNotice />
             </div>
           </div>
