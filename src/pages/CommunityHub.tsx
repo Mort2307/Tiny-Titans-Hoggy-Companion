@@ -19,6 +19,7 @@ const communityActions = [
   { icon: "🏆", title: "Wall of Titans", description: "Meet the keepers supporting Tiny Titans and explore recognised community contributions.", route: "/community/wall-of-titans", action: "Visit the wall" },
   { icon: "🧭", title: "Find a Mentor", description: "Connect with experienced keepers through the dedicated mentorship workspace.", route: "/community/mentorship", action: "Explore mentorship" },
   { icon: "🧬", title: "Morph Contributions", description: "Explore the Morph Library and submit reviewed reference images or missing terminology.", route: "/morph-library", action: "Open Morph Library" },
+  { icon: "🏡", title: "Vivarium Showcase", description: "Explore real keeper setups, compare approaches and share what you have learned — without ranking anyone's enclosure.", route: "/community/vivarium-showcase", action: "Explore setups" },
   { icon: "💬", title: "Conversations", description: "Jump into your existing community conversations and keep the discussion moving.", route: "/conversations", action: "Open conversations" },
   { icon: "🛠️", title: "Report and Improve", description: "Report bugs, share feedback and help make the app better for every keeper.", route: "/report-bug", action: "Send feedback" },
 ];
