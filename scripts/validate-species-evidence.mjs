@@ -6,34 +6,34 @@ const speciesDir = path.join(root, 'src', 'data', 'species');
 const files = fs.readdirSync(speciesDir).filter((name) => name.endsWith('.ts'));
 const text = files.map((name) => fs.readFileSync(path.join(speciesDir, name), 'utf8')).join('\n');
 
-const sourceIds = new Set();
-for (const match of text.matchAll(/sourceIds\s*:\s*\[([^\]]+)\]/g)) {
-  for (const id of match[1].matchAll(/['\"]([^'\"]+)['\"]/g)) sourceIds.add(id[1]);
-}
-for (const match of text.matchAll(/SPECIES_SOURCES\.([A-Za-z0-9_]+)/g)) sourceIds.add(match[1]);
-
 const sourceFile = fs.readFileSync(path.join(speciesDir, 'speciesSources.ts'), 'utf8');
 const declared = new Set();
 for (const match of sourceFile.matchAll(/^\s*([A-Za-z0-9_]+):\s*\{/gm)) declared.add(match[1]);
 for (const match of sourceFile.matchAll(/\b([A-Za-z0-9_]+):\s*\{/g)) declared.add(match[1]);
-const known = new Set(['reptileDatabase2026']);
-for (const id of declared) known.add(id);
 
-const unresolved = [...sourceIds].filter((id) => !known.has(id)).sort();
-const husbandryFiles = files.filter((name) => /speciesRegistryBase|speciesExpansion/.test(name));
-const taxonomyOnlyCount = (text.match(/taxonomyOnly\(/g) ?? []).length;
-const numericRangeCount = (text.match(/min:\s*\d+(?:\.\d+)?\s*,\s*max:\s*\d+/g) ?? []).length;
-const explicitEvidenceCount = (text.match(/evidence:\s*(?:\{[^{}]*\}|scope\()/g) ?? []).length;
+const sourceIds = new Set();
+for (const match of text.matchAll(/(?:sourceIds|SPECIES_SOURCES)\s*[:.(=]*\s*[^\n;]*/g)) {
+  for (const id of match[0].matchAll(/\b([A-Za-z][A-Za-z0-9]*(?:20\d{2}|19\d{2}))\b/g)) sourceIds.add(id[1]);
+}
+for (const match of text.matchAll(/['\"]([A-Za-z][A-Za-z0-9]*(?:20\d{2}|19\d{2}))['\"]/g)) sourceIds.add(match[1]);
+
+const unresolved = [...sourceIds].filter((id) => !declared.has(id)).sort();
+const placeholders = [...declared].filter((id) => new RegExp(`id:\\s*['\\"]${id}['\\"][^]*?url:\\s*['\\"]#['\\"]`).test(sourceFile));
+const evidenceObjects = (text.match(/\bevidence\s*:/g) ?? []).length;
+const numericRanges = (text.match(/\bmin\s*:\s*-?\d+(?:\.\d+)?\s*,\s*max\s*:\s*-?\d+(?:\.\d+)?/g) ?? []).length;
+const husbandryObjects = (text.match(/\bhusbandry\s*:/g) ?? []).length;
 
 console.log(`Species evidence audit: ${files.length} species-data source files scanned.`);
-console.log(`Referenced source IDs: ${sourceIds.size}. Declared source IDs: ${known.size}.`);
-console.log(`Numeric range literals detected: ${numericRangeCount}. Explicit evidence objects detected: ${explicitEvidenceCount}.`);
-console.log(`Taxonomy-only constructor occurrences: ${taxonomyOnlyCount}.`);
+console.log(`Referenced source IDs: ${sourceIds.size}. Declared source IDs: ${declared.size}.`);
+console.log(`Evidence object markers: ${evidenceObjects}. Numeric range literals: ${numericRanges}. Husbandry object markers: ${husbandryObjects}.`);
 
 if (unresolved.length > 0) {
   console.error(`UNRESOLVED SOURCE IDS: ${unresolved.join(', ')}`);
   process.exit(1);
 }
+if (placeholders.length > 0) {
+  console.error(`PLACEHOLDER SOURCE IDS IN CURATED CATALOGUE: ${placeholders.join(', ')}`);
+  process.exit(1);
+}
 
-console.log('Species evidence source contract OK: every statically referenced source ID resolves in the curated source catalogue.');
-console.log(`Evidence mapping files scanned: ${husbandryFiles.length}.`);
+console.log('Species evidence source contract OK: every statically discovered dated source ID resolves to a real curated source entry.');
