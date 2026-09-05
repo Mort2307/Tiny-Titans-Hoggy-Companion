@@ -14,9 +14,9 @@ export default defineConfig({
       ],
       manifest: {
         id: "/",
-        name: "Tiny Titans Hoggy Companion",
+        name: "Tiny Titans Reptile Companion",
         short_name: "Tiny Titans",
-        description: "Western Hognose snake tracking, genetics and husbandry companion app.",
+        description: "Tiny Titans Reptile Companion — species profiles, husbandry, tracking, genetics and keeper tools for reptiles.",
         theme_color: "#140022",
         background_color: "#140022",
         display: "standalone",
@@ -51,17 +51,17 @@ export default defineConfig({
           groups: [
             {
               name: "react-vendor",
-              test: /node_modules[\\/]react(?:$|[\\/])/,
+              test: /node_modules[\\/]react(?:$|[\\/])/, 
               priority: 30,
             },
             {
               name: "firebase-vendor",
-              test: /node_modules[\\/]firebase(?:$|[\\/])/,
+              test: /node_modules[\\/]firebase(?:$|[\\/])/, 
               priority: 20,
             },
             {
               name: "visual-vendor",
-              test: /node_modules[\\/](?:three|@react-three|react-globe\.gl|recharts)(?:$|[\\/])/,
+              test: /node_modules[\\/](?:three|@react-three|react-globe\\.gl|recharts)(?:$|[\\/])/, 
               priority: 10,
             },
             {
