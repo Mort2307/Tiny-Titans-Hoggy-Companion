@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "generatedOn": "2026-09-05",
+  "speciesCount": 113,
+  "mode": "count-locked-initial-baseline",
+  "note": "Initial enforcement baseline captured after the 113-species registry validation. Run npm run validate:species-integration -- --bootstrap to replace this with an exact species-ID baseline after future registry changes have been fully audited."
+}
