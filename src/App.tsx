@@ -7,7 +7,6 @@ import AppRouter from "./routes/AppRouter";
 import ExplainThis from "./components/ExplainThis/ExplainThis";
 import NotificationBridge from "./components/NotificationBridge";
 import NotificationOnboarding from "./components/NotificationOnboarding";
-import DateDisplayNormalizer from "./components/DateDisplayNormalizer";
 
 function App() {
   return (
@@ -16,7 +15,6 @@ function App() {
       <ExplainThis />
       <NotificationBridge />
       <NotificationOnboarding />
-      <DateDisplayNormalizer />
     </>
   );
 }
