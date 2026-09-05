@@ -1,8 +1,19 @@
 import { useEffect } from "react";
-import { formatDateForUser } from "../utils/dateDisplay";
+import { formatDateForUser, parseUserDate } from "../utils/dateDisplay";
 
 const ISO_DATE_PATTERN = /\b\d{4}-\d{2}-\d{2}\b/g;
+const SLASH_DATE_PATTERN = /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g;
 const DISPLAY_CLASS = "tt-date-user-display";
+const DATE_INPUT_SELECTOR = "input[type='date'], input[id*='date'], input[placeholder*='DD/MM/YYYY']";
+
+type SupportedDateInput = HTMLInputElement;
+
+function formatDateLikeText(value: string): string {
+  return value.replace(ISO_DATE_PATTERN, (date) => formatDateForUser(date)).replace(SLASH_DATE_PATTERN, (date) => {
+    const parsed = parseUserDate(date.replaceAll("/", "-"));
+    return parsed ? formatDateForUser(parsed) : date;
+  });
+}
 
 function formatTextNodes(root: ParentNode) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -13,21 +24,22 @@ function formatTextNodes(root: ParentNode) {
     const parent = text.parentElement;
     const tag = parent?.tagName;
     if (parent && tag !== "SCRIPT" && tag !== "STYLE" && tag !== "NOSCRIPT" && tag !== "TEXTAREA" && tag !== "OPTION" && !parent.closest(`.${DISPLAY_CLASS}`)) {
-      if (ISO_DATE_PATTERN.test(text.nodeValue ?? "")) nodes.push(text);
+      const value = text.nodeValue ?? "";
+      if (ISO_DATE_PATTERN.test(value) || SLASH_DATE_PATTERN.test(value)) nodes.push(text);
     }
     ISO_DATE_PATTERN.lastIndex = 0;
+    SLASH_DATE_PATTERN.lastIndex = 0;
     current = walker.nextNode();
   }
 
   nodes.forEach((node) => {
     const original = node.nodeValue ?? "";
-    const next = original.replace(ISO_DATE_PATTERN, (value) => formatDateForUser(value));
-    ISO_DATE_PATTERN.lastIndex = 0;
+    const next = formatDateLikeText(original);
     if (next !== original) node.nodeValue = next;
   });
 }
 
-function positionDisplay(input: HTMLInputElement, display: HTMLSpanElement) {
+function positionDisplay(input: SupportedDateInput, display: HTMLSpanElement) {
   const parent = input.parentElement;
   if (!parent) return;
   if (getComputedStyle(parent).position === "static") parent.style.position = "relative";
@@ -37,17 +49,23 @@ function positionDisplay(input: HTMLInputElement, display: HTMLSpanElement) {
   display.style.transform = "translateY(-50%)";
 }
 
-function syncDateInput(input: HTMLInputElement) {
+function syncDateInput(input: SupportedDateInput) {
   const display = input.parentElement?.querySelector<HTMLSpanElement>(`.${DISPLAY_CLASS}`);
   if (!display) return;
-  const formatted = formatDateForUser(input.value);
+  const formatted = formatDateLikeText(input.value);
   display.textContent = formatted || "DD-MM-YYYY";
   display.style.opacity = formatted ? "1" : "0.55";
   positionDisplay(input, display);
 }
 
+function isDateTextInput(input: HTMLInputElement): boolean {
+  if (input.type === "date") return true;
+  if (input.type !== "text") return false;
+  return input.id.toLowerCase().includes("date") || input.placeholder.toUpperCase().includes("DD/MM/YYYY") || input.placeholder.toUpperCase().includes("DD-MM-YYYY");
+}
+
 function enhanceDateInput(input: HTMLInputElement) {
-  if (input.dataset.ttDateFormatEnhanced === "1" || input.type !== "date") return;
+  if (input.dataset.ttDateFormatEnhanced === "1" || !isDateTextInput(input)) return;
   const parent = input.parentElement;
   if (!parent) return;
 
@@ -67,6 +85,7 @@ function enhanceDateInput(input: HTMLInputElement) {
   });
   parent.appendChild(display);
 
+  input.placeholder = "DD-MM-YYYY";
   input.style.color = "transparent";
   input.style.caretColor = "transparent";
   input.style.textShadow = "none";
@@ -75,8 +94,8 @@ function enhanceDateInput(input: HTMLInputElement) {
 }
 
 function enhanceDateInputs(root: ParentNode = document) {
-  if (root instanceof HTMLInputElement && root.type === "date") enhanceDateInput(root);
-  root.querySelectorAll<HTMLInputElement>("input[type='date']").forEach(enhanceDateInput);
+  if (root instanceof HTMLInputElement && isDateTextInput(root)) enhanceDateInput(root);
+  root.querySelectorAll<HTMLInputElement>(DATE_INPUT_SELECTOR).forEach(enhanceDateInput);
 }
 
 export default function DateDisplayNormalizer() {
@@ -86,7 +105,7 @@ export default function DateDisplayNormalizer() {
 
     const handleDateEvent = (event: Event) => {
       const target = event.target;
-      if (target instanceof HTMLInputElement && target.type === "date") syncDateInput(target);
+      if (target instanceof HTMLInputElement && isDateTextInput(target)) syncDateInput(target);
     };
 
     const observer = new MutationObserver((mutations) => {
@@ -101,10 +120,11 @@ export default function DateDisplayNormalizer() {
       });
     });
 
+    const syncAll = () => document.querySelectorAll<HTMLInputElement>("input[data-tt-date-format-enhanced='1']").forEach(syncDateInput);
     document.addEventListener("input", handleDateEvent, true);
     document.addEventListener("change", handleDateEvent, true);
     document.addEventListener("focusin", handleDateEvent, true);
-    window.addEventListener("resize", () => document.querySelectorAll<HTMLInputElement>("input[type='date'][data-tt-date-format-enhanced='1']").forEach(syncDateInput), { passive: true });
+    window.addEventListener("resize", syncAll, { passive: true });
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
@@ -112,6 +132,7 @@ export default function DateDisplayNormalizer() {
       document.removeEventListener("input", handleDateEvent, true);
       document.removeEventListener("change", handleDateEvent, true);
       document.removeEventListener("focusin", handleDateEvent, true);
+      window.removeEventListener("resize", syncAll);
     };
   }, []);
 
