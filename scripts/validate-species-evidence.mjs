@@ -6,10 +6,11 @@ const speciesDir = path.join(root, 'src', 'data', 'species');
 const files = fs.readdirSync(speciesDir).filter((name) => name.endsWith('.ts'));
 const text = files.map((name) => fs.readFileSync(path.join(speciesDir, name), 'utf8')).join('\n');
 
-const sourceFile = fs.readFileSync(path.join(speciesDir, 'speciesSources.ts'), 'utf8');
+const sourceFiles = files.filter((name) => /species.*source/i.test(name));
+const sourceCatalogueText = sourceFiles.map((name) => fs.readFileSync(path.join(speciesDir, name), 'utf8')).join('\n');
 const declared = new Set();
-for (const match of sourceFile.matchAll(/^\s*([A-Za-z0-9_]+):\s*\{/gm)) declared.add(match[1]);
-for (const match of sourceFile.matchAll(/\b([A-Za-z0-9_]+):\s*\{/g)) declared.add(match[1]);
+for (const match of sourceCatalogueText.matchAll(/^\s*([A-Za-z0-9_]+):\s*\{/gm)) declared.add(match[1]);
+for (const match of sourceCatalogueText.matchAll(/\b([A-Za-z0-9_]+):\s*\{/g)) declared.add(match[1]);
 
 const sourceIds = new Set();
 for (const match of text.matchAll(/(?:sourceIds|SPECIES_SOURCES)\s*[:.(=]*\s*[^\n;]*/g)) {
@@ -23,7 +24,7 @@ const unresolved = [...sourceIds].filter((id) => !declared.has(id)).sort();
 // detection to that same declaration line so a later unresolved placeholder
 // cannot falsely mark every earlier curated record as a placeholder.
 const placeholders = [];
-for (const match of sourceFile.matchAll(/^\s*([A-Za-z0-9_]+):\s*\{[^\n]*?url:\s*['\"]#['\"]/gm)) {
+for (const match of sourceCatalogueText.matchAll(/^\s*([A-Za-z0-9_]+):\s*\{[^\n]*?url:\s*['\"]#['\"]/gm)) {
   placeholders.push(match[1]);
 }
 
@@ -32,6 +33,7 @@ const numericRanges = (text.match(/\bmin\s*:\s*-?\d+(?:\.\d+)?\s*,\s*max\s*:\s*-
 const husbandryObjects = (text.match(/\bhusbandry\s*:/g) ?? []).length;
 
 console.log(`Species evidence audit: ${files.length} species-data source files scanned.`);
+console.log(`Source catalogue modules: ${sourceFiles.length}.`);
 console.log(`Referenced source IDs: ${sourceIds.size}. Declared source IDs: ${declared.size}.`);
 console.log(`Evidence object markers: ${evidenceObjects}. Numeric range literals: ${numericRanges}. Husbandry object markers: ${husbandryObjects}.`);
 
