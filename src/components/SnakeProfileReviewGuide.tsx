@@ -69,7 +69,7 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
 
     const currentWeight = latestWeight?.weight ?? snake.weight;
     const weightAge = ageDays(latestWeight?.date);
-    if (currentWeight === undefined || currentWeight === null || !weightCount || weightAge !== null && weightAge > 30) {
+    if (currentWeight == null || !weightCount || weightAge !== null && weightAge > 30) {
       areas.push({
         id: "weight",
         label: "Weight",
@@ -86,7 +86,7 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
         id: "feeding",
         label: "Feeding",
         icon: "🍽️",
-        reason: feedingCount ? `The feeding history is getting stale, so the next actual meal will help re-establish this snake's pattern. Species guidance currently prioritises ${dietText}.` : `No feeding history is available yet. Record the actual prey so Tiny Titans can learn this snake's individual response instead of applying a rodent-only assumption.`,
+        reason: feedingCount ? `The feeding history is getting stale, so the next actual meal will help re-establish this snake's pattern. Species guidance currently prioritises ${dietText}.` : "No feeding history is available yet. Record the actual prey so Tiny Titans can learn this snake's individual response instead of applying a rodent-only assumption.",
         fields: "Actual prey type, prey category, quantity, size where meaningful, single-item or total prey mass, response, feeding method, preparation and useful meal notes.",
         route: `/feeding/${snake.id}`,
       });
@@ -116,7 +116,8 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
       });
     }
 
-    if (!snake.notes?.trim() || !snake.acquisitionDate || snake.lengthCm == null) {
+    const masterRecordIncomplete = !snake.species || !snake.sex || !snake.hatchDate || !snake.acquisitionDate || snake.lengthCm == null;
+    if (masterRecordIncomplete) {
       areas.push({
         id: "master",
         label: "Master Record",
@@ -129,7 +130,7 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
 
     const coverageTargets = [
       Boolean(snake.species && snake.sex && snake.hatchDate),
-      Boolean(weightCount || snake.weight !== null),
+      Boolean(weightCount || snake.weight != null),
       Boolean(feedingCount || snake.lastMealDate),
       Boolean(shedCount),
       Boolean(snake.enclosure),
