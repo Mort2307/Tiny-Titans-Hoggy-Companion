@@ -11,7 +11,7 @@ import type { HusbandryProfile, SnakeSpeciesRecord } from './speciesTypes';
 const reviewedOn = '2026-09-05';
 
 function climateNotes(species: SnakeSpeciesRecord): string {
-  const text = `${species.acceptedScientificName} ${species.habitat} ${species.distribution}`.toLowerCase();
+  const text = `${species.acceptedScientificName} ${species.knowledge.habitat ?? ''} ${species.knowledge.distribution ?? ''}`.toLowerCase();
   if (/rainforest|tropical forest|humid forest|lowland forest|swamp|marsh|wetland|equatorial|monsoon/.test(text)) {
     return 'Tropical/wet-habitat ecology: maintain a moisture gradient with reliable ventilation and allow surfaces/substrate to dry appropriately between moisture events.';
   }
