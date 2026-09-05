@@ -16,12 +16,12 @@ const sourceFiles = fs.readdirSync(speciesDir)
 const sourceText = sourceFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
 
 // Species are declared either as direct object records (the original registry)
-// or through the expansion helpers (p/taxonomyOnly/cared/record). Do not scan
-// every `id:` field because expansion modules also contain source-citation IDs.
+// or through expansion helpers (including venomous species). Do not scan every
+// `id:` field because expansion modules also contain source-citation IDs.
 const declaredSpeciesIds = [];
 for (const file of sourceFiles) {
   const text = fs.readFileSync(file, 'utf8');
-  const helperIds = [...text.matchAll(/\b(?:p|taxonomyOnly|cared|record)\(\s*'([^']+)'/g)].map((m) => m[1]);
+  const helperIds = [...text.matchAll(/\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*'([^']+)'/g)].map((m) => m[1]);
   declaredSpeciesIds.push(...helperIds);
 
   // The base registry uses literal `{ id: '...' }` records; source-citation
