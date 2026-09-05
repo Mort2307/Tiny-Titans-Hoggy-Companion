@@ -13,7 +13,7 @@ const errors = [];
 for (const file of files) {
   const fileName = path.basename(file);
   const source = fs.readFileSync(file, 'utf8');
-  const helperIds = [...source.matchAll(/\b(?:p|taxonomyOnly|cared|record)\(\s*'([^']+)'/g)].map((match) => match[1]);
+  const helperIds = [...source.matchAll(/\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*'([^']+)'/g)].map((match) => match[1]);
   const directIds = fileName === 'speciesRegistryBase.ts'
     ? [...source.matchAll(/\bid:\s*'([^']+)'/g)].map((match) => match[1])
     : [];
@@ -51,7 +51,7 @@ const uniqueCount = new Set(ids).size;
 const duplicates = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 if (duplicates.length) errors.push(`Duplicate species IDs: ${duplicates.join(', ')}`);
 
-const expectedSpeciesCount = 100;
+const expectedSpeciesCount = 112;
 if (uniqueCount !== expectedSpeciesCount) {
   errors.push(`Expected exactly ${expectedSpeciesCount} unique snake species; discovered ${uniqueCount}.`);
 }
