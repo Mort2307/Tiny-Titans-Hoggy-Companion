@@ -103,7 +103,7 @@ export async function submitVivariumShowcase(input: {
   if (!user) throw new Error("You must be signed in to share a vivarium setup.");
   const species = findSnakeSpecies(input.speciesId);
   if (!species) throw new Error("Please select a recognised snake species.");
-  if (input.publicConsent === false) throw new Error("Please confirm that you want this setup shared with the Tiny Titans community.");
+  if (!input.publicConsent) throw new Error("Please confirm that you want this setup shared with the Tiny Titans community.");
   if (!input.title.trim() || !input.description.trim()) throw new Error("Please provide a setup title and description.");
   if (!input.media.length) throw new Error("Add at least one enclosure image or video.");
   if (input.media.length > MAX_MEDIA) throw new Error(`You can share up to ${MAX_MEDIA} images or videos per setup.`);
@@ -135,7 +135,7 @@ export async function submitVivariumShowcase(input: {
     hidesAndEnrichment: clean(input.hidesAndEnrichment, 1600),
     plantsAndBioactive: clean(input.plantsAndBioactive, 1600),
     waterAndFeeding: clean(input.waterAndFeeding, 1200),
-    publicConsent: input.publicConsent !== false,
+    publicConsent: input.publicConsent,
     creditMode: input.creditMode,
     creditName: input.creditMode === "name" ? clean(input.creditName, 120) : null,
     creditSocial: input.creditMode === "social" ? clean(input.creditSocial, 240) : null,
