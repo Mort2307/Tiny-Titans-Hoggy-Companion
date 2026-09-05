@@ -1,0 +1,42 @@
+name: Tiny Titans Species Source Monitor
+
+on:
+  schedule:
+    - cron: '30 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tiny-titans-species-source-monitor
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    name: Check curated species sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Check source health
+        run: node scripts/check-species-source-health.mjs
+
+      - name: Commit refreshed source health manifest
+        run: |
+          if git diff --quiet -- public/data/species-source-health.json; then
+            echo "No source-health changes detected."
+            exit 0
+          fi
+          git config user.name "tiny-titans-source-monitor[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/species-source-health.json
+          git commit -m "chore: refresh species source health manifest"
+          git push
