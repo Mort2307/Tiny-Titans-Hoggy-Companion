@@ -20,38 +20,27 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
-function walk(directory) {
-  const entries = fs.readdirSync(directory, { withFileTypes: true });
-  return entries.flatMap((entry) => {
-    const full = path.join(directory, entry.name);
-    if (entry.isDirectory()) return walk(full);
-    return entry.isFile() && entry.name.endsWith('.ts') ? [full] : [];
-  });
-}
-
 function extractSpeciesIds() {
-  const ids = new Set();
-  const files = walk(SPECIES_DIR).sort();
-  const helperNames = new Set();
+  const sourceFiles = fs.readdirSync(SPECIES_DIR)
+    .filter((name) => name.endsWith('.ts') && !['speciesTypes.ts', 'speciesSources.ts', 'index.ts'].includes(name))
+    .map((name) => path.join(SPECIES_DIR, name));
+  const declaredSpeciesIds = [];
 
-  for (const file of files) {
-    const source = fs.readFileSync(file, 'utf8');
-    for (const match of source.matchAll(/\b(?:const|let|function)\s+([A-Za-z_$][\w$]*)\s*(?:=\s*)?\([\s\S]{0,500}?\bid\s*:\s*string\b[\s\S]{0,900}?\)\s*:\s*SnakeSpeciesRecord/g)) {
-      helperNames.add(match[1]);
-    }
-    for (const match of source.matchAll(/^\s*id\s*:\s*['"]([^'"]+)['"]/gm)) ids.add(match[1]);
-  }
-
-  for (const file of files) {
-    const source = fs.readFileSync(file, 'utf8');
-    for (const helper of helperNames) {
-      const escaped = helper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const pattern = new RegExp(`\\b${escaped}\\(\\s*['\"]([^'\"]+)['\"]`, 'g');
-      for (const match of source.matchAll(pattern)) ids.add(match[1]);
+  // Keep discovery aligned with validate-species-database.mjs. Species records
+  // are declared either as direct object records in speciesRegistryBase.ts or
+  // through the known modular expansion helpers.
+  const helperPattern = /\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*'([^']+)'/g;
+  for (const file of sourceFiles) {
+    const text = fs.readFileSync(file, 'utf8');
+    declaredSpeciesIds.push(...[...text.matchAll(helperPattern)].map((m) => m[1]));
+    if (path.basename(file) === 'speciesRegistryBase.ts') {
+      declaredSpeciesIds.push(...[...text.matchAll(/\bid:\s*'([^']+)'/g)].map((m) => m[1]));
     }
   }
 
-  return [...ids].sort();
+  const duplicateIds = declaredSpeciesIds.filter((id, index) => declaredSpeciesIds.indexOf(id) !== index);
+  if (duplicateIds.length) throw new Error(`Duplicate species IDs discovered: ${[...new Set(duplicateIds)].join(', ')}`);
+  return declaredSpeciesIds.sort();
 }
 
 function bootstrap(currentIds, manifest) {
@@ -170,7 +159,7 @@ for (const [speciesId, entry] of Object.entries(released)) {
   if (entry?.status !== 'fully-integrated') {
     messages.push(`${speciesId} is present in the release manifest but is not marked fully-integrated.`);
   }
-  const surfaces = Array.isArray(entry?.surfaces) ? [...new Set(entry.surfaces)].sort() : [];
+  const surfaces = Array.isArray(entry.surfaces) ? [...new Set(entry.surfaces)].sort() : [];
   const expected = [...REQUIRED_SURFACES].sort();
   if (JSON.stringify(surfaces) !== JSON.stringify(expected)) {
     messages.push(`${speciesId} does not declare the complete ${REQUIRED_SURFACES.length}-surface integration contract.`);
