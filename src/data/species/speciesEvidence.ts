@@ -2,7 +2,6 @@ import { SPECIES_SOURCES, getUnresolvedSpeciesSourceIds } from './speciesSources
 import type { EvidenceLevel, EvidenceScope, HusbandryProfile, SourcedNumericRange, SnakeSpeciesRecord } from './speciesTypes';
 
 export type EvidenceCoverage = 'verified' | 'recorded-needs-scoping' | 'external-evidence-located' | 'evidence-limited' | 'context-only' | 'unmapped';
-
 export interface EvidenceCoverageResult { status: EvidenceCoverage; label: string; detail: string; sourceIds: string[]; }
 
 const TAXONOMY_ONLY_SOURCE_IDS = new Set(['reptileDatabase2026']);
@@ -44,18 +43,23 @@ function chooseProfileScope(species: SnakeSpeciesRecord): EvidenceScope | undefi
   const matchingId = ids.find((id) => PROFILE_SCOPE_BY_SOURCE[id]);
   const matching = matchingId ? PROFILE_SCOPE_BY_SOURCE[matchingId] : undefined;
   if (!matching) return undefined;
-  if (matchingId === 'reptifilesBloodPython2017') {
-    return { basis: 'taxon-level', scope: 'Blood and short-tailed python complex', sourceIds: ids, caveat: matching.caveat, reviewedOn: species.knowledge.reviewedOn };
-  }
   return { ...matching, sourceIds: ids, reviewedOn: species.knowledge.reviewedOn };
+}
+
+function correctedExistingScope(species: SnakeSpeciesRecord, husbandry: HusbandryProfile): EvidenceScope | undefined {
+  const existing = husbandry.evidenceSummary;
+  if (!existing) return chooseProfileScope(species);
+  if (existing.sourceIds.includes('reptifilesBloodPython2017')) return { basis: 'taxon-level', scope: 'Blood and short-tailed python complex', sourceIds: existing.sourceIds, caveat: 'Secondary keeper reference spanning more than one taxon; exact species scope must remain visible.', reviewedOn: existing.reviewedOn };
+  return existing;
 }
 
 export function ensureSpeciesHusbandryEvidence(species: SnakeSpeciesRecord): SnakeSpeciesRecord {
   const husbandry = species.knowledge.husbandry;
-  if (!husbandry || husbandry.evidenceSummary) return species;
-  const evidenceSummary = chooseProfileScope(species) ?? { basis: 'ecology-only' as const, scope: `${species.acceptedScientificName} profile context`, sourceIds: [], caveat: 'No captive-husbandry source is currently mapped to the profile. Existing values, if present, remain recorded data until individually scoped.', reviewedOn: species.knowledge.reviewedOn };
-  const enhancedHusbandry: HusbandryProfile = { ...husbandry, evidenceSummary };
-  return { ...species, knowledge: { ...species.knowledge, husbandry: enhancedHusbandry } };
+  if (!husbandry) return species;
+  const evidenceSummary = correctedExistingScope(species, husbandry);
+  if (!evidenceSummary) return species;
+  if (husbandry.evidenceSummary && husbandry.evidenceSummary.basis === evidenceSummary.basis && husbandry.evidenceSummary.scope === evidenceSummary.scope && husbandry.evidenceSummary.sourceIds.join('|') === evidenceSummary.sourceIds.join('|')) return species;
+  return { ...species, knowledge: { ...species.knowledge, husbandry: { ...husbandry, evidenceSummary } } };
 }
 
 export function evidenceLabel(status: EvidenceCoverage): string {
