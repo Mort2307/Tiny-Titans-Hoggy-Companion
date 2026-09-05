@@ -59,7 +59,7 @@ if (uniqueCount !== expectedSpeciesCount) {
 const registryPath = path.join(speciesDir, 'speciesRegistry.ts');
 const registrySource = fs.readFileSync(registryPath, 'utf8');
 const hasCompletionBoundary = /import\s*\{\s*completeSpeciesHusbandry\s*\}\s*from\s*['"]\.\/speciesHusbandryCompletion['"]/.test(registrySource)
-  && /RAW_SPECIES\.map\(completeSpeciesHusbandry\)/.test(registrySource);
+  && /RAW_SPECIES\s*\.map\(completeSpeciesHusbandry\)/.test(registrySource);
 
 if (!hasCompletionBoundary) {
   errors.push('speciesRegistry.ts: all-species husbandry completion boundary is missing.');
