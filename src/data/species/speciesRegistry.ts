@@ -7,11 +7,12 @@ import { SPECIES_EXPANSION_BATCH_5 } from './speciesExpansionBatch5';
 import { SPECIES_EXPANSION_BATCH_6 } from './speciesExpansionBatch6';
 import { SPECIES_EXPANSION_BATCH_7 } from './speciesExpansionBatch7';
 import { SPECIES_EXPANSION_BATCH_8 } from './speciesExpansionBatch8';
+import { completeSpeciesHusbandry } from './speciesHusbandryCompletion';
 import type { SnakeSpeciesRecord } from './speciesTypes';
 
 Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES);
 
-const ALL_SPECIES: SnakeSpeciesRecord[] = [
+const RAW_SPECIES: SnakeSpeciesRecord[] = [
   ...BASE_SPECIES,
   ...SPECIES_EXPANSION_CORE,
   ...SPECIES_EXPANSION_BATCH_3,
@@ -21,6 +22,10 @@ const ALL_SPECIES: SnakeSpeciesRecord[] = [
   ...SPECIES_EXPANSION_BATCH_7,
   ...SPECIES_EXPANSION_BATCH_8,
 ];
+
+/** Every registered species leaves this boundary with an explicit husbandry object. */
+const ALL_SPECIES: SnakeSpeciesRecord[] = RAW_SPECIES.map(completeSpeciesHusbandry);
+
 export const INITIAL_SNAKE_SPECIES = ALL_SPECIES;
 export const SNAKE_SPECIES_BY_ID = Object.fromEntries(ALL_SPECIES.map((species) => [species.id, species])) as Record<string, SnakeSpeciesRecord>;
 
