@@ -9,7 +9,8 @@ const DATE_INPUT_SELECTOR = "input[type='date'], input[id*='date'], input[placeh
 type SupportedDateInput = HTMLInputElement;
 
 function formatDateLikeText(value: string): string {
-  return value.replace(ISO_DATE_PATTERN, (date) => formatDateForUser(date)).replace(SLASH_DATE_PATTERN, (date) => {
+  const normalizedLabel = value.replaceAll("DD/MM/YYYY", "DD-MM-YYYY");
+  return normalizedLabel.replace(ISO_DATE_PATTERN, (date) => formatDateForUser(date)).replace(SLASH_DATE_PATTERN, (date) => {
     const parsed = parseUserDate(date.replaceAll("/", "-"));
     return parsed ? formatDateForUser(parsed) : date;
   });
@@ -25,7 +26,7 @@ function formatTextNodes(root: ParentNode) {
     const tag = parent?.tagName;
     if (parent && tag !== "SCRIPT" && tag !== "STYLE" && tag !== "NOSCRIPT" && tag !== "TEXTAREA" && tag !== "OPTION" && !parent.closest(`.${DISPLAY_CLASS}`)) {
       const value = text.nodeValue ?? "";
-      if (ISO_DATE_PATTERN.test(value) || SLASH_DATE_PATTERN.test(value)) nodes.push(text);
+      if (ISO_DATE_PATTERN.test(value) || SLASH_DATE_PATTERN.test(value) || value.includes("DD/MM/YYYY")) nodes.push(text);
     }
     ISO_DATE_PATTERN.lastIndex = 0;
     SLASH_DATE_PATTERN.lastIndex = 0;
