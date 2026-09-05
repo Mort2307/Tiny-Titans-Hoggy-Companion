@@ -3,12 +3,7 @@ import type { EvidenceLevel, EvidenceScope, HusbandryProfile, SourcedNumericRang
 
 export type EvidenceCoverage = 'verified' | 'recorded-needs-scoping' | 'external-evidence-located' | 'evidence-limited' | 'context-only' | 'unmapped';
 
-export interface EvidenceCoverageResult {
-  status: EvidenceCoverage;
-  label: string;
-  detail: string;
-  sourceIds: string[];
-}
+export interface EvidenceCoverageResult { status: EvidenceCoverage; label: string; detail: string; sourceIds: string[]; }
 
 const TAXONOMY_ONLY_SOURCE_IDS = new Set(['reptileDatabase2026']);
 const PROFILE_SCOPE_BY_SOURCE: Record<string, Pick<EvidenceScope, 'basis' | 'scope' | 'caveat'>> = {
@@ -41,31 +36,24 @@ const PROFILE_SCOPE_BY_SOURCE: Record<string, Pick<EvidenceScope, 'basis' | 'sco
   reptifilesBoaConstrictor2023: { basis: 'species-specific', scope: 'Boa constrictor care reference', caveat: 'Locality and taxonomic variation remain relevant.' },
 };
 
-function mappedSourceIds(species: SnakeSpeciesRecord): string[] {
-  return species.knowledge.sourceIds.filter((id) => !TAXONOMY_ONLY_SOURCE_IDS.has(id));
-}
-
-function hasResolvedSourceIds(sourceIds: string[]): boolean {
-  return sourceIds.length > 0 && sourceIds.every((id) => Boolean(SPECIES_SOURCES[id]?.url && SPECIES_SOURCES[id].url !== '#'));
-}
+function mappedSourceIds(species: SnakeSpeciesRecord): string[] { return species.knowledge.sourceIds.filter((id) => !TAXONOMY_ONLY_SOURCE_IDS.has(id)); }
+function hasResolvedSourceIds(sourceIds: string[]): boolean { return sourceIds.length > 0 && sourceIds.every((id) => Boolean(SPECIES_SOURCES[id]?.url && SPECIES_SOURCES[id].url !== '#')); }
 
 function chooseProfileScope(species: SnakeSpeciesRecord): EvidenceScope | undefined {
   const ids = mappedSourceIds(species);
-  const matching = ids.map((id) => PROFILE_SCOPE_BY_SOURCE[id]).find(Boolean);
+  const matchingId = ids.find((id) => PROFILE_SCOPE_BY_SOURCE[id]);
+  const matching = matchingId ? PROFILE_SCOPE_BY_SOURCE[matchingId] : undefined;
   if (!matching) return undefined;
+  if (matchingId === 'reptifilesBloodPython2017') {
+    return { basis: 'taxon-level', scope: 'Blood and short-tailed python complex', sourceIds: ids, caveat: matching.caveat, reviewedOn: species.knowledge.reviewedOn };
+  }
   return { ...matching, sourceIds: ids, reviewedOn: species.knowledge.reviewedOn };
 }
 
 export function ensureSpeciesHusbandryEvidence(species: SnakeSpeciesRecord): SnakeSpeciesRecord {
   const husbandry = species.knowledge.husbandry;
   if (!husbandry || husbandry.evidenceSummary) return species;
-  const evidenceSummary = chooseProfileScope(species) ?? {
-    basis: 'ecology-only' as const,
-    scope: `${species.acceptedScientificName} profile context`,
-    sourceIds: [],
-    caveat: 'No captive-husbandry source is currently mapped to the profile. Existing values, if present, remain recorded data until individually scoped.',
-    reviewedOn: species.knowledge.reviewedOn,
-  };
+  const evidenceSummary = chooseProfileScope(species) ?? { basis: 'ecology-only' as const, scope: `${species.acceptedScientificName} profile context`, sourceIds: [], caveat: 'No captive-husbandry source is currently mapped to the profile. Existing values, if present, remain recorded data until individually scoped.', reviewedOn: species.knowledge.reviewedOn };
   const enhancedHusbandry: HusbandryProfile = { ...husbandry, evidenceSummary };
   return { ...species, knowledge: { ...species.knowledge, husbandry: enhancedHusbandry } };
 }
@@ -116,6 +104,4 @@ export function getSpeciesEvidenceSummary(species: SnakeSpeciesRecord) {
   return { numericRanges: ranges.length, verifiedRanges, recordedRanges, profile: getProfileEvidenceCoverage(species, husbandry?.evidenceLevel, husbandry?.evidenceSummary), hasExternalEvidence: hasResolvedSourceIds(sourceIds), unresolvedSourceIds: [...new Set([...unresolvedSourceIds, ...getUnresolvedSpeciesSourceIds()])].sort() };
 }
 
-function formatBasis(evidence: EvidenceScope): string {
-  return `${evidence.basis.replace(/-/g, ' ')} · ${evidence.scope} ${evidence.caveat}`;
-}
+function formatBasis(evidence: EvidenceScope): string { return `${evidence.basis.replace(/-/g, ' ')} · ${evidence.scope} ${evidence.caveat}`; }
