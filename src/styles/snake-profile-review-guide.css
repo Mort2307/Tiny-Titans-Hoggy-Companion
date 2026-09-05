@@ -38,5 +38,11 @@
 .tt-profile-review-guide-links { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .tt-profile-review-guide-links button { min-width: 0; min-height: 46px; padding: 9px 10px; border: 1px solid var(--tt-border); border-radius: 12px; background: rgba(255,255,255,.025); color: var(--tt-text-strong); font-weight: 800; }
 .tt-profile-review-guide-links button:hover { transform: translateY(-1px); }
-@media (max-width: 760px) { .tt-profile-review-guide-header { flex-direction: column; } .tt-profile-review-guide-status { align-self: flex-start; } .tt-profile-review-guide-list, .tt-profile-review-guide-all { grid-template-columns: 1fr; } .tt-profile-review-guide-item-top { align-items: flex-start; flex-direction: column; } .tt-profile-review-guide-item-top button { width: 100%; } .tt-profile-review-guide-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (prefers-reduced-motion: reduce) { .tt-profile-review-guide-item-top button:hover, .tt-profile-review-guide-links button:hover { transform: none; } }
+.tt-profile-review-guide-market { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; margin-top: 14px; padding: 13px 14px; border: 1px solid var(--tt-border-strong); border-radius: 14px; background: linear-gradient(135deg, rgba(255,255,255,.04), rgba(0,174,255,.055)); color: var(--tt-text-strong); text-decoration: none; }
+.tt-profile-review-guide-market:hover { transform: translateY(-1px); }
+.tt-profile-review-guide-market strong, .tt-profile-review-guide-market small { display: block; }
+.tt-profile-review-guide-market small { margin-top: 3px; color: var(--tt-muted); line-height: 1.4; }
+.tt-profile-review-guide-market > span:last-child { flex: 0 0 auto; font-size: 1.1rem; }
+.tt-profile-review-guide-market-note { margin: 7px 2px 0; color: var(--tt-muted); font-size: .68rem; line-height: 1.45; }
+@media (max-width: 760px) { .tt-profile-review-guide-header { flex-direction: column; } .tt-profile-review-guide-status { align-self: flex-start; } .tt-profile-review-guide-list, .tt-profile-review-guide-all { grid-template-columns: 1fr; } .tt-profile-review-guide-item-top { align-items: flex-start; flex-direction: column; } .tt-profile-review-guide-item-top button { width: 100%; } .tt-profile-review-guide-links { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tt-profile-review-guide-market { padding: 12px; } }
+@media (prefers-reduced-motion: reduce) { .tt-profile-review-guide-item-top button:hover, .tt-profile-review-guide-links button:hover, .tt-profile-review-guide-market:hover { transform: none; } }
