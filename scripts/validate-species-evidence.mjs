@@ -18,7 +18,15 @@ for (const match of text.matchAll(/(?:sourceIds|SPECIES_SOURCES)\s*[:.(=]*\s*[^\
 for (const match of text.matchAll(/['\"]([A-Za-z][A-Za-z0-9]*(?:20\d{2}|19\d{2}))['\"]/g)) sourceIds.add(match[1]);
 
 const unresolved = [...sourceIds].filter((id) => !declared.has(id)).sort();
-const placeholders = [...declared].filter((id) => new RegExp(`id:\\s*['\\"]${id}['\\"][^]*?url:\\s*['\\"]#['\\"]`).test(sourceFile));
+
+// Each curated source is represented on its own object line. Scope placeholder
+// detection to that same declaration line so a later unresolved placeholder
+// cannot falsely mark every earlier curated record as a placeholder.
+const placeholders = [];
+for (const match of sourceFile.matchAll(/^\s*([A-Za-z0-9_]+):\s*\{[^\n]*?url:\s*['\"]#['\"]/gm)) {
+  placeholders.push(match[1]);
+}
+
 const evidenceObjects = (text.match(/\bevidence\s*:/g) ?? []).length;
 const numericRanges = (text.match(/\bmin\s*:\s*-?\d+(?:\.\d+)?\s*,\s*max\s*:\s*-?\d+(?:\.\d+)?/g) ?? []).length;
 const husbandryObjects = (text.match(/\bhusbandry\s*:/g) ?? []).length;
