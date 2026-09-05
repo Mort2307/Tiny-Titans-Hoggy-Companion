@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const router = fs.readFileSync('src/routes/AppRouter.tsx', 'utf8');
 const requiredPages = [
   'Home', 'MySnakes', 'SnakeProfile', 'SnakeTimeline', 'FeedingTracker', 'ShedTracker',
-  'HealthTracker', 'BehaviourTracker', 'MorphLibrary', 'MorphEvidenceAudit', 'Calculator',
+  'HealthTracker', 'BehaviourTracker', 'SpeciesAwareMorphLibrary', 'MorphEvidenceAudit', 'Calculator',
   'BreedingPlanner', 'BreedingReadinessIntelligence', 'CommunityHub', 'WallOfTitans',
   'LearningHub', 'AdaptiveLearningHub', 'LearnAchievements', 'DataPrivacy', 'FamilyManager',
   'FamilyReview', 'FamilyHistory',
