@@ -1,7 +1,8 @@
 export type MorphSubmissionCredit = "name" | "social" | "anonymous";
 
-/** Canonical moderation status for community morph-image submissions. */
+/** Canonical moderation status for community morph-media submissions. */
 export type MorphSubmissionStatus = "Pending" | "Approved" | "Rejected" | "NeedsInfo" | "Removed";
+export type MorphMediaType = "image" | "video";
 
 export type MorphImageSubmission = {
   id: string;
@@ -23,8 +24,10 @@ export type MorphImageSubmission = {
   creditSocial?: string;
   attachment: {
     path: string;
-    type: "image";
+    type: MorphMediaType;
     sizeBytes: number;
+    originalType?: string;
+    originalSizeBytes?: number;
   };
   issueFingerprint?: string;
   status: MorphSubmissionStatus;
@@ -42,6 +45,7 @@ export type ApprovedMorphImage = {
   morphName: string;
   imageUrl: string;
   storagePath: string;
+  mediaType?: MorphMediaType;
   creditType: MorphSubmissionCredit;
   creditName?: string;
   creditSocial?: string;
