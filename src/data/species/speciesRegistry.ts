@@ -8,12 +8,14 @@ import { SPECIES_EXPANSION_BATCH_6 } from './speciesExpansionBatch6';
 import { SPECIES_EXPANSION_BATCH_7 } from './speciesExpansionBatch7';
 import { SPECIES_EXPANSION_BATCH_8 } from './speciesExpansionBatch8';
 import { SPECIES_EXPANSION_BATCH_9 } from './speciesExpansionBatch9';
+import { SPECIES_RESEARCH_SOURCES } from './speciesResearchSources';
 import { enhanceVenomousSpecies } from './speciesVenomousEnhancement';
 import { completeSpeciesHusbandry } from './speciesHusbandryCompletion';
 import { ensureSpeciesHusbandryEvidence } from './speciesEvidence';
+import { applySpeciesResearchOverrides } from './speciesResearchOverrides';
 import type { SnakeSpeciesRecord } from './speciesTypes';
 
-Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES);
+Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES, SPECIES_RESEARCH_SOURCES);
 
 const RAW_SPECIES: SnakeSpeciesRecord[] = [
   ...BASE_SPECIES,
@@ -31,6 +33,7 @@ const RAW_SPECIES: SnakeSpeciesRecord[] = [
 const ALL_SPECIES: SnakeSpeciesRecord[] = RAW_SPECIES
   .map(completeSpeciesHusbandry)
   .map(ensureSpeciesHusbandryEvidence)
+  .map(applySpeciesResearchOverrides)
   .map(enhanceVenomousSpecies);
 
 export const INITIAL_SNAKE_SPECIES = ALL_SPECIES;
