@@ -41,14 +41,19 @@ const fields = [
   ["handlingTemperament", "Handling / temperament", "Evidence-led keeper context; avoid presenting anecdotes as facts"],
   ["commonHealthConcerns", "Common health concerns", "Known issues, husbandry-linked risks and red flags"],
   ["legalOrCitesNotes", "Legal / CITES notes", "Country-specific restrictions, CITES status or say needs verification"],
-];
+] as const;
 
-const initial = Object.fromEntries(fields.map(([key]) => [key, ""])) as Record<string, string>;
+type SpeciesSubmissionField = typeof fields[number][0];
+type SpeciesSubmissionFormValues = Record<SpeciesSubmissionField, string>;
+
+const initial: SpeciesSubmissionFormValues = Object.fromEntries(
+  fields.map(([key]) => [key, ""]),
+) as SpeciesSubmissionFormValues;
 
 export default function SubmitSpecies() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const [values, setValues] = useState(initial);
+  const [values, setValues] = useState<SpeciesSubmissionFormValues>(initial);
   const [evidenceSummary, setEvidenceSummary] = useState("");
   const [sources, setSources] = useState("");
   const [submitterNotes, setSubmitterNotes] = useState("");
@@ -67,7 +72,7 @@ export default function SubmitSpecies() {
     return searchSnakeSpecies(query).slice(0, 8);
   }, [values.scientificName, values.commonName]);
 
-  function update(key: string, value: string) {
+  function update(key: SpeciesSubmissionField, value: string) {
     setValues((current) => ({ ...current, [key]: value }));
   }
 
@@ -83,7 +88,7 @@ export default function SubmitSpecies() {
     setError("");
     setSuccess("");
     if (honeypot) return;
-    const required = ["commonName", "scientificName", "family", "genus", "nativeRange", "habitat", "temperatureGuidance", "humidityGuidance", "enclosureGuidance", "feedingGuidance"];
+    const required: SpeciesSubmissionField[] = ["commonName", "scientificName", "family", "genus", "nativeRange", "habitat", "temperatureGuidance", "humidityGuidance", "enclosureGuidance", "feedingGuidance"];
     const missing = required.filter((key) => !values[key].trim());
     if (missing.length) {
       setError("Please complete the core identity, ecology, husbandry and feeding fields before submitting.");
@@ -101,6 +106,7 @@ export default function SubmitSpecies() {
     try {
       await submitSpeciesSubmission(user.uid, {
         ...values,
+        userId: user.uid,
         evidenceSummary,
         sources,
         submitterNotes,
