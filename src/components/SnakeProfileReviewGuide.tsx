@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Snake } from "../types/Snake";
+import { getSpeciesDiet } from "../data/feeding/speciesDiet";
 import "../styles/snake-profile-review-guide.css";
 
 type ReviewArea = {
@@ -11,6 +12,8 @@ type ReviewArea = {
   fields: string;
   route: string;
 };
+
+const MORPHMARKET_URL = "https://www.morphmarket.com/all/c/reptiles";
 
 function validDate(value?: string | null) {
   if (!value) return false;
@@ -50,34 +53,78 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
     const latestFeeding = [...(snake.feedingHistory ?? [])].sort((a, b) => b.date.localeCompare(a.date))[0];
     const latestShed = [...(snake.shedHistory ?? [])].sort((a, b) => b.date.localeCompare(a.date))[0];
     const latestEnvironment = [...(snake.enclosure?.environmentHistory ?? [])].sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))[0];
+    const diet = getSpeciesDiet(snake);
+    const dietText = diet.recommended.length ? diet.recommended.join(", ") : "the actual prey item under Other";
 
     if (hasRecentNonRecoveredHealth(snake)) {
-      areas.push({ id: "health", label: "Health", icon: "🩺", reason: "A recent health record is still active, so Tiny Titans needs the current keeper/vet outcome rather than assuming what it means.", fields: "Date, observed signs, recorded status, vet findings where applicable, treatment/medication, and outcome.", route: `/health/${snake.id}` });
+      areas.push({
+        id: "health",
+        label: "Health",
+        icon: "🩺",
+        reason: "A recent health record is still active, so Tiny Titans needs the current keeper/vet outcome rather than assuming what it means.",
+        fields: "Date, observed signs, recorded status, vet findings where applicable, treatment/medication, follow-up and outcome.",
+        route: `/health/${snake.id}`,
+      });
     }
 
     const currentWeight = latestWeight?.weight ?? snake.weight;
     const weightAge = ageDays(latestWeight?.date);
     if (currentWeight === undefined || currentWeight === null || !weightCount || weightAge !== null && weightAge > 30) {
-      areas.push({ id: "weight", label: "Weight", icon: "⚖️", reason: weightCount ? "The weight record is getting stale, so a current measurement would improve the trend picture." : "No usable weight history is available yet, so Tiny Titans cannot establish this snake's personal weight baseline.", fields: "Measurement, date, unit, and body length in cm when known; repeated measurements are especially valuable for trend analysis.", route: `/weights/${snake.id}` });
+      areas.push({
+        id: "weight",
+        label: "Weight",
+        icon: "⚖️",
+        reason: weightCount ? "The latest weight is getting stale, so a current measurement would improve the growth and change trend." : "No usable weight history is available yet, so Tiny Titans cannot establish this snake's personal weight baseline.",
+        fields: "Body mass, exact date, unit and body length in cm when known; repeated measurements are especially valuable for trend analysis.",
+        route: `/weights/${snake.id}`,
+      });
     }
 
     const feedingAge = ageDays(latestFeeding?.date);
     if (!feedingCount || feedingAge !== null && feedingAge > 45) {
-      areas.push({ id: "feeding", label: "Feeding", icon: "🍽️", reason: feedingCount ? "The feeding history is stale, so the next actual meal will help re-establish the personal feeding pattern." : "No feeding history is available yet, so Tiny Titans cannot learn this snake's individual response or rhythm.", fields: "Actual prey type, prey category, quantity, size, individual or total prey mass, response, feeding method, and useful meal notes.", route: `/feeding/${snake.id}` });
+      areas.push({
+        id: "feeding",
+        label: "Feeding",
+        icon: "🍽️",
+        reason: feedingCount ? `The feeding history is getting stale, so the next actual meal will help re-establish this snake's pattern. Species guidance currently prioritises ${dietText}.` : `No feeding history is available yet. Record the actual prey so Tiny Titans can learn this snake's individual response instead of applying a rodent-only assumption.`,
+        fields: "Actual prey type, prey category, quantity, size where meaningful, single-item or total prey mass, response, feeding method, preparation and useful meal notes.",
+        route: `/feeding/${snake.id}`,
+      });
     }
 
     const shedAge = ageDays(latestShed?.date);
     if (!shedCount || latestShed?.status === "Partial" || latestShed?.status === "Problematic" || shedAge !== null && shedAge > 120) {
-      areas.push({ id: "shed", label: "Shed", icon: "🐍", reason: latestShed?.status === "Partial" || latestShed?.status === "Problematic" ? `The latest shed is recorded as ${latestShed.status.toLowerCase()}, so the exact outcome is worth reviewing.` : shedCount ? "The shed record is getting stale, so a current shed event will improve the individual rhythm picture." : "No shed history is available yet, so Tiny Titans cannot establish this snake's individual shed rhythm.", fields: "Shed date, complete/partial/problematic outcome, retained eye caps or tail tip, and notes about the shed or surrounding conditions.", route: `/shedding/${snake.id}` });
+      areas.push({
+        id: "shed",
+        label: "Shed",
+        icon: "🐍",
+        reason: latestShed?.status === "Partial" || latestShed?.status === "Problematic" ? `The latest shed is recorded as ${latestShed.status.toLowerCase()}, so the exact outcome and surrounding conditions are worth reviewing.` : shedCount ? "The shed record is getting stale, so a current shed event will improve this snake's individual shed rhythm." : "No shed history is available yet, so Tiny Titans cannot establish this snake's individual shed rhythm.",
+        fields: "Shed date, complete/partial/problematic outcome, retained eye caps or tail tip, humidity/condition notes when relevant and anything unusual about the event.",
+        route: `/shedding/${snake.id}`,
+      });
     }
 
     const environmentAge = ageDays(latestEnvironment?.recordedAt);
     if (!snake.enclosure || !latestEnvironment || environmentAge !== null && environmentAge > 30) {
-      areas.push({ id: "enclosure", label: "Enclosure", icon: "🏠", reason: snake.enclosure ? "The environment record is getting stale, so a current reading/setup check would improve context." : "No current enclosure/environment record is linked, limiting husbandry context around this snake.", fields: "Enclosure dimensions, warm/cool temperatures, humidity, substrate, hides, water, ventilation, lighting/UVB, enrichment, and relevant setup changes.", route: `/husbandry/${snake.id}` });
+      areas.push({
+        id: "enclosure",
+        label: "Enclosure",
+        icon: "🏠",
+        reason: snake.enclosure ? "The environment record is getting stale, so a current setup and reading check would improve context around feeding, shedding and behaviour." : "No current enclosure/environment record is linked, which limits the husbandry context Tiny Titans can associate with this snake's other records.",
+        fields: "Enclosure dimensions, warm/cool temperatures, humidity, substrate, hides, water, ventilation, lighting/UVB where applicable, enrichment, equipment and relevant setup changes.",
+        route: `/husbandry/${snake.id}`,
+      });
     }
 
     if (!snake.notes?.trim() || !snake.acquisitionDate || snake.lengthCm == null) {
-      areas.push({ id: "master", label: "Master Record", icon: "📋", reason: "Core identity or physical-reference fields are incomplete, which limits comparisons and longitudinal interpretation.", fields: "Species, sex, hatch date, arrival/acquisition date, breeder/origin, morphs/hets, body length, identifiers, and important keeper notes.", route: `/snakes/${snake.id}/master-record` });
+      areas.push({
+        id: "master",
+        label: "Master Record",
+        icon: "📋",
+        reason: "Core identity or physical-reference fields are incomplete, which limits comparisons and longitudinal interpretation.",
+        fields: "Species, sex, hatch date, arrival/acquisition date, breeder/origin, morphs/hets, body length, identifiers and important keeper notes.",
+        route: `/snakes/${snake.id}/master-record`,
+      });
     }
 
     const coverageTargets = [
@@ -96,7 +143,7 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
       : orderedAreas.length ? "watch" : coverage < 70 ? "watch" : "clear";
     const statusLabel = tone === "attention" ? "Action worth taking" : tone === "watch" ? "Worth checking" : "Record looks healthy";
 
-    return { areas: orderedAreas, coverage, tone, statusLabel };
+    return { areas: orderedAreas, coverage, tone, statusLabel, diet };
   }, [snake]);
 
   const quickLinks = [
@@ -107,12 +154,12 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
   ] as const;
 
   const alwaysUseful: ReviewArea[] = [
-    { id: "weight", label: "Weight", icon: "⚖️", reason: "Helps Tiny Titans measure growth/change against this snake's own history.", fields: "Mass, date, unit, and body length when known.", route: `/weights/${snake.id}` },
-    { id: "feeding", label: "Feeding", icon: "🍽️", reason: "Builds the individual feeding pattern and preserves the actual diet instead of guessing from generic snake defaults.", fields: "Actual prey, category, quantity, size, mass, response, method, and notes.", route: `/feeding/${snake.id}` },
-    { id: "shed", label: "Shed", icon: "🐍", reason: "Builds the individual shed rhythm and records whether each event completed normally.", fields: "Date, outcome, retained material, and relevant notes.", route: `/shedding/${snake.id}` },
-    { id: "enclosure", label: "Enclosure", icon: "🏠", reason: "Provides the environmental context needed to interpret behaviour, feeding and shed records.", fields: "Dimensions, temperature gradient, humidity, substrate, hides, water, ventilation, lighting/UVB, and enrichment.", route: `/husbandry/${snake.id}` },
-    { id: "health", label: "Health", icon: "🩺", reason: "Preserves observed health events without asking Tiny Titans to diagnose them.", fields: "Date, observation, recorded status, treatment/vet information, and outcome.", route: `/health/${snake.id}` },
-    { id: "behaviour", label: "Behaviour", icon: "👀", reason: "A consistent description of what the snake actually did is more useful than a guessed interpretation.", fields: "Observed behaviour, context, frequency/duration, change from baseline, and possible triggers.", route: `/behaviour/${snake.id}` },
+    { id: "weight", label: "Weight", icon: "⚖️", reason: "Helps Tiny Titans measure growth/change against this snake's own history.", fields: "Mass, exact date, unit and body length when known.", route: `/weights/${snake.id}` },
+    { id: "feeding", label: "Feeding", icon: "🍽️", reason: "Builds the individual feeding pattern and preserves the actual diet instead of guessing from generic snake defaults.", fields: "Actual prey, category, quantity, size where meaningful, mass, response, method, preparation and notes.", route: `/feeding/${snake.id}` },
+    { id: "shed", label: "Shed", icon: "🐍", reason: "Builds the individual shed rhythm and records whether each event completed normally.", fields: "Date, outcome, retained material and relevant environmental/context notes.", route: `/shedding/${snake.id}` },
+    { id: "enclosure", label: "Enclosure", icon: "🏠", reason: "Provides the environmental context needed to interpret feeding, shedding and behaviour.", fields: "Dimensions, temperature gradient, humidity, substrate, hides, water, ventilation, lighting/UVB and enrichment.", route: `/husbandry/${snake.id}` },
+    { id: "health", label: "Health", icon: "🩺", reason: "Preserves observed health events without asking Tiny Titans to diagnose them.", fields: "Date, observation, recorded status, treatment/vet information, follow-up and outcome.", route: `/health/${snake.id}` },
+    { id: "behaviour", label: "Behaviour", icon: "👀", reason: "A consistent description of what the snake actually did is more useful than a guessed interpretation.", fields: "Observed behaviour, context, frequency/duration, change from baseline and possible triggers.", route: `/behaviour/${snake.id}` },
   ];
 
   return (
@@ -127,11 +174,9 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
 
       <p className="tt-profile-review-guide-intro">
         {data.areas.length
-          ? `${snake.name} has something worth reviewing, but Tiny Titans will not assume a cause without enough evidence.`
-          : `${snake.name} has no immediate review flag from the records currently available. Keep the highlighted records current so Tiny Titans can build a stronger individual baseline.`}
+          ? `${snake.name} has something worth reviewing, but Tiny Titans will not assume a cause without enough evidence. The flagged areas below are the records that will add the most useful evidence next.`
+          : `${snake.name} has no immediate review flag from the records currently available. Keep the core records current so Tiny Titans can build a stronger individual baseline over time.`}
       </p>
-
-      <div className="tt-profile-review-guide-coverage"><strong>{data.coverage}% record coverage</strong><span>Coverage reflects useful data fields currently available; it is not a health score.</span></div>
 
       <div className="tt-profile-review-guide-section">
         <h3>Please review/update these logs:</h3>
@@ -144,6 +189,8 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
         </div> : <p className="tt-profile-review-guide-empty">Nothing is currently flagged. Continue recording the actual events below and the profile will reassess as new evidence arrives.</p>}
       </div>
 
+      <div className="tt-profile-review-guide-coverage"><strong>{data.coverage}% record coverage</strong><span>Coverage reflects useful data fields currently available; it is not a health score or husbandry grade.</span></div>
+
       <details className="tt-profile-review-guide-details">
         <summary>What information helps Tiny Titans build the best picture?</summary>
         <div className="tt-profile-review-guide-all">
@@ -155,6 +202,12 @@ export default function SnakeProfileReviewGuide({ snake }: { snake: Snake }) {
       <nav className="tt-profile-review-guide-links" aria-label={`${snake.name} record links`}>
         {quickLinks.map(([icon, label, path]) => <button key={label} type="button" onClick={() => navigate(path)}>{icon} {label}</button>)}
       </nav>
+
+      <a className="tt-profile-review-guide-market" href={MORPHMARKET_URL} target="_blank" rel="noopener noreferrer">
+        <span><strong>🛒 Explore MorphMarket</strong><small>External marketplace resource · search this species and its traits on MorphMarket.</small></span>
+        <span aria-hidden="true">↗</span>
+      </a>
+      <p className="tt-profile-review-guide-market-note">Tiny Titans is not presenting MorphMarket as a sponsor or affiliate. This is simply a direct external resource for users who want to browse current listings and traits.</p>
     </section>
   );
 }
