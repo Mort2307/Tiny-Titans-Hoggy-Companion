@@ -30,7 +30,8 @@ export interface NumericRange {
 }
 
 export interface SourcedNumericRange extends NumericRange {
-  evidence: EvidenceScope;
+  /** Evidence scope is added at the registry boundary for legacy records and is explicit on new evidence-led records. */
+  evidence?: EvidenceScope;
 }
 
 export interface HusbandryProfile {
