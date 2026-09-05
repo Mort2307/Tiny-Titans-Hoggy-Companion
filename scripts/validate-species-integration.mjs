@@ -39,9 +39,7 @@ function extractSpeciesIds() {
     for (const match of source.matchAll(/\b(?:const|let|function)\s+([A-Za-z_$][\w$]*)\s*(?:=\s*)?\([\s\S]{0,500}?\bid\s*:\s*string\b[\s\S]{0,900}?\)\s*:\s*SnakeSpeciesRecord/g)) {
       helperNames.add(match[1]);
     }
-    for (const match of source.matchAll(/^\s*id\s*:\s*['"]([^'"]+)['"]/gm)) {
-      ids.add(match[1]);
-    }
+    for (const match of source.matchAll(/^\s*id\s*:\s*['"]([^'"]+)['"]/gm)) ids.add(match[1]);
   }
 
   for (const file of files) {
@@ -56,16 +54,35 @@ function extractSpeciesIds() {
   return [...ids].sort();
 }
 
-function bootstrap(currentIds) {
+function bootstrap(currentIds, manifest) {
+  const existingBaseline = fs.existsSync(BASELINE_PATH)
+    ? JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'))
+    : null;
+  const currentManifestCount = Object.keys(manifest.fullyIntegratedSpecies ?? {}).length;
+  const previousCount = Number(existingBaseline?.speciesCount ?? 0);
+  const previousManifestCount = Number(existingBaseline?.releaseManifestCount ?? 0);
+  const delta = Math.max(0, currentIds.length - previousCount);
+
+  if (existingBaseline && delta > 0 && currentManifestCount < previousManifestCount + delta) {
+    console.error('\nSPECIES INTEGRATION BOOTSTRAP: BLOCKED\n');
+    console.error(`- Registry grew by ${delta} species.`);
+    console.error(`- At least ${previousManifestCount + delta} fully integrated release record(s) are required before the baseline can be advanced.`);
+    console.error('- Complete the new species integration manifest first; do not bypass the release gate by refreshing the baseline.');
+    process.exitCode = 1;
+    return;
+  }
+
   const baseline = {
     version: 1,
     generatedOn: new Date().toISOString().slice(0, 10),
     speciesCount: currentIds.length,
     speciesIds: currentIds,
     fingerprint: sha256(currentIds.join('\n')),
+    releaseManifestCount: currentManifestCount,
   };
   fs.writeFileSync(BASELINE_PATH, `${JSON.stringify(baseline, null, 2)}\n`, 'utf8');
   console.log(`Species integration baseline created: ${currentIds.length} species.`);
+  console.log(`Fully integrated release records captured: ${currentManifestCount}.`);
   console.log(`Committed baseline: ${path.relative(ROOT, BASELINE_PATH)}`);
 }
 
@@ -81,41 +98,70 @@ if (currentIds.length === 0) {
   process.exit();
 }
 
-if (process.argv.includes('--bootstrap')) {
-  bootstrap(currentIds);
-  process.exit();
-}
-
-if (!fs.existsSync(BASELINE_PATH)) {
-  console.warn('\nSPECIES INTEGRATION GATE: BASELINE NOT INITIALISED');
-  console.warn(`Run: npm run validate:species-integration -- --bootstrap`);
-  console.warn('The baseline is intentionally created once from the current registry, then committed.');
-  process.exit();
-}
-
 if (!fs.existsSync(MANIFEST_PATH)) {
   fail([`Missing release manifest: ${path.relative(ROOT, MANIFEST_PATH)}`]);
   process.exit();
 }
 
-const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
-const baselineIds = [...new Set(baseline.speciesIds ?? [])].sort();
-const baselineFingerprint = sha256(baselineIds.join('\n'));
+const released = manifest.fullyIntegratedSpecies ?? {};
+
+if (process.argv.includes('--bootstrap')) {
+  bootstrap(currentIds, manifest);
+  process.exit();
+}
+
+if (!fs.existsSync(BASELINE_PATH)) {
+  fail([
+    `Missing integration baseline: ${path.relative(ROOT, BASELINE_PATH)}`,
+    'Create the initial baseline with npm run validate:species-integration -- --bootstrap.',
+  ]);
+  process.exit();
+}
+
+const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+const baselineIds = Array.isArray(baseline.speciesIds) ? [...new Set(baseline.speciesIds)].sort() : [];
+const baselineFingerprint = baselineIds.length ? sha256(baselineIds.join('\n')) : null;
 const currentFingerprint = sha256(currentIds.join('\n'));
 const currentSet = new Set(currentIds);
 const baselineSet = new Set(baselineIds);
 const messages = [];
 
-if (baselineFingerprint !== baseline.fingerprint) {
-  messages.push('Baseline fingerprint is internally inconsistent. Regenerate the baseline rather than editing it manually.');
+if (baselineIds.length > 0) {
+  if (baselineFingerprint !== baseline.fingerprint) {
+    messages.push('Baseline fingerprint is internally inconsistent. Regenerate the baseline rather than editing it manually.');
+  }
+
+  const added = currentIds.filter((id) => !baselineSet.has(id));
+  const removed = baselineIds.filter((id) => !currentSet.has(id));
+  if (removed.length) messages.push(`Species removed from the registry: ${removed.join(', ')}`);
+  for (const speciesId of added) {
+    const entry = released[speciesId];
+    if (!entry) {
+      messages.push(`NEW SPECIES ${speciesId} was added without a full integration release record. Complete all ${REQUIRED_SURFACES.length} surfaces before advancing the baseline.`);
+      continue;
+    }
+    if (entry.status !== 'fully-integrated') {
+      messages.push(`NEW SPECIES ${speciesId} cannot be released with status ${entry.status}; new species must be fully-integrated.`);
+    }
+    const surfaces = Array.isArray(entry.surfaces) ? new Set(entry.surfaces) : new Set();
+    const missing = REQUIRED_SURFACES.filter((surface) => !surfaces.has(surface));
+    if (missing.length) messages.push(`NEW SPECIES ${speciesId} is missing integration surfaces: ${missing.join(', ')}`);
+  }
+
+  if (currentIds.length !== baseline.speciesCount || added.length || removed.length) {
+    messages.push(`Species registry changed from baseline ${baseline.speciesCount} to ${currentIds.length}. Run the bootstrap command only after all newly added species have fully integrated release records.`);
+  }
+
+  if (currentFingerprint !== baselineFingerprint && added.length === 0 && removed.length === 0) {
+    messages.push('Species fingerprint changed without an identifiable add/remove. Investigate the registry extraction or baseline before release.');
+  }
+} else {
+  if (currentIds.length !== Number(baseline.speciesCount)) {
+    messages.push(`Species registry count changed from baseline ${baseline.speciesCount} to ${currentIds.length}. An exact ID baseline must be generated before release.`);
+  }
 }
 
-const added = currentIds.filter((id) => !baselineSet.has(id));
-const removed = baselineIds.filter((id) => !currentSet.has(id));
-if (removed.length) messages.push(`Species removed from the registry: ${removed.join(', ')}`);
-
-const released = manifest.fullyIntegratedSpecies ?? {};
 for (const [speciesId, entry] of Object.entries(released)) {
   if (!currentSet.has(speciesId)) {
     messages.push(`Release manifest references species not present in registry: ${speciesId}`);
@@ -131,28 +177,11 @@ for (const [speciesId, entry] of Object.entries(released)) {
   }
 }
 
-for (const speciesId of added) {
-  const entry = released[speciesId];
-  if (!entry) {
-    messages.push(`NEW SPECIES ${speciesId} was added without a full integration release record. Add it to speciesIntegrationManifest.json only after every required surface is implemented and reviewed.`);
-    continue;
-  }
-  if (entry.status !== 'fully-integrated') {
-    messages.push(`NEW SPECIES ${speciesId} cannot be released with status ${entry.status}; new species must be fully-integrated.`);
-  }
-  const surfaces = Array.isArray(entry.surfaces) ? new Set(entry.surfaces) : new Set();
-  const missing = REQUIRED_SURFACES.filter((surface) => !surfaces.has(surface));
-  if (missing.length) messages.push(`NEW SPECIES ${speciesId} is missing integration surfaces: ${missing.join(', ')}`);
-}
-
-console.log(`Species integration audit: ${currentIds.length} current species; baseline ${baselineIds.length}.`);
+const baselineKnownIds = baselineIds.length ? baselineSet : currentSet;
+console.log(`Species integration audit: ${currentIds.length} current species; baseline ${baseline.speciesCount}.`);
 console.log(`Required integration surfaces: ${REQUIRED_SURFACES.length}.`);
-console.log(`Legacy species pending explicit audit: ${currentIds.filter((id) => baselineSet.has(id) && !released[id]).length}.`);
+console.log(`Legacy species pending explicit audit: ${currentIds.filter((id) => baselineKnownIds.has(id) && !released[id]).length}.`);
 console.log(`Fully integrated release records: ${Object.keys(released).length}.`);
-
-if (currentFingerprint !== baselineFingerprint && added.length === 0 && removed.length === 0) {
-  messages.push('Species fingerprint changed without an identifiable add/remove. Investigate the registry extraction or baseline before release.');
-}
 
 if (messages.length) fail(messages);
 else console.log('SPECIES INTEGRATION GATE: PASS');
