@@ -7,6 +7,7 @@ import { isActiveReportIssueStatus } from "../services/reportLifecycle";
 import type { ReportIssue } from "../types/reportIssue";
 
 const tools = [
+  ["🐍", "Species Submission Review", "/creator/species-submissions", "Review proposed species, evidence, husbandry, imagery and implementation notes before anything becomes canonical."],
   ["🧬", "Morph Submission Review", "/creator/submissions", "Review and moderate morph submissions."],
   ["🖼️", "Morph Library Editor", "/creator/morph-library", "Repair approved morph images, swap image assignments, crop, move, edit credits and remove incorrect imagery."],
   ["🏡", "Vivarium Showcase Review", "/creator/vivarium-showcase", "Review keeper enclosure setups, images and walkthrough videos before public publication."],
@@ -62,6 +63,7 @@ export default function CreatorLanding() {
       </section>
       <section className="creator-landing-command-grid" aria-label="Creator command centre">
         <Link className="creator-command-card creator-command-primary" to="/creator/issues"><span className="creator-command-icon">🐛</span><div><small>ACTIVE QUEUE</small><strong>{bugCount} Bug Reports</strong><p>Review reports, evidence, severity and creator decisions.</p></div><span className="creator-command-arrow">→</span></Link>
+        <Link className="creator-command-card" to="/creator/species-submissions"><span className="creator-command-icon">🐍</span><div><small>CONTENT PIPELINE</small><strong>Species Submissions</strong><p>Review proposed species and the evidence package before canonical implementation.</p></div><span className="creator-command-arrow">→</span></Link>
         <Link className="creator-command-card" to="/creator/morph-library"><span className="creator-command-icon">🖼️</span><div><small>MORPH LIBRARY · CREATOR</small><strong>Morph Library Editor</strong><p>Crop, swap, move, reassign, re-credit or remove approved morph imagery.</p></div><span className="creator-command-arrow">→</span></Link>
         <Link className="creator-command-card" to="/creator/submissions"><span className="creator-command-icon">🧬</span><div><small>CONTENT PIPELINE</small><strong>Morph Submissions</strong><p>Keep the community morph database accurate and evidence-led.</p></div><span className="creator-command-arrow">→</span></Link>
         <Link className="creator-command-card" to="/creator/vivarium-showcase"><span className="creator-command-icon">🏡</span><div><small>COMMUNITY SETUPS</small><strong>Vivarium Showcase Review</strong><p>Review enclosure setups, photographs and videos before they become shared community learning material.</p></div><span className="creator-command-arrow">→</span></Link>
