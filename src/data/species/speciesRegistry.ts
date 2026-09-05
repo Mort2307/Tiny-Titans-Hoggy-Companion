@@ -7,6 +7,7 @@ import { SPECIES_EXPANSION_BATCH_5 } from './speciesExpansionBatch5';
 import { SPECIES_EXPANSION_BATCH_6 } from './speciesExpansionBatch6';
 import { SPECIES_EXPANSION_BATCH_7 } from './speciesExpansionBatch7';
 import { SPECIES_EXPANSION_BATCH_8 } from './speciesExpansionBatch8';
+import { SPECIES_EXPANSION_BATCH_9 } from './speciesExpansionBatch9';
 import { completeSpeciesHusbandry } from './speciesHusbandryCompletion';
 import type { SnakeSpeciesRecord } from './speciesTypes';
 
@@ -21,6 +22,7 @@ const RAW_SPECIES: SnakeSpeciesRecord[] = [
   ...SPECIES_EXPANSION_BATCH_6,
   ...SPECIES_EXPANSION_BATCH_7,
   ...SPECIES_EXPANSION_BATCH_8,
+  ...SPECIES_EXPANSION_BATCH_9,
 ];
 
 /** Every registered species leaves this boundary with an explicit husbandry object. */
