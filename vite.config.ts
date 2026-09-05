@@ -44,4 +44,34 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "react-vendor",
+              test: /node_modules[\\/]react(?:$|[\\/])/,
+              priority: 30,
+            },
+            {
+              name: "firebase-vendor",
+              test: /node_modules[\\/]firebase(?:$|[\\/])/,
+              priority: 20,
+            },
+            {
+              name: "visual-vendor",
+              test: /node_modules[\\/](?:three|@react-three|react-globe\.gl|recharts)(?:$|[\\/])/,
+              priority: 10,
+            },
+            {
+              name: "other-vendor",
+              test: /node_modules[\\/]/,
+              priority: 0,
+            },
+          ],
+        },
+      },
+    },
+  },
 });
