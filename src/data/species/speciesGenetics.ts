@@ -130,3 +130,7 @@ export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): 
   if (isHognose(speciesId)) return "mapped";
   return getSpeciesCalculatorMorphs(speciesId).length > 0 ? "partial" : "baseline-only";
 }
+
+export function isSpeciesGeneticsMapped(speciesId: string | null | undefined): boolean {
+  return getSpeciesGeneticsStatus(speciesId) !== "baseline-only";
+}
