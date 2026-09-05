@@ -1,13 +1,7 @@
 import { SPECIES_SOURCES, getUnresolvedSpeciesSourceIds } from './speciesSources';
 import type { EvidenceLevel, EvidenceScope, HusbandryProfile, SourcedNumericRange, SnakeSpeciesRecord } from './speciesTypes';
 
-export type EvidenceCoverage =
-  | 'verified'
-  | 'recorded-needs-scoping'
-  | 'external-evidence-located'
-  | 'evidence-limited'
-  | 'context-only'
-  | 'unmapped';
+export type EvidenceCoverage = 'verified' | 'recorded-needs-scoping' | 'external-evidence-located' | 'evidence-limited' | 'context-only' | 'unmapped';
 
 export interface EvidenceCoverageResult {
   status: EvidenceCoverage;
@@ -59,17 +53,12 @@ function chooseProfileScope(species: SnakeSpeciesRecord): EvidenceScope | undefi
   const ids = mappedSourceIds(species);
   const matching = ids.map((id) => PROFILE_SCOPE_BY_SOURCE[id]).find(Boolean);
   if (!matching) return undefined;
-  return {
-    ...matching,
-    sourceIds: ids,
-    reviewedOn: species.knowledge.reviewedOn,
-  };
+  return { ...matching, sourceIds: ids, reviewedOn: species.knowledge.reviewedOn };
 }
 
 export function ensureSpeciesHusbandryEvidence(species: SnakeSpeciesRecord): SnakeSpeciesRecord {
   const husbandry = species.knowledge.husbandry;
-  if (!husbandry) return species;
-  if (husbandry.evidenceSummary) return species;
+  if (!husbandry || husbandry.evidenceSummary) return species;
   const evidenceSummary = chooseProfileScope(species) ?? {
     basis: 'ecology-only' as const,
     scope: `${species.acceptedScientificName} profile context`,
@@ -100,14 +89,7 @@ export function getRangeEvidenceCoverage(range: SourcedNumericRange | undefined,
   }
   if (range) {
     const sourceIds = mappedSourceIds(species);
-    return {
-      status: sourceIds.length > 0 ? 'recorded-needs-scoping' : 'context-only',
-      label: evidenceLabel(sourceIds.length > 0 ? 'recorded-needs-scoping' : 'context-only'),
-      detail: sourceIds.length > 0
-        ? 'A numeric value is already recorded, but its individual evidence scope is not attached yet.'
-        : 'A numeric value exists without a non-taxonomic supporting source trail. It must not be presented as a verified target.',
-      sourceIds,
-    };
+    return { status: sourceIds.length > 0 ? 'recorded-needs-scoping' : 'context-only', label: evidenceLabel(sourceIds.length > 0 ? 'recorded-needs-scoping' : 'context-only'), detail: sourceIds.length > 0 ? 'A numeric value is already recorded, but its individual evidence scope is not attached yet.' : 'A numeric value exists without a non-taxonomic supporting source trail. It must not be presented as a verified target.', sourceIds };
   }
   return getProfileEvidenceCoverage(species, species.knowledge.husbandry?.evidenceLevel);
 }
@@ -118,7 +100,8 @@ export function getProfileEvidenceCoverage(species: SnakeSpeciesRecord, evidence
     if (hasResolvedSourceIds(sourceIds)) return { status: 'verified', label: evidenceLabel('verified'), detail: `${formatBasis(explicitScope)}.`, sourceIds };
     return { status: 'recorded-needs-scoping', label: evidenceLabel('recorded-needs-scoping'), detail: 'The profile scope exists, but its source trail is not fully resolved yet.', sourceIds };
   }
-  if (sourceIds.length > 0) return { status: 'external-evidence-located', label: evidenceLabel('external-evidence-located'), detail: 'Tiny Titans has a non-taxonomic source trail, but the current profile fields have not all been individually scoped.', sourceIds };
+  if (hasResolvedSourceIds(sourceIds)) return { status: 'external-evidence-located', label: evidenceLabel('external-evidence-located'), detail: 'Tiny Titans has a resolved non-taxonomic source trail, but the current profile fields have not all been individually scoped.', sourceIds };
+  if (sourceIds.length > 0) return { status: 'recorded-needs-scoping', label: evidenceLabel('recorded-needs-scoping'), detail: 'Tiny Titans has source references, but at least one source record is unresolved in the current catalogue.', sourceIds };
   if (evidenceLevel === 'limited' || evidenceLevel === 'unknown') return { status: 'evidence-limited', label: evidenceLabel('evidence-limited'), detail: 'Keeper-facing evidence is currently too thin to justify a species-specific numeric target here.', sourceIds };
   return { status: 'context-only', label: evidenceLabel('context-only'), detail: 'The profile currently contains taxonomy/ecology context without a mapped captive-husbandry source.', sourceIds };
 }
@@ -128,7 +111,9 @@ export function getSpeciesEvidenceSummary(species: SnakeSpeciesRecord) {
   const ranges = [husbandry?.temperature?.basking, husbandry?.temperature?.warmSide, husbandry?.temperature?.coolSide, husbandry?.temperature?.night, husbandry?.humidity?.target, husbandry?.humidity?.acceptable].filter(Boolean) as SourcedNumericRange[];
   const verifiedRanges = ranges.filter((range) => getRangeEvidenceCoverage(range, species).status === 'verified').length;
   const recordedRanges = ranges.filter((range) => getRangeEvidenceCoverage(range, species).status === 'recorded-needs-scoping').length;
-  return { numericRanges: ranges.length, verifiedRanges, recordedRanges, profile: getProfileEvidenceCoverage(species, husbandry?.evidenceLevel, husbandry?.evidenceSummary), hasExternalEvidence: mappedSourceIds(species).length > 0, unresolvedSourceIds: getUnresolvedSpeciesSourceIds() };
+  const sourceIds = mappedSourceIds(species);
+  const unresolvedSourceIds = sourceIds.filter((id) => !Boolean(SPECIES_SOURCES[id]?.url && SPECIES_SOURCES[id].url !== '#'));
+  return { numericRanges: ranges.length, verifiedRanges, recordedRanges, profile: getProfileEvidenceCoverage(species, husbandry?.evidenceLevel, husbandry?.evidenceSummary), hasExternalEvidence: hasResolvedSourceIds(sourceIds), unresolvedSourceIds: [...new Set([...unresolvedSourceIds, ...getUnresolvedSpeciesSourceIds()])].sort() };
 }
 
 function formatBasis(evidence: EvidenceScope): string {
