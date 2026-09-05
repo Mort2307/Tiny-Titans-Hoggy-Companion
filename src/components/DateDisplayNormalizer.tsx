@@ -91,7 +91,7 @@ function enhanceDateInput(input: HTMLInputElement) {
   input.style.color = "transparent";
   input.style.caretColor = "transparent";
   input.style.textShadow = "none";
-  input.style.webkitTextFillColor = "transparent";
+  input.style.setProperty("-webkit-text-fill-color", "transparent");
   input.style.position = "relative";
   syncDateInput(input);
 }
