@@ -76,9 +76,10 @@ export default function FeedingTracker() {
   const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]);
   const diet = useMemo(() => getSpeciesDiet(selectedSnake), [selectedSnake]);
   const feedingFoodTypes = useMemo(() => {
-    const recommended = diet.recommended.length ? diet.recommended : ["Other" as FoodType];
-    const additional = diet.additional.filter((food) => !recommended.includes(food));
-    return { recommended, additional };
+    const supported = new Set<FoodType>(allFoodTypes);
+    const recommended = (diet.recommended.length ? diet.recommended : ["Other" as FoodType]).filter((food) => supported.has(food));
+    const additional = diet.additional.filter((food) => supported.has(food) && !recommended.includes(food));
+    return { recommended: recommended.length ? recommended : ["Other" as FoodType], additional };
   }, [diet]);
   const feedingsKey = user && selectedSnakeId ? `${user.uid}:${selectedSnakeId}` : null;
   const loadingFeedings = Boolean(feedingsKey && loadedFeedingsKey !== feedingsKey);
@@ -259,9 +260,9 @@ export default function FeedingTracker() {
                   <optgroup label={`Recommended for ${diet.label}`}>
                     {feedingFoodTypes.recommended.map((food) => <option key={food}>{food}</option>)}
                   </optgroup>
-                  <optgroup label="Other supported prey">
+                  {feedingFoodTypes.additional.length > 0 && <optgroup label="Other supported prey">
                     {feedingFoodTypes.additional.map((food) => <option key={food}>{food}</option>)}
-                  </optgroup>
+                  </optgroup>}
                 </select>
               </label>
               {foodType === "Other" && <label htmlFor="custom-food">Food description<input id="custom-food" value={customFood} onChange={(event) => setCustomFood(event.target.value)} placeholder="e.g. young rat, locusts, day-old chick" disabled={saving} required /></label>}
