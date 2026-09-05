@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { getApprovedMorphImages } from "../services/creatorService";
@@ -155,8 +156,9 @@ export default function SpeciesMorphLibrary() {
                 {morph.description && <p className="morph-card__description">{morph.description}</p>}
                 <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span></div>
                 <div className="morph-card__actions">
-                  <button type="button" className="morph-card__open" onClick={() => setSelected(morph)}>Open genetics record <span aria-hidden="true">→</span></button>
-                  <button type="button" className="morph-card__image-submit" onClick={() => openImageSubmission(morph.geneId)}>📷 Add image</button>
+                  <Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}`}>Open genetics record <span aria-hidden="true">→</span></Link>
+                  <Link className="morph-card__image-submit" to={`/morph-library/${encodeURIComponent(morph.geneId)}/gallery`}>📷 Morph Gallery</Link>
+                  <button type="button" className="morph-card__image-submit" onClick={() => openImageSubmission(morph.geneId)}>Add image</button>
                 </div>
               </div>
             </article>
@@ -164,7 +166,6 @@ export default function SpeciesMorphLibrary() {
         })}
       </section>
 
-      {selected && <div className="morph-detail-backdrop" role="presentation" onMouseDown={() => setSelected(null)}><article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="species-morph-title" onMouseDown={(event) => event.stopPropagation()}><button className="morph-detail__close" type="button" onClick={() => setSelected(null)} aria-label="Close morph details">×</button><div className="morph-detail__eyebrow">TINY TITANS · {speciesName.toUpperCase()}</div><h2 id="species-morph-title">{selected.name}</h2><div className="morph-detail__badges"><span>{selected.kind}</span><span>{selected.inheritance}</span><span>{selected.verification}</span></div><p className="morph-detail__description">{selected.description ?? "No description has been added yet."}</p>{selected.aliases?.length ? <section className="morph-detail__section"><h3>Recognised aliases</h3><p>{selected.aliases.join(" · ")}</p></section> : null}{selected.components?.length ? <section className="morph-detail__section"><h3>Genetic components</h3><ul>{selected.components.map((component) => <li key={`${component.morphId}-${component.copies ?? 1}`}><strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}</li>)}</ul></section> : null}<section className="morph-detail__section"><h3>Genetics notes</h3><p>{selected.educationalNotes ?? "No additional genetics notes have been published for this entry."}</p></section><SpeciesCommunityGallery speciesId={selectedSpeciesId} morphId={selected.geneId} morphName={selected.name} /><section className="morph-detail__source"><strong>Species reference</strong><span>{selected.sourceLabel ?? "Tiny Titans species genetics record"}</span>{selected.sourceUrl ? <a href={selected.sourceUrl} target="_blank" rel="noreferrer">Open source reference →</a> : <span className="morph-detail__source-note">Canonical species-scoped record maintained by Tiny Titans.</span>}</section></article></div>}
       {showImageSubmission && selectedSpeciesId && <SpeciesMorphImageSubmissionDialog initialMorphId={imageSubmissionMorphId} initialSpeciesId={selectedSpeciesId} onClose={closeImageSubmission} />}
     </main>
   );
