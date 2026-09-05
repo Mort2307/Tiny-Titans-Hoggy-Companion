@@ -57,14 +57,15 @@ function RangeCard({ label, range, species }: { label: string; range: SourcedNum
 
 export default function SpeciesSafeHusbandryCare() {
   const { selectedSpeciesId, selectedSpecies } = useSpeciesContext();
-  const knowledge = selectedSpecies?.knowledge;
-  const husbandry = knowledge?.husbandry;
-  const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "selected species";
-
   if (selectedSpeciesId === LEGACY_HOGNOSE_ID) return <HusbandryCare />;
   if (!selectedSpecies) {
     return <main className="page-container husbandry-page"><section className="husbandry-panel"><h1>Species husbandry</h1><p>No species is currently selected.</p></section></main>;
   }
+
+  const knowledge = selectedSpecies.knowledge;
+  const husbandry = knowledge.husbandry;
+  const speciesName = selectedSpecies.commonNames[0] ?? selectedSpecies.acceptedScientificName ?? "selected species";
+
 
   const evidenceSummary = getSpeciesEvidenceSummary(selectedSpecies);
   const profileCoverage = evidenceSummary.profile;
