@@ -61,7 +61,7 @@ export default defineConfig({
             },
             {
               name: "visual-vendor",
-              test: /node_modules[\\/](?:three|@react-three|react-globe\\.gl|recharts)(?:$|[\\/])/, 
+              test: /node_modules[\\/](?:three|@react-three|react-globe\.gl|recharts)(?:$|[\\/])/, 
               priority: 10,
             },
             {
