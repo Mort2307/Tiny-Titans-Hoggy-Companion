@@ -21,7 +21,7 @@ requireText("src/components/SnakeTile.tsx", "findSnakeSpecies", "snake selection
 requireText("src/pages/SpeciesMorphLibrary.tsx", "getSpeciesVisualMorphs", "the non-Hognose Morph Library must consume species-scoped genetics");
 requireText("src/pages/SpeciesMorphLibrary.tsx", "getSpeciesGeneticsStatus", "the Morph Library must expose honest species genetics coverage");
 requireText("src/pages/Calculator.tsx", "getSpeciesGeneticsStatus", "the calculator must gate itself on species genetics coverage");
-requireText("src/pages/Calculator.tsx", "const geneticsEnabled = geneticsStatus === \"mapped\"", "partial species catalogues must not unlock the Hognose calculator engine");
+requireText("src/pages/Calculator.tsx", 'const geneticsEnabled = geneticsStatus !== "baseline-only"', "catalogued species must expose their own calculator engine while baseline-only species remain disabled");
 requireText("src/data/species/speciesGenetics.ts", "SPECIES_GENETICS_CATALOGUES", "species genetics must be backed by the dedicated species catalogue registry");
 requireText("src/data/species/speciesGenetics.ts", '"mapped" | "partial" | "baseline-only"', "genetics coverage must distinguish full, partial and baseline-only species records");
 
