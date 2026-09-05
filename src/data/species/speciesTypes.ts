@@ -1,4 +1,5 @@
 export type EvidenceLevel = 'high' | 'moderate' | 'limited' | 'unknown';
+export type GuidanceBasis = 'species-specific' | 'locality-specific' | 'taxon-level' | 'genus-level' | 'general-veterinary' | 'ecology-only';
 export type SpeciesRiskClass = 'companion' | 'specialist' | 'venomous' | 'high-risk';
 export type ActivityPattern = 'diurnal' | 'nocturnal' | 'crepuscular' | 'cathemeral' | 'unknown';
 export type Lifestyle = 'terrestrial' | 'arboreal' | 'semi-arboreal' | 'fossorial' | 'semi-fossorial' | 'aquatic' | 'semi-aquatic' | 'mixed' | 'unknown';
@@ -13,6 +14,14 @@ export interface SourceCitation {
   notes?: string;
 }
 
+export interface EvidenceScope {
+  basis: GuidanceBasis;
+  scope: string;
+  sourceIds: string[];
+  caveat: string;
+  reviewedOn: string;
+}
+
 export interface NumericRange {
   min: number;
   max: number;
@@ -20,19 +29,24 @@ export interface NumericRange {
   context?: string;
 }
 
+export interface SourcedNumericRange extends NumericRange {
+  evidence: EvidenceScope;
+}
+
 export interface HusbandryProfile {
   evidenceLevel: EvidenceLevel;
+  evidenceSummary?: EvidenceScope;
   temperature?: {
-    basking?: NumericRange;
-    warmSide?: NumericRange;
-    coolSide?: NumericRange;
-    night?: NumericRange;
+    basking?: SourcedNumericRange;
+    warmSide?: SourcedNumericRange;
+    coolSide?: SourcedNumericRange;
+    night?: SourcedNumericRange;
     seasonal?: string;
     notes?: string;
   };
   humidity?: {
-    target?: NumericRange;
-    acceptable?: NumericRange;
+    target?: SourcedNumericRange;
+    acceptable?: SourcedNumericRange;
     seasonal?: string;
     notes?: string;
   };
@@ -58,6 +72,7 @@ export interface FeedingProfile {
   dietaryGuild?: 'carnivore' | 'insectivore' | 'piscivore' | 'amphibian-specialist' | 'generalist' | 'unknown';
   preyCategories?: string[];
   notes?: string;
+  evidenceSummary?: EvidenceScope;
 }
 
 export interface SpeciesKnowledgeProfile {
@@ -73,6 +88,7 @@ export interface SpeciesKnowledgeProfile {
     notes?: string;
     seasonalCycling?: string;
     evidenceLevel: EvidenceLevel;
+    evidenceSummary?: EvidenceScope;
   };
   safety?: {
     medicallySignificantVenom?: boolean;
