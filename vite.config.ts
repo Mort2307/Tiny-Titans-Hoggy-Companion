@@ -51,17 +51,17 @@ export default defineConfig({
           groups: [
             {
               name: "react-vendor",
-              test: /node_modules[\\/]react(?:$|[\\/])/, 
+              test: /node_modules[\\/]react(?:$|[\\/])/,
               priority: 30,
             },
             {
               name: "firebase-vendor",
-              test: /node_modules[\\/]firebase(?:$|[\\/])/, 
+              test: /node_modules[\\/]firebase(?:$|[\\/])/,
               priority: 20,
             },
             {
               name: "visual-vendor",
-              test: /node_modules[\\/](?:three|@react-three|react-globe\.gl|recharts)(?:$|[\\/])/, 
+              test: /node_modules[\\/](?:three|@react-three|react-globe\.gl|recharts)(?:$|[\\/])/,
               priority: 10,
             },
             {
