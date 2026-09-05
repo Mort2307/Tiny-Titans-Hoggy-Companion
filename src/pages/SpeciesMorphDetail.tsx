@@ -13,7 +13,7 @@ export default function SpeciesMorphDetail() {
   const speciesId = selectedSpeciesId || selectedSpecies?.id || 'heterodon-nasicus';
   const species = selectedSpecies ?? findSnakeSpecies(speciesId);
   const morph = useMemo(() => speciesId === 'heterodon-nasicus'
-    ? masterMorphs.find((entry) => entry.id === morphId || entry.geneId === morphId)
+    ? masterMorphs.find((entry) => entry.geneId === morphId)
     : getSpeciesVisualMorphs(speciesId).find((entry) => entry.geneId === morphId), [morphId, speciesId]);
   const speciesName = species?.commonNames[0] ?? species?.acceptedScientificName ?? 'Selected species';
 
@@ -22,7 +22,7 @@ export default function SpeciesMorphDetail() {
   const components = 'components' in morph ? (morph.components ?? []).map((item) => item.morphId) : ('contains' in morph ? (morph.contains ?? []) : []);
   const description = morph.description ?? 'No full description has been published yet.';
   const notes = morph.educationalNotes ?? 'No additional educational notes have been published yet.';
-  const galleryPath = `/morph-library/${encodeURIComponent(morph.geneId ?? morph.id)}/gallery`;
+  const galleryPath = `/morph-library/${encodeURIComponent(morph.geneId)}/gallery`;
 
   return <main className="page-container morph-library-page">
     <BackHomeButton />
