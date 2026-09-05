@@ -1,4 +1,4 @@
-import { SPECIES_SOURCES, getUnresolvedSpeciesSourceIds } from './speciesSources';
+import { SPECIES_SOURCES } from './speciesSources';
 import type { EvidenceLevel, EvidenceScope, HusbandryProfile, SourcedNumericRange, SnakeSpeciesRecord } from './speciesTypes';
 
 export type EvidenceCoverage = 'verified' | 'recorded-needs-scoping' | 'external-evidence-located' | 'evidence-limited' | 'context-only' | 'unmapped';
@@ -105,7 +105,7 @@ export function getSpeciesEvidenceSummary(species: SnakeSpeciesRecord) {
   const recordedRanges = ranges.filter((range) => getRangeEvidenceCoverage(range, species).status === 'recorded-needs-scoping').length;
   const sourceIds = mappedSourceIds(species);
   const unresolvedSourceIds = sourceIds.filter((id) => !SPECIES_SOURCES[id]?.url || SPECIES_SOURCES[id].url === '#');
-  return { numericRanges: ranges.length, verifiedRanges, recordedRanges, profile: getProfileEvidenceCoverage(species, husbandry?.evidenceLevel, husbandry?.evidenceSummary), hasExternalEvidence: hasResolvedSourceIds(sourceIds), unresolvedSourceIds: [...new Set([...unresolvedSourceIds, ...getUnresolvedSpeciesSourceIds()])].sort() };
+  return { numericRanges: ranges.length, verifiedRanges, recordedRanges, profile: getProfileEvidenceCoverage(species, husbandry?.evidenceLevel, husbandry?.evidenceSummary), hasExternalEvidence: hasResolvedSourceIds(sourceIds), unresolvedSourceIds: [...new Set(unresolvedSourceIds)].sort() };
 }
 
 function formatBasis(evidence: EvidenceScope): string { return `${evidence.basis.replace(/-/g, ' ')} · ${evidence.scope} ${evidence.caveat}`; }
