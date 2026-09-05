@@ -39,8 +39,9 @@ export default function Calculator() {
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const speciesDefinitions = useMemo(() => getSpeciesCalculatorMorphs(selectedSpeciesId), [selectedSpeciesId]);
-  const hasDocumentedLoci = speciesDefinitions.length > 0 || selectedSpeciesId === "heterodon-nasicus";
-  const isBaselineOnly = geneticsStatus === "baseline-only";
+  const geneticsEnabled = geneticsStatus !== "baseline-only";
+  const hasDocumentedLoci = geneticsEnabled && (speciesDefinitions.length > 0 || selectedSpeciesId === "heterodon-nasicus");
+  const isBaselineOnly = !geneticsEnabled;
   const isHognose = selectedSpeciesId === "heterodon-nasicus";
   useEffect(() => setMode(requestedMode), [requestedMode]);
   useEffect(() => { setMother({ ...EMPTY_PARENT }); setFather({ ...EMPTY_PARENT }); setPreloadedPairing(false); }, [selectedSpeciesId]);
