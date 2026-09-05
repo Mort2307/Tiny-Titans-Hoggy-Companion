@@ -2,6 +2,7 @@ import { useSpeciesContext } from "../context/SpeciesContext";
 import MorphLibrary from "./MorphLibrary";
 import SpeciesMorphLibrary from "./SpeciesMorphLibrary";
 import SpeciesMorphCommunityContribution from "../components/SpeciesMorphCommunityContribution";
+import "../styles/speciesMorphLibrary.css";
 
 /**
  * Single entry point for the Morph Library.
@@ -16,5 +17,10 @@ export default function SpeciesAwareMorphLibrary() {
   const { selectedSpeciesId } = useSpeciesContext();
 
   if (selectedSpeciesId === "heterodon-nasicus") return <MorphLibrary />;
-  return <><SpeciesMorphLibrary /><SpeciesMorphCommunityContribution /></>;
+  return (
+    <div className="species-morph-library-standard">
+      <SpeciesMorphLibrary />
+      <SpeciesMorphCommunityContribution />
+    </div>
+  );
 }
