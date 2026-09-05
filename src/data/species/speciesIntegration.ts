@@ -1,4 +1,5 @@
 import type { SnakeSpeciesRecord } from "./speciesTypes";
+import integrationManifest from "./speciesIntegrationManifest.json";
 import { getSpeciesGeneticsStatus } from "./speciesGenetics";
 
 export const SPECIES_INTEGRATION_SURFACES = [
@@ -35,27 +36,54 @@ export const SPECIES_INTEGRATION_SURFACES = [
 
 export type SpeciesIntegrationSurface = (typeof SPECIES_INTEGRATION_SURFACES)[number];
 export type SpeciesIntegrationSurfaceStatus = "integrated" | "pending-review";
+export type SpeciesReleaseStatus = "fully-integrated" | "legacy-review";
 
 export interface SpeciesIntegrationContract {
   speciesId: string;
   reviewedOn: string;
   reviewer: "Tiny Titans" | "Founder review" | "External expert review";
+  releaseStatus: SpeciesReleaseStatus;
   surfaces: Record<SpeciesIntegrationSurface, SpeciesIntegrationSurfaceStatus>;
   notes?: string;
 }
+
+type ManifestEntry = {
+  status: "fully-integrated";
+  reviewedOn: string;
+  reviewer: "Tiny Titans" | "Founder review" | "External expert review";
+  surfaces: SpeciesIntegrationSurface[];
+};
+
+const RELEASE_MANIFEST = integrationManifest.fullyIntegratedSpecies as Record<string, ManifestEntry>;
 
 const COMPLETE_SHARED_SURFACES: Record<SpeciesIntegrationSurface, SpeciesIntegrationSurfaceStatus> = Object.fromEntries(
   SPECIES_INTEGRATION_SURFACES.map((surface) => [surface, "integrated"]),
 ) as Record<SpeciesIntegrationSurface, SpeciesIntegrationSurfaceStatus>;
 
 /**
- * The integration matrix is deliberately conservative.
- *
- * Shared tracker/community/account pages are common application infrastructure,
- * but genetics, husbandry and breeding remain explicitly species-reviewed gates.
- * A species is not release-ready until every surface is explicitly integrated.
+ * A species is release-ready only when it has an explicit, reviewed record in
+ * speciesIntegrationManifest.json. Everything else remains legacy-review and
+ * is never silently presented as fully reviewed.
  */
 export function getSpeciesIntegrationContract(species: SnakeSpeciesRecord): SpeciesIntegrationContract {
+  const released = RELEASE_MANIFEST[species.id];
+  if (released) {
+    const surfaces = Object.fromEntries(
+      SPECIES_INTEGRATION_SURFACES.map((surface) => [
+        surface,
+        released.surfaces.includes(surface) ? "integrated" : "pending-review",
+      ]),
+    ) as Record<SpeciesIntegrationSurface, SpeciesIntegrationSurfaceStatus>;
+
+    return {
+      speciesId: species.id,
+      reviewedOn: released.reviewedOn,
+      reviewer: released.reviewer,
+      releaseStatus: released.status,
+      surfaces,
+    };
+  }
+
   const surfaces = { ...COMPLETE_SHARED_SURFACES };
   const geneticsReady = getSpeciesGeneticsStatus(species.id) !== "baseline-only";
   const husbandryReady = Boolean(species.knowledge.husbandry);
@@ -76,7 +104,9 @@ export function getSpeciesIntegrationContract(species: SnakeSpeciesRecord): Spec
     speciesId: species.id,
     reviewedOn: species.knowledge.reviewedOn,
     reviewer: "Tiny Titans",
+    releaseStatus: "legacy-review",
     surfaces,
+    notes: "Taxonomy/database presence is not equivalent to full species integration review.",
   };
 }
 
@@ -86,5 +116,6 @@ export function getPendingSpeciesIntegrationSurfaces(species: SnakeSpeciesRecord
 }
 
 export function isSpeciesFullyIntegrated(species: SnakeSpeciesRecord): boolean {
-  return getPendingSpeciesIntegrationSurfaces(species).length === 0;
+  return getSpeciesIntegrationContract(species).releaseStatus === "fully-integrated"
+    && getPendingSpeciesIntegrationSurfaces(species).length === 0;
 }
