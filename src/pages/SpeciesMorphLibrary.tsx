@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
+import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
 import { getApprovedMorphImages } from "../services/creatorService";
 import type { ApprovedMorphImage } from "../types/morphSubmission";
 import BackHomeButton from "../components/BackHomeButton";
+import { MorphImageSubmissionDialog } from "./MorphLibrary";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
 
@@ -56,6 +58,8 @@ export default function SpeciesMorphLibrary() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<SpeciesMorphEntry | null>(null);
+  const [showImageSubmission, setShowImageSubmission] = useState(false);
+  const [imageSubmissionMorphId, setImageSubmissionMorphId] = useState("");
   const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
@@ -99,6 +103,16 @@ export default function SpeciesMorphLibrary() {
       : "🟠 Species genetics catalogue pending";
   const baselineOnly = geneticsStatus === "baseline-only";
 
+  function openImageSubmission(morphId: string) {
+    setImageSubmissionMorphId(morphId);
+    setShowImageSubmission(true);
+  }
+
+  function closeImageSubmission() {
+    setShowImageSubmission(false);
+    setImageSubmissionMorphId("");
+  }
+
   return (
     <main className="page-container morph-library-page">
       <BackHomeButton />
@@ -125,7 +139,7 @@ export default function SpeciesMorphLibrary() {
         {filtered.map((morph) => {
           const image = cardImages[morph.geneId];
           return (
-            <button key={morph.geneId} type="button" className="morph-card morph-card--library" onClick={() => setSelected(morph)}>
+            <article key={morph.geneId} className="morph-card morph-card--library">
               <div className="morph-card__media">
                 {image ? (
                   <div className="morph-card__image-wrap"><img src={image.imageUrl} alt={`${morph.name} reference example`} loading="lazy" />{(image.creditName || image.creditSocial) && <span className="morph-card__credit">Credit: {image.creditName || image.creditSocial}</span>}</div>
@@ -140,14 +154,19 @@ export default function SpeciesMorphLibrary() {
                 {morph.aliases && morph.aliases.length > 0 && <p className="morph-card__canonical">Also known as: {morph.aliases.join(", ")}</p>}
                 {morph.components?.length ? <p className="morph-card__contains">Contains: {morph.components.map((component) => component.morphId).join(" + ")}</p> : null}
                 {morph.description && <p className="morph-card__description">{morph.description}</p>}
-                <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span><span className="morph-card__open">View details →</span></div>
+                <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span></div>
+                <div className="morph-card__actions">
+                  <button type="button" className="morph-card__open" onClick={() => setSelected(morph)}>Open genetics record <span aria-hidden="true">→</span></button>
+                  <button type="button" className="morph-card__image-submit" onClick={() => openImageSubmission(morph.geneId)}>📷 Add image</button>
+                </div>
               </div>
-            </button>
+            </article>
           );
         })}
       </section>
 
-      {selected && <div className="morph-detail-backdrop" role="presentation" onMouseDown={() => setSelected(null)}><article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="species-morph-title" onMouseDown={(event) => event.stopPropagation()}><button className="morph-detail__close" type="button" onClick={() => setSelected(null)} aria-label="Close morph details">×</button><div className="morph-detail__eyebrow">TINY TITANS · {speciesName.toUpperCase()}</div><h2 id="species-morph-title">{selected.name}</h2><div className="morph-detail__badges"><span>{selected.kind}</span><span>{selected.inheritance}</span><span>{selected.verification}</span></div><p className="morph-detail__description">{selected.description ?? "No description has been added yet."}</p>{selected.aliases?.length ? <section className="morph-detail__section"><h3>Recognised aliases</h3><p>{selected.aliases.join(" · ")}</p></section> : null}{selected.components?.length ? <section className="morph-detail__section"><h3>Genetic components</h3><ul>{selected.components.map((component) => <li key={`${component.morphId}-${component.copies ?? 1}`}><strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}</li>)}</ul></section> : null}<section className="morph-detail__section"><h3>Genetics notes</h3><p>{selected.educationalNotes ?? "No additional genetics notes have been published for this entry."}</p></section><SpeciesCommunityGallery speciesId={selectedSpeciesId} morphId={selected.geneId} morphName={selected.name} /><section className="morph-detail__section morph-detail__source"><strong>Species reference</strong><span>{selected.sourceLabel ?? "Tiny Titans species genetics record"}</span>{selected.sourceUrl ? <a href={selected.sourceUrl} target="_blank" rel="noreferrer">Open source reference →</a> : <span className="morph-detail__source-note">Canonical species-scoped record maintained by Tiny Titans.</span>}</section></article></div>}
+      {selected && <div className="morph-detail-backdrop" role="presentation" onMouseDown={() => setSelected(null)}><article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="species-morph-title" onMouseDown={(event) => event.stopPropagation()}><button className="morph-detail__close" type="button" onClick={() => setSelected(null)} aria-label="Close morph details">×</button><div className="morph-detail__eyebrow">TINY TITANS · {speciesName.toUpperCase()}</div><h2 id="species-morph-title">{selected.name}</h2><div className="morph-detail__badges"><span>{selected.kind}</span><span>{selected.inheritance}</span><span>{selected.verification}</span></div><p className="morph-detail__description">{selected.description ?? "No description has been added yet."}</p>{selected.aliases?.length ? <section className="morph-detail__section"><h3>Recognised aliases</h3><p>{selected.aliases.join(" · ")}</p></section> : null}{selected.components?.length ? <section className="morph-detail__section"><h3>Genetic components</h3><ul>{selected.components.map((component) => <li key={`${component.morphId}-${component.copies ?? 1}`}><strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}</li>)}</ul></section> : null}<section className="morph-detail__section"><h3>Genetics notes</h3><p>{selected.educationalNotes ?? "No additional genetics notes have been published for this entry."}</p></section><SpeciesCommunityGallery speciesId={selectedSpeciesId} morphId={selected.geneId} morphName={selected.name} /><section className="morph-detail__source"><strong>Species reference</strong><span>{selected.sourceLabel ?? "Tiny Titans species genetics record"}</span>{selected.sourceUrl ? <a href={selected.sourceUrl} target="_blank" rel="noreferrer">Open source reference →</a> : <span className="morph-detail__source-note">Canonical species-scoped record maintained by Tiny Titans.</span>}</section></article></div>}
+      {showImageSubmission && selectedSpeciesId && <MorphImageSubmissionDialog entries={entries as unknown as MorphReferenceEntry[]} initialMorphId={imageSubmissionMorphId} initialSpeciesId={selectedSpeciesId} onClose={closeImageSubmission} />}
     </main>
   );
 }
