@@ -7,7 +7,7 @@ import { deleteSnakeFeeding, getSnakeFeedings, saveSnakeFeeding } from "../servi
 import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
 import { generateId } from "../utils/generateId";
-import { getSpeciesDiet, type PreyCategory } from "../data/feeding/speciesDiet";
+import { getSpeciesDiet, type PreyCategory, type SpeciesDiet } from "../data/feeding/speciesDiet";
 import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import "../styles/trackerWorkspace.css";
@@ -16,10 +16,6 @@ const feedingMethods: FeedingMethod[] = ["Tongs", "Drop Feed", "Hand Fed", "Scen
 const feedingResponses: FeedingResponse[] = ["Accepted", "Refused", "Partial", "Regurgitated"];
 const responseEmoji: Record<FeedingResponse, string> = { Accepted: "✅", Refused: "❌", Partial: "⚠️", Regurgitated: "🔴" };
 const responseCopy: Record<FeedingResponse, string> = { Accepted: "Accepted", Refused: "Refused", Partial: "Partial", Regurgitated: "Regurgitated" };
-const allFoodTypes: FoodType[] = [
-  "Pinkie Mouse", "Fuzzy Mouse", "Hopper Mouse", "Adult Mouse", "Rat Pup", "Rat Fuzzy", "Adult Rat",
-  "Rabbit", "Piglet", "Quail", "Other Bird", "Fish", "Amphibian", "Egg", "Reptile Prey", "Invertebrate", "Other",
-];
 
 const categoryByFood: Record<FoodType, PreyCategory> = {
   "Pinkie Mouse": "rodent", "Fuzzy Mouse": "rodent", "Hopper Mouse": "rodent", "Adult Mouse": "rodent",
@@ -76,10 +72,9 @@ export default function FeedingTracker() {
   const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]);
   const diet = useMemo(() => getSpeciesDiet(selectedSnake), [selectedSnake]);
   const feedingFoodTypes = useMemo(() => {
-    const supported = new Set<FoodType>(allFoodTypes);
-    const recommended = (diet.recommended.length ? diet.recommended : ["Other" as FoodType]).filter((food) => supported.has(food));
-    const additional = diet.additional.filter((food) => supported.has(food) && !recommended.includes(food));
-    return { recommended: recommended.length ? recommended : ["Other" as FoodType], additional };
+    const recommended = diet.recommended.length ? diet.recommended : ["Other" as FoodType];
+    const additional = diet.additional.filter((food) => !recommended.includes(food));
+    return { recommended, additional };
   }, [diet]);
   const feedingsKey = user && selectedSnakeId ? `${user.uid}:${selectedSnakeId}` : null;
   const loadingFeedings = Boolean(feedingsKey && loadedFeedingsKey !== feedingsKey);
@@ -126,8 +121,8 @@ export default function FeedingTracker() {
   const acceptanceRate = feedings.length ? Math.round((counts.Accepted / feedings.length) * 100) : 0;
   const lastFeeding = feedings[0] ?? null;
 
-  function resetForm() {
-    const defaultFood = diet.recommended[0] ?? "Other";
+  function resetForm(nextDiet: SpeciesDiet = diet) {
+    const defaultFood = nextDiet.recommended[0] ?? "Other";
     setEditingId(null);
     setDate(today());
     setFoodType(defaultFood);
@@ -225,7 +220,7 @@ export default function FeedingTracker() {
           <h1>🍽️ Feeding Tracker</h1>
           <p className="tt-tracker-subtitle">Log the actual prey item, quantity and mass for every snake — from a mouse pinkie to a whole rabbit, fish, egg or bird.</p>
         </div>
-        <div className="tt-tracker-snake"><label htmlFor="feeding-snake">Record for<select id="feeding-snake" value={selectedSnakeId} onChange={(event) => { setSelectedSnakeId(event.target.value); resetForm(); }} disabled={saving}>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label></div>
+        <div className="tt-tracker-snake"><label htmlFor="feeding-snake">Record for<select id="feeding-snake" value={selectedSnakeId} onChange={(event) => { const nextSnakeId = event.target.value; const nextSnake = snakes.find((snake) => snake.id === nextSnakeId); setSelectedSnakeId(nextSnakeId); resetForm(getSpeciesDiet(nextSnake)); }} disabled={saving}>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label></div>
       </div>
       <nav className="tt-tracker-nav" aria-label="Tracker navigation">
         <button type="button" className="active" onClick={() => document.getElementById("feeding-overview")?.scrollIntoView({ behavior: "smooth" })}>Overview</button>
