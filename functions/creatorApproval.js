@@ -108,11 +108,12 @@ exports.approveMorphImageSubmission = onCall(
     if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new HttpsError("failed-precondition", "This submission is no longer awaiting approval.");
     const morphId = String(submission.morphId || "").trim();
     const morphName = String(submission.morphName || "").trim();
+    const speciesId = String(submission.speciesId || "").trim();
     const sourceStoragePath = String(submission.attachment?.path || "").trim();
-    if (!morphId || !morphName) throw new HttpsError("failed-precondition", "This submission has no canonical Morph Library selection. It must be resolved before approval.");
+    if (!morphId || !morphName || !speciesId) throw new HttpsError("failed-precondition", "This submission has no complete species-specific Morph Library selection. It must be resolved before approval.");
     if (!sourceStoragePath || !sourceStoragePath.startsWith("morph-submissions/")) throw new HttpsError("failed-precondition", "The submitted image file could not be located safely.");
     const publishToMorphLibrary = submission.allowMorphLibraryLink !== false;
-    const approvedPath = `morphLibrary/${morphId}/community/${submissionId}.jpg`;
+    const approvedPath = `morphLibrary/${speciesId}/${morphId}/community/${submissionId}.jpg`;
     try {
       const sourceFile = bucket.file(sourceStoragePath);
       const [exists] = await sourceFile.exists();
@@ -123,10 +124,10 @@ exports.approveMorphImageSubmission = onCall(
       if (publishToMorphLibrary) {
         const destinationFile = bucket.file(approvedPath);
         await sourceFile.copy(destinationFile);
-        await destinationFile.setMetadata({ contentType: "image/jpeg", metadata: { sourceSubmissionId: submissionId, approvedBy: request.auth.uid } });
+        await destinationFile.setMetadata({ contentType: "image/jpeg", metadata: { sourceSubmissionId: submissionId, approvedBy: request.auth.uid, speciesId, morphId } });
         const approvedRef = db.collection("approvedMorphImages").doc();
         await approvedRef.set({
-          speciesId: submission.speciesId || null,
+          speciesId,
           speciesName: submission.speciesName || null,
           morphId,
           morphName,
@@ -146,6 +147,7 @@ exports.approveMorphImageSubmission = onCall(
 
       await submissionRef.update({
         status: "Approved",
+        speciesId,
         morphId,
         morphName,
         reviewedAt: FieldValue.serverTimestamp(),
@@ -154,7 +156,7 @@ exports.approveMorphImageSubmission = onCall(
         morphLibraryLinked: publishToMorphLibrary,
       });
       await sourceFile.delete().catch(() => undefined);
-      return { success: true, published: publishToMorphLibrary, approvedImageId, morphId, morphName, storagePath: responseStoragePath };
+      return { success: true, published: publishToMorphLibrary, approvedImageId, speciesId, morphId, morphName, storagePath: responseStoragePath };
     } catch (error) {
       if (publishToMorphLibrary) await bucket.file(approvedPath).delete().catch(() => undefined);
       if (error instanceof HttpsError) throw error;
