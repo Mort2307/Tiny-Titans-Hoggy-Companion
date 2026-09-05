@@ -45,4 +45,4 @@ if (Number(contract.auditRules.minimumTouchTarget) < 44) throw new Error("Visual
 console.log("UI hardening contract: PASS");
 console.log(`Responsive viewports: ${contract.responsiveViewports.map((item) => item.name).join(", ")}`);
 console.log(`Minimum touch target: ${contract.auditRules.minimumTouchTarget}px`);
-console.log("Overflow/clipping rules: FAIL on violation");
+console.log("Overflow/clipping policy: build fails if the visual contract is violated");
