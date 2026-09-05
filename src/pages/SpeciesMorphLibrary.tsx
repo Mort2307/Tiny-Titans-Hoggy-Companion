@@ -64,7 +64,8 @@ export default function SpeciesMorphLibrary() {
   useEffect(() => {
     let cancelled = false;
     setCardImages({});
-    void getApprovedMorphImages()
+    if (!selectedSpeciesId) return undefined;
+    void getApprovedMorphImages(undefined, selectedSpeciesId)
       .then((result) => {
         if (cancelled) return;
         const next: Record<string, ApprovedMorphImage> = {};
@@ -96,6 +97,7 @@ export default function SpeciesMorphLibrary() {
     : geneticsStatus === "partial"
       ? "🟡 Species genetics partially catalogued"
       : "🟠 Species genetics catalogue pending";
+  const baselineOnly = geneticsStatus === "baseline-only";
 
   return (
     <main className="page-container morph-library-page">
@@ -111,40 +113,39 @@ export default function SpeciesMorphLibrary() {
         <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} species-scoped entries currently published</span></div>
       </header>
 
-      {geneticsStatus === "baseline-only" ? (
-        <section className="morph-library__empty tracker-card"><h2>🧬 No reviewed morph catalogue yet for {speciesName}</h2><p>Tiny Titans knows this species, but its recognised genetics catalogue has not yet been independently sourced and reviewed. The library therefore shows no Hognose, Ball Python, or other unrelated species genetics here.</p><p><strong>This is intentional intelligence.</strong> An incomplete species catalogue is safer than false cross-species information.</p></section>
-      ) : (
-        <>
-          {geneticsStatus === "partial" && <section className="tracker-card" aria-label="Catalogue coverage notice"><h2>🧠 Curated species catalogue</h2><p>These are verified species-specific entries currently published by Tiny Titans. This list is <strong>not yet an exhaustive trait index</strong>; missing names must not be inferred from another species.</p><p>Predictive breeding calculations use only the inheritance definitions currently mapped to this species.</p></section>}
-          <section className="morph-library-grid" aria-live="polite">
-            {filtered.map((morph) => {
-              const image = cardImages[morph.geneId];
-              return (
-                <button key={morph.geneId} type="button" className="morph-card morph-card--library" onClick={() => setSelected(morph)}>
-                  <div className="morph-card__media">
-                    {image ? (
-                      <div className="morph-card__image-wrap"><img src={image.imageUrl} alt={`${morph.name} reference example`} loading="lazy" />{(image.creditName || image.creditSocial) && <span className="morph-card__credit">Credit: {image.creditName || image.creditSocial}</span>}</div>
-                    ) : (
-                      <div className="morph-card__image-empty"><span className="morph-card__image-icon">🧬</span><strong>Species-scoped morph</strong><span>Open for genetics and evidence</span></div>
-                    )}
-                  </div>
-                  <div className="morph-card__body">
-                    <div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div>
-                    <h2>{morph.name}</h2>
-                    <div className="morph-card__classification"><span>{morph.kind}</span><span>{morph.inheritance}</span></div>
-                    {morph.aliases && morph.aliases.length > 0 && <p className="morph-card__canonical">Also known as: {morph.aliases.join(", ")}</p>}
-                    {morph.components?.length ? <p className="morph-card__contains">Contains: {morph.components.map((component) => component.morphId).join(" + ")}</p> : null}
-                    {morph.description && <p className="morph-card__description">{morph.description}</p>}
-                    <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span><span className="morph-card__open">View details →</span></div>
-                  </div>
-                </button>
-              );
-            })}
-          </section>
-        </>
+      {baselineOnly && (
+        <section className="tracker-card" aria-label="Baseline genetics coverage notice">
+          <h2>🧬 Baseline species genetics record</h2>
+          <p>Tiny Titans knows this species, but no reviewed species-specific genetic morph catalogue has been published yet. Until those traits are sourced and reviewed, this library contains only the canonical baseline phenotype.</p>
+          <p><strong>This is intentional intelligence.</strong> We will never substitute Hognose, Ball Python, or another species' genetics here.</p>
+        </section>
       )}
 
-      {geneticsStatus !== "baseline-only" && filtered.length === 0 && <section className="tracker-card"><h2>No matching morphs</h2><p>Try another search or clear the type filter.</p></section>}
+      <section className="morph-library-grid" aria-live="polite">
+        {filtered.map((morph) => {
+          const image = cardImages[morph.geneId];
+          return (
+            <button key={morph.geneId} type="button" className="morph-card morph-card--library" onClick={() => setSelected(morph)}>
+              <div className="morph-card__media">
+                {image ? (
+                  <div className="morph-card__image-wrap"><img src={image.imageUrl} alt={`${morph.name} reference example`} loading="lazy" />{(image.creditName || image.creditSocial) && <span className="morph-card__credit">Credit: {image.creditName || image.creditSocial}</span>}</div>
+                ) : (
+                  <div className="morph-card__image-empty"><span className="morph-card__image-icon">🧬</span><strong>{baselineOnly ? "Baseline phenotype" : "Species-scoped morph"}</strong><span>{baselineOnly ? "Canonical wild-type reference" : "Open for genetics and evidence"}</span></div>
+                )}
+              </div>
+              <div className="morph-card__body">
+                <div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div>
+                <h2>{morph.name}</h2>
+                <div className="morph-card__classification"><span>{morph.category}</span><span>{morph.inheritance}</span></div>
+                {morph.aliases && morph.aliases.length > 0 && <p className="morph-card__canonical">Also known as: {morph.aliases.join(", ")}</p>}
+                {morph.components?.length ? <p className="morph-card__contains">Contains: {morph.components.map((component) => component.morphId).join(" + ")}</p> : null}
+                {morph.description && <p className="morph-card__description">{morph.description}</p>}
+                <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span><span className="morph-card__open">View details →</span></div>
+              </div>
+            </button>
+          );
+        })}
+      </section>
 
       {selected && <div className="morph-detail-backdrop" role="presentation" onMouseDown={() => setSelected(null)}><article className="morph-detail" role="dialog" aria-modal="true" aria-labelledby="species-morph-title" onMouseDown={(event) => event.stopPropagation()}><button className="morph-detail__close" type="button" onClick={() => setSelected(null)} aria-label="Close morph details">×</button><div className="morph-detail__eyebrow">TINY TITANS · {speciesName.toUpperCase()}</div><h2 id="species-morph-title">{selected.name}</h2><div className="morph-detail__badges"><span>{selected.kind}</span><span>{selected.inheritance}</span><span>{selected.verification}</span></div><p className="morph-detail__description">{selected.description ?? "No description has been added yet."}</p>{selected.aliases?.length ? <section className="morph-detail__section"><h3>Recognised aliases</h3><p>{selected.aliases.join(" · ")}</p></section> : null}{selected.components?.length ? <section className="morph-detail__section"><h3>Genetic components</h3><ul>{selected.components.map((component) => <li key={`${component.morphId}-${component.copies ?? 1}`}><strong>{component.morphId}</strong>{component.copies ? ` ×${component.copies}` : ""}</li>)}</ul></section> : null}<section className="morph-detail__section"><h3>Genetics notes</h3><p>{selected.educationalNotes ?? "No additional genetics notes have been published for this entry."}</p></section><SpeciesCommunityGallery speciesId={selectedSpeciesId} morphId={selected.geneId} morphName={selected.name} /><section className="morph-detail__section morph-detail__source"><strong>Species reference</strong><span>{selected.sourceLabel ?? "Tiny Titans species genetics record"}</span>{selected.sourceUrl ? <a href={selected.sourceUrl} target="_blank" rel="noreferrer">Open source reference →</a> : <span className="morph-detail__source-note">Canonical species-scoped record maintained by Tiny Titans.</span>}</section></article></div>}
     </main>
