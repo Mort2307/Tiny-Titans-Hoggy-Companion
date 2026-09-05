@@ -56,9 +56,28 @@ export default function SpeciesMorphLibrary() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<SpeciesMorphEntry | null>(null);
+  const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const entries = useMemo(() => getSpeciesVisualMorphs(selectedSpeciesId), [selectedSpeciesId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCardImages({});
+    void getApprovedMorphImages()
+      .then((result) => {
+        if (cancelled) return;
+        const next: Record<string, ApprovedMorphImage> = {};
+        result.forEach((image) => {
+          if (image.morphId && image.imageUrl && !next[image.morphId]) next[image.morphId] = image;
+        });
+        setCardImages(next);
+      })
+      .catch(() => {
+        if (!cancelled) setCardImages({});
+      });
+    return () => { cancelled = true; };
+  }, [selectedSpeciesId]);
 
   const filtered = useMemo(() => {
     const needle = normalise(query);
@@ -98,7 +117,29 @@ export default function SpeciesMorphLibrary() {
         <>
           {geneticsStatus === "partial" && <section className="tracker-card" aria-label="Catalogue coverage notice"><h2>🧠 Curated species catalogue</h2><p>These are verified species-specific entries currently published by Tiny Titans. This list is <strong>not yet an exhaustive trait index</strong>; missing names must not be inferred from another species.</p><p>Predictive breeding calculations use only the inheritance definitions currently mapped to this species.</p></section>}
           <section className="morph-library-grid" aria-live="polite">
-            {filtered.map((morph) => <button key={morph.geneId} type="button" className="morph-card" onClick={() => setSelected(morph)}><span className="morph-card__name">{morph.name}</span><span className="morph-card__meta">{morph.kind} · {morph.inheritance}</span>{morph.aliases && morph.aliases.length > 0 && <span className="morph-card__aliases">Also: {morph.aliases.join(", ")}</span>}</button>)}
+            {filtered.map((morph) => {
+              const image = cardImages[morph.geneId];
+              return (
+                <button key={morph.geneId} type="button" className="morph-card morph-card--library" onClick={() => setSelected(morph)}>
+                  <div className="morph-card__media">
+                    {image ? (
+                      <div className="morph-card__image-wrap"><img src={image.imageUrl} alt={`${morph.name} reference example`} loading="lazy" />{(image.creditName || image.creditSocial) && <span className="morph-card__credit">Credit: {image.creditName || image.creditSocial}</span>}</div>
+                    ) : (
+                      <div className="morph-card__image-empty"><span className="morph-card__image-icon">🧬</span><strong>Species-scoped morph</strong><span>Open for genetics and evidence</span></div>
+                    )}
+                  </div>
+                  <div className="morph-card__body">
+                    <div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div>
+                    <h2>{morph.name}</h2>
+                    <div className="morph-card__classification"><span>{morph.kind}</span><span>{morph.inheritance}</span></div>
+                    {morph.aliases && morph.aliases.length > 0 && <p className="morph-card__canonical">Also known as: {morph.aliases.join(", ")}</p>}
+                    {morph.components?.length ? <p className="morph-card__contains">Contains: {morph.components.map((component) => component.morphId).join(" + ")}</p> : null}
+                    {morph.description && <p className="morph-card__description">{morph.description}</p>}
+                    <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span><span className="morph-card__open">View details →</span></div>
+                  </div>
+                </button>
+              );
+            })}
           </section>
         </>
       )}
