@@ -39,7 +39,7 @@ export default function Calculator() {
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const speciesDefinitions = useMemo(() => getSpeciesCalculatorMorphs(selectedSpeciesId), [selectedSpeciesId]);
-  const geneticsEnabled = speciesDefinitions.length > 0;
+  const geneticsEnabled = geneticsStatus !== "baseline-only";
   const isHognose = selectedSpeciesId === "heterodon-nasicus";
   useEffect(() => setMode(requestedMode), [requestedMode]);
   useEffect(() => { setMother({ ...EMPTY_PARENT }); setFather({ ...EMPTY_PARENT }); setPreloadedPairing(false); }, [selectedSpeciesId]);
