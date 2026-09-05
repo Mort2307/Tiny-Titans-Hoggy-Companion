@@ -2,11 +2,11 @@ import { auth, db, storage } from '../firebase/config';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { findSnakeSpecies } from '../data/species/speciesRegistry';
+import { getSpeciesVisualMorphs } from '../data/species/speciesGenetics';
 
 export type MorphCreditMode = 'name' | 'social' | 'anonymous';
 
 export interface MorphSubmissionInputV2 {
-  /** Optional during the migration window; legacy Morph Library entries are Hognose genetics. */
   speciesId?: string;
   morphId: string;
   morphName: string;
@@ -17,7 +17,6 @@ export interface MorphSubmissionInputV2 {
   image: File;
   factualAccuracyConfirmed: boolean;
   photoRequirementsConfirmed: boolean;
-  /** Optional so legacy callers receive the same explicit consent prompt. */
   allowMorphLibraryLink?: boolean;
   creditMode: MorphCreditMode;
   creditName?: string;
@@ -75,6 +74,12 @@ export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise
   const morphName = input.morphName.trim();
   if (!morphId || !morphName) throw new Error('Please select a morph from the Morph Library.');
 
+  const speciesMorphs = getSpeciesVisualMorphs(species.id);
+  const canonicalMorph = speciesMorphs.find((entry) => entry.geneId === morphId || entry.name.trim().toLowerCase() === morphName.toLowerCase());
+  if (!canonicalMorph) {
+    throw new Error(`“${morphName}” is not a recognised Morph Library entry for ${species.commonNames[0] ?? species.acceptedScientificName}. Choose the species-correct morph before submitting an image.`);
+  }
+
   const description = validateText(input.description, 'Animal description', true);
   const observedTraits = validateText(input.observedTraits, 'Known genetic information');
   const proofDetails = validateText(input.proofDetails, 'Evidence / proof', true);
@@ -88,16 +93,16 @@ export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise
 
   const creditName = validateText(input.creditName ?? '', 'Credit name');
   const creditSocial = validateText(input.creditSocial ?? '', 'Credit social');
-  const allowMorphLibraryLink = input.allowMorphLibraryLink ?? (typeof window !== 'undefined' && window.confirm(`May Tiny Titans link this approved photo to the ${morphName} entry in the Morph Library and display it as a community example?\n\nChoose Cancel to keep the photo out of the public Morph Library.`));
+  const allowMorphLibraryLink = input.allowMorphLibraryLink ?? (typeof window !== 'undefined' && window.confirm(`May Tiny Titans link this approved photo to the ${canonicalMorph.name} entry in the ${species.commonNames[0] ?? species.acceptedScientificName} Morph Library and display it as a community example?\n\nChoose Cancel to keep the photo out of the public Morph Library.`));
   const compressed = await prepareImage(input.image);
 
   const submissionRef = doc(collection(db, 'morphImageSubmissions'));
-  const storagePath = `morph-submissions/${user.uid}/${submissionRef.id}/${slugify(morphName) || 'morph'}.jpg`;
+  const storagePath = `morph-submissions/${user.uid}/${submissionRef.id}/${slugify(canonicalMorph.name) || 'morph'}.jpg`;
   const storageRef = ref(storage, storagePath);
   let uploaded = false;
 
   try {
-    await uploadBytes(storageRef, compressed, { contentType: 'image/jpeg', customMetadata: { speciesId: species.id, morphId, contributorUid: user.uid } });
+    await uploadBytes(storageRef, compressed, { contentType: 'image/jpeg', customMetadata: { speciesId: species.id, morphId: canonicalMorph.geneId, contributorUid: user.uid } });
     uploaded = true;
     const imageUrl = await getDownloadURL(storageRef);
 
@@ -105,8 +110,8 @@ export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise
       userId: user.uid,
       speciesId: species.id,
       speciesName: species.acceptedScientificName,
-      morphId,
-      morphName,
+      morphId: canonicalMorph.geneId,
+      morphName: canonicalMorph.name,
       description,
       observedTraits,
       proofDetails,
