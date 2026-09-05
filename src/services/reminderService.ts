@@ -15,6 +15,11 @@ function localParts(date: Date, timezone: string) {
   return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
 }
 
+function localDateKey(date: Date, timezone: string): string {
+  const parts = localParts(date, timezone);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function zonedTimeToUtc(dateKey: string, time: string, timezone: string): Date {
   const [year, month, day] = dateKey.split("-").map(Number);
   const [hour, minute] = time.split(":").map(Number);
@@ -28,10 +33,23 @@ function zonedTimeToUtc(dateKey: string, time: string, timezone: string): Date {
   return new Date(guess);
 }
 
-function nextSchedule(input: ReminderInput, occurrenceDate: string, phase: "lead-up" | "due") {
+function nextSchedule(input: ReminderInput, occurrenceDate: string, phase: "lead-up" | "due", notificationDateOverride?: string) {
   const leadStart = input.leadUpEnabled && input.leadUpDays > 0 ? addCalendarDays(occurrenceDate, -input.leadUpDays) : occurrenceDate;
-  const notificationDate = phase === "lead-up" ? leadStart : occurrenceDate;
+  const notificationDate = notificationDateOverride || (phase === "lead-up" ? leadStart : occurrenceDate);
   return { occurrenceDate, phase, at: zonedTimeToUtc(notificationDate, input.time, input.timezone).toISOString() };
+}
+
+export function feedingReminderSchedule(input: Pick<ReminderInput, "kind" | "frequencyDays" | "startDate" | "time" | "timezone">, now = new Date()) {
+  const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(input.frequencyDays) || 1)));
+  const timezone = input.timezone || "Europe/London";
+  let occurrenceDate = input.startDate;
+  if (!occurrenceDate) return null;
+  const today = localDateKey(now, timezone);
+  while (occurrenceDate < today) occurrenceDate = addCalendarDays(occurrenceDate, frequencyDays);
+  const dueToday = occurrenceDate === today;
+  const leadStart = addCalendarDays(occurrenceDate, -(frequencyDays - 1));
+  const notificationDate = today >= leadStart ? today : leadStart;
+  return { occurrenceDate, phase: dueToday ? "due" as const : "lead-up" as const, notificationDate, at: zonedTimeToUtc(notificationDate, input.time || "09:00", timezone).toISOString(), leadUpEnabled: frequencyDays > 1, leadUpDays: Math.max(0, frequencyDays - 1) };
 }
 
 function legacyFlagFor(kind: ReminderKind): string | null {
@@ -55,9 +73,13 @@ export function defaultReminderInput(kind: ReminderKind, snakeId: string | null 
 
 function withSchedule(input: ReminderInput): Omit<Reminder, "id" | "createdAt" | "updatedAt"> {
   const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(input.frequencyDays) || 1)));
-  const leadUpEnabled = Boolean(input.leadUpEnabled) && frequencyDays > 1;
-  const leadUpDays = Math.min(Math.max(1, Math.round(Number(input.leadUpDays) || 1)), Math.min(30, frequencyDays - 1));
+  const feedingSchedule = input.kind === "feeding" ? feedingReminderSchedule({ ...input, frequencyDays }) : null;
+  const leadUpEnabled = input.kind === "feeding" ? Boolean(feedingSchedule?.leadUpEnabled) : Boolean(input.leadUpEnabled) && frequencyDays > 1;
+  const leadUpDays = input.kind === "feeding" ? Math.max(0, frequencyDays - 1) : Math.min(Math.max(1, Math.round(Number(input.leadUpDays) || 1)), Math.min(30, frequencyDays - 1));
   const safeInput = { ...input, frequencyDays, leadUpEnabled, leadUpDays };
+  if (input.kind === "feeding" && feedingSchedule) {
+    return { ...safeInput, nextNotificationAt: feedingSchedule.at, nextOccurrenceDate: feedingSchedule.occurrenceDate, nextPhase: feedingSchedule.phase, lastNotifiedAt: null, lastCompletedAt: null };
+  }
   const schedule = nextSchedule(safeInput, input.startDate, leadUpEnabled ? "lead-up" : "due");
   return { ...safeInput, frequencyDays, leadUpEnabled, leadUpDays, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lastNotifiedAt: null, lastCompletedAt: null };
 }
@@ -87,6 +109,12 @@ export async function updateReminder(uid: string, reminderId: string, input: Rem
 export async function setReminderPaused(uid: string, reminder: Reminder, paused: boolean): Promise<void> {
   const ref = doc(db, "users", uid, "reminders", reminder.id);
   if (paused) { await updateDoc(ref, { status: "paused", lockedUntil: null, updatedAt: serverTimestamp() }); return; }
+  if (reminder.kind === "feeding") {
+    const schedule = feedingReminderSchedule({ ...reminder, kind: "feeding" });
+    if (!schedule) throw new Error("This feeding reminder has no due date.");
+    await updateDoc(ref, { status: "active", frequencyDays: Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1))), leadUpEnabled: schedule.leadUpEnabled, leadUpDays: schedule.leadUpDays, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lockedUntil: null, updatedAt: serverTimestamp() });
+    return;
+  }
   const input: ReminderInput = { ...reminder, status: "active", leadUpEnabled: reminder.leadUpEnabled && reminder.frequencyDays > 1 };
   let occurrenceDate = reminder.nextOccurrenceDate || reminder.startDate;
   let phase = reminder.nextPhase || "due";
