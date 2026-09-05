@@ -104,7 +104,7 @@ export function getSpeciesEvidenceSummary(species: SnakeSpeciesRecord) {
   const verifiedRanges = ranges.filter((range) => getRangeEvidenceCoverage(range, species).status === 'verified').length;
   const recordedRanges = ranges.filter((range) => getRangeEvidenceCoverage(range, species).status === 'recorded-needs-scoping').length;
   const sourceIds = mappedSourceIds(species);
-  const unresolvedSourceIds = sourceIds.filter((id) => !Boolean(SPECIES_SOURCES[id]?.url && SPECIES_SOURCES[id].url !== '#'));
+  const unresolvedSourceIds = sourceIds.filter((id) => !SPECIES_SOURCES[id]?.url || SPECIES_SOURCES[id].url === '#');
   return { numericRanges: ranges.length, verifiedRanges, recordedRanges, profile: getProfileEvidenceCoverage(species, husbandry?.evidenceLevel, husbandry?.evidenceSummary), hasExternalEvidence: hasResolvedSourceIds(sourceIds), unresolvedSourceIds: [...new Set([...unresolvedSourceIds, ...getUnresolvedSpeciesSourceIds()])].sort() };
 }
 
