@@ -18,7 +18,7 @@ export default function SpeciesMorphGallery() {
   const speciesId = selectedSpeciesId || selectedSpecies?.id || 'heterodon-nasicus';
   const species = selectedSpecies ?? findSnakeSpecies(speciesId);
   const morph = useMemo(() => speciesId === 'heterodon-nasicus'
-    ? masterMorphs.find((entry) => entry.id === morphId || entry.geneId === morphId)
+    ? masterMorphs.find((entry) => entry.geneId === morphId)
     : getSpeciesVisualMorphs(speciesId).find((entry) => entry.geneId === morphId), [morphId, speciesId]);
   const [media, setMedia] = useState<ApprovedMorphImage[]>([]);
   const [loading, setLoading] = useState(true);
