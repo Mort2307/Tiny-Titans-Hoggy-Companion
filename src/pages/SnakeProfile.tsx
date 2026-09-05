@@ -15,6 +15,7 @@ import IntelligencePanel from "../components/IntelligencePanel";
 import ExplainableIntelligenceSummary from "../components/ExplainableIntelligenceSummary";
 import IntelligenceDataQualityPanel from "../components/IntelligenceDataQualityPanel";
 import SnakeProfileSmartSummary from "../components/SnakeProfileSmartSummary";
+import SnakeProfileReviewGuide from "../components/SnakeProfileReviewGuide";
 import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import "../styles/snake-profile.css";
@@ -161,6 +162,7 @@ function SnakeProfile() {
         <button type="button" className="snake-profile-card snake-profile-card-notes" onClick={openSnakeEditor}><div className="snake-profile-card-icon">📝</div><h2>Notes</h2><p>{snake.notes || "No notes added"}</p></button>
       </section>
 
+      <SnakeProfileReviewGuide snake={snake} />
       <SnakeProfileSmartSummary snake={snake} />
 
       <section className="snake-profile-intelligence" aria-labelledby="snake-profile-intelligence-heading">
