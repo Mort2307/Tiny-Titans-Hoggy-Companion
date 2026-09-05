@@ -33,27 +33,28 @@ function dedupe(values: FoodType[]): FoodType[] {
   return [...new Set(values)];
 }
 
+function categoriesFromStructuredPrey(preyCategories: string[] = []): Set<PreyCategory> {
+  const categories = new Set<PreyCategory>();
+  for (const raw of preyCategories) {
+    const value = raw.trim().toLowerCase();
+    if (/^rodent$|^rodents$|mouse$|mice$|rat$|rats$/.test(value)) categories.add('rodent');
+    if (/^lagomorph$|^lagomorphs$|rabbit$|rabbits$|hare$|hares$/.test(value)) categories.add('lagomorph');
+    if (/^bird$|^birds$|avian$|avians$|quail$|chick$|chicks$/.test(value)) categories.add('bird');
+    if (/^fish$|^fishes$|piscivore$|piscivorous$/.test(value)) categories.add('fish');
+    if (/^amphibian$|^amphibians$|amphibian-specialist$/.test(value)) categories.add('amphibian');
+    if (/^egg$|^eggs$|egg-specialist$/.test(value)) categories.add('egg');
+    if (/^reptile$|^reptiles$|lizard$|lizards$|snake$|snakes$/.test(value)) categories.add('reptile');
+    if (/^invertebrate$|^invertebrates$|insect$|insects$|arthropod$|arthropods$/.test(value)) categories.add('invertebrate');
+  }
+  return categories;
+}
+
 function fromExistingProfile(snake: Snake): SpeciesDiet | undefined {
   const species = findSnakeSpecies(snake.species);
   const feeding = species?.knowledge.feeding;
   if (!species || !feeding) return undefined;
 
-  const text = [
-    feeding.dietaryGuild ?? '',
-    ...(feeding.preyCategories ?? []),
-    feeding.notes ?? '',
-  ].join(' ').toLowerCase();
-
-  const categories = new Set<PreyCategory>();
-  if (/rodent|mouse|rat|mammal/.test(text)) categories.add('rodent');
-  if (/rabbit|hare|lagomorph/.test(text)) categories.add('lagomorph');
-  if (/bird|avian|quail|chick/.test(text)) categories.add('bird');
-  if (/fish|pisciv/.test(text)) categories.add('fish');
-  if (/amphib/.test(text)) categories.add('amphibian');
-  if (/egg|oviv/.test(text)) categories.add('egg');
-  if (/reptile|lizard|snake/.test(text)) categories.add('reptile');
-  if (/invertebrate|insect|arthropod/.test(text)) categories.add('invertebrate');
-
+  const categories = categoriesFromStructuredPrey(feeding.preyCategories);
   const recommended: FoodType[] = [];
   if (categories.has('rodent')) recommended.push('Pinkie Mouse', 'Fuzzy Mouse', 'Hopper Mouse', 'Adult Mouse', 'Rat Pup', 'Rat Fuzzy', 'Adult Rat');
   if (categories.has('lagomorph')) recommended.push('Rabbit');
@@ -64,53 +65,50 @@ function fromExistingProfile(snake: Snake): SpeciesDiet | undefined {
   if (categories.has('reptile')) recommended.push('Reptile Prey');
   if (categories.has('invertebrate')) recommended.push('Invertebrate');
 
-  const guild = feeding.dietaryGuild ?? 'species-specific carnivore';
+  const guild = feeding.dietaryGuild ?? 'species-specific';
   const note = feeding.notes ?? 'Use the species profile and body condition to determine prey type, prey size and feeding interval.';
   return {
     label: species.commonNames[0] ?? species.acceptedScientificName,
     guild,
     recommended: dedupe(recommended),
     additional: dedupe(ALL_FOOD_TYPES.filter((food) => !recommended.includes(food))),
-    categories: [...categories],
+    categories: categories.size ? [...categories] : ['other'],
     note,
   };
 }
 
-function manualSpecialistDiet(snake: Snake): SpeciesDiet | undefined {
+function explicitSpecialistDiet(snake: Snake): SpeciesDiet | undefined {
   const species = findSnakeSpecies(snake.species);
   if (!species) return undefined;
-  const haystack = [species.id, species.acceptedScientificName, ...species.commonNames, ...species.searchAliases].join(' ').toLowerCase();
+  const id = species.id.toLowerCase();
 
-  if (/dasypeltis|egg-eating|egg eating/.test(haystack)) {
+  if (id.startsWith('dasypeltis-')) {
     return {
       label: species.commonNames[0] ?? species.acceptedScientificName,
       guild: 'egg-specialist',
       recommended: ['Egg'],
       additional: ALL_FOOD_TYPES.filter((food) => food !== 'Egg'),
       categories: ['egg'],
-      note: 'Egg-specialist snake: record whole eggs as the primary prey item. Do not substitute rodent prey merely because it is the default in a generic feeding tracker.',
+      note: 'Egg-specialist snake: record whole eggs as the primary prey item. Tiny Titans will not substitute rodents simply because rodents are common in generic snake trackers.',
     };
   }
 
-  if (/fish snake|water snake|keelback|natric|nerodia|regina|thamnophis|rhabdophis/.test(haystack)) {
+  const fishAmphibianIds = new Set([
+    'thamnophis-sirtalis',
+    'thamnophis-radix',
+    'nerodia-sipedon',
+    'nerodia-fasciata',
+    'regina-septemvittata',
+    'rhabdophis-subminiatus',
+  ]);
+  if (fishAmphibianIds.has(id)) {
     return {
       label: species.commonNames[0] ?? species.acceptedScientificName,
       guild: 'fish/amphibian-capable generalist',
       recommended: ['Fish', 'Amphibian'],
       additional: ALL_FOOD_TYPES.filter((food) => !['Fish', 'Amphibian'].includes(food)),
       categories: ['fish', 'amphibian'],
-      note: 'Aquatic or semi-aquatic snake: fish and/or amphibian prey should be available where supported by the species profile; use the species-specific record rather than a rodent-only assumption.',
-    };
-  }
-
-  if (/large python|reticulated|burmese|african rock|green anaconda|anaconda|boa constrictor|dumeril|dumeril's boa|common boa/.test(haystack)) {
-    return {
-      label: species.commonNames[0] ?? species.acceptedScientificName,
-      guild: 'large-vertebrate carnivore',
-      recommended: ['Adult Rat', 'Rabbit', 'Quail', 'Other Bird'],
-      additional: ['Piglet', 'Adult Mouse', 'Rat Pup', 'Rat Fuzzy', 'Fish', 'Other'],
-      categories: ['rodent', 'lagomorph', 'bird'],
-      note: 'Large constrictor: log the actual whole-prey item and, where practical, its individual or total mass. Larger prey classes are available without forcing them onto smaller species.',
+      note: 'Species-specific aquatic/semi-aquatic prey profile: fish and amphibians are surfaced first. Exact prey, size and response should remain attached to each feeding record.',
     };
   }
 
@@ -129,12 +127,12 @@ export function getSpeciesDiet(snake: Snake | undefined): SpeciesDiet {
     };
   }
 
-  return manualSpecialistDiet(snake) ?? fromExistingProfile(snake) ?? {
+  return explicitSpecialistDiet(snake) ?? fromExistingProfile(snake) ?? {
     label: snake.species || 'Snake',
     guild: 'species-specific',
     recommended: ['Other'],
     additional: ALL_FOOD_TYPES.filter((food) => food !== 'Other'),
     categories: ['other'],
-    note: 'No structured feeding profile is currently mapped for this snake. The tracker will still preserve the exact food item instead of inventing a diet.',
+    note: 'No structured feeding profile is currently mapped for this snake. The tracker will preserve the exact food item rather than inventing a diet.',
   };
 }
