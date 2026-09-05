@@ -1,0 +1,40 @@
+{
+  "fullyIntegratedSpecies": {
+    "heterodon-nasicus": {
+      "status": "fully-integrated",
+      "reviewedOn": "2026-09-05",
+      "reviewer": "Tiny Titans",
+      "surfaces": [
+        "reminders",
+        "husbandry",
+        "weights",
+        "feeding",
+        "shedding",
+        "behaviour",
+        "health",
+        "enclosure-intelligence",
+        "morph-library",
+        "genetics-calculator",
+        "breeding-planner",
+        "breeding-academy",
+        "keeper-handbook",
+        "behaviour-observatory",
+        "make-contribution",
+        "knowledge-base",
+        "titans-challenge",
+        "community-hub",
+        "mentorship",
+        "wall-of-titans",
+        "account",
+        "family",
+        "become-a-titan",
+        "educator-centre",
+        "creator-centre",
+        "morph-library-editor",
+        "community-manager",
+        "mentor-review",
+        "tester-centre"
+      ]
+    }
+  }
+}
