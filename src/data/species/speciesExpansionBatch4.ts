@@ -43,17 +43,19 @@ const taxonomyOnly = (
     activityPattern,
     lifestyle,
     riskClass,
-    feeding: { evidenceLevel: 'moderate', dietaryGuild: 'carnivore', preyCategories: ['appropriately sized vertebrate whole prey'], notes: feedingNotes },
-    breeding: { evidenceLevel: 'limited', seasonalCycling: 'Species-specific seasonal cues should be established from specialist literature before breeding conditioning.', notes: 'No generic breeding protocol is supplied where exact evidence is insufficient.' },
-    safety: { medicallySignificantVenom: riskClass === 'venomous', rearFangedOrVenomDelivery: false, handlingNotes: safetyNotes },
-    sourceIds: [taxonomySource],
-    reviewedOn,
-    ...knowledgeOverrides,
-    feeding: knowledgeOverrides.feeding ?? { evidenceLevel: 'moderate', dietaryGuild: 'carnivore', preyCategories: ['appropriately sized vertebrate whole prey'], notes: feedingNotes },
-    safety: knowledgeOverrides.safety ?? { medicallySignificantVenom: riskClass === 'venomous', rearFangedOrVenomDelivery: false, handlingNotes: safetyNotes },
+        feeding: knowledgeOverrides.feeding ?? { evidenceLevel: 'moderate', dietaryGuild: 'carnivore', preyCategories: ['appropriately sized vertebrate whole prey'], notes: feedingNotes },
+    breeding: knowledgeOverrides.breeding ?? {
+      evidenceLevel: 'limited',
+      seasonalCycling: 'Species-specific seasonal cues should be established from specialist literature before breeding conditioning.',
+      notes: 'No generic breeding protocol is supplied where exact evidence is insufficient.',
+    },
+    safety: knowledgeOverrides.safety ?? {
+      medicallySignificantVenom: riskClass === 'venomous',
+      rearFangedOrVenomDelivery: false,
+      handlingNotes: safetyNotes,
+    },
     sourceIds: knowledgeOverrides.sourceIds ?? [taxonomySource],
-    reviewedOn: knowledgeOverrides.reviewedOn ?? reviewedOn,
-  }
+    reviewedOn: knowledgeOverrides.reviewedOn ?? reviewedOn,  }
 });
 
 export const SPECIES_EXPANSION_BATCH_4: SnakeSpeciesRecord[] = [
