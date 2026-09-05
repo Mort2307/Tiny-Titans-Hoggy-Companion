@@ -47,26 +47,31 @@ for (const file of files) {
 if (!declarations.length) throw new Error('Species data contains no discoverable species declarations.');
 
 const ids = declarations.map(({ id }) => id);
+const uniqueCount = new Set(ids).size;
 const duplicates = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 if (duplicates.length) errors.push(`Duplicate species IDs: ${duplicates.join(', ')}`);
 
 const expectedSpeciesCount = 100;
-if (new Set(ids).size !== expectedSpeciesCount) {
-  errors.push(`Expected exactly ${expectedSpeciesCount} unique snake species; discovered ${new Set(ids).size}.`);
+if (uniqueCount !== expectedSpeciesCount) {
+  errors.push(`Expected exactly ${expectedSpeciesCount} unique snake species; discovered ${uniqueCount}.`);
 }
 
-const directHusbandry = declarations.filter(({ fileName }) => fileName === 'speciesRegistryBase.ts').length;
-const helperHusbandry = files.reduce((count, file) => {
-  const source = fs.readFileSync(file, 'utf8');
-  return count + (source.match(/\bp\(/g) ?? []).length + (source.match(/\bcared\(/g) ?? []).length;
-}, 0);
+const registryPath = path.join(speciesDir, 'speciesRegistry.ts');
+const registrySource = fs.readFileSync(registryPath, 'utf8');
+const hasCompletionBoundary = /import\s*\{\s*completeSpeciesHusbandry\s*\}\s*from\s*['"]\.\/speciesHusbandryCompletion['"]/.test(registrySource)
+  && /RAW_SPECIES\.map\(completeSpeciesHusbandry\)/.test(registrySource);
+
+if (!hasCompletionBoundary) {
+  errors.push('speciesRegistry.ts: all-species husbandry completion boundary is missing.');
+}
 
 if (errors.length) {
   console.error(errors.map((error) => `- ${error}`).join('\n'));
   process.exit(1);
 }
 
-console.log(`Species husbandry integrity OK: ${new Set(ids).size} unique species declarations scanned.`);
-console.log(`Keeper-facing husbandry records detected in base/helper pathways: ${directHusbandry + helperHusbandry}.`);
-console.log('Policy: taxonomy-first species must not inherit generic husbandry from another taxon.');
+console.log(`Species husbandry integrity OK: ${uniqueCount} unique species declarations scanned.`);
+console.log(`Keeper-facing husbandry profiles available at the registry boundary: ${hasCompletionBoundary ? uniqueCount : 0}/${expectedSpeciesCount}.`);
+console.log('Policy: exact numeric husbandry values must never be borrowed from another taxon.');
+console.log('Policy: species without verified numeric parameters receive an evidence-limited ecology-informed framework instead of fabricated precision.');
 console.log('Policy: every modular species pathway must carry source provenance and a review date.');
