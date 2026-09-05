@@ -1,0 +1,50 @@
+export type VivariumMediaType = "image" | "video";
+export type VivariumCreditMode = "name" | "social" | "anonymous";
+export type VivariumSubmissionStatus = "Pending" | "Approved" | "Rejected" | "NeedsInfo";
+
+export type VivariumMedia = {
+  id: string;
+  type: VivariumMediaType;
+  path: string;
+  url: string;
+  caption?: string;
+  name?: string;
+  sizeBytes: number;
+  contentType: string;
+};
+
+export type VivariumShowcaseSubmission = {
+  id: string;
+  userId: string;
+  speciesId: string;
+  speciesName: string;
+  individualName?: string | null;
+  title: string;
+  description: string;
+  whatWorks: string;
+  whatChanged: string;
+  lessonsLearned: string;
+  enclosureType: string;
+  dimensions: string;
+  setupAge: string;
+  substrate: string;
+  heating: string;
+  thermostat: string;
+  lighting: string;
+  humidity: string;
+  temperature: string;
+  ventilation: string;
+  hidesAndEnrichment: string;
+  plantsAndBioactive: string;
+  waterAndFeeding: string;
+  publicConsent: boolean;
+  creditMode: VivariumCreditMode;
+  creditName?: string | null;
+  creditSocial?: string | null;
+  media: VivariumMedia[];
+  status: VivariumSubmissionStatus;
+  submittedAt?: unknown;
+  reviewedAt?: unknown;
+  reviewedBy?: string | null;
+  rejectionReason?: string | null;
+};
