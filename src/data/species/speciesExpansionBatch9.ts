@@ -1,0 +1,77 @@
+import type { SnakeSpeciesRecord } from './speciesTypes';
+
+const reviewedOn = '2026-09-05';
+const taxonomySource = 'reptileDatabase2026';
+const base = { kingdom: 'Animalia' as const, phylum: 'Chordata' as const, class: 'Reptilia' as const, order: 'Squamata' as const };
+
+const venomous = (
+  id: string,
+  scientific: string,
+  authorYear: string,
+  commonNames: string[],
+  aliases: string[],
+  family: string,
+  genus: string,
+  epithet: string,
+  summary: string,
+  distribution: string,
+  habitat: string,
+  activityPattern: 'diurnal' | 'nocturnal' | 'crepuscular' | 'cathemeral',
+  lifestyle: ('terrestrial' | 'semi-arboreal' | 'arboreal' | 'fossorial' | 'semi-fossorial' | 'semi-aquatic' | 'aquatic')[],
+  safetyNotes: string,
+  synonyms: string[] = [],
+): SnakeSpeciesRecord => ({
+  ...base,
+  id,
+  acceptedScientificName: scientific,
+  authorYear,
+  commonNames,
+  searchAliases: aliases,
+  family,
+  genus,
+  speciesEpithet: epithet,
+  synonyms,
+  taxonStatus: 'accepted',
+  taxonSource: taxonomySource,
+  knowledge: {
+    summary,
+    distribution,
+    habitat,
+    activityPattern,
+    lifestyle,
+    riskClass: 'venomous',
+    feeding: {
+      evidenceLevel: 'limited',
+      dietaryGuild: 'carnivore',
+      preyCategories: ['species-appropriate vertebrate prey'],
+      notes: 'Species-specific prey and feeding schedule must be established from specialist sources; no generic frequency or prey-size shortcut is supplied.',
+    },
+    breeding: {
+      evidenceLevel: 'limited',
+      seasonalCycling: 'Breeding conditioning must follow species- and locality-specific specialist evidence.',
+      notes: 'Breeding guidance is intentionally conservative until species-level captive evidence is mapped.',
+    },
+    safety: {
+      medicallySignificantVenom: true,
+      rearFangedOrVenomDelivery: false,
+      handlingNotes: safetyNotes,
+    },
+    sourceIds: [taxonomySource],
+    reviewedOn,
+  },
+});
+
+export const SPECIES_EXPANSION_BATCH_9: SnakeSpeciesRecord[] = [
+  venomous('trimeresurus-insularis','Trimeresurus insularis','KRAMER, 1977',['White-lipped Island Pit Viper','Blue Pit Viper','Lesser Sunda Pit Viper'],['trimeresurus insularis','blue insularis','blue pit viper','lesser sunda pit viper','white-lipped island pitviper'],'Viperidae','Trimeresurus','insularis','Lesser Sunda and eastern Java pit viper with multiple recognised colour forms in captivity, including the well-known blue form. Colour form is not a separate species.','Eastern Java and the Lesser Sunda Islands, including islands such as Komodo, Rinca, Flores, Sumba and Timor depending on taxonomic locality treatment.','Tropical forest, woodland, scrub and humid island habitats, commonly associated with vegetation above ground.','nocturnal',['arboreal','semi-arboreal'],'Medically significant pit viper. Blue, green and other colour forms remain Trimeresurus insularis; do not create duplicate species records. No casual handling guidance; professional containment, legal compliance and emergency planning are essential.',['Cryptelytrops insularis','Trimeresurus albolabris insularis']),
+  venomous('trimeresurus-albolabris','Trimeresurus albolabris','(GRAY, 1842)',['White-lipped Pit Viper','White-lipped Bamboo Viper'],['trimeresurus albolabris','white lipped pit viper','white-lipped bamboo viper','green bamboo viper'],'Viperidae','Trimeresurus','albolabris','Small arboreal Asian pit viper with medically significant venom and a substantial captive display presence.','South and Southeast Asia from northeastern India and Bangladesh through Myanmar, Thailand, Vietnam, southern China and adjacent regions.','Humid forest, secondary vegetation, bamboo, plantations and other structurally complex tropical habitats.','nocturnal',['arboreal'],'Medically significant arboreal pit viper. No free-handling procedure is provided; use secure professional containment, protected service access and documented emergency planning.',['Trimeresurus albolabris insularis']),
+  venomous('bothriechis-schlegelii','Bothriechis schlegelii','(BERTHOLD, 1846)',['Eyelash Pit Viper','Eyelash Palm Pit Viper'],['bothriechis schlegelii','eyelash viper','eyelash pit viper','eyelash palm pitviper'],'Viperidae','Bothriechis','schlegelii','Small Neotropical arboreal pit viper notable for supraocular scale projections and extensive colour variation.','Central America through northwestern South America.','Humid lowland and montane forest, forest edge and vegetation near streams or other moisture sources.','nocturnal',['arboreal'],'Medically significant pit viper. No casual handling guidance; secure arboreal containment, protected service routes and professional emergency planning are required.'),
+  venomous('atheris-squamigera','Atheris squamigera','(HALLOWELL, 1854)',['Variable Bush Viper','Green Bush Viper'],['atheris squamigera','variable bush viper','green bush viper'],'Viperidae','Atheris','squamigera','Arboreal African bush viper with substantial colour variation and medically significant venom.','Central and western equatorial Africa.','Humid tropical forest, thick understory, low vegetation and forest margins.','nocturnal',['arboreal'],'Medically significant arboreal viper. No casual handling guidance; restricted professional containment and documented bite/escape planning are required.'),
+  venomous('atheris-chlorechis','Atheris chlorechis','(PEL, 1854)',['West African Bush Viper','Western Green Bush Viper'],['atheris chlorechis','west african bush viper','western green bush viper'],'Viperidae','Atheris','chlorechis','West African arboreal bush viper with medically significant venom.','West Africa including forest regions of Sierra Leone, Liberia, Côte d’Ivoire, Ghana and adjoining areas depending on taxonomic treatment.','Humid rainforest and dense arboreal understory.','nocturnal',['arboreal'],'Medically significant arboreal viper. No casual handling guidance; use secure professional containment and specialist emergency planning.'),
+  venomous('bitis-gabonica','Bitis gabonica','(DUMÉRIL, BIBRON & DUMÉRIL, 1854)',['Gaboon Viper','Gaboon Adder'],['bitis gabonica','gaboon viper','gaboon adder'],'Viperidae','Bitis','gabonica','Very large African viper with exceptionally long fangs, broad head and medically significant venom.','Central, eastern and parts of southern Africa.','Humid forest, woodland, forest edge and leaf-litter-rich habitats.','nocturnal',['terrestrial'],'Large medically significant viper. No casual handling guidance; specialist secure enclosure, protected service access and emergency planning are essential.',['Bitis gabonica rhinoceros']),
+  venomous('bitis-rhinoceros','Bitis rhinoceros','(SCHLEGEL, 1855)',['West African Gaboon Viper','Rhinoceros Viper'],['bitis rhinoceros','west african gaboon viper','rhinoceros viper'],'Viperidae','Bitis','rhinoceros','Large West African gaboon-viper lineage with distinctive facial horn scales and medically significant venom.','West Africa from Guinea and Sierra Leone through Liberia, Côte d’Ivoire, Ghana, Togo and adjoining regions.','Humid lowland forest, plantations and leaf-litter-rich forest floor.','nocturnal',['terrestrial'],'Large medically significant viper. No casual handling guidance; secure professional enclosure systems and emergency planning are mandatory considerations.',['Bitis gabonica rhinoceros']),
+  venomous('cerastes-cerastes','Cerastes cerastes','(LINNAEUS, 1758)',['Saharan Horned Viper','North African Horned Viper'],['cerastes cerastes','horned viper','saharan horned viper','desert horned viper'],'Viperidae','Cerastes','cerastes','Desert-adapted North African and Middle Eastern viper, often recognised by horn-like supraocular scales.','North Africa and parts of the Middle East.','Desert, semi-desert, sandy plains, rocky terrain and arid scrub.','nocturnal',['terrestrial','fossorial'],'Medically significant viper. No casual handling guidance; specialist secure containment and documented emergency planning are required.'),
+  venomous('naja-kaouthia','Naja kaouthia','(LESSON, 1831)',['Monocled Cobra','Monocellate Cobra'],['naja kaouthia','monocled cobra','monocellate cobra'],'Elapidae','Naja','kaouthia','South and Southeast Asian cobra with medically significant neurotoxic venom and a distinctive monocellate hood marking.','South and Southeast Asia.','Grassland, woodland, agricultural landscapes, wetlands and habitats near human settlement.','crepuscular',['terrestrial','semi-aquatic'],'Highly medically significant cobra. No casual handling guidance; professional secure containment, legal compliance and emergency planning are essential.'),
+  venomous('naja-naja','Naja naja','(LINNAEUS, 1758)',['Indian Cobra','Spectacled Cobra'],['naja naja','indian cobra','spectacled cobra'],'Elapidae','Naja','naja','Widely distributed South Asian cobra complex with medically significant venom and extensive human interaction.','South Asia including India, Pakistan, Bangladesh, Sri Lanka and neighbouring regions.','Agricultural landscapes, scrub, woodland, grassland and habitats around human settlement.','diurnal',['terrestrial','semi-aquatic'],'Highly medically significant cobra. No casual handling guidance; professional secure containment, legal compliance and emergency planning are essential.'),
+  venomous('naja-siamensis','Naja siamensis','(LAURENTI, 1768)',['Indochinese Spitting Cobra','Siamese Spitting Cobra'],['naja siamensis','indochinese spitting cobra','siamese spitting cobra'],'Elapidae','Naja','siamensis','Southeast Asian cobra capable of defensive venom projection and medically significant venom.','Mainland Southeast Asia.','Lowland forest, woodland, grassland, agricultural landscapes and settlement margins.','nocturnal',['terrestrial'],'Highly medically significant spitting cobra. No casual handling guidance; eye/face exposure risk makes professional containment and protective procedures essential.'),
+  venomous('naja-mossambica','Naja mossambica','(PETERS, 1854)',['Mozambique Spitting Cobra'],['naja mossambica','mozambique spitting cobra'],'Elapidae','Naja','mossambica','African spitting cobra with medically significant venom and defensive venom projection capability.','Eastern and southern Africa.','Savanna, woodland, scrub, agricultural landscapes and settlement margins.','nocturnal',['terrestrial','semi-arboreal'],'Highly medically significant spitting cobra. No casual handling guidance; professional containment and eye/face exposure emergency planning are essential.'),
+];
