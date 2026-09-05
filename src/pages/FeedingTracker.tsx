@@ -267,7 +267,7 @@ export default function FeedingTracker() {
               <label htmlFor="feeding-method">Feeding method<select id="feeding-method" value={feedingMethod} onChange={(event) => setFeedingMethod(event.target.value as FeedingMethod)} disabled={saving}>{feedingMethods.map((method) => <option key={method}>{method}</option>)}</select></label>
               <label htmlFor="feeding-response">Response<select id="feeding-response" value={response} onChange={(event) => setResponse(event.target.value as FeedingResponse)} disabled={saving}>{feedingResponses.map((item) => <option key={item}>{responseCopy[item]}</option>)}</select></label>
               <label htmlFor="feeding-notes">Keeper notes<textarea id="feeding-notes" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Actual prey details, preparation, acceptance behaviour, anything worth preserving…" rows={4} disabled={saving} /></label>
-              <div className="tt-tracker-actions"><button className="tt-tracker-button" type="submit" disabled={saving}>{saving ? "Saving…" : editingId ? "💾 Update Feeding" : "💾 Record Feeding"}</button>{editingId && <button className="tt-tracker-button secondary" type="button" onClick={resetForm} disabled={saving}>Cancel edit</button>}</div>
+              <div className="tt-tracker-actions"><button className="tt-tracker-button" type="submit" disabled={saving}>{saving ? "Saving…" : editingId ? "💾 Update Feeding" : "💾 Record Feeding"}</button>{editingId && <button className="tt-tracker-button secondary" type="button" onClick={() => resetForm()} disabled={saving}>Cancel edit</button>}</div>
             </form>
           </section>
         </div>
