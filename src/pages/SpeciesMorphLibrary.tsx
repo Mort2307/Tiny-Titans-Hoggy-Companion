@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
-import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
 import { getApprovedMorphImages } from "../services/creatorService";
 import type { ApprovedMorphImage } from "../types/morphSubmission";
 import BackHomeButton from "../components/BackHomeButton";
@@ -48,7 +47,7 @@ function SpeciesCommunityGallery({ speciesId, morphId, morphName }: { speciesId:
         <div><h3>📷 Community examples</h3><p>Approved keeper photographs linked to this exact species and morph.</p></div>
         {!loading && images.length > 0 && <span className="morph-community-gallery__count">{images.length} {images.length === 1 ? "example" : "examples"}</span>}
       </div>
-      {loading ? <p className="morph-community-gallery__state">Loading approved {morphName} examples…</p> : images.length === 0 ? <p className="morph-community-gallery__state">No approved community examples for {morphName} yet.</p> : <div className="morph-community-gallery__scroller" tabIndex={0}>{images.map((image, index) => <figure className="morph-community-gallery__card" key={image.id ?? `${image.imageUrl}-${index}`}><img src={image.imageUrl} alt={`${morphName} community example ${index + 1}`} loading={index < 2 ? "eager" : "lazy"} />{(image.creditName || image.creditSocial) && <figcaption className="morph-community-gallery__credit">Credit: {image.creditName || image.creditSocial}</figcaption>}</figure>)}</div>}
+      {loading ? <p className="morph-community-gallery__state">Loading approved {morphName} examples…</p> : images.length === 0 ? <p className="morph-community-gallery__state">No approved community examples for {morphName} yet.</p> : <div className="morph-community-gallery__scroller" tabIndex={0}>{images.map((image, index) => <figure className="morph-community-gallery__card" key={image.id ?? `${image.imageUrl}-${index}`}><img src={image.imageUrl} alt={`${morphName} community example ${index + 1}`} loading={index < 2 ? "eager" : "lazy"} />{(image.creditName || image.creditSocial) && <figcaption className="morph-community-gallery__credit">{image.creditName || image.creditSocial}</figcaption>}</figure>)}</div>}
     </section>
   );
 }
