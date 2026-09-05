@@ -5,7 +5,7 @@ const { getStorage } = require("firebase-admin/storage");
 
 const db = getFirestore();
 const adminAuth = getAuth();
-const bucket = getStorage().bucket();
+const bucket = getStorage().bucket("tinytitans-hoggy-companion.firebasestorage.app");
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 function ownerAccount(request) { return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL; }
 function creatorAuthorized(request) { return ownerAccount(request); }
