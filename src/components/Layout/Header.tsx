@@ -34,8 +34,15 @@ function Header() {
 
   return (
     <header className="app-header">
-      <Link to="/" className="logo-link" aria-label="Tiny Titans Reptile Companion home"><img src={logo} alt="Tiny Titans Reptile Companion" className="tiny-titans-logo" /></Link>
-      <div className="app-brand-lockup"><span className="app-brand-name" aria-label="Tiny Titans Reptile Companion">Tiny Titans Reptile Companion</span></div>
+      <Link to="/" className="logo-link" aria-label="Tiny Titans Reptile Companion home">
+        <img src={logo} alt="Tiny Titans Reptile Companion" className="tiny-titans-logo" />
+      </Link>
+      <div className="app-brand-lockup" aria-label="Tiny Titans Reptile Companion">
+        <span className="app-brand-name">
+          <span className="app-brand-primary">Tiny Titans</span>
+          <span className="app-brand-secondary">Reptile Companion</span>
+        </span>
+      </div>
       <div className="app-header-actions">
         {!creatorMode && decision && <Link className="titan-proactive-header-link" to={decision.destination || `/snakes/${decision.animalId}/master-record`} aria-label={`Tiny Titans noticed something for ${decision.animalName ?? "your Titan"}: ${decision.title}`} title={decision.why}><span aria-hidden="true">⚡</span><span className="titan-proactive-header-copy"><strong>{decision.animalName ?? "Titan"}</strong><small>{decision.title}</small></span></Link>}
         <Link className="submission-mailbox-link" to={mailboxPath} aria-label={unread > 0 ? `Submission messages, ${unread} unread` : "Submission messages"} title={unread > 0 ? `${unread} unread submission message${unread === 1 ? "" : "s"}` : "Submission messages"}><span aria-hidden="true">💬</span>{unread > 0 && <span className="submission-mailbox-badge" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}</Link>
