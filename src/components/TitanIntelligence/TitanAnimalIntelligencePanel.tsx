@@ -6,6 +6,7 @@ import { getTitanDecisionState, type TitanDecision } from "../../services/titanD
 import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiveIntelligenceService";
 import { useEffect, useState } from "react";
 import TitanDecisionWhyCard from "./TitanDecisionWhyCard";
+import TitanDecisionQueue from "./TitanDecisionQueue";
 
 interface Props { record: SnakeMasterRecord }
 
@@ -30,6 +31,7 @@ export default function TitanAnimalIntelligencePanel({ record }: Props) {
   return <section className="master-card titan-animal-intelligence">
     <div className="master-section-heading"><div><p className="master-eyebrow">🧠 V50 Animal Intelligence</p><h2>{snake.name}'s living context</h2></div><Link to={`/titan-intelligence?snakeId=${encodeURIComponent(snake.id)}`}>Open full Titan Intelligence →</Link></div>
     {decision && <TitanDecisionWhyCard decision={decision} compact />}
+    {decision && <TitanDecisionQueue animalId={snake.id} excludeDecisionId={decision.id} limit={3} />}
     <div className="master-grid">
       <article className="master-card"><span>📈 Growth history</span><strong>{overview.currentWeightG === null ? "More data needed" : `${overview.currentWeightG} g current`}</strong><small>{overview.totalWeightLogs} weight records • {overview.weightChangeG === null ? "No recorded baseline change" : `${overview.weightChangeG >= 0 ? "+" : ""}${overview.weightChangeG} g recorded change`}</small></article>
       <article className="master-card"><span>↔️ Then vs now</span><strong>{first && latest ? "Comparison available" : "More data needed"}</strong><small>{first && latest ? `${first.title} → ${latest.title}` : "At least two dated events are required; no causation is inferred."}</small></article>
