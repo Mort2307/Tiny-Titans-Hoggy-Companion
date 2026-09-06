@@ -36,6 +36,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CI_DIAGNOSTICS_DIR: ci-diagnostics
+
 concurrency:
   group: tiny-titans-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -60,10 +63,18 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Lint
-        run: npm run lint
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p "$CI_DIAGNOSTICS_DIR"
+          npm run lint 2>&1 | tee "$CI_DIAGNOSTICS_DIR/lint.log"
 
       - name: Production build and application contracts
-        run: npm run build
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p "$CI_DIAGNOSTICS_DIR"
+          npm run build 2>&1 | tee "$CI_DIAGNOSTICS_DIR/build.log"
 
       - name: Install Functions dependencies
         if: ${{ hashFiles('functions/package-lock.json') != '' }}
@@ -75,4 +86,10 @@ jobs:
         working-directory: functions
         run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
 
-      # Browser/App BOT journeys remain deliberate specialist validation rather than routine PR CI.
+      - name: Upload CI diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiny-titans-ci-diagnostics-${{ github.run_id }}
+          path: ci-diagnostics/
+          if-no-files-found: ignore
