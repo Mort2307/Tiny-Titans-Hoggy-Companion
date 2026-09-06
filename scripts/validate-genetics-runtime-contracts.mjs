@@ -16,7 +16,7 @@ const assertions = [
   ["cross-species hard stop", model.includes("Cross-species genetics are not supported")],
   ["wild-state completion", model.includes("wildState(locus)") && model.includes("a ?? wildState(locus)")],
   ["supported super gate", model.includes('locus.superStatus === "supported"') && model.includes("superAlleleId")],
-  ["allelic mixed-state guard", model.includes('return "mixed_allelic"')],
+  ["allelic mixed-state guard", model.includes('GeneticPhenotypeStatus = "wild_type" | "visual" | "heterozygous" | "mixed_allelic"') && model.includes('locus.inheritance === "allelic"') && model.includes("mixed_allelic")],
   ["allele-level combination contract", model.includes("CombinationComponent") && model.includes("components?")],
   ["canonical snake adapter", adapter.includes("buildSnakeGenome") && adapter.includes("canonicalSpecies")],
   ["species-scoped adapter", adapter.includes("locus.species === canonical")],
