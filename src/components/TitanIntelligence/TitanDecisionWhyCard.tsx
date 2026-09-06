@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { TitanDecision } from "../../services/titanDecisionStateService";
+import "./TitanDecisionWhyCard.css";
 
 interface Props { decision: TitanDecision; compact?: boolean; }
 
