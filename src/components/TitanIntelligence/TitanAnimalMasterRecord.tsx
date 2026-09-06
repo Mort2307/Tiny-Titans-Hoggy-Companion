@@ -9,7 +9,7 @@ interface Props { snakeName:string; record:AnimalMasterRecord }
 export default function TitanAnimalMasterRecord({snakeName,record}:Props){
   const { user } = useAuth();
   const [decision,setDecision]=useState<TitanDecision|null>(null);
-  useEffect(()=>{if(!user)return()=>undefined;const refresh=()=>{const state=getTitanDecisionState(user.uid);setDecision(state.decisions.find(item=>item.status==="active"&&item.animalId===record.animalId)||null);};refresh();return subscribeToTitanIntelligenceUpdates(refresh);},[user,record.animalId]);
+  useEffect(()=>{if(!user)return()=>undefined;const refresh=()=>{const state=getTitanDecisionState(user.uid);setDecision(state.decisions.find(item=>item.status==="active"&&item.animalName===snakeName)||null);};refresh();return subscribeToTitanIntelligenceUpdates(refresh);},[user,snakeName]);
   return <section className="titan-feature-panel titan-master-record">
   <div className="titan-master-record__header"><div><p className="titan-feature-kicker">🧠 TITAN MASTER RECORD</p><h2>{snakeName}</h2><p>{record.note}</p></div><div className="titan-master-record__score" aria-label={`${record.coverageScore}% record coverage`}><strong>{record.coverageScore}%</strong><span>record coverage</span></div></div>
   {decision&&<div className="titan-master-record__changes"><h3>⚡ What Titan Intelligence wants you to see next</h3><article className="titan-master-record__signal"><div><strong>{decision.title}</strong><p>{decision.reason}</p><small>Decision score {decision.score}/100 · {Math.round(decision.confidence*100)}% confidence · {decision.domain}</small></div><Link to={decision.destination||"/"}>Open →</Link></article></div>}
