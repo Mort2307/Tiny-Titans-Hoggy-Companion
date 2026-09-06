@@ -31,25 +31,10 @@ export async function sendSubmissionConversationMessage(input: { conversationId:
 export async function sendContributorThankYouMessage(input: { conversationId: string; senderId: string; message: string }): Promise<"sent" | "already-sent"> {
   const message = input.message.trim();
   if (!input.conversationId || !input.senderId || !message) throw new Error("A valid conversation, creator account and message are required.");
-  const conversationRef = doc(conversations, input.conversationId);
-  const messageRef = doc(messages(input.conversationId), "contributor-thankyou");
-  let sent = false;
-  await runTransaction(db, async (transaction) => {
-    const [conversationSnapshot, thankYouSnapshot] = await Promise.all([transaction.get(conversationRef), transaction.get(messageRef)]);
-    if (!conversationSnapshot.exists()) throw new Error("This submission conversation no longer exists.");
-    if (thankYouSnapshot.exists()) return;
-    const data = conversationSnapshot.data() as Partial<SubmissionConversation>;
-    transaction.set(messageRef, { senderId: input.senderId, senderRole: "creator", message, createdAt: serverTimestamp() });
-    transaction.update(conversationRef, {
-      updatedAt: serverTimestamp(),
-      lastMessageAt: serverTimestamp(),
-      lastMessagePreview: message.slice(0, 240),
-      lastSenderRole: "creator",
-      unreadForSubmitter: Number(data.unreadForSubmitter ?? 0) + 1,
-    });
-    sent = true;
-  });
-  return sent ? "sent" : "already-sent";
+  const existing = await getSubmissionConversationMessages(input.conversationId);
+  if (existing.some((item) => item.senderRole === "creator" && item.message.startsWith("🐍 Thank you for helping build Tiny Titans!"))) return "already-sent";
+  await sendSubmissionConversationMessage({ conversationId: input.conversationId, senderId: input.senderId, senderRole: "creator", message });
+  return "sent";
 }
 
 export async function markSubmissionConversationRead(conversationId: string, role: "creator" | "user") { if (!conversationId) return; await runTransaction(db, async (transaction) => { const ref = doc(conversations, conversationId); const snapshot = await transaction.get(ref); if (snapshot.exists()) transaction.update(ref, role === "creator" ? { unreadForCreator: 0 } : { unreadForSubmitter: 0 }); }); }
