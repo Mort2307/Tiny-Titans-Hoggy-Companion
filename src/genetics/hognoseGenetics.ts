@@ -1,4 +1,4 @@
-import type { GeneticsDatabase, LocusDefinition } from "./geneticsModel";
+import type { GeneticsDatabase, LocusDefinition } from "./geneticsModel.ts";
 
 const hognoseEvidence = [{
   sourceType: "specialist_database" as const,
