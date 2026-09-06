@@ -29,19 +29,29 @@ const learningFeatures = new Set([40, 41, 48]);
 const explanationFeatures = new Set([12]);
 const platformLiveFeatures = new Set([17, 44, 45, 49, 50]);
 
-function featureById(id: string | undefined): V50Feature | undefined {
-  const numeric = Number(id);
-  return Number.isInteger(numeric) ? TITAN_V50_FEATURES.find((feature) => feature.id === numeric) : undefined;
+function featureById(id: string | undefined): V50Feature | undefined { const numeric = Number(id); return Number.isInteger(numeric) ? TITAN_V50_FEATURES.find((feature) => feature.id === numeric) : undefined; }
+
+function recordDate(value: unknown): string | number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") return value;
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
+  if (value && typeof value === "object" && "toMillis" in value && typeof value.toMillis === "function") {
+    const millis = value.toMillis();
+    return Number.isFinite(millis) ? millis : "";
+  }
+  return "";
 }
+
+function recordNumber(value: unknown): number { const parsed = typeof value === "number" ? value : Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 
 function snakeRecords(snake: Snake) {
   const structural = snake as Snake & Record<string, unknown>;
   return {
-    weights: (snake.weightHistory ?? []).map((point) => ({ date: (point as Record<string, unknown>).date ?? (point as Record<string, unknown>).recordedAt ?? "", grams: Number((point as Record<string, unknown>).weight ?? (point as Record<string, unknown>).grams ?? 0) })).filter((point) => point.grams > 0),
-    feedings: (snake.feedingHistory ?? []).map((item) => ({ date: (item as Record<string, unknown>).date ?? (item as Record<string, unknown>).fedAt ?? "", label: String((item as Record<string, unknown>).food ?? (item as Record<string, unknown>).type ?? "Feeding recorded") })),
-    sheds: (snake.shedHistory ?? []).map((item) => ({ date: (item as Record<string, unknown>).date ?? (item as Record<string, unknown>).shedDate ?? "", label: String((item as Record<string, unknown>).status ?? "Shed recorded") })),
-    behaviour: ((structural.behaviourHistory as unknown[]) ?? []).map((item) => ({ date: String((item as Record<string, unknown>).date ?? ""), category: String((item as Record<string, unknown>).category ?? ""), label: String((item as Record<string, unknown>).label ?? (item as Record<string, unknown>).behaviour ?? "") })),
-    health: (snake.healthHistory ?? []).map((item) => ({ date: String((item as Record<string, unknown>).date ?? ""), label: String((item as Record<string, unknown>).title ?? "Health record") })),
+    weights: (snake.weightHistory ?? []).map((point) => { const data = point as Record<string, unknown>; return { date: recordDate(data.date ?? data.recordedAt), grams: recordNumber(data.weight ?? data.grams) }; }).filter((point) => point.grams > 0),
+    feedings: (snake.feedingHistory ?? []).map((item) => { const data = item as Record<string, unknown>; return { date: recordDate(data.date ?? data.fedAt), label: String(data.food ?? data.type ?? "Feeding recorded") }; }),
+    sheds: (snake.shedHistory ?? []).map((item) => { const data = item as Record<string, unknown>; return { date: recordDate(data.date ?? data.shedDate), label: String(data.status ?? "Shed recorded") }; }),
+    behaviour: ((structural.behaviourHistory as unknown[]) ?? []).map((item) => { const data = item as Record<string, unknown>; return { date: recordDate(data.date), category: String(data.category ?? ""), label: String(data.label ?? data.behaviour ?? "") }; }),
+    health: (snake.healthHistory ?? []).map((item) => { const data = item as Record<string, unknown>; return { date: recordDate(data.date), label: String(data.title ?? "Health record") }; }),
   };
 }
 
@@ -110,4 +120,4 @@ export default function TitanFeatureExperience() {
   </main>;
 }
 
-function passportText(recordEvents: Array<{ id: string; type: string; date: number; title: string }>): string { const passport = buildSnakePassport(recordEvents); return `${passport.eventCount} recorded events · ${passport.coveredRecordTypes.join(" • ") || "no dated record types yet"}.`; }
+function passportText(recordEvents: Array<{ id: string; type: string; date: number | string; title: string }>): string { const passport = buildSnakePassport(recordEvents); return `${passport.eventCount} recorded events · ${passport.coveredRecordTypes.join(" • ") || "no dated record types yet"}.`; }
