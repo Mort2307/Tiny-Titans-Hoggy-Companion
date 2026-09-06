@@ -1,44 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
+import { buildThenVsNow, type AnimalTimelineEvent } from "../intelligence/v50/animalIntelligenceEngine";
 import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
 import "./SnakeTimeline.css";
 
-function formatDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(date);
-}
-
-function eventIcon(type: string) {
-  return type === "Weight" ? "⚖️" : type === "Feeding" ? "🍽️" : type === "Shed" ? "🐍" : type === "Behaviour" ? "👀" : type === "Health" ? "❤️" : type === "Breeding" ? "🥚" : type === "Hatch" ? "🥚" : type === "Arrival" ? "🏠" : "📝";
-}
+function formatDate(value: string) { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(date); }
+function eventIcon(type: string) { return type === "Weight" ? "⚖️" : type === "Feeding" ? "🍽️" : type === "Shed" ? "🐍" : type === "Behaviour" ? "👀" : type === "Health" ? "❤️" : type === "Breeding" ? "🥚" : type === "Hatch" ? "🥚" : type === "Arrival" ? "🏠" : "📝"; }
+function destinationForEvent(event: { type: string; relatedRecordId?: string }, snakeId: string): string | null { switch (event.type) { case "Weight": return `/weights/${encodeURIComponent(snakeId)}${event.relatedRecordId ? `?record=${encodeURIComponent(event.relatedRecordId)}` : ""}`; case "Feeding": return `/feeding/${encodeURIComponent(snakeId)}`; case "Shed": return `/shedding/${encodeURIComponent(snakeId)}`; case "Behaviour": return `/behaviour/${encodeURIComponent(snakeId)}`; case "Health": return `/health/${encodeURIComponent(snakeId)}`; case "Breeding": return `/breeding/${encodeURIComponent(snakeId)}`; default: return null; } }
+function eventContext(event: AnimalTimelineEvent, previous?: AnimalTimelineEvent): string { if (!previous) return "This is the earliest dated event currently available in the assembled timeline."; const gapDays = Math.max(0, Math.round((event.date - previous.date) / 86_400_000)); if (gapDays === 0) return `Recorded on the same day as ${previous.label.toLowerCase()}.`; if (gapDays === 1) return `Recorded one day after ${previous.label.toLowerCase()}.`; if (gapDays <= 7) return `Recorded ${gapDays} days after ${previous.label.toLowerCase()}.`; return `Recorded ${gapDays} days after the preceding dated event.`; }
 
 export default function SnakeTimeline() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { user, loading, profileLoading } = useAuth();
-  const [record, setRecord] = useState<SnakeMasterRecord | null>(null);
-  const [error, setError] = useState("");
-  const [loadingRecord, setLoadingRecord] = useState(true);
-
-  useEffect(() => {
-    if (loading || profileLoading || !user || !id) return;
-    let active = true;
-    setLoadingRecord(true);
-    void getSnakeMasterRecord(user.uid, id).then((result) => {
-      if (!active) return;
-      if (!result) setError("This snake could not be found in your Tiny Titans account.");
-      else { setRecord(result); setError(""); }
-    }).catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load this timeline."); }).finally(() => { if (active) setLoadingRecord(false); });
-    return () => { active = false; };
-  }, [id, user, loading, profileLoading]);
+  const { id } = useParams<{ id: string }>(); const navigate = useNavigate(); const { user, loading, profileLoading } = useAuth();
+  const [record, setRecord] = useState<SnakeMasterRecord | null>(null); const [error, setError] = useState(""); const [loadingRecord, setLoadingRecord] = useState(true); const [selectedType, setSelectedType] = useState("all");
+  useEffect(() => { if (loading || profileLoading || !user || !id) return; let active = true; setLoadingRecord(true); void getSnakeMasterRecord(user.uid, id).then((result) => { if (!active) return; if (!result) setError("This snake could not be found in your Tiny Titans account."); else { setRecord(result); setError(""); } }).catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load this timeline."); }).finally(() => { if (active) setLoadingRecord(false); }); return () => { active = false; }; }, [id, user, loading, profileLoading]);
+  const filteredTimeline = useMemo(() => !record ? [] : selectedType === "all" ? record.timeline : record.timeline.filter((event) => event.type === selectedType), [record, selectedType]);
+  const thenVsNow = useMemo(() => !record ? null : buildThenVsNow({ weights: record.weights, feedings: record.feedings, sheds: record.sheds, behaviour: record.behaviours, health: record.health }), [record]);
+  const eventTypes = useMemo(() => record ? Array.from(new Set(record.timeline.map((event) => event.type))) : [], [record]);
 
   if (loading || profileLoading || loadingRecord) return <div className="page-container"><BackHomeButton /><h1>📜 Loading Timeline…</h1><section className="tracker-card"><p>Tiny Titans is assembling the chronological history from the canonical records.</p></section></div>;
   if (error || !record) return <div className="page-container"><BackHomeButton /><h1>📜 Timeline unavailable</h1><section className="tracker-card"><p>{error || "No timeline is available for this snake."}</p><button type="button" onClick={() => navigate(`/snakes/${id}`)}>Back to Snake Profile</button></section></div>;
 
-  return <div className="page-container tt-timeline-page"><BackHomeButton /><header className="tt-timeline-header"><div><p className="tt-intelligence-kicker">LIVING HISTORY</p><h1>📜 {record.snake.name}'s Timeline</h1><p>One chronological view of the records Tiny Titans currently has for this snake. This is a presentation layer — it does not create a second copy of the underlying records.</p></div><div className="tt-timeline-actions"><button type="button" onClick={() => navigate(`/snakes/${record.snake.id}/master-record`)}>Open Master Record</button><button type="button" onClick={() => navigate(`/snakes/${record.snake.id}`)}>Snake Profile</button></div></header>
+  return <div className="page-container tt-timeline-page"><BackHomeButton />
+    <header className="tt-timeline-header"><div><p className="tt-intelligence-kicker">LIVING HISTORY</p><h1>📜 {record.snake.name}'s Timeline</h1><p>One chronological view of the records Tiny Titans currently has for this snake. This is a presentation layer — it does not create a second copy of the underlying records.</p></div><div className="tt-timeline-actions"><button type="button" onClick={() => navigate(`/snakes/${record.snake.id}/master-record`)}>Open Master Record</button><button type="button" onClick={() => navigate(`/snakes/${record.snake.id}`)}>Snake Profile</button></div></header>
     <section className="tt-timeline-summary"><div><strong>{record.timeline.length}</strong><span>events</span></div><div><strong>{record.overview.totalWeightLogs}</strong><span>weights</span></div><div><strong>{record.overview.totalMeals}</strong><span>feeds</span></div><div><strong>{record.overview.totalSheds}</strong><span>sheds</span></div><div><strong>{record.overview.confidence.overall}</strong><span>intelligence confidence</span></div></section>
-    {record.timeline.length === 0 ? <section className="tt-intelligence-panel"><p className="tt-intelligence-kicker">EMPTY HISTORY</p><h2 className="tt-intelligence-title">The timeline is ready for its first event.</h2><p className="tt-intelligence-meta">Record a weight, feeding or shed and the event will appear here automatically.</p></section> : <div className="tt-timeline-list">{record.timeline.map((event) => <article className="tt-timeline-event" key={event.id}><div className="tt-timeline-marker" aria-hidden="true">{eventIcon(event.type)}</div><div className="tt-timeline-event-body"><div className="tt-timeline-event-meta"><span>{formatDate(event.date)}</span><span>{event.type}</span></div><h2>{event.title}</h2>{event.description && <p>{event.description}</p>}{event.relatedRecordId && <button type="button" onClick={() => { if (event.type === "Weight") navigate(`/weights/${record.snake.id}?record=${encodeURIComponent(event.relatedRecordId!)}`); else if (event.type === "Feeding") navigate(`/feeding/${record.snake.id}`); else if (event.type === "Shed") navigate(`/shedding/${record.snake.id}`); }}>Open record →</button>}</div></article>)}</div>}
+    {thenVsNow?.available && <section className="tt-intelligence-panel"><p className="tt-intelligence-kicker">THEN → NOW</p><h2 className="tt-intelligence-title">Timeline has enough data for a historical comparison</h2><p className="tt-intelligence-meta">Earliest recorded event: <strong>{thenVsNow.earlier?.label}</strong> · Latest: <strong>{thenVsNow.current?.label}</strong>. {thenVsNow.reason}</p></section>}
+    {eventTypes.length > 0 && <nav className="tt-timeline-filters" aria-label="Timeline filters"><button type="button" className={selectedType === "all" ? "is-active" : ""} onClick={() => setSelectedType("all")}>All</button>{eventTypes.map((type) => <button key={type} type="button" className={selectedType === type ? "is-active" : ""} onClick={() => setSelectedType(type)}>{eventIcon(type)} {type}</button>)}</nav>}
+    {filteredTimeline.length === 0 ? <section className="tt-intelligence-panel"><p className="tt-intelligence-kicker">EMPTY HISTORY</p><h2 className="tt-intelligence-title">The timeline is ready for its first event.</h2><p className="tt-intelligence-meta">Record a weight, feeding or shed and the event will appear here automatically.</p></section> : <div className="tt-timeline-list">{filteredTimeline.map((event, index) => { const previous = filteredTimeline[index + 1]; const context = eventContext({ date: Date.parse(`${event.date}T00:00:00`), type: event.type.toLowerCase() as AnimalTimelineEvent["type"], label: event.title }, previous ? { date: Date.parse(`${previous.date}T00:00:00`), type: previous.type.toLowerCase() as AnimalTimelineEvent["type"], label: previous.title } : undefined); const destination = destinationForEvent(event, record.snake.id); return <article className="tt-timeline-event" key={event.id}><div className="tt-timeline-marker" aria-hidden="true">{eventIcon(event.type)}</div><div className="tt-timeline-event-body"><div className="tt-timeline-event-meta"><span>{formatDate(event.date)}</span><span>{event.type}</span></div><h2>{event.title}</h2>{event.description && <p>{event.description}</p>}<p className="tt-timeline-event-context"><strong>Context:</strong> {context}</p><div className="tt-timeline-event-actions">{destination && <button type="button" onClick={() => navigate(destination)}>Open record →</button>}<button type="button" onClick={() => navigate(`/snakes/${record.snake.id}/master-record#${encodeURIComponent(event.id)}`)}>Open in Master Record →</button></div><small className="tt-timeline-event-note">Timeline context is descriptive only; it does not establish causation.</small></div></article>; })}</div>}
   </div>;
 }
