@@ -1,0 +1,8 @@
+STAGE: species genetics framework
+
+Shared coverage model added for every species in the registry.
+Species genetics status is explicit: mapped / partial / baseline-only.
+Evidence-backed trait counts are exposed for future admin/review tooling.
+Build validation now checks the coverage API wiring.
+
+NEXT: populate species-specific genetics records in evidence-reviewed batches, starting with the highest-demand captive snakes, while preserving unresolved states for disputed or insufficiently documented traits.
