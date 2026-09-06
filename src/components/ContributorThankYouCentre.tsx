@@ -25,7 +25,7 @@ export default function ContributorThankYouCentre({ onClose }: { onClose: () => 
   const [contributors, setContributors] = useState<HistoricalContributor[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendingUid, setSendingUid] = useState<string | null>(null);
-  const [results, setResults] = useState<Record<string, "sent" | "already-sent" | "error">}>({});
+  const [results, setResults] = useState<Record<string, "sent" | "already-sent" | "error">>({});
   const [error, setError] = useState("");
 
   async function scan() {
