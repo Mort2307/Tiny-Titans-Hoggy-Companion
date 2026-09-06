@@ -13,6 +13,8 @@ export type MasterMorphDefinition = MorphDefinition & MorphIntelligenceMetadata 
   sourceLinks?: MorphEvidenceSourceDefinition[];
   evidenceStatus?: string;
   evidenceNote?: string;
+  /** Explicit database-level permission for Mendelian calculator use. */
+  calculatorEligible?: boolean;
   contains?: string[];
   taxonomyStatus?: FullMorphTaxonomyEntry["taxonomyStatus"];
 };
@@ -63,6 +65,7 @@ function applyEvidenceMetadata(morph: MasterMorphDefinition): MasterMorphDefinit
       sourceLinks,
       sourceUrl: sourceLinks[0]?.url ?? morph.sourceUrl,
       sourceLabel: sourceLinks[0]?.label ?? morph.sourceLabel,
+      calculatorEligible: morph.calculatorEligible ?? (evidence.status === "confirmed" && morph.isGene && morph.kind === "Gene" && ["Recessive", "Incomplete Dominant", "Dominant"].includes(morph.inheritance)),
     } : {}),
   };
 }
@@ -122,6 +125,7 @@ function hasConfirmedEvidence(morph: MasterMorphDefinition): boolean {
 }
 
 function isCalculatorEligible(morph: MasterMorphDefinition): boolean {
+  if (morph.calculatorEligible === false) return false;
   if (morph.isProject || morph.kind === "Line-bred" || morph.kind === "Polygenic") return false;
   if (morph.verification === "Disputed" || morph.verification === "Unverified") return false;
   if (morph.kind === "Gene") return morph.isGene && hasConfirmedEvidence(morph);
@@ -172,4 +176,4 @@ export function getMorphEvidence(morph: MasterMorphDefinition): {
   };
 }
 
-export type { MorphEvidenceLevel };
+export type { MorphEvidenceLevel }; 
