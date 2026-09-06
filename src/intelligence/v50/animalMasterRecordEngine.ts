@@ -1,4 +1,5 @@
 import type { GrowthInsight, AnimalTimelineEvent, BehaviourProfile } from "./animalIntelligenceEngine";
+import { calculateTitanDataConfidence, type TitanDataConfidence } from "./titanDataConfidenceEngine";
 
 export interface MasterRecordDomain {
   id: string;
@@ -20,6 +21,7 @@ export interface AnimalMasterRecord {
   generatedAt: number;
   eventCount: number;
   coverageScore: number;
+  dataConfidence: TitanDataConfidence;
   domains: MasterRecordDomain[];
   latestEvent?: AnimalTimelineEvent;
   growth: GrowthInsight;
@@ -40,6 +42,12 @@ interface MasterRecordInput {
     health: number;
     journal: number;
     passport: number;
+  };
+  evidence?: {
+    explicitSourceCount?: number;
+    confirmedCount?: number;
+    reportedCount?: number;
+    uncertainCount?: number;
   };
 }
 
@@ -64,33 +72,34 @@ export function buildAnimalMasterRecord(input: MasterRecordInput): AnimalMasterR
 
   const activeDomains = domains.filter((domain) => domain.state === "active").length;
   const coverageScore = Math.round((activeDomains / domains.length) * 100);
-  const suggestions: MasterRecordSuggestion[] = [];
+  const latest = input.timeline.at(-1)?.date;
+  const dataConfidence = calculateTitanDataConfidence({
+    recordCount: input.timeline.length,
+    datedRecordCount: input.timeline.filter((event) => Boolean(event.date)).length,
+    explicitSourceCount: input.evidence?.explicitSourceCount ?? input.timeline.length,
+    confirmedCount: input.evidence?.confirmedCount,
+    reportedCount: input.evidence?.reportedCount ?? input.timeline.length,
+    uncertainCount: input.evidence?.uncertainCount,
+    lastRecordedAt: typeof latest === "number" ? latest : latest ? Date.parse(String(latest)) : undefined,
+  });
 
-  if (input.counts.weights < 2) {
-    suggestions.push({ id: "weight-baseline", title: "Build a growth baseline", reason: "Two or more dated weight records are needed before Tiny Titans can compare change over time.", destination: "/weights", confidence: 0.96 });
-  }
-  if (input.counts.behaviour === 0) {
-    suggestions.push({ id: "behaviour-baseline", title: "Start the behaviour record", reason: "Tiny Titans does not infer personality from silence. One or more observations create an evidence trail.", destination: "/behaviour", confidence: 0.94 });
-  }
-  if (input.counts.feedings === 0) {
-    suggestions.push({ id: "feeding-history", title: "Log the first feeding", reason: "Feeding history gives the wider intelligence layer temporal context for growth and routine changes.", destination: "/feeding", confidence: 0.93 });
-  }
-  if (input.counts.sheds === 0) {
-    suggestions.push({ id: "shed-history", title: "Start shed history", reason: "Shed dates make the animal timeline more informative without assuming anything about health.", destination: "/shedding", confidence: 0.9 });
-  }
-  if (input.counts.health === 0) {
-    suggestions.push({ id: "health-baseline", title: "Keep a health baseline", reason: "A dated baseline makes later changes easier to review with a veterinarian if concerns arise.", destination: "/health", confidence: 0.88 });
-  }
+  const suggestions: MasterRecordSuggestion[] = [];
+  if (input.counts.weights < 2) suggestions.push({ id: "weight-baseline", title: "Build a growth baseline", reason: "Two or more dated weight records are needed before Tiny Titans can compare change over time.", destination: "/weights", confidence: 0.96 });
+  if (input.counts.behaviour === 0) suggestions.push({ id: "behaviour-baseline", title: "Start the behaviour record", reason: "Tiny Titans does not infer personality from silence. One or more observations create an evidence trail.", destination: "/behaviour", confidence: 0.94 });
+  if (input.counts.feedings === 0) suggestions.push({ id: "feeding-history", title: "Log the first feeding", reason: "Feeding history gives the wider intelligence layer temporal context for growth and routine changes.", destination: "/feeding", confidence: 0.93 });
+  if (input.counts.sheds === 0) suggestions.push({ id: "shed-history", title: "Start shed history", reason: "Shed dates make the animal timeline more informative without assuming anything about health.", destination: "/shedding", confidence: 0.9 });
+  if (input.counts.health === 0) suggestions.push({ id: "health-baseline", title: "Keep a health baseline", reason: "A dated baseline makes later changes easier to review with a veterinarian if concerns arise.", destination: "/health", confidence: 0.88 });
 
   return {
     generatedAt: Date.now(),
     eventCount: input.timeline.length,
     coverageScore,
+    dataConfidence,
     domains,
     latestEvent: input.timeline.at(-1),
     growth: input.growth,
     behaviour: input.behaviour,
     suggestions: suggestions.slice(0, 4),
-    note: "The Master Record is a connected summary of explicit keeper records. It does not diagnose, infer missing facts, or replace the underlying source records.",
+    note: "The Master Record is a connected summary of explicit keeper records. Confidence describes evidence quality, not biological certainty. It does not diagnose, infer missing facts, or replace the underlying source records.",
   };
 }
