@@ -7,14 +7,42 @@ import type { BreedingPairing } from "./Breeding";
 import type { Enclosure } from "./Enclosure";
 import type { TimelineEvent } from "./Timeline";
 
-export type WeightTrackingFrequency =
-  | "Weekly"
-  | "Fortnightly"
-  | "Every 3 Weeks"
-  | "Monthly";
-
+export type WeightTrackingFrequency = "Weekly" | "Fortnightly" | "Every 3 Weeks" | "Monthly";
 export type SnakeSex = "Male" | "Female" | "Unknown";
 export type SnakeStatus = "Active" | "Sold" | "Deceased" | "Archived";
+
+export type GeneticEvidenceKind = "scientific-literature" | "specialist-database" | "breeder-record" | "community" | "keeper-recorded";
+export type GeneticConfidence = "high" | "moderate" | "low" | "unknown";
+
+export type AnimalGeneticsGeneRecord = {
+  geneId: string;
+  status: "confirmed" | "probable" | "possible" | "unresolved" | "clear";
+  copies?: 1 | 2;
+  evidenceKind: GeneticEvidenceKind;
+  confidence: GeneticConfidence;
+  sources?: string[];
+  notes?: string;
+};
+
+export type AnimalGeneticsLocusRecord = {
+  locusId: string;
+  alleleA: string;
+  alleleB: string;
+  status: "confirmed" | "probable" | "possible" | "unresolved";
+  evidenceKind: GeneticEvidenceKind;
+  confidence: GeneticConfidence;
+  sources?: string[];
+  notes?: string;
+};
+
+export type AnimalGeneticsProfile = {
+  speciesId: string;
+  genes?: AnimalGeneticsGeneRecord[];
+  loci?: AnimalGeneticsLocusRecord[];
+  visualMorphs?: string[];
+  lastVerifiedAt?: string;
+  notes?: string;
+};
 
 export type FeedingSchedule = {
   enabled: boolean;
@@ -31,7 +59,6 @@ export type Snake = {
   name: string;
   species: string;
   photo: string;
-  /** Legacy aliases retained for the 3D room renderer and older persisted records. */
   imageUrl?: string;
   photoUrl?: string;
   sex: SnakeSex;
@@ -43,13 +70,14 @@ export type Snake = {
   customMorph: string;
   hets: Het[];
   customHets: string;
+  /** Structured, evidence-aware genetics used by the authoritative calculator when present. */
+  geneticsProfile?: AnimalGeneticsProfile;
   startingWeight: number | null;
   startingWeightDate: string;
   weight: number | null;
   lastWeighedDate: string;
   weightHistory: WeightRecord[];
   weightTracking: { enabled: boolean; frequency: WeightTrackingFrequency };
-  /** Most recently recorded body length in centimetres. Optional so older records remain valid. */
   lengthCm?: number | null;
   feedingHistory?: FeedingRecord[];
   feedingSchedule?: FeedingSchedule;
