@@ -4,12 +4,16 @@ import path from "node:path";
 const root = path.resolve("src/data/species");
 const registry = fs.readFileSync(path.join(root, "speciesRegistry.ts"), "utf8");
 const coverage = fs.readFileSync(path.join(root, "speciesGeneticsCoverage.ts"), "utf8");
-const expanded = fs.readFileSync(path.join(root, "speciesGeneticsCataloguesExpanded.ts"), "utf8");
+const genetics = fs.readFileSync(path.join(root, "speciesGenetics.ts"), "utf8");
+const catalogue = fs.readFileSync(path.join(root, "speciesGeneticsCatalogues.ts"), "utf8");
 const batch = fs.readFileSync(path.join(root, "speciesGeneticsExpansionBatch1.ts"), "utf8");
 
 if (!coverage.includes('"mapped"') || !coverage.includes('"partial"') || !coverage.includes('"baseline-only"')) throw new Error("Species genetics coverage states are incomplete.");
 if (!coverage.includes("getAllSpeciesGeneticsCoverage") || !coverage.includes("getSpeciesGeneticsCoverageSummary")) throw new Error("Species genetics coverage API is incomplete.");
-if (!expanded.includes("SPECIES_GENETICS_CATALOGUES") || !expanded.includes("SPECIES_GENETICS_EXPANSION_BATCH_1")) throw new Error("Expanded species genetics read model is not wired to the base catalogue and expansion batches.");
+if (!coverage.includes("SPECIES_GENETICS_CATALOGUES") || !coverage.includes("SPECIES_GENETICS_EXPANSION_BATCH_1")) throw new Error("Coverage is not wired to the canonical catalogue and explicit evidence batch.");
+if (!genetics.includes("searchGenetics") || !genetics.includes("SPECIES_GENETICS_CATALOGUES")) throw new Error("Species genetics search is not wired to the canonical registry.");
+if (fs.existsSync(path.join(root, "speciesGeneticsCataloguesExpanded.ts"))) throw new Error("Obsolete expanded species genetics wrapper still exists.");
+if (!catalogue.includes("export const SPECIES_GENETICS_CATALOGUES")) throw new Error("Canonical species genetics catalogue is missing.");
 if (!batch.includes('"Lampropeltis triangulum"')) throw new Error("Expansion batch 1 is missing the Milk Snake catalogue.");
 if (!batch.includes('"Albino"') || !batch.includes('"Hypo"') || !batch.includes('"Anerythristic"')) throw new Error("Milk Snake expansion batch is missing required evidence-backed traits.");
 
@@ -19,4 +23,4 @@ const speciesIds = new Set([
 ]);
 if (speciesIds.size < 100) throw new Error(`Expected 100+ registered snake species; detected ${speciesIds.size}.`);
 
-console.log(`Species genetics coverage contract passed: ${speciesIds.size} registered species are covered by the shared status model.`);
+console.log(`Species genetics coverage contract passed: ${speciesIds.size} registered species are covered by the canonical registry + explicit evidence-batch composition.`);
