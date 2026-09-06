@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { calculatorNamedCombinations } from "../data/geneticsComboRegistry";
-import { getSpeciesCalculatorMorphs, getSpeciesGeneticsStatus, getSpeciesHetGenes } from "../data/species/speciesGenetics";
+import { getSpeciesCombinationMorphs, getSpeciesCalculatorMorphs, getSpeciesGeneticsStatus, getSpeciesHetGenes } from "../data/species/speciesGenetics";
 import ParentSelector, { snakeToSelection, type ParentSelection } from "../components/ParentSelector";
 import ResultCard from "../components/ResultCard";
 import MorphReversalPanel from "../components/MorphReversalPanel";
@@ -47,7 +47,7 @@ export default function Calculator() {
   useEffect(() => { setMother({ ...EMPTY_PARENT }); setFather({ ...EMPTY_PARENT }); setPreloadedPairing(false); }, [selectedSpeciesId]);
   useEffect(() => { if (snakesLoading || !speciesSnakes.length || preloadedPairing || (!requestedMaleId && !requestedFemaleId) || !hasDocumentedLoci) return; const male = requestedMaleId ? speciesSnakes.find((snake) => snake.id === requestedMaleId && snake.sex === "Male") : undefined; const female = requestedFemaleId ? speciesSnakes.find((snake) => snake.id === requestedFemaleId && snake.sex === "Female") : undefined; if (male || female) { if (female) setMother(snakeToSelection(female)); if (male) setFather(snakeToSelection(male)); setPreloadedPairing(true); } }, [speciesSnakes, snakesLoading, requestedMaleId, requestedFemaleId, preloadedPairing, hasDocumentedLoci]);
   useEffect(() => { if (loading || profileLoading || !user) return; let cancelled = false; setSnakesLoading(true); void getUserSnakes(user.uid).then((loaded) => { if (!cancelled) { setSnakes(loaded); setSnakesError(null); } }).catch((error: unknown) => { if (!cancelled) setSnakesError(error instanceof Error ? error.message : "Unable to load your snakes."); }).finally(() => { if (!cancelled) setSnakesLoading(false); }); return () => { cancelled = true; }; }, [user, loading, profileLoading]);
-  const allMorphs = useMemo(() => { const recognised = speciesDefinitions; const namedCombinations = selectedSpeciesId === "heterodon-nasicus" ? calculatorNamedCombinations : []; const seen = new Set<string>(); return [...recognised, ...namedCombinations].filter((morph) => { const key = `${morph.geneId.toLowerCase()}:${morph.name.toLowerCase()}`; if (seen.has(key)) return false; seen.add(key); return true; }); }, [speciesDefinitions, selectedSpeciesId]);
+  const allMorphs = useMemo(() => { const recognised = speciesDefinitions; const namedCombinations = selectedSpeciesId === "heterodon-nasicus" ? calculatorNamedCombinations : getSpeciesCombinationMorphs(selectedSpeciesId); const seen = new Set<string>(); return [...recognised, ...namedCombinations].filter((morph) => { const key = `${morph.geneId.toLowerCase()}:${morph.name.toLowerCase()}`; if (seen.has(key)) return false; seen.add(key); return true; }); }, [speciesDefinitions, selectedSpeciesId]);
   const recognisedVisualOptions = useMemo(() => uniqueMorphOptions(speciesDefinitions), [speciesDefinitions]);
   const hetOptions = useMemo(() => uniqueMorphOptions(getSpeciesHetGenes(selectedSpeciesId)), [selectedSpeciesId]);
   const femaleGenetics = useMemo(() => toParentGenetics(mother), [mother]);
