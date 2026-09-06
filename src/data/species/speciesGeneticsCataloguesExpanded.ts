@@ -2,6 +2,7 @@ import type { MasterMorphDefinition } from "../masterMorphDatabase";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_EXPANSION_BATCH_1 } from "./speciesGeneticsExpansionBatch1";
 import { SPECIES_GENETICS_EXPANSION_BATCH_3 } from "./speciesGeneticsExpansionBatch3";
+import { SPECIES_GENETICS_EXPANSION_BATCH_4 } from "./speciesGeneticsExpansionBatch4";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
 const identitySet = (trait: MasterMorphDefinition) => new Set([normalise(trait.geneId), normalise(trait.name), ...trait.aliases.map(normalise)]);
@@ -24,7 +25,7 @@ function mergeTraits(base: MasterMorphDefinition[], ...expansions: MasterMorphDe
 }
 
 const batchBySpecies: Record<string, MasterMorphDefinition[]> = {};
-for (const batch of [SPECIES_GENETICS_EXPANSION_BATCH_1, SPECIES_GENETICS_EXPANSION_BATCH_3]) {
+for (const batch of [SPECIES_GENETICS_EXPANSION_BATCH_1, SPECIES_GENETICS_EXPANSION_BATCH_3, SPECIES_GENETICS_EXPANSION_BATCH_4]) {
   for (const [speciesName, traits] of Object.entries(batch)) {
     batchBySpecies[speciesName] = [...(batchBySpecies[speciesName] ?? []), ...traits];
   }
