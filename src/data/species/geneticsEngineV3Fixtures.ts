@@ -8,6 +8,9 @@ export type GeneticsEngineV3Fixture = {
   expected: {
     certainty?: "exact" | "bounded";
     requiredVisual?: string[];
+    requiredPhenotype?: string[];
+    requiredProbabilityRange?: [number, number];
+    requiredProbability?: number;
     mustIncludeDiagnostic?: string;
     mustNotInventPercentage?: boolean;
   };
@@ -16,17 +19,31 @@ export type GeneticsEngineV3Fixture = {
 export const GENETICS_ENGINE_V3_FIXTURES: GeneticsEngineV3Fixture[] = [
   {
     id: "retic-unknown-tiger-x-normal",
-    description: "A visually Tiger Reticulated Python without known zygosity must produce bounded possibilities, not a fabricated 50/50 prior.",
+    description: "A visually Tiger Reticulated Python without known zygosity must produce bounded possibilities, never a fabricated prior.",
     mother: { speciesId: "malayopython-reticulatus", visualMorphs: ["Tiger"], hets: [] },
     father: { speciesId: "malayopython-reticulatus", visualMorphs: [], hets: [] },
-    expected: { certainty: "bounded", mustNotInventPercentage: true },
+    expected: { certainty: "bounded", requiredProbabilityRange: [0.5, 1], mustNotInventPercentage: true },
   },
   {
-    id: "corn-motley-x-stripe-allelic-safety",
-    description: "Motley and Stripe are alleles at the same CLCN2 locus and must not be calculated as independent genes.",
+    id: "ball-piebald-het-x-het",
+    description: "Two confirmed 100% Het Piebald Ball Pythons must produce the classic exact 25/50/25 genotype distribution.",
+    mother: { speciesId: "python-regius", visualMorphs: [], hets: [{ gene: "Piebald", percentage: "100%" }] },
+    father: { speciesId: "python-regius", visualMorphs: [], hets: [{ gene: "Piebald", percentage: "100%" }] },
+    expected: { certainty: "exact" },
+  },
+  {
+    id: "corn-motley-x-stripe-allelic-locus",
+    description: "Motley and Stripe must cross through the CLCN2 allele matrix, yielding the documented heteroallelic intermediate phenotype rather than independent-gene arithmetic.",
     mother: { speciesId: "pantherophis-guttatus", visualMorphs: ["Motley"], hets: [] },
     father: { speciesId: "pantherophis-guttatus", visualMorphs: ["Stripe"], hets: [] },
-    expected: { mustIncludeDiagnostic: "Alleles at pantherophis-guttatus-clcn2-pattern", mustNotInventPercentage: true },
+    expected: { certainty: "exact", requiredPhenotype: ["Motley/Stripe (intermediate)"], requiredProbability: 1 },
+  },
+  {
+    id: "corn-motley-het-x-normal",
+    description: "A Corn Snake carrying 100% Het Motley must be treated as a wild-type/Motley allele pair at the CLCN2 locus.",
+    mother: { speciesId: "pantherophis-guttatus", visualMorphs: [], hets: [{ gene: "Motley", percentage: "100%" }] },
+    father: { speciesId: "pantherophis-guttatus", visualMorphs: [], hets: [] },
+    expected: { certainty: "exact" },
   },
   {
     id: "hognose-grey-fog-components",
