@@ -1,7 +1,7 @@
 import type { GrowthInsight, AnimalTimelineEvent, BehaviourProfile } from "./animalIntelligenceEngine";
 import { calculateTitanDataConfidence, type TitanDataConfidence } from "./titanDataConfidenceEngine";
 import { detectTitanChanges, type TitanChangeSignal } from "./titanChangeDetector";
-import { detectCrossDomainSignals, type TitanCrossDomainSignal } from "./titanCrossDomainEngine";
+import { detectCrossDomainSignals, type TitanCrossDomainSignal, type TitanDomainEvent } from "./titanCrossDomainEngine";
 
 export interface MasterRecordDomain { id:string; label:string; count:number; state:"active"|"empty"|"insufficient"; detail:string }
 export interface MasterRecordSuggestion { id:string; title:string; reason:string; destination:string; confidence:number }
@@ -14,7 +14,7 @@ export function buildAnimalMasterRecord(input:MasterRecordInput):AnimalMasterRec
   const coverageScore=Math.round((domains.filter(d=>d.state==="active").length/domains.length)*100);const latest=input.timeline.at(-1)?.date;
   const dataConfidence=calculateTitanDataConfidence({recordCount:input.timeline.length,datedRecordCount:input.timeline.filter(e=>Boolean(e.date)).length,explicitSourceCount:input.evidence?.explicitSourceCount??input.timeline.length,confirmedCount:input.evidence?.confirmedCount,reportedCount:input.evidence?.reportedCount??input.timeline.length,uncertainCount:input.evidence?.uncertainCount,lastRecordedAt:typeof latest==="number"?latest:latest?Date.parse(String(latest)):undefined});
   const changes=detectTitanChanges(input.timeline);
-  const crossDomainSignals=detectCrossDomainSignals(input.timeline.map((event,index)=>({id:`${event.type}-${event.date}-${index}`,domain:domainForType(event.type),timestamp:event.date,label:event.label})));
+  const crossDomainSignals=detectCrossDomainSignals(input.timeline.map((event,index)=>({id:`${event.type}-${event.date}-${index}`,domain:domainForType(event.type) as TitanDomainEvent["domain"],timestamp:event.date,label:event.label})));
   const suggestions:MasterRecordSuggestion[]=[];
   if(input.counts.weights<2)suggestions.push({id:"weight-baseline",title:"Build a growth baseline",reason:"Two or more dated weight records are needed before Tiny Titans can compare change over time.",destination:"/weights",confidence:.96});
   if(input.counts.behaviour===0)suggestions.push({id:"behaviour-baseline",title:"Start the behaviour record",reason:"Tiny Titans does not infer personality from silence. One or more observations create an evidence trail.",destination:"/behaviour",confidence:.94});
