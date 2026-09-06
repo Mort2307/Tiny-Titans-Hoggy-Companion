@@ -19,7 +19,7 @@ const EMPTY_PARENT: ParentSelection = { morphs: [], hets: [] };
 const TRACKING_STORAGE_PREFIX = "tiny-titans-genetics-tracked:";
 type CalculatorMode = "pairing" | "reversal";
 function uniqueMorphOptions<T extends { geneId: string; name: string }>(options: T[]): T[] { const seen = new Set<string>(); return options.filter((option) => { const key = `${option.geneId.trim().toLowerCase()}:${option.name.trim().toLowerCase().replace(/\s+/g, " ")}`; if (seen.has(key)) return false; seen.add(key); return true; }); }
-function toParentGenetics(selection: ParentSelection): ParentGenetics { return { morphs: [...selection.morphs], hets: selection.hets.map((het) => het.gene), hetPercentages: Object.fromEntries(selection.hets.map((het) => [het.gene, het.percentage])) }; }
+function toParentGenetics(selection: ParentSelection): ParentGenetics { return { morphs: [...selection.morphs], hets: selection.hets.map((het) => het.gene), hetPercentages: Object.fromEntries(selection.hets.map((het) => [het.gene, het.percentage])), knownGeneCopies: selection.knownGeneCopies }; }
 
 export default function Calculator() {
   const { user, loading, profileLoading } = useAuth();
