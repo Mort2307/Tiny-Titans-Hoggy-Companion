@@ -65,7 +65,7 @@ function TitanIntelligence() {
                 <div className="titan-feature-top"><span>#{feature.id}</span><span className={`titan-status titan-status-${feature.status}`}>{feature.status}</span></div>
                 <h3>{feature.name}</h3>
                 <p>{FEATURE_SUMMARIES[feature.id] ?? "Capability summary is not recorded."}</p>
-                {feature.route && safeDestinations.has(feature.route) ? <Link to={feature.route}>Open connected experience →</Link> : <small className="titan-feature-not-ready">Destination is deliberately not exposed until its page exists.</small>}
+                <Link to={`/titan-intelligence/feature/${feature.id}`}>Open dedicated experience →</Link>
               </article>
             ))}
           </div>
