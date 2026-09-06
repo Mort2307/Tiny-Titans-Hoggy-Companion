@@ -30,8 +30,26 @@ const connected = buildTitanProactiveIntelligence({
 });
 assert.ok(connected.signals.some((item) => item.id === "feeding-weight-context"));
 assert.ok(connected.signals.some((item) => item.id === "weight-feeding-context"));
+assert.equal(connected.signals.find((item) => item.id === "feeding-weight-context")?.actionPath, "/weights");
+assert.equal(connected.signals.find((item) => item.id === "weight-feeding-context")?.actionPath, "/feeding");
 assert.ok(connected.context.relevantRoutes.includes("/husbandry"));
+assert.ok(connected.context.relevantRoutes.includes("/feeding"));
+assert.ok(connected.context.relevantRoutes.includes("/weights"));
 assert.equal(connected.context.animalId, undefined);
+
+const crossDomain = buildTitanProactiveIntelligence({
+  counts: { snakes: 1, weights: 3, feedings: 3, sheds: 2, health: 0, behaviour: 2, husbandry: 2, breeding: 1 },
+  recentEventTypes: ["ShedRecorded", "BehaviourObserved", "MicroclimateRecorded", "GeneticsChanged", "BreedingProjectChanged"],
+  animalId: "demo-animal",
+  speciesId: "western-hognose",
+});
+assert.ok(crossDomain.signals.some((item) => item.id === "shed-weight-context"));
+assert.ok(crossDomain.signals.some((item) => item.id === "behaviour-context"));
+assert.ok(crossDomain.signals.some((item) => item.id === "microclimate-shed-context"));
+assert.ok(crossDomain.signals.some((item) => item.id === "genetics-breeding-context"));
+assert.ok(crossDomain.signals.some((item) => item.id === "breeding-species-context"));
+assert.ok(crossDomain.context.relevantRoutes.includes("/breeding"));
+assert.ok(crossDomain.context.relevantRoutes.includes("/behaviour"));
 
 const stale = buildTitanProactiveIntelligence({
   counts: { snakes: 1, weights: 2, feedings: 2, sheds: 2, health: 1, behaviour: 1, husbandry: 1, breeding: 0 },
@@ -39,6 +57,7 @@ const stale = buildTitanProactiveIntelligence({
   animalId: "demo-animal",
 });
 assert.equal(stale.context.animalId, "demo-animal");
-assert.equal(stale.recommendations.filter((item) => item.destination === "/").length, 2);
+assert.equal(stale.recommendations.find((item) => item.id === "stale-weight")?.destination, "/weights");
+assert.equal(stale.recommendations.find((item) => item.id === "stale-husbandry")?.destination, "/husbandry");
 
 console.log("✅ Titan proactive intelligence contract tests passed.");
