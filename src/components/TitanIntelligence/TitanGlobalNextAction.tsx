@@ -5,6 +5,7 @@ import { hasFullIntelligenceAccess } from "../../services/intelligenceAccessServ
 import { refreshTitanDecisionStateForAnimals, subscribeToTitanDecisionState, type TitanDecision } from "../../services/titanDecisionStateService";
 import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiveIntelligenceService";
 import "../../styles/titanNextAction.css";
+import "../../styles/titanGlobalNextAction.css";
 
 function animalIdFromPath(pathname: string): string | null {
   const match = pathname.match(/^\/snakes\/([^/]+)/);
@@ -20,26 +21,46 @@ export default function TitanGlobalNextAction() {
   const animalId = animalIdFromPath(location.pathname);
 
   useEffect(() => {
-    if (!user || loading || profileLoading || !animalId) { setEnabled(false); setDecision(null); return; }
+    if (!user || loading || profileLoading || !animalId) {
+      setEnabled(false);
+      setDecision(null);
+      return undefined;
+    }
     let cancelled = false;
+    let cleanup = () => undefined;
+
     void hasFullIntelligenceAccess(user.uid).then((available) => {
       if (cancelled) return;
       setEnabled(available);
       if (!available) return;
-      const sync = (state: { decisions: readonly TitanDecision[] }) => setDecision(state.decisions.find((item) => item.status === "active" && item.animalId === animalId) ?? null);
+
+      const sync = (state: { decisions: readonly TitanDecision[] }) => {
+        if (cancelled) return;
+        setDecision(state.decisions.find((item) => item.status === "active" && item.animalId === animalId) ?? null);
+      };
       const unsubscribe = subscribeToTitanDecisionState(user.uid, sync);
       const reactiveUnsubscribe = subscribeToTitanIntelligenceUpdates((detail) => {
         if (detail.event?.animalId !== animalId) return;
         void refreshTitanDecisionStateForAnimals(user.uid, [animalId], { type: detail.event.type, occurredAt: detail.event.occurredAt }).then(sync).catch(() => undefined);
       }, user.uid);
+      cleanup = () => { unsubscribe(); reactiveUnsubscribe(); };
+
       void refreshTitanDecisionStateForAnimals(user.uid, [animalId]).then(sync).catch(() => undefined);
-      const current = localStorage.getItem(`tinyTitans:titan-decision-state:${user.uid}`);
-      if (current) {
-        try { const parsed = JSON.parse(current) as { decisions?: TitanDecision[] }; sync({ decisions: parsed.decisions ?? [] }); } catch { /* cache is optional */ }
-      }
-      return () => { unsubscribe(); reactiveUnsubscribe(); };
-    }).catch(() => { if (!cancelled) setEnabled(false); });
-    return () => { cancelled = true; };
+      try {
+        const current = localStorage.getItem(`tinyTitans:titan-decision-state:${user.uid}`);
+        if (current) {
+          const parsed = JSON.parse(current) as { decisions?: TitanDecision[] };
+          sync({ decisions: parsed.decisions ?? [] });
+        }
+      } catch { /* cached decision state is optional */ }
+    }).catch(() => {
+      if (!cancelled) setEnabled(false);
+    });
+
+    return () => {
+      cancelled = true;
+      cleanup();
+    };
   }, [user, loading, profileLoading, animalId]);
 
   if (!enabled || !decision || !animalId) return null;
