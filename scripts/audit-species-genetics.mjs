@@ -15,8 +15,8 @@ if (fs.existsSync(path.join(root, "speciesGeneticsCataloguesExpanded.ts"))) thro
 if (!batch.includes("Lampropeltis triangulum")) throw new Error("Milk Snake expansion batch is missing.");
 
 const speciesIds = new Set([
-  ...[...registry.matchAll(/\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*'([^']+)'/g)].map((m) => m[1]),
-  ...[...registry.matchAll(/\bid:\s*'([^']+)'/g)].map((m) => m[1]),
+  ...[...registry.matchAll(/\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*["']([^"']+)["']/g)].map((m) => m[1]),
+  ...[...registry.matchAll(/\bid:\s*["']([^"']+)["']/g)].map((m) => m[1]),
 ]);
 if (speciesIds.size < 100) throw new Error(`Expected 100+ registered species; detected ${speciesIds.size}.`);
 
