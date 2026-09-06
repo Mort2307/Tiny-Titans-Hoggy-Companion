@@ -17,40 +17,32 @@ import {
 import { getSpeciesGeneticsLocus, getSpeciesLocusMembers } from "../data/species/speciesGeneticsLoci";
 
 export type CopyKnowledge = 0 | 1 | 2 | "unknown";
-
 export type V3ParentGenetics = {
   visualMorphs: string[];
   hets: Array<{ gene: string; percentage: "100%" | "66%" | "50%" }>;
   speciesId: string;
   knownGeneCopies?: Record<string, 1 | 2>;
 };
-
 export type V3GeneState = { geneId: string; copies: CopyKnowledge; visual: boolean };
 export type V3Gamete = { geneId: string; copies: 0 | 1; probability: number };
-
 export type V3Outcome = {
   visualMorphs: string[];
   hets: string[];
   geneStates: Array<{ geneId: string; copies: 0 | 1 | 2 }>;
   certainty: "exact" | "bounded";
   probability?: number;
-  genotypeScenarios?: Array<{ visualMorphs: string[]; hets: string[]; probability: number }>;
+  genotypeScenarios?: Array<{ visualMorphs: string[]; hets: string[] }>;
 };
-
 export type V3Calculation = { outcomes: V3Outcome[]; diagnostics: string[] };
 
 const HOGNOSE_ID = "heterodon-nasicus";
-
 function clamp(value: number): number { return Math.max(0, Math.min(1, value)); }
-function hetProbability(value: V3ParentGenetics["hets"][number]["percentage"]): number {
-  return value === "100%" ? 1 : value === "66%" ? 0.66 : 0.5;
-}
+function hetProbability(value: V3ParentGenetics["hets"][number]["percentage"]): number { return value === "100%" ? 1 : value === "66%" ? 0.66 : 0.5; }
 function getMorph(speciesId: string, geneId: string): MorphDefinition | undefined { return getSpeciesCalculatorMorph(speciesId, geneId); }
 
 function getParentState(parent: V3ParentGenetics, geneId: string): V3GeneState {
   const explicit = parent.knownGeneCopies?.[geneId];
   if (explicit) return { geneId, copies: explicit, visual: true };
-
   for (const visual of parent.visualMorphs) {
     const component = resolveSpeciesUnderlyingGenes(parent.speciesId, visual).find((part) => part.morphId === geneId);
     if (!component) continue;
@@ -58,29 +50,28 @@ function getParentState(parent: V3ParentGenetics, geneId: string): V3GeneState {
     if (morph && (morph.inheritance === "Dominant" || morph.inheritance === "Incomplete Dominant")) return { geneId, copies: "unknown", visual: true };
     return { geneId, copies: Math.min(2, component.copies) as 1 | 2, visual: true };
   }
-
   const het = parent.hets.find((entry) => resolveSpeciesMorph(parent.speciesId, entry.gene)?.geneId === geneId);
   return het ? { geneId, copies: 1, visual: false } : { geneId, copies: 0, visual: false };
 }
 
-function gametesForKnown(state: V3GeneState, probability = 1): V3Gamete[] {
+function gametesForKnown(state: V3GeneState): V3Gamete[] {
   if (state.copies === 0) return [{ geneId: state.geneId, copies: 0, probability: 1 }];
-  if (state.copies === 2) return [{ geneId: state.geneId, copies: 1, probability: clamp(probability) }];
+  if (state.copies === 2) return [{ geneId: state.geneId, copies: 1, probability: 1 }];
   return [
-    { geneId: state.geneId, copies: 1, probability: clamp(probability * 0.5) },
-    { geneId: state.geneId, copies: 0, probability: clamp(1 - probability * 0.5) },
+    { geneId: state.geneId, copies: 1, probability: 0.5 },
+    { geneId: state.geneId, copies: 0, probability: 0.5 },
   ];
 }
 
 function genotypeScenarios(parent: V3ParentGenetics, geneId: string): Array<{ state: V3GeneState; weight: number; uncertainZygosity: boolean }> {
   const state = getParentState(parent, geneId);
-  const het = parent.hets.find((entry) => resolveSpeciesMorph(parent.speciesId, entry.gene)?.geneId === geneId);
   if (state.copies === "unknown") {
     return [
       { state: { ...state, copies: 1 }, weight: 1, uncertainZygosity: true },
       { state: { ...state, copies: 2 }, weight: 1, uncertainZygosity: true },
     ];
   }
+  const het = parent.hets.find((entry) => resolveSpeciesMorph(parent.speciesId, entry.gene)?.geneId === geneId);
   if (!het) return [{ state, weight: 1, uncertainZygosity: false }];
   const p = hetProbability(het.percentage);
   return [
@@ -122,7 +113,10 @@ function combinationRequirements(morph: MorphDefinition): Map<string, number> {
 function resolveCombination(speciesId: string, states: Array<{ geneId: string; copies: number }>): string | undefined {
   if (speciesId !== HOGNOSE_ID) return undefined;
   const available = new Map(states.filter((state) => state.copies > 0).map((state) => [state.geneId, state.copies]));
-  const candidates = calculatorNamedCombinations.filter((entry) => entry.kind === "Combination" && entry.isCombination === true).map((entry) => ({ entry, requirements: combinationRequirements(entry) })).filter(({ requirements }) => [...requirements.entries()].every(([geneId, copies]) => (available.get(geneId) ?? 0) >= copies));
+  const candidates = calculatorNamedCombinations
+    .filter((entry) => entry.kind === "Combination" && entry.isCombination === true)
+    .map((entry) => ({ entry, requirements: combinationRequirements(entry) }))
+    .filter(({ requirements }) => [...requirements.entries()].every(([geneId, copies]) => (available.get(geneId) ?? 0) >= copies));
   candidates.sort((a, b) => {
     const aSpecificity = [...a.requirements.values()].reduce((sum, value) => sum + value, 0);
     const bSpecificity = [...b.requirements.values()].reduce((sum, value) => sum + value, 0);
@@ -170,7 +164,11 @@ export function calculateGeneticsV3(mother: V3ParentGenetics, father: V3ParentGe
     for (const base of scenarios) {
       for (const motherScenario of genotypeScenarios(mother, geneId)) for (const fatherScenario of genotypeScenarios(father, geneId)) {
         for (const child of crossScenario(motherScenario.state, fatherScenario.state)) {
-          next.push({ states: [...base.states, { geneId, copies: child.copies }], probability: base.probability * motherScenario.weight * fatherScenario.weight * child.probability, bounded: base.bounded || motherScenario.uncertainZygosity || fatherScenario.uncertainZygosity });
+          next.push({
+            states: [...base.states, { geneId, copies: child.copies }],
+            probability: base.probability * motherScenario.weight * fatherScenario.weight * child.probability,
+            bounded: base.bounded || motherScenario.uncertainZygosity || fatherScenario.uncertainZygosity,
+          });
         }
       }
     }
@@ -195,16 +193,23 @@ export function calculateGeneticsV3(mother: V3ParentGenetics, father: V3ParentGe
     }
     const key = `${finalVisuals.slice().sort().join(",")}|${hets.slice().sort().join(",")}`;
     const current = groups.get(key);
-    if (current) {
-      if (!current.probability || scenario.bounded) current.probability = undefined;
-      if (current.certainty === "bounded" || scenario.bounded) {
-        current.certainty = "bounded";
-        current.genotypeScenarios = current.genotypeScenarios ?? [];
-        current.genotypeScenarios.push({ visualMorphs: finalVisuals, hets, probability: scenario.probability });
-      } else current.probability = (current.probability ?? 0) + scenario.probability;
-    } else {
-      groups.set(key, { visualMorphs: finalVisuals, hets, geneStates: scenario.states, certainty: scenario.bounded ? "bounded" : "exact", probability: scenario.bounded ? undefined : scenario.probability, ...(scenario.bounded ? { genotypeScenarios: [{ visualMorphs: finalVisuals, hets, probability: scenario.probability }] } : {}) });
+    if (!current) {
+      groups.set(key, {
+        visualMorphs: finalVisuals,
+        hets,
+        geneStates: scenario.states,
+        certainty: scenario.bounded ? "bounded" : "exact",
+        probability: scenario.bounded ? undefined : scenario.probability,
+        ...(scenario.bounded ? { genotypeScenarios: [{ visualMorphs: finalVisuals, hets }] } : {}),
+      });
+      continue;
     }
+    if (scenario.bounded || current.certainty === "bounded") {
+      current.certainty = "bounded";
+      current.probability = undefined;
+      current.genotypeScenarios = current.genotypeScenarios ?? [];
+      if (!current.genotypeScenarios.some((entry) => entry.visualMorphs.join("|") === finalVisuals.join("|") && entry.hets.join("|") === hets.join("|"))) current.genotypeScenarios.push({ visualMorphs: finalVisuals, hets });
+    } else current.probability = (current.probability ?? 0) + scenario.probability;
   }
 
   return { outcomes: [...groups.values()], diagnostics: [] };
