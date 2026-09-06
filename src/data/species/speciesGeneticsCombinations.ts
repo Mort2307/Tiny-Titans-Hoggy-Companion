@@ -13,11 +13,15 @@ export const SPECIES_GENETICS_COMBINATIONS: Record<string, MasterMorphDefinition
   "Pantherophis guttatus": [
     combo("Butter", [["amelanistic", 2], ["caramel", 2]], "corn-snakes/caramel/", ["Amel Caramel"]),
     combo("Amber", [["caramel", 2], ["hypomelanistic", 2]], "corn-snakes/caramel/"),
-    combo("Blizzard", [["amelanistic", 2], ["charcoal", 2]], "corn-snakes/charcoal/"),
+    combo("Blizzard", [["amelanistic", 2], ["charcoal", 2], ["diffused", 2]], "corn-snakes/charcoal/"),
     combo("Pewter", [["charcoal", 2], ["diffused", 2]], "corn-snakes/charcoal/"),
     combo("Diamond", [["charcoal", 2], ["lava", 2]], "corn-snakes/lava/"),
     combo("Ice", [["anerythristic", 2], ["lava", 2]], "corn-snakes/lava/"),
     combo("Ghost", [["anerythristic", 2], ["hypomelanistic", 2]], "corn-snakes/charcoal/"),
+    combo("Creamsicle", [["amelanistic", 2], ["hypomelanistic", 2]], "corn-snakes/hypomelanistic/"),
+    combo("Opal", [["amelanistic", 2], ["lavender", 2]], "corn-snakes/"),
+    combo("Snow", [["amelanistic", 2], ["anerythristic", 2]], "corn-snakes/"),
+    combo("Ultramel", [["amelanistic", 1], ["ultra", 1]], "corn-snakes/"),
   ],
   "Lampropeltis californiae": [
     combo("True Snow", [["amelanistic", 2], ["anerythristic", 2]], "kingsnakes/amelanistic/", ["Snow"]),
@@ -27,13 +31,21 @@ export const SPECIES_GENETICS_COMBINATIONS: Record<string, MasterMorphDefinition
   "Lampropeltis triangulum": [
     combo("Ghost", [["anerythristic", 2], ["hypo", 2]], "milk-snakes/hypo/"),
     combo("Hybino", [["albino", 2], ["hypo", 2]], "milk-snakes/hypo/"),
+    combo("Snow", [["albino", 2], ["anerythristic", 2]], "milk-snakes/anerythristic/"),
     combo("Pearl", [["albino", 2], ["anerythristic", 2], ["hypo", 2]], "milk-snakes/hypo/"),
   ],
   "Boa constrictor": [
-    combo("Ghost", [["anerythristic-type-1", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
-    combo("Snow", [["anerythristic-type-1", 2], ["kahl-albino", 2]], "boa-constrictors/anerythristic-type-1/"),
-    combo("Moonglow", [["anerythristic-type-1", 2], ["kahl-albino", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Ghost", [["anery-type-1", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Snow", [["anery-type-1", 2], ["kahl-albino", 2]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Moonglow", [["anery-type-1", 2], ["kahl-albino", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
     combo("Sunglow", [["kahl-albino", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Anery Blood", [["anery-type-1", 2], ["blood", 1]], "boa-constrictors/anerythristic/"),
+    combo("Jungle Blood", [["jungle", 1], ["blood", 1]], "boa-constrictors/"),
+  ],
+  "Boa imperator": [
+    combo("Ghost", [["anery-type-1", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Snow", [["anery-type-1", 2], ["kahl-albino", 2]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Sunglow", [["kahl-albino", 2], ["hypo", 1]], "boa-constrictors/"),
   ],
   "Morelia spilota": [
     combo("Ghost", [["caramel", 1], ["axanthic", 2]], "carpet-pythons/axanthic/"),
@@ -41,10 +53,14 @@ export const SPECIES_GENETICS_COMBINATIONS: Record<string, MasterMorphDefinition
     combo("Sun Glow", [["caramel", 1], ["albino", 2]], "carpet-pythons/caramel/"),
   ],
   "Eryx colubrinus": [
-    combo("Ghost", [["anery", 2], ["hypomelanistic", 2]], "sand-boas/anery/"),
-    combo("Snow", [["albino", 2], ["anery", 2]], "sand-boas/albino/"),
+    combo("Ghost", [["anerythristic", 2], ["hypomelanistic", 2]], "sand-boas/anery/"),
+    combo("Snow", [["albino", 2], ["anerythristic", 2]], "sand-boas/albino/"),
   ],
   "Malayopython reticulatus": [
     combo("Sun Tiger", [["sunfire", 1], ["tiger", 1]], "reticulated-pythons/sunfire/"),
+  ],
+  "Python bivittatus": [
+    combo("Blizzard", [["albino", 2], ["patternless", 2]], "burmese-pythons/albino/"),
+    combo("Super Hypo Albino", [["hypo", 2], ["albino", 2]], "burmese-pythons/albino/"),
   ],
 };
