@@ -20,16 +20,50 @@ function animalInput(snake: RawRecord) {
   const weights = records(snake.weightHistory).map((record) => ({ date: recordDate(record), grams: Number(record.grams ?? record.weight ?? record.value) })).filter((point) => Number.isFinite(point.grams) && point.grams > 0 && point.date != null);
   return { name: typeof snake.name === "string" ? snake.name : "Unnamed Titan", birthDate: typeof snake.birthDate === "string" || typeof snake.birthDate === "number" ? snake.birthDate : undefined, weights, feedings: observationList(snake.feedingHistory, "Feeding recorded"), sheds: observationList(snake.shedHistory, "Shed recorded"), behaviour: observationList(snake.behaviourHistory, "Behaviour observed"), health: observationList(snake.healthHistory, "Health record") };
 }
+function enclosureComponents(snake: RawRecord) {
+  const enclosure = snake.enclosure as RawRecord | undefined;
+  if (!enclosure || typeof enclosure !== "object") return [];
+  const plants = records(enclosure.plants).map((plant) => typeof plant === "string" ? plant : typeof plant.name === "string" ? plant.name : "").filter(Boolean);
+  const decorations = records(enclosure.decorations);
+  return [
+    { id: "enclosure", kind: "enclosure" as const, label: typeof enclosure.enclosureType === "string" ? enclosure.enclosureType : "Enclosure", enabled: true },
+    { id: "heating", kind: "heat" as const, label: typeof enclosure.heatingType === "string" ? enclosure.heatingType : "Heat source", enabled: true, metadata: { thermostat: typeof enclosure.thermostat === "string" ? enclosure.thermostat : null } },
+    { id: "uvb", kind: "uvb" as const, label: "UVB", enabled: enclosure.uvbEnabled === true },
+    { id: "humidity", kind: "humidity" as const, label: "Humidity", enabled: Number.isFinite(Number(enclosure.humidity)) },
+    { id: "substrate", kind: "substrate" as const, label: typeof enclosure.customSubstrate === "string" ? enclosure.customSubstrate : String(enclosure.substrate ?? "Substrate"), enabled: true },
+    ...plants.map((name, index) => ({ id: `plant-${index}`, kind: "plant" as const, label: name, enabled: true })),
+    { id: "monitor", kind: "monitor" as const, label: "Environmental observations", enabled: true },
+    { id: "enrichment", kind: "enrichment" as const, label: `${Number(enclosure.hides ?? 0)} hide(s) + ${decorations.length} decoration(s)`, enabled: Number(enclosure.hides ?? 0) > 0 || decorations.length > 0 },
+  ];
+}
 function husbandryInput(snake: RawRecord, microclimate: Awaited<ReturnType<typeof getTitanMicroclimateReadings>>, reactiveEvents: TitanReactiveEvent[]) {
   const observations: HusbandryObservation[] = records(snake.husbandryHistory).map((record) => { const date = recordDate(record); const temperatureC = Number(record.temperatureC ?? record.temperature ?? record.tempC); const humidityPercent = Number(record.humidityPercent ?? record.humidity ?? record.humidityPercentage); const hasTemperature = Number.isFinite(temperatureC); const hasHumidity = Number.isFinite(humidityPercent); if (date == null || (!hasTemperature && !hasHumidity)) return null; return { date, ...(hasTemperature ? { temperatureC } : {}), ...(hasHumidity ? { humidityPercent } : {}), enclosureId: typeof record.enclosureId === "string" ? record.enclosureId : undefined, source: record.source === "sensor" ? "sensor" : "keeper" } satisfies HusbandryObservation; }).filter((item): item is HusbandryObservation => item !== null);
-  const twinReadings = microclimate.map((reading) => ({ id: reading.id, timestamp: reading.recordedAt, zone: "ambient" as const, temperatureC: reading.temperatureC, humidityPct: reading.humidityPercent, source: reading.source === "sensor" ? "sensor" as const : "manual" as const }));
-  const eventEnclosureChanges = reactiveEvents.filter((event) => event.animalId === String(snake.id ?? snake.snakeId) && event.type === "EnclosureChanged").map((event) => ({ kind: "enclosure" as const, occurredAt: event.createdAt, enclosureId: event.enclosureId, detail: `Enclosure change recorded at ${new Date(event.createdAt).toLocaleString()}.` }));
-  return { hasEnclosure: Boolean(snake.enclosureId || snake.enclosure || snake.vivariumId), observations, twinComponents: [], twinReadings, plants: [], enclosureChanges: eventEnclosureChanges };
+  const enclosure = snake.enclosure as RawRecord | undefined;
+  const environmentHistory = records(enclosure?.environmentHistory).flatMap((record) => {
+    const date = recordDate(record); if (date == null) return [];
+    const values: Array<HusbandryObservation> = [];
+    const shared = { date, enclosureId: typeof record.enclosureId === "string" ? record.enclosureId : undefined, source: record.source === "device" ? "sensor" as const : "keeper" as const };
+    for (const [key, zone] of [["warmSideTemperature", "warm"], ["coolSideTemperature", "cool"], ["ambientTemperature", "ambient"], ["baskingTemperature", "basking" ]] as const) {
+      const value = Number(record[key]);
+      if (Number.isFinite(value)) values.push({ ...shared, temperatureC: value, enclosureId: `${shared.enclosureId ?? snake.id}:${zone}` });
+    }
+    const humidity = Number(record.humidity); if (Number.isFinite(humidity)) values.push({ ...shared, humidityPercent: humidity });
+    return values;
+  });
+  const twinReadings = [
+    ...environmentHistory.map((item, index) => ({ id: `environment-${index}-${String(item.date)}`, timestamp: typeof item.date === "number" ? item.date : Date.parse(String(item.date)), zone: (String(item.enclosureId ?? "").split(":").at(-1) as "warm" | "cool" | "ambient" | "basking" | "other") || "ambient", temperatureC: item.temperatureC, humidityPct: item.humidityPercent, source: item.source === "sensor" ? "sensor" as const : "manual" as const })),
+    ...microclimate.map((reading) => ({ id: reading.id, timestamp: reading.recordedAt, zone: "ambient" as const, temperatureC: reading.temperatureC, humidityPct: reading.humidityPercent, source: reading.source === "sensor" ? "sensor" as const : "manual" as const })),
+  ].filter((reading) => Number.isFinite(reading.timestamp));
+  const snakeId = String(snake.id ?? snake.snakeId);
+  const eventEnclosureChanges = reactiveEvents.filter((event) => event.animalId === snakeId && event.type === "EnclosureChanged").map((event) => ({ kind: "enclosure" as const, occurredAt: event.createdAt, enclosureId: event.enclosureId, detail: `Enclosure change recorded at ${new Date(event.createdAt).toLocaleString()}.` }));
+  return { hasEnclosure: Boolean(snake.enclosureId || snake.enclosure || snake.vivariumId), observations: [...observations, ...environmentHistory], twinComponents: enclosureComponents(snake), twinReadings, plants: [], enclosureChanges: eventEnclosureChanges };
 }
 async function buildLiveResult(uid: string, snake: RawRecord, reactiveEvents: TitanReactiveEvent[]): Promise<LiveAnimalResult> {
   const snakeId = typeof snake.id === "string" ? snake.id : typeof snake.snakeId === "string" ? snake.snakeId : crypto.randomUUID();
   const microclimate = await getTitanMicroclimateReadings(uid, snakeId).catch(() => []);
-  const result = runTitanV50Unified({ counts: { snakes: 1, weights: records(snake.weightHistory).length, feedings: records(snake.feedingHistory).length, sheds: records(snake.shedHistory).length, health: records(snake.healthHistory).length, behaviour: records(snake.behaviourHistory).length, husbandry: records(snake.husbandryHistory).length + microclimate.length, breeding: 0 }, hasGeneticRecords: Boolean(snake.genetics || snake.morphs || snake.morph || snake.hets), hasBreedingProjects: Boolean(snake.breedingProjectId || snake.breedingProjectIds), hasEnclosures: Boolean(snake.enclosureId || snake.enclosure || snake.vivariumId), hasBehaviourRecords: records(snake.behaviourHistory).length > 0, hasLearningActivity: false, hasCommunityActivity: false, context: { animal: animalInput(snake), husbandry: husbandryInput(snake, microclimate, reactiveEvents) } });
+  const events = reactiveEvents.filter((event) => event.animalId === snakeId);
+  const recentEventTypes = [...new Set(events.slice(0, 12).map((event) => event.type))];
+  const result = runTitanV50Unified({ counts: { snakes: 1, weights: records(snake.weightHistory).length, feedings: records(snake.feedingHistory).length, sheds: records(snake.shedHistory).length, health: records(snake.healthHistory).length, behaviour: records(snake.behaviourHistory).length, husbandry: records(snake.husbandryHistory).length + microclimate.length, breeding: 0 }, hasGeneticRecords: Boolean(snake.genetics || snake.morphs || snake.morph || snake.hets), hasBreedingProjects: Boolean(snake.breedingProjectId || snake.breedingProjectIds), hasEnclosures: Boolean(snake.enclosureId || snake.enclosure || snake.vivariumId), hasBehaviourRecords: records(snake.behaviourHistory).length > 0, hasLearningActivity: false, hasCommunityActivity: false, animalId: snakeId, recentEventTypes, context: { animal: animalInput(snake), husbandry: husbandryInput(snake, microclimate, events) } });
   return { snakeId, name: typeof snake.name === "string" ? snake.name : "Unnamed Titan", result };
 }
 
