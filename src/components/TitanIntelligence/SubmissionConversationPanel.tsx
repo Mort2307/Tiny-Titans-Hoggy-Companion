@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
-import { ensureSubmissionConversation, getSubmissionConversationMessages, sendSubmissionConversationMessage, markSubmissionConversationRead, watchSubmissionConversationMessages, type SubmissionConversation, type SubmissionConversationMessage, type SubmissionConversationType } from "../../services/submissionConversationService";
+import { ensureSubmissionConversation, sendSubmissionConversationMessage, markSubmissionConversationRead, watchSubmissionConversationMessages, type SubmissionConversation, type SubmissionConversationMessage, type SubmissionConversationType } from "../../services/submissionConversationService";
 import "../../styles/ConversationInbox.css";
 
 export default function SubmissionConversationPanel({ submissionType, submissionId, submitterUid, submissionTitle, submissionStatus }: { submissionType: SubmissionConversationType; submissionId: string; submitterUid: string; submissionTitle: string; submissionStatus?: string }) {
@@ -13,11 +13,13 @@ export default function SubmissionConversationPanel({ submissionType, submission
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const creatorMode = profile?.role === "admin";
+  const mailboxPath = creatorMode ? "/creator/submission-conversations" : "/conversations/submissions";
 
   useEffect(() => {
     if (!user || !submitterUid || !submissionId) return;
     let active = true;
     setLoading(true);
+    setError("");
     void ensureSubmissionConversation({ submissionType, submissionId, submitterUid, submissionTitle, submissionStatus })
       .then((value) => { if (active) setConversation(value); })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Conversation could not be opened."); })
@@ -46,7 +48,7 @@ export default function SubmissionConversationPanel({ submissionType, submission
   return <section className="conversation-reply submission-conversation-panel">
     <div className="conversation-detail-top">
       <div><strong>💬 {creatorMode ? `Message ${submissionTitle}'s keeper` : "Message Tiny Titans"}</strong><p>Private conversation attached to this submission. Every message stays linked to its review record.</p></div>
-      {conversation && <Link to={`/conversations/submissions?thread=${encodeURIComponent(conversation.id)}`}>Open full mailbox →</Link>}
+      {conversation && <Link to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}>Open full mailbox →</Link>}
     </div>
     {loading ? <p className="creator-muted">Opening submission conversation…</p> : error && <div className="creator-error">{error}</div>}
     {!loading && <>
