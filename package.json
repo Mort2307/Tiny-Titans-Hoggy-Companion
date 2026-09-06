@@ -44,8 +44,6 @@
     "test:genetics-search": "node scripts/validate-genetics-search-intelligence.mjs",
     "test:genetics-engine": "node scripts/validate-genetics-engine-contract.mjs",
     "test:v50-impact": "node scripts/validate-v50-impact-graph.mjs",
-    "validate:intelligence-consent": "npm run test:intelligence:consent",
-    "validate:intelligence-journey": "npm run test:intelligence:journey",
     "test:notifications": "node scripts/test-notification-delivery-contracts.mjs",
     "test:room-photo": "node scripts/check-room-photo-render-contract.mjs",
     "test:bot:contracts": "node scripts/run-bot-test-contract.mjs",
@@ -74,7 +72,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.4",
