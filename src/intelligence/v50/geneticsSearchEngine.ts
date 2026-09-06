@@ -1,4 +1,5 @@
 import { calculatorNamedCombinations, findCalculatorNamedCombination, normaliseComboName } from "../../data/geneticsComboRegistry";
+import { hognoseMorphCatalog } from "../../data/hognoseMorphCatalog";
 import { morphs, type MorphDefinition } from "../../data/morphs";
 import { SPECIES_GENETICS_CATALOGUES } from "../../data/species/speciesGeneticsCatalogues";
 
@@ -8,14 +9,18 @@ export interface GeneticsMatch { record: MorphDefinition; matchKind: GeneticsMat
 function normalise(value: string): string { return normaliseComboName(value).replace(/[+×x]/g, " ").replace(/\s+/g, " ").trim(); }
 function scoreName(query: string, candidate: string): number { if (!query || !candidate) return 0; if (candidate === query) return 100; if (candidate.startsWith(query)) return 88; if (candidate.includes(query)) return 72; const q = new Set(query.split(" ").filter(Boolean)); const c = new Set(candidate.split(" ").filter(Boolean)); const overlap = [...q].filter((token) => c.has(token)).length; return q.size ? Math.round((overlap / q.size) * 60) : 0; }
 function candidates(speciesScientificName?: string): MorphDefinition[] {
-  if (speciesScientificName?.trim()) return SPECIES_GENETICS_CATALOGUES[speciesScientificName.trim()] ?? [];
-  return [...morphs, ...calculatorNamedCombinations.filter((combo) => !morphs.some((morph) => morph.geneId === combo.geneId))];
+  const scoped = speciesScientificName?.trim();
+  if (!scoped) return [...morphs, ...calculatorNamedCombinations.filter((combo) => !morphs.some((morph) => morph.geneId === combo.geneId))];
+  if (scoped === "Heterodon nasicus") return hognoseMorphCatalog;
+  return SPECIES_GENETICS_CATALOGUES[scoped] ?? [];
 }
 
 /**
  * Canonical genetics search. When a species is supplied, only that species'
  * scoped catalogue is searched; global morph/combo records are deliberately not
  * mixed into the result so one species cannot inherit another species' genetics.
+ * Western Hognose is explicitly backed by its reviewed legacy Hognose catalogue,
+ * which already includes its recognised combination registry.
  */
 export function searchGenetics(query: string, speciesScientificName?: string): GeneticsMatch[] {
   const raw = query.trim();
