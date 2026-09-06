@@ -1,4 +1,4 @@
-export type TinyTitansPageGroup = "overview" | "care" | "genetics" | "learning" | "community" | "account";
+export type TinyTitansPageGroup = "overview" | "care" | "genetics" | "learning" | "community" | "account" | "intelligence";
 
 export interface TinyTitansPageDefinition {
   id: string;
@@ -14,6 +14,7 @@ export const tinyTitansPageRegistry: readonly TinyTitansPageDefinition[] = [
   { id: "home", path: "/", label: "Home", icon: "⌂", group: "overview", description: "Your keeper command centre.", navigation: "route" },
   { id: "snakes", path: "/snakes", label: "My Snakes", icon: "🐍", group: "overview", description: "Your animals and their living records.", navigation: "route" },
   { id: "room", path: "/reptile-room", label: "Reptile Room", icon: "▦", group: "overview", description: "Your enclosures and reptile space.", navigation: "route" },
+  { id: "intelligence", path: "/titan-intelligence", label: "Titan Intelligence", icon: "🧠", group: "intelligence", description: "The connected intelligence layer across your Tiny Titans data.", navigation: "route" },
   { id: "reminders", path: "/reminders", label: "Reminder Hub", icon: "🔔", group: "care", description: "Contextual keeper reminders.", navigation: "route" },
   { id: "husbandry", path: "/husbandry", label: "Husbandry", icon: "✦", group: "care", description: "Species-aware husbandry and care.", navigation: "route" },
   { id: "weights", path: "/weights", label: "Weight", icon: "⚖️", group: "care", description: "Weight records and growth history.", navigation: "route" },
@@ -32,7 +33,6 @@ export const tinyTitansPageRegistry: readonly TinyTitansPageDefinition[] = [
   { id: "mentorship", path: "/community/mentorship", label: "Mentorship", icon: "↔", group: "community", description: "Keeper-to-keeper mentorship.", navigation: "route" },
   { id: "wall", path: "/community/wall-of-titans", label: "Wall of Titans", icon: "★", group: "community", description: "Community showcase.", navigation: "route" },
   { id: "account", path: "/account", label: "My Account", icon: "●", group: "account", description: "Account, preferences and privacy.", navigation: "route" },
-  { id: "intelligence", path: "/account/intelligence", label: "Titan Intelligence", icon: "🧠", group: "account", description: "Your contribution and Intelligence centre.", navigation: "route" },
   { id: "family", path: "/account/family", label: "My Family", icon: "👨‍👩‍👧", group: "account", description: "Controlled shared access.", navigation: "route" },
   { id: "become", path: "/become-a-titan", label: "Become a Titan", icon: "✦", group: "account", description: "Support and contribution goals.", navigation: "route" },
 ];
