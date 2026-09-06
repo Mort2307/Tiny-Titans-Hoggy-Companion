@@ -35,11 +35,11 @@ export const SPECIES_GENETICS_COMBINATIONS: Record<string, MasterMorphDefinition
     combo("Pearl", [["albino", 2], ["anerythristic", 2], ["hypo", 2]], "milk-snakes/hypo/"),
   ],
   "Boa constrictor": [
-    combo("Ghost", [["anery-type-1", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
-    combo("Snow", [["anery-type-1", 2], ["kahl-albino", 2]], "boa-constrictors/anerythristic-type-1/"),
-    combo("Moonglow", [["anery-type-1", 2], ["kahl-albino", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
-    combo("Sunglow", [["kahl-albino", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
-    combo("Anery Blood", [["anery-type-1", 2], ["blood", 1]], "boa-constrictors/anerythristic/"),
+    combo("Ghost", [["anerythristic-type-1", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Snow", [["anerythristic-type-1", 2], ["albino-kahl", 2]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Moonglow", [["anerythristic-type-1", 2], ["albino-kahl", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Sunglow", [["albino-kahl", 2], ["hypo", 1]], "boa-constrictors/anerythristic-type-1/"),
+    combo("Anery Blood", [["anerythristic-type-1", 2], ["blood", 1]], "boa-constrictors/anerythristic/"),
     combo("Jungle Blood", [["jungle", 1], ["blood", 1]], "boa-constrictors/"),
   ],
   "Boa imperator": [
@@ -53,8 +53,8 @@ export const SPECIES_GENETICS_COMBINATIONS: Record<string, MasterMorphDefinition
     combo("Sun Glow", [["caramel", 1], ["albino", 2]], "carpet-pythons/caramel/"),
   ],
   "Eryx colubrinus": [
-    combo("Ghost", [["anerythristic", 2], ["hypomelanistic", 2]], "sand-boas/anery/"),
-    combo("Snow", [["albino", 2], ["anerythristic", 2]], "sand-boas/albino/"),
+    combo("Ghost", [["anery", 2], ["hypomelanistic", 2]], "sand-boas/anery/"),
+    combo("Snow", [["albino", 2], ["anery", 2]], "sand-boas/albino/"),
   ],
   "Malayopython reticulatus": [
     combo("Sun Tiger", [["sunfire", 1], ["tiger", 1]], "reticulated-pythons/sunfire/"),
