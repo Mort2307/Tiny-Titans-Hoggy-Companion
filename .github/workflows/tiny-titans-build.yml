@@ -2,7 +2,7 @@ name: Tiny Titans CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, feature/full-species-genetics-expansion-current]
     paths:
       - 'src/**'
       - 'functions/**'
@@ -36,8 +36,6 @@ on:
 permissions:
   contents: read
 
-# Never waste Actions minutes validating an obsolete commit.
-# A new push to the same PR/branch cancels the previous run.
 concurrency:
   group: tiny-titans-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -58,21 +56,15 @@ jobs:
           node-version: 22
           cache: npm
 
-      # One dependency install for the application. Do not add separate runners
-      # or repeated installs for routine validation.
       - name: Install application dependencies
         run: npm ci --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
 
-      # This already runs the project's application contracts, intelligence
-      # contracts, TypeScript build and Vite production build in one command.
       - name: Production build and application contracts
         run: npm run build
 
-      # Keep Functions syntax validation on the same runner. It is cheap and
-      # avoids creating another workflow/job just for a small check.
       - name: Install Functions dependencies
         if: ${{ hashFiles('functions/package-lock.json') != '' }}
         working-directory: functions
@@ -83,6 +75,4 @@ jobs:
         working-directory: functions
         run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
 
-      # Browser/App BOT journeys are intentionally NOT part of routine PR CI.
-      # They are an expensive, specialist validation and should only be run
-      # deliberately when browser behaviour needs verification.
+      # Browser/App BOT journeys remain deliberate specialist validation rather than routine PR CI.
