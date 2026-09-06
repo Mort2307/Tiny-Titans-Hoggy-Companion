@@ -5,6 +5,7 @@ import { ensureSubmissionConversation, sendSubmissionConversationMessage, markSu
 import "../../styles/ConversationInbox.css";
 
 const suggestedQuestions: Record<SubmissionConversationType, string[]> = {
+  direct: ["How can Tiny Titans help with your reptile keeping question?", "Would you like help with a submission, genetics question, husbandry topic or app issue?"],
   "morph-image": ["Can you confirm the animal's known parents or genetic background?", "What makes you confident this phenotype matches the submitted morph?"],
   "morph-terminology": ["Where did this morph name originate, and is there a breeder or published source we can check?", "Is this term intended as a synonym, combo name, locality term, or a separate morph?"],
   species: ["Which sources are strongest for the husbandry values in this submission?", "Are any of these husbandry details locality-, season-, or life-stage-specific?"],
@@ -17,7 +18,7 @@ const DEFAULT_THANK_YOU = "🐍 Thank you for helping build Tiny Titans!\n\nWe g
 const THANK_YOU_PREFIX = "🐍 Thank you for helping build Tiny Titans!";
 
 type SubmissionConversationPanelProps = {
-  submissionType: SubmissionConversationType;
+  submissionType: Exclude<SubmissionConversationType, "direct">;
   submissionId: string;
   submitterUid?: string;
   submissionTitle: string;
@@ -81,6 +82,7 @@ export default function SubmissionConversationPanel({ submissionType, submission
   function useDefaultThankYou() {
     setDraft(DEFAULT_THANK_YOU);
     setError("");
+    window.requestAnimationFrame(() => document.getElementById(`submission-reply-${submissionType}-${submissionId}`)?.focus());
   }
 
   const hasThankYou = messages.some((item) => item.senderRole === "creator" && item.message.startsWith(THANK_YOU_PREFIX));
