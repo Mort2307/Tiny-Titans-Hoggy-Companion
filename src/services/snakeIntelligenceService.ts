@@ -217,12 +217,11 @@ function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
 
   const missingAreas = [overview.confidence.weight, overview.confidence.feeding, overview.confidence.shedding, overview.confidence.behaviour, overview.confidence.health].filter((value) => value === "Insufficient");
   if (missingAreas.length > 0) {
-    const missing = missingAreas.length === 3 ? "weight, feeding and shed" : missingAreas.length === 2 ? "two key history areas" : "one key history area";
     insights.push({
       id: "data-baseline",
       title: "Build the individual baseline",
       value: "More history needed",
-      why: `${snake.name} does not yet have enough recorded ${missing} data for Tiny Titans to make stronger individual comparisons.`,
+      why: `${snake.name} doesn't yet have enough history across key areas to make stronger individual comparisons.`,
       action: "Log the next relevant event rather than trying to fill in old history from memory. Real records improve the intelligence over time.",
       tone: "attention",
       confidence: overview.confidence.overall,
