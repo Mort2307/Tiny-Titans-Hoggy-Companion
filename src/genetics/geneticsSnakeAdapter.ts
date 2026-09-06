@@ -1,102 +1,13 @@
 import type { Snake } from "../types/Snake.ts";
 import type { GeneticsDatabase, GeneticState, LocusDefinition, ParentGenome, CombinationDefinition } from "./geneticsModel.ts";
 import { getSpeciesLoci } from "./geneticsDatabase.ts";
-
 export type SnakeGenomeBuild = { genome: ParentGenome; warnings: string[]; supported: boolean };
-
-const SPECIES_ALIASES: Record<string, string> = {
-  "western hognose": "Heterodon nasicus",
-  "western hognose snake": "Heterodon nasicus",
-  "heterodon nasicus": "Heterodon nasicus",
-  "corn snake": "Pantherophis guttatus",
-  "corn snake (pantherophis guttatus)": "Pantherophis guttatus",
-  "pantherophis guttatus": "Pantherophis guttatus",
-};
-
+const SPECIES_ALIASES: Record<string, string> = { "western hognose": "Heterodon nasicus", "western hognose snake": "Heterodon nasicus", "heterodon nasicus": "Heterodon nasicus", "corn snake": "Pantherophis guttatus", "corn snake (pantherophis guttatus)": "Pantherophis guttatus", "pantherophis guttatus": "Pantherophis guttatus" };
 export function canonicalSpecies(species: string): string { return SPECIES_ALIASES[species.trim().toLowerCase()] ?? species.trim(); }
-
-function identityValues(value: string): string[] {
-  const normalised = value.trim().toLowerCase();
-  return [normalised, normalised.replace(/\s+/g, " ")];
-}
-
-function matchesGene(locus: LocusDefinition, value: string): boolean {
-  const candidates = identityValues(value);
-  return locus.alleles.some((allele) => [allele.id, allele.name, ...(allele.aliases ?? [])].some((candidate) => candidates.includes(candidate.trim().toLowerCase())));
-}
-
-function findAllele(locus: LocusDefinition, value: string) {
-  const candidates = identityValues(value);
-  return locus.alleles.find((allele) => [allele.id, allele.name, ...(allele.aliases ?? [])].some((candidate) => candidates.includes(candidate.trim().toLowerCase())));
-}
-
-function explicitSuperName(locus: LocusDefinition, snake: Snake): string | undefined {
-  if (!locus.superAlleleId) return undefined;
-  const superAllele = locus.alleles.find((allele) => allele.id === locus.superAlleleId);
-  if (!superAllele) return undefined;
-  const names = [`super ${superAllele.name}`, ...(superAllele.aliases ?? []).map((alias) => `super ${alias}`)];
-  return snake.morphs.find((morph) => names.some((name) => name.toLowerCase() === morph.trim().toLowerCase()));
-}
-
-function findCombination(database: GeneticsDatabase, species: string, value: string): CombinationDefinition | undefined {
-  const query = value.trim().toLowerCase();
-  return database.combinations.find((combination) => combination.species === species && [combination.name, combination.id, ...(combination.aliases ?? [])].some((candidate) => candidate.trim().toLowerCase() === query));
-}
-
-function applyCombination(database: GeneticsDatabase, combination: CombinationDefinition, states: GeneticState[], warnings: string[]) {
-  for (const component of combination.components ?? combination.componentLocusIds.map((locusId) => ({ locusId, alleleId: "" }))) {
-    const locus = database.loci.find((entry) => entry.id === component.locusId);
-    if (!locus) { warnings.push(`${combination.name}: missing component locus ${component.locusId}.`); continue; }
-    const allele = component.alleleId ? locus.alleles.find((candidate) => candidate.id === component.alleleId) : locus.alleles.find((candidate) => !candidate.isWildType);
-    const wild = locus.alleles.find((candidate) => candidate.isWildType);
-    if (!allele || allele.isWildType || !wild) { warnings.push(`${combination.name}: component locus ${locus.name} cannot be represented safely.`); continue; }
-    const copies = component.copies ?? 1;
-    if (!states.some((state) => state.locusId === locus.id)) states.push(copies === 2 ? { locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: allele.id } : { locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id });
-  }
-}
-
-export function buildSnakeGenome(snake: Snake, database?: GeneticsDatabase): SnakeGenomeBuild {
-  const canonical = canonicalSpecies(snake.species);
-  const sourceLoci = database?.loci ?? getSpeciesLoci(canonical);
-  const loci = sourceLoci.filter((locus) => locus.species === canonical);
-  const db = database ?? { loci, combinations: [] };
-  const warnings: string[] = [];
-  const states: GeneticState[] = [];
-  if (!loci.length) return { genome: { species: canonical, states }, warnings: [`No canonical genetics loci are registered for ${snake.species}.`], supported: false };
-
-  for (const morphValue of snake.morphs ?? []) {
-    const combination = findCombination(db, canonical, morphValue);
-    if (combination) applyCombination(db, combination, states, warnings);
-  }
-
-  for (const locus of loci) {
-    if (states.some((state) => state.locusId === locus.id)) continue;
-    const visual = snake.morphs.find((morph) => matchesGene(locus, morph));
-    const superVisual = explicitSuperName(locus, snake);
-    const het = snake.hets.find((entry) => matchesGene(locus, entry.geneId ?? entry.gene));
-
-    if (superVisual && locus.superStatus === "supported" && locus.superAlleleId) { states.push({ locusId: locus.id, paternalAlleleId: locus.superAlleleId, maternalAlleleId: locus.superAlleleId }); continue; }
-    if (visual) {
-      const allele = findAllele(locus, visual);
-      if (!allele) continue;
-      if (locus.inheritance === "recessive") states.push({ locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: allele.id });
-      else if (["dominant", "incomplete_dominant", "codominant"].includes(locus.inheritance)) {
-        const wild = locus.alleles.find((candidate) => candidate.isWildType);
-        if (!wild) throw new Error(`Locus ${locus.name} has no wild-type allele.`);
-        states.push({ locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id });
-      } else warnings.push(`${locus.name}: the recorded visual phenotype does not uniquely identify the genotype for an allelic/complex locus. Exact breeding probabilities are withheld.`);
-      continue;
-    }
-    if (het) {
-      const allele = findAllele(locus, het.geneId ?? het.gene);
-      const percentage = String(het.percentage).replace(/\s/g, "");
-      if (!allele) continue;
-      if (percentage === "100%" || percentage === "100") {
-        const wild = locus.alleles.find((candidate) => candidate.isWildType);
-        if (!wild) throw new Error(`Locus ${locus.name} has no wild-type allele.`);
-        states.push({ locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id });
-      } else warnings.push(`${locus.name}: ${percentage} het records are probability-bearing uncertainty and are not collapsed into a false exact genotype.`);
-    }
-  }
-  return { genome: { species: canonical, states }, warnings, supported: warnings.length === 0 };
-}
+function identityValues(value: string): string[] { const normalised = value.trim().toLowerCase(); return [normalised, normalised.replace(/\s+/g, " ")]; }
+function matchesGene(locus: LocusDefinition, value: string): boolean { const candidates = identityValues(value); return locus.alleles.some((allele) => [allele.id, allele.name, ...(allele.aliases ?? [])].some((candidate) => candidates.includes(candidate.trim().toLowerCase()))); }
+function findAllele(locus: LocusDefinition, value: string) { const candidates = identityValues(value); return locus.alleles.find((allele) => [allele.id, allele.name, ...(allele.aliases ?? [])].some((candidate) => candidates.includes(candidate.trim().toLowerCase()))); }
+function explicitSuperName(locus: LocusDefinition, snake: Snake): string | undefined { if (!locus.superAlleleId) return undefined; const superAllele = locus.alleles.find((allele) => allele.id === locus.superAlleleId); if (!superAllele) return undefined; const names = [`super ${superAllele.name}`, ...(superAllele.aliases ?? []).map((alias) => `super ${alias}`)]; return snake.morphs.find((morph) => names.some((name) => name.toLowerCase() === morph.trim().toLowerCase())); }
+function findCombination(database: GeneticsDatabase, species: string, value: string): CombinationDefinition | undefined { const query = value.trim().toLowerCase(); return database.combinations.find((combination) => combination.species === species && [combination.name, combination.id, ...(combination.aliases ?? [])].some((candidate) => candidate.trim().toLowerCase() === query)); }
+function applyCombination(database: GeneticsDatabase, combination: CombinationDefinition, states: GeneticState[], warnings: string[]) { const fallbackComponents: Array<{ locusId: string; alleleId: string; copies?: 1 | 2 }> = combination.componentLocusIds.map((locusId) => ({ locusId, alleleId: "", copies: 1 })); for (const component of combination.components ?? fallbackComponents) { const locus = database.loci.find((entry) => entry.id === component.locusId); if (!locus) { warnings.push(`${combination.name}: missing component locus ${component.locusId}.`); continue; } const allele = component.alleleId ? locus.alleles.find((candidate) => candidate.id === component.alleleId) : locus.alleles.find((candidate) => !candidate.isWildType); const wild = locus.alleles.find((candidate) => candidate.isWildType); if (!allele || allele.isWildType || !wild) { warnings.push(`${combination.name}: component locus ${locus.name} cannot be represented safely.`); continue; } const copies = component.copies ?? 1; if (!states.some((state) => state.locusId === locus.id)) states.push(copies === 2 ? { locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: allele.id } : { locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id }); } }
+export function buildSnakeGenome(snake: Snake, database?: GeneticsDatabase): SnakeGenomeBuild { const canonical = canonicalSpecies(snake.species); const sourceLoci = database?.loci ?? getSpeciesLoci(canonical); const loci = sourceLoci.filter((locus) => locus.species === canonical); const db = database ?? { loci, combinations: [] }; const warnings: string[] = []; const states: GeneticState[] = []; if (!loci.length) return { genome: { species: canonical, states }, warnings: [`No canonical genetics loci are registered for ${snake.species}.`], supported: false }; for (const morphValue of snake.morphs ?? []) { const combination = findCombination(db, canonical, morphValue); if (combination) applyCombination(db, combination, states, warnings); } for (const locus of loci) { if (states.some((state) => state.locusId === locus.id)) continue; const visual = snake.morphs.find((morph) => matchesGene(locus, morph)); const superVisual = explicitSuperName(locus, snake); const het = snake.hets.find((entry) => matchesGene(locus, entry.geneId ?? entry.gene)); if (superVisual && locus.superStatus === "supported" && locus.superAlleleId) { states.push({ locusId: locus.id, paternalAlleleId: locus.superAlleleId, maternalAlleleId: locus.superAlleleId }); continue; } if (visual) { const allele = findAllele(locus, visual); if (!allele) continue; if (locus.inheritance === "recessive") states.push({ locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: allele.id }); else if (["dominant", "incomplete_dominant", "codominant"].includes(locus.inheritance)) { const wild = locus.alleles.find((candidate) => candidate.isWildType); if (!wild) throw new Error(`Locus ${locus.name} has no wild-type allele.`); states.push({ locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id }); } else warnings.push(`${locus.name}: the recorded visual phenotype does not uniquely identify the genotype for an allelic/complex locus. Exact breeding probabilities are withheld.`); continue; } if (het) { const allele = findAllele(locus, het.geneId ?? het.gene); const percentage = String(het.percentage).replace(/\s/g, ""); if (!allele) continue; if (percentage === "100%" || percentage === "100") { const wild = locus.alleles.find((candidate) => candidate.isWildType); if (!wild) throw new Error(`Locus ${locus.name} has no wild-type allele.`); states.push({ locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id }); } else warnings.push(`${locus.name}: ${percentage} het records are probability-bearing uncertainty and are not collapsed into a false exact genotype.`); } } return { genome: { species: canonical, states }, warnings, supported: warnings.length === 0 }; }
