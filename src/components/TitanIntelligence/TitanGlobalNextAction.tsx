@@ -7,9 +7,14 @@ import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiv
 import "../../styles/titanNextAction.css";
 import "../../styles/titanGlobalNextAction.css";
 
+const ANIMAL_CONTEXT_PREFIXES = ["/snakes", "/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry", "/enclosure-intelligence"];
+
 function animalIdFromPath(pathname: string): string | null {
-  const match = pathname.match(/^\/snakes\/([^/]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  for (const prefix of ANIMAL_CONTEXT_PREFIXES) {
+    const match = pathname.match(new RegExp(`^${prefix.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}/([^/]+)(?:/|$)`));
+    if (match) return decodeURIComponent(match[1]);
+  }
+  return null;
 }
 
 export default function TitanGlobalNextAction() {
