@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../../assets/TinyTitans-Logo.jpg";
 import { useAuth } from "../../context/useAuth";
@@ -8,11 +8,14 @@ import { getUserSnakes } from "../../services/snakeService";
 import { hasFullIntelligenceAccess } from "../../services/intelligenceAccessService";
 import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
 
+const PROACTIVE_CACHE_MS = 3_000;
+
 function Header() {
   const { user, profile } = useAuth();
   const location = useLocation();
   const [unread, setUnread] = useState(0);
   const [proactive, setProactive] = useState<SnakeIntelligence | null>(null);
+  const lastProactiveRefresh = useRef(0);
   const creatorMode = profile?.role === "admin";
   const mailboxPath = creatorMode ? "/creator/submission-conversations" : "/conversations/submissions";
 
@@ -29,9 +32,12 @@ function Header() {
   }, [user, creatorMode, location.pathname]);
 
   useEffect(() => {
-    if (!user || creatorMode) { setProactive(null); return () => undefined; }
+    if (!user || creatorMode) { setProactive(null); lastProactiveRefresh.current = 0; return () => undefined; }
     let active = true;
-    const refresh = async () => {
+    const refresh = async (force = false) => {
+      const now = Date.now();
+      if (!force && now - lastProactiveRefresh.current < PROACTIVE_CACHE_MS) return;
+      lastProactiveRefresh.current = now;
       try {
         const hasAccess = await hasFullIntelligenceAccess(user.uid);
         if (!active) return;
@@ -53,8 +59,8 @@ function Header() {
       }
     };
     void refresh();
-    const onFocus = () => { void refresh(); };
-    const onVisibility = () => { if (document.visibilityState === "visible") void refresh(); };
+    const onFocus = () => { void refresh(true); };
+    const onVisibility = () => { if (document.visibilityState === "visible") void refresh(true); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
