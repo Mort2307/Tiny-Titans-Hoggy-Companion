@@ -3,7 +3,7 @@ import { db } from "../firebase/config";
 import type { BehaviourRecord } from "../types/Behaviour";
 import { resolveDataOwnerUid } from "./familyService";
 import { requestFamilyMutation } from "./familyPermissionsService";
-import { tinyTitansEventBus } from "./tinyTitansEventBus";
+import { emitTitanIntelligenceEvent } from "./titanReactiveIntelligenceService";
 
 function records(uid: string, snakeId: string) { return collection(db, "users", uid, "snakes", snakeId, "behaviours"); }
 
@@ -20,19 +20,7 @@ export async function saveSnakeBehaviourRecord(uid: string, record: BehaviourRec
   const payload = { ...record, lastModifiedBy: uid };
   await requestFamilyMutation({ requesterUid: uid, requesterName: uid, area: "behaviour", action: operation === "create" ? "create" : "edit", title: "Update behaviour record", description: "A family member wants to update a shared behaviour observation.", targetPath: `users/${owner}/snakes/${record.snakeId}/behaviours/${record.id}`, operation, data: payload });
   await setDoc(doc(records(owner, record.snakeId), record.id), payload, { merge: true });
-
-  tinyTitansEventBus.emit({
-    type: "BehaviourRecorded",
-    payload: {
-      snakeId: record.snakeId,
-      recordId: record.id,
-      observation: record.observation,
-      context: record.context,
-      occurredAt: record.date,
-      operation,
-    },
-  });
-
+  emitTitanIntelligenceEvent({ uid, animalId: record.snakeId, type: "BehaviourObserved", action: operation === "create" ? "created" : "updated", recordId: record.id, observation: record.observation, context: record.context, occurredAt: `${record.date}T00:00:00.000Z` });
   return payload;
 }
 
@@ -40,5 +28,5 @@ export async function deleteSnakeBehaviourRecord(uid: string, snakeId: string, r
   const owner = await resolveDataOwnerUid(uid);
   await requestFamilyMutation({ requesterUid: uid, requesterName: uid, area: "behaviour", action: "delete", title: "Delete behaviour record", description: "A family member wants to permanently remove a shared behaviour observation.", targetPath: `users/${owner}/snakes/${snakeId}/behaviours/${recordId}`, operation: "delete" });
   await deleteDoc(doc(records(owner, snakeId), recordId));
-  tinyTitansEventBus.emit({ type: "BehaviourRecorded", payload: { snakeId, recordId, observation: "Other", context: "Other", occurredAt: new Date().toISOString(), operation: "delete" } });
+  emitTitanIntelligenceEvent({ uid, animalId: snakeId, type: "BehaviourObserved", action: "deleted", recordId, observation: "Other", context: "Other", occurredAt: new Date().toISOString() });
 }
