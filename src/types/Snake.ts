@@ -7,14 +7,51 @@ import type { BreedingPairing } from "./Breeding";
 import type { Enclosure } from "./Enclosure";
 import type { TimelineEvent } from "./Timeline";
 
-export type WeightTrackingFrequency =
-  | "Weekly"
-  | "Fortnightly"
-  | "Every 3 Weeks"
-  | "Monthly";
-
+export type WeightTrackingFrequency = "Weekly" | "Fortnightly" | "Every 3 Weeks" | "Monthly";
 export type SnakeSex = "Male" | "Female" | "Unknown";
 export type SnakeStatus = "Active" | "Sold" | "Deceased" | "Archived";
+
+export type GeneticEvidenceKind =
+  | "genetic-test"
+  | "breeder-documented"
+  | "parent-derived"
+  | "offspring-confirmed"
+  | "keeper-recorded"
+  | "community-observation";
+export type GeneticConfidence = "high" | "medium" | "low" | "unknown";
+export type AnimalGeneStatus = "confirmed" | "probable" | "possible" | "excluded";
+export type AnimalGeneCopies = 0 | 1 | 2 | "unknown";
+
+export type AnimalGeneticEvidence = {
+  geneId: string;
+  copies: AnimalGeneCopies;
+  status: AnimalGeneStatus;
+  evidence: GeneticEvidenceKind;
+  confidence: GeneticConfidence;
+  note?: string;
+  sourceLabel?: string;
+  sourceUrl?: string;
+  recordedAt?: string;
+};
+
+export type AnimalGeneticLocusState = {
+  locusId: string;
+  alleleA: string;
+  alleleB: string;
+  status: Extract<AnimalGeneStatus, "confirmed" | "probable" | "possible">;
+  confidence: GeneticConfidence;
+  evidence?: GeneticEvidenceKind;
+  note?: string;
+};
+
+export type AnimalGeneticsProfile = {
+  speciesId: string;
+  visualMorphs: string[];
+  genes: AnimalGeneticEvidence[];
+  loci?: AnimalGeneticLocusState[];
+  updatedAt?: string;
+  notes?: string;
+};
 
 export type FeedingSchedule = {
   enabled: boolean;
@@ -31,7 +68,6 @@ export type Snake = {
   name: string;
   species: string;
   photo: string;
-  /** Legacy aliases retained for the 3D room renderer and older persisted records. */
   imageUrl?: string;
   photoUrl?: string;
   sex: SnakeSex;
@@ -43,13 +79,14 @@ export type Snake = {
   customMorph: string;
   hets: Het[];
   customHets: string;
+  /** Structured genetics provenance. Legacy morphs/hets remain supported during migration. */
+  geneticsProfile?: AnimalGeneticsProfile;
   startingWeight: number | null;
   startingWeightDate: string;
   weight: number | null;
   lastWeighedDate: string;
   weightHistory: WeightRecord[];
   weightTracking: { enabled: boolean; frequency: WeightTrackingFrequency };
-  /** Most recently recorded body length in centimetres. Optional so older records remain valid. */
   lengthCm?: number | null;
   feedingHistory?: FeedingRecord[];
   feedingSchedule?: FeedingSchedule;
