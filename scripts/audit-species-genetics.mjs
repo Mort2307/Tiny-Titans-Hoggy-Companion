@@ -7,20 +7,27 @@ const coverage = fs.readFileSync("src/data/species/speciesGeneticsCoverage.ts", 
 
 const failures = [];
 
-if (!registry.includes("SPECIES_EXPANSION_BATCH_9")) failures.push("Species registry is missing the current expansion boundary.");
-if (!catalog.includes("SPECIES_GENETICS_CATALOGUES")) failures.push("Species genetics catalogue export is missing.");
-if (!speciesTypes.includes("SourceCitation")) failures.push("Species evidence contract is missing SourceCitation.");
-if (!coverage.includes("baseline-only")) failures.push("Species genetics coverage does not distinguish unmapped species.");
-if (!coverage.includes("sourceBackedTraitCount")) failures.push("Species genetics coverage does not measure evidence-backed traits.");
-
-// Keep the audit intentionally source-light: it verifies architecture without
-// treating an unreviewed catalogue entry as scientifically confirmed.
-const traitBlocks = [...catalog.matchAll(/\[\"([^\"]+)\",\s*\"(Recessive|Incomplete Dominant|Dominant|Polygenic|Line-bred|Unknown)\"/g)];
-const seenNames = new Set();
-for (const match of traitBlocks) {
-  const name = match[1].trim().toLowerCase();
-  if (seenNames.has(name)) continue;
-  seenNames.add(name);
+for (const [source, needle, message] of [
+  [registry, "SPECIES_EXPANSION_BATCH_9", "Species registry is missing the current expansion boundary."],
+  [catalog, "SPECIES_GENETICS_CATALOGUES", "Species genetics catalogue export is missing."],
+  [speciesTypes, "SourceCitation", "Species evidence contract is missing SourceCitation."],
+  [coverage, "baseline-only", "Species genetics coverage does not distinguish unmapped species."],
+  [coverage, "sourceBackedTraitCount", "Species genetics coverage does not measure evidence-backed traits."],
+]) {
+  if (!source.includes(needle)) failures.push(message);
 }
 
-console.log(`Species genetics architecture audit passed: ${seenNames.size} distinct catalogue trait names detected; coverage and evidence contracts are present.`);
+const rows = [...catalog.matchAll(/\[\"([^\"]+)\",\s*\"(Recessive|Incomplete Dominant|Dominant|Polygenic|Line-bred|Unknown)\"/g)];
+const canonicalNames = rows.map((match) => match[1].trim().toLowerCase());
+const uniqueNames = new Set(canonicalNames);
+
+if (!rows.length) failures.push("No species genetics trait records were detected.");
+if (uniqueNames.size !== canonicalNames.length) failures.push("Species genetics catalogue contains duplicate canonical trait names.");
+
+if (failures.length) {
+  console.error(`Species genetics integrity audit failed with ${failures.length} issue(s):`);
+  failures.forEach((failure) => console.error(`- ${failure}`));
+  process.exit(1);
+}
+
+console.log(`Species genetics integrity audit passed: ${uniqueNames.size} distinct catalogue trait names detected; coverage and evidence contracts are present.`);
