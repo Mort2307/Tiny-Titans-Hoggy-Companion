@@ -1,0 +1,1 @@
+Batch 1 target species: Ball Python, Corn Snake, Boa imperator, Boa constrictor, Carpet Python, Kingsnake/Milk Snake, Burmese Python, Reticulated Python, Sand Boa and Rainbow Boa. All traits remain species-scoped and evidence-reviewed.
