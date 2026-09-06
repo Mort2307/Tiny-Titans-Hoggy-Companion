@@ -32,7 +32,7 @@ export const TITAN_V50_FEATURES: readonly V50Feature[] = [
   { id: 14, name: "Vet Mode", layer: "animal", status: "planned", intelligence: true, route: "/health" },
   { id: 15, name: "Something Changed Detector", layer: "husbandry", status: "planned", intelligence: true, route: "/" },
   { id: 16, name: "Genetic What-If Sandbox", layer: "genetics", status: "planned", intelligence: true, route: "/sandbox" },
-  { id: 17, name: "Titanverse", layer: "platform", status: "planned", intelligence: true, route: "/" },
+  { id: 17, name: "Titanverse", layer: "platform", status: "planned", intelligence: true, route: "/titan-intelligence" },
   { id: 18, name: "Husbandry Anomaly Engine", layer: "husbandry", status: "planned", intelligence: true, route: "/husbandry" },
   { id: 19, name: "Microclimate Logger", layer: "husbandry", status: "planned", intelligence: true, route: "/enclosure-intelligence" },
   { id: 20, name: "Vivarium Digital Twin", layer: "husbandry", status: "foundation", intelligence: true, route: "/reptile-room" },
@@ -59,13 +59,13 @@ export const TITAN_V50_FEATURES: readonly V50Feature[] = [
   { id: 41, name: "Species Mastery", layer: "learning", status: "foundation", intelligence: true, route: "/learn" },
   { id: 42, name: "Reptile Census", layer: "community", status: "planned", intelligence: true, route: "/community" },
   { id: 43, name: "Titan Knowledge Graph", layer: "platform", status: "planned", intelligence: true, route: "/knowledge-base" },
-  { id: 44, name: "Why Am I Seeing This?", layer: "platform", status: "planned", intelligence: true, route: "/" },
-  { id: 45, name: "Data Confidence", layer: "platform", status: "planned", intelligence: true, route: "/account/intelligence" },
+  { id: 44, name: "Why Am I Seeing This?", layer: "platform", status: "planned", intelligence: true, route: "/titan-intelligence" },
+  { id: 45, name: "Data Confidence", layer: "platform", status: "planned", intelligence: true, route: "/titan-intelligence" },
   { id: 46, name: "Genetic Identity Confidence", layer: "genetics", status: "planned", intelligence: true, route: "/morph-library" },
   { id: 47, name: "Global Species Intelligence", layer: "community", status: "planned", intelligence: true, route: "/community" },
   { id: 48, name: "Reptile Research Archive", layer: "learning", status: "planned", intelligence: true, route: "/knowledge-base" },
-  { id: 49, name: "Proactive Titan Suggestions", layer: "platform", status: "planned", intelligence: true, route: "/" },
-  { id: 50, name: "HOLY SHIT Mode / Titan Intelligence", layer: "platform", status: "planned", intelligence: true, route: "/" },
+  { id: 49, name: "Proactive Titan Suggestions", layer: "platform", status: "planned", intelligence: true, route: "/titan-intelligence" },
+  { id: 50, name: "HOLY SHIT Mode / Titan Intelligence", layer: "platform", status: "planned", intelligence: true, route: "/titan-intelligence" },
 ];
 
 export const V50_FEATURE_COUNT = TITAN_V50_FEATURES.length;
