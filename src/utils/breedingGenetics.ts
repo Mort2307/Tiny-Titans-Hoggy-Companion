@@ -29,7 +29,6 @@ function eligibleHet(value: string): string | null {
   return resolved && calculatorHetIds.has(resolved.geneId) ? resolved.geneId : null;
 }
 
-/** Legacy-compatible input used only when persisted data cannot yet be represented exactly by the canonical locus model. */
 export function toBreedingParent(snake: Snake) {
   const visualMorphs = (snake.morphs ?? []).map(eligibleVisual).filter((value): value is string => Boolean(value));
   const hets = (snake.hets ?? [])
@@ -51,9 +50,10 @@ function superDisplayName(geneId: string, copies: number): string | null {
 
 function adaptLegacyResult(result: GeneticsCalculatorResult): GeneticsCalculation {
   const outcomes = result.offspring.map((offspring) => {
+    const probability = (offspring.percentage ?? offspring.probabilityRange?.max ?? 0) / 100;
     const visualMorphs = offspring.visualComponents.map((component) => superDisplayName(component.geneId, component.copies) ?? component.name).sort();
     const hets = offspring.hetComponents.map((component) => ({ geneId: component.geneId, name: component.name, percentage: "100%" as const })).sort((a, b) => a.name.localeCompare(b.name));
-    return { probability: offspring.percentage / 100, visualMorphs, hets, geneStates: [...offspring.visualComponents, ...offspring.hetComponents].map((component) => ({ geneId: component.geneId, copies: component.copies, probability: offspring.percentage / 100 })) };
+    return { probability, visualMorphs, hets, geneStates: [...offspring.visualComponents, ...offspring.hetComponents].map((component) => ({ geneId: component.geneId, copies: component.copies, probability })) };
   });
   return { outcomes, totalProbability: outcomes.reduce((sum, outcome) => sum + outcome.probability, 0) };
 }
@@ -105,12 +105,12 @@ function combineCanonicalResults(results: LocusResult[], species: string): Genet
     const result: OffspringResult = { id: `${visualComponents.map((item) => `${item.geneId}:${item.copies}`).sort().join(",")}|${hetComponents.map((item) => item.geneId).sort().join(",")}`, name, percentage: joint.probability * 100, visualComponents: [...visualComponents].sort((a, b) => a.name.localeCompare(b.name)), hetComponents: [...hetComponents].sort((a, b) => a.name.localeCompare(b.name)), possibleHetComponents: [], recognisedCombination: Boolean(combination), combination: undefined, hasUnresolvedGenetics: joint.outcomes.some((outcome) => outcome.phenotypeStatus === "unresolved" || outcome.phenotypeStatus === "mixed_allelic") };
     if (combination) result.combination = getMasterCalculatorMorphs().find((morph) => morph.name.toLowerCase() === combination.name.toLowerCase());
     const existing = merged.get(result.id);
-    if (existing) { existing.percentage += result.percentage; existing.hasUnresolvedGenetics ||= result.hasUnresolvedGenetics; }
+    if (existing) { existing.percentage = (existing.percentage ?? 0) + (result.percentage ?? result.probabilityRange?.max ?? 0); existing.hasUnresolvedGenetics ||= result.hasUnresolvedGenetics; }
     else merged.set(result.id, result);
   }
 
-  const outcomes = [...merged.values()].sort((a, b) => b.percentage - a.percentage);
-  return { outcomes: outcomes.map((item) => ({ probability: item.percentage / 100, visualMorphs: item.visualComponents.map((component) => component.name), hets: item.hetComponents.map((component) => ({ geneId: component.geneId, name: component.name, percentage: "100%" as const })), geneStates: [...item.visualComponents, ...item.hetComponents].map((component) => ({ geneId: component.geneId, copies: component.copies, probability: item.percentage / 100 })) })), totalProbability: outcomes.reduce((sum, item) => sum + item.percentage / 100, 0) };
+  const outcomes = [...merged.values()].sort((a, b) => (b.percentage ?? b.probabilityRange?.max ?? 0) - (a.percentage ?? a.probabilityRange?.max ?? 0));
+  return { outcomes: outcomes.map((item) => { const probability = (item.percentage ?? item.probabilityRange?.max ?? 0) / 100; return { probability, visualMorphs: item.visualComponents.map((component) => component.name), hets: item.hetComponents.map((component) => ({ geneId: component.geneId, name: component.name, percentage: "100%" as const })), geneStates: [...item.visualComponents, ...item.hetComponents].map((component) => ({ geneId: component.geneId, copies: component.copies, probability })) }; }), totalProbability: outcomes.reduce((sum, item) => sum + (item.percentage ?? item.probabilityRange?.max ?? 0) / 100, 0) };
 }
 
 export function calculateBreedingGenetics(female: Snake, male: Snake): GeneticsCalculation {
