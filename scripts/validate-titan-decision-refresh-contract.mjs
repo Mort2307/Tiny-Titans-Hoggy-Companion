@@ -25,6 +25,7 @@ for (const symbol of [
 if (!home.includes("getTitanDecisionState")) findings.push("Home is not reading the canonical decision state before refreshing.");
 if (!home.includes("existing.decisions.length>0")) findings.push("Home refresh guard is missing; it may rewrite the decision state on every visit.");
 if (!home.includes("else{const refreshed=await refreshTitanDecisionStateForAnimals")) findings.push("Home does not retain first-run decision generation when canonical state is empty.");
+if (!home.includes("const event=detail.event") || !home.includes("event?.animalId&&event.occurredAt") || !home.includes("refreshTitanDecisionStateForAnimals(user.uid,[event.animalId],{type:event.type,occurredAt:event.occurredAt})")) findings.push("Home reactive event handling does not refresh the affected animal from the real event timestamp.");
 if (!decision.includes("const triggerAt=trigger?.occurredAt?Date.parse(trigger.occurredAt):NaN")) findings.push("Decision refresh still synthesises an event timestamp when no trigger is supplied.");
 if (!decision.includes("lastEventAt:hasTriggerTimestamp?triggerAt:undefined")) findings.push("Decision refresh does not guard lastEventAt behind a real trigger timestamp.");
 if (decision.includes("SnakeIntelligence[\"priority\"][\"category\"]")) findings.push("Decision refresh category type is incorrectly indexed through nullable priority.");
