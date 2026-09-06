@@ -16,16 +16,7 @@ import {
 } from "../data/species/speciesGenetics";
 import { getGeneId } from "./geneticsIdentity";
 import type { MorphComponent } from "../data/morphs";
-import type {
-  GeneticsCalculatorInput,
-  GeneticsCalculatorResult,
-  OffspringComponent,
-  OffspringResult,
-  ParentGenetics,
-  BreedingSummary,
-  HetResult,
-  HetPercentage,
-} from "../types/genetics";
+import type { GeneticsCalculatorInput, GeneticsCalculatorResult, OffspringComponent, OffspringResult, ParentGenetics, BreedingSummary, HetResult, HetPercentage } from "../types/genetics";
 
 type AlleleState = { geneId: string; copies: 0 | 1 | 2; mutationAlleleProbability: number; unresolved?: boolean };
 type ParentLocus = { geneId: string; mother: AlleleState; father: AlleleState };
@@ -33,17 +24,9 @@ type LocusOutcome = { geneId: string; copies: 0 | 1 | 2; probability: number };
 type InternalOutcome = { loci: Map<string, number>; probability: number; unresolved: boolean };
 const EPSILON = 0.000001;
 
-function getDefinition(geneId: string, speciesId?: string | null): MasterMorphDefinition | undefined {
-  if (speciesId && speciesId !== "heterodon-nasicus") return getSpeciesGeneticDefinition(speciesId, geneId);
-  return masterMorphs.find((morph) => morph.geneId === geneId);
-}
-
+function getDefinition(geneId: string, speciesId?: string | null): MasterMorphDefinition | undefined { return speciesId && speciesId !== "heterodon-nasicus" ? getSpeciesGeneticDefinition(speciesId, geneId) : masterMorphs.find((morph) => morph.geneId === geneId); }
 function clampProbability(value: number): number { return Math.min(1, Math.max(0, value)); }
-function getHetProbabilityAsParentAlleleProbability(percentage: HetPercentage): number {
-  if (percentage === "66%" || percentage === 66) return 1 / 3;
-  if (percentage === "50%" || percentage === 50) return 1 / 4;
-  return 1 / 2;
-}
+function getHetProbabilityAsParentAlleleProbability(percentage: HetPercentage): number { if (percentage === "66%" || percentage === 66) return 1 / 3; if (percentage === "50%" || percentage === 50) return 1 / 4; return 1 / 2; }
 function getVisualGeneCopies(morph: MasterMorphDefinition): 0 | 1 | 2 { return morph.inheritance === "Recessive" ? 2 : 1; }
 function createKnownState(geneId: string, copies: 0 | 1 | 2, probabilityOverride?: number): AlleleState { return { geneId, copies, mutationAlleleProbability: probabilityOverride ?? copies / 2 }; }
 
@@ -92,63 +75,19 @@ function buildLoci(input: GeneticsCalculatorInput): ParentLocus[] {
   const geneIds = new Set([...mother.keys(), ...father.keys()]);
   return [...geneIds].map((geneId) => ({ geneId, mother: mother.get(geneId) ?? createKnownState(geneId, 0), father: father.get(geneId) ?? createKnownState(geneId, 0) }));
 }
-function calculateLocus(locus: ParentLocus): LocusOutcome[] {
-  const motherMutation = clampProbability(locus.mother.mutationAlleleProbability);
-  const fatherMutation = clampProbability(locus.father.mutationAlleleProbability);
-  const outcomes = new Map<0 | 1 | 2, number>();
-  const normalNormal = (1 - motherMutation) * (1 - fatherMutation);
-  const motherMutant = motherMutation * (1 - fatherMutation);
-  const fatherMutant = (1 - motherMutation) * fatherMutation;
-  const bothMutant = motherMutation * fatherMutation;
-  if (normalNormal > EPSILON) outcomes.set(0, normalNormal);
-  if (motherMutant + fatherMutant > EPSILON) outcomes.set(1, motherMutant + fatherMutant);
-  if (bothMutant > EPSILON) outcomes.set(2, bothMutant);
-  return [...outcomes.entries()].map(([copies, probability]) => ({ geneId: locus.geneId, copies, probability: probability * 100 }));
-}
+function calculateLocus(locus: ParentLocus): LocusOutcome[] { const motherMutation = clampProbability(locus.mother.mutationAlleleProbability); const fatherMutation = clampProbability(locus.father.mutationAlleleProbability); const outcomes = new Map<0 | 1 | 2, number>(); const normalNormal = (1 - motherMutation) * (1 - fatherMutation); const motherMutant = motherMutation * (1 - fatherMutation); const fatherMutant = (1 - motherMutation) * fatherMutation; const bothMutant = motherMutation * fatherMutation; if (normalNormal > EPSILON) outcomes.set(0, normalNormal); if (motherMutant + fatherMutant > EPSILON) outcomes.set(1, motherMutant + fatherMutant); if (bothMutant > EPSILON) outcomes.set(2, bothMutant); return [...outcomes.entries()].map(([copies, probability]) => ({ geneId: locus.geneId, copies, probability: probability * 100 })); }
 function internalOutcomeKey(outcome: InternalOutcome): string { return [...outcome.loci.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([geneId, copies]) => `${geneId}:${copies}`).join("|"); }
-function mergeInternalOutcomes(outcomes: InternalOutcome[]): InternalOutcome[] {
-  const map = new Map<string, InternalOutcome>();
-  for (const outcome of outcomes) {
-    const key = internalOutcomeKey(outcome);
-    const existing = map.get(key);
-    if (!existing) map.set(key, { loci: new Map(outcome.loci), probability: outcome.probability, unresolved: outcome.unresolved });
-    else { existing.probability += outcome.probability; existing.unresolved ||= outcome.unresolved; }
-  }
-  return [...map.values()];
-}
-function combineLocusOutcomes(loci: ParentLocus[]): InternalOutcome[] {
-  let outcomes: InternalOutcome[] = [{ loci: new Map(), probability: 100, unresolved: false }];
-  for (const locus of loci) {
-    const next: InternalOutcome[] = [];
-    for (const existing of outcomes) for (const locusOutcome of calculateLocus(locus)) {
-      const probability = existing.probability * locusOutcome.probability / 100;
-      if (probability <= EPSILON) continue;
-      const lociMap = new Map(existing.loci);
-      lociMap.set(locusOutcome.geneId, locusOutcome.copies);
-      next.push({ loci: lociMap, probability, unresolved: existing.unresolved || Boolean(locus.mother.unresolved || locus.father.unresolved) });
-    }
-    outcomes = mergeInternalOutcomes(next);
-  }
-  return outcomes;
-}
-function getLocusState(morph: MasterMorphDefinition, copies: number): "Clear" | "Het" | "Visual" | "Super" {
-  if (copies <= 0) return "Clear";
-  if (morph.inheritance === "Recessive") return copies >= 2 ? "Visual" : "Het";
-  if (morph.inheritance === "Incomplete Dominant") return copies >= 2 ? "Super" : "Visual";
-  if (morph.inheritance === "Dominant") return "Visual";
-  return "Clear";
-}
+function mergeInternalOutcomes(outcomes: InternalOutcome[]): InternalOutcome[] { const map = new Map<string, InternalOutcome>(); for (const outcome of outcomes) { const key = internalOutcomeKey(outcome); const existing = map.get(key); if (!existing) map.set(key, { loci: new Map(outcome.loci), probability: outcome.probability, unresolved: outcome.unresolved }); else { existing.probability += outcome.probability; existing.unresolved ||= outcome.unresolved; } } return [...map.values()]; }
+function combineLocusOutcomes(loci: ParentLocus[]): InternalOutcome[] { let outcomes: InternalOutcome[] = [{ loci: new Map(), probability: 100, unresolved: false }]; for (const locus of loci) { const next: InternalOutcome[] = []; for (const existing of outcomes) for (const locusOutcome of calculateLocus(locus)) { const probability = existing.probability * locusOutcome.probability / 100; if (probability <= EPSILON) continue; const lociMap = new Map(existing.loci); lociMap.set(locusOutcome.geneId, locusOutcome.copies); next.push({ loci: lociMap, probability, unresolved: existing.unresolved || Boolean(locus.mother.unresolved || locus.father.unresolved) }); } outcomes = mergeInternalOutcomes(next); } return outcomes; }
+function getLocusState(morph: MasterMorphDefinition, copies: number): "Clear" | "Het" | "Visual" | "Super" { if (copies <= 0) return "Clear"; if (morph.inheritance === "Recessive") return copies >= 2 ? "Visual" : "Het"; if (morph.inheritance === "Incomplete Dominant") return copies >= 2 ? "Super" : "Visual"; if (morph.inheritance === "Dominant") return "Visual"; return "Clear"; }
 function buildComponent(geneId: string, copies: number, speciesId?: string | null): OffspringComponent | undefined { const morph = getDefinition(geneId, speciesId); if (!morph || copies <= 0) return undefined; return { geneId, name: morph.name, copies, state: getLocusState(morph, copies) }; }
 function getVisualComponents(loci: Map<string, number>, speciesId?: string | null): OffspringComponent[] { const components: OffspringComponent[] = []; for (const [geneId, copies] of loci) { const component = buildComponent(geneId, copies, speciesId); if (component?.state === "Visual" || component?.state === "Super") components.push(component); } return components.sort((a, b) => a.name.localeCompare(b.name)); }
 function getHetComponents(loci: Map<string, number>, speciesId?: string | null): OffspringComponent[] { const components: OffspringComponent[] = []; for (const [geneId, copies] of loci) { const component = buildComponent(geneId, copies, speciesId); if (component?.state === "Het") components.push(component); } return components.sort((a, b) => a.name.localeCompare(b.name)); }
-function getRecognisedCombinationForLoci(loci: Map<string, number>, speciesId?: string | null): MasterMorphDefinition | undefined {
-  const components: MorphComponent[] = [...loci.entries()].filter(([, copies]) => copies > 0).map(([morphId, copies]) => ({ morphId, type: "Gene", copies }));
-  return speciesId ? findSpeciesCanonicalMorphForComposition(speciesId, components) : findCanonicalMorphForComposition(components);
-}
+function getRecognisedCombinationForLoci(loci: Map<string, number>, speciesId?: string | null): MasterMorphDefinition | undefined { const components: MorphComponent[] = [...loci.entries()].filter(([, copies]) => copies > 0).map(([morphId, copies]) => ({ morphId, type: "Gene", copies })); return speciesId ? findSpeciesCanonicalMorphForComposition(speciesId, components) : findCanonicalMorphForComposition(components); }
 function buildFallbackName(visualComponents: OffspringComponent[]): string { return visualComponents.length ? visualComponents.map((component) => component.state === "Super" ? `Super ${component.name}` : component.name).join(" + ") : "Normal"; }
-function getPossibleHetComponents(_loci: Map<string, number>): OffspringComponent[] { return []; }
+function getPossibleHetComponents(): OffspringComponent[] { return []; }
 function buildResultId(visual: OffspringComponent[], het: OffspringComponent[], possible: OffspringComponent[]): string { return [visual.map((item) => `${item.geneId}:${item.copies}`).sort().join(","), het.map((item) => `${item.geneId}:${item.copies}`).sort().join(","), possible.map((item) => item.geneId).sort().join(",")].join("|"); }
-function buildOffspringResult(outcome: InternalOutcome, speciesId?: string | null): OffspringResult { const visualComponents = getVisualComponents(outcome.loci, speciesId); const hetComponents = getHetComponents(outcome.loci, speciesId); const possibleHetComponents = getPossibleHetComponents(outcome.loci); const combination = getRecognisedCombinationForLoci(outcome.loci, speciesId); return { id: buildResultId(visualComponents, hetComponents, possibleHetComponents), name: combination?.name ?? buildFallbackName(visualComponents), percentage: outcome.probability, visualComponents, hetComponents, possibleHetComponents, recognisedCombination: Boolean(combination), combination, hasUnresolvedGenetics: outcome.unresolved }; }
+function buildOffspringResult(outcome: InternalOutcome, speciesId?: string | null): OffspringResult { const visualComponents = getVisualComponents(outcome.loci, speciesId); const hetComponents = getHetComponents(outcome.loci, speciesId); const possibleHetComponents = getPossibleHetComponents(); const combination = getRecognisedCombinationForLoci(outcome.loci, speciesId); return { id: buildResultId(visualComponents, hetComponents, possibleHetComponents), name: combination?.name ?? buildFallbackName(visualComponents), percentage: outcome.probability, visualComponents, hetComponents, possibleHetComponents, recognisedCombination: Boolean(combination), combination, hasUnresolvedGenetics: outcome.unresolved }; }
 function mergeOffspringResults(results: OffspringResult[]): OffspringResult[] { const map = new Map<string, OffspringResult>(); for (const result of results) { const existing = map.get(result.id); if (!existing) map.set(result.id, { ...result, visualComponents: [...result.visualComponents], hetComponents: [...result.hetComponents], possibleHetComponents: [...result.possibleHetComponents] }); else { existing.percentage += result.percentage; existing.hasUnresolvedGenetics ||= result.hasUnresolvedGenetics; } } return [...map.values()].sort((a, b) => b.percentage - a.percentage); }
 function ensureNormalResult(results: OffspringResult[]): OffspringResult[] { const normal = results.find((result) => result.visualComponents.length === 0 && result.hetComponents.length === 0 && result.possibleHetComponents.length === 0); if (normal) normal.name = "Normal"; return results; }
 export function calculateGenetics(input: GeneticsCalculatorInput): GeneticsCalculatorResult { const merged = ensureNormalResult(mergeOffspringResults(combineLocusOutcomes(buildLoci(input)).map((outcome) => buildOffspringResult(outcome, input.speciesId)))); return { input, offspring: merged, hasUnresolvedGenetics: merged.some((result) => result.hasUnresolvedGenetics) }; }
