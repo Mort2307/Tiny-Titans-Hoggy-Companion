@@ -60,7 +60,7 @@ function mapV3Outcome(outcome: V3Outcome, definitions: MasterMorphDefinition[], 
     : undefined;
 
   return {
-    id: `${outcome.visualMorphs.slice().sort().join(",")}|${outcome.phenotypes.slice().sort().join(",")}|${outcome.geneStates.map((state) => `${state.geneId}:${state.copies}`).sort().join(",`)}|${index}`,
+    id: `${outcome.visualMorphs.slice().sort().join(",")}|${outcome.phenotypes.slice().sort().join(",")}|${outcome.geneStates.map((state) => `${state.geneId}:${state.copies}`).sort().join(",")}|${index}`,
     name,
     ...(probability === undefined ? {} : { percentage: probability }),
     ...(probabilityRange ? { probabilityRange } : {}),
@@ -76,12 +76,8 @@ function mapV3Outcome(outcome: V3Outcome, definitions: MasterMorphDefinition[], 
 }
 
 /** @deprecated Prefer calculateSpeciesGeneticsForSpecies so taxonomy is explicit. */
-export function calculateSpeciesGenetics(input: GeneticsCalculatorInput, definitions: MasterMorphDefinition[]): GeneticsCalculatorResult {
-  return {
-    input,
-    offspring: [],
-    hasUnresolvedGenetics: true,
-  };
+export function calculateSpeciesGenetics(input: GeneticsCalculatorInput, _definitions: MasterMorphDefinition[]): GeneticsCalculatorResult {
+  return { input, offspring: [], hasUnresolvedGenetics: true };
 }
 
 export function calculateSpeciesGeneticsForSpecies(
