@@ -34,23 +34,14 @@ export type V3Outcome = {
   certainty: "exact" | "bounded";
   probability?: number;
   probabilityRange?: { min: number; max: number };
-  genotypeScenarios?: Array<{
-    label: string;
-    probability?: number;
-    visualMorphs: string[];
-    phenotypes: string[];
-    hets: string[];
-    locusStates: V3LocusState[];
-  }>;
+  genotypeScenarios?: Array<{ label: string; probability?: number; visualMorphs: string[]; phenotypes: string[]; hets: string[]; locusStates: V3LocusState[] }>;
 };
 export type V3Calculation = { outcomes: V3Outcome[]; diagnostics: string[] };
 
 type Weighted<T> = { value: T; weight?: number; unknown: boolean; label: string };
 type ParentAlleleState = { alleleA: string; alleleB: string };
 
-function clamp(value: number): number { return Math.max(0, Math.min(1, value)); }
-function product(values: number[]): number { return values.reduce((total, value) => total * value, 1); }
-function hetProbability(value: HetPercentage): number { return value === "100%" ? 1 : value === "66%" ? 0.66 : 0.5; }
+function hetProbability(value: HetPercentage): number { return value === "100%" ? 1 : value === "66%" ? 2 / 3 : 0.5; }
 function getMorph(speciesId: string, geneId: string): MorphDefinition | undefined { return getSpeciesCalculatorMorph(speciesId, geneId); }
 
 function getParentState(parent: V3ParentGenetics, geneId: string): V3GeneState {
@@ -225,14 +216,8 @@ export function calculateGeneticsV3(mother: V3ParentGenetics, father: V3ParentGe
   if (mother.speciesId !== father.speciesId) return { outcomes: [], diagnostics: [`Species mismatch: ${mother.speciesId} × ${father.speciesId}.`] };
   const { loci, diagnostics } = diagnosticsForLoci(mother, father);
   const hardDiagnostics = [...diagnostics];
-  const locusModels = loci.map((locusId) => ({
-    locusId,
-    mother: parentLocusScenarios(mother, locusId),
-    father: parentLocusScenarios(father, locusId),
-  }));
-  for (const model of locusModels) {
-    if (!model.mother.length || !model.father.length) hardDiagnostics.push(`Locus ${model.locusId} has an unsupported or conflicting parent allele state; calculation stopped rather than guessing.`);
-  }
+  const locusModels = loci.map((locusId) => ({ locusId, mother: parentLocusScenarios(mother, locusId), father: parentLocusScenarios(father, locusId) }));
+  for (const model of locusModels) if (!model.mother.length || !model.father.length) hardDiagnostics.push(`Locus ${model.locusId} has an unsupported or conflicting parent allele state; calculation stopped rather than guessing.`);
   if (hardDiagnostics.length) return { outcomes: [], diagnostics: [...new Set(hardDiagnostics)] };
 
   const excludedLoci = new Set(loci);
@@ -243,16 +228,14 @@ export function calculateGeneticsV3(mother: V3ParentGenetics, father: V3ParentGe
 
   for (const locus of locusModels) {
     const next: Scenario[] = [];
-    for (const base of scenarios) for (const ms of locus.mother) for (const fs of locus.father) {
-      for (const child of crossLocusStates(ms.value, fs.value)) {
-        next.push({
-          probabilityKnown: base.probabilityKnown && ms.weight !== undefined && fs.weight !== undefined,
-          probability: base.probability * (ms.weight ?? 1) * (fs.weight ?? 1) * child.probability,
-          labels: [...base.labels, `${locus.locusId}: ${ms.label} × ${fs.label}`],
-          geneStates: [...base.geneStates],
-          locusStates: [...base.locusStates, { locusId: locus.locusId, alleleA: child.state.alleleA, alleleB: child.state.alleleB }],
-        });
-      }
+    for (const base of scenarios) for (const ms of locus.mother) for (const fs of locus.father) for (const child of crossLocusStates(ms.value, fs.value)) {
+      next.push({
+        probabilityKnown: base.probabilityKnown && ms.weight !== undefined && fs.weight !== undefined,
+        probability: base.probability * (ms.weight ?? 1) * (fs.weight ?? 1) * child.probability,
+        labels: [...base.labels, `${locus.locusId}: ${ms.label} × ${fs.label}`],
+        geneStates: [...base.geneStates],
+        locusStates: [...base.locusStates, { locusId: locus.locusId, alleleA: child.state.alleleA, alleleB: child.state.alleleB }],
+      });
     }
     scenarios = next;
   }
@@ -350,6 +333,4 @@ export function getSpeciesCalculatorCoverageV3(speciesId: string): { eligibleGen
   return { eligibleGenes, count: eligibleGenes.length };
 }
 
-export function isSpeciesCalculatorV3Ready(speciesId: string): boolean {
-  return getSpeciesCalculatorMorphs(speciesId).length > 0;
-}
+export function isSpeciesCalculatorV3Ready(speciesId: string): boolean { return getSpeciesCalculatorMorphs(speciesId).length > 0; }
