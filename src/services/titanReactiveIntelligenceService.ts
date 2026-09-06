@@ -1,9 +1,9 @@
 import type { SnakeInsight, SnakeIntelligence } from "./snakeIntelligenceService";
-import { TITAN_INTELLIGENCE_UPDATED_EVENT, tinyTitansEventBus, type TinyTitansEvent } from "./tinyTitansEventBus";
+import { tinyTitansEventBus, type TinyTitansEvent, type TinyTitansEventName } from "./tinyTitansEventBus";
 
 type TitanRecordEventType = "WeightRecorded" | "FeedingRecorded" | "ShedRecorded" | "BehaviourObserved" | "HealthRecordCreated" | "MicroclimateRecorded" | "EnclosureChanged" | "GeneticsChanged" | "BreedingProjectChanged" | "HatchlingRecorded" | "LearningActivityRecorded";
 type TitanActionKind = "created" | "updated" | "deleted";
-export interface TitanReactiveEvent { id: string; uid: string; animalId?: string; type: TitanRecordEventType; action: TitanActionKind; createdAt: number; weightGrams?: number; shedStatus?: "Complete" | "Partial" | "Problematic"; occurredAt?: string; }
+export interface TitanReactiveEvent { id: string; uid: string; animalId?: string; projectId?: string; type: TitanRecordEventType; action: TitanActionKind; createdAt: number; weightGrams?: number; shedStatus?: "Complete" | "Partial" | "Problematic"; occurredAt?: string; enclosureId?: string; }
 export type TitanProactiveItemStatus = "active" | "handled" | "dismissed";
 export interface TitanProactiveStateItem { key: string; uid: string; animalId: string; insightId: string; title: string; why: string; action: string; tone: SnakeInsight["tone"]; confidence: SnakeInsight["confidence"]; status: TitanProactiveItemStatus; firstSeenAt: number; lastSeenAt: number; lastEventAt?: number; handledAt?: number; dismissedAt?: number; }
 export interface TitanReactiveUpdateDetail { event?: TitanReactiveEvent; affectedAnimalId?: string; }
@@ -15,21 +15,26 @@ function safeWrite<T>(key: string, value: T): void { if (typeof window === "unde
 function pruneState(items: TitanProactiveStateItem[], now = Date.now()): TitanProactiveStateItem[] { return items.filter((item) => now - item.lastSeenAt <= STATE_TTL_MS || item.status === "active").sort((a, b) => b.lastSeenAt - a.lastSeenAt).slice(0, MAX_STATE_ITEMS); }
 function insightKey(animalId: string, insightId: string): string { return `${animalId}:${insightId}`; }
 
-function emitToTypedDomainBus(event: TitanReactiveEvent): boolean {
-  if (!event.animalId) return false;
+function emitDomainBusEvent(event: TitanReactiveEvent): void {
+  if (!event.animalId && event.type !== "BreedingProjectChanged" && event.type !== "HatchlingRecorded") return;
   const occurredAt = event.occurredAt ?? new Date(event.createdAt).toISOString();
-  if (event.type === "WeightRecorded" && typeof event.weightGrams === "number") { tinyTitansEventBus.emit({ type: "WeightRecorded", payload: { snakeId: event.animalId, weightGrams: event.weightGrams, occurredAt } }); return true; }
-  if (event.type === "FeedingRecorded") { tinyTitansEventBus.emit({ type: "FeedingRecorded", payload: { snakeId: event.animalId, occurredAt } }); return true; }
-  if (event.type === "ShedRecorded" && event.shedStatus) { tinyTitansEventBus.emit({ type: "ShedRecorded", payload: { snakeId: event.animalId, status: event.shedStatus, occurredAt } }); return true; }
-  return false;
+  if (event.type === "WeightRecorded" && event.animalId && typeof event.weightGrams === "number") return tinyTitansEventBus.emit({ type: "WeightRecorded", payload: { snakeId: event.animalId, weightGrams: event.weightGrams, occurredAt } });
+  if (event.type === "FeedingRecorded" && event.animalId) return tinyTitansEventBus.emit({ type: "FeedingRecorded", payload: { snakeId: event.animalId, occurredAt } });
+  if (event.type === "ShedRecorded" && event.animalId) return tinyTitansEventBus.emit({ type: "ShedRecorded", payload: { snakeId: event.animalId, status: event.shedStatus ?? "Complete", occurredAt } });
+  if (event.type === "HealthRecordCreated" && event.animalId) return tinyTitansEventBus.emit({ type: "HealthRecordCreated", payload: { snakeId: event.animalId, occurredAt } });
+  if (event.type === "MicroclimateRecorded" && event.animalId) return tinyTitansEventBus.emit({ type: "MicroclimateRecorded", payload: { snakeId: event.animalId, enclosureId: event.enclosureId, occurredAt } });
+  if (event.type === "EnclosureChanged" && event.animalId && event.enclosureId) return tinyTitansEventBus.emit({ type: "EnclosureUpdated", payload: { snakeId: event.animalId, enclosureId: event.enclosureId, occurredAt } });
+  if (event.type === "GeneticsChanged" && event.animalId) return tinyTitansEventBus.emit({ type: "GeneticsChanged", payload: { snakeId: event.animalId, occurredAt } });
+  if (event.type === "BreedingProjectChanged" && event.projectId) return tinyTitansEventBus.emit({ type: "BreedingProjectChanged", payload: { projectId: event.projectId, snakeId: event.animalId, action: event.action, occurredAt } });
+  if (event.type === "HatchlingRecorded" && event.projectId) return tinyTitansEventBus.emit({ type: "HatchlingRecorded", payload: { projectId: event.projectId, snakeId: event.animalId, action: event.action, occurredAt } });
 }
 
 export function emitTitanIntelligenceEvent(input: Omit<TitanReactiveEvent, "id" | "createdAt">): TitanReactiveEvent {
-  const event: TitanReactiveEvent = { ...input, id: `${input.type}-${input.action}-${input.animalId ?? "collection"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, createdAt: Date.now() };
+  const event: TitanReactiveEvent = { ...input, id: `${input.type}-${input.action}-${input.animalId ?? input.projectId ?? "collection"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, createdAt: Date.now() };
   const events = safeRead<TitanReactiveEvent[]>(EVENTS_KEY(input.uid), []);
   safeWrite(EVENTS_KEY(input.uid), [event, ...events].slice(0, MAX_EVENTS));
-  const sentToDomainBus = emitToTypedDomainBus(event);
-  if (!sentToDomainBus && typeof window !== "undefined") window.dispatchEvent(new CustomEvent<TitanReactiveUpdateDetail>(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: { event, affectedAnimalId: input.animalId } }));
+  emitDomainBusEvent(event);
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("titan:intelligence-updated", { detail: { event, affectedAnimalId: input.animalId } }));
   return event;
 }
 export function getRecentTitanIntelligenceEvents(uid: string, max = 12): TitanReactiveEvent[] { return safeRead<TitanReactiveEvent[]>(EVENTS_KEY(uid), []).slice(0, max); }
@@ -47,6 +52,12 @@ export function markTitanProactiveHandled(uid: string, animalId: string, insight
 export function dismissTitanProactive(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "dismissed"); }
 export function reopenTitanProactive(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "active"); }
 export function getActiveTitanProactiveState(uid: string): TitanProactiveStateItem[] { return pruneState(safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), [])).filter((item) => item.status === "active"); }
-export function subscribeToTitanIntelligenceUpdates(callback: (detail: TitanReactiveUpdateDetail) => void): () => void { if (typeof window === "undefined") return () => undefined; const listener = (event: Event) => callback((event as CustomEvent<TitanReactiveUpdateDetail>).detail ?? {}); window.addEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener); return () => window.removeEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener); }
-function updateTitanProactiveState(uid: string, key: string, status: TitanProactiveItemStatus): void { const now = Date.now(); const items = safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), []); const updated = items.map((item) => item.key === key ? { ...item, status, ...(status === "handled" ? { handledAt: now, dismissedAt: undefined } : {}), ...(status === "dismissed" ? { dismissedAt: now, handledAt: undefined } : {}), ...(status === "active" ? { handledAt: undefined, dismissedAt: undefined } : {}), lastSeenAt: now } : item); safeWrite(STATE_KEY(uid), pruneState(updated, now)); if (typeof window !== "undefined") window.dispatchEvent(new Event(TITAN_INTELLIGENCE_UPDATED_EVENT)); }
+export function subscribeToTitanIntelligenceUpdates(callback: (detail: TitanReactiveUpdateDetail) => void): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  const listener = (event: Event) => callback((event as CustomEvent<TitanReactiveUpdateDetail>).detail ?? {});
+  window.addEventListener("titan:intelligence-updated", listener as EventListener);
+  return () => window.removeEventListener("titan:intelligence-updated", listener as EventListener);
+}
+function updateTitanProactiveState(uid: string, key: string, status: TitanProactiveItemStatus): void { const now = Date.now(); const items = safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), []); const updated = items.map((item) => item.key === key ? { ...item, status, ...(status === "handled" ? { handledAt: now, dismissedAt: undefined } : {}), ...(status === "dismissed" ? { dismissedAt: now, handledAt: undefined } : {}), ...(status === "active" ? { handledAt: undefined, dismissedAt: undefined } : {}), lastSeenAt: now } : item); safeWrite(STATE_KEY(uid), pruneState(updated, now)); if (typeof window !== "undefined") window.dispatchEvent(new Event("titan:intelligence-updated")); }
 export type TitanReactiveDomainEvent = TinyTitansEvent;
+export type TitanReactiveDomainEventName = TinyTitansEventName;
