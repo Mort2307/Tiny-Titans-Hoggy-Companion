@@ -3,6 +3,7 @@ import { getMasterVisualMorphs } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_EXPANSION_BATCH_1 } from "./speciesGeneticsExpansionBatch1";
+import { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";
 
 export type SpeciesGeneticsCoverageStatus = "mapped" | "partial" | "baseline-only";
 
@@ -23,12 +24,18 @@ export type SpeciesGeneticsCoverage = {
 const MENDELIAN = new Set(["Recessive", "Incomplete Dominant", "Dominant"]);
 
 function composeCatalogue(speciesName: string): MasterMorphDefinition[] {
-  const base = SPECIES_GENETICS_CATALOGUES[speciesName] ?? [];
-  const expansion = SPECIES_GENETICS_EXPANSION_BATCH_1[speciesName] ?? [];
-  return [
-    ...base,
-    ...expansion.filter((trait) => !base.some((entry) => entry.geneId === trait.geneId || entry.name.trim().toLowerCase() === trait.name.trim().toLowerCase())),
+  const batches = [
+    SPECIES_GENETICS_CATALOGUES,
+    SPECIES_GENETICS_EXPANSION_BATCH_1,
+    SPECIES_GENETICS_EXPANSION_BATCH_2,
   ];
+  return batches.reduce<MasterMorphDefinition[]>((combined, batch) => {
+    const additions = batch[speciesName] ?? [];
+    return [
+      ...combined,
+      ...additions.filter((trait) => !combined.some((entry) => entry.geneId === trait.geneId || entry.name.trim().toLowerCase() === trait.name.trim().toLowerCase())),
+    ];
+  }, []);
 }
 
 function catalogueForSpecies(speciesId: string): MasterMorphDefinition[] {
