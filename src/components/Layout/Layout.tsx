@@ -10,6 +10,7 @@ import SupportNotificationCenter from "../SupportNotificationCenter";
 import SpeciesContextBar from "../SpeciesContextBar";
 import SpeciesContextRouteSync from "../SpeciesContextRouteSync";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
+import TitanGlobalNextAction from "../TitanIntelligence/TitanGlobalNextAction";
 import SpeciesAwareMorphLibrary from "../../pages/SpeciesAwareMorphLibrary";
 import SpeciesMorphDetail from "../../pages/SpeciesMorphDetail";
 import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
@@ -17,29 +18,9 @@ import SpeciesSafeEnclosureIntelligence from "../../pages/SpeciesSafeEnclosureIn
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
 const speciesAwarePrefixes = [
-  "/snakes",
-  "/reptile-room",
-  "/reminders",
-  "/husbandry",
-  "/weights",
-  "/feeding",
-  "/shedding",
-  "/behaviour",
-  "/health",
-  "/enclosure-intelligence",
-  "/morph-library",
-  "/calculator",
-  "/breeding",
-  "/keeper-handbook",
-  "/behaviour-observatory",
-  "/make-contribution",
-  "/knowledge-base",
-  "/challenge",
-  "/community",
-  "/account",
-  "/become-a-titan",
-  "/educator",
-  "/creator",
+  "/snakes", "/reptile-room", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding", "/behaviour", "/health",
+  "/enclosure-intelligence", "/morph-library", "/calculator", "/breeding", "/keeper-handbook", "/behaviour-observatory",
+  "/make-contribution", "/knowledge-base", "/challenge", "/community", "/account", "/become-a-titan", "/educator", "/creator",
 ];
 
 function Layout() {
@@ -67,6 +48,7 @@ function Layout() {
             <SupportNotificationCenter />
             <div className="tt-page-frame">
               {speciesAware && <SpeciesContextBar />}
+              <TitanGlobalNextAction />
               {isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
                 : morphGalleryMatch ? <SpeciesMorphGallery />
                   : morphDetailMatch ? <SpeciesMorphDetail />
