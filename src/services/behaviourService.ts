@@ -40,4 +40,5 @@ export async function deleteSnakeBehaviourRecord(uid: string, snakeId: string, r
   const owner = await resolveDataOwnerUid(uid);
   await requestFamilyMutation({ requesterUid: uid, requesterName: uid, area: "behaviour", action: "delete", title: "Delete behaviour record", description: "A family member wants to permanently remove a shared behaviour observation.", targetPath: `users/${owner}/snakes/${snakeId}/behaviours/${recordId}`, operation: "delete" });
   await deleteDoc(doc(records(owner, snakeId), recordId));
+  tinyTitansEventBus.emit({ type: "BehaviourRecorded", payload: { snakeId, recordId, observation: "Other", context: "Other", occurredAt: new Date().toISOString(), operation: "delete" } });
 }
