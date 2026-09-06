@@ -46,7 +46,8 @@ export function buildTitanTimelinePulse(timeline: readonly AnimalTimelineEvent[]
     const eventMs = timestamp(event.date);
     return nowMs - eventMs >= 0 && nowMs - eventMs <= 30 * 86_400_000;
   });
-  const source = recent.length ? recent : dated.slice(-6);
+  const hasRecentActivity = recent.length > 0;
+  const source = hasRecentActivity ? recent : dated.slice(-6);
   const domainCounts: Record<string, number> = {};
   source.forEach((event) => {
     const domain = domainForType(event.type);
@@ -60,9 +61,11 @@ export function buildTitanTimelinePulse(timeline: readonly AnimalTimelineEvent[]
   const strongest = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0];
   const summary = source.length === 1
     ? `The latest recorded event is ${latest.label}. Tiny Titans is waiting for more temporal evidence before calling a pattern.`
-    : strongest
-      ? `${source.length} dated events are clustered in the recent history, with ${strongest[0]} currently the most represented area. This is descriptive rather than causal.`
-      : `${source.length} dated events are currently available in the recent timeline.`;
+    : hasRecentActivity && strongest
+      ? `${source.length} dated events are clustered in the recent 30-day history, with ${strongest[0]} currently the most represented area. This is descriptive rather than causal.`
+      : strongest
+        ? `${source.length} older dated events remain available for context; no recorded event falls within the current 30-day activity window. ${strongest[0]} is the most represented area in that historical sample.`
+        : `${source.length} dated events are available for historical context, with no recorded event in the current 30-day activity window.`;
 
-  return { windowDays: recent.length ? 30 : 0, eventCount: source.length, domainCounts, latest, preceding, tempoLabel, summary };
+  return { windowDays: hasRecentActivity ? 30 : 0, eventCount: source.length, domainCounts, latest, preceding, tempoLabel, summary };
 }
