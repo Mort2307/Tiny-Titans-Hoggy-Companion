@@ -7,6 +7,7 @@ import {
 } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
+import { SPECIES_GENETICS_EXPANSION_BATCH_1 } from "./speciesGeneticsExpansionBatch1";
 import { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary } from "./speciesGeneticsCoverage";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
@@ -28,7 +29,20 @@ const normalTrait = (speciesName: string): MasterMorphDefinition => ({
   educationalNotes: "Baseline reference only. A visible difference is not automatically a genetic morph. Community submissions can document unusual animals for Creator review and future evidence gathering.",
 });
 
-const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = SPECIES_GENETICS_CATALOGUES;
+function composeSpeciesCatalogues(): Record<string, MasterMorphDefinition[]> {
+  const result: Record<string, MasterMorphDefinition[]> = {};
+  for (const [speciesName, traits] of Object.entries(SPECIES_GENETICS_CATALOGUES)) result[speciesName] = [...traits];
+  for (const [speciesName, traits] of Object.entries(SPECIES_GENETICS_EXPANSION_BATCH_1)) {
+    const existing = result[speciesName] ?? [];
+    result[speciesName] = [
+      ...existing,
+      ...traits.filter((trait) => !existing.some((entry) => entry.geneId === trait.geneId || normalise(entry.name) === normalise(trait.name))),
+    ];
+  }
+  return result;
+}
+
+const SPECIES_CATALOGUES = composeSpeciesCatalogues();
 
 function getSpeciesRecord(speciesId: string | null | undefined): SpeciesRecord | undefined {
   return speciesId ? INITIAL_SNAKE_SPECIES.find((species) => species.id === speciesId) : undefined;
@@ -151,14 +165,7 @@ function buildExplanation(entry: MasterMorphDefinition, components: GeneticsSear
   return `${entry.name} is catalogued as ${entry.inheritance}. Tiny Titans will not infer homozygous/super state unless the individual record explicitly supports it.`;
 }
 
-/**
- * Species-aware genetics search. This is the single search path used by the
- * species Morph Library so display search and genetics identity stay aligned.
- *
- * No cross-species records are imported into a species search. Hognose-only
- * named combinations are additionally searched from the canonical combination
- * registry because names such as Grey Fog are combinations rather than loci.
- */
+/** Species-aware genetics search. Search never falls back across species. */
 export function searchGenetics(
   speciesId: string | null | undefined,
   query: string,
@@ -178,74 +185,14 @@ export function searchGenetics(
   const speciesName = getSpeciesName(species);
 
   if (!q) {
-    return searchEntries
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .slice(0, limit)
-      .map((entry) => {
-        const components = resolveSearchComponents(entry, speciesEntries);
-        return {
-          entry,
-          speciesId,
-          speciesName,
-          score: 0,
-          matchedOn: [],
-          aliases: entry.aliases ?? [],
-          components,
-          calculatorEligible: calculatorIds.has(entry.geneId),
-          evidence: {
-            verification: entry.verification,
-            status: entry.evidenceStatus ?? entry.verification,
-            note: entry.evidenceNote,
-            confidence: confidenceFromEvidence(entry),
-          },
-          explanation: buildExplanation(entry, components),
-        };
-      });
-  }
-
-  return searchEntries
-    .map((entry) => {
-      const matchedOn: string[] = [];
-      let score = 0;
-      const nameScore = scoreField(entry.name, q, 1200, 850, 500, 300);
-      if (nameScore) {
-        score += nameScore;
-        matchedOn.push("name");
-      }
-      for (const alias of entry.aliases ?? []) {
-        const aliasScore = scoreField(alias, q, 1100, 800, 475, 275);
-        if (aliasScore) {
-          score = Math.max(score, aliasScore) + Math.min(aliasScore, 225);
-          matchedOn.push("alias");
-        }
-      }
-      for (const component of entry.components ?? []) {
-        const componentScore = scoreField(component.morphId, q, 700, 550, 400, 225);
-        if (componentScore) {
-          score += componentScore;
-          matchedOn.push("component");
-        }
-      }
-      for (const contains of entry.contains ?? []) {
-        const containsScore = scoreField(contains, q, 700, 550, 400, 225);
-        if (containsScore) {
-          score += containsScore;
-          matchedOn.push("contains");
-        }
-      }
-      const descriptionScore = scoreField(entry.description ?? "", q, 200, 175, 125, 75);
-      if (descriptionScore) {
-        score += descriptionScore;
-        matchedOn.push("description");
-      }
-
+    return searchEntries.sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit).map((entry) => {
       const components = resolveSearchComponents(entry, speciesEntries);
       return {
         entry,
         speciesId,
         speciesName,
-        score,
-        matchedOn: [...new Set(matchedOn)],
+        score: 0,
+        matchedOn: [],
         aliases: entry.aliases ?? [],
         components,
         calculatorEligible: calculatorIds.has(entry.geneId),
@@ -257,10 +204,48 @@ export function searchGenetics(
         },
         explanation: buildExplanation(entry, components),
       };
-    })
-    .filter((result) => result.score > 0)
-    .sort((a, b) => b.score - a.score || a.entry.name.localeCompare(b.entry.name))
-    .slice(0, limit);
+    });
+  }
+
+  return searchEntries.map((entry) => {
+    const matchedOn: string[] = [];
+    let score = 0;
+    const nameScore = scoreField(entry.name, q, 1200, 850, 500, 300);
+    if (nameScore) { score += nameScore; matchedOn.push("name"); }
+    for (const alias of entry.aliases ?? []) {
+      const aliasScore = scoreField(alias, q, 1100, 800, 475, 275);
+      if (aliasScore) { score = Math.max(score, aliasScore) + Math.min(aliasScore, 225); matchedOn.push("alias"); }
+    }
+    for (const component of entry.components ?? []) {
+      const componentScore = scoreField(component.morphId, q, 700, 550, 400, 225);
+      if (componentScore) { score += componentScore; matchedOn.push("component"); }
+    }
+    for (const contains of entry.contains ?? []) {
+      const containsScore = scoreField(contains, q, 700, 550, 400, 225);
+      if (containsScore) { score += containsScore; matchedOn.push("contains"); }
+    }
+    const descriptionScore = scoreField(entry.description ?? "", q, 200, 175, 125, 75);
+    if (descriptionScore) { score += descriptionScore; matchedOn.push("description"); }
+
+    const components = resolveSearchComponents(entry, speciesEntries);
+    return {
+      entry,
+      speciesId,
+      speciesName,
+      score,
+      matchedOn: [...new Set(matchedOn)],
+      aliases: entry.aliases ?? [],
+      components,
+      calculatorEligible: calculatorIds.has(entry.geneId),
+      evidence: {
+        verification: entry.verification,
+        status: entry.evidenceStatus ?? entry.verification,
+        note: entry.evidenceNote,
+        confidence: confidenceFromEvidence(entry),
+      },
+      explanation: buildExplanation(entry, components),
+    };
+  }).filter((result) => result.score > 0).sort((a, b) => b.score - a.score || a.entry.name.localeCompare(b.entry.name)).slice(0, limit);
 }
 
 export { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary };
