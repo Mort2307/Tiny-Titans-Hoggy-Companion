@@ -1,3 +1,4 @@
+import { calculatorNamedCombinations } from "./geneticsComboRegistry";
 import type { MorphDefinition } from './morphs';
 
 /**
@@ -37,7 +38,7 @@ const combination = (
   contains, description, sourceUrl: 'https://hognose-morphs.com/', sourceLabel: 'Hognose Morphs',
 });
 
-export const hognoseMorphCatalog: MorphReferenceEntry[] = [
+const externalCatalog: MorphReferenceEntry[] = [
   gene('Albino', 'Recessive'), gene('Anaconda', 'Incomplete Dominant'), gene('Antarctic', 'Incomplete Dominant'),
   gene('Arctic', 'Incomplete Dominant'), gene('Axanthic', 'Recessive'), gene('Caramel', 'Recessive'),
   gene('Cinnamon', 'Dominant', 'MorphMarket currently lists Cinnamon as a dominant Western Hognose trait; community documentation also discusses variable penetrance and sex-influenced expression.'),
@@ -53,7 +54,8 @@ export const hognoseMorphCatalog: MorphReferenceEntry[] = [
   gene('Jaguar', 'Unknown'), gene('Motley', 'Unknown'), gene('Reverse Stripe', 'Unknown'), gene('Smoke Hypo', 'Unknown'),
   gene('Tiger', 'Polygenic'), gene('Yellow Glow', 'Unknown'), gene('Pink Pastel Albino', 'Recessive'), gene('Toffee Glow', 'Recessive'),
   combination('Normal'), combination('Anaconda', ['Anaconda']), combination('Superconda', ['Superconda']), combination('Arctic', ['Arctic']),
-  combination('Grey Fog'), combination('Platinum', ['Arctic', 'Superconda'], 'Named combination containing Arctic and Super Conda.'),
+  combination('Grey Fog', ['Arctic', 'Anaconda'], 'A recognised Western Hognose combination of Arctic and Anaconda (Conda).'),
+  combination('Platinum', ['Arctic', 'Superconda'], 'Named combination containing Arctic and Super Conda.'),
   combination('Superarctic', ['Superarctic']), combination('Superarctic Anaconda', ['Superarctic', 'Anaconda']),
   combination('Superarctic Superconda', ['Superarctic', 'Superconda']), combination('Antarctic', ['Antarctic']),
   combination('Superantarctic', ['Superantarctic']), combination('Antarctic Anaconda', ['Antarctic', 'Anaconda']),
@@ -70,6 +72,20 @@ export const hognoseMorphCatalog: MorphReferenceEntry[] = [
   combination('Ultra Caramel', ['Albino', 'Caramel']), combination('Hybino', ['Albino', "Evan's Hypo"]), combination('Purple Haze', ["Evan's Hypo", 'Lavender']),
   combination('T+ Snow', ['Axanthic', "Evan's Hypo"]), combination('Toxic', ['Axanthic', 'Toffeebelly']), combination('Toffeeconda', ['Anaconda', 'Toffeebelly']),
   combination('Thallium', ['Anaconda', 'Axanthic', 'Toffeebelly']),
+];
+
+/**
+ * Calculator-only recognised names are surfaced in the master library too.
+ * They remain combinations and never become new genetic loci.
+ */
+export const hognoseMorphCatalog: MorphReferenceEntry[] = [
+  ...externalCatalog,
+  ...calculatorNamedCombinations.map((entry) => ({
+    ...entry,
+    sourceLabel: 'Tiny Titans genetics registry',
+    description: entry.description ?? 'Recognised named Western Hognose combination.',
+    contains: entry.components?.map((component) => component.morphId) ?? [],
+  })),
 ];
 
 export const hognoseMorphReferenceByName = new Map(hognoseMorphCatalog.map((entry) => [entry.name.toLowerCase(), entry]));
