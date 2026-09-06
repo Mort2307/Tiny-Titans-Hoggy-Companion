@@ -10,7 +10,8 @@ export interface GeneticState { locusId: string; paternalAlleleId: string; mater
 export interface ParentGenome { species: string; states: GeneticState[]; }
 export interface OffspringOutcome { locusId: string; paternalAlleleId: string; maternalAlleleId: string; probability: number; copiesByAllele: Record<string, number>; label: string; phenotypeStatus: GeneticPhenotypeStatus; superForm: boolean; }
 export interface LocusResult { locus: LocusDefinition; outcomes: OffspringOutcome[]; }
-export interface CombinationDefinition { id: string; species: string; name: string; componentLocusIds: string[]; aliases?: string[]; evidence: EvidenceRecord[]; status: "recognised" | "community_name" | "unresolved"; }
+export interface CombinationComponent { locusId: string; alleleId: string; copies?: 1 | 2; }
+export interface CombinationDefinition { id: string; species: string; name: string; componentLocusIds: string[]; components?: CombinationComponent[]; aliases?: string[]; evidence: EvidenceRecord[]; status: "recognised" | "community_name" | "unresolved"; }
 export interface GeneticsDatabase { loci: LocusDefinition[]; combinations: CombinationDefinition[]; }
 export function alleleIdentity(allele: AlleleDefinition): string[] { return [allele.id, allele.name, ...(allele.aliases ?? [])].map((value) => value.trim().toLowerCase()).filter(Boolean); }
 export function getLocusAllele(locus: LocusDefinition, value: string): AlleleDefinition | undefined { const query = value.trim().toLowerCase(); return locus.alleles.find((allele) => alleleIdentity(allele).includes(query)); }
@@ -54,11 +55,10 @@ export function calculateLocus(locus: LocusDefinition, parentA: GeneticState, pa
 }
 export function calculateGenome(database: GeneticsDatabase, parentA: ParentGenome, parentB: ParentGenome): LocusResult[] {
   if (parentA.species !== parentB.species) throw new Error("Cross-species genetics are not supported by this engine.");
-  return database.loci.filter((locus) => locus.species === parentA.species).flatMap((locus) => {
+  return database.loci.filter((locus) => locus.species === parentA.species).map((locus) => {
     const a = parentA.states.find((state) => state.locusId === locus.id);
     const b = parentB.states.find((state) => state.locusId === locus.id);
-    if (!a && !b) return [calculateLocus(locus, wildState(locus), wildState(locus))];
-    return [calculateLocus(locus, a ?? wildState(locus), b ?? wildState(locus))];
+    return calculateLocus(locus, a ?? wildState(locus), b ?? wildState(locus));
   });
 }
 export function resolveCombination(database: GeneticsDatabase, species: string, query: string): CombinationDefinition | undefined {
