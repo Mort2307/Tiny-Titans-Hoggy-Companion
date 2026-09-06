@@ -1,40 +1,16 @@
 import { calculateGenome, calculateLocus, resolveCombination, type GeneticsDatabase, type LocusDefinition, type ParentGenome } from "../src/genetics/geneticsModel.ts";
 import { HOGNOSE_GENETICS_DATABASE } from "../src/genetics/hognoseGenetics.ts";
 import { CORN_SNAKE_GENETICS_DATABASE } from "../src/genetics/cornSnakeGenetics.ts";
+import { buildSnakeGenome } from "../src/genetics/geneticsSnakeAdapter.ts";
 
 const assert = (condition: unknown, message: string): asserts condition => {
   if (!condition) throw new Error(`Genetics runtime test failed: ${message}`);
 };
 const approx = (actual: number, expected: number, message: string) => assert(Math.abs(actual - expected) < 0.000001, `${message} (expected ${expected}, got ${actual})`);
 
-const recessive: LocusDefinition = {
-  id: "test-recessive",
-  species: "Test species",
-  name: "Test Recessive",
-  inheritance: "recessive",
-  alleles: [{ id: "wild", name: "Wild type", isWildType: true }, { id: "test", name: "Test" }],
-  superStatus: "not_applicable",
-  evidence: [],
-};
-const dominant: LocusDefinition = {
-  id: "test-dominant",
-  species: "Test species",
-  name: "Test Dominant",
-  inheritance: "dominant",
-  alleles: [{ id: "wild", name: "Wild type", isWildType: true }, { id: "test", name: "Test" }],
-  superStatus: "not_applicable",
-  evidence: [],
-};
-const incomplete: LocusDefinition = {
-  id: "test-incomplete",
-  species: "Test species",
-  name: "Test Incomplete",
-  inheritance: "incomplete_dominant",
-  alleles: [{ id: "wild", name: "Wild type", isWildType: true }, { id: "test", name: "Test" }],
-  superStatus: "supported",
-  superAlleleId: "test",
-  evidence: [],
-};
+const recessive: LocusDefinition = { id: "test-recessive", species: "Test species", name: "Test Recessive", inheritance: "recessive", alleles: [{ id: "wild", name: "Wild type", isWildType: true }, { id: "test", name: "Test" }], superStatus: "not_applicable", evidence: [] };
+const dominant: LocusDefinition = { id: "test-dominant", species: "Test species", name: "Test Dominant", inheritance: "dominant", alleles: [{ id: "wild", name: "Wild type", isWildType: true }, { id: "test", name: "Test" }], superStatus: "not_applicable", evidence: [] };
+const incomplete: LocusDefinition = { id: "test-incomplete", species: "Test species", name: "Test Incomplete", inheritance: "incomplete_dominant", alleles: [{ id: "wild", name: "Wild type", isWildType: true }, { id: "test", name: "Test" }], superStatus: "supported", superAlleleId: "test", evidence: [] };
 
 const recessiveHetXHet = calculateLocus(recessive, { locusId: recessive.id, paternalAlleleId: "test", maternalAlleleId: "wild" }, { locusId: recessive.id, paternalAlleleId: "test", maternalAlleleId: "wild" }).outcomes;
 approx(recessiveHetXHet.find((o) => o.phenotypeStatus === "visual")?.probability ?? 0, 0.25, "recessive het × het visual probability");
@@ -64,6 +40,11 @@ const hogDatabase: GeneticsDatabase = HOGNOSE_GENETICS_DATABASE;
 const arctic = hogDatabase.loci.find((locus) => locus.id === "heterodon-nasicus-arctic");
 const conda = hogDatabase.loci.find((locus) => locus.id === "heterodon-nasicus-conda");
 assert(arctic && conda, "Hognose Arctic and Conda loci exist");
+const greyFogSnake = { id: "test-grey-fog", name: "Grey Fog", species: "Western Hognose", morphs: ["Grey Fog"], hets: [] } as never;
+const greyFogGenome = buildSnakeGenome(greyFogSnake, hogDatabase);
+assert(greyFogGenome.supported, "Grey Fog snake record remains canonical and supported");
+assert(greyFogGenome.genome.states.some((state) => state.locusId === arctic.id) && greyFogGenome.genome.states.some((state) => state.locusId === conda.id), "Grey Fog expands into Arctic and Conda loci");
+
 const parentA: ParentGenome = { species: "Heterodon nasicus", states: [{ locusId: arctic.id, paternalAlleleId: "arctic", maternalAlleleId: "wild" }, { locusId: conda.id, paternalAlleleId: "conda", maternalAlleleId: "wild" }] };
 const parentB: ParentGenome = { species: "Heterodon nasicus", states: [] };
 const completed = calculateGenome(hogDatabase, parentA, parentB);
@@ -77,4 +58,4 @@ try {
 }
 assert(crossSpeciesRejected, "cross-species breeding is rejected");
 
-console.log("Genetics runtime tests passed: inheritance, super states, alleles, aliases, wild completion and species safety.");
+console.log("Genetics runtime tests passed: inheritance, super states, alleles, aliases, combination expansion, wild completion and species safety.");
