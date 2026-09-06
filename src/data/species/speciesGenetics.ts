@@ -6,6 +6,7 @@ import {
 } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
+import { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary } from "./speciesGeneticsCoverage";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
@@ -37,7 +38,7 @@ const ballPythonTrait = (name: string, inheritance: MasterMorphDefinition["inher
   hetPossible: inheritance === "Recessive",
   verification: "Recognised",
   description: `Recognised ${name} trait for Python regius.`,
-  educationalNotes: "Species-scoped catalogue entry. Confirm individual lineage and documentation before treating a genetic claim as proven.",
+  educationalNotes: "Species-scoped catalogue entry. Confirm individual lineage and breeder documentation before treating a genetic claim as proven.",
   sourceUrl: BALL_PYTHON_SOURCE,
   sourceLabel: "MorphMarket Ball Python trait index",
 });
@@ -128,8 +129,11 @@ export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined)
 export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): SpeciesGeneticsStatus {
   if (!speciesId) return "baseline-only";
   if (isHognose(speciesId)) return "mapped";
-  return getSpeciesCalculatorMorphs(speciesId).length > 0 ? "partial" : "baseline-only";
+  const coverage = getSpeciesGeneticsCoverage(speciesId);
+  return coverage?.traitCount ? "partial" : "baseline-only";
 }
+
+export { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary };
 
 export function isSpeciesGeneticsMapped(speciesId: string | null | undefined): boolean {
   return getSpeciesGeneticsStatus(speciesId) !== "baseline-only";
