@@ -1,5 +1,6 @@
 import { calculatorNamedCombinations, componentSignature, findCalculatorNamedCombination, normaliseComboName } from "../../data/geneticsComboRegistry";
 import { morphs, type MorphComponent, type MorphDefinition, type VerificationStatus } from "../../data/morphs";
+import { searchGenetics } from "./geneticsSearchEngine";
 
 export interface GeneticsSearchResult {
   matchedName: string;
@@ -11,6 +12,7 @@ export interface GeneticsSearchResult {
   description: string;
   educationalNotes?: string;
   confidence: "High" | "Moderate" | "Low";
+  matchKind?: "canonical" | "alias" | "combination" | "fuzzy";
 }
 
 function displayComponent(component: MorphComponent): string {
@@ -25,7 +27,7 @@ function confidenceFor(verification: VerificationStatus, isCombination: boolean)
   return "Low";
 }
 
-function toResult(morph: MorphDefinition, commonCombinationName?: string): GeneticsSearchResult {
+function toResult(morph: MorphDefinition, commonCombinationName?: string, matchKind?: GeneticsSearchResult["matchKind"]): GeneticsSearchResult {
   return {
     matchedName: morph.name,
     matchedType: morph.kind,
@@ -36,49 +38,20 @@ function toResult(morph: MorphDefinition, commonCombinationName?: string): Genet
     description: morph.description ?? "No description is currently recorded.",
     educationalNotes: morph.educationalNotes,
     confidence: confidenceFor(morph.verification, Boolean(morph.isCombination)),
+    matchKind,
   };
 }
 
 /**
- * Evidence-aware lookup for keeper-facing genetics search.
- * Display aliases are lookup paths only; the canonical morph/component data
- * remains the source of truth for genetic calculations.
+ * Evidence-aware lookup for keeper-facing genetics search. The canonical
+ * search engine resolves names/aliases; this adapter adds presentation and
+ * evidence metadata without changing genetic records.
  */
 export function searchGeneticsIntelligence(query: string): GeneticsSearchResult[] {
   const normalised = normaliseComboName(query);
   if (!normalised) return [];
-
-  const named = findCalculatorNamedCombination(query);
-  if (named) {
-    const result = toResult(named, named.isCombination ? named.name : undefined);
-    return [result, ...findRelatedComponents(named).map((morph) => toResult(morph)).slice(0, 4)];
-  }
-
-  const exact = morphs.filter((morph) =>
-    normaliseComboName(morph.name) === normalised ||
-    morph.aliases?.some((alias) => normaliseComboName(alias) === normalised),
-  );
-  if (exact.length) return exact.map((morph) => toResult(morph));
-
-  const ranked = morphs
-    .map((morph) => {
-      const haystack = [morph.name, ...(morph.aliases ?? []), morph.geneId].map(normaliseComboName);
-      const score = haystack.reduce((best, value) => {
-        if (value === normalised) return 100;
-        if (value.startsWith(normalised)) return Math.max(best, 80);
-        if (value.includes(normalised)) return Math.max(best, 60);
-        const tokens = normalised.split(" ").filter(Boolean);
-        const matched = tokens.filter((token) => value.includes(token)).length;
-        return Math.max(best, tokens.length ? Math.round((matched / tokens.length) * 50) : 0);
-      }, 0);
-      return { morph, score };
-    })
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8)
-    .map(({ morph }) => toResult(morph));
-
-  return ranked;
+  const matches = searchGenetics(query);
+  return matches.map((match) => toResult(match.record, match.record.isCombination ? match.record.name : undefined, match.matchKind));
 }
 
 function findRelatedComponents(combination: MorphDefinition): MorphDefinition[] {
