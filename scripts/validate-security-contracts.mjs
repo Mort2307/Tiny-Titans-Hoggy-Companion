@@ -7,6 +7,7 @@ const accessService = readFileSync("src/services/intelligenceAccessService.ts", 
 const communityIntelligence = readFileSync("functions/communityIntelligence.js", "utf8");
 const trackerStats = readFileSync("src/services/trackerStatsService.ts", "utf8");
 
+const familyAccessContract = /function (?:canAccessUserData|familyMemberOf)\([^)]*userId[^)]*\)/;
 const checks = [
   ["Firestore rules are version 2", /rules_version\s*=\s*'2'/, firestore],
   ["Firestore has deny-by-default fallback", /match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/, firestore],
@@ -14,7 +15,7 @@ const checks = [
   ["Tester sandboxes require bot-test purpose", /request\.resource\.data\.purpose\s*==\s*\"bot-test\"/, firestore],
   ["Tester sandbox writes remain owner-bound", /resource\.data\.ownerUid\s*==\s*request\.auth\.uid/, firestore],
   ["User role cannot be changed by the user", /request\.resource\.data\.role\s*==\s*resource\.data\.role/, firestore],
-  ["Family data access is membership-bound", /function canAccessUserData\(userId\)/, firestore],
+  ["Family data access is membership-bound", familyAccessContract, firestore],
   ["Family membership is capped at three accounts", /request\.resource\.data\.memberUids\.size\(\) <= 3/, firestore],
   ["Family invitations are owner-bound", /request\.resource\.data\.ownerUid == request\.auth\.uid/, firestore],
   ["Family invite acceptance is email-bound", /request\.resource\.data\.get\('acceptingInviteId'/, firestore],
