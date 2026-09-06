@@ -1,0 +1,7 @@
+Tiny Titans species genetics framework
+
+Every registered species is explicitly classified as mapped, partial, or baseline-only for genetics coverage.
+Traits are species-scoped and must have stable identity, canonical name, aliases, inheritance model, and evidence/source metadata.
+Combination names are phenotype labels, not independent loci. Super forms are copy-count states where supported.
+Polygenic, line-bred, disputed, and unresolved traits do not receive artificial Mendelian probabilities.
+The canonical composition model must feed Morph Library, saved snake genetics, parent selection, breeding calculation, and morph reversal.
