@@ -3,6 +3,19 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { tinyTitansPageRegistry } from "../../config/tinyTitansPageRegistry";
 import "./TitanCommandPalette.css";
 
+function resolveDestination(path: string, currentPath: string): string {
+  if (!path) return "/";
+  const [destinationPath, suffix = ""] = path.split(/(?=[?#])/);
+  const animalMatch = currentPath.match(/^\/snakes\/([^/]+)(?:\/|$)/);
+
+  if (animalMatch && ["/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry"].includes(destinationPath)) {
+    return `/snakes/${encodeURIComponent(animalMatch[1])}${destinationPath}${suffix}`;
+  }
+
+  if (destinationPath.startsWith("/")) return path;
+  return `/${path}`;
+}
+
 function TitanCommandPalette() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,7 +61,7 @@ function TitanCommandPalette() {
 
   const go = (path: string) => {
     setOpen(false);
-    navigate(path);
+    navigate(resolveDestination(path, location.pathname));
   };
 
   return (
