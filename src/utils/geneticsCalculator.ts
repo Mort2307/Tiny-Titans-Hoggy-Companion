@@ -21,12 +21,7 @@ import type {
   HetPercentage,
 } from "../types/genetics";
 
-type AlleleState = {
-  geneId: string;
-  copies: 0 | 1 | 2;
-  mutationAlleleProbability: number;
-  unresolved?: boolean;
-};
+type AlleleState = { geneId: string; copies: 0 | 1 | 2; mutationAlleleProbability: number; unresolved?: boolean };
 type ParentLocus = { geneId: string; mother: AlleleState; father: AlleleState };
 type LocusOutcome = { geneId: string; copies: 0 | 1 | 2; probability: number };
 type InternalOutcome = { loci: Map<string, number>; probability: number; unresolved: boolean };
@@ -40,9 +35,7 @@ function getHetProbabilityAsParentAlleleProbability(percentage: HetPercentage): 
   return 1 / 2;
 }
 function getVisualGeneCopies(morph: MasterMorphDefinition): 0 | 1 | 2 { return morph.inheritance === "Recessive" ? 2 : 1; }
-function createKnownState(geneId: string, copies: 0 | 1 | 2, probabilityOverride?: number): AlleleState {
-  return { geneId, copies, mutationAlleleProbability: probabilityOverride ?? copies / 2 };
-}
+function createKnownState(geneId: string, copies: 0 | 1 | 2, probabilityOverride?: number): AlleleState { return { geneId, copies, mutationAlleleProbability: probabilityOverride ?? copies / 2 }; }
 
 function getParentAlleleStates(parent: ParentGenetics): Map<string, AlleleState> {
   const states = new Map<string, AlleleState>();
@@ -52,8 +45,7 @@ function getParentAlleleStates(parent: ParentGenetics): Map<string, AlleleState>
     for (const component of resolution.components) {
       const definition = getDefinition(component.morphId);
       if (!definition?.isGene || definition.kind !== "Gene") continue;
-      const rawCopies = component.copies ?? 1;
-      const copies = Math.min(2, Math.max(0, rawCopies)) as 0 | 1 | 2;
+      const copies = Math.min(2, Math.max(0, component.copies ?? 1)) as 0 | 1 | 2;
       const standalone = resolution.morph.kind === "Gene" && resolution.morph.geneId === definition.geneId;
       const effectiveCopies = standalone ? getVisualGeneCopies(definition) : copies;
       const existing = states.get(definition.geneId);
@@ -61,13 +53,12 @@ function getParentAlleleStates(parent: ParentGenetics): Map<string, AlleleState>
       states.set(definition.geneId, createKnownState(definition.geneId, mergedCopies));
     }
   }
-
   for (const entry of parent.hets) {
-    const geneId = getGeneId(entry);
+    const geneId = getGeneId(entry.gene);
     if (!geneId) continue;
     const morph = getDefinition(geneId);
     if (!morph?.isGene || morph.kind !== "Gene" || !morph.hetPossible) continue;
-    const percentage = parent.hetPercentages?.[geneId] ?? (parent.hetPercentages?.[entry] as HetPercentage | undefined) ?? "100%";
+    const percentage = parent.hetPercentages?.[geneId] ?? entry.percentage ?? "100%";
     const existing = states.get(geneId);
     if (existing?.copies === 2) continue;
     states.set(geneId, createKnownState(geneId, 1, clampProbability(getHetProbabilityAsParentAlleleProbability(percentage))));
@@ -128,95 +119,48 @@ function getLocusState(morph: MasterMorphDefinition, copies: number): "Clear" | 
   return "Clear";
 }
 function buildComponent(geneId: string, copies: number): OffspringComponent | undefined {
-  const morph = getDefinition(geneId);
-  if (!morph || copies <= 0) return undefined;
+  const morph = getDefinition(geneId); if (!morph || copies <= 0) return undefined;
   return { geneId, name: morph.name, copies, state: getLocusState(morph, copies) };
 }
 function getVisualComponents(loci: Map<string, number>): OffspringComponent[] {
   const components: OffspringComponent[] = [];
-  for (const [geneId, copies] of loci) {
-    const component = buildComponent(geneId, copies);
-    if (component?.state === "Visual" || component?.state === "Super") components.push(component);
-  }
+  for (const [geneId, copies] of loci) { const component = buildComponent(geneId, copies); if (component?.state === "Visual" || component?.state === "Super") components.push(component); }
   return components.sort((a, b) => a.name.localeCompare(b.name));
 }
 function getHetComponents(loci: Map<string, number>): OffspringComponent[] {
   const components: OffspringComponent[] = [];
-  for (const [geneId, copies] of loci) {
-    const component = buildComponent(geneId, copies);
-    if (component?.state === "Het") components.push(component);
-  }
+  for (const [geneId, copies] of loci) { const component = buildComponent(geneId, copies); if (component?.state === "Het") components.push(component); }
   return components.sort((a, b) => a.name.localeCompare(b.name));
 }
 function getRecognisedCombinationForLoci(loci: Map<string, number>): MasterMorphDefinition | undefined {
   const components: MorphComponent[] = [...loci.entries()].filter(([, copies]) => copies > 0).map(([morphId, copies]) => ({ morphId, type: "Gene", copies }));
   return findCanonicalMorphForComposition(components);
 }
-function buildFallbackName(visualComponents: OffspringComponent[]): string {
-  if (!visualComponents.length) return "Normal";
-  return visualComponents.map((component) => {
-    if (component.state === "Super") return `Super ${component.name}`;
-    return component.name;
-  }).join(" + ");
-}
+function buildFallbackName(visualComponents: OffspringComponent[]): string { return visualComponents.length ? visualComponents.map((component) => component.state === "Super" ? `Super ${component.name}` : component.name).join(" + ") : "Normal"; }
 function getPossibleHetComponents(_loci: Map<string, number>): OffspringComponent[] { return []; }
-function buildResultId(visual: OffspringComponent[], het: OffspringComponent[], possible: OffspringComponent[]): string {
-  return [visual.map((item) => `${item.geneId}:${item.copies}`).sort().join(","), het.map((item) => `${item.geneId}:${item.copies}`).sort().join(","), possible.map((item) => item.geneId).sort().join(",")].join("|");
-}
+function buildResultId(visual: OffspringComponent[], het: OffspringComponent[], possible: OffspringComponent[]): string { return [visual.map((item) => `${item.geneId}:${item.copies}`).sort().join(","), het.map((item) => `${item.geneId}:${item.copies}`).sort().join(","), possible.map((item) => item.geneId).sort().join(",")].join("|"); }
 function buildOffspringResult(outcome: InternalOutcome): OffspringResult {
   const visualComponents = getVisualComponents(outcome.loci);
   const hetComponents = getHetComponents(outcome.loci);
   const possibleHetComponents = getPossibleHetComponents(outcome.loci);
   const combination = getRecognisedCombinationForLoci(outcome.loci);
-  return {
-    id: buildResultId(visualComponents, hetComponents, possibleHetComponents),
-    name: combination?.name ?? buildFallbackName(visualComponents),
-    percentage: outcome.probability,
-    visualComponents,
-    hetComponents,
-    possibleHetComponents,
-    recognisedCombination: Boolean(combination),
-    combination,
-    hasUnresolvedGenetics: outcome.unresolved,
-  };
+  return { id: buildResultId(visualComponents, hetComponents, possibleHetComponents), name: combination?.name ?? buildFallbackName(visualComponents), percentage: outcome.probability, visualComponents, hetComponents, possibleHetComponents, recognisedCombination: Boolean(combination), combination, hasUnresolvedGenetics: outcome.unresolved };
 }
 function mergeOffspringResults(results: OffspringResult[]): OffspringResult[] {
   const map = new Map<string, OffspringResult>();
-  for (const result of results) {
-    const existing = map.get(result.id);
-    if (!existing) map.set(result.id, { ...result, visualComponents: [...result.visualComponents], hetComponents: [...result.hetComponents], possibleHetComponents: [...result.possibleHetComponents] });
-    else { existing.percentage += result.percentage; existing.hasUnresolvedGenetics ||= result.hasUnresolvedGenetics; }
-  }
+  for (const result of results) { const existing = map.get(result.id); if (!existing) map.set(result.id, { ...result, visualComponents: [...result.visualComponents], hetComponents: [...result.hetComponents], possibleHetComponents: [...result.possibleHetComponents] }); else { existing.percentage += result.percentage; existing.hasUnresolvedGenetics ||= result.hasUnresolvedGenetics; } }
   return [...map.values()].sort((a, b) => b.percentage - a.percentage);
 }
-function ensureNormalResult(results: OffspringResult[]): OffspringResult[] {
-  const normal = results.find((result) => result.visualComponents.length === 0 && result.hetComponents.length === 0 && result.possibleHetComponents.length === 0);
-  if (normal) normal.name = "Normal";
-  return results;
-}
-export function calculateGenetics(input: GeneticsCalculatorInput): GeneticsCalculatorResult {
-  const merged = ensureNormalResult(mergeOffspringResults(combineLocusOutcomes(buildLoci(input)).map(buildOffspringResult)));
-  return { input, offspring: merged, hasUnresolvedGenetics: merged.some((result) => result.hasUnresolvedGenetics) };
-}
+function ensureNormalResult(results: OffspringResult[]): OffspringResult[] { const normal = results.find((result) => result.visualComponents.length === 0 && result.hetComponents.length === 0 && result.possibleHetComponents.length === 0); if (normal) normal.name = "Normal"; return results; }
+export function calculateGenetics(input: GeneticsCalculatorInput): GeneticsCalculatorResult { const merged = ensureNormalResult(mergeOffspringResults(combineLocusOutcomes(buildLoci(input)).map(buildOffspringResult))); return { input, offspring: merged, hasUnresolvedGenetics: merged.some((result) => result.hasUnresolvedGenetics) }; }
 export function calculateBreeding(female: ParentGenetics, male: ParentGenetics): GeneticsCalculatorResult { return calculateGenetics({ female, male }); }
 export function getBreedingSummary(result: GeneticsCalculatorResult): BreedingSummary {
   const visualOutcomes = result.offspring.filter((offspring) => offspring.visualComponents.length > 0);
   const combinations = result.offspring.filter((offspring) => offspring.recognisedCombination && offspring.combination).map((offspring) => ({ combination: offspring.combination!, percentage: offspring.percentage, underlyingComponents: [...offspring.visualComponents] }));
   const hetByGene = new Map<string, { name: string; percentage: number }>();
-  for (const offspring of result.offspring) for (const component of offspring.hetComponents) {
-    const existing = hetByGene.get(component.geneId);
-    if (!existing) hetByGene.set(component.geneId, { name: component.name, percentage: offspring.percentage });
-    else existing.percentage += offspring.percentage;
-  }
+  for (const offspring of result.offspring) for (const component of offspring.hetComponents) { const existing = hetByGene.get(component.geneId); if (!existing) hetByGene.set(component.geneId, { name: component.name, percentage: offspring.percentage }); else existing.percentage += offspring.percentage; }
   const hetOutcomes: HetResult[] = [...hetByGene.entries()].map(([geneId, value]) => ({ geneId, name: value.name, percentage: value.percentage, certainty: value.percentage >= 99.999999 ? "Confirmed" as const : "Possible" as const })).sort((a, b) => b.percentage - a.percentage || a.name.localeCompare(b.name));
   return { outcomeCount: result.offspring.length, visualOutcomes, hetOutcomes, combinations, hasUnresolvedGenetics: result.hasUnresolvedGenetics };
 }
-export function calculateSingleGene(geneId: string, motherCopies: 0 | 1 | 2, fatherCopies: 0 | 1 | 2): LocusOutcome[] {
-  return calculateLocus({ geneId, mother: createKnownState(geneId, motherCopies), father: createKnownState(geneId, fatherCopies) });
-}
-export function debugGeneticsCalculation(input: GeneticsCalculatorInput) {
-  const loci = buildLoci(input);
-  const internalOutcomes = combineLocusOutcomes(loci);
-  const result = calculateGenetics(input);
-  return { input, loci, internalOutcomes, offspring: result.offspring, summary: getBreedingSummary(result) };
-}
+export function calculateSingleGene(geneId: string, motherCopies: 0 | 1 | 2, fatherCopies: 0 | 1 | 2): LocusOutcome[] { return calculateLocus({ geneId, mother: createKnownState(geneId, motherCopies), father: createKnownState(geneId, fatherCopies) }); }
+export function debugGeneticsCalculation(input: GeneticsCalculatorInput) { const loci = buildLoci(input); const internalOutcomes = combineLocusOutcomes(loci); const result = calculateGenetics(input); return { input, loci, internalOutcomes, offspring: result.offspring, summary: getBreedingSummary(result) }; }
