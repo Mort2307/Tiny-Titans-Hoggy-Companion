@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { MorphDefinition } from "../data/morphs";
 import { resolveStrictMorph } from "../utils/geneticsIdentity";
 import { rankMorphSearch, normaliseSearch } from "../utils/searchRelevance";
+import { findSnakeSpecies } from "../data/species/speciesRegistry";
 import type { Het, HetPercentage } from "../types/genetics";
 import type { Snake } from "../types/Snake";
 import "../styles/het-confidence.css";
@@ -26,12 +27,14 @@ function normaliseSnakeHets(value: unknown): Het[] { if (!Array.isArray(value)) 
 
 export function snakeToSelection(snake: Snake): ParentSelection {
   const profile = snake.geneticsProfile;
-  const profileMorphs = profile?.visualMorphs?.filter((value): value is string => typeof value === "string" && Boolean(value.trim())) ?? [];
+  const canonicalSnakeSpeciesId = findSnakeSpecies(snake.species)?.id;
+  const profileMatchesSnake = Boolean(profile?.speciesId) && profile?.speciesId?.trim().toLowerCase() === canonicalSnakeSpeciesId?.trim().toLowerCase();
+  const profileMorphs = profileMatchesSnake ? (profile?.visualMorphs?.filter((value): value is string => typeof value === "string" && Boolean(value.trim())) ?? []) : [];
   const morphSource = profileMorphs.length ? profileMorphs : (Array.isArray(snake.morphs) ? snake.morphs : []);
   const uniqueMorphs = [...new Set(morphSource.filter((value): value is string => typeof value === "string" && !!value.trim()).map((value) => canonicalGeneId(value) ?? value.trim()))];
   const hets = normaliseSnakeHets(snake.hets);
   const uniqueHets = hets.filter((het, index, list) => list.findIndex((candidate) => candidate.gene === het.gene) === index);
-  const knownGeneCopies = Object.fromEntries((profile?.genes ?? []).filter((entry) => entry.status === "confirmed" && (entry.copies === 1 || entry.copies === 2)).map((entry) => [entry.geneId, entry.copies]));
+  const knownGeneCopies = Object.fromEntries((profileMatchesSnake ? (profile?.genes ?? []) : []).filter((entry) => entry.status === "confirmed" && (entry.copies === 1 || entry.copies === 2)).map((entry) => [entry.geneId, entry.copies]));
   return { snakeId: snake.id, morphs: uniqueMorphs, hets: uniqueHets, ...(Object.keys(knownGeneCopies).length ? { knownGeneCopies } : {}), customMorph: snake.customMorph || undefined, customHets: snake.customHets || undefined };
 }
 function toggleValue(values: string[], value: string): string[] { const canonical = canonicalGeneId(value) ?? value; return values.includes(canonical) ? values.filter((entry) => entry !== canonical) : [...values, canonical]; }
