@@ -1,0 +1,1 @@
+Complete Hognose normalization, then populate genetics for the highest-demand captive snake species already in the species registry in evidence-reviewed batches. Each batch keeps canonical identity, component signatures, inheritance, aliases, source metadata and unresolved safeguards.
