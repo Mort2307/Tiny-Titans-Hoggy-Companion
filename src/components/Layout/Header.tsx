@@ -4,6 +4,7 @@ import logo from "../../assets/TinyTitans-Logo.jpg";
 import { useAuth } from "../../context/useAuth";
 import { getCreatorSubmissionConversations, getUserSubmissionConversations } from "../../services/submissionConversationService";
 import { getDashboardIntelligence, type SnakeIntelligence } from "../../services/snakeIntelligenceService";
+import { getUserSnakes } from "../../services/snakeService";
 import { hasFullIntelligenceAccess } from "../../services/intelligenceAccessService";
 import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
 
@@ -35,11 +36,17 @@ function Header() {
         const hasAccess = await hasFullIntelligenceAccess(user.uid);
         if (!active) return;
         if (!hasAccess) { setProactive(null); return; }
-        const snakes = await getDashboardIntelligence(user.uid, undefined);
+        const records = await getUserSnakes(user.uid);
+        if (!active) return;
+        const snakes = await getDashboardIntelligence(user.uid, records.map((snake) => snake.id));
         if (!active) return;
         const candidate = snakes
           .filter((item) => item.priority?.tone === "attention")
-          .sort((a, b) => (b.priority?.confidence === "High" ? 2 : 1) - (a.priority?.confidence === "High" ? 2 : 1))[0] ?? null;
+          .sort((a, b) => {
+            const aWeight = a.priority?.confidence === "High" ? 2 : 1;
+            const bWeight = b.priority?.confidence === "High" ? 2 : 1;
+            return bWeight - aWeight;
+          })[0] ?? null;
         setProactive(candidate);
       } catch {
         if (active) setProactive(null);
