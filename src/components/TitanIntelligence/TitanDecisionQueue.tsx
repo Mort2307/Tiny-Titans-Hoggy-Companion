@@ -8,7 +8,7 @@ function confidenceLabel(value:number): string {
   return value >= 0.9 ? "High" : value >= 0.75 ? "Moderate" : value >= 0.5 ? "Low" : "Insufficient";
 }
 
-export default function TitanDecisionQueue({ limit = 3 }: { limit?: number }) {
+export default function TitanDecisionQueue({ limit = 3, excludeDecisionId }: { limit?: number; excludeDecisionId?: string }) {
   const { user } = useAuth();
   const [decisions, setDecisions] = useState<TitanDecision[]>([]);
 
@@ -17,10 +17,10 @@ export default function TitanDecisionQueue({ limit = 3 }: { limit?: number }) {
       setDecisions([]);
       return;
     }
-    const sync = () => setDecisions(getActiveTitanDecisions(user.uid).slice(0, Math.max(1, limit)));
+    const sync = () => setDecisions(getActiveTitanDecisions(user.uid).filter((decision) => decision.id !== excludeDecisionId).slice(0, Math.max(1, limit)));
     sync();
     return subscribeToTitanDecisionState(user.uid, sync);
-  }, [user, limit]);
+  }, [user, limit, excludeDecisionId]);
 
   if (!user || decisions.length === 0) return null;
 
@@ -28,9 +28,9 @@ export default function TitanDecisionQueue({ limit = 3 }: { limit?: number }) {
     <section className="titan-decision-queue" aria-labelledby="titan-decision-queue-title">
       <div className="titan-decision-queue-heading">
         <div>
-          <p className="titan-decision-queue-kicker">🧠 NEXT BEST ACTIONS</p>
-          <h2 id="titan-decision-queue-title">Things Tiny Titans thinks are worth doing</h2>
-          <p>Ranked from the records currently available. A higher position means stronger supporting evidence, not greater biological urgency.</p>
+          <p className="titan-decision-queue-kicker">🧠 ALSO WORTH CONSIDERING</p>
+          <h2 id="titan-decision-queue-title">Other useful next actions</h2>
+          <p>Ranked from the records currently available. Position reflects supporting evidence, not biological urgency.</p>
         </div>
         <span>{decisions.length} surfaced</span>
       </div>
