@@ -5,6 +5,7 @@ import { rankMorphSearch, normaliseSearch } from "../utils/searchRelevance";
 import type { Het, HetPercentage } from "../types/genetics";
 import type { Snake } from "../types/Snake";
 import "../styles/het-confidence.css";
+import "../styles/genetics-selector-hardening.css";
 
 export type ParentSelection = {
   snakeId?: string;
@@ -33,7 +34,7 @@ export function snakeToSelection(snake: Snake): ParentSelection {
   const hets = normaliseSnakeHets(snake.hets);
   const uniqueHets = hets.filter((het, index, list) => list.findIndex((candidate) => candidate.gene === het.gene) === index);
   const knownGeneCopies: Record<string, 1 | 2> = {};
-  for (const record of profile?.genes ?? []) if ((record.status === "confirmed" || record.status === "probable") && (record.copies === 1 || record.copies === 2) && record.status === "confirmed") knownGeneCopies[record.geneId] = record.copies;
+  for (const record of profile?.genes ?? []) if (record.status === "confirmed" && (record.copies === 1 || record.copies === 2)) knownGeneCopies[record.geneId] = record.copies;
   for (const locus of profile?.loci ?? []) if (locus.status === "confirmed") {
     const a = locus.alleleA;
     const b = locus.alleleB;
