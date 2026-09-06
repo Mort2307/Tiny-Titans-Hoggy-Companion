@@ -34,6 +34,8 @@
     "validate:ui-hardening": "node scripts/validate-ui-hardening.mjs",
     "validate:observatory": "node scripts/validate-behaviour-observatory.mjs",
     "validate:genetics-calculator-v2": "node scripts/validate-genetics-calculator-v2.mjs",
+    "validate:intelligence-consent": "node scripts/test-intelligence-consent-contracts.mjs",
+    "validate:intelligence-journey": "node scripts/test-intelligence-journey-contracts.mjs",
     "monitor:species-sources": "node scripts/check-species-source-health.mjs",
     "test:intelligence:consent": "node scripts/test-intelligence-consent-contracts.mjs",
     "test:intelligence:journey": "node scripts/test-intelligence-journey-contracts.mjs",
@@ -52,35 +54,13 @@
     "test:production-gate": "node scripts/run-production-gate.mjs",
     "test": "npm run test:bot:contracts && npm run test:intelligence:consent && npm run test:intelligence:journey && npm run test:intelligence:proactive && npm run test:v50-runtime && npm run test:v50-experiences && npm run test:v50-complete && npm run test:genetics-search && npm run test:genetics-engine && npm run test:v50-impact && npm run test:notifications && npm run test:room-photo",
     "audit": "npm audit --audit-level=high",
-    "build": "npm run validate:morphs && npm run validate:morph-taxonomy && npm run validate:morph-sources && npm run validate:morph-integrity && npm run validate:morph-intelligence && npm run validate:species && npm run validate:species-husbandry && npm run validate:species-evidence && npm run validate:species-genetics && npm run validate:species-integration && npm run validate:submissions && npm run validate:breeding-bridge && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:v50-routes && npm run validate:v50-runtime && npm run validate:v50-experiences && npm run validate:v50-complete && npm run validate:genetics-search && npm run validate:genetics-engine && npm run validate:v50-impact && npm run validate:encoding && npm run validate:copy-quality && npm run validate:security && npm run validate:ui-hardening && npm run validate:observatory && npm run validate:genetics-calculator-v2 && npm run test:intelligence:consent && npm run test:intelligence:journey && npm run test:intelligence:proactive && npm run test:v50-runtime && npm run test:v50-experiences && npm run test:v50-complete && npm run test:genetics-search && npm run test:genetics-engine && npm run test:v50-impact && npm run test:notifications && npm run test:room-photo && tsc -b && vite build",
+    "build": "npm run validate:morphs && npm run validate:morph-taxonomy && npm run validate:morph-sources && npm run validate:morph-integrity && npm run validate:morph-intelligence && npm run validate:species && npm run validate:species-husbandry && npm run validate:species-evidence && npm run validate:species-genetics && npm run validate:species-integration && npm run validate:submissions && npm run validate:breeding-bridge && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:v50-routes && npm run validate:v50-runtime && npm run validate:v50-experiences && npm run validate:v50-complete && npm run validate:genetics-search && npm run validate:genetics-engine && npm run validate:v50-impact && npm run validate:encoding && npm run validate:copy-quality && npm run validate:security && npm run validate:ui-hardening && npm run validate:observatory && npm run validate:genetics-calculator-v2 && npm run validate:intelligence-consent && npm run validate:intelligence-journey && npm run test:intelligence:proactive && npm run test:v50-runtime && npm run test:v50-experiences && npm run test:v50-complete && npm run test:genetics-search && npm run test:genetics-engine && npm run test:v50-impact && npm run test:notifications && npm run test:room-photo && tsc -b && vite build",
     "lint": "eslint .",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:functions": "npm run build && firebase deploy --only functions",
     "deploy:rules": "firebase deploy --only firestore,storage",
     "deploy:app": "npm run build && firebase deploy --only hosting,functions,firestore,storage"
   },
-  "dependencies": {
-    "@react-three/drei": "^10.7.8",
-    "@react-three/fiber": "^9.7.0",
-    "firebase": "^12.17.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-globe.gl": "^2.37.0",
-    "recharts": "^3.10.1",
-    "three": "^0.185.1",
-    "vite-plugin-pwa": "^1.3.0"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.0",
-    "@playwright/test": "^1.62.1",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.4",
-    "eslint": "^10.8.0",
-    "eslint-plugin-react-hooks": "^7.1.0",
-    "eslint-plugin-react-refresh": "^0.5.3",
-    "globals": "^17.7.0",
-    "typescript": "~6.0.2",
-    "typescript-eslint": "^8.65.0"
-  }
+  "dependencies": {"@react-three/drei":"^10.7.8","@react-three/fiber":"^9.7.0","firebase":"^12.17.1","react":"^19.2.8","react-dom":"^19.2.8","react-globe.gl":"^2.37.0","recharts":"^3.10.1","three":"^0.185.1","vite-plugin-pwa":"^1.3.0"},
+  "devDependencies": {"@eslint/js":"^10.8.0","@playwright/test":"^1.62.1","@types/node":"^24.13.3","@types/react":"^19.2.17","@types/react-dom":"^19.2.4","eslint":"^10.8.0","eslint-plugin-react-hooks":"^7.1.0","eslint-plugin-react-refresh":"^0.5.3","globals":"^17.7.0","typescript":"~6.0.2","typescript-eslint":"^8.65.0"}
 }
