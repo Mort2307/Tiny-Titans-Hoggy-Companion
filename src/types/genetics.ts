@@ -7,19 +7,14 @@ export type HetPercentage = 50 | 66 | 100 | "50%" | "66%" | "100%";
 export type GeneticHetPercentage = number;
 
 export type Het = {
-  /** Stable genetic identity. Legacy consumers may still call this `gene`. */
   gene: string;
   percentage: HetPercentage;
-  /** Preferred explicit identity field for new consumers. */
   geneId?: string;
 };
 
 export type ParentGenetics = {
-  /** Canonical stable gene IDs for visual/confirmed genetics. */
   morphs: string[];
-  /** Canonical stable gene IDs for known/possible hets. */
   hets: string[];
-  /** Per-gene confidence for the corresponding het entry. */
   hetPercentages?: Record<string, HetPercentage>;
 };
 
@@ -43,7 +38,6 @@ export type GeneState = {
 export type OffspringComponent = {
   geneId: string;
   name: string;
-  /** Runtime-calculated copy count; the calculator constrains this to 0/1/2. */
   copies: number;
   state: InheritanceState;
 };
@@ -61,6 +55,8 @@ export type OffspringResult = {
 };
 
 export type GeneticsCalculatorInput = {
+  /** Species identity is now part of the breeding calculation context. */
+  speciesId?: string | null;
   female: ParentGenetics;
   male: ParentGenetics;
 };
@@ -130,6 +126,5 @@ export type GeneticsIssueReport = {
   createdAt: string;
 };
 
-// Compatibility aliases retained while consuming components migrate.
 export type GeneticsParent = ParentGenetics;
 export type GeneticsResult = OffspringResult;
