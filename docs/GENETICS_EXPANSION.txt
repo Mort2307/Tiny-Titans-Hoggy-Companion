@@ -1,0 +1,1 @@
+Species genetics expansion guardrails: never invent inheritance; never treat combination names as loci; preserve evidence level; keep unresolved records explicit; use the same canonical composition resolver everywhere.
