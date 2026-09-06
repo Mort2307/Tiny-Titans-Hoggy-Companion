@@ -19,13 +19,14 @@ export function processTitanV50Event(
 ): TitanV50JourneyResult {
   const runtime = getCachedTitanV50({
     ...input,
+    eventType,
     recentEventTypes: [...(input.recentEventTypes ?? []), eventType],
   });
   const impact = buildV50ImpactResult(eventType);
   return {
     ...runtime,
     eventType,
-    impactedFeatureIds: impact.featureIds,
+    impactedFeatureIds: [...new Set([...runtime.impactedFeatureIds, ...impact.featureIds])],
     signals: [...runtime.signals, ...impact.signals],
     recommendations: [...runtime.recommendations, ...impact.recommendations],
   };
