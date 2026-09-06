@@ -15,7 +15,7 @@ const required=[
  [confidence,"calculateTitanDataConfidence","Data confidence engine is missing."],
  [confidence,"evidence quality","Data confidence does not explain what its score means."],
  [changes,"detectTitanChanges","Change detector is missing."],
- [changes,"does not diagnose","Change detector is missing its non-diagnostic boundary."],
+ [changes,"not a diagnosis","Change detector is missing its non-diagnostic boundary."],
  [cross,"detectCrossDomainSignals","Cross-domain engine is missing."],
  [cross,"causalClaim","Cross-domain engine is not explicitly non-causal."],
  [cross,"explainCrossDomainSignal","Cross-domain explanation path is missing."],
