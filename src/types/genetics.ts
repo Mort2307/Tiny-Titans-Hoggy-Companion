@@ -55,6 +55,8 @@ export type OffspringResult = {
   certainty?: "exact" | "bounded";
   /** Human-readable genotype scenario explanations for bounded outcomes. */
   genotypeScenarioLabels?: string[];
+  /** Canonical named combination matched from the species genetics database. */
+  recognisedCombinationName?: string;
   visualComponents: OffspringComponent[];
   hetComponents: OffspringComponent[];
   possibleHetComponents: OffspringComponent[];
