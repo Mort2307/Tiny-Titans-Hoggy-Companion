@@ -42,7 +42,8 @@ export function expandSelectedMorphs(selectedMorphs: string[]): MorphComponent[]
 export function resolveMorphSelection(selectedMorphs: string[]): ResolvedMorph {
   const components = expandSelectedMorphs(selectedMorphs);
   const combination = findCanonicalMorphForComposition(components);
-  const displayName = combination?.name ?? canonicalComponentsToFormula(components) || selectedMorphs.join(" + ");
+  const formula = canonicalComponentsToFormula(components);
+  const displayName = combination?.name ?? (formula || selectedMorphs.join(" + "));
   return {
     selected: selectedMorphs,
     combination,
