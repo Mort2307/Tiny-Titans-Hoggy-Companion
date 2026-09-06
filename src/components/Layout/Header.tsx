@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import logo from "../../assets/TinyTitans-Logo.jpg";
+import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
 
 function Header() {
   return (
@@ -21,6 +22,10 @@ function Header() {
         <span className="app-brand-name" aria-label="Tiny Titans Reptile Companion">
           Tiny Titans Reptile Companion
         </span>
+      </div>
+
+      <div className="app-header-actions">
+        <TitanCommandPalette />
       </div>
     </header>
   );
