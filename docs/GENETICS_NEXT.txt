@@ -1,0 +1,1 @@
+Next stage: evidence-reviewed species genetics batches. Keep species-scoped identities, canonical aliases, composition signatures, inheritance models and unresolved safeguards.
