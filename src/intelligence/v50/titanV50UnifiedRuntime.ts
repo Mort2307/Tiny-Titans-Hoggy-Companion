@@ -6,6 +6,11 @@ import { buildV50ImpactResult, type TitanV50EventType } from "./titanV50ImpactGr
 
 export interface TitanV50UnifiedInput extends TitanV50RuntimeInput {
   context?: TitanContextSnapshotInput;
+  animal?: TitanContextSnapshotInput["animal"];
+  genetics?: TitanContextSnapshotInput["genetics"];
+  husbandry?: TitanContextSnapshotInput["husbandry"];
+  learning?: TitanContextSnapshotInput["learning"];
+  community?: TitanContextSnapshotInput["community"];
   eventType?: TitanV50EventType;
 }
 
@@ -57,7 +62,7 @@ export function runTitanV50Unified(input: TitanV50UnifiedInput): TitanV50Unified
     genetics: input.genetics,
     husbandry: input.husbandry,
     learning: input.learning,
-    community: [],
+    community: input.community,
   });
   const impact = input.eventType ? buildV50ImpactResult(input.eventType) : { featureIds: [] as number[], signals: [] as TitanSignal[], recommendations: [] as TitanRecommendation[] };
   const signals = [...base.signals, ...contextSignals(contextSnapshot), ...impact.signals].slice(0, 30);
