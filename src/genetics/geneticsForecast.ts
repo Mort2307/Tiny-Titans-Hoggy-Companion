@@ -77,14 +77,15 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
   }
 
   const hetEntry = parent.hets.find((entry) => {
-    const allele = findAllele(locus, entry.gene);
+    const allele = findAllele(locus, entry);
     return Boolean(allele && !allele.isWildType);
   });
   if (hetEntry) {
-    const allele = findAllele(locus, hetEntry.gene)!;
-    const p = hetProbability(hetEntry.percentage);
+    const allele = findAllele(locus, hetEntry)!;
+    const hetPercentage: HetPercentage = parent.hetPercentages?.[hetEntry] ?? "100%";
+    const p = hetProbability(hetPercentage);
     return [
-      { state: { locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id }, weight: p, label: `${hetEntry.percentage} Het ${allele.name}`, unknown: false },
+      { state: { locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id }, weight: p, label: `${hetPercentage} Het ${allele.name}`, unknown: false },
       { state: { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id }, weight: 1 - p, label: `${Math.round((1 - p) * 100)}% not Het ${allele.name}`, unknown: false },
     ];
   }
@@ -106,7 +107,7 @@ function relevantLoci(species: string, parentA: ForecastParent, parentB: Forecas
     }
     for (const het of parent.hets) {
       GENETICS_DATABASE.loci
-        .filter((locus) => locus.species === species && Boolean(findAllele(locus, het.gene)) && !findAllele(locus, het.gene)?.isWildType)
+        .filter((locus) => locus.species === species && Boolean(findAllele(locus, het)) && !findAllele(locus, het)?.isWildType)
         .forEach((locus) => relevant.add(locus.id));
     }
     for (const geneId of Object.keys(parent.knownGeneCopies ?? {})) {
