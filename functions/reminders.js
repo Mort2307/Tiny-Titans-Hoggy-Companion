@@ -17,8 +17,6 @@ function daysBetween(dateA, dateB) { const a = new Date(`${dateA}T00:00:00Z`).ge
 function zonedTimeToUtc(dateKey, time, timezone) { const [year, month, day] = dateKey.split("-").map(Number); const [hour, minute] = time.split(":").map(Number); const desired = Date.UTC(year, month - 1, day, hour, minute, 0); let guess = desired; for (let index = 0; index < 3; index += 1) { const parts = getLocalParts(new Date(guess), timezone); const localAsUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second)); guess -= localAsUtc - desired; } return new Date(guess); }
 function scheduleFor(reminder, occurrenceDate, phase, notificationDateOverride) { const leadStart = reminder.leadUpEnabled === true && Number(reminder.leadUpDays) > 0 ? addCalendarDays(occurrenceDate, -Number(reminder.leadUpDays)) : occurrenceDate; const date = notificationDateOverride || (phase === "lead-up" ? leadStart : occurrenceDate); return zonedTimeToUtc(date, String(reminder.time || "09:00"), String(reminder.timezone || "Europe/London")).toISOString(); }
 
-function isDailyFeedingReminder(reminder) { return reminder.kind === "feeding" && Math.max(1, Number(reminder.frequencyDays) || 1) > 1; }
-
 function reconcileFeedingSchedule(reminder, now = new Date()) {
   const frequencyDays = Math.max(1, Number(reminder.frequencyDays) || 1);
   const timezone = String(reminder.timezone || "Europe/London");
@@ -26,18 +24,14 @@ function reconcileFeedingSchedule(reminder, now = new Date()) {
   if (!occurrenceDate) return null;
   const today = localDateKey(now, timezone);
   while (occurrenceDate < today) occurrenceDate = addCalendarDays(occurrenceDate, frequencyDays);
-  const dueToday = occurrenceDate === today;
-  const leadStart = addCalendarDays(occurrenceDate, -(frequencyDays - 1));
-  const notificationDate = today >= leadStart ? today : leadStart;
-  const phase = dueToday ? "due" : "lead-up";
   return {
     frequencyDays,
-    leadUpEnabled: frequencyDays > 1,
-    leadUpDays: Math.max(0, frequencyDays - 1),
+    leadUpEnabled: false,
+    leadUpDays: 0,
     occurrenceDate,
-    phase,
-    notificationDate,
-    at: scheduleFor({ ...reminder, leadUpEnabled: frequencyDays > 1, leadUpDays: Math.max(0, frequencyDays - 1) }, occurrenceDate, phase, notificationDate),
+    phase: "due",
+    notificationDate: occurrenceDate,
+    at: scheduleFor({ ...reminder, leadUpEnabled: false, leadUpDays: 0 }, occurrenceDate, "due", occurrenceDate),
   };
 }
 
@@ -45,11 +39,9 @@ function advanceSchedule(reminder) {
   const occurrenceDate = String(reminder.nextOccurrenceDate || reminder.startDate || "");
   const timezone = String(reminder.timezone || "Europe/London");
   const frequencyDays = Math.max(1, Number(reminder.frequencyDays) || 1);
-  if (isDailyFeedingReminder(reminder)) {
-    const currentDate = localDateKey(new Date(reminder.nextNotificationAt), timezone);
-    const nextDate = addCalendarDays(currentDate, 1);
-    if (nextDate < occurrenceDate) return { occurrenceDate, phase: "lead-up", at: scheduleFor({ ...reminder, leadUpEnabled: true, leadUpDays: frequencyDays - 1 }, occurrenceDate, "lead-up", nextDate) };
-    return { occurrenceDate, phase: "due", at: scheduleFor({ ...reminder, leadUpEnabled: true, leadUpDays: frequencyDays - 1 }, occurrenceDate, "due") };
+  if (reminder.kind === "feeding") {
+    const nextOccurrenceDate = addCalendarDays(occurrenceDate, frequencyDays);
+    return { occurrenceDate: nextOccurrenceDate, phase: "due", at: scheduleFor({ ...reminder, leadUpEnabled: false, leadUpDays: 0 }, nextOccurrenceDate, "due", nextOccurrenceDate) };
   }
   const leadUpDays = Math.max(1, Math.min(30, Number(reminder.leadUpDays) || 1));
   const phase = reminder.nextPhase === "lead-up" && reminder.leadUpEnabled === true && leadUpDays < frequencyDays ? "lead-up" : "due";
@@ -101,7 +93,7 @@ async function reconcileActiveFeedingReminders(now) {
     const storedAt = String(data.nextNotificationAt || "");
     const needsUpdate = storedOccurrence !== schedule.occurrenceDate || storedPhase !== schedule.phase || storedAt !== schedule.at || Number(data.leadUpDays) !== schedule.leadUpDays || data.leadUpEnabled !== schedule.leadUpEnabled;
     if (!needsUpdate) continue;
-    await document.ref.update({ frequencyDays: schedule.frequencyDays, leadUpEnabled: schedule.leadUpEnabled, leadUpDays: schedule.leadUpDays, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() });
+    await document.ref.update({ frequencyDays: schedule.frequencyDays, leadUpEnabled: false, leadUpDays: 0, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: "due", lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() });
     reconciled += 1;
   }
   return { matched: snapshot.size, reconciled };
