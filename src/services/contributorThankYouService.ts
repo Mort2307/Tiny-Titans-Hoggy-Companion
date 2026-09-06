@@ -4,7 +4,7 @@ import { getAllSpeciesSubmissions } from "./speciesSubmissionService";
 import { getCreatorVivariumShowcases } from "./vivariumShowcaseService";
 import { getCreatorKeeperObservations } from "./keeperObservationService";
 import { getCreatorUserDisplayNames } from "./creatorUserDirectoryService";
-import { ensureSubmissionConversation, sendContributorThankYouMessage, type SubmissionConversationType } from "./submissionConversationService";
+import { ensureSubmissionConversation, getUserSubmissionConversations, getSubmissionConversationMessages, sendContributorThankYouMessage, type SubmissionConversationType } from "./submissionConversationService";
 
 export type ContributorSource = {
   submissionType: SubmissionConversationType;
@@ -70,7 +70,22 @@ export async function getHistoricalContributors(excludeUid?: string): Promise<Hi
   }).filter((item) => Boolean(item.latestSubmission)).sort((a, b) => timestampToMillis(b.latestSubmission.submittedAt) - timestampToMillis(a.latestSubmission.submittedAt));
 }
 
+async function contributorAlreadyThanked(uid: string): Promise<boolean> {
+  const conversations = await getUserSubmissionConversations(uid);
+  if (!conversations.length) return false;
+  const checks = await Promise.all(conversations.map(async (conversation) => {
+    try {
+      const messages = await getSubmissionConversationMessages(conversation.id);
+      return messages.some((message) => message.id === "contributor-thankyou");
+    } catch {
+      return false;
+    }
+  }));
+  return checks.some(Boolean);
+}
+
 export async function thankContributor(contributor: HistoricalContributor, senderId: string): Promise<"sent" | "already-sent"> {
+  if (await contributorAlreadyThanked(contributor.uid)) return "already-sent";
   const source = contributor.latestSubmission;
   const conversation = await ensureSubmissionConversation({
     submissionType: source.submissionType,
