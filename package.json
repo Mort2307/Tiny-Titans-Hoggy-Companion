@@ -31,7 +31,7 @@
     "validate:genetics-calculator-v2": "node scripts/validate-genetics-calculator-v2.mjs",
     "monitor:species-sources": "node scripts/check-species-source-health.mjs",
     "test:intelligence:consent": "node scripts/test-intelligence-consent-contracts.mjs",
-    "test:intelligence:journey": "node scripts/test-intelligence:journey-contracts.mjs",
+    "test:intelligence:journey": "node scripts/test-intelligence-journey-contracts.mjs",
     "validate:intelligence-consent": "npm run test:intelligence:consent",
     "validate:intelligence-journey": "npm run test:intelligence:journey",
     "test:notifications": "node scripts/test-notification-delivery-contracts.mjs",
@@ -56,14 +56,12 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-globe.gl": "^2.37.0",
-    "react-router-dom": "^6.30.1",
     "recharts": "^3.10.1",
     "three": "^0.185.1",
     "vite-plugin-pwa": "^1.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
-    "@playwright/test": "^1.62.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.4",
