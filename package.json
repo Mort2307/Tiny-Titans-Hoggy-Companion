@@ -41,6 +41,7 @@
     "validate:intelligence-consent": "node scripts/test-intelligence-consent-contracts.mjs",
     "validate:intelligence-journey": "node scripts/test-intelligence-journey-contracts.mjs",
     "validate:genetics-runtime": "node --experimental-strip-types scripts/test-genetics-runtime.ts && node scripts/validate-genetics-runtime-contracts.mjs",
+    "validate:titan-reactive-events": "node scripts/validate-titan-reactive-event-contract.mjs",
     "monitor:species-sources": "node scripts/check-species-source-health.mjs",
     "test:intelligence:consent": "node scripts/test-intelligence-consent-contracts.mjs",
     "test:intelligence:journey": "node scripts/test-intelligence-journey-contracts.mjs",
@@ -55,6 +56,7 @@
     "test:titan-intelligence": "node scripts/validate-titan-intelligence-contract.mjs",
     "test:cross-domain-intelligence": "node scripts/validate-titan-cross-domain-intelligence.mjs",
     "test:v50-impact": "node scripts/validate-v50-impact-graph.mjs",
+    "test:titan-reactive-events": "node scripts/validate-titan-reactive-event-contract.mjs",
     "test:notifications": "node scripts/test-notification-delivery-contracts.mjs",
     "test:feeding-reminders": "node scripts/test-feeding-reminder-anchoring.mjs",
     "test:room-photo": "node scripts/check-room-photo-render-contract.mjs",
@@ -62,9 +64,9 @@
     "test:overlord": "node scripts/run-overlord-bot.mjs",
     "test:visual-ux": "node scripts/run-visual-ux-bot.mjs",
     "test:production-gate": "node scripts/run-production-gate.mjs",
-    "test": "npm run test:bot:contracts && npm run test:intelligence:consent && npm run test:intelligence:journey && npm run test:intelligence:proactive && npm run test:v50-runtime && npm run test:v50-experiences && npm run test:v50-complete && npm run test:genetics-search && npm run test:genetics-engine && npm run test:genetics-model && npm run test:genetics-runtime && npm run test:titan-intelligence && npm run test:cross-domain-intelligence && npm run test:v50-impact && npm run test:notifications && npm run test:feeding-reminders && npm run test:room-photo && npm run validate:species-combinations",
+    "test": "npm run test:bot:contracts && npm run test:intelligence:consent && npm run test:intelligence:journey && npm run test:intelligence:proactive && npm run test:v50-runtime && npm run test:v50-experiences && npm run test:v50-complete && npm run test:genetics-search && npm run test:genetics-engine && npm run test:genetics-model && npm run test:genetics-runtime && npm run test:titan-intelligence && npm run test:cross-domain-intelligence && npm run test:v50-impact && npm run test:titan-reactive-events && npm run test:notifications && npm run test:feeding-reminders && npm run test:room-photo && npm run validate:species-combinations",
     "audit": "npm audit --audit-level=high",
-    "build": "npm run validate:morphs && npm run validate:morph-taxonomy && npm run validate:morph-sources && npm run validate:morph-integrity && npm run validate:morph-intelligence && npm run validate:species && npm run validate:species-husbandry && npm run validate:species-evidence && npm run validate:species-genetics && npm run validate:species-combinations && npm run validate:species-integration && npm run validate:submissions && npm run validate:breeding-bridge && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:v50-routes && npm run validate:v50-runtime && npm run validate:v50-experiences && npm run validate:v50-complete && npm run validate:genetics-search && npm run validate:genetics-engine && npm run validate:genetics-model && npm run validate:genetics-runtime && npm run validate:titan-intelligence && npm run validate:cross-domain-intelligence && npm run validate:v50-impact && npm run validate:encoding && npm run validate:copy-quality && npm run validate:security && npm run validate:ui-hardening && npm run validate:observatory && npm run validate:genetics-calculator-v2 && npm run validate:intelligence-consent && npm run validate:intelligence-journey && npm run test:intelligence:proactive && npm run test:v50-runtime && npm run test:v50-experiences && npm run test:v50-complete && npm run test:genetics-search && npm run test:genetics-engine && npm run test:genetics-model && npm run test:genetics-runtime && npm run test:titan-intelligence && npm run test:cross-domain-intelligence && npm run test:v50-impact && npm run test:notifications && npm run test:feeding-reminders && npm run test:room-photo && tsc -b && vite build",
+    "build": "npm run validate:morphs && npm run validate:morph-taxonomy && npm run validate:morph-sources && npm run validate:morph-integrity && npm run validate:morph-intelligence && npm run validate:species && npm run validate:species-husbandry && npm run validate:species-evidence && npm run validate:species-genetics && npm run validate:species-combinations && npm run validate:species-integration && npm run validate:submissions && npm run validate:breeding-bridge && npm run validate:app-health && npm run validate:learning && npm run validate:routes && npm run validate:route-coverage && npm run validate:v50-routes && npm run validate:v50-runtime && npm run validate:v50-experiences && npm run validate:v50-complete && npm run validate:genetics-search && npm run validate:genetics-engine && npm run validate:genetics-model && npm run validate:genetics-runtime && npm run validate:titan-intelligence && npm run validate:cross-domain-intelligence && npm run validate:v50-impact && npm run validate:encoding && npm run validate:copy-quality && npm run validate:security && npm run validate:ui-hardening && npm run validate:observatory && npm run validate:genetics-calculator-v2 && npm run validate:intelligence-consent && npm run validate:intelligence-journey && npm run validate:titan-reactive-events && npm run test:intelligence:proactive && npm run test:v50-runtime && npm run test:v50-experiences && npm run test:v50-complete && npm run test:genetics-search && npm run test:genetics-engine && npm run test:genetics-model && npm run test:genetics-runtime && npm run test:titan-intelligence && npm run test:cross-domain-intelligence && npm run test:v50-impact && npm run test:titan-reactive-events && npm run test:notifications && npm run test:feeding-reminders && npm run test:room-photo && tsc -b && vite build",
     "lint": "eslint .",
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:functions": "npm run build && firebase deploy --only functions",
@@ -95,7 +97,6 @@
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.65.0",
-    "vite": "^8.2.0"
+    "typescript-eslint": "^8.65.0"
   }
 }
