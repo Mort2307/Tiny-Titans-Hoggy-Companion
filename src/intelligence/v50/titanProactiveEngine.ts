@@ -1,91 +1,10 @@
 import type { TitanContextSnapshot, TitanIntelligenceResult, TitanRecommendation, TitanSignal } from "./titanIntelligenceContracts";
 
-export interface TitanRecordCounts {
-  snakes: number;
-  weights: number;
-  feedings: number;
-  sheds: number;
-  health: number;
-  behaviour: number;
-  husbandry: number;
-  breeding: number;
-}
-
-export interface TitanProactiveInput {
-  counts: TitanRecordCounts;
-  staleAreas?: readonly string[];
-  recentEventTypes?: readonly string[];
-  animalId?: string;
-  speciesId?: string;
-}
-
-const now = () => Date.now();
-
-function signal(id: string, title: string, message: string, severity: TitanSignal["severity"], destination: string, confidence = 0.9): TitanSignal {
-  return {
-    id,
-    title,
-    message,
-    severity,
-    confidence,
-    actionPath: destination,
-    createdAt: now(),
-  };
-}
-
-function recommendation(id: string, title: string, reason: string, destination: string, priority: number, confidence = 0.9): TitanRecommendation {
-  return { id, title, reason, destination, priority, confidence };
-}
-
-/**
- * Deterministic first-pass proactive intelligence. It intentionally reasons only
- * from counts and explicit context supplied by the caller. No clinical, genetic
- * or behavioural claim is inferred from missing data.
- */
-export function buildTitanProactiveIntelligence(input: TitanProactiveInput): TitanIntelligenceResult {
-  const staleAreas = [...(input.staleAreas ?? [])];
-  const recentEventTypes = [...(input.recentEventTypes ?? [])];
-  const signals: TitanSignal[] = [];
-  const recommendations: TitanRecommendation[] = [];
-
-  if (input.counts.snakes === 0) {
-    recommendations.push(recommendation("add-first-titan", "Add your first Tiny Titan", "Tiny Titans can personalise the keeper command centre once an animal record exists.", "/snakes/new", 100, 1));
-  }
-
-  if (input.counts.snakes > 0 && input.counts.weights === 0) {
-    signals.push(signal("no-weight-baseline", "No weight baseline yet", "A weight record gives Tiny Titans a starting point for future growth history. This is a record-keeping prompt, not a health judgement.", "notice", "/weights", 0.99));
-    recommendations.push(recommendation("record-weight-baseline", "Record a baseline weight", "No weight record is currently present for this collection.", "/weights", 90, 0.99));
-  }
-
-  if (input.counts.snakes > 0 && input.counts.feedings === 0) {
-    recommendations.push(recommendation("record-first-feeding", "Start the feeding history", "A feeding entry lets later pattern tools work from actual keeper records rather than assumptions.", "/feeding", 70, 0.98));
-  }
-
-  if (input.counts.snakes > 0 && input.counts.sheds === 0) {
-    recommendations.push(recommendation("record-first-shed", "Start the shed history", "Shed records become useful only when real observations accumulate.", "/shedding", 50, 0.98));
-  }
-
-  staleAreas.slice(0, 3).forEach((area, index) => {
-    recommendations.push(recommendation(`stale-${area.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, `Review ${area}`, `This area has been marked stale by the caller. Tiny Titans is surfacing it rather than assuming why it is stale.`, "/", 60 - index, 0.95));
-  });
-
-  if (recentEventTypes.includes("FeedingRecorded") && input.counts.weights > 0) {
-    signals.push(signal("feeding-weight-context", "New feeding data can add context", "A recent feeding record and an existing weight history can be considered together by downstream pattern tools.", "info", "/snakes", 0.92));
-  }
-
-  if (recentEventTypes.includes("WeightRecorded") && input.counts.feedings > 0) {
-    signals.push(signal("weight-feeding-context", "Weight history just became more useful", "A new weight record can be interpreted alongside recorded feeding history without treating either as a diagnosis.", "info", "/weights", 0.92));
-  }
-
-  const context: TitanContextSnapshot = {
-    animalId: input.animalId,
-    speciesId: input.speciesId,
-    recentEventTypes,
-    incompleteTasks: recommendations.map((item) => item.title),
-    staleAreas,
-    relevantRoutes: ["/", "/snakes", "/weights", "/feeding", "/shedding", "/husbandry"],
-    generatedAt: now(),
-  };
-
-  return { signals, recommendations, context, generatedAt: now() };
-}
+export interface TitanRecordCounts { snakes:number; weights:number; feedings:number; sheds:number; health:number; behaviour:number; husbandry:number; breeding:number; }
+export interface TitanProactiveInput { counts:TitanRecordCounts; staleAreas?:readonly string[]; recentEventTypes?:readonly string[]; animalId?:string; speciesId?:string; }
+const now=()=>Date.now();
+function signal(id:string,title:string,message:string,severity:TitanSignal["severity"],destination:string,confidence=0.9):TitanSignal{return{id,title,message,severity,confidence,actionPath:destination,createdAt:now()};}
+function recommendation(id:string,title:string,reason:string,destination:string,priority:number,confidence=0.9):TitanRecommendation{return{id,title,reason,destination,priority,confidence};}
+function routeForArea(area:string):string{const value=area.toLowerCase();if(value.includes("weight")||value.includes("growth"))return"/weights";if(value.includes("feed"))return"/feeding";if(value.includes("shed"))return"/shedding";if(value.includes("health"))return"/health";if(value.includes("behaviour")||value.includes("behavior"))return"/behaviour";if(value.includes("husbandry")||value.includes("enclosure")||value.includes("climate")||value.includes("temperature")||value.includes("humidity"))return"/husbandry";if(value.includes("breed"))return"/breeding";if(value.includes("genetic")||value.includes("morph"))return"/morph-library";return"/";}
+function eventPairSignal(input:TitanProactiveInput,signals:TitanSignal[]):void{const events=new Set(input.recentEventTypes??[]);const has=(name:string)=>events.has(name);if(has("FeedingRecorded")&&input.counts.weights>0)signals.push(signal("feeding-weight-context","Feeding and weight history now connect","A recent feeding record can be considered alongside this animal's existing weight history by downstream pattern tools. Neither record is treated as a diagnosis.","info","/weights",0.92));if(has("WeightRecorded")&&input.counts.feedings>0)signals.push(signal("weight-feeding-context","Weight and feeding history now connect","A recent weight record can be considered alongside recorded feeding history without assuming cause or outcome.","info","/feeding",0.92));if(has("ShedRecorded")&&input.counts.weights>0)signals.push(signal("shed-weight-context","A new shed can add growth context","The latest shed event can now be viewed alongside the recorded weight history for the animal.","info","/weights",0.9));if(has("BehaviourObserved")&&(input.counts.feedings>0||input.counts.weights>0)){const destination=input.counts.feedings>0?"/feeding":"/weights";signals.push(signal("behaviour-context","Behaviour can be compared with recent records","The new behaviour observation can be reviewed beside existing feeding or weight history. Tiny Titans does not infer a cause from the correlation alone.","info",destination,0.88));}if(has("MicroclimateRecorded")&&input.counts.sheds>0)signals.push(signal("microclimate-shed-context","Microclimate and shed history now connect","A new microclimate record gives downstream husbandry tools additional context when reviewing this animal's shed history.","info","/husbandry",0.9));if(has("GeneticsChanged")&&input.counts.breeding>0)signals.push(signal("genetics-breeding-context","Genetics change can update breeding context","A genetics update should be reviewed alongside active breeding records so downstream calculations use the current recorded identity.","notice","/breeding",0.96));if((has("BreedingProjectChanged")||has("HatchlingRecorded"))&&input.speciesId)signals.push(signal("breeding-species-context","Breeding context is now species-aware","The current species context is available to downstream breeding and genetics tools; unsupported cross-species inference remains blocked by the genetics contracts.","info","/breeding",0.94));}
+export function buildTitanProactiveIntelligence(input:TitanProactiveInput):TitanIntelligenceResult{const staleAreas=[...(input.staleAreas??[])];const recentEventTypes=[...(input.recentEventTypes??[])];const signals:TitanSignal[]=[];const recommendations:TitanRecommendation[]=[];if(input.counts.snakes===0)recommendations.push(recommendation("add-first-titan","Add your first Tiny Titan","Tiny Titans can personalise the keeper command centre once an animal record exists.","/snakes/new",100,1));if(input.counts.snakes>0&&input.counts.weights===0){signals.push(signal("no-weight-baseline","No weight baseline yet","A weight record gives Tiny Titans a starting point for future growth history. This is a record-keeping prompt, not a health judgement.","notice","/weights",0.99));recommendations.push(recommendation("record-weight-baseline","Record a baseline weight","No weight record is currently present for this collection.","/weights",90,0.99));}if(input.counts.snakes>0&&input.counts.feedings===0)recommendations.push(recommendation("record-first-feeding","Start the feeding history","A feeding entry lets later pattern tools work from actual keeper records rather than assumptions.","/feeding",70,0.98));if(input.counts.snakes>0&&input.counts.sheds===0)recommendations.push(recommendation("record-first-shed","Start the shed history","Shed records become useful only when real observations accumulate.","/shedding",50,0.98));staleAreas.slice(0,3).forEach((area,index)=>recommendations.push(recommendation(`stale-${area.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}`,`Review ${area}`,`This area has been marked stale by the caller. Tiny Titans is surfacing it rather than assuming why it is stale.`,routeForArea(area),60-index,0.95)));eventPairSignal(input,signals);const relevantRoutes=new Set(["/","/snakes","/weights","/feeding","/shedding","/husbandry"]);recommendations.forEach(item=>relevantRoutes.add(item.destination));signals.forEach(item=>relevantRoutes.add(item.actionPath??"/"));if(input.counts.health>0)relevantRoutes.add("/health");if(input.counts.behaviour>0)relevantRoutes.add("/behaviour");if(input.counts.breeding>0)relevantRoutes.add("/breeding");const context:TitanContextSnapshot={animalId:input.animalId,speciesId:input.speciesId,recentEventTypes,incompleteTasks:recommendations.map(item=>item.title),staleAreas,relevantRoutes:[...relevantRoutes],generatedAt:now()};return{signals,recommendations,context,generatedAt:now()};}
