@@ -1,5 +1,5 @@
 import type { SnakeInsight, SnakeIntelligence } from "./snakeIntelligenceService";
-import { tinyTitansEventBus, TITAN_INTELLIGENCE_UPDATED_EVENT, type TinyTitansEvent } from "./tinyTitansEventBus";
+import { TITAN_INTELLIGENCE_UPDATED_EVENT, type TinyTitansEvent } from "./tinyTitansEventBus";
 
 type TitanRecordEventType = "WeightRecorded" | "FeedingRecorded" | "ShedRecorded" | "BehaviourObserved" | "HealthRecordCreated" | "MicroclimateRecorded" | "EnclosureChanged" | "GeneticsChanged" | "BreedingProjectChanged" | "HatchlingRecorded" | "LearningActivityRecorded";
 type TitanActionKind = "created" | "updated" | "deleted";
@@ -19,18 +19,10 @@ function safeWrite<T>(key: string, value: T): void { if (typeof window === "unde
 function pruneState(items: TitanProactiveStateItem[], now = Date.now()): TitanProactiveStateItem[] { return items.filter((item) => now - item.lastSeenAt <= STATE_TTL_MS || item.status === "active").sort((a, b) => b.lastSeenAt - a.lastSeenAt).slice(0, MAX_STATE_ITEMS); }
 function insightKey(animalId: string, insightId: string): string { return `${animalId}:${insightId}`; }
 
-function mapToDomainEvent(event: TitanReactiveEvent): void {
-  const at = new Date(event.createdAt).toISOString();
-  if (event.type === "WeightRecorded" && event.animalId) tinyTitansEventBus.emit({ type: "WeightRecorded", payload: { snakeId: event.animalId, weightGrams: 0, occurredAt: at } });
-  else if (event.type === "FeedingRecorded" && event.animalId) tinyTitansEventBus.emit({ type: "FeedingRecorded", payload: { snakeId: event.animalId, occurredAt: at } });
-  else if (event.type === "ShedRecorded" && event.animalId) tinyTitansEventBus.emit({ type: "ShedRecorded", payload: { snakeId: event.animalId, status: "Complete", occurredAt: at } });
-}
-
 export function emitTitanIntelligenceEvent(input: Omit<TitanReactiveEvent, "id" | "createdAt">): TitanReactiveEvent {
   const event: TitanReactiveEvent = { ...input, id: `${input.type}-${input.action}-${input.animalId ?? "collection"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, createdAt: Date.now() };
   const events = safeRead<TitanReactiveEvent[]>(EVENTS_KEY(input.uid), []);
   safeWrite(EVENTS_KEY(input.uid), [event, ...events].slice(0, MAX_EVENTS));
-  mapToDomainEvent(event);
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent<TitanReactiveUpdateDetail>(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: { event, affectedAnimalId: input.animalId } }));
   return event;
 }
@@ -55,19 +47,16 @@ export function mergeTitanProactiveState(uid: string, insights: readonly SnakeIn
   safeWrite(STATE_KEY(uid), merged);
   return merged.filter((item) => item.status === "active");
 }
-
 export function markTitanProactiveHandled(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "handled"); }
 export function dismissTitanProactive(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "dismissed"); }
 export function reopenTitanProactive(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "active"); }
 export function getActiveTitanProactiveState(uid: string): TitanProactiveStateItem[] { return pruneState(safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), [])).filter((item) => item.status === "active"); }
-
 export function subscribeToTitanIntelligenceUpdates(callback: (detail: TitanReactiveUpdateDetail) => void): () => void {
   if (typeof window === "undefined") return () => undefined;
   const listener = (event: Event) => callback((event as CustomEvent<TitanReactiveUpdateDetail>).detail ?? {});
   window.addEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener);
   return () => window.removeEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener);
 }
-
 function updateTitanProactiveState(uid: string, key: string, status: TitanProactiveItemStatus): void {
   const now = Date.now();
   const items = safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), []);
@@ -75,6 +64,4 @@ function updateTitanProactiveState(uid: string, key: string, status: TitanProact
   safeWrite(STATE_KEY(uid), pruneState(updated, now));
   if (typeof window !== "undefined") window.dispatchEvent(new Event(TITAN_INTELLIGENCE_UPDATED_EVENT));
 }
-
-// Keep the compiler aware that the reactive service deliberately bridges the typed domain bus.
 export type TitanReactiveDomainEvent = TinyTitansEvent;
