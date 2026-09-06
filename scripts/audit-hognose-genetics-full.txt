@@ -1,0 +1,1 @@
+Use scripts/audit-hognose-genetics.mjs in CI to report record-class counts and core canonical identity invariants.
