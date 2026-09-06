@@ -2,6 +2,7 @@ import { getMorphImageSubmissions } from "./creatorService";
 import { getAllUserMorphSubmissions } from "./creatorUserMorphSubmissionService";
 import { getAllSpeciesSubmissions } from "./speciesSubmissionService";
 import { getCreatorVivariumShowcases } from "./vivariumShowcaseService";
+import { getCreatorKeeperObservations } from "./keeperObservationService";
 import { getCreatorUserDisplayNames } from "./creatorUserDirectoryService";
 import { ensureSubmissionConversation, sendContributorThankYouMessage, type SubmissionConversationType } from "./submissionConversationService";
 
@@ -39,11 +40,12 @@ function addSource(map: Map<string, ContributorSource[]>, uid: unknown, source: 
 }
 
 export async function getHistoricalContributors(excludeUid?: string): Promise<HistoricalContributor[]> {
-  const [photoSubmissions, terminologySubmissions, speciesSubmissions, vivariumSubmissions] = await Promise.all([
+  const [photoSubmissions, terminologySubmissions, speciesSubmissions, vivariumSubmissions, observations] = await Promise.all([
     getMorphImageSubmissions(),
     getAllUserMorphSubmissions(),
     getAllSpeciesSubmissions(),
     getCreatorVivariumShowcases(),
+    getCreatorKeeperObservations(),
   ]);
 
   const byUser = new Map<string, ContributorSource[]>();
@@ -51,6 +53,7 @@ export async function getHistoricalContributors(excludeUid?: string): Promise<Hi
   for (const item of terminologySubmissions) addSource(byUser, item.userId, { submissionType: "morph-terminology", submissionId: item.id, title: clean(item.submittedName) || "Morph terminology submission", submittedAt: item.createdAt, status: clean(item.status) });
   for (const item of speciesSubmissions) addSource(byUser, item.userId, { submissionType: "species", submissionId: item.id, title: clean(item.commonName) || clean(item.scientificName) || "Species submission", submittedAt: item.submittedAt, status: clean(item.status) });
   for (const item of vivariumSubmissions) addSource(byUser, item.userId, { submissionType: "vivarium-showcase", submissionId: item.id, title: clean(item.title) || "Vivarium showcase", submittedAt: item.submittedAt, status: clean(item.status) });
+  for (const item of observations) addSource(byUser, item.userId, { submissionType: "observation", submissionId: item.id, title: clean(item.title) || "Keeper observation", submittedAt: item.submittedAt, status: clean(item.status) });
 
   const excluded = clean(excludeUid);
   const contributorIds = [...byUser.keys()].filter((uid) => uid !== excluded);
