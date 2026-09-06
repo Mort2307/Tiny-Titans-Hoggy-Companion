@@ -19,6 +19,7 @@ for (const symbol of [
   "refreshTitanDecisionStateForAnimals",
   "subscribeToTitanIntelligenceUpdates",
   "hasFullIntelligenceAccess",
+  "syncSnakes",
 ]) {
   if (!collection.includes(symbol)) findings.push(`Collection is not wired to canonical reactive refresh: ${symbol}`);
 }
