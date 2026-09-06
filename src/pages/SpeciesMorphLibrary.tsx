@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { getApprovedMorphImages } from "../services/creatorService";
@@ -24,6 +24,7 @@ function matchesFilter(morph: SpeciesMorphEntry, filter: Filter): boolean {
 
 export default function SpeciesMorphLibrary() {
   const { selectedSpeciesId, selectedSpecies } = useSpeciesContext();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [showImageSubmission, setShowImageSubmission] = useState(false);
@@ -81,6 +82,22 @@ export default function SpeciesMorphLibrary() {
     setImageSubmissionMorphId("");
   }
 
+  function openMorphRecord(morphId: string) {
+    navigate(`/morph-library/${encodeURIComponent(morphId)}`);
+  }
+
+  function handleMorphCardClick(event: React.MouseEvent<HTMLElement>, morphId: string) {
+    const target = event.target as HTMLElement;
+    if (target.closest("a,button,input,textarea,select")) return;
+    openMorphRecord(morphId);
+  }
+
+  function handleMorphCardKeyDown(event: React.KeyboardEvent<HTMLElement>, morphId: string) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openMorphRecord(morphId);
+  }
+
   return (
     <main className="page-container morph-library-page">
       <BackHomeButton />
@@ -89,7 +106,7 @@ export default function SpeciesMorphLibrary() {
         <h1>{speciesName} Morph Library</h1>
         <p>This library is driven by the selected species context. Tiny Titans will never display another species' genetics as a substitute.</p>
         <div className="morph-library__filters" role="group" aria-label="Morph type">
-          {(["all", "gene", "combination", "polygenic", "line-bred"] as Filter[]).map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>{value === "all" ? "All" : value === "gene" ? "Genes & Supers" : value === "combination" ? "Combinations" : value === "polygenic" ? "Polygenic" : "Line-bred"}</button>)}
+          {["all", "gene", "combination", "polygenic", "line-bred"].map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value as Filter)}>{value === "all" ? "All" : value === "gene" ? "Genes & Supers" : value === "combination" ? "Combinations" : value === "polygenic" ? "Polygenic" : "Line-bred"}</button>)}
         </div>
         <label className="morph-library__search"><span>Search {speciesName} morphs</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${speciesName} genetics…`} /></label>
         <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} species-scoped entries currently published</span></div>
@@ -107,7 +124,15 @@ export default function SpeciesMorphLibrary() {
         {filtered.map((morph) => {
           const image = cardImages[morph.geneId];
           return (
-            <article key={morph.geneId} className="morph-card morph-card--library">
+            <article
+              key={morph.geneId}
+              className="morph-card morph-card--library morph-card--clickable"
+              role="link"
+              tabIndex={0}
+              aria-label={`Open ${morph.name} genetics record`}
+              onClick={(event) => handleMorphCardClick(event, morph.geneId)}
+              onKeyDown={(event) => handleMorphCardKeyDown(event, morph.geneId)}
+            >
               <div className="morph-card__media">
                 {image ? (
                   <div className="morph-card__image-wrap"><img src={image.imageUrl} alt={`${morph.name} reference example`} loading="lazy" />{(image.creditName || image.creditSocial) && <span className="morph-card__credit">Credit: {image.creditName || image.creditSocial}</span>}</div>
