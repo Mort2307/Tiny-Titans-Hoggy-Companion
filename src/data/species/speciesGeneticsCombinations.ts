@@ -15,7 +15,7 @@ function evidence(spec: ComboSpec): EvidenceRecord { return { sourceType: "speci
 function toCombination(spec: ComboSpec): CombinationDefinition { const record = evidence(spec); return { id: spec.id, species: spec.species, name: spec.name, aliases: spec.aliases, componentLocusIds: [...new Set(spec.components.map((item) => item.locusId))], components: spec.components, status: "recognised", evidence: [record] }; }
 function toMorph(spec: ComboSpec): MasterMorphDefinition { return { geneId: spec.id, name: spec.name, aliases: spec.aliases ?? [], kind: "Combination", isGene: false, isCombination: true, category: "Recognised genetic combination", inheritance: "Unknown", hetPossible: false, verification: "Recognised", evidenceStatus: "documented", description: `Recognised ${spec.name} combination: ${spec.components.map((item) => `${item.alleleId}${item.copies === 2 ? " ×2" : ""}`).join(" + ")}.`, educationalNotes: `${spec.note} This name describes a phenotype/genetic combination and is not an independent locus.`, sourceUrl: `${morphMarket}${spec.sourcePath}`, sourceLabel: "MorphMarket Morphpedia", components: spec.components.map((item) => ({ morphId: item.alleleId, type: "Gene" as const, copies: item.copies })) }; }
 
-const cornSnake: ComboSpec[] = [
+const cornSnake: ComboSpec[] = ([
   ["almond", "Almond", [component("Pantherophis guttatus", "caramel"), component("Pantherophis guttatus", "lavender")], "", "caramel", "MorphMarket lists Almond as Caramel + Lavender."],
   ["amaretto", "Amaretto", [component("Pantherophis guttatus", "caramel"), component("Pantherophis guttatus", "hypomelanistic"), component("Pantherophis guttatus", "lavender")], "", "caramel", "MorphMarket lists Amaretto as Caramel + Hypo + Lavender."],
   ["amber", "Amber", [component("Pantherophis guttatus", "caramel"), component("Pantherophis guttatus", "hypomelanistic")], "", "caramel", "MorphMarket lists Amber as Caramel + Hypo."],
@@ -40,15 +40,15 @@ const cornSnake: ComboSpec[] = [
   ["sulfur", "Sulfur", [component("Pantherophis guttatus", "amel"), component("Pantherophis guttatus", "caramel"), component("Pantherophis guttatus", "diffused")], "", "caramel", "MorphMarket lists Sulfur as Amelanistic + Caramel + Diffused."],
   ["topaz", "Topaz", [component("Pantherophis guttatus", "caramel"), component("Pantherophis guttatus", "lava")], "", "lava", "MorphMarket lists Topaz as Caramel + Lava."],
   ["xanthic-snow", "Xanthic Snow", [component("Pantherophis guttatus", "amel"), component("Pantherophis guttatus", "anerythristic"), component("Pantherophis guttatus", "caramel")], "", "caramel", "MorphMarket lists Xanthic Snow as Amelanistic + Anery + Caramel."],
-].map(([id, name, components, alias, source, note]) => ({ id, name, species: "Pantherophis guttatus", components, aliases: alias ? [alias] : undefined, sourcePath: `corn-snakes/${source}/`, note }));
+] as Array<[string, string, CombinationComponent[], string, string, string]>).map(([id, name, components, alias, source, note]) => ({ id, name, species: "Pantherophis guttatus", components, aliases: alias ? [alias] : undefined, sourcePath: `corn-snakes/${source}/`, note }));
 
-const boaCombos: ComboSpec[] = [
+const boaCombos: ComboSpec[] = ([
   ["ghost", "Ghost", [component("Boa constrictor", "hypo"), component("Boa constrictor", "anery-type-1")], "", "anery-type-1", "MorphMarket lists Ghost as Hypo + Anery Type 1."],
   ["junglow", "Junglow", [component("Boa constrictor", "hypo"), component("Boa constrictor", "jungle"), component("Boa constrictor", "kahl-albino")], "", "kahl-albino", "MorphMarket lists Junglow as Hypo + Jungle + Kahl Albino."],
   ["moon-glow", "Moon Glow", [component("Boa constrictor", "hypo"), component("Boa constrictor", "kahl-albino"), component("Boa constrictor", "anery-type-1")], "Moonglow", "kahl-albino", "Moon Glow and Moonglow are the same recognised genetic signature; Moonglow is retained as an alias."],
   ["snow", "Snow", [component("Boa constrictor", "kahl-albino"), component("Boa constrictor", "anery-type-1")], "", "kahl-albino", "MorphMarket lists Snow as Kahl Albino + Anery Type 1."],
   ["sunglow", "Sunglow", [component("Boa constrictor", "hypo"), component("Boa constrictor", "kahl-albino")], "", "kahl-albino", "MorphMarket lists Sunglow as Hypo + Kahl Albino."],
-].map(([id, name, components, alias, source, note]) => ({ id: `boa-constrictor-${id}`, name, species: "Boa constrictor", components, aliases: alias ? [alias] : undefined, sourcePath: `boa-constrictors/${source}/`, note }));
+] as Array<[string, string, CombinationComponent[], string, string, string]>).map(([id, name, components, alias, source, note]) => ({ id: `boa-constrictor-${id}`, name, species: "Boa constrictor", components, aliases: alias ? [alias] : undefined, sourcePath: `boa-constrictors/${source}/`, note }));
 
 const burmese: ComboSpec[] = [
   { id: "python-bivittatus-pearl", species: "Python bivittatus", name: "Pearl", components: [component("Python bivittatus", "hypo"), component("Python bivittatus", "albino")], sourcePath: "albino/", note: "MorphMarket lists Pearl as Hypo + Albino." },
@@ -104,7 +104,7 @@ export const SPECIES_GENETICS_COMBINATION_BACKLOG: CombinationBacklogEntry[] = [
   { species: "Malayopython reticulatus", name: "Ruby Eyed Ivory", requiredTraits: ["Super Platinum", "Albino"], reason: "The current Platinum model lacks the required super-form semantics.", source: "MorphMarket Reticulated Python combinations" },
   { species: "Lampropeltis californiae", name: "Alabaster", requiredTraits: ["Axanthic", "Hypo", "Peanut Butter"], reason: "Axanthic is not yet modelled for California Kingsnake.", source: "MorphMarket California Kingsnake combinations" },
   { species: "Lampropeltis californiae", name: "Albescent", requiredTraits: ["Amelanistic", "Axanthic", "Hypo"], reason: "Axanthic is not yet modelled.", source: "MorphMarket California Kingsnake combinations" },
-  { species: "Lampropeltis californiae", name: "Goblin", requiredTraits: ["Axanthic", "Leucistic"], reason: "Axanthic is not yet modelled.", source: "MorphMarket California Kingsnake combinations" },
+  { species: "Lampropeltis californiae", name: "Goblin", requiredTraits: ["Axanthic", "Leucistic"], reason: "Axanthic is not yet modelled for California Kingsnake.", source: "MorphMarket California Kingsnake combinations" },
   { species: "Python regius", name: "Snow (VPI)", requiredTraits: ["Axanthic (VPI)", "Albino"], reason: "The current Axanthic record is not line-specific VPI.", source: "MorphMarket VPI Axanthic combinations" },
   { species: "Python regius", name: "Lavender Snow", requiredTraits: ["Axanthic (VPI)", "Lavender Albino"], reason: "Requires line-specific VPI Axanthic.", source: "MorphMarket VPI Axanthic combinations" },
   { species: "Python regius", name: "True Ghost", requiredTraits: ["Axanthic (VPI)", "Ghost"], reason: "Requires line-specific VPI Axanthic.", source: "MorphMarket VPI Axanthic combinations" },
