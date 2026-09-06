@@ -4,9 +4,9 @@ import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_EXPANSION_BATCH_1 } from "./speciesGeneticsExpansionBatch1";
 import { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";
+import { applyScientificEvidence } from "./speciesGeneticsScientificEvidence";
 
 export type SpeciesGeneticsCoverageStatus = "mapped" | "partial" | "baseline-only";
-
 export type SpeciesGeneticsCoverage = {
   speciesId: string;
   scientificName: string;
@@ -24,18 +24,12 @@ export type SpeciesGeneticsCoverage = {
 const MENDELIAN = new Set(["Recessive", "Incomplete Dominant", "Dominant"]);
 
 function composeCatalogue(speciesName: string): MasterMorphDefinition[] {
-  const batches = [
-    SPECIES_GENETICS_CATALOGUES,
-    SPECIES_GENETICS_EXPANSION_BATCH_1,
-    SPECIES_GENETICS_EXPANSION_BATCH_2,
-  ];
-  return batches.reduce<MasterMorphDefinition[]>((combined, batch) => {
+  const batches = [SPECIES_GENETICS_CATALOGUES, SPECIES_GENETICS_EXPANSION_BATCH_1, SPECIES_GENETICS_EXPANSION_BATCH_2];
+  const composed = batches.reduce<MasterMorphDefinition[]>((combined, batch) => {
     const additions = batch[speciesName] ?? [];
-    return [
-      ...combined,
-      ...additions.filter((trait) => !combined.some((entry) => entry.geneId === trait.geneId || entry.name.trim().toLowerCase() === trait.name.trim().toLowerCase())),
-    ];
+    return [...combined, ...additions.filter((trait) => !combined.some((entry) => entry.geneId === trait.geneId || entry.name.trim().toLowerCase() === trait.name.trim().toLowerCase()))];
   }, []);
+  return applyScientificEvidence({ [speciesName]: composed })[speciesName] ?? composed;
 }
 
 function catalogueForSpecies(speciesId: string): MasterMorphDefinition[] {
@@ -51,28 +45,14 @@ function hasScientificSource(entry: MasterMorphDefinition): boolean {
 export function getSpeciesGeneticsCoverage(speciesId: string): SpeciesGeneticsCoverage | undefined {
   const species = INITIAL_SNAKE_SPECIES.find((entry) => entry.id === speciesId);
   if (!species) return undefined;
-
   const catalogue = catalogueForSpecies(speciesId);
   const mendelianTraitCount = catalogue.filter((entry) => MENDELIAN.has(entry.inheritance) && entry.isGene === true && entry.kind === "Gene").length;
-  const confirmedMendelianTraitCount = catalogue.filter((entry) =>
-    MENDELIAN.has(entry.inheritance) &&
-    entry.isGene === true &&
-    entry.kind === "Gene" &&
-    entry.evidenceStatus === "confirmed" &&
-    entry.verification === "Confirmed",
-  ).length;
-  const calculatorEligibleTraitCount = catalogue.filter((entry) =>
-    entry.isGene === true &&
-    entry.kind === "Gene" &&
-    MENDELIAN.has(entry.inheritance) &&
-    entry.evidenceStatus === "confirmed" &&
-    entry.verification === "Confirmed",
-  ).length;
+  const confirmedMendelianTraitCount = catalogue.filter((entry) => MENDELIAN.has(entry.inheritance) && entry.isGene === true && entry.kind === "Gene" && entry.evidenceStatus === "confirmed" && entry.verification === "Confirmed").length;
+  const calculatorEligibleTraitCount = catalogue.filter((entry) => entry.isGene === true && entry.kind === "Gene" && MENDELIAN.has(entry.inheritance) && entry.evidenceStatus === "confirmed" && entry.verification === "Confirmed").length;
   const nonMendelianTraitCount = catalogue.length - mendelianTraitCount;
   const sourceBackedTraitCount = catalogue.filter((entry) => Boolean(entry.sourceUrl || entry.sourceLinks?.length)).length;
   const scientificSourceBackedTraitCount = catalogue.filter(hasScientificSource).length;
   const mapped = speciesId === "heterodon-nasicus";
-
   return {
     speciesId: species.id,
     scientificName: species.acceptedScientificName,
@@ -89,9 +69,7 @@ export function getSpeciesGeneticsCoverage(speciesId: string): SpeciesGeneticsCo
 }
 
 export function getAllSpeciesGeneticsCoverage(): SpeciesGeneticsCoverage[] {
-  return INITIAL_SNAKE_SPECIES.map((species) => getSpeciesGeneticsCoverage(species.id)).filter(
-    (entry): entry is SpeciesGeneticsCoverage => Boolean(entry),
-  );
+  return INITIAL_SNAKE_SPECIES.map((species) => getSpeciesGeneticsCoverage(species.id)).filter((entry): entry is SpeciesGeneticsCoverage => Boolean(entry));
 }
 
 export function getSpeciesGeneticsCoverageSummary() {
