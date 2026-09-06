@@ -1,5 +1,5 @@
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
-import { getSpeciesGeneticsCoverage, type SpeciesGeneticsCoverage } from "./speciesGeneticsCoverage";
+import { getSpeciesGeneticsCoverage } from "./speciesGeneticsCoverage";
 
 export type GeneticsEvidencePriority = "tier-1" | "tier-2" | "tier-3" | "watchlist";
 export type SpeciesGeneticsPriorityRecord = {
