@@ -46,10 +46,14 @@ export function feedingReminderSchedule(input: Pick<ReminderInput, "kind" | "fre
   if (!occurrenceDate) return null;
   const today = localDateKey(now, timezone);
   while (occurrenceDate < today) occurrenceDate = addCalendarDays(occurrenceDate, frequencyDays);
-  const dueToday = occurrenceDate === today;
-  const leadStart = addCalendarDays(occurrenceDate, -(frequencyDays - 1));
-  const notificationDate = today >= leadStart ? today : leadStart;
-  return { occurrenceDate, phase: dueToday ? "due" as const : "lead-up" as const, notificationDate, at: zonedTimeToUtc(notificationDate, input.time || "09:00", timezone).toISOString(), leadUpEnabled: frequencyDays > 1, leadUpDays: Math.max(0, frequencyDays - 1) };
+  return {
+    occurrenceDate,
+    phase: occurrenceDate === today ? "due" as const : "due" as const,
+    notificationDate: occurrenceDate,
+    at: zonedTimeToUtc(occurrenceDate, input.time || "09:00", timezone).toISOString(),
+    leadUpEnabled: false,
+    leadUpDays: 0,
+  };
 }
 
 function legacyFlagFor(kind: ReminderKind): string | null {
@@ -74,11 +78,11 @@ export function defaultReminderInput(kind: ReminderKind, snakeId: string | null 
 function withSchedule(input: ReminderInput): Omit<Reminder, "id" | "createdAt" | "updatedAt"> {
   const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(input.frequencyDays) || 1)));
   const feedingSchedule = input.kind === "feeding" ? feedingReminderSchedule({ ...input, frequencyDays }) : null;
-  const leadUpEnabled = input.kind === "feeding" ? Boolean(feedingSchedule?.leadUpEnabled) : Boolean(input.leadUpEnabled) && frequencyDays > 1;
-  const leadUpDays = input.kind === "feeding" ? Math.max(0, frequencyDays - 1) : Math.min(Math.max(1, Math.round(Number(input.leadUpDays) || 1)), Math.min(30, frequencyDays - 1));
+  const leadUpEnabled = input.kind === "feeding" ? false : Boolean(input.leadUpEnabled) && frequencyDays > 1;
+  const leadUpDays = input.kind === "feeding" ? 0 : Math.min(Math.max(1, Math.round(Number(input.leadUpDays) || 1)), Math.min(30, frequencyDays - 1));
   const safeInput = { ...input, frequencyDays, leadUpEnabled, leadUpDays };
   if (input.kind === "feeding" && feedingSchedule) {
-    return { ...safeInput, nextNotificationAt: feedingSchedule.at, nextOccurrenceDate: feedingSchedule.occurrenceDate, nextPhase: feedingSchedule.phase, lastNotifiedAt: null, lastCompletedAt: null };
+    return { ...safeInput, nextNotificationAt: feedingSchedule.at, nextOccurrenceDate: feedingSchedule.occurrenceDate, nextPhase: "due", lastNotifiedAt: null, lastCompletedAt: null };
   }
   const schedule = nextSchedule(safeInput, input.startDate, leadUpEnabled ? "lead-up" : "due");
   return { ...safeInput, frequencyDays, leadUpEnabled, leadUpDays, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lastNotifiedAt: null, lastCompletedAt: null };
@@ -90,12 +94,30 @@ export async function listReminders(uid: string): Promise<Reminder[]> {
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Reminder, "id">) }));
 }
 
+export async function reanchorFeedingRemindersAfterFeed(uid: string, snakeId: string): Promise<void> {
+  if (!uid || !snakeId) return;
+  const [reminders, feedingsSnapshot] = await Promise.all([
+    listReminders(uid),
+    getDocs(query(collection(db, "users", uid, "snakes", snakeId, "feedings"), orderBy("date", "desc"))),
+  ]);
+  const latest = feedingsSnapshot.docs.map((item) => item.data().date).find((value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value));
+  if (!latest) return;
+  const matching = reminders.filter((reminder) => reminder.kind === "feeding" && reminder.status === "active" && reminder.snakeId === snakeId);
+  await Promise.all(matching.map((reminder) => {
+    const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1)));
+    const nextDate = addCalendarDays(latest, frequencyDays);
+    const at = zonedTimeToUtc(nextDate, reminder.time || "09:00", reminder.timezone || "Europe/London").toISOString();
+    return updateDoc(doc(db, "users", uid, "reminders", reminder.id), { nextNotificationAt: at, nextOccurrenceDate: nextDate, nextPhase: "due", leadUpEnabled: false, leadUpDays: 0, lockedUntil: null, updatedAt: serverTimestamp() });
+  }));
+}
+
 export async function createReminder(uid: string, input: ReminderInput): Promise<Reminder> {
   if (!uid) throw new Error("You must be signed in to create a reminder.");
   const ref = doc(remindersCollection(uid));
   const next = withSchedule(input);
   await setDoc(ref, { ...next, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   await handOffLegacyStream(uid, input.kind);
+  if (input.kind === "feeding" && input.snakeId) await reanchorFeedingRemindersAfterFeed(uid, input.snakeId);
   return { id: ref.id, ...next };
 }
 
@@ -104,6 +126,7 @@ export async function updateReminder(uid: string, reminderId: string, input: Rem
   const next = withSchedule(input);
   await updateDoc(doc(db, "users", uid, "reminders", reminderId), { ...next, updatedAt: serverTimestamp() });
   await handOffLegacyStream(uid, input.kind);
+  if (input.kind === "feeding" && input.snakeId) await reanchorFeedingRemindersAfterFeed(uid, input.snakeId);
 }
 
 export async function setReminderPaused(uid: string, reminder: Reminder, paused: boolean): Promise<void> {
@@ -112,7 +135,7 @@ export async function setReminderPaused(uid: string, reminder: Reminder, paused:
   if (reminder.kind === "feeding") {
     const schedule = feedingReminderSchedule({ ...reminder, kind: "feeding" });
     if (!schedule) throw new Error("This feeding reminder has no due date.");
-    await updateDoc(ref, { status: "active", frequencyDays: Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1))), leadUpEnabled: schedule.leadUpEnabled, leadUpDays: schedule.leadUpDays, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lockedUntil: null, updatedAt: serverTimestamp() });
+    await updateDoc(ref, { status: "active", frequencyDays: Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1))), leadUpEnabled: false, leadUpDays: 0, nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: "due", lockedUntil: null, updatedAt: serverTimestamp() });
     return;
   }
   const input: ReminderInput = { ...reminder, status: "active", leadUpEnabled: reminder.leadUpEnabled && reminder.frequencyDays > 1 };
