@@ -14,7 +14,17 @@ function safeRead<T>(key: string, fallback: T): T { if (typeof window === "undef
 function safeWrite<T>(key: string, value: T): void { if (typeof window === "undefined") return; try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* Non-critical cache. Never block keeper actions. */ } }
 function pruneState(items: TitanProactiveStateItem[], now = Date.now()): TitanProactiveStateItem[] { return items.filter((item) => now - item.lastSeenAt <= STATE_TTL_MS || item.status === "active").sort((a, b) => b.lastSeenAt - a.lastSeenAt).slice(0, MAX_STATE_ITEMS); }
 function insightKey(animalId: string, insightId: string): string { return `${animalId}:${insightId}`; }
-
+function eventAffectsCategory(event: TitanReactiveEvent, category: SnakeInsight["category"]): boolean {
+  if (category === "data") return true;
+  switch (event.type) {
+    case "WeightRecorded": return category === "weight";
+    case "FeedingRecorded": return category === "feeding";
+    case "ShedRecorded": return category === "shedding";
+    case "BehaviourObserved": return category === "behaviour";
+    case "HealthRecordCreated": return category === "health";
+    default: return false;
+  }
+}
 function emitDomainBusEvent(event: TitanReactiveEvent): boolean {
   if (!event.animalId && event.type !== "BreedingProjectChanged" && event.type !== "HatchlingRecorded") return false;
   const occurredAt = event.occurredAt ?? new Date(event.createdAt).toISOString();
@@ -29,26 +39,9 @@ function emitDomainBusEvent(event: TitanReactiveEvent): boolean {
   if (event.type === "HatchlingRecorded" && event.projectId) { tinyTitansEventBus.emit({ type: "HatchlingRecorded", payload: { projectId: event.projectId, snakeId: event.animalId, action: event.action, occurredAt } }); return true; }
   return false;
 }
-
-export function emitTitanIntelligenceEvent(input: Omit<TitanReactiveEvent, "id" | "createdAt">): TitanReactiveEvent {
-  const event: TitanReactiveEvent = { ...input, id: `${input.type}-${input.action}-${input.animalId ?? input.projectId ?? "collection"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, createdAt: Date.now() };
-  const events = safeRead<TitanReactiveEvent[]>(EVENTS_KEY(input.uid), []);
-  safeWrite(EVENTS_KEY(input.uid), [event, ...events].slice(0, MAX_EVENTS));
-  const domainBroadcasted = emitDomainBusEvent(event);
-  if (!domainBroadcasted && typeof window !== "undefined") window.dispatchEvent(new CustomEvent<TitanReactiveUpdateDetail>(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: { event, affectedAnimalId: input.animalId } }));
-  return event;
-}
+export function emitTitanIntelligenceEvent(input: Omit<TitanReactiveEvent, "id" | "createdAt">): TitanReactiveEvent { const event: TitanReactiveEvent = { ...input, id: `${input.type}-${input.action}-${input.animalId ?? input.projectId ?? "collection"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, createdAt: Date.now() }; const events = safeRead<TitanReactiveEvent[]>(EVENTS_KEY(input.uid), []); safeWrite(EVENTS_KEY(input.uid), [event, ...events].slice(0, MAX_EVENTS)); const domainBroadcasted = emitDomainBusEvent(event); if (!domainBroadcasted && typeof window !== "undefined") window.dispatchEvent(new CustomEvent(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: { event, affectedAnimalId: input.animalId } })); return event; }
 export function getRecentTitanIntelligenceEvents(uid: string, max = 12): TitanReactiveEvent[] { return safeRead<TitanReactiveEvent[]>(EVENTS_KEY(uid), []).slice(0, max); }
-export function mergeTitanProactiveState(uid: string, insights: readonly SnakeIntelligence[], recentEvents: readonly TitanReactiveEvent[] = getRecentTitanIntelligenceEvents(uid)): TitanProactiveStateItem[] {
-  const now = Date.now(); const state = pruneState(safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), []), now); const byKey = new Map(state.map((item) => [item.key, item]));
-  for (const intelligence of insights) {
-    const priority = intelligence.priority; if (!priority) continue; const key = insightKey(intelligence.snakeId, priority.id);
-    const latestEventAt = recentEvents.find((event) => event.animalId === intelligence.snakeId)?.createdAt; const existing = byKey.get(key); const isNewContext = Boolean(latestEventAt && (!existing?.lastEventAt || latestEventAt > existing.lastEventAt));
-    const status = isNewContext ? "active" : existing?.status === "dismissed" || existing?.status === "handled" ? existing.status : "active";
-    byKey.set(key, { key, uid, animalId: intelligence.snakeId, insightId: priority.id, title: priority.title, why: priority.why, action: priority.action, tone: priority.tone, confidence: priority.confidence, status, firstSeenAt: existing?.firstSeenAt ?? now, lastSeenAt: now, lastEventAt: latestEventAt ?? existing?.lastEventAt, handledAt: isNewContext ? undefined : existing?.handledAt, dismissedAt: isNewContext ? undefined : existing?.dismissedAt });
-  }
-  const merged = pruneState([...byKey.values()], now); safeWrite(STATE_KEY(uid), merged); return merged.filter((item) => item.status === "active");
-}
+export function mergeTitanProactiveState(uid: string, insights: readonly SnakeIntelligence[], recentEvents: readonly TitanReactiveEvent[] = getRecentTitanIntelligenceEvents(uid)): TitanProactiveStateItem[] { const now = Date.now(); const state = pruneState(safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), []), now); const byKey = new Map(state.map((item) => [item.key, item])); for (const intelligence of insights) { const priority = intelligence.priority; if (!priority) continue; const key = insightKey(intelligence.snakeId, priority.id); const latestEvent = recentEvents.find((event) => event.animalId === intelligence.snakeId && eventAffectsCategory(event, priority.category)); const latestEventAt = latestEvent?.createdAt; const existing = byKey.get(key); const isNewContext = Boolean(latestEventAt && (!existing?.lastEventAt || latestEventAt > existing.lastEventAt)); const status = isNewContext ? "active" : existing?.status === "dismissed" || existing?.status === "handled" ? existing.status : "active"; byKey.set(key, { key, uid, animalId: intelligence.snakeId, insightId: priority.id, title: priority.title, why: priority.why, action: priority.action, tone: priority.tone, confidence: priority.confidence, status, firstSeenAt: existing?.firstSeenAt ?? now, lastSeenAt: now, lastEventAt: latestEventAt ?? existing?.lastEventAt, handledAt: isNewContext ? undefined : existing?.handledAt, dismissedAt: isNewContext ? undefined : existing?.dismissedAt }); } const merged = pruneState([...byKey.values()], now); safeWrite(STATE_KEY(uid), merged); return merged.filter((item) => item.status === "active"); }
 export function markTitanProactiveHandled(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "handled"); }
 export function dismissTitanProactive(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "dismissed"); }
 export function reopenTitanProactive(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "active"); }
