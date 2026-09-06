@@ -26,13 +26,15 @@ export default function SnakeTitanIntelligencePage() {
   useEffect(() => {
     if (!user || !snakeId) return;
     let active = true;
+    const authenticatedUser = user;
+    const selectedSnakeId = snakeId;
     setAccess(null);
     setRecord(null);
     setError("");
     setLoadedKey(null);
 
     async function load() {
-      const allowed = await hasFullIntelligenceAccess(user.uid).catch(() => false);
+      const allowed = await hasFullIntelligenceAccess(authenticatedUser.uid).catch(() => false);
       if (!active) return;
       setAccess(allowed);
       if (!allowed) {
@@ -40,7 +42,7 @@ export default function SnakeTitanIntelligencePage() {
         return;
       }
       try {
-        const result = await getSnakeMasterRecord(user.uid, snakeId);
+        const result = await getSnakeMasterRecord(authenticatedUser.uid, selectedSnakeId);
         if (!active) return;
         setRecord(result);
         setError(result ? "" : "This snake could not be found in your Tiny Titans account.");
