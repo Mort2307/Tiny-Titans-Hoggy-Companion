@@ -15,10 +15,12 @@ export default function TitanAnimalMasterRecord({snakeId,snakeName,record}:Props
     const refresh=()=>{
       const state=getTitanDecisionState(user.uid);
       const active=state.decisions.filter(item=>item.status==="active");
-      setDecision((snakeId?active.find(item=>item.animalId===snakeId):undefined)??active.find(item=>item.animalName===snakeName)??null);
+      const idMatch=snakeId?active.find(item=>item.animalId===snakeId):undefined;
+      const nameMatches=active.filter(item=>item.animalName===snakeName);
+      setDecision(idMatch??(nameMatches.length===1?nameMatches[0]:null));
     };
     refresh();
-    return subscribeToTitanIntelligenceUpdates(refresh);
+    return subscribeToTitanIntelligenceUpdates(refresh,user.uid);
   },[user,snakeId,snakeName]);
   return <section className="titan-feature-panel titan-master-record">
   <div className="titan-master-record__header"><div><p className="titan-feature-kicker">🧠 TITAN MASTER RECORD</p><h2>{snakeName}</h2><p>{record.note}</p></div><div className="titan-master-record__score" aria-label={`${record.coverageScore}% record coverage`}><strong>{record.coverageScore}%</strong><span>record coverage</span></div></div>
