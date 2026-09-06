@@ -1,88 +1,17 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getHistoricalContributors, thankContributor, type HistoricalContributor } from "../services/contributorThankYouService";
 import "../styles/CreatorTools.css";
 
-const sourceLabel: Record<HistoricalContributor["latestSubmission"]["submissionType"], string> = {
-  "morph-image": "Morph photo",
-  "morph-terminology": "Morph terminology",
-  species: "Species submission",
-  "vivarium-showcase": "Vivarium showcase",
-  observation: "Observation",
-  "mentor-application": "Mentor application",
-};
-
-function formatDate(value: unknown): string {
-  if (!value) return "Unknown date";
-  if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") return value.toDate().toLocaleDateString("en-GB");
-  if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return new Date(value.toMillis()).toLocaleDateString("en-GB");
-  const date = new Date(String(value));
-  return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleDateString("en-GB");
-}
+const sourceLabel: Record<HistoricalContributor["latestSubmission"]["submissionType"], string> = { "morph-image": "Morph photo", "morph-terminology": "Morph terminology", species: "Species submission", "vivarium-showcase": "Vivarium showcase", observation: "Observation", "mentor-application": "Mentor application" };
+function formatDate(value: unknown): string { if (!value) return "Unknown date"; if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") return value.toDate().toLocaleDateString("en-GB"); if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return new Date(value.toMillis()).toLocaleDateString("en-GB"); const date = new Date(String(value)); return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleDateString("en-GB"); }
 
 export default function ContributorThankYouCentre({ onClose }: { onClose: () => void }) {
-  const { user } = useAuth();
-  const [contributors, setContributors] = useState<HistoricalContributor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [sendingUid, setSendingUid] = useState<string | null>(null);
-  const [results, setResults] = useState<Record<string, "sent" | "already-sent" | "error">>({});
-  const [error, setError] = useState("");
-
-  async function scan() {
-    if (!user) return;
-    setLoading(true); setError("");
-    try { setContributors(await getHistoricalContributors(user.uid)); setResults({}); }
-    catch (scanError) { setError(scanError instanceof Error ? scanError.message : "Contributor history could not be loaded."); }
-    finally { setLoading(false); }
-  }
-
-  async function thank(contributor: HistoricalContributor) {
-    if (!user || sendingUid) return;
-    setSendingUid(contributor.uid); setError("");
-    try {
-      const result = await thankContributor(contributor, user.uid);
-      setResults((current) => ({ ...current, [contributor.uid]: result }));
-    } catch (sendError) {
-      setResults((current) => ({ ...current, [contributor.uid]: "error" }));
-      setError(sendError instanceof Error ? `${contributor.displayName}: ${sendError.message}` : `${contributor.displayName}: message could not be sent.`);
-    } finally { setSendingUid(null); }
-  }
-
-  async function thankAll() {
-    if (!user || sendingUid || !contributors.length) return;
-    for (const contributor of contributors) await thank(contributor);
-  }
-
-  const counts = useMemo(() => {
-    let sent = 0; let already = 0; let failed = 0;
-    for (const value of Object.values(results)) { if (value === "sent") sent += 1; else if (value === "already-sent") already += 1; else failed += 1; }
-    return { sent, already, failed };
-  }, [results]);
-
-  return <div className="creator-intelligence-detail" role="dialog" aria-modal="true" aria-label="Contributor thank-you centre">
-    <div className="creator-intelligence-detail-inner">
-      <div className="creator-section-heading">
-        <div><span className="creator-admin-kicker">COMMUNITY APPRECIATION</span><h3>💌 Contributor Thank-You Centre</h3><p>Find historical contributors and send one private thank-you through their existing submission conversation.</p></div>
-        <div className="creator-actions"><button type="button" onClick={scan} disabled={loading}>{loading ? "↻ Scanning…" : "↻ Scan submissions"}</button><button type="button" onClick={onClose} aria-label="Close contributor thank-you centre">✕</button></div>
-      </div>
-      {error && <div className="creator-error" role="alert">{error}</div>}
-      {!contributors.length && !loading && <div className="creator-list-item"><strong>Ready to find your contributors.</strong><span>The scan covers morph photos, morph terminology, species submissions, vivarium showcases and keeper observations, and automatically excludes the currently signed-in Creator account.</span></div>}
-      {contributors.length > 0 && <>
-        <div className="creator-actions">
-          <button type="button" className="creator-primary" onClick={() => void thankAll()} disabled={Boolean(sendingUid)}>💌 Thank everyone</button>
-          <span className="creator-muted">{contributors.length} contributor{contributors.length === 1 ? "" : "s"} found · {counts.sent} sent · {counts.already} already thanked{counts.failed ? ` · ${counts.failed} failed` : ""}</span>
-        </div>
-        <div className="creator-list">
-          {contributors.map((contributor) => {
-            const result = results[contributor.uid];
-            return <div key={contributor.uid} className="creator-list-item">
-              <div><strong>👤 {contributor.displayName}</strong><span>{contributor.submissionCount} contribution{contributor.submissionCount === 1 ? "" : "s"} · latest: {sourceLabel[contributor.latestSubmission.submissionType]} · {formatDate(contributor.latestSubmission.submittedAt)}</span><small>{contributor.latestSubmission.title}</small></div>
-              <button type="button" className="secondary-button" onClick={() => void thank(contributor)} disabled={Boolean(sendingUid)}>{sendingUid === contributor.uid ? "Sending…" : result === "sent" ? "✓ Sent" : result === "already-sent" ? "✓ Already thanked" : result === "error" ? "↻ Retry" : "💌 Thank"}</button>
-            </div>;
-          })}
-        </div>
-        <p className="creator-intelligence-note">Each contributor is thanked at most once by using a deterministic thank-you message ID inside their latest submission conversation. Re-running this tool is therefore safe and reports existing thank-yous instead of sending duplicates.</p>
-      </>}
-    </div>
-  </div>;
+  const { user } = useAuth(); const [contributors, setContributors] = useState<HistoricalContributor[]>([]); const [loading, setLoading] = useState(false); const [sendingUid, setSendingUid] = useState<string | null>(null); const [results, setResults] = useState<Record<string, "sent" | "already-sent" | "error">}>({}); const [error, setError] = useState("");
+  async function scan() { if (!user) return; setLoading(true); setError(""); try { setContributors(await getHistoricalContributors(user.uid)); setResults({}); } catch (scanError) { setError(scanError instanceof Error ? scanError.message : "Contributor history could not be loaded."); } finally { setLoading(false); } }
+  async function thank(contributor: HistoricalContributor) { if (!user || sendingUid) return; setSendingUid(contributor.uid); setError(""); try { const result = await thankContributor(contributor, user.uid); setResults((current) => ({ ...current, [contributor.uid]: result })); } catch (sendError) { setResults((current) => ({ ...current, [contributor.uid]: "error" })); setError(sendError instanceof Error ? `${contributor.displayName}: ${sendError.message}` : `${contributor.displayName}: message could not be sent.`); } finally { setSendingUid(null); } }
+  async function thankAll() { if (!user || sendingUid || !contributors.length) return; for (const contributor of contributors) await thank(contributor); }
+  const counts = useMemo(() => { let sent = 0; let already = 0; let failed = 0; for (const value of Object.values(results)) { if (value === "sent") sent += 1; else if (value === "already-sent") already += 1; else failed += 1; } return { sent, already, failed }; }, [results]);
+  return <div className="creator-intelligence-detail" role="dialog" aria-modal="true" aria-label="Contributor thank-you centre"><div className="creator-intelligence-detail-inner"><div className="creator-section-heading"><div><span className="creator-admin-kicker">COMMUNITY APPRECIATION</span><h3>💌 Contributor Thank-You Centre</h3><p>Find historical contributors and send one private thank-you through their existing submission conversation.</p></div><div className="creator-actions"><button type="button" onClick={scan} disabled={loading}>{loading ? "↻ Scanning…" : "↻ Scan submissions"}</button><button type="button" onClick={onClose} aria-label="Close contributor thank-you centre">✕</button></div></div>{error && <div className="creator-error" role="alert">{error}</div>}{!contributors.length && !loading && <div className="creator-list-item"><strong>Ready to find your contributors.</strong><span>The scan covers morph photos, morph terminology, species submissions, vivarium showcases and keeper observations, and automatically excludes the current Creator account.</span></div>}{contributors.length > 0 && <><div className="creator-actions"><button type="button" className="creator-primary" onClick={() => void thankAll()} disabled={Boolean(sendingUid)}>💌 Thank everyone</button><span className="creator-muted">{contributors.length} contributor{contributors.length === 1 ? "" : "s"} found · {counts.sent} sent · {counts.already} already thanked{counts.failed ? ` · ${counts.failed} failed` : ""}</span></div><div className="creator-list">{contributors.map((contributor) => { const result = results[contributor.uid]; const threadId = `${contributor.latestSubmission.submissionType}__${contributor.latestSubmission.submissionId}`; return <div key={contributor.uid} className="creator-list-item"><div><strong>👤 {contributor.displayName}</strong><span>{contributor.submissionCount} contribution{contributor.submissionCount === 1 ? "" : "s"} · latest: {sourceLabel[contributor.latestSubmission.submissionType]} · {formatDate(contributor.latestSubmission.submittedAt)}</span><small>{contributor.latestSubmission.title}</small></div><div className="creator-actions"><Link className="secondary-button" to={`/creator/submission-conversations?thread=${encodeURIComponent(threadId)}`} title="Open the keeper's submission messenger">💬 Open Messenger</Link><button type="button" className="secondary-button" onClick={() => void thank(contributor)} disabled={Boolean(sendingUid)}>{sendingUid === contributor.uid ? "Sending…" : result === "sent" ? "✓ Sent" : result === "already-sent" ? "✓ Already thanked" : result === "error" ? "↻ Retry" : "💌 Thank"}</button></div></div>; })}</div><p className="creator-intelligence-note">Each contributor is thanked at most once. Re-running the scan is safe and reports existing thank-yous instead of intentionally sending duplicates.</p></>}</div></div>;
 }
