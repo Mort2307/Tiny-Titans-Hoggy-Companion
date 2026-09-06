@@ -1,0 +1,1 @@
+The audit script validates that the core Hognose canonical identity and recognised combination records remain present while the genetics system is normalised.
