@@ -1,7 +1,6 @@
-import type { Snake } from "../types/Snake";
-import type { GeneticsDatabase, GeneticState, LocusDefinition, ParentGenome, CombinationDefinition } from "./geneticsModel";
-import { getSpeciesLoci } from "./geneticsDatabase";
-import { resolveStrictMorph } from "../utils/geneticsIdentity";
+import type { Snake } from "../types/Snake.ts";
+import type { GeneticsDatabase, GeneticState, LocusDefinition, ParentGenome, CombinationDefinition } from "./geneticsModel.ts";
+import { getSpeciesLoci } from "./geneticsDatabase.ts";
 
 export type SnakeGenomeBuild = { genome: ParentGenome; warnings: string[]; supported: boolean };
 
@@ -14,18 +13,21 @@ const SPECIES_ALIASES: Record<string, string> = {
   "pantherophis guttatus": "Pantherophis guttatus",
 };
 
-export function canonicalSpecies(species: string): string { const key = species.trim().toLowerCase(); return SPECIES_ALIASES[key] ?? species.trim(); }
+export function canonicalSpecies(species: string): string { return SPECIES_ALIASES[species.trim().toLowerCase()] ?? species.trim(); }
+
+function identityValues(value: string): string[] {
+  const normalised = value.trim().toLowerCase();
+  return [normalised, normalised.replace(/\s+/g, " ")];
+}
 
 function matchesGene(locus: LocusDefinition, value: string): boolean {
-  const resolved = resolveStrictMorph(value);
-  const candidates = [resolved?.geneId, resolved?.name, value].filter(Boolean).map((item) => item!.trim().toLowerCase());
-  return locus.alleles.some((allele) => [allele.id, allele.name, ...(allele.aliases ?? [])].some((candidate) => candidates.includes(candidate.toLowerCase())));
+  const candidates = identityValues(value);
+  return locus.alleles.some((allele) => [allele.id, allele.name, ...(allele.aliases ?? [])].some((candidate) => candidates.includes(candidate.trim().toLowerCase())));
 }
 
 function findAllele(locus: LocusDefinition, value: string) {
-  const resolved = resolveStrictMorph(value);
-  const candidates = [resolved?.geneId, resolved?.name, value].filter(Boolean).map((item) => item!.trim().toLowerCase());
-  return locus.alleles.find((allele) => [allele.id, allele.name, ...(allele.aliases ?? [])].some((candidate) => candidates.includes(candidate.toLowerCase())));
+  const candidates = identityValues(value);
+  return locus.alleles.find((allele) => [allele.id, allele.name, ...(allele.aliases ?? [])].some((candidate) => candidates.includes(candidate.trim().toLowerCase())));
 }
 
 function explicitSuperName(locus: LocusDefinition, snake: Snake): string | undefined {
