@@ -1,12 +1,8 @@
 import type { MasterMorphDefinition } from "../data/masterMorphDatabase";
 import type { GeneticsCalculatorInput, GeneticsCalculatorResult } from "../types/genetics";
-import { calculateSpeciesGeneticsForecast } from "../genetics/geneticsForecast";
+import { calculateSpeciesGeneticsForecast } from "../genetics/geneticsForecast.ts";
 
-/**
- * Compatibility entry point retained for existing imports. All species now use
- * the authoritative locus-based forecast rather than the legacy allele-probability
- * approximation, which could not represent unknown zygosity or 66/50% hets safely.
- */
+/** Compatibility entry point retained for existing imports. */
 export function calculateSpeciesGenetics(input: GeneticsCalculatorInput, definitions: MasterMorphDefinition[], species?: string): GeneticsCalculatorResult {
   void definitions;
   const resolvedSpecies = species?.trim() || inferSpeciesFromDefinitions(definitions);
