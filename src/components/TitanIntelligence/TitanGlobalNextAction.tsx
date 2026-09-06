@@ -10,11 +10,11 @@ import "../../styles/titanGlobalNextAction.css";
 const ANIMAL_CONTEXT_PREFIXES = ["/snakes", "/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry", "/enclosure-intelligence"];
 
 function animalIdFromPath(pathname: string): string | null {
-  for (const prefix of ANIMAL_CONTEXT_PREFIXES) {
-    const match = pathname.match(new RegExp(`^${prefix.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}/([^/]+)(?:/|$)`));
-    if (match) return decodeURIComponent(match[1]);
-  }
-  return null;
+  const prefix = ANIMAL_CONTEXT_PREFIXES.find((candidate) => pathname.startsWith(`${candidate}/`));
+  if (!prefix) return null;
+  const remainder = pathname.slice(prefix.length + 1);
+  const [segment] = remainder.split("/");
+  return segment ? decodeURIComponent(segment) : null;
 }
 
 export default function TitanGlobalNextAction() {
