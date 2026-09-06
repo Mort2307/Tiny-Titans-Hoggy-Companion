@@ -13,7 +13,7 @@ export function TitanIntelligenceProvider({children,input}:{children:ReactNode;i
   }),[input?.counts?.snakes,input?.counts?.weights,input?.counts?.feedings,input?.counts?.sheds,input?.counts?.health,input?.counts?.behaviour,input?.counts?.husbandry,input?.counts?.breeding]);
   const recentEventTypes=input?.recentEventTypes;
   const staleAreas=input?.staleAreas;
-  const intelligence=useMemo(()=>buildTitanProactiveIntelligence({ ...input, counts, recentEventTypes, staleAreas }),[counts,input?.animalId,input?.speciesId,recentEventTypes,staleAreas,input?.eventType,input?.hasGeneticRecords,input?.hasBreedingProjects,input?.hasEnclosures,input?.hasBehaviourRecords,input?.hasLearningActivity,input?.hasCommunityActivity]);
+  const intelligence=useMemo(()=>buildTitanProactiveIntelligence({ ...input, counts, recentEventTypes, staleAreas }),[input,counts,recentEventTypes,staleAreas]);
   const value=useMemo<TitanIntelligenceContextValue>(()=>({intelligence,refresh:buildTitanProactiveIntelligence}),[intelligence]);
   return <TitanIntelligenceContext.Provider value={value}>{children}</TitanIntelligenceContext.Provider>;
 }
