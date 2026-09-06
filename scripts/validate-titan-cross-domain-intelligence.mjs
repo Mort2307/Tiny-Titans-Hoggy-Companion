@@ -6,6 +6,7 @@ const context = read("src/intelligence/v50/titanContextSnapshot.ts");
 const twin = read("src/intelligence/v50/titanDigitalTwinEngine.ts");
 const holy = read("src/intelligence/v50/titanHolyShitEngine.ts");
 const master = read("src/intelligence/v50/animalMasterRecordEngine.ts");
+const crossDomain = read("src/intelligence/v50/titanCrossDomainEngine.ts");
 
 const failures = [];
 const checks = [
@@ -20,6 +21,14 @@ const checks = [
   [holy, "buildTitanDiscoveries", "Cross-domain discovery engine is missing."],
   [holy, "evidenceIds", "Discoveries must retain explicit evidence links."],
   [master, "changes", "Animal Master Record must surface cross-domain change signals."],
+  [crossDomain, 'feeding-weight', "Feeding↔weight temporal rule is missing."],
+  [crossDomain, 'shed-microclimate', "Shed↔microclimate temporal rule is missing."],
+  [crossDomain, 'behaviour-feeding', "Behaviour↔feeding temporal rule is missing."],
+  [crossDomain, 'microclimate-behaviour', "Microclimate↔behaviour temporal rule is missing."],
+  [crossDomain, 'genetics-breeding', "Genetics↔breeding temporal rule is missing."],
+  [crossDomain, 'breeding-hatchling', "Breeding↔hatchling temporal rule is missing."],
+  [crossDomain, 'learning-activity', "Learning recency rule is missing."],
+  [crossDomain, 'causalClaim: \"none\"', "Cross-domain signals must explicitly prohibit causal claims."],
 ];
 for (const [source, needle, message] of checks) if (!source.includes(needle)) failures.push(message);
 
@@ -28,4 +37,4 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exit(1);
 }
-console.log("Cross-domain intelligence validation passed: Digital Twin, evidence-linked discovery, unified context and Master Record change signals are wired.");
+console.log("Cross-domain intelligence validation passed: bounded temporal rules, Digital Twin context, evidence-linked discovery, unified context and Master Record change signals are wired.");
