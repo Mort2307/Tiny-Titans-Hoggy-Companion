@@ -24,20 +24,15 @@ export interface TitanV50UnifiedResult extends TitanV50RuntimeResult {
 }
 
 function contextSignals(snapshot: TitanContextSnapshotResult): TitanSignal[] {
-  const findings = [
-    ...snapshot.genetics.conflicts,
-    ...snapshot.genetics.impossibleOutcomes,
-    ...snapshot.husbandry.findings.filter((finding) => finding.type === "anomaly" || finding.type === "alert"),
-    ...snapshot.husbandry.digitalTwin.findings,
+  const signals: TitanSignal[] = [
+    ...snapshot.genetics.conflicts.map((finding, index) => ({ id: `genetic-conflict-${index}`, title: finding.title, message: finding.detail, severity: finding.severity, confidence: finding.confidence, createdAt: snapshot.generatedAt })),
+    ...snapshot.genetics.impossibleOutcomes.map((finding, index) => ({ id: `genetic-outcome-${index}`, title: finding.title, message: finding.detail, severity: finding.severity, confidence: finding.confidence, createdAt: snapshot.generatedAt })),
+    ...snapshot.husbandry.findings.filter((finding) => finding.type === "anomaly" || finding.type === "alert").map((finding, index) => ({ id: `husbandry-${index}-${finding.type}`, title: finding.title, message: finding.detail, severity: finding.severity, confidence: finding.confidence, createdAt: snapshot.generatedAt })),
   ];
-  return findings.slice(0, 12).map((finding, index) => ({
-    id: `context-${index}-${finding.type ?? finding.id}`,
-    title: finding.title,
-    message: finding.detail ?? finding.explanation,
-    severity: finding.severity,
-    confidence: finding.confidence,
-    createdAt: snapshot.generatedAt,
-  }));
+  for (const cluster of snapshot.husbandry.vivarium.anomalyClusters.slice(0, 4)) signals.push({ id: cluster.id, animalId: snapshot.lifeTimeline.length ? undefined : undefined, title: `Vivarium ${cluster.severity}: ${cluster.metric} pattern`, message: cluster.explanation, severity: cluster.severity, confidence: cluster.confidence, createdAt: cluster.lastObservedAt, actionPath: "/enclosure-intelligence" });
+  for (const trend of snapshot.husbandry.vivarium.trendDeltas.filter((item) => Math.abs(item.delta) >= (item.metric === "temperature" ? 1 : 5)).slice(0, 4)) signals.push({ id: trend.id, title: `Vivarium ${trend.metric} ${trend.direction}`, message: `${trend.zone} is ${trend.delta > 0 ? "+" : ""}${trend.delta}${trend.metric === "temperature" ? "°C" : "%"} versus its recorded baseline.`, severity: Math.abs(trend.delta) >= (trend.metric === "temperature" ? 2 : 10) ? "watch" : "notice", confidence: trend.confidence, createdAt: snapshot.generatedAt, actionPath: "/enclosure-intelligence" });
+  if (snapshot.husbandry.vivarium.behaviourContext.nearbyObservationCount > 0) signals.push({ id: "vivarium-behaviour-overlap", title: "Behaviour overlaps the environmental window", message: snapshot.husbandry.vivarium.behaviourContext.interpretation, severity: "notice", confidence: snapshot.husbandry.vivarium.behaviourContext.confidence, createdAt: snapshot.generatedAt, actionPath: "/snakes" });
+  return signals.slice(0, 20);
 }
 
 function contextRecommendations(snapshot: TitanContextSnapshotResult): TitanRecommendation[] {
@@ -47,6 +42,16 @@ function contextRecommendations(snapshot: TitanContextSnapshotResult): TitanReco
   if (snapshot.growth && snapshot.growth.sampleCount >= 3) recommendations.push({ id: "context-growth", title: "Review growth history", reason: `${snapshot.growth.sampleCount} dated weight records now support a bounded growth summary.`, destination: "/weights", priority: 58, confidence: snapshot.growth.confidence === "High" ? 0.95 : 0.82 });
   if (snapshot.husbandry.findings.some((finding) => finding.type === "anomaly")) recommendations.push({ id: "context-husbandry", title: "Review enclosure readings", reason: "Recorded environmental observations fall outside the configured keeper baseline.", destination: "/enclosure-intelligence", priority: 88, confidence: 0.98 });
   if (snapshot.husbandry.digitalTwin.optimisations.length) recommendations.push({ id: "context-twin", title: "Review Digital Twin optimisation", reason: snapshot.husbandry.digitalTwin.optimisations[0].reason, destination: "/reptile-room", priority: 72, confidence: 0.9 });
+
+  const vivarium = snapshot.husbandry.vivarium;
+  for (const cluster of vivarium.anomalyClusters.slice(0, 2)) {
+    recommendations.push({ id: `context-vivarium-cluster-${cluster.id}`, title: "Review a clustered vivarium change", reason: `${cluster.observationCount} environmental observations form a ${cluster.severity} cluster over ${cluster.spanHours} hours. ${cluster.explanation}`, destination: "/enclosure-intelligence", priority: cluster.severity === "urgent" ? 96 : cluster.severity === "watch" ? 84 : 68, confidence: cluster.confidence });
+  }
+  for (const trend of vivarium.trendDeltas.filter((item) => Math.abs(item.delta) >= (item.metric === "temperature" ? 1 : 5)).slice(0, 2)) {
+    recommendations.push({ id: `context-vivarium-trend-${trend.id}`, title: `Review ${trend.zone} ${trend.metric} trend`, reason: `Recent ${trend.metric} is ${trend.direction} by ${trend.delta > 0 ? "+" : ""}${trend.delta}${trend.metric === "temperature" ? "°C" : "%"} against the keeper's recorded baseline.`, destination: "/enclosure-intelligence", priority: Math.min(90, 62 + Math.round(Math.abs(trend.delta) * (trend.metric === "temperature" ? 8 : 2))), confidence: trend.confidence });
+  }
+  if (vivarium.behaviourContext.nearbyObservationCount > 0) recommendations.push({ id: "context-vivarium-behaviour", title: "Review behaviour beside environmental readings", reason: vivarium.behaviourContext.interpretation, destination: "/snakes", priority: 74, confidence: vivarium.behaviourContext.confidence });
+  if (vivarium.enclosureChanges.length) recommendations.push({ id: "context-vivarium-change", title: "Review the latest enclosure change", reason: vivarium.enclosureChanges[0].detail, destination: "/reptile-room", priority: 70, confidence: 0.9 });
   if (snapshot.learning.nextTopics.length) recommendations.push({ id: "context-learning", title: "Continue your weakest learning topics", reason: "The next topics are selected from your recorded learning performance rather than guessed ability.", destination: "/learn", priority: 42, confidence: 0.92 });
   return recommendations;
 }
@@ -57,11 +62,21 @@ function memorySignals(snapshot: TitanContextSnapshotResult): TitanMemorySignal[
   for (const finding of snapshot.genetics.impossibleOutcomes.slice(0, 3)) signals.push({ id: `offspring-${finding.title}`, domain: "genetics", label: finding.title, value: finding.detail, confidence: finding.confidence });
   for (const finding of snapshot.husbandry.findings.filter((item) => item.type === "anomaly" || item.type === "alert").slice(0, 3)) signals.push({ id: `husbandry-${finding.title}`, domain: "husbandry", label: finding.title, value: finding.detail, confidence: finding.confidence });
   for (const finding of snapshot.husbandry.digitalTwin.findings.slice(0, 3)) signals.push({ id: `twin-${finding.id}`, domain: "husbandry", label: finding.title, value: finding.explanation, confidence: finding.confidence });
+  for (const trend of snapshot.husbandry.vivarium.trendDeltas.slice(0, 3)) signals.push({ id: `vivarium-trend-${trend.id}`, domain: "husbandry", label: `${trend.metric} ${trend.direction}`, value: `${trend.delta}`, confidence: trend.confidence });
+  for (const cluster of snapshot.husbandry.vivarium.anomalyClusters.slice(0, 3)) signals.push({ id: `vivarium-cluster-${cluster.id}`, domain: "husbandry", label: `${cluster.metric} cluster`, value: cluster.explanation, confidence: cluster.confidence });
   if (snapshot.growth) signals.push({ id: "animal-growth", domain: "animal", label: "Growth history", value: `${snapshot.growth.sampleCount} recorded weights`, confidence: snapshot.growth.sampleCount >= 3 ? 0.9 : 0.7 });
   if (snapshot.behaviour) signals.push({ id: "animal-behaviour", domain: "animal", label: "Behaviour history", value: `${snapshot.behaviour.observationCount} recorded observations`, confidence: snapshot.behaviour.observationCount >= 4 ? 0.84 : 0.6 });
   if (snapshot.learning.topicMastery.length) signals.push({ id: "learning-history", domain: "learning", label: "Learning history", value: `${snapshot.learning.topicMastery.length} measured topics`, confidence: snapshot.learning.overallAccuracy >= 0.8 ? 0.9 : 0.75 });
   if (snapshot.community.totalAccepted > 0) signals.push({ id: "community-history", domain: "community", label: "Community contributions", value: `${snapshot.community.totalAccepted} accepted contributions`, confidence: 0.88 });
   return signals;
+}
+
+function rankRecommendations(recommendations: readonly TitanRecommendation[]): TitanRecommendation[] {
+  return [...recommendations]
+    .filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index)
+    .map((item) => ({ ...item, priority: Math.min(100, Number((item.priority * (0.7 + Math.max(0, Math.min(1, item.confidence)) * 0.3)).toFixed(2))) }))
+    .sort((a, b) => b.priority - a.priority || b.confidence - a.confidence || a.id.localeCompare(b.id))
+    .slice(0, 20);
 }
 
 export function runTitanV50Unified(input: TitanV50UnifiedInput): TitanV50UnifiedResult {
@@ -75,10 +90,7 @@ export function runTitanV50Unified(input: TitanV50UnifiedInput): TitanV50Unified
     ...advancedDiscoveries.map((item) => ({ id: item.id, title: item.title, message: item.detail, severity: "info" as const, confidence: item.confidence, createdAt: contextSnapshot.generatedAt })),
   ];
   const signals = [...base.signals, ...contextSignals(contextSnapshot), ...impact.signals, ...discoverySignals].slice(0, 30);
-  const recommendations = [...base.recommendations, ...contextRecommendations(contextSnapshot), ...impact.recommendations]
-    .filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index)
-    .filter((item) => TITAN_V50_FEATURES.some((feature) => feature.route === item.destination) || ["/", "/weights", "/feeding", "/shedding", "/husbandry", "/enclosure-intelligence", "/morph-library", "/breeding", "/learn", "/reptile-room"].includes(item.destination))
-    .slice(0, 20);
+  const recommendations = rankRecommendations([...base.recommendations, ...contextRecommendations(contextSnapshot), ...impact.recommendations].filter((item) => TITAN_V50_FEATURES.some((feature) => feature.route === item.destination) || ["/", "/weights", "/feeding", "/shedding", "/husbandry", "/enclosure-intelligence", "/morph-library", "/breeding", "/learn", "/reptile-room", "/snakes"].includes(item.destination)));
 
   return { ...base, signals, recommendations, contextSnapshot, impactedFeatureIds: impact.featureIds, discoveries, advancedDiscoveries };
 }
