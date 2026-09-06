@@ -8,7 +8,7 @@ function confidenceLabel(value:number): string {
   return value >= 0.9 ? "High" : value >= 0.75 ? "Moderate" : value >= 0.5 ? "Low" : "Insufficient";
 }
 
-export default function TitanDecisionQueue({ limit = 3, excludeDecisionId }: { limit?: number; excludeDecisionId?: string }) {
+export default function TitanDecisionQueue({ limit = 3, animalId, excludeDecisionId }: { limit?: number; animalId?: string; excludeDecisionId?: string }) {
   const { user } = useAuth();
   const [decisions, setDecisions] = useState<TitanDecision[]>([]);
 
@@ -17,10 +17,10 @@ export default function TitanDecisionQueue({ limit = 3, excludeDecisionId }: { l
       setDecisions([]);
       return;
     }
-    const sync = () => setDecisions(getActiveTitanDecisions(user.uid).filter((decision) => decision.id !== excludeDecisionId).slice(0, Math.max(1, limit)));
+    const sync = () => setDecisions(getActiveTitanDecisions(user.uid).filter((decision) => (!animalId || decision.animalId === animalId) && decision.id !== excludeDecisionId).slice(0, Math.max(1, limit)));
     sync();
     return subscribeToTitanDecisionState(user.uid, sync);
-  }, [user, limit, excludeDecisionId]);
+  }, [user, limit, animalId, excludeDecisionId]);
 
   if (!user || decisions.length === 0) return null;
 
