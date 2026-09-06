@@ -1,8 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { tinyTitansPageRegistry } from "../config/tinyTitansPageRegistry";
 import { TITAN_V50_FEATURES } from "../intelligence/v50/titanV50FeatureMatrix";
 import { FEATURE_SUMMARIES } from "../intelligence/v50/titanV50Runtime";
 import TitanLiveIntelligencePanel from "../components/TitanIntelligence/TitanLiveIntelligencePanel";
+import SnakeTitanIntelligencePage from "./SnakeTitanIntelligencePage";
 import "../components/TitanIntelligence/TitanLiveIntelligencePanel.css";
 import "./TitanIntelligence.css";
 
@@ -12,6 +13,9 @@ const layerLabels: Record<string, string> = {
 };
 
 function TitanIntelligence() {
+  const [params] = useSearchParams();
+  if (params.get("snakeId")) return <SnakeTitanIntelligencePage />;
+
   const foundation=TITAN_V50_FEATURES.filter(feature=>feature.status==="foundation").length;
   const wired=TITAN_V50_FEATURES.filter(feature=>feature.status==="wired").length;
   const validated=TITAN_V50_FEATURES.filter(feature=>feature.status==="validated").length;
