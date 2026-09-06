@@ -20,7 +20,7 @@ function formatDate(value: unknown): string {
   return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleDateString("en-GB");
 }
 
-export default function ContributorThankYouCentre() {
+export default function ContributorThankYouCentre({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
   const [contributors, setContributors] = useState<HistoricalContributor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,10 +63,10 @@ export default function ContributorThankYouCentre() {
     <div className="creator-intelligence-detail-inner">
       <div className="creator-section-heading">
         <div><span className="creator-admin-kicker">COMMUNITY APPRECIATION</span><h3>💌 Contributor Thank-You Centre</h3><p>Find historical contributors and send one private thank-you through their existing submission conversation.</p></div>
-        <button type="button" onClick={scan} disabled={loading}>{loading ? "↻ Scanning…" : "↻ Scan submissions"}</button>
+        <div className="creator-actions"><button type="button" onClick={scan} disabled={loading}>{loading ? "↻ Scanning…" : "↻ Scan submissions"}</button><button type="button" onClick={onClose} aria-label="Close contributor thank-you centre">✕</button></div>
       </div>
       {error && <div className="creator-error" role="alert">{error}</div>}
-      {!contributors.length && !loading && <div className="creator-list-item"><strong>Ready to find your contributors.</strong><span>The scan covers morph photos, morph terminology, species submissions and vivarium showcases, and automatically excludes the currently signed-in Creator account.</span></div>}
+      {!contributors.length && !loading && <div className="creator-list-item"><strong>Ready to find your contributors.</strong><span>The scan covers morph photos, morph terminology, species submissions, vivarium showcases and keeper observations, and automatically excludes the currently signed-in Creator account.</span></div>}
       {contributors.length > 0 && <>
         <div className="creator-actions">
           <button type="button" className="creator-primary" onClick={() => void thankAll()} disabled={Boolean(sendingUid)}>💌 Thank everyone</button>
@@ -81,7 +81,7 @@ export default function ContributorThankYouCentre() {
             </div>;
           })}
         </div>
-        <p className="creator-intelligence-note">Each contributor is thanked at most once by using a deterministic thank-you message ID inside their latest submission conversation. Re-running this tool is therefore safe and will report existing thank-yous instead of sending duplicates.</p>
+        <p className="creator-intelligence-note">Each contributor is thanked at most once by using a deterministic thank-you message ID inside their latest submission conversation. Re-running this tool is therefore safe and reports existing thank-yous instead of sending duplicates.</p>
       </>}
     </div>
   </div>;
