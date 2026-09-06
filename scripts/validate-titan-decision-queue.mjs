@@ -7,6 +7,8 @@ const homePath = "src/pages/Home.tsx";
 const weightPath = "src/pages/WeightRecords.tsx";
 const feedingPath = "src/pages/FeedingTracker.tsx";
 const shedPath = "src/pages/ShedTrackerIntelligent.tsx";
+const behaviourPath = "src/pages/BehaviourTracker.tsx";
+const healthPath = "src/pages/HealthTracker.tsx";
 const decision = fs.readFileSync(decisionPath, "utf8");
 const queue = fs.readFileSync(queuePath, "utf8");
 const animalPanel = fs.readFileSync(animalPanelPath, "utf8");
@@ -14,6 +16,8 @@ const home = fs.readFileSync(homePath, "utf8");
 const weight = fs.readFileSync(weightPath, "utf8");
 const feeding = fs.readFileSync(feedingPath, "utf8");
 const shed = fs.readFileSync(shedPath, "utf8");
+const behaviour = fs.readFileSync(behaviourPath, "utf8");
+const health = fs.readFileSync(healthPath, "utf8");
 
 const checks = [
   ["Canonical decision state promotes all current insights", decision.includes("intelligence.flatMap(item=>item.insights.map(insight=>insightToCandidate")],
@@ -25,9 +29,13 @@ const checks = [
   ["Weight decisions deep-link into the log action", decision.includes('case\"weight\":return\"/weights?action=log\"')],
   ["Feeding decisions deep-link into the log action", decision.includes('case\"feeding\":return\"/feeding?action=log\"')],
   ["Shedding decisions deep-link into the log action", decision.includes('case\"shedding\":return\"/shedding?action=log\"')],
+  ["Behaviour decisions deep-link into the journal action", decision.includes('case\"behaviour\":return\"/behaviour?action=log\"')],
+  ["Health decisions deep-link into the care action", decision.includes('case\"health\":return\"/health?action=log\"')],
   ["Weight tracker consumes the action deep-link", weight.includes('searchParams.get("action")') && weight.includes('action === "log"') && weight.includes('setSearchParams((current) => { current.delete("action")')],
   ["Feeding tracker consumes the action deep-link", feeding.includes('searchParams.get("action")') && feeding.includes('searchParams.get("action") !== "log"') && feeding.includes('current.delete("action")')],
   ["Shedding tracker consumes the action deep-link", shed.includes('searchParams.get("action")') && shed.includes('searchParams.get("action") !== "log"') && shed.includes('current.delete("action")')],
+  ["Behaviour tracker consumes the action deep-link", behaviour.includes('searchParams.get("action")') && behaviour.includes('searchParams.get("action") !== "log"') && behaviour.includes('current.delete("action")')],
+  ["Health tracker consumes the action deep-link", health.includes('searchParams.get("action")') && health.includes('searchParams.get("action") !== "log"') && health.includes('current.delete("action")')],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
