@@ -135,6 +135,18 @@ export default function FeedingTracker() {
     setNotes("");
   }
 
+  useEffect(() => {
+    if (!user || !selectedSnakeId || loadingFeedings || searchParams.get("action") !== "log") return;
+    queueMicrotask(() => {
+      setEditingId(null);
+      resetForm(diet);
+      setSuccess("🧠 Tiny Titans opened the feeding log because this is the next supported keeper action.");
+      requestAnimationFrame(() => document.getElementById("feeding-date")?.focus());
+      requestAnimationFrame(() => document.getElementById("feeding-log")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      setSearchParams((current) => { current.delete("action"); return current; }, { replace: true });
+    });
+  }, [user, selectedSnakeId, loadingFeedings, searchParams, setSearchParams, diet]);
+
   function editFeeding(feeding: FeedingRecord) {
     setEditingId(feeding.id);
     setDate(feeding.date);
