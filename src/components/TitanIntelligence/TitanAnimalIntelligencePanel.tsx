@@ -28,7 +28,7 @@ export default function TitanAnimalIntelligencePanel({ record }: Props) {
   }, [user, snake.id]);
 
   return <section className="master-card titan-animal-intelligence">
-    <div className="master-section-heading"><div><p className="master-eyebrow">🧠 V50 Animal Intelligence</p><h2>{snake.name}'s living context</h2></div><Link to="/titan-intelligence">Open full Titan Intelligence →</Link></div>
+    <div className="master-section-heading"><div><p className="master-eyebrow">🧠 V50 Animal Intelligence</p><h2>{snake.name}'s living context</h2></div><Link to={`/titan-intelligence?snakeId=${encodeURIComponent(snake.id)}`}>Open full Titan Intelligence →</Link></div>
     {decision && <TitanDecisionWhyCard decision={decision} compact />}
     <div className="master-grid">
       <article className="master-card"><span>📈 Growth history</span><strong>{overview.currentWeightG === null ? "More data needed" : `${overview.currentWeightG} g current`}</strong><small>{overview.totalWeightLogs} weight records • {overview.weightChangeG === null ? "No recorded baseline change" : `${overview.weightChangeG >= 0 ? "+" : ""}${overview.weightChangeG} g recorded change`}</small></article>
