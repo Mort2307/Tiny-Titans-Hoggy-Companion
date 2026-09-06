@@ -3,8 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
 const edits = [];
+
 function edit(relativePath, transform) {
   const file = path.join(root, relativePath);
   const source = fs.readFileSync(file, "utf8");
@@ -30,7 +30,6 @@ replace("src/data/species/speciesGeneticsCombinations.ts", 'const boaCombos: Com
 
 replace("src/genetics/geneticsForecast.ts", '  const hetEntry = parent.hets.find((entry) => {\n    const allele = findAllele(locus, entry.gene);\n    return Boolean(allele && !allele.isWildType);\n  });\n  if (hetEntry) {\n    const allele = findAllele(locus, hetEntry.gene)!;\n    const p = hetProbability(hetEntry.percentage);', '  const hetEntry = parent.hets.find((entry) => {\n    const allele = findAllele(locus, entry);\n    return Boolean(allele && !allele.isWildType);\n  });\n  if (hetEntry) {\n    const allele = findAllele(locus, hetEntry)!;\n    const p = hetProbability(parent.hetPercentages?.[hetEntry] ?? "100%");\n    const hetLabel = parent.hetPercentages?.[hetEntry] ?? "100%";');
 replace("src/genetics/geneticsForecast.ts", '`${hetEntry.percentage} Het ${allele.name}`', '`${hetLabel} Het ${allele.name}`');
-replace("src/genetics/geneticsForecast.ts", '`${Math.round((1 - p) * 100)}% not Het ${allele.name}`', '`${Math.round((1 - p) * 100)}% not Het ${allele.name}`');
 
 replace("src/genetics/geneticsSnakeAdapter.ts", 'const copies = component.copies ?? 1;', 'const copies = "copies" in component && typeof component.copies === "number" ? component.copies : 1;');
 replace("src/intelligence/v50/animalRecordsIntelligence.ts", "Date.parse(value)", "Date.parse(String(value))");
@@ -44,9 +43,14 @@ replace("src/intelligence/v50/titanV50UnifiedRuntime.ts", 'severity: finding.sev
 replace("src/intelligence/v50/titanV50UnifiedRuntime.ts", 'severity: finding.severity', 'severity: "notice" as const');
 replace("src/pages/CreatorSubmissions.tsx", 'submitterUid={selectedTerminology.userId}', 'submitterUid={selectedTerminology.userId ?? ""}');
 
-edit("src/pages/SnakeTitanIntelligencePage.tsx", (source) => source
-  .replace('const allowed = await hasFullIntelligenceAccess(user.uid).catch(() => false);', 'const allowed = await hasFullIntelligenceAccess(user.uid).catch(() => false);')
-  .replace('const result = await getSnakeMasterRecord(user.uid, snakeId);', 'const result = await getSnakeMasterRecord(user.uid, snakeId);'));
+edit("src/pages/SnakeTitanIntelligencePage.tsx", (source) => {
+  const marker = '    setLoadedKey(null);\n\n    async function load() {';
+  if (!source.includes(marker)) throw new Error("SnakeTitanIntelligencePage auth marker not found.");
+  let next = source.replace(marker, '    setLoadedKey(null);\n    const authenticatedUser = user;\n    const selectedSnakeId = snakeId;\n\n    async function load() {');
+  next = next.replace('const allowed = await hasFullIntelligenceAccess(user.uid).catch(() => false);', 'const allowed = await hasFullIntelligenceAccess(authenticatedUser.uid).catch(() => false);');
+  next = next.replace('const result = await getSnakeMasterRecord(user.uid, snakeId);', 'const result = await getSnakeMasterRecord(authenticatedUser.uid, selectedSnakeId);');
+  return next;
+});
 
 replace("src/services/healthService.ts", 'action: operation,', 'action: operation === "create" ? "created" : "updated",');
 replace("src/services/weightService.ts", 'action:operation,', 'action:operation==="create"?"created":"updated",');
@@ -61,14 +65,15 @@ replace("src/utils/geneticsCalculator.ts", 'existing.percentage+=result.percenta
 replace("src/utils/geneticsCalculator.ts", 'b.percentage-a.percentage', '(b.percentage ?? 0)-(a.percentage ?? 0)');
 replace("src/utils/geneticsCalculator.ts", 'percentage:offspring.percentage', 'percentage:offspring.percentage ?? 0');
 replace("src/utils/geneticsCalculator.ts", 'percentage:offspring.percentage});else', 'percentage:offspring.percentage ?? 0});else');
-replace("src/utils/geneticsCalculator.ts", 'percentage:value.percentage,certainty', 'percentage:value.percentage,certainty');
 
-edit("src/components/TitanIntelligence/TitanLiveIntelligencePanel.tsx", (source) => source
-  .replace('function observationList(value: unknown, fallbackLabel: string) { return records(value).map((record) => ({ date: recordDate(record), category: typeof record.category === "string" ? record.category : undefined, label: typeof record.label === "string" ? record.label : fallbackLabel, detail: typeof record.detail === "string" ? record.detail : undefined })); }', 'function observationList(value: unknown, fallbackLabel: string) { return records(value).map((record) => ({ date: recordDate(record), category: typeof record.category === "string" ? record.category : undefined, label: typeof record.label === "string" ? record.label : fallbackLabel, detail: typeof record.detail === "string" ? record.detail : undefined })).filter((item): item is { date: string | number; category?: string; label: string; detail?: string } => item.date != null); }')
-  .replace('return { name: typeof snake.name === "string" ? snake.name : "Unnamed Titan", birthDate:', 'return { name: typeof snake.name === "string" ? snake.name : "Unnamed Titan", birthDate:')
-  .replace('const weights = records(snake.weightHistory).map((record) => ({ date: recordDate(record), grams: Number(record.grams ?? record.weight ?? record.value) })).filter((point) => Number.isFinite(point.grams) && point.grams > 0 && point.date != null);', 'const weights = records(snake.weightHistory).map((record) => ({ date: recordDate(record), grams: Number(record.grams ?? record.weight ?? record.value) })).filter((point): point is { date: string | number; grams: number } => Number.isFinite(point.grams) && point.grams > 0 && point.date != null);')
-  .replace('return{date,...(hasTemperature?{temperatureC}:{}),...(hasHumidity?{humidityPercent}:{}),enclosureId:typeof record.enclosureId==="string"?record.enclosureId:undefined,source:record.source==="sensor"?"sensor":"keeper"} satisfies HusbandryObservation;', 'return{date,...(hasTemperature?{temperatureC}:{}),...(hasHumidity?{humidityPercent}:{}),enclosureId:typeof record.enclosureId==="string"?record.enclosureId:undefined,source:record.source==="sensor"?"sensor":"keeper"} as HusbandryObservation;')
-);
+edit("src/components/TitanIntelligence/TitanLiveIntelligencePanel.tsx", (source) => {
+  let next = source;
+  next = next.replace('function observationList(value: unknown, fallbackLabel: string) { return records(value).map((record) => ({ date: recordDate(record), category: typeof record.category === "string" ? record.category : undefined, label: typeof record.label === "string" ? record.label : fallbackLabel, detail: typeof record.detail === "string" ? record.detail : undefined })); }', 'function observationList(value: unknown, fallbackLabel: string) { return records(value).map((record) => ({ date: recordDate(record), category: typeof record.category === "string" ? record.category : undefined, label: typeof record.label === "string" ? record.label : fallbackLabel, detail: typeof record.detail === "string" ? record.detail : undefined })).filter((item): item is { date: string | number; category?: string; label: string; detail?: string } => item.date != null); }');
+  next = next.replace('const weights = records(snake.weightHistory).map((record) => ({ date: recordDate(record), grams: Number(record.grams ?? record.weight ?? record.value) })).filter((point) => Number.isFinite(point.grams) && point.grams > 0 && point.date != null);', 'const weights = records(snake.weightHistory).map((record) => ({ date: recordDate(record), grams: Number(record.grams ?? record.weight ?? record.value) })).filter((point): point is { date: string | number; grams: number } => Number.isFinite(point.grams) && point.grams > 0 && point.date != null);');
+  next = next.replace('return{date,...(hasTemperature?{temperatureC}:{}),...(hasHumidity?{humidityPercent}:{}),enclosureId:typeof record.enclosureId==="string"?record.enclosureId:undefined,source:record.source==="sensor"?"sensor":"keeper"} satisfies HusbandryObservation;', 'return{date,...(hasTemperature?{temperatureC}:{}),...(hasHumidity?{humidityPercent}:{}),enclosureId:typeof record.enclosureId==="string"?record.enclosureId:undefined,source:record.source==="sensor"?"sensor":"keeper"} as HusbandryObservation;');
+  if (next === source) throw new Error("TitanLiveIntelligencePanel patterns were not found.");
+  return next;
+});
 
 replace("src/intelligence/v50/animalMasterRecordEngine.ts", 'domain: domainForType(event.type)', 'domain: domainForType(event.type) as TitanDomainEvent["domain"]');
 
