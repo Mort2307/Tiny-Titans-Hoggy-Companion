@@ -14,8 +14,8 @@ const cornAmelLocus: LocusDefinition = {
   inheritance: "allelic",
   alleles: [
     { id: "wild", name: "Wild type", isWildType: true, phenotype: "Normal pigmentation" },
-    { id: "amel", name: "Amel", aliases: ["Amelanistic", "Albino"], phenotype: "Amelanistic / Albino" },
-    { id: "ultra", name: "Ultra", phenotype: "Ultra phenotype" },
+    { id: "amel", name: "Amel", aliases: ["Amelanistic", "Albino", "Amelanistic / Albino", "amelanistic-albino"], phenotype: "Amelanistic / Albino" },
+    { id: "ultra", name: "Ultra", aliases: ["Ultramel"], phenotype: "Ultra phenotype" },
   ],
   superStatus: "not_applicable",
   evidence: evidence("Amel and Ultra are modelled as alternative alleles at one locus rather than independent genes."),

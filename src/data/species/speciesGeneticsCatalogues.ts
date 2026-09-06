@@ -46,6 +46,7 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Diffused", "Recessive", ["Bloodred"]],
       ["Hypomelanistic", "Recessive", ["Hypo"]],
       ["Lava", "Recessive", ["Hypo C", "Trans Hypo"]],
+      ["Lavender", "Recessive"],
       ["Motley", "Recessive"],
       ["Stripe", "Recessive"],
       ["Scaleless", "Recessive"],
@@ -57,7 +58,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Tequila Sunrise", "Polygenic", ["TS"], false, "Polygenic"],
     ]),
   ],
-
   "Boa constrictor": [
     ...bySource("boa-constrictors/", [
       ["Kahl Albino", "Recessive", ["Albino", "Kahl"]],
@@ -71,7 +71,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Motley", "Recessive"],
     ]),
   ],
-
   "Boa imperator": [
     ...bySource("boa-constrictors/", [
       ["Kahl Albino", "Recessive", ["Albino", "Kahl"]],
@@ -84,7 +83,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Jungle", "Incomplete Dominant"],
     ]),
   ],
-
   "Python bivittatus": [
     ...bySource("burmese-pythons/", [
       ["Albino", "Recessive", ["Amelanistic", "Amel"]],
@@ -92,9 +90,9 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Granite", "Recessive"],
       ["Labyrinth", "Recessive"],
       ["Caramel", "Recessive"],
+      ["Hypo", "Incomplete Dominant"],
     ]),
   ],
-
   "Morelia spilota": [
     ...bySource("carpet-pythons/", [
       ["Jaguar", "Incomplete Dominant", ["Jag"]],
@@ -108,7 +106,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Stonewashed", "Polygenic", [], false, "Polygenic"],
     ]),
   ],
-
   "Eryx colubrinus": [
     ...bySource("sand-boas/", [
       ["Albino", "Recessive"],
@@ -130,7 +127,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["P3 Anery", "Line-bred", [], false, "Line-bred"],
     ]),
   ],
-
   "Gongylophis colubrinus": [
     ...bySource("sand-boas/", [
       ["Albino", "Recessive"],
@@ -144,7 +140,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Patternless", "Incomplete Dominant"],
     ]),
   ],
-
   "Epicrates cenchria": [
     ...bySource("rainbow-boas/", [
       ["Anery (Sharp)", "Recessive", ["Anerythristic"]],
@@ -157,7 +152,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Leopard", "Incomplete Dominant"],
     ]),
   ],
-
   "Malayopython reticulatus": [
     ...bySource("reticulated-pythons/", [
       ["Albino", "Recessive", ["Amelanistic", "Amel"]],
@@ -172,7 +166,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Calico", "Recessive"],
     ]),
   ],
-
   "Python curtus": [
     ...bySource("short-tailed-pythons/", [
       ["Albino", "Recessive", ["Amelanistic", "Amel"]],
@@ -181,7 +174,6 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Sunset", "Recessive"],
     ]),
   ],
-
   "Lampropeltis californiae": [
     ...bySource("kingsnakes/", [
       ["Amelanistic", "Recessive", ["Albino", "Amel"]],
@@ -193,6 +185,56 @@ export const SPECIES_GENETICS_CATALOGUES: Record<string, MasterMorphDefinition[]
       ["Banana", "Incomplete Dominant"],
       ["Peanut Butter", "Recessive"],
       ["Long Beach Hypermelanistic", "Incomplete Dominant", ["Grease King"]],
+    ]),
+  ],
+  "Python regius": [
+    ...bySource("ball-pythons/", [
+      ["Albino", "Recessive", ["Amelanistic", "Amel"]],
+      ["Axanthic", "Recessive", ["Anery"]],
+      ["Clown", "Recessive"],
+      ["Desert Ghost", "Recessive", ["DG"]],
+      ["Ghost", "Recessive", ["Hypo"]],
+      ["Genetic Stripe", "Recessive", ["G Stripe"]],
+      ["Lavender Albino", "Recessive", ["Lavender", "Lav Albino"]],
+      ["Piebald", "Recessive", ["Pied"]],
+      ["Puzzle", "Recessive"],
+      ["Tri-Stripe", "Recessive", ["Tristripe", "Tri Stripe"]],
+      ["Ultramel", "Recessive"],
+      ["Enhancer", "Recessive"],
+      ["Axanthic (MJ)", "Recessive", ["Markus Jayne Axanthic"]],
+      ["Banana", "Incomplete Dominant", ["Coral Glow"]],
+      ["Bamboo", "Incomplete Dominant"],
+      ["Black Pastel", "Incomplete Dominant"],
+      ["Butter", "Incomplete Dominant"],
+      ["Cinnamon", "Incomplete Dominant"],
+      ["Fire", "Incomplete Dominant"],
+      ["Lesser", "Incomplete Dominant"],
+      ["Mojave", "Incomplete Dominant"],
+      ["Mystic", "Incomplete Dominant"],
+      ["Orange Dream", "Incomplete Dominant", ["OD"]],
+      ["Pastel", "Incomplete Dominant"],
+      ["Phantom", "Incomplete Dominant"],
+      ["Enchi", "Incomplete Dominant"],
+      ["GHI", "Incomplete Dominant"],
+      ["Mahogany", "Incomplete Dominant"],
+      ["Red Stripe", "Incomplete Dominant"],
+      ["Yellow Belly", "Incomplete Dominant"],
+      ["Champagne", "Incomplete Dominant"],
+      ["Cypress", "Incomplete Dominant"],
+      ["Gravel", "Incomplete Dominant"],
+      ["Huffman", "Incomplete Dominant"],
+      ["Leopard", "Incomplete Dominant"],
+      ["Lori", "Incomplete Dominant"],
+      ["Special", "Incomplete Dominant"],
+      ["Jolt", "Incomplete Dominant"],
+      ["Raven", "Incomplete Dominant"],
+      ["Honey", "Incomplete Dominant"],
+      ["Scaleless Head", "Incomplete Dominant"],
+      ["Pinstripe", "Dominant"],
+      ["Spider", "Dominant"],
+      ["Spotnose", "Dominant"],
+      ["Ashen", "Dominant"],
+      ["Citron", "Incomplete Dominant"],
     ]),
   ],
 };

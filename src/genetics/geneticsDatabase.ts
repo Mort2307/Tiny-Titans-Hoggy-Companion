@@ -1,5 +1,6 @@
 import type { MasterMorphDefinition } from "../data/masterMorphDatabase.ts";
 import { SPECIES_GENETICS_CATALOGUES } from "../data/species/speciesGeneticsCatalogues.ts";
+import { SPECIES_GENETICS_COMBINATIONS } from "../data/species/speciesGeneticsCombinations.ts";
 import type { GeneticsDatabase, LocusDefinition, InheritanceModel, EvidenceRecord, CombinationDefinition } from "./geneticsModel.ts";
 import { CORN_SNAKE_GENETICS_DATABASE } from "./cornSnakeGenetics.ts";
 import { HOGNOSE_GENETICS_DATABASE } from "./hognoseGenetics.ts";
@@ -32,7 +33,7 @@ function catalogueLocus(species: string, morph: MasterMorphDefinition): LocusDef
 }
 
 const catalogueLoci = Object.entries(SPECIES_GENETICS_CATALOGUES_EXPANDED).flatMap(([species, traits]: [string, MasterMorphDefinition[]]) => traits.map((trait) => catalogueLocus(species, trait)).filter((value): value is LocusDefinition => Boolean(value)));
-export const GENETICS_DATABASE: GeneticsDatabase = { loci: [...catalogueLoci, ...CORN_SNAKE_GENETICS_DATABASE.loci, ...HOGNOSE_GENETICS_DATABASE.loci], combinations: [...CORN_SNAKE_GENETICS_DATABASE.combinations, ...HOGNOSE_GENETICS_DATABASE.combinations] };
+export const GENETICS_DATABASE: GeneticsDatabase = { loci: [...catalogueLoci, ...CORN_SNAKE_GENETICS_DATABASE.loci, ...HOGNOSE_GENETICS_DATABASE.loci], combinations: [...SPECIES_GENETICS_COMBINATIONS, ...CORN_SNAKE_GENETICS_DATABASE.combinations, ...HOGNOSE_GENETICS_DATABASE.combinations] };
 export function getSpeciesLoci(species: string): LocusDefinition[] { return GENETICS_DATABASE.loci.filter((locus) => locus.species === species); }
 export function getEvidenceForLocus(locus: LocusDefinition): EvidenceRecord[] { return locus.evidence; }
 export function getMasterCatalogueEvidence(morph: MasterMorphDefinition): EvidenceRecord[] { return evidenceFor(morph); }

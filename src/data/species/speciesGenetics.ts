@@ -6,6 +6,7 @@ import {
 } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
+import { SPECIES_GENETICS_COMBINATION_MORPHS, SPECIES_GENETICS_COMBINATION_SPECS } from "./speciesGeneticsCombinations";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
@@ -106,13 +107,20 @@ function getCatalogue(speciesId: string | null | undefined): MasterMorphDefiniti
   return species ? SPECIES_CATALOGUES[species.acceptedScientificName] ?? [] : [];
 }
 
+export function getSpeciesCombinationMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
+  const species = getSpeciesRecord(speciesId);
+  if (!species) return [];
+  const comboIds = new Set(SPECIES_GENETICS_COMBINATION_SPECS.filter((spec) => spec.species === species.acceptedScientificName).map((spec) => spec.id));
+  return SPECIES_GENETICS_COMBINATION_MORPHS.filter((morph) => comboIds.has(morph.geneId));
+}
+
 export function getSpeciesVisualMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
   if (isHognose(speciesId)) return getMasterVisualMorphs();
   const species = getSpeciesRecord(speciesId);
   if (!species) return [];
   const mapped = SPECIES_CATALOGUES[species.acceptedScientificName] ?? [];
   const name = species.commonNames[0] ?? species.acceptedScientificName;
-  return [normalTrait(name), ...mapped];
+  return [normalTrait(name), ...mapped, ...getSpeciesCombinationMorphs(speciesId)];
 }
 
 export function getSpeciesHetGenes(speciesId: string | null | undefined): MasterMorphDefinition[] {
