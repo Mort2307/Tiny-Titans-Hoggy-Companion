@@ -4,23 +4,11 @@ export type GeneticsLocusDefinition = {
   heteroallelicPhenotype?: string;
 };
 
-/**
- * A locus can contain multiple alleles. These records are deliberately
- * species-scoped so an identical gene label in another species cannot be
- * treated as the same biological locus.
- */
+/** Species-specific allelic-series metadata. */
 export const SPECIES_GENETICS_LOCI: Record<string, GeneticsLocusDefinition[]> = {
   "pantherophis-guttatus": [
-    {
-      locusId: "pantherophis-guttatus-clcn2-pattern",
-      geneId: "motley",
-      heteroallelicPhenotype: "Motley/Stripe (intermediate)",
-    },
-    {
-      locusId: "pantherophis-guttatus-clcn2-pattern",
-      geneId: "stripe",
-      heteroallelicPhenotype: "Motley/Stripe (intermediate)",
-    },
+    { locusId: "pantherophis-guttatus-clcn2-pattern", geneId: "motley", heteroallelicPhenotype: "Motley/Stripe (intermediate)" },
+    { locusId: "pantherophis-guttatus-clcn2-pattern", geneId: "stripe", heteroallelicPhenotype: "Motley/Stripe (intermediate)" },
   ],
 };
 
