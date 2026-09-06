@@ -29,6 +29,7 @@ const checks = [
   ["Species legacy bridge delegates to forecast", bridge.includes("calculateSpeciesGeneticsForecast")],
   ["Core model conserves locus probabilities", model.includes("existing.probability += 0.25")],
   ["Cross-species safety remains enforced", model.includes("Cross-species genetics are not supported")],
+  ["Master Record calculator deep-link preserves context", calculator.includes('searchParams.get("snakeId")') && calculator.includes('`/snakes/${requestedSnake.id}/master-record`') && calculator.includes("requestedSnake ? `← Back to ${requestedSnake.name} Master Record` : \"← Back to Breeding Planner\"" )],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
