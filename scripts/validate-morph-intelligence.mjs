@@ -21,7 +21,7 @@ const required = [
   [identity, "resolveCanonicalGeneticIdentity", "Genetics identity layer is not exposing canonical resolution."],
   [canonical, "resolveCanonicalGenetics", "Canonical genetics adapter is missing."],
   [resolver, "getCanonicalComposition", "Morph resolver is not using canonical composition."],
-  [calculator, "expandMorphToComponents", "Genetics calculator is not using the canonical morph resolver."],
+  [calculator, "resolveCanonicalGenetics", "Genetics calculator is not using the canonical genetics resolver."],
   [reversal, "resolveMasterMorph", "Morph reversal is not using the master identity resolver."],
   [library, "typed.geneticFormula", "Morph Library does not surface canonical formulas."],
   [library, "typed.recognisedNames", "Morph Library does not surface recognised names."],
