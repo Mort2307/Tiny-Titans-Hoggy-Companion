@@ -11,6 +11,9 @@ import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
 
 const PROACTIVE_CACHE_MS = 3_000;
 
+type PriorityTone = "positive" | "neutral" | "attention";
+type PriorityConfidence = "High" | "Moderate" | "Low" | "Insufficient";
+
 function Header() {
   const { user, profile } = useAuth();
   const location = useLocation();
@@ -48,15 +51,12 @@ function Header() {
         const snakes = await getDashboardIntelligence(user.uid, records.map((snake) => snake.id));
         if (!active) return;
         const activeState = mergeTitanProactiveState(user.uid, snakes);
-        const candidateKey = activeState
-          .sort((a, b) => {
-            const tone = (value: SnakeIntelligence["priority"]["tone"] | undefined) => value === "attention" ? 3 : value === "positive" ? 1 : 2;
-            const confidence = (value: SnakeIntelligence["priority"]["confidence"] | undefined) => value === "High" ? 4 : value === "Moderate" ? 3 : value === "Low" ? 2 : 1;
-            return tone(b.tone) - tone(a.tone) || confidence(b.confidence) - confidence(a.confidence) || b.lastSeenAt - a.lastSeenAt;
-          })[0];
-        const candidate = candidateKey
-          ? snakes.find((item) => item.snakeId === candidateKey.animalId && item.priority?.id === candidateKey.insightId) ?? null
-          : null;
+        const candidateKey = activeState.sort((a, b) => {
+          const tone = (value: PriorityTone) => value === "attention" ? 3 : value === "positive" ? 1 : 2;
+          const confidence = (value: PriorityConfidence) => value === "High" ? 4 : value === "Moderate" ? 3 : value === "Low" ? 2 : 1;
+          return tone(b.tone as PriorityTone) - tone(a.tone as PriorityTone) || confidence(b.confidence as PriorityConfidence) - confidence(a.confidence as PriorityConfidence) || b.lastSeenAt - a.lastSeenAt;
+        })[0];
+        const candidate = candidateKey ? snakes.find((item) => item.snakeId === candidateKey.animalId && item.priority?.id === candidateKey.insightId) ?? null : null;
         setProactive(candidate);
       } catch {
         if (active) setProactive(null);
@@ -81,22 +81,12 @@ function Header() {
       <Link to="/" className="logo-link" aria-label="Tiny Titans Reptile Companion home">
         <img src={logo} alt="Tiny Titans Reptile Companion" className="tiny-titans-logo" />
       </Link>
-      <div className="app-brand-lockup">
-        <span className="app-brand-name" aria-label="Tiny Titans Reptile Companion">Tiny Titans Reptile Companion</span>
-      </div>
+      <div className="app-brand-lockup"><span className="app-brand-name" aria-label="Tiny Titans Reptile Companion">Tiny Titans Reptile Companion</span></div>
       <div className="app-header-actions">
         {!creatorMode && proactive?.priority && (
-          <Link
-            className="titan-proactive-header-link"
-            to={`/snakes/${proactive.snakeId}/master-record`}
-            aria-label={`Tiny Titans noticed something for ${proactive.snakeName}: ${proactive.priority.title}`}
-            title={proactive.priority.why}
-          >
+          <Link className="titan-proactive-header-link" to={`/snakes/${proactive.snakeId}/master-record`} aria-label={`Tiny Titans noticed something for ${proactive.snakeName}: ${proactive.priority.title}`} title={proactive.priority.why}>
             <span aria-hidden="true">⚡</span>
-            <span className="titan-proactive-header-copy">
-              <strong>{proactive.snakeName}</strong>
-              <small>{proactive.priority.title}</small>
-            </span>
+            <span className="titan-proactive-header-copy"><strong>{proactive.snakeName}</strong><small>{proactive.priority.title}</small></span>
           </Link>
         )}
         <Link className="submission-mailbox-link" to={mailboxPath} aria-label={unread > 0 ? `Submission messages, ${unread} unread` : "Submission messages"} title={unread > 0 ? `${unread} unread submission message${unread === 1 ? "" : "s"}` : "Submission messages"}>
