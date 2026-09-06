@@ -1,5 +1,5 @@
 import type { MasterMorphDefinition } from "../masterMorphDatabase";
-import { INITIAL_SNAKE_SPECIES } from "./speciesRegistryBase";
+import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 
 export type SpeciesGeneticsCoverageStatus = "mapped" | "partial" | "baseline-only";
