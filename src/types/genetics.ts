@@ -71,6 +71,17 @@ export type GeneticsCalculatorResult = {
   hasUnresolvedGenetics: boolean;
 };
 
+/** Canonical UI-facing breeding forecast contract used by the planner bridge. */
+export type GeneticsCalculation = {
+  outcomes: Array<{
+    probability: number;
+    visualMorphs: string[];
+    hets: Array<{ geneId: string; name: string; percentage: "100%" }>;
+    geneStates: Array<{ geneId: string; copies: number; probability: number }>;
+  }>;
+  totalProbability: number;
+};
+
 export type GeneticProbability = {
   geneId: string;
   copies: GeneCopyState;
