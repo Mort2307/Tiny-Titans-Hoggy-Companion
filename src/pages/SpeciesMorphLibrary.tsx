@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSpeciesContext } from "../context/SpeciesContext";
-import { getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
+import {
+  getSpeciesGeneticsStatus,
+  searchGenetics,
+  type GeneticsSearchResult,
+} from "../data/species/speciesGenetics";
 import { getApprovedMorphImages } from "../services/creatorService";
 import type { ApprovedMorphImage } from "../types/morphSubmission";
 import BackHomeButton from "../components/BackHomeButton";
@@ -10,16 +14,22 @@ import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
-type SpeciesMorphEntry = ReturnType<typeof getSpeciesVisualMorphs>[number];
 type Filter = "all" | "gene" | "combination" | "polygenic" | "line-bred";
 
-function matchesFilter(morph: SpeciesMorphEntry, filter: Filter): boolean {
+function matchesFilter(result: GeneticsSearchResult, filter: Filter): boolean {
+  const morph = result.entry;
   if (filter === "all") return true;
   if (filter === "gene") return morph.kind === "Gene" || morph.kind === "Super";
   if (filter === "combination") return morph.kind === "Combination";
   if (filter === "polygenic") return morph.kind === "Polygenic" || morph.inheritance === "Polygenic";
   if (filter === "line-bred") return morph.kind === "Line-bred" || morph.inheritance === "Line-bred";
   return true;
+}
+
+function confidenceLabel(confidence: GeneticsSearchResult["evidence"]["confidence"]): string {
+  if (confidence === "confirmed") return "Confirmed evidence";
+  if (confidence === "recognised") return "Recognised catalogue record";
+  return "Evidence status unknown";
 }
 
 export default function SpeciesMorphLibrary() {
@@ -31,7 +41,6 @@ export default function SpeciesMorphLibrary() {
   const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
-  const entries = useMemo(() => getSpeciesVisualMorphs(selectedSpeciesId), [selectedSpeciesId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,16 +62,11 @@ export default function SpeciesMorphLibrary() {
   }, [selectedSpeciesId]);
 
   const filtered = useMemo(() => {
-    const needle = normalise(query);
-    return entries
-      .filter((morph) => matchesFilter(morph, filter))
-      .filter((morph) => {
-        if (!needle) return true;
-        const searchable = [morph.name, ...(morph.aliases ?? []), ...(morph.contains ?? []), ...(morph.components?.map((component) => component.morphId) ?? [])].map(normalise);
-        return searchable.some((value) => value.includes(needle));
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [entries, filter, query]);
+    const results = searchGenetics(selectedSpeciesId, query, { limit: 150 });
+    return results
+      .filter((result) => matchesFilter(result, filter))
+      .sort((a, b) => query.trim() ? b.score - a.score || a.entry.name.localeCompare(b.entry.name) : a.entry.name.localeCompare(b.entry.name));
+  }, [filter, query, selectedSpeciesId]);
 
   const statusLabel = geneticsStatus === "mapped"
     ? "🟢 Full species genetics catalogue"
@@ -92,7 +96,7 @@ export default function SpeciesMorphLibrary() {
           {(["all", "gene", "combination", "polygenic", "line-bred"] as Filter[]).map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>{value === "all" ? "All" : value === "gene" ? "Genes & Supers" : value === "combination" ? "Combinations" : value === "polygenic" ? "Polygenic" : "Line-bred"}</button>)}
         </div>
         <label className="morph-library__search"><span>Search {speciesName} morphs</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${speciesName} genetics…`} /></label>
-        <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} species-scoped entries currently published</span></div>
+        <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} matching species-scoped entries</span></div>
       </header>
 
       {baselineOnly && (
@@ -104,7 +108,8 @@ export default function SpeciesMorphLibrary() {
       )}
 
       <section className="morph-library-grid" aria-live="polite">
-        {filtered.map((morph) => {
+        {filtered.map((result) => {
+          const morph = result.entry;
           const image = cardImages[morph.geneId];
           return (
             <article key={morph.geneId} className="morph-card morph-card--library">
@@ -120,9 +125,13 @@ export default function SpeciesMorphLibrary() {
                 <h2>{morph.name}</h2>
                 <div className="morph-card__classification"><span>{morph.category}</span><span>{morph.inheritance}</span></div>
                 {morph.aliases && morph.aliases.length > 0 && <p className="morph-card__canonical">Also known as: {morph.aliases.join(", ")}</p>}
-                {morph.components?.length ? <p className="morph-card__contains">Contains: {morph.components.map((component) => component.morphId).join(" + ")}</p> : null}
-                {morph.description && <p className="morph-card__description">{morph.description}</p>}
-                <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span></div>
+                {result.components.length ? <p className="morph-card__contains">Components: {result.components.map((component) => `${component.name}${component.copies > 1 ? ` ×${component.copies}` : ""}`).join(" + ")}</p> : null}
+                <p className="morph-card__description">{result.explanation}</p>
+                <div className="morph-card__footer">
+                  <span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span>
+                  <span title={result.evidence.note}>{confidenceLabel(result.evidence.confidence)}</span>
+                </div>
+                {result.matchedOn.length > 0 && <div className="morph-card__classification"><span>Matched: {result.matchedOn.join(", ")}</span>{result.calculatorEligible ? <span>🧮 Calculator eligible</span> : <span>📚 Evidence/reference only</span>}</div>}
                 <div className="morph-card__actions">
                   <Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}`}>Open genetics record <span aria-hidden="true">→</span></Link>
                   <Link className="morph-card__image-submit" to={`/morph-library/${encodeURIComponent(morph.geneId)}/gallery`}>📷 Morph Gallery</Link>
@@ -132,6 +141,12 @@ export default function SpeciesMorphLibrary() {
             </article>
           );
         })}
+        {!filtered.length && query.trim() && (
+          <div className="tracker-card" role="status">
+            <h2>No species-scoped genetics match</h2>
+            <p>No published genetics record matched <strong>{query}</strong> for {speciesName}. Tiny Titans has deliberately not fallen back to another species.</p>
+          </div>
+        )}
       </section>
 
       {showImageSubmission && selectedSpeciesId && <SpeciesMorphImageSubmissionDialog initialMorphId={imageSubmissionMorphId} initialSpeciesId={selectedSpeciesId} onClose={closeImageSubmission} />}
