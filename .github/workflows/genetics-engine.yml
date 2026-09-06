@@ -6,19 +6,46 @@ on:
   pull_request:
     branches: [master]
 
+permissions:
+  contents: read
+
 jobs:
   genetics-engine:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run validate:genetics-model
-      - run: npm run validate:genetics-runtime
-      - run: npm run validate:genetics-engine
-      - run: npm run validate:genetics-search
-      - run: npm run validate:breeding-bridge
-      - run: npx tsc -b
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Genetics engine contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p ci-diagnostics
+          {
+            echo '=== validate:genetics-model ==='
+            npm run validate:genetics-model
+            echo '=== validate:genetics-runtime ==='
+            npm run validate:genetics-runtime
+            echo '=== validate:genetics-engine ==='
+            npm run validate:genetics-engine
+            echo '=== validate:genetics-search ==='
+            npm run validate:genetics-search
+            echo '=== validate:breeding-bridge ==='
+            npm run validate:breeding-bridge
+            echo '=== tsc ==='
+            npx tsc -b
+          } 2>&1 | tee ci-diagnostics/genetics-engine.log
+      - name: Upload genetics diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiny-titans-genetics-engine-${{ github.run_id }}
+          path: ci-diagnostics/genetics-engine.log
+          if-no-files-found: ignore
