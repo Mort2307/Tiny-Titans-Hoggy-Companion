@@ -1,6 +1,7 @@
 import type { SnakeInsight, SnakeIntelligence } from "./snakeIntelligenceService";
 import { invalidateTitanV50CacheForAnimal } from "../intelligence/v50/titanIntelligenceCache";
 import { TITAN_INTELLIGENCE_UPDATED_EVENT, tinyTitansEventBus, type TinyTitansEvent, type TinyTitansEventName } from "./tinyTitansEventBus";
+import { subscribeToTitanDecisionState } from "./titanDecisionStateService";
 
 type TitanRecordEventType = "WeightRecorded" | "FeedingRecorded" | "ShedRecorded" | "BehaviourObserved" | "HealthRecordCreated" | "MicroclimateRecorded" | "EnclosureChanged" | "GeneticsChanged" | "BreedingProjectChanged" | "HatchlingRecorded" | "LearningActivityRecorded";
 type TitanActionKind = "created" | "updated" | "deleted";
@@ -80,7 +81,13 @@ export function markTitanProactiveHandled(uid: string, animalId: string, insight
 export function dismissTitanProactive(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "dismissed"); }
 export function reopenTitanProactive(uid: string, animalId: string, insightId: string): void { updateTitanProactiveState(uid, insightKey(animalId, insightId), "active"); }
 export function getActiveTitanProactiveState(uid: string): TitanProactiveStateItem[] { return pruneState(safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), [])).filter((item) => item.status === "active"); }
-export function subscribeToTitanIntelligenceUpdates(callback: (detail: TitanReactiveUpdateDetail) => void): () => void { if (typeof window === "undefined") return () => undefined; const listener = (event: Event) => callback((event as CustomEvent<TitanReactiveUpdateDetail>).detail ?? {}); window.addEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener); return () => window.removeEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener); }
+export function subscribeToTitanIntelligenceUpdates(callback: (detail: TitanReactiveUpdateDetail) => void, uid?: string): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  const listener = (event: Event) => callback((event as CustomEvent<TitanReactiveUpdateDetail>).detail ?? {});
+  window.addEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener);
+  const decisionUnsubscribe = uid ? subscribeToTitanDecisionState(uid, () => callback({})) : () => undefined;
+  return () => { window.removeEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener); decisionUnsubscribe(); };
+}
 function updateTitanProactiveState(uid: string, key: string, status: TitanProactiveItemStatus): void { const now = Date.now(); const items = safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), []); const updated = items.map((item) => item.key === key ? { ...item, status, ...(status === "handled" ? { handledAt: now, dismissedAt: undefined } : {}), ...(status === "dismissed" ? { dismissedAt: now, handledAt: undefined } : {}), ...(status === "active" ? { handledAt: undefined, dismissedAt: undefined } : {}), lastSeenAt: now } : item); safeWrite(STATE_KEY(uid), pruneState(updated, now)); if (typeof window !== "undefined") window.dispatchEvent(new Event(TITAN_INTELLIGENCE_UPDATED_EVENT)); }
 export type TitanReactiveDomainEvent = TinyTitansEvent;
 export type TitanReactiveDomainEventName = TinyTitansEventName;
