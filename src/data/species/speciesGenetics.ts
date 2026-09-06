@@ -5,7 +5,7 @@ import {
   type MasterMorphDefinition,
 } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
-import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
+import { SPECIES_GENETICS_CATALOGUES_EXPANDED } from "./speciesGeneticsCataloguesExpanded";
 import { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary } from "./speciesGeneticsCoverage";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
@@ -25,7 +25,7 @@ const normalTrait = (speciesName: string): MasterMorphDefinition => ({
   educationalNotes: "Baseline reference only. A visible difference is not automatically a genetic morph. Community submissions can document unusual animals for Creator review and future evidence gathering.",
 });
 
-const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = SPECIES_GENETICS_CATALOGUES;
+const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = SPECIES_GENETICS_CATALOGUES_EXPANDED;
 
 function getSpeciesRecord(speciesId: string | null | undefined): SpeciesRecord | undefined {
   return speciesId ? INITIAL_SNAKE_SPECIES.find((species) => species.id === speciesId) : undefined;
