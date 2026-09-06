@@ -8,6 +8,17 @@ function confidenceLabel(value:number): string {
   return value >= 0.9 ? "High" : value >= 0.75 ? "Moderate" : value >= 0.5 ? "Low" : "Insufficient";
 }
 
+function actionLabel(decision:TitanDecision): string {
+  if (decision.destination.includes("/weights?action=log")) return "Log weight →";
+  if (decision.destination.includes("/feeding?action=log")) return "Log feeding →";
+  if (decision.destination.includes("/shedding?action=log")) return "Log shed →";
+  if (decision.destination.includes("/behaviour?action=log")) return "Log behaviour →";
+  if (decision.destination.includes("/health?action=log")) return "Open care log →";
+  if (decision.domain === "vivarium") return "Review enclosure →";
+  if (decision.domain === "genetics") return "Review genetics →";
+  return "Open →";
+}
+
 export default function TitanDecisionQueue({ limit = 3, animalId, excludeDecisionId }: { limit?: number; animalId?: string; excludeDecisionId?: string }) {
   const { user } = useAuth();
   const [decisions, setDecisions] = useState<TitanDecision[]>([]);
@@ -49,7 +60,7 @@ export default function TitanDecisionQueue({ limit = 3, animalId, excludeDecisio
               <p><strong>Next:</strong> {decision.reason}</p>
               <p className="titan-decision-queue-boundary">Record-derived prioritisation only — not a diagnosis or proof of causation.</p>
             </div>
-            <Link className="titan-decision-queue-action" to={decision.destination}>Open →</Link>
+            <Link className="titan-decision-queue-action" to={decision.destination}>{actionLabel(decision)}</Link>
           </article>
         ))}
       </div>
