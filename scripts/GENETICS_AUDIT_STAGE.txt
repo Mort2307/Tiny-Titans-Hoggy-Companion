@@ -1,1 +1,0 @@
-Canonical Hognose identity and recognised combination invariants are now guarded by scripts/audit-hognose-genetics.mjs.
