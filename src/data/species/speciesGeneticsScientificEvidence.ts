@@ -1,5 +1,6 @@
 import type { MasterMorphDefinition } from "../masterMorphDatabase";
 import type { MorphEvidenceSourceDefinition } from "../morphEvidenceSources";
+import { applyBreederGeneticsEvidence } from "./speciesGeneticsBreederEvidence";
 
 type ScientificEvidenceOverlay = {
   speciesName: string;
@@ -11,12 +12,7 @@ type ScientificEvidenceOverlay = {
   sources: MorphEvidenceSourceDefinition[];
 };
 
-const scientificSource = (
-  id: string,
-  label: string,
-  url: string,
-  notes: string,
-): MorphEvidenceSourceDefinition => ({ id, label, url, type: "scientific-literature", authority: "primary", notes });
+const scientificSource = (id: string, label: string, url: string, notes: string): MorphEvidenceSourceDefinition => ({ id, label, url, type: "scientific-literature", authority: "primary", notes });
 
 const ballPiebald = scientificSource("omia-python-regius-tfec-piebald", "OMIA: TFEC-related piebald in Python regius", "https://omia.org/OMIA002761/51751/", "OMIA records piebald as a recessive single-gene trait and documents a known TFEC stop-gain variant.");
 const ballPiebaldPaper = scientificSource("garcia-elfring-2023-tfec-piebald", "Garcia-Elfring et al. (2023) — Piebaldism and TFEC", "https://pmc.ncbi.nlm.nih.gov/articles/PMC10712277/", "Peer-reviewed whole-genome and segregation evidence links recessive ball-python piebaldism to TFEC.");
@@ -68,7 +64,7 @@ export function applyScientificEvidence(catalogues: Record<string, MasterMorphDe
     }
     result[overlay.speciesName] = traits;
   }
-  return result;
+  return applyBreederGeneticsEvidence(result);
 }
 
 export const SCIENTIFIC_GENETICS_OVERLAY_COUNT = OVERLAYS.length;
