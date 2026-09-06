@@ -4,13 +4,17 @@ import path from "node:path";
 const root = path.resolve("src");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const engine = read("utils/geneticsEngineV3.ts");
+const safety = read("utils/geneticsEngineV3Safety.ts");
 const resolver = read("data/species/speciesGeneticsResolver.ts");
 const speciesGenetics = read("data/species/speciesGenetics.ts");
 const loci = read("data/species/speciesGeneticsLoci.ts");
 const overlay = read("data/species/speciesGeneticsScientificEvidence.ts");
 const calculator = read("pages/Calculator.tsx");
 const adapter = read("utils/speciesGeneticsCalculator.ts");
+const resultCard = read("components/ResultCard.tsx");
+const parentSelector = read("components/ParentSelector.tsx");
 const snake = read("types/Snake.ts");
+const migration = read("utils/snakeMigration.ts");
 const fixtures = read("data/species/geneticsEngineV3Fixtures.ts");
 
 const required = [
@@ -24,12 +28,19 @@ const required = [
   [engine, "getSpeciesWildTypeAllele", "Wild-type allele support is missing."],
   [engine, "combinationRequirements", "Canonical combination component requirements are missing."],
   [engine, "calculatorNamedCombinations", "Canonical combination registry is missing."],
+  [safety, "calculateGeneticsV3Safe", "Safe V3 parent normalisation is missing."],
+  [safety, "morph.inheritance === \"Recessive\"", "Recessive visual normalisation is missing."],
+  [safety, "copies >= 2", "Known super-form copy-state preservation is missing."],
   [calculator, "calculateSpeciesGeneticsForSpecies", "Live calculator is not routed through V3."],
   [calculator, "knownGeneCopies: selection.knownGeneCopies", "Live calculator is not passing stored copy evidence."],
-  [adapter, "calculateGeneticsV3", "Species adapter is not backed by V3."],
-  [adapter, "probabilityRange", "Species adapter does not expose bounded conditional probability ranges."],
+  [adapter, "calculateGeneticsV3Safe", "Species adapter is not using the hardened V3 path."],
+  [adapter, "probabilityRange", "Species adapter does not expose bounded conditional ranges."],
+  [resultCard, "formatProbability", "Result card has no bounded probability rendering."],
+  [resultCard, "Genotype uncertainty", "Result card does not explain unresolved zygosity."],
+  [parentSelector, "knownGeneCopies", "Parent selector cannot carry explicit copy evidence."],
   [snake, "geneticsProfile?: AnimalGeneticsProfile", "Animal records cannot carry structured genetics evidence."],
   [snake, "GeneticEvidenceKind", "Animal genetics provenance model is missing."],
+  [migration, "geneticsProfile", "Snake migration does not preserve structured genetics."],
   [fixtures, "retic-unknown-tiger-x-normal", "Unknown-zigosity fixture is missing."],
   [fixtures, "ball-piebald-het-x-het", "Exact recessive fixture is missing."],
   [fixtures, "corn-motley-x-stripe-allelic-locus", "Allelic-locus fixture is missing."],
@@ -46,4 +57,4 @@ if (!loci.includes("clcn2-motley") || !loci.includes("clcn2-stripe")) throw new 
 if (!loci.includes("clcn2-motley-stripe-intermediate")) throw new Error("CLCN2 heteroallelic phenotype rule is missing.");
 if (!overlay.includes("applyScientificEvidence")) throw new Error("Scientific evidence application function is missing.");
 
-console.log("Genetics Engine V3 contract passed: bounded zygosity, species-scoped routing, explicit allele loci, canonical combinations, provenance-aware animal genetics, live calculator integration and evidence overlays are wired.");
+console.log("Genetics Engine V3 contract passed: bounded zygosity, hardened parent normalisation, species-scoped routing, explicit allele loci, canonical combinations, animal provenance, live calculator integration and evidence overlays are wired.");
