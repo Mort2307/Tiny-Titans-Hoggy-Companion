@@ -101,12 +101,16 @@ export function resolveMasterMorph(value: string): MasterMorphDefinition | undef
   return masterMorphs.find((morph) =>
     identityKey(morph.geneId) === query ||
     identityKey(morph.name) === query ||
+    (morph.aliases ?? []).some((alias) => identityKey(alias) === query) ||
     (morph.searchTerms ?? []).some((term) => identityKey(term) === query),
   );
 }
 
 export function getMasterMorphByGeneId(geneId: string): MasterMorphDefinition | undefined {
-  return masterMorphs.find((morph) => identityKey(morph.geneId) === identityKey(geneId));
+  return masterMorphs.find((morph) =>
+    identityKey(morph.geneId) === identityKey(geneId) ||
+    (morph.aliases ?? []).some((alias) => identityKey(alias) === identityKey(geneId)),
+  );
 }
 
 export function getMasterMorphByName(name: string): MasterMorphDefinition | undefined {
