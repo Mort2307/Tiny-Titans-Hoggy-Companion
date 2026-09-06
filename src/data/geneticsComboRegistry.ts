@@ -1,13 +1,28 @@
 import type { MorphComponent, MorphDefinition } from "./morphs";
 
 /**
- * Calculator-only recognised names whose genetic signatures are useful to
- * presentation/reversal but are not yet represented as dedicated records in
- * the central morph array.
- *
- * IMPORTANT: these are names for combinations, never new loci.
+ * Recognised combination names used by the genetics calculator and presentation
+ * layer. These names are phenotypic/compositional labels, never new loci.
  */
 export const calculatorNamedCombinations: MorphDefinition[] = [
+  {
+    geneId: "grey-fog",
+    name: "Grey Fog",
+    aliases: ["Arctic Conda", "Arctic Anaconda", "Arctic + Conda", "Arctic x Conda"],
+    kind: "Combination",
+    isGene: false,
+    isCombination: true,
+    category: "Combination",
+    inheritance: "Unknown",
+    hetPossible: false,
+    verification: "Recognised",
+    components: [
+      { morphId: "arctic", type: "Gene", copies: 1 },
+      { morphId: "conda", type: "Gene", copies: 1 },
+    ],
+    description: "A recognised combination of Arctic and Anaconda (Conda), commonly known as Grey Fog.",
+    educationalNotes: "Grey Fog is not a separate locus: Arctic ×1 + Conda ×1.",
+  },
   {
     geneId: "bubs-daddy",
     name: "Bub's Daddy",
@@ -16,7 +31,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -35,7 +50,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -54,7 +69,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Incomplete Dominant",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -72,7 +87,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -91,7 +106,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -110,7 +125,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
