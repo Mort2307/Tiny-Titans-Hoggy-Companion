@@ -46,6 +46,13 @@
   text-transform: uppercase;
 }
 
+.app-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 @media (max-width: 800px) {
   .app-header { padding: 8px 14px; }
   .tiny-titans-logo { width: 40px; height: 40px; border-radius: 11px; }
