@@ -1,10 +1,7 @@
 import type { Snake } from "../types/Snake";
-
 import { generateId } from "./generateId";
 
-export function migrateSnake(
-  snake: Partial<Snake>
-): Snake {
+export function migrateSnake(snake: Partial<Snake>): Snake {
   return {
     id: typeof snake.id === "string" && snake.id.trim() ? snake.id.trim() : generateId(),
     name: snake.name ?? "Unnamed Snake",
@@ -19,6 +16,7 @@ export function migrateSnake(
     customMorph: snake.customMorph ?? "",
     hets: snake.hets ?? [],
     customHets: snake.customHets ?? "",
+    ...(snake.geneticsProfile ? { geneticsProfile: snake.geneticsProfile } : {}),
     startingWeight: snake.startingWeight ?? null,
     startingWeightDate: snake.startingWeightDate ?? "",
     weight: snake.weight ?? null,
