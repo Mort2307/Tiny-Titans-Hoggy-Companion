@@ -26,7 +26,7 @@ export interface HusbandryFinding {
 
 function toMillis(value: number | string): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
-  const parsed = Date.parse(value);
+  const parsed = Date.parse(String(value));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -103,6 +103,10 @@ export function buildHusbandryBaseline(observations: readonly HusbandryObservati
   return { temperatureMinC: temperatures.length ? Math.min(...temperatures) : undefined, temperatureMaxC: temperatures.length ? Math.max(...temperatures) : undefined, humidityMinPercent: humidities.length ? Math.min(...humidities) : undefined, humidityMaxPercent: humidities.length ? Math.max(...humidities) : undefined, method: "observed-range", sampleCount: Math.max(temperatures.length, humidities.length) };
 }
 
+/**
+ * Derives a keeper-specific baseline using historical readings only. The
+ * median/MAD approach limits one-off sensor spikes from dominating the range.
+ */
 export function buildAdaptiveHusbandryBaseline(observations: readonly HusbandryObservation[]): HusbandryBaseline {
   const temperatures = finiteValues(observations.map((item) => item.temperatureC));
   const humidities = finiteValues(observations.map((item) => item.humidityPercent));
