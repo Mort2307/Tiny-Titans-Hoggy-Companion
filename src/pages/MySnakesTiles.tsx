@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Snake } from "../types/Snake";
 import { getUserSnakes } from "../services/snakeService";
 import { getHoggieInsight, type HoggieStatus } from "../services/hoggieIntelligence";
+import { subscribeToTitanDecisionState, type TitanDecision } from "../services/titanDecisionStateService";
 import { useAuth } from "../context/useAuth";
 import SnakeTile from "../components/SnakeTile";
 import "../styles/snake-selector.css";
@@ -97,6 +98,10 @@ function statusIcon(status: HoggieStatus): string {
   return status === "good" ? "✓" : status === "attention" ? "⚠️" : "ℹ️";
 }
 
+function decisionForSnake(decisions: readonly TitanDecision[], snakeId: string): TitanDecision | undefined {
+  return decisions.find((decision) => decision.animalId === snakeId && decision.status === "active");
+}
+
 export default function MySnakesTiles() {
   const navigate = useNavigate();
   const { user, loading, profileLoading } = useAuth();
@@ -106,6 +111,7 @@ export default function MySnakesTiles() {
   const [sortMode, setSortMode] = useState<SortMode>(() => readStoredSort());
   const [customOrder, setCustomOrder] = useState<string[]>(() => readStoredOrder());
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [activeDecisions, setActiveDecisions] = useState<readonly TitanDecision[]>([]);
 
   useEffect(() => {
     if (loading || profileLoading || !user) return;
@@ -138,6 +144,23 @@ export default function MySnakesTiles() {
   }, [user, loading, profileLoading]);
 
   useEffect(() => {
+    if (!user || loading || profileLoading) return;
+    const sync = (state: { decisions: readonly TitanDecision[] }) => setActiveDecisions(state.decisions.filter((decision) => decision.status === "active"));
+    const unsubscribe = subscribeToTitanDecisionState(user.uid, sync);
+    sync({ decisions: [] });
+    try {
+      const raw = window.localStorage.getItem(`tinyTitans:titan-decision-state:${user.uid}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { decisions?: TitanDecision[] };
+        setActiveDecisions((parsed.decisions ?? []).filter((decision) => decision.status === "active"));
+      }
+    } catch {
+      /* optional cached intelligence */
+    }
+    return unsubscribe;
+  }, [user, loading, profileLoading]);
+
+  useEffect(() => {
     try {
       localStorage.setItem(SORT_STORAGE_KEY, sortMode);
     } catch {
@@ -153,7 +176,7 @@ export default function MySnakesTiles() {
     }
   }, [customOrder]);
 
-  const displayedSnakes = (() => {
+  const displayedSnakes = useMemo(() => {
     if (sortMode !== "custom") return [...snakes].sort((a, b) => compareSnakes(a, b, sortMode));
 
     const order = customOrder.filter((id) => snakes.some((snake) => snake.id === id));
@@ -167,10 +190,11 @@ export default function MySnakesTiles() {
         .filter((snake): snake is Snake => Boolean(snake)),
       ...missing,
     ];
-  })();
+  }, [customOrder, snakes, sortMode]);
 
   const attentionCount = snakes.filter((snake) => getHoggieInsight(snake).status === "attention").length;
   const baselineCount = snakes.filter((snake) => getHoggieInsight(snake).status === "info").length;
+  const intelligenceCount = activeDecisions.length;
   const pageLoading = loading || profileLoading || (Boolean(user) && loadingSnakes);
 
   function moveCustomSnake(sourceId: string, targetId: string) {
@@ -235,6 +259,7 @@ export default function MySnakesTiles() {
           <strong>{snakes.length} Titan{snakes.length === 1 ? "" : "s"}</strong>
           <span>{attentionCount ? `⚠️ ${attentionCount} worth checking` : "✓ Nothing currently needs attention"}</span>
           {baselineCount > 0 && <span>ℹ️ {baselineCount} still building a baseline</span>}
+          {intelligenceCount > 0 && <span>🧠 {intelligenceCount} personalised next action{intelligenceCount === 1 ? "" : "s"}</span>}
         </div>
       </div>
 
@@ -265,6 +290,7 @@ export default function MySnakesTiles() {
           const snakeId = String(snake.id ?? "").trim();
           if (!snakeId) return null;
           const insight = getHoggieInsight(snake);
+          const decision = decisionForSnake(activeDecisions, snakeId);
 
           return (
             <div
@@ -295,6 +321,20 @@ export default function MySnakesTiles() {
               >
                 {statusIcon(insight.status)}
               </span>
+              {decision && (
+                <button
+                  type="button"
+                  className="hoggie-titan-next-action"
+                  title={decision.reason}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    navigate(decision.destination);
+                  }}
+                  draggable={false}
+                >
+                  🧠 {decision.title} →
+                </button>
+              )}
             </div>
           );
         })}
