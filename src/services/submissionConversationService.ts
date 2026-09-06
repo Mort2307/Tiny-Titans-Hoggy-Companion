@@ -8,6 +8,8 @@ const conversations = collection(db, "submissionConversations");
 const messages = (conversationId: string) => collection(db, "submissionConversations", conversationId, "messages");
 const conversationIdFor = (submissionType: SubmissionConversationType, submissionId: string) => `${submissionType}__${submissionId}`;
 function clean(value: unknown) { return String(value ?? "").trim(); }
+function timestampValue(value: unknown): number { if (!value) return 0; if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return Number(value.toMillis()) || 0; if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") return value.toDate().getTime() || 0; const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : 0; }
+function sortConversations(items: SubmissionConversation[]) { return [...items].sort((a, b) => timestampValue(b.lastMessageAt ?? b.updatedAt ?? b.createdAt) - timestampValue(a.lastMessageAt ?? a.updatedAt ?? a.createdAt)); }
 
 export async function ensureSubmissionConversation(input: { submissionType: Exclude<SubmissionConversationType, "direct">; submissionId: string; submitterUid: string; submissionTitle: string; submissionStatus?: string }): Promise<SubmissionConversation> {
   const submissionId = clean(input.submissionId); const submitterUid = clean(input.submitterUid); const submissionTitle = clean(input.submissionTitle) || "Submission conversation";
@@ -29,10 +31,10 @@ export async function ensureDirectConversation(submitterUid: string, submitterNa
     if (current.exists()) return;
     transaction.set(ref, { submissionType: "direct", submissionId: uid, submitterUid: uid, submissionTitle: "Message Tiny Titans", submissionStatus: "Open", createdAt: serverTimestamp(), updatedAt: serverTimestamp(), unreadForSubmitter: 0, unreadForCreator: 0, submitterDisplayName: displayName });
   });
-  return { id, submissionType: "direct", submissionId: uid, submitterUid: uid, submissionTitle: "Message Tiny Titans", submissionStatus: "Open", unreadForSubmitter: 0, unreadForCreator: 0 };
+  return { id, submissionType: "direct", submissionId: uid, submitterUid: uid, submissionTitle: "Message Tiny Titans", submissionStatus: "Open", createdAt: undefined, unreadForSubmitter: 0, unreadForCreator: 0 };
 }
 
-export async function getUserSubmissionConversations(uid: string): Promise<SubmissionConversation[]> { if (!uid) return []; const snapshot = await getDocs(query(conversations, where("submitterUid", "==", uid), orderBy("lastMessageAt", "desc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<SubmissionConversation, "id">) })); }
+export async function getUserSubmissionConversations(uid: string): Promise<SubmissionConversation[]> { if (!uid) return []; const snapshot = await getDocs(query(conversations, where("submitterUid", "==", uid))); return sortConversations(snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<SubmissionConversation, "id">) }))); }
 export async function getCreatorSubmissionConversations(maxResults = 100): Promise<SubmissionConversation[]> { const snapshot = await getDocs(query(conversations, orderBy("lastMessageAt", "desc"), limit(maxResults))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<SubmissionConversation, "id">) })); }
 export async function getSubmissionConversationMessages(conversationId: string): Promise<SubmissionConversationMessage[]> { const snapshot = await getDocs(query(messages(conversationId), orderBy("createdAt", "asc"))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<SubmissionConversationMessage, "id">) })); }
 export function watchSubmissionConversationMessages(conversationId: string, callback: (messages: SubmissionConversationMessage[]) => void, onError?: (error: Error) => void) { return onSnapshot(query(messages(conversationId), orderBy("createdAt", "asc")), (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<SubmissionConversationMessage, "id">) }))), (error) => onError?.(error)); }
