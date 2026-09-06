@@ -1,19 +1,17 @@
-import type { GeneticsCalculatorInput, GeneticsCalculatorResult, OffspringComponent, OffspringResult } from "../types/genetics";
-import { GENETICS_DATABASE } from "./geneticsDatabase";
-import { calculateLocus, getLocusAllele, type AlleleDefinition, type GeneticState, type LocusDefinition } from "./geneticsModel";
-import type { CombinationDefinition } from "./geneticsModel";
+import type { GeneticsCalculatorInput, GeneticsCalculatorResult, HetPercentage, OffspringComponent, OffspringResult } from "../types/genetics";
+import { GENETICS_DATABASE } from "./geneticsDatabase.ts";
+import { calculateLocus, getLocusAllele, type AlleleDefinition, type GeneticState, type LocusDefinition, type CombinationDefinition } from "./geneticsModel.ts";
 
 export type ForecastParent = GeneticsCalculatorInput["female"];
 type ParentScenario = { state: GeneticState; weight?: number; label: string; unknown: boolean };
 type ChildLocus = { locus: LocusDefinition; state: GeneticState; probability: number; label: string; phenotypeStatus: string; superForm: boolean; copiesByAllele: Record<string, number> };
-type ForecastScenario = { probabilityKnown: boolean; probability: number; labels: string[]; loci: ChildLocus[] };
+type ForecastScenario = { probabilityKnown: boolean; probability: number; probabilityRange?: { min: number; max: number }; labels: string[]; loci: ChildLocus[] };
 
 const normalise = (value: string) => value.trim().toLowerCase();
 
-function hetProbability(value: ForecastParent["hets"][number] extends infer T ? T extends { percentage: infer P } ? P : never : never): number {
-  const percentage = String(value).replace(/\s/g, "");
-  if (percentage === "66%" || percentage === "66") return 2 / 3;
-  if (percentage === "50%" || percentage === "50") return 0.5;
+function hetProbability(value: HetPercentage): number {
+  if (value === "66%" || value === 66) return 2 / 3;
+  if (value === "50%" || value === 50) return 0.5;
   return 1;
 }
 
@@ -60,9 +58,7 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
     const allele = findAllele(locus, morphValue);
     if (allele && !allele.isWildType) visualAlleles.add(allele.id);
   }
-  if (visualAlleles.size > 1) {
-    return [];
-  }
+  if (visualAlleles.size > 1) return [];
 
   const visualAlleleId = [...visualAlleles][0];
   if (visualAlleleId) {
@@ -80,7 +76,10 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
     ];
   }
 
-  const hetEntry = parent.hets.find((entry) => Boolean(findAllele(locus, entry.gene)) && !findAllele(locus, entry.gene)?.isWildType);
+  const hetEntry = parent.hets.find((entry) => {
+    const allele = findAllele(locus, entry.gene);
+    return Boolean(allele && !allele.isWildType);
+  });
   if (hetEntry) {
     const allele = findAllele(locus, hetEntry.gene)!;
     const p = hetProbability(hetEntry.percentage);
@@ -98,8 +97,9 @@ function relevantLoci(species: string, parentA: ForecastParent, parentB: Forecas
   const parents = [parentA, parentB];
   for (const parent of parents) {
     for (const morphValue of parent.morphs) {
-      const direct = GENETICS_DATABASE.loci.filter((locus) => locus.species === species && Boolean(findAllele(locus, morphValue)) && Boolean(findAllele(locus, morphValue)?.isWildType === false));
-      direct.forEach((locus) => relevant.add(locus.id));
+      GENETICS_DATABASE.loci
+        .filter((locus) => locus.species === species && Boolean(findAllele(locus, morphValue)) && !findAllele(locus, morphValue)?.isWildType)
+        .forEach((locus) => relevant.add(locus.id));
       GENETICS_DATABASE.combinations
         .filter((combination) => combination.species === species && combinationMatchesParent(combination, morphValue))
         .forEach((combination) => (combination.componentLocusIds ?? []).forEach((id) => relevant.add(id)));
@@ -110,14 +110,12 @@ function relevantLoci(species: string, parentA: ForecastParent, parentB: Forecas
         .forEach((locus) => relevant.add(locus.id));
     }
     for (const geneId of Object.keys(parent.knownGeneCopies ?? {})) {
-      GENETICS_DATABASE.loci.filter((locus) => locus.species === species && locus.alleles.some((allele) => allele.id === geneId || allele.geneId === geneId)).forEach((locus) => relevant.add(locus.id));
+      GENETICS_DATABASE.loci
+        .filter((locus) => locus.species === species && locus.alleles.some((allele) => allele.id === geneId))
+        .forEach((locus) => relevant.add(locus.id));
     }
   }
   return GENETICS_DATABASE.loci.filter((locus) => locus.species === species && relevant.has(locus.id));
-}
-
-function childLabel(child: ChildLocus): string {
-  return `${child.locus.name}: ${child.label}`;
 }
 
 function makeOutcome(species: string, scenario: ForecastScenario, index: number): OffspringResult {
@@ -155,13 +153,13 @@ function makeOutcome(species: string, scenario: ForecastScenario, index: number)
     id: `${scenario.loci.map((child) => `${child.locus.id}:${child.state.paternalAlleleId}/${child.state.maternalAlleleId}`).sort().join("|")}|${index}`,
     name,
     ...(exactProbability === undefined ? {} : { percentage: exactProbability }),
+    ...(scenario.probabilityRange ? { probabilityRange: { min: scenario.probabilityRange.min * 100, max: scenario.probabilityRange.max * 100 } } : {}),
     certainty: scenario.probabilityKnown ? "exact" : "bounded",
-    ...(scenario.probabilityKnown ? {} : { genotypeScenarioLabels: scenario.labels.map((label) => `Parent/genotype condition: ${label}`) }),
+    ...(scenario.probabilityKnown ? {} : { genotypeScenarioLabels: scenario.labels.map((label) => `Conditional parent genotype: ${label}`) }),
     visualComponents,
     hetComponents,
     possibleHetComponents: [],
     recognisedCombination: Boolean(combination),
-    ...(combination ? { combination: undefined } : {}),
     hasUnresolvedGenetics: !scenario.probabilityKnown,
   };
   return result;
@@ -193,48 +191,69 @@ export function calculateSpeciesGeneticsForecast(species: string, input: Genetic
   }));
 
   const invalid = scenariosByLocus.find((entry) => entry.mother.length === 0 || entry.father.length === 0);
-  if (invalid) {
-    return { input, offspring: [], hasUnresolvedGenetics: true };
-  }
+  if (invalid) return { input, offspring: [], hasUnresolvedGenetics: true };
 
   let scenarios: ForecastScenario[] = [{ probabilityKnown: true, probability: 1, labels: [], loci: [] }];
   for (const locus of scenariosByLocus) {
     const next: ForecastScenario[] = [];
-    for (const base of scenarios) for (const mother of locus.mother) for (const father of locus.father) for (const child of exactLocusChildren(locus.locus, mother, father)) {
-      next.push({
-        probabilityKnown: base.probabilityKnown && mother.weight !== undefined && father.weight !== undefined,
-        probability: base.probability * (mother.weight ?? 1) * (father.weight ?? 1) * child.probability,
-        labels: [...base.labels, mother.label, father.label],
-        loci: [...base.loci, child],
-      });
+    for (const base of scenarios) {
+      for (const mother of locus.mother) {
+        for (const father of locus.father) {
+          for (const child of exactLocusChildren(locus.locus, mother, father)) {
+            const known = base.probabilityKnown && mother.weight !== undefined && father.weight !== undefined;
+            const probability = base.probability * (mother.weight ?? 1) * (father.weight ?? 1) * child.probability;
+            const baseRange = base.probabilityRange ?? { min: base.probability, max: base.probability };
+            const branchWeight = (mother.weight ?? 1) * (father.weight ?? 1) * child.probability;
+            next.push({
+              probabilityKnown: known,
+              probability,
+              probabilityRange: known ? undefined : { min: baseRange.min * branchWeight, max: baseRange.max * branchWeight },
+              labels: [...base.labels, mother.label, father.label],
+              loci: [...base.loci, child],
+            });
+          }
+        }
+      }
     }
     scenarios = next;
   }
 
-  const merged = new Map<string, { scenario: ForecastScenario; branches: string[]; probability: number }>();
+  const merged = new Map<string, { scenario: ForecastScenario; branches: string[]; probabilities: number[] }>();
   scenarios.forEach((scenario) => {
     const key = scenario.loci.map((child) => `${child.locus.id}:${child.state.paternalAlleleId}/${child.state.maternalAlleleId}`).sort().join("|");
     const existing = merged.get(key);
-    if (!existing || !scenario.probabilityKnown || !existing.scenario.probabilityKnown) {
-      if (!existing) merged.set(key, { scenario, branches: [scenario.labels.join("; ")], probability: scenario.probability });
-      else {
-        existing.scenario.probabilityKnown = false;
-        existing.scenario.probability = 0;
-        existing.branches.push(scenario.labels.join("; "));
-      }
+    if (!existing) {
+      merged.set(key, {
+        scenario,
+        branches: [scenario.labels.join("; ")],
+        probabilities: [scenario.probabilityRange?.max ?? scenario.probability],
+      });
       return;
     }
-    existing.probability += scenario.probability;
+    existing.branches.push(scenario.labels.join("; "));
+    existing.probabilities.push(scenario.probabilityRange?.max ?? scenario.probability);
+    if (!scenario.probabilityKnown || !existing.scenario.probabilityKnown) {
+      existing.scenario.probabilityKnown = false;
+      existing.scenario.probability = 0;
+      const mins = scenarios.filter((candidate) => candidate.loci.map((child) => `${child.locus.id}:${child.state.paternalAlleleId}/${child.state.maternalAlleleId}`).sort().join("|") === key).map((candidate) => candidate.probabilityRange?.min ?? candidate.probability);
+      existing.scenario.probabilityRange = { min: Math.min(...mins), max: Math.max(...existing.probabilities) };
+    } else {
+      existing.scenario.probability += scenario.probability;
+    }
   });
 
   let index = 0;
   const offspring = [...merged.values()].map((entry) => {
-    const scenario = { ...entry.scenario, probability: entry.probability, labels: entry.scenario.probabilityKnown ? entry.scenario.labels : entry.branches };
+    const scenario = {
+      ...entry.scenario,
+      labels: entry.scenario.probabilityKnown ? entry.scenario.labels : entry.branches,
+      probabilityRange: entry.scenario.probabilityKnown ? undefined : entry.scenario.probabilityRange,
+    };
     return makeOutcome(species, scenario, index++);
   });
   return {
     input,
-    offspring: offspring.sort((a, b) => (b.percentage ?? -1) - (a.percentage ?? -1) || a.name.localeCompare(b.name)),
+    offspring: offspring.sort((a, b) => (b.percentage ?? b.probabilityRange?.max ?? -1) - (a.percentage ?? a.probabilityRange?.max ?? -1) || a.name.localeCompare(b.name)),
     hasUnresolvedGenetics: offspring.some((result) => result.hasUnresolvedGenetics),
   };
 }
