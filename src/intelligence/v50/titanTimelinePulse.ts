@@ -22,25 +22,29 @@ function domainForType(type: string): string {
   return "other";
 }
 
-function daysBetween(newer: string, older: string): number | null {
-  const a = Date.parse(newer);
-  const b = Date.parse(older);
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+function timestamp(value: number): number {
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function daysBetween(newer: number, older: number): number | null {
+  const a = timestamp(newer);
+  const b = timestamp(older);
+  if (!a || !b) return null;
   return Math.max(0, Math.round((a - b) / 86_400_000));
 }
 
 export function buildTitanTimelinePulse(timeline: readonly AnimalTimelineEvent[], now = new Date()): TitanTimelinePulse | null {
   const dated = timeline
-    .filter((event) => event?.date)
+    .filter((event) => timestamp(event.date) > 0 && timestamp(event.date) <= now.getTime())
     .slice()
-    .sort((a, b) => Date.parse(String(a.date)) - Date.parse(String(b.date)));
+    .sort((a, b) => timestamp(a.date) - timestamp(b.date));
   const latest = dated.at(-1);
   if (!latest) return null;
 
   const nowMs = now.getTime();
   const recent = dated.filter((event) => {
-    const eventMs = Date.parse(String(event.date));
-    return Number.isFinite(eventMs) && nowMs - eventMs >= 0 && nowMs - eventMs <= 30 * 86_400_000;
+    const eventMs = timestamp(event.date);
+    return nowMs - eventMs >= 0 && nowMs - eventMs <= 30 * 86_400_000;
   });
   const source = recent.length ? recent : dated.slice(-6);
   const domainCounts: Record<string, number> = {};
@@ -50,7 +54,7 @@ export function buildTitanTimelinePulse(timeline: readonly AnimalTimelineEvent[]
   });
 
   const preceding = dated.length > 1 ? dated.at(-2) : undefined;
-  const gap = preceding ? daysBetween(String(latest.date), String(preceding.date)) : null;
+  const gap = preceding ? daysBetween(latest.date, preceding.date) : null;
   const tempoLabel = gap === null ? "First recorded event" : gap <= 7 ? "Recently active" : gap <= 30 ? "Steady activity" : "Long gap between records";
 
   const strongest = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0];
