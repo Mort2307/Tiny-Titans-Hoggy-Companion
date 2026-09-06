@@ -1,4 +1,5 @@
 import { useSpeciesContext } from "../context/SpeciesContext";
+import GeneticsIntelligentSearch from "../components/GeneticsIntelligentSearch/GeneticsIntelligentSearch";
 import MorphLibrary from "./MorphLibrary";
 import SpeciesMorphLibrary from "./SpeciesMorphLibrary";
 import SpeciesMorphCommunityContribution from "../components/SpeciesMorphCommunityContribution";
@@ -15,12 +16,11 @@ import "../styles/speciesMorphLibrary.css";
  */
 export default function SpeciesAwareMorphLibrary() {
   const { selectedSpeciesId } = useSpeciesContext();
-
-  if (selectedSpeciesId === "heterodon-nasicus") return <MorphLibrary />;
   return (
     <div className="species-morph-library-standard">
-      <SpeciesMorphLibrary />
-      <SpeciesMorphCommunityContribution />
+      <GeneticsIntelligentSearch />
+      {selectedSpeciesId === "heterodon-nasicus" ? <MorphLibrary /> : <SpeciesMorphLibrary />}
+      {selectedSpeciesId !== "heterodon-nasicus" && <SpeciesMorphCommunityContribution />}
     </div>
   );
 }
