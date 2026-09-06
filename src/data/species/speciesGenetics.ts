@@ -5,7 +5,8 @@ import {
   type MasterMorphDefinition,
 } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
-import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
+import { SPECIES_GENETICS_CATALOGUES_EXPANDED } from "./speciesGeneticsCataloguesExpanded";
+import { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary } from "./speciesGeneticsCoverage";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
@@ -43,56 +44,23 @@ const ballPythonTrait = (name: string, inheritance: MasterMorphDefinition["inher
 });
 
 const BALL_PYTHON_TRAITS: MasterMorphDefinition[] = [
-  ballPythonTrait("Albino", "Recessive", ["Amelanistic", "Amel"]),
-  ballPythonTrait("Axanthic", "Recessive", ["Anery"]),
-  ballPythonTrait("Clown", "Recessive"),
-  ballPythonTrait("Desert Ghost", "Recessive", ["DG"]),
-  ballPythonTrait("Ghost", "Recessive", ["Hypo"]),
-  ballPythonTrait("Genetic Stripe", "Recessive", ["G Stripe"]),
-  ballPythonTrait("Lavender Albino", "Recessive", ["Lavender", "Lav Albino"]),
-  ballPythonTrait("Piebald", "Recessive", ["Pied"]),
-  ballPythonTrait("Puzzle", "Recessive"),
-  ballPythonTrait("Tri-Stripe", "Recessive", ["Tristripe", "Tri Stripe"]),
-  ballPythonTrait("Ultramel", "Recessive"),
-  ballPythonTrait("Enhancer", "Recessive"),
-  ballPythonTrait("Axanthic (MJ)", "Recessive", ["Markus Jayne Axanthic"]),
-  ballPythonTrait("Banana", "Incomplete Dominant", ["Coral Glow"]),
-  ballPythonTrait("Bamboo", "Incomplete Dominant"),
-  ballPythonTrait("Black Pastel", "Incomplete Dominant"),
-  ballPythonTrait("Butter", "Incomplete Dominant"),
-  ballPythonTrait("Cinnamon", "Incomplete Dominant"),
-  ballPythonTrait("Fire", "Incomplete Dominant"),
-  ballPythonTrait("Lesser", "Incomplete Dominant"),
-  ballPythonTrait("Mojave", "Incomplete Dominant"),
-  ballPythonTrait("Mystic", "Incomplete Dominant"),
-  ballPythonTrait("Orange Dream", "Incomplete Dominant", ["OD"]),
-  ballPythonTrait("Pastel", "Incomplete Dominant"),
-  ballPythonTrait("Phantom", "Incomplete Dominant"),
-  ballPythonTrait("Enchi", "Incomplete Dominant"),
-  ballPythonTrait("GHI", "Incomplete Dominant"),
-  ballPythonTrait("Mahogany", "Incomplete Dominant"),
-  ballPythonTrait("Red Stripe", "Incomplete Dominant"),
-  ballPythonTrait("Yellow Belly", "Incomplete Dominant"),
-  ballPythonTrait("Champagne", "Incomplete Dominant"),
-  ballPythonTrait("Cypress", "Incomplete Dominant"),
-  ballPythonTrait("Gravel", "Incomplete Dominant"),
-  ballPythonTrait("Huffman", "Incomplete Dominant"),
-  ballPythonTrait("Leopard", "Incomplete Dominant"),
-  ballPythonTrait("Lori", "Incomplete Dominant"),
-  ballPythonTrait("Special", "Incomplete Dominant"),
-  ballPythonTrait("Jolt", "Incomplete Dominant"),
-  ballPythonTrait("Raven", "Incomplete Dominant"),
-  ballPythonTrait("Honey", "Incomplete Dominant"),
-  ballPythonTrait("Scaleless Head", "Incomplete Dominant"),
-  ballPythonTrait("Pinstripe", "Dominant"),
-  ballPythonTrait("Spider", "Dominant"),
-  ballPythonTrait("Spotnose", "Dominant"),
-  ballPythonTrait("Ashen", "Dominant"),
-  ballPythonTrait("Citron", "Incomplete Dominant"),
+  ballPythonTrait("Albino", "Recessive", ["Amelanistic", "Amel"]), ballPythonTrait("Axanthic", "Recessive", ["Anery"]), ballPythonTrait("Clown", "Recessive"),
+  ballPythonTrait("Desert Ghost", "Recessive", ["DG"]), ballPythonTrait("Ghost", "Recessive", ["Hypo"]), ballPythonTrait("Genetic Stripe", "Recessive", ["G Stripe"]),
+  ballPythonTrait("Lavender Albino", "Recessive", ["Lavender", "Lav Albino"]), ballPythonTrait("Piebald", "Recessive", ["Pied"]), ballPythonTrait("Puzzle", "Recessive"),
+  ballPythonTrait("Tri-Stripe", "Recessive", ["Tristripe", "Tri Stripe"]), ballPythonTrait("Ultramel", "Recessive"), ballPythonTrait("Enhancer", "Recessive"),
+  ballPythonTrait("Axanthic (MJ)", "Recessive", ["Markus Jayne Axanthic"]), ballPythonTrait("Banana", "Incomplete Dominant", ["Coral Glow"]), ballPythonTrait("Bamboo", "Incomplete Dominant"),
+  ballPythonTrait("Black Pastel", "Incomplete Dominant"), ballPythonTrait("Butter", "Incomplete Dominant"), ballPythonTrait("Cinnamon", "Incomplete Dominant"), ballPythonTrait("Fire", "Incomplete Dominant"),
+  ballPythonTrait("Lesser", "Incomplete Dominant"), ballPythonTrait("Mojave", "Incomplete Dominant"), ballPythonTrait("Mystic", "Incomplete Dominant"), ballPythonTrait("Orange Dream", "Incomplete Dominant", ["OD"]),
+  ballPythonTrait("Pastel", "Incomplete Dominant"), ballPythonTrait("Phantom", "Incomplete Dominant"), ballPythonTrait("Enchi", "Incomplete Dominant"), ballPythonTrait("GHI", "Incomplete Dominant"),
+  ballPythonTrait("Mahogany", "Incomplete Dominant"), ballPythonTrait("Red Stripe", "Incomplete Dominant"), ballPythonTrait("Yellow Belly", "Incomplete Dominant"), ballPythonTrait("Champagne", "Incomplete Dominant"),
+  ballPythonTrait("Cypress", "Incomplete Dominant"), ballPythonTrait("Gravel", "Incomplete Dominant"), ballPythonTrait("Huffman", "Incomplete Dominant"), ballPythonTrait("Leopard", "Incomplete Dominant"),
+  ballPythonTrait("Lori", "Incomplete Dominant"), ballPythonTrait("Special", "Incomplete Dominant"), ballPythonTrait("Jolt", "Incomplete Dominant"), ballPythonTrait("Raven", "Incomplete Dominant"),
+  ballPythonTrait("Honey", "Incomplete Dominant"), ballPythonTrait("Scaleless Head", "Incomplete Dominant"), ballPythonTrait("Pinstripe", "Dominant"), ballPythonTrait("Spider", "Dominant"),
+  ballPythonTrait("Spotnose", "Dominant"), ballPythonTrait("Ashen", "Dominant"), ballPythonTrait("Citron", "Incomplete Dominant"),
 ];
 
 const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = {
-  ...SPECIES_GENETICS_CATALOGUES,
+  ...SPECIES_GENETICS_CATALOGUES_EXPANDED,
   "Python regius": BALL_PYTHON_TRAITS,
 };
 
@@ -128,8 +96,11 @@ export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined)
 export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): SpeciesGeneticsStatus {
   if (!speciesId) return "baseline-only";
   if (isHognose(speciesId)) return "mapped";
-  return getSpeciesCalculatorMorphs(speciesId).length > 0 ? "partial" : "baseline-only";
+  const coverage = getSpeciesGeneticsCoverage(speciesId);
+  return coverage?.traitCount ? "partial" : "baseline-only";
 }
+
+export { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary };
 
 export function isSpeciesGeneticsMapped(speciesId: string | null | undefined): boolean {
   return getSpeciesGeneticsStatus(speciesId) !== "baseline-only";
