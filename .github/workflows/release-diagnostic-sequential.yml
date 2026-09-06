@@ -1,0 +1,23 @@
+name: Tiny Titans Sequential Release Diagnostics
+
+on:
+  push:
+    branches: [feature/full-species-genetics-expansion-current]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    name: Sequential release diagnostics
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Run full build gate
+        run: npm run build
