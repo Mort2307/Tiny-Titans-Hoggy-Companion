@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import {
   getSpeciesGeneticsStatus,
+  getSpeciesVisualMorphs,
   searchGenetics,
   type GeneticsSearchResult,
 } from "../data/species/speciesGenetics";
@@ -41,6 +42,7 @@ export default function SpeciesMorphLibrary() {
   const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
   const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
+  const speciesVisualMorphs = useMemo(() => getSpeciesVisualMorphs(selectedSpeciesId), [selectedSpeciesId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,10 +95,10 @@ export default function SpeciesMorphLibrary() {
         <h1>{speciesName} Morph Library</h1>
         <p>This library is driven by the selected species context. Tiny Titans will never display another species' genetics as a substitute.</p>
         <div className="morph-library__filters" role="group" aria-label="Morph type">
-          {(["all", "gene", "combination", "polygenic", "line-bred"] as Filter[]).map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>{value === "all" ? "All" : value === "gene" ? "Genes & Supers" : value === "combination" ? "Combinations" : value === "polygenic" ? "Polygenic" : "Line-bred"}</button>)}
+          {["all", "gene", "combination", "polygenic", "line-bred"].map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value as Filter)}>{value === "all" ? "All" : value === "gene" ? "Genes & Supers" : value === "combination" ? "Combinations" : value === "polygenic" ? "Polygenic" : "Line-bred"}</button>)}
         </div>
         <label className="morph-library__search"><span>Search {speciesName} morphs</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${speciesName} genetics…`} /></label>
-        <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} matching species-scoped entries</span></div>
+        <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} matching species-scoped entries · {speciesVisualMorphs.length} visual phenotype records</span></div>
       </header>
 
       {baselineOnly && (
