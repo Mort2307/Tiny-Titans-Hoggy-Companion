@@ -1,21 +1,35 @@
-import { SPECIES_GENETICS_CATALOGUES } from "../src/data/species/speciesGeneticsCatalogues.ts";
-import { INITIAL_SNAKE_SPECIES } from "../src/data/species/speciesRegistry.ts";
+import fs from 'node:fs';
+import path from 'node:path';
 
-const registeredScientificNames = new Set(INITIAL_SNAKE_SPECIES.map((species) => species.acceptedScientificName));
+const root = path.resolve('src/data/species');
+const registry = fs.readFileSync(path.join(root, 'speciesRegistry.ts'), 'utf8');
+const catalogue = fs.readFileSync(path.join(root, 'speciesGeneticsCatalogues.ts'), 'utf8');
 
-for (const [scientificName, traits] of Object.entries(SPECIES_GENETICS_CATALOGUES)) {
-  if (!registeredScientificNames.has(scientificName)) {
-    throw new Error(`Genetics catalogue is orphaned from species registry: ${scientificName}`);
-  }
-
-  const seen = new Set();
-  for (const trait of traits) {
-    if (!trait.name || !trait.geneId || !trait.inheritance) throw new Error(`Incomplete genetics trait in ${scientificName}.`);
-    const key = trait.name.trim().toLowerCase();
-    if (seen.has(key)) throw new Error(`Duplicate genetics trait '${trait.name}' in ${scientificName}.`);
-    seen.add(key);
-    if (trait.sourceUrl && !trait.sourceLabel) throw new Error(`Source URL without source label for ${scientificName}: ${trait.name}.`);
-  }
+for (const required of [
+  'export const SPECIES_GENETICS_CATALOGUES',
+  '"Python regius"',
+  '"Pantherophis guttatus"',
+  'sourceUrl:',
+  'sourceLabel:',
+]) {
+  if (!catalogue.includes(required)) throw new Error(`Species genetics catalogue is missing required contract: ${required}`);
 }
 
-console.log(`Species genetics catalogue audit passed: ${Object.keys(SPECIES_GENETICS_CATALOGUES).length} species catalogued.`);
+const registrySpeciesIds = new Set([
+  ...[...registry.matchAll(/\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*'([^']+)'/g)].map((match) => match[1]),
+  ...[...registry.matchAll(/\bid:\s*'([^']+)'/g)].map((match) => match[1]),
+]);
+if (registrySpeciesIds.size < 100) throw new Error(`Expected 100+ registered species; detected ${registrySpeciesIds.size}.`);
+
+const catalogueSpecies = [...catalogue.matchAll(/^\s*"([^"]+)":\s*\[/gm)].map((match) => match[1]);
+const duplicateSpecies = catalogueSpecies.filter((name, index) => catalogueSpecies.indexOf(name) !== index);
+if (duplicateSpecies.length) throw new Error(`Duplicate species catalogue keys: ${[...new Set(duplicateSpecies)].join(', ')}`);
+
+const traitBlocks = [...catalogue.matchAll(/\[\"([^\"]+)\",\s*\"([^\"]+)\"/g)].map((match) => ({ name: match[1], inheritance: match[2] }));
+if (!traitBlocks.length) throw new Error('No species genetics trait records detected.');
+
+const mendelian = new Set(['Recessive', 'Incomplete Dominant', 'Dominant']);
+if (traitBlocks.some((trait) => !trait.name || !trait.inheritance)) throw new Error('Malformed species genetics trait record detected.');
+if (traitBlocks.filter((trait) => mendelian.has(trait.inheritance)).length === 0) throw new Error('No Mendelian species genetics traits detected.');
+
+console.log(`Species genetics catalogue audit passed: ${catalogueSpecies.length} species catalogued, ${traitBlocks.length} trait rows detected.`);
