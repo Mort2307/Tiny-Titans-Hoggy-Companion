@@ -5,8 +5,9 @@ import { fullHognoseMorphTaxonomy, type FullMorphTaxonomyEntry } from "./hognose
 import { resolveRegionalMorphName } from "./morphRegionalTerminology";
 import { morphSourceAuditByName } from "./morphSourceAudit";
 import { resolveMorphEvidenceSources, type MorphEvidenceSourceDefinition } from "./morphEvidenceSources";
+import { enrichMorphDatabase, type MorphIntelligenceMetadata, type MorphEvidenceLevel } from "./morphIntelligence";
 
-export type MasterMorphDefinition = MorphDefinition & {
+export type MasterMorphDefinition = MorphDefinition & MorphIntelligenceMetadata & {
   sourceUrl?: string;
   sourceLabel?: string;
   sourceLinks?: MorphEvidenceSourceDefinition[];
@@ -16,7 +17,8 @@ export type MasterMorphDefinition = MorphDefinition & {
   taxonomyStatus?: FullMorphTaxonomyEntry["taxonomyStatus"];
 };
 
-const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
+const normalise = (value: string) => value.trim().toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, " ");
+const identityKey = (value: string) => normalise(value).replace(/[^a-z0-9']/g, "");
 
 const referenceTrait = (
   name: string,
@@ -67,41 +69,44 @@ function applyEvidenceMetadata(morph: MasterMorphDefinition): MasterMorphDefinit
 
 function mergeMorphs(canonical: MorphDefinition[], reference: Array<MorphReferenceEntry | FullMorphTaxonomyEntry>): MasterMorphDefinition[] {
   const result: MasterMorphDefinition[] = canonical.map((morph) => applyEvidenceMetadata(morph as MasterMorphDefinition));
-  const ids = new Set(result.map((morph) => normalise(morph.geneId)));
-  const names = new Set(result.map((morph) => normalise(morph.name)));
+  const identities = new Set<string>();
+  for (const morph of result) {
+    [morph.geneId, morph.name, ...(morph.aliases ?? [])].forEach((value) => identities.add(identityKey(value)));
+  }
+
   for (const rawEntry of reference) {
     const entry = applyEvidenceMetadata(rawEntry as MasterMorphDefinition);
-    const id = normalise(entry.geneId);
-    const name = normalise(entry.name);
-    if (ids.has(id) || names.has(name)) continue;
+    const entryIdentities = [entry.geneId, entry.name, ...(entry.aliases ?? [])].map(identityKey).filter(Boolean);
+    if (entryIdentities.some((key) => identities.has(key))) continue;
     result.push(entry);
-    ids.add(id);
-    names.add(name);
+    entryIdentities.forEach((key) => identities.add(key));
   }
   return result;
 }
 
-export const masterMorphs: MasterMorphDefinition[] = mergeMorphs(
+const mergedMorphs = mergeMorphs(
   canonicalMorphs,
-  [...hognoseMorphCatalog, ...morphReferenceAdditions, ...fullHognoseMorphTaxonomy, ...morphMarketTraits]
+  [...hognoseMorphCatalog, ...morphReferenceAdditions, ...fullHognoseMorphTaxonomy, ...morphMarketTraits],
 );
 
+export const masterMorphs: MasterMorphDefinition[] = enrichMorphDatabase(mergedMorphs) as MasterMorphDefinition[];
+
 export function resolveMasterMorph(value: string): MasterMorphDefinition | undefined {
-  const query = normalise(value);
+  const query = identityKey(value);
   const regionalId = resolveRegionalMorphName(value);
   if (regionalId) {
-    const regional = masterMorphs.find((morph) => normalise(morph.geneId) === normalise(regionalId));
+    const regional = masterMorphs.find((morph) => identityKey(morph.geneId) === identityKey(regionalId));
     if (regional) return regional;
   }
-  const byId = masterMorphs.find((morph) => normalise(morph.geneId) === query);
-  if (byId) return byId;
-  const byName = masterMorphs.find((morph) => normalise(morph.name) === query);
-  if (byName) return byName;
-  return masterMorphs.find((morph) => morph.aliases?.some((alias) => normalise(alias) === query));
+  return masterMorphs.find((morph) =>
+    identityKey(morph.geneId) === query ||
+    identityKey(morph.name) === query ||
+    (morph.searchTerms ?? []).some((term) => identityKey(term) === query),
+  );
 }
 
 export function getMasterMorphByGeneId(geneId: string): MasterMorphDefinition | undefined {
-  return masterMorphs.find((morph) => normalise(morph.geneId) === normalise(geneId));
+  return masterMorphs.find((morph) => identityKey(morph.geneId) === identityKey(geneId));
 }
 
 export function getMasterMorphByName(name: string): MasterMorphDefinition | undefined {
@@ -162,3 +167,5 @@ export function getMorphEvidence(morph: MasterMorphDefinition): {
     sources: evidence ? resolveMorphEvidenceSources(evidence.sources) : (morph.sourceLinks ?? []),
   };
 }
+
+export type { MorphEvidenceLevel };
