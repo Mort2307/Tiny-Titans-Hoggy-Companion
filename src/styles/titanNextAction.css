@@ -1,0 +1,31 @@
+.hoggie-titan-next-action {
+  display: block;
+  width: 100%;
+  margin: 0.55rem 0 0;
+  padding: 0.62rem 0.72rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 0.8rem;
+  background: rgba(255,255,255,0.055);
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.hoggie-titan-next-action:hover,
+.hoggie-titan-next-action:focus-visible {
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.22);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hoggie-titan-next-action {
+    transition: none;
+  }
+}
