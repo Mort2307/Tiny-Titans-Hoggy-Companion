@@ -6,12 +6,7 @@ function signature(parts: string[]): string {
   return [...new Set(parts)].sort().map((geneId) => `${geneId}:1`).join("|");
 }
 
-function combo(
-  name: string,
-  parts: string[],
-  sourcePath: string,
-  aliases: string[] = [],
-): MasterMorphDefinition {
+function combo(name: string, parts: string[], sourcePath: string, aliases: string[] = []): MasterMorphDefinition {
   return {
     geneId: `combo-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
     name,
@@ -32,11 +27,7 @@ function combo(
   };
 }
 
-/**
- * Recognised combination names are stored separately from gene rows. This
- * prevents a named combo from becoming a fake Mendelian locus while still
- * allowing search, reversal and breeding output to resolve the common name.
- */
+/** Recognised combination names are phenotype labels, never independent loci. */
 export const SPECIES_GENETICS_COMBINATIONS: Record<string, MasterMorphDefinition[]> = {
   "Pantherophis guttatus": [
     combo("Butter", ["amelanistic", "caramel"], "corn-snakes/caramel/", ["Amel Caramel"]),
@@ -47,37 +38,31 @@ export const SPECIES_GENETICS_COMBINATIONS: Record<string, MasterMorphDefinition
     combo("Ice", ["anerythristic", "lava"], "corn-snakes/lava/"),
     combo("Ghost", ["anerythristic", "hypomelanistic"], "corn-snakes/charcoal/"),
   ],
-
   "Lampropeltis californiae": [
     combo("True Snow", ["amelanistic", "anerythristic"], "kingsnakes/amelanistic/", ["Snow"]),
     combo("Hybino", ["amelanistic", "hypo"], "kingsnakes/hypo/"),
     combo("Albescent", ["amelanistic", "axanthic", "hypo"], "kingsnakes/axanthic/"),
   ],
-
   "Lampropeltis triangulum": [
     combo("Ghost", ["anerythristic", "hypo"], "milk-snakes/hypo/"),
     combo("Hybino", ["albino", "hypo"], "milk-snakes/hypo/"),
     combo("Pearl", ["albino", "anerythristic", "hypo"], "milk-snakes/hypo/"),
   ],
-
   "Boa constrictor": [
-    combo("Ghost", ["anery-type-1", "hypo"], "boa-constrictors/anerythristic-type-1/"),
-    combo("Snow", ["anery-type-1", "kahl-albino"], "boa-constrictors/anerythristic-type-1/"),
-    combo("Moonglow", ["anery-type-1", "kahl-albino", "hypo"], "boa-constrictors/anerythristic-type-1/"),
+    combo("Ghost", ["anerythristic-type-1", "hypo"], "boa-constrictors/anerythristic-type-1/"),
+    combo("Snow", ["anerythristic-type-1", "kahl-albino"], "boa-constrictors/anerythristic-type-1/"),
+    combo("Moonglow", ["anerythristic-type-1", "kahl-albino", "hypo"], "boa-constrictors/anerythristic-type-1/"),
     combo("Sunglow", ["kahl-albino", "hypo"], "boa-constrictors/anerythristic-type-1/"),
   ],
-
   "Morelia spilota": [
     combo("Ghost", ["caramel", "axanthic"], "carpet-pythons/axanthic/"),
     combo("Snow", ["albino", "axanthic"], "carpet-pythons/axanthic/"),
     combo("Sun Glow", ["caramel", "albino"], "carpet-pythons/caramel/"),
   ],
-
   "Eryx colubrinus": [
     combo("Ghost", ["anery", "hypomelanistic"], "sand-boas/anery/"),
     combo("Snow", ["albino", "anery"], "sand-boas/albino/"),
   ],
-
   "Malayopython reticulatus": [
     combo("Sun Tiger", ["sunfire", "tiger"], "reticulated-pythons/sunfire/"),
   ],
