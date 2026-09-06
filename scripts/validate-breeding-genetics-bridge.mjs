@@ -14,7 +14,7 @@ const checks = [
   ['Persisted 50%/66% hets are not fabricated as exact genotypes', adapter.includes('probability-bearing uncertainty')],
   ['Supported super states are evidence-gated', model.includes('locus.superStatus === "supported"') && model.includes('superAlleleId')],
   ['Recessive states require two mutant copies', model.includes('paternal.isWildType || maternal.isWildType ? "heterozygous" : "visual"')],
-  ['Allelic states distinguish mixed alleles from ordinary visual states', model.includes('return "mixed_allelic"')],
+  ['Allelic states distinguish mixed alleles from ordinary visual states', model.includes('GeneticPhenotypeStatus =') && model.includes('mixed_allelic') && model.includes('locus.inheritance === "allelic"')],
   ['One-parent loci are completed with wild type', model.includes('wildState(locus)') && model.includes('a ?? wildState(locus)') && model.includes('b ?? wildState(locus)')],
   ['Canonical result has a probability integrity guard', breeding.includes('Math.abs(adapted.totalProbability - 1)') && breeding.includes('Canonical breeding forecast failed')],
   ['Legacy bridge is explicitly labelled', breeding.includes('legacy-evidence-gated-bridge')],
