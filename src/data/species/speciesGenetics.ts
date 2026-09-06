@@ -8,6 +8,7 @@ import {
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_EXPANSION_BATCH_1 } from "./speciesGeneticsExpansionBatch1";
+import { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";
 import { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary } from "./speciesGeneticsCoverage";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
@@ -31,13 +32,19 @@ const normalTrait = (speciesName: string): MasterMorphDefinition => ({
 
 function composeSpeciesCatalogues(): Record<string, MasterMorphDefinition[]> {
   const result: Record<string, MasterMorphDefinition[]> = {};
-  for (const [speciesName, traits] of Object.entries(SPECIES_GENETICS_CATALOGUES)) result[speciesName] = [...traits];
-  for (const [speciesName, traits] of Object.entries(SPECIES_GENETICS_EXPANSION_BATCH_1)) {
-    const existing = result[speciesName] ?? [];
-    result[speciesName] = [
-      ...existing,
-      ...traits.filter((trait) => !existing.some((entry) => entry.geneId === trait.geneId || normalise(entry.name) === normalise(trait.name))),
-    ];
+  const batches = [
+    SPECIES_GENETICS_CATALOGUES,
+    SPECIES_GENETICS_EXPANSION_BATCH_1,
+    SPECIES_GENETICS_EXPANSION_BATCH_2,
+  ];
+  for (const batch of batches) {
+    for (const [speciesName, traits] of Object.entries(batch)) {
+      const existing = result[speciesName] ?? [];
+      result[speciesName] = [
+        ...existing,
+        ...traits.filter((trait) => !existing.some((entry) => entry.geneId === trait.geneId || normalise(entry.name) === normalise(trait.name))),
+      ];
+    }
   }
   return result;
 }
