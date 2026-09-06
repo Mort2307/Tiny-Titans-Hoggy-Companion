@@ -6,6 +6,7 @@ import { getCreatorSubmissionConversations, getUserSubmissionConversations } fro
 import { getTitanDecisionState, type TitanDecision } from "../../services/titanDecisionStateService";
 import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiveIntelligenceService";
 import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
+import "./Header.css";
 
 function Header() {
   const { user, profile } = useAuth();
