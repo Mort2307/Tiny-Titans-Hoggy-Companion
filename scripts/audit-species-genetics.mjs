@@ -1,12 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
+
 const root = path.resolve("src/data/species");
 const registry = fs.readFileSync(path.join(root, "speciesRegistry.ts"), "utf8");
 const catalogue = fs.readFileSync(path.join(root, "speciesGeneticsCatalogues.ts"), "utf8");
 const expanded = fs.readFileSync(path.join(root, "speciesGeneticsCataloguesExpanded.ts"), "utf8");
+const combinations = fs.readFileSync(path.join(root, "speciesGeneticsCombinations.ts"), "utf8");
+const resolver = fs.readFileSync(path.join(root, "speciesGenetics.ts"), "utf8");
+
 if (!catalogue.includes("export const SPECIES_GENETICS_CATALOGUES") || !catalogue.includes("sourceUrl:") || !catalogue.includes("sourceLabel:")) throw new Error("Species genetics catalogue source contract is incomplete.");
-if (!expanded.includes("SPECIES_GENETICS_EXPANSION_BATCH_1")) throw new Error("Expansion batches are not composed into the expanded catalogue.");
-const speciesIds = new Set([...([...registry.matchAll(/\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*'([^']+)'/g)].map((m) => m[1])), ...([...registry.matchAll(/\bid:\s*'([^']+)'/g)].map((m) => m[1])))]);
+if (!expanded.includes("SPECIES_GENETICS_EXPANSION_BATCH_1") || !expanded.includes("SPECIES_GENETICS_EXPANSION_BATCH_3")) throw new Error("Expansion batches are not composed into the expanded catalogue.");
+if (!combinations.includes("SPECIES_GENETICS_COMBINATIONS") || !resolver.includes("resolveSpeciesGenetics")) throw new Error("Species canonical genetics resolver/combination contract is incomplete.");
+const speciesIds = new Set([
+  ...([...registry.matchAll(/\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*'([^']+)'/g)].map((m) => m[1])),
+  ...([...registry.matchAll(/\bid:\s*'([^']+)'/g)].map((m) => m[1])),
+]);
 if (speciesIds.size < 100) throw new Error(`Expected 100+ registered species; detected ${speciesIds.size}.`);
 const traitRows = [...catalogue.matchAll(/\[\"([^\"]+)\",\s*\"([^\"]+)\"/g)];
 if (!traitRows.length) throw new Error("No species genetics trait rows detected.");
