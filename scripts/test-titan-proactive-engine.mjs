@@ -3,7 +3,9 @@ import ts from "typescript";
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
+import { createRequire } from "node:module";
 
+const require = createRequire(import.meta.url);
 const file = path.resolve("src/intelligence/v50/titanProactiveEngine.ts");
 const source = fs.readFileSync(file, "utf8");
 const transpiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
