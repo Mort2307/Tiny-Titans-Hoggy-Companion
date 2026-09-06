@@ -4,6 +4,7 @@ import { db } from "../firebase/config";
 import { advanceFeedingScheduleAfterFeed } from "./feedingScheduleService";
 import { resolveDataOwnerUid } from "./familyService";
 import { requestFamilyMutation } from "./familyPermissionsService";
+import { emitTitanIntelligenceEvent } from "./titanReactiveIntelligenceService";
 
 function feedingsCollection(uid: string, snakeId: string) {
   return collection(db, "users", uid, "snakes", snakeId, "feedings");
@@ -77,6 +78,7 @@ export async function saveSnakeFeeding(uid: string, feeding: FeedingRecord): Pro
   try {
     await setDoc(feedingRef, { ...feeding, lastModifiedBy: uid }, { merge: true });
     await advanceFeedingScheduleAfterFeed(dataOwnerUid, feeding.snakeId, feeding.date);
+    emitTitanIntelligenceEvent({ uid, animalId: feeding.snakeId, type: "FeedingRecorded", action: isUpdate ? "updated" : "created" });
     return feeding;
   } catch (error) {
     console.error("Tiny Titans: unable to save feeding", error);
@@ -102,6 +104,7 @@ export async function deleteSnakeFeeding(uid: string, snakeId: string, feedingId
   });
   try {
     await deleteDoc(doc(db, "users", dataOwnerUid, "snakes", snakeId, "feedings", feedingId));
+    emitTitanIntelligenceEvent({ uid, animalId: snakeId, type: "FeedingRecorded", action: "deleted" });
   } catch (error) {
     console.error("Tiny Titans: unable to delete feeding", error);
     throw new Error(`Unable to delete this feeding: ${getFirestoreErrorMessage(error)}`, { cause: error });
