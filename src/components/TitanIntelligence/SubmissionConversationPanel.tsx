@@ -15,7 +15,15 @@ const suggestedQuestions: Record<SubmissionConversationType, string[]> = {
 
 const THANK_YOU_PREFIX = "🐍 Thank you for helping build Tiny Titans!";
 
-export default function SubmissionConversationPanel({ submissionType, submissionId, submitterUid, submissionTitle, submissionStatus }: { submissionType: SubmissionConversationType; submissionId: string; submitterUid: string; submissionTitle: string; submissionStatus?: string }) {
+type SubmissionConversationPanelProps = {
+  submissionType: SubmissionConversationType;
+  submissionId: string;
+  submitterUid?: string;
+  submissionTitle: string;
+  submissionStatus?: string;
+};
+
+export default function SubmissionConversationPanel({ submissionType, submissionId, submitterUid, submissionTitle, submissionStatus }: SubmissionConversationPanelProps) {
   const { user, profile } = useAuth();
   const [conversation, setConversation] = useState<SubmissionConversation | null>(null);
   const [messages, setMessages] = useState<SubmissionConversationMessage[]>([]);
@@ -30,7 +38,16 @@ export default function SubmissionConversationPanel({ submissionType, submission
   const prompts = useMemo(() => suggestedQuestions[submissionType], [submissionType]);
 
   useEffect(() => {
-    if (!user || !submitterUid || !submissionId) return;
+    if (!user || !submissionId) {
+      setLoading(false);
+      return;
+    }
+    if (!submitterUid) {
+      setLoading(false);
+      setConversation(null);
+      setError("This submission does not have a valid submitter account, so messaging is unavailable.");
+      return;
+    }
     let active = true;
     setLoading(true);
     setError("");
@@ -84,7 +101,7 @@ export default function SubmissionConversationPanel({ submissionType, submission
       {conversation && <Link className="secondary-button" to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}>🗨 Open Messenger →</Link>}
     </div>
     {loading ? <p className="creator-muted">Opening submission conversation…</p> : error && <div className="creator-error">{error}</div>}
-    {!loading && <>
+    {!loading && conversation && <>
       {creatorMode && <div className="submission-smart-prompts"><small>💌 Contributor tools</small><div><button type="button" onClick={() => void thankKeeper()} disabled={thanking || sending || thankYouStatus === "sent" || thankYouStatus === "already-sent"}>{thanking ? "Sending thank-you…" : thankYouStatus === "sent" ? "✓ Thank-you sent" : thankYouStatus === "already-sent" ? "✓ Already thanked" : "💌 Thank contributor"}</button></div></div>}
       {creatorMode && messages.length === 0 && <div className="submission-smart-prompts"><small>🧠 Suggested questions</small><div>{prompts.map((prompt) => <button key={prompt} type="button" onClick={() => setDraft(prompt)} disabled={sending}>{prompt}</button>)}</div></div>}
       <div className="conversation-messages submission-conversation-messages">{messages.length === 0 ? <p className="creator-muted">No messages yet. Start the conversation when you need clarification.</p> : messages.slice(-6).map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : "👤 Keeper"}</strong><p>{item.message}</p></article>)}</div>
