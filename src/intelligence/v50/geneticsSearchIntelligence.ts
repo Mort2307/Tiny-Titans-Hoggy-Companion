@@ -1,5 +1,5 @@
 import { calculatorNamedCombinations, componentSignature, findCalculatorNamedCombination, normaliseComboName } from "../../data/geneticsComboRegistry";
-import { morphs, type MorphDefinition, type VerificationStatus } from "../../data/morphs";
+import { morphs, type MorphComponent, type MorphDefinition, type VerificationStatus } from "../../data/morphs";
 
 export interface GeneticsSearchResult {
   matchedName: string;
@@ -13,10 +13,9 @@ export interface GeneticsSearchResult {
   confidence: "High" | "Moderate" | "Low";
 }
 
-function displayComponent(component: MorphDefinition["components"] extends infer T ? T : never): string {
-  const item = component as { morphId: string; copies?: number };
-  const copies = item.copies ?? 1;
-  return copies === 2 ? `2 copies ${item.morphId}` : `${copies} copy ${item.morphId}`;
+function displayComponent(component: MorphComponent): string {
+  const copies = component.copies ?? 1;
+  return copies === 2 ? `2 copies ${component.morphId}` : `${copies} copy ${component.morphId}`;
 }
 
 function confidenceFor(verification: VerificationStatus, isCombination: boolean): GeneticsSearchResult["confidence"] {
