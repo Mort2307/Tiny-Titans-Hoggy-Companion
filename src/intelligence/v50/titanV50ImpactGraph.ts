@@ -16,18 +16,18 @@ export type TitanV50EventType =
   | "SpeciesAdded";
 
 const IMPACTS: Record<TitanV50EventType, readonly number[]> = {
-  WeightRecorded: [6, 7, 8, 15, 27, 39, 44, 45, 49, 50],
-  FeedingRecorded: [6, 8, 9, 15, 26, 27, 33, 39, 44, 49, 50],
-  ShedRecorded: [6, 8, 15, 26, 39, 44, 45, 49, 50],
-  BehaviourObserved: [6, 8, 9, 15, 26, 39, 44, 47, 49, 50],
-  HealthRecordCreated: [6, 8, 13, 14, 15, 28, 29, 39, 44, 45, 49, 50],
-  BreedingProjectCreated: [3, 4, 5, 24, 25, 33, 34, 37, 43, 44, 45, 46, 49, 50],
-  MorphConfirmed: [1, 2, 5, 11, 23, 24, 34, 37, 43, 44, 45, 46, 49, 50],
-  EnclosureUpdated: [6, 15, 18, 19, 20, 21, 22, 30, 31, 32, 39, 43, 44, 45, 49, 50],
-  MicroclimateRecorded: [15, 18, 19, 20, 21, 22, 30, 31, 32, 44, 45, 49, 50],
-  LearningCompleted: [12, 40, 41, 43, 44, 45, 48, 49, 50],
-  CommunityContribution: [10, 23, 35, 36, 42, 47, 48, 49, 50],
-  SpeciesAdded: [6, 10, 12, 41, 42, 43, 47, 48, 49, 50],
+  WeightRecorded: [6, 7, 8, 15, 17, 27, 38, 39, 44, 45, 49, 50],
+  FeedingRecorded: [6, 8, 9, 15, 17, 26, 27, 33, 38, 39, 44, 49, 50],
+  ShedRecorded: [6, 8, 15, 17, 26, 38, 39, 44, 45, 49, 50],
+  BehaviourObserved: [6, 8, 9, 15, 17, 26, 38, 39, 44, 47, 49, 50],
+  HealthRecordCreated: [6, 8, 13, 14, 15, 17, 28, 29, 38, 39, 44, 45, 49, 50],
+  BreedingProjectCreated: [3, 4, 5, 16, 17, 24, 25, 33, 34, 37, 38, 43, 44, 45, 46, 49, 50],
+  MorphConfirmed: [1, 2, 5, 11, 16, 17, 23, 24, 34, 37, 38, 43, 44, 45, 46, 49, 50],
+  EnclosureUpdated: [6, 15, 17, 18, 19, 20, 21, 22, 30, 31, 32, 38, 39, 43, 44, 45, 49, 50],
+  MicroclimateRecorded: [15, 17, 18, 19, 20, 21, 22, 30, 31, 32, 38, 44, 45, 49, 50],
+  LearningCompleted: [12, 17, 38, 40, 41, 43, 44, 45, 48, 49, 50],
+  CommunityContribution: [10, 17, 23, 35, 36, 38, 42, 47, 48, 49, 50],
+  SpeciesAdded: [6, 10, 12, 17, 38, 41, 42, 43, 47, 48, 49, 50],
 };
 
 function unique<T>(items: readonly T[]): T[] {
