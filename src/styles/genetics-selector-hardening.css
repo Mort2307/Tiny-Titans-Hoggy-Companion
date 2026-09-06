@@ -1,0 +1,87 @@
+.genetics-morph-selection-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.genetics-gene-copy-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--background);
+}
+
+.genetics-gene-copy-controls > span {
+  margin: 0 2px 0 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  opacity: 0.62;
+}
+
+.genetics-gene-copy-controls button {
+  min-width: 42px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.genetics-gene-copy-controls button:hover,
+.genetics-gene-copy-controls button:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-elevated, var(--surface));
+  outline: none;
+}
+
+.genetics-gene-copy-controls button.is-selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--background);
+}
+
+.genetics-result-card-bounded {
+  border-style: dashed;
+}
+
+.genetics-result-uncertainty {
+  display: grid;
+  gap: 3px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 182, 66, 0.32);
+  border-radius: 10px;
+  background: rgba(245, 182, 66, 0.08);
+  font-size: 0.76rem;
+}
+
+.genetics-result-uncertainty strong {
+  font-size: 0.8rem;
+}
+
+.genetics-result-uncertainty span {
+  opacity: 0.76;
+}
+
+.genetics-scenario-list {
+  display: grid;
+  gap: 6px;
+}
+
+.genetics-scenario-list span {
+  padding: 8px 10px;
+  border-left: 2px solid var(--accent);
+  border-radius: 6px;
+  background: rgba(0, 174, 255, 0.05);
+  font-size: 0.74rem;
+}
