@@ -1,0 +1,1 @@
+One-shot automation trigger. This file is removed by the patch runner.
