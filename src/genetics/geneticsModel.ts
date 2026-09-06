@@ -32,6 +32,11 @@ function phenotypeStatus(locus: LocusDefinition, paternal: AlleleDefinition, mat
   return "unresolved";
 }
 function isSuper(locus: LocusDefinition, paternal: AlleleDefinition, maternal: AlleleDefinition): boolean { return Boolean(locus.superAlleleId && locus.superStatus === "supported" && paternal.id === locus.superAlleleId && maternal.id === locus.superAlleleId); }
+function wildState(locus: LocusDefinition): GeneticState {
+  const wild = locus.alleles.find((allele) => allele.isWildType);
+  if (!wild) throw new Error(`Locus ${locus.name} has no wild-type allele.`);
+  return { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id };
+}
 export function calculateLocus(locus: LocusDefinition, parentA: GeneticState, parentB: GeneticState): LocusResult {
   if (parentA.locusId !== locus.id || parentB.locusId !== locus.id) throw new Error(`State/locus mismatch for ${locus.name}`);
   const a1 = getLocusAllele(locus, parentA.paternalAlleleId), a2 = getLocusAllele(locus, parentA.maternalAlleleId), b1 = getLocusAllele(locus, parentB.paternalAlleleId), b2 = getLocusAllele(locus, parentB.maternalAlleleId);
@@ -50,8 +55,10 @@ export function calculateLocus(locus: LocusDefinition, parentA: GeneticState, pa
 export function calculateGenome(database: GeneticsDatabase, parentA: ParentGenome, parentB: ParentGenome): LocusResult[] {
   if (parentA.species !== parentB.species) throw new Error("Cross-species genetics are not supported by this engine.");
   return database.loci.filter((locus) => locus.species === parentA.species).flatMap((locus) => {
-    const a = parentA.states.find((state) => state.locusId === locus.id), b = parentB.states.find((state) => state.locusId === locus.id);
-    return a && b ? [calculateLocus(locus, a, b)] : [];
+    const a = parentA.states.find((state) => state.locusId === locus.id);
+    const b = parentB.states.find((state) => state.locusId === locus.id);
+    if (!a && !b) return [calculateLocus(locus, wildState(locus), wildState(locus))];
+    return [calculateLocus(locus, a ?? wildState(locus), b ?? wildState(locus))];
   });
 }
 export function resolveCombination(database: GeneticsDatabase, species: string, query: string): CombinationDefinition | undefined {
