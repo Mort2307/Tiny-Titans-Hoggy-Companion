@@ -53,31 +53,34 @@ function adaptLegacyResult(result: GeneticsCalculatorResult): GeneticsCalculatio
   const outcomes = result.offspring.map((offspring) => {
     const visualMorphs = offspring.visualComponents.map((component) => superDisplayName(component.geneId, component.copies) ?? component.name).sort();
     const hets = offspring.hetComponents.map((component) => ({ geneId: component.geneId, name: component.name, percentage: "100%" as const })).sort((a, b) => a.name.localeCompare(b.name));
-    return {
-      probability: offspring.percentage / 100,
-      visualMorphs,
-      hets,
-      geneStates: [...offspring.visualComponents, ...offspring.hetComponents].map((component) => ({ geneId: component.geneId, copies: component.copies, probability: offspring.percentage / 100 })),
-    };
+    return { probability: offspring.percentage / 100, visualMorphs, hets, geneStates: [...offspring.visualComponents, ...offspring.hetComponents].map((component) => ({ geneId: component.geneId, copies: component.copies, probability: offspring.percentage / 100 })) };
   });
   return { outcomes, totalProbability: outcomes.reduce((sum, outcome) => sum + outcome.probability, 0) };
 }
 
 function componentFromOutcome(outcome: OffspringOutcome): OffspringComponent | null {
+  const locus = GENETICS_DATABASE.loci.find((entry) => entry.id === outcome.locusId);
+  if (!locus) return null;
   if (outcome.phenotypeStatus === "visual") {
-    const allele = outcome.superForm ? outcome.paternalAlleleId : outcome.paternalAlleleId === "wild" ? outcome.maternalAlleleId : outcome.paternalAlleleId;
-    const locus = GENETICS_DATABASE.loci.find((entry) => entry.id === outcome.locusId);
-    const alleleDefinition = locus?.alleles.find((entry) => entry.id === allele);
-    if (!locus || !alleleDefinition || alleleDefinition.isWildType) return null;
-    return { geneId: alleleDefinition.id, name: outcome.superForm ? `Super ${alleleDefinition.name}` : alleleDefinition.name, copies: outcome.copiesByAllele[alleleDefinition.id] ?? 1, state: outcome.superForm ? "Super" : "Visual" };
+    const alleleId = outcome.superForm ? outcome.paternalAlleleId : outcome.paternalAlleleId === "wild" ? outcome.maternalAlleleId : outcome.paternalAlleleId;
+    const allele = locus.alleles.find((entry) => entry.id === alleleId);
+    if (!allele || allele.isWildType) return null;
+    return { geneId: allele.id, name: outcome.superForm ? `Super ${allele.name}` : allele.name, copies: outcome.copiesByAllele[allele.id] ?? 1, state: outcome.superForm ? "Super" : "Visual" };
   }
   if (outcome.phenotypeStatus === "heterozygous") {
-    const locus = GENETICS_DATABASE.loci.find((entry) => entry.id === outcome.locusId);
-    const alleleId = Object.keys(outcome.copiesByAllele).find((id) => locus?.alleles.find((allele) => allele.id === id && !allele.isWildType));
-    const allele = locus?.alleles.find((entry) => entry.id === alleleId);
-    return allele ? { geneId: allele.id, name: allele.name, copies: 1, state: "Het" } : null;
+    const allele = Object.keys(outcome.copiesByAllele).map((id) => locus.alleles.find((entry) => entry.id === id && !entry.isWildType)).find(Boolean);
+    if (!allele) return null;
+    return { geneId: allele.id, name: allele.name, copies: 1, state: "Het" };
   }
   return null;
+}
+
+function isVisualOrSuper(component: OffspringComponent | null): component is OffspringComponent {
+  return component !== null && (component.state === "Visual" || component.state === "Super");
+}
+
+function isHet(component: OffspringComponent | null): component is OffspringComponent {
+  return component !== null && component.state === "Het";
 }
 
 function combineCanonicalResults(results: LocusResult[], species: string): GeneticsCalculation {
@@ -94,30 +97,16 @@ function combineCanonicalResults(results: LocusResult[], species: string): Genet
 
   const merged = new Map<string, OffspringResult>();
   for (const joint of joints) {
-    const visualComponents = joint.outcomes.map(componentFromOutcome).filter((value): value is OffspringComponent => Boolean(value) && (value.state === "Visual" || value.state === "Super"));
-    const hetComponents = joint.outcomes.map(componentFromOutcome).filter((value): value is OffspringComponent => Boolean(value) && value.state === "Het");
+    const visualComponents = joint.outcomes.map(componentFromOutcome).filter(isVisualOrSuper);
+    const hetComponents = joint.outcomes.map(componentFromOutcome).filter(isHet);
     const candidateLocusIds = new Set(joint.outcomes.filter((outcome) => outcome.phenotypeStatus === "visual" || outcome.superForm).map((outcome) => outcome.locusId));
     const combination = GENETICS_DATABASE.combinations.find((entry) => entry.species === species && entry.componentLocusIds.every((locusId) => candidateLocusIds.has(locusId)));
     const name = combination?.name ?? (visualComponents.length ? visualComponents.map((component) => component.name).join(" + ") : "Normal");
-    const result: OffspringResult = {
-      id: `${visualComponents.map((item) => `${item.geneId}:${item.copies}`).sort().join(",")}|${hetComponents.map((item) => item.geneId).sort().join(",")}`,
-      name,
-      percentage: joint.probability * 100,
-      visualComponents: [...visualComponents].sort((a, b) => a.name.localeCompare(b.name)),
-      hetComponents: [...hetComponents].sort((a, b) => a.name.localeCompare(b.name)),
-      possibleHetComponents: [],
-      recognisedCombination: Boolean(combination),
-      combination: undefined,
-      hasUnresolvedGenetics: joint.outcomes.some((outcome) => outcome.phenotypeStatus === "unresolved" || outcome.phenotypeStatus === "mixed_allelic"),
-    };
-    if (combination) {
-      result.combination = getMasterCalculatorMorphs().find((morph) => morph.name.toLowerCase() === combination.name.toLowerCase());
-    }
+    const result: OffspringResult = { id: `${visualComponents.map((item) => `${item.geneId}:${item.copies}`).sort().join(",")}|${hetComponents.map((item) => item.geneId).sort().join(",")}`, name, percentage: joint.probability * 100, visualComponents: [...visualComponents].sort((a, b) => a.name.localeCompare(b.name)), hetComponents: [...hetComponents].sort((a, b) => a.name.localeCompare(b.name)), possibleHetComponents: [], recognisedCombination: Boolean(combination), combination: undefined, hasUnresolvedGenetics: joint.outcomes.some((outcome) => outcome.phenotypeStatus === "unresolved" || outcome.phenotypeStatus === "mixed_allelic") };
+    if (combination) result.combination = getMasterCalculatorMorphs().find((morph) => morph.name.toLowerCase() === combination.name.toLowerCase());
     const existing = merged.get(result.id);
-    if (existing) {
-      existing.percentage += result.percentage;
-      existing.hasUnresolvedGenetics ||= result.hasUnresolvedGenetics;
-    } else merged.set(result.id, result);
+    if (existing) { existing.percentage += result.percentage; existing.hasUnresolvedGenetics ||= result.hasUnresolvedGenetics; }
+    else merged.set(result.id, result);
   }
 
   const outcomes = [...merged.values()].sort((a, b) => b.percentage - a.percentage);
@@ -127,7 +116,6 @@ function combineCanonicalResults(results: LocusResult[], species: string): Genet
 export function calculateBreedingGenetics(female: Snake, male: Snake): GeneticsCalculation {
   const canonicalFemale = buildSnakeGenome(female, GENETICS_DATABASE);
   const canonicalMale = buildSnakeGenome(male, GENETICS_DATABASE);
-
   if (canonicalSpecies(female.species) === canonicalSpecies(male.species) && canonicalFemale.supported && canonicalMale.supported) {
     const canonical = calculateCanonicalBreeding(canonicalFemale.genome, canonicalMale.genome, GENETICS_DATABASE);
     if (!canonical.warnings.length) {
@@ -136,29 +124,14 @@ export function calculateBreedingGenetics(female: Snake, male: Snake): GeneticsC
       throw new Error("Canonical breeding forecast failed its probability-integrity check.");
     }
   }
-
-  const legacy = adaptLegacyResult(calculateLegacyGenetics({ female: toBreedingParent(female), male: toBreedingParent(male) }));
-  return legacy;
+  return adaptLegacyResult(calculateLegacyGenetics({ female: toBreedingParent(female), male: toBreedingParent(male) }));
 }
 
-export type BreedingGeneticsSnapshot = GeneticsCalculation & {
-  calculatedAt: string;
-  engine: "canonical-locus-genetics" | "legacy-evidence-gated-bridge";
-  femaleId: string;
-  maleId: string;
-};
+export type BreedingGeneticsSnapshot = GeneticsCalculation & { calculatedAt: string; engine: "canonical-locus-genetics" | "legacy-evidence-gated-bridge"; femaleId: string; maleId: string };
 
 export function createBreedingGeneticsSnapshot(female: Snake, male: Snake): BreedingGeneticsSnapshot {
   const calculation = calculateBreedingGenetics(female, male);
-  return {
-    ...calculation,
-    calculatedAt: new Date().toISOString(),
-    engine: (() => {
-      const f = buildSnakeGenome(female, GENETICS_DATABASE);
-      const m = buildSnakeGenome(male, GENETICS_DATABASE);
-      return f.supported && m.supported && canonicalSpecies(female.species) === canonicalSpecies(male.species) ? "canonical-locus-genetics" : "legacy-evidence-gated-bridge";
-    })(),
-    femaleId: female.id,
-    maleId: male.id,
-  };
+  const f = buildSnakeGenome(female, GENETICS_DATABASE);
+  const m = buildSnakeGenome(male, GENETICS_DATABASE);
+  return { ...calculation, calculatedAt: new Date().toISOString(), engine: f.supported && m.supported && canonicalSpecies(female.species) === canonicalSpecies(male.species) ? "canonical-locus-genetics" : "legacy-evidence-gated-bridge", femaleId: female.id, maleId: male.id };
 }
