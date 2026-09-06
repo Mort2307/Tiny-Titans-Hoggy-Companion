@@ -1,5 +1,5 @@
-import { GENETICS_DATABASE } from "./geneticsDatabase";
-import { calculateGenome, getLocusAllele, type GeneticsDatabase, type LocusDefinition, type ParentGenome, type LocusResult, type GeneticState, type EvidenceRecord } from "./geneticsModel";
+import { GENETICS_DATABASE } from "./geneticsDatabase.ts";
+import { calculateGenome, getLocusAllele, type GeneticsDatabase, type LocusDefinition, type ParentGenome, type LocusResult, type GeneticState, type EvidenceRecord } from "./geneticsModel.ts";
 
 export interface GeneticsCalculation { results: LocusResult[]; warnings: string[]; }
 export interface GeneticsSearchResult { kind: "locus" | "allele" | "combination"; name: string; species: string; locusId?: string; alleleId?: string; combinationId?: string; confidence?: string; explanation: string; }
