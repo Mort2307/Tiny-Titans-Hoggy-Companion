@@ -9,6 +9,9 @@ const resolver = read("src/utils/morphResolver.ts");
 const calculator = read("src/utils/geneticsCalculator.ts");
 const reversal = read("src/utils/geneticsReversal.ts");
 const library = read("src/pages/MorphLibrary.tsx");
+const morphs = read("src/data/morphs.ts");
+const combos = read("src/data/geneticsComboRegistry.ts");
+const catalog = read("src/data/hognoseMorphCatalog.ts");
 
 const failures = [];
 const required = [
@@ -21,7 +24,8 @@ const required = [
   [identity, "resolveCanonicalGeneticIdentity", "Genetics identity layer is not exposing canonical resolution."],
   [canonical, "resolveCanonicalGenetics", "Canonical genetics adapter is missing."],
   [resolver, "getCanonicalComposition", "Morph resolver is not using canonical composition."],
-  [calculator, "expandMorphToComponents", "Genetics calculator is not using the canonical morph resolver."],
+  [calculator, "expandMorphToComponents", "Genetics calculator is not exposing canonical component expansion."],
+  [calculator, "resolveCanonicalGenetics", "Genetics calculator is not resolving parent genetics through the canonical resolver."],
   [reversal, "resolveMasterMorph", "Morph reversal is not using the master identity resolver."],
   [library, "typed.geneticFormula", "Morph Library does not surface canonical formulas."],
   [library, "typed.recognisedNames", "Morph Library does not surface recognised names."],
@@ -33,11 +37,12 @@ if (!resolver.includes("findCanonicalMorphForComposition")) failures.push("Morph
 if (!reversal.includes("getCanonicalComposition")) failures.push("Morph reversal does not use canonical composition data.");
 if (!reversal.includes("findCanonicalMorphForComposition")) failures.push("Morph reversal does not map compositions back to recognised names.");
 
-const morphs = read("src/data/morphs.ts");
-const combos = read("src/data/geneticsComboRegistry.ts");
-const catalog = read("src/data/hognoseMorphCatalog.ts");
+const hasGreyFogCombo = combos.includes('name: "Grey Fog"') &&
+  combos.includes('aliases: ["Arctic Conda", "Arctic Anaconda"') &&
+  combos.includes('morphId: "arctic", type: "Gene", copies: 1') &&
+  combos.includes('morphId: "conda", type: "Gene", copies: 1');
+if (!hasGreyFogCombo) failures.push("Recognised Grey Fog contract must map Arctic ×1 + Conda ×1 and retain Arctic Conda aliases.");
 if (!catalog.includes("combination('Grey Fog', ['Arctic', 'Anaconda'")) failures.push("Grey Fog is not mapped to Arctic + Anaconda in the Hognose reference catalogue.");
-if (!combos.includes('name: "Grey Fog"')) failures.push("Grey Fog is missing from the recognised combination registry.");
 if (!combos.includes('inheritance: "Unknown"')) failures.push("Named combinations should not claim a single inheritance mode.");
 if (!morphs.includes('geneId: "conda"') || !morphs.includes('"Anaconda"')) failures.push("Conda/Anaconda canonical alias contract is missing.");
 
@@ -46,5 +51,4 @@ if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exit(1);
 }
-
 console.log("Morph intelligence validation passed: canonical identity, composition inference, calculator/reversal wiring, search metadata and Hognose invariants are present.");
