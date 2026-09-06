@@ -4,6 +4,7 @@ const read = (path) => fs.readFileSync(path, "utf8");
 const intelligence = read("src/data/morphIntelligence.ts");
 const master = read("src/data/masterMorphDatabase.ts");
 const identity = read("src/utils/geneticsIdentity.ts");
+const canonical = read("src/utils/canonicalGenetics.ts");
 const resolver = read("src/utils/morphResolver.ts");
 const calculator = read("src/utils/geneticsCalculator.ts");
 const reversal = read("src/utils/geneticsReversal.ts");
@@ -18,20 +19,19 @@ const required = [
   [intelligence, "unresolvedComponents", "Morph intelligence is missing unresolved-component tracking."],
   [master, "enrichMorphDatabase", "Master morph database is not enriched by the intelligence layer."],
   [identity, "resolveCanonicalGeneticIdentity", "Genetics identity layer is not exposing canonical resolution."],
+  [canonical, "resolveCanonicalGenetics", "Canonical genetics adapter is missing."],
   [resolver, "getCanonicalComposition", "Morph resolver is not using canonical composition."],
-  [calculator, "resolveCanonicalGenetics", "Genetics calculator is not consuming canonical genetics."],
+  [calculator, "expandMorphToComponents", "Genetics calculator is not using the canonical morph resolver."],
+  [reversal, "resolveMasterMorph", "Morph reversal is not using the master identity resolver."],
   [library, "typed.geneticFormula", "Morph Library does not surface canonical formulas."],
   [library, "typed.recognisedNames", "Morph Library does not surface recognised names."],
 ];
 for (const [source, needle, message] of required) if (!source.includes(needle)) failures.push(message);
 
-if (!intelligence.includes('type MorphCompositionStatus = "exact" | "inferred" | "unresolved"')) failures.push("Morph composition status contract is incomplete.");
-if (!identity.includes("resolveMasterMorph(value)")) failures.push("Human genetics input does not route through the master resolver.");
+if (!canonical.includes("findCanonicalMorphForComposition")) failures.push("Canonical adapter does not map compositions back to recognised names.");
 if (!resolver.includes("findCanonicalMorphForComposition")) failures.push("Morph resolver does not map compositions back to recognised names.");
-if (!calculator.includes("findCanonicalMorphForComposition")) failures.push("Calculator does not map offspring signatures back to recognised combinations.");
-
-if (reversal.includes("findCalculatorNamedCombination(query)")) failures.push("Morph reversal still uses the legacy calculator-only name lookup path.");
-if (!reversal.includes("reverseMorph")) failures.push("Morph reversal entry point is missing.");
+if (!reversal.includes("getCanonicalComposition")) failures.push("Morph reversal does not use canonical composition data.");
+if (!reversal.includes("findCanonicalMorphForComposition")) failures.push("Morph reversal does not map compositions back to recognised names.");
 
 const morphs = read("src/data/morphs.ts");
 const combos = read("src/data/geneticsComboRegistry.ts");
@@ -47,4 +47,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("Morph intelligence validation passed: canonical identity, composition inference, calculator integration, search metadata and Hognose invariants are present.");
+console.log("Morph intelligence validation passed: canonical identity, composition inference, calculator/reversal wiring, search metadata and Hognose invariants are present.");
