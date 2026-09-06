@@ -1,7 +1,7 @@
 import type { MasterMorphDefinition } from "../masterMorphDatabase";
 import { getMasterVisualMorphs } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
-import { SPECIES_GENETICS_CATALOGUES_EXPANDED } from "./speciesGeneticsCataloguesExpanded";
+import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 
 export type SpeciesGeneticsCoverageStatus = "mapped" | "partial" | "baseline-only";
 
@@ -21,7 +21,7 @@ const MENDELIAN = new Set(["Recessive", "Incomplete Dominant", "Dominant"]);
 function catalogueForSpecies(speciesId: string): MasterMorphDefinition[] {
   if (speciesId === "heterodon-nasicus") return getMasterVisualMorphs();
   const species = INITIAL_SNAKE_SPECIES.find((entry) => entry.id === speciesId);
-  return species ? SPECIES_GENETICS_CATALOGUES_EXPANDED[species.acceptedScientificName] ?? [] : [];
+  return species ? SPECIES_GENETICS_CATALOGUES[species.acceptedScientificName] ?? [] : [];
 }
 
 export function getSpeciesGeneticsCoverage(speciesId: string): SpeciesGeneticsCoverage | undefined {
@@ -29,7 +29,7 @@ export function getSpeciesGeneticsCoverage(speciesId: string): SpeciesGeneticsCo
   if (!species) return undefined;
 
   const catalogue = catalogueForSpecies(speciesId);
-  const mendelianTraitCount = catalogue.filter((entry) => MENDELIAN.has(entry.inheritance)).length;
+  const mendelianTraitCount = catalogue.filter((entry) => MENDELIAN.has(entry.inheritance) && entry.isGene === true && entry.kind === "Gene").length;
   const nonMendelianTraitCount = catalogue.length - mendelianTraitCount;
   const sourceBackedTraitCount = catalogue.filter((entry) => Boolean(entry.sourceUrl)).length;
   const mapped = speciesId === "heterodon-nasicus";
