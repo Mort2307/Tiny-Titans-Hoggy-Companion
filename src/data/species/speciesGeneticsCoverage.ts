@@ -1,0 +1,65 @@
+import type { MasterMorphDefinition } from "../masterMorphDatabase";
+import { getMasterVisualMorphs } from "../masterMorphDatabase";
+import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
+import { SPECIES_GENETICS_CATALOGUES_EXPANDED } from "./speciesGeneticsCataloguesExpanded";
+
+export type SpeciesGeneticsCoverageStatus = "mapped" | "partial" | "baseline-only";
+
+export type SpeciesGeneticsCoverage = {
+  speciesId: string;
+  scientificName: string;
+  commonName: string;
+  status: SpeciesGeneticsCoverageStatus;
+  traitCount: number;
+  mendelianTraitCount: number;
+  nonMendelianTraitCount: number;
+  sourceBackedTraitCount: number;
+};
+
+const MENDELIAN = new Set(["Recessive", "Incomplete Dominant", "Dominant"]);
+
+function catalogueForSpecies(speciesId: string): MasterMorphDefinition[] {
+  if (speciesId === "heterodon-nasicus") return getMasterVisualMorphs();
+  const species = INITIAL_SNAKE_SPECIES.find((entry) => entry.id === speciesId);
+  return species ? SPECIES_GENETICS_CATALOGUES_EXPANDED[species.acceptedScientificName] ?? [] : [];
+}
+
+export function getSpeciesGeneticsCoverage(speciesId: string): SpeciesGeneticsCoverage | undefined {
+  const species = INITIAL_SNAKE_SPECIES.find((entry) => entry.id === speciesId);
+  if (!species) return undefined;
+
+  const catalogue = catalogueForSpecies(speciesId);
+  const mendelianTraitCount = catalogue.filter((entry) => MENDELIAN.has(entry.inheritance)).length;
+  const nonMendelianTraitCount = catalogue.length - mendelianTraitCount;
+  const sourceBackedTraitCount = catalogue.filter((entry) => Boolean(entry.sourceUrl)).length;
+  const mapped = speciesId === "heterodon-nasicus";
+
+  return {
+    speciesId: species.id,
+    scientificName: species.acceptedScientificName,
+    commonName: species.commonNames[0] ?? species.acceptedScientificName,
+    status: mapped ? "mapped" : catalogue.length === 0 ? "baseline-only" : "partial",
+    traitCount: catalogue.length,
+    mendelianTraitCount,
+    nonMendelianTraitCount,
+    sourceBackedTraitCount,
+  };
+}
+
+export function getAllSpeciesGeneticsCoverage(): SpeciesGeneticsCoverage[] {
+  return INITIAL_SNAKE_SPECIES.map((species) => getSpeciesGeneticsCoverage(species.id)).filter(
+    (entry): entry is SpeciesGeneticsCoverage => Boolean(entry),
+  );
+}
+
+export function getSpeciesGeneticsCoverageSummary() {
+  const coverage = getAllSpeciesGeneticsCoverage();
+  return {
+    speciesCount: coverage.length,
+    mappedCount: coverage.filter((entry) => entry.status === "mapped").length,
+    partialCount: coverage.filter((entry) => entry.status === "partial").length,
+    baselineOnlyCount: coverage.filter((entry) => entry.status === "baseline-only").length,
+    traitCount: coverage.reduce((sum, entry) => sum + entry.traitCount, 0),
+    sourceBackedTraitCount: coverage.reduce((sum, entry) => sum + entry.sourceBackedTraitCount, 0),
+  };
+}
