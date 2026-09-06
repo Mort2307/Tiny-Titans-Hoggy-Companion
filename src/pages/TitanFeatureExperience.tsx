@@ -7,9 +7,14 @@ import { buildAutomaticKeeperJournal, buildAnnualTitanTimeCapsule, buildEmergenc
 import { buildMissingDataFindings } from "../intelligence/v50/husbandryIntelligenceEngine";
 import TitanMicroclimateTool from "../components/TitanIntelligence/TitanMicroclimateTool";
 import TitanGeneticsWorkspace from "../components/TitanIntelligence/TitanGeneticsWorkspace";
+import TitanCommunityLearningPanel from "../components/TitanIntelligence/TitanCommunityLearningPanel";
+import TitanExplanationModes from "../components/TitanIntelligence/TitanExplanationModes";
+import TitanKnowledgeGraphPanel from "../components/TitanIntelligence/TitanKnowledgeGraphPanel";
+import TitanLiveIntelligencePanel from "../components/TitanIntelligence/TitanLiveIntelligencePanel";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
+import "../components/TitanIntelligence/TitanLiveIntelligencePanel.css";
 import "./TitanFeatureExperience.css";
 
 const icons: Record<number, string> = {
@@ -19,8 +24,15 @@ const icons: Record<number, string> = {
 const geneticsFeatures = new Set([1, 2, 3, 4, 5, 11, 16, 23, 24, 25, 34, 36, 37, 43, 46, 48]);
 const animalFeatures = new Set([6, 7, 8, 9, 13, 14, 15, 26, 27, 28, 29, 38, 39]);
 const husbandryFeatures = new Set([18, 19, 20, 21, 22, 30, 31, 32]);
+const communityFeatures = new Set([10, 35, 36, 42, 47]);
+const learningFeatures = new Set([40, 41, 48]);
+const explanationFeatures = new Set([12]);
+const platformLiveFeatures = new Set([17, 44, 45, 49, 50]);
 
-function featureById(id: string | undefined): V50Feature | undefined { const numeric = Number(id); return Number.isInteger(numeric) ? TITAN_V50_FEATURES.find((feature) => feature.id === numeric) : undefined; }
+function featureById(id: string | undefined): V50Feature | undefined {
+  const numeric = Number(id);
+  return Number.isInteger(numeric) ? TITAN_V50_FEATURES.find((feature) => feature.id === numeric) : undefined;
+}
 
 function snakeRecords(snake: Snake) {
   const structural = snake as Snake & Record<string, unknown>;
@@ -60,6 +72,10 @@ export default function TitanFeatureExperience() {
   const geneticsTool = geneticsFeatures.has(id);
   const animalTool = animalFeatures.has(id);
   const husbandryTool = husbandryFeatures.has(id);
+  const communityTool = communityFeatures.has(id);
+  const learningTool = learningFeatures.has(id);
+  const explanationTool = explanationFeatures.has(id);
+  const platformLiveTool = platformLiveFeatures.has(id);
   const needsSnake = animalTool || husbandryTool;
   const title = `${icons[id] ?? "🧠"} ${feature.name}`;
   const recordEvents = timeline.map((event, index) => ({ id: `${index}`, type: event.type, date: event.date, title: event.label }));
@@ -68,6 +84,11 @@ export default function TitanFeatureExperience() {
     <button type="button" className="titan-feature-back" onClick={() => navigate(-1)}>← Back to Titan Intelligence</button>
     <header className="titan-feature-hero"><div><span className="titan-feature-id">V50 · #{id}</span><h1>{title}</h1><p>{FEATURE_SUMMARIES[id] ?? "Connected intelligence capability."}</p></div><div className={`titan-feature-status titan-feature-status--${feature.status}`}><strong>{feature.status}</strong><span>canonical capability state</span></div></header>
 
+    {platformLiveTool && <TitanLiveIntelligencePanel />}
+    {communityTool && <TitanCommunityLearningPanel featureId={id} />}
+    {learningTool && <TitanCommunityLearningPanel featureId={id} />}
+    {explanationTool && <TitanExplanationModes summary={FEATURE_SUMMARIES[id] ?? feature.name} />}
+    {id === 43 && <TitanKnowledgeGraphPanel />}
     {geneticsTool && <TitanGeneticsWorkspace featureId={id} />}
 
     {needsSnake && <section className="titan-feature-panel"><p className="titan-feature-kicker">🐍 ANIMAL CONTEXT</p><h2>Choose the Tiny Titan this capability should inspect</h2>{snakes.length === 0 ? <><p>No animal records are available yet, so Tiny Titans will not fabricate a context.</p><Link to="/snakes/new">Add a Tiny Titan →</Link></> : <><select value={selectedSnakeId} onChange={(event) => setSelectedSnakeId(event.target.value)} aria-label="Select Tiny Titan">{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select>{animalTool && records && <div className="titan-feature-data-grid"><article><strong>{growth?.currentWeight ?? "—"}</strong><span>Current weight (g)</span></article><article><strong>{growth?.sampleCount ?? 0}</strong><span>Weight records</span></article><article><strong>{records.feedings.length}</strong><span>Feeding records</span></article><article><strong>{records.sheds.length}</strong><span>Shed records</span></article></div>}
@@ -84,12 +105,9 @@ export default function TitanFeatureExperience() {
     {husbandryTool && selectedSnake && <section className="titan-feature-panel"><p className="titan-feature-kicker">🌡️ HUSBANDRY INTELLIGENCE</p><h2>Recorded microclimate</h2><p>Readings are stored against {selectedSnake.name}. Baselines are derived from recorded observations and are not treated as universal species rules.</p><TitanMicroclimateTool snakeId={selectedSnake.id} /></section>}
     {husbandryTool && !selectedSnake && <section className="titan-feature-panel"><p>Select a Tiny Titan above before recording enclosure observations.</p><div className="titan-feature-note">{buildMissingDataFindings(false, 0)[0].detail}</div></section>}
 
-    {!geneticsTool && !animalTool && !husbandryTool && <section className="titan-feature-panel"><p className="titan-feature-kicker">CONNECTED EXPERIENCE</p><h2>This capability is connected to the wider Tiny Titans system</h2><p>{FEATURE_SUMMARIES[id] ?? "The capability is represented in the V50 intelligence graph and is designed to use shared records, evidence and context."}</p><div className="titan-feature-links">{feature.route && <Link to={feature.route}>Open primary experience →</Link>}{id === 10 || id === 35 || id === 36 || id === 42 || id === 47 ? <Link to="/community">Open Community Intelligence →</Link> : null}{id === 40 || id === 41 || id === 48 ? <Link to="/learn">Open Learning Intelligence →</Link> : null}{id === 12 ? <Link to="/knowledge-base">Open Knowledge Base →</Link> : null}{id === 17 || id === 44 || id === 45 || id === 49 || id === 50 ? <Link to="/titan-intelligence">Open Titan Intelligence Hub →</Link> : null}</div></section>}
+    {!geneticsTool && !animalTool && !husbandryTool && !communityTool && !learningTool && !explanationTool && !platformLiveTool && id !== 43 && <section className="titan-feature-panel"><p className="titan-feature-kicker">CONNECTED EXPERIENCE</p><h2>This capability is connected to the wider Tiny Titans system</h2><p>{FEATURE_SUMMARIES[id] ?? "The capability is represented in the V50 intelligence graph and is designed to use shared records, evidence and context."}</p><div className="titan-feature-links">{feature.route && <Link to={feature.route}>Open primary experience →</Link>}</div></section>}
     <section className="titan-feature-panel titan-feature-proof"><p className="titan-feature-kicker">TRUST BOUNDARY</p><p>V50 never treats a missing record as a fact, preserves uncertain genetics, keeps appearance separate from genetic confirmation, and escalates veterinary decisions to qualified professionals.</p></section>
   </main>;
 }
 
-function passportText(recordEvents: Array<{ id: string; type: string; date: number; title: string }>): string {
-  const passport = buildSnakePassport(recordEvents);
-  return `${passport.eventCount} recorded events · ${passport.coveredRecordTypes.join(" • ") || "no dated record types yet"}.`;
-}
+function passportText(recordEvents: Array<{ id: string; type: string; date: number; title: string }>): string { const passport = buildSnakePassport(recordEvents); return `${passport.eventCount} recorded events · ${passport.coveredRecordTypes.join(" • ") || "no dated record types yet"}.`; }
