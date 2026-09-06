@@ -4,6 +4,9 @@ import type { GeneticsDatabase, LocusDefinition, InheritanceModel, EvidenceRecor
 import { CORN_SNAKE_GENETICS_DATABASE } from "./cornSnakeGenetics";
 import { HOGNOSE_GENETICS_DATABASE } from "./hognoseGenetics";
 
+/** Canonical species-scoped catalogue adapter used by the genetics runtime. */
+export const SPECIES_GENETICS_CATALOGUES_EXPANDED = SPECIES_GENETICS_CATALOGUES;
+
 const inheritanceMap: Record<string, InheritanceModel> = { Recessive: "recessive", Dominant: "dominant", "Incomplete Dominant": "incomplete_dominant", "Co-Dominant": "codominant", Polygenic: "polygenic", "Line-bred": "line_bred", Unknown: "unknown" };
 const explicitAllelicOverrides = new Set(["pantherophis guttatus|amel", "pantherophis guttatus|amelanistic / albino", "pantherophis guttatus|ultra", "pantherophis guttatus|motley", "pantherophis guttatus|stripe", "heterodon nasicus|arctic", "heterodon nasicus|conda"]);
 
@@ -29,7 +32,7 @@ function catalogueLocus(species: string, morph: MasterMorphDefinition): LocusDef
   return { id: `catalogue:${species}:${morph.geneId}`, species, name: morph.name, inheritance, alleles: [{ id: "wild", name: "Wild type", isWildType: true }, { id: morph.geneId, name: morph.name, aliases: morph.aliases, phenotype: morph.name }], superStatus: inheritance === "incomplete_dominant" || inheritance === "codominant" ? "unresolved" : "not_applicable", evidence: evidenceFor(morph), notes: "Compatibility locus generated from the species catalogue. Explicit allelic-series definitions override this fallback model." };
 }
 
-const catalogueLoci = Object.entries(SPECIES_GENETICS_CATALOGUES).flatMap(([species, traits]: [string, MasterMorphDefinition[]]) => traits.map((trait) => catalogueLocus(species, trait)).filter((value): value is LocusDefinition => Boolean(value)));
+const catalogueLoci = Object.entries(SPECIES_GENETICS_CATALOGUES_EXPANDED).flatMap(([species, traits]: [string, MasterMorphDefinition[]]) => traits.map((trait) => catalogueLocus(species, trait)).filter((value): value is LocusDefinition => Boolean(value)));
 export const GENETICS_DATABASE: GeneticsDatabase = { loci: [...catalogueLoci, ...CORN_SNAKE_GENETICS_DATABASE.loci, ...HOGNOSE_GENETICS_DATABASE.loci], combinations: [...CORN_SNAKE_GENETICS_DATABASE.combinations, ...HOGNOSE_GENETICS_DATABASE.combinations] };
 export function getSpeciesLoci(species: string): LocusDefinition[] { return GENETICS_DATABASE.loci.filter((locus) => locus.species === species); }
 export function getEvidenceForLocus(locus: LocusDefinition): EvidenceRecord[] { return locus.evidence; }
