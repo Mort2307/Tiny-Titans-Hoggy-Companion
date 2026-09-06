@@ -1,5 +1,5 @@
 import type { Snake } from "../types/Snake";
-import type { GeneticsDatabase, GeneticState, LocusDefinition, ParentGenome } from "./geneticsModel";
+import type { GeneticsDatabase, GeneticState, LocusDefinition, ParentGenome, CombinationDefinition } from "./geneticsModel";
 import { getSpeciesLoci } from "./geneticsDatabase";
 import { resolveStrictMorph } from "../utils/geneticsIdentity";
 
@@ -43,14 +43,42 @@ function explicitSuperName(locus: LocusDefinition, snake: Snake): string | undef
   return snake.morphs.find((morph) => names.some((name) => name.toLowerCase() === morph.trim().toLowerCase()));
 }
 
+function findCombination(database: GeneticsDatabase, species: string, value: string): CombinationDefinition | undefined {
+  const query = value.trim().toLowerCase();
+  return database.combinations.find((combination) => combination.species === species && [combination.name, combination.id, ...(combination.aliases ?? [])].some((candidate) => candidate.trim().toLowerCase() === query));
+}
+
+function applyCombination(database: GeneticsDatabase, combination: CombinationDefinition, states: GeneticState[], warnings: string[]) {
+  for (const locusId of combination.componentLocusIds) {
+    const locus = database.loci.find((entry) => entry.id === locusId);
+    if (!locus) {
+      warnings.push(`${combination.name}: missing component locus ${locusId}.`);
+      continue;
+    }
+    const allele = locus.alleles.find((candidate) => !candidate.isWildType);
+    const wild = locus.alleles.find((candidate) => candidate.isWildType);
+    if (!allele || !wild) {
+      warnings.push(`${combination.name}: component locus ${locus.name} cannot be represented safely.`);
+      continue;
+    }
+    if (!states.some((state) => state.locusId === locus.id)) states.push({ locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id });
+  }
+}
+
 export function buildSnakeGenome(snake: Snake, database?: GeneticsDatabase): SnakeGenomeBuild {
   const canonical = canonicalSpecies(snake.species);
-  const loci = (database?.loci ?? getSpeciesLoci(canonical));
+  const sourceLoci = database?.loci ?? getSpeciesLoci(canonical);
+  const loci = sourceLoci.filter((locus) => locus.species === canonical);
   const warnings: string[] = [];
   const states: GeneticState[] = [];
 
-  if (!loci.length) {
-    return { genome: { species: canonical, states }, warnings: [`No canonical genetics loci are registered for ${snake.species}.`], supported: false };
+  if (!loci.length) return { genome: { species: canonical, states }, warnings: [`No canonical genetics loci are registered for ${snake.species}.`], supported: false };
+
+  for (const morphValue of snake.morphs ?? []) {
+    const combination = findCombination(database ?? { loci, combinations: [] }, canonical, morphValue);
+    if (combination) {
+      applyCombination(database ?? { loci, combinations: [] }, combination, states, warnings);
+    }
   }
 
   for (const locus of loci) {
@@ -60,6 +88,8 @@ export function buildSnakeGenome(snake: Snake, database?: GeneticsDatabase): Sna
       const source = entry.geneId ?? entry.gene;
       return matchesGene(locus, source);
     });
+
+    if (states.some((state) => state.locusId === locus.id)) continue;
 
     if (superVisual && locus.superStatus === "supported" && locus.superAlleleId) {
       states.push({ locusId: locus.id, paternalAlleleId: locus.superAlleleId, maternalAlleleId: locus.superAlleleId });
