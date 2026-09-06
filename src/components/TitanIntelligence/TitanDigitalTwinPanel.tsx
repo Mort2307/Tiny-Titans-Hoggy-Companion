@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Snake } from "../../types/Snake";
 import { getTitanMicroclimateReadings, type TitanMicroclimateReading } from "../../services/titanMicroclimateService";
 import { buildTitanDigitalTwin, type TwinComponent, type TwinPlant, type TwinReading } from "../../intelligence/v50/titanDigitalTwinEngine";
+import TitanEcosystemPanel from "./TitanEcosystemPanel";
 import "./TitanDigitalTwinPanel.css";
 
 export default function TitanDigitalTwinPanel({ uid, snake }: { uid: string; snake: Snake }) {
@@ -41,10 +42,13 @@ export default function TitanDigitalTwinPanel({ uid, snake }: { uid: string; sna
   if (loading) return <section className="titan-digital-twin"><div className="titan-feature-empty">🏠 Building the Digital Twin from your recorded enclosure…</div></section>;
   if (error) return <section className="titan-digital-twin"><div className="titan-feature-empty"><strong>Digital Twin unavailable.</strong><p>{error}</p></div></section>;
 
-  return <section className="titan-digital-twin">
-    <div className="titan-digital-twin__hero"><div><p className="titan-feature-kicker">🏠 DIGITAL TWIN</p><h2>{snake.name}'s enclosure model</h2><p>{twin.note}</p></div><strong>{twin.health}</strong></div>
-    <div className="titan-feature-data-grid"><article><strong>{twin.activeComponentCount}</strong><span>Active components</span></article><article><strong>{twin.readingCount}</strong><span>Environmental readings</span></article><article><strong>{twin.zoneCoverage.length}</strong><span>Zones represented</span></article><article><strong>{twin.plantCount}</strong><span>Plant records</span></article></div>
-    {twin.findings.length > 0 && <div className="titan-digital-twin__findings">{twin.findings.map((finding) => <article key={finding.id}><strong>{finding.title}</strong><p>{finding.explanation}</p><small>{finding.severity} · {Math.round(finding.confidence * 100)}% confidence</small></article>)}</div>}
-    {twin.optimisations.length > 0 && <div className="titan-digital-twin__optimisations"><h3>Potential optimisation targets</h3>{twin.optimisations.map((item) => <article key={item.id}><strong>{item.title}</strong><p>{item.reason}</p></article>)}</div>}
-  </section>;
+  return <>
+    <section className="titan-digital-twin">
+      <div className="titan-digital-twin__hero"><div><p className="titan-feature-kicker">🏠 DIGITAL TWIN</p><h2>{snake.name}'s enclosure model</h2><p>{twin.note}</p></div><strong>{twin.health}</strong></div>
+      <div className="titan-feature-data-grid"><article><strong>{twin.activeComponentCount}</strong><span>Active components</span></article><article><strong>{twin.readingCount}</strong><span>Environmental readings</span></article><article><strong>{twin.zoneCoverage.length}</strong><span>Zones represented</span></article><article><strong>{twin.plantCount}</strong><span>Plant records</span></article></div>
+      {twin.findings.length > 0 && <div className="titan-digital-twin__findings">{twin.findings.map((finding) => <article key={finding.id}><strong>{finding.title}</strong><p>{finding.explanation}</p><small>{finding.severity} · {Math.round(finding.confidence * 100)}% confidence</small></article>)}</div>}
+      {twin.optimisations.length > 0 && <div className="titan-digital-twin__optimisations"><h3>Potential optimisation targets</h3>{twin.optimisations.map((item) => <article key={item.id}><strong>{item.title}</strong><p>{item.reason}</p></article>)}</div>}
+    </section>
+    <TitanEcosystemPanel snake={snake} />
+  </>;
 }

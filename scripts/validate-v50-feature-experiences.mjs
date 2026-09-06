@@ -8,6 +8,9 @@ const router = fs.readFileSync(path.join(root, "src/routes/AppRouter.tsx"), "utf
 const experience = fs.readFileSync(path.join(root, "src/pages/TitanFeatureExperience.tsx"), "utf8");
 const geneticsWorkspace = fs.readFileSync(path.join(root, "src/components/TitanIntelligence/TitanGeneticsWorkspace.tsx"), "utf8");
 const animalMasterRecord = fs.readFileSync(path.join(root, "src/intelligence/v50/animalMasterRecordEngine.ts"), "utf8");
+const digitalTwin = fs.readFileSync(path.join(root, "src/intelligence/v50/titanDigitalTwinEngine.ts"), "utf8");
+const ecosystem = fs.readFileSync(path.join(root, "src/intelligence/v50/titanEcosystemEngine.ts"), "utf8");
+const ecosystemPanel = fs.readFileSync(path.join(root, "src/components/TitanIntelligence/TitanEcosystemPanel.tsx"), "utf8");
 
 const ids = [...matrix.matchAll(/\{ id: (\d+), name:/g)].map((m) => Number(m[1]));
 const findings = [];
@@ -18,11 +21,21 @@ if (!experience.includes("TitanGeneticsWorkspace") || !geneticsWorkspace.include
 if (!experience.includes("getGrowthInsight")) findings.push("Feature experience is missing animal/growth integration.");
 if (!experience.includes("buildAnimalMasterRecord") || !experience.includes("TitanAnimalMasterRecord") || !animalMasterRecord.includes("buildAnimalMasterRecord")) findings.push("Feature experience is missing connected animal Master Record integration.");
 if (!experience.includes("buildMissingDataFindings")) findings.push("Feature experience is missing husbandry evidence boundary integration.");
+if (!experience.includes("TitanDigitalTwinPanel") || !digitalTwin.includes("buildTitanDigitalTwin")) findings.push("Digital Twin runtime is not connected to the feature experience.");
+if (!experience.includes("TitanEcosystemPanel") || !ecosystem.includes("buildTitanEcosystemSnapshot") || !ecosystemPanel.includes("TitanEcosystemPanel")) findings.push("Bioactive / plant intelligence is missing from the feature experience.");
 if (new Set(ids).size !== 50) findings.push(`Canonical matrix must contain 50 unique features; found ${new Set(ids).size}.`);
 
 console.log(JSON.stringify({
   test: "v50-feature-experience-coverage",
-  evidence: { canonicalFeatures: new Set(ids).size, dedicatedRoute: router.includes(canonicalRoute), matrixResolution: experience.includes("featureById"), sharedGeneticsWorkspace: experience.includes("TitanGeneticsWorkspace") && geneticsWorkspace.includes("searchGeneticsIntelligence"), animalMasterRecord: experience.includes("TitanAnimalMasterRecord") && animalMasterRecord.includes("buildAnimalMasterRecord") },
+  evidence: {
+    canonicalFeatures: new Set(ids).size,
+    dedicatedRoute: router.includes(canonicalRoute),
+    matrixResolution: experience.includes("featureById"),
+    sharedGeneticsWorkspace: experience.includes("TitanGeneticsWorkspace") && geneticsWorkspace.includes("searchGeneticsIntelligence"),
+    animalMasterRecord: experience.includes("TitanAnimalMasterRecord") && animalMasterRecord.includes("buildAnimalMasterRecord"),
+    digitalTwin: experience.includes("TitanDigitalTwinPanel") && digitalTwin.includes("buildTitanDigitalTwin"),
+    ecosystem: experience.includes("TitanEcosystemPanel") && ecosystem.includes("buildTitanEcosystemSnapshot"),
+  },
   status: findings.length ? "fail" : "pass",
   findings,
   limitation: "A dedicated experience route proves navigability and rendering architecture, not full domain completeness of every feature. Feature-level acceptance remains required before status can become validated.",
