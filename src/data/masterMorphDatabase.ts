@@ -13,7 +13,6 @@ export type MasterMorphDefinition = MorphDefinition & MorphIntelligenceMetadata 
   sourceLinks?: MorphEvidenceSourceDefinition[];
   evidenceStatus?: string;
   evidenceNote?: string;
-  /** Explicit database-level permission for Mendelian calculator use. */
   calculatorEligible?: boolean;
   contains?: string[];
   taxonomyStatus?: FullMorphTaxonomyEntry["taxonomyStatus"];
