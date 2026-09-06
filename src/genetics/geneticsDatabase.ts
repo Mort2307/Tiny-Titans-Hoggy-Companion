@@ -2,6 +2,7 @@ import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDat
 import { SPECIES_GENETICS_CATALOGUES_EXPANDED } from "../data/species/speciesGeneticsCataloguesExpanded";
 import type { GeneticsDatabase, LocusDefinition, InheritanceModel, EvidenceRecord, CombinationDefinition } from "./geneticsModel";
 import { CORN_SNAKE_GENETICS_DATABASE } from "./cornSnakeGenetics";
+import { HOGNOSE_GENETICS_DATABASE } from "./hognoseGenetics";
 
 const inheritanceMap: Record<string, InheritanceModel> = {
   Recessive: "recessive",
@@ -54,8 +55,12 @@ export const GENETICS_DATABASE: GeneticsDatabase = {
   loci: [
     ...catalogueLoci,
     ...CORN_SNAKE_GENETICS_DATABASE.loci,
+    ...HOGNOSE_GENETICS_DATABASE.loci,
   ],
-  combinations: [...CORN_SNAKE_GENETICS_DATABASE.combinations],
+  combinations: [
+    ...CORN_SNAKE_GENETICS_DATABASE.combinations,
+    ...HOGNOSE_GENETICS_DATABASE.combinations,
+  ],
 };
 
 export function getSpeciesLoci(species: string): LocusDefinition[] {
