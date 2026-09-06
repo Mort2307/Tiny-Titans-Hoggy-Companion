@@ -1,10 +1,9 @@
-import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
-import { SPECIES_GENETICS_CATALOGUES } from "../data/species/speciesGeneticsCatalogues";
-import type { GeneticsDatabase, LocusDefinition, InheritanceModel, EvidenceRecord, CombinationDefinition } from "./geneticsModel";
-import { CORN_SNAKE_GENETICS_DATABASE } from "./cornSnakeGenetics";
-import { HOGNOSE_GENETICS_DATABASE } from "./hognoseGenetics";
+import type { MasterMorphDefinition } from "../data/masterMorphDatabase.ts";
+import { SPECIES_GENETICS_CATALOGUES } from "../data/species/speciesGeneticsCatalogues.ts";
+import type { GeneticsDatabase, LocusDefinition, InheritanceModel, EvidenceRecord, CombinationDefinition } from "./geneticsModel.ts";
+import { CORN_SNAKE_GENETICS_DATABASE } from "./cornSnakeGenetics.ts";
+import { HOGNOSE_GENETICS_DATABASE } from "./hognoseGenetics.ts";
 
-/** Canonical species-scoped catalogue adapter used by the genetics runtime. */
 export const SPECIES_GENETICS_CATALOGUES_EXPANDED = SPECIES_GENETICS_CATALOGUES;
 
 const inheritanceMap: Record<string, InheritanceModel> = { Recessive: "recessive", Dominant: "dominant", "Incomplete Dominant": "incomplete_dominant", "Co-Dominant": "codominant", Polygenic: "polygenic", "Line-bred": "line_bred", Unknown: "unknown" };
@@ -39,4 +38,6 @@ export function getEvidenceForLocus(locus: LocusDefinition): EvidenceRecord[] { 
 export function getMasterCatalogueEvidence(morph: MasterMorphDefinition): EvidenceRecord[] { return evidenceFor(morph); }
 export function getCombinationByName(species: string, name: string): CombinationDefinition | undefined { const query = name.trim().toLowerCase(); return GENETICS_DATABASE.combinations.find((entry) => entry.species === species && [entry.name, entry.id, ...(entry.aliases ?? [])].some((value) => value.toLowerCase() === query)); }
 export function countSpeciesLoci(species: string): number { return getSpeciesLoci(species).length; }
-export function getMasterMorphById(geneId: string): MasterMorphDefinition | undefined { return masterMorphs.find((morph) => morph.geneId === geneId); }
+export function getMasterMorphById(geneId: string): MasterMorphDefinition | undefined {
+  return Object.values(SPECIES_GENETICS_CATALOGUES_EXPANDED).flat().find((morph) => morph.geneId === geneId);
+}
