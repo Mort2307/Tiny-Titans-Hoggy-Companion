@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { tinyTitansPageRegistry } from "../config/tinyTitansPageRegistry";
 import { TITAN_V50_FEATURES } from "../intelligence/v50/titanV50FeatureMatrix";
 import { FEATURE_SUMMARIES } from "../intelligence/v50/titanV50Runtime";
+import TitanLiveIntelligencePanel from "../components/TitanIntelligence/TitanLiveIntelligencePanel";
+import "../components/TitanIntelligence/TitanLiveIntelligencePanel.css";
 import "./TitanIntelligence.css";
 
 const layerLabels: Record<string, string> = {
@@ -38,6 +40,8 @@ function TitanIntelligence() {
           <small>Every V50 capability has a runtime adapter. A capability still marked planned is not being presented as production-complete merely because its adapter exists.</small>
         </div>
       </section>
+
+      <TitanLiveIntelligencePanel />
 
       <section className="titan-intelligence-stats" aria-label="V50 implementation status">
         <div><strong>{foundation}</strong><span>Foundation</span></div>
