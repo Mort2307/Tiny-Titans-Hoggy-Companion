@@ -12,9 +12,14 @@ export type TinyTitansEventMap = {
   FeedingRecorded: { snakeId: string; occurredAt: string };
   ShedRecorded: { snakeId: string; status: "Complete" | "Partial" | "Problematic"; occurredAt: string };
   BehaviourRecorded: { snakeId: string; recordId: string; observation: string; context: string; occurredAt: string; operation: "create" | "update" };
+  HealthRecordCreated: { snakeId: string; occurredAt: string };
+  MicroclimateRecorded: { snakeId: string; enclosureId?: string; occurredAt: string };
   EnclosureUpdated: { snakeId: string; enclosureId: string; occurredAt: string };
   MorphConfirmed: { snakeId: string; morphId: string; occurredAt: string };
+  GeneticsChanged: { snakeId: string; occurredAt: string };
   BreedingProjectCreated: { projectId: string; occurredAt: string };
+  BreedingProjectChanged: { projectId: string; snakeId?: string; action: "created" | "updated" | "deleted"; occurredAt: string };
+  HatchlingRecorded: { projectId: string; snakeId?: string; action: "created" | "updated" | "deleted"; occurredAt: string };
   MarketplaceListingCreated: { listingId: string; snakeId?: string; occurredAt: string };
   AchievementUnlocked: { achievementId: string; occurredAt: string };
   NotificationScheduled: { notificationId: string; occurredAt: string };
@@ -33,23 +38,16 @@ class TinyTitansEventBus {
     const existing = this.listeners.get(type) ?? new Set<Listener<TinyTitansEventName>>();
     existing.add(listener as Listener<TinyTitansEventName>);
     this.listeners.set(type, existing);
-    return () => {
-      existing.delete(listener as Listener<TinyTitansEventName>);
-      if (existing.size === 0) this.listeners.delete(type);
-    };
+    return () => { existing.delete(listener as Listener<TinyTitansEventName>); if (existing.size === 0) this.listeners.delete(type); };
   }
 
   emit<K extends TinyTitansEventName>(event: TinyTitansEvent<K>): void {
     const listeners = this.listeners.get(event.type);
     if (listeners) for (const listener of listeners) listener(event as TinyTitansEvent<TinyTitansEventName>);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: event }));
-    }
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: event }));
   }
 
-  clear(): void {
-    this.listeners.clear();
-  }
+  clear(): void { this.listeners.clear(); }
 }
 
 export const tinyTitansEventBus = new TinyTitansEventBus();
