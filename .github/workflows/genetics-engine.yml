@@ -17,4 +17,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run validate:genetics-model
+      - run: npm run validate:genetics-runtime
+      - run: npm run validate:genetics-engine
+      - run: npm run validate:genetics-search
+      - run: npm run validate:breeding-bridge
       - run: npx tsc -b
