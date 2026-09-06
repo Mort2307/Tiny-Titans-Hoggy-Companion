@@ -14,16 +14,19 @@ const hog = read("src/genetics/hognoseGenetics.ts");
 const assertions = [
   ["copy-state model", model.includes("copiesByAllele") && model.includes("paternalAlleleId") && model.includes("maternalAlleleId")],
   ["cross-species hard stop", model.includes("Cross-species genetics are not supported")],
-  ["wild-state completion", model.includes("wildState(locus)") && model.includes("if (!a && !b) return")],
-  ["supported super gate", model.includes('locus.superStatus === "supported"')],
+  ["wild-state completion", model.includes("wildState(locus)") && model.includes("a ?? wildState(locus)")],
+  ["supported super gate", model.includes('locus.superStatus === "supported"') && model.includes("superAlleleId")],
   ["allelic mixed-state guard", model.includes('return "mixed_allelic"')],
+  ["allele-level combination contract", model.includes("CombinationComponent") && model.includes("components?")],
   ["canonical snake adapter", adapter.includes("buildSnakeGenome") && adapter.includes("canonicalSpecies")],
+  ["species-scoped adapter", adapter.includes("locus.species === canonical")],
+  ["named combination expansion", adapter.includes("applyCombination") && adapter.includes("combination.components")],
   ["uncertain het guard", adapter.includes("probability-bearing uncertainty")],
   ["canonical breeding bridge", bridge.includes("calculateCanonicalBreeding") && bridge.includes("canonical-locus-genetics")],
   ["legacy bridge is explicit", bridge.includes("legacy-evidence-gated-bridge")],
   ["Corn Amel/Ultra allelic locus", corn.includes("Amel and Ultra") && corn.includes('inheritance: "allelic"')],
   ["Corn Motley/Stripe allelic locus", corn.includes("Motley and Stripe") && corn.includes('inheritance: "allelic"')],
-  ["Hognose Grey Fog is a combination", hog.includes('name: "Grey Fog"') && hog.includes('aliases: ["Arctic Conda"]')],
+  ["Hognose Grey Fog explicit components", hog.includes('name: "Grey Fog"') && hog.includes('components:') && hog.includes('alleleId: "arctic"') && hog.includes('alleleId: "conda"')],
   ["search explains allele relationship", engine.includes("not an independent locus")],
 ];
 
