@@ -10,11 +10,19 @@ const library = read("src/pages/MorphLibrary.tsx");
 
 const failures = [];
 
-if (!intelligence.includes("geneticSignature")) failures.push("Morph intelligence metadata is missing geneticSignature.");
-if (!intelligence.includes("geneticFormula")) failures.push("Morph intelligence metadata is missing geneticFormula.");
-if (!intelligence.includes("recognisedNames")) failures.push("Morph intelligence metadata is missing recognisedNames.");
-if (!intelligence.includes("searchTerms")) failures.push("Morph intelligence metadata is missing searchTerms.");
-if (!intelligence.includes("evidenceLevel")) failures.push("Morph intelligence metadata is missing evidenceLevel.");
+for (const required of [
+  "geneticSignature",
+  "geneticFormula",
+  "recognisedNames",
+  "searchTerms",
+  "evidenceLevel",
+  "compositionStatus",
+  "unresolvedComponents",
+  "inferNameComponents",
+  "compositionForEntry",
+]) {
+  if (!intelligence.includes(required)) failures.push(`Morph intelligence is missing ${required}.`);
+}
 
 if (!catalog.includes("combination('Grey Fog', ['Arctic', 'Anaconda'")) failures.push("Grey Fog is not mapped to Arctic + Anaconda in the Hognose reference catalogue.");
 if (!combos.includes('name: "Grey Fog"') && !combos.includes('name: \'Grey Fog\'')) failures.push("Grey Fog is missing from the recognised combination registry.");
@@ -24,7 +32,6 @@ if (!master.includes("searchTerms")) failures.push("Master morph resolver is mis
 if (!library.includes("typed.geneticFormula")) failures.push("Morph Library does not surface canonical genetic formulas.");
 if (!library.includes("typed.recognisedNames")) failures.push("Morph Library does not surface recognised combination names.");
 if (!library.includes("typed.searchTerms")) failures.push("Morph Library search does not consume intelligence search terms.");
-
 if (morphs.includes('Grey Fog') && !morphs.includes('InheritanceType')) failures.push("Canonical morph type definitions could not be inspected.");
 
 if (failures.length) {
@@ -33,4 +40,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("Morph intelligence validation passed: canonical composition, evidence/search metadata, Grey Fog mapping and Morph Library integration are present.");
+console.log("Morph intelligence validation passed: canonical composition, safe name inference, evidence/search metadata, Grey Fog mapping and Morph Library integration are present.");
