@@ -7,6 +7,7 @@ import { subscribeToTitanDecisionState, type TitanDecision } from "../services/t
 import { useAuth } from "../context/useAuth";
 import SnakeTile from "../components/SnakeTile";
 import "../styles/snake-selector.css";
+import "../styles/titanNextAction.css";
 
 type SortMode =
   | "name-asc"
