@@ -1,17 +1,9 @@
 // ============================================================
 // TINY TITANS — GENETICS ENGINE
 // ============================================================
-//
-// Core inheritance calculation engine.
-//
-// The engine deliberately separates:
-//   1. species-scoped identity / evidence resolution
-//   2. inheritance mechanics
-//   3. recognised combination presentation
-//
-// Legacy callers may omit speciesId and continue using the original
-// Hognose database. Species-aware callers must provide speciesId on
-// the parent records (or use calculateSpeciesGenetics()).
+// Species-scoped Mendelian inheritance engine with canonical
+// combination resolution. Unsupported allelic-series crosses are
+// rejected rather than calculated as independent loci.
 // ============================================================
 
 import {
@@ -26,6 +18,7 @@ import {
   resolveSpeciesMorph,
   resolveSpeciesUnderlyingGenes,
 } from "../data/species/speciesGeneticsResolver";
+import { getSpeciesGeneticsLocus, getSpeciesLocusMembers } from "../data/species/speciesGeneticsLoci";
 import { resolveStrictMorph, type HetPercentage } from "./geneticsIdentity";
 
 export type ParentGeneState = {
@@ -38,9 +31,7 @@ export type ParentGeneState = {
 export type ParentGenetics = {
   visualMorphs: string[];
   hets: Array<{ gene: string; percentage: HetPercentage }>;
-  /** Species id for species-scoped genetics. Legacy Hognose calls may omit it. */
   speciesId?: string;
-  /** Explicitly known copy count for a visually expressed locus. */
   knownGeneCopies?: Record<string, 1 | 2>;
 };
 
@@ -59,10 +50,6 @@ export type GeneticsCalculation = {
   totalProbability: number;
   diagnostics?: string[];
 };
-
-function normalise(value: string): string {
-  return value.trim().toLowerCase().replace(/[’‘]/g, "'").replace(/[×✕]/g, "x").replace(/\s+/g, " ");
-}
 
 function roundProbability(value: number): number {
   return Math.round(value * 1000000) / 1000000;
@@ -86,13 +73,11 @@ function resolveLegacyMorph(value: string): MorphDefinition | undefined {
 }
 
 function resolveScopedMorph(speciesId: string | undefined, value: string): MorphDefinition | undefined {
-  if (!speciesId) return resolveLegacyMorph(value);
-  return resolveSpeciesMorph(speciesId, value);
+  return speciesId ? resolveSpeciesMorph(speciesId, value) : resolveLegacyMorph(value);
 }
 
 function getMorph(geneId: string, speciesId?: string): MorphDefinition | undefined {
-  if (speciesId) return getSpeciesCalculatorMorph(speciesId, geneId);
-  return getMorphByGeneId(geneId);
+  return speciesId ? getSpeciesCalculatorMorph(speciesId, geneId) : getMorphByGeneId(geneId);
 }
 
 function resolveParentSpecies(mother: ParentGenetics, father: ParentGenetics): string | undefined {
@@ -101,44 +86,26 @@ function resolveParentSpecies(mother: ParentGenetics, father: ParentGenetics): s
 }
 
 function getKnownCopies(parent: ParentGenetics, geneId: string, fallback: number): number {
-  const explicit = parent.knownGeneCopies?.[geneId];
-  return explicit ?? fallback;
+  return parent.knownGeneCopies?.[geneId] ?? fallback;
 }
 
 export function buildParentGeneStates(parent: ParentGenetics): ParentGeneState[] {
-  const speciesId = parent.speciesId;
   const states = new Map<string, ParentGeneState>();
+  const speciesId = parent.speciesId;
 
   for (const morphValue of parent.visualMorphs) {
-    const underlying = speciesId
-      ? resolveSpeciesUnderlyingGenes(speciesId, morphValue)
-      : resolveUnderlyingGenes(morphValue);
-
-    const resolvedVisual = resolveScopedMorph(speciesId, morphValue);
-    if (!underlying.length) {
-      if (resolvedVisual?.kind === "Gene" && !resolvedVisual.isGene) continue;
-      continue;
-    }
-
+    const underlying = speciesId ? resolveSpeciesUnderlyingGenes(speciesId, morphValue) : resolveUnderlyingGenes(morphValue);
     for (const component of underlying) {
       const morph = getMorph(component.morphId, speciesId);
-      if (!morph || !morph.isGene || morph.kind !== "Gene") continue;
-
-      const defaultCopies = component.copies ?? 1;
-      const copies = getKnownCopies(parent, morph.geneId, defaultCopies);
+      if (!morph?.isGene || morph.kind !== "Gene") continue;
+      const copies = getKnownCopies(parent, morph.geneId, component.copies ?? 1);
       const existing = states.get(morph.geneId);
       if (!existing) {
-        states.set(morph.geneId, {
-          geneId: morph.geneId,
-          copies,
-          visual: true,
-          probability: 1,
-        });
-        continue;
+        states.set(morph.geneId, { geneId: morph.geneId, copies, visual: true, probability: 1 });
+      } else {
+        existing.copies = Math.max(existing.copies, copies);
+        existing.visual = true;
       }
-
-      existing.copies = Math.max(existing.copies, copies);
-      existing.visual = true;
     }
   }
 
@@ -146,22 +113,16 @@ export function buildParentGeneStates(parent: ParentGenetics): ParentGeneState[]
     const resolved = resolveScopedMorph(speciesId, het.gene);
     if (!resolved?.isGene || resolved.kind !== "Gene") continue;
     if (speciesId && !getSpeciesCalculatorMorph(speciesId, resolved.geneId)) continue;
-
-    const geneId = resolved.geneId;
     const probability = hetPercentageToProbability(het.percentage);
-    const existing = states.get(geneId);
+    const existing = states.get(resolved.geneId);
     if (!existing) {
-      states.set(geneId, { geneId, copies: 1, visual: false, probability });
-      continue;
-    }
-
-    if (existing.copies >= 2) {
+      states.set(resolved.geneId, { geneId: resolved.geneId, copies: 1, visual: false, probability });
+    } else if (existing.copies >= 2) {
       existing.probability = 1;
-      continue;
+    } else {
+      existing.copies = 1;
+      existing.probability = Math.max(existing.probability, probability);
     }
-
-    existing.copies = Math.max(existing.copies, 1);
-    existing.probability = Math.max(existing.probability, probability);
   }
 
   return Array.from(states.values());
@@ -177,119 +138,49 @@ export function getParentGeneState(parent: ParentGenetics, geneId: string): Pare
 }
 
 export function generateGametes(state: ParentGeneState): Gamete[] {
-  if (state.copies <= 0) {
-    return [{ geneId: state.geneId, copies: 0, probability: 1 }];
-  }
-
-  if (state.copies >= 2) {
-    return [{
-      geneId: state.geneId,
-      copies: 1,
-      probability: clampProbability(state.probability),
-    }];
-  }
-
+  if (state.copies <= 0) return [{ geneId: state.geneId, copies: 0, probability: 1 }];
+  if (state.copies >= 2) return [{ geneId: state.geneId, copies: 1, probability: clampProbability(state.probability) }];
   return [
     { geneId: state.geneId, copies: 1, probability: clampProbability(state.probability * 0.5) },
-    { geneId: state.geneId, copies: 0, probability: clampProbability(state.probability * 0.5) },
+    { geneId: state.geneId, copies: 0, probability: clampProbability((1 - state.probability) * 0.5) + clampProbability(state.probability * 0.5) },
   ];
-}
-
-function combineGametes(mother: Gamete, father: Gamete): OffspringGeneState {
-  return {
-    geneId: mother.geneId,
-    copies: mother.copies + father.copies,
-    probability: mother.probability * father.probability,
-  };
-}
-
-function collectRelevantGeneIds(mother: ParentGenetics, father: ParentGenetics): string[] {
-  const speciesId = resolveParentSpecies(mother, father);
-  const ids = new Set<string>();
-
-  for (const parent of [mother, father]) {
-    for (const morphValue of parent.visualMorphs) {
-      const underlying = speciesId
-        ? resolveSpeciesUnderlyingGenes(speciesId, morphValue)
-        : resolveUnderlyingGenes(morphValue);
-      for (const component of underlying) {
-        const morph = getMorph(component.morphId, speciesId);
-        if (morph?.isGene && morph.kind === "Gene") ids.add(component.morphId);
-      }
-    }
-
-    for (const het of parent.hets) {
-      const resolved = resolveScopedMorph(speciesId, het.gene);
-      if (resolved?.isGene && resolved.kind === "Gene" && (!speciesId || getSpeciesCalculatorMorph(speciesId, resolved.geneId))) {
-        ids.add(resolved.geneId);
-      }
-    }
-  }
-
-  return Array.from(ids);
 }
 
 type GeneCrossOutcome = { copies: number; probability: number };
 
-export function calculateGeneCross(
-  motherState: ParentGeneState,
-  fatherState: ParentGeneState,
-): GeneCrossOutcome[] {
+export function calculateGeneCross(motherState: ParentGeneState, fatherState: ParentGeneState): GeneCrossOutcome[] {
   const motherGametes = generateGametes(motherState);
   const fatherGametes = generateGametes(fatherState);
   const outcomes = new Map<number, number>();
-
-  for (const motherGamete of motherGametes) {
-    for (const fatherGamete of fatherGametes) {
-      const combined = combineGametes(motherGamete, fatherGamete);
-      outcomes.set(combined.copies, (outcomes.get(combined.copies) ?? 0) + combined.probability);
+  for (const mg of motherGametes) {
+    for (const fg of fatherGametes) {
+      const copies = mg.copies + fg.copies;
+      outcomes.set(copies, (outcomes.get(copies) ?? 0) + mg.probability * fg.probability);
     }
   }
-
   return Array.from(outcomes.entries())
     .map(([copies, probability]) => ({ copies, probability: roundProbability(probability) }))
     .sort((a, b) => a.copies - b.copies);
 }
 
-function isRecessiveVisual(morph: MorphDefinition, copies: number): boolean {
-  return morph.inheritance === "Recessive" && copies >= 2;
-}
-
-function getIncompleteDominantVisual(morph: MorphDefinition, copies: number): string | undefined {
-  if (morph.inheritance !== "Incomplete Dominant") return undefined;
-  if (copies >= 2) return morph.superFormId ?? morph.geneId;
-  if (copies === 1) return morph.geneId;
-  return undefined;
-}
-
-export function resolveGenePhenotype(geneId: string, copies: number, speciesId?: string): string | undefined {
+function resolveGenePhenotype(geneId: string, copies: number, speciesId?: string): string | undefined {
   const morph = getMorph(geneId, speciesId);
   if (!morph) return undefined;
-  if (morph.inheritance === "Recessive") return isRecessiveVisual(morph, copies) ? morph.geneId : undefined;
-  if (morph.inheritance === "Incomplete Dominant") return getIncompleteDominantVisual(morph, copies);
+  if (morph.inheritance === "Recessive") return copies >= 2 ? morph.geneId : undefined;
+  if (morph.inheritance === "Incomplete Dominant") {
+    if (copies >= 2) return morph.superFormId ?? morph.geneId;
+    return copies === 1 ? morph.geneId : undefined;
+  }
   if (morph.inheritance === "Dominant") return copies >= 1 ? morph.geneId : undefined;
   return undefined;
 }
 
-function getHetProbabilityFromCopies(morph: MorphDefinition, copies: number): HetPercentage | undefined {
-  if (!morph.hetPossible || morph.inheritance !== "Recessive" || copies !== 1) return undefined;
-  return "100%";
-}
-
-export function resolveSingleGeneOutcome(
-  geneId: string,
-  copies: number,
-  speciesId?: string,
-): { visual?: string; het?: HetPercentage } {
+export function resolveSingleGeneOutcome(geneId: string, copies: number, speciesId?: string): { visual?: string; het?: HetPercentage } {
   const morph = getMorph(geneId, speciesId);
   if (!morph) return {};
-
   const visual = resolveGenePhenotype(geneId, copies, speciesId);
   if (visual) return { visual };
-
-  const het = getHetProbabilityFromCopies(morph, copies);
-  if (het) return { het };
-
+  if (morph.hetPossible && morph.inheritance === "Recessive" && copies === 1) return { het: "100%" };
   return {};
 }
 
@@ -299,11 +190,7 @@ function getAllCombinations(): MorphDefinition[] {
   );
 }
 
-type CombinationMatch = {
-  combinationId: string;
-  consumedGeneIds: Set<string>;
-  specificity: number;
-};
+type CombinationMatch = { combinationId: string; consumedGeneIds: Set<string>; specificity: number };
 
 function getCombinationRequirements(morph: MorphDefinition): Map<string, number> {
   const requirements = new Map<string, number>();
@@ -315,52 +202,41 @@ function getCombinationRequirements(morph: MorphDefinition): Map<string, number>
 }
 
 function resolveRecognisedCombination(
-  visualGeneIds: string[],
   geneStates: OffspringGeneState[],
   speciesId?: string,
 ): CombinationMatch | undefined {
-  // The current canonical named-combination registry contains Hognose
-  // combinations. Do not leak those names into other species calculators.
   if (speciesId && speciesId !== "heterodon-nasicus") return undefined;
-  if (!speciesId && visualGeneIds.length === 0) return undefined;
-
-  const available = new Map<string, number>();
-  for (const state of geneStates) {
-    if (state.copies > 0) available.set(state.geneId, state.copies);
-  }
-
+  const available = new Map(geneStates.filter((state) => state.copies > 0).map((state) => [state.geneId, state.copies]));
   const candidates: CombinationMatch[] = [];
+
   for (const morph of getAllCombinations()) {
     const requirements = getCombinationRequirements(morph);
     if (!requirements.size) continue;
-
     let matches = true;
     const consumedGeneIds = new Set<string>();
     for (const [geneId, requiredCopies] of requirements) {
-      const actualCopies = available.get(geneId) ?? 0;
-      if (actualCopies < requiredCopies) {
+      if ((available.get(geneId) ?? 0) < requiredCopies) {
         matches = false;
         break;
       }
       consumedGeneIds.add(geneId);
     }
-
     if (matches) {
       candidates.push({
         combinationId: morph.geneId,
         consumedGeneIds,
-        specificity: Array.from(requirements.values()).reduce((sum, copies) => sum + copies, 0),
+        specificity: Array.from(requirements.values()).reduce((sum, value) => sum + value, 0),
       });
     }
   }
-
   return candidates.sort((a, b) => b.specificity - a.specificity)[0];
 }
 
 function getOutcomeKey(outcome: GeneticsOutcome): string {
   const visuals = outcome.visualMorphs.slice().sort().join(",");
   const hets = outcome.hets.map((het) => `${het.geneId}:${het.percentage}`).sort().join(",");
-  return `${visuals}|${hets}`;
+  const states = outcome.geneStates.map((state) => `${state.geneId}:${state.copies}`).sort().join(",");
+  return `${visuals}|${hets}|${states}`;
 }
 
 function mergeOutcomes(outcomes: GeneticsOutcome[]): GeneticsOutcome[] {
@@ -375,19 +251,48 @@ function mergeOutcomes(outcomes: GeneticsOutcome[]): GeneticsOutcome[] {
         hets: [...outcome.hets],
         geneStates: [...outcome.geneStates],
       });
-      continue;
+    } else {
+      existing.probability += outcome.probability;
     }
-    existing.probability += outcome.probability;
   }
-
   return Array.from(map.values())
     .map((outcome) => ({ ...outcome, probability: roundProbability(outcome.probability) }))
     .sort((a, b) => b.probability - a.probability);
 }
 
+function validateAllelicSeries(mother: ParentGenetics, father: ParentGenetics, speciesId?: string): string[] {
+  if (!speciesId) return [];
+  const relevant = new Set<string>();
+  for (const parent of [mother, father]) {
+    for (const value of parent.visualMorphs) {
+      for (const component of resolveSpeciesUnderlyingGenes(speciesId, value)) relevant.add(component.morphId);
+    }
+    for (const het of parent.hets) {
+      const resolved = resolveSpeciesMorph(speciesId, het.gene);
+      if (resolved?.isGene) relevant.add(resolved.geneId);
+    }
+  }
+
+  const locusIds = new Set<string>();
+  for (const geneId of relevant) {
+    const locus = getSpeciesGeneticsLocus(speciesId, geneId);
+    if (locus) locusIds.add(locus.locusId);
+  }
+
+  const diagnostics: string[] = [];
+  for (const locusId of locusIds) {
+    const members = getSpeciesLocusMembers(speciesId, locusId).filter((member) => relevant.has(member.geneId));
+    if (members.length < 2) continue;
+    diagnostics.push(
+      `Allelic-series locus ${locusId} (${members.map((member) => member.geneId).join(" / ")}) requires locus-aware allele-state handling; Tiny Titans will not calculate these alleles as independent genes yet.`,
+    );
+  }
+  return diagnostics;
+}
+
 function resolveSpeciesDiagnostics(mother: ParentGenetics, father: ParentGenetics, speciesId?: string): string[] {
   if (!speciesId) return [];
-  const diagnostics: string[] = [];
+  const diagnostics = validateAllelicSeries(mother, father, speciesId);
   const allowed = new Set(getSpeciesCalculatorMorphs(speciesId).map((morph) => morph.geneId));
 
   for (const [label, parent] of [["mother", mother], ["father", father]] as const) {
@@ -405,7 +310,6 @@ function resolveSpeciesDiagnostics(mother: ParentGenetics, father: ParentGenetic
       if (resolved.kind === "Gene" && !resolved.isGene) continue;
       diagnostics.push(`${label}: "${resolved.name}" is catalogued but not calculator-eligible for ${speciesId}.`);
     }
-
     for (const het of parent.hets) {
       const resolved = resolveSpeciesMorph(speciesId, het.gene);
       if (!resolved || !resolved.isGene || resolved.kind !== "Gene" || !allowed.has(resolved.geneId)) {
@@ -413,68 +317,58 @@ function resolveSpeciesDiagnostics(mother: ParentGenetics, father: ParentGenetic
       }
     }
   }
-
   return diagnostics;
 }
 
 export function calculateGenetics(mother: ParentGenetics, father: ParentGenetics): GeneticsCalculation {
   if (mother.speciesId && father.speciesId && mother.speciesId !== father.speciesId) {
-    return {
-      outcomes: [],
-      totalProbability: 0,
-      diagnostics: [`Species mismatch: ${mother.speciesId} × ${father.speciesId} cannot be crossed in one species-scoped calculation.`],
-    };
+    return { outcomes: [], totalProbability: 0, diagnostics: [`Species mismatch: ${mother.speciesId} × ${father.speciesId} cannot be crossed in one species-scoped calculation.`] };
   }
 
   const speciesId = resolveParentSpecies(mother, father);
   const diagnostics = resolveSpeciesDiagnostics(mother, father, speciesId);
   if (diagnostics.length) return { outcomes: [], totalProbability: 0, diagnostics };
 
-  const geneIds = collectRelevantGeneIds(mother, father);
-  if (!geneIds.length) return { outcomes: [], totalProbability: 0 };
+  const geneIds = new Set<string>();
+  for (const parent of [mother, father]) {
+    for (const value of parent.visualMorphs) {
+      for (const component of speciesId ? resolveSpeciesUnderlyingGenes(speciesId, value) : resolveUnderlyingGenes(value)) {
+        const morph = getMorph(component.morphId, speciesId);
+        if (morph?.isGene && morph.kind === "Gene") geneIds.add(component.morphId);
+      }
+    }
+    for (const het of parent.hets) {
+      const resolved = resolveScopedMorph(speciesId, het.gene);
+      if (resolved?.isGene && resolved.kind === "Gene" && (!speciesId || getSpeciesCalculatorMorph(speciesId, resolved.geneId))) geneIds.add(resolved.geneId);
+    }
+  }
 
+  if (!geneIds.size) return { outcomes: [], totalProbability: 0 };
   let outcomes: GeneticsOutcome[] = [{ probability: 1, visualMorphs: [], hets: [], geneStates: [] }];
 
   for (const geneId of geneIds) {
-    const motherState = getParentGeneState(mother, geneId);
-    const fatherState = getParentGeneState(father, geneId);
-    const geneCross = calculateGeneCross(motherState, fatherState);
+    const geneCross = calculateGeneCross(getParentGeneState(mother, geneId), getParentGeneState(father, geneId));
     const next: GeneticsOutcome[] = [];
-
     for (const existing of outcomes) {
       for (const geneOutcome of geneCross) {
-        const geneResult = resolveSingleGeneOutcome(geneId, geneOutcome.copies, speciesId);
+        const result = resolveSingleGeneOutcome(geneId, geneOutcome.copies, speciesId);
+        const morph = getMorph(geneId, speciesId);
         next.push({
           probability: existing.probability * geneOutcome.probability,
-          visualMorphs: [...existing.visualMorphs, ...(geneResult.visual ? [geneResult.visual] : [])],
-          hets: [
-            ...existing.hets,
-            ...(geneResult.het ? [{
-              geneId,
-              name: getMorph(geneId, speciesId)?.name ?? geneId,
-              percentage: geneResult.het,
-            }] : []),
-          ],
-          geneStates: [
-            ...existing.geneStates,
-            { geneId, copies: geneOutcome.copies, probability: geneOutcome.probability },
-          ],
+          visualMorphs: [...existing.visualMorphs, ...(result.visual ? [result.visual] : [])],
+          hets: [...existing.hets, ...(result.het ? [{ geneId, name: morph?.name ?? geneId, percentage: result.het }] : [])],
+          geneStates: [...existing.geneStates, { geneId, copies: geneOutcome.copies, probability: geneOutcome.probability }],
         });
       }
     }
-
     outcomes = mergeOutcomes(next);
   }
 
   outcomes = outcomes.map((outcome) => {
-    const combination = resolveRecognisedCombination(outcome.visualMorphs, outcome.geneStates, speciesId);
+    const combination = resolveRecognisedCombination(outcome.geneStates, speciesId);
     if (!combination) return outcome;
-
-    const nonConsumedVisuals = outcome.visualMorphs.filter((geneId) => !combination.consumedGeneIds.has(geneId));
-    return {
-      ...outcome,
-      visualMorphs: [combination.combinationId, ...nonConsumedVisuals],
-    };
+    const remaining = outcome.visualMorphs.filter((geneId) => !combination.consumedGeneIds.has(geneId));
+    return { ...outcome, visualMorphs: [combination.combinationId, ...remaining] };
   });
   outcomes = mergeOutcomes(outcomes);
 
@@ -491,10 +385,7 @@ export function calculateSpeciesGenetics(
   mother: Omit<ParentGenetics, "speciesId">,
   father: Omit<ParentGenetics, "speciesId">,
 ): GeneticsCalculation {
-  return calculateGenetics(
-    { ...mother, speciesId },
-    { ...father, speciesId },
-  );
+  return calculateGenetics({ ...mother, speciesId }, { ...father, speciesId });
 }
 
 export type CalculatorResult = {
@@ -506,14 +397,10 @@ export type CalculatorResult = {
 };
 
 function resolveDisplayMorph(geneId: string, speciesId?: string): MorphDefinition | undefined {
-  if (speciesId) return resolveSpeciesMorph(speciesId, geneId);
-  return getMorphByGeneId(geneId);
+  return speciesId ? resolveSpeciesMorph(speciesId, geneId) : getMorphByGeneId(geneId);
 }
 
-export function calculateCalculatorResults(
-  mother: ParentGenetics,
-  father: ParentGenetics,
-): CalculatorResult[] {
+export function calculateCalculatorResults(mother: ParentGenetics, father: ParentGenetics): CalculatorResult[] {
   const calculation = calculateGenetics(mother, father);
   const speciesId = resolveParentSpecies(mother, father);
   return calculation.outcomes.map((outcome) => {
@@ -522,7 +409,6 @@ export function calculateCalculatorResults(
     let name = visualNames.join(" + ");
     if (!name) name = hetNames.join(" + ");
     if (!name) name = "No visual copy";
-
     return {
       name,
       percentage: Math.round(outcome.probability * 10000) / 100,
