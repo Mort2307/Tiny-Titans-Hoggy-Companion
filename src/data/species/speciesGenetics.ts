@@ -69,7 +69,13 @@ export function getSpeciesVisualMorphs(speciesId: string | null | undefined): Ma
 
 export function getSpeciesHetGenes(speciesId: string | null | undefined): MasterMorphDefinition[] {
   if (isHognose(speciesId)) return getMasterHetGenes();
-  return getCatalogue(speciesId).filter((morph) => morph.isGene === true && morph.kind === "Gene" && morph.hetPossible === true);
+  return getCatalogue(speciesId).filter((morph) =>
+    morph.isGene === true &&
+    morph.kind === "Gene" &&
+    morph.hetPossible === true &&
+    morph.evidenceStatus === "confirmed" &&
+    morph.verification === "Confirmed",
+  );
 }
 
 export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
@@ -77,7 +83,9 @@ export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined)
   return getCatalogue(speciesId).filter((morph) =>
     morph.isGene === true &&
     morph.kind === "Gene" &&
-    ["Recessive", "Incomplete Dominant", "Dominant"].includes(morph.inheritance),
+    ["Recessive", "Incomplete Dominant", "Dominant"].includes(morph.inheritance) &&
+    morph.evidenceStatus === "confirmed" &&
+    morph.verification === "Confirmed",
   );
 }
 
@@ -218,22 +226,16 @@ export function searchGenetics(
     }
     for (const component of entry.components ?? []) {
       const componentScore = scoreField(component.morphId, q, 700, 550, 400, 225);
-      if (componentScore) { score += componentScore; matchedOn.push("component"); }
+      if (componentScore) { score = Math.max(score, componentScore); matchedOn.push("component"); }
     }
-    for (const contains of entry.contains ?? []) {
-      const containsScore = scoreField(contains, q, 700, 550, 400, 225);
-      if (containsScore) { score += containsScore; matchedOn.push("contains"); }
-    }
-    const descriptionScore = scoreField(entry.description ?? "", q, 200, 175, 125, 75);
-    if (descriptionScore) { score += descriptionScore; matchedOn.push("description"); }
-
+    if (!score) return null;
     const components = resolveSearchComponents(entry, speciesEntries);
     return {
       entry,
       speciesId,
       speciesName,
       score,
-      matchedOn: [...new Set(matchedOn)],
+      matchedOn,
       aliases: entry.aliases ?? [],
       components,
       calculatorEligible: calculatorIds.has(entry.geneId),
@@ -244,12 +246,8 @@ export function searchGenetics(
         confidence: confidenceFromEvidence(entry),
       },
       explanation: buildExplanation(entry, components),
-    };
-  }).filter((result) => result.score > 0).sort((a, b) => b.score - a.score || a.entry.name.localeCompare(b.entry.name)).slice(0, limit);
+    } satisfies GeneticsSearchResult;
+  }).filter((result): result is GeneticsSearchResult => result !== null).sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
-export { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary };
-
-export function isSpeciesGeneticsMapped(speciesId: string | null | undefined): boolean {
-  return getSpeciesGeneticsStatus(speciesId) !== "baseline-only";
-}
+export { getSpeciesGeneticsCoverageSummary };
