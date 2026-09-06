@@ -9,39 +9,18 @@ export type ScopedGeneticsMorph = MasterMorphDefinition | MorphDefinition;
 const normalise = (value: string) => value.trim().toLowerCase().replace(/[’‘]/g, "'").replace(/[×✕]/g, "x").replace(/\s+/g, " ");
 const isHognose = (speciesId: string) => speciesId === "heterodon-nasicus";
 
-function getScientificSpeciesEntries(speciesId: string): ScopedGeneticsMorph[] {
-  if (isHognose(speciesId)) return getSpeciesVisualMorphs(speciesId);
-  const base = getSpeciesVisualMorphs(speciesId);
-  const bySpeciesScientificName = new Map<string, ScopedGeneticsMorph>();
-  const speciesRecord = base.find((entry) => entry.name !== "Wild Type / Unclassified") ? undefined : undefined;
-  void speciesRecord;
-
-  // applyScientificEvidence is keyed by accepted scientific name. Resolve the
-  // small number of species records already exposed by speciesGenetics by
-  // matching their accepted name through the species catalogue's own entries.
-  // For species not covered by an overlay this is a no-op.
-  for (const entry of base) bySpeciesScientificName.set(entry.geneId, entry);
-
-  return applyOverlayByKnownSpeciesName(base, speciesId);
-}
-
-function applyOverlayByKnownSpeciesName(base: ScopedGeneticsMorph[], speciesId: string): ScopedGeneticsMorph[] {
-  // The canonical species names used by the overlay are also recoverable from
-  // the existing resolver entries' source metadata. Rather than invent a
-  // second species-name registry, only apply the overlay through explicit
-  // known mappings here.
-  const nameMap: Record<string, string> = {
+function applyScientificOverlay(speciesId: string, entries: ScopedGeneticsMorph[]): ScopedGeneticsMorph[] {
+  const scientificNameBySpeciesId: Record<string, string> = {
     "python-regius": "Python regius",
     "pantherophis-guttatus": "Pantherophis guttatus",
   };
-  const scientificName = nameMap[speciesId];
-  if (!scientificName) return base;
-  const overlay = applyScientificEvidence({ [scientificName]: base });
-  return overlay[scientificName] ?? base;
+  const scientificName = scientificNameBySpeciesId[speciesId];
+  if (!scientificName) return entries;
+  return applyScientificEvidence({ [scientificName]: entries })[scientificName] ?? entries;
 }
 
 export function getSpeciesResolverEntries(speciesId: string): ScopedGeneticsMorph[] {
-  const speciesEntries = getScientificSpeciesEntries(speciesId);
+  const speciesEntries = applyScientificOverlay(speciesId, getSpeciesVisualMorphs(speciesId));
   if (!isHognose(speciesId)) return speciesEntries;
   const combinations = calculatorNamedCombinations.filter((combination) => !speciesEntries.some((entry) => entry.geneId === combination.geneId));
   return [...speciesEntries, ...combinations];
