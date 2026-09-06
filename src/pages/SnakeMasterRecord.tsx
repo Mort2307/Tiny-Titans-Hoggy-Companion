@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
 import { buildSnakeIntelligence, type SnakeInsight } from "../services/snakeIntelligenceService";
@@ -20,12 +20,14 @@ function insightIcon(tone: SnakeInsight["tone"]) { return tone === "attention" ?
 
 export default function SnakeMasterRecord() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { isImperial, formatWeight, formatLength } = useUnits();
   const [record, setRecord] = useState<SnakeMasterRecord | null>(null);
   const [loadedRecordKey, setLoadedRecordKey] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
   const recordKey = user && id ? `${user.uid}:${id}` : null;
   const loading = Boolean(recordKey && loadedRecordKey !== recordKey);
 
@@ -45,6 +47,19 @@ export default function SnakeMasterRecord() {
     void loadRecord().catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load this snake overview."); }).finally(() => { if (!cancelled) setLoadedRecordKey(recordKey); });
     return () => { cancelled = true; };
   }, [user, id, recordKey, loadRecord]);
+
+  useEffect(() => {
+    const target = searchParams.get("event");
+    if (!target || !record) return;
+    const frame = window.requestAnimationFrame(() => {
+      const element = document.getElementById(`timeline-event-${target}`);
+      if (!element) return;
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedEventId(target);
+      window.setTimeout(() => setHighlightedEventId((current) => current === target ? null : current), 2200);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [record, searchParams]);
 
   const intelligence = useMemo(() => record ? buildSnakeIntelligence(record) : null, [record]);
 
@@ -88,7 +103,7 @@ export default function SnakeMasterRecord() {
 
     <section className="master-card"><div className="master-section-heading"><div><p className="master-eyebrow">Data quality</p><h2>Confidence explained</h2></div><span>{overview.confidence.overall}</span></div><p>Confidence is based on the amount of individual history recorded for {snake.name}; it is not a claim about the snake's health.</p><div className="master-grid">{confidenceDetails.map(([area, level, count, target]) => <article className="master-card" key={area}><span>{area}</span><strong>{level}</strong><small>{confidenceExplanation(level, area, count, target)}</small></article>)}</div></section>
 
-    <section className="master-card master-timeline-card"><div className="master-section-heading"><div><p className="master-eyebrow">Living history</p><h2>Life Timeline</h2></div><span>{timeline.length} events</span></div>{error && <p role="alert" className="master-error">{error}</p>}{timeline.length === 0 ? <div><p>No timeline events have been recorded yet. Start building {snake.name}'s history with an individual record.</p><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}>⚖️ Log Weight</Link><Link to={`/snakes/${snake.id}/feeding`}>🍽️ Log Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}>🐍 Record Shed</Link></div></div> : <ol className="master-timeline">{timeline.map((event) => { const deletable = Boolean(event.relatedRecordId && ["Weight", "Feeding", "Shed"].includes(event.type)); const deleting = deletingRecordId === event.id; return <li key={event.id}><div className="master-timeline-entry"><Link to={timelineDestination(snake.id, event.type, event.relatedRecordId)} className="master-timeline-link"><div className="master-timeline-dot" /><div><time>{formatDate(event.date)}</time><strong>{event.title}</strong>{event.description && <p>{event.description}</p>}<small>{timelineActionLabel(event.type)}</small></div></Link>{deletable && <div className="master-timeline-actions"><Link to={`${timelineDestination(snake.id, event.type, event.relatedRecordId)}&edit=true`} aria-label={`Edit ${event.title}`}>Edit</Link><button type="button" onClick={() => void handleDeleteTimelineRecord(event)} disabled={deleting} aria-label={`Delete ${event.title}`}>{deleting ? "Deleting…" : "Delete"}</button></div>}</div></li>; })}</ol>}</section>
+    <section className="master-card master-timeline-card"><div className="master-section-heading"><div><p className="master-eyebrow">Living history</p><h2>Life Timeline</h2></div><span>{timeline.length} events</span></div>{error && <p role="alert" className="master-error">{error}</p>}{timeline.length === 0 ? <div><p>No timeline events have been recorded yet. Start building {snake.name}'s history with an individual record.</p><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}>⚖️ Log Weight</Link><Link to={`/snakes/${snake.id}/feeding`}>🍽️ Log Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}>🐍 Record Shed</Link></div></div> : <ol className="master-timeline">{timeline.map((event) => { const deletable = Boolean(event.relatedRecordId && ["Weight", "Feeding", "Shed"].includes(event.type)); const deleting = deletingRecordId === event.id; const eventId = `timeline-event-${event.id}`; return <li key={event.id} id={eventId} className={highlightedEventId === event.id ? "is-highlighted" : undefined}><div className="master-timeline-entry"><Link to={timelineDestination(snake.id, event.type, event.relatedRecordId)} className="master-timeline-link"><div className="master-timeline-dot" /><div><time>{formatDate(event.date)}</time><strong>{event.title}</strong>{event.description && <p>{event.description}</p>}<small>{timelineActionLabel(event.type)}</small></div></Link>{deletable && <div className="master-timeline-actions"><Link to={`${timelineDestination(snake.id, event.type, event.relatedRecordId)}&edit=true`} aria-label={`Edit ${event.title}`}>Edit</Link><button type="button" onClick={() => void handleDeleteTimelineRecord(event)} disabled={deleting} aria-label={`Delete ${event.title}`}>{deleting ? "Deleting…" : "Delete"}</button></div>}</div></li>; })}</ol>}</section>
     <section className="master-card"><div className="master-section-heading"><div><p className="master-eyebrow">Keep recording</p><h2>What's next?</h2></div></div><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}>⚖️ Weight</Link><Link to={`/snakes/${snake.id}/feeding`}>🍽️ Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}>🐍 Shed</Link><Link to={`/snakes/${snake.id}`}>🐍 Snake Profile</Link></div></section>
   </section></main>;
 }
