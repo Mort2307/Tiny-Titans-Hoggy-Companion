@@ -21,16 +21,12 @@ export type ParentGenetics = {
   hets: string[];
   /** Per-gene confidence for the corresponding het entry. */
   hetPercentages?: Record<string, HetPercentage>;
+  /** Explicitly established zygosity for visual dominant/incomplete-dominant traits. */
+  knownGeneCopies?: Record<string, 1 | 2>;
 };
 
 export type GeneCopyState = 0 | 1 | 2;
-
-export type InheritanceState =
-  | "Clear"
-  | "Het"
-  | "Visual"
-  | "Super"
-  | "Unknown";
+export type InheritanceState = "Clear" | "Het" | "Visual" | "Super" | "Unknown";
 
 export type GeneState = {
   geneId: string;
@@ -51,7 +47,14 @@ export type OffspringComponent = {
 export type OffspringResult = {
   id: string;
   name: string;
-  percentage: number;
+  /** Exact probability when all parental genotype states are established. */
+  percentage?: number;
+  /** Conditional probability range across explicitly enumerated but unweighted genotype scenarios. */
+  probabilityRange?: { min: number; max: number };
+  /** Exact or bounded forecast. */
+  certainty?: "exact" | "bounded";
+  /** Human-readable genotype scenario explanations for bounded outcomes. */
+  genotypeScenarioLabels?: string[];
   visualComponents: OffspringComponent[];
   hetComponents: OffspringComponent[];
   possibleHetComponents: OffspringComponent[];
