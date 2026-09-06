@@ -1,11 +1,6 @@
 import type { GeneticsDatabase, LocusDefinition } from "./geneticsModel.ts";
 
-const evidence = (claim: string) => [{
-  sourceType: "specialist_database" as const,
-  claim,
-  confidence: "moderate" as const,
-  note: "Species-specific genetics model entry. Keep molecularly unresolved relationships explicitly marked until the evidence supports a stronger classification.",
-}];
+const evidence = (claim: string) => [{ sourceType: "specialist_database" as const, claim, confidence: "moderate" as const, note: "Species-specific genetics model entry. Keep molecularly unresolved relationships explicitly marked until the evidence supports a stronger classification." }];
 
 const cornAmelLocus: LocusDefinition = {
   id: "pantherophis-guttatus-amel-locus",
@@ -14,8 +9,8 @@ const cornAmelLocus: LocusDefinition = {
   inheritance: "allelic",
   alleles: [
     { id: "wild", name: "Wild type", isWildType: true, phenotype: "Normal pigmentation" },
-    { id: "amel", name: "Amel", aliases: ["Amelanistic", "Albino"], phenotype: "Amelanistic / Albino" },
-    { id: "ultra", name: "Ultra", phenotype: "Ultra phenotype" },
+    { id: "amel", name: "Amel", aliases: ["Amelanistic", "Albino", "Amelanistic / Albino", "amelanistic-albino"], phenotype: "Amelanistic / Albino" },
+    { id: "ultra", name: "Ultra", aliases: ["Ultramel"], phenotype: "Ultra phenotype" },
   ],
   superStatus: "not_applicable",
   evidence: evidence("Amel and Ultra are modelled as alternative alleles at one locus rather than independent genes."),
@@ -36,7 +31,4 @@ const cornPatternLocus: LocusDefinition = {
   evidence: evidence("Motley and Stripe are modelled as an allelic series for calculator purposes where they occupy the same recognised pattern locus."),
 };
 
-export const CORN_SNAKE_GENETICS_DATABASE: GeneticsDatabase = {
-  loci: [cornAmelLocus, cornPatternLocus],
-  combinations: [],
-};
+export const CORN_SNAKE_GENETICS_DATABASE: GeneticsDatabase = { loci: [cornAmelLocus, cornPatternLocus], combinations: [] };
