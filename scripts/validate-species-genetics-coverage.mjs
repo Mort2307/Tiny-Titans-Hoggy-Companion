@@ -15,7 +15,8 @@ if (!coverage.includes("getAllSpeciesGeneticsCoverage") || !coverage.includes("g
 if (!expanded.includes("SPECIES_GENETICS_CATALOGUES") || !expanded.includes("SPECIES_GENETICS_EXPANSION_BATCH_1") || !expanded.includes("SPECIES_GENETICS_EXPANSION_BATCH_3")) throw new Error("Expanded catalogue is not composed from all evidence batches.");
 if (!batch1.includes('"Lampropeltis triangulum"') || !batch1.includes('"Albino"') || !batch1.includes('"Hypo"') || !batch1.includes('"Anerythristic"')) throw new Error("Milk Snake evidence batch is incomplete.");
 if (!batch3.includes('"Pantherophis guttatus"') || !batch3.includes('"Lampropeltis californiae"') || !batch3.includes('"Boa constrictor"') || !batch3.includes('"Malayopython reticulatus"')) throw new Error("Priority species expansion batch is incomplete.");
-if (!combinations.includes("SPECIES_GENETICS_COMBINATIONS") || !combinations.includes("Combination")) throw new Error("Species combination registry is missing.");
+if (!batch3.includes('"Morelia spilota"') || !batch3.includes('"Eryx colubrinus"') || !batch3.includes('"Python bivittatus"')) throw new Error("Carpet, Sand Boa or Burmese expansion is incomplete.");
+if (!combinations.includes("SPECIES_GENETICS_COMBINATIONS") || !combinations.includes("CombinationPart")) throw new Error("Species combination registry is missing.");
 if (!speciesGenetics.includes("resolveSpeciesGenetics") || !speciesGenetics.includes("findSpeciesCanonicalMorphForComposition")) throw new Error("Species canonical genetics resolver is missing.");
 if (expanded.includes("speciesGeneticsExpansionBatch2")) throw new Error("Superseded unverified genetics batch remains wired.");
 
