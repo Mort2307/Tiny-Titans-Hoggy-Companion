@@ -1,24 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  getCreatorCommunityIntelligence,
-  type CreatorCommunityIntelligence,
-} from "../services/creatorCommunityIntelligenceService";
+import { getCreatorCommunityIntelligence, type CreatorCommunityIntelligence } from "../services/creatorCommunityIntelligenceService";
+import ContributorThankYouCentre from "./ContributorThankYouCentre";
 import "../styles/creatorCommunityIntelligence.css";
 
-type TileKey =
-  | "consent"
-  | "activity"
-  | "network"
-  | "locations"
-  | "engagement"
-  | "operations"
-  | "mentors"
-  | "contributions";
-
+type TileKey = "consent" | "activity" | "network" | "locations" | "engagement" | "operations" | "mentors" | "contributions";
 const fmt = (value: number) => new Intl.NumberFormat("en-GB").format(value);
 const pct = (part: number, total: number) => total > 0 ? `${Math.round((part / total) * 100)}%` : "0%";
-
 const queueRoutes: Partial<Record<TileKey, { label: string; path: string }>> = {
   operations: { label: "Open Community Operations →", path: "/creator/issues" },
   contributions: { label: "Open Morph Submission Review →", path: "/creator/submissions" },
@@ -31,6 +19,7 @@ export default function CreatorCommunityIntelligence() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openTile, setOpenTile] = useState<TileKey | null>(null);
+  const [showThankYous, setShowThankYous] = useState(false);
 
   async function refresh() {
     setLoading(true); setError("");
@@ -41,11 +30,11 @@ export default function CreatorCommunityIntelligence() {
 
   useEffect(() => { void refresh(); }, []);
   useEffect(() => {
-    if (!openTile) return;
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setOpenTile(null); };
+    if (!openTile && !showThankYous) return;
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") { setOpenTile(null); setShowThankYous(false); } };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [openTile]);
+  }, [openTile, showThankYous]);
 
   const tiles = useMemo(() => {
     if (!data) return [];
@@ -83,17 +72,17 @@ export default function CreatorCommunityIntelligence() {
   return (
     <section className="creator-admin-section creator-intelligence-section">
       <div className="creator-section-heading">
-        <div>
-          <span className="creator-admin-kicker">LIVE CREATOR SNAPSHOT</span>
-          <h2>🌍 Tiny Titans Community</h2>
-          <p>Consent-controlled global intelligence. Aggregates only: no exact addresses, GPS coordinates or individual husbandry records are exposed here.</p>
-        </div>
+        <div><span className="creator-admin-kicker">LIVE CREATOR SNAPSHOT</span><h2>🌍 Tiny Titans Community</h2><p>Consent-controlled global intelligence. Aggregates only: no exact addresses, GPS coordinates or individual husbandry records are exposed here.</p></div>
         <button type="button" onClick={() => void refresh()} disabled={loading}>{loading ? "↻ Refreshing…" : "↻ Refresh intelligence"}</button>
       </div>
       {error && <div className="creator-error" role="alert">{error}</div>}
       {data?.unavailableSources.length ? <div className="creator-warning" role="status"><strong>⚠️ Partial intelligence coverage</strong><span>{fmt(data.unavailableSources.length)} source{data.unavailableSources.length === 1 ? " is" : "s are"} restricted or unavailable. Restricted sources are never silently treated as zero.</span></div> : null}
-      {loading && !data ? <div className="creator-loading">Building the global community picture…</div> : <div className="creator-global-grid creator-intelligence-grid">{tiles.map((tile) => <button key={tile.key} type="button" className="creator-global-card creator-global-card-button creator-intelligence-card" onClick={() => setOpenTile(tile.key)} aria-haspopup="dialog" aria-label={`Open ${tile.label} intelligence`}><span>{tile.icon}</span><strong>{tile.value}</strong><label>{tile.label}</label><em>Tap to explore →</em></button>)}</div>}
+      {loading && !data ? <div className="creator-loading">Building the global community picture…</div> : <div className="creator-global-grid creator-intelligence-grid">
+        {tiles.map((tile) => <button key={tile.key} type="button" className="creator-global-card creator-global-card-button creator-intelligence-card" onClick={() => setOpenTile(tile.key)} aria-haspopup="dialog" aria-label={`Open ${tile.label} intelligence`}><span>{tile.icon}</span><strong>{tile.value}</strong><label>{tile.label}</label><em>Tap to explore →</em></button>)}
+        <button type="button" className="creator-global-card creator-global-card-button creator-intelligence-card" onClick={() => { setOpenTile(null); setShowThankYous(true); }} aria-haspopup="dialog" aria-label="Open contributor thank-you centre"><span>💌</span><strong>Thank</strong><label>Contributor Thank-Yous</label><em>Find & message contributors →</em></button>
+      </div>}
       {detail && data && <div className="creator-intelligence-detail" role="dialog" aria-modal="true" aria-label={detail.title} onMouseDown={(event) => { if (event.target === event.currentTarget) setOpenTile(null); }}><div className="creator-intelligence-detail-inner"><div className="creator-section-heading"><div><span className="creator-admin-kicker">COMMUNITY INTELLIGENCE</span><h3>{detail.title}</h3></div><button type="button" onClick={() => setOpenTile(null)} aria-label="Close intelligence">✕</button></div><p className="creator-intelligence-why"><strong>What this tells you:</strong> {detail.why}</p><div className="creator-intelligence-rows">{detail.rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{fmt(Number(value))}</strong></div>)}</div><div className="creator-intelligence-source-list"><h4>🔎 Data source & eligibility</h4>{data.sources.map((source) => <div key={source.source} className={source.available ? "is-available" : "is-restricted"}><strong>{source.available ? "🟢" : "🟠"} {source.source}</strong><span>{source.reason}</span>{typeof source.count === "number" && <small>{fmt(source.count)} records available</small>}</div>)}</div>{selectedQueueRoute && <Link className="creator-intelligence-action" to={selectedQueueRoute.path} onClick={() => setOpenTile(null)}>{selectedQueueRoute.label}</Link>}<p className="creator-intelligence-note">These figures are live aggregate counts from the current Firebase dataset. A user is considered map-represented only when the community-location permission is ON and their city/country can be mapped to a valid city-level point. No exact addresses, GPS coordinates, private health records or private husbandry notes are displayed here.</p></div></div>}
+      {showThankYous && <ContributorThankYouCentre onClose={() => setShowThankYous(false)} />}
     </section>
   );
 }

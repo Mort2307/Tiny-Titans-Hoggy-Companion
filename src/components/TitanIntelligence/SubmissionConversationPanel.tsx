@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
-import { ensureSubmissionConversation, sendSubmissionConversationMessage, markSubmissionConversationRead, watchSubmissionConversationMessages, type SubmissionConversation, type SubmissionConversationMessage, type SubmissionConversationType } from "../../services/submissionConversationService";
+import { ensureSubmissionConversation, sendSubmissionConversationMessage, sendContributorThankYouMessage, markSubmissionConversationRead, watchSubmissionConversationMessages, type SubmissionConversation, type SubmissionConversationMessage, type SubmissionConversationType } from "../../services/submissionConversationService";
 import "../../styles/ConversationInbox.css";
 
 const suggestedQuestions: Record<SubmissionConversationType, string[]> = {
@@ -20,7 +20,9 @@ export default function SubmissionConversationPanel({ submissionType, submission
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [thanking, setThanking] = useState(false);
   const [error, setError] = useState("");
+  const [thankYouStatus, setThankYouStatus] = useState<"sent" | "already-sent" | null>(null);
   const creatorMode = profile?.role === "admin";
   const mailboxPath = creatorMode ? "/creator/submission-conversations" : "/conversations/submissions";
   const prompts = useMemo(() => suggestedQuestions[submissionType], [submissionType]);
@@ -55,6 +57,21 @@ export default function SubmissionConversationPanel({ submissionType, submission
     } finally { setSending(false); }
   }
 
+  async function thankKeeper() {
+    if (!conversation || !user || thanking) return;
+    setThanking(true); setError("");
+    try {
+      const result = await sendContributorThankYouMessage({
+        conversationId: conversation.id,
+        senderId: user.uid,
+        message: `🐍 Thank you for helping build Tiny Titans!\n\nWe genuinely appreciate you taking the time to share your knowledge, evidence or experience with us. Contributions like yours help us build a better reptile resource for keepers everywhere.\n\nThank you for being part of the community. ❤️\n\n— Tiny Titans`,
+      });
+      setThankYouStatus(result);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Thank-you message could not be sent.");
+    } finally { setThanking(false); }
+  }
+
   return <section className="conversation-reply submission-conversation-panel">
     <div className="conversation-detail-top">
       <div><strong>💬 {creatorMode ? `Message ${submissionTitle}'s keeper` : "Message Tiny Titans"}</strong><p>Private conversation attached to this submission. Every message stays linked to its review record.</p></div>
@@ -62,6 +79,7 @@ export default function SubmissionConversationPanel({ submissionType, submission
     </div>
     {loading ? <p className="creator-muted">Opening submission conversation…</p> : error && <div className="creator-error">{error}</div>}
     {!loading && <>
+      {creatorMode && <div className="submission-smart-prompts"><small>💌 Contributor tools</small><div><button type="button" onClick={() => void thankKeeper()} disabled={thanking || sending || thankYouStatus === "sent" || thankYouStatus === "already-sent"}>{thanking ? "Sending thank-you…" : thankYouStatus === "sent" ? "✓ Thank-you sent" : thankYouStatus === "already-sent" ? "✓ Already thanked" : "💌 Thank contributor"}</button></div></div>}
       {creatorMode && messages.length === 0 && <div className="submission-smart-prompts"><small>🧠 Suggested questions</small><div>{prompts.map((prompt) => <button key={prompt} type="button" onClick={() => setDraft(prompt)} disabled={sending}>{prompt}</button>)}</div></div>}
       <div className="conversation-messages submission-conversation-messages">{messages.length === 0 ? <p className="creator-muted">No messages yet. Start the conversation when you need clarification.</p> : messages.slice(-6).map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : "👤 Keeper"}</strong><p>{item.message}</p></article>)}</div>
       <label htmlFor={`submission-reply-${submissionType}-${submissionId}`}><strong>{creatorMode ? "Write to the keeper" : "Write to Tiny Titans"}</strong></label>
