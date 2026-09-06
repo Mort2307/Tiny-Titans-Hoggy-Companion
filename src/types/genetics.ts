@@ -24,13 +24,7 @@ export type ParentGenetics = {
 };
 
 export type GeneCopyState = 0 | 1 | 2;
-
-export type InheritanceState =
-  | "Clear"
-  | "Het"
-  | "Visual"
-  | "Super"
-  | "Unknown";
+export type InheritanceState = "Clear" | "Het" | "Visual" | "Super" | "Unknown";
 
 export type GeneState = {
   geneId: string;
@@ -43,7 +37,6 @@ export type GeneState = {
 export type OffspringComponent = {
   geneId: string;
   name: string;
-  /** Runtime-calculated copy count; the calculator constrains this to 0/1/2. */
   copies: number;
   state: InheritanceState;
 };
@@ -51,7 +44,11 @@ export type OffspringComponent = {
 export type OffspringResult = {
   id: string;
   name: string;
-  percentage: number;
+  /** Exact percentage when fully determined. Undefined when genotype probability is bounded by unknown parental zygosity. */
+  percentage?: number;
+  probabilityRange?: { min: number; max: number };
+  certainty?: "exact" | "bounded";
+  genotypeScenarioLabels?: string[];
   visualComponents: OffspringComponent[];
   hetComponents: OffspringComponent[];
   possibleHetComponents: OffspringComponent[];
@@ -130,6 +127,5 @@ export type GeneticsIssueReport = {
   createdAt: string;
 };
 
-// Compatibility aliases retained while consuming components migrate.
 export type GeneticsParent = ParentGenetics;
 export type GeneticsResult = OffspringResult;
