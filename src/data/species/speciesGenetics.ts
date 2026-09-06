@@ -6,6 +6,7 @@ import {
 } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
+import { SPECIES_GENETICS_COMBINATION_MORPHS } from "./speciesGeneticsCombinations";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
@@ -111,8 +112,9 @@ export function getSpeciesVisualMorphs(speciesId: string | null | undefined): Ma
   const species = getSpeciesRecord(speciesId);
   if (!species) return [];
   const mapped = SPECIES_CATALOGUES[species.acceptedScientificName] ?? [];
+  const combinations = SPECIES_GENETICS_COMBINATION_MORPHS.filter((morph) => morph.sourceLinks?.[0]?.url && morph.sourceLinks[0].url.includes("morphmarket.com/morphpedia") && morph.geneId.startsWith(`${species.acceptedScientificName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-`));
   const name = species.commonNames[0] ?? species.acceptedScientificName;
-  return [normalTrait(name), ...mapped];
+  return [normalTrait(name), ...mapped, ...combinations];
 }
 
 export function getSpeciesHetGenes(speciesId: string | null | undefined): MasterMorphDefinition[] {
@@ -123,6 +125,13 @@ export function getSpeciesHetGenes(speciesId: string | null | undefined): Master
 export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
   if (isHognose(speciesId)) return getMasterCalculatorMorphs();
   return getCatalogue(speciesId).filter((morph) => morph.isGene && ["Recessive", "Incomplete Dominant", "Dominant"].includes(morph.inheritance));
+}
+
+export function getSpeciesCombinationMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
+  const species = getSpeciesRecord(speciesId);
+  if (!species) return [];
+  const prefix = `${species.acceptedScientificName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-`;
+  return SPECIES_GENETICS_COMBINATION_MORPHS.filter((morph) => morph.geneId.startsWith(prefix));
 }
 
 export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): SpeciesGeneticsStatus {
