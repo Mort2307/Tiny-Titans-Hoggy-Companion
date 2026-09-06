@@ -6,24 +6,14 @@ import type { HusbandryBaseline, HusbandryFinding, HusbandryObservation } from "
 import { analyseMicroclimate, buildHusbandryBaseline, buildMissingDataFindings } from "./husbandryIntelligenceEngine";
 import type { LearningSignal, CommunityContribution } from "./learningCommunityIntelligenceEngine";
 import { buildAdaptiveLearningProfile, buildCommunityCensus, calculateKeeperReputation, chooseNextLearningTopics } from "./learningCommunityIntelligenceEngine";
+import type { TitanDigitalTwin } from "./titanDigitalTwinEngine";
+import { buildTitanDigitalTwin, type TwinComponent, type TwinPlant, type TwinReading } from "./titanDigitalTwinEngine";
 
 export interface TitanContextSnapshotInput {
   animal?: AnimalIntelligenceInput;
-  genetics?: {
-    claims?: readonly GeneticsClaim[];
-    parentA?: readonly GeneticsClaim[];
-    parentB?: readonly GeneticsClaim[];
-    observedOffspring?: readonly GeneticsClaim[];
-  };
-  husbandry?: {
-    hasEnclosure: boolean;
-    observations?: readonly HusbandryObservation[];
-    baseline?: HusbandryBaseline;
-  };
-  learning?: {
-    signals?: readonly LearningSignal[];
-    availableTopics?: readonly string[];
-  };
+  genetics?: { claims?: readonly GeneticsClaim[]; parentA?: readonly GeneticsClaim[]; parentB?: readonly GeneticsClaim[]; observedOffspring?: readonly GeneticsClaim[] };
+  husbandry?: { hasEnclosure: boolean; observations?: readonly HusbandryObservation[]; baseline?: HusbandryBaseline; twinComponents?: readonly TwinComponent[]; twinReadings?: readonly TwinReading[]; plants?: readonly TwinPlant[] };
+  learning?: { signals?: readonly LearningSignal[]; availableTopics?: readonly string[] };
   community?: readonly CommunityContribution[];
 }
 
@@ -32,15 +22,8 @@ export interface TitanContextSnapshotResult {
   growth?: GrowthInsight;
   behaviour?: BehaviourProfile;
   lifeTimeline: readonly AnimalTimelineEvent[];
-  genetics: {
-    conflicts: readonly GeneticsIntegrityFinding[];
-    impossibleOutcomes: readonly GeneticsIntegrityFinding[];
-    identityConfidence: number;
-  };
-  husbandry: {
-    baseline?: HusbandryBaseline;
-    findings: readonly HusbandryFinding[];
-  };
+  genetics: { conflicts: readonly GeneticsIntegrityFinding[]; impossibleOutcomes: readonly GeneticsIntegrityFinding[]; identityConfidence: number };
+  husbandry: { baseline?: HusbandryBaseline; findings: readonly HusbandryFinding[]; digitalTwin: TitanDigitalTwin };
   learning: ReturnType<typeof buildAdaptiveLearningProfile> & { nextTopics: readonly string[] };
   community: ReturnType<typeof buildCommunityCensus> & { keeperReputation: number };
 }
@@ -54,31 +37,19 @@ export function buildTitanContextSnapshot(input: TitanContextSnapshotInput): Tit
   const baseline = input.husbandry?.baseline ?? buildHusbandryBaseline(husbandryObservations);
   const learningSignals = input.learning?.signals ?? [];
   const community = input.community ?? [];
-
+  const digitalTwin = buildTitanDigitalTwin({
+    components: input.husbandry?.twinComponents ?? [],
+    readings: input.husbandry?.twinReadings ?? [],
+    plants: input.husbandry?.plants ?? [],
+  });
   return {
     generatedAt: Date.now(),
     growth: animal ? getGrowthInsight(weights) : undefined,
     behaviour: animal ? buildBehaviourProfile(behaviour) : undefined,
     lifeTimeline: animal ? buildAnimalTimeline(animal) : [],
-    genetics: {
-      conflicts: detectGeneticsConflicts(genetics.claims ?? []),
-      impossibleOutcomes: detectImpossibleOffspring(genetics),
-      identityConfidence: calculateGeneticIdentityConfidence(genetics.claims ?? []),
-    },
-    husbandry: {
-      baseline: Object.keys(baseline).length ? baseline : undefined,
-      findings: [
-        ...analyseMicroclimate(husbandryObservations, baseline),
-        ...buildMissingDataFindings(input.husbandry?.hasEnclosure ?? false, husbandryObservations.length),
-      ],
-    },
-    learning: {
-      ...buildAdaptiveLearningProfile(learningSignals),
-      nextTopics: chooseNextLearningTopics(learningSignals, input.learning?.availableTopics ?? []),
-    },
-    community: {
-      ...buildCommunityCensus(community),
-      keeperReputation: calculateKeeperReputation(community),
-    },
+    genetics: { conflicts: detectGeneticsConflicts(genetics.claims ?? []), impossibleOutcomes: detectImpossibleOffspring(genetics), identityConfidence: calculateGeneticIdentityConfidence(genetics.claims ?? []) },
+    husbandry: { baseline: Object.keys(baseline).length ? baseline : undefined, findings: [...analyseMicroclimate(husbandryObservations, baseline), ...buildMissingDataFindings(input.husbandry?.hasEnclosure ?? false, husbandryObservations.length)], digitalTwin },
+    learning: { ...buildAdaptiveLearningProfile(learningSignals), nextTopics: chooseNextLearningTopics(learningSignals, input.learning?.availableTopics ?? []) },
+    community: { ...buildCommunityCensus(community), keeperReputation: calculateKeeperReputation(community) },
   };
 }
