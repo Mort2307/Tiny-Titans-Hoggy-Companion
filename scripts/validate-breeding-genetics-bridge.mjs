@@ -2,19 +2,22 @@ import fs from 'node:fs';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const breeding = read('src/utils/breedingGenetics.ts');
-const calculator = read('src/utils/geneticsCalculator.ts');
+const model = read('src/genetics/geneticsModel.ts');
+const engine = read('src/genetics/geneticsEngine.ts');
+const adapter = read('src/genetics/geneticsSnakeAdapter.ts');
 const parentSelector = read('src/components/ParentSelector.tsx');
 
 const checks = [
-  ['Breeding planner uses evidence-gated calculator morphs', breeding.includes('getMasterCalculatorMorphs') && breeding.includes('getMasterHetGenes')],
-  ['Breeding planner delegates to canonical genetics calculator', breeding.includes('calculateGenetics({')],
-  ['Breeding planner filters persisted visuals through strict identity', breeding.includes('resolveStrictMorph') && breeding.includes('eligibleVisual')],
-  ['Breeding planner filters persisted hets through strict identity', breeding.includes('eligibleHet') && breeding.includes('calculatorHetIds')],
-  ['Dominant offspring are visual', calculator.includes('case "Dominant":') && calculator.includes('return "Visual"')],
-  ['Incomplete-dominant two-copy outcomes become Super state', calculator.includes('case "Incomplete Dominant":') && calculator.includes('return copies >= 2 ? "Super" : "Visual"')],
-  ['Recessive visual requires two copies', calculator.includes('if (morph.inheritance === "Recessive") return 2')],
-  ['100/66/50 het probabilities are represented mathematically', calculator.includes('1 / 3') && calculator.includes('1 / 4') && calculator.includes('1 / 2')],
-  ['Breeding result rejects broken probability totals', breeding.includes('Math.abs(calculation.totalProbability - 1) > PROBABILITY_EPSILON')],
+  ['Breeding planner uses canonical Snake genome adapter', breeding.includes('buildSnakeGenome') && breeding.includes('canonicalSpecies')],
+  ['Breeding planner delegates to canonical locus engine', breeding.includes('calculateCanonicalBreeding') && breeding.includes('GENETICS_DATABASE')],
+  ['Canonical engine is species-aware', model.includes('Cross-species genetics are not supported') && engine.includes('calculateGenome')],
+  ['Persisted 50%/66% hets are not fabricated as exact genotypes', adapter.includes('probability-bearing uncertainty')],
+  ['Supported super states are evidence-gated', model.includes('locus.superStatus === "supported"') && model.includes('superAlleleId')],
+  ['Recessive states require two mutant copies', model.includes('paternal.isWildType || maternal.isWildType ? "heterozygous" : "visual"')],
+  ['Allelic states distinguish mixed alleles from ordinary visual states', model.includes('return "mixed_allelic"')],
+  ['One-parent loci are completed with wild type', model.includes('wildState(locus)') && model.includes('a ?? wildState(locus)') && model.includes('b ?? wildState(locus)')],
+  ['Canonical result has a probability integrity guard', breeding.includes('Math.abs(adapted.totalProbability - 1)') && breeding.includes('Canonical breeding forecast failed')],
+  ['Legacy bridge is explicitly labelled', breeding.includes('legacy-evidence-gated-bridge')],
   ['Sex selectors remain correctly filtered', parentSelector.includes('snake.sex')],
 ];
 
