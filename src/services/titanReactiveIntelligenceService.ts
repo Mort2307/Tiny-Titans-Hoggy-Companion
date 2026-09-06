@@ -1,14 +1,14 @@
 import type { SnakeInsight, SnakeIntelligence } from "./snakeIntelligenceService";
 import { invalidateTitanV50CacheForAnimal } from "../intelligence/v50/titanIntelligenceCache";
 import { TITAN_INTELLIGENCE_UPDATED_EVENT, tinyTitansEventBus, type TinyTitansEvent, type TinyTitansEventName } from "./tinyTitansEventBus";
-import { subscribeToTitanDecisionState } from "./titanDecisionStateService";
+import { subscribeToTitanDecisionState, type TitanDecisionState } from "./titanDecisionStateService";
 
 type TitanRecordEventType = "WeightRecorded" | "FeedingRecorded" | "ShedRecorded" | "BehaviourObserved" | "HealthRecordCreated" | "MicroclimateRecorded" | "EnclosureChanged" | "GeneticsChanged" | "BreedingProjectChanged" | "HatchlingRecorded" | "LearningActivityRecorded";
 type TitanActionKind = "created" | "updated" | "deleted";
 export interface TitanReactiveEvent { id: string; uid: string; animalId?: string; projectId?: string; type: TitanRecordEventType; action: TitanActionKind; createdAt: number; weightGrams?: number; shedStatus?: "Complete" | "Partial" | "Problematic"; occurredAt?: string; enclosureId?: string; }
 export type TitanProactiveItemStatus = "active" | "handled" | "dismissed";
 export interface TitanProactiveStateItem { key: string; uid: string; animalId: string; insightId: string; title: string; why: string; action: string; tone: SnakeInsight["tone"]; confidence: SnakeInsight["confidence"]; status: TitanProactiveItemStatus; firstSeenAt: number; lastSeenAt: number; lastEventAt?: number; handledAt?: number; dismissedAt?: number; }
-export interface TitanReactiveUpdateDetail { event?: TitanReactiveEvent; affectedAnimalId?: string; }
+export interface TitanReactiveUpdateDetail { event?: TitanReactiveEvent; affectedAnimalId?: string; decisionState?: TitanDecisionState; }
 const EVENTS_KEY = (uid: string) => `tinyTitans:titan-events:${uid}`;
 const STATE_KEY = (uid: string) => `tinyTitans:titan-proactive-state:${uid}`;
 const MAX_EVENTS = 30; const MAX_STATE_ITEMS = 100; const STATE_TTL_MS = 1000 * 60 * 60 * 24 * 7;
@@ -85,7 +85,7 @@ export function subscribeToTitanIntelligenceUpdates(callback: (detail: TitanReac
   if (typeof window === "undefined") return () => undefined;
   const listener = (event: Event) => callback((event as CustomEvent<TitanReactiveUpdateDetail>).detail ?? {});
   window.addEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener);
-  const decisionUnsubscribe = uid ? subscribeToTitanDecisionState(uid, () => callback({})) : () => undefined;
+  const decisionUnsubscribe = uid ? subscribeToTitanDecisionState(uid, (state) => callback({ decisionState: state })) : () => undefined;
   return () => { window.removeEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, listener as EventListener); decisionUnsubscribe(); };
 }
 function updateTitanProactiveState(uid: string, key: string, status: TitanProactiveItemStatus): void { const now = Date.now(); const items = safeRead<TitanProactiveStateItem[]>(STATE_KEY(uid), []); const updated = items.map((item) => item.key === key ? { ...item, status, ...(status === "handled" ? { handledAt: now, dismissedAt: undefined } : {}), ...(status === "dismissed" ? { dismissedAt: now, handledAt: undefined } : {}), ...(status === "active" ? { handledAt: undefined, dismissedAt: undefined } : {}), lastSeenAt: now } : item); safeWrite(STATE_KEY(uid), pruneState(updated, now)); if (typeof window !== "undefined") window.dispatchEvent(new Event(TITAN_INTELLIGENCE_UPDATED_EVENT)); }
