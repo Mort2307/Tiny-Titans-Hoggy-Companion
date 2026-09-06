@@ -32,6 +32,7 @@ export const tinyTitansPageRegistry: readonly TinyTitansPageDefinition[] = [
   { id: "community", path: "/community", label: "Community Hub", icon: "◌", group: "community", description: "Keeper community and contributions.", navigation: "route" },
   { id: "mentorship", path: "/community/mentorship", label: "Mentorship", icon: "↔", group: "community", description: "Keeper-to-keeper mentorship.", navigation: "route" },
   { id: "wall", path: "/community/wall-of-titans", label: "Wall of Titans", icon: "★", group: "community", description: "Community showcase.", navigation: "route" },
+  { id: "submission-messages", path: "/conversations/submissions", label: "Submission Messages", icon: "💬", group: "community", description: "Private conversations with Tiny Titans about your submissions.", navigation: "route" },
   { id: "account", path: "/account", label: "My Account", icon: "●", group: "account", description: "Account, preferences and privacy.", navigation: "route" },
   { id: "family", path: "/account/family", label: "My Family", icon: "👨‍👩‍👧", group: "account", description: "Controlled shared access.", navigation: "route" },
   { id: "become", path: "/become-a-titan", label: "Become a Titan", icon: "✦", group: "account", description: "Support and contribution goals.", navigation: "route" },
