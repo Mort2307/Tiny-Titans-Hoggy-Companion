@@ -1,11 +1,8 @@
 import type { MorphComponent, MorphDefinition } from "./morphs";
 
 /**
- * Calculator-only recognised names whose genetic signatures are useful to
- * presentation/reversal but are not yet represented as dedicated records in
- * the central morph array.
- *
- * IMPORTANT: these are names for combinations, never new loci.
+ * Recognised combination names used by the genetics calculator and presentation
+ * layer. These names are phenotypic/compositional labels, never new loci.
  */
 export const calculatorNamedCombinations: MorphDefinition[] = [
   {
@@ -16,7 +13,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -35,7 +32,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -54,7 +51,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Incomplete Dominant",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -72,7 +69,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -91,7 +88,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
@@ -110,7 +107,7 @@ export const calculatorNamedCombinations: MorphDefinition[] = [
     isGene: false,
     isCombination: true,
     category: "Combination",
-    inheritance: "Recessive",
+    inheritance: "Unknown",
     hetPossible: false,
     verification: "Recognised",
     components: [
