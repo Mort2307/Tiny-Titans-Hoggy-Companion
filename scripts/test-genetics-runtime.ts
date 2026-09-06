@@ -2,10 +2,10 @@ import { calculateGenome, calculateLocus, resolveCombination, type GeneticsDatab
 import { HOGNOSE_GENETICS_DATABASE } from "../src/genetics/hognoseGenetics.ts";
 import { CORN_SNAKE_GENETICS_DATABASE } from "../src/genetics/cornSnakeGenetics.ts";
 import { buildSnakeGenome } from "../src/genetics/geneticsSnakeAdapter.ts";
+import { calculateSpeciesGeneticsForecast } from "../src/genetics/geneticsForecast.ts";
+import type { GeneticsCalculatorInput } from "../src/types/genetics.ts";
 
-const assert = (condition: unknown, message: string): asserts condition => {
-  if (!condition) throw new Error(`Genetics runtime test failed: ${message}`);
-};
+const assert = (condition: unknown, message: string): asserts condition => { if (!condition) throw new Error(`Genetics runtime test failed: ${message}`); };
 const approx = (actual: number, expected: number, message: string) => assert(Math.abs(actual - expected) < 0.000001, `${message} (expected ${expected}, got ${actual})`);
 
 const recessive: LocusDefinition = { id: "test-recessive", species: "Test species", name: "Test Recessive", inheritance: "recessive", alleles: [{ id: "wild", name: "Wild type", isWildType: true }, { id: "test", name: "Test" }], superStatus: "not_applicable", evidence: [] };
@@ -50,12 +50,18 @@ const parentB: ParentGenome = { species: "Heterodon nasicus", states: [] };
 const completed = calculateGenome(hogDatabase, parentA, parentB);
 assert(completed.length === 2, "missing parent loci are completed with wild type");
 
+const hognoseInput = (female: GeneticsCalculatorInput["female"], male: GeneticsCalculatorInput["male"]): GeneticsCalculatorInput => ({ female, male });
+const knownHetero = hognoseInput({ morphs: ["arctic"], hets: [], knownGeneCopies: { arctic: 1 } }, { morphs: [], hets: [] });
+const knownForecast = calculateSpeciesGeneticsForecast("Heterodon nasicus", knownHetero);
+assert(knownForecast.offspring.some((outcome) => outcome.certainty === "exact" && outcome.percentage === 50), "known Arctic one-copy × wild produces an exact 50% visual outcome");
+
+const unknownDominant = calculateSpeciesGeneticsForecast("Heterodon nasicus", { female: { morphs: ["arctic"], hets: [] }, male: { morphs: [], hets: [] } });
+assert(unknownDominant.offspring.some((outcome) => outcome.certainty === "bounded"), "unknown Arctic copy state remains conditional");
+assert(unknownDominant.offspring.every((outcome) => outcome.percentage === undefined), "bounded outcomes do not pretend an exact percentage");
+
+const crossSpeciesInput: ParentGenome = { species: "Pantherophis guttatus", states: [] };
 let crossSpeciesRejected = false;
-try {
-  calculateGenome(hogDatabase, parentA, { species: "Pantherophis guttatus", states: [] });
-} catch (error) {
-  crossSpeciesRejected = error instanceof Error && error.message.includes("Cross-species genetics are not supported");
-}
+try { calculateGenome(hogDatabase, parentA, crossSpeciesInput); } catch (error) { crossSpeciesRejected = error instanceof Error && error.message.includes("Cross-species genetics are not supported"); }
 assert(crossSpeciesRejected, "cross-species breeding is rejected");
 
-console.log("Genetics runtime tests passed: inheritance, super states, alleles, aliases, combination expansion, wild completion and species safety.");
+console.log("Genetics runtime tests passed: inheritance, super states, alleles, aliases, combination expansion, bounded zygosity, wild completion and species safety.");
