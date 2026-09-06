@@ -1,4 +1,5 @@
 import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
+import { SPECIES_GENETICS_CATALOGUES_EXPANDED } from "../data/species/speciesGeneticsCataloguesExpanded";
 import type { GeneticsDatabase, LocusDefinition, InheritanceModel, EvidenceRecord, CombinationDefinition } from "./geneticsModel";
 import { CORN_SNAKE_GENETICS_DATABASE } from "./cornSnakeGenetics";
 
@@ -27,12 +28,13 @@ function evidenceFor(morph: MasterMorphDefinition): EvidenceRecord[] {
   }];
 }
 
-function genericLocus(morph: MasterMorphDefinition): LocusDefinition | undefined {
+function catalogueLocus(species: string, morph: MasterMorphDefinition): LocusDefinition | undefined {
   if (!morph.isGene || morph.kind !== "Gene") return undefined;
   const inheritance = inheritanceMap[morph.inheritance] ?? "unknown";
+  if (["polygenic", "line_bred", "unknown", "complex"].includes(inheritance)) return undefined;
   return {
-    id: `catalogue:${morph.geneId}`,
-    species: "catalogue",
+    id: `catalogue:${species}:${morph.geneId}`,
+    species,
     name: morph.name,
     inheritance,
     alleles: [
@@ -41,20 +43,19 @@ function genericLocus(morph: MasterMorphDefinition): LocusDefinition | undefined
     ],
     superStatus: inheritance === "incomplete_dominant" || inheritance === "codominant" ? "unresolved" : "not_applicable",
     evidence: evidenceFor(morph),
-    notes: "Compatibility locus generated from the existing catalogue. Species-specific allelic relationships override this fallback model.",
+    notes: "Compatibility locus generated from the species catalogue. Explicit allelic-series definitions override this fallback model.",
   };
 }
 
-const catalogueLoci = masterMorphs.map(genericLocus).filter((value): value is LocusDefinition => Boolean(value));
+const catalogueLoci = Object.entries(SPECIES_GENETICS_CATALOGUES_EXPANDED)
+  .flatMap(([species, traits]) => traits.map((trait) => catalogueLocus(species, trait)).filter((value): value is LocusDefinition => Boolean(value)));
 
 export const GENETICS_DATABASE: GeneticsDatabase = {
   loci: [
     ...catalogueLoci,
     ...CORN_SNAKE_GENETICS_DATABASE.loci,
   ],
-  combinations: [
-    ...CORN_SNAKE_GENETICS_DATABASE.combinations,
-  ],
+  combinations: [...CORN_SNAKE_GENETICS_DATABASE.combinations],
 };
 
 export function getSpeciesLoci(species: string): LocusDefinition[] {
@@ -65,10 +66,22 @@ export function getEvidenceForLocus(locus: LocusDefinition): EvidenceRecord[] {
   return locus.evidence;
 }
 
+export function getMasterCatalogueEvidence(morph: MasterMorphDefinition): EvidenceRecord[] {
+  return evidenceFor(morph);
+}
+
 export function getCombinationByName(species: string, name: string): CombinationDefinition | undefined {
   const query = name.trim().toLowerCase();
   return GENETICS_DATABASE.combinations.find((entry) =>
     entry.species === species &&
     [entry.name, entry.id, ...(entry.aliases ?? [])].some((value) => value.toLowerCase() === query),
   );
+}
+
+export function countSpeciesLoci(species: string): number {
+  return getSpeciesLoci(species).length;
+}
+
+export function getMasterMorphById(geneId: string): MasterMorphDefinition | undefined {
+  return masterMorphs.find((morph) => morph.geneId === geneId);
 }
