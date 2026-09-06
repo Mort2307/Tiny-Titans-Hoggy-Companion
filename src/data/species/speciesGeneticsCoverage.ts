@@ -2,6 +2,7 @@ import type { MasterMorphDefinition } from "../masterMorphDatabase";
 import { getMasterVisualMorphs } from "../masterMorphDatabase";
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
+import { SPECIES_GENETICS_EXPANSION_BATCH_1 } from "./speciesGeneticsExpansionBatch1";
 
 export type SpeciesGeneticsCoverageStatus = "mapped" | "partial" | "baseline-only";
 
@@ -18,10 +19,19 @@ export type SpeciesGeneticsCoverage = {
 
 const MENDELIAN = new Set(["Recessive", "Incomplete Dominant", "Dominant"]);
 
+function composeCatalogue(speciesName: string): MasterMorphDefinition[] {
+  const base = SPECIES_GENETICS_CATALOGUES[speciesName] ?? [];
+  const expansion = SPECIES_GENETICS_EXPANSION_BATCH_1[speciesName] ?? [];
+  return [
+    ...base,
+    ...expansion.filter((trait) => !base.some((entry) => entry.geneId === trait.geneId || entry.name.trim().toLowerCase() === trait.name.trim().toLowerCase())),
+  ];
+}
+
 function catalogueForSpecies(speciesId: string): MasterMorphDefinition[] {
   if (speciesId === "heterodon-nasicus") return getMasterVisualMorphs();
   const species = INITIAL_SNAKE_SPECIES.find((entry) => entry.id === speciesId);
-  return species ? SPECIES_GENETICS_CATALOGUES[species.acceptedScientificName] ?? [] : [];
+  return species ? composeCatalogue(species.acceptedScientificName) : [];
 }
 
 export function getSpeciesGeneticsCoverage(speciesId: string): SpeciesGeneticsCoverage | undefined {
