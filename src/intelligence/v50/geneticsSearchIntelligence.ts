@@ -2,99 +2,14 @@ import { calculatorNamedCombinations, componentSignature, findCalculatorNamedCom
 import { morphs, type MorphComponent, type MorphDefinition, type VerificationStatus } from "../../data/morphs";
 import { searchGenetics, type GeneticsMatch } from "./geneticsSearchEngine";
 
-export interface GeneticsSearchResult {
-  matchedName: string;
-  canonicalName: string;
-  matchedType: MorphDefinition["kind"];
-  recognised: boolean;
-  verification: VerificationStatus;
-  canonicalComponents: string[];
-  commonCombinationName?: string;
-  description: string;
-  educationalNotes?: string;
-  evidenceSummary: string;
-  confidence: "High" | "Moderate" | "Low";
-  matchKind?: "canonical" | "alias" | "combination" | "fuzzy";
-  score: number;
-}
-
-/**
- * Display aliases are lookup paths only. They never create a new gene, locus,
- * inheritance rule, or genetic certainty; resolution always returns the
- * canonical calculator combination record and its recorded verification.
- */
+export interface GeneticsSearchResult { matchedName:string; canonicalName:string; matchedType:MorphDefinition["kind"]; recognised:boolean; verification:VerificationStatus; canonicalComponents:string[]; commonCombinationName?:string; description:string; educationalNotes?:string; evidenceSummary:string; confidence:"High"|"Moderate"|"Low"; matchKind?:"canonical"|"alias"|"combination"|"fuzzy"; score:number; }
 export { findCalculatorNamedCombination };
 
-function displayComponent(component: MorphComponent): string {
-  const copies = component.copies ?? 1;
-  const morph = morphs.find((candidate) => candidate.geneId === component.morphId) ?? calculatorNamedCombinations.find((candidate) => candidate.geneId === component.morphId);
-  const name = morph?.name ?? component.morphId;
-  if (copies === 2) return `2 copies ${name}`;
-  return `${copies} copy ${name}`;
-}
+function displayComponent(component:MorphComponent):string{const copies=component.copies??1;const morph=morphs.find(candidate=>candidate.geneId===component.morphId)??calculatorNamedCombinations.find(candidate=>candidate.geneId===component.morphId);const name=morph?.name??component.morphId;if(copies===2)return`2 copies ${name}`;return`${copies} copy ${name}`;}
+function confidenceFor(verification:VerificationStatus,isCombination:boolean,matchKind?:GeneticsMatch["matchKind"]):GeneticsSearchResult["confidence"]{if(verification==="Confirmed"&&matchKind!=="fuzzy")return"High";if(verification==="Recognised"&&isCombination&&matchKind!=="fuzzy")return"High";if(verification==="Recognised")return matchKind==="fuzzy"?"Low":"Moderate";return"Low";}
+function evidenceSummaryFor(morph:MorphDefinition,matchKind:GeneticsMatch["matchKind"]):string{if(matchKind==="alias")return`Matched through a recorded alias; the canonical combination record is ${morph.verification.toLowerCase()}.`;if(matchKind==="fuzzy")return`Fuzzy name match only; the canonical record is ${morph.verification.toLowerCase()}. Verify before using it as a genetic fact.`;if(morph.isCombination)return`Recognised combination record with ${morph.verification.toLowerCase()} verification. Components remain the genetic source of truth.`;return`Canonical genetic record with ${morph.verification.toLowerCase()} verification.`;}
+function toResult(morph:MorphDefinition,query:string,matchKind:GeneticsMatch["matchKind"],score:number):GeneticsSearchResult{const input=query.trim();const isAliasOfCombination=Boolean(morph.isCombination&&input&&normaliseComboName(input)!==normaliseComboName(morph.name));const matchedName=isAliasOfCombination||matchKind==="alias"?input:morph.name;return{matchedName,canonicalName:morph.name,matchedType:morph.kind,recognised:morph.verification==="Confirmed"||morph.verification==="Recognised",verification:morph.verification,canonicalComponents:(morph.components??[]).map(displayComponent),commonCombinationName:isAliasOfCombination?morph.name:undefined,description:morph.description??"No description is currently recorded.",educationalNotes:morph.educationalNotes,evidenceSummary:evidenceSummaryFor(morph,matchKind),confidence:confidenceFor(morph.verification,Boolean(morph.isCombination),matchKind),matchKind,score};}
 
-function confidenceFor(verification: VerificationStatus, isCombination: boolean, matchKind?: GeneticsMatch["matchKind"]): GeneticsSearchResult["confidence"] {
-  if (verification === "Confirmed" && matchKind !== "fuzzy") return "High";
-  if (verification === "Recognised" && isCombination && matchKind !== "fuzzy") return "High";
-  if (verification === "Recognised") return matchKind === "fuzzy" ? "Low" : "Moderate";
-  return "Low";
-}
-
-function evidenceSummaryFor(morph: MorphDefinition, matchKind: GeneticsMatch["matchKind"]): string {
-  if (matchKind === "alias") return `Matched through a recorded alias; the canonical combination record is ${morph.verification.toLowerCase()}.`;
-  if (matchKind === "fuzzy") return `Fuzzy name match only; the canonical record is ${morph.verification.toLowerCase()}. Verify before using it as a genetic fact.`;
-  if (morph.isCombination) return `Recognised combination record with ${morph.verification.toLowerCase()} verification. Components remain the genetic source of truth.`;
-  return `Canonical genetic record with ${morph.verification.toLowerCase()} verification.`;
-}
-
-function toResult(morph: MorphDefinition, query: string, matchKind: GeneticsMatch["matchKind"], score: number): GeneticsSearchResult {
-  const input = query.trim();
-  const isAliasOfCombination = Boolean(morph.isCombination && input && normaliseComboName(input) !== normaliseComboName(morph.name));
-  const matchedName = isAliasOfCombination || matchKind === "alias" ? input : morph.name;
-  return {
-    matchedName,
-    canonicalName: morph.name,
-    matchedType: morph.kind,
-    recognised: morph.verification === "Confirmed" || morph.verification === "Recognised",
-    verification: morph.verification,
-    canonicalComponents: (morph.components ?? []).map(displayComponent),
-    commonCombinationName: isAliasOfCombination ? morph.name : undefined,
-    description: morph.description ?? "No description is currently recorded.",
-    educationalNotes: morph.educationalNotes,
-    evidenceSummary: evidenceSummaryFor(morph, matchKind),
-    confidence: confidenceFor(morph.verification, Boolean(morph.isCombination), matchKind),
-    matchKind,
-    score,
-  };
-}
-
-export function searchGeneticsIntelligence(query: string): GeneticsSearchResult[] {
-  if (!normaliseComboName(query)) return [];
-  return searchGenetics(query).map((match) => toResult(match.record, query, match.matchKind, match.score));
-}
-
-function findEquivalentCombinations(combination: MorphDefinition): MorphDefinition[] {
-  const signature = componentSignature(combination.components ?? []);
-  return calculatorNamedCombinations.filter((candidate) =>
-    candidate.geneId !== combination.geneId &&
-    componentSignature(candidate.components ?? []) === signature,
-  );
-}
-
-export function explainGeneticsSearch(query: string): string {
-  const result = searchGeneticsIntelligence(query)[0];
-  if (!result) return "No confirmed or recognised genetics record matched that search.";
-  const components = result.canonicalComponents.map((item) => item.replace(/^2 copies /, "Super ").replace(/^1 copy /, "")).join(" × ");
-  if (result.commonCombinationName) {
-    const equivalents = findEquivalentCombinations(
-      findCalculatorNamedCombination(result.canonicalName) ??
-      [...morphs, ...calculatorNamedCombinations].find((morph) => morph.name === result.canonicalName) ??
-      calculatorNamedCombinations[0],
-    );
-    const equivalentNames = equivalents.map((item) => item.name).slice(0, 3);
-    const suffix = equivalentNames.length ? ` Related recognised names: ${equivalentNames.join(", ")}.` : "";
-    return `${result.matchedName} [${components}] is a recorded recognition path to the recognised combination ${result.commonCombinationName}. ${result.evidenceSummary}${suffix}`;
-  }
-  if (result.matchedType === "Combination") return `${result.matchedName} [${components}] is a recognised combination record. ${result.evidenceSummary}`;
-  return `${result.matchedName} resolves to the canonical ${result.canonicalName} record, classified as ${result.matchedType.toLowerCase()}, with ${result.verification.toLowerCase()} verification. Appearance alone does not upgrade the claim.`;
-}
+export function searchGeneticsIntelligence(query:string,speciesScientificName?:string):GeneticsSearchResult[]{if(!normaliseComboName(query))return[];return searchGenetics(query,speciesScientificName).map(match=>toResult(match.record,query,match.matchKind,match.score));}
+export function explainGeneticsSearch(query:string,speciesScientificName?:string):string{const result=searchGeneticsIntelligence(query,speciesScientificName)[0];if(!result)return"No confirmed or recognised genetics record matched that search.";const components=result.canonicalComponents.map(item=>item.replace(/^2 copies /,"Super ").replace(/^1 copy /,"")).join(" × ");if(result.commonCombinationName){const equivalents=findEquivalentCombinations(findCalculatorNamedCombination(result.canonicalName)??[...morphs,...calculatorNamedCombinations].find(morph=>morph.name===result.canonicalName)??calculatorNamedCombinations[0]);const equivalentNames=speciesScientificName?[]:equivalents.map(item=>item.name).slice(0,3);const suffix=equivalentNames.length?` Related recognised names: ${equivalentNames.join(", ")}.`:"";return`${result.matchedName} [${components}] is a recorded recognition path to the recognised combination ${result.commonCombinationName}. ${result.evidenceSummary}${suffix}`;}if(result.matchedType==="Combination")return`${result.matchedName} [${components}] is a recognised combination record. ${result.evidenceSummary}`;return`${result.matchedName} resolves to the canonical ${result.canonicalName} record, classified as ${result.matchedType.toLowerCase()}, with ${result.verification.toLowerCase()} verification. Appearance alone does not upgrade the claim.`;}
+function findEquivalentCombinations(combination:MorphDefinition):MorphDefinition[]{const signature=componentSignature(combination.components??[]);return calculatorNamedCombinations.filter(candidate=>candidate.geneId!==combination.geneId&&componentSignature(candidate.components??[])===signature);}
