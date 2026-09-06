@@ -1,10 +1,10 @@
-import type { TitanV50RuntimeInput, TitanV50RuntimeResult } from "./titanV50Runtime";
-import { runTitanV50 } from "./titanV50Runtime";
+import type { TitanV50UnifiedInput, TitanV50UnifiedResult } from "./titanV50UnifiedRuntime";
+import { runTitanV50Unified } from "./titanV50UnifiedRuntime";
 
 interface CacheEntry {
   key: string;
   createdAt: number;
-  result: TitanV50RuntimeResult;
+  result: TitanV50UnifiedResult;
 }
 
 const DEFAULT_TTL_MS = 15_000;
@@ -15,7 +15,7 @@ function stableList(values: readonly string[] | undefined): string {
   return [...(values ?? [])].sort().join(",");
 }
 
-function inputKey(input: TitanV50RuntimeInput): string {
+function inputKey(input: TitanV50UnifiedInput): string {
   return JSON.stringify({
     counts: input.counts,
     staleAreas: stableList(input.staleAreas),
@@ -28,6 +28,7 @@ function inputKey(input: TitanV50RuntimeInput): string {
     hasBehaviourRecords: Boolean(input.hasBehaviourRecords),
     hasLearningActivity: Boolean(input.hasLearningActivity),
     hasCommunityActivity: Boolean(input.hasCommunityActivity),
+    eventType: input.eventType ?? "",
   });
 }
 
@@ -42,11 +43,7 @@ function prune(now: number): void {
   }
 }
 
-/**
- * Small in-memory cache for deterministic intelligence. It is intentionally
- * bounded and short-lived so stale recommendations cannot persist indefinitely.
- */
-export function getCachedTitanV50(input: TitanV50RuntimeInput): TitanV50RuntimeResult {
+export function getCachedTitanV50(input: TitanV50UnifiedInput): TitanV50UnifiedResult {
   const now = Date.now();
   prune(now);
   const key = inputKey(input);
@@ -57,7 +54,7 @@ export function getCachedTitanV50(input: TitanV50RuntimeInput): TitanV50RuntimeR
     return existing.result;
   }
 
-  const result = runTitanV50(input);
+  const result = runTitanV50Unified(input);
   cache.set(key, { key, createdAt: now, result });
   prune(now);
   return result;
