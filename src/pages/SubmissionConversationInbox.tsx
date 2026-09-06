@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { getCreatorSubmissionConversations, getSubmissionConversationMessages, getUserSubmissionConversations, markSubmissionConversationRead, sendSubmissionConversationMessage, type SubmissionConversation, type SubmissionConversationMessage } from "../services/submissionConversationService";
+import { getCreatorSubmissionConversations, getSubmissionConversationMessages, getUserSubmissionConversations, markSubmissionConversationRead, sendSubmissionConversationMessage, watchSubmissionConversationMessages, type SubmissionConversation, type SubmissionConversationMessage } from "../services/submissionConversationService";
 import "../styles/ConversationInbox.css";
 
 function dateLabel(value: unknown) {
@@ -49,9 +49,9 @@ export default function SubmissionConversationInbox({ creatorMode = false }: { c
     if (!selected || !user) { setMessages([]); return; }
     void markSubmissionConversationRead(selected.id, actualCreatorMode ? "creator" : "user").catch(() => undefined);
     let active = true;
-    const unsubscribe = selected ? undefined : undefined;
+    const unsubscribe = watchSubmissionConversationMessages(selected.id, (items) => { if (active) setMessages(items); }, (reason) => { if (active) setError(reason.message); });
     void getSubmissionConversationMessages(selected.id).then((items) => { if (active) setMessages(items); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Unable to load messages."); });
-    return () => { active = false; unsubscribe?.(); };
+    return () => { active = false; unsubscribe(); };
   }, [selected, user, actualCreatorMode]);
 
   const unread = useMemo(() => threads.reduce((sum, thread) => sum + (actualCreatorMode ? Number(thread.unreadForCreator ?? 0) : Number(thread.unreadForSubmitter ?? 0)), 0), [threads, actualCreatorMode]);
