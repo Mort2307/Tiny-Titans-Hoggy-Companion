@@ -4,11 +4,14 @@ import path from "node:path";
 const root = path.resolve("src");
 const speciesGenetics = fs.readFileSync(path.join(root, "data/species/speciesGenetics.ts"), "utf8");
 const speciesCatalogue = fs.readFileSync(path.join(root, "data/species/speciesGeneticsCatalogues.ts"), "utf8");
+const expansionBatch2 = fs.readFileSync(path.join(root, "data/species/speciesGeneticsExpansionBatch2.ts"), "utf8");
+const masterMorphDatabase = fs.readFileSync(path.join(root, "data/masterMorphDatabase.ts"), "utf8");
 const speciesLibrary = fs.readFileSync(path.join(root, "pages/SpeciesMorphLibrary.tsx"), "utf8");
 const comboRegistry = fs.readFileSync(path.join(root, "data/geneticsComboRegistry.ts"), "utf8");
 const speciesCoverage = fs.readFileSync(path.join(root, "data/species/speciesGeneticsCoverage.ts"), "utf8");
 
 if (!speciesGenetics.includes("SPECIES_GENETICS_CATALOGUES")) throw new Error("Species genetics must use the canonical species catalogue registry.");
+if (!speciesGenetics.includes("SPECIES_GENETICS_EXPANSION_BATCH_1") || !speciesGenetics.includes("SPECIES_GENETICS_EXPANSION_BATCH_2")) throw new Error("All active species genetics expansion batches must be composed.");
 if (speciesGenetics.includes("speciesGeneticsCataloguesExpanded")) throw new Error("Deleted expanded species catalogue wrapper is still referenced.");
 if (!speciesGenetics.includes("export function searchGenetics")) throw new Error("Species-aware searchGenetics API is missing.");
 if (!speciesGenetics.includes("calculatorNamedCombinations")) throw new Error("Recognised calculator combinations are not included in genetics search.");
@@ -18,6 +21,9 @@ if (!speciesGenetics.includes("morph.verification === \"Confirmed\"")) throw new
 if (!speciesGenetics.includes("evidence")) throw new Error("Genetics search results are missing evidence metadata.");
 if (!speciesGenetics.includes("explanation")) throw new Error("Genetics search results are missing explanation metadata.");
 
+if (!masterMorphDatabase.includes("calculatorEligible?: boolean")) throw new Error("Master morph definitions are missing explicit calculator eligibility metadata.");
+if (!masterMorphDatabase.includes("if (morph.calculatorEligible === false) return false")) throw new Error("Master calculator gate is not honouring explicit calculator exclusion.");
+
 if (!speciesCatalogue.includes('"Python regius"')) throw new Error("Ball Python species genetics catalogue is missing.");
 if (!speciesCatalogue.includes('trait("Piebald", "Recessive"')) throw new Error("Ball Python Piebald locus is missing.");
 if (!speciesCatalogue.includes('evidenceStatus: "confirmed"')) throw new Error("Confirmed species genetics evidence metadata is missing.");
@@ -25,6 +31,11 @@ if (!speciesCatalogue.includes("omnia.org/OMIA002761/51751/")) throw new Error("
 if (!speciesCatalogue.includes("pmc.ncbi.nlm.nih.gov/articles/PMC10712277/")) throw new Error("Ball Python Piebald peer-reviewed provenance is missing.");
 if (!speciesCatalogue.includes("omia.org/OMIA002130/94885/")) throw new Error("Corn Snake amelanism OMIA provenance is missing.");
 if (!speciesCatalogue.includes("pubmed.ncbi.nlm.nih.gov/40140900/")) throw new Error("Corn Snake CLCN2 provenance is missing.");
+
+if (!expansionBatch2.includes('"Python bivittatus"')) throw new Error("Burmese Python expansion is missing.");
+if (!expansionBatch2.includes('trait("python-bivittatus", "Pied", "Recessive"')) throw new Error("Burmese Python Pied trait is missing.");
+if (!expansionBatch2.includes('trait("python-bivittatus", "Hypo", "Incomplete Dominant"')) throw new Error("Burmese Python Hypo inheritance is missing.");
+if (!expansionBatch2.includes('trait("morelia-spilota", "Genetic Stripe", "Recessive"')) throw new Error("Carpet Python Genetic Stripe trait is missing.");
 
 if (!speciesLibrary.includes("searchGenetics(selectedSpeciesId, query")) throw new Error("Species Morph Library is not routed through searchGenetics().");
 if (!speciesLibrary.includes("result.components")) throw new Error("Species Morph Library does not render resolved combination components.");
@@ -35,8 +46,9 @@ if (!comboRegistry.includes('morphId: "arctic"') || !comboRegistry.includes('mor
 if (!comboRegistry.includes('aliases: ["Arctic Conda"')) throw new Error("Grey Fog alias recognition is missing.");
 
 if (!speciesCoverage.includes("SPECIES_GENETICS_CATALOGUES")) throw new Error("Species genetics coverage is not tied to the canonical catalogue.");
+if (!speciesCoverage.includes("SPECIES_GENETICS_EXPANSION_BATCH_2")) throw new Error("Species genetics coverage is missing the second expansion batch.");
 if (!speciesCoverage.includes("getAllSpeciesGeneticsCoverage")) throw new Error("Species genetics coverage API is incomplete.");
 if (!speciesCoverage.includes("confirmedMendelianTraitCount")) throw new Error("Species genetics coverage does not expose confirmed Mendelian evidence.");
 if (!speciesCoverage.includes("scientificSourceBackedTraitCount")) throw new Error("Species genetics coverage does not expose scientific-source coverage.");
 
-console.log("Genetics search contract passed: species-scoped search, evidence-gated calculator eligibility, recognised combinations, component resolution and provenance-aware coverage are wired together.");
+console.log("Genetics search contract passed: species-scoped search, explicit calculator eligibility, recognised combinations, second-wave traits, component resolution and provenance-aware coverage are wired together.");
