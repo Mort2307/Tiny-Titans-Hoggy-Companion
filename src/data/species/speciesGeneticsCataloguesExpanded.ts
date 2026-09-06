@@ -4,14 +4,18 @@ import { SPECIES_GENETICS_EXPANSION_BATCH_1 } from "./speciesGeneticsExpansionBa
 import { SPECIES_GENETICS_EXPANSION_BATCH_3 } from "./speciesGeneticsExpansionBatch3";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
+const identitySet = (trait: MasterMorphDefinition) => new Set([normalise(trait.geneId), normalise(trait.name), ...trait.aliases.map(normalise)]);
+
+function overlaps(a: MasterMorphDefinition, b: MasterMorphDefinition): boolean {
+  const left = identitySet(a);
+  return [...identitySet(b)].some((value) => left.has(value));
+}
 
 function mergeTraits(base: MasterMorphDefinition[], ...expansions: MasterMorphDefinition[][]): MasterMorphDefinition[] {
   const output = [...base];
   for (const batch of expansions) {
     for (const trait of batch) {
-      const index = output.findIndex((entry) =>
-        normalise(entry.geneId) === normalise(trait.geneId) || normalise(entry.name) === normalise(trait.name),
-      );
+      const index = output.findIndex((entry) => overlaps(entry, trait));
       if (index >= 0) output[index] = trait;
       else output.push(trait);
     }
