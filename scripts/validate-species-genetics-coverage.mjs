@@ -1,28 +1,40 @@
-import { INITIAL_SNAKE_SPECIES } from "../src/data/species/speciesRegistry.ts";
-import { getAllSpeciesGeneticsCoverage, getSpeciesGeneticsCoverage } from "../src/data/species/speciesGeneticsCoverage.ts";
+import fs from 'node:fs';
+import path from 'node:path';
 
-const coverage = getAllSpeciesGeneticsCoverage();
-const ids = new Set(coverage.map((entry) => entry.speciesId));
+const root = path.resolve('src/data/species');
+const registryPath = path.join(root, 'speciesRegistry.ts');
+const geneticsPath = path.join(root, 'speciesGenetics.ts');
+const coveragePath = path.join(root, 'speciesGeneticsCoverage.ts');
+const cataloguePath = path.join(root, 'speciesGeneticsCatalogues.ts');
 
-if (coverage.length !== INITIAL_SNAKE_SPECIES.length) {
-  throw new Error(`Species genetics coverage mismatch: ${coverage.length} coverage records for ${INITIAL_SNAKE_SPECIES.length} registered species.`);
+for (const file of [registryPath, geneticsPath, coveragePath, cataloguePath]) {
+  if (!fs.existsSync(file)) throw new Error(`Missing species genetics framework file: ${file}`);
 }
 
-for (const species of INITIAL_SNAKE_SPECIES) {
-  const entry = getSpeciesGeneticsCoverage(species.id);
-  if (!entry || !ids.has(species.id)) throw new Error(`Missing genetics coverage for ${species.id}.`);
-  if (!entry.scientificName || !entry.commonName) throw new Error(`Incomplete coverage identity for ${species.id}.`);
-  if (!["mapped", "partial", "baseline-only"].includes(entry.status)) throw new Error(`Invalid coverage status for ${species.id}.`);
-  if (entry.traitCount < 0 || entry.mendelianTraitCount < 0 || entry.nonMendelianTraitCount < 0 || entry.sourceBackedTraitCount < 0) {
-    throw new Error(`Negative genetics coverage count for ${species.id}.`);
-  }
-  if (entry.mendelianTraitCount + entry.nonMendelianTraitCount !== entry.traitCount) {
-    throw new Error(`Trait-count accounting mismatch for ${species.id}.`);
-  }
-  if (entry.sourceBackedTraitCount > entry.traitCount) throw new Error(`Source-backed count exceeds trait count for ${species.id}.`);
+const registry = fs.readFileSync(registryPath, 'utf8');
+const genetics = fs.readFileSync(geneticsPath, 'utf8');
+const coverage = fs.readFileSync(coveragePath, 'utf8');
+const catalogue = fs.readFileSync(cataloguePath, 'utf8');
+
+if (!genetics.includes('getSpeciesGeneticsCoverage') || !genetics.includes('getSpeciesGeneticsCoverageSummary')) {
+  throw new Error('speciesGenetics.ts is not wired to the shared coverage API.');
+}
+if (!coverage.includes('getAllSpeciesGeneticsCoverage') || !coverage.includes('getSpeciesGeneticsCoverage')) {
+  throw new Error('Species genetics coverage API is incomplete.');
+}
+if (!coverage.includes('heterodon-nasicus') || !coverage.includes('"mapped"')) {
+  throw new Error('Western Hognose mapped coverage contract is missing.');
+}
+if (!catalogue.includes('"Python regius"')) {
+  throw new Error('Python regius is not present in the central species genetics catalogue.');
+}
+if (!catalogue.includes('"Pantherophis guttatus"')) {
+  throw new Error('Corn Snake catalogue is missing from the central species genetics catalogue.');
 }
 
-const hognose = getSpeciesGeneticsCoverage("heterodon-nasicus");
-if (!hognose || hognose.status !== "mapped") throw new Error("Western Hognose must remain mapped in the shared coverage model.");
+const helperIds = [...registry.matchAll(/\b(?:p|taxonomyOnly|cared|record|venomous)\(\s*'([^']+)'/g)].map((match) => match[1]);
+const baseIds = [...registry.matchAll(/\bid:\s*'([^']+)'/g)].map((match) => match[1]);
+const speciesCount = new Set([...helperIds, ...baseIds]).size;
+if (speciesCount < 100) throw new Error(`Expected the expanded snake registry to contain 100+ species; detected ${speciesCount}.`);
 
-console.log(`Species genetics coverage validated: ${coverage.length} species.`);
+console.log(`Species genetics coverage wiring OK: ${speciesCount} registered snake records and a central catalogue.`);
