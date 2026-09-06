@@ -1,5 +1,3 @@
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase/config";
 import { getMorphImageSubmissions } from "./creatorService";
 import { getAllUserMorphSubmissions } from "./creatorUserMorphSubmissionService";
 import { getAllSpeciesSubmissions } from "./speciesSubmissionService";
@@ -67,14 +65,6 @@ export async function getHistoricalContributors(excludeUid?: string): Promise<Hi
       submissionCount: submissions.length,
     };
   }).filter((item) => Boolean(item.latestSubmission)).sort((a, b) => timestampToMillis(b.latestSubmission.submittedAt) - timestampToMillis(a.latestSubmission.submittedAt));
-}
-
-export async function getContributorThankYouStatus(uid: string): Promise<boolean> {
-  const snapshot = await getDocs(collection(db, "submissionConversations"));
-  return snapshot.docs.some((item) => {
-    const data = item.data() as { submitterUid?: string; };
-    return data.submitterUid === uid && item.id.endsWith(`__${clean(uid)}`) === false;
-  });
 }
 
 export async function thankContributor(contributor: HistoricalContributor, senderId: string): Promise<"sent" | "already-sent"> {
