@@ -14,7 +14,6 @@ function Header() {
   const [unread, setUnread] = useState(0);
   const [decision, setDecision] = useState<TitanDecision | null>(null);
   const creatorMode = profile?.role === "admin";
-  const mailboxPath = creatorMode ? "/creator/submission-conversations" : "/conversations/submissions";
 
   useEffect(() => {
     let active = true;
@@ -46,7 +45,7 @@ function Header() {
       </div>
       <div className="app-header-actions">
         {!creatorMode && decision && <Link className="titan-proactive-header-link" to={decision.destination || `/snakes/${decision.animalId}/master-record`} aria-label={`Tiny Titans noticed something for ${decision.animalName ?? "your Titan"}: ${decision.title}`} title={decision.why}><span aria-hidden="true">⚡</span><span className="titan-proactive-header-copy"><strong>{decision.animalName ?? "Titan"}</strong><small>{decision.title}</small></span></Link>}
-        <Link className="submission-mailbox-link" to={mailboxPath} aria-label={unread > 0 ? `Submission messages, ${unread} unread` : "Submission messages"} title={unread > 0 ? `${unread} unread submission message${unread === 1 ? "" : "s"}` : "Submission messages"}><span aria-hidden="true">💬</span>{unread > 0 && <span className="submission-mailbox-badge" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}</Link>
+        <Link className="submission-mailbox-link" to="/conversations" aria-label={unread > 0 ? `Message Centre, ${unread} unread submission message${unread === 1 ? "" : "s"}` : "Open Message Centre"} title={unread > 0 ? `${unread} unread submission message${unread === 1 ? "" : "s"}` : "Message Centre"}><span aria-hidden="true">💬</span>{unread > 0 && <span className="submission-mailbox-badge" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}</Link>
         <TitanCommandPalette />
       </div>
     </header>
