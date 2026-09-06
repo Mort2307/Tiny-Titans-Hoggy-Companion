@@ -35,7 +35,16 @@ function WeightMiniChart({ history }: WeightMiniChartProps) {
     };
   }, [user, snakeId]);
 
-  const chartHistory = canonicalHistory ?? history;
+  const chartHistory = useMemo(() => {
+    const merged = [...history, ...(canonicalHistory ?? [])];
+    const seen = new Set<string>();
+    return merged.filter((record) => {
+      const key = record.id || `${record.date}|${record.weight}|${record.unit ?? "g"}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [history, canonicalHistory]);
 
   const data = useMemo(() => [...chartHistory]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -44,7 +53,7 @@ function WeightMiniChart({ history }: WeightMiniChartProps) {
       weight: (record.unit === "kg" ? record.weight * 1000 : record.weight) / (isImperial ? 28.349523125 : 1),
     })), [chartHistory, isImperial]);
 
-  if (!chartHistory || chartHistory.length < 2) return <div className="weight-chart-empty">📈 Add more weight records<br />to see growth progress</div>;
+  if (chartHistory.length < 2) return <div className="weight-chart-empty">📈 Add more weight records<br />to see growth progress</div>;
 
   return (
     <div className="weight-chart-container">
