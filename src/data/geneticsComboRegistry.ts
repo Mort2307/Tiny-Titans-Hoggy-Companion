@@ -6,6 +6,24 @@ import type { MorphComponent, MorphDefinition } from "./morphs";
  */
 export const calculatorNamedCombinations: MorphDefinition[] = [
   {
+    geneId: "grey-fog",
+    name: "Grey Fog",
+    aliases: ["Arctic Conda", "Arctic Anaconda", "Arctic + Conda", "Arctic x Conda"],
+    kind: "Combination",
+    isGene: false,
+    isCombination: true,
+    category: "Combination",
+    inheritance: "Unknown",
+    hetPossible: false,
+    verification: "Recognised",
+    components: [
+      { morphId: "arctic", type: "Gene", copies: 1 },
+      { morphId: "conda", type: "Gene", copies: 1 },
+    ],
+    description: "A recognised combination of Arctic and Anaconda (Conda), commonly known as Grey Fog.",
+    educationalNotes: "Grey Fog is not a separate locus: Arctic ×1 + Conda ×1.",
+  },
+  {
     geneId: "bubs-daddy",
     name: "Bub's Daddy",
     aliases: ["Bubs Daddy", "Bub’s Daddy"],
