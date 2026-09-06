@@ -1,6 +1,11 @@
 import type { GeneticsDatabase, LocusDefinition } from "./geneticsModel.ts";
 
-const evidence = (claim: string) => [{ sourceType: "specialist_database" as const, claim, confidence: "moderate" as const, note: "Species-specific genetics model entry. Keep molecularly unresolved relationships explicitly marked until the evidence supports a stronger classification." }];
+const evidence = (claim: string) => [{
+  sourceType: "specialist_database" as const,
+  claim,
+  confidence: "moderate" as const,
+  note: "Species-specific genetics model entry. Keep molecularly unresolved relationships explicitly marked until the evidence supports a stronger classification.",
+}];
 
 const cornAmelLocus: LocusDefinition = {
   id: "pantherophis-guttatus-amel-locus",
@@ -31,4 +36,7 @@ const cornPatternLocus: LocusDefinition = {
   evidence: evidence("Motley and Stripe are modelled as an allelic series for calculator purposes where they occupy the same recognised pattern locus."),
 };
 
-export const CORN_SNAKE_GENETICS_DATABASE: GeneticsDatabase = { loci: [cornAmelLocus, cornPatternLocus], combinations: [] };
+export const CORN_SNAKE_GENETICS_DATABASE: GeneticsDatabase = {
+  loci: [cornAmelLocus, cornPatternLocus],
+  combinations: [],
+};
