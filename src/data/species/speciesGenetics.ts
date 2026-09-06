@@ -9,6 +9,7 @@ import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_EXPANSION_BATCH_1 } from "./speciesGeneticsExpansionBatch1";
 import { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";
+import { applyScientificEvidence } from "./speciesGeneticsScientificEvidence";
 import { getSpeciesGeneticsCoverage, getSpeciesGeneticsCoverageSummary } from "./speciesGeneticsCoverage";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
@@ -32,11 +33,7 @@ const normalTrait = (speciesName: string): MasterMorphDefinition => ({
 
 function composeSpeciesCatalogues(): Record<string, MasterMorphDefinition[]> {
   const result: Record<string, MasterMorphDefinition[]> = {};
-  const batches = [
-    SPECIES_GENETICS_CATALOGUES,
-    SPECIES_GENETICS_EXPANSION_BATCH_1,
-    SPECIES_GENETICS_EXPANSION_BATCH_2,
-  ];
+  const batches = [SPECIES_GENETICS_CATALOGUES, SPECIES_GENETICS_EXPANSION_BATCH_1, SPECIES_GENETICS_EXPANSION_BATCH_2];
   for (const batch of batches) {
     for (const [speciesName, traits] of Object.entries(batch)) {
       const existing = result[speciesName] ?? [];
@@ -46,7 +43,7 @@ function composeSpeciesCatalogues(): Record<string, MasterMorphDefinition[]> {
       ];
     }
   }
-  return result;
+  return applyScientificEvidence(result);
 }
 
 const SPECIES_CATALOGUES = composeSpeciesCatalogues();
@@ -76,13 +73,7 @@ export function getSpeciesVisualMorphs(speciesId: string | null | undefined): Ma
 
 export function getSpeciesHetGenes(speciesId: string | null | undefined): MasterMorphDefinition[] {
   if (isHognose(speciesId)) return getMasterHetGenes();
-  return getCatalogue(speciesId).filter((morph) =>
-    morph.isGene === true &&
-    morph.kind === "Gene" &&
-    morph.hetPossible === true &&
-    morph.evidenceStatus === "confirmed" &&
-    morph.verification === "Confirmed",
-  );
+  return getCatalogue(speciesId).filter((morph) => morph.isGene === true && morph.kind === "Gene" && morph.hetPossible === true && morph.evidenceStatus === "confirmed" && morph.verification === "Confirmed");
 }
 
 export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
@@ -103,13 +94,7 @@ export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): 
   return coverage?.traitCount ? "partial" : "baseline-only";
 }
 
-export type GeneticsSearchEvidence = {
-  verification: string;
-  status: string;
-  note?: string;
-  confidence: "confirmed" | "recognised" | "unknown";
-};
-
+export type GeneticsSearchEvidence = { verification: string; status: string; note?: string; confidence: "confirmed" | "recognised" | "unknown" };
 export type GeneticsSearchResult = {
   entry: MasterMorphDefinition;
   speciesId: string;
@@ -123,10 +108,7 @@ export type GeneticsSearchResult = {
   explanation: string;
 };
 
-function getSpeciesName(species: SpeciesRecord): string {
-  return species.commonNames[0] ?? species.acceptedScientificName;
-}
-
+function getSpeciesName(species: SpeciesRecord): string { return species.commonNames[0] ?? species.acceptedScientificName; }
 function confidenceFromEvidence(entry: MasterMorphDefinition): GeneticsSearchEvidence["confidence"] {
   const status = String(entry.evidenceStatus ?? "").toLowerCase();
   const verification = String(entry.verification ?? "").toLowerCase();
@@ -134,7 +116,6 @@ function confidenceFromEvidence(entry: MasterMorphDefinition): GeneticsSearchEvi
   if (verification === "recognised" || status === "recognised") return "recognised";
   return "unknown";
 }
-
 function scoreField(value: string, query: string, exact: number, starts: number, contains: number, tokenScore: number): number {
   const field = normalise(value);
   const tokens = query.split(" ").filter(Boolean);
@@ -145,83 +126,41 @@ function scoreField(value: string, query: string, exact: number, starts: number,
   if (tokens.length > 1 && tokens.every((token) => field.split(" ").some((part) => part.startsWith(token)))) return tokenScore;
   return 0;
 }
-
 function resolveSearchComponents(entry: MasterMorphDefinition, speciesEntries: MasterMorphDefinition[]): GeneticsSearchResult["components"] {
   return (entry.components ?? []).map((component) => {
-    const resolved = speciesEntries.find((candidate) =>
-      candidate.geneId === component.morphId ||
-      normalise(candidate.name) === normalise(component.morphId) ||
-      (candidate.aliases ?? []).some((alias) => normalise(alias) === normalise(component.morphId)),
-    );
-    return {
-      geneId: component.morphId,
-      name: resolved?.name ?? component.morphId,
-      copies: component.copies ?? (component.type === "Super" ? 2 : 1),
-    };
+    const resolved = speciesEntries.find((candidate) => candidate.geneId === component.morphId || normalise(candidate.name) === normalise(component.morphId) || (candidate.aliases ?? []).some((alias) => normalise(alias) === normalise(component.morphId)));
+    return { geneId: component.morphId, name: resolved?.name ?? component.morphId, copies: component.copies ?? (component.type === "Super" ? 2 : 1) };
   });
 }
-
 function buildExplanation(entry: MasterMorphDefinition, components: GeneticsSearchResult["components"]): string {
-  if (entry.kind === "Combination" && components.length) {
-    return `${entry.name} is a recognised combination, not a separate locus: ${components.map((component) => `${component.name}${component.copies > 1 ? ` ×${component.copies}` : ""}`).join(" + ")}.`;
-  }
-  if (entry.kind === "Polygenic" || entry.inheritance === "Polygenic") {
-    return `${entry.name} is recorded as polygenic evidence and is intentionally excluded from Mendelian locus calculations.`;
-  }
-  if (entry.kind === "Line-bred" || entry.inheritance === "Line-bred") {
-    return `${entry.name} is recorded as line-bred evidence and is intentionally excluded from Mendelian locus calculations.`;
-  }
-  if (!entry.isGene || entry.inheritance === "Unknown") {
-    return `${entry.name} is a species-scoped reference record; Tiny Titans does not infer a calculable locus from phenotype alone.`;
-  }
-  if (entry.inheritance === "Recessive") {
-    return `${entry.name} is catalogued as a recessive gene. Individual animal state still depends on documented lineage/genotype evidence.`;
-  }
+  if (entry.kind === "Combination" && components.length) return `${entry.name} is a recognised combination, not a separate locus: ${components.map((component) => `${component.name}${component.copies > 1 ? ` ×${component.copies}` : ""}`).join(" + ")}.`;
+  if (entry.kind === "Polygenic" || entry.inheritance === "Polygenic") return `${entry.name} is recorded as polygenic evidence and is intentionally excluded from Mendelian locus calculations.`;
+  if (entry.kind === "Line-bred" || entry.inheritance === "Line-bred") return `${entry.name} is recorded as line-bred evidence and is intentionally excluded from Mendelian locus calculations.`;
+  if (!entry.isGene || entry.inheritance === "Unknown") return `${entry.name} is a species-scoped reference record; Tiny Titans does not infer a calculable locus from phenotype alone.`;
+  if (entry.inheritance === "Recessive") return `${entry.name} is catalogued as a recessive gene. Individual animal state still depends on documented lineage/genotype evidence.`;
   return `${entry.name} is catalogued as ${entry.inheritance}. Tiny Titans will not infer homozygous/super state unless the individual record explicitly supports it.`;
 }
 
 /** Species-aware genetics search. Search never falls back across species. */
-export function searchGenetics(
-  speciesId: string | null | undefined,
-  query: string,
-  options?: { limit?: number },
-): GeneticsSearchResult[] {
+export function searchGenetics(speciesId: string | null | undefined, query: string, options?: { limit?: number }): GeneticsSearchResult[] {
   if (!speciesId) return [];
   const species = getSpeciesRecord(speciesId);
   if (!species) return [];
-
   const speciesEntries = getSpeciesVisualMorphs(speciesId);
-  const searchEntries = isHognose(speciesId)
-    ? [...speciesEntries, ...calculatorNamedCombinations.filter((combo) => !speciesEntries.some((entry) => entry.geneId === combo.geneId))]
-    : speciesEntries;
+  const searchEntries = isHognose(speciesId) ? [...speciesEntries, ...calculatorNamedCombinations.filter((combo) => !speciesEntries.some((entry) => entry.geneId === combo.geneId))] : speciesEntries;
   const q = normalise(query);
   const limit = Math.max(1, options?.limit ?? 100);
   const calculatorIds = new Set(getSpeciesCalculatorMorphs(speciesId).map((entry) => entry.geneId));
   const speciesName = getSpeciesName(species);
-
-  if (!q) {
-    return searchEntries.sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit).map((entry) => {
-      const components = resolveSearchComponents(entry, speciesEntries);
-      return {
-        entry,
-        speciesId,
-        speciesName,
-        score: 0,
-        matchedOn: [],
-        aliases: entry.aliases ?? [],
-        components,
-        calculatorEligible: calculatorIds.has(entry.geneId),
-        evidence: {
-          verification: entry.verification,
-          status: entry.evidenceStatus ?? entry.verification,
-          note: entry.evidenceNote,
-          confidence: confidenceFromEvidence(entry),
-        },
-        explanation: buildExplanation(entry, components),
-      };
-    });
-  }
-
+  if (!q) return searchEntries.sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit).map((entry) => {
+    const components = resolveSearchComponents(entry, speciesEntries);
+    return {
+      entry, speciesId, speciesName, score: 0, matchedOn: [], aliases: entry.aliases ?? [], components,
+      calculatorEligible: calculatorIds.has(entry.geneId),
+      evidence: { verification: entry.verification, status: entry.evidenceStatus ?? entry.verification, note: entry.evidenceNote, confidence: confidenceFromEvidence(entry) },
+      explanation: buildExplanation(entry, components),
+    };
+  });
   return searchEntries.map((entry) => {
     const matchedOn: string[] = [];
     let score = 0;
@@ -238,20 +177,9 @@ export function searchGenetics(
     if (!score) return null;
     const components = resolveSearchComponents(entry, speciesEntries);
     return {
-      entry,
-      speciesId,
-      speciesName,
-      score,
-      matchedOn,
-      aliases: entry.aliases ?? [],
-      components,
+      entry, speciesId, speciesName, score, matchedOn, aliases: entry.aliases ?? [], components,
       calculatorEligible: calculatorIds.has(entry.geneId),
-      evidence: {
-        verification: entry.verification,
-        status: entry.evidenceStatus ?? entry.verification,
-        note: entry.evidenceNote,
-        confidence: confidenceFromEvidence(entry),
-      },
+      evidence: { verification: entry.verification, status: entry.evidenceStatus ?? entry.verification, note: entry.evidenceNote, confidence: confidenceFromEvidence(entry) },
       explanation: buildExplanation(entry, components),
     } satisfies GeneticsSearchResult;
   }).filter((result): result is GeneticsSearchResult => result !== null).sort((a, b) => b.score - a.score).slice(0, limit);
