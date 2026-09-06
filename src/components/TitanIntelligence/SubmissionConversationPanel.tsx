@@ -13,6 +13,8 @@ const suggestedQuestions: Record<SubmissionConversationType, string[]> = {
   "mentor-application": ["Can you provide the strongest evidence supporting the experience or verification requested?", "Which areas are you most confident mentoring, and which would you refer onward?"],
 };
 
+const THANK_YOU_PREFIX = "🐍 Thank you for helping build Tiny Titans!";
+
 export default function SubmissionConversationPanel({ submissionType, submissionId, submitterUid, submissionTitle, submissionStatus }: { submissionType: SubmissionConversationType; submissionId: string; submitterUid: string; submissionTitle: string; submissionStatus?: string }) {
   const { user, profile } = useAuth();
   const [conversation, setConversation] = useState<SubmissionConversation | null>(null);
@@ -59,12 +61,16 @@ export default function SubmissionConversationPanel({ submissionType, submission
 
   async function thankKeeper() {
     if (!conversation || !user || thanking) return;
+    if (messages.some((item) => item.senderRole === "creator" && item.message.startsWith(THANK_YOU_PREFIX))) {
+      setThankYouStatus("already-sent");
+      return;
+    }
     setThanking(true); setError("");
     try {
       const result = await sendContributorThankYouMessage({
         conversationId: conversation.id,
         senderId: user.uid,
-        message: `🐍 Thank you for helping build Tiny Titans!\n\nWe genuinely appreciate you taking the time to share your knowledge, evidence or experience with us. Contributions like yours help us build a better reptile resource for keepers everywhere.\n\nThank you for being part of the community. ❤️\n\n— Tiny Titans`,
+        message: `${THANK_YOU_PREFIX}\n\nWe genuinely appreciate you taking the time to share your knowledge, evidence or experience with us. Contributions like yours help us build a better reptile resource for keepers everywhere.\n\nThank you for being part of the community. ❤️\n\n— Tiny Titans`,
       });
       setThankYouStatus(result);
     } catch (reason) {
@@ -74,8 +80,8 @@ export default function SubmissionConversationPanel({ submissionType, submission
 
   return <section className="conversation-reply submission-conversation-panel">
     <div className="conversation-detail-top">
-      <div><strong>💬 {creatorMode ? `Message ${submissionTitle}'s keeper` : "Message Tiny Titans"}</strong><p>Private conversation attached to this submission. Every message stays linked to its review record.</p></div>
-      {conversation && <Link to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}>Open full mailbox →</Link>}
+      <div><strong>💬 {creatorMode ? `Message ${submissionTitle}'s keeper` : "Message Tiny Titans"}</strong><p>Private conversation attached to this submission. Keepers can reply here and you will see their response in the same thread.</p></div>
+      {conversation && <Link className="secondary-button" to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}>🗨 Open Messenger →</Link>}
     </div>
     {loading ? <p className="creator-muted">Opening submission conversation…</p> : error && <div className="creator-error">{error}</div>}
     {!loading && <>
