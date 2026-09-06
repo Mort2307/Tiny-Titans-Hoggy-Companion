@@ -1,4 +1,4 @@
-import { calculatorNamedCombinations, componentSignature, normaliseComboName } from "../../data/geneticsComboRegistry";
+import { calculatorNamedCombinations, componentSignature, findCalculatorNamedCombination, normaliseComboName } from "../../data/geneticsComboRegistry";
 import { morphs, type MorphComponent, type MorphDefinition, type VerificationStatus } from "../../data/morphs";
 import { searchGenetics, type GeneticsMatch } from "./geneticsSearchEngine";
 
@@ -17,6 +17,13 @@ export interface GeneticsSearchResult {
   matchKind?: "canonical" | "alias" | "combination" | "fuzzy";
   score: number;
 }
+
+/**
+ * Display aliases are lookup paths only. They never create a new gene, locus,
+ * inheritance rule, or genetic certainty; resolution always returns the
+ * canonical calculator combination record and its recorded verification.
+ */
+export { findCalculatorNamedCombination };
 
 function displayComponent(component: MorphComponent): string {
   const copies = component.copies ?? 1;
@@ -80,7 +87,9 @@ export function explainGeneticsSearch(query: string): string {
   const components = result.canonicalComponents.map((item) => item.replace(/^2 copies /, "Super ").replace(/^1 copy /, "")).join(" × ");
   if (result.commonCombinationName) {
     const equivalents = findEquivalentCombinations(
-      [...morphs, ...calculatorNamedCombinations].find((morph) => morph.name === result.canonicalName) ?? calculatorNamedCombinations[0],
+      findCalculatorNamedCombination(result.canonicalName) ??
+      [...morphs, ...calculatorNamedCombinations].find((morph) => morph.name === result.canonicalName) ??
+      calculatorNamedCombinations[0],
     );
     const equivalentNames = equivalents.map((item) => item.name).slice(0, 3);
     const suffix = equivalentNames.length ? ` Related recognised names: ${equivalentNames.join(", ")}.` : "";
