@@ -6,6 +6,7 @@ import { getCreatorSubmissionConversations, getUserSubmissionConversations } fro
 import { getDashboardIntelligence, type SnakeIntelligence } from "../../services/snakeIntelligenceService";
 import { getUserSnakes } from "../../services/snakeService";
 import { hasFullIntelligenceAccess } from "../../services/intelligenceAccessService";
+import { mergeTitanProactiveState, subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiveIntelligenceService";
 import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
 
 const PROACTIVE_CACHE_MS = 3_000;
@@ -46,25 +47,30 @@ function Header() {
         if (!active) return;
         const snakes = await getDashboardIntelligence(user.uid, records.map((snake) => snake.id));
         if (!active) return;
-        const candidate = snakes
-          .filter((item) => item.priority?.tone === "attention")
+        const activeState = mergeTitanProactiveState(user.uid, snakes);
+        const candidateKey = activeState
           .sort((a, b) => {
-            const aWeight = a.priority?.confidence === "High" ? 2 : 1;
-            const bWeight = b.priority?.confidence === "High" ? 2 : 1;
-            return bWeight - aWeight;
-          })[0] ?? null;
+            const tone = (value: SnakeIntelligence["priority"]["tone"] | undefined) => value === "attention" ? 3 : value === "positive" ? 1 : 2;
+            const confidence = (value: SnakeIntelligence["priority"]["confidence"] | undefined) => value === "High" ? 4 : value === "Moderate" ? 3 : value === "Low" ? 2 : 1;
+            return tone(b.tone) - tone(a.tone) || confidence(b.confidence) - confidence(a.confidence) || b.lastSeenAt - a.lastSeenAt;
+          })[0];
+        const candidate = candidateKey
+          ? snakes.find((item) => item.snakeId === candidateKey.animalId && item.priority?.id === candidateKey.insightId) ?? null
+          : null;
         setProactive(candidate);
       } catch {
         if (active) setProactive(null);
       }
     };
     void refresh();
+    const unsubscribe = subscribeToTitanIntelligenceUpdates(() => { void refresh(true); });
     const onFocus = () => { void refresh(true); };
     const onVisibility = () => { if (document.visibilityState === "visible") void refresh(true); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       active = false;
+      unsubscribe();
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
