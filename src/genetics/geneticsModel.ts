@@ -19,6 +19,7 @@ export type InheritanceModel =
   | "unknown";
 
 export type SuperStatus = "supported" | "not_applicable" | "claimed" | "unresolved";
+export type GeneticPhenotypeStatus = "wild_type" | "visual" | "heterozygous" | "mixed_allelic" | "unresolved";
 
 export interface EvidenceRecord {
   sourceType: EvidenceSourceType;
@@ -68,6 +69,8 @@ export interface OffspringOutcome {
   probability: number;
   copiesByAllele: Record<string, number>;
   label: string;
+  phenotypeStatus: GeneticPhenotypeStatus;
+  superForm: boolean;
 }
 
 export interface LocusResult {
@@ -103,6 +106,10 @@ export function getLocusAllele(locus: LocusDefinition, value: string): AlleleDef
 
 export function genotypeLabel(locus: LocusDefinition, paternal: AlleleDefinition, maternal: AlleleDefinition): string {
   if (paternal.isWildType && maternal.isWildType) return "Wild type";
+  if (locus.inheritance === "recessive" && (paternal.isWildType || maternal.isWildType)) {
+    const mutant = paternal.isWildType ? maternal : paternal;
+    return `Het ${mutant.name}`;
+  }
   if (paternal.id === maternal.id) return paternal.name;
   return `${paternal.name} / ${maternal.name}`;
 }
@@ -111,39 +118,53 @@ function unorderedKey(a: string, b: string): string {
   return [a, b].sort().join("|");
 }
 
+function phenotypeStatus(locus: LocusDefinition, paternal: AlleleDefinition, maternal: AlleleDefinition): GeneticPhenotypeStatus {
+  if (paternal.isWildType && maternal.isWildType) return "wild_type";
+  if (locus.inheritance === "recessive") {
+    return paternal.isWildType || maternal.isWildType ? "heterozygous" : "visual";
+  }
+  if (locus.inheritance === "dominant" || locus.inheritance === "incomplete_dominant" || locus.inheritance === "codominant") return "visual";
+  if (locus.inheritance === "allelic") {
+    if (paternal.id === maternal.id) return paternal.isWildType ? "wild_type" : "visual";
+    if (paternal.isWildType || maternal.isWildType) return "heterozygous";
+    return "mixed_allelic";
+  }
+  return "unresolved";
+}
+
+function isSuper(locus: LocusDefinition, paternal: AlleleDefinition, maternal: AlleleDefinition): boolean {
+  return Boolean(locus.superFormId && locus.superStatus === "supported" && paternal.id === locus.superFormId && maternal.id === locus.superFormId);
+}
+
 export function calculateLocus(locus: LocusDefinition, parentA: GeneticState, parentB: GeneticState): LocusResult {
+  if (parentA.locusId !== locus.id || parentB.locusId !== locus.id) throw new Error(`State/locus mismatch for ${locus.name}`);
   const a1 = getLocusAllele(locus, parentA.paternalAlleleId);
   const a2 = getLocusAllele(locus, parentA.maternalAlleleId);
   const b1 = getLocusAllele(locus, parentB.paternalAlleleId);
   const b2 = getLocusAllele(locus, parentB.maternalAlleleId);
   if (!a1 || !a2 || !b1 || !b2) throw new Error(`Invalid allele state for locus ${locus.name}`);
 
-  const raw = [
-    [a1, b1],
-    [a1, b2],
-    [a2, b1],
-    [a2, b2],
-  ];
+  const raw: Array<[AlleleDefinition, AlleleDefinition]> = [[a1, b1], [a1, b2], [a2, b1], [a2, b2]];
   const grouped = new Map<string, OffspringOutcome>();
   for (const [paternal, maternal] of raw) {
     const key = unorderedKey(paternal.id, maternal.id);
     const existing = grouped.get(key);
-    const copiesByAllele = {
-      [paternal.id]: (paternal.id === maternal.id ? 2 : 1),
-      ...(paternal.id === maternal.id ? {} : { [maternal.id]: 1 }),
-    };
     if (existing) {
       existing.probability += 0.25;
-    } else {
-      grouped.set(key, {
-        locusId: locus.id,
-        paternalAlleleId: paternal.id,
-        maternalAlleleId: maternal.id,
-        probability: 0.25,
-        copiesByAllele,
-        label: genotypeLabel(locus, paternal, maternal),
-      });
+      continue;
     }
+    const copiesByAllele: Record<string, number> = { [paternal.id]: paternal.id === maternal.id ? 2 : 1 };
+    if (paternal.id !== maternal.id) copiesByAllele[maternal.id] = 1;
+    grouped.set(key, {
+      locusId: locus.id,
+      paternalAlleleId: paternal.id,
+      maternalAlleleId: maternal.id,
+      probability: 0.25,
+      copiesByAllele,
+      label: genotypeLabel(locus, paternal, maternal),
+      phenotypeStatus: phenotypeStatus(locus, paternal, maternal),
+      superForm: isSuper(locus, paternal, maternal),
+    });
   }
   return { locus, outcomes: [...grouped.values()].sort((a, b) => b.probability - a.probability) };
 }
