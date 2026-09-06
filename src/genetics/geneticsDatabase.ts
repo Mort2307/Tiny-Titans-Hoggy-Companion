@@ -14,6 +14,16 @@ const inheritanceMap: Record<string, InheritanceModel> = {
   Unknown: "unknown",
 };
 
+const explicitAllelicOverrides = new Set([
+  "pantherophis guttatus|amel",
+  "pantherophis guttatus|amelanistic / albino",
+  "pantherophis guttatus|ultra",
+  "pantherophis guttatus|motley",
+  "pantherophis guttatus|stripe",
+  "heterodon nasicus|arctic",
+  "heterodon nasicus|conda",
+]);
+
 function evidenceFor(morph: MasterMorphDefinition): EvidenceRecord[] {
   const confidence = morph.evidenceStatus === "confirmed" || morph.verification === "Confirmed"
     ? "high"
@@ -31,6 +41,8 @@ function evidenceFor(morph: MasterMorphDefinition): EvidenceRecord[] {
 
 function catalogueLocus(species: string, morph: MasterMorphDefinition): LocusDefinition | undefined {
   if (!morph.isGene || morph.kind !== "Gene") return undefined;
+  const key = `${species.trim().toLowerCase()}|${morph.name.trim().toLowerCase()}`;
+  if (explicitAllelicOverrides.has(key)) return undefined;
   const inheritance = inheritanceMap[morph.inheritance] ?? "unknown";
   if (["polygenic", "line_bred", "unknown", "complex"].includes(inheritance)) return undefined;
   return {
@@ -52,15 +64,8 @@ const catalogueLoci = Object.entries(SPECIES_GENETICS_CATALOGUES_EXPANDED)
   .flatMap(([species, traits]) => traits.map((trait) => catalogueLocus(species, trait)).filter((value): value is LocusDefinition => Boolean(value)));
 
 export const GENETICS_DATABASE: GeneticsDatabase = {
-  loci: [
-    ...catalogueLoci,
-    ...CORN_SNAKE_GENETICS_DATABASE.loci,
-    ...HOGNOSE_GENETICS_DATABASE.loci,
-  ],
-  combinations: [
-    ...CORN_SNAKE_GENETICS_DATABASE.combinations,
-    ...HOGNOSE_GENETICS_DATABASE.combinations,
-  ],
+  loci: [...catalogueLoci, ...CORN_SNAKE_GENETICS_DATABASE.loci, ...HOGNOSE_GENETICS_DATABASE.loci],
+  combinations: [...CORN_SNAKE_GENETICS_DATABASE.combinations, ...HOGNOSE_GENETICS_DATABASE.combinations],
 };
 
 export function getSpeciesLoci(species: string): LocusDefinition[] {
