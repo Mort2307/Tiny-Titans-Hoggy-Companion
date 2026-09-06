@@ -14,7 +14,7 @@ function toV3Parent(parent: ParentGenetics, speciesId: string) {
     speciesId,
     visualMorphs: parent.morphs,
     hets: parent.hets.map((gene) => ({ gene, percentage: normaliseHetPercentage(parent.hetPercentages?.[gene]) })),
-    knownGeneCopies: undefined,
+    ...(parent.knownGeneCopies ? { knownGeneCopies: parent.knownGeneCopies } : {}),
   };
 }
 
@@ -58,7 +58,7 @@ function mapV3Outcome(outcome: ReturnType<typeof calculateGeneticsV3>["outcomes"
   };
 }
 
-/** V3-backed species calculator. Taxonomy is supplied explicitly by the caller; this adapter never guesses species from morph names. */
+/** Legacy overload retained for compatibility; speciesId must be supplied by the caller through the explicit V3 entry point below. */
 export function calculateSpeciesGenetics(input: GeneticsCalculatorInput, definitions: MasterMorphDefinition[]): GeneticsCalculatorResult {
   return { input, offspring: [], hasUnresolvedGenetics: true };
 }
