@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationSettings } from "../types/Notifications";
 import type { FeedingSchedule } from "../types/Snake";
@@ -34,6 +34,19 @@ function notificationDefaults(value: unknown): Pick<NotificationSettings, "feedi
     feedingPreparationDaysBefore: normalisePreparationDays(settings.feedingPreparationDaysBefore),
     feedingPreparationTime: normaliseTime(settings.feedingPreparationTime),
   };
+}
+
+function validDate(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime());
+}
+
+function latestLoggedFeedingDate(value: unknown): string | null {
+  if (!Array.isArray(value)) return null;
+  const dates = value
+    .map((item) => item && typeof item === "object" && "date" in item ? (item as { date?: unknown }).date : undefined)
+    .filter((date): date is string => validDate(date))
+    .sort();
+  return dates.at(-1) ?? null;
 }
 
 export function getDefaultNextFeedingDate(referenceDate = new Date().toISOString().slice(0, 10)): string {
@@ -88,13 +101,55 @@ export async function saveFeedingSchedule(uid: string, snakeId: string, schedule
   return next;
 }
 
-export async function advanceFeedingScheduleAfterFeed(uid: string, snakeId: string, feedingDate: string): Promise<FeedingSchedule | null> {
+/**
+ * The reminder anchor is the latest ACTUAL logged feeding, not the previous
+ * scheduled reminder. This keeps a weekly schedule moving with the keeper's
+ * real routine: feeding one day early moves the next due date one interval
+ * from that actual feeding rather than one interval from the old reminder.
+ */
+export async function advanceFeedingScheduleAfterFeed(uid: string, snakeId: string, _feedingDate: string): Promise<FeedingSchedule | null> {
   const snapshot = await getDoc(doc(db, "users", uid, "snakes", snakeId));
   const existing = snapshot.data()?.feedingSchedule;
   if (!existing) return null;
-  const schedule = normaliseFeedingSchedule(existing, feedingDate);
+
+  const schedule = normaliseFeedingSchedule(existing, _feedingDate);
   if (!schedule.enabled) return schedule;
-  let nextDate = schedule.nextFeedingDate;
-  while (nextDate <= feedingDate) nextDate = addDays(nextDate, schedule.intervalDays);
-  return saveFeedingSchedule(uid, snakeId, { ...schedule, nextFeedingDate: nextDate });
+
+  const feedingsSnapshot = await getDocs(query(
+    collection(db, "users", uid, "snakes", snakeId, "feedings"),
+    orderBy("date", "desc"),
+  ));
+  const latestDate = latestLoggedFeedingDate(feedingsSnapshot.docs.map((item) => item.data()));
+  const anchorDate = latestDate ?? (validDate(_feedingDate) ? _feedingDate : new Date().toISOString().slice(0, 10));
+  const nextDate = addDays(anchorDate, schedule.intervalDays);
+
+  return saveFeedingSchedule(uid, snakeId, {
+    ...schedule,
+    nextFeedingDate: nextDate,
+  });
+}
+
+/**
+ * Rebuild the schedule after an edit/delete so it can never drift away from
+ * the most recent real feeding history.
+ */
+export async function recalculateFeedingScheduleFromHistory(uid: string, snakeId: string): Promise<FeedingSchedule | null> {
+  const snapshot = await getDoc(doc(db, "users", uid, "snakes", snakeId));
+  const existing = snapshot.data()?.feedingSchedule;
+  if (!existing) return null;
+
+  const schedule = normaliseFeedingSchedule(existing);
+  if (!schedule.enabled) return schedule;
+
+  const feedingsSnapshot = await getDocs(query(
+    collection(db, "users", uid, "snakes", snakeId, "feedings"),
+    orderBy("date", "desc"),
+  ));
+  const latestDate = latestLoggedFeedingDate(feedingsSnapshot.docs.map((item) => item.data()));
+  if (!latestDate) return schedule;
+
+  return saveFeedingSchedule(uid, snakeId, {
+    ...schedule,
+    nextFeedingDate: addDays(latestDate, schedule.intervalDays),
+  });
 }
