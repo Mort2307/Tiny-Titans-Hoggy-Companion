@@ -4,10 +4,9 @@ import { TITAN_V50_FEATURES, type V50Feature } from "../intelligence/v50/titanV5
 import { FEATURE_SUMMARIES } from "../intelligence/v50/titanV50Runtime";
 import { searchGeneticsIntelligence, explainGeneticsSearch, type GeneticsSearchResult } from "../intelligence/v50/geneticsSearchIntelligence";
 import { buildAnimalTimeline, buildBehaviourProfile, getGrowthInsight } from "../intelligence/v50/animalIntelligenceEngine";
-import { buildGeneticFamilyTree, buildGeneticTimeMachine, buildGeneticWhatIf } from "../intelligence/v50/geneticsJourneyEngine";
-import { calculateGeneticIdentityConfidence } from "../intelligence/v50/geneticsIntegrityEngine";
-import { buildMissingDataFindings } from "../intelligence/v50/husbandryIntelligenceEngine";
 import { buildAutomaticKeeperJournal, buildAnnualTitanTimeCapsule, buildEmergencyBoundary, buildEscapeRecoveryChecklist, buildSnakePassport } from "../intelligence/v50/animalRecordsIntelligence";
+import { buildMissingDataFindings } from "../intelligence/v50/husbandryIntelligenceEngine";
+import TitanMicroclimateTool from "../components/TitanIntelligence/TitanMicroclimateTool";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
@@ -72,15 +71,13 @@ export default function TitanFeatureExperience() {
   const husbandryTool = husbandryFeatures.has(id);
   const needsSnake = animalTool || husbandryTool;
 
-  function runGeneticsSearch() {
-    setGeneticsResults(searchGeneticsIntelligence(query));
-  }
+  function runGeneticsSearch() { setGeneticsResults(searchGeneticsIntelligence(query)); }
 
   const title = `${icons[id] ?? "🧠"} ${feature.name}`;
   return <main className="page-container titan-feature-page">
     <button type="button" className="titan-feature-back" onClick={() => navigate(-1)}>← Back to Titan Intelligence</button>
     <header className="titan-feature-hero">
-      <div><span className="titan-feature-id">V50 · #{id}</span><h1>{title}</h1><p>{FEATURE_SUMMARIES[id] ?? feature.intelligence ? (FEATURE_SUMMARIES[id] ?? "Connected intelligence capability.") : "Connected capability."}</p></div>
+      <div><span className="titan-feature-id">V50 · #{id}</span><h1>{title}</h1><p>{FEATURE_SUMMARIES[id] ?? "Connected intelligence capability."}</p></div>
       <div className={`titan-feature-status titan-feature-status--${feature.status}`}><strong>{feature.status}</strong><span>canonical capability state</span></div>
     </header>
 
@@ -99,12 +96,7 @@ export default function TitanFeatureExperience() {
       <h2>Choose the Tiny Titan this capability should inspect</h2>
       {snakes.length === 0 ? <><p>No animal records are available yet, so Tiny Titans will not fabricate a context.</p><Link to="/snakes/new">Add a Tiny Titan →</Link></> : <>
         <select value={selectedSnakeId} onChange={(event) => setSelectedSnakeId(event.target.value)} aria-label="Select Tiny Titan">{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select>
-        {animalTool && records && <div className="titan-feature-data-grid">
-          <article><strong>{growth?.currentWeight ?? "—"}</strong><span>Current weight (g)</span></article>
-          <article><strong>{growth?.sampleCount ?? 0}</strong><span>Weight records</span></article>
-          <article><strong>{records.feedings.length}</strong><span>Feeding records</span></article>
-          <article><strong>{records.sheds.length}</strong><span>Shed records</span></article>
-        </div>}
+        {animalTool && records && <div className="titan-feature-data-grid"><article><strong>{growth?.currentWeight ?? "—"}</strong><span>Current weight (g)</span></article><article><strong>{growth?.sampleCount ?? 0}</strong><span>Weight records</span></article><article><strong>{records.feedings.length}</strong><span>Feeding records</span></article><article><strong>{records.sheds.length}</strong><span>Shed records</span></article></div>}
         {id === 7 && growth && <div className="titan-feature-note"><b>Growth insight</b><p>{growth.sampleCount < 2 ? "More dated weights are needed before a change can be calculated." : `${growth.changeGrams ?? 0} g change across the recorded weight window at an average of ${growth.averageChangePerDay ?? 0} g/day. This is a record-derived summary, not a health judgement.`}</p></div>}
         {id === 9 && behaviour && <div className="titan-feature-note"><b>Behaviour profile</b><p>{behaviour.observationCount ? `Repeated recorded labels: ${behaviour.labels.join(", ")}.` : behaviour.note}</p><small>{behaviour.confidence} confidence</small></div>}
         {id === 13 && <div className="titan-feature-note"><b>Snake passport</b><p>{JSON.stringify(buildSnakePassport(timeline.map((event, index) => ({ id: `${index}`, type: event.type, date: event.date, title: event.label }))))}</p></div>}
@@ -116,13 +108,14 @@ export default function TitanFeatureExperience() {
       </>}
     </section>}
 
-    {husbandryTool && <section className="titan-feature-panel">
-      <p className="titan-feature-kicker">🌡️ HUSBANDRY CONTEXT</p>
-      <h2>Environment intelligence stays evidence-bound</h2>
-      <p>{selectedSnake ? "This experience is scoped to the selected animal. Environmental readings must come from explicit enclosure or sensor observations; the capability will not infer them from absent records." : "Select a Tiny Titan above to scope the experience."}</p>
-      <div className="titan-feature-note">{buildMissingDataFindings(false, 0)[0].detail}</div>
-      <Link to="/enclosure-intelligence">Open Enclosure Intelligence →</Link>
+    {husbandryTool && selectedSnake && <section className="titan-feature-panel">
+      <p className="titan-feature-kicker">🌡️ HUSBANDRY INTELLIGENCE</p>
+      <h2>Recorded microclimate</h2>
+      <p>Readings are stored against {selectedSnake.name}. Baselines are derived from recorded observations and are not treated as universal species rules.</p>
+      <TitanMicroclimateTool snakeId={selectedSnake.id} />
     </section>}
+
+    {husbandryTool && !selectedSnake && <section className="titan-feature-panel"><p>Select a Tiny Titan above before recording enclosure observations.</p><div className="titan-feature-note">{buildMissingDataFindings(false, 0)[0].detail}</div></section>}
 
     {!geneticsTool && !animalTool && !husbandryTool && <section className="titan-feature-panel">
       <p className="titan-feature-kicker">CONNECTED EXPERIENCE</p>
@@ -137,9 +130,6 @@ export default function TitanFeatureExperience() {
       </div>
     </section>}
 
-    <section className="titan-feature-panel titan-feature-proof">
-      <p className="titan-feature-kicker">TRUST BOUNDARY</p>
-      <p>V50 never treats a missing record as a fact, preserves uncertain genetics, keeps appearance separate from genetic confirmation, and escalates veterinary decisions to qualified professionals.</p>
-    </section>
+    <section className="titan-feature-panel titan-feature-proof"><p className="titan-feature-kicker">TRUST BOUNDARY</p><p>V50 never treats a missing record as a fact, preserves uncertain genetics, keeps appearance separate from genetic confirmation, and escalates veterinary decisions to qualified professionals.</p></section>
   </main>;
 }
