@@ -3,8 +3,8 @@ import type { MorphReferenceEntry } from "./hognoseMorphCatalog";
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 /**
- * Reference-only line-bred identities which must be selectable in the Morph Library
- * without being promoted to confirmed Mendelian loci.
+ * Reference-only line-bred identities and community-documented combinations which
+ * must remain selectable/searchable without being promoted to new Mendelian loci.
  */
 export const morphReferenceAdditions: MorphReferenceEntry[] = [
   {
@@ -57,5 +57,26 @@ export const morphReferenceAdditions: MorphReferenceEntry[] = [
     educationalNotes: "This is a reference-line identity rather than a simple Mendelian mutation.",
     sourceUrl: "https://hognose.ca/",
     sourceLabel: "Hognose Morphs",
+  },
+  {
+    geneId: slug("Super Arctic Albino Anaconda"),
+    name: "Super Arctic Albino Anaconda",
+    aliases: ["Super Arctic Albino Conda", "Pink Subzero", "Bubz Daddy", "Super Arctic Albino Anaconda Western Hognose"],
+    kind: "Combination",
+    isGene: false,
+    isCombination: true,
+    category: "Community-documented Combination",
+    inheritance: "Unknown",
+    hetPossible: false,
+    verification: "Recognised",
+    components: [
+      { morphId: "arctic", type: "Gene", copies: 2 },
+      { morphId: "albino", type: "Gene", copies: 2 },
+      { morphId: "conda", type: "Gene", copies: 1 },
+    ],
+    contains: ["Super Arctic", "Albino", "Anaconda"],
+    description: "A community-documented Western Hognose combination described from a Super Arctic Albino Anaconda individual. The contributor describes this particular example as part of a polygenically pink lineage selected for pink colour expression. Subzeros are reported to occur across a range of colour expressions, similar to Super Arctic.",
+    educationalNotes: "Contributor description: \"Pictured is a super arctic albino anaconda western hognose also known as a subzero conda or bubz daddy. This particular example is from polygenically pink lineage meaning it is a descendant of line breeding for pink colors. Subzeros come in a wide range of colors just like super Arctic.\" Treat Pink Subzero and Bubz Daddy as recorded community names for this composition, not as separate genetic loci. The albino component is represented as homozygous in the composition; the stated parentage described both parents as carrying albino.",
+    sourceLabel: "Tiny Titans community submission",
   },
 ];
