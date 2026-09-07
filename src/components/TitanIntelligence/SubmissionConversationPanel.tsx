@@ -16,17 +16,20 @@ const suggestedQuestions: Record<SubmissionConversationType, string[]> = {
 };
 
 const DEFAULT_THANK_YOU = "🐍 Thank you for helping build Tiny Titans!\n\nWe genuinely appreciate you taking the time to share your knowledge, evidence or experience with us. Contributions like yours help us build a better reptile resource for keepers everywhere.\n\nThank you for being part of the community. ❤️\n\n— Tiny Titans";
+const DEFAULT_MORPH_VERIFICATION = "Hi! We are reviewing your morph submission and would like to verify the animal before we make any canonical genetics decision.\n\nCould you please confirm the animal's known parents, genetics and/or the breeder/lineage information you have available? Any supporting photographs, records or source details would also be helpful.\n\nThanks for helping us keep the Tiny Titans Morph Library accurate.\n\n— Tiny Titans";
+const DEFAULT_TERMINOLOGY_VERIFICATION = "Hi! We are reviewing your terminology submission and would like to verify the terminology before we map it into the Tiny Titans Morph Library.\n\nCould you please tell us where this name came from, who uses it, and whether it is intended as a recognised morph, combination name, regional alias, locality term or breeder-specific term? Any supporting source or lineage information would be very helpful.\n\nThanks for helping us keep the Tiny Titans Morph Library accurate.\n\n— Tiny Titans";
 const THANK_YOU_PREFIX = "🐍 Thank you for helping build Tiny Titans!";
 
 type SubmissionConversationPanelProps = {
   submissionType: Exclude<SubmissionConversationType, "direct">;
   submissionId: string;
   submitterUid?: string;
+  submitterName?: string;
   submissionTitle: string;
   submissionStatus?: string;
 };
 
-export default function SubmissionConversationPanel({ submissionType, submissionId, submitterUid, submissionTitle, submissionStatus }: SubmissionConversationPanelProps) {
+export default function SubmissionConversationPanel({ submissionType, submissionId, submitterUid, submitterName, submissionTitle, submissionStatus }: SubmissionConversationPanelProps) {
   const { user, profile } = useAuth();
   const [conversation, setConversation] = useState<SubmissionConversation | null>(null);
   const [messages, setMessages] = useState<SubmissionConversationMessage[]>([]);
@@ -38,6 +41,8 @@ export default function SubmissionConversationPanel({ submissionType, submission
   const creatorMode = profile?.role === "admin";
   const mailboxPath = creatorMode ? "/creator/submission-conversations" : "/conversations/submissions";
   const prompts = useMemo(() => suggestedQuestions[submissionType], [submissionType]);
+  const recipientName = creatorMode ? (submitterName?.trim() || "the keeper") : "Tiny Titans";
+  const composerId = `submission-reply-${submissionType}-${submissionId}`;
 
   useEffect(() => {
     if (!user || !submissionId) {
@@ -87,44 +92,56 @@ export default function SubmissionConversationPanel({ submissionType, submission
     }
   }
 
-  function useDefaultThankYou() {
-    setDraft(DEFAULT_THANK_YOU);
+  function focusComposer(message?: string) {
+    if (message) setDraft(message);
     setError("");
-    window.requestAnimationFrame(() => replyRef.current?.focus({ preventScroll: true }));
+    window.requestAnimationFrame(() => {
+      replyRef.current?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      replyRef.current?.focus({ preventScroll: true });
+    });
+  }
+
+  function useDefaultThankYou() {
+    focusComposer(DEFAULT_THANK_YOU);
+  }
+
+  function requestVerification() {
+    focusComposer(submissionType === "morph-terminology" ? DEFAULT_TERMINOLOGY_VERIFICATION : DEFAULT_MORPH_VERIFICATION);
   }
 
   const hasThankYou = Boolean(conversation?.contributorThankedAt) || messages.some((item) => item.senderRole === "creator" && item.message.startsWith(THANK_YOU_PREFIX));
 
-  return <section className={`conversation-reply submission-conversation-panel ${hasThankYou ? "submission-conversation-thanked" : ""}`}>
+  return <section id={`submission-conversation-${submissionType}-${submissionId}`} className={`conversation-reply submission-conversation-panel ${hasThankYou ? "submission-conversation-thanked" : ""}`}>
     <div className="conversation-detail-top">
       <div>
-        <strong>💬 {creatorMode ? `Message ${submissionTitle}'s keeper` : "Message Tiny Titans"}</strong>
-        <p>Private conversation attached to this submission. Messages stay in the same thread so the keeper and Tiny Titans can reply to one another.</p>
+        <strong>💬 {creatorMode ? `Message ${recipientName}` : "Message Tiny Titans"}</strong>
+        <p>{creatorMode ? `Private conversation with ${recipientName} about this submission. You can ask for evidence, verify the morph, clarify terminology or send a thank-you.` : "Private conversation with the Tiny Titans review team. Reply here for questions, evidence or submission follow-up."}</p>
       </div>
       {conversation && <Link className="secondary-button" to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}>🗨 Open Messenger →</Link>}
     </div>
     {hasThankYou && creatorMode && <div className="contributor-thanked-badge" role="status">✓ THANKED · Contributor has received the Tiny Titans thank-you</div>}
-    {loading && <p className="creator-muted">Opening submission conversation…</p>}
+    {loading && <p className="creator-muted">Opening conversation with {recipientName}…</p>}
     {!loading && error && <div className="creator-error" role="alert">{error}</div>}
     {!loading && conversation && <>
       {creatorMode && <div className="submission-smart-prompts">
-        <small>💌 Contributor message</small>
+        <small>💬 Message {recipientName}</small>
         <div className="submission-message-actions">
+          {submissionType === "morph-image" || submissionType === "morph-terminology" ? <button type="button" onClick={requestVerification} disabled={sending}>🧬 Request morph verification</button> : null}
           <button type="button" onClick={useDefaultThankYou} disabled={sending || hasThankYou}>💌 Load thank-you template</button>
           {hasThankYou && <span className="creator-muted">Already thanked in this thread.</span>}
         </div>
       </div>}
       {creatorMode && messages.length === 0 && <div className="submission-smart-prompts">
         <small>🧠 Suggested questions</small>
-        <div>{prompts.map((prompt) => <button key={prompt} type="button" onClick={() => { setDraft(prompt); window.requestAnimationFrame(() => replyRef.current?.focus({ preventScroll: true })); }} disabled={sending}>{prompt}</button>)}</div>
+        <div>{prompts.map((prompt) => <button key={prompt} type="button" onClick={() => focusComposer(prompt)} disabled={sending}>{prompt}</button>)}</div>
       </div>}
       <div className="conversation-messages submission-conversation-messages">
-        {messages.length === 0 ? <p className="creator-muted">No messages yet. Start the conversation when you need clarification or want to thank the contributor.</p> : messages.slice(-8).map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : "👤 Keeper"}</strong><p>{item.message}</p></article>)}
+        {messages.length === 0 ? <p className="creator-muted">No messages yet. Start the conversation with {recipientName} when you need clarification or want to thank the contributor.</p> : messages.slice(-8).map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : `👤 ${recipientName}`}</strong><p>{item.message}</p></article>)}
       </div>
-      <label htmlFor={`submission-reply-${submissionType}-${submissionId}`}><strong>{creatorMode ? "Write a message to the keeper" : "Write a message to Tiny Titans"}</strong></label>
-      <textarea ref={replyRef} id={`submission-reply-${submissionType}-${submissionId}`} value={draft} onChange={(event) => setDraft(event.target.value)} rows={6} maxLength={5000} placeholder={creatorMode ? "Write your thank-you, question, clarification or follow-up here…" : "Reply to the Tiny Titans review team…"} disabled={sending} autoComplete="off" spellCheck="true" />
+      <label htmlFor={composerId}><strong>{creatorMode ? `Write a message to ${recipientName}` : "Write a message to Tiny Titans"}</strong></label>
+      <textarea ref={replyRef} id={composerId} value={draft} onChange={(event) => setDraft(event.target.value)} rows={6} maxLength={5000} placeholder={creatorMode ? `Write your message to ${recipientName}…` : "Reply to the Tiny Titans review team…"} disabled={sending} autoComplete="off" spellCheck="true" />
       <div className="creator-actions">
-        <button type="button" className="creator-primary" onClick={() => void send()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : "💬 Send message"}</button>
+        <button type="button" className="creator-primary" onClick={() => void send()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : `💬 Send to ${recipientName}`}</button>
         {creatorMode && <button type="button" className="secondary-button" onClick={useDefaultThankYou} disabled={sending || hasThankYou}>Use thank-you template</button>}
       </div>
     </>}
