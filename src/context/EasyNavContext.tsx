@@ -79,18 +79,24 @@ const MIN_WEEKLY_METRICS = 2;
 const MAX_WEEKLY_METRICS = 6;
 const db = getFirestore(app);
 
+type SnakeSlicePreferences = Record<string, TitanAtAGlanceSliceId[]>;
+
 type EasyNavContextValue = {
   mode: EasyNavMode;
   slices: TitanAtAGlanceSliceId[];
+  snakeSlices: SnakeSlicePreferences;
   weekStartDay: WeekStartDay;
   weeklyMetrics: TitanWeeklyMetricId[];
   loading: boolean;
   isEasyNav: boolean;
   setMode: (mode: EasyNavMode) => Promise<void>;
   setSlices: (slices: TitanAtAGlanceSliceId[]) => Promise<void>;
+  setSnakeSlices: (snakeId: string, slices: TitanAtAGlanceSliceId[]) => Promise<void>;
+  getSlicesForSnake: (snakeId?: string) => TitanAtAGlanceSliceId[];
   setWeekStartDay: (day: WeekStartDay) => Promise<void>;
   setWeeklyMetrics: (metrics: TitanWeeklyMetricId[]) => Promise<void>;
   resetSlices: () => Promise<void>;
+  resetSnakeSlices: (snakeId: string) => Promise<void>;
   resetWeeklyPreferences: () => Promise<void>;
 };
 
@@ -101,6 +107,12 @@ function sanitiseSlices(value: unknown): TitanAtAGlanceSliceId[] {
   const allowed = new Set<TitanAtAGlanceSliceId>(TITAN_AT_A_GLANCE_OPTIONS.map((option) => option.id));
   const result = [...new Set(value.filter((item): item is TitanAtAGlanceSliceId => typeof item === "string" && allowed.has(item as TitanAtAGlanceSliceId)))].slice(0, MAX_SLICES);
   return result.length < MIN_SLICES ? DEFAULT_SLICES : result;
+}
+
+function sanitiseSnakeSlices(value: unknown): SnakeSlicePreferences {
+  if (!value || typeof value !== "object") return {};
+  const record = value as Record<string, unknown>;
+  return Object.fromEntries(Object.entries(record).map(([snakeId, snakeSlices]) => [snakeId, sanitiseSlices(snakeSlices)]));
 }
 
 function sanitiseWeekStart(value: unknown): WeekStartDay {
@@ -122,6 +134,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [mode, setModeState] = useState<EasyNavMode>("standard");
   const [slices, setSlicesState] = useState<TitanAtAGlanceSliceId[]>(DEFAULT_SLICES);
+  const [snakeSlices, setSnakeSlicesState] = useState<SnakeSlicePreferences>({});
   const [weekStartDay, setWeekStartDayState] = useState<WeekStartDay>(DEFAULT_WEEK_START);
   const [weeklyMetrics, setWeeklyMetricsState] = useState<TitanWeeklyMetricId[]>(DEFAULT_WEEKLY_METRICS);
   const [loading, setLoading] = useState(true);
@@ -131,6 +144,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setModeState("standard");
       setSlicesState(DEFAULT_SLICES);
+      setSnakeSlicesState({});
       setWeekStartDayState(DEFAULT_WEEK_START);
       setWeeklyMetricsState(DEFAULT_WEEKLY_METRICS);
       setLoading(false);
@@ -145,11 +159,13 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
         const record = preferences as Record<string, unknown>;
         setModeState(sanitiseMode(record.mode));
         setSlicesState(sanitiseSlices(record.slices));
+        setSnakeSlicesState(sanitiseSnakeSlices(record.snakeSlices));
         setWeekStartDayState(sanitiseWeekStart(record.weekStartDay));
         setWeeklyMetricsState(sanitiseWeeklyMetrics(record.weeklyMetrics));
       } else {
         setModeState("standard");
         setSlicesState(DEFAULT_SLICES);
+        setSnakeSlicesState({});
         setWeekStartDayState(DEFAULT_WEEK_START);
         setWeeklyMetricsState(DEFAULT_WEEKLY_METRICS);
       }
@@ -161,6 +177,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
           const parsed = JSON.parse(cached) as Record<string, unknown>;
           setModeState(sanitiseMode(parsed.mode));
           setSlicesState(sanitiseSlices(parsed.slices));
+          setSnakeSlicesState(sanitiseSnakeSlices(parsed.snakeSlices));
           setWeekStartDayState(sanitiseWeekStart(parsed.weekStartDay));
           setWeeklyMetricsState(sanitiseWeeklyMetrics(parsed.weeklyMetrics));
         }
@@ -169,20 +186,23 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, [user]);
 
-  async function persist(nextMode: EasyNavMode, nextSlices: TitanAtAGlanceSliceId[], nextWeekStartDay: WeekStartDay, nextWeeklyMetrics: TitanWeeklyMetricId[]) {
+  async function persist(nextMode: EasyNavMode, nextSlices: TitanAtAGlanceSliceId[], nextSnakeSlices: SnakeSlicePreferences, nextWeekStartDay: WeekStartDay, nextWeeklyMetrics: TitanWeeklyMetricId[]) {
     if (!user) return;
     const cleanSlices = sanitiseSlices(nextSlices);
+    const cleanSnakeSlices = sanitiseSnakeSlices(nextSnakeSlices);
     const cleanMetrics = sanitiseWeeklyMetrics(nextWeeklyMetrics);
     setModeState(nextMode);
     setSlicesState(cleanSlices);
+    setSnakeSlicesState(cleanSnakeSlices);
     setWeekStartDayState(nextWeekStartDay);
     setWeeklyMetricsState(cleanMetrics);
-    const cachePayload = JSON.stringify({ mode: nextMode, slices: cleanSlices, weekStartDay: nextWeekStartDay, weeklyMetrics: cleanMetrics });
+    const cachePayload = JSON.stringify({ mode: nextMode, slices: cleanSlices, snakeSlices: cleanSnakeSlices, weekStartDay: nextWeekStartDay, weeklyMetrics: cleanMetrics });
     try {
       await setDoc(doc(db, "users", user.uid), {
         easyNavPreferences: {
           mode: nextMode,
           slices: cleanSlices,
+          snakeSlices: cleanSnakeSlices,
           weekStartDay: nextWeekStartDay,
           weeklyMetrics: cleanMetrics,
           updatedAt: serverTimestamp(),
@@ -193,19 +213,34 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function setSnakeSlices(snakeId: string, next: TitanAtAGlanceSliceId[]) {
+    const nextSnakeSlices = { ...snakeSlices, [snakeId]: sanitiseSlices(next) };
+    await persist(mode, slices, nextSnakeSlices, weekStartDay, weeklyMetrics);
+  }
+
+  async function resetSnakeSlices(snakeId: string) {
+    const nextSnakeSlices = { ...snakeSlices };
+    delete nextSnakeSlices[snakeId];
+    await persist(mode, slices, nextSnakeSlices, weekStartDay, weeklyMetrics);
+  }
+
   const value: EasyNavContextValue = {
     mode,
     slices,
+    snakeSlices,
     weekStartDay,
     weeklyMetrics,
     loading,
     isEasyNav: mode === "easy",
-    setMode: (nextMode) => persist(nextMode, slices, weekStartDay, weeklyMetrics),
-    setSlices: (nextSlices) => persist(mode, nextSlices, weekStartDay, weeklyMetrics),
-    setWeekStartDay: (nextDay) => persist(mode, slices, nextDay, weeklyMetrics),
-    setWeeklyMetrics: (nextMetrics) => persist(mode, slices, weekStartDay, nextMetrics),
-    resetSlices: () => persist(mode, DEFAULT_SLICES, weekStartDay, weeklyMetrics),
-    resetWeeklyPreferences: () => persist(mode, slices, DEFAULT_WEEK_START, DEFAULT_WEEKLY_METRICS),
+    setMode: (nextMode) => persist(nextMode, slices, snakeSlices, weekStartDay, weeklyMetrics),
+    setSlices: (nextSlices) => persist(mode, nextSlices, snakeSlices, weekStartDay, weeklyMetrics),
+    setSnakeSlices,
+    getSlicesForSnake: (snakeId) => snakeId && snakeSlices[snakeId] ? snakeSlices[snakeId] : slices,
+    setWeekStartDay: (nextDay) => persist(mode, slices, snakeSlices, nextDay, weeklyMetrics),
+    setWeeklyMetrics: (nextMetrics) => persist(mode, slices, snakeSlices, weekStartDay, nextMetrics),
+    resetSlices: () => persist(mode, DEFAULT_SLICES, snakeSlices, weekStartDay, weeklyMetrics),
+    resetSnakeSlices,
+    resetWeeklyPreferences: () => persist(mode, slices, snakeSlices, DEFAULT_WEEK_START, DEFAULT_WEEKLY_METRICS),
   };
 
   return <EasyNavContext.Provider value={value}>{children}</EasyNavContext.Provider>;
