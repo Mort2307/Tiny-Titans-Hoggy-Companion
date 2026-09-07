@@ -7,7 +7,9 @@ export function normaliseSearch(value: unknown): string {
     .normalize("NFKC")
     .toLowerCase()
     .replace(/[‐‑‒–—−]/g, "-")
-    .replace(/[^\p{L}\p{N}%+\-\s]/gu, " ")
+    .replace(/[×✕]/g, "x")
+    .replace(/[+,/|]/g, " ")
+    .replace(/[^\p{L}\p{N}%+\-x\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -28,6 +30,12 @@ function sameTokenSet(value: string, queryTokens: string[]): boolean {
   return candidateTokens.length === queryTokens.length && tokenMatch(value, queryTokens);
 }
 
+function sameCompositionTokenSet(a: string, b: string): boolean {
+  const left = tokens(a).flatMap((token) => token === "x" ? [] : [token]).sort();
+  const right = tokens(b).flatMap((token) => token === "x" ? [] : [token]).sort();
+  return left.length > 1 && left.length === right.length && left.every((token, index) => token === right[index]);
+}
+
 function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode): number {
   const q = normaliseSearch(query);
   if (!q) return 0;
@@ -36,26 +44,15 @@ function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode
   const name = normaliseSearch(morph.name);
   const id = normaliseSearch(morph.geneId);
   const aliases = (morph.aliases ?? []).map(normaliseSearch).filter(Boolean);
+  const componentIds = (morph.components ?? []).map((component) => normaliseSearch(component.morphId)).filter(Boolean);
 
-  // MorphDefinition stores combination relationships as typed components;
-  // there is deliberately no loose `contains` field. Component IDs are used
-  // here as genetic identity evidence rather than treating arbitrary display
-  // text as a match.
-  const componentIds = (morph.components ?? [])
-    .map((component) => normaliseSearch(component.morphId))
-    .filter(Boolean);
-
-  // Exact canonical identity always wins.
   if (name === q || id === q) return 1000;
-
-  // A canonical name beginning with the query is a useful direct match,
-  // but only when the query is not merely a token buried inside the name.
   if (name.startsWith(`${q} `)) return 850;
   if (name.startsWith(q)) return 800;
 
-  // Strict selectors are intentionally conservative. A search for
-  // "Super Arctic" must not surface "Albino Super Arctic" merely because
-  // all query tokens occur somewhere in a longer candidate name.
+  if (sameCompositionTokenSet(name, q) && morph.isCombination) return 980;
+  if (sameCompositionTokenSet(aliases.find((alias) => sameCompositionTokenSet(alias, q)) ?? "", q)) return 960;
+
   if (mode === "strict") {
     if (sameTokenSet(name, qTokens)) return 700;
     if (aliases.some((alias) => alias === q || sameTokenSet(alias, qTokens))) return 650;
@@ -70,35 +67,24 @@ function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode
     return -1;
   }
 
-  // General search may use token matching, but it remains deterministic and
-  // only returns candidates containing every query token in canonical fields.
   if (componentIds.some((componentId) => tokenMatch(componentId, qTokens))) return 300;
   return -1;
 }
 
-export function rankMorphSearch<T extends MorphDefinition>(
-  options: T[],
-  query: string,
-  mode: MorphSearchMode = "strict"
-): T[] {
+export function rankMorphSearch<T extends MorphDefinition>(options: T[], query: string, mode: MorphSearchMode = "strict"): T[] {
   const q = normaliseSearch(query);
   if (!q) return options;
 
-  return options
-    .map((option, index) => ({ option, index, score: scoreMorph(option, q, mode) }))
+  const scored = options.map((option, index) => ({ option, index, score: scoreMorph(option, q, mode) }));
+  const exact = scored.filter((item) => item.score >= 1000 || (mode !== "strict" && item.score >= 950));
+  if (exact.length) return exact.sort((a, b) => b.score - a.score || a.option.name.localeCompare(b.option.name) || a.index - b.index).map((item) => item.option);
+
+  return scored
     .filter((item) => item.score >= 0)
-    .sort((a, b) =>
-      b.score - a.score ||
-      a.option.name.localeCompare(b.option.name) ||
-      a.index - b.index
-    )
+    .sort((a, b) => b.score - a.score || a.option.name.localeCompare(b.option.name) || a.index - b.index)
     .map((item) => item.option);
 }
 
-export function morphMatchesQuery(
-  morph: MorphDefinition,
-  query: string,
-  mode: MorphSearchMode = "strict"
-): boolean {
+export function morphMatchesQuery(morph: MorphDefinition, query: string, mode: MorphSearchMode = "strict"): boolean {
   return scoreMorph(morph, query, mode) >= 0;
 }
