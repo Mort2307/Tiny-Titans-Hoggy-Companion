@@ -28,8 +28,15 @@ export async function getHistoricalContributors(excludeUid?: string): Promise<Hi
 }
 
 async function contributorAlreadyThanked(uid: string): Promise<boolean> {
-  const conversations = await getUserSubmissionConversations(uid);
-  return conversations.some((conversation) => Boolean(conversation.contributorThankedAt));
+  try {
+    const conversations = await getUserSubmissionConversations(uid);
+    return conversations.some((conversation) => Boolean(conversation.contributorThankedAt));
+  } catch {
+    // The atomic send transaction below is the authoritative idempotency check.
+    // A transient read denial must never prevent a creator from opening the
+    // contributor thread and attempting the actual message send.
+    return false;
+  }
 }
 
 export async function thankContributor(contributor: HistoricalContributor, senderId: string): Promise<"sent" | "already-sent"> {
