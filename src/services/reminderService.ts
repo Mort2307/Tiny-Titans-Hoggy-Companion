@@ -94,6 +94,31 @@ export async function listReminders(uid: string): Promise<Reminder[]> {
   return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Reminder, "id">) }));
 }
 
+export async function getNextActiveFeedingReminder(uid: string, snakeId: string): Promise<Reminder | null> {
+  if (!uid || !snakeId) return null;
+  const reminders = await listReminders(uid);
+  return reminders.find((reminder) => reminder.kind === "feeding" && reminder.status === "active" && reminder.snakeId === snakeId) ?? null;
+}
+
+export async function getFeedingReminderConfirmation(uid: string, snakeId: string): Promise<{ snakeName: string; nextDate: string; daysUntil: number; message: string; url: string } | null> {
+  const reminder = await getNextActiveFeedingReminder(uid, snakeId);
+  if (!reminder?.nextOccurrenceDate) return null;
+  const timezone = reminder.timezone || "Europe/London";
+  const today = localDateKey(new Date(), timezone);
+  const nextDate = reminder.nextOccurrenceDate;
+  const daysUntil = Math.max(0, Math.round((new Date(`${nextDate}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / 86400000));
+  const [year, month, day] = nextDate.split("-");
+  const formattedDate = `${day}/${month}/${year}`;
+  const dayLabel = `${daysUntil} day${daysUntil === 1 ? "" : "s"}`;
+  return {
+    snakeName: reminder.snakeName || "your snake",
+    nextDate,
+    daysUntil,
+    message: `Your feed reminder is set for ${dayLabel} — ${formattedDate}.`,
+    url: `/reminders/feeding?snakeId=${encodeURIComponent(snakeId)}`,
+  };
+}
+
 export async function reanchorFeedingRemindersAfterFeed(uid: string, snakeId: string): Promise<void> {
   if (!uid || !snakeId) return;
   const [reminders, feedingsSnapshot] = await Promise.all([
