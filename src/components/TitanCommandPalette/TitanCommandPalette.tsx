@@ -67,7 +67,7 @@ function TitanCommandPalette() {
   return (
     <>
       <button type="button" className="tt-command-trigger" onClick={() => setOpen(true)} aria-label="Open Tiny Titans command palette">
-        <span>Jump to…</span><kbd>⌘K</kbd>
+        <span>Jump to…</span>
       </button>
       {open && (
         <div className="tt-command-backdrop" role="presentation" onMouseDown={() => setOpen(false)}>
