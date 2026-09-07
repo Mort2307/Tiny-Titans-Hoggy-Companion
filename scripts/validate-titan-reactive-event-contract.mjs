@@ -16,12 +16,15 @@ for (const symbol of ["BehaviourObserved", "eventAffectsCategory", "invalidateTi
 for (const symbol of ["BehaviourObserved", "saveSnakeBehaviourRecord", "deleteSnakeBehaviourRecord", "emitTitanIntelligenceEvent"]) {
   if (!behaviour.includes(symbol)) findings.push(`Behaviour service missing reactive event contract: ${symbol}`);
 }
-for (const [name, source, marker] of [
-  ["weight", weight, "emitTitanIntelligenceEvent({ uid, animalId: weight.snakeId, type: \"WeightRecorded\""],
-  ["feeding", feeding, "emitTitanIntelligenceEvent({ uid, animalId: feeding.snakeId, type: \"FeedingRecorded\""],
-  ["shed", shed, "emitTitanIntelligenceEvent({ uid, animalId: cycle.snakeId, type: \"ShedRecorded\""]
-]) {
-  if (!source.includes(marker)) findings.push(`${name} service no longer emits its reactive intelligence event.`);
+
+const eventContracts = [
+  ["weight", weight, /emitTitanIntelligenceEvent\s*\(\s*\{\s*uid\s*,\s*animalId\s*:\s*weight\.snakeId\s*,\s*type\s*:\s*[\"']WeightRecorded[\"']/],
+  ["feeding", feeding, /emitTitanIntelligenceEvent\s*\(\s*\{\s*uid\s*,\s*animalId\s*:\s*feeding\.snakeId\s*,\s*type\s*:\s*[\"']FeedingRecorded[\"']/],
+  ["shed", shed, /emitTitanIntelligenceEvent\s*\(\s*\{\s*uid\s*,\s*animalId\s*:\s*cycle\.snakeId\s*,\s*type\s*:\s*[\"']ShedRecorded[\"']/]
+];
+
+for (const [name, source, marker] of eventContracts) {
+  if (!marker.test(source)) findings.push(`${name} service no longer emits its reactive intelligence event.`);
 }
 
 console.log(JSON.stringify({ test: "titan-reactive-event-contract", status: findings.length ? "fail" : "pass", findings }, null, 2));
