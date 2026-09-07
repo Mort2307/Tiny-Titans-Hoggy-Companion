@@ -1,0 +1,20 @@
+[
+  {
+    "id": "2026-09-07-titan-at-a-glance",
+    "version": "1.0.0",
+    "releasedAt": "2026-09-07",
+    "icon": "🥧",
+    "title": "Titan At A Glance + Titan Week",
+    "summary": "Easy Nav is now a persistent keeper mode, with a configurable Titan Pie and a dedicated This Week Command Centre.",
+    "details": [
+      "Easy Nav reduces navigation density without removing intelligence, records, genetics, reminders or any underlying feature.",
+      "The Titan Pie gives you 4–6 configurable live shortcuts that can be reordered and changed to fit your routine.",
+      "Titan Week now has its own full page with current and historical weeks, configurable week starts, weekly metrics, per-Titan targets and direct actions.",
+      "The command centre uses recorded keeper data and evidence-bound intelligence, so it does not invent missing events or turn trends into diagnoses."
+    ],
+    "whereToFind": [
+      { "label": "Enable Easy Nav", "path": "/personalisation", "hint": "Personalisation → Navigation Mode → Easy Nav" },
+      { "label": "Open Titan Week", "path": "/titan-intelligence/feature/this-week", "hint": "Titan Pie → This Week, or open the dedicated Command Centre" }
+    ]
+  }
+]
