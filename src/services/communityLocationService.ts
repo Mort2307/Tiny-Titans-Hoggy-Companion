@@ -1,7 +1,12 @@
-import { collection, getCountFromServer, getDocs } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getPrivacyPreferences } from "./privacyService";
 import { resolveCommunityLocation, type ResolvedCommunityLocation } from "./communityLocationResolver";
+
+export type CommunityCount = {
+  name: string;
+  count: number;
+};
 
 export type CommunityLocationMember = {
   uid: string;
@@ -13,9 +18,17 @@ export type CommunityLocationMember = {
   latitude: number;
   longitude: number;
   snakeCount?: number;
+  speciesCounts?: CommunityCount[];
+  morphCounts?: CommunityCount[];
 };
 
 type AnyRecord = Record<string, unknown>;
+
+type CommunitySnakeSummary = {
+  snakeCount: number;
+  speciesCounts: CommunityCount[];
+  morphCounts: CommunityCount[];
+};
 
 function hasValidCoordinates(location: AnyRecord | undefined): location is AnyRecord & { latitude: number; longitude: number } {
   const latitude = location?.latitude;
@@ -25,19 +38,80 @@ function hasValidCoordinates(location: AnyRecord | undefined): location is AnyRe
     && !(latitude === 0 && longitude === 0);
 }
 
-async function getTrackedSnakeCount(uid: string): Promise<number | undefined> {
-  const snakes = collection(db, "users", uid, "snakes");
-  try {
-    const snapshot = await getCountFromServer(snakes);
-    return snapshot.data().count;
-  } catch (countError) {
-    try {
-      const snapshot = await getDocs(snakes);
-      return snapshot.size;
-    } catch (readError) {
-      console.warn("Tiny Titans: unable to read community snake count", { uid, countError, readError });
-      return undefined;
+function normaliseLabel(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function firstString(record: AnyRecord, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return normaliseLabel(value);
+  }
+  return "";
+}
+
+function stringList(record: AnyRecord, keys: string[]) {
+  const values: string[] = [];
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) values.push(normaliseLabel(value));
+    else if (Array.isArray(value)) {
+      for (const entry of value) {
+        if (typeof entry === "string" && entry.trim()) values.push(normaliseLabel(entry));
+        else if (entry && typeof entry === "object") {
+          const entryRecord = entry as AnyRecord;
+          const label = firstString(entryRecord, ["name", "label", "morph", "gene", "id"]);
+          if (label) values.push(label);
+        }
+      }
     }
+  }
+  return values;
+}
+
+function increment(counts: Map<string, number>, label: string) {
+  const key = normaliseLabel(label);
+  if (!key) return;
+  counts.set(key, (counts.get(key) ?? 0) + 1);
+}
+
+function toSortedCounts(counts: Map<string, number>) {
+  return Array.from(counts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+function getSnakeSpecies(record: AnyRecord) {
+  return firstString(record, ["speciesName", "species", "speciesCommonName", "speciesLabel", "speciesId"]);
+}
+
+function getSnakeMorphs(record: AnyRecord) {
+  return stringList(record, ["morph", "morphName", "morphs", "visualMorphs", "genetics", "genes", "traits"]);
+}
+
+async function getCommunitySnakeSummary(uid: string): Promise<CommunitySnakeSummary | undefined> {
+  try {
+    const snapshot = await getDocs(collection(db, "users", uid, "snakes"));
+    const speciesCounts = new Map<string, number>();
+    const morphCounts = new Map<string, number>();
+
+    snapshot.docs.forEach((item) => {
+      const snake = item.data() as AnyRecord;
+      const species = getSnakeSpecies(snake);
+      if (species) increment(speciesCounts, species);
+
+      const morphs = getSnakeMorphs(snake);
+      for (const morph of new Set(morphs)) increment(morphCounts, morph);
+    });
+
+    return {
+      snakeCount: snapshot.size,
+      speciesCounts: toSortedCounts(speciesCounts),
+      morphCounts: toSortedCounts(morphCounts),
+    };
+  } catch (error) {
+    console.warn("Tiny Titans: unable to read community snake intelligence", { uid, error });
+    return undefined;
   }
 }
 
@@ -94,7 +168,9 @@ export async function getCommunityLocationMembers(): Promise<CommunityLocationMe
 
   const eligible = candidates.filter((member): member is CommunityLocationMember => member !== null);
   return Promise.all(eligible.map(async (member) => {
-    const snakeCount = await getTrackedSnakeCount(member.uid);
-    return snakeCount === undefined ? member : { ...member, snakeCount };
+    const summary = await getCommunitySnakeSummary(member.uid);
+    return summary
+      ? { ...member, ...summary }
+      : member;
   }));
 }
