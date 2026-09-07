@@ -13,128 +13,158 @@ function queryTokens(value: string): string[] {
 }
 
 function structuredTokens(value: string): Map<string, number> {
-  const rawTokens = queryTokens(value);
+  const tokens = queryTokens(value);
   const counts = new Map<string, number>();
-  let superNext = false;
+  let pendingCopies: number | undefined;
 
-  for (let index = 0; index < rawTokens.length; index += 1) {
-    const token = rawTokens[index];
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
     if (token === "super") {
-      superNext = true;
+      pendingCopies = 2;
       continue;
     }
+    if (token === "x") continue;
 
     const attachedSuper = token.startsWith("super") && token.length > 5;
     const baseToken = attachedSuper ? token.slice(5) : token;
-    if (!baseToken || baseToken === "x") continue;
+    if (!baseToken) continue;
 
-    const next = rawTokens[index + 1];
-    const explicitCopies = next === "x" && /^\d+$/.test(rawTokens[index + 2] ?? "")
-      ? Number(rawTokens[index + 2])
-      : undefined;
-    const copies = superNext || attachedSuper ? 2 : explicitCopies ?? 1;
+    const next = tokens[index + 1];
+    const nextCopies = tokens[index + 2];
+    const explicitCopies = next === "x" && /^\d+$/.test(nextCopies ?? "") ? Number(nextCopies) : undefined;
+    const copies = attachedSuper || pendingCopies ? 2 : explicitCopies ?? 1;
     counts.set(baseToken, Math.max(counts.get(baseToken) ?? 0, copies));
-    superNext = false;
-
+    pendingCopies = undefined;
     if (explicitCopies !== undefined) index += 2;
   }
-
   return counts;
 }
 
+function isStructured(value: string): boolean {
+  return /[+×✕]|\bx\b/i.test(value);
+}
+
+/** Returns an order-independent genetic signature; e.g. Arctic x Conda == Conda + Arctic. */
+export function getSearchGeneticSignature(value: string): string {
+  return [...structuredTokens(value).entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([token, copies]) => `${token}#${copies}`)
+    .join("|");
+}
+
 function structuredMatchScore(query: string, candidate: string): number {
-  if (!candidate || !looksLikeStructuredIdentity(candidate)) return 0;
+  if (!isStructured(candidate)) return 0;
+  const requested = structuredTokens(query);
+  const available = structuredTokens(candidate);
+  if (!requested.size || !available.size || requested.size > available.size) return 0;
 
-  const queryStructure = structuredTokens(query);
-  const candidateStructure = structuredTokens(candidate);
-  if (!queryStructure.size || !candidateStructure.size) return 0;
-  if (queryStructure.size > candidateStructure.size) return 0;
-
-  let exactKeys = true;
-  let requestedCountTotal = 0;
-  let candidateCountTotal = 0;
-  for (const [token, requestedCopies] of queryStructure) {
-    const candidateCopies = candidateStructure.get(token);
-    if (!candidateCopies || candidateCopies < requestedCopies) return 0;
-    requestedCountTotal += requestedCopies;
-    candidateCountTotal += candidateCopies;
-    if (!candidateStructure.has(token)) exactKeys = false;
+  let totalRequested = 0;
+  let totalAvailable = 0;
+  for (const [token, copies] of requested) {
+    const candidateCopies = available.get(token);
+    if (!candidateCopies || candidateCopies < copies) return 0;
+    totalRequested += copies;
+    totalAvailable += candidateCopies;
   }
 
-  const sameGeneSet = exactKeys && queryStructure.size === candidateStructure.size;
-  if (sameGeneSet && requestedCountTotal === candidateCountTotal) return 520;
-  if (sameGeneSet) return 490;
-  return 430 - Math.max(0, candidateStructure.size - queryStructure.size) * 18;
+  const exactSignature = getSearchGeneticSignature(query) === getSearchGeneticSignature(candidate);
+  if (exactSignature && totalRequested === totalAvailable) return 95000;
+  if (exactSignature) return 90000;
+  return 72000 - Math.max(0, available.size - requested.size) * 1200;
 }
 
 function tokenSequenceScore(query: string, candidate: string): number {
-  const tokens = queryTokens(query);
-  const candidateTokens = queryTokens(candidate);
-  if (!tokens.length || !candidateTokens.length || tokens.length > candidateTokens.length) return 0;
-
-  for (let start = 0; start <= candidateTokens.length - tokens.length; start += 1) {
-    if (tokens.every((token, offset) => candidateTokens[start + offset] === token)) {
-      const exactLengthBonus = candidateTokens.length === tokens.length ? 90 : 45;
-      return 310 + exactLengthBonus - Math.max(0, candidateTokens.length - tokens.length) * 10;
+  const queryParts = queryTokens(query);
+  const candidateParts = queryTokens(candidate);
+  if (!queryParts.length || !candidateParts.length || queryParts.length > candidateParts.length) return 0;
+  for (let start = 0; start <= candidateParts.length - queryParts.length; start += 1) {
+    if (queryParts.every((token, offset) => candidateParts[start + offset] === token)) {
+      const exactLength = queryParts.length === candidateParts.length;
+      return 52000 + (exactLength ? 5000 : 1000);
     }
   }
   return 0;
 }
 
 function tokenScore(query: string, candidate: string): number {
-  const tokens = queryTokens(query);
-  const candidateTokens = queryTokens(candidate);
-  if (!tokens.length || !candidateTokens.length) return 0;
-
-  const matched = tokens.filter((token) => candidateTokens.includes(token));
-  if (matched.length !== tokens.length) return 0;
-
-  const extraTokens = Math.max(0, candidateTokens.length - tokens.length);
-  return 250 + Math.max(0, 150 - extraTokens * 15);
+  const queryParts = queryTokens(query);
+  const candidateParts = queryTokens(candidate);
+  if (!queryParts.length || !candidateParts.length) return 0;
+  if (!queryParts.every((token) => candidateParts.includes(token))) return 0;
+  return 43000 - Math.max(0, candidateParts.length - queryParts.length) * 750;
 }
 
 function prefixTokenScore(query: string, candidate: string): number {
-  const tokens = queryTokens(query);
-  const candidateTokens = queryTokens(candidate);
-  if (!tokens.length || !candidateTokens.length) return 0;
-
-  const matched = tokens.filter((token) => candidateTokens.some((candidateToken) => candidateToken.startsWith(token)));
-  if (matched.length !== tokens.length) return 0;
-  return 180;
+  const queryParts = queryTokens(query);
+  const candidateParts = queryTokens(candidate);
+  if (!queryParts.length || !candidateParts.length) return 0;
+  if (!queryParts.every((token) => candidateParts.some((candidateToken) => candidateToken.startsWith(token)))) return 0;
+  return 26000;
 }
 
-function looksLikeStructuredIdentity(value: string): boolean {
-  return /[+×✕]|\bx\b/i.test(value);
+function editDistanceAtMostOne(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (a.length < 5 || b.length < 5 || Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  let j = 0;
+  let edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      i += 1;
+      j += 1;
+      continue;
+    }
+    edits += 1;
+    if (edits > 1) return false;
+    if (a.length > b.length) i += 1;
+    else if (b.length > a.length) j += 1;
+    else {
+      i += 1;
+      j += 1;
+    }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
 }
 
-/** Keeper-facing search ranking with deterministic genetic identity short circuits. */
+function conservativeTypoScore(query: string, candidate: string): number {
+  const queryParts = queryTokens(query);
+  const candidateParts = queryTokens(candidate);
+  if (queryParts.length !== candidateParts.length || !queryParts.length) return 0;
+  const matched = queryParts.every((token) => candidateParts.some((candidateToken) => editDistanceAtMostOne(token, candidateToken)));
+  return matched ? 14000 : 0;
+}
+
 export function scoreSearchCandidate(query: string, candidate: string, tier: "canonical" | "alias" | "secondary" = "secondary"): number {
   const q = normaliseSearchValue(query);
   const c = normaliseSearchValue(candidate);
   if (!q || !c) return 0;
 
-  const base = tier === "canonical" ? 100000 : tier === "alias" ? 90000 : 70000;
-  const prefixBase = tier === "canonical" ? 85000 : tier === "alias" ? 76000 : 56000;
-  const tokenBase = tier === "canonical" ? 58000 : tier === "alias" ? 50000 : 32000;
-  const fuzzyBase = tier === "canonical" ? 40000 : tier === "alias" ? 34000 : 18000;
+  const exactBase = tier === "canonical" ? 220000 : tier === "alias" ? 170000 : 120000;
+  const prefixBase = tier === "canonical" ? 105000 : tier === "alias" ? 90000 : 70000;
 
-  if (c === q) return base;
-  if (c.startsWith(`${q} `)) return prefixBase + 900;
+  if (c === q) return exactBase;
+  if (getSearchGeneticSignature(q) && getSearchGeneticSignature(q) === getSearchGeneticSignature(c)) {
+    return (tier === "secondary" ? 180000 : prefixBase) + 4000;
+  }
+  if (c.startsWith(`${q} `)) return prefixBase + 1500;
   if (c.startsWith(q)) return prefixBase;
 
   const structured = structuredMatchScore(q, c);
-  if (structured) return tier === "secondary" ? 82000 + structured : tokenBase + structured;
+  if (structured) return Math.max(0, structured + (tier === "secondary" ? 0 : 12000));
 
-  const phraseMatch = tokenSequenceScore(q, c);
-  if (phraseMatch) return tokenBase + phraseMatch;
+  const phrase = tokenSequenceScore(q, c);
+  if (phrase) return phrase + (tier === "canonical" ? 8000 : tier === "alias" ? 4000 : 0);
 
-  const wholeTokenMatch = tokenScore(q, c);
-  if (wholeTokenMatch) return tokenBase + wholeTokenMatch;
+  const wholeTokens = tokenScore(q, c);
+  if (wholeTokens) return wholeTokens + (tier === "canonical" ? 6000 : tier === "alias" ? 3000 : 0);
 
-  const prefixTokenMatch = prefixTokenScore(q, c);
-  if (prefixTokenMatch) return fuzzyBase + 500 + prefixTokenMatch;
+  const prefixTokens = prefixTokenScore(q, c);
+  if (prefixTokens) return prefixTokens + (tier === "canonical" ? 4000 : tier === "alias" ? 2000 : 0);
 
-  if (c.includes(q)) return fuzzyBase;
+  const typo = conservativeTypoScore(q, c);
+  if (typo) return typo + (tier === "canonical" ? 3000 : tier === "alias" ? 1500 : 0);
+
+  if (c.includes(q)) return tier === "canonical" ? 9000 : tier === "alias" ? 7000 : 5000;
   return 0;
 }
 
@@ -151,38 +181,28 @@ export function rankSearchResults<T>(query: string, items: T[], getFields: (item
 }): SearchScored<T>[] {
   const raw = query.trim();
   if (!raw) return items.map((item) => ({ item, score: 0 }));
-
   const normalizedQuery = normaliseSearchValue(raw);
-  const scored = items.map((item, index) => {
-    const fields = getFields(item);
-    const canonical = fields.canonical ?? [];
-    const aliases = fields.aliases ?? [];
-    const secondary = fields.secondary ?? [];
 
-    const exactCanonical = canonical.some((field) => normaliseSearchValue(field) === normalizedQuery);
-    const exactAlias = aliases.some((field) => normaliseSearchValue(field) === normalizedQuery);
-    const exactStructured = secondary.some((field) => normaliseSearchValue(field) === normalizedQuery && looksLikeStructuredIdentity(field));
-    const structuredScore = Math.max(0, ...secondary.map((field) => structuredMatchScore(raw, field)));
-
-    let score = Math.max(
-      scoreTextFields(raw, canonical, "canonical"),
-      scoreTextFields(raw, aliases, "alias"),
-      scoreTextFields(raw, secondary, "secondary"),
-    );
-
-    if (exactCanonical) score += 400000;
-    if (exactStructured) score += 360000;
-    if (structuredScore) score = Math.max(score, 82000 + structuredScore);
-    if (exactAlias) score += 250000;
-
-    return { item, score: score - index * 0.0001 };
-  });
-
-  // Do not let a named phenotype/alias stop the search from surfacing a
-  // genetically structured identity that matches the requested components.
-  // Exact canonical identity still wins; exact genetic structure is next;
-  // aliases and fuzzy text follow behind.
-  return scored
+  return items
+    .map((item, index) => {
+      const fields = getFields(item);
+      const canonical = fields.canonical ?? [];
+      const aliases = fields.aliases ?? [];
+      const secondary = fields.secondary ?? [];
+      const scores = [
+        scoreTextFields(raw, canonical, "canonical"),
+        scoreTextFields(raw, aliases, "alias"),
+        scoreTextFields(raw, secondary, "secondary"),
+      ];
+      const exactCanonical = canonical.some((field) => normaliseSearchValue(field) === normalizedQuery);
+      const exactAlias = aliases.some((field) => normaliseSearchValue(field) === normalizedQuery);
+      const exactStructured = secondary.some((field) => getSearchGeneticSignature(field) === getSearchGeneticSignature(raw) && getSearchGeneticSignature(raw));
+      let score = Math.max(...scores, 0);
+      if (exactCanonical) score += 1_000_000;
+      else if (exactStructured) score += 900_000;
+      else if (exactAlias) score += 750_000;
+      return { item, score: score - index * 0.0001 };
+    })
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score);
 }
