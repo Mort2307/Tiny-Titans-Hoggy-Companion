@@ -11,6 +11,8 @@ export type GeneticsMatchKind = "canonical" | "alias" | "combination" | "fuzzy";
 export interface GeneticsMatch { record: MorphDefinition; matchKind: GeneticsMatchKind; matchedQuery: string; score: number; }
 
 function normalise(value: string): string { return normaliseComboName(value).replace(/[+×x]/g, " ").replace(/\s+/g, " ").trim(); }
+function tokens(value: string): string[] { return [...new Set(normaliseSearchValue(value).split(" ").filter(Boolean))]; }
+function identityTokens(value: string): string[] { return tokens(value).filter((token) => !/^(copy|copies|super)$/i.test(token)); }
 
 function scoreName(query: string, candidate: string): number { return scoreSearchCandidate(query, candidate, "canonical"); }
 
@@ -41,12 +43,30 @@ function candidates(speciesScientificName?: string): MorphDefinition[] {
   return SPECIES_GENETICS_CATALOGUES[scoped] ?? [];
 }
 
+function componentDisplayNames(record: MorphDefinition): string[] {
+  return (record.components ?? []).flatMap((component) => {
+    const base = morphs.find((morph) => morph.geneId === component.morphId)
+      ?? masterMorphs.find((morph) => morph.geneId === component.morphId)
+      ?? calculatorNamedCombinations.find((morph) => morph.geneId === component.morphId);
+    return base ? [base.name, ...(base.aliases ?? [])] : [component.morphId];
+  });
+}
+
+function matchesExactComponentComposition(query: string, record: MorphDefinition): boolean {
+  if (!record.isCombination || !record.components?.length) return false;
+  const queryTokens = identityTokens(query);
+  if (queryTokens.length < 2) return false;
+  const componentTokens = identityTokens(componentDisplayNames(record)).sort();
+  if (componentTokens.length !== queryTokens.length) return false;
+  return [...queryTokens].sort().every((token, index) => token === componentTokens[index]);
+}
+
 /**
  * Species-aware genetics search with strict keeper-facing ranking.
- * Exact canonical identity always wins before aliases, token matches,
- * secondary search terms or broad text matches. The master enriched database
- * is included so canonical display identities such as Arctic Conda participate
- * in the same ranking path as the rest of the app.
+ * Exact canonical identity always wins before aliases and composition matches.
+ * A multi-word genetics query can also resolve directly against the recorded
+ * component composition, so a canonical name such as Arctic Conda remains the
+ * first result even when another source describes the same record by formula.
  */
 export function searchGenetics(query: string, speciesScientificName?: string): GeneticsMatch[] {
   const raw = query.trim();
@@ -54,6 +74,7 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
   if (!q) return [];
 
   const scopedCandidates = candidates(speciesScientificName);
+
   const exactCanonical = scopedCandidates.filter((record) => normalise(record.name) === q);
   if (exactCanonical.length) {
     return exactCanonical
@@ -78,6 +99,18 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
       })),
   );
   if (exactAlias.length) return exactAlias.slice(0, 12);
+
+  const exactComponentCompositions = scopedCandidates
+    .filter((record) => matchesExactComponentComposition(raw, record))
+    .sort((a, b) => Number(Boolean(b.isCombination)) - Number(Boolean(a.isCombination)) || a.name.localeCompare(b.name));
+  if (exactComponentCompositions.length) {
+    return exactComponentCompositions.slice(0, 12).map((record) => ({
+      record,
+      matchKind: "combination",
+      matchedQuery: raw,
+      score: 98000,
+    }));
+  }
 
   if (!speciesScientificName?.trim()) {
     const exactCombination = findCalculatorNamedCombination(raw);
