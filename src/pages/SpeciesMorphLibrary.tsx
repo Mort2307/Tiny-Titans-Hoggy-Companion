@@ -10,7 +10,6 @@ import { rankSearchResults } from "../utils/searchRanking";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
 
-
 type SpeciesMorphEntry = ReturnType<typeof getSpeciesVisualMorphs>[number];
 type Filter = "all" | "gene" | "combination" | "polygenic" | "line-bred";
 
@@ -21,6 +20,22 @@ function matchesFilter(morph: SpeciesMorphEntry, filter: Filter): boolean {
   if (filter === "polygenic") return morph.kind === "Polygenic" || morph.inheritance === "Polygenic";
   if (filter === "line-bred") return morph.kind === "Line-bred" || morph.inheritance === "Line-bred";
   return true;
+}
+
+function searchFields(morph: SpeciesMorphEntry): { canonical: string[]; aliases: string[]; secondary: string[] } {
+  const enriched = morph as SpeciesMorphEntry & { searchTerms?: string[]; recognisedNames?: string[]; geneticFormula?: string; directFormula?: string };
+  return {
+    canonical: [morph.name],
+    aliases: morph.aliases ?? [],
+    secondary: [
+      ...(enriched.searchTerms ?? []),
+      ...(enriched.recognisedNames ?? []),
+      ...(enriched.geneticFormula ? [enriched.geneticFormula] : []),
+      ...(enriched.directFormula ? [enriched.directFormula] : []),
+      ...(morph.contains ?? []),
+      ...(morph.components?.map((component) => component.morphId) ?? []),
+    ],
+  };
 }
 
 export default function SpeciesMorphLibrary() {
@@ -56,16 +71,8 @@ export default function SpeciesMorphLibrary() {
 
   const filtered = useMemo(() => {
     const filteredEntries = entries.filter((morph) => matchesFilter(morph, filter));
-    if (!query.trim()) return filteredEntries.sort((a, b) => a.name.localeCompare(b.name));
-
-    return rankSearchResults(query, filteredEntries, (morph) => ({
-      canonical: [morph.name],
-      aliases: morph.aliases ?? [],
-      secondary: [
-        ...(morph.contains ?? []),
-        ...(morph.components?.map((component) => component.morphId) ?? []),
-      ],
-    })).map(({ item }) => item);
+    if (!query.trim()) return [...filteredEntries].sort((a, b) => a.name.localeCompare(b.name));
+    return rankSearchResults(query, filteredEntries, searchFields).map(({ item }) => item);
   }, [entries, filter, query]);
 
   const statusLabel = geneticsStatus === "mapped"
