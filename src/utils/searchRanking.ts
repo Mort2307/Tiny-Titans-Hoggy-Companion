@@ -58,8 +58,8 @@ export function scoreSearchCandidate(query: string, candidate: string, tier: "ca
   return 0;
 }
 
-export function scoreTextFields(query: string, fields: string[]): number {
-  return Math.max(0, ...fields.map((field) => scoreSearchCandidate(query, field, "secondary")));
+export function scoreTextFields(query: string, fields: string[], tier: "canonical" | "alias" | "secondary" = "secondary"): number {
+  return Math.max(0, ...fields.map((field) => scoreSearchCandidate(query, field, tier)));
 }
 
 export type SearchScored<T> = { item: T; score: number };
@@ -93,9 +93,9 @@ export function rankSearchResults<T>(query: string, items: T[], getFields: (item
   return items
     .map((item, index) => {
       const fields = getFields(item);
-      const canonicalScore = scoreTextFields(raw, fields.canonical ?? []);
-      const aliasScore = Math.max(0, ...((fields.aliases ?? []).map((field) => scoreSearchCandidate(raw, field, "alias"))));
-      const secondaryScore = scoreTextFields(raw, fields.secondary ?? []);
+      const canonicalScore = scoreTextFields(raw, fields.canonical ?? [], "canonical");
+      const aliasScore = scoreTextFields(raw, fields.aliases ?? [], "alias");
+      const secondaryScore = scoreTextFields(raw, fields.secondary ?? [], "secondary");
       return { item, score: Math.max(canonicalScore, aliasScore, secondaryScore) - index * 0.0001 };
     })
     .filter((entry) => entry.score > 0)
