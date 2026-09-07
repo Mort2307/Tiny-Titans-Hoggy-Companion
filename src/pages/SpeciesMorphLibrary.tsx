@@ -76,10 +76,8 @@ export default function SpeciesMorphLibrary() {
   }, [entries, filter, query]);
 
   const statusLabel = geneticsStatus === "mapped"
-    ? "🟢 Full species genetics catalogue"
-    : geneticsStatus === "partial"
-      ? "🟡 Species genetics partially catalogued"
-      : "🟠 Species genetics catalogue pending";
+    ? "🟢 Reviewed species genetics catalogue"
+    : "🟠 Species genetics catalogue pending review";
   const baselineOnly = geneticsStatus === "baseline-only";
 
   function openImageSubmission(morphId: string) {
