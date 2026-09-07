@@ -1,88 +1,52 @@
 import type { MorphDefinition } from "../data/morphs";
+import { rankSearchResults as rankSharedSearchResults, scoreSearchCandidate, normaliseSearchValue } from "./searchRanking";
 
 export type MorphSearchMode = "strict" | "combination" | "general";
 
 export function normaliseSearch(value: unknown): string {
-  return String(value ?? "")
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/[‐‑‒–—−]/g, "-")
-    .replace(/[×✕]/g, "x")
-    .replace(/[+,/|]/g, " ")
-    .replace(/[^\p{L}\p{N}%+\-x\s]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return normaliseSearchValue(String(value ?? ""));
 }
 
-function tokens(value: string): string[] {
-  return normaliseSearch(value).split(" ").filter(Boolean);
-}
-
-function tokenMatch(value: string, queryTokens: string[]): boolean {
-  const candidate = normaliseSearch(value);
-  return queryTokens.every((token) =>
-    candidate.split(" ").some((part) => part === token || part.startsWith(token))
-  );
-}
-
-function sameTokenSet(value: string, queryTokens: string[]): boolean {
-  const candidateTokens = tokens(value);
-  return candidateTokens.length === queryTokens.length && tokenMatch(value, queryTokens);
-}
-
-function sameCompositionTokenSet(a: string, b: string): boolean {
-  const left = tokens(a).flatMap((token) => token === "x" ? [] : [token]).sort();
-  const right = tokens(b).flatMap((token) => token === "x" ? [] : [token]).sort();
-  return left.length > 1 && left.length === right.length && left.every((token, index) => token === right[index]);
+function fieldsForMorph(morph: MorphDefinition) {
+  const enriched = morph as MorphDefinition & {
+    searchTerms?: string[];
+    recognisedNames?: string[];
+    geneticFormula?: string;
+    directFormula?: string;
+  };
+  return {
+    canonical: [morph.name, morph.geneId],
+    aliases: morph.aliases ?? [],
+    secondary: [
+      ...(enriched.searchTerms ?? []),
+      ...(enriched.recognisedNames ?? []),
+      ...(enriched.geneticFormula ? [enriched.geneticFormula] : []),
+      ...(enriched.directFormula ? [enriched.directFormula] : []),
+      ...(morph.components ?? []).map((component) => component.morphId),
+    ],
+  };
 }
 
 function scoreMorph(morph: MorphDefinition, query: string, mode: MorphSearchMode): number {
-  const q = normaliseSearch(query);
-  if (!q) return 0;
-
-  const qTokens = tokens(q);
-  const name = normaliseSearch(morph.name);
-  const id = normaliseSearch(morph.geneId);
-  const aliases = (morph.aliases ?? []).map(normaliseSearch).filter(Boolean);
-  const componentIds = (morph.components ?? []).map((component) => normaliseSearch(component.morphId)).filter(Boolean);
-
-  if (name === q || id === q) return 1000;
-  if (name.startsWith(`${q} `)) return 850;
-  if (name.startsWith(q)) return 800;
-
-  if (sameCompositionTokenSet(name, q) && morph.isCombination) return 980;
-  if (sameCompositionTokenSet(aliases.find((alias) => sameCompositionTokenSet(alias, q)) ?? "", q)) return 960;
-
-  if (mode === "strict") {
-    if (sameTokenSet(name, qTokens)) return 700;
-    if (aliases.some((alias) => alias === q || sameTokenSet(alias, qTokens))) return 650;
-    return -1;
-  }
-
-  if (aliases.some((alias) => alias === q)) return 650;
-  if (aliases.some((alias) => tokenMatch(alias, qTokens))) return 550;
-
-  if (mode === "combination") {
-    if (morph.isCombination && componentIds.some((componentId) => tokenMatch(componentId, qTokens))) return 500;
-    return -1;
-  }
-
-  if (componentIds.some((componentId) => tokenMatch(componentId, qTokens))) return 300;
-  return -1;
+  const fields = fieldsForMorph(morph);
+  const canonical = Math.max(0, ...fields.canonical.map((value) => scoreSearchCandidate(query, value, "canonical")));
+  const alias = Math.max(0, ...fields.aliases.map((value) => scoreSearchCandidate(query, value, "alias")));
+  const secondary = Math.max(0, ...fields.secondary.map((value) => scoreSearchCandidate(query, value, "secondary")));
+  const combinationBoost = mode === "combination" && morph.isCombination && secondary > 0 ? 50000 : 0;
+  if (mode === "strict" && !canonical && !alias && !secondary) return -1;
+  if (mode === "combination" && !morph.isCombination && !canonical && !alias) return -1;
+  return Math.max(canonical, alias, secondary) + combinationBoost;
 }
 
 export function rankMorphSearch<T extends MorphDefinition>(options: T[], query: string, mode: MorphSearchMode = "strict"): T[] {
-  const q = normaliseSearch(query);
-  if (!q) return options;
-
-  const scored = options.map((option, index) => ({ option, index, score: scoreMorph(option, q, mode) }));
-  const exact = scored.filter((item) => item.score >= 1000 || (mode !== "strict" && item.score >= 950));
-  if (exact.length) return exact.sort((a, b) => b.score - a.score || a.option.name.localeCompare(b.option.name) || a.index - b.index).map((item) => item.option);
-
-  return scored
-    .filter((item) => item.score >= 0)
-    .sort((a, b) => b.score - a.score || a.option.name.localeCompare(b.option.name) || a.index - b.index)
-    .map((item) => item.option);
+  const raw = query.trim();
+  if (!raw) return options;
+  const ranked = rankSharedSearchResults(raw, options, fieldsForMorph);
+  if (mode === "general") return ranked.map(({ item }) => item);
+  return ranked
+    .filter(({ item }) => scoreMorph(item, raw, mode) >= 0)
+    .sort((a, b) => scoreMorph(b.item, raw, mode) - scoreMorph(a.item, raw, mode) || a.item.name.localeCompare(b.item.name))
+    .map(({ item }) => item);
 }
 
 export function morphMatchesQuery(morph: MorphDefinition, query: string, mode: MorphSearchMode = "strict"): boolean {
