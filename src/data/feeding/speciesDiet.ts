@@ -29,6 +29,8 @@ const ALL_FOOD_TYPES: FoodType[] = [
   'Invertebrate', 'Other',
 ];
 
+const MOUSE_FOOD_TYPES: FoodType[] = ['Pinkie Mouse', 'Fuzzy Mouse', 'Hopper Mouse', 'Adult Mouse'];
+
 function dedupe(values: FoodType[]): FoodType[] {
   return [...new Set(values)];
 }
@@ -56,7 +58,7 @@ function fromExistingProfile(snake: Snake): SpeciesDiet | undefined {
 
   const categories = categoriesFromStructuredPrey(feeding.preyCategories);
   const recommended: FoodType[] = [];
-  if (categories.has('rodent')) recommended.push('Pinkie Mouse', 'Fuzzy Mouse', 'Hopper Mouse', 'Adult Mouse', 'Rat Pup', 'Rat Fuzzy', 'Adult Rat');
+  if (categories.has('rodent')) recommended.push(...MOUSE_FOOD_TYPES, 'Rat Pup', 'Rat Fuzzy', 'Adult Rat');
   if (categories.has('lagomorph')) recommended.push('Rabbit');
   if (categories.has('bird')) recommended.push('Quail', 'Other Bird');
   if (categories.has('fish')) recommended.push('Fish');
