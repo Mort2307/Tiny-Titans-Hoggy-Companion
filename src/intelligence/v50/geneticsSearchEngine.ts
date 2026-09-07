@@ -11,10 +11,6 @@ export type GeneticsMatchKind = "canonical" | "alias" | "combination" | "fuzzy";
 export interface GeneticsMatch { record: MorphDefinition; matchKind: GeneticsMatchKind; matchedQuery: string; score: number; }
 
 function normalise(value: string): string { return normaliseComboName(value).replace(/[+×x]/g, " ").replace(/\s+/g, " ").trim(); }
-function tokens(value: string): string[] { return [...new Set(normaliseSearchValue(value).split(" ").filter(Boolean))]; }
-function identityTokens(value: string): string[] { return tokens(value).filter((token) => !/^(copy|copies|super)$/i.test(token)); }
-
-function scoreName(query: string, candidate: string): number { return scoreSearchCandidate(query, candidate, "canonical"); }
 
 function dedupeRecords(records: MorphDefinition[]): MorphDefinition[] {
   const seen = new Set<string>();
@@ -44,21 +40,29 @@ function candidates(speciesScientificName?: string): MorphDefinition[] {
 }
 
 function componentDisplayNames(record: MorphDefinition): string[] {
-  return (record.components ?? []).flatMap((component) => {
+  return (record.components ?? []).map((component) => {
     const base = morphs.find((morph) => morph.geneId === component.morphId)
       ?? masterMorphs.find((morph) => morph.geneId === component.morphId)
       ?? calculatorNamedCombinations.find((morph) => morph.geneId === component.morphId);
-    return base ? [base.name, ...(base.aliases ?? [])] : [component.morphId];
+    return base?.name ?? component.morphId;
   });
 }
 
 function matchesExactComponentComposition(query: string, record: MorphDefinition): boolean {
   if (!record.isCombination || !record.components?.length) return false;
-  const queryTokens = identityTokens(query);
-  if (queryTokens.length < 2) return false;
-  const componentTokens = identityTokens(componentDisplayNames(record)).sort();
-  if (componentTokens.length !== queryTokens.length) return false;
-  return [...queryTokens].sort().every((token, index) => token === componentTokens[index]);
+  const queryText = normaliseSearchValue(query).replace(/\s+/g, " ");
+  const componentNames = componentDisplayNames(record).map((name) => normaliseSearchValue(name)).filter(Boolean);
+  if (!queryText || componentNames.length < 2) return false;
+
+  // Exact composition matching is order-independent. The query may be typed
+  // as "Arctic Conda" or "Arctic + Conda"; both resolve to the same genetic
+  // component set without confusing a single component with the combination.
+  const exactJoined = componentNames.slice().sort().join(" ");
+  const queryJoined = queryText.replace(/[+]/g, " ").replace(/\s+/g, " ").trim().split(" ").sort().join(" ");
+  if (exactJoined === queryJoined) return true;
+
+  return componentNames.every((componentName) => new RegExp(`(?:^|\\s)${componentName.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(?:$|\\s)`).test(queryText))
+    && queryText.split(" ").length === componentNames.join(" ").split(" ").length;
 }
 
 /**
@@ -119,7 +123,7 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
 
   const matches: GeneticsMatch[] = [];
   for (const record of scopedCandidates) {
-    const canonicalScore = scoreName(q, record.name);
+    const canonicalScore = scoreSearchCandidate(q, record.name, "canonical");
     const aliasScores = (record.aliases ?? []).map((alias) => scoreSearchCandidate(q, alias, "alias"));
     const secondaryTerms = [
       ...((record as MorphDefinition & { searchTerms?: string[] }).searchTerms ?? []),
