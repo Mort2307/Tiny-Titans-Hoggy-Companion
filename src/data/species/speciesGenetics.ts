@@ -7,6 +7,7 @@ import {
 import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_COMBINATION_MORPHS, SPECIES_GENETICS_COMBINATION_SPECS } from "./speciesGeneticsCombinations";
+import { SPECIES_GENETICS_RESEARCH_ADDITIONS } from "./speciesGeneticsResearchAdditions";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
@@ -92,10 +93,23 @@ const BALL_PYTHON_TRAITS: MasterMorphDefinition[] = [
   ballPythonTrait("Citron", "Incomplete Dominant"),
 ];
 
-const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = {
+const BASE_SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = {
   ...SPECIES_GENETICS_CATALOGUES,
   "Python regius": BALL_PYTHON_TRAITS,
 };
+
+function mergeSpeciesTraits(speciesName: string): MasterMorphDefinition[] {
+  const base = BASE_SPECIES_CATALOGUES[speciesName] ?? [];
+  const additions = SPECIES_GENETICS_RESEARCH_ADDITIONS[speciesName] ?? [];
+  const byId = new Map(base.map((morph) => [morph.geneId, morph]));
+  additions.forEach((morph) => byId.set(morph.geneId, morph));
+  return [...byId.values()];
+}
+
+const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = Object.fromEntries(
+  [...new Set([...Object.keys(BASE_SPECIES_CATALOGUES), ...Object.keys(SPECIES_GENETICS_RESEARCH_ADDITIONS)])]
+    .map((speciesName) => [speciesName, mergeSpeciesTraits(speciesName)]),
+);
 
 function getSpeciesRecord(speciesId: string | null | undefined): SpeciesRecord | undefined {
   return speciesId ? INITIAL_SNAKE_SPECIES.find((species) => species.id === speciesId) : undefined;
@@ -118,7 +132,7 @@ export function getSpeciesVisualMorphs(speciesId: string | null | undefined): Ma
   if (isHognose(speciesId)) return getMasterVisualMorphs();
   const species = getSpeciesRecord(speciesId);
   if (!species) return [];
-  const mapped = SPECIES_CATALOGUES[species.acceptedScientificName] ?? [];
+  const mapped = getCatalogue(speciesId);
   const name = species.commonNames[0] ?? species.acceptedScientificName;
   return [normalTrait(name), ...mapped, ...getSpeciesCombinationMorphs(speciesId)];
 }
@@ -136,7 +150,10 @@ export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined)
 export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): SpeciesGeneticsStatus {
   if (!speciesId) return "baseline-only";
   if (isHognose(speciesId)) return "mapped";
-  return getSpeciesCalculatorMorphs(speciesId).length > 0 ? "partial" : "baseline-only";
+  const species = getSpeciesRecord(speciesId);
+  if (!species) return "baseline-only";
+  if (Object.prototype.hasOwnProperty.call(SPECIES_CATALOGUES, species.acceptedScientificName)) return "mapped";
+  return "baseline-only";
 }
 
 export function isSpeciesGeneticsMapped(speciesId: string | null | undefined): boolean {
