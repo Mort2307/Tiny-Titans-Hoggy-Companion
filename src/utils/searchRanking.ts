@@ -8,13 +8,32 @@ export function normaliseSearchValue(value: string): string {
     .replace(/\s+/g, " ");
 }
 
+function queryTokens(value: string): string[] {
+  return [...new Set(normaliseSearchValue(value).split(" ").filter(Boolean))];
+}
+
 function tokenScore(query: string, candidate: string): number {
-  const queryTokens = [...new Set(query.split(" ").filter(Boolean))];
-  const candidateTokens = new Set(candidate.split(" ").filter(Boolean));
-  if (!queryTokens.length) return 0;
-  const matched = queryTokens.filter((token) => candidateTokens.has(token)).length;
-  if (!matched) return 0;
-  return Math.round((matched / queryTokens.length) * 250);
+  const tokens = queryTokens(query);
+  const candidateTokens = queryTokens(candidate);
+  if (!tokens.length || !candidateTokens.length) return 0;
+
+  // For a multi-word query, every query token must be represented before a
+  // token match is allowed to outrank a genuine whole-name match. This stops
+  // queries such as "Arctic Conda" being dominated by separate Arctic/Conda
+  // records or unrelated descriptions containing only one word.
+  const matched = tokens.filter((token) => candidateTokens.includes(token));
+  if (matched.length !== tokens.length) return 0;
+
+  return 250 + Math.min(150, candidateTokens.length - tokens.length <= 0 ? 150 : 100);
+}
+
+function prefixTokenScore(query: string, candidate: string): number {
+  const tokens = queryTokens(query);
+  const candidateTokens = queryTokens(candidate);
+  if (!tokens.length || !candidateTokens.length) return 0;
+  const matched = tokens.filter((token) => candidateTokens.some((candidateToken) => candidateToken.startsWith(token)));
+  if (matched.length !== tokens.length) return 0;
+  return 180;
 }
 
 /**
@@ -26,18 +45,23 @@ export function scoreSearchCandidate(query: string, candidate: string, tier: "ca
   const q = normaliseSearchValue(query);
   const c = normaliseSearchValue(candidate);
   if (!q || !c) return 0;
-  if (c === q) return tier === "canonical" ? 100000 : tier === "alias" ? 90000 : 70000;
-  if (c.startsWith(`${q} `)) return tier === "canonical" ? 85000 : tier === "alias" ? 76000 : 56000;
-  if (c.startsWith(q)) return tier === "canonical" ? 82000 : tier === "alias" ? 73000 : 54000;
 
-  const tokens = tokenScore(q, c);
-  if (tokens) {
-    if (tier === "canonical") return 58000 + tokens;
-    if (tier === "alias") return 50000 + tokens;
-    return 32000 + tokens;
-  }
+  const base = tier === "canonical" ? 100000 : tier === "alias" ? 90000 : 70000;
+  const prefixBase = tier === "canonical" ? 85000 : tier === "alias" ? 76000 : 56000;
+  const tokenBase = tier === "canonical" ? 58000 : tier === "alias" ? 50000 : 32000;
+  const fuzzyBase = tier === "canonical" ? 40000 : tier === "alias" ? 34000 : 18000;
 
-  if (c.includes(q)) return tier === "canonical" ? 40000 : tier === "alias" ? 34000 : 18000;
+  if (c === q) return base;
+  if (c.startsWith(`${q} `)) return prefixBase + 900;
+  if (c.startsWith(q)) return prefixBase;
+
+  const wholeTokenMatch = tokenScore(q, c);
+  if (wholeTokenMatch) return tokenBase + wholeTokenMatch;
+
+  const prefixTokenMatch = prefixTokenScore(q, c);
+  if (prefixTokenMatch) return fuzzyBase + 500 + prefixTokenMatch;
+
+  if (c.includes(q)) return fuzzyBase;
   return 0;
 }
 
