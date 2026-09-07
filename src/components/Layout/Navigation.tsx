@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { hasCapability } from "../../services/capabilityService";
 import { getCommunityUnreadCount } from "../../services/communityReadStateService";
@@ -12,11 +12,13 @@ type NavigationSection = { label: string; links: NavigationLink[] };
 function Navigation() {
   const { profile, user, loading, profileLoading } = useAuth();
   const { isEasyNav } = useEasyNav();
-  const userId = user?.uid;
+  const navigate = useNavigate();
   const [creatorAuthorized, setCreatorAuthorized] = useState(false);
   const [testerAuthorized, setTesterAuthorized] = useState(false);
   const [educatorAuthorized, setEducatorAuthorized] = useState(false);
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const userId = user?.uid;
   const authReady = !loading && !profileLoading && Boolean(userId);
   useEffect(() => { if (!authReady) return; let active = true; void Promise.all([hasCapability("creator", profile), hasCapability("tester", profile), hasCapability("educator", profile)]).then(([creator, tester, educator]) => { if (!active) return; setCreatorAuthorized(creator); setTesterAuthorized(tester); setEducatorAuthorized(educator); }).catch(() => { if (!active) return; setCreatorAuthorized(false); setTesterAuthorized(false); setEducatorAuthorized(false); }); return () => { active = false; }; }, [authReady, profile]);
   useEffect(() => { if (!authReady || !userId) return; let active = true; const refresh = () => { void getCommunityUnreadCount(userId, { isTester: profile?.isTester === true, isAdmin: profile?.role === "admin" }).then((count) => { if (active) setCommunityUnreadCount(count); }).catch(() => { if (active) setCommunityUnreadCount(0); }); }; refresh(); window.addEventListener("focus", refresh); window.addEventListener("community-read-state-changed", refresh); return () => { active = false; window.removeEventListener("focus", refresh); window.removeEventListener("community-read-state-changed", refresh); }; }, [authReady, userId, profile?.isTester, profile?.role]);
@@ -32,10 +34,14 @@ function Navigation() {
   if (educatorAuthorized) restricted.push({ label: "Educator", links: [["/educator", "▣", "Educator Centre"]] });
   if (creatorAuthorized) restricted.push({ label: "Creator", links: [["/creator", "⚒", "Creator Centre"], ["/creator/morph-library", "🖼️", "Morph Library Editor"], ["/creator/community", "◈", "Community Manager"], ["/creator/mentor-review", "↔", "Mentor Review"]] });
   if (testerAuthorized) restricted.push({ label: "Testing", links: [["/creator/tester", "◇", "Tester Centre"]] });
-  const renderLink = ([to, icon, label]: NavigationLink) => <li className="app-navigation-item" key={to}><NavLink to={to} end={to === "/"} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && communityUnreadCount > 0 && <span className="community-unread-dot" aria-label={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} title={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} />}</NavLink></li>;
+  const renderLink = ([to, icon, label]: NavigationLink) => <li className="app-navigation-item" key={to}><NavLink to={to} end={to === "/"} onClick={() => setMoreOpen(false)} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && communityUnreadCount > 0 && <span className="community-unread-dot" aria-label={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} title={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} />}</NavLink></li>;
 
   if (isEasyNav) {
-    return <nav className="app-navigation tt-easy-nav-strip" aria-label="Easy navigation"><div className="tt-easy-nav-inner"><NavLink to="/" end className="tt-easy-nav-link"><span>🏠</span><small>At a Glance</small></NavLink><NavLink to="/snakes" className="tt-easy-nav-link"><span>🐍</span><small>My Snakes</small></NavLink><NavLink to="/reminders" className="tt-easy-nav-link"><span>🔔</span><small>Due</small></NavLink><NavLink to="/account/personalise?easy-nav=1" className="tt-easy-nav-link"><span>☰</span><small>More</small></NavLink></div></nav>;
+    const openMore = () => setMoreOpen((current) => !current);
+    return <>
+      <nav className="app-navigation tt-easy-nav-strip" aria-label="Easy navigation"><div className="tt-easy-nav-inner"><NavLink to="/" end className="tt-easy-nav-link"><span>🏠</span><small>At a Glance</small></NavLink><NavLink to="/snakes" className="tt-easy-nav-link"><span>🐍</span><small>My Snakes</small></NavLink><NavLink to="/reminders" className="tt-easy-nav-link"><span>🔔</span><small>Due</small></NavLink><button type="button" className={`tt-easy-nav-link tt-easy-nav-more${moreOpen ? " active" : ""}`} onClick={openMore} aria-expanded={moreOpen} aria-controls="tt-easy-more-menu"><span>☰</span><small>More</small></button></div></nav>
+      {moreOpen && <div className="tt-easy-more-backdrop" role="presentation" onClick={() => setMoreOpen(false)}><section id="tt-easy-more-menu" className="tt-easy-more" role="dialog" aria-modal="true" aria-label="Tiny Titans full navigation" onClick={(event) => event.stopPropagation()}><div className="tt-easy-more-head"><div><span>EVERYTHING ELSE</span><h2>Full Tiny Titans toolbox</h2></div><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close full navigation">×</button></div><div className="tt-easy-more-grid">{sections.concat(restricted).flatMap((section) => section.links).map(renderLink)}</div><div className="tt-easy-more-foot"><button type="button" onClick={() => { setMoreOpen(false); navigate("/account/personalise?easy-nav=1"); }}>🥧 Customise Titan Pie</button></div></section></div>}
+    </>;
   }
 
   return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner">{sections.concat(restricted).map((section) => <section className="app-navigation-section" key={section.label} aria-labelledby={`nav-${section.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}><h2 className="app-navigation-section-label" id={`nav-${section.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>{section.label}</h2><ul className="app-navigation-list">{section.links.map(renderLink)}</ul></section>)}</div></nav>;
