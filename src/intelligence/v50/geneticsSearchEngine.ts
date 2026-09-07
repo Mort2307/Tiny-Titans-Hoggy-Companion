@@ -42,15 +42,16 @@ function candidates(speciesScientificName?: string): MorphDefinition[] {
     ...hognoseMorphCatalog,
     ...morphReferenceAdditions,
     ...fullHognoseMorphTaxonomy,
+    ...calculatorNamedCombinations,
   ] as MorphDefinition[]);
   return SPECIES_GENETICS_CATALOGUES[scoped] ?? [];
 }
 
 /**
  * Species-aware genetics search with strict ranking. Exact canonical identity
- * always outranks an exact alias, partial name, component overlap or fuzzy hit.
- * Hognose search also includes the full taxonomy/reference additions so every
- * published library identity is searchable from the same resolver.
+ * always wins first, followed by exact recorded aliases, then prefix/contains/fuzzy
+ * matches. Hognose search includes the full taxonomy and recognised calculator
+ * combinations so names such as Arctic Conda and Grey Fog resolve immediately.
  */
 export function searchGenetics(query: string, speciesScientificName?: string): GeneticsMatch[] {
   const raw = query.trim();
@@ -67,6 +68,18 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
       score: 1000,
     })).slice(0, 12);
   }
+
+  const exactAlias = scopedCandidates.flatMap((record) =>
+    (record.aliases ?? [])
+      .filter((alias) => normalise(alias) === q)
+      .map(() => ({
+        record,
+        matchKind: record.isCombination ? "combination" as const : "alias" as const,
+        matchedQuery: raw,
+        score: 980,
+      })),
+  );
+  if (exactAlias.length) return exactAlias.slice(0, 12);
 
   if (!speciesScientificName?.trim()) {
     const exactCombination = findCalculatorNamedCombination(raw);
