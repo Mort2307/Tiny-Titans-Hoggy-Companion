@@ -1,5 +1,7 @@
 import { calculatorNamedCombinations, findCalculatorNamedCombination, normaliseComboName } from "../../data/geneticsComboRegistry";
+import { fullHognoseMorphTaxonomy } from "../../data/hognoseMorphFullTaxonomy";
 import { hognoseMorphCatalog } from "../../data/hognoseMorphCatalog";
+import { morphReferenceAdditions } from "../../data/morphReferenceAdditions";
 import { morphs, type MorphDefinition } from "../../data/morphs";
 import { SPECIES_GENETICS_CATALOGUES } from "../../data/species/speciesGeneticsCatalogues";
 
@@ -7,42 +9,87 @@ export type GeneticsMatchKind = "canonical" | "alias" | "combination" | "fuzzy";
 export interface GeneticsMatch { record: MorphDefinition; matchKind: GeneticsMatchKind; matchedQuery: string; score: number; }
 
 function normalise(value: string): string { return normaliseComboName(value).replace(/[+×x]/g, " ").replace(/\s+/g, " ").trim(); }
-function scoreName(query: string, candidate: string): number { if (!query || !candidate) return 0; if (candidate === query) return 100; if (candidate.startsWith(query)) return 88; if (candidate.includes(query)) return 72; const q = new Set(query.split(" ").filter(Boolean)); const c = new Set(candidate.split(" ").filter(Boolean)); const overlap = [...q].filter((token) => c.has(token)).length; return q.size ? Math.round((overlap / q.size) * 60) : 0; }
+
+function scoreName(query: string, candidate: string): number {
+  if (!query || !candidate) return 0;
+  if (candidate === query) return 1000;
+  if (candidate.startsWith(query)) return 850;
+  if (candidate.includes(query)) return 650;
+  const q = new Set(query.split(" ").filter(Boolean));
+  const c = new Set(candidate.split(" ").filter(Boolean));
+  const overlap = [...q].filter((token) => c.has(token)).length;
+  if (!q.size || !overlap) return 0;
+  return 400 + Math.round((overlap / q.size) * 80);
+}
+
+function dedupeRecords(records: MorphDefinition[]): MorphDefinition[] {
+  const seen = new Set<string>();
+  return records.filter((record) => {
+    const key = String(record.geneId || record.name || "").toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function candidates(speciesScientificName?: string): MorphDefinition[] {
   const scoped = speciesScientificName?.trim();
-  if (!scoped) return [...morphs, ...calculatorNamedCombinations.filter((combo) => !morphs.some((morph) => morph.geneId === combo.geneId))];
-  if (scoped === "Heterodon nasicus") return hognoseMorphCatalog;
+  if (!scoped) return dedupeRecords([
+    ...morphs,
+    ...calculatorNamedCombinations.filter((combo) => !morphs.some((morph) => morph.geneId === combo.geneId)),
+  ]);
+  if (scoped === "Heterodon nasicus") return dedupeRecords([
+    ...hognoseMorphCatalog,
+    ...morphReferenceAdditions,
+    ...fullHognoseMorphTaxonomy,
+  ] as MorphDefinition[]);
   return SPECIES_GENETICS_CATALOGUES[scoped] ?? [];
 }
 
 /**
- * Canonical genetics search. When a species is supplied, only that species'
- * scoped catalogue is searched; global morph/combo records are deliberately not
- * mixed into the result so one species cannot inherit another species' genetics.
- * Western Hognose is explicitly backed by its reviewed legacy Hognose catalogue,
- * which already includes its recognised combination registry.
+ * Species-aware genetics search with strict ranking. Exact canonical identity
+ * always outranks an exact alias, partial name, component overlap or fuzzy hit.
+ * Hognose search also includes the full taxonomy/reference additions so every
+ * published library identity is searchable from the same resolver.
  */
 export function searchGenetics(query: string, speciesScientificName?: string): GeneticsMatch[] {
   const raw = query.trim();
   const q = normalise(raw);
   if (!q) return [];
 
+  const scopedCandidates = candidates(speciesScientificName);
+  const exactCanonical = scopedCandidates.filter((record) => normalise(record.name) === q);
+  if (exactCanonical.length) {
+    return exactCanonical.map((record) => ({
+      record,
+      matchKind: record.isCombination ? "combination" : "canonical",
+      matchedQuery: raw,
+      score: 1000,
+    })).slice(0, 12);
+  }
+
   if (!speciesScientificName?.trim()) {
     const exactCombination = findCalculatorNamedCombination(raw);
-    if (exactCombination) return [{ record: exactCombination, matchKind: "combination", matchedQuery: raw, score: 100 }];
+    if (exactCombination) return [{ record: exactCombination, matchKind: "combination", matchedQuery: raw, score: 990 }];
   }
 
   const matches: GeneticsMatch[] = [];
-  for (const record of candidates(speciesScientificName)) {
-    const canonical = normalise(record.name);
+  for (const record of scopedCandidates) {
+    const canonicalScore = scoreName(q, normalise(record.name));
     const aliasScores = (record.aliases ?? []).map((alias) => scoreName(q, normalise(alias)));
-    const canonicalScore = scoreName(q, canonical);
+    const searchTermScores = ((record as MorphDefinition & { searchTerms?: string[] }).searchTerms ?? []).map((term) => scoreName(q, normalise(term)));
     const bestAlias = Math.max(0, ...aliasScores);
-    const score = Math.max(canonicalScore, bestAlias);
+    const bestSearchTerm = Math.max(0, ...searchTermScores);
+    const score = Math.max(canonicalScore, bestAlias > 0 ? bestAlias - 10 : 0, bestSearchTerm > 0 ? bestSearchTerm - 20 : 0);
     if (score <= 0) continue;
-    matches.push({ record, matchKind: canonicalScore >= bestAlias ? (record.isCombination ? "combination" : "canonical") : "alias", matchedQuery: raw, score });
+    const matchKind: GeneticsMatchKind = canonicalScore >= bestAlias && canonicalScore >= bestSearchTerm
+      ? (record.isCombination ? "combination" : "canonical")
+      : bestAlias >= bestSearchTerm ? "alias" : "fuzzy";
+    matches.push({ record, matchKind, matchedQuery: raw, score });
   }
-  return matches.sort((a, b) => b.score - a.score || a.record.name.localeCompare(b.record.name)).slice(0, 12);
+  return matches
+    .sort((a, b) => b.score - a.score || a.record.name.localeCompare(b.record.name))
+    .slice(0, 12);
 }
 
 export function searchSpeciesGenetics(query: string, speciesScientificName: string): GeneticsMatch[] {
