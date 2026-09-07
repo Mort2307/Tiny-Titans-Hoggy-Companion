@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
+import { useAuth } from "../context/useAuth";
 import { buildThenVsNow, type AnimalTimelineEvent } from "../intelligence/v50/animalIntelligenceEngine";
 import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
 import "./SnakeTimeline.css";
@@ -20,7 +21,7 @@ export default function SnakeTimeline() {
   const [record, setRecord] = useState<SnakeMasterRecord | null>(null); const [error, setError] = useState(""); const [loadingRecord, setLoadingRecord] = useState(true); const [selectedType, setSelectedType] = useState("all");
   useEffect(() => { if (loading || profileLoading || !user || !id) return; let active = true; setLoadingRecord(true); void getSnakeMasterRecord(user.uid, id).then((result) => { if (!active) return; if (!result) setError("This snake could not be found in your Tiny Titans account."); else { setRecord(result); setError(""); } }).catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load this timeline."); }).finally(() => { if (active) setLoadingRecord(false); }); return () => { active = false; }; }, [id, user, loading, profileLoading]);
   const filteredTimeline = useMemo(() => !record ? [] : selectedType === "all" ? record.timeline : record.timeline.filter((event) => event.type === selectedType), [record, selectedType]);
-  const thenVsNow = useMemo(() => !record ? null : buildThenVsNow({ weights: record.weights, feedings: record.feedings, sheds: record.sheds, behaviour: record.behaviours, health: record.health }), [record]);
+  const thenVsNow = useMemo(() => !record ? null : buildThenVsNow({ weights: record.weights.map((weight) => ({ date: weight.date, grams: weight.weight })), feedings: record.feedings, sheds: record.sheds, behaviour: record.behaviours, health: record.health }), [record]);
   const eventTypes = useMemo(() => record ? Array.from(new Set(record.timeline.map((event) => event.type))) : [], [record]);
 
   if (loading || profileLoading || loadingRecord) return <div className="page-container"><BackHomeButton /><h1>📜 Loading Timeline…</h1><section className="tracker-card"><p>Tiny Titans is assembling the chronological history from the canonical records.</p></section></div>;
