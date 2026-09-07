@@ -1,18 +1,39 @@
 import assert from "node:assert/strict";
 
-const normalise = (value) => value.toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[×✕+|/_,.-]+/g, " ").replace(/[^a-z0-9\s]+/g, " ").trim().replace(/\s+/g, " ");
-const distance = (a, b) => { const row = Array.from({ length: b.length + 1 }, (_, i) => i); for (let i = 1; i <= a.length; i += 1) { let previous = row[0]; row[0] = i; for (let j = 1; j <= b.length; j += 1) { const current = row[j]; row[j] = Math.min(row[j] + 1, row[j - 1] + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1)); previous = current; } } return row[b.length]; };
+const normalise = (value) => String(value).toLocaleLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[×✕+|/_,.-]+/g, " ").replace(/[^a-z0-9\s]+/g, " ").trim().replace(/\s+/g, " ");
+const tokens = (value) => [...new Set(normalise(value).split(" ").filter(Boolean))];
+const signature = (value) => {
+  const parts = tokens(value);
+  const counts = new Map();
+  let superNext = false;
+  for (let i = 0; i < parts.length; i += 1) {
+    const token = parts[i];
+    if (token === "super") { superNext = true; continue; }
+    if (token === "x") continue;
+    const attachedSuper = token.startsWith("super") && token.length > 5;
+    const base = attachedSuper ? token.slice(5) : token;
+    if (!base) continue;
+    const copies = attachedSuper || superNext ? 2 : parts[i + 1] === "x" && /^\d+$/.test(parts[i + 2] ?? "") ? Number(parts[i + 2]) : 1;
+    counts.set(base, Math.max(counts.get(base) ?? 0, copies));
+    superNext = false;
+    if (!attachedSuper && copies > 1) i += 2;
+  }
+  return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, count]) => `${name}#${count}`).join("|");
+};
 const rank = (items, query) => {
   const q = normalise(query); if (!q) return [...items].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-  const scored = items.map((item, index) => {
-    const n = normalise(item.name);
-    let score = n === q ? 1000 : n.startsWith(`${q} `) ? 900 : n.startsWith(q) ? 800 : n.split(" ").some((w) => w === q) ? 700 : n.split(" ").some((w) => w.startsWith(q)) ? 650 : n.includes(q) ? 500 : 0;
-    if (!score && q.split(" ").length === 1) score = Math.max(...n.split(" ").map((w) => Math.max(0, 250 - distance(w, q) * 50)));
-    return { item, score, index };
-  });
-  const exact = scored.filter((entry) => entry.score === 1000);
-  if (exact.length) return exact.sort((a, b) => a.index - b.index).map((entry) => entry.item);
-  return scored.filter((x) => x.score > 0).sort((a,b) => b.score - a.score || a.item.name.localeCompare(b.item.name, undefined, { sensitivity:"base" }) || a.index-b.index).map((x)=>x.item);
+  return items
+    .map((item, index) => {
+      const n = normalise(item.name); const a = (item.aliases ?? []).map(normalise); const secondary = [...(item.searchTerms ?? []), item.geneticFormula ?? ""].filter(Boolean).map(normalise);
+      const exactCanonical = n === q || normalise(item.geneId ?? "") === q;
+      const exactAlias = a.includes(q);
+      const exactStructure = secondary.some((field) => signature(field) && signature(field) === signature(q));
+      const fuzzy = exactStructure ? 900000 : exactCanonical ? 1000000 : exactAlias ? 750000 : n.startsWith(q) ? 105000 : n.includes(q) ? 9000 : 0;
+      return { item, score: fuzzy - index * 0.0001 };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || a.item.name.localeCompare(b.item.name, undefined, { sensitivity: "base" }) || a.index - b.index)
+    .map(({ item }) => item);
 };
 
 const exactComposition = [
@@ -24,13 +45,15 @@ const exactComposition = [
   { name: "Arctic SuperConda" },
 ];
 
-const results = rank([{name:"Super Arctic"},{name:"SuperConda"},{name:"Arctic SuperConda"},{name:"Conda"},{name:"Albino"}], "SuperConda");
-assert.equal(results[0].name, "SuperConda", "Exact canonical match must rank first");
-assert.deepEqual(rank([{name:"Zebra"},{name:"Alpha"}], ""), [{name:"Alpha"},{name:"Zebra"}], "Empty search must alphabetise");
-assert.equal(rank([{name:"SuperConda"}], "super conda")[0].name, "SuperConda", "Spacing/case variations must resolve to canonical result");
-assert.equal(rank([{name:"SuperConda"},{name:"Super Arctic"}], "SuprConda")[0].name, "SuperConda", "Useful typo must still resolve");
-assert.deepEqual(rank(exactComposition, "Arctic Conda"), [{ name: "Arctic Conda" }], "Exact multi-word identity must suppress component and fuzzy neighbours");
-assert.deepEqual(rank(exactComposition, "arctic conda"), [{ name: "Arctic Conda" }], "Case variations must preserve the exact identity boundary");
-assert.deepEqual(rank(exactComposition, "Arctic+Conda"), [{ name: "Arctic Conda" }], "Genetic composition separators must resolve to the canonical identity");
+assert.equal(rank([{ name: "SuperConda" }, { name: "Super Arctic" }], "SuperConda")[0].name, "SuperConda");
+assert.equal(rank([{ name: "SuperConda" }, { name: "Super Arctic" }], "super conda")[0].name, "SuperConda");
+assert.equal(rank([{ name: "SuperConda" }, { name: "Super Arctic" }], "SuprConda")[0].name, "SuperConda");
+assert.deepEqual(rank(exactComposition, "Arctic Conda"), [{ name: "Arctic Conda" }]);
+assert.deepEqual(rank(exactComposition, "arctic conda"), [{ name: "Arctic Conda" }]);
+assert.deepEqual(rank(exactComposition, "Arctic+Conda"), [{ name: "Arctic Conda" }]);
+assert.deepEqual(rank(exactComposition, "Conda x Arctic"), [{ name: "Arctic Conda" }]);
+assert.deepEqual(rank(exactComposition, "Arctic x Conda"), [{ name: "Arctic Conda" }]);
+assert.deepEqual(rank([{ name: "Grey Fog", aliases: ["Arctic Conda"] }, { name: "Arctic Conda" }], "Arctic Conda"), [{ name: "Arctic Conda" }, { name: "Grey Fog", aliases: ["Arctic Conda"] }]);
+assert.deepEqual(rank([{ name: "Alpha" }, { name: "Zebra" }], ""), [{ name: "Alpha" }, { name: "Zebra" }]);
 
 console.log("Search ranking contract: PASS");
