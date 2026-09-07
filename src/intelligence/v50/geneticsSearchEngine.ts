@@ -83,7 +83,7 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
   if (exactCanonical.length) {
     return exactCanonical
       .sort((a, b) => Number(Boolean(b.isCombination)) - Number(Boolean(a.isCombination)) || a.name.localeCompare(b.name))
-      .map((record) => ({
+      .map((record): GeneticsMatch => ({
         record,
         matchKind: record.isCombination ? "combination" : "canonical",
         matchedQuery: raw,
@@ -95,9 +95,9 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
   const exactAlias = scopedCandidates.flatMap((record) =>
     (record.aliases ?? [])
       .filter((alias) => normalise(alias) === q)
-      .map(() => ({
+      .map((): GeneticsMatch => ({
         record,
-        matchKind: record.isCombination ? "combination" as const : "alias" as const,
+        matchKind: record.isCombination ? "combination" : "alias",
         matchedQuery: raw,
         score: 90000,
       })),
@@ -108,7 +108,7 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
     .filter((record) => matchesExactComponentComposition(raw, record))
     .sort((a, b) => Number(Boolean(b.isCombination)) - Number(Boolean(a.isCombination)) || a.name.localeCompare(b.name));
   if (exactComponentCompositions.length) {
-    return exactComponentCompositions.slice(0, 12).map((record) => ({
+    return exactComponentCompositions.slice(0, 12).map((record): GeneticsMatch => ({
       record,
       matchKind: "combination",
       matchedQuery: raw,
