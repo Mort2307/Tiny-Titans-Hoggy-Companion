@@ -29,10 +29,14 @@ const ALL_FOOD_TYPES: FoodType[] = [
   'Invertebrate', 'Other',
 ];
 
-const MOUSE_FOOD_TYPES: FoodType[] = ['Pinkie Mouse', 'Fuzzy Mouse', 'Hopper Mouse', 'Adult Mouse'];
+export const MOUSE_FOOD_TYPES: FoodType[] = ['Pinkie Mouse', 'Fuzzy Mouse', 'Hopper Mouse', 'Adult Mouse'];
 
 function dedupe(values: FoodType[]): FoodType[] {
   return [...new Set(values)];
+}
+
+function addUniversalMouseOptions(recommended: FoodType[]): FoodType[] {
+  return dedupe([...recommended, ...MOUSE_FOOD_TYPES]);
 }
 
 function categoriesFromStructuredPrey(preyCategories: string[] = []): Set<PreyCategory> {
@@ -57,14 +61,14 @@ function explicitGeneralistDiet(snake: Snake): SpeciesDiet | undefined {
   const id = species.id.toLowerCase();
 
   if (id === 'heterodon-nasicus') {
-    const recommended = [...MOUSE_FOOD_TYPES, 'Rat Pup', 'Rat Fuzzy', 'Adult Rat'] as FoodType[];
+    const recommended = addUniversalMouseOptions(['Rat Pup', 'Rat Fuzzy', 'Adult Rat']);
     return {
       label: species.commonNames[0] ?? species.acceptedScientificName,
       guild: 'rodent-based generalist',
       recommended,
       additional: ALL_FOOD_TYPES.filter((food) => !recommended.includes(food)),
       categories: ['rodent'],
-      note: 'Western Hognoses are shown the common captive rodent prey choices first. This is a keeper-friendly recommendation, not a claim that one prey item is universally superior; prey size and individual condition still matter.',
+      note: 'Western Hognoses are shown the common captive rodent prey choices first. Mouse options are included as common feeder choices, not as a claim that one prey item is universally superior; prey size and individual condition still matter.',
     };
   }
   return undefined;
@@ -86,13 +90,14 @@ function fromExistingProfile(snake: Snake): SpeciesDiet | undefined {
   if (categories.has('reptile')) recommended.push('Reptile Prey');
   if (categories.has('invertebrate')) recommended.push('Invertebrate');
 
+  const finalRecommended = addUniversalMouseOptions(recommended);
   const guild = feeding.dietaryGuild ?? 'species-specific';
-  const note = feeding.notes ?? 'Use the species profile and body condition to determine prey type, prey size and feeding interval.';
+  const note = `${feeding.notes ?? 'Use the species profile and body condition to determine prey type, prey size and feeding interval.'} Mouse options are retained for common captive-feeder logging across Tiny Titans; they are not a claim that mice are appropriate for every species.`;
   return {
     label: species.commonNames[0] ?? species.acceptedScientificName,
     guild,
-    recommended: dedupe(recommended),
-    additional: dedupe(ALL_FOOD_TYPES.filter((food) => !recommended.includes(food))),
+    recommended: finalRecommended,
+    additional: dedupe(ALL_FOOD_TYPES.filter((food) => !finalRecommended.includes(food))),
     categories: categories.size ? [...categories] : ['other'],
     note,
   };
@@ -104,13 +109,14 @@ function explicitSpecialistDiet(snake: Snake): SpeciesDiet | undefined {
   const id = species.id.toLowerCase();
 
   if (id.startsWith('dasypeltis-')) {
+    const recommended = addUniversalMouseOptions(['Egg']);
     return {
       label: species.commonNames[0] ?? species.acceptedScientificName,
       guild: 'egg-specialist',
-      recommended: ['Egg'],
-      additional: ALL_FOOD_TYPES.filter((food) => food !== 'Egg'),
+      recommended,
+      additional: ALL_FOOD_TYPES.filter((food) => !recommended.includes(food)),
       categories: ['egg'],
-      note: 'Egg-specialist snake: record whole eggs as the primary prey item. Tiny Titans will not substitute rodents simply because rodents are common in generic snake trackers.',
+      note: 'Egg-specialist snake: eggs remain the primary species-specific prey recommendation. Mouse options are shown because the tracker supports common captive feeder choices, but they are not being presented as a suitable substitute for an egg-specialist diet.',
     };
   }
 
@@ -123,13 +129,14 @@ function explicitSpecialistDiet(snake: Snake): SpeciesDiet | undefined {
     'rhabdophis-subminiatus',
   ]);
   if (fishAmphibianIds.has(id)) {
+    const recommended = addUniversalMouseOptions(['Fish', 'Amphibian']);
     return {
       label: species.commonNames[0] ?? species.acceptedScientificName,
       guild: 'fish/amphibian-capable generalist',
-      recommended: ['Fish', 'Amphibian'],
-      additional: ALL_FOOD_TYPES.filter((food) => !['Fish', 'Amphibian'].includes(food)),
+      recommended,
+      additional: ALL_FOOD_TYPES.filter((food) => !recommended.includes(food)),
       categories: ['fish', 'amphibian'],
-      note: 'Species-specific aquatic/semi-aquatic prey profile: fish and amphibians are surfaced first. Exact prey, size and response should remain attached to each feeding record.',
+      note: 'Species-specific aquatic/semi-aquatic prey profile: fish and amphibians remain primary. Mouse options are also surfaced for common captive-feeder logging and are not a claim that mice are universally preferred or appropriate.',
     };
   }
 
@@ -138,22 +145,27 @@ function explicitSpecialistDiet(snake: Snake): SpeciesDiet | undefined {
 
 export function getSpeciesDiet(snake: Snake | undefined): SpeciesDiet {
   if (!snake) {
+    const recommended = addUniversalMouseOptions(['Other']);
     return {
       label: 'Snake',
       guild: 'unknown',
-      recommended: ['Other'],
-      additional: ALL_FOOD_TYPES.filter((food) => food !== 'Other'),
+      recommended,
+      additional: ALL_FOOD_TYPES.filter((food) => !recommended.includes(food)),
       categories: ['other'],
-      note: 'Species not resolved. Record the actual prey item under Other until the species profile has been mapped.',
+      note: 'Species not resolved. Record the actual prey item under Other until the species profile has been mapped. Mouse feeder options remain visible for common captive-feeder logging but should not be assumed appropriate for an unresolved species.',
     };
   }
 
-  return explicitGeneralistDiet(snake) ?? explicitSpecialistDiet(snake) ?? fromExistingProfile(snake) ?? {
+  const diet = explicitGeneralistDiet(snake) ?? explicitSpecialistDiet(snake) ?? fromExistingProfile(snake);
+  if (diet) return diet;
+
+  const recommended = addUniversalMouseOptions(['Other']);
+  return {
     label: snake.species || 'Snake',
     guild: 'species-specific',
-    recommended: ['Other'],
-    additional: ALL_FOOD_TYPES.filter((food) => food !== 'Other'),
+    recommended,
+    additional: ALL_FOOD_TYPES.filter((food) => !recommended.includes(food)),
     categories: ['other'],
-    note: 'No structured feeding profile is currently mapped for this snake. The tracker will preserve the exact food item rather than inventing a diet.',
+    note: 'No structured feeding profile is currently mapped for this snake. The tracker will preserve the exact food item rather than inventing a diet. Mouse feeder options remain visible for common captive-feeder logging but should not be assumed appropriate without species-specific guidance.',
   };
 }
