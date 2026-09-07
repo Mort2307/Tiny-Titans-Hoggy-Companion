@@ -131,7 +131,7 @@ export default function TitanAtAGlance() {
     return () => { active = false; };
   }, [user, isEasyNav]);
 
-  const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === activeSnakeId) ?? snakes[0], [snakes, activeSnakeId]);
+  const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === activeSnakeId), [snakes, activeSnakeId]);
   const views = useMemo(() => slices.map((slice) => ({ id: slice, ...buildView(slice, selectedSnake) })), [slices, selectedSnake]);
 
   if (!isEasyNav || loading) return null;
