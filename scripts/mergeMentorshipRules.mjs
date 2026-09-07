@@ -1,6 +1,9 @@
 import fs from "node:fs";
 const path="firestore.rules";let rules=fs.readFileSync(path,"utf8");const marker='match /{document=**} { allow read, write: if false; }';
-if(rules.includes("match /mentorApplications/{applicationId}")) process.exit(0);
+const legacyCreatorRule="function isCreator() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.creator == true); }";
+const canonicalCreatorRule="function isCreator() { return ownerAccount(); }";
+if(rules.includes(legacyCreatorRule)) rules=rules.replace(legacyCreatorRule,canonicalCreatorRule);
+if(rules.includes("match /mentorApplications/{applicationId}")) { fs.writeFileSync(path,rules,"utf8"); process.exit(0); }
 if(!rules.includes(marker)) throw new Error("Mentorship rules merge refused: default deny marker not found.");
 const block=`    match /mentorApplications/{applicationId} { allow create: if signedIn() && request.resource.data.applicantId == request.auth.uid && request.resource.data.status == "submitted" && request.resource.data.mentorRoles.size() > 0 && request.resource.data.specialities.size() > 0 && request.resource.data.experienceYears >= 0 && request.resource.data.experienceYears <= 80 && request.resource.data.conductAccepted == true; allow get: if signedIn() && (isCreator() || resource.data.applicantId == request.auth.uid); allow list: if isCreator(); allow update, delete: if isCreator(); }
     match /mentors/{mentorId} { allow read: if signedIn(); allow create, update, delete: if isCreator(); }
