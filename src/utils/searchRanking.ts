@@ -17,14 +17,11 @@ function tokenScore(query: string, candidate: string): number {
   const candidateTokens = queryTokens(candidate);
   if (!tokens.length || !candidateTokens.length) return 0;
 
-  // For a multi-word query, every query token must be represented before a
-  // token match is allowed to outrank a genuine whole-name match. This stops
-  // queries such as "Arctic Conda" being dominated by separate Arctic/Conda
-  // records or unrelated descriptions containing only one word.
   const matched = tokens.filter((token) => candidateTokens.includes(token));
   if (matched.length !== tokens.length) return 0;
 
-  return 250 + Math.min(150, candidateTokens.length - tokens.length <= 0 ? 150 : 100);
+  const extraTokens = Math.max(0, candidateTokens.length - tokens.length);
+  return 250 + Math.max(0, 150 - extraTokens * 15);
 }
 
 function prefixTokenScore(query: string, candidate: string): number {
@@ -36,11 +33,7 @@ function prefixTokenScore(query: string, candidate: string): number {
   return 180;
 }
 
-/**
- * Keeper-facing search ranking. Exact canonical identity is deliberately much
- * stronger than aliases, components, descriptions, or fuzzy text so a precise
- * genetics term does not get buried under broad matches.
- */
+/** Keeper-facing search ranking with deterministic exact-match short circuits. */
 export function scoreSearchCandidate(query: string, candidate: string, tier: "canonical" | "alias" | "secondary" = "secondary"): number {
   const q = normaliseSearchValue(query);
   const c = normaliseSearchValue(candidate);
@@ -79,11 +72,29 @@ export function rankSearchResults<T>(query: string, items: T[], getFields: (item
   const raw = query.trim();
   if (!raw) return items.map((item) => ({ item, score: 0 }));
 
+  const normalizedQuery = normaliseSearchValue(raw);
+
+  // Exact canonical identity is a hard match: return only the canonical hits.
+  // This prevents a precise query such as "Arctic Conda" being surrounded by
+  // separate Arctic/Conda records, descriptions, formula matches, or fuzzy hits.
+  const exactCanonical = items
+    .map((item, index) => ({ item, index, fields: getFields(item) }))
+    .filter(({ fields }) => (fields.canonical ?? []).some((field) => normaliseSearchValue(field) === normalizedQuery))
+    .map(({ item, index }) => ({ item, score: 100000 - index * 0.0001 }));
+  if (exactCanonical.length) return exactCanonical.sort((a, b) => b.score - a.score);
+
+  // Exact alias is also decisive when no canonical identity matched.
+  const exactAlias = items
+    .map((item, index) => ({ item, index, fields: getFields(item) }))
+    .filter(({ fields }) => (fields.aliases ?? []).some((field) => normaliseSearchValue(field) === normalizedQuery))
+    .map(({ item, index }) => ({ item, score: 90000 - index * 0.0001 }));
+  if (exactAlias.length) return exactAlias.sort((a, b) => b.score - a.score);
+
   return items
     .map((item, index) => {
       const fields = getFields(item);
       const canonicalScore = scoreTextFields(raw, fields.canonical ?? []);
-      const aliasScore = scoreTextFields(raw, fields.aliases ?? []);
+      const aliasScore = Math.max(0, ...((fields.aliases ?? []).map((field) => scoreSearchCandidate(raw, field, "alias"))));
       const secondaryScore = scoreTextFields(raw, fields.secondary ?? []);
       return { item, score: Math.max(canonicalScore, aliasScore, secondaryScore) - index * 0.0001 };
     })
