@@ -6,10 +6,11 @@ import { getApprovedMorphImages } from "../services/creatorService";
 import type { ApprovedMorphImage } from "../types/morphSubmission";
 import BackHomeButton from "../components/BackHomeButton";
 import { SpeciesMorphImageSubmissionDialog } from "./SpeciesMorphImageSubmissionDialog";
+import { rankSearchResults } from "../utils/searchRanking";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
 
-const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
+
 type SpeciesMorphEntry = ReturnType<typeof getSpeciesVisualMorphs>[number];
 type Filter = "all" | "gene" | "combination" | "polygenic" | "line-bred";
 
@@ -54,15 +55,17 @@ export default function SpeciesMorphLibrary() {
   }, [selectedSpeciesId]);
 
   const filtered = useMemo(() => {
-    const needle = normalise(query);
-    return entries
-      .filter((morph) => matchesFilter(morph, filter))
-      .filter((morph) => {
-        if (!needle) return true;
-        const searchable = [morph.name, ...(morph.aliases ?? []), ...(morph.contains ?? []), ...(morph.components?.map((component) => component.morphId) ?? [])].map(normalise);
-        return searchable.some((value) => value.includes(needle));
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const filteredEntries = entries.filter((morph) => matchesFilter(morph, filter));
+    if (!query.trim()) return filteredEntries.sort((a, b) => a.name.localeCompare(b.name));
+
+    return rankSearchResults(query, filteredEntries, (morph) => ({
+      canonical: [morph.name],
+      aliases: morph.aliases ?? [],
+      secondary: [
+        ...(morph.contains ?? []),
+        ...(morph.components?.map((component) => component.morphId) ?? []),
+      ],
+    })).map(({ item }) => item);
   }, [entries, filter, query]);
 
   const statusLabel = geneticsStatus === "mapped"
@@ -108,7 +111,7 @@ export default function SpeciesMorphLibrary() {
         <div className="morph-library__filters" role="group" aria-label="Morph type">
           {["all", "gene", "combination", "polygenic", "line-bred"].map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value as Filter)}>{value === "all" ? "All" : value === "gene" ? "Genes & Supers" : value === "combination" ? "Combinations" : value === "polygenic" ? "Polygenic" : "Line-bred"}</button>)}
         </div>
-        <label className="morph-library__search"><span>Search {speciesName} morphs</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${speciesName} genetics…`} /></label>
+        <label className="morph-library__search"><span>Search {speciesName} morphs</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${speciesName} genetics…`} autoComplete="off" spellCheck={false} /></label>
         <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} species-scoped entries currently published</span></div>
       </header>
 
