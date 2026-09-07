@@ -6,7 +6,7 @@ import { morphs, type MorphDefinition } from "../../data/morphs";
 import { masterMorphs } from "../../data/masterMorphDatabase";
 import { SPECIES_GENETICS_CATALOGUES } from "../../data/species/speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_COMBINATION_MORPHS, SPECIES_GENETICS_COMBINATION_SPECS } from "../../data/species/speciesGeneticsCombinations";
-import { normaliseSearchValue, scoreSearchCandidate } from "../../utils/searchRanking";
+import { scoreSearchCandidate } from "../../utils/searchRanking";
 
 export type GeneticsMatchKind = "canonical" | "alias" | "combination" | "fuzzy";
 export interface GeneticsMatch { record: MorphDefinition; matchKind: GeneticsMatchKind; matchedQuery: string; score: number; }
