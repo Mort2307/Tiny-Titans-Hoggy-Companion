@@ -7,14 +7,7 @@
   box-shadow: 0 20px 55px rgba(0,0,0,.22);
 }
 
-.tt-at-glance-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-  margin-bottom: .25rem;
-}
-
+.tt-at-glance-head { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom:.25rem; }
 .tt-at-glance-eyebrow { display:block; font-size:.68rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800; opacity:.64; }
 .tt-at-glance h1 { margin:.22rem 0 .1rem; font-size:clamp(1.35rem,3vw,1.8rem); }
 .tt-at-glance p { margin:0; opacity:.72; font-size:.87rem; }
@@ -32,17 +25,20 @@
 .tt-at-glance-value { font-size:8.2px; font-weight:700; fill:rgba(255,255,255,.62); }
 .tt-at-glance-centre { fill:rgba(7,13,12,.98); stroke:rgba(255,255,255,.12); stroke-width:1.5; pointer-events:none; }
 
-/* The centre control is positioned without transform so it cannot inherit or trigger any transform-based hover animation. */
+/* Deliberately hard-locked circular centre tile. */
 .tt-at-glance-centre-button {
   position:absolute;
   top:50%;
   left:50%;
-  width:152px;
-  min-width:152px;
-  height:152px;
-  min-height:152px;
+  width:152px !important;
+  min-width:152px !important;
+  max-width:152px !important;
+  height:152px !important;
+  min-height:152px !important;
+  max-height:152px !important;
   margin-left:-76px;
   margin-top:-76px;
+  padding:.75rem;
   box-sizing:border-box;
   appearance:none;
   -webkit-appearance:none;
@@ -51,16 +47,16 @@
   align-items:center;
   justify-content:center;
   gap:.18rem;
-  padding:.75rem;
-  border:0;
-  border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.12) !important;
+  border-radius:50% !important;
   background:radial-gradient(circle at 50% 30%,rgba(42,70,61,.9),rgba(7,13,12,.99) 72%);
   color:inherit;
   cursor:pointer;
   text-align:center;
-  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12),0 10px 30px rgba(0,0,0,.26);
-  z-index:3;
   overflow:hidden;
+  clip-path:circle(50% at 50% 50%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 10px 30px rgba(0,0,0,.26);
+  z-index:3;
 }
 
 .tt-at-glance-centre-button:hover,
@@ -70,6 +66,8 @@
   transform:none !important;
   translate:none !important;
   scale:none !important;
+  border-radius:50% !important;
+  clip-path:circle(50% at 50% 50%) !important;
   outline:none;
 }
 
@@ -111,7 +109,7 @@ img.tt-at-glance-picker-avatar { object-fit:cover; }
   .tt-at-glance-head { align-items:center; }
   .tt-at-glance p { font-size:.8rem; }
   .tt-at-glance-customise { font-size:.72rem; }
-  .tt-at-glance-centre-button { width:132px; min-width:132px; height:132px; min-height:132px; margin-left:-66px; margin-top:-66px; }
+  .tt-at-glance-centre-button { width:132px !important; min-width:132px !important; max-width:132px !important; height:132px !important; min-height:132px !important; max-height:132px !important; margin-left:-66px; margin-top:-66px; }
   .tt-at-glance-centre-photo { width:68px; height:68px; }
   .tt-at-glance-centre-name { max-width:114px; font-size:.74rem; }
   .tt-at-glance-centre-meta { max-width:114px; font-size:.6rem; }
