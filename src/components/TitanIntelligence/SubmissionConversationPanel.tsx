@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { ensureSubmissionConversation, sendSubmissionConversationMessage, markSubmissionConversationRead, watchSubmissionConversationMessages, type SubmissionConversation, type SubmissionConversationMessage, type SubmissionConversationType } from "../../services/submissionConversationService";
 import "../../styles/ConversationInbox.css";
+import "../../styles/contributor-thank-you.css";
 
 const suggestedQuestions: Record<SubmissionConversationType, string[]> = {
   direct: ["How can Tiny Titans help with your reptile keeping question?", "Would you like help with a submission, genetics question, husbandry topic or app issue?"],
@@ -33,6 +34,7 @@ export default function SubmissionConversationPanel({ submissionType, submission
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const replyRef = useRef<HTMLTextAreaElement | null>(null);
   const creatorMode = profile?.role === "admin";
   const mailboxPath = creatorMode ? "/creator/submission-conversations" : "/conversations/submissions";
   const prompts = useMemo(() => suggestedQuestions[submissionType], [submissionType]);
@@ -61,15 +63,21 @@ export default function SubmissionConversationPanel({ submissionType, submission
   useEffect(() => {
     if (!conversation) return;
     void markSubmissionConversationRead(conversation.id, creatorMode ? "creator" : "user").catch(() => undefined);
-    return watchSubmissionConversationMessages(conversation.id, (next) => setMessages(next), (reason) => setError(reason.message));
+    const unsubscribe = watchSubmissionConversationMessages(conversation.id, (next) => setMessages(next), (reason) => setError(reason.message));
+    const focusComposer = window.setTimeout(() => {
+      replyRef.current?.focus({ preventScroll: true });
+      replyRef.current?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+    }, 80);
+    return () => { window.clearTimeout(focusComposer); unsubscribe(); };
   }, [conversation, creatorMode]);
 
   async function send(message = draft) {
-    if (!conversation || !user || !message.trim() || sending) return;
+    const cleanMessage = message.trim();
+    if (!conversation || !user || !cleanMessage || sending) return;
     setSending(true);
     setError("");
     try {
-      await sendSubmissionConversationMessage({ conversationId: conversation.id, senderId: user.uid, senderRole: creatorMode ? "creator" : "user", message });
+      await sendSubmissionConversationMessage({ conversationId: conversation.id, senderId: user.uid, senderRole: creatorMode ? "creator" : "user", message: cleanMessage, kind: creatorMode && cleanMessage.startsWith(THANK_YOU_PREFIX) ? "contributor-thank-you" : undefined });
       setDraft("");
       await markSubmissionConversationRead(conversation.id, creatorMode ? "creator" : "user");
     } catch (reason) {
@@ -82,12 +90,12 @@ export default function SubmissionConversationPanel({ submissionType, submission
   function useDefaultThankYou() {
     setDraft(DEFAULT_THANK_YOU);
     setError("");
-    window.requestAnimationFrame(() => document.getElementById(`submission-reply-${submissionType}-${submissionId}`)?.focus());
+    window.requestAnimationFrame(() => replyRef.current?.focus({ preventScroll: true }));
   }
 
-  const hasThankYou = messages.some((item) => item.senderRole === "creator" && item.message.startsWith(THANK_YOU_PREFIX));
+  const hasThankYou = Boolean(conversation?.contributorThankedAt) || messages.some((item) => item.senderRole === "creator" && item.message.startsWith(THANK_YOU_PREFIX));
 
-  return <section className="conversation-reply submission-conversation-panel">
+  return <section className={`conversation-reply submission-conversation-panel ${hasThankYou ? "submission-conversation-thanked" : ""}`}>
     <div className="conversation-detail-top">
       <div>
         <strong>💬 {creatorMode ? `Message ${submissionTitle}'s keeper` : "Message Tiny Titans"}</strong>
@@ -95,6 +103,7 @@ export default function SubmissionConversationPanel({ submissionType, submission
       </div>
       {conversation && <Link className="secondary-button" to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}>🗨 Open Messenger →</Link>}
     </div>
+    {hasThankYou && creatorMode && <div className="contributor-thanked-badge" role="status">✓ THANKED · Contributor has received the Tiny Titans thank-you</div>}
     {loading && <p className="creator-muted">Opening submission conversation…</p>}
     {!loading && error && <div className="creator-error" role="alert">{error}</div>}
     {!loading && conversation && <>
@@ -107,13 +116,13 @@ export default function SubmissionConversationPanel({ submissionType, submission
       </div>}
       {creatorMode && messages.length === 0 && <div className="submission-smart-prompts">
         <small>🧠 Suggested questions</small>
-        <div>{prompts.map((prompt) => <button key={prompt} type="button" onClick={() => setDraft(prompt)} disabled={sending}>{prompt}</button>)}</div>
+        <div>{prompts.map((prompt) => <button key={prompt} type="button" onClick={() => { setDraft(prompt); window.requestAnimationFrame(() => replyRef.current?.focus({ preventScroll: true })); }} disabled={sending}>{prompt}</button>)}</div>
       </div>}
       <div className="conversation-messages submission-conversation-messages">
         {messages.length === 0 ? <p className="creator-muted">No messages yet. Start the conversation when you need clarification or want to thank the contributor.</p> : messages.slice(-8).map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : "👤 Keeper"}</strong><p>{item.message}</p></article>)}
       </div>
       <label htmlFor={`submission-reply-${submissionType}-${submissionId}`}><strong>{creatorMode ? "Write a message to the keeper" : "Write a message to Tiny Titans"}</strong></label>
-      <textarea id={`submission-reply-${submissionType}-${submissionId}`} value={draft} onChange={(event) => setDraft(event.target.value)} rows={6} maxLength={5000} placeholder={creatorMode ? "Write your thank-you, question, clarification or follow-up here…" : "Reply to the Tiny Titans review team…"} disabled={sending} />
+      <textarea ref={replyRef} id={`submission-reply-${submissionType}-${submissionId}`} value={draft} onChange={(event) => setDraft(event.target.value)} rows={6} maxLength={5000} placeholder={creatorMode ? "Write your thank-you, question, clarification or follow-up here…" : "Reply to the Tiny Titans review team…"} disabled={sending} autoComplete="off" spellCheck="true" />
       <div className="creator-actions">
         <button type="button" className="creator-primary" onClick={() => void send()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : "💬 Send message"}</button>
         {creatorMode && <button type="button" className="secondary-button" onClick={useDefaultThankYou} disabled={sending || hasThankYou}>Use thank-you template</button>}
