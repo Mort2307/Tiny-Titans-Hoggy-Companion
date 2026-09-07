@@ -31,6 +31,7 @@ import "./styles/tiny-titans-enclosure-formatting.css";
 import "./styles/reptile-room-3d-builder-mobile-overrides.css";
 import "./styles/tiny-titans-brand-theme.css";
 import "./styles/tiny-titans-brand-glow.css";
+import "./styles/contributor-thank-you.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
@@ -87,7 +88,7 @@ export function MobileReptileRoomToolsManager() {
           launcher.className = "tt-mobile-room-tools-launcher";
           launcher.setAttribute("aria-controls", "rr3d-mobile-tools-panel");
           launcher.setAttribute("aria-expanded", "false");
-          launcher.textContent = "TITANS TOOLS";
+          launcher.textContent = "TITAN TOOLS";
           workspace.appendChild(launcher);
         }
         const sidebar = workspace.querySelector<HTMLElement>(".rr3d-sidebar");
@@ -96,7 +97,7 @@ export function MobileReptileRoomToolsManager() {
         const open = sidebar.classList.contains("tt-mobile-room-tools-open");
         launcher.classList.toggle("is-open", open);
         launcher.setAttribute("aria-expanded", String(open));
-        launcher.textContent = open ? "CLOSE TOOLS" : "TITANS TOOLS";
+        launcher.textContent = open ? "CLOSE TOOLS" : "TITAN TOOLS";
       });
     };
     const onClick = (event: MouseEvent) => {
