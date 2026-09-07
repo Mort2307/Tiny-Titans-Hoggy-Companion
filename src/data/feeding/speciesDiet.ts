@@ -51,6 +51,25 @@ function categoriesFromStructuredPrey(preyCategories: string[] = []): Set<PreyCa
   return categories;
 }
 
+function explicitGeneralistDiet(snake: Snake): SpeciesDiet | undefined {
+  const species = findSnakeSpecies(snake.species);
+  if (!species) return undefined;
+  const id = species.id.toLowerCase();
+
+  if (id === 'heterodon-nasicus') {
+    const recommended = [...MOUSE_FOOD_TYPES, 'Rat Pup', 'Rat Fuzzy', 'Adult Rat'] as FoodType[];
+    return {
+      label: species.commonNames[0] ?? species.acceptedScientificName,
+      guild: 'rodent-based generalist',
+      recommended,
+      additional: ALL_FOOD_TYPES.filter((food) => !recommended.includes(food)),
+      categories: ['rodent'],
+      note: 'Western Hognoses are shown the common captive rodent prey choices first. This is a keeper-friendly recommendation, not a claim that one prey item is universally superior; prey size and individual condition still matter.',
+    };
+  }
+  return undefined;
+}
+
 function fromExistingProfile(snake: Snake): SpeciesDiet | undefined {
   const species = findSnakeSpecies(snake.species);
   const feeding = species?.knowledge.feeding;
@@ -129,7 +148,7 @@ export function getSpeciesDiet(snake: Snake | undefined): SpeciesDiet {
     };
   }
 
-  return explicitSpecialistDiet(snake) ?? fromExistingProfile(snake) ?? {
+  return explicitGeneralistDiet(snake) ?? explicitSpecialistDiet(snake) ?? fromExistingProfile(snake) ?? {
     label: snake.species || 'Snake',
     guild: 'species-specific',
     recommended: ['Other'],
