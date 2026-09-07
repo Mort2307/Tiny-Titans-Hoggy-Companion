@@ -55,8 +55,8 @@ function currentSnakeId(pathname: string): string | undefined {
 
 function routeFor(slice: TitanAtAGlanceSliceId, snakeId?: string): string {
   switch (slice) {
-    case "feed": return snakeId ? `/snakes/${snakeId}/feeding` : "/feeding";
-    case "weight": return snakeId ? `/snakes/${snakeId}/weights` : "/weights";
+    case "feed": return snakeId ? `/snakes/${snakeId}/feeding?action=log` : "/feeding?action=log";
+    case "weight": return snakeId ? `/snakes/${snakeId}/weights?action=log` : "/weights";
     case "shed": return snakeId ? `/snakes/${snakeId}/shedding` : "/shedding";
     case "health": return snakeId ? `/snakes/${snakeId}/health` : "/health";
     case "behaviour": return snakeId ? `/snakes/${snakeId}/behaviour` : "/behaviour";
