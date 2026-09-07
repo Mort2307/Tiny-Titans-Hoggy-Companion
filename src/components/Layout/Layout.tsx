@@ -16,6 +16,7 @@ import SpeciesAwareMorphLibrary from "../../pages/SpeciesAwareMorphLibrary";
 import SpeciesMorphDetail from "../../pages/SpeciesMorphDetail";
 import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
 import SpeciesSafeEnclosureIntelligence from "../../pages/SpeciesSafeEnclosureIntelligence";
+import TitanWeekCommandCentre from "../../pages/TitanWeekCommandCentre";
 import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
@@ -34,6 +35,7 @@ function LayoutChrome() {
   const morphGalleryMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
   const morphDetailMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/?$/);
   const isEnclosureIntelligence = location.pathname === "/enclosure-intelligence" || location.pathname.startsWith("/enclosure-intelligence/");
+  const isTitanWeekPage = location.pathname === "/titan-intelligence/feature/this-week";
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -74,15 +76,16 @@ function LayoutChrome() {
           {!isEasyNav && <SupportNotificationCenter />}
           <div className="tt-page-frame">
             {speciesAware && <SpeciesContextBar />}
-            <TitanAtAGlance />
+            {!isTitanWeekPage && <TitanAtAGlance />}
             <div className={isEasyNav ? "tt-easy-intelligence" : undefined}>
               <TitanGlobalNextAction />
             </div>
-            {isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
-              : morphGalleryMatch ? <SpeciesMorphGallery />
-                : morphDetailMatch ? <SpeciesMorphDetail />
-                  : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence />
-                    : <Outlet />}
+            {isTitanWeekPage ? <TitanWeekCommandCentre />
+              : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
+                : morphGalleryMatch ? <SpeciesMorphGallery />
+                  : morphDetailMatch ? <SpeciesMorphDetail />
+                    : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence />
+                      : <Outlet />}
             <TinyTitansEvidenceNotice />
           </div>
         </div>
