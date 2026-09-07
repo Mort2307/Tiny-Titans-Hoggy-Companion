@@ -1,0 +1,120 @@
+.tt-at-glance {
+  margin: 0 0 1.1rem;
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 22px;
+  background: radial-gradient(circle at 50% 12%, rgba(79, 153, 113, .14), transparent 40%), rgba(8, 14, 13, .94);
+  box-shadow: 0 20px 55px rgba(0,0,0,.22);
+}
+
+.tt-at-glance-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: .25rem;
+}
+
+.tt-at-glance-eyebrow {
+  display: block;
+  font-size: .68rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  font-weight: 800;
+  opacity: .64;
+}
+
+.tt-at-glance h1 {
+  margin: .22rem 0 .1rem;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.tt-at-glance p {
+  margin: 0;
+  opacity: .72;
+  font-size: .87rem;
+}
+
+.tt-at-glance-customise,
+.tt-at-glance-foot a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tt-at-glance-customise {
+  flex: 0 0 auto;
+  padding: .58rem .78rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04);
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.tt-at-glance-customise:hover,
+.tt-at-glance-foot a:hover { background: rgba(255,255,255,.08); }
+
+.tt-at-glance-stage {
+  display: grid;
+  place-items: center;
+  padding: .15rem 0 .05rem;
+}
+
+.tt-at-glance-wheel {
+  display: block;
+  width: min(100%, 420px);
+  height: auto;
+  overflow: visible;
+}
+
+.tt-at-glance-sector { cursor: pointer; outline: none; }
+
+.tt-at-glance-sector-shape {
+  fill: rgba(25, 43, 39, .92);
+  stroke: rgba(255,255,255,.11);
+  stroke-width: 1.3;
+  transition: transform .16s ease, fill .16s ease, stroke .16s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.tt-at-glance-sector:hover .tt-at-glance-sector-shape,
+.tt-at-glance-sector:focus .tt-at-glance-sector-shape {
+  fill: rgba(43, 76, 66, .98);
+  stroke: rgba(255,255,255,.24);
+  transform: scale(1.018);
+}
+
+.tt-at-glance-icon { font-size: 18px; }
+.tt-at-glance-label { font-size: 8.5px; font-weight: 800; letter-spacing: .03em; fill: rgba(255,255,255,.84); }
+.tt-at-glance-value { font-size: 8.2px; font-weight: 700; fill: rgba(255,255,255,.62); }
+.tt-at-glance-centre { fill: rgba(7, 13, 12, .98); stroke: rgba(255,255,255,.12); stroke-width: 1.5; }
+.tt-at-glance-centre-icon { font-size: 28px; }
+.tt-at-glance-centre-name { font-size: 10px; font-weight: 850; fill: rgba(255,255,255,.94); }
+
+.tt-at-glance-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  font-size: .72rem;
+  opacity: .7;
+  padding: 0 .3rem;
+}
+
+.tt-at-glance-foot a {
+  padding: .42rem .62rem;
+  border-radius: 10px;
+}
+
+.easy-nav-active .tt-page-frame { max-width: 900px; }
+.easy-nav-active .tt-page-frame > .app-page-title,
+.easy-nav-active .tt-page-frame > .page-heading { margin-top: .35rem; }
+
+@media (max-width: 620px) {
+  .tt-at-glance { border-radius: 18px; padding: .8rem; }
+  .tt-at-glance-head { align-items: center; }
+  .tt-at-glance p { font-size: .8rem; }
+  .tt-at-glance-customise { font-size: .72rem; }
+  .tt-at-glance-foot { font-size: .68rem; }
+}
