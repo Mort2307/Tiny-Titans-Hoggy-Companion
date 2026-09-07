@@ -50,23 +50,27 @@ function score(item: UniversalSearchItem, query: string): { score: number; match
       matchedOn.push(field);
       continue;
     }
-    if (value.startsWith(q)) {
+    if (value.startsWith(`${q} `)) {
       total += 700;
       matchedOn.push(field);
       continue;
     }
-    if (value.includes(q)) {
-      total += 450;
+    if (value.startsWith(q)) {
+      total += 650;
       matchedOn.push(field);
       continue;
     }
-    if (queryTokens.every((token) => value.split(" ").some((part) => part.startsWith(token)))) {
-      total += 250;
+    if (value.includes(q)) {
+      total += 350;
+      matchedOn.push(field);
+      continue;
+    }
+    if (queryTokens.length > 1 && queryTokens.every((token) => value.split(" ").some((part) => part === token))) {
+      total += 225;
       matchedOn.push(field);
     }
   }
 
-  // Title and type are intentionally stronger than generic description text.
   if (matchedOn.includes("title")) total += 250;
   if (matchedOn.includes("keywords")) total += 75;
 
@@ -83,9 +87,15 @@ export function searchTinyTitans(
 
   const allowedKinds = options?.kinds;
   const limit = Math.max(1, options?.limit ?? 30);
+  const scoped = items.filter((item) => !allowedKinds || allowedKinds.includes(item.kind));
 
-  return items
-    .filter((item) => !allowedKinds || allowedKinds.includes(item.kind))
+  const exactTitle = scoped.filter((item) => normaliseSearch(item.title) === q).map((item) => ({ ...item, score: 100000, matchedOn: ["title"] }));
+  if (exactTitle.length) return exactTitle.slice(0, limit);
+
+  const exactKeyword = scoped.filter((item) => (item.keywords ?? []).some((keyword) => normaliseSearch(keyword) === q)).map((item) => ({ ...item, score: 90000, matchedOn: ["keywords"] }));
+  if (exactKeyword.length) return exactKeyword.slice(0, limit);
+
+  return scoped
     .map((item) => {
       const result = score(item, q);
       return { item, ...result };
