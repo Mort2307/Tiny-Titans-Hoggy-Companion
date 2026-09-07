@@ -16,6 +16,8 @@ import SpeciesAwareMorphLibrary from "../../pages/SpeciesAwareMorphLibrary";
 import SpeciesMorphDetail from "../../pages/SpeciesMorphDetail";
 import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
 import SpeciesSafeEnclosureIntelligence from "../../pages/SpeciesSafeEnclosureIntelligence";
+import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
+import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
 const speciesAwarePrefixes = [
@@ -24,8 +26,9 @@ const speciesAwarePrefixes = [
   "/make-contribution", "/knowledge-base", "/challenge", "/community", "/account", "/become-a-titan", "/educator", "/creator",
 ];
 
-function Layout() {
+function LayoutChrome() {
   const location = useLocation();
+  const { isEasyNav } = useEasyNav();
   const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isSpeciesAwareMorphLibrary = location.pathname === "/morph-library";
   const morphGalleryMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
@@ -57,33 +60,42 @@ function Layout() {
   }, [location.pathname, location.search, location.hash, location.key]);
 
   return (
+    <div className={`app-shell${isEasyNav ? " easy-nav-active" : ""}`} data-navigation-mode={isEasyNav ? "easy" : "standard"}>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+      <Header />
+      <Navigation />
+      <main id="main-content" className="app-main" tabIndex={-1}>
+        <div className="app-content">
+          {!isEasyNav && <AdaptiveGuideBar />}
+          {!isEasyNav && <CreatorTesterInvitationBanner />}
+          {!isEasyNav && <CreatorCommandBar />}
+          {!isEasyNav && <CreatorStatusBar />}
+          {!isEasyNav && <TitanQuickActions />}
+          {!isEasyNav && <SupportNotificationCenter />}
+          <div className="tt-page-frame">
+            {speciesAware && <SpeciesContextBar />}
+            <TitanAtAGlance />
+            {!isEasyNav && <TitanGlobalNextAction />}
+            {isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
+              : morphGalleryMatch ? <SpeciesMorphGallery />
+                : morphDetailMatch ? <SpeciesMorphDetail />
+                  : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence />
+                    : <Outlet />}
+            <TinyTitansEvidenceNotice />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Layout() {
+  return (
     <SpeciesContextProvider>
       <SpeciesContextRouteSync />
-      <div className="app-shell">
-        <a className="skip-link" href="#main-content">Skip to main content</a>
-        <Header />
-        <Navigation />
-        <main id="main-content" className="app-main" tabIndex={-1}>
-          <div className="app-content">
-            <AdaptiveGuideBar />
-            <CreatorTesterInvitationBanner />
-            <CreatorCommandBar />
-            <CreatorStatusBar />
-            <TitanQuickActions />
-            <SupportNotificationCenter />
-            <div className="tt-page-frame">
-              {speciesAware && <SpeciesContextBar />}
-              <TitanGlobalNextAction />
-              {isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
-                : morphGalleryMatch ? <SpeciesMorphGallery />
-                  : morphDetailMatch ? <SpeciesMorphDetail />
-                    : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence />
-                      : <Outlet />}
-              <TinyTitansEvidenceNotice />
-            </div>
-          </div>
-        </main>
-      </div>
+      <EasyNavProvider>
+        <LayoutChrome />
+      </EasyNavProvider>
     </SpeciesContextProvider>
   );
 }
