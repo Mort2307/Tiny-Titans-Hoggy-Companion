@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, onSnapshot, orderBy, query, runTransaction, serverTimestamp, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 export type SubmissionConversationType = "direct" | "morph-image" | "morph-terminology" | "species" | "vivarium-showcase" | "observation" | "mentor-application";
