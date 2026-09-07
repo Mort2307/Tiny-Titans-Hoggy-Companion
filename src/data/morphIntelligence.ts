@@ -39,6 +39,13 @@ const normalise = (value: string): string =>
 
 const identityKey = (value: string): string => normalise(value).replace(/\s+/g, "");
 
+const KNOWN_NAMED_COMBINATION_COMPONENTS: Record<string, MorphComponent[]> = {
+  greyfog: [
+    { morphId: "arctic", type: "Gene", copies: 1 },
+    { morphId: "conda", type: "Gene", copies: 1 },
+  ],
+};
+
 function buildIdentityIndex(entries: MorphDefinition[]): Map<string, MorphDefinition> {
   const index = new Map<string, MorphDefinition>();
   for (const entry of entries) {
@@ -152,12 +159,17 @@ function isGeneticallyResolvable(entry: MorphDefinition, index: Map<string, Morp
 
 /**
  * Resolve a whitespace-separated combination name without inventing genetics.
+ * Known named combinations with curated component evidence are resolved first.
  * Only complete tokenisations into existing genetic genes/supers/known genetic
- * combinations are accepted. Line-bred, polygenic, project and unknown terms
- * deliberately stop inference rather than being silently promoted to loci.
+ * combinations are accepted otherwise. Line-bred, polygenic, project and
+ * unknown terms deliberately stop inference rather than being silently
+ * promoted to loci.
  */
 function inferNameComponents(entry: MorphDefinition, index: Map<string, MorphDefinition>): MorphComponent[] | undefined {
   if (entry.kind !== "Combination" || entry.components?.length) return entry.components;
+
+  const known = KNOWN_NAMED_COMBINATION_COMPONENTS[identityKey(entry.name)];
+  if (known?.length) return known.map((component) => ({ ...component }));
 
   const source = normalise(entry.name);
   if (!source || !source.includes(" ")) return undefined;
@@ -239,8 +251,10 @@ export function enrichMorphDatabase<T extends MorphDefinition & { evidenceStatus
     const inheritance = inheritedProfiles(geneticComponents, index);
     const geneticFormula = geneticNames.length ? geneticNames.join(" + ") : undefined;
     const directFormula = directNames.length ? directNames.join(" + ") : undefined;
+    const displayName = identityKey(entry.name) === "greyfog" ? "Arctic Conda" : entry.name;
     const aliases = [...new Set([
       ...(entry.aliases ?? []),
+      ...(identityKey(entry.name) === "greyfog" ? ["Grey Fog"] : []),
       ...formulaVariants(geneticNames.length ? geneticNames : directNames),
       ...recognisedNames.filter((name) => identityKey(name) !== identityKey(entry.name)),
     ].filter(Boolean))];
@@ -254,7 +268,7 @@ export function enrichMorphDatabase<T extends MorphDefinition & { evidenceStatus
       geneticFormula ? `Genetic composition: ${geneticFormula}.` : undefined,
       recognitionSummary,
       inheritance.length > 0 ? `Component inheritance: ${inheritance.join(" + ")}.` : undefined,
-      composition.status === "inferred" ? "Composition inferred from the published combination name and existing canonical genetic terms; review the source before treating the structure as authoritative." : undefined,
+      composition.status === "inferred" ? "Composition resolved from a curated named-combination mapping or the published combination name and existing canonical genetic terms; review the source before treating the structure as authoritative." : undefined,
       composition.status === "unresolved" && entry.kind === "Combination" ? "Genetic composition is not yet encoded in the canonical database; this name is retained for search and review without inventing a locus." : undefined,
       entry.kind === "Combination" ? "This name describes a combination of underlying genetics, not a separate locus." : undefined,
     ].filter((part): part is string => Boolean(part));
@@ -265,6 +279,7 @@ export function enrichMorphDatabase<T extends MorphDefinition & { evidenceStatus
 
     return {
       ...entry,
+      name: displayName,
       inheritance: enrichedInheritance,
       aliases,
       contains,
@@ -278,6 +293,7 @@ export function enrichMorphDatabase<T extends MorphDefinition & { evidenceStatus
       recognitionSummary,
       searchTerms: [...new Set([
         entry.name,
+        displayName,
         entry.geneId,
         ...(entry.aliases ?? []),
         ...aliases,
