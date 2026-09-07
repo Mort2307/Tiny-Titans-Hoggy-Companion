@@ -48,29 +48,30 @@ function componentDisplayNames(record: MorphDefinition): string[] {
   });
 }
 
+function componentCompositionSearchTerms(record: MorphDefinition): string[] {
+  if (!record.isCombination || !record.components?.length) return [];
+  const names = componentDisplayNames(record).map((name, index) => {
+    const copies = record.components?.[index]?.copies ?? 1;
+    return copies > 1 ? `${name} x${copies}` : name;
+  });
+  if (names.length < 2) return [];
+  return [
+    names.join(" + "),
+    names.join(" x "),
+    names.join(" "),
+  ];
+}
+
 function matchesExactComponentComposition(query: string, record: MorphDefinition): boolean {
-  if (!record.isCombination || !record.components?.length) return false;
-  const queryText = normaliseSearchValue(query).replace(/\s+/g, " ");
-  const componentNames = componentDisplayNames(record).map((name) => normaliseSearchValue(name)).filter(Boolean);
-  if (!queryText || componentNames.length < 2) return false;
-
-  // Exact composition matching is order-independent. The query may be typed
-  // as "Arctic Conda" or "Arctic + Conda"; both resolve to the same genetic
-  // component set without confusing a single component with the combination.
-  const exactJoined = componentNames.slice().sort().join(" ");
-  const queryJoined = queryText.replace(/[+]/g, " ").replace(/\s+/g, " ").trim().split(" ").sort().join(" ");
-  if (exactJoined === queryJoined) return true;
-
-  return componentNames.every((componentName) => new RegExp(`(?:^|\\s)${componentName.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(?:$|\\s)`).test(queryText))
-    && queryText.split(" ").length === componentNames.join(" ").split(" ").length;
+  return componentCompositionSearchTerms(record)
+    .some((term) => scoreSearchCandidate(query, term, "secondary") >= 82500);
 }
 
 /**
  * Species-aware genetics search with strict keeper-facing ranking.
- * Exact canonical identity always wins before aliases and composition matches.
- * A multi-word genetics query can also resolve directly against the recorded
- * component composition, so a canonical name such as Arctic Conda remains the
- * first result even when another source describes the same record by formula.
+ * Canonical identities win first, then exact recorded genetic composition,
+ * then recognised aliases/named phenotypes. This prevents a source label such
+ * as Subzero from outranking a direct query for Arctic + Conda genetics.
  */
 export function searchGenetics(query: string, speciesScientificName?: string): GeneticsMatch[] {
   const raw = query.trim();
@@ -92,18 +93,6 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
       .slice(0, 12);
   }
 
-  const exactAlias = scopedCandidates.flatMap((record) =>
-    (record.aliases ?? [])
-      .filter((alias) => normalise(alias) === q)
-      .map((): GeneticsMatch => ({
-        record,
-        matchKind: record.isCombination ? "combination" : "alias",
-        matchedQuery: raw,
-        score: 90000,
-      })),
-  );
-  if (exactAlias.length) return exactAlias.slice(0, 12);
-
   const exactComponentCompositions = scopedCandidates
     .filter((record) => matchesExactComponentComposition(raw, record))
     .sort((a, b) => Number(Boolean(b.isCombination)) - Number(Boolean(a.isCombination)) || a.name.localeCompare(b.name));
@@ -115,6 +104,18 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
       score: 98000,
     }));
   }
+
+  const exactAlias = scopedCandidates.flatMap((record) =>
+    (record.aliases ?? [])
+      .filter((alias) => normalise(alias) === q)
+      .map((): GeneticsMatch => ({
+        record,
+        matchKind: record.isCombination ? "combination" : "alias",
+        matchedQuery: raw,
+        score: 90000,
+      })),
+  );
+  if (exactAlias.length) return exactAlias.slice(0, 12);
 
   if (!speciesScientificName?.trim()) {
     const exactCombination = findCalculatorNamedCombination(raw);
@@ -129,6 +130,7 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
       ...((record as MorphDefinition & { searchTerms?: string[] }).searchTerms ?? []),
       ...((record as MorphDefinition & { recognisedNames?: string[] }).recognisedNames ?? []),
       ...((record as MorphDefinition & { geneticFormula?: string }).geneticFormula ? [((record as MorphDefinition & { geneticFormula?: string }).geneticFormula as string)] : []),
+      ...componentCompositionSearchTerms(record),
     ];
     const secondaryScores = secondaryTerms.map((term) => scoreSearchCandidate(q, term, "secondary"));
     const bestAlias = Math.max(0, ...aliasScores);
