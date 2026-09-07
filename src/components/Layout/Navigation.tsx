@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { hasCapability } from "../../services/capabilityService";
 import { getCommunityUnreadCount } from "../../services/communityReadStateService";
+import { useEasyNav } from "../../context/EasyNavContext";
 import "./Navigation.css";
 
 type NavigationLink = [string, string, string];
@@ -10,6 +11,7 @@ type NavigationSection = { label: string; links: NavigationLink[] };
 
 function Navigation() {
   const { profile, user, loading, profileLoading } = useAuth();
+  const { isEasyNav } = useEasyNav();
   const userId = user?.uid;
   const [creatorAuthorized, setCreatorAuthorized] = useState(false);
   const [testerAuthorized, setTesterAuthorized] = useState(false);
@@ -31,6 +33,11 @@ function Navigation() {
   if (creatorAuthorized) restricted.push({ label: "Creator", links: [["/creator", "⚒", "Creator Centre"], ["/creator/morph-library", "🖼️", "Morph Library Editor"], ["/creator/community", "◈", "Community Manager"], ["/creator/mentor-review", "↔", "Mentor Review"]] });
   if (testerAuthorized) restricted.push({ label: "Testing", links: [["/creator/tester", "◇", "Tester Centre"]] });
   const renderLink = ([to, icon, label]: NavigationLink) => <li className="app-navigation-item" key={to}><NavLink to={to} end={to === "/"} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && communityUnreadCount > 0 && <span className="community-unread-dot" aria-label={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} title={`${communityUnreadCount} unread community update${communityUnreadCount === 1 ? "" : "s"}`} />}</NavLink></li>;
+
+  if (isEasyNav) {
+    return <nav className="app-navigation tt-easy-nav-strip" aria-label="Easy navigation"><div className="tt-easy-nav-inner"><NavLink to="/" end className="tt-easy-nav-link"><span>🏠</span><small>At a Glance</small></NavLink><NavLink to="/snakes" className="tt-easy-nav-link"><span>🐍</span><small>My Snakes</small></NavLink><NavLink to="/reminders" className="tt-easy-nav-link"><span>🔔</span><small>Due</small></NavLink><NavLink to="/account/personalise?easy-nav=1" className="tt-easy-nav-link"><span>☰</span><small>More</small></NavLink></div></nav>;
+  }
+
   return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner">{sections.concat(restricted).map((section) => <section className="app-navigation-section" key={section.label} aria-labelledby={`nav-${section.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}><h2 className="app-navigation-section-label" id={`nav-${section.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>{section.label}</h2><ul className="app-navigation-list">{section.links.map(renderLink)}</ul></section>)}</div></nav>;
 }
 export default Navigation;
