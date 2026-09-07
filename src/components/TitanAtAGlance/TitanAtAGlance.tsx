@@ -43,9 +43,14 @@ function latest<T extends { date: string }>(records: T[] | undefined): T | undef
   return records?.slice().sort((a, b) => dateValue(b.date) - dateValue(a.date))[0];
 }
 
+const ANIMAL_ROUTE_PREFIXES = ["/snakes", "/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry", "/enclosure-intelligence"];
+
 function currentSnakeId(pathname: string): string | undefined {
-  const match = pathname.match(/^\/snakes\/([^/]+)/);
-  return match?.[1];
+  const prefix = ANIMAL_ROUTE_PREFIXES.find((candidate) => pathname === candidate || pathname.startsWith(`${candidate}/`));
+  if (!prefix || pathname === prefix) return undefined;
+  const remainder = pathname.slice(prefix.length + 1);
+  const [segment] = remainder.split("/");
+  return segment ? decodeURIComponent(segment) : undefined;
 }
 
 function routeFor(slice: TitanAtAGlanceSliceId, snakeId?: string): string {
@@ -109,7 +114,7 @@ export default function TitanAtAGlance() {
   const activeSnakeId = currentSnakeId(location.pathname);
 
   useEffect(() => {
-    if (!user || !isEasyNav) return;
+    if (!user || !isEasyNav) return undefined;
     let active = true;
     setLoadingSnakes(true);
     void getUserSnakes(user.uid).then((records) => {
