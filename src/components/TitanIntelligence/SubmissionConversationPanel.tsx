@@ -42,6 +42,7 @@ export default function SubmissionConversationPanel({ submissionType, submission
   const mailboxPath = creatorMode ? "/creator/submission-conversations" : "/conversations/submissions";
   const prompts = useMemo(() => suggestedQuestions[submissionType], [submissionType]);
   const recipientName = creatorMode ? (submitterName?.trim() || "the keeper") : "Tiny Titans";
+  const displayedSubmitterName = submitterName?.trim() || "Keeper name unavailable";
   const composerId = `submission-reply-${submissionType}-${submissionId}`;
 
   useEffect(() => {
@@ -118,6 +119,11 @@ export default function SubmissionConversationPanel({ submissionType, submission
         <p>{creatorMode ? `Private conversation with ${recipientName} about this submission. You can ask for evidence, verify the morph, clarify terminology or send a thank-you.` : "Private conversation with the Tiny Titans review team. Reply here for questions, evidence or submission follow-up."}</p>
       </div>
       {conversation && <Link className="secondary-button" to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}>🗨 Open Messenger →</Link>}
+    </div>
+    <div className="submission-conversation-context" aria-label="Submission details">
+      <strong>📷 Morph photo</strong>
+      <div><span>Submission:</span> {submissionTitle}</div>
+      <div><span>Submitted by:</span> {displayedSubmitterName}</div>
     </div>
     {hasThankYou && creatorMode && <div className="contributor-thanked-badge" role="status">✓ THANKED · Contributor has received the Tiny Titans thank-you</div>}
     {loading && <p className="creator-muted">Opening conversation with {recipientName}…</p>}
