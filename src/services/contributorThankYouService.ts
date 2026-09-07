@@ -32,7 +32,9 @@ async function contributorAlreadyThanked(uid: string): Promise<boolean> {
 
 export async function thankContributor(contributor: HistoricalContributor, senderId: string): Promise<"sent" | "already-sent"> {
   if (await contributorAlreadyThanked(contributor.uid)) return "already-sent";
-  const source = contributor.latestSubmission; const conversation = await ensureSubmissionConversation({ submissionType: source.submissionType, submissionId: source.submissionId, submitterUid: contributor.uid, submissionTitle: source.title, submissionStatus: source.status });
+  const source = contributor.latestSubmission;
+  if (source.submissionType === "direct") throw new Error("Historical contributor records cannot use a direct-message conversation.");
+  const conversation = await ensureSubmissionConversation({ submissionType: source.submissionType, submissionId: source.submissionId, submitterUid: contributor.uid, submissionTitle: source.title, submissionStatus: source.status });
   const message = `🐍 Thank you for helping build Tiny Titans!\n\nYour contribution${contributor.submissionCount > 1 ? "s" : ""} has helped us make the reptile knowledge base more useful for keepers. We genuinely appreciate you taking the time to share your experience, evidence or knowledge with us.\n\nThank you for being part of the community. ❤️\n\n— Tiny Titans`;
   const messageId = await sendSubmissionConversationMessage({ conversationId: conversation.id, senderId, senderRole: "creator", message });
   return messageId ? "sent" : "sent";
