@@ -7,10 +7,11 @@ import type { FeedingRecord } from "../../types/Feeding";
 import type { WeightRecord } from "../../types/Weight";
 import type { ShedRecord } from "../../types/Shed";
 import { TITAN_AT_A_GLANCE_OPTIONS, useEasyNav, type TitanAtAGlanceSliceId } from "../../context/EasyNavContext";
+import TitanThisWeek from "./TitanThisWeek";
 import "./TitanAtAGlance.css";
 
 type Point = { x: number; y: number };
-type SliceView = { label: string; value: string; secondary?: string; route: string };
+type SliceView = { label: string; value: string; secondary?: string; route: string; opensWeek?: boolean };
 
 function polar(cx: number, cy: number, radius: number, angle: number): Point {
   const radians = (angle - 90) * Math.PI / 180;
@@ -73,6 +74,7 @@ function routeFor(slice: TitanAtAGlanceSliceId, snakeId?: string): string {
     case "goals": return "/become-a-titan";
     case "account": return "/account/personalise";
     case "reminders": return "/reminders";
+    case "thisWeek": return "/";
     default: return "/";
   }
 }
@@ -87,6 +89,7 @@ function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): Slic
     case "weight": return { label: "Last Weight", value: weight ? `${weight.weight}${weight.unit}` : "Not yet", secondary: weight ? formatDate(weight.date) : "Record one", route: routeFor(slice, id) };
     case "shed": return { label: "Last Shed", value: shed ? formatDate(shed.date) : "Not yet", secondary: shed?.status ?? "Record one", route: routeFor(slice, id) };
     case "reminders": return { label: "Reminders", value: "Open", secondary: "See what's due", route: routeFor(slice, id) };
+    case "thisWeek": return { label: "This Week", value: "Open", secondary: "Your keeper week", route: routeFor(slice, id), opensWeek: true };
     case "health": return { label: "Health", value: snake?.healthHistory?.length ? `${snake.healthHistory.length} records` : "No records", secondary: "Health & Vet", route: routeFor(slice, id) };
     case "behaviour": return { label: "Behaviour", value: "Open", secondary: "Journal & observations", route: routeFor(slice, id) };
     case "husbandry": return { label: "Husbandry", value: "Open", secondary: "Environment & care", route: routeFor(slice, id) };
@@ -111,6 +114,7 @@ export default function TitanAtAGlance() {
   const navigate = useNavigate();
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [loadingSnakes, setLoadingSnakes] = useState(false);
+  const [showThisWeek, setShowThisWeek] = useState(false);
   const activeSnakeId = currentSnakeId(location.pathname);
 
   useEffect(() => {
@@ -139,41 +143,27 @@ export default function TitanAtAGlance() {
   const angleStep = 360 / views.length;
   const gap = Math.min(3, angleStep / 10);
 
-  return (
-    <section className="tt-at-glance" aria-label="Titan At A Glance">
-      <div className="tt-at-glance-head">
-        <div>
-          <span className="tt-at-glance-eyebrow">TITAN AT A GLANCE</span>
-          <h1>{selectedSnake ? selectedSnake.name : "Your Tiny Titans"}</h1>
-          <p>{loadingSnakes ? "Loading your latest records…" : selectedSnake ? "Tap a slice to view or update it." : "Tap a slice to jump straight to what you need."}</p>
-        </div>
-        <Link className="tt-at-glance-customise" to="/account/personalise?easy-nav=1">⚙ Customise</Link>
-      </div>
-
-      <div className="tt-at-glance-stage">
-        <svg className="tt-at-glance-wheel" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Customisable Tiny Titans quick navigation wheel">
-          {views.map((view, index) => {
-            const start = index * angleStep + gap;
-            const end = (index + 1) * angleStep - gap;
-            const mid = (start + end) / 2;
-            const labelPoint = polar(centre, centre, 122, mid);
-            return <g key={view.id} className="tt-at-glance-sector" onClick={() => navigate(view.route)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); navigate(view.route); } }} aria-label={`${view.label}: ${view.value}. ${view.secondary ?? ""}`}>
-              <path d={sectorPath(centre, centre, outer, inner, start, end)} className="tt-at-glance-sector-shape" />
-              <text x={labelPoint.x} y={labelPoint.y - 6} className="tt-at-glance-icon" textAnchor="middle">{TITAN_AT_A_GLANCE_OPTIONS.find((option) => option.id === view.id)?.icon}</text>
-              <text x={labelPoint.x} y={labelPoint.y + 15} className="tt-at-glance-label" textAnchor="middle">{view.label}</text>
-              <text x={labelPoint.x} y={labelPoint.y + 34} className="tt-at-glance-value" textAnchor="middle">{view.value}</text>
-            </g>;
-          })}
-          <circle cx={centre} cy={centre} r={inner - 4} className="tt-at-glance-centre" />
-          <text x={centre} y={centre - 8} className="tt-at-glance-centre-icon" textAnchor="middle">🐍</text>
-          <text x={centre} y={centre + 18} className="tt-at-glance-centre-name" textAnchor="middle">{selectedSnake?.name ?? "Tiny Titans"}</text>
-        </svg>
-      </div>
-
-      <div className="tt-at-glance-foot">
-        <span>Showing {views.length} personalised shortcuts</span>
-        <Link to="/snakes">Switch Titan</Link>
-      </div>
-    </section>
-  );
+  return <section className="tt-at-glance" aria-label="Titan At A Glance">
+    <div className="tt-at-glance-head"><div><span className="tt-at-glance-eyebrow">TITAN AT A GLANCE</span><h1>{selectedSnake ? selectedSnake.name : "Your Tiny Titans"}</h1><p>{loadingSnakes ? "Loading your latest records…" : selectedSnake ? "Tap a slice to view, update or review it." : "Tap a slice to open what you need."}</p></div><Link className="tt-at-glance-customise" to="/account/personalise?easy-nav=1">⚙ Customise</Link></div>
+    <div className="tt-at-glance-stage"><svg className="tt-at-glance-wheel" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Customisable Tiny Titans quick navigation wheel">
+      {views.map((view, index) => {
+        const start = index * angleStep + gap;
+        const end = (index + 1) * angleStep - gap;
+        const mid = (start + end) / 2;
+        const labelPoint = polar(centre, centre, 122, mid);
+        const activate = () => { if (view.opensWeek) setShowThisWeek((current) => !current); else navigate(view.route); };
+        return <g key={view.id} className={`tt-at-glance-sector${view.opensWeek && showThisWeek ? " selected" : ""}`} onClick={activate} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(); } }} aria-label={`${view.label}: ${view.value}. ${view.secondary ?? ""}`}>
+          <path d={sectorPath(centre, centre, outer, inner, start, end)} className="tt-at-glance-sector-shape" />
+          <text x={labelPoint.x} y={labelPoint.y - 6} className="tt-at-glance-icon" textAnchor="middle">{TITAN_AT_A_GLANCE_OPTIONS.find((option) => option.id === view.id)?.icon}</text>
+          <text x={labelPoint.x} y={labelPoint.y + 15} className="tt-at-glance-label" textAnchor="middle">{view.label}</text>
+          <text x={labelPoint.x} y={labelPoint.y + 34} className="tt-at-glance-value" textAnchor="middle">{view.value}</text>
+        </g>;
+      })}
+      <circle cx={centre} cy={centre} r={inner - 4} className="tt-at-glance-centre" />
+      <text x={centre} y={centre - 8} className="tt-at-glance-centre-icon" textAnchor="middle">🐍</text>
+      <text x={centre} y={centre + 18} className="tt-at-glance-centre-name" textAnchor="middle">{selectedSnake?.name ?? "Tiny Titans"}</text>
+    </svg></div>
+    {showThisWeek && <TitanThisWeek snakes={snakes} selectedSnake={selectedSnake} />}
+    <div className="tt-at-glance-foot"><span>Showing {views.length} personalised shortcuts</span><Link to="/snakes">Switch Titan</Link></div>
+  </section>;
 }
