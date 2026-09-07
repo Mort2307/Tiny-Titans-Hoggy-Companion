@@ -12,6 +12,61 @@ function queryTokens(value: string): string[] {
   return [...new Set(normaliseSearchValue(value).split(" ").filter(Boolean))];
 }
 
+function structuredTokens(value: string): Map<string, number> {
+  const rawTokens = queryTokens(value);
+  const counts = new Map<string, number>();
+  let superNext = false;
+
+  for (let index = 0; index < rawTokens.length; index += 1) {
+    const token = rawTokens[index];
+    if (token === "super") {
+      superNext = true;
+      continue;
+    }
+
+    const attachedSuper = token.startsWith("super") && token.length > 5;
+    const baseToken = attachedSuper ? token.slice(5) : token;
+    if (!baseToken || baseToken === "x") continue;
+
+    const next = rawTokens[index + 1];
+    const explicitCopies = next === "x" && /^\d+$/.test(rawTokens[index + 2] ?? "")
+      ? Number(rawTokens[index + 2])
+      : undefined;
+    const copies = superNext || attachedSuper ? 2 : explicitCopies ?? 1;
+    counts.set(baseToken, Math.max(counts.get(baseToken) ?? 0, copies));
+    superNext = false;
+
+    if (explicitCopies !== undefined) index += 2;
+  }
+
+  return counts;
+}
+
+function structuredMatchScore(query: string, candidate: string): number {
+  if (!candidate || !looksLikeStructuredIdentity(candidate)) return 0;
+
+  const queryStructure = structuredTokens(query);
+  const candidateStructure = structuredTokens(candidate);
+  if (!queryStructure.size || !candidateStructure.size) return 0;
+  if (queryStructure.size > candidateStructure.size) return 0;
+
+  let exactKeys = true;
+  let requestedCountTotal = 0;
+  let candidateCountTotal = 0;
+  for (const [token, requestedCopies] of queryStructure) {
+    const candidateCopies = candidateStructure.get(token);
+    if (!candidateCopies || candidateCopies < requestedCopies) return 0;
+    requestedCountTotal += requestedCopies;
+    candidateCountTotal += candidateCopies;
+    if (!candidateStructure.has(token)) exactKeys = false;
+  }
+
+  const sameGeneSet = exactKeys && queryStructure.size === candidateStructure.size;
+  if (sameGeneSet && requestedCountTotal === candidateCountTotal) return 520;
+  if (sameGeneSet) return 490;
+  return 430 - Math.max(0, candidateStructure.size - queryStructure.size) * 18;
+}
+
 function tokenSequenceScore(query: string, candidate: string): number {
   const tokens = queryTokens(query);
   const candidateTokens = queryTokens(candidate);
@@ -52,7 +107,7 @@ function looksLikeStructuredIdentity(value: string): boolean {
   return /[+×✕]|\bx\b/i.test(value);
 }
 
-/** Keeper-facing search ranking with deterministic identity short circuits. */
+/** Keeper-facing search ranking with deterministic genetic identity short circuits. */
 export function scoreSearchCandidate(query: string, candidate: string, tier: "canonical" | "alias" | "secondary" = "secondary"): number {
   const q = normaliseSearchValue(query);
   const c = normaliseSearchValue(candidate);
@@ -66,6 +121,9 @@ export function scoreSearchCandidate(query: string, candidate: string, tier: "ca
   if (c === q) return base;
   if (c.startsWith(`${q} `)) return prefixBase + 900;
   if (c.startsWith(q)) return prefixBase;
+
+  const structured = structuredMatchScore(q, c);
+  if (structured) return tier === "secondary" ? 82000 + structured : tokenBase + structured;
 
   const phraseMatch = tokenSequenceScore(q, c);
   if (phraseMatch) return tokenBase + phraseMatch;
@@ -95,39 +153,36 @@ export function rankSearchResults<T>(query: string, items: T[], getFields: (item
   if (!raw) return items.map((item) => ({ item, score: 0 }));
 
   const normalizedQuery = normaliseSearchValue(raw);
+  const scored = items.map((item, index) => {
+    const fields = getFields(item);
+    const canonical = fields.canonical ?? [];
+    const aliases = fields.aliases ?? [];
+    const secondary = fields.secondary ?? [];
 
-  // An exact canonical identity is a hard result boundary.
-  const exactCanonical = items
-    .map((item, index) => ({ item, index, fields: getFields(item) }))
-    .filter(({ fields }) => (fields.canonical ?? []).some((field) => normaliseSearchValue(field) === normalizedQuery))
-    .map(({ item, index }) => ({ item, score: 100000 - index * 0.0001 }));
-  if (exactCanonical.length) return exactCanonical.sort((a, b) => b.score - a.score);
+    const exactCanonical = canonical.some((field) => normaliseSearchValue(field) === normalizedQuery);
+    const exactAlias = aliases.some((field) => normaliseSearchValue(field) === normalizedQuery);
+    const exactStructured = secondary.some((field) => normaliseSearchValue(field) === normalizedQuery && looksLikeStructuredIdentity(field));
+    const structuredScore = Math.max(0, ...secondary.map((field) => structuredMatchScore(raw, field)));
 
-  // Exact alias / recognised-name matches are the next identity boundary.
-  const exactAlias = items
-    .map((item, index) => ({ item, index, fields: getFields(item) }))
-    .filter(({ fields }) => (fields.aliases ?? []).some((field) => normaliseSearchValue(field) === normalizedQuery))
-    .map(({ item, index }) => ({ item, score: 90000 - index * 0.0001 }));
-  if (exactAlias.length) return exactAlias.sort((a, b) => b.score - a.score);
+    let score = Math.max(
+      scoreTextFields(raw, canonical, "canonical"),
+      scoreTextFields(raw, aliases, "alias"),
+      scoreTextFields(raw, secondary, "secondary"),
+    );
 
-  // Exact genetic formulas/compositions are treated as structured identities,
-  // so "Arctic Conda" resolves directly to "Arctic + Conda" even when the
-  // keeper-facing named combination is regional or otherwise differently named.
-  const exactStructured = items
-    .map((item, index) => ({ item, index, fields: getFields(item) }))
-    .filter(({ fields }) => (fields.secondary ?? []).some((field) => looksLikeStructuredIdentity(field) && normaliseSearchValue(field) === normalizedQuery))
-    .map(({ item, index }) => ({ item, score: 85000 - index * 0.0001 }));
-  if (exactStructured.length) return exactStructured.sort((a, b) => b.score - a.score);
+    if (exactCanonical) score += 400000;
+    if (exactStructured) score += 360000;
+    if (structuredScore) score = Math.max(score, 82000 + structuredScore);
+    if (exactAlias) score += 250000;
 
-  return items
-    .map((item, index) => {
-      const fields = getFields(item);
-      const canonicalScore = scoreTextFields(raw, fields.canonical ?? [], "canonical");
-      const aliasScore = scoreTextFields(raw, fields.aliases ?? [], "alias");
-      const secondaryScore = scoreTextFields(raw, fields.secondary ?? [], "secondary");
-      const score = Math.max(canonicalScore, aliasScore, secondaryScore);
-      return { item, score: score - index * 0.0001 };
-    })
+    return { item, score: score - index * 0.0001 };
+  });
+
+  // Do not let a named phenotype/alias stop the search from surfacing a
+  // genetically structured identity that matches the requested components.
+  // Exact canonical identity still wins; exact genetic structure is next;
+  // aliases and fuzzy text follow behind.
+  return scored
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score);
 }
