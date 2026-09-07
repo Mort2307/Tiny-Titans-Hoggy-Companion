@@ -5,6 +5,7 @@ import { morphReferenceAdditions } from "../../data/morphReferenceAdditions";
 import { morphs, type MorphDefinition } from "../../data/morphs";
 import { masterMorphs } from "../../data/masterMorphDatabase";
 import { SPECIES_GENETICS_CATALOGUES } from "../../data/species/speciesGeneticsCatalogues";
+import { SPECIES_GENETICS_COMBINATION_MORPHS, SPECIES_GENETICS_COMBINATION_SPECS } from "../../data/species/speciesGeneticsCombinations";
 import { normaliseSearchValue, scoreSearchCandidate } from "../../utils/searchRanking";
 
 export type GeneticsMatchKind = "canonical" | "alias" | "combination" | "fuzzy";
@@ -22,6 +23,11 @@ function dedupeRecords(records: MorphDefinition[]): MorphDefinition[] {
   });
 }
 
+function speciesCombinations(scoped: string): MorphDefinition[] {
+  const ids = new Set(SPECIES_GENETICS_COMBINATION_SPECS.filter((spec) => spec.species === scoped).map((spec) => spec.id));
+  return SPECIES_GENETICS_COMBINATION_MORPHS.filter((morph) => ids.has(morph.geneId)) as MorphDefinition[];
+}
+
 function candidates(speciesScientificName?: string): MorphDefinition[] {
   const scoped = speciesScientificName?.trim();
   if (!scoped) return dedupeRecords([
@@ -36,7 +42,10 @@ function candidates(speciesScientificName?: string): MorphDefinition[] {
     ...fullHognoseMorphTaxonomy,
     ...calculatorNamedCombinations,
   ] as MorphDefinition[]);
-  return SPECIES_GENETICS_CATALOGUES[scoped] ?? [];
+  return dedupeRecords([
+    ...(SPECIES_GENETICS_CATALOGUES[scoped] ?? []),
+    ...speciesCombinations(scoped),
+  ]);
 }
 
 function componentDisplayNames(record: MorphDefinition): string[] {
@@ -55,24 +64,24 @@ function componentCompositionSearchTerms(record: MorphDefinition): string[] {
     return copies > 1 ? `${name} x${copies}` : name;
   });
   if (names.length < 2) return [];
-  return [
-    names.join(" + "),
-    names.join(" x "),
-    names.join(" "),
-  ];
+  return [names.join(" + "), names.join(" x "), names.join(" ")];
 }
 
 function matchesExactComponentComposition(query: string, record: MorphDefinition): boolean {
-  return componentCompositionSearchTerms(record)
-    .some((term) => scoreSearchCandidate(query, term, "secondary") >= 82500);
+  return componentCompositionSearchTerms(record).some((term) => scoreSearchCandidate(query, term, "secondary") >= 180000);
 }
 
-/**
- * Species-aware genetics search with strict keeper-facing ranking.
- * Canonical identities win first, then exact recorded genetic composition,
- * then recognised aliases/named phenotypes. This prevents a source label such
- * as Subzero from outranking a direct query for Arctic + Conda genetics.
- */
+function secondaryTermsFor(record: MorphDefinition): string[] {
+  const enriched = record as MorphDefinition & { searchTerms?: string[]; recognisedNames?: string[]; geneticFormula?: string; directFormula?: string };
+  return [
+    ...(enriched.searchTerms ?? []),
+    ...(enriched.recognisedNames ?? []),
+    ...(enriched.geneticFormula ? [enriched.geneticFormula] : []),
+    ...(enriched.directFormula ? [enriched.directFormula] : []),
+    ...componentCompositionSearchTerms(record),
+  ];
+}
+
 export function searchGenetics(query: string, speciesScientificName?: string): GeneticsMatch[] {
   const raw = query.trim();
   const q = normalise(raw);
@@ -84,12 +93,7 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
   if (exactCanonical.length) {
     return exactCanonical
       .sort((a, b) => Number(Boolean(b.isCombination)) - Number(Boolean(a.isCombination)) || a.name.localeCompare(b.name))
-      .map((record): GeneticsMatch => ({
-        record,
-        matchKind: record.isCombination ? "combination" : "canonical",
-        matchedQuery: raw,
-        score: 100000,
-      }))
+      .map((record): GeneticsMatch => ({ record, matchKind: record.isCombination ? "combination" : "canonical", matchedQuery: raw, score: 1000000 }))
       .slice(0, 12);
   }
 
@@ -97,44 +101,27 @@ export function searchGenetics(query: string, speciesScientificName?: string): G
     .filter((record) => matchesExactComponentComposition(raw, record))
     .sort((a, b) => Number(Boolean(b.isCombination)) - Number(Boolean(a.isCombination)) || a.name.localeCompare(b.name));
   if (exactComponentCompositions.length) {
-    return exactComponentCompositions.slice(0, 12).map((record): GeneticsMatch => ({
-      record,
-      matchKind: "combination",
-      matchedQuery: raw,
-      score: 98000,
-    }));
+    return exactComponentCompositions.slice(0, 12).map((record): GeneticsMatch => ({ record, matchKind: "combination", matchedQuery: raw, score: 980000 }));
   }
 
   const exactAlias = scopedCandidates.flatMap((record) =>
     (record.aliases ?? [])
       .filter((alias) => normalise(alias) === q)
-      .map((): GeneticsMatch => ({
-        record,
-        matchKind: record.isCombination ? "combination" : "alias",
-        matchedQuery: raw,
-        score: 90000,
-      })),
+      .map((): GeneticsMatch => ({ record, matchKind: record.isCombination ? "combination" : "alias", matchedQuery: raw, score: 900000 })),
   );
   if (exactAlias.length) return exactAlias.slice(0, 12);
 
   if (!speciesScientificName?.trim()) {
     const exactCombination = findCalculatorNamedCombination(raw);
-    if (exactCombination) return [{ record: exactCombination, matchKind: "combination", matchedQuery: raw, score: 99000 }];
+    if (exactCombination) return [{ record: exactCombination, matchKind: "combination", matchedQuery: raw, score: 990000 }];
   }
 
   const matches: GeneticsMatch[] = [];
   for (const record of scopedCandidates) {
+    const secondaryTerms = secondaryTermsFor(record);
     const canonicalScore = scoreSearchCandidate(q, record.name, "canonical");
-    const aliasScores = (record.aliases ?? []).map((alias) => scoreSearchCandidate(q, alias, "alias"));
-    const secondaryTerms = [
-      ...((record as MorphDefinition & { searchTerms?: string[] }).searchTerms ?? []),
-      ...((record as MorphDefinition & { recognisedNames?: string[] }).recognisedNames ?? []),
-      ...((record as MorphDefinition & { geneticFormula?: string }).geneticFormula ? [((record as MorphDefinition & { geneticFormula?: string }).geneticFormula as string)] : []),
-      ...componentCompositionSearchTerms(record),
-    ];
-    const secondaryScores = secondaryTerms.map((term) => scoreSearchCandidate(q, term, "secondary"));
-    const bestAlias = Math.max(0, ...aliasScores);
-    const bestSecondary = Math.max(0, ...secondaryScores);
+    const bestAlias = Math.max(0, ...(record.aliases ?? []).map((alias) => scoreSearchCandidate(q, alias, "alias")));
+    const bestSecondary = Math.max(0, ...secondaryTerms.map((term) => scoreSearchCandidate(q, term, "secondary")));
     const score = Math.max(canonicalScore, bestAlias, bestSecondary);
     if (score <= 0) continue;
 
