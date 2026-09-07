@@ -5,10 +5,11 @@ import { useAuth, type UserCategory } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
 import type { AgeBand, EducatorTeachingLevel, LearningLevel, ProfileType } from "../types/Profile";
+import app from "../firebase/config";
 import { TITAN_AT_A_GLANCE_OPTIONS, TITAN_WEEKLY_METRIC_OPTIONS, WEEK_START_OPTIONS, MAX_SLICES, MIN_SLICES, MAX_WEEKLY_METRICS, MIN_WEEKLY_METRICS, useEasyNav, type TitanAtAGlanceSliceId, type TitanWeeklyMetricId, type WeekStartDay } from "../context/EasyNavContext";
 import "../styles/Personalisation.css";
 
-const db = getFirestore();
+const db = getFirestore(app);
 const profileTypes: Array<[ProfileType, string, string]> = [["keeper", "🐍", "Keeper"], ["learner", "🎓", "Learner"], ["educator", "🧑‍🏫", "Educator"], ["professional", "🔬", "Professional"]];
 const levels: Array<[AgeBand, LearningLevel, string]> = [["7-10", "explorer", "Explorer"], ["11-14", "learner", "Learner"], ["15-18", "student", "Student"], ["adult", "adult", "Adult"]];
 const teachingLevels: Array<[EducatorTeachingLevel, string]> = [["primary", "Primary"], ["secondary", "Secondary"], ["college", "College"], ["university", "University"], ["homeschool", "Homeschool"], ["club", "Club / Group"], ["other", "Other"]];
