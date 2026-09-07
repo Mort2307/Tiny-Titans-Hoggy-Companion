@@ -30,14 +30,56 @@
 .tt-at-glance-icon { font-size:18px; }
 .tt-at-glance-label { font-size:8.5px; font-weight:800; letter-spacing:.03em; fill:rgba(255,255,255,.84); }
 .tt-at-glance-value { font-size:8.2px; font-weight:700; fill:rgba(255,255,255,.62); }
-.tt-at-glance-centre { fill:rgba(7,13,12,.98); stroke:rgba(255,255,255,.12); stroke-width:1.5; }
+.tt-at-glance-centre { fill:rgba(7,13,12,.98); stroke:rgba(255,255,255,.12); stroke-width:1.5; pointer-events:none; }
 
+/* The centre control is positioned without transform so it cannot inherit or trigger any transform-based hover animation. */
 .tt-at-glance-centre-button {
-  position:absolute; top:50%; left:50%; width:152px; height:152px; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.18rem; padding:.75rem; border:0; border-radius:50%; background:radial-gradient(circle at 50% 30%,rgba(42,70,61,.9),rgba(7,13,12,.99) 72%); color:inherit; cursor:pointer; text-align:center; box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12),0 10px 30px rgba(0,0,0,.26); z-index:2;
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:152px;
+  min-width:152px;
+  height:152px;
+  min-height:152px;
+  margin-left:-76px;
+  margin-top:-76px;
+  box-sizing:border-box;
+  appearance:none;
+  -webkit-appearance:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.18rem;
+  padding:.75rem;
+  border:0;
+  border-radius:50%;
+  background:radial-gradient(circle at 50% 30%,rgba(42,70,61,.9),rgba(7,13,12,.99) 72%);
+  color:inherit;
+  cursor:pointer;
+  text-align:center;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12),0 10px 30px rgba(0,0,0,.26);
+  z-index:3;
+  overflow:hidden;
 }
 
-/* Static hit target: never moves, scales, translates, or changes its layout box on hover/focus. */
-.tt-at-glance-centre-button:hover,.tt-at-glance-centre-button:focus-visible { box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22),0 10px 30px rgba(0,0,0,.26); outline:2px solid rgba(255,255,255,.12); outline-offset:2px; }
+.tt-at-glance-centre-button:hover,
+.tt-at-glance-centre-button:focus,
+.tt-at-glance-centre-button:focus-visible,
+.tt-at-glance-centre-button:active {
+  transform:none !important;
+  translate:none !important;
+  scale:none !important;
+  outline:none;
+}
+
+.tt-at-glance-centre-button:hover,
+.tt-at-glance-centre-button:focus-visible {
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22),0 10px 30px rgba(0,0,0,.26);
+  outline:2px solid rgba(255,255,255,.12);
+  outline-offset:2px;
+}
+
 .tt-at-glance-centre-button.has-titan { background:radial-gradient(circle at 50% 30%,rgba(34,62,53,.96),rgba(7,13,12,.99) 74%); }
 .tt-at-glance-centre-icon { font-size:30px; line-height:1; }
 .tt-at-glance-centre-photo { width:78px; height:78px; object-fit:cover; border-radius:50%; border:2px solid rgba(255,255,255,.16); box-shadow:0 5px 18px rgba(0,0,0,.24); }
@@ -64,4 +106,16 @@ img.tt-at-glance-picker-avatar { object-fit:cover; }
 .tt-at-glance-picker-option > span:last-child { flex:0 0 auto; font-size:.9rem; font-weight:900; opacity:.85; }
 .easy-nav-active .tt-page-frame { max-width:900px; }
 .easy-nav-active .tt-page-frame > .app-page-title,.easy-nav-active .tt-page-frame > .page-heading { margin-top:.35rem; }
-@media (max-width:620px) { .tt-at-glance { border-radius:18px; padding:.8rem; } .tt-at-glance-head { align-items:center; } .tt-at-glance p { font-size:.8rem; } .tt-at-glance-customise { font-size:.72rem; } .tt-at-glance-centre-button { width:132px; height:132px; } .tt-at-glance-centre-photo { width:68px; height:68px; } .tt-at-glance-centre-name { max-width:114px; font-size:.74rem; } .tt-at-glance-centre-meta { max-width:114px; font-size:.6rem; } .tt-at-glance-picker { border-radius:18px; padding:.8rem; } .tt-at-glance-picker-avatar { width:42px; height:42px; flex-basis:42px; } .tt-at-glance-foot { font-size:.68rem; } }
+@media (max-width:620px) {
+  .tt-at-glance { border-radius:18px; padding:.8rem; }
+  .tt-at-glance-head { align-items:center; }
+  .tt-at-glance p { font-size:.8rem; }
+  .tt-at-glance-customise { font-size:.72rem; }
+  .tt-at-glance-centre-button { width:132px; min-width:132px; height:132px; min-height:132px; margin-left:-66px; margin-top:-66px; }
+  .tt-at-glance-centre-photo { width:68px; height:68px; }
+  .tt-at-glance-centre-name { max-width:114px; font-size:.74rem; }
+  .tt-at-glance-centre-meta { max-width:114px; font-size:.6rem; }
+  .tt-at-glance-picker { border-radius:18px; padding:.8rem; }
+  .tt-at-glance-picker-avatar { width:42px; height:42px; flex-basis:42px; }
+  .tt-at-glance-foot { font-size:.68rem; }
+}
