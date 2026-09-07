@@ -6,26 +6,31 @@
 }
 .logo-link { display:inline-flex; align-items:center; flex:0 0 auto; border-radius:12px; }
 .tiny-titans-logo { width:44px; height:44px; object-fit:cover; border-radius:12px; cursor:pointer; }
-.app-brand-lockup { display:flex; flex-direction:column; justify-content:center; min-width:0; line-height:1.1; }
+.app-brand-lockup { display:flex; flex-direction:column; justify-content:center; min-width:0; line-height:1.1; flex:1 1 auto; }
 .app-brand-name { display:flex; align-items:baseline; gap:.42em; min-width:0; color:#f7f3fb; font-size:1rem; font-weight:800; letter-spacing:-.015em; line-height:1.1; white-space:nowrap; }
 .app-brand-primary,.app-brand-secondary { white-space:nowrap; overflow-wrap:normal; word-break:normal; hyphens:none; }
 .app-brand-primary { color:#f7f3fb; }
 .app-brand-secondary { color:rgba(255,255,255,.58); font-size:.82em; font-weight:700; }
 .app-brand-tagline { margin-top:3px; color:rgba(255,255,255,.45); font-size:.67rem; font-weight:650; letter-spacing:.075em; line-height:1; text-transform:uppercase; }
-.app-header-actions { margin-left:auto; display:flex; align-items:center; min-width:0; }
+.app-header-actions { margin-left:auto; display:flex; align-items:center; justify-content:flex-end; min-width:max-content; flex:0 0 auto; }
 @media(max-width:800px){
   .app-header{padding:8px 12px;gap:9px;min-width:0}
   .tiny-titans-logo{width:38px;height:38px;border-radius:10px}
-  .app-brand-lockup{flex:1 1 auto;min-width:0}
+  .app-brand-lockup{flex:1 1 auto;min-width:0;overflow:hidden}
   .app-brand-name{display:flex;flex-direction:column;align-items:flex-start;gap:1px;font-size:.86rem;line-height:1.02;letter-spacing:-.02em}
   .app-brand-primary{font-size:1em;font-weight:850}
   .app-brand-secondary{font-size:.78em;font-weight:750;line-height:1.08}
   .app-brand-tagline{display:none}
-  .app-header-actions{gap:6px;flex:0 0 auto}
+  .app-header-actions{gap:6px;flex:0 0 auto;margin-left:auto;position:relative;z-index:5}
+}
+@media(max-width:480px){
+  .app-header{padding-inline:10px;gap:7px}
+  .app-header-actions{margin-left:10px;gap:5px}
 }
 @media(max-width:380px){
-  .app-header{padding-inline:9px;gap:7px}
+  .app-header{padding-inline:8px;gap:6px}
   .tiny-titans-logo{width:35px;height:35px}
-  .app-brand-name{font-size:.78rem}
-  .app-brand-secondary{font-size:.75em}
+  .app-brand-name{font-size:.76rem}
+  .app-brand-secondary{font-size:.74em}
+  .app-header-actions{margin-left:8px;gap:4px}
 }
