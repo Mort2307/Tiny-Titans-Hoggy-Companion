@@ -46,6 +46,11 @@ export type ApprovedMorphImage = {
   imageUrl: string;
   storagePath: string;
   mediaType?: MorphMediaType;
+  description?: string;
+  observedTraits?: string;
+  proofDetails?: string;
+  proofReference?: string;
+  geneticsNotes?: string;
   creditType: MorphSubmissionCredit;
   creditName?: string;
   creditSocial?: string;
