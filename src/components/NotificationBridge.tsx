@@ -1,11 +1,41 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getMessaging, isSupported, onMessage } from "firebase/messaging";
 import { app } from "../firebase/config";
 import { getNotificationSettings, NOTIFICATION_ENABLED_EVENT, refreshNotificationRegistration } from "../services/notificationService";
 import { useAuth } from "../context/useAuth";
+import "../styles/notificationBridge.css";
+
+type InAppNotification = { title: string; body: string; url: string; id: number };
+const IN_APP_NOTIFICATION_EVENT = "tiny-titans-in-app-notification";
+
+type InAppNotificationDetail = { title?: unknown; body?: unknown; url?: unknown };
 
 export default function NotificationBridge() {
   const { user } = useAuth();
+  const [inAppNotification, setInAppNotification] = useState<InAppNotification | null>(null);
+
+  useEffect(() => {
+    const onInAppNotification = (event: Event) => {
+      const custom = event as CustomEvent<InAppNotificationDetail>;
+      const detail = custom.detail || {};
+      const next: InAppNotification = {
+        title: String(detail.title || "Tiny Titans"),
+        body: String(detail.body || "You have a Tiny Titans update."),
+        url: String(detail.url || "/"),
+        id: Date.now(),
+      };
+      setInAppNotification(next);
+    };
+
+    window.addEventListener(IN_APP_NOTIFICATION_EVENT, onInAppNotification);
+    return () => window.removeEventListener(IN_APP_NOTIFICATION_EVENT, onInAppNotification);
+  }, []);
+
+  useEffect(() => {
+    if (!inAppNotification) return;
+    const timeout = window.setTimeout(() => setInAppNotification(null), 9000);
+    return () => window.clearTimeout(timeout);
+  }, [inAppNotification?.id]);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -62,5 +92,10 @@ export default function NotificationBridge() {
     };
   }, [user?.uid]);
 
-  return null;
+  return inAppNotification ? (
+    <aside className="tt-in-app-notification" role="status" aria-live="polite">
+      <div className="tt-in-app-notification__copy"><strong>{inAppNotification.title}</strong><span>{inAppNotification.body}</span></div>
+      <div className="tt-in-app-notification__actions"><button type="button" onClick={() => { window.location.assign(inAppNotification.url); setInAppNotification(null); }}>Open</button><button type="button" onClick={() => setInAppNotification(null)} aria-label="Dismiss notification">×</button></div>
+    </aside>
+  ) : null;
 }
