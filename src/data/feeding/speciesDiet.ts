@@ -61,14 +61,14 @@ function explicitGeneralistDiet(snake: Snake): SpeciesDiet | undefined {
   const id = species.id.toLowerCase();
 
   if (id === 'heterodon-nasicus') {
-    const recommended = addUniversalMouseOptions(['Rat Pup', 'Rat Fuzzy', 'Adult Rat']);
+    const recommended = dedupe([...MOUSE_FOOD_TYPES, 'Rat Pup', 'Rat Fuzzy', 'Adult Rat']);
     return {
       label: species.commonNames[0] ?? species.acceptedScientificName,
       guild: 'rodent-based generalist',
       recommended,
       additional: ALL_FOOD_TYPES.filter((food) => !recommended.includes(food)),
       categories: ['rodent'],
-      note: 'Western Hognoses are shown the common captive rodent prey choices first. Mouse options are included as common feeder choices, not as a claim that one prey item is universally superior; prey size and individual condition still matter.',
+      note: 'Western Hognoses are shown the common captive rodent prey choices first, with mouse sizes as the default feeder options. This is a keeper-friendly recommendation, not a claim that one prey item is universally superior; prey size and individual condition still matter.',
     };
   }
   return undefined;
