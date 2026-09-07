@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
+import { useLayoutEffect } from "react";
 import Header from "./Header";
 import Navigation from "./Navigation";
 import AdaptiveGuideBar from "../AdaptiveGuideBar";
@@ -30,6 +31,11 @@ function Layout() {
   const morphGalleryMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
   const morphDetailMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/?$/);
   const isEnclosureIntelligence = location.pathname === "/enclosure-intelligence" || location.pathname.startsWith("/enclosure-intelligence/");
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.key]);
 
   return (
     <SpeciesContextProvider>
