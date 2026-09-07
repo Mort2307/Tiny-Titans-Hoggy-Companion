@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tinyTitansPageRegistry } from "../../config/tinyTitansPageRegistry";
+import { scoreSearchCandidate } from "../../utils/searchRanking";
 import "./TitanCommandPalette.css";
 
 function resolveDestination(path: string, currentPath: string): string {
@@ -42,16 +43,16 @@ function TitanCommandPalette() {
 
   const currentGroup = tinyTitansPageRegistry.find((page) => location.pathname === page.path)?.group;
   const results = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
+    const normalized = query.trim();
     return tinyTitansPageRegistry
-      .map((page) => {
-        let score = 0;
+      .map((page, index) => {
+        const labelScore = scoreSearchCandidate(normalized, page.label, "canonical");
+        const descriptionScore = scoreSearchCandidate(normalized, page.description, "secondary");
+        const pathScore = scoreSearchCandidate(normalized, page.path.replace(/[\/_-]+/g, " "), "secondary");
+        let score = Math.max(labelScore, descriptionScore, pathScore);
         if (!normalized && page.group === currentGroup) score += 20;
-        if (page.label.toLowerCase() === normalized) score += 100;
-        if (page.label.toLowerCase().includes(normalized)) score += 50;
-        if (page.description.toLowerCase().includes(normalized)) score += 10;
         if (page.path === location.pathname) score -= 1000;
-        return { page, score };
+        return { page, score: score - index * 0.0001 };
       })
       .filter(({ page, score }) => score > 0 && page.path !== location.pathname)
       .sort((a, b) => b.score - a.score)
@@ -86,7 +87,7 @@ function TitanCommandPalette() {
                 </button>
               )) : <div className="tt-command-empty">No matching destination. Try a broader search.</div>}
             </div>
-            <footer className="tt-command-footer"><span>Enter a destination name to move directly to a page.</span><kbd>Esc</kbd></footer>
+            <footer className="tt-command-footer"><span>Exact matches and strong keeper terms are ranked first.</span><kbd>Esc</kbd></footer>
           </section>
         </div>
       )}
