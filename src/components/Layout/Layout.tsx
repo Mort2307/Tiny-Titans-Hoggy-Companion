@@ -75,7 +75,9 @@ function LayoutChrome() {
           <div className="tt-page-frame">
             {speciesAware && <SpeciesContextBar />}
             <TitanAtAGlance />
-            {!isEasyNav && <TitanGlobalNextAction />}
+            <div className={isEasyNav ? "tt-easy-intelligence" : undefined}>
+              <TitanGlobalNextAction />
+            </div>
             {isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
               : morphGalleryMatch ? <SpeciesMorphGallery />
                 : morphDetailMatch ? <SpeciesMorphDetail />
