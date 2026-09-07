@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { INITIAL_SNAKE_SPECIES } from "../data/species/speciesRegistry";
+import { rankSearchResults } from "../utils/searchRanking";
 import "../styles/species-selector.css";
 
 const sortedSpecies = [...INITIAL_SNAKE_SPECIES].sort((a, b) => {
@@ -7,8 +8,6 @@ const sortedSpecies = [...INITIAL_SNAKE_SPECIES].sort((a, b) => {
   const bName = b.commonNames[0] ?? b.acceptedScientificName;
   return aName.localeCompare(bName);
 });
-
-const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
 
 type SpeciesSelectorProps = {
   id: string;
@@ -35,15 +34,11 @@ export default function SpeciesSelector({
   const selectedName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Select species…";
 
   const options = useMemo(() => {
-    const needle = normalise(query);
-    if (!needle) return sortedSpecies;
-    return sortedSpecies.filter((species) => [
-      species.id,
-      species.acceptedScientificName,
-      ...species.commonNames,
-      ...species.searchAliases,
-      ...(species.synonyms ?? []),
-    ].some((candidate) => normalise(candidate).includes(needle)));
+    if (!query.trim()) return sortedSpecies;
+    return rankSearchResults(query, sortedSpecies, (species) => ({
+      canonical: [species.commonNames[0] ?? "", species.acceptedScientificName, species.id],
+      aliases: [...species.searchAliases, ...species.commonNames.slice(1), ...(species.synonyms ?? [])],
+    })).map(({ item }) => item);
   }, [query]);
 
   useEffect(() => {
