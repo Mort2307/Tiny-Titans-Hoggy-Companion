@@ -4,7 +4,7 @@ import { useAuth } from "../context/useAuth";
 import { getHistoricalContributors, thankContributor, type HistoricalContributor } from "../services/contributorThankYouService";
 import "../styles/CreatorTools.css";
 
-const sourceLabel: Record<HistoricalContributor["latestSubmission"]["submissionType"], string> = { "morph-image": "Morph photo", "morph-terminology": "Morph terminology", species: "Species submission", "vivarium-showcase": "Vivarium showcase", observation: "Observation", "mentor-application": "Mentor application" };
+const sourceLabel: Record<HistoricalContributor["latestSubmission"]["submissionType"], string> = { direct: "Direct message", "morph-image": "Morph photo", "morph-terminology": "Morph terminology", species: "Species submission", "vivarium-showcase": "Vivarium showcase", observation: "Observation", "mentor-application": "Mentor application" };
 function formatDate(value: unknown): string { if (!value) return "Unknown date"; if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") return value.toDate().toLocaleDateString("en-GB"); if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return new Date(value.toMillis()).toLocaleDateString("en-GB"); const date = new Date(String(value)); return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleDateString("en-GB"); }
 
 export default function ContributorThankYouCentre({ onClose }: { onClose: () => void }) {
