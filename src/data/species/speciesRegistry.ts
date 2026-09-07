@@ -15,6 +15,7 @@ import { completeSpeciesHusbandry } from './speciesHusbandryCompletion';
 import { ensureSpeciesHusbandryEvidence } from './speciesEvidence';
 import { applySpeciesResearchOverrides } from './speciesResearchOverrides';
 import type { SnakeSpeciesRecord } from './speciesTypes';
+import { rankSearchResults } from '../../utils/searchRanking';
 
 Object.assign(SPECIES_SOURCES, SPECIES_EXPANSION_SOURCES, SPECIES_EXPANSION_BATCH_3_SOURCES, SPECIES_RESEARCH_SOURCES, SPECIES_SPECIALIST_SOURCES);
 
@@ -40,15 +41,22 @@ const ALL_SPECIES: SnakeSpeciesRecord[] = RAW_SPECIES
 export const INITIAL_SNAKE_SPECIES = ALL_SPECIES;
 export const SNAKE_SPECIES_BY_ID = Object.fromEntries(ALL_SPECIES.map((species) => [species.id, species])) as Record<string, SnakeSpeciesRecord>;
 
+function speciesSearchFields(species: SnakeSpeciesRecord) {
+  return {
+    canonical: [species.commonNames[0] ?? '', species.acceptedScientificName, species.id],
+    aliases: [...species.commonNames.slice(1), ...species.searchAliases, ...(species.synonyms ?? [])],
+    secondary: [species.genus, species.speciesEpithet, species.family],
+  };
+}
+
 export function searchSnakeSpecies(query: string): SnakeSpeciesRecord[] {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return ALL_SPECIES;
-  return ALL_SPECIES.filter((species) => [species.acceptedScientificName, ...species.commonNames, ...species.searchAliases, ...(species.synonyms ?? [])].some((value) => value.toLowerCase().includes(normalized)));
+  const raw = query.trim();
+  if (!raw) return ALL_SPECIES;
+  return rankSearchResults(raw, ALL_SPECIES, speciesSearchFields).map(({ item }) => item);
 }
 
 export function findSnakeSpecies(value: string | null | undefined): SnakeSpeciesRecord | undefined {
-  const normalized = value?.trim().toLowerCase();
-  if (!normalized) return undefined;
-  return ALL_SPECIES.find((species) => [species.id, species.acceptedScientificName, ...species.commonNames, ...species.searchAliases, ...(species.synonyms ?? [])].some((candidate) => candidate.toLowerCase() === normalized))
-    ?? ALL_SPECIES.find((species) => [species.acceptedScientificName, ...species.commonNames, ...species.searchAliases, ...(species.synonyms ?? [])].some((candidate) => candidate.toLowerCase().includes(normalized) || normalized.includes(candidate.toLowerCase())));
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  return rankSearchResults(raw, ALL_SPECIES, speciesSearchFields)[0]?.item;
 }
