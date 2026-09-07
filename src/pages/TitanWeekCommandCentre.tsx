@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { Snake } from "../types/Snake";
+import { useAuth } from "../context/useAuth";
 import type { TitanWeeklyMetricId, WeekStartDay } from "../context/EasyNavContext";
 import { useEasyNav, TITAN_WEEKLY_METRIC_OPTIONS, WEEK_START_OPTIONS } from "../context/EasyNavContext";
 import { getUserSnakes } from "../services/snakeService";
@@ -37,8 +38,8 @@ function makeCurrentPriorities(snakes: Snake[], intelligenceAccess: boolean, dec
 export default function TitanWeekCommandCentre() {
   const { user } = useAuth(); const { weekStartDay, weeklyMetrics, setWeekStartDay, setWeeklyMetrics, loading: easyNavLoading } = useEasyNav(); const [params, setParams] = useSearchParams();
   const [snakes, setSnakes] = useState<Snake[]>([]); const [intelligence, setIntelligence] = useState<SnakeIntelligence[]>([]); const [decision, setDecision] = useState<TitanDecision | null>(null); const [intelligenceAccess, setIntelligenceAccess] = useState(false); const [targets, setTargets] = useState<TargetMap>({}); const [configOpen, setConfigOpen] = useState(false); const [loading, setLoading] = useState(true);
-  const selectedSnakeId = params.get("snake"); const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]); const scope = selectedSnake ? [selectedSnake] : snakes;
-  const today = new Date(); const referenceDate = parseDateKey(params.get("week"), today); const range = useMemo(() => getCurrentTitanWeek(referenceDate, weekStartDay), [referenceDate, weekStartDay]); const isCurrentWeek = toLocalKey(range.start) === toLocalKey(getCurrentTitanWeek(today, weekStartDay).start);
+  const selectedSnakeId = params.get("snake"); const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]); const scope = useMemo(() => selectedSnake ? [selectedSnake] : snakes, [selectedSnake, snakes]);
+  const today = new Date(); const referenceDate = parseDateKey(params.get("week"), today); const range = getCurrentTitanWeek(referenceDate, weekStartDay); const isCurrentWeek = toLocalKey(range.start) === toLocalKey(getCurrentTitanWeek(today, weekStartDay).start);
 
   useEffect(() => { if (!user) return; let active = true; setLoading(true); void getUserSnakes(user.uid).then((records) => { if (active) setSnakes(records.filter((snake) => snake.status !== "Deceased")); }).catch(() => { if (active) setSnakes([]); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [user]);
   useEffect(() => { if (!user) return; let active = true; const load = async () => { try { const access = await hasFullIntelligenceAccess(user.uid); if (!active) return; setIntelligenceAccess(access); if (!access || !snakes.length) return; const [insights, state] = await Promise.all([getDashboardIntelligence(user.uid, snakes.map((snake) => snake.id)), Promise.resolve(getTitanDecisionState(user.uid))]); if (!active) return; setIntelligence(insights); setDecision(state.decisions.find((item) => item.status === "active") ?? null); } catch { if (active) { setIntelligence([]); setDecision(null); } } }; void load(); const unsubscribe = subscribeToTitanDecisionState(user.uid, (state) => { if (active) setDecision(state.decisions.find((item) => item.status === "active") ?? null); }); return () => { active = false; unsubscribe(); }; }, [user, snakes]);
