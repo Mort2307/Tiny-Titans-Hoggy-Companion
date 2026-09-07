@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 import { useAuth } from "./useAuth";
 import app from "../firebase/config";
@@ -39,7 +39,7 @@ export const TITAN_AT_A_GLANCE_OPTIONS: Array<{ id: TitanAtAGlanceSliceId; label
   { id: "learning", label: "Learn", icon: "🎓", description: "Continue learning and challenges." },
   { id: "community", label: "Community", icon: "🌍", description: "Open the keeper community." },
   { id: "room", label: "Reptile Room", icon: "▦", description: "Open your reptile room." },
-  { id: "knowledge", label: "Knowledge Base", icon: "📚", description: "Open the knowledge base." },
+  { id: "knowledge", label: "Knowledge Base", icon: "📚", description: "Find an answer in the knowledge base." },
   { id: "contribution", label: "Contribute", icon: "＋", description: "Make a contribution to Tiny Titans." },
   { id: "goals", label: "Titan Goals", icon: "🎯", description: "See your current Titan goals." },
   { id: "account", label: "Account", icon: "⚙️", description: "Open account and personalisation." },
@@ -104,7 +104,6 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
       }
     }).catch(() => {
       if (!active) return;
-      // Local cache keeps the preference useful if Firestore is temporarily unavailable.
       try {
         const cached = window.localStorage.getItem(`tinytitans:easy-nav:${user.uid}`);
         if (cached) {
@@ -112,7 +111,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
           setModeState(sanitiseMode(parsed.mode));
           setSlicesState(sanitiseSlices(parsed.slices));
         }
-      } catch { /* ignore malformed or unavailable local storage */ }
+      } catch { /* local storage is a convenience cache only */ }
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [user]);
@@ -137,7 +136,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const value = useMemo<EasyNavContextValue>(() => ({
+  const value: EasyNavContextValue = {
     mode,
     slices,
     loading,
@@ -145,7 +144,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
     setMode: (nextMode) => persist(nextMode, slices),
     setSlices: (nextSlices) => persist(mode, nextSlices),
     resetSlices: () => persist(mode, DEFAULT_SLICES),
-  }), [mode, slices, loading, user]);
+  };
 
   return <EasyNavContext.Provider value={value}>{children}</EasyNavContext.Provider>;
 }
