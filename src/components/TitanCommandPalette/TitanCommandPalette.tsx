@@ -48,7 +48,7 @@ function TitanCommandPalette() {
       .map((page, index) => {
         const labelScore = scoreSearchCandidate(normalized, page.label, "canonical");
         const descriptionScore = scoreSearchCandidate(normalized, page.description, "secondary");
-        const pathScore = scoreSearchCandidate(normalized, page.path.replace(/[\_-]+/g, " ").replaceAll("/", " "), "secondary");
+        const pathScore = scoreSearchCandidate(normalized, page.path.replace(/[_-]+/g, " ").replaceAll("/", " "), "secondary");
         let score = Math.max(labelScore, descriptionScore, pathScore);
         if (!normalized && page.group === currentGroup) score += 20;
         if (page.path === location.pathname) score -= 1000;
