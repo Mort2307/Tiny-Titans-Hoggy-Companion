@@ -35,6 +35,23 @@ assert(moonstruck.notes.some((note) => note.includes("Arctic x1")), "Moonstruck 
 const crystalAlias = resolveHognoseMorphInput("Superarctic Coral Superconda");
 assert(crystalAlias.matchedName === "Crystal Diamond Superconda", "Crystal Diamond alias should resolve to the canonical name");
 
+// Core input grammar: aliases, case, punctuation, and super forms must resolve
+// without silently changing the underlying copy count or locus identity.
+assertSignature("ANACONDA", "conda:1");
+assertSignature("Conda", "conda:1");
+assertSignature("Arctic Anaconda", "arctic:1|conda:1");
+assertSignature("ARCTIC + ANACONDA", "arctic:1|conda:1");
+assertSignature("Super Arctic", "arctic:2");
+assertSignature("Superarctic", "arctic:2");
+assertSignature("Super Conda", "conda:2");
+assertSignature("Superconda", "conda:2");
+assertSignature("Amelanistic", "albino:2");
+assertSignature("ALBINO", "albino:2");
+assertSignature("Anery", "axanthic:2");
+assertSignature("Lav", "lavender:2");
+assertSignature("Toffee Belly", "toffeebelly:2");
+assertSignature("Swiss Choc", "swiss-chocolate:2");
+
 const unresolved = resolveHognoseMorphInput("Albino Frosted Arctic SuperConda");
 assert(unresolved.confidence === "limited", "Unknown Frosted token must not be silently discarded");
 assert(unresolved.notes.some((note) => note.includes("frosted")), "Unresolved Frosted token should be visible to the caller");
