@@ -19,8 +19,8 @@ const entry = (
   name: string,
   kind: MorphDefinition["kind"],
   inheritance: MorphDefinition["inheritance"] = "Unknown",
-  options: Partial<Pick<FullHognoseMorphTaxonomyEntry, "aliases" | "components" | "description" | "educationalNotes" | "verification" | "hetPossible" | "sourceUrl" | "sourceLabel" | "sourceClaim" | "sourceSnapshotDate" | "taxonomyStatus">> = {},
-): FullHognoseMorphTaxonomyEntry => {
+  options: Partial<Pick<FullMorphTaxonomyEntry, "aliases" | "components" | "description" | "educationalNotes" | "verification" | "hetPossible" | "sourceUrl" | "sourceLabel" | "sourceClaim" | "sourceSnapshotDate" | "taxonomyStatus">> = {},
+): FullMorphTaxonomyEntry => {
   const inferred = kind === "Combination" ? resolveHognoseMorphInput(name) : undefined;
   const inferredComponents = inferred?.confidence !== "unresolved" && inferred?.components.length ? inferred.components.map((component) => ({
     morphId: component.geneId,
