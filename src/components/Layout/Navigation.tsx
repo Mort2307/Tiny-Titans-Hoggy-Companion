@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { hasCapability } from "../../services/capabilityService";
@@ -58,11 +58,13 @@ function Navigation() {
     window.addEventListener("focus", refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("community-read-state-changed", refresh);
+    window.addEventListener("community-product-update-read", refresh);
     return () => {
       active = false;
       window.removeEventListener("focus", refresh);
       window.removeEventListener("storage", refresh);
       window.removeEventListener("community-read-state-changed", refresh);
+      window.removeEventListener("community-product-update-read", refresh);
     };
   }, [authReady, userId, profile?.isTester, profile?.role]);
 
@@ -79,17 +81,18 @@ function Navigation() {
   if (testerAuthorized) restricted.push({ label: "Testing", links: [["/creator/tester", "◇", "Tester Centre"]] });
 
   const quickRestrictedItems: QuickNavItem[] = [
-    ...(educatorAuthorized ? [{ id: "educator", label: "Educator Centre", icon: "▣", path: "/educator", group: "Educator", description: "Teaching and classroom tools." } satisfies QuickNavItem] : []),
+    ...(educatorAuthorized ? [{ id: "educator", label: "Educator Centre", icon: "▣", path: "/educator", group: "Educator", description: "Teaching and classroom tools." }] : []),
     ...(creatorAuthorized ? [
       { id: "creator", label: "Creator Centre", icon: "⚒", path: "/creator", group: "Creator", description: "Creator administration and tools." },
       { id: "creator-morph", label: "Morph Library Editor", icon: "🖼️", path: "/creator/morph-library", group: "Creator", description: "Review and manage morph submissions." },
       { id: "creator-community", label: "Community Manager", icon: "◈", path: "/creator/community", group: "Creator", description: "Publish official Community Hub content." },
       { id: "creator-mentor", label: "Mentor Review", icon: "↔", path: "/creator/mentor-review", group: "Creator", description: "Review mentor applications." },
-    ] satisfies QuickNavItem[] : []),
-    ...(testerAuthorized ? [{ id: "tester", label: "Tester Centre", icon: "◇", path: "/creator/tester", group: "Testing", description: "Tester tools and focused test flows." } satisfies QuickNavItem] : []),
+    ] : []),
+    ...(testerAuthorized ? [{ id: "tester", label: "Tester Centre", icon: "◇", path: "/creator/tester", group: "Testing", description: "Tester tools and focused test flows." }] : []),
   ];
-  const quickItems = useMemo(() => quickNavSearchItems(quickSearch).concat(quickRestrictedItems.filter((item) => quickNavSearchItems(quickSearch).every((candidate) => candidate.id !== item.id))), [quickSearch, educatorAuthorized, creatorAuthorized, testerAuthorized]);
-  const quickGroups = useMemo(() => quickItems.reduce<Record<string, QuickNavItem[]>>((groups, item) => { (groups[item.group] ??= []).push(item); return groups; }, {}), [quickItems]);
+  const quickSearchMatches = quickNavSearchItems(quickSearch);
+  const quickItems = [...quickSearchMatches, ...quickRestrictedItems.filter((item) => !quickSearchMatches.some((candidate) => candidate.id === item.id))];
+  const quickGroups = quickItems.reduce<Record<string, QuickNavItem[]>>((groups, item) => { (groups[item.group] ??= []).push(item); return groups; }, {});
 
   const renderLink = ([to, icon, label]: NavigationLink) => <li className="app-navigation-item" key={to}><NavLink to={to} end={to === "/"} onClick={() => setMoreOpen(false)} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && (communityUnreadCount > 0 || unseenProductUpdate) && <span className="community-unread-dot" aria-label="New Community Hub updates" title="New Community Hub updates" />}</NavLink></li>;
 
