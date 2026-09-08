@@ -49,7 +49,7 @@ assertTaxonomyFormula("Lavender Oxide", "evans-hypo:2|lavender:2|sable:2");
 assertTaxonomyFormula("Toffee Frosted", "caramel:2|evans-hypo:2|toffeebelly:2");
 assertTaxonomyFormula("Lemon Ghost Albino Arctic Anaconda", "albino:2|arctic:1|conda:1|lemon-ghost:1");
 assertTaxonomyFormula("Paint Maker Anaconda", "conda:1|lemon-ghost:1|toffeebelly:2");
-assertTaxonomyFormula("Cinnamon Lemon Ghost Extreme Red Anaconda", "conda:1|cinnamon:1|extreme-red:1|lemon-ghost:1");
+assertTaxonomyFormula("Cinnamon Lemon Ghost Extreme Red Anaconda", "cinnamon:1|conda:1|extreme-red:1|lemon-ghost:1");
 assertTaxonomyFormula("Extreme Red Tomato Lemon Ghost Anaconda", "albino:2|conda:1|cinnamon:1|extreme-red:1|lemon-ghost:1");
 assertTaxonomyFormula("Sunburst Cinnamon Anaconda", "albino:2|conda:1|cinnamon:1|sable:2");
 assertTaxonomyFormula("Sunburst Cinnamon Arctic Anaconda", "albino:2|arctic:1|conda:1|cinnamon:1|sable:2");
