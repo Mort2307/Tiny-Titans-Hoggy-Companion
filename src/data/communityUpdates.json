@@ -22,8 +22,8 @@
       "id": "quick-mode-onboarding",
       "title": "Turn on Quick Mode",
       "steps": [
-        { "path": "/community", "target": "quick-more", "title": "Open Everything", "instruction": "Tap the glowing Everything button to open Tiny Titans' full Quick Mode menu." },
-        { "path": "/community", "target": "quick-my-account", "title": "Open My Account", "instruction": "Now tap the glowing My Account entry inside the full menu." },
+        { "path": "/community", "target": "quick-more", "title": "Open Everything", "instruction": "Tap the glowing Everything button to open Tiny Titans' full Quick Mode menu.", "allowSkipIfMissing": true },
+        { "path": "/community", "target": "quick-my-account", "title": "Open My Account", "instruction": "Now tap the glowing My Account entry inside the full menu.", "allowSkipIfMissing": true },
         { "path": "/account", "target": "text:Personalise Experience", "title": "Personalise your experience", "instruction": "In My Account, tap Personalise Experience." },
         { "path": "/account/personalise", "target": "text:Quick Mode", "title": "Choose Quick Mode", "instruction": "Finally, tap the glowing Quick Mode option. That's it — your full app is now in Quick Mode." }
       ]
