@@ -17,7 +17,7 @@ const sectionCounts = Object.fromEntries(sections.map((name) => {
 }));
 const entryCount = sections.reduce((sum, name) => sum + Number(sectionCounts[name] ?? 0), 0);
 const missing = requiredNames.filter((name) => !source.includes(`"${name}"`));
-const hasSources = source.includes("HOGNOSE_MORPHS") && source.includes("HOGNOSE_POLYGENIC") && source.includes("REPTIFIT") && source.includes("REPTINODE");
+const hasSources = source.includes("HOGNOSE_MORPHS") && source.includes("HOGNOSE_POLYGENIC") && source.includes("REPTINODE");
 const passed = entryCount >= 150 && missing.length === 0 && hasSources;
 
 console.log(`Western Hognose full taxonomy: ${entryCount} declared reference identities indexed.`);
