@@ -98,7 +98,20 @@ const namedCombinations = [
   "Super Avalanche", "Ultramel Sable Arctic Anaconda", "Albino Skullface Arctic Anaconda", "Albino Skullface Superconda",
   "Skullface Albino Lemon Ghost Anaconda", "Woma Lemon Ghost Albino Anaconda", "Savannah Anaconda", "Savannah Albino Anaconda",
   "Symphony Superarctic Anaconda", "Pastel Axanthic Anaconda", "Vanilla Cherry Superconda", "ATOM",
+  "Gaverth Green Lemon Ghost", "Lavender Oxide",
 ] as const;
+
+const manualCombinationComponents: Record<string, FullMorphTaxonomyEntry["components"]> = {
+  "Gaverth Green Lemon Ghost": [
+    { morphId: "gaverth-green", type: "Polygenic", copies: 1 },
+    { morphId: "lemon-ghost", type: "Polygenic", copies: 1 },
+  ],
+  "Lavender Oxide": [
+    { morphId: "sable", type: "Gene", copies: 2 },
+    { morphId: "lavender", type: "Gene", copies: 2 },
+    { morphId: "evans-hypo", type: "Gene", copies: 2 },
+  ],
+};
 
 const unverifiedNamedTerms = [
   "Dinker", "Import", "Other Trait", "Paradox", "Savannah", "Shuriken", "Circuit", "Volcano", "Stormcloud Line",
@@ -117,6 +130,7 @@ export const fullHognoseMorphTaxonomy: FullMorphTaxonomyEntry[] = [
   ...namedCombinations.map((name) => entry(name, "Combination", "Unknown", {
     sourceUrl: HOGNOSE_MORPHS,
     sourceLabel: "Hognose Morphs current named-combination catalogue",
+    components: manualCombinationComponents[name],
   })),
   ...unverifiedNamedTerms.map((name) => entry(name, "Project", "Unknown", {
     sourceUrl: REPTINODE,
