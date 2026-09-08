@@ -62,7 +62,7 @@ function LayoutChrome() {
   }, [location.pathname, location.search, location.hash, location.key]);
 
   return (
-    <div className={`app-shell${isEasyNav ? " easy-nav-active" : ""}`} data-navigation-mode={isEasyNav ? "easy" : "standard"}>
+    <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <Header />
       <Navigation />
