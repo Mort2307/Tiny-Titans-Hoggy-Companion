@@ -87,8 +87,6 @@ function Navigation() {
   const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities);
   const quickGroups = quickItems.reduce<Record<string, typeof quickItems>>((groups, item) => { (groups[item.group] ??= []).push(item); return groups; }, {});
 
-  const renderLink = ([to, icon, label]: NavigationLink) => <li className="app-navigation-item" key={to}><NavLink to={to} end={to === "/"} onClick={() => setMoreOpen(false)} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && (communityUnreadCount > 0 || unseenProductUpdate) && <span className="community-unread-dot" aria-label="New Community Hub updates" title="New Community Hub updates" />}</NavLink></li>;
-
   if (isEasyNav) {
     const openMore = () => setMoreOpen((current) => !current);
     const openQuickItem = (path: string) => { setMoreOpen(false); setQuickSearch(""); navigate(path); };
