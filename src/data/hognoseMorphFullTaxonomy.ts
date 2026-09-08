@@ -19,8 +19,8 @@ const entry = (
   name: string,
   kind: MorphDefinition["kind"],
   inheritance: MorphDefinition["inheritance"] = "Unknown",
-  options: Partial<Pick<FullMorphTaxonomyEntry, "aliases" | "components" | "description" | "educationalNotes" | "verification" | "hetPossible" | "sourceUrl" | "sourceLabel" | "sourceClaim" | "sourceSnapshotDate" | "taxonomyStatus">> = {},
-): FullMorphTaxonomyEntry => {
+  options: Partial<Pick<FullHognoseMorphTaxonomyEntry, "aliases" | "components" | "description" | "educationalNotes" | "verification" | "hetPossible" | "sourceUrl" | "sourceLabel" | "sourceClaim" | "sourceSnapshotDate" | "taxonomyStatus">> = {},
+): FullHognoseMorphTaxonomyEntry => {
   const inferred = kind === "Combination" ? resolveHognoseMorphInput(name) : undefined;
   const inferredComponents = inferred?.confidence !== "unresolved" && inferred?.components.length ? inferred.components.map((component) => ({
     morphId: component.geneId,
@@ -151,6 +151,20 @@ const manualCombinationComponents: Record<string, FullMorphTaxonomyEntry["compon
     { morphId: "conda", type: "Gene", copies: 1 },
     { morphId: "sable", type: "Gene", copies: 2 },
   ],
+  "Sunburst Cinnamon Arctic Anaconda": [
+    { morphId: "albino", type: "Gene", copies: 2 },
+    { morphId: "arctic", type: "Gene", copies: 1 },
+    { morphId: "cinnamon", type: "Gene", copies: 1 },
+    { morphId: "conda", type: "Gene", copies: 1 },
+    { morphId: "sable", type: "Gene", copies: 2 },
+  ],
+  "Pink Pastel Maitai Arctic Anaconda": [
+    { morphId: "arctic", type: "Gene", copies: 1 },
+    { morphId: "conda", type: "Gene", copies: 1 },
+    { morphId: "pink-pastel-albino", type: "Gene", copies: 2 },
+    { morphId: "sable", type: "Gene", copies: 2 },
+    { morphId: "toffeebelly", type: "Gene", copies: 2 },
+  ],
   "Sable Cinnamon Anaconda": [
     { morphId: "cinnamon", type: "Gene", copies: 1 },
     { morphId: "conda", type: "Gene", copies: 1 },
@@ -181,7 +195,9 @@ export const fullHognoseMorphTaxonomy: FullMorphTaxonomyEntry[] = [
     components: manualCombinationComponents[name],
     educationalNotes: name === "Extreme Red Tomato Lemon Ghost Anaconda"
       ? "The source page name contains 'Tomato', but its structured Contains block does not list Tomato. Tiny Titans does not manufacture a Tomato gene; the source-described components are preserved exactly and the naming discrepancy is flagged."
-      : undefined,
+      : name === "Sunburst Cinnamon Arctic Anaconda"
+        ? "The source page prose identifies Sable as present, while the structured Contains list omits Sable. Tiny Titans preserves the source prose-derived Sable component and flags the source inconsistency for review."
+        : undefined,
   })),
   ...unverifiedNamedTerms.map((name) => entry(name, "Project", "Unknown", {
     sourceUrl: REPTINODE,
