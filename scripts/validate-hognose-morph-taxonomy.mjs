@@ -10,24 +10,24 @@ const requiredNames = [
 ];
 
 const sections = ["geneNames", "lineNames", "namedCombinations", "unverifiedNamedTerms"];
-const sectionCounts = Object.fromEntries(sections.map((name) => {
+const extractQuotedStrings = (value) => (value.match(/"(?:[^"\\]|\\.)*"/g) ?? []).map((entry) => entry.slice(1, -1).replace(/\\(["\\\\])/g, "$1"));
+const sectionBodies = Object.fromEntries(sections.map((name) => {
   const match = source.match(new RegExp(`const ${name} = \\[([\\s\\S]*?)\\] as const;`));
-  if (!match) return [name, 0];
-  return [name, (match[1].match(/"(?:[^"\\]|\\.)*"/g) ?? []).length / (name === "geneNames" ? 2 : 1)];
+  return [name, match?.[1] ?? ""];
 }));
+const sectionValues = Object.fromEntries(sections.map((name) => {
+  const values = extractQuotedStrings(sectionBodies[name]);
+  return [name, name === "geneNames" ? values.filter((_, index) => index % 2 === 0) : values];
+}));
+
+const sectionCounts = Object.fromEntries(sections.map((name) => [name, sectionValues[name].length]));
 const entryCount = sections.reduce((sum, name) => sum + Number(sectionCounts[name] ?? 0), 0);
 const missing = requiredNames.filter((name) => !source.includes(`"${name}"`));
 const hasSources = source.includes("HOGNOSE_MORPHS") && source.includes("HOGNOSE_POLYGENIC") && source.includes("REPTINODE");
 
-const sectionValues = Object.fromEntries(sections.map((name) => {
-  const match = source.match(new RegExp(`const ${name} = \\[([\\s\\S]*?)\\] as const;`));
-  if (!match) return [name, []];
-  return [name, (match[1].match(/"(?:[^"\\]|\\.)*"/g) ?? []).map((value) => value.slice(1, -1).replace(/\\(["\\\\])/g, "$1"))];
-}));
-
 const duplicateOccurrences = new Map();
 for (const section of sections) {
-  for (const name of sectionValues[section] ?? []) {
+  for (const name of sectionValues[section]) {
     const normalized = name.trim().toLowerCase().replace(/\s+/g, " ");
     const occurrences = duplicateOccurrences.get(normalized) ?? [];
     occurrences.push(section);
