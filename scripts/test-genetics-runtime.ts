@@ -37,13 +37,13 @@ assert(hogCombo?.id === hogAlias?.id, "Grey Fog reverse alias resolves to the sa
 assert(hogCombo?.componentLocusIds.length === 2, "Grey Fog contains Arctic + Conda component loci");
 
 const hogDatabase: GeneticsDatabase = HOGNOSE_GENETICS_DATABASE;
-const arctic = hogDatabase.loci.find((locus) => locus.id === "heterodon-nasicus-arctic");
+const arctic = hogDatabase.loci.find((locus) => locus.id === "heterodon-nasicus-arctic-antarctic");
 const conda = hogDatabase.loci.find((locus) => locus.id === "heterodon-nasicus-conda");
-assert(arctic && conda, "Hognose Arctic and Conda loci exist");
+assert(arctic && arctic.alleles.some((allele) => allele.id === "arctic") && conda, "Hognose Arctic allele and Conda locus exist");
 const greyFogSnake = { id: "test-grey-fog", name: "Grey Fog", species: "Western Hognose", morphs: ["Grey Fog"], hets: [] } as never;
 const greyFogGenome = buildSnakeGenome(greyFogSnake, hogDatabase);
 assert(greyFogGenome.supported, "Grey Fog snake record remains canonical and supported");
-assert(greyFogGenome.genome.states.some((state) => state.locusId === arctic.id) && greyFogGenome.genome.states.some((state) => state.locusId === conda.id), "Grey Fog expands into Arctic and Conda loci");
+assert(greyFogGenome.genome.states.some((state) => state.locusId === arctic.id) && greyFogGenome.genome.states.some((state) => state.locusId === conda.id), "Grey Fog expands into Arctic/Antarctic and Conda loci");
 
 const parentA: ParentGenome = { species: "Heterodon nasicus", states: [{ locusId: arctic.id, paternalAlleleId: "arctic", maternalAlleleId: "wild" }, { locusId: conda.id, paternalAlleleId: "conda", maternalAlleleId: "wild" }] };
 const parentB: ParentGenome = { species: "Heterodon nasicus", states: [] };
