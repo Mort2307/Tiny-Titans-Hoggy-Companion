@@ -71,10 +71,7 @@ function applyEvidenceMetadata(morph: MasterMorphDefinition): MasterMorphDefinit
 function mergeMorphs(canonical: MorphDefinition[], reference: Array<MorphReferenceEntry | FullMorphTaxonomyEntry>): MasterMorphDefinition[] {
   const result: MasterMorphDefinition[] = canonical.map((morph) => applyEvidenceMetadata(morph as MasterMorphDefinition));
   const identities = new Set<string>();
-  for (const morph of result) {
-    [morph.geneId, morph.name, ...(morph.aliases ?? [])].forEach((value) => identities.add(identityKey(value)));
-  }
-
+  for (const morph of result) [morph.geneId, morph.name, ...(morph.aliases ?? [])].forEach((value) => identities.add(identityKey(value)));
   for (const rawEntry of reference) {
     const entry = applyEvidenceMetadata(rawEntry as MasterMorphDefinition);
     const entryIdentities = [entry.geneId, entry.name, ...(entry.aliases ?? [])].map(identityKey).filter(Boolean);
@@ -85,22 +82,27 @@ function mergeMorphs(canonical: MorphDefinition[], reference: Array<MorphReferen
   return result;
 }
 
-const mergedMorphs = mergeMorphs(
-  canonicalMorphs,
-  [...hognoseMorphCatalog, ...morphReferenceAdditions, ...fullHognoseMorphTaxonomy, ...morphMarketTraits],
-);
-
+const mergedMorphs = mergeMorphs(canonicalMorphs, [...hognoseMorphCatalog, ...morphReferenceAdditions, ...fullHognoseMorphTaxonomy, ...morphMarketTraits]);
 export const masterMorphs: MasterMorphDefinition[] = enrichMorphDatabase(mergedMorphs) as MasterMorphDefinition[];
+
+function resolverSourceLinks(urls: string[]): MorphEvidenceSourceDefinition[] {
+  return urls.map((url) => ({
+    id: `hognose-resolver-${identityKey(url)}`,
+    label: url.includes("hognosehub.com") ? "Hognose Hub" : "Hognose Morphs",
+    url,
+    type: url.includes("hognosehub.com") ? "community-reference" : "breeder-reference",
+    authority: "secondary",
+    notes: "Resolver source used for Western Hognose terminology and component-genetics cross-checking.",
+  }));
+}
 
 function parsedHognoseMorph(value: string): MasterMorphDefinition | undefined {
   if (!value.trim()) return undefined;
   const parsed = resolveHognoseMorphInput(value);
   if (!parsed.components.length || parsed.confidence === "unresolved" || parsed.confidence === "limited") return undefined;
-
   const name = parsed.matchedName ?? value.trim();
-  const signature = parsed.signature;
   return {
-    geneId: `heterodon-nasicus-${identityKey(name) || signature}`,
+    geneId: `heterodon-nasicus-${identityKey(name) || parsed.signature}`,
     name,
     aliases: parsed.aliases,
     kind: "Combination",
@@ -111,16 +113,11 @@ function parsedHognoseMorph(value: string): MasterMorphDefinition | undefined {
     hetPossible: false,
     verification: parsed.confidence === "high" ? "Confirmed" : "Recognised",
     components: parsed.morphComponents,
-    description: parsed.matchedName
-      ? `${parsed.matchedName} — genetics resolved from the canonical Western Hognose combination registry.`
-      : `Genetic combination parsed from user-entered Western Hognose terminology: ${value.trim()}.`,
-    educationalNotes: [
-      "This record is resolver-generated and does not create a new genetic locus.",
-      ...parsed.notes,
-    ].join(" "),
+    description: parsed.matchedName ? `${parsed.matchedName} — genetics resolved from the canonical Western Hognose combination registry.` : `Genetic combination parsed from user-entered Western Hognose terminology: ${value.trim()}.`,
+    educationalNotes: ["Resolver-generated record; this does not create a new genetic locus.", ...parsed.notes].join(" "),
     sourceUrl: parsed.sourceUrls[0],
     sourceLabel: "Tiny Titans Western Hognose genetics resolver",
-    sourceLinks: parsed.sourceUrls.map((url) => ({ url, label: url.includes("hognosehub.com") ? "Hognose Hub" : "Hognose Morphs" })),
+    sourceLinks: resolverSourceLinks(parsed.sourceUrls),
   };
 }
 
@@ -132,8 +129,7 @@ export function resolveMasterMorph(value: string): MasterMorphDefinition | undef
     if (regional) return regional;
   }
   const exact = masterMorphs.find((morph) =>
-    identityKey(morph.geneId) === query ||
-    identityKey(morph.name) === query ||
+    identityKey(morph.geneId) === query || identityKey(morph.name) === query ||
     (morph.aliases ?? []).some((alias) => identityKey(alias) === query) ||
     (morph.searchTerms ?? []).some((term) => identityKey(term) === query),
   );
@@ -141,15 +137,10 @@ export function resolveMasterMorph(value: string): MasterMorphDefinition | undef
 }
 
 export function getMasterMorphByGeneId(geneId: string): MasterMorphDefinition | undefined {
-  return masterMorphs.find((morph) =>
-    identityKey(morph.geneId) === identityKey(geneId) ||
-    (morph.aliases ?? []).some((alias) => identityKey(alias) === identityKey(geneId)),
-  );
+  return masterMorphs.find((morph) => identityKey(morph.geneId) === identityKey(geneId) || (morph.aliases ?? []).some((alias) => identityKey(alias) === identityKey(geneId)));
 }
 
-export function getMasterMorphByName(name: string): MasterMorphDefinition | undefined {
-  return resolveMasterMorph(name);
-}
+export function getMasterMorphByName(name: string): MasterMorphDefinition | undefined { return resolveMasterMorph(name); }
 
 function hasConfirmedEvidence(morph: MasterMorphDefinition): boolean {
   return morph.evidenceStatus === "confirmed" || morph.verification === "Confirmed" || morph.sourceLabel === "Tiny Titans Western Hognose genetics resolver";
@@ -159,21 +150,13 @@ function isCalculatorEligible(morph: MasterMorphDefinition): boolean {
   if (morph.isProject || morph.kind === "Line-bred" || morph.kind === "Polygenic") return false;
   if (morph.verification === "Disputed" || morph.verification === "Unverified") return false;
   if (morph.kind === "Gene") return morph.isGene && hasConfirmedEvidence(morph);
-  if (morph.kind === "Super") {
-    const components = morph.components;
-    if (!components?.length) return false;
-    return components.every((component) => {
-      const base = resolveMasterMorph(component.morphId);
-      return Boolean(base && base.kind === "Gene" && base.isGene && hasConfirmedEvidence(base));
-    });
-  }
-  if (morph.kind === "Combination") {
+  if (morph.kind === "Super" || morph.kind === "Combination") {
     const components = morph.components;
     if (!components?.length) return false;
     return components.every((component) => {
       const base = resolveMasterMorph(component.morphId);
       return Boolean(base && isCalculatorEligible(base));
-    }) && (morph.evidenceStatus === "confirmed" || morph.sourceLabel === "Tiny Titans Western Hognose genetics resolver");
+    }) && (morph.kind === "Super" ? true : morph.evidenceStatus === "confirmed" || morph.sourceLabel === "Tiny Titans Western Hognose genetics resolver");
   }
   return false;
 }
@@ -189,15 +172,9 @@ export function getMasterVisualMorphs(): MasterMorphDefinition[] {
   );
 }
 
-export function getMasterCalculatorMorphs(): MasterMorphDefinition[] {
-  return masterMorphs.filter(isCalculatorEligible);
-}
+export function getMasterCalculatorMorphs(): MasterMorphDefinition[] { return masterMorphs.filter(isCalculatorEligible); }
 
-export function getMorphEvidence(morph: MasterMorphDefinition): {
-  status: string;
-  note?: string;
-  sources: MorphEvidenceSourceDefinition[];
-} {
+export function getMorphEvidence(morph: MasterMorphDefinition): { status: string; note?: string; sources: MorphEvidenceSourceDefinition[] } {
   const evidence = morphSourceAuditByName.get(normalise(morph.name));
   return {
     status: evidence?.status ?? morph.evidenceStatus ?? "unknown",
