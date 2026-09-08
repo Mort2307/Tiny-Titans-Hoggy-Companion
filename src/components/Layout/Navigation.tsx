@@ -4,7 +4,7 @@ import { useAuth } from "../../context/useAuth";
 import { hasCapability } from "../../services/capabilityService";
 import { getCommunityUnreadCount } from "../../services/communityReadStateService";
 import { useEasyNav } from "../../context/EasyNavContext";
-import { quickNavSearchItems, type QuickNavItem } from "../../data/quickNavigation";
+import { quickNavSearchItems, type QuickNavCapability } from "../../data/quickNavigation";
 import communityUpdates from "../../data/communityUpdates.json";
 import "./Navigation.css";
 
@@ -80,28 +80,21 @@ function Navigation() {
   if (creatorAuthorized) restricted.push({ label: "Creator", links: [["/creator", "⚒", "Creator Centre"], ["/creator/morph-library", "🖼️", "Morph Library Editor"], ["/creator/community", "◈", "Community Manager"], ["/creator/mentor-review", "↔", "Mentor Review"]] });
   if (testerAuthorized) restricted.push({ label: "Testing", links: [["/creator/tester", "◇", "Tester Centre"]] });
 
-  const quickRestrictedItems: QuickNavItem[] = [
-    ...(educatorAuthorized ? [{ id: "educator", label: "Educator Centre", icon: "▣", path: "/educator", group: "Educator", description: "Teaching and classroom tools." }] : []),
-    ...(creatorAuthorized ? [
-      { id: "creator", label: "Creator Centre", icon: "⚒", path: "/creator", group: "Creator", description: "Creator administration and tools." },
-      { id: "creator-morph", label: "Morph Library Editor", icon: "🖼️", path: "/creator/morph-library", group: "Creator", description: "Review and manage morph submissions." },
-      { id: "creator-community", label: "Community Manager", icon: "◈", path: "/creator/community", group: "Creator", description: "Publish official Community Hub content." },
-      { id: "creator-mentor", label: "Mentor Review", icon: "↔", path: "/creator/mentor-review", group: "Creator", description: "Review mentor applications." },
-    ] : []),
-    ...(testerAuthorized ? [{ id: "tester", label: "Tester Centre", icon: "◇", path: "/creator/tester", group: "Testing", description: "Tester tools and focused test flows." }] : []),
-  ];
-  const quickSearchMatches = quickNavSearchItems(quickSearch);
-  const quickItems = [...quickSearchMatches, ...quickRestrictedItems.filter((item) => !quickSearchMatches.some((candidate) => candidate.id === item.id))];
-  const quickGroups = quickItems.reduce<Record<string, QuickNavItem[]>>((groups, item) => { (groups[item.group] ??= []).push(item); return groups; }, {});
+  const authorisedCapabilities = new Set<QuickNavCapability>(["everyone"]);
+  if (creatorAuthorized) authorisedCapabilities.add("creator");
+  if (testerAuthorized) authorisedCapabilities.add("tester");
+  if (educatorAuthorized) authorisedCapabilities.add("educator");
+  const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities);
+  const quickGroups = quickItems.reduce<Record<string, typeof quickItems>>((groups, item) => { (groups[item.group] ??= []).push(item); return groups; }, {});
 
   const renderLink = ([to, icon, label]: NavigationLink) => <li className="app-navigation-item" key={to}><NavLink to={to} end={to === "/"} onClick={() => setMoreOpen(false)} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true">{icon}</span><span className="app-navigation-label">{label}</span>{to === "/community" && (communityUnreadCount > 0 || unseenProductUpdate) && <span className="community-unread-dot" aria-label="New Community Hub updates" title="New Community Hub updates" />}</NavLink></li>;
 
   if (isEasyNav) {
     const openMore = () => setMoreOpen((current) => !current);
-    const openQuickItem = (item: QuickNavItem) => { setMoreOpen(false); setQuickSearch(""); navigate(item.path); };
+    const openQuickItem = (path: string) => { setMoreOpen(false); setQuickSearch(""); navigate(path); };
     return <>
       <nav className="app-navigation tt-easy-nav-strip" aria-label="Quick Mode navigation"><div className="tt-easy-nav-inner"><NavLink to="/" end className="tt-easy-nav-link"><span>🏠</span><small>At a Glance</small></NavLink><NavLink to="/snakes" className="tt-easy-nav-link"><span>🐍</span><small>My Snakes</small></NavLink><NavLink to="/reminders" className="tt-easy-nav-link"><span>🔔</span><small>Due</small></NavLink><button type="button" className={`tt-easy-nav-link tt-easy-nav-more${moreOpen ? " active" : ""}`} onClick={openMore} aria-expanded={moreOpen} aria-controls="tt-easy-more-menu"><span>☰</span><small>Everything</small></button></div></nav>
-      {moreOpen && <div className="tt-easy-more-backdrop" role="presentation" onClick={() => setMoreOpen(false)}><section id="tt-easy-more-menu" className="tt-easy-more" role="dialog" aria-modal="true" aria-label="Quick Mode full app navigation" onClick={(event) => event.stopPropagation()}><div className="tt-easy-more-head"><div><span>QUICK MODE · FULL APP</span><h2>Everything in Tiny Titans</h2><p>Quick Mode changes how you navigate — it never removes a feature.</p></div><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close full navigation">×</button></div><label className="tt-easy-search"><span aria-hidden="true">⌕</span><input value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="Find anything in Tiny Titans…" aria-label="Search the full Tiny Titans app" autoFocus /></label>{Object.entries(quickGroups).map(([group, items]) => <section className="tt-easy-more-group" key={group}><h3>{group}</h3><div className="tt-easy-more-grid">{items.map((item) => <button type="button" className="tt-easy-feature-link" key={item.id} onClick={() => openQuickItem(item)}><span className="app-navigation-icon" aria-hidden="true">{item.icon}</span><span><strong>{item.label}</strong><small>{item.description}</small></span></button>)}</div></section>)}{quickItems.length === 0 && <div className="tt-easy-no-results"><strong>Nothing matched.</strong><span>Try a broader search such as feeding, genetics, community or account.</span></div>}<div className="tt-easy-more-foot"><button type="button" onClick={() => { setMoreOpen(false); navigate("/account/personalise?quick-mode=1"); }}>⚡ Customise Quick Mode</button></div></section></div>}
+      {moreOpen && <div className="tt-easy-more-backdrop" role="presentation" onClick={() => setMoreOpen(false)}><section id="tt-easy-more-menu" className="tt-easy-more" role="dialog" aria-modal="true" aria-label="Quick Mode full app navigation" onClick={(event) => event.stopPropagation()}><div className="tt-easy-more-head"><div><span>QUICK MODE · FULL APP</span><h2>Everything in Tiny Titans</h2><p>Quick Mode changes how you navigate — it never removes a feature.</p></div><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close full navigation">×</button></div><label className="tt-easy-search"><span aria-hidden="true">⌕</span><input value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="Find anything in Tiny Titans…" aria-label="Search the full Tiny Titans app" autoFocus /></label>{Object.entries(quickGroups).map(([group, items]) => <section className="tt-easy-more-group" key={group}><h3>{group}</h3><div className="tt-easy-more-grid">{items.map((item) => <button type="button" className="tt-easy-feature-link" key={item.id} onClick={() => openQuickItem(item.path)}><span className="app-navigation-icon" aria-hidden="true">{item.icon}</span><span><strong>{item.label}</strong><small>{item.description}</small></span></button>)}</div></section>)}{quickItems.length === 0 && <div className="tt-easy-no-results"><strong>Nothing matched.</strong><span>Try a broader search such as feeding, genetics, community or account.</span></div>}<div className="tt-easy-more-foot"><button type="button" onClick={() => { setMoreOpen(false); navigate("/account/personalise?quick-mode=1"); }}>⚡ Customise Quick Mode</button></div></section></div>}
     </>;
   }
 
