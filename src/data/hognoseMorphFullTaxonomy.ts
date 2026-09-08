@@ -103,7 +103,7 @@ const namedCombinations = [
   "Skullface Albino Lemon Ghost Anaconda", "Woma Lemon Ghost Albino Anaconda", "Savannah Anaconda", "Savannah Albino Anaconda",
   "Symphony Superarctic Anaconda", "Pastel Axanthic Anaconda", "Vanilla Cherry Superconda", "ATOM",
   "Gaverth Green Lemon Ghost", "Lavender Oxide", "Toffee Frosted", "Lemon Ghost Albino Arctic Anaconda", "Paint Maker Anaconda",
-  "Cinnamon Lemon Ghost Extreme Red Anaconda", "Extreme Red Tomato Lemon Ghost Anaconda", "Sunburst Cinnamon Anaconda",
+  "Cinnamon Lemon Ghost Extreme Red Anaconda", "Extreme Red Tomato Lemon Ghost Anaconda", "Sunburst Cinnamon Anaconda", "Sable Cinnamon Anaconda",
 ] as const;
 
 const manualCombinationComponents: Record<string, FullMorphTaxonomyEntry["components"]> = {
@@ -147,9 +147,14 @@ const manualCombinationComponents: Record<string, FullMorphTaxonomyEntry["compon
   ],
   "Sunburst Cinnamon Anaconda": [
     { morphId: "albino", type: "Gene", copies: 2 },
-    { morphId: "sable", type: "Gene", copies: 2 },
     { morphId: "cinnamon", type: "Gene", copies: 1 },
     { morphId: "conda", type: "Gene", copies: 1 },
+    { morphId: "sable", type: "Gene", copies: 2 },
+  ],
+  "Sable Cinnamon Anaconda": [
+    { morphId: "cinnamon", type: "Gene", copies: 1 },
+    { morphId: "conda", type: "Gene", copies: 1 },
+    { morphId: "sable", type: "Gene", copies: 2 },
   ],
 };
 
