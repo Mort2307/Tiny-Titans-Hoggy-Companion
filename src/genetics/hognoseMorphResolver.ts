@@ -103,7 +103,7 @@ function withCopies(base: HognoseComponent, copies: 1 | 2, kind: HognoseComponen
 const NAMED: Array<{ name: string; aliases?: string[]; components: HognoseComponent[]; sourceUrls: string[]; notes?: string[] }> = [
   { name: "Grey Fog", aliases: ["Arctic Conda", "Arctic Anaconda"], components: [withCopies(findGene("arctic")!, 1, "gene"), withCopies(findGene("conda")!, 1, "gene")], sourceUrls: [HOGNOSE_MORPHS, HOGNOSE_HUB_GUIDE] },
   { name: "Platinum", aliases: ["Arctic Superconda", "Arctic Super Conda"], components: [withCopies(findGene("arctic")!, 1, "gene"), withCopies(findGene("conda")!, 2, "super")], sourceUrls: [HOGNOSE_MORPHS, HOGNOSE_HUB_GUIDE] },
-  { name: "Moonstruck", aliases: ["Arctic Conda Lavender", "Lavender Arctic Conda"], components: [withCopies(findGene("lavender")!, 2, "gene"), withCopies(findGene("arctic")!, 1, "gene"), withCopies(findGene("conda")!, 1, "gene")], sourceUrls: [HOGNOSE_MORPHS] },
+  { name: "Moonstruck", aliases: ["Arctic Conda Lavender", "Lavender Arctic Conda"], components: [withCopies(findGene("lavender")!, 2, "gene"), withCopies(findGene("arctic")!, 1, "gene"), withCopies(findGene("conda")!, 1, "gene")], sourceUrls: [HOGNOSE_MORPHS], notes: ["Canonical component formula: Lavender x2 + Arctic x1 + Conda x1."] },
   { name: "Subzero", components: [withCopies(findGene("albino")!, 2, "gene"), withCopies(findGene("arctic")!, 2, "super")], sourceUrls: [HOGNOSE_MORPHS] },
   { name: "Bub's Daddy", aliases: ["Bubs Daddy", "Bub’s Daddy"], components: [withCopies(findGene("albino")!, 2, "gene"), withCopies(findGene("arctic")!, 2, "super"), withCopies(findGene("conda")!, 1, "gene")], sourceUrls: [HOGNOSE_MORPHS] },
   { name: "Super Daddy", aliases: ["Super AAA"], components: [withCopies(findGene("albino")!, 2, "gene"), withCopies(findGene("arctic")!, 2, "super"), withCopies(findGene("conda")!, 2, "super")], sourceUrls: [HOGNOSE_MORPHS] },
@@ -197,7 +197,7 @@ export function resolveHognoseMorphInput(query: string): HognoseMorphResolution 
     signature: signature(named.components),
     confidence: "high",
     sourceUrls: named.sourceUrls,
-    notes: named.notes ?? [],
+    notes: named.notes ?? [`Named combination resolved as ${named.components.map((component) => `${component.name} x${component.copies}`).join(" + ")}.`],
   };
 
   const parsed = parseTokens(input);
