@@ -4,20 +4,22 @@ import { resolveHognoseMorphInput } from "../genetics/hognoseMorphResolver.ts";
 export type FullMorphTaxonomyEntry = MorphDefinition & {
   sourceUrl?: string;
   sourceLabel?: string;
+  sourceClaim?: string;
+  sourceSnapshotDate?: string;
   taxonomyStatus?: "documented" | "regional" | "community" | "historical";
 };
 
+const SOURCE_SNAPSHOT_DATE = "2026-09-08";
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const HOGNOSE_MORPHS = "https://hognose-morphs.com/morphs/all";
 const HOGNOSE_POLYGENIC = "https://hognose-morphs.com/morphs/polygenic";
-const REPTIFIT = "https://www.reptifit.nl/en/collection";
 const REPTINODE = "https://reptinode.fr/en/genetics/heterodon-nasicus";
 
 const entry = (
   name: string,
   kind: MorphDefinition["kind"],
   inheritance: MorphDefinition["inheritance"] = "Unknown",
-  options: Partial<Pick<FullMorphTaxonomyEntry, "aliases" | "components" | "description" | "educationalNotes" | "verification" | "hetPossible" | "sourceUrl" | "sourceLabel" | "taxonomyStatus">> = {},
+  options: Partial<Pick<FullMorphTaxonomyEntry, "aliases" | "components" | "description" | "educationalNotes" | "verification" | "hetPossible" | "sourceUrl" | "sourceLabel" | "sourceClaim" | "sourceSnapshotDate" | "taxonomyStatus">> = {},
 ): FullMorphTaxonomyEntry => {
   const inferred = kind === "Combination" ? resolveHognoseMorphInput(name) : undefined;
   const inferredComponents = inferred?.confidence !== "unresolved" && inferred?.components.length ? inferred.components.map((component) => ({
@@ -40,6 +42,8 @@ const entry = (
     educationalNotes: options.educationalNotes ?? (inferred?.notes.join(" ") || "Reference taxonomy entry. Confirm lineage and genetic structure before treating this as a confirmed Mendelian locus."),
     sourceUrl: options.sourceUrl,
     sourceLabel: options.sourceLabel,
+    sourceClaim: options.sourceClaim ?? (options.sourceUrl?.includes("hognose-morphs.com") ? `${name} is listed by the source catalogue; Tiny Titans records the source claim and does not independently adjudicate breeder nomenclature.` : undefined),
+    sourceSnapshotDate: options.sourceSnapshotDate ?? SOURCE_SNAPSHOT_DATE,
     taxonomyStatus: options.taxonomyStatus ?? "documented",
     aliases: options.aliases,
     components: options.components ?? inferredComponents,
@@ -121,20 +125,24 @@ export const fullHognoseMorphTaxonomy: FullMorphTaxonomyEntry[] = [
   ...geneNames.map(([name, inheritance]) => entry(name, "Gene", inheritance, {
     sourceUrl: HOGNOSE_MORPHS,
     sourceLabel: "Hognose Morphs / Tiny Titans master reference",
+    sourceClaim: `${name} is listed by the current Hognose Morphs catalogue; Tiny Titans records the source claim without treating the name as independently validated.",
   })),
   ...lineNames.map((name) => entry(name, "Polygenic", "Polygenic", {
     sourceUrl: HOGNOSE_POLYGENIC,
     sourceLabel: "Hognose Morphs polygenic catalogue",
+    sourceClaim: `${name} is listed in the Hognose Morphs polygenic catalogue; Tiny Titans preserves the source classification as a source record.`,
     taxonomyStatus: "documented",
   })),
   ...namedCombinations.map((name) => entry(name, "Combination", "Unknown", {
     sourceUrl: HOGNOSE_MORPHS,
     sourceLabel: "Hognose Morphs current named-combination catalogue",
+    sourceClaim: `${name} is listed by the current Hognose Morphs catalogue; the linked source page is the authority for the recorded name and source-described components.`,
     components: manualCombinationComponents[name],
   })),
   ...unverifiedNamedTerms.map((name) => entry(name, "Project", "Unknown", {
     sourceUrl: REPTINODE,
     sourceLabel: "ReptiNode named-term index",
+    sourceClaim: `${name} is preserved as a community/reference term; Tiny Titans does not promote it to confirmed genetics.`,
     verification: "Unverified",
     taxonomyStatus: "community",
     description: `Named Western Hognose term encountered in community/reference indexing: ${name}. Tiny Titans preserves the name for search and correction workflows but does not treat it as confirmed genetics.`,
