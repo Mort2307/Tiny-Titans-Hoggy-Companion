@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getCreatorUserDirectory, getCreatorUserDisplayNames, type CreatorUserDirectoryEntry } from "../services/creatorUserDirectoryService";
@@ -70,8 +70,12 @@ export default function MessagesPage({ creatorMode = false }: { creatorMode?: bo
   const [initialising, setInitialising] = useState(false);
   const replyRef = useRef<HTMLTextAreaElement | null>(null);
   const actualCreatorMode = creatorMode && profile?.role === "admin";
+  const recipientUid = searchParams.get("recipientUid");
+  const submissionId = searchParams.get("submissionId");
+  const submissionType = searchParams.get("submissionType") as Exclude<SubmissionConversationType, "direct"> | null;
+  const submissionTitle = searchParams.get("submissionTitle") || "Submission conversation";
 
-  const loadThreads = async () => {
+  const loadThreads = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     setError("");
@@ -95,12 +99,12 @@ export default function MessagesPage({ creatorMode = false }: { creatorMode?: bo
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, actualCreatorMode]);
 
   useEffect(() => {
     if (!user) return;
     void loadThreads();
-  }, [user, actualCreatorMode]);
+  }, [user, loadThreads]);
 
   useEffect(() => {
     const target = searchParams.get("thread");
@@ -110,10 +114,6 @@ export default function MessagesPage({ creatorMode = false }: { creatorMode?: bo
   }, [searchParams, threads]);
 
   useEffect(() => {
-    const recipientUid = searchParams.get("recipientUid");
-    const submissionId = searchParams.get("submissionId");
-    const submissionType = searchParams.get("submissionType") as Exclude<SubmissionConversationType, "direct"> | null;
-    const submissionTitle = searchParams.get("submissionTitle") || "Submission conversation";
     if (!user || !actualCreatorMode || !recipientUid || !submissionId || !submissionType || !Object.prototype.hasOwnProperty.call(labels, submissionType)) return;
     let active = true;
     setInitialising(true);
@@ -127,7 +127,7 @@ export default function MessagesPage({ creatorMode = false }: { creatorMode?: bo
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "The conversation could not be opened."); })
       .finally(() => { if (active) setInitialising(false); });
     return () => { active = false; };
-  }, [user, actualCreatorMode, searchParams.get("recipientUid"), searchParams.get("submissionId"), searchParams.get("submissionType")]);
+  }, [user, actualCreatorMode, recipientUid, submissionId, submissionType, submissionTitle, loadThreads]);
 
   useEffect(() => {
     if (!selected || !user) {
