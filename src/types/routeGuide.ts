@@ -3,6 +3,7 @@ export type RouteGuideStep = {
   target: string;
   title?: string;
   instruction?: string;
+  allowSkipIfMissing?: boolean;
 };
 
 export type RouteGuideDefinition = {
