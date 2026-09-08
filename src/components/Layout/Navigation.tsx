@@ -4,7 +4,7 @@ import { useAuth } from "../../context/useAuth";
 import { hasCapability } from "../../services/capabilityService";
 import { getCommunityUnreadCount } from "../../services/communityReadStateService";
 import { useEasyNav } from "../../context/EasyNavContext";
-import { QUICK_NAV_ITEMS, quickNavSearchItems, type QuickNavItem } from "../../data/quickNavigation";
+import { quickNavSearchItems, type QuickNavItem } from "../../data/quickNavigation";
 import communityUpdates from "../../data/communityUpdates.json";
 import "./Navigation.css";
 
