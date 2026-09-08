@@ -35,25 +35,27 @@ export default function TitanThisWeek({ snakes, selectedSnake }: Props) {
   }, []);
 
   const range = useMemo(() => getCurrentTitanWeek(referenceDate, weekStartDay), [referenceDate, weekStartDay]);
-  const scopedSnakes = selectedSnake ? [selectedSnake] : snakes;
 
-  const views = useMemo<MetricView[]>(() => weeklyMetrics.map((metric) => {
-    const option = TITAN_WEEKLY_METRIC_OPTIONS.find((item) => item.id === metric)!;
-    if (metric === "reminders") return { id: metric, label: option.label, icon: option.icon, value: "Review", detail: "Open current reminders" };
-    if (metric === "intelligence") return { id: metric, label: option.label, icon: option.icon, value: "Live", detail: "Open current intelligence" };
-    const count = scopedSnakes.reduce((sum, snake) => {
-      switch (metric) {
-        case "feed": return sum + getRecordCountForWeek(snake.feedingHistory, range);
-        case "weight": return sum + getRecordCountForWeek(snake.weightHistory, range);
-        case "shed": return sum + getRecordCountForWeek(snake.shedHistory, range);
-        case "health": return sum + getRecordCountForWeek(snake.healthHistory, range);
-        case "behaviour": return sum + getRecordCountForWeek(snake.timeline?.filter((event) => event.type === "Behaviour"), range);
-        case "breeding": return sum + getRecordCountForWeek(snake.breedingHistory?.map((item) => ({ date: item.pairingDate })), range);
-        default: return sum;
-      }
-    }, 0);
-    return { id: metric, label: option.label, icon: option.icon, value: String(count), detail: count === 1 ? "record this week" : "records this week" };
-  }), [weeklyMetrics, scopedSnakes, range]);
+  const views = useMemo<MetricView[]>(() => {
+    const scopedSnakes = selectedSnake ? [selectedSnake] : snakes;
+    return weeklyMetrics.map((metric) => {
+      const option = TITAN_WEEKLY_METRIC_OPTIONS.find((item) => item.id === metric)!;
+      if (metric === "reminders") return { id: metric, label: option.label, icon: option.icon, value: "Review", detail: "Open current reminders" };
+      if (metric === "intelligence") return { id: metric, label: option.label, icon: option.icon, value: "Live", detail: "Open current intelligence" };
+      const count = scopedSnakes.reduce((sum, snake) => {
+        switch (metric) {
+          case "feed": return sum + getRecordCountForWeek(snake.feedingHistory, range);
+          case "weight": return sum + getRecordCountForWeek(snake.weightHistory, range);
+          case "shed": return sum + getRecordCountForWeek(snake.shedHistory, range);
+          case "health": return sum + getRecordCountForWeek(snake.healthHistory, range);
+          case "behaviour": return sum + getRecordCountForWeek(snake.timeline?.filter((event) => event.type === "Behaviour"), range);
+          case "breeding": return sum + getRecordCountForWeek(snake.breedingHistory?.map((item) => ({ date: item.pairingDate })), range);
+          default: return sum;
+        }
+      }, 0);
+      return { id: metric, label: option.label, icon: option.icon, value: String(count), detail: count === 1 ? "record this week" : "records this week" };
+    });
+  }, [weeklyMetrics, selectedSnake, snakes, range]);
 
   const totalRecords = views.reduce((sum, item) => sum + (item.id === "reminders" || item.id === "intelligence" ? 0 : Number(item.value)), 0);
   const scopeLabel = selectedSnake ? selectedSnake.name : "all Tiny Titans";
