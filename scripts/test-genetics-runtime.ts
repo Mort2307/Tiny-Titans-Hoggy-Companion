@@ -48,7 +48,9 @@ assert(greyFogGenome.genome.states.some((state) => state.locusId === arctic.id) 
 const parentA: ParentGenome = { species: "Heterodon nasicus", states: [{ locusId: arctic.id, paternalAlleleId: "arctic", maternalAlleleId: "wild" }, { locusId: conda.id, paternalAlleleId: "conda", maternalAlleleId: "wild" }] };
 const parentB: ParentGenome = { species: "Heterodon nasicus", states: [] };
 const completed = calculateGenome(hogDatabase, parentA, parentB);
-assert(completed.length === 2, "missing parent loci are completed with wild type");
+assert(completed.length === hogDatabase.loci.length, "calculateGenome covers every registered Hognose locus");
+const missingLocus = completed.find((result) => result.locus.id !== arctic.id && result.locus.id !== conda.id);
+assert(missingLocus?.outcomes.some((outcome) => outcome.phenotypeStatus === "wild_type" && outcome.probability === 1), "missing parent loci are completed with wild type");
 
 const hognoseInput = (female: GeneticsCalculatorInput["female"], male: GeneticsCalculatorInput["male"]): GeneticsCalculatorInput => ({ female, male });
 const knownHetero = hognoseInput({ morphs: ["arctic"], hets: [], knownGeneCopies: { arctic: 1 } }, { morphs: [], hets: [] });
