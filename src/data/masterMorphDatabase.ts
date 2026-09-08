@@ -6,6 +6,7 @@ import { resolveRegionalMorphName } from "./morphRegionalTerminology";
 import { morphSourceAuditByName } from "./morphSourceAudit";
 import { resolveMorphEvidenceSources, type MorphEvidenceSourceDefinition } from "./morphEvidenceSources";
 import { enrichMorphDatabase, type MorphIntelligenceMetadata, type MorphEvidenceLevel } from "./morphIntelligence";
+import { resolveHognoseMorphInput } from "../genetics/hognoseMorphResolver.ts";
 
 export type MasterMorphDefinition = MorphDefinition & MorphIntelligenceMetadata & {
   sourceUrl?: string;
@@ -91,6 +92,38 @@ const mergedMorphs = mergeMorphs(
 
 export const masterMorphs: MasterMorphDefinition[] = enrichMorphDatabase(mergedMorphs) as MasterMorphDefinition[];
 
+function parsedHognoseMorph(value: string): MasterMorphDefinition | undefined {
+  if (!value.trim()) return undefined;
+  const parsed = resolveHognoseMorphInput(value);
+  if (!parsed.components.length || parsed.confidence === "unresolved" || parsed.confidence === "limited") return undefined;
+
+  const name = parsed.matchedName ?? value.trim();
+  const signature = parsed.signature;
+  return {
+    geneId: `heterodon-nasicus-${identityKey(name) || signature}`,
+    name,
+    aliases: parsed.aliases,
+    kind: "Combination",
+    isGene: false,
+    isCombination: true,
+    category: "Resolved Genetics",
+    inheritance: "Unknown",
+    hetPossible: false,
+    verification: parsed.confidence === "high" ? "Confirmed" : "Recognised",
+    components: parsed.morphComponents,
+    description: parsed.matchedName
+      ? `${parsed.matchedName} — genetics resolved from the canonical Western Hognose combination registry.`
+      : `Genetic combination parsed from user-entered Western Hognose terminology: ${value.trim()}.`,
+    educationalNotes: [
+      "This record is resolver-generated and does not create a new genetic locus.",
+      ...parsed.notes,
+    ].join(" "),
+    sourceUrl: parsed.sourceUrls[0],
+    sourceLabel: "Tiny Titans Western Hognose genetics resolver",
+    sourceLinks: parsed.sourceUrls.map((url) => ({ url, label: url.includes("hognosehub.com") ? "Hognose Hub" : "Hognose Morphs" })),
+  };
+}
+
 export function resolveMasterMorph(value: string): MasterMorphDefinition | undefined {
   const query = identityKey(value);
   const regionalId = resolveRegionalMorphName(value);
@@ -98,12 +131,13 @@ export function resolveMasterMorph(value: string): MasterMorphDefinition | undef
     const regional = masterMorphs.find((morph) => identityKey(morph.geneId) === identityKey(regionalId));
     if (regional) return regional;
   }
-  return masterMorphs.find((morph) =>
+  const exact = masterMorphs.find((morph) =>
     identityKey(morph.geneId) === query ||
     identityKey(morph.name) === query ||
     (morph.aliases ?? []).some((alias) => identityKey(alias) === query) ||
     (morph.searchTerms ?? []).some((term) => identityKey(term) === query),
   );
+  return exact ?? parsedHognoseMorph(value);
 }
 
 export function getMasterMorphByGeneId(geneId: string): MasterMorphDefinition | undefined {
@@ -118,7 +152,7 @@ export function getMasterMorphByName(name: string): MasterMorphDefinition | unde
 }
 
 function hasConfirmedEvidence(morph: MasterMorphDefinition): boolean {
-  return morph.evidenceStatus === "confirmed" || morph.verification === "Confirmed";
+  return morph.evidenceStatus === "confirmed" || morph.verification === "Confirmed" || morph.sourceLabel === "Tiny Titans Western Hognose genetics resolver";
 }
 
 function isCalculatorEligible(morph: MasterMorphDefinition): boolean {
@@ -139,7 +173,7 @@ function isCalculatorEligible(morph: MasterMorphDefinition): boolean {
     return components.every((component) => {
       const base = resolveMasterMorph(component.morphId);
       return Boolean(base && isCalculatorEligible(base));
-    }) && morph.evidenceStatus === "confirmed";
+    }) && (morph.evidenceStatus === "confirmed" || morph.sourceLabel === "Tiny Titans Western Hognose genetics resolver");
   }
   return false;
 }
