@@ -102,7 +102,8 @@ const namedCombinations = [
   "Super Avalanche", "Ultramel Sable Arctic Anaconda", "Albino Skullface Arctic Anaconda", "Albino Skullface Superconda",
   "Skullface Albino Lemon Ghost Anaconda", "Woma Lemon Ghost Albino Anaconda", "Savannah Anaconda", "Savannah Albino Anaconda",
   "Symphony Superarctic Anaconda", "Pastel Axanthic Anaconda", "Vanilla Cherry Superconda", "ATOM",
-  "Gaverth Green Lemon Ghost", "Lavender Oxide",
+  "Gaverth Green Lemon Ghost", "Lavender Oxide", "Toffee Frosted", "Lemon Ghost Albino Arctic Anaconda", "Paint Maker Anaconda",
+  "Cinnamon Lemon Ghost Extreme Red Anaconda", "Extreme Red Tomato Lemon Ghost Anaconda",
 ] as const;
 
 const manualCombinationComponents: Record<string, FullMorphTaxonomyEntry["components"]> = {
@@ -115,6 +116,35 @@ const manualCombinationComponents: Record<string, FullMorphTaxonomyEntry["compon
     { morphId: "lavender", type: "Gene", copies: 2 },
     { morphId: "evans-hypo", type: "Gene", copies: 2 },
   ],
+  "Toffee Frosted": [
+    { morphId: "toffeebelly", type: "Gene", copies: 2 },
+    { morphId: "caramel", type: "Gene", copies: 2 },
+    { morphId: "evans-hypo", type: "Gene", copies: 2 },
+  ],
+  "Lemon Ghost Albino Arctic Anaconda": [
+    { morphId: "albino", type: "Gene", copies: 2 },
+    { morphId: "arctic", type: "Gene", copies: 1 },
+    { morphId: "conda", type: "Gene", copies: 1 },
+    { morphId: "lemon-ghost", type: "Polygenic", copies: 1 },
+  ],
+  "Paint Maker Anaconda": [
+    { morphId: "toffeebelly", type: "Gene", copies: 2 },
+    { morphId: "conda", type: "Gene", copies: 1 },
+    { morphId: "lemon-ghost", type: "Polygenic", copies: 1 },
+  ],
+  "Cinnamon Lemon Ghost Extreme Red Anaconda": [
+    { morphId: "cinnamon", type: "Gene", copies: 1 },
+    { morphId: "conda", type: "Gene", copies: 1 },
+    { morphId: "lemon-ghost", type: "Polygenic", copies: 1 },
+    { morphId: "extreme-red", type: "Polygenic", copies: 1 },
+  ],
+  "Extreme Red Tomato Lemon Ghost Anaconda": [
+    { morphId: "albino", type: "Gene", copies: 2 },
+    { morphId: "cinnamon", type: "Gene", copies: 1 },
+    { morphId: "conda", type: "Gene", copies: 1 },
+    { morphId: "extreme-red", type: "Polygenic", copies: 1 },
+    { morphId: "lemon-ghost", type: "Polygenic", copies: 1 },
+  ],
 };
 
 const unverifiedNamedTerms = [
@@ -125,7 +155,7 @@ export const fullHognoseMorphTaxonomy: FullMorphTaxonomyEntry[] = [
   ...geneNames.map(([name, inheritance]) => entry(name, "Gene", inheritance, {
     sourceUrl: HOGNOSE_MORPHS,
     sourceLabel: "Hognose Morphs / Tiny Titans master reference",
-    sourceClaim: `${name} is listed by the current Hognose Morphs catalogue; Tiny Titans records the source claim without treating the name as independently validated.",
+    sourceClaim: `${name} is listed by the current Hognose Morphs catalogue; Tiny Titans records the source claim without treating the name as independently validated.`,
   })),
   ...lineNames.map((name) => entry(name, "Polygenic", "Polygenic", {
     sourceUrl: HOGNOSE_POLYGENIC,
@@ -138,6 +168,9 @@ export const fullHognoseMorphTaxonomy: FullMorphTaxonomyEntry[] = [
     sourceLabel: "Hognose Morphs current named-combination catalogue",
     sourceClaim: `${name} is listed by the current Hognose Morphs catalogue; the linked source page is the authority for the recorded name and source-described components.`,
     components: manualCombinationComponents[name],
+    educationalNotes: name === "Extreme Red Tomato Lemon Ghost Anaconda"
+      ? "The source page name contains 'Tomato', but its structured Contains block does not list Tomato. Tiny Titans does not manufacture a Tomato gene; the source-described components are preserved exactly and the naming discrepancy is flagged."
+      : undefined,
   })),
   ...unverifiedNamedTerms.map((name) => entry(name, "Project", "Unknown", {
     sourceUrl: REPTINODE,
