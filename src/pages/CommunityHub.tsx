@@ -5,7 +5,7 @@ import { useRouteGuide } from "../context/RouteGuideContext";
 import { getCommunityPosts } from "../services/communityService";
 import { markCommunityAsRead } from "../services/communityReadStateService";
 import communityUpdates from "../data/communityUpdates.json";
-import { generateCommunityUpdateMessage, type ProductUpdateKind } from "../utils/communityUpdateMessage";
+import { generateCommunityUpdateMessage, type ProductUpdateDefinition, type ProductUpdateKind } from "../utils/communityUpdateMessage";
 import type { CommunityCategory, CommunityPost } from "../types/community";
 import { communityCategoryIcon, communityCategoryLabel } from "../types/community";
 import "../styles/CommunityHub.css";
@@ -39,7 +39,8 @@ function ProductUpdateCard({ update, onOpen, isNew }: { update: typeof community
   const { startGuide } = useRouteGuide();
   const [showDetails, setShowDetails] = useState(false);
   const kind = ("kind" in update ? update.kind : "improvement") as ProductUpdateKind;
-  const generatedMessage = generateCommunityUpdateMessage(update, kind);
+  const updateDefinition: ProductUpdateDefinition = { ...update, kind };
+  const generatedMessage = generateCommunityUpdateMessage(updateDefinition, kind);
   const hasGuide = "routeGuide" in update && update.routeGuide && Array.isArray(update.routeGuide.steps) && update.routeGuide.steps.length > 0;
   return <article className={`community-product-update${isNew ? " community-product-update-new" : ""}`}>
     <div className="community-product-update-head"><div className="community-product-update-icon" aria-hidden="true">{update.icon}</div><div><div className="community-product-update-kicker"><p className="community-eyebrow">WHAT'S NEW · {update.version}</p>{isNew && <span className="community-product-update-new-badge">NEW</span>}</div><h2>{update.title}</h2><p>{update.summary}</p><p className="community-product-update-auto-message">{generatedMessage}</p></div><time>{new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${update.releasedAt}T00:00:00`))}</time></div>
