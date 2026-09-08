@@ -43,9 +43,14 @@ const empty = resolveHognoseMorphInput("NotARealMorph");
 assert(empty.confidence === "unresolved", "Unknown morph names should remain unresolved");
 
 // Source-reconciliation gates: these are currently accessible source-listed entries
-// that were missing from the previous taxonomy snapshot.
+// whose formulas were checked against their live Hognose Morphs source pages.
 assertTaxonomyFormula("Gaverth Green Lemon Ghost", "gaverth-green:1|lemon-ghost:1");
 assertTaxonomyFormula("Lavender Oxide", "evans-hypo:2|lavender:2|sable:2");
+assertTaxonomyFormula("Toffee Frosted", "caramel:2|evans-hypo:2|toffeebelly:2");
+assertTaxonomyFormula("Lemon Ghost Albino Arctic Anaconda", "albino:2|arctic:1|conda:1|lemon-ghost:1");
+assertTaxonomyFormula("Paint Maker Anaconda", "conda:1|lemon-ghost:1|toffeebelly:2");
+assertTaxonomyFormula("Cinnamon Lemon Ghost Extreme Red Anaconda", "conda:1|cinnamon:1|extreme-red:1|lemon-ghost:1");
+assertTaxonomyFormula("Extreme Red Tomato Lemon Ghost Anaconda", "albino:2|conda:1|cinnamon:1|extreme-red:1|lemon-ghost:1");
 assertTaxonomyFormula("Sunburst Cinnamon Anaconda", "albino:2|conda:1|cinnamon:1|sable:2");
 assertTaxonomyFormula("Sunburst Cinnamon Arctic Anaconda", "albino:2|arctic:1|conda:1|cinnamon:1|sable:2");
 assertTaxonomyFormula("Sable Cinnamon Anaconda", "conda:1|cinnamon:1|sable:2");
