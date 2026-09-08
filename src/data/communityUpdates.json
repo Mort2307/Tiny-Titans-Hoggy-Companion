@@ -5,17 +5,18 @@
     "releasedAt": "2026-09-07",
     "kind": "feature",
     "icon": "🥧",
-    "title": "Titan At A Glance + Titan Week",
-    "summary": "Easy Nav is now a persistent keeper mode, with a configurable Titan Pie and a dedicated This Week Command Centre.",
+    "title": "Quick Mode + Titan At A Glance",
+    "summary": "Quick Mode is now a complete optional app experience, with the Titan Pie and This Week Command Centre while Classic Mode remains available.",
     "details": [
-      "Quick Mode reduces navigation density without removing intelligence, records, genetics, reminders or any underlying feature.",
+      "Quick Mode reduces navigation density without removing intelligence, records, genetics, reminders, learning, community or any underlying feature.",
+      "The full Quick Mode toolbox exposes every major app area from one searchable, grouped entry point — specialist Creator, Tester and Educator tools remain permission-aware.",
       "The Titan Pie gives you 4–6 configurable live shortcuts that can be reordered and changed to fit your routine.",
-      "Titan Week now has its own full page with current and historical weeks, configurable week starts, weekly metrics, per-Titan targets and direct actions.",
-      "The command centre uses recorded keeper data and evidence-bound intelligence, so it does not invent missing events or turn trends into diagnoses."
+      "Titan Week has its own full page with current and historical weeks, configurable week starts, weekly metrics, per-Titan targets and direct actions.",
+      "Classic Mode remains available in Personalise Experience for users who prefer the existing navigation model."
     ],
     "whereToFind": [
-      { "label": "Enable Quick Mode", "path": "/account/personalise", "hint": "Personalise Experience → App Experience → Quick Mode" },
-      { "label": "Open Titan Week", "path": "/titan-intelligence/feature/this-week", "hint": "Titan Pie → This Week, or open the dedicated Command Centre" }
+      { "label": "Enable Quick Mode", "path": "/account/personalise", "hint": "My Account → Personalise Experience → App Experience → Quick Mode" },
+      { "label": "Open Titan Week", "path": "/titan-intelligence/feature/this-week", "hint": "Titan Pie → This Week, or the dedicated Titan Week Command Centre" }
     ]
   }
 ]
