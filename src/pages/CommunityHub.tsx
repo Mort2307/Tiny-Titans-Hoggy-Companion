@@ -4,6 +4,7 @@ import { useAuth } from "../context/useAuth";
 import { getCommunityPosts } from "../services/communityService";
 import { markCommunityAsRead } from "../services/communityReadStateService";
 import communityUpdates from "../data/communityUpdates.json";
+import { generateCommunityUpdateMessage, type ProductUpdateKind } from "../utils/communityUpdateMessage";
 import type { CommunityCategory, CommunityPost } from "../types/community";
 import { communityCategoryIcon, communityCategoryLabel } from "../types/community";
 import "../styles/CommunityHub.css";
@@ -75,15 +76,18 @@ function PostCard({ post }: { post: CommunityPost }) {
   );
 }
 
-function ProductUpdateCard({ update, onOpen }: { update: typeof communityUpdates[number]; onOpen: (route: string) => void }) {
+function ProductUpdateCard({ update, onOpen, isNew }: { update: typeof communityUpdates[number]; onOpen: (route: string) => void; isNew: boolean }) {
+  const kind = ("kind" in update ? update.kind : "improvement") as ProductUpdateKind;
+  const generatedMessage = generateCommunityUpdateMessage(update, kind);
   return (
-    <article className="community-product-update">
+    <article className={`community-product-update${isNew ? " community-product-update-new" : ""}`}>
       <div className="community-product-update-head">
         <div className="community-product-update-icon" aria-hidden="true">{update.icon}</div>
         <div>
-          <p className="community-eyebrow">WHAT'S NEW · {update.version}</p>
+          <div className="community-product-update-kicker"><p className="community-eyebrow">WHAT'S NEW · {update.version}</p>{isNew && <span className="community-product-update-new-badge">NEW</span>}</div>
           <h2>{update.title}</h2>
           <p>{update.summary}</p>
+          <p className="community-product-update-auto-message">{generatedMessage}</p>
         </div>
         <time>{new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${update.releasedAt}T00:00:00`))}</time>
       </div>
@@ -102,6 +106,7 @@ export default function CommunityHub() {
   const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState("");
   const [active, setActive] = useState<CommunityCategory | "all">("all");
+  const [isProductUpdateNew, setIsProductUpdateNew] = useState(false);
   const userId = user?.uid;
   const loading = authLoading || profileLoading || Boolean(userId && loadedUserId !== userId);
   const effectiveError = !authLoading && !profileLoading && !userId ? "Please sign in to view the Community Hub." : loadError;
@@ -119,6 +124,14 @@ export default function CommunityHub() {
   useEffect(() => {
     if (authLoading || profileLoading || !userId || loading || effectiveError) return;
     void markCommunityAsRead(userId).then(() => window.dispatchEvent(new Event("community-read-state-changed"))).catch(() => undefined);
+    const latestProductUpdate = [...communityUpdates].sort((a, b) => b.releasedAt.localeCompare(a.releasedAt))[0];
+    if (!latestProductUpdate) return;
+    try {
+      const seen = window.localStorage.getItem("tinytitans:community-product-update:last-seen");
+      setIsProductUpdateNew(seen !== latestProductUpdate.id);
+      window.localStorage.setItem("tinytitans:community-product-update:last-seen", latestProductUpdate.id);
+      window.dispatchEvent(new Event("community-product-update-read"));
+    } catch { /* local storage is a convenience read marker only */ }
   }, [authLoading, profileLoading, userId, loading, effectiveError]);
 
   const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
@@ -126,15 +139,16 @@ export default function CommunityHub() {
   const testerCount = posts.filter((post) => post.category === "tester").length;
   const releaseCount = posts.filter((post) => post.category === "release").length;
   const isAdmin = profile?.role === "admin";
+  const latestProductUpdate = useMemo(() => [...communityUpdates].sort((a, b) => b.releasedAt.localeCompare(a.releasedAt))[0], []);
 
   return (
     <section className="community-page">
-      <header className="community-hero"><div className="community-hero-icon" aria-hidden="true">🌿</div><div className="community-hero-copy"><p className="community-eyebrow">TINY TITANS · COMMUNITY</p><h1>Community Hub</h1><p>A single place for keeper news, shared knowledge, feature voting, mentorship, contributions and official Tiny Titans updates.</p></div>{importantCount > 0 && <span className="community-live-badge">● {importantCount} important</span>}</header>
-      <section className="community-pulse" aria-label="Community pulse"><div><strong>{posts.length}</strong><span>Published updates</span></div><div><strong>{importantCount}</strong><span>Important items</span></div><div><strong>{testerCount}</strong><span>Tester notices</span></div><div><strong>{releaseCount}</strong><span>Release notes</span></div></section>
+      <header className="community-hero"><div className="community-hero-icon" aria-hidden="true">🌿</div><div className="community-hero-copy"><p className="community-eyebrow">TINY TITANS · COMMUNITY</p><h1>Community Hub</h1><p>A single place for keeper news, shared knowledge, feature voting, mentorship, contributions and official Tiny Titans updates.</p></div>{(importantCount > 0 || isProductUpdateNew) && <span className="community-live-badge">● {importantCount + (isProductUpdateNew ? 1 : 0)} new / important</span>}</header>
+      <section className="community-pulse" aria-label="Community pulse"><div><strong>{posts.length + communityUpdates.length}</strong><span>Published updates</span></div><div><strong>{importantCount + (isProductUpdateNew ? 1 : 0)}</strong><span>New / important</span></div><div><strong>{testerCount}</strong><span>Tester notices</span></div><div><strong>{releaseCount + communityUpdates.length}</strong><span>Release updates</span></div></section>
       <section className="community-section-heading"><div><p className="community-eyebrow">GET INVOLVED</p><h2>Help shape Tiny Titans.</h2><p>There are several ways to learn, contribute, share ideas and connect with other keepers.</p></div></section>
       <section className="community-action-grid" aria-label="Community actions">{communityActions.map((action) => <ActionCard key={action.route} action={action} onOpen={navigate} />)}</section>
       <section className="community-standard"><div className="community-standard-icon" aria-hidden="true">🤝</div><div><h2>Keeper-first community.</h2><p>Share knowledge from evidence, ask questions without fear of judgement, protect keeper privacy and help each other learn.</p></div></section>
-      <section className="community-product-updates" aria-label="What's new"><div className="community-section-heading"><div><p className="community-eyebrow">AUTOMATIC PRODUCT UPDATES</p><h2>What's new in Tiny Titans</h2><p>Every published product update is displayed here with the changes and the exact place to find them.</p></div><span className="community-update-system-badge">● Live from release registry</span></div><div className="community-product-update-list-wrapper">{[...communityUpdates].sort((a, b) => b.releasedAt.localeCompare(a.releasedAt)).map((update) => <ProductUpdateCard key={update.id} update={update} onOpen={navigate} />)}</div></section>
+      <section className="community-product-updates" aria-label="What's new"><div className="community-section-heading"><div><p className="community-eyebrow">AUTOMATIC PRODUCT UPDATES</p><h2>What's new in Tiny Titans</h2><p>Release registry entries are built into the app. When a new release is deployed, its structured announcement appears here automatically, with generated wording and direct in-app destinations.</p></div><span className="community-update-system-badge">● Release registry connected</span></div><div className="community-product-update-list-wrapper">{[...communityUpdates].sort((a, b) => b.releasedAt.localeCompare(a.releasedAt)).map((update) => <ProductUpdateCard key={update.id} update={update} onOpen={navigate} isNew={Boolean(latestProductUpdate && update.id === latestProductUpdate.id && isProductUpdateNew)} />)}</div></section>
       <section className="community-section-heading community-updates-heading"><div><p className="community-eyebrow">OFFICIAL FEED</p><h2>{active === "all" ? "Latest from Tiny Titans" : communityCategoryLabel(active)}</h2><p>{active === "all" ? "Official updates, known issues, tester notices and release information." : sections.find((item) => item.category === active)?.description}</p></div>{active !== "all" && <button type="button" className="community-filter-button" onClick={() => setActive("all")}>Show all</button>}</section>
       <div className="community-section-grid">{sections.map((section) => <button key={section.category} type="button" className={`community-section-card ${active === section.category ? "active" : ""}`} onClick={() => setActive(section.category)}><span className="community-section-icon" aria-hidden="true">{communityCategoryIcon(section.category)}</span><span><strong>{communityCategoryLabel(section.category)}</strong><small>{section.description}</small>{section.category === "tester" && testerCount > 0 && <small className="community-section-count">{testerCount} current tester update{testerCount === 1 ? "" : "s"}.</small>}</span></button>)}</div>
       {loading && <div className="community-empty"><span aria-hidden="true">🐍</span><h3>Loading the Hub…</h3><p>Checking for the latest Tiny Titans updates.</p></div>}
