@@ -9,24 +9,14 @@ const errors = [];
 const ids = new Set();
 const versions = new Set();
 
-if (!Array.isArray(updates) || updates.length === 0) {
-  errors.push("Community update registry must contain at least one published update.");
-}
+if (!Array.isArray(updates) || updates.length === 0) errors.push("Community update registry must contain at least one published update.");
 
 for (const [index, update] of (Array.isArray(updates) ? updates : []).entries()) {
   const prefix = `Update #${index + 1}`;
-  for (const field of ["id", "version", "releasedAt", "title", "summary", "icon"]) {
-    if (typeof update?.[field] !== "string" || !update[field].trim()) errors.push(`${prefix}: missing ${field}.`);
-  }
+  for (const field of ["id", "version", "releasedAt", "title", "summary", "icon"]) if (typeof update?.[field] !== "string" || !update[field].trim()) errors.push(`${prefix}: missing ${field}.`);
   if (typeof update?.releasedAt === "string" && Number.isNaN(Date.parse(`${update.releasedAt}T00:00:00`))) errors.push(`${prefix}: releasedAt is not a valid date.`);
-  if (typeof update?.id === "string") {
-    if (ids.has(update.id)) errors.push(`${prefix}: duplicate id ${update.id}.`);
-    ids.add(update.id);
-  }
-  if (typeof update?.version === "string") {
-    if (versions.has(update.version)) errors.push(`${prefix}: duplicate release version ${update.version}.`);
-    versions.add(update.version);
-  }
+  if (typeof update?.id === "string") { if (ids.has(update.id)) errors.push(`${prefix}: duplicate id ${update.id}.`); ids.add(update.id); }
+  if (typeof update?.version === "string") { if (versions.has(update.version)) errors.push(`${prefix}: duplicate release version ${update.version}.`); versions.add(update.version); }
   if (!Array.isArray(update?.details) || update.details.length === 0 || update.details.some((item) => typeof item !== "string" || !item.trim())) errors.push(`${prefix}: details must contain at least one non-empty item.`);
   if (!Array.isArray(update?.whereToFind) || update.whereToFind.length === 0) errors.push(`${prefix}: whereToFind must contain at least one destination.`);
   for (const [destinationIndex, destination] of (Array.isArray(update?.whereToFind) ? update.whereToFind : []).entries()) {
@@ -34,17 +24,27 @@ for (const [index, update] of (Array.isArray(updates) ? updates : []).entries())
     if (typeof destination?.path !== "string" || !destination.path.startsWith("/")) errors.push(`${prefix}: destination #${destinationIndex + 1} needs an in-app path beginning with /.`);
     if (typeof destination?.hint !== "string" || !destination.hint.trim()) errors.push(`${prefix}: destination #${destinationIndex + 1} is missing hint text.`);
   }
+  if (update?.routeGuide !== undefined) {
+    const guide = update.routeGuide;
+    if (!guide || typeof guide !== "object") errors.push(`${prefix}: routeGuide must be an object.`);
+    if (typeof guide?.id !== "string" || !guide.id.trim()) errors.push(`${prefix}: routeGuide is missing id.`);
+    if (typeof guide?.title !== "string" || !guide.title.trim()) errors.push(`${prefix}: routeGuide is missing title.`);
+    if (!Array.isArray(guide?.steps) || guide.steps.length === 0) errors.push(`${prefix}: routeGuide.steps must contain at least one step.`);
+    for (const [stepIndex, step] of (Array.isArray(guide?.steps) ? guide.steps : []).entries()) {
+      if (typeof step?.path !== "string" || !step.path.startsWith("/")) errors.push(`${prefix}: routeGuide step #${stepIndex + 1} needs a path beginning with /.`);
+      if (typeof step?.target !== "string" || !step.target.trim()) errors.push(`${prefix}: routeGuide step #${stepIndex + 1} is missing target.`);
+      if (step?.title !== undefined && typeof step.title !== "string") errors.push(`${prefix}: routeGuide step #${stepIndex + 1} title must be text.`);
+      if (step?.instruction !== undefined && typeof step.instruction !== "string") errors.push(`${prefix}: routeGuide step #${stepIndex + 1} instruction must be text.`);
+    }
+  }
 }
 
 const latest = [...(Array.isArray(updates) ? updates : [])].sort((a, b) => String(b.releasedAt).localeCompare(String(a.releasedAt)))[0];
-if (latest && String(latest.version) !== String(packageJson.version)) {
-  errors.push(`Latest published Community update is version ${latest.version}, but package.json is ${packageJson.version}. Bump the update entry for each shipped release.`);
-}
+if (latest && String(latest.version) !== String(packageJson.version)) errors.push(`Latest published Community update is version ${latest.version}, but package.json is ${packageJson.version}. Bump the update entry for each shipped release.`);
 
 if (errors.length) {
   console.error("Tiny Titans Community update validation FAILED:\n");
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
-
 console.log(`Community update validation passed: ${updates.length} published update${updates.length === 1 ? "" : "s"}; latest version ${latest?.version ?? packageJson.version}.`);
