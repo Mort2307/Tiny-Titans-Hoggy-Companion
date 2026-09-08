@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Snake } from "../types/Snake";
 import type { FoodType, FeedingMethod, FeedingRecord, FeedingResponse } from "../types/Feeding";
@@ -121,7 +121,7 @@ export default function FeedingTracker() {
   const acceptanceRate = feedings.length ? Math.round((counts.Accepted / feedings.length) * 100) : 0;
   const lastFeeding = feedings[0] ?? null;
 
-  function resetForm(nextDiet: SpeciesDiet = diet) {
+  const resetForm = useCallback((nextDiet: SpeciesDiet = diet) => {
     const defaultFood = nextDiet.recommended[0] ?? "Other";
     setEditingId(null);
     setDate(today());
@@ -133,19 +133,18 @@ export default function FeedingTracker() {
     setFeedingMethod("Tongs");
     setResponse("Accepted");
     setNotes("");
-  }
+  }, [diet]);
 
   useEffect(() => {
     if (!user || !selectedSnakeId || loadingFeedings || searchParams.get("action") !== "log") return;
     queueMicrotask(() => {
-      setEditingId(null);
       resetForm(diet);
       setSuccess("🧠 Tiny Titans opened the feeding log because this is the next supported keeper action.");
       requestAnimationFrame(() => document.getElementById("feeding-date")?.focus());
       requestAnimationFrame(() => document.getElementById("feeding-log")?.scrollIntoView({ behavior: "smooth", block: "center" }));
       setSearchParams((current) => { current.delete("action"); return current; }, { replace: true });
     });
-  }, [user, selectedSnakeId, loadingFeedings, searchParams, setSearchParams, diet]);
+  }, [user, selectedSnakeId, loadingFeedings, searchParams, setSearchParams, diet, resetForm]);
 
   function editFeeding(feeding: FeedingRecord) {
     setEditingId(feeding.id);
