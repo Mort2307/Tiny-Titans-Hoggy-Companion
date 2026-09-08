@@ -35,6 +35,7 @@ for (const [index, update] of (Array.isArray(updates) ? updates : []).entries())
       if (typeof step?.target !== "string" || !step.target.trim()) errors.push(`${prefix}: routeGuide step #${stepIndex + 1} is missing target.`);
       if (step?.title !== undefined && typeof step.title !== "string") errors.push(`${prefix}: routeGuide step #${stepIndex + 1} title must be text.`);
       if (step?.instruction !== undefined && typeof step.instruction !== "string") errors.push(`${prefix}: routeGuide step #${stepIndex + 1} instruction must be text.`);
+      if (step?.allowSkipIfMissing !== undefined && typeof step.allowSkipIfMissing !== "boolean") errors.push(`${prefix}: routeGuide step #${stepIndex + 1} allowSkipIfMissing must be boolean.`);
     }
   }
 }
