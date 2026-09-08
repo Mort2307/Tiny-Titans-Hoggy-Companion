@@ -35,7 +35,7 @@ export default function NotificationBridge() {
     if (!inAppNotification) return;
     const timeout = window.setTimeout(() => setInAppNotification(null), 9000);
     return () => window.clearTimeout(timeout);
-  }, [inAppNotification?.id]);
+  }, [inAppNotification]);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
