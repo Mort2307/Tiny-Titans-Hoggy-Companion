@@ -55,6 +55,7 @@
 .tt-at-glance-foot a:hover { background: rgba(255,255,255,.08); }
 
 .tt-at-glance-stage {
+  position: relative;
   display: grid;
   place-items: center;
   padding: .15rem 0 .05rem;
@@ -85,12 +86,104 @@
   transform: scale(1.018);
 }
 
+.tt-at-glance-centre-action { cursor: pointer; outline: none; }
+.tt-at-glance-centre-action .tt-at-glance-centre { transition: transform .16s ease, fill .16s ease, stroke .16s ease; transform-origin: center; }
+.tt-at-glance-centre-action:hover .tt-at-glance-centre,
+.tt-at-glance-centre-action:focus .tt-at-glance-centre,
+.tt-at-glance-centre-action.open .tt-at-glance-centre {
+  fill: rgba(18, 32, 29, 1);
+  stroke: rgba(255,255,255,.28);
+  transform: scale(1.025);
+}
+
 .tt-at-glance-icon { font-size: 18px; }
 .tt-at-glance-label { font-size: 8.5px; font-weight: 800; letter-spacing: .03em; fill: rgba(255,255,255,.84); }
 .tt-at-glance-value { font-size: 8.2px; font-weight: 700; fill: rgba(255,255,255,.62); }
 .tt-at-glance-centre { fill: rgba(7, 13, 12, .98); stroke: rgba(255,255,255,.12); stroke-width: 1.5; }
-.tt-at-glance-centre-icon { font-size: 28px; }
-.tt-at-glance-centre-name { font-size: 10px; font-weight: 850; fill: rgba(255,255,255,.94); }
+.tt-at-glance-centre-icon { font-size: 28px; pointer-events: none; }
+.tt-at-glance-centre-name { font-size: 10px; font-weight: 850; fill: rgba(255,255,255,.94); pointer-events: none; }
+
+.tt-at-glance-snake-picker {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 50%;
+  width: min(290px, calc(100% - 1rem));
+  max-height: min(360px, 70vh);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  padding: .75rem;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  background: rgba(8, 14, 13, .98);
+  box-shadow: 0 20px 55px rgba(0,0,0,.42);
+  backdrop-filter: blur(12px);
+}
+
+.tt-at-glance-snake-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .55rem;
+}
+
+.tt-at-glance-snake-picker-head strong { font-size: .9rem; }
+.tt-at-glance-snake-picker-head button,
+.tt-at-glance-snake-picker-list button {
+  border: 1px solid rgba(255,255,255,.1);
+  color: inherit;
+}
+
+.tt-at-glance-snake-picker-head button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 9px;
+  background: rgba(255,255,255,.05);
+  font-size: 1.1rem;
+}
+
+.tt-at-glance-snake-picker-list { display: grid; gap: .45rem; }
+
+.tt-at-glance-snake-picker-list button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: .55rem;
+  padding: .65rem;
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+  text-align: left;
+}
+
+.tt-at-glance-snake-picker-list button:hover,
+.tt-at-glance-snake-picker-list button.selected {
+  background: rgba(43, 76, 66, .78);
+  border-color: rgba(255,255,255,.2);
+}
+
+.tt-at-glance-snake-picker-list button > span:first-child { font-size: 1.2rem; text-align: center; }
+.tt-at-glance-snake-picker-list button > span:last-child { min-width: 0; }
+.tt-at-glance-snake-picker-list strong,
+.tt-at-glance-snake-picker-list small { display: block; }
+.tt-at-glance-snake-picker-list strong { font-size: .83rem; }
+.tt-at-glance-snake-picker-list small { margin-top: .12rem; opacity: .58; font-size: .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.tt-at-glance-snake-picker-all {
+  display: block;
+  margin-top: .55rem;
+  padding: .55rem .6rem;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+  background: rgba(255,255,255,.025);
+  font-size: .76rem;
+  font-weight: 750;
+}
+
+.tt-at-glance-snake-picker-all:hover { background: rgba(255,255,255,.06); }
 
 .tt-at-glance-foot {
   display: flex;
@@ -117,4 +210,5 @@
   .tt-at-glance p { font-size: .8rem; }
   .tt-at-glance-customise { font-size: .72rem; }
   .tt-at-glance-foot { font-size: .68rem; }
+  .tt-at-glance-snake-picker { width: min(300px, calc(100% - .5rem)); }
 }
