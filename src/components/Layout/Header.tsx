@@ -6,6 +6,7 @@ import { getCreatorSubmissionConversations, getUserSubmissionConversations } fro
 import { getTitanDecisionState, type TitanDecision } from "../../services/titanDecisionStateService";
 import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiveIntelligenceService";
 import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
+import LiveWorldClockBadge from "../LiveWorldClockBadge";
 import "./Header.css";
 
 function Header() {
@@ -44,6 +45,7 @@ function Header() {
         </span>
       </div>
       <div className="app-header-actions">
+        <LiveWorldClockBadge />
         {!creatorMode && decision && <Link className="titan-proactive-header-link" to={decision.destination || `/snakes/${decision.animalId}/master-record`} aria-label={`Tiny Titans noticed something for ${decision.animalName ?? "your Titan"}: ${decision.title}`} title={decision.why}><span aria-hidden="true">⚡</span><span className="titan-proactive-header-copy"><strong>{decision.animalName ?? "Titan"}</strong><small>{decision.title}</small></span></Link>}
         <Link className="submission-mailbox-link" to="/conversations" aria-label={unread > 0 ? `Message Centre, ${unread} unread submission message${unread === 1 ? "" : "s"}` : "Open Message Centre"} title={unread > 0 ? `${unread} unread submission message${unread === 1 ? "" : "s"}` : "Message Centre"}><span aria-hidden="true">💬</span>{unread > 0 && <span className="submission-mailbox-badge" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}</Link>
         <TitanCommandPalette />
