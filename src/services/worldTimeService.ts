@@ -76,7 +76,10 @@ function getSolarState(date: Date): Pick<WorldTimeSnapshot, "utcHour" | "solarDe
   const raDegrees = ((rightAscension * 180 / Math.PI) + 360) % 360;
   const equationOfTimeMinutes = 4 * (((meanLongitude - raDegrees + 540) % 360) - 180);
   const utcMinutes = date.getUTCHours() * 60 + date.getUTCMinutes() + date.getUTCSeconds() / 60;
-  const subsolarLongitude = -((utcMinutes + equationOfTimeMinutes) / 4);
+  // The subsolar longitude is positive east longitude. At 12:00 UTC it is
+  // near 0°, and every hour later the point directly under the Sun moves
+  // roughly 15° west. The previous implementation was 180° out of phase.
+  const subsolarLongitude = (720 - utcMinutes - equationOfTimeMinutes) / 4;
   return {
     utcHour: date.getUTCHours() + date.getUTCMinutes() / 60,
     solarDeclination: declination,
