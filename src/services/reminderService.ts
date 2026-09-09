@@ -68,8 +68,10 @@ function normaliseRecurringReminder(reminder: Reminder, now: Date): Reminder {
 
   for (let guard = 0; guard < 10000; guard += 1) {
     const schedule = nextSchedule(input, occurrenceDate, phase);
-    const scheduledAt = new Date(schedule.at);
-    if (occurrenceDate > today && scheduledAt.getTime() > now.getTime()) {
+    if (occurrenceDate === today && phase === "due") {
+      return { ...reminder, ...input, nextOccurrenceDate: occurrenceDate, nextPhase: phase, nextNotificationAt: schedule.at };
+    }
+    if (occurrenceDate > today && schedule.at && new Date(schedule.at).getTime() > now.getTime()) {
       return { ...reminder, ...input, nextOccurrenceDate: occurrenceDate, nextPhase: phase, nextNotificationAt: schedule.at };
     }
     if (occurrenceDate === today && phase === "lead-up") {
