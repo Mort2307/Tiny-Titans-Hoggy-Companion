@@ -7,7 +7,7 @@ import { getCurrentWorldWeather, getGlobalWorldWeatherField, describeWeatherCode
 import { EARTH_BUMP_TEXTURE_URL, EARTH_DAY_TEXTURE_URL, EARTH_STAR_TEXTURE_URL, type EarthDayNightMaterial, loadEarthDayNightMaterial, updateEarthSun } from "../services/earthDayNight";
 import "../styles/tinyTitansPinnacleGlobe.css";
 
-type GlobeRef = { controls: () => { autoRotate: boolean; autoRotateSpeed: number; enableZoom: boolean; enablePan: boolean; enableDamping: boolean; dampingFactor: number; rotateSpeed: number; zoomSpeed: number }; pointOfView: (view: { lat: number; lng: number; altitude: number }, transitionMs?: number) => void };
+type GlobeRef = { controls: () => { autoRotate: boolean; autoRotateSpeed: number; enableZoom: boolean; enablePan: boolean; enableDamping: boolean; dampingFactor: number; rotateSpeed: number; zoomSpeed: number }; pointOfView: (view: { lat: number; lng: number; altitude: number }, transitionMs?: number) => void; renderer?: () => { setPixelRatio: (ratio: number) => void; outputColorSpace?: unknown } };
 type GlobeArea = PublicCommunityLocation & { isSelf: boolean; kind: "community" };
 type WeatherMap = Record<string, WorldWeather>;
 type WeatherHex = { points: object[]; sumWeight: number; center: { lat: number; lng: number } };
@@ -90,6 +90,8 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
     controls.enableZoom = true; controls.enablePan = false; controls.enableDamping = true;
     controls.dampingFactor = 0.075; controls.autoRotate = false; controls.autoRotateSpeed = 0;
     controls.rotateSpeed = 0.52; controls.zoomSpeed = 0.62;
+    const renderer = globeRef.current?.renderer?.();
+    if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   }, [material]);
 
   useEffect(() => {
@@ -149,8 +151,9 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
     </div>
     <div className={`tt-pinnacle-globe-shell${selected ? "" : " tt-pinnacle-globe-shell-centered"}`}>
       <div className="tt-pinnacle-globe-space">
-        <Globe ref={globeRef as never} width={900} height={520} backgroundColor="rgba(0,0,0,0)" backgroundImageUrl={EARTH_STAR_TEXTURE_URL} globeMaterial={material ?? undefined} globeImageUrl={material ? undefined : EARTH_DAY_TEXTURE_URL} bumpImageUrl={EARTH_BUMP_TEXTURE_URL} showAtmosphere atmosphereColor="#5cc8ff" atmosphereAltitude={0.17}
-          pointsData={globeAreas} pointLat="latitude" pointLng="longitude" pointAltitude={0.035}
+        <Globe ref={globeRef as never} width={900} height={520} backgroundColor="rgba(0,0,0,0)" backgroundImageUrl={EARTH_STAR_TEXTURE_URL} globeMaterial={material ?? undefined} globeImageUrl={material ? undefined : EARTH_DAY_TEXTURE_URL} bumpImageUrl={EARTH_BUMP_TEXTURE_URL} showAtmosphere atmosphereColor="#5cc8ff" atmosphereAltitude={0.19}
+          globeCurvatureResolution={3} rendererConfig={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+          pointsData={globeAreas} pointLat="latitude" pointLng="longitude" pointAltitude={0.035} pointResolution={20}
           pointRadius={(item: object) => { const area = item as GlobeArea; return area.isSelf ? 0.38 : Math.min(0.3, 0.19 + area.memberCount * 0.018); }}
           pointColor={(item: object) => (item as GlobeArea).isSelf ? "#F5B642" : "#4CD7FF"}
           pointLabel={(item: object) => { const area = item as GlobeArea; const currentWeather = weatherFor(area); const weatherLabel = weatherEnabled && currentWeather ? ` · ${Math.round(currentWeather.temperatureC)}°C · ${describeWeatherCode(currentWeather.weatherCode)}` : ""; return `${area.isSelf ? "Creator Pin · " : ""}${area.city} · ${area.country} · ${area.memberCount} Titan${area.memberCount === 1 ? "" : "s"}${weatherLabel}`; }}
@@ -162,8 +165,8 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
           hexTopColor={({ points }: WeatherHex) => weatherColor(points, 0.58)} hexSideColor={({ points }: WeatherHex) => weatherColor(points, 0.28)}
           hexBinMerge={true} hexTransitionDuration={1400}
           hexLabel={({ points }: WeatherHex) => { const samples = points as WorldWeatherFieldPoint[]; const precipitation = samples.reduce((sum, point) => sum + point.precipitationMm, 0) / Math.max(1, samples.length); const cloud = Math.round(samples.reduce((sum, point) => sum + point.cloudCover, 0) / Math.max(1, samples.length)); return `Weather field · cloud cover ${cloud}% · precipitation ${precipitation.toFixed(1)} mm`; }}
-          ringsData={globeAreas.filter((area) => area.isSelf)} ringLat="latitude" ringLng="longitude" ringColor={() => "#F5B642"} ringAltitude={0.045} ringMaxRadius={0.8} ringPropagationSpeed={0.45} ringRepeatPeriod={1800}
-          enablePointerInteraction onGlobeReady={() => { if (ownLocation) globeRef.current?.pointOfView({ lat: ownLocation.latitude, lng: ownLocation.longitude, altitude: 2.05 }, 0); }}
+          ringsData={globeAreas.filter((area) => area.isSelf)} ringLat="latitude" ringLng="longitude" ringColor={() => "#F5B642"} ringAltitude={0.045} ringResolution={96} ringMaxRadius={0.8} ringPropagationSpeed={0.45} ringRepeatPeriod={1800}
+          enablePointerInteraction onGlobeReady={() => { if (ownLocation) globeRef.current?.pointOfView({ lat: ownLocation.latitude, lng: ownLocation.longitude, altitude: 2.05 }, 0); const renderer = globeRef.current?.renderer?.(); if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); }}
         />
         {loading && <div className="tt-pinnacle-status">Loading the global representation…</div>}
         {weatherLoading && weatherEnabled && <div className="tt-pinnacle-weather-status">🌦 Updating live global weather…</div>}
