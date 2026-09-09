@@ -12,6 +12,7 @@ import SpeciesContextBar from "../SpeciesContextBar";
 import SpeciesContextRouteSync from "../SpeciesContextRouteSync";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
 import TitanGlobalNextAction from "../TitanIntelligence/TitanGlobalNextAction";
+import WorldIntelligenceContext from "../WorldIntelligenceContext";
 import SpeciesAwareMorphLibrary from "../../pages/SpeciesAwareMorphLibrary";
 import SpeciesMorphDetail from "../../pages/SpeciesMorphDetail";
 import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
@@ -76,6 +77,7 @@ function LayoutChrome() {
           {!isEasyNav && <SupportNotificationCenter />}
           <div className="tt-page-frame">
             {speciesAware && <SpeciesContextBar />}
+            <WorldIntelligenceContext />
             {!isTitanWeekPage && <TitanAtAGlance />}
             <div className={isEasyNav ? "tt-easy-intelligence" : undefined}>
               <TitanGlobalNextAction />
