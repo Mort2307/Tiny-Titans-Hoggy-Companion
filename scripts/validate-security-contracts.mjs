@@ -6,6 +6,7 @@ const accessService = readFileSync('src/services/intelligenceAccessService.ts', 
 const privacy = readFileSync('src/services/privacyService.ts', 'utf8');
 const communityIntelligence = readFileSync('functions/communityIntelligence.js', 'utf8');
 const communityComments = readFileSync('functions/communityComments.js', 'utf8');
+const publicContributions = readFileSync('functions/publicContributions.js', 'utf8');
 const trackerStats = readFileSync('src/services/trackerStatsService.ts', 'utf8');
 const feedback = readFileSync('functions/intelligenceFeedback.js', 'utf8');
 
@@ -33,6 +34,7 @@ const checks = [
   ['Access service reads the central permission decision', /getIntelligencePermissionDecision\(preferences\)/, accessService],
   ['Community backend requires contribution consent', /hasCommunityConsent\(privacy\)/, communityIntelligence],
   ['Creator aggregation requires current contribution permission', /privacy\.communityContribution !== true/, trackerStats],
+  ['Public community intelligence requires caller permission', /privacy\.communityIntelligence !== true.*community-intelligence-disabled/s, publicContributions],
   ['Comment reads enforce post audience access', /canReadAudience\(request, audience\)/, communityComments],
   ['Comment creation requires messaging consent', /assertMessagingConsent\(request\.auth\.uid\)/, communityComments],
   ['Comment creation is rate limited', /enforceRateLimit\(request\.auth\.uid, 'comment'/, communityComments],
