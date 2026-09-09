@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 import { useAuth } from "./useAuth";
 import app from "../firebase/config";
+import { TINY_TITANS_OWNER_EMAIL } from "../services/capabilityService";
 
 export type EasyNavMode = "standard" | "easy";
 export type WeekStartDay = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -25,9 +26,10 @@ export type TitanAtAGlanceSliceId =
   | "contribution"
   | "goals"
   | "account"
-  | "thisWeek";
+  | "thisWeek"
+  | "creatorCentre";
 
-export const TITAN_AT_A_GLANCE_OPTIONS: Array<{ id: TitanAtAGlanceSliceId; label: string; icon: string; description: string }> = [
+export const TITAN_AT_A_GLANCE_OPTIONS: Array<{ id: TitanAtAGlanceSliceId; label: string; icon: string; description: string; creatorOnly?: boolean }> = [
   { id: "feed", label: "Last Feed", icon: "🍽️", description: "See the latest feeding event and log the next one." },
   { id: "weight", label: "Last Weight", icon: "⚖️", description: "See current weight and open weight recording." },
   { id: "shed", label: "Last Shed", icon: "🐍", description: "See the latest shed status and open Shed Intelligence." },
@@ -47,6 +49,7 @@ export const TITAN_AT_A_GLANCE_OPTIONS: Array<{ id: TitanAtAGlanceSliceId; label
   { id: "contribution", label: "Contribute", icon: "＋", description: "Make a contribution to Tiny Titans." },
   { id: "goals", label: "Titan Goals", icon: "🎯", description: "See your current Titan goals." },
   { id: "account", label: "Account", icon: "⚙️", description: "Open account and personalisation." },
+  { id: "creatorCentre", label: "Creator Centre", icon: "🛠️", description: "Open the private Tiny Titans Creator Centre.", creatorOnly: true },
 ];
 
 export const TITAN_WEEKLY_METRIC_OPTIONS: Array<{ id: TitanWeeklyMetricId; label: string; icon: string; description: string }> = [
@@ -96,9 +99,14 @@ type EasyNavContextValue = {
 
 const EasyNavContext = createContext<EasyNavContextValue | undefined>(undefined);
 
-function sanitiseSlices(value: unknown): TitanAtAGlanceSliceId[] {
+function isCreatorAccount(email: string | null | undefined): boolean {
+  return String(email || "").trim().toLowerCase() === TINY_TITANS_OWNER_EMAIL;
+}
+
+function sanitiseSlices(value: unknown, creatorAccess: boolean): TitanAtAGlanceSliceId[] {
   if (!Array.isArray(value)) return DEFAULT_SLICES;
-  const allowed = new Set<TitanAtAGlanceSliceId>(TITAN_AT_A_GLANCE_OPTIONS.map((option) => option.id));
+  const allowedOptions = TITAN_AT_A_GLANCE_OPTIONS.filter((option) => creatorAccess || !option.creatorOnly);
+  const allowed = new Set<TitanAtAGlanceSliceId>(allowedOptions.map((option) => option.id));
   const result = [...new Set(value.filter((item): item is TitanAtAGlanceSliceId => typeof item === "string" && allowed.has(item as TitanAtAGlanceSliceId)))].slice(0, MAX_SLICES);
   return result.length < MIN_SLICES ? DEFAULT_SLICES : result;
 }
@@ -126,6 +134,8 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
   const [weeklyMetrics, setWeeklyMetricsState] = useState<TitanWeeklyMetricId[]>(DEFAULT_WEEKLY_METRICS);
   const [loading, setLoading] = useState(true);
 
+  const creatorAccess = isCreatorAccount(user?.email);
+
   useEffect(() => {
     let active = true;
     if (!user) {
@@ -144,7 +154,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
       if (preferences && typeof preferences === "object") {
         const record = preferences as Record<string, unknown>;
         setModeState(sanitiseMode(record.mode));
-        setSlicesState(sanitiseSlices(record.slices));
+        setSlicesState(sanitiseSlices(record.slices, creatorAccess));
         setWeekStartDayState(sanitiseWeekStart(record.weekStartDay));
         setWeeklyMetricsState(sanitiseWeeklyMetrics(record.weeklyMetrics));
       } else {
@@ -160,18 +170,18 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
         if (cached) {
           const parsed = JSON.parse(cached) as Record<string, unknown>;
           setModeState(sanitiseMode(parsed.mode));
-          setSlicesState(sanitiseSlices(parsed.slices));
+          setSlicesState(sanitiseSlices(parsed.slices, creatorAccess));
           setWeekStartDayState(sanitiseWeekStart(parsed.weekStartDay));
           setWeeklyMetricsState(sanitiseWeeklyMetrics(parsed.weeklyMetrics));
         }
       } catch { /* local storage is a convenience cache only */ }
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [user]);
+  }, [user, creatorAccess]);
 
   async function persist(nextMode: EasyNavMode, nextSlices: TitanAtAGlanceSliceId[], nextWeekStartDay: WeekStartDay, nextWeeklyMetrics: TitanWeeklyMetricId[]) {
     if (!user) return;
-    const cleanSlices = sanitiseSlices(nextSlices);
+    const cleanSlices = sanitiseSlices(nextSlices, creatorAccess);
     const cleanMetrics = sanitiseWeeklyMetrics(nextWeeklyMetrics);
     setModeState(nextMode);
     setSlicesState(cleanSlices);
