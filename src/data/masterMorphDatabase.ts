@@ -7,6 +7,7 @@ import { morphSourceAuditByName } from "./morphSourceAudit";
 import { resolveMorphEvidenceSources, type MorphEvidenceSourceDefinition } from "./morphEvidenceSources";
 import { enrichMorphDatabase, type MorphIntelligenceMetadata, type MorphEvidenceLevel } from "./morphIntelligence";
 import { resolveHognoseMorphInput } from "../genetics/hognoseMorphResolver.ts";
+import { getHognosePhenotypeGuide } from "./hognosePhenotypeGuide.ts";
 
 export type MasterMorphDefinition = MorphDefinition & MorphIntelligenceMetadata & {
   sourceUrl?: string;
@@ -16,6 +17,7 @@ export type MasterMorphDefinition = MorphDefinition & MorphIntelligenceMetadata 
   evidenceNote?: string;
   contains?: string[];
   taxonomyStatus?: FullMorphTaxonomyEntry["taxonomyStatus"];
+  phenotypeGuide?: ReturnType<typeof getHognosePhenotypeGuide>;
 };
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, " ");
@@ -50,22 +52,47 @@ const morphMarketTraits: MorphReferenceEntry[] = [
   referenceTrait("True Hypo", "Recessive", true), referenceTrait("Yellow Glow")
 ];
 
+function applyPhenotypeGuide(morph: MasterMorphDefinition): MasterMorphDefinition {
+  const guide = getHognosePhenotypeGuide(morph.geneId, morph.components);
+  const visualSummary = `Visual identification: ${guide.visualDescription}`;
+  const identificationSummary = guide.identificationMarkers.length
+    ? `What to look for: ${guide.identificationMarkers.join("; ")}`
+    : "What to look for: no verified marker set is currently published for this entry.";
+  const distinctionSummary = guide.differentiators.length
+    ? `How to distinguish it: ${guide.differentiators.join("; ")}`
+    : "How to distinguish it: use the documented genotype and source provenance.";
+  const variabilitySummary = guide.variabilityNotes.length
+    ? `Expression variability: ${guide.variabilityNotes.join("; ")}`
+    : "Expression variability: limited published visual guidance.";
+
+  return {
+    ...morph,
+    phenotypeGuide: guide,
+    description: morph.description ? `${morph.description}\n\n${visualSummary}` : visualSummary,
+    educationalNotes: [morph.educationalNotes, identificationSummary, distinctionSummary, variabilitySummary, `Genetic proof: ${guide.identificationCaveat}`]
+      .filter(Boolean)
+      .join("\n\n"),
+  };
+}
+
 function applyEvidenceMetadata(morph: MasterMorphDefinition): MasterMorphDefinition {
   const evidence = morphSourceAuditByName.get(normalise(morph.name));
   const sourceLinks = evidence ? resolveMorphEvidenceSources(evidence.sources) : [];
   const canonicalEvidenceForCinnamon = normalise(morph.name) === "cinnamon";
-  if (!evidence && !morph.sourceUrl && sourceLinks.length === 0) return morph;
-  return {
-    ...morph,
-    ...(canonicalEvidenceForCinnamon ? { inheritance: "Dominant" as const } : {}),
-    ...(evidence ? {
-      evidenceStatus: evidence.status,
-      evidenceNote: evidence.note,
-      sourceLinks,
-      sourceUrl: sourceLinks[0]?.url ?? morph.sourceUrl,
-      sourceLabel: sourceLinks[0]?.label ?? morph.sourceLabel,
-    } : {}),
-  };
+  const enriched: MasterMorphDefinition = (!evidence && !morph.sourceUrl && sourceLinks.length === 0)
+    ? morph
+    : {
+        ...morph,
+        ...(canonicalEvidenceForCinnamon ? { inheritance: "Dominant" as const } : {}),
+        ...(evidence ? {
+          evidenceStatus: evidence.status,
+          evidenceNote: evidence.note,
+          sourceLinks,
+          sourceUrl: sourceLinks[0]?.url ?? morph.sourceUrl,
+          sourceLabel: sourceLinks[0]?.label ?? morph.sourceLabel,
+        } : {}),
+      };
+  return applyPhenotypeGuide(enriched);
 }
 
 function mergeMorphs(canonical: MorphDefinition[], reference: Array<MorphReferenceEntry | FullMorphTaxonomyEntry>): MasterMorphDefinition[] {
@@ -101,7 +128,7 @@ function parsedHognoseMorph(value: string): MasterMorphDefinition | undefined {
   const parsed = resolveHognoseMorphInput(value);
   if (!parsed.components.length || parsed.confidence === "unresolved" || parsed.confidence === "limited") return undefined;
   const name = parsed.matchedName ?? value.trim();
-  return {
+  return applyPhenotypeGuide({
     geneId: `heterodon-nasicus-${identityKey(name) || parsed.signature}`,
     name,
     aliases: parsed.aliases,
@@ -118,7 +145,7 @@ function parsedHognoseMorph(value: string): MasterMorphDefinition | undefined {
     sourceUrl: parsed.sourceUrls[0],
     sourceLabel: "Tiny Titans Western Hognose genetics resolver",
     sourceLinks: resolverSourceLinks(parsed.sourceUrls),
-  };
+  });
 }
 
 export function resolveMasterMorph(value: string): MasterMorphDefinition | undefined {
