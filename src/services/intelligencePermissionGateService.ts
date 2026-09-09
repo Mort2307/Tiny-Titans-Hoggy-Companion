@@ -1,5 +1,11 @@
 import type { PrivacyPreferences } from "../types/privacy";
 
+function permissionFlag<T extends keyof PrivacyPreferences>(privacy: PrivacyPreferences | null | undefined, key: T, legacyFallback: boolean): boolean {
+  if (!privacy) return false;
+  if (Object.prototype.hasOwnProperty.call(privacy, key)) return privacy[key] === true;
+  return legacyFallback;
+}
+
 export type IntelligencePermissionDecision = {
   coreTracking: true;
   basicTracking: true;
@@ -10,22 +16,13 @@ export type IntelligencePermissionDecision = {
   reason: string;
 };
 
-/**
- * Intelligence eligibility is permission-based, not population-based.
- * A keeper with one snake receives the same intelligence architecture as a keeper
- * with many snakes; sparse evidence lowers confidence rather than removing access.
- *
- * `communityHusbandryData` is retained only as a legacy migration signal. New
- * decisions use the dedicated permission fields so personal intelligence,
- * community contribution, community intelligence and messaging can be controlled
- * independently.
- */
+/** Intelligence eligibility is permission-based, not population-based. */
 export function getIntelligencePermissionDecision(privacy: PrivacyPreferences | null | undefined): IntelligencePermissionDecision {
-  const personalIntelligence = privacy?.personalIntelligence === true || privacy?.communityHusbandryData === true;
-  const communityContribution = privacy?.communityContribution === true || privacy?.communityHusbandryData === true;
-  const communityIntelligence = privacy?.communityIntelligence === true || privacy?.communityHusbandryData === true;
-  const communityMessaging = privacy?.communityMessaging === true;
-
+  const legacy = privacy?.communityHusbandryData === true;
+  const personalIntelligence = permissionFlag(privacy, "personalIntelligence", legacy);
+  const communityContribution = permissionFlag(privacy, "communityContribution", legacy);
+  const communityIntelligence = permissionFlag(privacy, "communityIntelligence", legacy);
+  const communityMessaging = permissionFlag(privacy, "communityMessaging", false);
   const enabled = personalIntelligence || communityContribution || communityIntelligence;
   return {
     coreTracking: true,
@@ -41,30 +38,16 @@ export function getIntelligencePermissionDecision(privacy: PrivacyPreferences | 
 }
 
 export function assertFullIntelligenceAllowed(privacy: PrivacyPreferences | null | undefined): void {
-  if (!getIntelligencePermissionDecision(privacy).personalIntelligence) {
-    throw new Error("Personal Titan Intelligence is not enabled for this account.");
-  }
+  if (!getIntelligencePermissionDecision(privacy).personalIntelligence) throw new Error("Personal Titan Intelligence is not enabled for this account.");
 }
-
 export function assertCommunityContributionAllowed(privacy: PrivacyPreferences | null | undefined): void {
-  if (!getIntelligencePermissionDecision(privacy).communityContribution) {
-    throw new Error("Community Intelligence contribution is not enabled for this account.");
-  }
+  if (!getIntelligencePermissionDecision(privacy).communityContribution) throw new Error("Community Intelligence contribution is not enabled for this account.");
 }
-
 export function assertCommunityMessagingAllowed(privacy: PrivacyPreferences | null | undefined): void {
-  if (!getIntelligencePermissionDecision(privacy).communityMessaging) {
-    throw new Error("Community messaging is not enabled for this account.");
-  }
+  if (!getIntelligencePermissionDecision(privacy).communityMessaging) throw new Error("Community messaging is not enabled for this account.");
 }
-
-export function canUseFullIntelligence(privacy: PrivacyPreferences | null | undefined): boolean {
-  return getIntelligencePermissionDecision(privacy).personalIntelligence;
-}
-
-export function canContributeToCommunityIntelligence(privacy: PrivacyPreferences | null | undefined): boolean {
-  return getIntelligencePermissionDecision(privacy).communityContribution;
-}
+export function canUseFullIntelligence(privacy: PrivacyPreferences | null | undefined): boolean { return getIntelligencePermissionDecision(privacy).personalIntelligence; }
+export function canContributeToCommunityIntelligence(privacy: PrivacyPreferences | null | undefined): boolean { return getIntelligencePermissionDecision(privacy).communityContribution; }
 
 export const FULL_INTELLIGENCE_COPY = {
   title: "Titan Intelligence",
