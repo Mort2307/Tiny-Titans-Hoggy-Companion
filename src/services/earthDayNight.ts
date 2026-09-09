@@ -1,8 +1,12 @@
 import * as THREE from "three";
 
-export const EARTH_DAY_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg";
+// NASA Blue Marble / Three Globe assets. The day texture is the richer Blue Marble
+// surface used by the Three Globe examples; the supporting topology and water masks
+// let the custom shader add subtle terrain relief and ocean specular response.
+export const EARTH_DAY_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg";
 export const EARTH_NIGHT_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg";
 export const EARTH_BUMP_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png";
+export const EARTH_WATER_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-water.png";
 export const EARTH_STAR_TEXTURE_URL = "https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png";
 
 export const EARTH_DAY_NIGHT_VERTEX_SHADER = `
@@ -18,18 +22,42 @@ export const EARTH_DAY_NIGHT_VERTEX_SHADER = `
 export const EARTH_DAY_NIGHT_FRAGMENT_SHADER = `
   uniform sampler2D dayTexture;
   uniform sampler2D nightTexture;
+  uniform sampler2D topologyTexture;
+  uniform sampler2D waterTexture;
   uniform vec3 sunDirection;
   varying vec3 vWorldNormal;
   varying vec2 vUv;
 
   void main() {
-    float intensity = dot(normalize(vWorldNormal), normalize(sunDirection));
-    float dayFactor = smoothstep(-0.13, 0.16, intensity);
     vec4 dayColor = texture2D(dayTexture, vUv);
     vec4 nightColor = texture2D(nightTexture, vUv);
-    vec3 twilightColor = mix(nightColor.rgb, dayColor.rgb, smoothstep(-0.26, -0.03, intensity));
-    vec3 finalColor = mix(twilightColor, dayColor.rgb, dayFactor);
-    gl_FragColor = vec4(finalColor, 1.0);
+    float terrain = texture2D(topologyTexture, vUv).r;
+    float water = texture2D(waterTexture, vUv).r;
+
+    float intensity = dot(normalize(vWorldNormal), normalize(sunDirection));
+    float dayFactor = smoothstep(-0.16, 0.14, intensity);
+    float twilightFactor = smoothstep(-0.32, 0.02, intensity);
+
+    // Preserve the rich Blue Marble colour in daylight while gently lifting
+    // terrain facing the light so the surface reads as three-dimensional.
+    float relief = 0.9 + terrain * 0.16;
+    vec3 litDay = dayColor.rgb * relief;
+
+    // A narrow, soft terminator gives the Earth a more photographic transition
+    // between day, twilight and night rather than a hard shader cutoff.
+    vec3 twilightColor = mix(nightColor.rgb, litDay, twilightFactor);
+    vec3 finalColor = mix(twilightColor, litDay, dayFactor);
+
+    // Ocean surfaces pick up a restrained blue-white sun glint on the illuminated
+    // side without washing out land or night lights.
+    float oceanMask = smoothstep(0.35, 0.65, water);
+    float sunGlint = pow(max(intensity, 0.0), 7.0) * oceanMask * 0.16;
+    finalColor += vec3(0.10, 0.17, 0.24) * sunGlint;
+
+    // Keep night lights crisp while allowing a trace of twilight colour at the edge.
+    finalColor += nightColor.rgb * (1.0 - twilightFactor) * 0.015;
+
+    gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
   }
 `;
 
@@ -37,6 +65,8 @@ export type EarthDayNightMaterial = THREE.ShaderMaterial & {
   uniforms: {
     dayTexture: { value: THREE.Texture };
     nightTexture: { value: THREE.Texture };
+    topologyTexture: { value: THREE.Texture };
+    waterTexture: { value: THREE.Texture };
     sunDirection: { value: THREE.Vector3 };
   };
 };
@@ -70,16 +100,30 @@ export function updateEarthSun(material: EarthDayNightMaterial, date = new Date(
 
 export async function loadEarthDayNightMaterial(): Promise<EarthDayNightMaterial> {
   const loader = new THREE.TextureLoader();
-  const [dayTexture, nightTexture] = await Promise.all([
+  const [dayTexture, nightTexture, topologyTexture, waterTexture] = await Promise.all([
     loader.loadAsync(EARTH_DAY_TEXTURE_URL),
     loader.loadAsync(EARTH_NIGHT_TEXTURE_URL),
+    loader.loadAsync(EARTH_BUMP_TEXTURE_URL),
+    loader.loadAsync(EARTH_WATER_TEXTURE_URL),
   ]);
+
   dayTexture.colorSpace = THREE.SRGBColorSpace;
   nightTexture.colorSpace = THREE.SRGBColorSpace;
+  topologyTexture.colorSpace = THREE.NoColorSpace;
+  waterTexture.colorSpace = THREE.NoColorSpace;
+
+  for (const texture of [dayTexture, nightTexture, topologyTexture, waterTexture]) {
+    texture.anisotropy = 4;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+  }
+
   return new THREE.ShaderMaterial({
     uniforms: {
       dayTexture: { value: dayTexture },
       nightTexture: { value: nightTexture },
+      topologyTexture: { value: topologyTexture },
+      waterTexture: { value: waterTexture },
       sunDirection: { value: geoToSunDirection(0, 0) },
     },
     vertexShader: EARTH_DAY_NIGHT_VERTEX_SHADER,
