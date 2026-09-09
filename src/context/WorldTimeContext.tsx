@@ -7,7 +7,7 @@ type Props = { children: ReactNode };
 
 export function WorldTimeProvider({ children }: Props) {
   const [snapshot, setSnapshot] = useState<WorldTimeSnapshot>(() => getWorldTimeSnapshot());
-  const refresh = useCallback(() => setSnapshot(getWorldTimeSnapshot(new Date(), getDetectedTimezone())), []);
+  const refresh = useCallback(() => setSnapshot((current) => getWorldTimeSnapshot(new Date(), getDetectedTimezone() || current.timezone)), []);
 
   useEffect(() => {
     const heartbeat = window.setInterval(refresh, 5 * 60 * 1000);
@@ -33,6 +33,12 @@ export function WorldTimeProvider({ children }: Props) {
 export function useWorldTime(): WorldTimeSnapshot {
   const context = useContext(WorldTimeContext);
   if (!context) throw new Error("useWorldTime must be used inside WorldTimeProvider");
+  return context.snapshot;
+}
+
+export function useLiveWorldTime(): WorldTimeSnapshot {
+  const context = useContext(WorldTimeContext);
+  if (!context) throw new Error("useLiveWorldTime must be used inside WorldTimeProvider");
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
