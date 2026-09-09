@@ -57,14 +57,22 @@ function normaliseRecurringReminder(reminder: Reminder, now: Date): Reminder {
   let phase: "lead-up" | "due" = reminder.nextPhase || "due";
   if (!occurrenceDate) return reminder;
 
-  // Always move stale recurring schedules forward, but keep a current occurrence
-  // in the lead-up phase until its actual due time has also passed.
+  const today = localDateKey(now, timezone);
+
+  // A reminder due today remains visible as today's due/overdue item until it
+  // is completed. Older missed occurrences are rolled forward to the next cycle.
+  if (occurrenceDate === today && phase === "due") {
+    const schedule = nextSchedule(input, occurrenceDate, phase);
+    return { ...reminder, ...input, nextOccurrenceDate: occurrenceDate, nextPhase: phase, nextNotificationAt: schedule.at };
+  }
+
   for (let guard = 0; guard < 10000; guard += 1) {
     const schedule = nextSchedule(input, occurrenceDate, phase);
-    if (new Date(schedule.at).getTime() > now.getTime()) {
+    const scheduledAt = new Date(schedule.at);
+    if (occurrenceDate > today && scheduledAt.getTime() > now.getTime()) {
       return { ...reminder, ...input, nextOccurrenceDate: occurrenceDate, nextPhase: phase, nextNotificationAt: schedule.at };
     }
-    if (input.leadUpEnabled && phase === "lead-up") {
+    if (occurrenceDate === today && phase === "lead-up") {
       phase = "due";
       continue;
     }
