@@ -1,6 +1,7 @@
 import { collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { Reminder, ReminderInput, ReminderKind } from "../types/Reminder";
+import { getDetectedTimezone, getWorldTimeSnapshot } from "./worldTimeService";
 
 function remindersCollection(uid: string) { return collection(db, "users", uid, "reminders"); }
 
@@ -94,7 +95,7 @@ export function feedingReminderSchedule(input: Pick<ReminderInput, "kind" | "fre
   while (occurrenceDate < today) occurrenceDate = addCalendarDays(occurrenceDate, frequencyDays);
   return {
     occurrenceDate,
-    phase: occurrenceDate === today ? "due" as const : "due" as const,
+    phase: "due" as const,
     notificationDate: occurrenceDate,
     at: zonedTimeToUtc(occurrenceDate, input.time || "09:00", timezone).toISOString(),
     leadUpEnabled: false,
@@ -115,10 +116,11 @@ async function handOffLegacyStream(uid: string, kind: ReminderKind) {
 export function defaultReminderInput(kind: ReminderKind, snakeId: string | null = null): ReminderInput {
   const definition = ({ weight: "Weight check", feeding: "Feeding check", shedding: "Shed check", health: "Health check", husbandry: "Husbandry check", custom: "Custom reminder" } as Record<ReminderKind, string>)[kind];
   const now = new Date();
-  const startDate = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const timezone = getDetectedTimezone();
+  const startDate = getWorldTimeSnapshot(now, timezone).localDateKey;
   const requestedSnakeId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("snakeId") : null;
   const selectedSnakeId = snakeId ?? requestedSnakeId;
-  return { kind, title: definition, description: "", snakeId: selectedSnakeId, snakeName: null, frequencyDays: 7, time: "09:00", startDate, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/London", leadUpEnabled: false, leadUpDays: 1, status: "active" };
+  return { kind, title: definition, description: "", snakeId: selectedSnakeId, snakeName: null, frequencyDays: 7, time: "09:00", startDate, timezone, leadUpEnabled: false, leadUpDays: 1, status: "active" };
 }
 
 function withSchedule(input: ReminderInput): Omit<Reminder, "id" | "createdAt" | "updatedAt"> {
