@@ -6,51 +6,69 @@ export type IntelligencePermissionDecision = {
   personalIntelligence: boolean;
   communityContribution: boolean;
   communityIntelligence: boolean;
+  communityMessaging: boolean;
   reason: string;
 };
 
 /**
- * Basic keeper tracking is always available: users can record and review their
- * own snake records without opting into Tiny Titans Intelligence.
+ * Intelligence eligibility is permission-based, not population-based.
+ * A keeper with one snake receives the same intelligence architecture as a keeper
+ * with many snakes; sparse evidence lowers confidence rather than removing access.
  *
- * Advanced interpretation is deliberately separate. Trends, correlations,
- * anomaly detection, benchmarking, intelligence memory/timeline and community
- * intelligence are optional benefits unlocked only while explicit community
- * husbandry contribution consent is enabled.
+ * `communityHusbandryData` is retained only as a legacy migration signal. New
+ * decisions use the dedicated permission fields so personal intelligence,
+ * community contribution, community intelligence and messaging can be controlled
+ * independently.
  */
 export function getIntelligencePermissionDecision(privacy: PrivacyPreferences | null | undefined): IntelligencePermissionDecision {
-  const optedIn = privacy?.communityHusbandryData === true;
+  const personalIntelligence = privacy?.personalIntelligence === true || privacy?.communityHusbandryData === true;
+  const communityContribution = privacy?.communityContribution === true || privacy?.communityHusbandryData === true;
+  const communityIntelligence = privacy?.communityIntelligence === true || privacy?.communityHusbandryData === true;
+  const communityMessaging = privacy?.communityMessaging === true;
+
+  const enabled = personalIntelligence || communityContribution || communityIntelligence;
   return {
     coreTracking: true,
     basicTracking: true,
-    personalIntelligence: optedIn,
-    communityContribution: optedIn,
-    communityIntelligence: optedIn,
-    reason: optedIn
-      ? "Full Tiny Titans Intelligence is enabled because community husbandry contribution is currently enabled."
-      : "Basic keeper tracking remains available, but advanced intelligence and community contribution are paused until community husbandry contribution is enabled.",
+    personalIntelligence,
+    communityContribution,
+    communityIntelligence,
+    communityMessaging,
+    reason: enabled
+      ? "Titan Intelligence is permission-based. The amount of evidence affects confidence, not whether a keeper can use Intelligence."
+      : "Basic keeper tracking remains available. Advanced intelligence is paused until the keeper enables Personal Intelligence.",
   };
 }
 
 export function assertFullIntelligenceAllowed(privacy: PrivacyPreferences | null | undefined): void {
-  if (privacy?.communityHusbandryData !== true) {
-    throw new Error("Full Tiny Titans Intelligence requires community husbandry contribution to be enabled.");
+  if (!getIntelligencePermissionDecision(privacy).personalIntelligence) {
+    throw new Error("Personal Titan Intelligence is not enabled for this account.");
   }
 }
 
 export function assertCommunityContributionAllowed(privacy: PrivacyPreferences | null | undefined): void {
-  if (privacy?.communityHusbandryData !== true) {
-    throw new Error("Community husbandry contribution is not permitted without explicit consent.");
+  if (!getIntelligencePermissionDecision(privacy).communityContribution) {
+    throw new Error("Community Intelligence contribution is not enabled for this account.");
+  }
+}
+
+export function assertCommunityMessagingAllowed(privacy: PrivacyPreferences | null | undefined): void {
+  if (!getIntelligencePermissionDecision(privacy).communityMessaging) {
+    throw new Error("Community messaging is not enabled for this account.");
   }
 }
 
 export function canUseFullIntelligence(privacy: PrivacyPreferences | null | undefined): boolean {
-  return privacy?.communityHusbandryData === true;
+  return getIntelligencePermissionDecision(privacy).personalIntelligence;
+}
+
+export function canContributeToCommunityIntelligence(privacy: PrivacyPreferences | null | undefined): boolean {
+  return getIntelligencePermissionDecision(privacy).communityContribution;
 }
 
 export const FULL_INTELLIGENCE_COPY = {
   title: "Titan Intelligence",
-  body: "Basic keeper tracking is available to everyone. Titan Intelligence is the optional advanced layer: it interprets eligible records, builds individual patterns and can contribute to the growing Tiny Titans knowledge base when you choose to help.",
-  paused: "Titan Intelligence is currently paused. Your snake records remain available, but Tiny Titans will only provide basic record history and simple totals until you enable Intelligence again.",
-  enabled: "Titan Intelligence is active. Tiny Titans can now use eligible records for advanced individual intelligence and community knowledge while your consent remains enabled.",
+  body: "Titan Intelligence is available from your first snake. Tiny datasets are not discarded: they simply carry lower evidence confidence until more records or independent keepers strengthen the pattern.",
+  paused: "Titan Intelligence is paused for this account. Your snake records remain available and no records are deleted. Re-enable Personal Intelligence to restore advanced interpretation.",
+  enabled: "Titan Intelligence is active. Tiny Titans can analyse eligible records from every keeper-managed snake, while evidence quality controls confidence rather than access.",
 } as const;
