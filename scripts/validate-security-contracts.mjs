@@ -40,9 +40,8 @@ const checks = [
   ['Moderation queue is creator-only', /assertCreatorRequest\(request\)/, communityComments],
   ['Intelligence feedback is authenticated', /request\.auth\?\.uid/, feedback],
   ['Intelligence feedback is deduplicated per user/insight', /feedbackDocId\(request\.auth\.uid, insightId\)/, feedback],
-  ['Feedback ranking endpoint returns aggregate signals only', /signals\[id, \{ \.\.\.counts, total, positive, negative \}\]/, feedback],
+  ['Feedback ranking endpoint returns aggregate signals only', /return \[id, \{ \.\.\.counts, total, positive, negative \}\]/, feedback],
 ];
-
 const failures = [];
 for (const [label, pattern, source] of checks) if (!pattern.test(source)) failures.push(label);
 console.log('SECURITY CONTRACT REPORT');
