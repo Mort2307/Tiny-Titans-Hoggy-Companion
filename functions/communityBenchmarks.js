@@ -1,9 +1,7 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore } = require("firebase-admin/firestore");
-const { getAuth } = require("firebase-admin/auth");
 
 const db = getFirestore();
-const auth = getAuth();
 const MIN_CONTRIBUTORS = 5;
 const MIN_RECORDS = 5;
 
@@ -67,11 +65,11 @@ function normalise(value) { return String(value || "").trim().toLowerCase(); }
 exports.getCommunityBenchmarks = onCall({ region: "europe-west2", memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
 
-  const caller = await db.collection("users").doc(request.auth.uid).get();
-  const callerData = caller.data() || {};
-  const claims = request.auth.token || {};
-  const creator = claims.admin === true || claims.creator === true || callerData.role === "admin" || callerData.profileType === "creator";
-  if (!creator) throw new HttpsError("permission-denied", "Creator authorization is required.");
+  // Access to benchmark output is tied to the caller's own Intelligence consent.
+  const callerPrivacy = await db.collection("users").doc(request.auth.uid).collection("settings").doc("privacy").get();
+  if (!callerPrivacy.exists || callerPrivacy.data()?.communityHusbandryData !== true) {
+    throw new HttpsError("permission-denied", "Enable Tiny Titans Intelligence before viewing community benchmarks.");
+  }
 
   const input = request.data || {};
   const speciesFilter = normalise(input.species);
@@ -125,26 +123,11 @@ exports.getCommunityBenchmarks = onCall({ region: "europe-west2", memory: "512Mi
       if (shedDates.length) userContributed = true;
 
       if (validWeights.length || feedingDates.length || shedDates.length) snakeIds.add(snakeDoc.id);
-      if (validWeights.length || feedingDates.length || shedDates.length) userContributed = true;
     }
     if (userContributed) contributorIds.add(userDoc.id);
   }
 
   const contributorCount = contributorIds.size;
-  if (contributorCount < MIN_CONTRIBUTORS) {
-    return {
-      generatedAt: new Date().toISOString(),
-      contributorCount,
-      snakeCount: snakeIds.size,
-      cohortKey: [speciesFilter || "all", sexFilter || "all", morphFilter || "all", ageBandFilter || "all"].join("|"),
-      metrics: [
-        metric("weight", "Recorded weight", weightValues, contributorCount, "g"),
-        metric("feedingInterval", "Feeding interval", feedingIntervals, contributorCount, "days"),
-        metric("shedInterval", "Shed interval", shedIntervals, contributorCount, "days"),
-      ],
-    };
-  }
-
   return {
     generatedAt: new Date().toISOString(),
     contributorCount,
