@@ -1,9 +1,27 @@
 import type { ReactElement } from "react";
 import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
-import { getHognosePhenotypeGuide } from "../data/hognosePhenotypeGuide";
+import { getHognosePhenotypeGuide, type PhenotypeGuide } from "../data/hognosePhenotypeGuide";
+import { hognosePhenotypeExtensionsById } from "../data/hognosePhenotypeExtensions";
+
+const normaliseGuideId = (geneId: string): string => {
+  const key = geneId.trim().toLowerCase();
+  return ({
+    anaconda: "conda",
+    "superconda": "super-conda",
+    superarctic: "super-arctic",
+    "superantarctic": "super-antarctic",
+    "dutch-hypo": "dutch-hypo",
+  } as Record<string, string>)[key] ?? key;
+};
+
+const guideForMorph = (morph: MorphReferenceEntry): PhenotypeGuide => {
+  const id = normaliseGuideId(morph.geneId);
+  const direct = hognosePhenotypeExtensionsById[id];
+  return direct ?? getHognosePhenotypeGuide(id, morph.components);
+};
 
 export default function HognosePhenotypeGuide({ morph }: { morph: MorphReferenceEntry }): ReactElement {
-  const guide = getHognosePhenotypeGuide(morph.geneId, morph.components);
+  const guide = guideForMorph(morph);
   const confidence = guide.visualDescription.startsWith("No verified") ? "Limited" : "Keeper guide";
 
   return (
