@@ -54,11 +54,10 @@ function buildWeightContext(snake: Snake, currentWeight: number, ageMonths: numb
   const sex = snake.sex.trim().toLowerCase();
   const isMale = sex === "male" || sex.endsWith(" male") || sex.includes(" male ");
   const isFemale = sex === "female" || sex.endsWith(" female") || sex.includes(" female ");
-  const adultFloor = isMale ? 60 : isFemale ? 180 : null;
-  const adultCeiling = isMale ? 133 : isFemale ? 300 : null;
+  const adultRange = isMale ? { min: 60, max: 133 } : isFemale ? { min: 180, max: 300 } : null;
   const sexLabel = isMale ? "male" : isFemale ? "female" : "recorded-sex";
 
-  if (!adultFloor) {
+  if (!adultRange) {
     return { tone: "neutral", title: "Sex-specific context is unavailable", body: "Tiny Titans can still assess this Titan's personal trend, but the available published weight reference is sex-specific.", detail: "Use body condition and the individual growth trajectory alongside the recorded weight." };
   }
 
@@ -77,15 +76,15 @@ function buildWeightContext(snake: Snake, currentWeight: number, ageMonths: numb
   }
 
   if (ageMonths < 24) {
-    if (currentWeight >= adultFloor) {
-      return { tone: "positive", title: `${formatWeight(currentWeight)} is already within the published adult ${sexLabel} weight range`, body: `The published 3-year ${sexLabel} study included weights from ${formatWeight(adultFloor)} to ${formatWeight(adultCeiling)}.`, detail: `At ${Math.round(ageMonths)} months, reaching the adult study's observed range can be reassuring, but it still is not an age-specific target.` };
+    if (currentWeight >= adultRange.min) {
+      return { tone: "positive", title: `${formatWeight(currentWeight)} is already within the published adult ${sexLabel} weight range`, body: `The published 3-year ${sexLabel} study included weights from ${formatWeight(adultRange.min)} to ${formatWeight(adultRange.max)}.`, detail: `At ${Math.round(ageMonths)} months, reaching the adult study's observed range can be reassuring, but it still is not an age-specific target.` };
     }
-    return { tone: "positive", title: `${formatWeight(currentWeight)} is below the adult ${sexLabel} study range — but that does not mean underweight`, body: `The adult reference study observed ${sexLabel}s from ${formatWeight(adultFloor)} to ${formatWeight(adultCeiling)} at 3 years old.`, detail: `This Titan is still subadult, so being below the adult study floor at ${Math.round(ageMonths)} months cannot by itself be classed as too small. The recorded growth trajectory matters.` };
+    return { tone: "positive", title: `${formatWeight(currentWeight)} is below the adult ${sexLabel} study range — but that does not mean underweight`, body: `The adult reference study observed ${sexLabel}s from ${formatWeight(adultRange.min)} to ${formatWeight(adultRange.max)} at 3 years old.`, detail: `This Titan is still subadult, so being below the adult study floor at ${Math.round(ageMonths)} months cannot by itself be classed as too small. The recorded growth trajectory matters.` };
   }
 
-  if (currentWeight < adultFloor) return { tone: "caution", title: `Below the published adult ${sexLabel} study range`, body: `At ${Math.round(ageMonths)} months, ${formatWeight(currentWeight)} is below the ${formatWeight(adultFloor)}–${formatWeight(adultCeiling)} range observed in 3-year-old ${sexLabel}s.`, detail: "That is a useful prompt to review body condition, feeding history and the wider husbandry picture. Weight alone cannot diagnose underweight." };
-  if (currentWeight > adultCeiling) return { tone: "caution", title: `Above the published adult ${sexLabel} study range`, body: `At ${Math.round(ageMonths)} months, ${formatWeight(currentWeight)} is above the ${formatWeight(adultFloor)}–${formatWeight(adultCeiling)} range observed in the 3-year-old study.`, detail: "This identifies an unusually high recorded weight relative to that study, not a diagnosis of excess body condition. Check body condition and trend." };
-  return { tone: "positive", title: `Within the published adult ${sexLabel} study range`, body: `${formatWeight(currentWeight)} sits inside the ${formatWeight(adultFloor)}–${formatWeight(adultCeiling)} range observed in 3-year-old ${sexLabel}s.`, detail: "This is a broad research reference, not a perfect weight target for every adult." };
+  if (currentWeight < adultRange.min) return { tone: "caution", title: `Below the published adult ${sexLabel} study range`, body: `At ${Math.round(ageMonths)} months, ${formatWeight(currentWeight)} is below the ${formatWeight(adultRange.min)}–${formatWeight(adultRange.max)} range observed in 3-year-old ${sexLabel}s.`, detail: "That is a useful prompt to review body condition, feeding history and the wider husbandry picture. Weight alone cannot diagnose underweight." };
+  if (currentWeight > adultRange.max) return { tone: "caution", title: `Above the published adult ${sexLabel} study range`, body: `At ${Math.round(ageMonths)} months, ${formatWeight(currentWeight)} is above the ${formatWeight(adultRange.min)}–${formatWeight(adultRange.max)} range observed in the 3-year-old study.`, detail: "This identifies an unusually high recorded weight relative to that study, not a diagnosis of excess body condition. Check body condition and trend." };
+  return { tone: "positive", title: `Within the published adult ${sexLabel} study range`, body: `${formatWeight(currentWeight)} sits inside the ${formatWeight(adultRange.min)}–${formatWeight(adultRange.max)} range observed in 3-year-old ${sexLabel}s.`, detail: "This is a broad research reference, not a perfect weight target for every adult." };
 }
 
 export default function WeightGrowthIntelligence({ snake, history }: Props) {
