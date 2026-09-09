@@ -8,6 +8,7 @@ import { resolveMorphEvidenceSources, type MorphEvidenceSourceDefinition } from 
 import { enrichMorphDatabase, type MorphIntelligenceMetadata, type MorphEvidenceLevel } from "./morphIntelligence";
 import { resolveHognoseMorphInput } from "../genetics/hognoseMorphResolver.ts";
 import { getHognosePhenotypeGuide } from "./hognosePhenotypeGuide.ts";
+import { hognosePhenotypeExtensionsById } from "./hognosePhenotypeExtensions.ts";
 
 export type MasterMorphDefinition = MorphDefinition & MorphIntelligenceMetadata & {
   sourceUrl?: string;
@@ -52,8 +53,21 @@ const morphMarketTraits: MorphReferenceEntry[] = [
   referenceTrait("True Hypo", "Recessive", true), referenceTrait("Yellow Glow")
 ];
 
+function phenotypeGuideForMorph(morph: MasterMorphDefinition) {
+  const extensionId = ({
+    anaconda: "conda",
+    superarctic: "super-arctic",
+    superconda: "super-conda",
+    superantarctic: "super-antarctic",
+    "dutch-hypo": "dutch-hypo",
+  } as Record<string, string>)[morph.geneId] ?? morph.geneId;
+  return hognosePhenotypeExtensionsById[extensionId] ?? getHognosePhenotypeGuide(extensionId, morph.components);
+}
+
 function applyPhenotypeGuide(morph: MasterMorphDefinition): MasterMorphDefinition {
-  const guide = getHognosePhenotypeGuide(morph.geneId, morph.components);
+  const guide = phenotypeGuideForMorph(morph);
+  const isKnownGuide = !guide.visualDescription.startsWith("No verified");
+  if (!isKnownGuide) return morph;
   const visualSummary = `Visual identification: ${guide.visualDescription}`;
   const identificationSummary = guide.identificationMarkers.length
     ? `What to look for: ${guide.identificationMarkers.join("; ")}`
