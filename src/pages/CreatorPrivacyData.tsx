@@ -5,7 +5,7 @@ import { clearCommunityLocation, getPrivacyPreferences, savePrivacyPreferences }
 import type { PrivacyPreferences } from "../types/privacy";
 import "../styles/CreatorTools.css";
 
-const EMPTY: PrivacyPreferences = { consentVersion: "", communityLocation: false, anonymousAnalytics: false, communityHusbandryData: false, productUpdates: false };
+const EMPTY: PrivacyPreferences = { consentVersion: "", communityLocation: false, anonymousAnalytics: false, communityHusbandryData: false, personalIntelligence: false, communityContribution: false, communityIntelligence: false, communityMessaging: false, communityMessagingDeclineReason: null, communityMessagingDeclineReasonDetail: null, productUpdates: false };
 
 export default function CreatorPrivacyData() {
   const { user } = useAuth();
@@ -14,42 +14,24 @@ export default function CreatorPrivacyData() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    if (!user) return () => { active = false; };
-    void getPrivacyPreferences(user.uid).then((value) => { if (active) setPreferences(value); }).catch((e) => { if (active) setError(e instanceof Error ? e.message : "Privacy settings could not be loaded."); }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [user]);
-
-  async function save(next: Omit<PrivacyPreferences, "consentVersion" | "consentUpdatedAt">) {
-    if (!user) return;
-    setSaving(true); setError(""); setMessage("");
-    try { await savePrivacyPreferences(user.uid, next); setPreferences(await getPrivacyPreferences(user.uid)); setMessage("Privacy preferences saved."); }
-    catch (e) { setError(e instanceof Error ? e.message : "Privacy preferences could not be saved."); }
-    finally { setSaving(false); }
-  }
-
-  async function disableLocation() {
-    if (!user) return;
-    setSaving(true); setError(""); setMessage("");
-    try { await clearCommunityLocation(user.uid); setPreferences(await getPrivacyPreferences(user.uid)); setMessage("Community location sharing disabled and location fields cleared."); }
-    catch (e) { setError(e instanceof Error ? e.message : "Community location could not be cleared."); }
-    finally { setSaving(false); }
-  }
-
+  useEffect(() => { let active = true; if (!user) return () => { active = false; }; void getPrivacyPreferences(user.uid).then((value) => { if (active) setPreferences(value); }).catch((e) => { if (active) setError(e instanceof Error ? e.message : "Privacy settings could not be loaded."); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [user]);
+  async function save(next: Omit<PrivacyPreferences, "consentVersion" | "consentUpdatedAt">) { if (!user) return; setSaving(true); setError(""); setMessage(""); try { await savePrivacyPreferences(user.uid, next); setPreferences(await getPrivacyPreferences(user.uid)); setMessage("Privacy preferences saved."); } catch (e) { setError(e instanceof Error ? e.message : "Privacy preferences could not be saved."); } finally { setSaving(false); } }
+  async function disableLocation() { if (!user) return; setSaving(true); setError(""); setMessage(""); try { await clearCommunityLocation(user.uid); setPreferences(await getPrivacyPreferences(user.uid)); setMessage("Community location sharing disabled and location fields cleared."); } catch (e) { setError(e instanceof Error ? e.message : "Community location could not be cleared."); } finally { setSaving(false); } }
   return <main className="creator-admin-page">
-    <header className="creator-admin-header"><div><span className="creator-admin-kicker">PRIVATE CREATOR CENTRE</span><h1>🔐 Privacy & Data</h1><p>Account privacy controls and community-data policy. This screen contains privacy information only.</p></div><Link className="creator-global-card" to="/creator">← Creator Hub</Link></header>
+    <header className="creator-admin-header"><div><span className="creator-admin-kicker">PRIVATE CREATOR CENTRE</span><h1>🔐 Privacy &amp; Data</h1><p>Audit the permission state that controls personal Intelligence, community contribution, community Intelligence access, messaging, analytics and community location.</p></div><Link className="creator-global-card" to="/creator">← Creator Hub</Link></header>
     {message && <div className="creator-success" role="status">{message}</div>}{error && <div className="creator-error" role="alert">{error}</div>}
     {loading ? <div className="creator-loading">Loading privacy controls…</div> : <>
       <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">CONSENT STATUS</span><h2>Current account permissions</h2><p>Consent version: {preferences.consentVersion || "Not recorded"}</p></div></div><div className="creator-global-grid">
+        <article className="creator-global-card"><span>🧠</span><label>Personal Intelligence</label><small>{preferences.personalIntelligence ? "Enabled" : "Disabled"}</small><p>Advanced individual intelligence. One snake is enough; evidence depth affects confidence, not eligibility.</p><button type="button" disabled={saving} onClick={() => void save({ ...preferences, personalIntelligence: !preferences.personalIntelligence })}>{preferences.personalIntelligence ? "Disable" : "Enable"}</button></article>
+        <article className="creator-global-card"><span>🌱</span><label>Community Intelligence contribution</label><small>{preferences.communityContribution ? "Enabled" : "Disabled"}</small><p>Eligible private records can strengthen anonymous community intelligence without exposing individual records.</p><button type="button" disabled={saving} onClick={() => void save({ ...preferences, communityContribution: !preferences.communityContribution })}>{preferences.communityContribution ? "Disable" : "Enable"}</button></article>
+        <article className="creator-global-card"><span>🌐</span><label>Community Intelligence access</label><small>{preferences.communityIntelligence ? "Enabled" : "Disabled"}</small><p>Controls access to aggregate community intelligence only.</p><button type="button" disabled={saving} onClick={() => void save({ ...preferences, communityIntelligence: !preferences.communityIntelligence })}>{preferences.communityIntelligence ? "Disable" : "Enable"}</button></article>
+        <article className="creator-global-card"><span>💬</span><label>Community Messaging</label><small>{preferences.communityMessaging ? "Enabled" : "Disabled"}</small><p>Controls participation in public post discussions. Existing private support/submission conversations remain on their secure channel.</p><button type="button" disabled={saving} onClick={() => void save({ ...preferences, communityMessaging: !preferences.communityMessaging })}>{preferences.communityMessaging ? "Disable" : "Enable"}</button></article>
         <article className="creator-global-card"><span>📊</span><label>Anonymous analytics</label><small>{preferences.anonymousAnalytics ? "Enabled" : "Disabled"}</small><button type="button" disabled={saving} onClick={() => void save({ ...preferences, anonymousAnalytics: !preferences.anonymousAnalytics })}>{preferences.anonymousAnalytics ? "Disable" : "Enable"}</button></article>
-        <article className="creator-global-card"><span>🌍</span><label>Community husbandry data</label><small>{preferences.communityHusbandryData ? "Enabled" : "Disabled"}</small><p>Allow anonymous aggregate feeding, weight and shedding data to contribute to Tiny Titans community intelligence. Your individual records are never displayed in the global totals.</p><button type="button" disabled={saving} onClick={() => void save({ ...preferences, communityHusbandryData: !preferences.communityHusbandryData })}>{preferences.communityHusbandryData ? "Disable" : "Enable"}</button></article>
+        <article className="creator-global-card"><span>🌍</span><label>Community location</label><small>{preferences.communityLocation ? "Enabled" : "Disabled"}</small><p>{preferences.communityLocation && preferences.city && preferences.country ? `${preferences.city}, ${preferences.country}` : "No community location recorded."}</p>{preferences.communityLocation && <button type="button" disabled={saving} onClick={() => void disableLocation()}>Disable &amp; clear location</button>}</article>
         <article className="creator-global-card"><span>📰</span><label>Product updates</label><small>{preferences.productUpdates ? "Enabled" : "Disabled"}</small><button type="button" disabled={saving} onClick={() => void save({ ...preferences, productUpdates: !preferences.productUpdates })}>{preferences.productUpdates ? "Disable" : "Enable"}</button></article>
-        <article className="creator-global-card"><span>📍</span><label>Community location</label><small>{preferences.communityLocation ? "Enabled" : "Disabled"}</small><p>{preferences.communityLocation && preferences.city && preferences.country ? `${preferences.city}, ${preferences.country}` : "No community location recorded."}</p>{preferences.communityLocation && <button type="button" disabled={saving} onClick={() => void disableLocation()}>Disable & clear location</button>}</article>
       </div></section>
-      <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">COMMUNITY DATA POLICY</span><h2>How community husbandry intelligence works</h2><p>Only users who enable Community husbandry data contribute to aggregate feeding, weight and shedding statistics. Creator or admin status does not exclude a consenting contributor. Individual snake records are never shown as part of the global totals.</p></div></div></section>
-      <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">LOCATION SAFETY</span><h2>Community Globe policy</h2><p>Community locations are intended to identify an approximate town/city and country only. Exact GPS coordinates and home addresses must never be displayed on the Creator Globe.</p></div></div></section>
+      <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">INTERPRETATION RULE</span><h2>1 snake = full Intelligence</h2><p>Community minimums are disclosure safeguards only. A keeper with one snake can use Personal Intelligence and, with consent, contribute to the community learning pool. Smaller datasets simply carry lower evidence confidence.</p></div></div></section>
+      <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">LOCATION SAFETY</span><h2>Community Globe policy</h2><p>Locations are coarse community areas. The app locally coarsens device GPS before third-party reverse geocoding; Creator-facing output is city/area level rather than exact home coordinates.</p></div></div></section>
     </>}
   </main>;
 }
