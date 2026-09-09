@@ -1,12 +1,20 @@
+export type LocalTimePeriod = "late-night" | "morning" | "afternoon" | "evening" | "night";
+
 export type WorldTimeSnapshot = {
   observedAt: Date;
   timezone: string;
   offsetMinutes: number;
+  utcOffsetLabel: string;
   localDateKey: string;
   localTime: string;
   localDate: string;
+  localWeekday: string;
+  localHour: number;
+  localMinute: number;
+  localTimePeriod: LocalTimePeriod;
   timezoneLabel: string;
   dstActive: boolean;
+  isWeekend: boolean;
   utcHour: number;
   solarDeclination: number;
   subsolarLongitude: number;
@@ -76,11 +84,31 @@ function getSolarState(date: Date): Pick<WorldTimeSnapshot, "utcHour" | "solarDe
   };
 }
 
+function getPeriod(hour: number): LocalTimePeriod {
+  if (hour < 6) return "late-night";
+  if (hour < 12) return "morning";
+  if (hour < 17) return "afternoon";
+  if (hour < 21) return "evening";
+  return "night";
+}
+
+function formatUtcOffset(offsetMinutes: number): string {
+  if (offsetMinutes === 0) return "UTC";
+  const sign = offsetMinutes > 0 ? "+" : "-";
+  const absolute = Math.abs(offsetMinutes);
+  const hours = Math.floor(absolute / 60);
+  const minutes = absolute % 60;
+  return `UTC${sign}${hours}${minutes ? `:${String(minutes).padStart(2, "0")}` : ""}`;
+}
+
 export function getWorldTimeSnapshot(now = new Date(), timezone = getDetectedTimezone()): WorldTimeSnapshot {
   const safeTimezone = isValidTimezone(timezone) ? timezone : FALLBACK_TIMEZONE;
   const offsetMinutes = getTimezoneOffsetMinutes(now, safeTimezone);
-  const dateKeyParts = new Intl.DateTimeFormat("en-CA", { timeZone: safeTimezone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
-  const dateKey = `${dateKeyParts.find((p) => p.type === "year")?.value}-${dateKeyParts.find((p) => p.type === "month")?.value}-${dateKeyParts.find((p) => p.type === "day")?.value}`;
+  const dateParts = new Intl.DateTimeFormat("en-GB", { timeZone: safeTimezone, year: "numeric", month: "2-digit", day: "2-digit", weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(now);
+  const values = Object.fromEntries(dateParts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  const localHour = Number(values.hour) % 24;
+  const localMinute = Number(values.minute);
+  const dateKey = `${values.year}-${values.month}-${values.day}`;
   const localDate = new Intl.DateTimeFormat("en-GB", { timeZone: safeTimezone, weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
   const localTime = new Intl.DateTimeFormat("en-GB", { timeZone: safeTimezone, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(now);
   const timezoneLabel = new Intl.DateTimeFormat("en-GB", { timeZone: safeTimezone, timeZoneName: "long" }).formatToParts(now).find((p) => p.type === "timeZoneName")?.value || safeTimezone;
@@ -91,11 +119,17 @@ export function getWorldTimeSnapshot(now = new Date(), timezone = getDetectedTim
     observedAt: now,
     timezone: safeTimezone,
     offsetMinutes,
+    utcOffsetLabel: formatUtcOffset(offsetMinutes),
     localDateKey: dateKey,
     localTime,
     localDate,
+    localWeekday: values.weekday,
+    localHour,
+    localMinute,
+    localTimePeriod: getPeriod(localHour),
     timezoneLabel,
     dstActive,
+    isWeekend: values.weekday === "Saturday" || values.weekday === "Sunday",
     ...getSolarState(now),
   };
 }
