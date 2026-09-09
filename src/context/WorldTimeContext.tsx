@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getDetectedTimezone, getWorldTimeSnapshot, type WorldTimeSnapshot } from "../services/worldTimeService";
 
 type WorldTimeContextValue = { timezone: string; snapshot: WorldTimeSnapshot; refresh: () => void };
@@ -7,7 +7,7 @@ type Props = { children: ReactNode };
 
 export function WorldTimeProvider({ children }: Props) {
   const [snapshot, setSnapshot] = useState<WorldTimeSnapshot>(() => getWorldTimeSnapshot());
-  const refresh = () => setSnapshot(getWorldTimeSnapshot(new Date(), getDetectedTimezone()));
+  const refresh = useCallback(() => setSnapshot(getWorldTimeSnapshot(new Date(), getDetectedTimezone())), []);
 
   useEffect(() => {
     const heartbeat = window.setInterval(refresh, 5 * 60 * 1000);
@@ -24,7 +24,7 @@ export function WorldTimeProvider({ children }: Props) {
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("online", onOnline);
     };
-  }, []);
+  }, [refresh]);
 
   const value = useMemo(() => ({ timezone: snapshot.timezone, snapshot, refresh }), [snapshot, refresh]);
   return <WorldTimeContext.Provider value={value}>{children}</WorldTimeContext.Provider>;
