@@ -39,6 +39,42 @@ function nextSchedule(input: ReminderInput, occurrenceDate: string, phase: "lead
   return { occurrenceDate, phase, at: zonedTimeToUtc(notificationDate, input.time, input.timezone).toISOString() };
 }
 
+function normaliseRecurringReminder(reminder: Reminder, now: Date): Reminder {
+  if (reminder.status !== "active") return reminder;
+
+  const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1)));
+  const timezone = reminder.timezone || "Europe/London";
+  const input: ReminderInput = {
+    ...reminder,
+    frequencyDays,
+    timezone,
+    status: "active",
+    leadUpEnabled: reminder.kind === "feeding" ? false : Boolean(reminder.leadUpEnabled) && frequencyDays > 1,
+    leadUpDays: reminder.kind === "feeding" ? 0 : Math.min(Math.max(1, Math.round(Number(reminder.leadUpDays) || 1)), Math.min(30, frequencyDays - 1)),
+  };
+
+  let occurrenceDate = reminder.nextOccurrenceDate || reminder.startDate;
+  let phase: "lead-up" | "due" = reminder.nextPhase || "due";
+  if (!occurrenceDate) return reminder;
+
+  // Always move stale recurring schedules forward, but keep a current occurrence
+  // in the lead-up phase until its actual due time has also passed.
+  for (let guard = 0; guard < 10000; guard += 1) {
+    const schedule = nextSchedule(input, occurrenceDate, phase);
+    if (new Date(schedule.at).getTime() > now.getTime()) {
+      return { ...reminder, ...input, nextOccurrenceDate: occurrenceDate, nextPhase: phase, nextNotificationAt: schedule.at };
+    }
+    if (input.leadUpEnabled && phase === "lead-up") {
+      phase = "due";
+      continue;
+    }
+    occurrenceDate = addCalendarDays(occurrenceDate, frequencyDays);
+    phase = input.leadUpEnabled ? "lead-up" : "due";
+  }
+
+  return reminder;
+}
+
 export function feedingReminderSchedule(input: Pick<ReminderInput, "kind" | "frequencyDays" | "startDate" | "time" | "timezone">, now = new Date()) {
   const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(input.frequencyDays) || 1)));
   const timezone = input.timezone || "Europe/London";
@@ -91,7 +127,11 @@ function withSchedule(input: ReminderInput): Omit<Reminder, "id" | "createdAt" |
 export async function listReminders(uid: string): Promise<Reminder[]> {
   if (!uid) return [];
   const snapshot = await getDocs(query(remindersCollection(uid), orderBy("nextNotificationAt", "asc")));
-  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<Reminder, "id">) }));
+  const now = new Date();
+  return snapshot.docs
+    .map((item) => ({ id: item.id, ...(item.data() as Omit<Reminder, "id">) }))
+    .map((reminder) => normaliseRecurringReminder(reminder, now))
+    .sort((a, b) => new Date(a.nextNotificationAt).getTime() - new Date(b.nextNotificationAt).getTime());
 }
 
 export async function getNextActiveFeedingReminder(uid: string, snakeId: string): Promise<Reminder | null> {
@@ -106,15 +146,15 @@ export async function getFeedingReminderConfirmation(uid: string, snakeId: strin
   const timezone = reminder.timezone || "Europe/London";
   const today = localDateKey(new Date(), timezone);
   const nextDate = reminder.nextOccurrenceDate;
-  const daysUntil = Math.max(0, Math.round((new Date(`${nextDate}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / 86400000));
+  const daysUntil = Math.round((new Date(`${nextDate}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / 86400000);
   const [year, month, day] = nextDate.split("-");
   const formattedDate = `${day}/${month}/${year}`;
-  const dayLabel = `${daysUntil} day${daysUntil === 1 ? "" : "s"}`;
+  const dayLabel = daysUntil === 0 ? "today" : daysUntil === 1 ? "tomorrow" : `in ${daysUntil} days`;
   return {
     snakeName: reminder.snakeName || "your snake",
     nextDate,
     daysUntil,
-    message: `Your feed reminder is set for ${dayLabel} — ${formattedDate}.`,
+    message: `Your feed reminder is ${dayLabel} — ${formattedDate}.`,
     url: `/reminders/feeding?snakeId=${encodeURIComponent(snakeId)}`,
   };
 }
