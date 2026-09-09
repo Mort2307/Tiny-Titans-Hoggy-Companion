@@ -53,7 +53,7 @@ export default function SpeciesSelector({
   const rootRef = useRef<HTMLLabelElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedSpecies = sortedSpecies.find((species) => species.id === value);
-  const selectedPath = getSelectedPath(value);
+  const selectedPath = useMemo(() => getSelectedPath(value), [value]);
   const selectedName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Select species…";
 
   const searchResults = useMemo(() => {
