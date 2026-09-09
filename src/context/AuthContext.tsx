@@ -22,12 +22,8 @@ async function reconcileCreatorCapability(profile: UserProfile | null): Promise<
   try {
     const reconcile = httpsCallable<Record<string, never>, CreatorReconcileResponse>(functions, "reconcileCreatorClaim");
     const result = await reconcile({});
-    if (result.data?.refreshRequired) {
-      await getAuth(app).currentUser?.getIdToken(true);
-    }
+    if (result.data?.refreshRequired) await getAuth(app).currentUser?.getIdToken(true);
   } catch (error) {
-    // Do not block normal authentication if the optional capability reconciliation
-    // is unavailable. Firestore rules remain the authoritative security boundary.
     console.warn("Tiny Titans: creator capability reconciliation unavailable", error);
   }
 }
@@ -50,15 +46,7 @@ function isUnitSystem(v: unknown): v is UnitSystem { return v === "imperial" || 
 function loadEducatorProfile(v: unknown): EducatorProfile | undefined {
   if (!v || typeof v !== "object") return undefined;
   const d = v as Record<string, unknown>;
-  return {
-    teachingLevel: ["primary", "secondary", "college", "university", "homeschool", "club", "other"].includes(String(d.teachingLevel)) ? d.teachingLevel as EducatorProfile["teachingLevel"] : "other",
-    subjects: Array.isArray(d.subjects) ? d.subjects.filter((x): x is string => typeof x === "string") : [],
-    studentAgeBands: Array.isArray(d.studentAgeBands) ? d.studentAgeBands.filter(isAgeBand) : [],
-    reptileExperience: d.reptileExperience === "advanced" ? "advanced" : d.reptileExperience === "intermediate" ? "intermediate" : "beginner",
-    organisationName: typeof d.organisationName === "string" ? d.organisationName : undefined,
-    country: typeof d.country === "string" ? d.country : undefined,
-    verified: d.verified === true,
-  };
+  return { teachingLevel: ["primary", "secondary", "college", "university", "homeschool", "club", "other"].includes(String(d.teachingLevel)) ? d.teachingLevel as EducatorProfile["teachingLevel"] : "other", subjects: Array.isArray(d.subjects) ? d.subjects.filter((x): x is string => typeof x === "string") : [], studentAgeBands: Array.isArray(d.studentAgeBands) ? d.studentAgeBands.filter(isAgeBand) : [], reptileExperience: d.reptileExperience === "advanced" ? "advanced" : d.reptileExperience === "intermediate" ? "intermediate" : "beginner", organisationName: typeof d.organisationName === "string" ? d.organisationName : undefined, country: typeof d.country === "string" ? d.country : undefined, verified: d.verified === true };
 }
 function loadApproximateLocation(v: unknown): ApproximateLocation | undefined {
   if (!v || typeof v !== "object") return undefined;
@@ -77,31 +65,7 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile | null> 
   const d = s.data();
   const interests = (Array.isArray(d.interests) ? d.interests : []).filter(isValidInterest);
   const profileType: ProfileType = isProfileType(d.profileType) ? d.profileType : interests.includes("learner") && interests.length === 1 ? "learner" : "keeper";
-  return {
-    uid: String(d.uid ?? firebaseUser.uid),
-    displayName: String(d.displayName ?? firebaseUser.displayName ?? ""),
-    email: String(d.email ?? firebaseUser.email ?? ""),
-    category: d.category === "child" ? "child" : "adult",
-    ageBand: isAgeBand(d.ageBand) ? d.ageBand : undefined,
-    learningLevel: isLearningLevel(d.learningLevel) ? d.learningLevel : undefined,
-    profileType,
-    experienceLevel: d.experienceLevel === "intermediate" ? "intermediate" : d.experienceLevel === "pro" ? "pro" : "beginner",
-    interests,
-    role: d.role === "admin" ? "admin" : d.role === "moderator" ? "moderator" : "user",
-    isTester: d.isTester === true || d.role === "tester",
-    setupComplete: d.setupComplete === true,
-    unitSystem: isUnitSystem(d.unitSystem) ? d.unitSystem : "metric",
-    educatorProfile: loadEducatorProfile(d.educatorProfile),
-    approximateLocation: loadApproximateLocation(d.approximateLocation),
-    dataCollectionPreferences: loadDataCollectionPreferences(d.dataCollectionPreferences),
-    privacyConsentVersion: typeof d.privacyConsent?.version === "string" ? d.privacyConsent.version : undefined,
-    platform: d.platform === "iOS" || d.platform === "Android" || d.platform === "Windows" || d.platform === "macOS" || d.platform === "Linux" || d.platform === "Other" ? d.platform : undefined,
-    appVersion: typeof d.appVersion === "string" ? d.appVersion : undefined,
-    familyId: typeof d.familyId === "string" ? d.familyId : undefined,
-    familyRole: d.familyRole === "owner" || d.familyRole === "adult" || d.familyRole === "child" ? d.familyRole : undefined,
-    createdAt: d.createdAt,
-    updatedAt: d.updatedAt,
-  };
+  return { uid: String(d.uid ?? firebaseUser.uid), displayName: String(d.displayName ?? firebaseUser.displayName ?? ""), email: String(d.email ?? firebaseUser.email ?? ""), category: d.category === "child" ? "child" : "adult", ageBand: isAgeBand(d.ageBand) ? d.ageBand : undefined, learningLevel: isLearningLevel(d.learningLevel) ? d.learningLevel : undefined, profileType, experienceLevel: d.experienceLevel === "intermediate" ? "intermediate" : d.experienceLevel === "pro" ? "pro" : "beginner", interests, role: d.role === "admin" ? "admin" : d.role === "moderator" ? "moderator" : "user", isTester: d.isTester === true || d.role === "tester", setupComplete: d.setupComplete === true, unitSystem: isUnitSystem(d.unitSystem) ? d.unitSystem : "metric", educatorProfile: loadEducatorProfile(d.educatorProfile), approximateLocation: loadApproximateLocation(d.approximateLocation), dataCollectionPreferences: loadDataCollectionPreferences(d.dataCollectionPreferences), privacyConsentVersion: typeof d.privacyConsent?.version === "string" ? d.privacyConsent.version : undefined, platform: d.platform === "iOS" || d.platform === "Android" || d.platform === "Windows" || d.platform === "macOS" || d.platform === "Linux" || d.platform === "Other" ? d.platform : undefined, appVersion: typeof d.appVersion === "string" ? d.appVersion : undefined, timezone: typeof d.timezone === "string" ? d.timezone : undefined, timezoneOffsetMinutes: typeof d.timezoneOffsetMinutes === "number" ? d.timezoneOffsetMinutes : undefined, timezoneSource: d.timezoneSource === "device" ? "device" : undefined, timezoneObservedAt: d.timezoneObservedAt, familyId: typeof d.familyId === "string" ? d.familyId : undefined, familyRole: d.familyRole === "owner" || d.familyRole === "adult" || d.familyRole === "child" ? d.familyRole : undefined, createdAt: d.createdAt, updatedAt: d.updatedAt };
 }
 async function recordActivity(u: User) {
   try { await updateDoc(doc(db, "users", u.uid), { lastActiveAt: serverTimestamp(), platform: detectPlatform(), appVersion: getAppVersion() }); }
@@ -109,52 +73,9 @@ async function recordActivity(u: User) {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
-
-  async function hydrateUser(u: User) {
-    setProfileLoading(true);
-    try {
-      const loadedProfile = await loadUserProfile(u);
-      await reconcileCreatorCapability(loadedProfile);
-      const refreshedProfile = await loadUserProfile(u);
-      await Promise.all([syncLearningFromCloud(u.uid)]);
-      setProfile(refreshedProfile);
-      await recordActivity(u);
-      void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error) => console.warn("Tiny Titans: unable to sync tracker achievement counts", error));
-    } catch (error) {
-      console.error("Tiny Titans: unable to hydrate user state", error);
-      try { setProfile(await loadUserProfile(u)); } catch { setProfile(null); }
-    } finally { setProfileLoading(false); setLoading(false); }
-  }
-
-  async function refreshProfile() {
-    const u = getAuth(app).currentUser;
-    if (!u) { setProfile(null); return null; }
-    setProfileLoading(true);
-    try {
-      const loaded = await loadUserProfile(u);
-      await reconcileCreatorCapability(loaded);
-      const refreshed = await loadUserProfile(u);
-      setProfile(refreshed);
-      await syncLearningFromCloud(u.uid);
-      void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error) => console.warn("Tiny Titans: unable to sync tracker achievement counts", error));
-      await recordActivity(u);
-      return refreshed;
-    } finally { setProfileLoading(false); }
-  }
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(getAuth(app), async u => {
-      setUser(u);
-      setProfile(null);
-      if (!u) { setProfileLoading(false); setLoading(false); return; }
-      await hydrateUser(u);
-    });
-    return unsubscribe;
-  }, []);
-
+  const [user, setUser] = useState<User | null>(null); const [profile, setProfile] = useState<UserProfile | null>(null); const [loading, setLoading] = useState(true); const [profileLoading, setProfileLoading] = useState(false);
+  async function hydrateUser(u: User) { setProfileLoading(true); try { const loadedProfile = await loadUserProfile(u); await reconcileCreatorCapability(loadedProfile); const refreshedProfile = await loadUserProfile(u); await Promise.all([syncLearningFromCloud(u.uid)]); setProfile(refreshedProfile); await recordActivity(u); void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error) => console.warn("Tiny Titans: unable to sync tracker achievement counts", error)); } catch (error) { console.error("Tiny Titans: unable to hydrate user state", error); try { setProfile(await loadUserProfile(u)); } catch { setProfile(null); } } finally { setProfileLoading(false); setLoading(false); } }
+  async function refreshProfile() { const u = getAuth(app).currentUser; if (!u) { setProfile(null); return null; } setProfileLoading(true); try { const loaded = await loadUserProfile(u); await reconcileCreatorCapability(loaded); const refreshed = await loadUserProfile(u); setProfile(refreshed); await syncLearningFromCloud(u.uid); void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error) => console.warn("Tiny Titans: unable to sync tracker achievement counts", error)); await recordActivity(u); return refreshed; } finally { setProfileLoading(false); } }
+  useEffect(() => { const unsubscribe = onAuthStateChanged(getAuth(app), async u => { setUser(u); setProfile(null); if (!u) { setProfileLoading(false); setLoading(false); return; } await hydrateUser(u); }); return unsubscribe; }, []);
   return <AuthContext.Provider value={{ user, profile, loading, profileLoading, isAuthenticated: user !== null, refreshProfile }}>{children}</AuthContext.Provider>;
 }
