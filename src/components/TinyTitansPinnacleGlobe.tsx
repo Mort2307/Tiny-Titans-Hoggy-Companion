@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Globe from "react-globe.gl";
 import LiveWorldClockBadge from "./LiveWorldClockBadge";
-import { useWorldTime } from "../context/WorldTimeContext";
 import { getOwnCommunityLocation, getPublicCommunityLocations, type PublicCommunityLocation } from "../services/communityLocationPublicService";
 import { syncCommunityLocationMembership } from "../services/communityLocationSyncService";
 import { EARTH_BUMP_TEXTURE_URL, EARTH_DAY_TEXTURE_URL, EARTH_STAR_TEXTURE_URL, type EarthDayNightMaterial, loadEarthDayNightMaterial, updateEarthSun } from "../services/earthDayNight";
@@ -11,7 +10,6 @@ type GlobeRef = { controls: () => { autoRotate: boolean; autoRotateSpeed: number
 type GlobeArea = PublicCommunityLocation & { isSelf: boolean; kind: "community" };
 
 export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
-  useWorldTime();
   const globeRef = useRef<GlobeRef | undefined>(undefined);
   const [areas, setAreas] = useState<PublicCommunityLocation[]>([]);
   const [ownLocation, setOwnLocation] = useState<PublicCommunityLocation | null>(null);
