@@ -1,16 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getDetectedTimezone, getWorldTimeSnapshot, type WorldTimeSnapshot } from "../services/worldTimeService";
 
-const WorldTimeContext = createContext<WorldTimeSnapshot | null>(null);
-
+type WorldTimeContextValue = { timezone: string; snapshot: WorldTimeSnapshot; refresh: () => void };
+const WorldTimeContext = createContext<WorldTimeContextValue | null>(null);
 type Props = { children: ReactNode };
 
 export function WorldTimeProvider({ children }: Props) {
   const [snapshot, setSnapshot] = useState<WorldTimeSnapshot>(() => getWorldTimeSnapshot());
+  const refresh = () => setSnapshot(getWorldTimeSnapshot(new Date(), getDetectedTimezone()));
 
   useEffect(() => {
-    const refresh = () => setSnapshot(getWorldTimeSnapshot(new Date(), getDetectedTimezone()));
-    const interval = window.setInterval(refresh, 1000);
     const heartbeat = window.setInterval(refresh, 5 * 60 * 1000);
     const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
     const onFocus = () => refresh();
@@ -20,7 +19,6 @@ export function WorldTimeProvider({ children }: Props) {
     window.addEventListener("online", onOnline);
     refresh();
     return () => {
-      window.clearInterval(interval);
       window.clearInterval(heartbeat);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onFocus);
@@ -28,12 +26,27 @@ export function WorldTimeProvider({ children }: Props) {
     };
   }, []);
 
-  const value = useMemo(() => snapshot, [snapshot]);
+  const value = useMemo(() => ({ timezone: snapshot.timezone, snapshot, refresh }), [snapshot, refresh]);
   return <WorldTimeContext.Provider value={value}>{children}</WorldTimeContext.Provider>;
 }
 
 export function useWorldTime(): WorldTimeSnapshot {
-  const value = useContext(WorldTimeContext);
-  if (!value) throw new Error("useWorldTime must be used inside WorldTimeProvider");
-  return value;
+  const context = useContext(WorldTimeContext);
+  if (!context) throw new Error("useWorldTime must be used inside WorldTimeProvider");
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const interval = window.setInterval(tick, 1000);
+    const onVisibility = () => { if (document.visibilityState === "visible") tick(); };
+    window.addEventListener("focus", tick);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", tick);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  return getWorldTimeSnapshot(now, context.timezone);
 }
