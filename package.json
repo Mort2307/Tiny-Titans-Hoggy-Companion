@@ -13,7 +13,7 @@
     "validate:hognose-morph-resolution": "node --experimental-strip-types scripts/validate-hognose-morph-resolution.ts",
     "audit:hognose-taxonomy-resolution": "node --experimental-strip-types scripts/audit-hognose-taxonomy-resolution.ts",
     "validate:species": "node scripts/validate-species-database.mjs",
-    "validate:species-taxonomy": "node --experimental-strip-types scripts/validate-species-taxonomy.ts",
+    "validate:species-taxonomy": "npx --yes tsx@4.23.13 scripts/validate-species-taxonomy-runtime.ts",
     "validate:species-husbandry": "node scripts/validate-species-husbandry.mjs",
     "validate:species-evidence": "node scripts/validate-species-evidence.mjs",
     "validate:species-genetics": "node scripts/validate-species-genetics.mjs",
