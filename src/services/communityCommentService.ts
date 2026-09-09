@@ -1,4 +1,4 @@
-import { addDoc, collection, limit, onSnapshot, orderBy, query, serverTimestamp, where, getDocs } from "firebase/firestore";
+import { addDoc, collection, getDocs, limit, onSnapshot, query, serverTimestamp, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 
 export type CommunityComment = {
@@ -36,7 +36,7 @@ export async function getCommunityComments(postId: string): Promise<CommunityCom
 
 export function watchCommunityComments(postId: string, onChange: (items: CommunityComment[]) => void, onError?: (error: Error) => void) {
   if (!postId) return () => undefined;
-  return onSnapshot(query(comments, where("postId", "==", postId), orderBy("createdAt", "asc"), limit(100)), (snapshot) => onChange(snapshot.docs.map(mapComment)), (error) => onError?.(error));
+  return onSnapshot(query(comments, where("postId", "==", postId), limit(100)), (snapshot) => onChange(sortComments(snapshot.docs.map(mapComment))), (error) => onError?.(error));
 }
 
 export async function addCommunityComment(input: { postId: string; authorUid: string; authorName: string; body: string }) {
