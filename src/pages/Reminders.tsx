@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
-import { useWorldTime } from "../context/WorldTimeContext";
+import { useLiveWorldTime } from "../context/WorldTimeContext";
 import { listReminders } from "../services/reminderService";
 import type { Reminder } from "../types/Reminder";
 import { REMINDER_DEFINITIONS } from "../types/Reminder";
@@ -39,7 +39,7 @@ function reminderTiming(reminder: Reminder, now: Date) {
 
 export default function Reminders() {
   const { user, loading, profileLoading } = useAuth();
-  const world = useWorldTime();
+  const world = useLiveWorldTime();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
@@ -69,7 +69,7 @@ export default function Reminders() {
       <div><p className="tt-reminder-eyebrow">Keeper routine · reminder hub</p><h1>🔔 Reminder Hub</h1><p>Dates use the shared live world clock. Your device timezone is tracked separately from each reminder's scheduled timezone, so travel does not silently rewrite your routines.</p></div>
       <div className="tt-reminder-hero-stats">
         <span><strong>TODAY</strong><b>{fullDate(appToday)}</b></span>
-        <span><strong>{world.localTime}</strong>{world.timezone}</span>
+        <span><strong>{world.localTime}</strong>{world.timezone} · {world.utcOffsetLabel}</span>
         <span><strong>{activeReminders.length}</strong> active</span>
         <span><strong>{pausedReminders.length}</strong> paused</span>
       </div>
