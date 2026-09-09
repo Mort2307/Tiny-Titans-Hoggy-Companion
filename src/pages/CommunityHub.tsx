@@ -5,6 +5,7 @@ import { getCommunityPosts } from "../services/communityService";
 import { markCommunityAsRead } from "../services/communityReadStateService";
 import type { CommunityCategory, CommunityPost } from "../types/community";
 import { communityCategoryIcon, communityCategoryLabel } from "../types/community";
+import CommunityPostDiscussion from "../components/CommunityPostDiscussion";
 import "../styles/CommunityHub.css";
 
 const sections: { category: CommunityCategory; description: string }[] = [
@@ -20,15 +21,13 @@ const communityActions = [
   { icon: "🧭", title: "Find a Mentor", description: "Connect with experienced keepers through the dedicated mentorship workspace.", route: "/community/mentorship", action: "Explore mentorship" },
   { icon: "🧬", title: "Morph Contributions", description: "Explore the Morph Library and submit reviewed reference images or missing terminology.", route: "/morph-library", action: "Open Morph Library" },
   { icon: "🏡", title: "Vivarium Showcase", description: "Explore real keeper setups, compare approaches and share what you have learned — without ranking anyone's enclosure.", route: "/community/vivarium-showcase", action: "Explore setups" },
-  { icon: "💬", title: "Conversations", description: "Jump into your existing community conversations and keep the discussion moving.", route: "/conversations", action: "Open conversations" },
+  { icon: "💬", title: "Conversations", description: "Message Tiny Titans privately, follow replies to your contributions and keep every conversation in one inbox.", route: "/conversations", action: "Open conversations" },
   { icon: "🛠️", title: "Report and Improve", description: "Report bugs, share feedback and help make the app better for every keeper.", route: "/report-bug", action: "Send feedback" },
 ];
 
 function formatDate(value: unknown) {
   if (!value) return "";
-  if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") {
-    return value.toDate().toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-  }
+  if (typeof value === "object" && value !== null && "toDate" in value && typeof value.toDate === "function") return value.toDate().toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   const date = new Date(String(value));
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
@@ -44,6 +43,26 @@ function ActionCard({ action, onOpen }: { action: typeof communityActions[number
       </span>
     </button>
   );
+}
+
+function CommunityPrivacyNotice({ onOpenPrivacy, onOpenMessages }: { onOpenPrivacy: () => void; onOpenMessages: () => void }) {
+  return <article className="community-post community-post-important community-privacy-post">
+    <div className="community-post-top">
+      <span className="community-post-icon" aria-hidden="true">🛡️</span>
+      <div className="community-post-meta"><span className="community-post-category">Privacy &amp; Safety</span><span className="community-priority community-priority-important">pinned</span></div>
+      <span>Always available</span>
+    </div>
+    <h3>Your information. Your choice. Our responsibility.</h3>
+    <p>Tiny Titans is deliberately built to minimise the information it uses. Community conversations only need enough account information to identify the correct sender — primarily your Firebase UID as an internal account identifier and the community name you choose to display.</p>
+    <div className="community-privacy-post__grid">
+      <div><strong>🔒 What we protect</strong><span>Your private snake records stay in your account. Community messaging does not require your contacts, microphone, phone contents or exact GPS location.</span></div>
+      <div><strong>🧠 Intelligence is optional</strong><span>Declining the existing Intelligence contribution choice does not remove you from Tiny Titans. Your core records still work; the existing App Intelligence Modifier simply limits the advanced intelligence layer.</span></div>
+      <div><strong>🌍 Location is separate</strong><span>The community globe uses coarse community areas. Exact home positions are not displayed as public community locations.</span></div>
+      <div><strong>↩️ You can change your mind</strong><span>Review your choices at any time from My Account → Data &amp; Privacy. You can also tell us why a choice feels uncomfortable so we can improve the explanation.</span></div>
+    </div>
+    <p className="community-privacy-post__note"><strong>Why ask for permission?</strong> Because Tiny Titans should be explicit about what a feature uses, why it uses it and what happens when you say no. We do not ask for access to unrelated information simply because it is technically available.</p>
+    <div className="community-privacy-post__actions"><button type="button" onClick={onOpenPrivacy}>Review privacy choices →</button><button type="button" onClick={onOpenMessages}>Open conversations →</button></div>
+  </article>;
 }
 
 function PostCard({ post }: { post: CommunityPost }) {
@@ -68,13 +87,9 @@ function PostCard({ post }: { post: CommunityPost }) {
           {post.severity && <span>⚠️ {post.severity}</span>}
         </div>
       )}
-      {post.workaround && (
-        <div className="community-workaround">
-          <strong>Workaround.</strong>
-          <p>{post.workaround}</p>
-        </div>
-      )}
+      {post.workaround && <div className="community-workaround"><strong>Workaround.</strong><p>{post.workaround}</p></div>}
       {post.resolvedVersion && <div className="community-resolved">🟢 Resolved in {post.resolvedVersion}.</div>}
+      <CommunityPostDiscussion postId={post.id} />
     </article>
   );
 }
@@ -94,33 +109,18 @@ export default function CommunityHub() {
     if (authLoading || profileLoading || !userId) return;
     let mounted = true;
     getCommunityPosts({ isTester: profile?.isTester, isAdmin: profile?.role === "admin" })
-      .then((items) => {
-        if (!mounted) return;
-        setPosts(items);
-        setLoadError("");
-      })
-      .catch((error) => {
-        if (mounted) setLoadError(error instanceof Error ? error.message : "Unable to load the Community Hub.");
-      })
-      .finally(() => {
-        if (mounted) setLoadedUserId(userId);
-      });
-    return () => {
-      mounted = false;
-    };
+      .then((items) => { if (!mounted) return; setPosts(items); setLoadError(""); })
+      .catch((error) => { if (mounted) setLoadError(error instanceof Error ? error.message : "Unable to load the Community Hub."); })
+      .finally(() => { if (mounted) setLoadedUserId(userId); });
+    return () => { mounted = false; };
   }, [authLoading, profileLoading, userId, profile?.isTester, profile?.role]);
 
   useEffect(() => {
     if (authLoading || profileLoading || !userId || loading || effectiveError) return;
-    void markCommunityAsRead(userId)
-      .then(() => window.dispatchEvent(new Event("community-read-state-changed")))
-      .catch(() => undefined);
+    void markCommunityAsRead(userId).then(() => window.dispatchEvent(new Event("community-read-state-changed"))).catch(() => undefined);
   }, [authLoading, profileLoading, userId, loading, effectiveError]);
 
-  const visiblePosts = useMemo(
-    () => active === "all" ? posts : posts.filter((post) => post.category === active),
-    [active, posts],
-  );
+  const visiblePosts = useMemo(() => active === "all" ? posts : posts.filter((post) => post.category === active), [active, posts]);
   const importantCount = posts.filter((post) => post.priority !== "normal" && post.category !== "release").length;
   const testerCount = posts.filter((post) => post.category === "tester").length;
   const releaseCount = posts.filter((post) => post.category === "release").length;
@@ -128,121 +128,20 @@ export default function CommunityHub() {
 
   return (
     <section className="community-page">
-      <header className="community-hero">
-        <div className="community-hero-icon" aria-hidden="true">🌿</div>
-        <div className="community-hero-copy">
-          <p className="community-eyebrow">TINY TITANS · COMMUNITY</p>
-          <h1>Community Hub</h1>
-          <p>A single place for keeper news, shared knowledge, feature voting, mentorship, contributions and official Tiny Titans updates.</p>
-        </div>
-        {importantCount > 0 && <span className="community-live-badge">● {importantCount} important</span>}
-      </header>
-
-      <section className="community-pulse" aria-label="Community pulse">
-        <div><strong>{posts.length}</strong><span>Published updates</span></div>
-        <div><strong>{importantCount}</strong><span>Important items</span></div>
-        <div><strong>{testerCount}</strong><span>Tester notices</span></div>
-        <div><strong>{releaseCount}</strong><span>Release notes</span></div>
-      </section>
-
-      <section className="community-section-heading">
-        <div>
-          <p className="community-eyebrow">GET INVOLVED</p>
-          <h2>Help shape Tiny Titans.</h2>
-          <p>There are several ways to learn, contribute, share ideas and connect with other keepers.</p>
-        </div>
-      </section>
-
-      <section className="community-action-grid" aria-label="Community actions">
-        {communityActions.map((action) => <ActionCard key={action.route} action={action} onOpen={navigate} />)}
-      </section>
-
-      <section className="community-standard">
-        <div className="community-standard-icon" aria-hidden="true">🤝</div>
-        <div>
-          <h2>Keeper-first community.</h2>
-          <p>Share knowledge from evidence, ask questions without fear of judgement, protect keeper privacy and help each other learn.</p>
-        </div>
-      </section>
-
-      <section className="community-section-heading community-updates-heading">
-        <div>
-          <p className="community-eyebrow">OFFICIAL FEED</p>
-          <h2>{active === "all" ? "Latest from Tiny Titans" : communityCategoryLabel(active)}</h2>
-          <p>{active === "all" ? "Official updates, known issues, tester notices and release information." : sections.find((item) => item.category === active)?.description}</p>
-        </div>
-        {active !== "all" && <button type="button" className="community-filter-button" onClick={() => setActive("all")}>Show all</button>}
-      </section>
-
-      <div className="community-section-grid">
-        {sections.map((section) => (
-          <button
-            key={section.category}
-            type="button"
-            className={`community-section-card ${active === section.category ? "active" : ""}`}
-            onClick={() => setActive(section.category)}
-          >
-            <span className="community-section-icon" aria-hidden="true">{communityCategoryIcon(section.category)}</span>
-            <span>
-              <strong>{communityCategoryLabel(section.category)}</strong>
-              <small>{section.description}</small>
-              {section.category === "tester" && testerCount > 0 && <small className="community-section-count">{testerCount} current tester update{testerCount === 1 ? "" : "s"}.</small>}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {loading && (
-        <div className="community-empty">
-          <span aria-hidden="true">🐍</span>
-          <h3>Loading the Hub…</h3>
-          <p>Checking for the latest Tiny Titans updates.</p>
-        </div>
-      )}
-      {!loading && effectiveError && (
-        <div className="community-empty community-error">
-          <span aria-hidden="true">⚠️</span>
-          <h3>We couldn't load the updates.</h3>
-          <p>{effectiveError}</p>
-          {user && <button type="button" onClick={() => window.location.reload()}>Try again</button>}
-        </div>
-      )}
-      {!loading && !effectiveError && visiblePosts.length === 0 && (
-        <div className="community-empty">
-          <span aria-hidden="true">🌱</span>
-          <h3>No published updates here yet.</h3>
-          <p>When Tiny Titans has something to share, it will appear in this feed.</p>
-        </div>
-      )}
-      {!loading && !effectiveError && visiblePosts.length > 0 && (
-        <div className="community-post-list">
-          {visiblePosts.map((post) => <PostCard key={post.id} post={post} />)}
-        </div>
-      )}
-
-      {isAdmin && (
-        <section className="community-feedback-card community-admin-card">
-          <div>
-            <span className="community-feedback-icon" aria-hidden="true">📢</span>
-            <div>
-              <h2>Creator publishing.</h2>
-              <p>Publish official updates, known issues, tester notices and release notes for the community.</p>
-            </div>
-          </div>
-          <button type="button" onClick={() => navigate("/creator/community")}>Open Community Manager →</button>
-        </section>
-      )}
-
-      <section className="community-feedback-card">
-        <div>
-          <span className="community-feedback-icon" aria-hidden="true">💬</span>
-          <div>
-            <h2>Have something to tell us?</h2>
-            <p>Report a problem, share feedback or help us make the next release better.</p>
-          </div>
-        </div>
-        <button type="button" onClick={() => navigate(user ? "/report-bug" : "/report-issue")}>{user ? "Send feedback" : "Report an issue"} →</button>
-      </section>
+      <header className="community-hero"><div className="community-hero-icon" aria-hidden="true">🌿</div><div className="community-hero-copy"><p className="community-eyebrow">TINY TITANS · COMMUNITY</p><h1>Community Hub</h1><p>A single place for keeper news, shared knowledge, feature voting, mentorship, contributions and official Tiny Titans updates.</p></div>{importantCount > 0 && <span className="community-live-badge">● {importantCount} important</span>}</header>
+      <section className="community-pulse" aria-label="Community pulse"><div><strong>{posts.length}</strong><span>Published updates</span></div><div><strong>{importantCount}</strong><span>Important items</span></div><div><strong>{testerCount}</strong><span>Tester notices</span></div><div><strong>{releaseCount}</strong><span>Release notes</span></div></section>
+      <CommunityPrivacyNotice onOpenPrivacy={() => navigate("/account/privacy")} onOpenMessages={() => navigate("/conversations")} />
+      <section className="community-section-heading"><div><p className="community-eyebrow">GET INVOLVED</p><h2>Help shape Tiny Titans.</h2><p>There are several ways to learn, contribute, share ideas and connect with other keepers.</p></div></section>
+      <section className="community-action-grid" aria-label="Community actions">{communityActions.map((action) => <ActionCard key={action.route} action={action} onOpen={navigate} />)}</section>
+      <section className="community-standard"><div className="community-standard-icon" aria-hidden="true">🤝</div><div><h2>Keeper-first community.</h2><p>Share knowledge from evidence, ask questions without fear of judgement, protect keeper privacy and help each other learn.</p></div></section>
+      <section className="community-section-heading community-updates-heading"><div><p className="community-eyebrow">OFFICIAL FEED</p><h2>{active === "all" ? "Latest from Tiny Titans" : communityCategoryLabel(active)}</h2><p>{active === "all" ? "Official updates, known issues, tester notices and release information." : sections.find((item) => item.category === active)?.description}</p></div>{active !== "all" && <button type="button" className="community-filter-button" onClick={() => setActive("all")}>Show all</button>}</section>
+      <div className="community-section-grid">{sections.map((section) => <button key={section.category} type="button" className={`community-section-card ${active === section.category ? "active" : ""}`} onClick={() => setActive(section.category)}><span className="community-section-icon" aria-hidden="true">{communityCategoryIcon(section.category)}</span><span><strong>{communityCategoryLabel(section.category)}</strong><small>{section.description}</small>{section.category === "tester" && testerCount > 0 && <small className="community-section-count">{testerCount} current tester update{testerCount === 1 ? "" : "s"}.</small>}</span></button>)}</div>
+      {loading && <div className="community-empty"><span aria-hidden="true">🐍</span><h3>Loading the Hub…</h3><p>Checking for the latest Tiny Titans updates.</p></div>}
+      {!loading && effectiveError && <div className="community-empty community-error"><span aria-hidden="true">⚠️</span><h3>We couldn't load the updates.</h3><p>{effectiveError}</p>{user && <button type="button" onClick={() => window.location.reload()}>Try again</button>}</div>}
+      {!loading && !effectiveError && visiblePosts.length === 0 && <div className="community-empty"><span aria-hidden="true">🌱</span><h3>No published updates here yet.</h3><p>When Tiny Titans has something to share, it will appear in this feed.</p></div>}
+      {!loading && !effectiveError && visiblePosts.length > 0 && <div className="community-post-list">{visiblePosts.map((post) => <PostCard key={post.id} post={post} />)}</div>}
+      {isAdmin && <section className="community-feedback-card community-admin-card"><div><span className="community-feedback-icon" aria-hidden="true">📢</span><div><h2>Creator publishing.</h2><p>Publish official updates, known issues, tester notices and release notes for the community.</p></div></div><button type="button" onClick={() => navigate("/creator/community")}>Open Community Manager →</button></section>}
+      <section className="community-feedback-card"><div><span className="community-feedback-icon" aria-hidden="true">💬</span><div><h2>Have something to tell us?</h2><p>Message Tiny Titans privately, report a problem or share feedback.</p></div></div><button type="button" onClick={() => navigate(user ? "/conversations" : "/report-issue")}>{user ? "Open conversations" : "Report an issue"} →</button></section>
     </section>
   );
 }
