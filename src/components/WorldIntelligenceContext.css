@@ -1,0 +1,39 @@
+.tt-world-intelligence {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--tt-surface, #fff) 94%, currentColor 6%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.tt-world-intelligence--attention { border-color: color-mix(in srgb, currentColor 26%, transparent); }
+.tt-world-intelligence--quiet { opacity: 0.9; }
+
+.tt-world-intelligence__meta,
+.tt-world-intelligence__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.tt-world-intelligence__meta { margin-bottom: 7px; flex-wrap: wrap; }
+.tt-world-intelligence__eyebrow { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; }
+.tt-world-intelligence__clock { font-size: 0.76rem; opacity: 0.72; }
+.tt-world-intelligence__body > div { min-width: 0; }
+.tt-world-intelligence__body strong { display: block; font-size: 0.96rem; line-height: 1.25; }
+.tt-world-intelligence__body p { margin: 5px 0 0; font-size: 0.82rem; line-height: 1.45; opacity: 0.8; }
+.tt-world-intelligence__action {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 700px) {
+  .tt-world-intelligence { padding: 13px 14px; }
+  .tt-world-intelligence__body { align-items: flex-start; flex-direction: column; }
+  .tt-world-intelligence__action { align-self: flex-start; }
+}
