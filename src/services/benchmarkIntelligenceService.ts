@@ -19,8 +19,10 @@ export type BenchmarkMetric = {
 export type CommunityBenchmarkDataset = {
   generatedAt: string;
   contributorCount: number;
+  eligibleKeepers: number;
   snakeCount: number;
   cohortKey: string;
+  publicationThreshold: { minimumContributors: number; minimumRecords: number; met: boolean };
   metrics: BenchmarkMetric[];
 };
 
@@ -30,7 +32,6 @@ const getCommunityBenchmarks = httpsCallable<
   CommunityBenchmarkDataset
 >(functions, "getCommunityBenchmarks");
 
-/** Uses the same cohort boundaries as the server benchmark engine. */
 export function getAgeBand(hatchDate?: string, now = new Date()): string | undefined {
   if (!hatchDate) return undefined;
   const parsed = Date.parse(hatchDate);
@@ -44,13 +45,7 @@ export function getAgeBand(hatchDate?: string, now = new Date()): string | undef
   return "mature";
 }
 
-/** Fetches only anonymised benchmark aggregates. */
-export async function getCommunityBenchmarkDataset(input: {
-  species?: string;
-  sex?: string;
-  morph?: string;
-  ageBand?: string;
-} = {}): Promise<CommunityBenchmarkDataset> {
+export async function getCommunityBenchmarkDataset(input: { species?: string; sex?: string; morph?: string; ageBand?: string } = {}): Promise<CommunityBenchmarkDataset> {
   const result = await getCommunityBenchmarks(input);
   return result.data;
 }
