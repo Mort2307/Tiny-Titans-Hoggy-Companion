@@ -29,8 +29,6 @@ export default function SnakeProfileDeleteControl() {
     }
   }
 
-  const encodedId = encodeURIComponent(decodeURIComponent(snakeId));
-
   return (
     <>
       <section className="tracker-card" style={{ marginTop: "2rem", border: "1px solid rgba(220, 70, 70, 0.35)" }} aria-labelledby="snake-delete-heading">
