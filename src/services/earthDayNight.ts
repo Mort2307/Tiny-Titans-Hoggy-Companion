@@ -78,7 +78,7 @@ export async function loadEarthDayNightMaterial(): Promise<EarthDayNightMaterial
   nightTexture.colorSpace = THREE.SRGBColorSpace;
   return new THREE.ShaderMaterial({
     uniforms: {
-      dayTexture: { value: geoToSunDirection(0, 0) as unknown as THREE.Texture },
+      dayTexture: { value: dayTexture },
       nightTexture: { value: nightTexture },
       sunDirection: { value: geoToSunDirection(0, 0) },
     },
