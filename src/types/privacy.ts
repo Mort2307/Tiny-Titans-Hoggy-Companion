@@ -12,14 +12,11 @@ export type PrivacyPreferences = {
   anonymousAnalytics: boolean;
   /** Legacy husbandry consent retained for migration/backward compatibility. */
   communityHusbandryData: boolean;
-  /** Personal advanced intelligence. Independent from community contribution. */
-  personalIntelligence: boolean;
-  /** Optional contribution of eligible husbandry records to aggregate community intelligence. */
-  communityContribution: boolean;
-  /** Optional access to aggregate community intelligence. */
-  communityIntelligence: boolean;
-  /** Optional ability to participate in community comments/messaging. */
-  communityMessaging: boolean;
+  /** Optional at the type boundary so older call-sites can be migrated safely. */
+  personalIntelligence?: boolean;
+  communityContribution?: boolean;
+  communityIntelligence?: boolean;
+  communityMessaging?: boolean;
   communityMessagingDeclineReason?: CommunityMessagingDeclineReason | null;
   communityMessagingDeclineReasonDetail?: string | null;
   productUpdates: boolean;
