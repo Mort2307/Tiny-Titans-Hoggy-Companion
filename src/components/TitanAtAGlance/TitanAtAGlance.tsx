@@ -91,6 +91,7 @@ function routeFor(slice: TitanAtAGlanceSliceId, snakeId?: string): string {
     case "account": return "/account/personalise";
     case "reminders": return "/reminders";
     case "thisWeek": return snakeId ? `/titan-intelligence/feature/this-week?snake=${encodeURIComponent(snakeId)}` : "/titan-intelligence/feature/this-week";
+    case "creatorCentre": return "/creator";
     default: return "/";
   }
 }
@@ -120,6 +121,7 @@ function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): Slic
     case "contribution": return { label: "Contribute", value: "Open", secondary: "Help Tiny Titans", route: routeFor(slice, id) };
     case "goals": return { label: "Titan Goals", value: "Open", secondary: "Your progress", route: routeFor(slice, id) };
     case "account": return { label: "Account", value: "Open", secondary: "Personalise Tiny Titans", route: routeFor(slice, id) };
+    case "creatorCentre": return { label: "Creator Centre", value: "Private", secondary: "Creator tools", route: routeFor(slice, id) };
   }
 }
 
