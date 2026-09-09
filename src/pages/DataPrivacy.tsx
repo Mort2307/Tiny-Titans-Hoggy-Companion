@@ -6,7 +6,19 @@ import { getPrivacyPreferences, savePrivacyPreferences } from "../services/priva
 import type { PrivacyPreferences } from "../types/privacy";
 import PageBackButton from "../components/PageBackButton";
 
-const EMPTY: PrivacyPreferences = { consentVersion: "", communityLocation: false, anonymousAnalytics: false, communityHusbandryData: false, productUpdates: false };
+const EMPTY: PrivacyPreferences = {
+  consentVersion: "",
+  communityLocation: false,
+  anonymousAnalytics: false,
+  communityHusbandryData: false,
+  personalIntelligence: false,
+  communityContribution: false,
+  communityIntelligence: false,
+  communityMessaging: false,
+  communityMessagingDeclineReason: null,
+  communityMessagingDeclineReasonDetail: null,
+  productUpdates: false,
+};
 
 export default function DataPrivacy() {
   const navigate = useNavigate();
@@ -34,39 +46,29 @@ export default function DataPrivacy() {
 
   if (loading) return <main className="page-container"><section className="personalisation-shell"><p className="personalisation-eyebrow">My Account</p><h1>🔐 Data &amp; Privacy</h1><div className="personalisation-card"><p>Loading privacy controls…</p></div></section></main>;
 
-  const intelligenceEnabled = preferences.communityHusbandryData === true;
-
   return <main className="page-container"><section className="personalisation-shell">
     <PageBackButton fallbackPath="/account" label="Back to My Account" />
     <p className="personalisation-eyebrow">My Account</p><h1>🔐 Data &amp; Privacy</h1>
-    <p>Your snake records remain yours and the app remains fully usable either way. This choice controls whether Tiny Titans may use eligible husbandry records for its advanced Intelligence layer.</p>
+    <p>Your snake records remain yours and the app remains fully usable either way. Privacy choices control which optional systems may use eligible records. Evidence quantity changes confidence; it never changes whether a keeper with one snake can use Intelligence.</p>
+
+    <section className="personalisation-card"><h2>🐍 Basic Keeper Mode</h2><p><strong>Always available.</strong> You can add and manage snakes, record weights, feeding, shedding, behaviour, health and husbandry, use reminders, learning, morphs and breeding tools, and review your own records without optional intelligence sharing.</p></section>
 
     <section className="personalisation-card">
-      <h2>🐍 Basic Keeper Mode</h2>
-      <p><strong>Always available.</strong> When Intelligence is off, Tiny Titans still lets you add and manage snakes, record weights, feeding, shedding, behaviour, health and husbandry, use reminders, learning, morphs and breeding tools, and review your own records.</p>
-      <p><strong>Basic means basic:</strong> with Intelligence off, your records are limited to <strong>basic record history and simple totals</strong>. Tiny Titans does not interpret them, correlate them, benchmark them, detect patterns or generate smart keeper insights while Intelligence is off.</p>
-    </section>
-
-    <section className="personalisation-card">
-      <h2>🧠 Titan Intelligence</h2>
+      <h2>🧠 Personal Titan Intelligence</h2>
       <p>{FULL_INTELLIGENCE_COPY.body}</p>
-      <label className="setup-check">
-        <input type="checkbox" checked={intelligenceEnabled} onChange={(event) => void save({ ...preferences, communityHusbandryData: event.target.checked })} disabled={saving} />
-        <span>
-          <strong>{intelligenceEnabled ? "Titan Intelligence: Active." : "Titan Intelligence: Inactive."}</strong>
-          <small>{intelligenceEnabled ? "Advanced individual intelligence and eligible community contribution are enabled while your consent remains on." : "Enable Titan Intelligence to unlock advanced individual intelligence and community knowledge by choosing to contribute eligible husbandry data."}</small>
-        </span>
-      </label>
-      <div className="setup-help">
-        <strong>{intelligenceEnabled ? "What you unlock" : "What stays locked"}</strong>
-        <p>{intelligenceEnabled ? "Intelligent trends, correlations, anomaly detection, individual benchmarking, intelligence memory/timeline and community intelligence can operate while your consent is enabled." : "Smart trends, correlations, anomaly detection, benchmarking, intelligence memory/timeline and community intelligence remain paused. Your basic records are not deleted or restricted."}</p>
-      </div>
-      <button className="account-button account-button--highlight" type="button" onClick={() => navigate("/account/intelligence")}>🧠 {intelligenceEnabled ? "Open Intelligence Dashboard" : "View Intelligence & Why Opt In"} →</button>
+      <label className="setup-check"><input type="checkbox" checked={preferences.personalIntelligence} onChange={(event) => void save({ ...preferences, personalIntelligence: event.target.checked })} disabled={saving} /><span><strong>{preferences.personalIntelligence ? "Personal Intelligence: Active." : "Personal Intelligence: Inactive."}</strong><small>Growth, behaviour, husbandry, genetics, timeline, anomaly and cross-domain intelligence can use your eligible private records. One snake is enough; sparse evidence affects confidence only.</small></span></label>
+      <button className="account-button account-button--highlight" type="button" onClick={() => navigate("/account/intelligence")}>🧠 Open Intelligence Dashboard →</button>
     </section>
+
+    <section className="personalisation-card"><h2>🌱 Community Intelligence contribution</h2><p>Your eligible records can strengthen anonymous community knowledge. One snake is enough to contribute. Five independent contributors is only a keeper-facing disclosure safeguard; qualifying data is retained in the aggregate learning pool.</p><label className="setup-check"><input type="checkbox" checked={preferences.communityContribution} onChange={(event) => void save({ ...preferences, communityContribution: event.target.checked })} disabled={saving} /><span><strong>{preferences.communityContribution ? "Community contribution: Active." : "Community contribution: Off."}</strong><small>Individual snake records, names, notes, photos and exact locations are not community output.</small></span></label></section>
+
+    <section className="personalisation-card"><h2>🌐 Community Intelligence access</h2><p>Allow responsible aggregate community intelligence to be shown when independent-cohort safeguards are met.</p><label className="setup-check"><input type="checkbox" checked={preferences.communityIntelligence} onChange={(event) => void save({ ...preferences, communityIntelligence: event.target.checked })} disabled={saving} /><span><strong>{preferences.communityIntelligence ? "Community Intelligence: Active." : "Community Intelligence: Off."}</strong><small>This does not change your personal records or contribution permission.</small></span></label></section>
+
+    <section className="personalisation-card"><h2>💬 Community Messaging &amp; Comments</h2><p>Reading the Community Hub remains available without this permission. Enabling it lets you comment on official posts and participate in community discussion. Existing private support/submission conversations remain in their dedicated secure workspace.</p><label className="setup-check"><input type="checkbox" checked={preferences.communityMessaging} onChange={(event) => void save({ ...preferences, communityMessaging: event.target.checked, communityMessagingDeclineReason: event.target.checked ? null : (preferences.communityMessagingDeclineReason ?? "dont-want-messages") })} disabled={saving} /><span><strong>{preferences.communityMessaging ? "Community Messaging: Active." : "Community Messaging: Off."}</strong><small>Only your chosen community display name is shown beside a comment.</small></span></label></section>
 
     <section className="personalisation-card"><h2>📊 Anonymous product analytics</h2><p>Optional aggregated usage and feature-performance information used to improve Tiny Titans. This is separate from Titan Intelligence.</p><label className="setup-check"><input type="checkbox" checked={preferences.anonymousAnalytics} onChange={(event) => void save({ ...preferences, anonymousAnalytics: event.target.checked })} disabled={saving} /><span><strong>Allow anonymous product analytics</strong><small>You can switch this off later.</small></span></label></section>
-    <section className="personalisation-card"><h2>🌍 Community location</h2><p>Optional approximate community location. Tiny Titans should use a coarse area rather than expose an exact home position.</p><label className="setup-check"><input type="checkbox" checked={preferences.communityLocation} onChange={(event) => void save({ ...preferences, communityLocation: event.target.checked })} disabled={saving} /><span><strong>Show my approximate area on the community map</strong><small>Community location is separate from husbandry intelligence.</small></span></label></section>
-    <section className="personalisation-card"><h2>📣 Product updates</h2><p>Optional Tiny Titans feature and release updates.</p><label className="setup-check"><input type="checkbox" checked={preferences.productUpdates} onChange={(event) => void save({ ...preferences, productUpdates: event.target.checked })} disabled={saving} /><span><strong>Receive product updates</strong><small>This does not control app tracking or Intelligence.</small></span></label></section>
+    <section className="personalisation-card"><h2>🌍 Community location</h2><p>Optional approximate community location. Tiny Titans uses a coarse area rather than exposing an exact home position.</p><label className="setup-check"><input type="checkbox" checked={preferences.communityLocation} onChange={(event) => void save({ ...preferences, communityLocation: event.target.checked })} disabled={saving} /><span><strong>Show my approximate area on the community map</strong><small>Community location is separate from Intelligence and messaging.</small></span></label></section>
+    <section className="personalisation-card"><h2>📣 Product updates</h2><p>Optional Tiny Titans feature and release updates.</p><label className="setup-check"><input type="checkbox" checked={preferences.productUpdates} onChange={(event) => void save({ ...preferences, productUpdates: event.target.checked })} disabled={saving} /><span><strong>Receive product updates</strong><small>This does not control your core snake records.</small></span></label></section>
     {error && <div className="setup-error" role="alert">{error}</div>}{saved && <p className="personalisation-saved" role="status">✓ Your data choices have been saved.</p>}
     <p className="setup-help">Consent version: {preferences.consentVersion || "Not recorded"}. Optional choices can be changed or withdrawn at any time.</p>
   </section></main>;

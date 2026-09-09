@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { TitanDecision } from "../../services/titanDecisionStateService";
+import TitanDecisionFeedback from "./TitanDecisionFeedback";
 import "./TitanDecisionWhyCard.css";
 
 interface Props { decision: TitanDecision; compact?: boolean; }
@@ -15,5 +16,6 @@ export default function TitanDecisionWhyCard({ decision, compact = false }: Prop
       <p className="titan-decision-why__boundary"><b>Boundary:</b> {decision.explanation.boundary}</p>
     </>}
     <Link to={decision.destination || "/"}>Review the canonical next action →</Link>
+    {!compact && <TitanDecisionFeedback insightId={decision.id} animalId={decision.animalId} domain={decision.domain} destination={decision.destination} />}
   </section>;
 }

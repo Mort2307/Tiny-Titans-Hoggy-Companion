@@ -1,0 +1,7 @@
+.titan-decision-feedback{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.titan-decision-feedback>span{font-size:12px;font-weight:800;color:rgba(255,255,255,.68);margin-right:2px}
+.titan-decision-feedback button{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.035);color:inherit;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:750;cursor:pointer}
+.titan-decision-feedback button:hover:not(:disabled){background:rgba(255,255,255,.08)}
+.titan-decision-feedback button:disabled{opacity:.45;cursor:not-allowed}
+.titan-decision-feedback--done{font-size:12px;color:rgba(255,255,255,.72)}
+@media (max-width:640px){.titan-decision-feedback{align-items:stretch}.titan-decision-feedback>span{width:100%}.titan-decision-feedback button{flex:1;min-width:0}}
