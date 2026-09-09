@@ -24,7 +24,8 @@ export type CommunityBenchmarkDataset = {
   metrics: BenchmarkMetric[];
 };
 
-const functions = getFunctions(app);
+// The callable benchmark function is deployed in the app's European region.
+const functions = getFunctions(app, "europe-west2");
 const getCommunityBenchmarks = httpsCallable<
   { species?: string; sex?: string; morph?: string; ageBand?: string },
   CommunityBenchmarkDataset
