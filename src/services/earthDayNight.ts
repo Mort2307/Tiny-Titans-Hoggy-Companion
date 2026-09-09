@@ -57,7 +57,10 @@ export function getSolarCoordinates(date: Date): { lat: number; lng: number } {
 export function geoToSunDirection(lat: number, lng: number): THREE.Vector3 {
   const latRad = lat * Math.PI / 180;
   const lngRad = lng * Math.PI / 180;
-  return new THREE.Vector3(Math.cos(latRad) * Math.sin(lngRad), Math.sin(latRad), Math.cos(latRad) * Math.cos(lngRad)).normalize();
+  // Match three-globe's geographic Cartesian convention: x = cos(lat)cos(lng),
+  // y = sin(lat), z = cos(lat)sin(lng). This keeps the solar terminator aligned
+  // with the same latitude/longitude coordinates used by globe markers and POV.
+  return new THREE.Vector3(Math.cos(latRad) * Math.cos(lngRad), Math.sin(latRad), Math.cos(latRad) * Math.sin(lngRad)).normalize();
 }
 
 export function updateEarthSun(material: EarthDayNightMaterial, date = new Date()): void {
@@ -75,7 +78,7 @@ export async function loadEarthDayNightMaterial(): Promise<EarthDayNightMaterial
   nightTexture.colorSpace = THREE.SRGBColorSpace;
   return new THREE.ShaderMaterial({
     uniforms: {
-      dayTexture: { value: dayTexture },
+      dayTexture: { value: geoToSunDirection(0, 0) as unknown as THREE.Texture },
       nightTexture: { value: nightTexture },
       sunDirection: { value: geoToSunDirection(0, 0) },
     },
