@@ -1,6 +1,7 @@
 import { resolveHognoseMorphInput } from "../src/genetics/hognoseMorphResolver.ts";
 import { fullHognoseMorphTaxonomyByName } from "../src/data/hognoseMorphFullTaxonomy.ts";
 import { getHognosePhenotypeGuide, hognosePhenotypeGuideById } from "../src/data/hognosePhenotypeGuide.ts";
+import { hognosePhenotypeExtensionsById } from "../src/data/hognosePhenotypeExtensions.ts";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`Hognose morph resolution validation failed: ${message}`);
@@ -75,7 +76,7 @@ assertTaxonomyFormula("Sable Cinnamon Anaconda", "cinnamon:1|conda:1|sable:2");
 assertTaxonomyFormula("Pastel Toffeeglow Chocolate Superconda", "albino:2|conda:2|pastel:1|swiss-chocolate:2|toffeebelly:2");
 assertTaxonomyFormula("Pink Pastel Maitai Arctic Anaconda", "arctic:1|conda:1|pink-pastel-albino:2|sable:2|toffeebelly:2");
 
-// Visual identification intelligence gates.
+// Visual identification intelligence gates for core guides.
 for (const id of [
   "arctic", "super-arctic", "conda", "super-conda", "albino", "axanthic", "lavender", "caramel",
   "evans-hypo", "leucistic", "pink-pastel-albino", "pistachio", "sable", "swiss-chocolate", "toffeebelly",
@@ -89,6 +90,18 @@ for (const id of [
   assert(guide.identificationMarkers.length > 0, `${id} has no identification markers`);
   assert(guide.differentiators.length > 0, `${id} has no differentiators`);
   assert(guide.identificationCaveat.includes("not proof of genotype"), `${id} is missing the visual-vs-genetic safety rail`);
+}
+
+// Extension guides must also be real, usable phenotype knowledge rather than dead records.
+for (const id of [
+  "antarctic", "super-antarctic", "desert", "dutch-hypo", "true-hypo", "savannah", "phoenix-red",
+  "raging-red", "spider", "yellow-glow", "green-phase", "citrus", "mocha", "orange-albino", "rbe-pastel", "gaverth-green",
+]) {
+  const guide = hognosePhenotypeExtensionsById[id];
+  assert(guide, `${id} has no extension phenotype guide`);
+  assert(guide.visualDescription.length > 40, `${id} extension visual description is too thin`);
+  assert(guide.identificationMarkers.length > 0, `${id} extension has no identification markers`);
+  assert(guide.identificationCaveat.includes("not as proof of genotype"), `${id} extension is missing the visual-vs-genetic safety rail`);
 }
 
 const arctic = getHognosePhenotypeGuide("arctic");
