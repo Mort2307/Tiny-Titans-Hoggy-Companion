@@ -14,7 +14,6 @@ export type IntelligenceFeedbackSignal = {
   positive: number;
   negative: number;
 };
-
 type FeedbackResponse = { signals: Record<string, IntelligenceFeedbackSignal> };
 const feedbackCallable = httpsCallable<{ insightIds: string[] }, FeedbackResponse>(getFunctions(app, 'europe-west2'), 'getIntelligenceFeedbackSignals');
 
@@ -24,7 +23,6 @@ export async function getIntelligenceFeedbackSignals(insightIds: readonly string
   const result = await feedbackCallable({ insightIds: ids });
   return result.data.signals;
 }
-
 function feedbackBias(signal?: IntelligenceFeedbackSignal): number {
   if (!signal || signal.total < 3) return 0;
   const directional = signal.positive - signal.negative;
@@ -32,13 +30,11 @@ function feedbackBias(signal?: IntelligenceFeedbackSignal): number {
   const confidence = Math.min(1, signal.total / 12);
   return Math.round(Math.max(-8, Math.min(8, ratio * 10 * confidence)));
 }
-
 function storeState(uid: string, state: TitanDecisionState) {
   try { window.localStorage.setItem(`tinyTitans:titan-decision-state:${uid}`, JSON.stringify(state)); } catch { /* non-critical cache */ }
   void setDoc(doc(db, 'users', uid, 'intelligence', 'titanDecisionState'), JSON.parse(JSON.stringify(state)), { merge: false }).catch(() => undefined);
-  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: { decisionState: state } }));
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: { decisionState: state, feedbackRanking: true } }));
 }
-
 export function applyFeedbackRanking(uid: string, signals: Record<string, IntelligenceFeedbackSignal>): TitanDecisionState {
   const current = getTitanDecisionState(uid);
   const decisions = current.decisions
@@ -48,7 +44,6 @@ export function applyFeedbackRanking(uid: string, signals: Record<string, Intell
   storeState(uid, next);
   return next;
 }
-
 export async function refreshFeedbackRanking(uid: string, insightIds: readonly string[]) {
   const signals = await getIntelligenceFeedbackSignals(insightIds);
   return applyFeedbackRanking(uid, signals);
