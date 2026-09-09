@@ -13,11 +13,17 @@
 .app-brand-secondary { color:rgba(255,255,255,.58); font-size:.82em; font-weight:700; }
 .app-brand-tagline { margin-top:3px; color:rgba(255,255,255,.45); font-size:.67rem; font-weight:650; letter-spacing:.075em; line-height:1; text-transform:uppercase; }
 .app-header-actions { margin-left:auto; display:flex; align-items:center; justify-content:flex-end; min-width:max-content; flex:0 0 auto; }
-.tt-live-world-clock { display:inline-flex; align-items:center; gap:8px; max-width:220px; padding:6px 10px; margin-right:8px; border:1px solid rgba(92,200,255,.18); border-radius:999px; background:rgba(9,21,31,.74); box-shadow:0 8px 24px rgba(0,0,0,.12); }
-.tt-live-world-clock-dot { width:7px; height:7px; flex:0 0 7px; border-radius:50%; background:#5cc8ff; box-shadow:0 0 0 4px rgba(92,200,255,.1),0 0 12px rgba(92,200,255,.45); }
-.tt-live-world-clock-copy { display:flex; flex-direction:column; align-items:flex-start; min-width:0; line-height:1.05; }
-.tt-live-world-clock-copy strong { color:#f7f3fb; font-size:.77rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
-.tt-live-world-clock-copy small { max-width:185px; overflow:hidden; color:rgba(255,255,255,.52); font-size:.56rem; font-weight:750; letter-spacing:.045em; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Tiny Titans World Pulse: deliberately compact so time/date are useful without
+   competing with navigation, intelligence or the keeper's primary actions. */
+.tt-live-world-clock { display:inline-flex; align-items:center; gap:7px; max-width:205px; padding:5px 9px; margin-right:8px; border:1px solid rgba(92,200,255,.16); border-radius:12px; background:rgba(9,21,31,.62); box-shadow:0 6px 18px rgba(0,0,0,.1); }
+.tt-live-world-clock-dot { width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#5cc8ff; box-shadow:0 0 0 3px rgba(92,200,255,.08),0 0 9px rgba(92,200,255,.38); }
+.tt-live-world-clock-copy { display:grid; grid-template-columns:auto; align-items:start; min-width:0; line-height:1.05; }
+.tt-live-world-clock-date { display:flex; align-items:center; gap:4px; min-width:0; overflow:hidden; color:rgba(255,255,255,.56); font-size:.53rem; font-weight:750; letter-spacing:.025em; text-overflow:ellipsis; white-space:nowrap; }
+.tt-live-world-clock-date span { flex:0 0 auto; font-size:.58rem; }
+.tt-live-world-clock-copy strong { color:#f7f3fb; font-size:.76rem; font-variant-numeric:tabular-nums; letter-spacing:.015em; white-space:nowrap; }
+.tt-live-world-clock-copy small { max-width:155px; overflow:hidden; color:rgba(255,255,255,.42); font-size:.49rem; font-weight:700; letter-spacing:.035em; text-overflow:ellipsis; white-space:nowrap; }
+
 @media(max-width:800px){
   .app-header{padding:8px 12px;gap:9px;min-width:0}
   .tiny-titans-logo{width:38px;height:38px;border-radius:10px}
@@ -27,15 +33,18 @@
   .app-brand-secondary{font-size:.78em;font-weight:750;line-height:1.08}
   .app-brand-tagline{display:none}
   .app-header-actions{gap:6px;flex:0 0 auto;margin-left:auto;position:relative;z-index:5}
-  .tt-live-world-clock{max-width:138px;margin-right:2px;padding:5px 8px;gap:6px}
-  .tt-live-world-clock-copy small{max-width:105px;font-size:.5rem}
+  .tt-live-world-clock{max-width:151px;margin-right:2px;padding:5px 8px;gap:6px}
+  .tt-live-world-clock-copy small{max-width:112px;font-size:.47rem}
   .tt-live-world-clock-copy strong{font-size:.7rem}
+  .tt-live-world-clock-date{font-size:.5rem}
 }
 @media(max-width:480px){
   .app-header{padding-inline:10px;gap:7px}
   .app-header-actions{margin-left:10px;gap:5px}
-  .tt-live-world-clock{max-width:98px;padding:5px 7px}
-  .tt-live-world-clock-copy small{max-width:66px}
+  .tt-live-world-clock{max-width:112px;padding:4px 7px;gap:5px}
+  .tt-live-world-clock-copy small{display:none}
+  .tt-live-world-clock-copy strong{font-size:.68rem}
+  .tt-live-world-clock-date{font-size:.48rem}
 }
 @media(max-width:380px){
   .app-header{padding-inline:8px;gap:6px}
@@ -43,7 +52,8 @@
   .app-brand-name{font-size:.76rem}
   .app-brand-secondary{font-size:.74em}
   .app-header-actions{margin-left:8px;gap:4px}
-  .tt-live-world-clock{max-width:82px;padding:4px 6px}
-  .tt-live-world-clock-copy small{display:none}
-  .tt-live-world-clock-copy strong{font-size:.65rem}
+  .tt-live-world-clock{max-width:84px;padding:4px 6px}
+  .tt-live-world-clock-date{font-size:.44rem}
+  .tt-live-world-clock-copy strong{font-size:.62rem}
+  .tt-live-world-clock-date span{display:none}
 }
