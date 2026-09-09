@@ -4,15 +4,14 @@ import LiveWorldClockBadge from "./LiveWorldClockBadge";
 import { useWorldTime } from "../context/WorldTimeContext";
 import { getOwnCommunityLocation, getPublicCommunityLocations, type PublicCommunityLocation } from "../services/communityLocationPublicService";
 import { syncCommunityLocationMembership } from "../services/communityLocationSyncService";
-import { EARTH_BUMP_TEXTURE_URL, EARTH_DAY_TEXTURE_URL, EARTH_STAR_TEXTURE_URL, type EarthDayNightMaterial, geoToSunDirection, loadEarthDayNightMaterial, updateEarthSun } from "../services/earthDayNight";
-import { getWorldTimeSnapshot } from "../services/worldTimeService";
+import { EARTH_BUMP_TEXTURE_URL, EARTH_DAY_TEXTURE_URL, EARTH_STAR_TEXTURE_URL, type EarthDayNightMaterial, loadEarthDayNightMaterial, updateEarthSun } from "../services/earthDayNight";
 import "../styles/tinyTitansPinnacleGlobe.css";
 
 type GlobeRef = { controls: () => { autoRotate: boolean; autoRotateSpeed: number; enableZoom: boolean; enablePan: boolean; enableDamping: boolean; dampingFactor: number; rotateSpeed: number; zoomSpeed: number }; pointOfView: (view: { lat: number; lng: number; altitude: number }, transitionMs?: number) => void };
 type GlobeArea = PublicCommunityLocation & { isSelf: boolean; kind: "community" };
 
 export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
-  const world = useWorldTime();
+  useWorldTime();
   const globeRef = useRef<GlobeRef | undefined>(undefined);
   const [areas, setAreas] = useState<PublicCommunityLocation[]>([]);
   const [ownLocation, setOwnLocation] = useState<PublicCommunityLocation | null>(null);
@@ -27,19 +26,19 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
     void (async () => { try { try { await syncCommunityLocationMembership(); } catch (error) { console.warn("Tiny Titans: community location membership sync unavailable", error); if (active) setSyncError(true); } const [publicAreas, own] = await Promise.all([getPublicCommunityLocations(), getOwnCommunityLocation(uid)]); if (!active) return; setAreas(publicAreas); setOwnLocation(own); } catch (error) { console.warn("Tiny Titans: community globe feed unavailable", error); if (active) setLocationError(true); } finally { if (active) setLoading(false); } })();
     return () => { active = false; };
   }, [uid]);
+
   useEffect(() => { let active = true; void loadEarthDayNightMaterial().then((nextMaterial) => { if (!active) { nextMaterial.dispose(); return; } setMaterial(nextMaterial); }).catch((error) => console.warn("Tiny Titans: Earth surface textures could not be loaded", error)); return () => { active = false; setMaterial((current) => { current?.dispose(); return null; }); }; }, []);
+
   useEffect(() => {
     if (!material) return;
-    const updateSun = () => {
-      const snapshot = getWorldTimeSnapshot(new Date(), world.timezone);
-      material.uniforms.sunDirection.value.copy(geoToSunDirection(snapshot.solarDeclination, snapshot.subsolarLongitude));
-    };
+    const updateSun = () => updateEarthSun(material, new Date());
     updateSun();
     const timer = window.setInterval(updateSun, 10000);
     return () => window.clearInterval(timer);
-  }, [material, world.timezone]);
-  useEffect(() => { if (!material) return; updateEarthSun(material, world.observedAt); }, [material, world.observedAt]);
+  }, [material]);
+
   useEffect(() => { const controls = globeRef.current?.controls(); if (!controls) return; controls.enableZoom = true; controls.enablePan = false; controls.enableDamping = true; controls.dampingFactor = 0.075; controls.autoRotate = false; controls.autoRotateSpeed = 0; controls.rotateSpeed = 0.52; controls.zoomSpeed = 0.62; }, [material]);
+
   useEffect(() => { if (!ownLocation || !globeRef.current) return; const frame = window.requestAnimationFrame(() => { globeRef.current?.pointOfView({ lat: ownLocation.latitude, lng: ownLocation.longitude, altitude: 2.05 }, 900); }); return () => window.cancelAnimationFrame(frame); }, [ownLocation]);
   const globeAreas = useMemo<GlobeArea[]>(() => areas.map((area) => ({ ...area, kind: "community", isSelf: ownLocation?.areaId === area.areaId })), [areas, ownLocation]);
   const representedAreaCount = globeAreas.length; const representedTitanCount = globeAreas.reduce((sum, area) => sum + Math.max(0, area.memberCount), 0); const selected = selectedAreaId ? globeAreas.find((area) => area.areaId === selectedAreaId) ?? null : null;
