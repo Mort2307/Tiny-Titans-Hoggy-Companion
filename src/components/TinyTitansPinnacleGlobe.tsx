@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Globe from "react-globe.gl";
+import * as THREE from "three";
 import LiveWorldClockBadge from "./LiveWorldClockBadge";
 import { getOwnCommunityLocation, getPublicCommunityLocations, type PublicCommunityLocation } from "../services/communityLocationPublicService";
 import { syncCommunityLocationMembership } from "../services/communityLocationSyncService";
 import { getCurrentWorldWeather, getGlobalWorldWeatherField, describeWeatherCode, type WorldWeather, type WorldWeatherFieldPoint } from "../services/worldWeatherService";
+import { createEarthCloudLayer, disposeEarthCloudLayer, updateEarthCloudLayer, type EarthCloudLayer } from "../services/earthCloudLayer";
 import { EARTH_BUMP_TEXTURE_URL, EARTH_DAY_TEXTURE_URL, EARTH_STAR_TEXTURE_URL, type EarthDayNightMaterial, loadEarthDayNightMaterial, updateEarthSun } from "../services/earthDayNight";
 import "../styles/tinyTitansPinnacleGlobe.css";
 
-type GlobeRef = { controls: () => { autoRotate: boolean; autoRotateSpeed: number; enableZoom: boolean; enablePan: boolean; enableDamping: boolean; dampingFactor: number; rotateSpeed: number; zoomSpeed: number }; pointOfView: (view: { lat: number; lng: number; altitude: number }, transitionMs?: number) => void; renderer?: () => { setPixelRatio: (ratio: number) => void; outputColorSpace?: unknown } };
+type GlobeRef = { controls: () => { autoRotate: boolean; autoRotateSpeed: number; enableZoom: boolean; enablePan: boolean; enableDamping: boolean; dampingFactor: number; rotateSpeed: number; zoomSpeed: number }; pointOfView: (view: { lat: number; lng: number; altitude: number }, transitionMs?: number) => void; renderer?: () => { setPixelRatio: (ratio: number) => void; outputColorSpace?: unknown }; scene?: () => THREE.Scene };
 type GlobeArea = PublicCommunityLocation & { isSelf: boolean; kind: "community" };
 type WeatherMap = Record<string, WorldWeather>;
 type WeatherHex = { points: object[]; sumWeight: number; center: { lat: number; lng: number } };
@@ -38,6 +40,8 @@ function weatherColor(points: object[], alpha: number): string {
 
 export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
   const globeRef = useRef<GlobeRef | undefined>(undefined);
+  const cloudLayerRef = useRef<EarthCloudLayer | null>(null);
+  const cloudSceneRef = useRef<THREE.Scene | null>(null);
   const [areas, setAreas] = useState<PublicCommunityLocation[]>([]);
   const [ownLocation, setOwnLocation] = useState<PublicCommunityLocation | null>(null);
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
@@ -93,6 +97,30 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
     const renderer = globeRef.current?.renderer?.();
     if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   }, [material]);
+
+  useEffect(() => {
+    if (!material) return;
+    const scene = globeRef.current?.scene?.();
+    if (!scene) return;
+    const cloudLayer = createEarthCloudLayer(100);
+    scene.add(cloudLayer);
+    cloudLayerRef.current = cloudLayer;
+    cloudSceneRef.current = scene;
+    const startedAt = performance.now();
+    const timer = window.setInterval(() => {
+      if (!cloudLayerRef.current) return;
+      updateEarthCloudLayer(cloudLayerRef.current, (performance.now() - startedAt) / 1000, weatherEnabled);
+    }, 50);
+    return () => {
+      window.clearInterval(timer);
+      if (cloudLayerRef.current) {
+        cloudSceneRef.current?.remove(cloudLayerRef.current);
+        disposeEarthCloudLayer(cloudLayerRef.current);
+        cloudLayerRef.current = null;
+      }
+      cloudSceneRef.current = null;
+    };
+  }, [material, weatherEnabled]);
 
   useEffect(() => {
     if (!ownLocation || !globeRef.current) return;
@@ -171,7 +199,7 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
         {loading && <div className="tt-pinnacle-status">Loading the global representation…</div>}
         {weatherLoading && weatherEnabled && <div className="tt-pinnacle-weather-status">🌦 Updating live global weather…</div>}
         {!loading && locationError && <div className="tt-pinnacle-status tt-pinnacle-status-warning">The global location feed could not be loaded.</div>}
-        {!loading && !locationError && representedAreaCount === 0 && <div className="tt-pinnacle-location-empty"><strong>No community areas are indexed yet.</strong><span>{syncError ? "Your location service could not synchronise just now. The public map will remain privacy-safe and will retry when the page is refreshed." : ownLocation ? "Your community area is ready, but no aggregate areas are currently available." : "Share your city-level community area in Data & Privacy to add your Titan to the world map."}</span></div>}
+        {!loading && !locationError && representedAreaCount === 0 && <div className="tt-pinnacle-location-empty"><strong>No community areas are indexed yet.</strong><span>{syncError ? "Your community location service could not synchronise just now. The public map will remain privacy-safe and will retry when the page is refreshed." : ownLocation ? "Your community area is ready, but no aggregate areas are currently available." : "Share your city-level community area in Data & Privacy to add your Titan to the world map."}</span></div>}
         {!loading && !locationError && representedAreaCount > 0 && <div className="tt-pinnacle-map-count">{representedAreaCount} community area{representedAreaCount === 1 ? "" : "s"} · {representedTitanCount} represented Titan{representedTitanCount === 1 ? "" : "s"}</div>}
         <div className="tt-pinnacle-controls-hint">Drag to explore · pinch or wheel to zoom</div>
         {weatherEnabled && representedAreaCount > 0 && <div className="tt-pinnacle-weather-legend">🌦 Live weather field · refreshed every 15 minutes · hover a weather area for details</div>}
