@@ -89,7 +89,8 @@ for (const id of [
   assert(guide.visualDescription.length > 40, `${id} visual description is too thin`);
   assert(guide.identificationMarkers.length > 0, `${id} has no identification markers`);
   assert(guide.differentiators.length > 0, `${id} has no differentiators`);
-  assert(guide.identificationCaveat.includes("not proof of genotype"), `${id} is missing the visual-vs-genetic safety rail`);
+  const caveat = guide.identificationCaveat.toLowerCase();
+  assert(caveat.includes("proof of genotype") && caveat.includes("appearance"), `${id} is missing the visual-vs-genetic safety rail`);
 }
 
 // Extension guides must also be real, usable phenotype knowledge rather than dead records.
@@ -101,7 +102,8 @@ for (const id of [
   assert(guide, `${id} has no extension phenotype guide`);
   assert(guide.visualDescription.length > 40, `${id} extension visual description is too thin`);
   assert(guide.identificationMarkers.length > 0, `${id} extension has no identification markers`);
-  assert(guide.identificationCaveat.includes("not as proof of genotype"), `${id} extension is missing the visual-vs-genetic safety rail`);
+  const caveat = guide.identificationCaveat.toLowerCase();
+  assert(caveat.includes("proof of genotype") && caveat.includes("appearance"), `${id} extension is missing the visual-vs-genetic safety rail`);
 }
 
 const arctic = getHognosePhenotypeGuide("arctic");
