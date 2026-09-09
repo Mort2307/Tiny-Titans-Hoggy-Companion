@@ -45,6 +45,17 @@ function formatDate(value: string | undefined): string {
   return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
+function formatDaysAgo(value: string | undefined): string {
+  if (!value) return "Not yet";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not recorded";
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const recordStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const days = Math.max(0, Math.floor((todayStart - recordStart) / 86_400_000));
+  return `${days} ${days === 1 ? "Day" : "Days"} ago`;
+}
+
 function latest<T extends { date: string }>(records: T[] | undefined): T | undefined {
   return records?.slice().sort((a, b) => dateValue(b.date) - dateValue(a.date))[0];
 }
@@ -90,7 +101,7 @@ function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): Slic
   const weight = latest<WeightRecord>(snake?.weightHistory);
   const shed = latest<ShedRecord>(snake?.shedHistory);
   switch (slice) {
-    case "feed": return { label: "Last Feed", value: feed ? formatDate(feed.date) : "Not yet", secondary: feed ? feed.foodType : "Log a feed", route: routeFor(slice, id) };
+    case "feed": return { label: "Last Fed", value: feed ? formatDaysAgo(feed.date) : "Not yet", secondary: feed ? feed.foodType : "Log a feed", route: routeFor(slice, id) };
     case "weight": return { label: "Last Weight", value: weight ? `${weight.weight}${weight.unit}` : "Not yet", secondary: weight ? formatDate(weight.date) : "Record one", route: routeFor(slice, id) };
     case "shed": return { label: "Last Shed", value: shed ? formatDate(shed.date) : "Not yet", secondary: shed?.status ?? "Record one", route: routeFor(slice, id) };
     case "reminders": return { label: "Reminders", value: "Open", secondary: "See what's due", route: routeFor(slice, id) };
