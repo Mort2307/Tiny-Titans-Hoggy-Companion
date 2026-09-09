@@ -29,17 +29,10 @@
   font-size: clamp(1.35rem, 3vw, 1.8rem);
 }
 
-.tt-at-glance p {
-  margin: 0;
-  opacity: .72;
-  font-size: .87rem;
-}
+.tt-at-glance p { margin: 0; opacity: .72; font-size: .87rem; }
 
 .tt-at-glance-customise,
-.tt-at-glance-foot a {
-  color: inherit;
-  text-decoration: none;
-}
+.tt-at-glance-foot a { color: inherit; text-decoration: none; }
 
 .tt-at-glance-customise {
   flex: 0 0 auto;
@@ -87,13 +80,29 @@
 }
 
 .tt-at-glance-centre-action { cursor: pointer; outline: none; }
-.tt-at-glance-centre-action .tt-at-glance-centre { transition: transform .16s ease, fill .16s ease, stroke .16s ease; transform-origin: center; }
+.tt-at-glance-centre-action .tt-at-glance-centre {
+  transition: transform .16s ease, fill .16s ease, stroke .16s ease;
+  transform-origin: center;
+}
+
 .tt-at-glance-centre-action:hover .tt-at-glance-centre,
 .tt-at-glance-centre-action:focus .tt-at-glance-centre,
 .tt-at-glance-centre-action.open .tt-at-glance-centre {
   fill: rgba(18, 32, 29, 1);
   stroke: rgba(255,255,255,.28);
   transform: scale(1.025);
+}
+
+.tt-at-glance-centre-photo {
+  pointer-events: none;
+  filter: saturate(1.04) contrast(1.03);
+}
+
+.tt-at-glance-centre-ring {
+  fill: none;
+  stroke: rgba(255,255,255,.18);
+  stroke-width: 2;
+  pointer-events: none;
 }
 
 .tt-at-glance-icon { font-size: 18px; }
@@ -108,8 +117,8 @@
   z-index: 4;
   top: 50%;
   left: 50%;
-  width: min(290px, calc(100% - 1rem));
-  max-height: min(360px, 70vh);
+  width: min(310px, calc(100% - 1rem));
+  max-height: min(390px, 72vh);
   overflow: auto;
   transform: translate(-50%, -50%);
   padding: .75rem;
@@ -120,20 +129,10 @@
   backdrop-filter: blur(12px);
 }
 
-.tt-at-glance-snake-picker-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem;
-  margin-bottom: .55rem;
-}
-
+.tt-at-glance-snake-picker-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .55rem; }
 .tt-at-glance-snake-picker-head strong { font-size: .9rem; }
 .tt-at-glance-snake-picker-head button,
-.tt-at-glance-snake-picker-list button {
-  border: 1px solid rgba(255,255,255,.1);
-  color: inherit;
-}
+.tt-at-glance-snake-picker-list button { border: 1px solid rgba(255,255,255,.1); color: inherit; }
 
 .tt-at-glance-snake-picker-head button {
   width: 32px;
@@ -149,22 +148,31 @@
 .tt-at-glance-snake-picker-list button {
   width: 100%;
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
+  grid-template-columns: 2.6rem minmax(0, 1fr);
   align-items: center;
-  gap: .55rem;
-  padding: .65rem;
+  gap: .65rem;
+  padding: .55rem .65rem;
   border-radius: 12px;
   background: rgba(255,255,255,.035);
   text-align: left;
 }
 
 .tt-at-glance-snake-picker-list button:hover,
-.tt-at-glance-snake-picker-list button.selected {
-  background: rgba(43, 76, 66, .78);
-  border-color: rgba(255,255,255,.2);
+.tt-at-glance-snake-picker-list button.selected { background: rgba(43, 76, 66, .78); border-color: rgba(255,255,255,.2); }
+
+.tt-at-glance-snake-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.11);
 }
 
-.tt-at-glance-snake-picker-list button > span:first-child { font-size: 1.2rem; text-align: center; }
+.tt-at-glance-snake-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tt-at-glance-snake-avatar > span { font-size: 1.15rem; }
 .tt-at-glance-snake-picker-list button > span:last-child { min-width: 0; }
 .tt-at-glance-snake-picker-list strong,
 .tt-at-glance-snake-picker-list small { display: block; }
@@ -185,20 +193,8 @@
 
 .tt-at-glance-snake-picker-all:hover { background: rgba(255,255,255,.06); }
 
-.tt-at-glance-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem;
-  font-size: .72rem;
-  opacity: .7;
-  padding: 0 .3rem;
-}
-
-.tt-at-glance-foot a {
-  padding: .42rem .62rem;
-  border-radius: 10px;
-}
+.tt-at-glance-foot { display: flex; align-items: center; justify-content: space-between; gap: .75rem; font-size: .72rem; opacity: .7; padding: 0 .3rem; }
+.tt-at-glance-foot a { padding: .42rem .62rem; border-radius: 10px; }
 
 .easy-nav-active .tt-page-frame { max-width: 900px; }
 .easy-nav-active .tt-page-frame > .app-page-title,
