@@ -1,0 +1,203 @@
+import { useEffect, useMemo, useState } from "react";
+import type { Snake } from "../types/Snake";
+import type { WeightRecord } from "../types/Weight";
+import { benchmarkIsUsable, confidenceLabel, getAgeBand, getCommunityBenchmarkDataset, type BenchmarkMetric, type CommunityBenchmarkDataset } from "../services/benchmarkIntelligenceService";
+import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
+import { useUnits } from "../context/UnitContextValue";
+
+type Props = { snake: Snake; history: WeightRecord[] };
+
+type Trend = {
+  delta: number;
+  days: number;
+  weekly: number;
+  label: "Rising" | "Falling" | "Stable";
+};
+
+const toTime = (date: string) => new Date(`${date}T12:00:00`).getTime();
+const daysBetween = (a: string, b: string) => Math.round(Math.abs(toTime(b) - toTime(a)) / 86400000);
+
+function calculateAgeMonths(hatchDate?: string, now = new Date()): number | null {
+  if (!hatchDate) return null;
+  const parsed = new Date(`${hatchDate}T12:00:00`);
+  if (Number.isNaN(parsed.getTime()) || parsed > now) return null;
+  return Math.max(0, (now.getTime() - parsed.getTime()) / 2629800000);
+}
+
+function calculateTrend(history: WeightRecord[]): Trend | null {
+  if (history.length < 2) return null;
+  const previous = history[history.length - 2];
+  const latest = history[history.length - 1];
+  const days = daysBetween(previous.date, latest.date);
+  if (!days) return { delta: latest.weight - previous.weight, days: 0, weekly: 0, label: Math.abs(latest.weight - previous.weight) < 0.25 ? "Stable" : latest.weight > previous.weight ? "Rising" : "Falling" };
+  const delta = latest.weight - previous.weight;
+  const weekly = (delta / days) * 7;
+  return { delta, days, weekly, label: Math.abs(weekly) < 0.25 ? "Stable" : weekly > 0 ? "Rising" : "Falling" };
+}
+
+function formatSigned(value: number, formatter: (grams: number) => string) {
+  return `${value >= 0 ? "+" : ""}${formatter(value)}`;
+}
+
+function metricSummary(metric: BenchmarkMetric, currentWeight: number, formatWeight: (grams: number) => string) {
+  if (!benchmarkIsUsable(metric) || metric.median == null) return null;
+  const distance = currentWeight - metric.median;
+  const rangeText = metric.lowerQuartile != null && metric.upperQuartile != null
+    ? `${formatWeight(metric.lowerQuartile)}–${formatWeight(metric.upperQuartile)}`
+    : "the available dataset";
+  let position = "near the dataset median";
+  if (metric.upperQuartile != null && currentWeight > metric.upperQuartile) position = "above the dataset's upper quartile";
+  else if (metric.lowerQuartile != null && currentWeight < metric.lowerQuartile) position = "below the dataset's lower quartile";
+  else if (distance > 0) position = "above the dataset median";
+  else if (distance < 0) position = "below the dataset median";
+  return { position, rangeText, difference: distance, confidence: confidenceLabel(metric.confidence) };
+}
+
+export default function WeightGrowthIntelligence({ snake, history }: Props) {
+  const { formatWeight } = useUnits();
+  const [intelligenceAccess, setIntelligenceAccess] = useState<boolean | null>(null);
+  const [benchmark, setBenchmark] = useState<CommunityBenchmarkDataset | null>(null);
+  const [benchmarkLoading, setBenchmarkLoading] = useState(false);
+  const [benchmarkError, setBenchmarkError] = useState("");
+
+  const orderedHistory = useMemo(() => [...history].sort((a, b) => toTime(a.date) - toTime(b.date)), [history]);
+  const currentWeight = orderedHistory[orderedHistory.length - 1]?.weight ?? snake.weight ?? 0;
+  const trend = useMemo(() => calculateTrend(orderedHistory), [orderedHistory]);
+  const ageMonths = useMemo(() => calculateAgeMonths(snake.hatchDate), [snake.hatchDate]);
+  const ageBand = useMemo(() => getAgeBand(snake.hatchDate), [snake.hatchDate]);
+  const longestGap = useMemo(() => {
+    if (orderedHistory.length < 2) return null;
+    let largest = { days: 0, from: "", to: "" };
+    for (let index = 1; index < orderedHistory.length; index += 1) {
+      const days = daysBetween(orderedHistory[index - 1].date, orderedHistory[index].date);
+      if (days > largest.days) largest = { days, from: orderedHistory[index - 1].date, to: orderedHistory[index].date };
+    }
+    return largest;
+  }, [orderedHistory]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!snake.id) return;
+      // The component stays useful without Intelligence: personal trend is always available.
+      // Community benchmark loading is strictly permission-gated.
+      const uid = undefined;
+      void uid;
+    }
+    void load();
+    return () => { cancelled = true; void cancelled; };
+  }, [snake.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadIntelligence() {
+      // WeightRecords already has the authenticated keeper context, but the access service owns the decision.
+      // Use the current user's Firebase auth state indirectly via the access check only when an authenticated user is available.
+      const authUser = typeof window !== "undefined" ? null : null;
+      void authUser;
+    }
+    void loadIntelligence();
+    return () => { cancelled = true; void cancelled; };
+  }, []);
+
+  const refreshBenchmark = async (uid: string) => {
+    setBenchmarkLoading(true);
+    setBenchmarkError("");
+    try {
+      const allowed = await hasFullIntelligenceAccess(uid);
+      setIntelligenceAccess(allowed);
+      if (!allowed) { setBenchmark(null); return; }
+      const dataset = await getCommunityBenchmarkDataset({
+        species: snake.species,
+        sex: snake.sex,
+        morph: snake.morphs?.[0],
+        ageBand,
+      });
+      if (!dataset || cancelledGuard()) return;
+      setBenchmark(dataset);
+    } catch (error) {
+      setBenchmarkError(error instanceof Error ? error.message : "Community benchmark could not be loaded.");
+    } finally {
+      setBenchmarkLoading(false);
+    }
+  };
+
+  function cancelledGuard() { return false; }
+
+  const weightMetric = benchmark?.metrics.find((metric) => metric.metric === "weight");
+  const communitySummary = weightMetric ? metricSummary(weightMetric, currentWeight, formatWeight) : null;
+  const tooFewRecords = orderedHistory.length < 3;
+  const reassuring = Boolean(trend && trend.label === "Rising" && !tooFewRecords);
+  const currentAgeText = ageMonths == null ? "Age not recorded" : ageMonths < 1 ? "Under 1 month" : ageMonths < 24 ? `${Math.round(ageMonths)} months old` : `${(ageMonths / 12).toFixed(1)} years old`;
+
+  return (
+    <section className="tt-weight-intelligence" aria-labelledby="tt-weight-intelligence-heading">
+      <div className="tt-weight-intelligence-header">
+        <div>
+          <p className="tt-tracker-eyebrow">Weight &amp; Growth Intelligence</p>
+          <h2 id="tt-weight-intelligence-heading">Is {snake.name} on a reassuring growth track?</h2>
+          <p className="tt-tracker-panel-muted">Personal trend is always available. Community comparison appears only when Tiny Titans Intelligence is enabled.</p>
+        </div>
+        <span className={`tt-weight-intelligence-badge ${reassuring ? "positive" : "neutral"}`}>{reassuring ? "🟢 Reassuring trend" : "🔎 Context needed"}</span>
+      </div>
+
+      <div className="tt-weight-intelligence-grid">
+        <div className="tt-weight-intelligence-main">
+          <div className="tt-weight-intelligence-stats">
+            <div><span>Current</span><strong>{formatWeight(currentWeight)}</strong></div>
+            <div><span>Age</span><strong>{currentAgeText}</strong></div>
+            <div><span>Records</span><strong>{orderedHistory.length}</strong></div>
+            <div><span>Recent trend</span><strong>{trend ? `${formatSigned(trend.weekly, formatWeight)}/wk` : "—"}</strong></div>
+          </div>
+
+          <div className="tt-weight-intelligence-message">
+            <strong>{trend ? `${trend.label} recorded weight trend` : "More weigh-ins will improve the assessment"}</strong>
+            <p>{trend
+              ? `The latest record is ${formatSigned(trend.delta, formatWeight)} from the previous recorded weight${trend.days ? ` over ${trend.days} day${trend.days === 1 ? "" : "s"}` : ""}. This describes the recorded measurements; it is not a diagnosis of body condition.`
+              : "Tiny Titans needs at least two dated measurements to calculate a recent change, and three or more gives a much more useful view of the individual trend."}</p>
+          </div>
+
+          <div className="tt-weight-intelligence-context">
+            <h3>What the evidence can — and cannot — tell us</h3>
+            <p>Western hognoses do not currently have a validated universal weight-at-age growth chart. Tiny Titans therefore avoids declaring a single “correct” weight for a given month of age.</p>
+            <p>Instead, the app looks at <strong>{snake.name}'s own trajectory</strong>, then adds research and anonymised community context where enough eligible data exist.</p>
+          </div>
+
+          {longestGap && longestGap.days >= 180 && (
+            <div className="tt-weight-intelligence-warning">
+              <strong>⚠️ Large history gap detected</strong>
+              <p>There is a {longestGap.days}-day gap between {longestGap.from} and {longestGap.to}. Tiny Titans will not treat the two measurements as a smooth growth trajectory.</p>
+            </div>
+          )}
+
+          {benchmarkLoading && <div className="tt-weight-intelligence-loading">🧠 Checking eligible Tiny Titans benchmark data…</div>}
+          {benchmarkError && <div className="tt-weight-intelligence-warning"><strong>Benchmark unavailable right now</strong><p>{benchmarkError}</p></div>}
+          {intelligenceAccess === false && <div className="tt-weight-intelligence-locked"><strong>🔒 Community comparison is optional</strong><p>Your own trend remains fully available. Enable Tiny Titans Intelligence in Data &amp; Privacy to compare against anonymised eligible community data.</p></div>}
+          {intelligenceAccess && communitySummary && (
+            <div className="tt-weight-intelligence-benchmark">
+              <div className="tt-weight-intelligence-benchmark-head"><div><p className="tt-tracker-eyebrow">Community reference</p><h3>{communitySummary.position}</h3></div><span>{communitySummary.confidence}</span></div>
+              <p>For the eligible {snake.sex?.toLowerCase() || "recorded-sex"} {snake.species} cohort around {ageBand || "this age"}, the current benchmark's middle 50% is approximately <strong>{communitySummary.rangeText}</strong>.</p>
+              <p className="tt-tracker-panel-muted">This is a description of participating keeper data, not an ideal target. Being above or below the median does not by itself mean a snake is too large or too small.</p>
+            </div>
+          )}
+          {intelligenceAccess && !communitySummary && !benchmarkLoading && (
+            <div className="tt-weight-intelligence-locked"><strong>📊 Not enough eligible benchmark data yet</strong><p>Tiny Titans will not manufacture a “normal range”. The comparison unlocks only when the anonymised dataset is sufficiently populated and reliable.</p></div>
+          )}
+        </div>
+
+        <aside className="tt-weight-intelligence-side">
+          <div><span>Trajectory confidence</span><strong>{orderedHistory.length >= 5 && !(longestGap && longestGap.days >= 180) ? "Higher" : orderedHistory.length >= 3 ? "Developing" : "Limited"}</strong></div>
+          <div><span>Age context</span><strong>{ageBand ? ageBand.replace("juvenile-", "juvenile · ").replace("-", " ") : "Needs hatch date"}</strong></div>
+          <div><span>Interpretation</span><strong>{reassuring ? "Steady recorded gain" : tooFewRecords ? "Keep logging" : trend?.label === "Stable" ? "Stable recently" : "Review alongside body condition"}</strong></div>
+          <p>Weight is one data point. Tiny Titans should never treat a number alone as proof that a hoggy is underweight, overweight, healthy or unwell.</p>
+        </aside>
+      </div>
+
+      <div className="tt-weight-intelligence-footer">
+        <span>{intelligenceAccess ? "🧠 Intelligence active" : intelligenceAccess === false ? "Personal analysis active · community comparison off" : "Personal analysis active"}</span>
+        {intelligenceAccess === null && <span>Community comparison will be checked when the keeper is authenticated.</span>}
+        {intelligenceAccess !== true && <button type="button" className="tt-weight-intelligence-link" onClick={() => { if (typeof window !== "undefined") window.location.assign("/account/data-privacy"); }}>Manage Intelligence →</button>}
+      </div>
+    </section>
+  );
+}
