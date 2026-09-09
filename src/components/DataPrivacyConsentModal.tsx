@@ -3,12 +3,20 @@ import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useAuth } from "../context/useAuth";
 import { db } from "../firebase/config";
 import { savePrivacyPreferences } from "../services/privacyService";
+import type { CommunityMessagingDeclineReason } from "../types/privacy";
 
-export const CONSENT_VERSION = "2026-08-20-privacy-community-husbandry-v3";
+export const CONSENT_VERSION = "2026-09-09-community-messaging-v5";
 
 type Props = { onAccepted: () => void };
 type CoarseLocation = { city: string; country: string; areaId: string; latitude: number; longitude: number };
 const CELL_SIZE_DEGREES = 0.05;
+const DECLINE_OPTIONS: Array<{ value: CommunityMessagingDeclineReason; label: string }> = [
+  { value: "dont-want-messages", label: "I don't want messages" },
+  { value: "privacy-concern", label: "I'm concerned about privacy" },
+  { value: "dont-understand", label: "I don't understand what is collected" },
+  { value: "dont-trust-messaging", label: "I don't trust online messaging" },
+  { value: "other", label: "Other" },
+];
 
 function coarseCell(latitude: number, longitude: number) { const latIndex = Math.floor(latitude / CELL_SIZE_DEGREES); const lngIndex = Math.floor(longitude / CELL_SIZE_DEGREES); return { areaId: `geo-${latIndex}-${lngIndex}`, latitude: Number(((latIndex + 0.5) * CELL_SIZE_DEGREES).toFixed(4)), longitude: Number(((lngIndex + 0.5) * CELL_SIZE_DEGREES).toFixed(4)) }; }
 async function resolveCoarseLocation(latitude: number, longitude: number): Promise<CoarseLocation> { const cell = coarseCell(latitude, longitude); const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}&zoom=10&addressdetails=1`, { headers: { Accept: "application/json" } }); if (!response.ok) throw new Error("Unable to determine your approximate area."); const data = await response.json() as { address?: Record<string, string> }; const address = data.address ?? {}; const city = address.city ?? address.town ?? address.village ?? address.municipality ?? address.county; const country = address.country; if (!city || !country) throw new Error("Your approximate area could not be identified."); return { city, country, ...cell }; }
@@ -22,6 +30,9 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
   const [location, setLocation] = useState(Boolean(profile?.dataCollectionPreferences?.approximateLocation));
   const [analytics, setAnalytics] = useState(Boolean(profile?.dataCollectionPreferences?.analytics));
   const [communityHusbandryData, setCommunityHusbandryData] = useState(false);
+  const [communityMessaging, setCommunityMessaging] = useState(Boolean(profile?.dataCollectionPreferences?.communityMessaging));
+  const [communityMessagingDeclineReason, setCommunityMessagingDeclineReason] = useState<CommunityMessagingDeclineReason | null>(null);
+  const [communityMessagingDeclineReasonDetail, setCommunityMessagingDeclineReasonDetail] = useState("");
   const [updates, setUpdates] = useState(Boolean(profile?.dataCollectionPreferences?.productUpdates));
   const [city, setCity] = useState(profile?.approximateLocation?.city ?? "");
   const [country, setCountry] = useState(profile?.approximateLocation?.country ?? "");
@@ -29,7 +40,7 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState("");
 
-  async function saveChoices(next: { location: boolean; analytics: boolean; communityHusbandryData: boolean; updates: boolean }) {
+  async function saveChoices(next: { location: boolean; analytics: boolean; communityHusbandryData: boolean; communityMessaging: boolean; communityMessagingDeclineReason: CommunityMessagingDeclineReason | null; communityMessagingDeclineReasonDetail: string; updates: boolean }) {
     if (!user) return;
     setError(""); setSaving(true);
     try {
@@ -47,8 +58,8 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
       }
 
       const consentRecord = { version: CONSENT_VERSION, acceptedAt: serverTimestamp() };
-      await setDoc(doc(db, "users", user.uid), { privacyConsent: consentRecord, dataCollectionPreferences: { approximateLocation: next.location, analytics: next.analytics, communityHusbandryData: next.communityHusbandryData, productUpdates: next.updates, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() }, approximateLocation, updatedAt: serverTimestamp() }, { merge: true });
-      await savePrivacyPreferences(user.uid, { communityLocation: next.location, anonymousAnalytics: next.analytics, communityHusbandryData: next.communityHusbandryData, productUpdates: next.updates });
+      await setDoc(doc(db, "users", user.uid), { privacyConsent: consentRecord, dataCollectionPreferences: { approximateLocation: next.location, analytics: next.analytics, communityHusbandryData: next.communityHusbandryData, communityMessaging: next.communityMessaging, communityMessagingDeclineReason: next.communityMessaging ? null : next.communityMessagingDeclineReason, communityMessagingDeclineReasonDetail: next.communityMessaging ? null : next.communityMessagingDeclineReasonDetail.slice(0, 500), productUpdates: next.updates, consentVersion: CONSENT_VERSION, consentUpdatedAt: serverTimestamp() }, approximateLocation, updatedAt: serverTimestamp() }, { merge: true });
+      await savePrivacyPreferences(user.uid, { communityLocation: next.location, anonymousAnalytics: next.analytics, communityHusbandryData: next.communityHusbandryData, communityMessaging: next.communityMessaging, communityMessagingDeclineReason: next.communityMessaging ? null : next.communityMessagingDeclineReason, communityMessagingDeclineReasonDetail: next.communityMessaging ? null : next.communityMessagingDeclineReasonDetail, productUpdates: next.updates });
       window.localStorage.setItem(`tinytitans:privacy-consent:${user.uid}`, CONSENT_VERSION);
       await refreshProfile();
       onAccepted();
@@ -56,30 +67,35 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
     finally { setSaving(false); setLocating(false); }
   }
 
+  const saveAll = () => void saveChoices({ location: true, analytics: true, communityHusbandryData: true, communityMessaging: true, communityMessagingDeclineReason: null, communityMessagingDeclineReasonDetail: "", updates: true });
+  const saveNone = () => void saveChoices({ location: false, analytics: false, communityHusbandryData: false, communityMessaging: false, communityMessagingDeclineReason: communityMessagingDeclineReason ?? "privacy-concern", communityMessagingDeclineReasonDetail, updates: false });
+
   return (
     <div className="privacy-consent-backdrop" style={backdropStyle} role="dialog" aria-modal="true" aria-labelledby="privacy-consent-title">
       <section className="privacy-consent-modal" style={modalStyle}>
         <p className="personalisation-eyebrow">TINY TITANS · YOUR CHOICE</p><h1 id="privacy-consent-title">🔐 Data &amp; Privacy</h1>
-        <p className="privacy-consent-intro">Tiny Titans works without optional data sharing. You can make one simple choice now and change individual choices later from My Account → Data &amp; Privacy.</p>
+        <p className="privacy-consent-intro">Tiny Titans works without optional data sharing. We ask separately about community interaction because comments and messages need a minimal account identity. Your core app remains yours either way.</p>
         {!customising ? <>
-          <div className="privacy-consent-option"><strong>🌍 Community location</strong><small>If enabled, your device location is immediately converted into a coarse privacy area. Tiny Titans does not store your raw GPS position. The Creator globe shows one aggregated marker for each area.</small></div>
+          <div className="privacy-consent-option"><strong>💬 Community conversations</strong><small>Comments and messages use your Firebase UID as an internal account identifier plus the community name you choose to display. They do not require your contacts, microphone, phone contents or exact GPS location.</small></div>
+          <div className="privacy-consent-option"><strong>🌍 Community location</strong><small>If enabled, your device location is immediately converted into a coarse privacy area. Tiny Titans does not store your raw GPS position for the community map.</small></div>
           <div className="privacy-consent-option"><strong>📊 Anonymous product analytics</strong><small>Optional aggregated usage information that helps improve Tiny Titans.</small></div>
-          <div className="privacy-consent-option"><strong>🐍 Community husbandry intelligence</strong><small>If enabled, your feeding, weight and shedding records can be included anonymously in aggregate community statistics. Your individual records are never shown as community data.</small></div>
+          <div className="privacy-consent-option"><strong>🐍 Community husbandry intelligence</strong><small>If enabled, your feeding, weight and shedding records can contribute anonymously to aggregate community statistics and the advanced Intelligence layer. Declining it does not disable the rest of the app.</small></div>
           <div className="privacy-consent-option"><strong>📣 Product updates</strong><small>Optional Tiny Titans feature and release updates.</small></div>
           {error && <div className="setup-error" role="alert">{error}</div>}
-          <button className="setup-submit" type="button" onClick={() => void saveChoices({ location: true, analytics: true, communityHusbandryData: true, updates: true })} disabled={saving}>{saving ? (locating ? "Finding your approximate area…" : "Saving your choices…") : "Accept Optional Data"}</button>
-          <button className="creator-tool-button" type="button" onClick={() => void saveChoices({ location: false, analytics: false, communityHusbandryData: false, updates: false })} disabled={saving}>Decline Optional Data</button>
+          <button className="setup-submit" type="button" onClick={saveAll} disabled={saving}>{saving ? (locating ? "Finding your approximate area…" : "Saving your choices…") : "Accept Optional Data"}</button>
+          <button className="creator-tool-button" type="button" onClick={saveNone} disabled={saving}>Decline Optional Data</button>
           <button className="creator-tool-button" type="button" onClick={() => setCustomising(true)} disabled={saving}>Customise choices</button>
         </> : <>
-          <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={location} onChange={(event) => setLocation(event.target.checked)} disabled={saving} /><span><strong>🌍 Community location</strong><small>Uses a coarse privacy area rather than your exact GPS position. The globe aggregates users into one area marker.</small></span></label>{location && <div className="setup-location-fields"><label>City<input value={city} onChange={(event) => setCity(event.target.value)} placeholder="Fallback: e.g. Peterborough" disabled={saving} /></label><label>Country<input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="Fallback: e.g. United Kingdom" disabled={saving} /></label></div>}</div>
+          <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={communityMessaging} onChange={(event) => setCommunityMessaging(event.target.checked)} disabled={saving} /><span><strong>💬 Community conversations</strong><small>Allows Community Hub comments and private messages with Tiny Titans. Only minimal account identity is attached to messages.</small></span></label>{!communityMessaging && <div className="setup-location-fields"><label>Why are you declining?<select value={communityMessagingDeclineReason ?? "privacy-concern"} onChange={(event) => setCommunityMessagingDeclineReason(event.target.value as CommunityMessagingDeclineReason)} disabled={saving}>{DECLINE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label>Anything else? <span>(optional)</span><textarea value={communityMessagingDeclineReasonDetail} onChange={(event) => setCommunityMessagingDeclineReasonDetail(event.target.value.slice(0, 500))} placeholder="Tell us what feels unclear or uncomfortable…" rows={3} maxLength={500} disabled={saving} /></label></div>}</div>
+          <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={location} onChange={(event) => setLocation(event.target.checked)} disabled={saving} /><span><strong>🌍 Community location</strong><small>Uses a coarse privacy area rather than your exact GPS position. The globe aggregates users into area markers.</small></span></label>{location && <div className="setup-location-fields"><label>City<input value={city} onChange={(event) => setCity(event.target.value)} placeholder="Fallback: e.g. Peterborough" disabled={saving} /></label><label>Country<input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="Fallback: e.g. United Kingdom" disabled={saving} /></label></div>}</div>
           <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} disabled={saving} /><span><strong>📊 Anonymous product analytics</strong><small>Aggregated usage and feature-performance information.</small></span></label></div>
-          <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={communityHusbandryData} onChange={(event) => setCommunityHusbandryData(event.target.checked)} disabled={saving} /><span><strong>🐍 Community husbandry intelligence</strong><small>Allows feeding, weight and shedding records to contribute anonymously to aggregate community statistics.</small></span></label></div>
+          <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={communityHusbandryData} onChange={(event) => setCommunityHusbandryData(event.target.checked)} disabled={saving} /><span><strong>🐍 Community husbandry intelligence</strong><small>Allows eligible husbandry records to contribute anonymously to aggregate community intelligence.</small></span></label></div>
           <div className="privacy-consent-option"><label className="setup-check"><input type="checkbox" checked={updates} onChange={(event) => setUpdates(event.target.checked)} disabled={saving} /><span><strong>📣 Product updates</strong><small>Optional Tiny Titans feature and release updates.</small></span></label></div>
           {error && <div className="setup-error" role="alert">{error}</div>}
-          <button className="setup-submit" type="button" onClick={() => void saveChoices({ location, analytics, communityHusbandryData, updates })} disabled={saving}>{saving ? "Saving…" : "Save Choices"}</button>
+          <button className="setup-submit" type="button" onClick={() => void saveChoices({ location, analytics, communityHusbandryData, communityMessaging, communityMessagingDeclineReason, communityMessagingDeclineReasonDetail, updates })} disabled={saving}>{saving ? "Saving…" : "Save Choices"}</button>
           <button className="creator-tool-button" type="button" onClick={() => setCustomising(false)} disabled={saving}>Back to simple choice</button>
         </>}
-        <p className="setup-help">Optional choices can be withdrawn later. Core snake tracking remains available without optional sharing.</p>
+        <p className="setup-help">Optional choices can be withdrawn later. Core snake tracking remains available without optional sharing. Your community-message choice is separate from the existing Titan Intelligence modifier.</p>
       </section>
     </div>
   );
