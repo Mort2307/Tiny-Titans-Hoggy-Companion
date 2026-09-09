@@ -13,6 +13,7 @@ const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 
 Object.assign(exports, require("./creatorApproval"));
 Object.assign(exports, require("./communityIntelligence"));
+Object.assign(exports, require("./communityComments"));
 Object.assign(exports, require("./communityLocations"));
 Object.assign(exports, require("./publicContributions"));
 Object.assign(exports, require("./familyJoinCodes"));
