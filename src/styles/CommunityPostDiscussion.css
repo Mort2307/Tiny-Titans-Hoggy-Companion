@@ -1,0 +1,20 @@
+.community-discussion{margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
+.community-discussion-toggle{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer;padding:8px 0}
+.community-discussion-toggle span{min-width:22px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.08);font-size:12px;text-align:center}
+.community-discussion-body{margin-top:10px;padding:14px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+.community-discussion-form textarea{width:100%;box-sizing:border-box;resize:vertical;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(0,0,0,.18);color:inherit;padding:12px;font:inherit;line-height:1.45}
+.community-discussion-form div{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.community-discussion-form small,.community-discussion-muted,.community-discussion-permission span{color:rgba(255,255,255,.6);font-size:12px;line-height:1.45}
+.community-discussion-form button{border:0;border-radius:10px;padding:9px 13px;font-weight:800;cursor:pointer}
+.community-discussion-form button:disabled{opacity:.5;cursor:not-allowed}
+.community-discussion-permission{display:grid;gap:4px}
+.community-discussion-error{margin:10px 0 0;color:#ffd79a;font-size:13px}
+.community-discussion-list{display:grid;gap:10px;margin-top:12px}
+.community-comment{padding:12px;border-radius:12px;background:rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.06)}
+.community-comment>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.community-comment>div time{margin-left:auto;font-size:11px;color:rgba(255,255,255,.48)}
+.community-comment-badge{font-size:10px;font-weight:800;padding:3px 7px;border-radius:999px;background:rgba(245,182,66,.14)}
+.community-comment p{margin:8px 0 0;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.community-comment footer{display:flex;justify-content:flex-end;margin-top:6px}
+.community-comment footer button{border:0;background:transparent;color:rgba(255,255,255,.55);font-size:11px;cursor:pointer;padding:3px 0}
+@media (max-width:640px){.community-discussion-form div{align-items:stretch;flex-direction:column}.community-discussion-form button{width:100%}.community-comment>div time{width:100%;margin-left:0}}
