@@ -84,6 +84,20 @@ function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", 
         aria-label={`Delete ${name}`}
         title={`Delete ${name}`}
         disabled={deleting}
+        style={{
+          position: "absolute",
+          top: "0.2rem",
+          right: "0.2rem",
+          zIndex: 2,
+          width: "2rem",
+          height: "2rem",
+          padding: 0,
+          borderRadius: "999px",
+          border: "1px solid rgba(255,255,255,0.22)",
+          background: "rgba(35, 12, 16, 0.92)",
+          cursor: "pointer",
+          lineHeight: 1,
+        }}
       >
         🗑️
       </button>
