@@ -1,7 +1,8 @@
+import type { ReactElement } from "react";
 import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
 import { getHognosePhenotypeGuide } from "../data/hognosePhenotypeGuide";
 
-export default function HognosePhenotypeGuide({ morph }: { morph: MorphReferenceEntry }): JSX.Element {
+export default function HognosePhenotypeGuide({ morph }: { morph: MorphReferenceEntry }): ReactElement {
   const guide = getHognosePhenotypeGuide(morph.geneId, morph.components);
   const confidence = guide.visualDescription.startsWith("No verified") ? "Limited" : "Keeper guide";
 
