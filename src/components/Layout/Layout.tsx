@@ -22,6 +22,7 @@ import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
 import PaidPlans from "../../pages/PaidPlans";
 import AccountBilling from "../../pages/AccountBilling";
 import PaidFeatureWorkspace from "../../pages/PaidFeatureWorkspace";
+import PaidTimelineFeature from "../../pages/PaidTimelineFeature";
 import PaidTierGate from "../PaidTierGate";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
@@ -44,6 +45,7 @@ function LayoutChrome() {
   const isPaidPlansPage = location.pathname === "/plans";
   const isBillingPage = location.pathname === "/account/billing";
   const isPaidFeaturePage = location.pathname === "/paid" || location.pathname.startsWith("/paid/");
+  const isPaidTimelinePage = location.pathname === "/paid/timeline";
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -69,7 +71,7 @@ function LayoutChrome() {
     };
   }, [location.pathname, location.search, location.hash, location.key]);
 
-  const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
+  const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
   const outletEntitlement = location.pathname === "/reminders" || location.pathname.startsWith("/reminders/") ? "smart_reminders"
     : /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname) ? "advanced_timeline"
       : location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/") ? "reptile_room"
