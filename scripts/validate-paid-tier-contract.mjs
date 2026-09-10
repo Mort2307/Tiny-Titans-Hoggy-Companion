@@ -16,6 +16,11 @@ const checks = [
   ["actionable paywall", gate.includes("Compare plans") && gate.includes('to="/plans"')],
   ["retired room not in paid catalogue", !config.includes('"reptile_room"')],
   ["retired room not in paid feature centre", !workspace.includes("Open Reptile Room") && !workspace.includes('to="/reptile-room"')],
+  ["promotion catalogue exists", fs.existsSync(path.join(root, "src", "config", "paidPromotions.ts"))],
+  ["promotion claim service exists", fs.existsSync(path.join(root, "src", "services", "paidPromotionService.ts"))],
+  ["promotion backend exported", fs.existsSync(path.join(root, "functions", "paidPromotions.js"))],
+  ["promotion disabled by default", read("src/config/paidPromotions.ts").includes("enabled: false")],
+  ["plans promotion hook exists", read("src/pages/PaidPlans.tsx").includes("Start free trial")],
 ];
 const failures = checks.filter(([, ok]) => !ok).map(([name]) => name);
 console.log(JSON.stringify({ test: "paid-tier-contract", status: failures.length ? "fail" : "pass", checked: checks.length, failures }, null, 2));
