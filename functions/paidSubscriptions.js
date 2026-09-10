@@ -2,6 +2,7 @@ const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https")
 const { defineSecret } = require("firebase-functions/params");
 const { getFirestore, FieldValue, Timestamp } = require("firebase-admin/firestore");
 const Stripe = require("stripe");
+const { recordPaidTierActivationNotification } = require("./creatorPaidTier");
 
 const db = getFirestore();
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
@@ -75,7 +76,17 @@ exports.paidSubscriptionWebhook = onRequest({ region: "europe-west2", secrets: [
       if (session.mode === "subscription" && session.payment_status !== "unpaid") {
         const uid = String(session.metadata?.uid || session.client_reference_id || "");
         const tier = String(session.metadata?.tinyTitansTier || "");
-        if (uid && TIERS.has(tier)) await db.collection("users").doc(uid).set({ subscriptionTier: tier, subscriptionStatus: "active", stripeCustomerId: session.customer || null, stripeSubscriptionId: session.subscription || null, subscriptionUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        if (uid && TIERS.has(tier)) {
+          const userRef = db.collection("users").doc(uid);
+          const userSnapshot = await userRef.get();
+          const before = userSnapshot.data() || {};
+          await userRef.set({ subscriptionTier: tier, subscriptionStatus: "active", stripeCustomerId: session.customer || null, stripeSubscriptionId: session.subscription || null, subscriptionUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
+          const wasAlreadyActive = String(before.subscriptionTier || "") === tier && ["active", "trialing"].includes(String(before.subscriptionStatus || ""));
+          if (!wasAlreadyActive) {
+            const targetName = String(before.displayName || before.name || requestSafeEmail(session.customer_details?.email || "") || "A Tiny Titans user");
+            await recordPaidTierActivationNotification({ eventKey: `paid-tier-subscription-${event.id}`, targetUid: uid, targetName, tier, activationKind: "subscription", source: "stripe" });
+          }
+        }
       }
     }
     if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.created") {
@@ -83,6 +94,11 @@ exports.paidSubscriptionWebhook = onRequest({ region: "europe-west2", secrets: [
       const uid = String(subscription.metadata?.uid || "");
       const tier = TIERS.has(String(subscription.metadata?.tinyTitansTier || "")) ? String(subscription.metadata.tinyTitansTier) : tierFromPrice(subscription.items?.data?.[0]?.price);
       if (uid && TIERS.has(tier)) await db.collection("users").doc(uid).set({ subscriptionTier: tier, subscriptionStatus: String(subscription.status || "active"), stripeCustomerId: subscription.customer || null, stripeSubscriptionId: subscription.id, subscriptionCurrentPeriodEnd: timestampOrNull(subscription.current_period_end), cancelAtPeriodEnd: subscription.cancel_at_period_end === true, subscriptionUpdatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      if (uid && TIERS.has(tier) && event.type === "customer.subscription.updated" && ["active", "trialing"].includes(String(subscription.status || "")) && event.data.previous_attributes?.status && !["active", "trialing"].includes(String(event.data.previous_attributes.status))) {
+        const targetSnapshot = await db.collection("users").doc(uid).get();
+        const target = targetSnapshot.data() || {};
+        await recordPaidTierActivationNotification({ eventKey: `paid-tier-subscription-${event.id}`, targetUid: uid, targetName: String(target.displayName || target.name || "A Tiny Titans user"), tier, activationKind: "subscription", source: "stripe-status-transition" });
+      }
     }
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object;
@@ -95,3 +111,5 @@ exports.paidSubscriptionWebhook = onRequest({ region: "europe-west2", secrets: [
     return res.status(400).send("Invalid webhook signature or event");
   }
 });
+
+function requestSafeEmail(value) { const email = String(value || "").trim(); return email && email.includes("@") ? email : ""; }
