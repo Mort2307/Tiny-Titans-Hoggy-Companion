@@ -40,3 +40,5 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   const override = data.paidTesterOverride || null; const overrideEnabled = override?.enabled === true && VALID_TIERS.has(String(override?.tier || "")) && (!override.expiresAt?.toMillis || override.expiresAt.toMillis() > Date.now());
   return { success: true, uid: requestedUid, actualTier, effectiveTier: overrideEnabled ? String(override.tier) : actualTier, source: overrideEnabled ? "tester" : actualTier === "free" ? "free" : "subscription", subscriptionStatus: String(data.subscriptionStatus || (actualTier === "free" ? "free" : "active")), testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null };
 });
+
+Object.assign(exports, require("./paidSubscriptions"));
