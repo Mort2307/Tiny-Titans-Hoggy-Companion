@@ -10,6 +10,7 @@ import { generateId } from "../utils/generateId";
 import { getSpeciesDiet, type PreyCategory, type SpeciesDiet } from "../data/feeding/speciesDiet";
 import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
+import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../utils/feedingSummary";
 import "../styles/trackerWorkspace.css";
 
 const feedingMethods: FeedingMethod[] = ["Tongs", "Drop Feed", "Hand Fed", "Scented", "Other"];
@@ -119,7 +120,8 @@ export default function FeedingTracker() {
     Regurgitated: feedings.filter((f) => f.response === "Regurgitated").length,
   }), [feedings]);
   const acceptanceRate = feedings.length ? Math.round((counts.Accepted / feedings.length) * 100) : 0;
-  const lastFeeding = feedings[0] ?? null;
+  const lastFeeding = latestFeedingAttempt(feedings);
+  const lastSuccessfulFeeding = latestSuccessfulFeed(feedings);
 
   const resetForm = useCallback((nextDiet: SpeciesDiet = diet) => {
     const defaultFood = nextDiet.recommended[0] ?? "Other";
@@ -248,8 +250,8 @@ export default function FeedingTracker() {
 
     {snakes.length === 0 ? <section className="tt-tracker-panel"><div className="tt-empty"><h2>No snakes yet</h2><p>Add a snake before recording a feeding.</p><button className="tt-tracker-button" type="button" onClick={() => navigate("/snakes")}>➕ Add a Snake</button></div></section> : <>
       <section id="feeding-overview" className="tt-tracker-stat-grid">
-        <div className="tt-tracker-stat"><span>Last meal</span><strong>{lastFeeding?.date ?? "—"}</strong></div>
-        <div className="tt-tracker-stat"><span>Days since</span><strong>{lastFeeding ? daysSince(lastFeeding.date) : "—"}</strong></div>
+        <div className="tt-tracker-stat"><span>Last feed attempt</span><strong>{lastFeeding?.date ? formatDaysSinceFeeding(lastFeeding.date) : "—"}</strong><small>{lastFeeding?.foodType ?? "No feeding attempt recorded"}</small></div>
+        <div className="tt-tracker-stat"><span>Last successful feed</span><strong>{lastSuccessfulFeeding?.date ? formatDaysSinceFeeding(lastSuccessfulFeeding.date) : "—"}</strong><small>{lastSuccessfulFeeding ? "Accepted" : "No successful feed recorded"}</small></div>
         <div className="tt-tracker-stat"><span>Acceptance</span><strong>{acceptanceRate}%</strong></div>
         <div className="tt-tracker-stat"><span>Total feeds</span><strong>{feedings.length}</strong></div>
       </section>
