@@ -23,6 +23,7 @@ import PaidPlans from "../../pages/PaidPlans";
 import AccountBilling from "../../pages/AccountBilling";
 import PaidFeatureWorkspace from "../../pages/PaidFeatureWorkspace";
 import PaidTimelineFeature from "../../pages/PaidTimelineFeature";
+import PaidMarketplaceFeature from "../../pages/PaidMarketplaceFeature";
 import PaidTierGate from "../PaidTierGate";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
@@ -44,87 +45,41 @@ function LayoutChrome() {
   const isTitanWeekPage = location.pathname === "/titan-intelligence/feature/this-week";
   const isPaidPlansPage = location.pathname === "/plans";
   const isBillingPage = location.pathname === "/account/billing";
-  const isPaidFeaturePage = location.pathname === "/paid" || location.pathname.startsWith("/paid/");
+  const isPaidMarketplacePage = location.pathname === "/paid/marketplace";
   const isPaidTimelinePage = location.pathname === "/paid/timeline";
+  const isPaidFeaturePage = location.pathname === "/paid" || (location.pathname.startsWith("/paid/") && !isPaidMarketplacePage && !isPaidTimelinePage);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const historyWithRestoration = window.history as History & { scrollRestoration?: "auto" | "manual" };
     if (historyWithRestoration.scrollRestoration) historyWithRestoration.scrollRestoration = "manual";
-
-    const resetScroll = () => {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-
+    const resetScroll = () => { window.scrollTo({ top: 0, left: 0, behavior: "auto" }); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; };
     resetScroll();
-    const firstFrame = window.requestAnimationFrame(() => {
-      resetScroll();
-      window.requestAnimationFrame(resetScroll);
-    });
+    const firstFrame = window.requestAnimationFrame(() => { resetScroll(); window.requestAnimationFrame(resetScroll); });
     const timeout = window.setTimeout(resetScroll, 80);
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.clearTimeout(timeout);
-    };
+    return () => { window.cancelAnimationFrame(firstFrame); window.clearTimeout(timeout); };
   }, [location.pathname, location.search, location.hash, location.key]);
 
-  const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
+  const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidMarketplacePage ? <PaidMarketplaceFeature /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
   const outletEntitlement = location.pathname === "/reminders" || location.pathname.startsWith("/reminders/") ? "smart_reminders"
     : /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname) ? "advanced_timeline"
       : location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/") ? "reptile_room"
         : location.pathname === "/breeding" || location.pathname.startsWith("/breeding/") ? "breeding_suite"
-          : location.pathname === "/morph-library/evidence" ? "morph_intelligence"
-            : null;
-
+          : location.pathname === "/morph-library/evidence" ? "morph_intelligence" : null;
   const outlet = <Outlet />;
   const gatedOutlet = outletEntitlement ? <PaidTierGate entitlement={outletEntitlement}>{outlet}</PaidTierGate> : outlet;
 
-  return (
-    <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"}>
-      <a className="skip-link" href="#main-content">Skip to main content</a>
-      <Header />
-      <Navigation />
-      <main id="main-content" className="app-main" tabIndex={-1}>
-        <div className="app-content">
-          {!isEasyNav && <AdaptiveGuideBar />}
-          {!isEasyNav && <CreatorTesterInvitationBanner />}
-          {!isEasyNav && <CreatorCommandBar />}
-          {!isEasyNav && <CreatorStatusBar />}
-          {!isEasyNav && <TitanQuickActions />}
-          {!isEasyNav && <SupportNotificationCenter />}
-          <div className="tt-page-frame">
-            {speciesAware && <SpeciesContextBar />}
-            <WorldIntelligenceContext />
-            {!isTitanWeekPage && <TitanAtAGlance />}
-            <div className={isEasyNav ? "tt-easy-intelligence" : undefined}>
-              <TitanGlobalNextAction />
-            </div>
-            {specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre />
-              : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
-                : morphGalleryMatch ? <SpeciesMorphGallery />
-                  : morphDetailMatch ? <SpeciesMorphDetail />
-                    : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence />
-                      : gatedOutlet)}
-            <TinyTitansEvidenceNotice />
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+  return <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"}>
+    <a className="skip-link" href="#main-content">Skip to main content</a><Header/><Navigation/>
+    <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
+      {!isEasyNav && <AdaptiveGuideBar/>}{!isEasyNav && <CreatorTesterInvitationBanner/>}{!isEasyNav && <CreatorCommandBar/>}{!isEasyNav && <CreatorStatusBar/>}{!isEasyNav && <TitanQuickActions/>}{!isEasyNav && <SupportNotificationCenter/>}
+      <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}<WorldIntelligenceContext/>{!isTitanWeekPage && <TitanAtAGlance/>}<div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>
+        {specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre/> : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary/> : morphGalleryMatch ? <SpeciesMorphGallery/> : morphDetailMatch ? <SpeciesMorphDetail/> : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence/> : gatedOutlet)}
+        <TinyTitansEvidenceNotice/>
+      </div>
+    </div></main>
+  </div>;
 }
 
-function Layout() {
-  return (
-    <SpeciesContextProvider>
-      <SpeciesContextRouteSync />
-      <EasyNavProvider>
-        <LayoutChrome />
-      </EasyNavProvider>
-    </SpeciesContextProvider>
-  );
-}
-
+function Layout() { return <SpeciesContextProvider><SpeciesContextRouteSync/><EasyNavProvider><LayoutChrome/></EasyNavProvider></SpeciesContextProvider>; }
 export default Layout;
