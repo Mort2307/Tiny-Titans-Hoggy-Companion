@@ -46,3 +46,4 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
 
 Object.assign(exports, require("./paidSubscriptions"));
 Object.assign(exports, require("./paidBusiness"));
+Object.assign(exports, require("./paidPublicApi"));
