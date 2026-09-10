@@ -16,6 +16,7 @@ const LOOKUP_KEYS = Object.freeze({
   business_plus: "tinytitans_business_plus_monthly",
   business_advanced: "tinytitans_business_advanced_monthly",
 });
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due", "unpaid", "incomplete"]);
 const ORIGINS = new Set(["https://tinytitans-hoggy-companion.web.app", "https://tinytitans-hoggy-companion.firebaseapp.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
 function origin(request) { const value = request.rawRequest?.headers?.origin || ""; return ORIGINS.has(value) ? value : "https://tinytitans-hoggy-companion.web.app"; }
 function tierFromPrice(price) { const lookup = String(price?.lookup_key || ""); const found = Object.entries(LOOKUP_KEYS).find(([, value]) => value === lookup); return found?.[0] || String(price?.metadata?.tinyTitansTier || ""); }
@@ -24,8 +25,19 @@ async function findRecurringPrice(stripe, tier) { const lookup = LOOKUP_KEYS[tie
 
 exports.createPaidSubscriptionCheckout = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in."); const tier = String(request.data?.tier || ""); if (!TIERS.has(tier)) throw new HttpsError("invalid-argument", "Invalid paid subscription tier.");
-  try { const stripe = new Stripe(STRIPE_SECRET_KEY.value()); const price = await findRecurringPrice(stripe, tier); const userRef = db.collection("users").doc(request.auth.uid); const user = await userRef.get(); const existingCustomerId = user.exists ? String(user.data()?.stripeCustomerId || "") : ""; const checkout = await stripe.checkout.sessions.create({ mode: "subscription", line_items: [{ price: price.id, quantity: 1 }], ...(existingCustomerId ? { customer: existingCustomerId } : { customer_email: request.auth.token.email || undefined }), client_reference_id: request.auth.uid, allow_promotion_codes: true, subscription_data: { metadata: { uid: request.auth.uid, tinyTitansTier: tier } }, metadata: { uid: request.auth.uid, tinyTitansTier: tier }, success_url: `${origin(request)}/account/billing?subscription=success`, cancel_url: `${origin(request)}/plans?subscription=cancelled` }); if (!checkout.url) throw new Error("Stripe did not return a checkout URL."); return { url: checkout.url }; }
-  catch (error) { console.error("Paid subscription checkout failed", error); if (error instanceof HttpsError) throw error; throw new HttpsError("internal", "Unable to start subscription checkout."); }
+  try {
+    const userRef = db.collection("users").doc(request.auth.uid);
+    const user = await userRef.get();
+    const current = user.exists ? user.data() || {} : {};
+    const currentStatus = String(current.subscriptionStatus || "");
+    const currentSubscriptionId = String(current.stripeSubscriptionId || "");
+    if (currentSubscriptionId && ACTIVE_SUBSCRIPTION_STATUSES.has(currentStatus)) throw new HttpsError("failed-precondition", "You already have a Stripe subscription. Use Billing & access to manage or change it.");
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+    const price = await findRecurringPrice(stripe, tier);
+    const existingCustomerId = String(current.stripeCustomerId || "");
+    const checkout = await stripe.checkout.sessions.create({ mode: "subscription", line_items: [{ price: price.id, quantity: 1 }], ...(existingCustomerId ? { customer: existingCustomerId } : { customer_email: request.auth.token.email || undefined }), client_reference_id: request.auth.uid, allow_promotion_codes: true, subscription_data: { metadata: { uid: request.auth.uid, tinyTitansTier: tier } }, metadata: { uid: request.auth.uid, tinyTitansTier: tier }, success_url: `${origin(request)}/account/billing?subscription=success`, cancel_url: `${origin(request)}/plans?subscription=cancelled` });
+    if (!checkout.url) throw new Error("Stripe did not return a checkout URL."); return { url: checkout.url };
+  } catch (error) { console.error("Paid subscription checkout failed", error); if (error instanceof HttpsError) throw error; throw new HttpsError("internal", "Unable to start subscription checkout."); }
 });
 
 exports.createPaidBillingPortalSession = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
