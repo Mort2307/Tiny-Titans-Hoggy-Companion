@@ -24,7 +24,9 @@ async function authenticateApiKey(request) {
   for (const doc of matches.docs) {
     const data = doc.data();
     if (data.revoked || typeof data.secretHash !== "string") continue;
-    if (!crypto.timingSafeEqual(Buffer.from(data.secretHash), Buffer.from(hash))) continue;
+    const stored = Buffer.from(data.secretHash);
+    const supplied = Buffer.from(hash);
+    if (stored.length !== supplied.length || !crypto.timingSafeEqual(stored, supplied)) continue;
     const workspaceRef = doc.ref.parent.parent;
     const uid = workspaceRef?.id;
     if (!uid) continue;
@@ -32,7 +34,7 @@ async function authenticateApiKey(request) {
     const userData = userSnapshot.exists ? userSnapshot.data() : {};
     const tier = String(userData.subscriptionTier || "free");
     const override = userData.paidTesterOverride || null;
-    const overrideValid = override?.enabled === true && override?.tier && override?.expiresAt?.toMillis && override.expiresAt.toMillis() > Date.now();
+    const overrideValid = override?.enabled === true && override?.tier && (!override.expiresAt?.toMillis || override.expiresAt.toMillis() > Date.now());
     const effectiveTier = overrideValid ? String(override.tier) : tier;
     const access = TIER_ENTITLEMENTS[effectiveTier] || TIER_ENTITLEMENTS.free;
     if (!access.has("api_access")) return null;
@@ -46,9 +48,7 @@ exports.paidPublicApi = onRequest({ region: "europe-west2", cors: true }, async 
     if (request.method === "GET" && request.path === "/api/v1/health") return sendJson(response, 200, { ok: true, service: "Tiny Titans API", version: "v1" });
     const auth = await authenticateApiKey(request);
     if (!auth) return sendJson(response, 401, { ok: false, error: "Invalid or revoked API key." });
-    if (request.method === "GET" && request.path === "/api/v1/me") {
-      return sendJson(response, 200, { ok: true, data: { uid: auth.uid, tier: auth.tier, effectiveTier: auth.effectiveTier, displayName: auth.userData.displayName || null, api: { version: "v1", access: ["me"] } } });
-    }
+    if (request.method === "GET" && request.path === "/api/v1/me") return sendJson(response, 200, { ok: true, data: { uid: auth.uid, tier: auth.tier, effectiveTier: auth.effectiveTier, displayName: auth.userData.displayName || null, api: { version: "v1", access: ["me"] } } });
     return sendJson(response, 404, { ok: false, error: "Unknown API endpoint." });
   } catch (error) {
     console.error("Tiny Titans: paid public API failure", error);
