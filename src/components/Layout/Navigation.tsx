@@ -12,11 +12,7 @@ type NavigationLink = [string, string, string];
 type NavigationSection = { label: string; links: NavigationLink[] };
 
 const latestProductUpdateId = [...communityUpdates].sort((a, b) => b.releasedAt.localeCompare(a.releasedAt))[0]?.id ?? null;
-
-function hasUnseenProductUpdate() {
-  if (!latestProductUpdateId || typeof window === "undefined") return false;
-  try { return window.localStorage.getItem("tinytitans:community-product-update:last-seen") !== latestProductUpdateId; } catch { return false; }
-}
+function hasUnseenProductUpdate() { if (!latestProductUpdateId || typeof window === "undefined") return false; try { return window.localStorage.getItem("tinytitans:community-product-update:last-seen") !== latestProductUpdateId; } catch { return false; } }
 
 function Navigation() {
   const { profile, user, loading, profileLoading } = useAuth();
@@ -32,44 +28,11 @@ function Navigation() {
   const userId = user?.uid;
   const authReady = !loading && !profileLoading && Boolean(userId);
 
-  useEffect(() => {
-    if (!authReady) return;
-    let active = true;
-    void Promise.all([hasCapability("creator", profile), hasCapability("tester", profile), hasCapability("educator", profile)]).then(([creator, tester, educator]) => {
-      if (!active) return;
-      setCreatorAuthorized(creator); setTesterAuthorized(tester); setEducatorAuthorized(educator);
-    }).catch(() => {
-      if (!active) return;
-      setCreatorAuthorized(false); setTesterAuthorized(false); setEducatorAuthorized(false);
-    });
-    return () => { active = false; };
-  }, [authReady, profile]);
-
-  useEffect(() => {
-    if (!authReady || !userId) return;
-    let active = true;
-    const refresh = () => {
-      void getCommunityUnreadCount(userId, { isTester: profile?.isTester === true, isAdmin: profile?.role === "admin" }).then((count) => {
-        if (active) setCommunityUnreadCount(count);
-      }).catch(() => { if (active) setCommunityUnreadCount(0); });
-      setUnseenProductUpdate(hasUnseenProductUpdate());
-    };
-    refresh();
-    window.addEventListener("focus", refresh);
-    window.addEventListener("storage", refresh);
-    window.addEventListener("community-read-state-changed", refresh);
-    window.addEventListener("community-product-update-read", refresh);
-    return () => {
-      active = false;
-      window.removeEventListener("focus", refresh);
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener("community-read-state-changed", refresh);
-      window.removeEventListener("community-product-update-read", refresh);
-    };
-  }, [authReady, userId, profile?.isTester, profile?.role]);
+  useEffect(() => { if (!authReady) return; let active = true; void Promise.all([hasCapability("creator", profile), hasCapability("tester", profile), hasCapability("educator", profile)]).then(([creator, tester, educator]) => { if (!active) return; setCreatorAuthorized(creator); setTesterAuthorized(tester); setEducatorAuthorized(educator); }).catch(() => { if (!active) return; setCreatorAuthorized(false); setTesterAuthorized(false); setEducatorAuthorized(false); }); return () => { active = false; }; }, [authReady, profile]);
+  useEffect(() => { if (!authReady || !userId) return; let active = true; const refresh = () => { void getCommunityUnreadCount(userId, { isTester: profile?.isTester === true, isAdmin: profile?.role === "admin" }).then((count) => { if (active) setCommunityUnreadCount(count); }).catch(() => { if (active) setCommunityUnreadCount(0); }); setUnseenProductUpdate(hasUnseenProductUpdate()); }; refresh(); window.addEventListener("focus", refresh); window.addEventListener("storage", refresh); window.addEventListener("community-read-state-changed", refresh); window.addEventListener("community-product-update-read", refresh); return () => { active = false; window.removeEventListener("focus", refresh); window.removeEventListener("storage", refresh); window.removeEventListener("community-read-state-changed", refresh); window.removeEventListener("community-product-update-read", refresh); }; }, [authReady, userId, profile?.isTester, profile?.role]);
 
   const sections: NavigationSection[] = [
-    { label: "Overview", links: [["/", "⌂", "Home"], ["/snakes", "🐍", "My Snakes"], ["/reptile-room", "▦", "Reptile Room"], ["/conversations", "💬", "Message Centre"]] },
+    { label: "Overview", links: [["/", "⌂", "Home"], ["/snakes", "🐍", "My Snakes"], ["/conversations", "💬", "Message Centre"]] },
     { label: "Care", links: [["/reminders", "🔔", "Reminder Hub"], ["/husbandry", "✦", "Husbandry & Care"], ["/weights", "⚖️", "Weight Records"], ["/feeding", "🍽️", "Feeding Tracker"], ["/shedding", "🐍", "Shed Intelligence"], ["/behaviour", "◉", "Behaviour Journal"], ["/health", "+", "Health & Vet"], ["/enclosure-intelligence", "⌘", "Enclosure Intelligence"]] },
     { label: "Genetics & Breeding", links: [["/morph-library", "🧬", "Morph Library"], ["/calculator", "∑", "Genetics Calculator"], ["/breeding", "🥚", "Breeding Planner"], ["/breeding/academy", "▣", "Breeding Academy"]] },
     { label: "Learn & Community", links: [["/keeper-handbook", "📖", "Keeper Behaviour Handbook"], ["/behaviour-observatory", "🔭", "Behaviour Observatory"], ["/make-contribution", "＋", "Make a Contribution"], ["/knowledge-base", "▤", "Knowledge Base"], ["/challenge", "◆", "Titans Challenge"], ["/community", "◌", "Community Hub"], ["/community/mentorship", "↔", "Mentorship"], ["/community/wall-of-titans", "★", "Wall of Titans"]] },
