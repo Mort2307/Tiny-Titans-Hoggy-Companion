@@ -4,6 +4,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 const db = getFirestore();
 const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
+const PAID_TIERS = new Set(["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
 const ENTITLEMENTS = new Set([
   "advanced_analytics",
   "data_export",
@@ -25,14 +26,28 @@ const TIER_ENTITLEMENTS = {
   business_plus: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence", "breeding_suite", "morph_intelligence", "reptile_room", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "priority_support"]),
   business_advanced: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence", "breeding_suite", "morph_intelligence", "reptile_room", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "api_access", "priority_support", "custom_branding"]),
 };
+function expiryMillis(value) {
+  if (!value) return null;
+  if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis();
+  const parsed = new Date(String(value)).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
 function entitlementFromUser(data) {
   const tier = VALID_TIERS.has(String(data.subscriptionTier || "")) ? String(data.subscriptionTier) : "free";
+  const status = String(data.subscriptionStatus || (tier === "free" ? "free" : "active"));
+  const subscriptionActive = PAID_TIERS.has(tier) && ["active", "trialing"].includes(status);
   const override = data.paidTesterOverride || null;
-  const overrideValid = override?.enabled === true && VALID_TIERS.has(String(override?.tier || "")) && (!override.expiresAt?.toMillis || override.expiresAt.toMillis() > Date.now());
-  const effectiveTier = overrideValid ? String(override.tier) : tier;
-  const status = String(data.subscriptionStatus || "active");
-  const statusAllowsAccess = effectiveTier === "free" || status === "active" || status === "trialing";
-  return { tier, effectiveTier, statusAllowsAccess, entitlements: TIER_ENTITLEMENTS[effectiveTier] || TIER_ENTITLEMENTS.free };
+  const overrideTier = VALID_TIERS.has(String(override?.tier || "")) ? String(override.tier) : "free";
+  const overrideExpiry = expiryMillis(override?.expiresAt);
+  const overrideValid = override?.enabled === true && PAID_TIERS.has(overrideTier) && (overrideExpiry === null || overrideExpiry > Date.now());
+  const trial = data.paidTrial || null;
+  const trialTier = VALID_TIERS.has(String(trial?.tier || "")) ? String(trial.tier) : "free";
+  const trialExpiry = expiryMillis(trial?.expiresAt);
+  const trialValid = trial?.enabled === true && PAID_TIERS.has(trialTier) && trialExpiry !== null && trialExpiry > Date.now();
+  const effectiveTier = overrideValid ? overrideTier : subscriptionActive ? tier : trialValid ? trialTier : "free";
+  const source = overrideValid ? "tester" : subscriptionActive ? "subscription" : trialValid ? "trial" : "free";
+  const statusAllowsAccess = effectiveTier === "free" || subscriptionActive || trialValid;
+  return { tier, effectiveTier, source, statusAllowsAccess, entitlements: TIER_ENTITLEMENTS[effectiveTier] || TIER_ENTITLEMENTS.free };
 }
 async function requireEntitlement(uid, entitlement) {
   if (!ENTITLEMENTS.has(entitlement)) throw new HttpsError("invalid-argument", "Unknown paid entitlement.");
