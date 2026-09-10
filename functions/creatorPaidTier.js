@@ -26,7 +26,6 @@ function accessForUser(data) {
   if (overrideActive) { effectiveTier = overrideTier; source = "tester"; } else if (subscriptionActive) { effectiveTier = actualTier; source = "subscription"; } else if (trialActive) { effectiveTier = trialTier; source = "trial"; }
   return { actualTier, effectiveTier, source, subscriptionStatus, currentPeriodEnd: data.subscriptionCurrentPeriodEnd || null, testerOverride: overrideActive ? { ...override, tier: overrideTier, enabled: true } : null, trial: trialActive ? { ...trial, tier: trialTier, enabled: true } : null };
 }
-
 exports.getCreatorPaidTierUsers = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can inspect paid-tier users.");
@@ -39,23 +38,18 @@ exports.getCreatorPaidTierUsers = onCall({ region: "europe-west2" }, async (requ
   const summary = users.reduce((result, account) => { result.total += 1; result[account.effectiveTier] = (result[account.effectiveTier] || 0) + 1; if (account.source === "trial") result.trials += 1; if (account.source === "subscription") result.paid += 1; if (account.source === "tester") result.testers += 1; return result; }, { total: 0, trials: 0, paid: 0, testers: 0, free: 0, titan_pro: 0, titan_seller: 0, business_starter: 0, business_plus: 0, business_advanced: 0 });
   return { success: true, users, summary, generatedAt: Date.now() };
 });
-
 exports.getCreatorPaidTierNotifications = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can inspect Creator paid-tier notifications.");
-  const uid = await ownerUid();
-  const snapshot = await db.collection("users").doc(uid).collection("notificationEvents").orderBy("createdAt", "desc").limit(100).get();
+  const uid = await ownerUid(); const snapshot = await db.collection("users").doc(uid).collection("notificationEvents").orderBy("createdAt", "desc").limit(100).get();
   const notifications = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).filter((item) => item.eventType === "paid-tier-activation").slice(0, 50);
   return { success: true, notifications, unreadCount: notifications.filter((item) => item.read !== true).length };
 });
-
 exports.markCreatorPaidTierNotificationRead = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can update Creator paid-tier notifications.");
-  const eventId = String(request.data?.eventId || "").trim(); if (!eventId) throw new HttpsError("invalid-argument", "Notification ID is required.");
-  const uid = await ownerUid(); await db.collection("users").doc(uid).collection("notificationEvents").doc(eventId).set({ read: true, readAt: FieldValue.serverTimestamp() }, { merge: true }); return { success: true, eventId };
+  const eventId = String(request.data?.eventId || "").trim(); if (!eventId) throw new HttpsError("invalid-argument", "Notification ID is required."); const uid = await ownerUid(); await db.collection("users").doc(uid).collection("notificationEvents").doc(eventId).set({ read: true, readAt: FieldValue.serverTimestamp() }, { merge: true }); return { success: true, eventId };
 });
-
 exports.grantPaidTrial = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can grant paid trials.");
@@ -70,5 +64,14 @@ exports.grantPaidTrial = onCall({ region: "europe-west2" }, async (request) => {
   await recordPaidTierActivationNotification({ eventKey, targetUid, targetName, tier, activationKind: "trial", source: "creator" });
   return { success: true, targetUid, tier, durationDays, expiresAt: expiresAt.toMillis(), auditId: auditRef.id };
 });
-
+exports.revokePaidTrial = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can revoke paid trials.");
+  const targetUid = String(request.data?.targetUid || "").trim(); if (!targetUid) throw new HttpsError("invalid-argument", "A target user ID is required.");
+  await adminAuth.getUser(targetUid); const userRef = db.collection("users").doc(targetUid); const snapshot = await userRef.get(); const trial = snapshot.data()?.paidTrial || null;
+  if (!trial?.enabled || !activeExpiry(trial.expiresAt)) throw new HttpsError("failed-precondition", "This user does not have an active paid trial.");
+  await userRef.set({ paidTrial: { ...trial, enabled: false, revokedAt: FieldValue.serverTimestamp(), revokedByUid: request.auth.uid }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_paid_trial", tier: trial.tier, createdAt: FieldValue.serverTimestamp() });
+  return { success: true, targetUid, tier: String(trial.tier || "free"), revoked: true };
+});
 async function ownerUid() { return (await adminAuth.getUserByEmail(OWNER_EMAIL)).uid; }
