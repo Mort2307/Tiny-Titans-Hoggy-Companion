@@ -1,0 +1,1 @@
+.paid-existing-grid article:has(a[href="/reptile-room"]) { display: none !important; }
