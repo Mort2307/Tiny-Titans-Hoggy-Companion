@@ -41,3 +41,4 @@ Object.assign(exports, require("./paidPublicApi"));
 Object.assign(exports, require("./paidMarketplace"));
 Object.assign(exports, require("./paidSupport"));
 Object.assign(exports, require("./creatorPaidTier"));
+Object.assign(exports, require("./paidTrialLifecycle"));
