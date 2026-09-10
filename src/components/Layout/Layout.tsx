@@ -19,6 +19,9 @@ import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
 import SpeciesSafeEnclosureIntelligence from "../../pages/SpeciesSafeEnclosureIntelligence";
 import TitanWeekCommandCentre from "../../pages/TitanWeekCommandCentre";
 import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
+import PaidPlans from "../../pages/PaidPlans";
+import AccountBilling from "../../pages/AccountBilling";
+import PaidFeatureWorkspace from "../../pages/PaidFeatureWorkspace";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
@@ -37,6 +40,9 @@ function LayoutChrome() {
   const morphDetailMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/?$/);
   const isEnclosureIntelligence = location.pathname === "/enclosure-intelligence" || location.pathname.startsWith("/enclosure-intelligence/");
   const isTitanWeekPage = location.pathname === "/titan-intelligence/feature/this-week";
+  const isPaidPlansPage = location.pathname === "/plans";
+  const isBillingPage = location.pathname === "/account/billing";
+  const isPaidFeaturePage = location.pathname === "/paid" || location.pathname.startsWith("/paid/");
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -62,6 +68,8 @@ function LayoutChrome() {
     };
   }, [location.pathname, location.search, location.hash, location.key]);
 
+  const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
+
   return (
     <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -82,12 +90,12 @@ function LayoutChrome() {
             <div className={isEasyNav ? "tt-easy-intelligence" : undefined}>
               <TitanGlobalNextAction />
             </div>
-            {isTitanWeekPage ? <TitanWeekCommandCentre />
+            {specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre />
               : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary />
                 : morphGalleryMatch ? <SpeciesMorphGallery />
                   : morphDetailMatch ? <SpeciesMorphDetail />
                     : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence />
-                      : <Outlet />}
+                      : <Outlet />)}
             <TinyTitansEvidenceNotice />
           </div>
         </div>
