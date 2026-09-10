@@ -3,9 +3,11 @@ import "./data/expandGeneticsComboRegistry";
 import "./tinyTitansModern.css";
 import "./styles/species-layout-hardening.css";
 import "./styles/mobileNavigation.css";
+import "./styles/creatorPaidTierOperations.css";
 import AppRouter from "./routes/AppRouter";
 import ExplainThis from "./components/ExplainThis/ExplainThis";
 import NotificationOnboarding from "./components/NotificationOnboarding";
+import CreatorPaidTierOperations from "./components/CreatorPaidTierOperations";
 import { RouteGuideProvider } from "./context/RouteGuideContext";
 
 function App() {
@@ -16,6 +18,7 @@ function App() {
       </RouteGuideProvider>
       <ExplainThis />
       <NotificationOnboarding />
+      <CreatorPaidTierOperations />
     </>
   );
 }
