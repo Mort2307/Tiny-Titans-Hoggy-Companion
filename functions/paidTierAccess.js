@@ -19,7 +19,12 @@ exports.setPaidTesterOverride = onCall({ region: "europe-west2" }, async (reques
   if (!VALID_MODES.has(mode)) throw new HttpsError("invalid-argument", "Invalid tester visibility mode.");
   await adminAuth.getUser(targetUid);
   const userRef = db.collection("users").doc(targetUid);
-  if (!enabled) { await userRef.set({ paidTesterOverride: { enabled: false, tier: "free", mode, revokedAt: FieldValue.serverTimestamp(), revokedByUid: request.auth.uid } }, { merge: true }); await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_paid_tier_tester_override", createdAt: FieldValue.serverTimestamp() }); return { success: true, targetUid, effectiveTier: "free", enabled: false }; }
+  if (!enabled) {
+    const current = await userRef.get(); const actualTier = current.exists && VALID_TIERS.has(String(current.data()?.subscriptionTier || "")) ? String(current.data().subscriptionTier) : "free";
+    await userRef.set({ paidTesterOverride: { enabled: false, tier: "free", mode, revokedAt: FieldValue.serverTimestamp(), revokedByUid: request.auth.uid } }, { merge: true });
+    await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_paid_tier_tester_override", createdAt: FieldValue.serverTimestamp() });
+    return { success: true, targetUid, effectiveTier: actualTier, enabled: false };
+  }
   const expiresAt = normaliseExpiry(request.data?.expiresAt);
   await userRef.set({ paidTesterOverride: { enabled: true, tier, mode, grantedAt: FieldValue.serverTimestamp(), grantedByUid: request.auth.uid, expiresAt } }, { merge: true });
   await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "grant_paid_tier_tester_override", tier, mode, expiresAt, createdAt: FieldValue.serverTimestamp() });
