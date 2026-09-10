@@ -38,7 +38,11 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   const snapshot = await db.collection("users").doc(requestedUid).get(); const data = snapshot.exists ? snapshot.data() : {};
   const actualTier = VALID_TIERS.has(String(data.subscriptionTier || "")) ? String(data.subscriptionTier) : "free";
   const override = data.paidTesterOverride || null; const overrideEnabled = override?.enabled === true && VALID_TIERS.has(String(override?.tier || "")) && (!override.expiresAt?.toMillis || override.expiresAt.toMillis() > Date.now());
-  return { success: true, uid: requestedUid, actualTier, effectiveTier: overrideEnabled ? String(override.tier) : actualTier, source: overrideEnabled ? "tester" : actualTier === "free" ? "free" : "subscription", subscriptionStatus: String(data.subscriptionStatus || (actualTier === "free" ? "free" : "active")), testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null };
+  const status = String(data.subscriptionStatus || (actualTier === "free" ? "free" : "active"));
+  const statusAllowsPaidAccess = actualTier === "free" || status === "active" || status === "trialing";
+  const effectiveTier = overrideEnabled ? String(override.tier) : statusAllowsPaidAccess ? actualTier : "free";
+  return { success: true, uid: requestedUid, actualTier, effectiveTier, source: overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : "subscription", subscriptionStatus: status, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null };
 });
 
 Object.assign(exports, require("./paidSubscriptions"));
+Object.assign(exports, require("./paidBusiness"));
