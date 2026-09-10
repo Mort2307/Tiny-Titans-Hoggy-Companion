@@ -208,3 +208,6 @@
   .tt-at-glance-foot { font-size: .68rem; }
   .tt-at-glance-snake-picker { width: min(300px, calc(100% - .5rem)); }
 }
+
+
+.tt-at-glance-feed-secondary { font-size: 8px; font-weight: 700; letter-spacing: 0.02em; opacity: 0.9; }
