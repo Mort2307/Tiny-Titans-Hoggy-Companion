@@ -1,15 +1,23 @@
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const db = getFirestore();
+const PAID_TIERS = new Set(["business_plus", "business_advanced"]);
 function cleanText(value, max = 1000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
+function expiryMillis(value) { if (!value) return null; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : null; }
 async function requirePriority(uid) {
   const user = await db.collection("users").doc(uid).get();
   const data = user.exists ? user.data() : {};
-  const tier = String(data.subscriptionTier || "free");
-  const allowed = new Set(["business_plus", "business_advanced"]);
+  const subscriptionTier = String(data.subscriptionTier || "free");
+  const subscriptionStatus = String(data.subscriptionStatus || (subscriptionTier === "free" ? "free" : "active"));
+  const subscriptionActive = PAID_TIERS.has(subscriptionTier) && ["active", "trialing"].includes(subscriptionStatus);
   const override = data.paidTesterOverride || null;
-  const effective = override?.enabled === true && override?.tier && (!override.expiresAt?.toMillis || override.expiresAt.toMillis() > Date.now()) ? String(override.tier) : tier;
-  if (!allowed.has(effective)) throw new HttpsError("permission-denied", "Priority support requires Business Plus or Business Advanced.");
+  const overrideTier = String(override?.tier || "");
+  const overrideActive = override?.enabled === true && PAID_TIERS.has(overrideTier) && (expiryMillis(override.expiresAt) === null || expiryMillis(override.expiresAt) > Date.now());
+  const trial = data.paidTrial || null;
+  const trialTier = String(trial?.tier || "");
+  const trialActive = trial?.enabled === true && PAID_TIERS.has(trialTier) && (expiryMillis(trial.expiresAt) || 0) > Date.now();
+  const effective = overrideActive ? overrideTier : subscriptionActive ? subscriptionTier : trialActive ? trialTier : "free";
+  if (!PAID_TIERS.has(effective)) throw new HttpsError("permission-denied", "Priority support requires Business Plus or Business Advanced.");
   return effective;
 }
 exports.createPrioritySupportTicket = onCall({ region: "europe-west2" }, async (request) => {
