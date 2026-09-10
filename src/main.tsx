@@ -32,6 +32,7 @@ import "./styles/reptile-room-3d-builder-mobile-overrides.css";
 import "./styles/tiny-titans-brand-theme.css";
 import "./styles/tiny-titans-brand-glow.css";
 import "./styles/contributor-thank-you.css";
+import "./styles/tiny-titans-paid-room-retirement.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
@@ -114,8 +115,8 @@ createRoot(document.getElementById("root")!).render(
         <DateDisplayNormalizer />
         <NotificationBridge />
         <CopyQualityGuard />
-        <AppUpdatePrompt />
         <AppErrorBoundary><App /></AppErrorBoundary>
+        <AppUpdatePrompt />
       </WorldTimeProvider>
     </AuthProvider>
   </StrictMode>,
