@@ -47,7 +47,7 @@ function Navigation() {
   if (creatorAuthorized) authorisedCapabilities.add("creator");
   if (testerAuthorized) authorisedCapabilities.add("tester");
   if (educatorAuthorized) authorisedCapabilities.add("educator");
-  const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities);
+  const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities).filter((item) => item.id !== "room");
   const quickGroups = quickItems.reduce<Record<string, typeof quickItems>>((groups, item) => { (groups[item.group] ??= []).push(item); return groups; }, {});
 
   if (isEasyNav) {
