@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
 import Header from "./Header";
 import Navigation from "./Navigation";
@@ -30,7 +30,7 @@ import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
 const speciesAwarePrefixes = [
-  "/snakes", "/reptile-room", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding", "/behaviour", "/health",
+  "/snakes", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding", "/behaviour", "/health",
   "/enclosure-intelligence", "/morph-library", "/calculator", "/breeding", "/keeper-handbook", "/behaviour-observatory",
   "/make-contribution", "/knowledge-base", "/challenge", "/community", "/account", "/become-a-titan", "/educator", "/creator",
 ];
@@ -50,6 +50,7 @@ function LayoutChrome() {
   const isPaidSupportPage = location.pathname === "/paid/support";
   const isPaidTimelinePage = location.pathname === "/paid/timeline";
   const isPaidFeaturePage = location.pathname === "/paid" || (location.pathname.startsWith("/paid/") && !isPaidMarketplacePage && !isPaidSupportPage && !isPaidTimelinePage);
+  const isRetiredReptileRoom = location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/");
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -62,12 +63,13 @@ function LayoutChrome() {
     return () => { window.cancelAnimationFrame(firstFrame); window.clearTimeout(timeout); };
   }, [location.pathname, location.search, location.hash, location.key]);
 
+  if (isRetiredReptileRoom) return <Navigate to="/snakes" replace />;
+
   const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidMarketplacePage ? <PaidMarketplaceFeature /> : isPaidSupportPage ? <PaidSupportFeature /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
   const outletEntitlement = location.pathname === "/reminders" || location.pathname.startsWith("/reminders/") ? "smart_reminders"
     : /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname) ? "advanced_timeline"
-      : location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/") ? "reptile_room"
-        : location.pathname === "/breeding" || location.pathname.startsWith("/breeding/") ? "breeding_suite"
-          : location.pathname === "/morph-library/evidence" ? "morph_intelligence" : null;
+      : location.pathname === "/breeding" || location.pathname.startsWith("/breeding/") ? "breeding_suite"
+        : location.pathname === "/morph-library/evidence" ? "morph_intelligence" : null;
   const outlet = <Outlet />;
   const gatedOutlet = outletEntitlement ? <PaidTierGate entitlement={outletEntitlement}>{outlet}</PaidTierGate> : outlet;
 
