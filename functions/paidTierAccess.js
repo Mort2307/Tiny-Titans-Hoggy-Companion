@@ -9,6 +9,7 @@ const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_star
 const VALID_MODES = new Set(["silent", "visible"]);
 function isOwnerRequest(request) { return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL; }
 function normaliseExpiry(value) { if (value === null || value === undefined || value === "") return null; const millis = new Date(String(value)).getTime(); if (!Number.isFinite(millis)) throw new HttpsError("invalid-argument", "Tester expiry must be a valid date/time."); if (millis <= Date.now()) throw new HttpsError("invalid-argument", "Tester expiry must be in the future."); return Timestamp.fromMillis(millis); }
+function isActiveExpiry(value) { if (!value) return false; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis() > Date.now(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) && parsed > Date.now(); }
 
 exports.setPaidTesterOverride = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
@@ -23,9 +24,15 @@ exports.setPaidTesterOverride = onCall({ region: "europe-west2" }, async (reques
 exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const requestedUid = String(request.data?.uid || request.auth.uid); if (requestedUid !== request.auth.uid && !isOwnerRequest(request)) throw new HttpsError("permission-denied", "You cannot inspect another user's paid access.");
-  const snapshot = await db.collection("users").doc(requestedUid).get(); const data = snapshot.exists ? snapshot.data() : {}; const actualTier = VALID_TIERS.has(String(data.subscriptionTier || "")) ? String(data.subscriptionTier) : "free";
-  const override = data.paidTesterOverride || null; const overrideEnabled = override?.enabled === true && VALID_TIERS.has(String(override?.tier || "")) && (!override.expiresAt?.toMillis || override.expiresAt.toMillis() > Date.now()); const status = String(data.subscriptionStatus || (actualTier === "free" ? "free" : "active")); const statusAllowsPaidAccess = actualTier === "free" || status === "active" || status === "trialing"; const effectiveTier = overrideEnabled ? String(override.tier) : statusAllowsPaidAccess ? actualTier : "free";
-  return { success: true, uid: requestedUid, actualTier, effectiveTier, source: overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : "subscription", subscriptionStatus: status, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null };
+  const snapshot = await db.collection("users").doc(requestedUid).get(); const data = snapshot.exists ? snapshot.data() : {};
+  const actualTier = VALID_TIERS.has(String(data.subscriptionTier || "")) ? String(data.subscriptionTier) : "free";
+  const status = String(data.subscriptionStatus || (actualTier === "free" ? "free" : "active"));
+  const statusAllowsPaidAccess = actualTier === "free" || status === "active" || status === "trialing";
+  const override = data.paidTesterOverride || null; const overrideEnabled = override?.enabled === true && VALID_TIERS.has(String(override?.tier || "")) && (!override.expiresAt || isActiveExpiry(override.expiresAt));
+  const trial = data.paidTrial || null; const trialEnabled = trial?.enabled === true && VALID_TIERS.has(String(trial?.tier || "")) && String(trial?.tier || "") !== "free" && isActiveExpiry(trial.expiresAt);
+  const effectiveTier = overrideEnabled ? String(override.tier) : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
+  const source = overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
+  return { success: true, uid: requestedUid, actualTier, effectiveTier, source, subscriptionStatus: status, currentPeriodEnd: data.subscriptionCurrentPeriodEnd, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null, trial: trialEnabled ? { ...trial, tier: String(trial.tier), enabled: true } : null };
 });
 
 Object.assign(exports, require("./paidSubscriptions"));
