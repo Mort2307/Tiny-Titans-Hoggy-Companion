@@ -14,7 +14,21 @@ const TIER_ENTITLEMENTS = {
 
 function sendJson(response, status, payload) { response.status(status).set("Cache-Control", "no-store").json(payload); }
 function bearerToken(request) { const header = String(request.get("authorization") || ""); return header.startsWith("Bearer ") ? header.slice(7).trim() : ""; }
-
+function expiryMillis(value) { if (!value) return null; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : null; }
+function hasActiveTrial(data) { const trial = data.paidTrial || null; const tier = String(trial?.tier || "free"); const expiresAt = expiryMillis(trial?.expiresAt); return trial?.enabled === true && tier !== "free" && Boolean(TIER_ENTITLEMENTS[tier]) && expiresAt !== null && expiresAt > Date.now(); }
+function resolveEffectiveTier(data) {
+  const subscriptionTier = String(data.subscriptionTier || "free");
+  const subscriptionStatus = String(data.subscriptionStatus || (subscriptionTier === "free" ? "free" : "active"));
+  const subscriptionActive = Boolean(TIER_ENTITLEMENTS[subscriptionTier]) && subscriptionTier !== "free" && ["active", "trialing"].includes(subscriptionStatus);
+  const override = data.paidTesterOverride || null;
+  const overrideTier = String(override?.tier || "free");
+  const overrideExpiry = expiryMillis(override?.expiresAt);
+  const overrideActive = override?.enabled === true && overrideTier !== "free" && Boolean(TIER_ENTITLEMENTS[overrideTier]) && (overrideExpiry === null || overrideExpiry > Date.now());
+  if (overrideActive) return { effectiveTier: overrideTier, source: "tester" };
+  if (subscriptionActive) return { effectiveTier: subscriptionTier, source: "subscription" };
+  if (hasActiveTrial(data)) return { effectiveTier: String(data.paidTrial.tier), source: "trial" };
+  return { effectiveTier: "free", source: "free" };
+}
 async function authenticateApiKey(request) {
   const token = bearerToken(request);
   if (!token || token.length < 20) return null;
@@ -32,13 +46,10 @@ async function authenticateApiKey(request) {
     if (!uid) continue;
     const userSnapshot = await db.collection("users").doc(uid).get();
     const userData = userSnapshot.exists ? userSnapshot.data() : {};
-    const tier = String(userData.subscriptionTier || "free");
-    const override = userData.paidTesterOverride || null;
-    const overrideValid = override?.enabled === true && override?.tier && (!override.expiresAt?.toMillis || override.expiresAt.toMillis() > Date.now());
-    const effectiveTier = overrideValid ? String(override.tier) : tier;
-    const access = TIER_ENTITLEMENTS[effectiveTier] || TIER_ENTITLEMENTS.free;
-    if (!access.has("api_access")) return null;
-    return { uid, tier, effectiveTier, userData };
+    const access = resolveEffectiveTier(userData);
+    const entitlements = TIER_ENTITLEMENTS[access.effectiveTier] || TIER_ENTITLEMENTS.free;
+    if (!entitlements.has("api_access")) return null;
+    return { uid, tier: String(userData.subscriptionTier || "free"), effectiveTier: access.effectiveTier, source: access.source, userData };
   }
   return null;
 }
@@ -47,8 +58,8 @@ exports.paidPublicApi = onRequest({ region: "europe-west2", cors: true }, async 
   try {
     if (request.method === "GET" && request.path === "/api/v1/health") return sendJson(response, 200, { ok: true, service: "Tiny Titans API", version: "v1" });
     const auth = await authenticateApiKey(request);
-    if (!auth) return sendJson(response, 401, { ok: false, error: "Invalid or revoked API key." });
-    if (request.method === "GET" && request.path === "/api/v1/me") return sendJson(response, 200, { ok: true, data: { uid: auth.uid, tier: auth.tier, effectiveTier: auth.effectiveTier, displayName: auth.userData.displayName || null, api: { version: "v1", access: ["me"] } } });
+    if (!auth) return sendJson(response, 401, { ok: false, error: "Invalid or inactive API key." });
+    if (request.method === "GET" && request.path === "/api/v1/me") return sendJson(response, 200, { ok: true, data: { uid: auth.uid, tier: auth.tier, effectiveTier: auth.effectiveTier, source: auth.source, displayName: auth.userData.displayName || null, api: { version: "v1", access: ["me"] } } });
     return sendJson(response, 404, { ok: false, error: "Unknown API endpoint." });
   } catch (error) {
     console.error("Tiny Titans: paid public API failure", error);
