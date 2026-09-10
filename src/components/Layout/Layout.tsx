@@ -22,6 +22,7 @@ import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
 import PaidPlans from "../../pages/PaidPlans";
 import AccountBilling from "../../pages/AccountBilling";
 import PaidFeatureWorkspace from "../../pages/PaidFeatureWorkspace";
+import PaidTierGate from "../PaidTierGate";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
@@ -69,6 +70,15 @@ function LayoutChrome() {
   }, [location.pathname, location.search, location.hash, location.key]);
 
   const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
+  const outletEntitlement = location.pathname === "/reminders" || location.pathname.startsWith("/reminders/") ? "smart_reminders"
+    : /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname) ? "advanced_timeline"
+      : location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/") ? "reptile_room"
+        : location.pathname === "/breeding" || location.pathname.startsWith("/breeding/") ? "breeding_suite"
+          : location.pathname === "/morph-library/evidence" ? "morph_intelligence"
+            : null;
+
+  const outlet = <Outlet />;
+  const gatedOutlet = outletEntitlement ? <PaidTierGate entitlement={outletEntitlement}>{outlet}</PaidTierGate> : outlet;
 
   return (
     <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"}>
@@ -95,7 +105,7 @@ function LayoutChrome() {
                 : morphGalleryMatch ? <SpeciesMorphGallery />
                   : morphDetailMatch ? <SpeciesMorphDetail />
                     : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence />
-                      : <Outlet />)}
+                      : gatedOutlet)}
             <TinyTitansEvidenceNotice />
           </div>
         </div>
