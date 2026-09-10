@@ -4,13 +4,14 @@ import { useAuth } from "../../context/useAuth";
 import { getUserSnakes } from "../../services/snakeService";
 import type { Snake } from "../../types/Snake";
 import type { FeedingRecord } from "../../types/Feeding";
+import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../../utils/feedingSummary";
 import type { WeightRecord } from "../../types/Weight";
 import type { ShedRecord } from "../../types/Shed";
 import { TITAN_AT_A_GLANCE_OPTIONS, useEasyNav, type TitanAtAGlanceSliceId } from "../../context/EasyNavContext";
 import "./TitanAtAGlance.css";
 
 type Point = { x: number; y: number };
-type SliceView = { label: string; value: string; secondary?: string; route: string };
+type SliceView = { label: string; value: string; secondary?: string; route: string; feedSecondary?: string };
 
 function polar(cx: number, cy: number, radius: number, angle: number): Point {
   const radians = (angle - 90) * Math.PI / 180;
@@ -102,7 +103,17 @@ function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): Slic
   const weight = latest<WeightRecord>(snake?.weightHistory);
   const shed = latest<ShedRecord>(snake?.shedHistory);
   switch (slice) {
-    case "feed": return { label: "Last Fed", value: feed ? formatDaysAgo(feed.date) : "Not yet", secondary: feed ? feed.foodType : "Log a feed", route: routeFor(slice, id) };
+    case "feed": {
+      const attempt = latestFeedingAttempt(snake?.feedingHistory);
+      const successful = latestSuccessfulFeed(snake?.feedingHistory);
+      return {
+        label: "Last feed attempt",
+        value: attempt?.date ? formatDaysSinceFeeding(attempt.date) : "Not recorded",
+        secondary: attempt ? "Latest recorded feeding attempt" : "Log a feeding attempt",
+        feedSecondary: successful?.date ? `Last successful feed · ${formatDaysSinceFeeding(successful.date)}` : "Last successful feed · Not recorded",
+        route: routeFor(slice, id),
+      };
+    }
     case "weight": return { label: "Last Weight", value: weight ? `${weight.weight}${weight.unit}` : "Not yet", secondary: weight ? formatDate(weight.date) : "Record one", route: routeFor(slice, id) };
     case "shed": return { label: "Last Shed", value: shed ? formatDate(shed.date) : "Not yet", secondary: shed?.status ?? "Record one", route: routeFor(slice, id) };
     case "reminders": return { label: "Reminders", value: "Open", secondary: "See what's due", route: routeFor(slice, id) };
@@ -235,6 +246,7 @@ export default function TitanAtAGlance() {
                 <text x={labelPoint.x} y={labelPoint.y - 6} className="tt-at-glance-icon" textAnchor="middle">{TITAN_AT_A_GLANCE_OPTIONS.find((option) => option.id === view.id)?.icon}</text>
                 <text x={labelPoint.x} y={labelPoint.y + 15} className="tt-at-glance-label" textAnchor="middle">{view.label}</text>
                 <text x={labelPoint.x} y={labelPoint.y + 34} className="tt-at-glance-value" textAnchor="middle">{view.value}</text>
+                {view.feedSecondary && <text x={labelPoint.x} y={labelPoint.y + 50} className="tt-at-glance-secondary tt-at-glance-feed-secondary" textAnchor="middle">{view.feedSecondary}</text>}
               </g>
             );
           })}
