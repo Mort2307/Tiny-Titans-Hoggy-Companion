@@ -27,7 +27,7 @@ Object.assign(exports, {
   acceptCreatorTesterInvitation: creatorTesterInvitation.acceptCreatorTesterInvitation,
   declineCreatorTesterInvitation: creatorTesterInvitation.declineCreatorTesterInvitation,
 });
-Object.assign(exports, require("./paidTierAccess"));
+Object.assign(exports, require("./paidTierAccess"));\nObject.assign(exports, require("./paidPromotions"));
 Object.assign(exports, require("./paidTrialLifecycle"));
 Object.assign(exports, require("./notificationTest"));
 Object.assign(exports, require("./supportNotifications"));
