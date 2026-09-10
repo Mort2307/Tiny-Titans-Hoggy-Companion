@@ -16,36 +16,97 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
+
+      - name: Prepare diagnostics
+        shell: bash
+        run: mkdir -p ci-diagnostics
+
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-      - name: Genetics engine contracts
+        id: install
         shell: bash
         run: |
           set -o pipefail
-          mkdir -p ci-diagnostics
+          npm ci --no-audit --no-fund 2>&1 | tee ci-diagnostics/npm-ci.log
+
+      - name: Genetics model contract
+        id: model
+        continue-on-error: true
+        shell: bash
+        run: |
+          npm run validate:genetics-model 2>&1 | tee ci-diagnostics/validate-genetics-model.log
+
+      - name: Genetics runtime contract
+        id: runtime
+        continue-on-error: true
+        shell: bash
+        run: |
+          npm run validate:genetics-runtime 2>&1 | tee ci-diagnostics/validate-genetics-runtime.log
+
+      - name: Genetics engine contract
+        id: engine
+        continue-on-error: true
+        shell: bash
+        run: |
+          npm run validate:genetics-engine 2>&1 | tee ci-diagnostics/validate-genetics-engine.log
+
+      - name: Genetics search contract
+        id: search
+        continue-on-error: true
+        shell: bash
+        run: |
+          npm run validate:genetics-search 2>&1 | tee ci-diagnostics/validate-genetics-search.log
+
+      - name: Breeding bridge contract
+        id: bridge
+        continue-on-error: true
+        shell: bash
+        run: |
+          npm run validate:breeding-bridge 2>&1 | tee ci-diagnostics/validate-breeding-bridge.log
+
+      - name: TypeScript project check
+        id: tsc
+        continue-on-error: true
+        shell: bash
+        run: |
+          npx tsc -b --pretty false 2>&1 | tee ci-diagnostics/tsc.log
+
+      - name: Genetics gate summary
+        if: ${{ always() }}
+        shell: bash
+        env:
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          MODEL_OUTCOME: ${{ steps.model.outcome }}
+          RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+          ENGINE_OUTCOME: ${{ steps.engine.outcome }}
+          SEARCH_OUTCOME: ${{ steps.search.outcome }}
+          BRIDGE_OUTCOME: ${{ steps.bridge.outcome }}
+          TSC_OUTCOME: ${{ steps.tsc.outcome }}
+        run: |
           {
-            echo '=== validate:genetics-model ==='
-            npm run validate:genetics-model
-            echo '=== validate:genetics-runtime ==='
-            npm run validate:genetics-runtime
-            echo '=== validate:genetics-engine ==='
-            npm run validate:genetics-engine
-            echo '=== validate:genetics-search ==='
-            npm run validate:genetics-search
-            echo '=== validate:breeding-bridge ==='
-            npm run validate:breeding-bridge
-            echo '=== tsc ==='
-            npx tsc -b
-          } 2>&1 | tee ci-diagnostics/genetics-engine.log
+            echo "install=$INSTALL_OUTCOME"
+            echo "genetics-model=$MODEL_OUTCOME"
+            echo "genetics-runtime=$RUNTIME_OUTCOME"
+            echo "genetics-engine=$ENGINE_OUTCOME"
+            echo "genetics-search=$SEARCH_OUTCOME"
+            echo "breeding-bridge=$BRIDGE_OUTCOME"
+            echo "tsc=$TSC_OUTCOME"
+          } | tee ci-diagnostics/gate-summary.log
+
+          if [[ "$INSTALL_OUTCOME" != "success" || "$MODEL_OUTCOME" != "success" || "$RUNTIME_OUTCOME" != "success" || "$ENGINE_OUTCOME" != "success" || "$SEARCH_OUTCOME" != "success" || "$BRIDGE_OUTCOME" != "success" || "$TSC_OUTCOME" != "success" ]]; then
+            echo "Genetics Engine Gate failed. Inspect the named failing contract and uploaded diagnostics."
+            exit 1
+          fi
+
       - name: Upload genetics diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: tiny-titans-genetics-engine-${{ github.run_id }}
-          path: ci-diagnostics/genetics-engine.log
-          if-no-files-found: ignore
+          name: tiny-titans-genetics-engine-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: ci-diagnostics/
+          if-no-files-found: warn
