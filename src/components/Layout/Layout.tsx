@@ -24,6 +24,7 @@ import AccountBilling from "../../pages/AccountBilling";
 import PaidFeatureWorkspace from "../../pages/PaidFeatureWorkspace";
 import PaidTimelineFeature from "../../pages/PaidTimelineFeature";
 import PaidMarketplaceFeature from "../../pages/PaidMarketplaceFeature";
+import PaidSupportFeature from "../../pages/PaidSupportFeature";
 import PaidTierGate from "../PaidTierGate";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
@@ -46,8 +47,9 @@ function LayoutChrome() {
   const isPaidPlansPage = location.pathname === "/plans";
   const isBillingPage = location.pathname === "/account/billing";
   const isPaidMarketplacePage = location.pathname === "/paid/marketplace";
+  const isPaidSupportPage = location.pathname === "/paid/support";
   const isPaidTimelinePage = location.pathname === "/paid/timeline";
-  const isPaidFeaturePage = location.pathname === "/paid" || (location.pathname.startsWith("/paid/") && !isPaidMarketplacePage && !isPaidTimelinePage);
+  const isPaidFeaturePage = location.pathname === "/paid" || (location.pathname.startsWith("/paid/") && !isPaidMarketplacePage && !isPaidSupportPage && !isPaidTimelinePage);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -60,7 +62,7 @@ function LayoutChrome() {
     return () => { window.cancelAnimationFrame(firstFrame); window.clearTimeout(timeout); };
   }, [location.pathname, location.search, location.hash, location.key]);
 
-  const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidMarketplacePage ? <PaidMarketplaceFeature /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
+  const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidMarketplacePage ? <PaidMarketplaceFeature /> : isPaidSupportPage ? <PaidSupportFeature /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
   const outletEntitlement = location.pathname === "/reminders" || location.pathname.startsWith("/reminders/") ? "smart_reminders"
     : /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname) ? "advanced_timeline"
       : location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/") ? "reptile_room"
