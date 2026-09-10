@@ -8,7 +8,6 @@ import "./styles/tiny-titans-design-system.css";
 import "./styles/tiny-titans-home-overrides.css";
 import "./styles/selector-scroll.css";
 import "./styles/husbandry-equipment.css";
-import "./styles/reptile-room-digital-twin.css";
 import "./styles/tiny-titans-professional-ui.css";
 import "./styles/tiny-titans-professional-hardening.css";
 import "./styles/tiny-titans-final-polish.css";
@@ -19,16 +18,11 @@ import "./styles/tiny-titans-product-polish.css";
 import "./styles/tiny-titans-creator-command.css";
 import "./styles/tiny-titans-creator-status.css";
 import "./styles/tiny-titans-command.css";
-import "./styles/reptile-room-3d-mobile.css";
-import "./styles/reptile-room-3d-mobile-v2.css";
-import "./styles/reptile-room-3d-mobile-brightness.css";
-import "./styles/rr3d-layout-frame.css";
 import "./styles/tiny-titans-app-polish-v3.css";
 import "./styles/tiny-titans-layout-final.css";
 import "./styles/tiny-titans-final-formatting.css";
 import "./styles/tiny-titans-enclosure-intelligence-polish.css";
 import "./styles/tiny-titans-enclosure-formatting.css";
-import "./styles/reptile-room-3d-builder-mobile-overrides.css";
 import "./styles/tiny-titans-brand-theme.css";
 import "./styles/tiny-titans-brand-glow.css";
 import "./styles/contributor-thank-you.css";
@@ -78,40 +72,12 @@ export function SelectorGrabScrollManager() {
   return null;
 }
 
-export function MobileReptileRoomToolsManager() {
-  useEffect(() => {
-    const isMobile = () => window.matchMedia("(max-width: 850px)").matches;
-    const sync = () => {
-      document.querySelectorAll<HTMLElement>(".rr3d-workspace").forEach((workspace) => {
-        let launcher = workspace.querySelector<HTMLButtonElement>(".tt-mobile-room-tools-launcher");
-        if (!launcher) {
-          launcher = document.createElement("button"); launcher.type = "button"; launcher.className = "tt-mobile-room-tools-launcher";
-          launcher.setAttribute("aria-controls", "rr3d-mobile-tools-panel"); launcher.setAttribute("aria-expanded", "false"); launcher.textContent = "TITAN TOOLS"; workspace.appendChild(launcher);
-        }
-        const sidebar = workspace.querySelector<HTMLElement>(".rr3d-sidebar"); if (!sidebar) return;
-        sidebar.id = "rr3d-mobile-tools-panel"; const open = sidebar.classList.contains("tt-mobile-room-tools-open");
-        launcher.classList.toggle("is-open", open); launcher.setAttribute("aria-expanded", String(open)); launcher.textContent = open ? "CLOSE TOOLS" : "TITAN TOOLS";
-      });
-    };
-    const onClick = (event: MouseEvent) => {
-      if (!isMobile()) return; const target = event.target; if (!(target instanceof Element)) return;
-      const launcher = target.closest<HTMLButtonElement>(".tt-mobile-room-tools-launcher"); if (!launcher) return;
-      const workspace = launcher.closest<HTMLElement>(".rr3d-workspace"); const sidebar = workspace?.querySelector<HTMLElement>(".rr3d-sidebar"); if (!sidebar) return;
-      sidebar.classList.toggle("tt-mobile-room-tools-open"); sync();
-    };
-    const observer = new MutationObserver(sync); observer.observe(document.body, { childList: true, subtree: true }); document.addEventListener("click", onClick, true); sync();
-    return () => { observer.disconnect(); document.removeEventListener("click", onClick, true); document.querySelectorAll(".tt-mobile-room-tools-launcher").forEach((element) => element.remove()); };
-  }, []);
-  return null;
-}
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <WorldTimeProvider>
         <LiveWorldTracker />
         <SelectorGrabScrollManager />
-        <MobileReptileRoomToolsManager />
         <DateDisplayNormalizer />
         <NotificationBridge />
         <CopyQualityGuard />
