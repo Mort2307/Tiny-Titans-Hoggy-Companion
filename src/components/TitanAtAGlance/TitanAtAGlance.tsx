@@ -46,17 +46,6 @@ function formatDate(value: string | undefined): string {
   return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
-function formatDaysAgo(value: string | undefined): string {
-  if (!value) return "Not yet";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not recorded";
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const recordStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-  const days = Math.max(0, Math.floor((todayStart - recordStart) / 86_400_000));
-  return `${days} ${days === 1 ? "Day" : "Days"} ago`;
-}
-
 function latest<T extends { date: string }>(records: T[] | undefined): T | undefined {
   return records?.slice().sort((a, b) => dateValue(b.date) - dateValue(a.date))[0];
 }
