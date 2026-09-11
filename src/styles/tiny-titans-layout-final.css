@@ -38,11 +38,14 @@ html[data-tt-tier="business_advanced"]{--tt-tier-accent:#f0c968;--tt-tier-glow:r
 
 /* The prestige cue is intentionally visible on every screen without making the app
    look like six unrelated products. */
-html[data-tt-tier] .app-header{border-bottom:1px solid color-mix(in srgb,var(--tt-tier-accent) 22%,transparent);box-shadow:0 8px 30px var(--tt-tier-glow)}
+html[data-tt-tier] .app-header{position:relative;border-bottom:1px solid color-mix(in srgb,var(--tt-tier-accent) 22%,transparent);box-shadow:0 8px 30px var(--tt-tier-glow)}
 html[data-tt-tier] .app-header:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--tt-tier-accent) 65%,transparent),transparent);opacity:.65;pointer-events:none}
+html[data-tt-tier] .tiny-titans-logo{border:1px solid color-mix(in srgb,var(--tt-tier-accent) 38%,transparent);box-shadow:0 0 16px var(--tt-tier-glow)}
 html[data-tt-tier] .app-navigation{border-right-color:color-mix(in srgb,var(--tt-tier-accent) 19%,transparent);box-shadow:14px 0 40px rgba(0,0,0,.22),inset -1px 0 22px var(--tt-tier-wash)}
 html[data-tt-tier] .app-navigation-link.active{background:linear-gradient(90deg,color-mix(in srgb,var(--tt-tier-accent) 17%,transparent),color-mix(in srgb,var(--tt-tier-accent) 3%,transparent));border-color:color-mix(in srgb,var(--tt-tier-accent) 28%,transparent);box-shadow:inset 3px 0 0 var(--tt-tier-accent),0 6px 20px var(--tt-tier-glow)}
 html[data-tt-tier] .app-navigation-link.active .app-navigation-icon{color:var(--tt-tier-accent)}
+html[data-tt-tier] .tt-easy-nav-strip{border-color:color-mix(in srgb,var(--tt-tier-accent) 17%,transparent);box-shadow:0 8px 22px rgba(0,0,0,.16),inset 0 -1px 18px var(--tt-tier-wash)}
+html[data-tt-tier] .tt-easy-nav-link.active{background:color-mix(in srgb,var(--tt-tier-accent) 12%,transparent);border-color:color-mix(in srgb,var(--tt-tier-accent) 24%,transparent)}
 html[data-tt-tier] .app-content{background-image:radial-gradient(ellipse 80% 28% at 50% 0%,var(--tt-tier-wash),transparent 72%)}
 html[data-tt-tier] .app-content>.tt-page-frame:before{content:"";display:block;height:2px;margin:0 auto 10px;max-width:var(--tt-layout-max);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--tt-tier-accent) 55%,transparent),transparent);opacity:.55;border-radius:999px}
 html[data-tt-tier="free"] .app-content>.tt-page-frame:before{opacity:.22}
