@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { useAuth } from "../context/useAuth";
 import { db } from "../firebase/config";
@@ -15,9 +15,19 @@ export default function CreatorPaidTierTester() {
   const [users, setUsers] = useState<UserRow[]>([]); const [selectedUid, setSelectedUid] = useState(""); const [access, setAccess] = useState<PaidAccess | null>(null);
   const [search, setSearch] = useState(""); const [tier, setTier] = useState<PaidTierId>("titan_pro"); const [mode, setMode] = useState<PaidTierTesterMode>("visible"); const [expiry, setExpiry] = useState("never"); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [error, setError] = useState("");
 
-  async function loadUsers() { const snapshot = await getDocs(collection(db, "users")); const next = snapshot.docs.map((item) => { const data = item.data(); return { uid: item.id, displayName: String(data.displayName || "Unnamed user"), profileType: typeof data.profileType === "string" ? data.profileType : undefined, platform: typeof data.platform === "string" ? data.platform : undefined, appVersion: typeof data.appVersion === "string" ? data.appVersion : undefined }; }); next.sort((a, b) => a.displayName.localeCompare(b.displayName)); setUsers(next); if (!selectedUid && user?.uid) setSelectedUid(user.uid); }
+  const loadUsers = useCallback(async () => {
+    const snapshot = await getDocs(collection(db, "users"));
+    const next = snapshot.docs.map((item) => {
+      const data = item.data();
+      return { uid: item.id, displayName: String(data.displayName || "Unnamed user"), profileType: typeof data.profileType === "string" ? data.profileType : undefined, platform: typeof data.platform === "string" ? data.platform : undefined, appVersion: typeof data.appVersion === "string" ? data.appVersion : undefined };
+    });
+    next.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    setUsers(next);
+    setSelectedUid((current) => current || user?.uid || "");
+  }, [user?.uid]);
+
   async function loadAccess(uid: string) { if (!uid) { setAccess(null); return; } setAccess(await getPaidAccess(uid)); }
-  useEffect(() => { if (!user || (profile?.role !== "admin" && profile?.profileType !== "creator")) return; void loadUsers().catch((err) => setError(err instanceof Error ? err.message : "Users could not be loaded.")); }, [profile?.profileType, profile?.role, user]);
+  useEffect(() => { if (!user || (profile?.role !== "admin" && profile?.profileType !== "creator")) return; void loadUsers().catch((err) => setError(err instanceof Error ? err.message : "Users could not be loaded.")); }, [profile?.profileType, profile?.role, user, loadUsers]);
   useEffect(() => { if (!selectedUid) return; void loadAccess(selectedUid).catch((err) => setError(err instanceof Error ? err.message : "Paid access could not be loaded.")); }, [selectedUid]);
 
   const filtered = useMemo(() => { const term = search.trim().toLowerCase(); return term ? users.filter((item) => [item.displayName, item.profileType, item.platform, item.appVersion].some((value) => String(value || "").toLowerCase().includes(term))) : users; }, [search, users]);
