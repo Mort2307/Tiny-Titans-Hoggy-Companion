@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getPaidAccess } from "../services/paidTierService";
 import { getPaidBusinessWorkspace, savePaidBusinessWorkspace, upsertPaidTeamMember, removePaidTeamMember, upsertPaidAutomation, removePaidAutomation, createPaidApiKey, revokePaidApiKey } from "../services/paidBusinessService";
@@ -79,7 +79,6 @@ function DataExportFeature() {
 
 function SettingsForm({ section, title, description, initial, fields }: { section: "seller" | "marketplace" | "business" | "branding"; title: string; description: string; initial: Record<string, unknown>; fields: Array<{ key: string; label: string; type?: "text" | "textarea" | "checkbox"; placeholder?: string }> }) {
   const [form, setForm] = useState<Record<string, unknown>>(initial); const [loading, setLoading] = useState(false); const [message, setMessage] = useState("");
-  useEffect(() => setForm(initial), [JSON.stringify(initial)]);
   async function save() { setLoading(true); setMessage(""); try { await savePaidBusinessWorkspace(section, form); setMessage("Saved."); } catch (error) { setMessage(errorMessage(error)); } finally { setLoading(false); } }
   return <FeatureScaffold title={title} icon={section === "seller" ? "🏪" : section === "marketplace" ? "🛒" : section === "branding" ? "🎨" : "📈"} description={description}><div className="paid-form-grid">{fields.map((field) => <label key={field.key}><span>{field.label}</span>{field.type === "textarea" ? <textarea value={String(form[field.key] ?? "")} placeholder={field.placeholder} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}/> : field.type === "checkbox" ? <input type="checkbox" checked={Boolean(form[field.key])} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.checked }))}/> : <input value={String(form[field.key] ?? "")} placeholder={field.placeholder} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}/>}</label>)}</div><button className="paid-primary-action" type="button" disabled={loading} onClick={save}>{loading ? "Saving…" : "Save changes"}</button><p className="paid-status-text" aria-live="polite">{message}</p></FeatureScaffold>;
 }
@@ -105,8 +104,8 @@ function TeamOrAutomationOrApi({ section }: { section: "team" | "automation" | "
   const [items, setItems] = useState<Array<Record<string, unknown>>>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState(""); const [name, setName] = useState(""); const [role, setRole] = useState("member");
   const [automationName, setAutomationName] = useState(""); const [trigger, setTrigger] = useState("new record"); const [action, setAction] = useState("create reminder"); const [apiName, setApiName] = useState(""); const [newSecret, setNewSecret] = useState("");
-  const refresh = () => { setLoading(true); void getPaidBusinessWorkspace(section).then((result) => { setItems(section === "team" ? result.teamMembers : section === "automation" ? result.automations : result.apiKeys); setError(null); }).catch((err) => setError(errorMessage(err))).finally(() => setLoading(false)); };
-  useEffect(() => refresh(), [section]);
+  const refresh = useCallback(() => { setLoading(true); void getPaidBusinessWorkspace(section).then((result) => { setItems(section === "team" ? result.teamMembers : section === "automation" ? result.automations : result.apiKeys); setError(null); }).catch((err) => setError(errorMessage(err))).finally(() => setLoading(false)); }, [section]);
+  useEffect(() => { refresh(); }, [refresh]);
   async function addTeam() { try { await upsertPaidTeamMember({ email, displayName: name, role }); setEmail(""); setName(""); refresh(); } catch (err) { setError(errorMessage(err)); } }
   async function addAutomation() { try { await upsertPaidAutomation({ name: automationName, trigger, action, enabled: true }); setAutomationName(""); refresh(); } catch (err) { setError(errorMessage(err)); } }
   async function addKey() { try { const result = await createPaidApiKey(apiName || "Tiny Titans API key"); setNewSecret(result.secret); setApiName(""); refresh(); } catch (err) { setError(errorMessage(err)); } }
