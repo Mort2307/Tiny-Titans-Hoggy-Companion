@@ -1,7 +1,7 @@
 /* Tiny Titans — final routed-page presentation layer.
  * Presentation only. Intelligence and application behaviour are untouched.
  */
-:root{--tt-layout-max:1240px;--tt-layout-gap:18px;--tt-layout-radius:16px;--tt-layout-text:#f5f1f7;--tt-layout-soft:#d1c8d7;--tt-layout-muted:#978da1;--tt-layout-purple:#b985df;--tt-layout-gold:#e2b66d}
+:root{--tt-layout-max:1240px;--tt-layout-gap:18px;--tt-layout-radius:16px;--tt-layout-text:#f5f1f7;--tt-layout-soft:#d1c8d7;--tt-layout-muted:#978da1;--tt-layout-purple:#b985df;--tt-layout-gold:#e2b66d;--tt-tier-accent:#92a0ad;--tt-tier-glow:rgba(146,160,173,.10);--tt-tier-wash:rgba(146,160,173,.035)}
 
 /* Every routed page lives inside .tt-page-frame. Keep normal pages readable and left-aligned. */
 .app-content>.tt-page-frame{width:100%;min-width:0}
@@ -26,8 +26,49 @@
 /* Tables stay usable instead of collapsing into tiny text on phones. */
 .app-content>.tt-page-frame :where(table){width:100%;max-width:100%;overflow:hidden}
 
+/* Tier Aura — the account's tier subtly changes the atmosphere of the whole app.
+   This is deliberately an identity layer, not a separate theme: content, data and
+   functionality stay identical while the visual finish becomes progressively richer. */
+html[data-tt-tier="free"]{--tt-tier-accent:#9aa5ae;--tt-tier-glow:rgba(154,165,174,.055);--tt-tier-wash:rgba(154,165,174,.018)}
+html[data-tt-tier="titan_pro"]{--tt-tier-accent:#62d6c7;--tt-tier-glow:rgba(98,214,199,.11);--tt-tier-wash:rgba(98,214,199,.035)}
+html[data-tt-tier="titan_seller"]{--tt-tier-accent:#e5b35b;--tt-tier-glow:rgba(229,179,91,.105);--tt-tier-wash:rgba(229,179,91,.032)}
+html[data-tt-tier="business_starter"]{--tt-tier-accent:#6fb0ff;--tt-tier-glow:rgba(111,176,255,.105);--tt-tier-wash:rgba(111,176,255,.032)}
+html[data-tt-tier="business_plus"]{--tt-tier-accent:#b98cff;--tt-tier-glow:rgba(185,140,255,.13);--tt-tier-wash:rgba(185,140,255,.04)}
+html[data-tt-tier="business_advanced"]{--tt-tier-accent:#f0c968;--tt-tier-glow:rgba(240,201,104,.16);--tt-tier-wash:rgba(240,201,104,.05)}
+
+/* The prestige cue is intentionally visible on every screen without making the app
+   look like six unrelated products. */
+html[data-tt-tier] .app-header{border-bottom:1px solid color-mix(in srgb,var(--tt-tier-accent) 22%,transparent);box-shadow:0 8px 30px var(--tt-tier-glow)}
+html[data-tt-tier] .app-header:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--tt-tier-accent) 65%,transparent),transparent);opacity:.65;pointer-events:none}
+html[data-tt-tier] .app-navigation{border-right-color:color-mix(in srgb,var(--tt-tier-accent) 19%,transparent);box-shadow:14px 0 40px rgba(0,0,0,.22),inset -1px 0 22px var(--tt-tier-wash)}
+html[data-tt-tier] .app-navigation-link.active{background:linear-gradient(90deg,color-mix(in srgb,var(--tt-tier-accent) 17%,transparent),color-mix(in srgb,var(--tt-tier-accent) 3%,transparent));border-color:color-mix(in srgb,var(--tt-tier-accent) 28%,transparent);box-shadow:inset 3px 0 0 var(--tt-tier-accent),0 6px 20px var(--tt-tier-glow)}
+html[data-tt-tier] .app-navigation-link.active .app-navigation-icon{color:var(--tt-tier-accent)}
+html[data-tt-tier] .app-content{background-image:radial-gradient(ellipse 80% 28% at 50% 0%,var(--tt-tier-wash),transparent 72%)}
+html[data-tt-tier] .app-content>.tt-page-frame:before{content:"";display:block;height:2px;margin:0 auto 10px;max-width:var(--tt-layout-max);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--tt-tier-accent) 55%,transparent),transparent);opacity:.55;border-radius:999px}
+html[data-tt-tier="free"] .app-content>.tt-page-frame:before{opacity:.22}
+html[data-tt-tier="titan_pro"] .app-content>.tt-page-frame:before{box-shadow:0 0 18px rgba(98,214,199,.25)}
+html[data-tt-tier="titan_seller"] .app-content>.tt-page-frame:before{box-shadow:0 0 18px rgba(229,179,91,.22)}
+html[data-tt-tier="business_starter"] .app-content>.tt-page-frame:before{box-shadow:0 0 20px rgba(111,176,255,.22)}
+html[data-tt-tier="business_plus"] .app-content>.tt-page-frame:before{height:3px;box-shadow:0 0 22px rgba(185,140,255,.3);opacity:.7}
+html[data-tt-tier="business_advanced"] .app-content>.tt-page-frame:before{height:3px;box-shadow:0 0 28px rgba(240,201,104,.38);opacity:.82}
+
+/* Higher tiers get increasingly deliberate surface treatment. */
+html[data-tt-tier="titan_pro"] .app-content>.tt-page-frame :where(.card,.panel,.section-card,.feature-card){border-color:color-mix(in srgb,var(--tt-tier-accent) 10%,rgba(255,255,255,.09))}
+html[data-tt-tier="titan_seller"] .app-content>.tt-page-frame :where(.card,.panel,.section-card,.feature-card){border-color:color-mix(in srgb,var(--tt-tier-accent) 11%,rgba(255,255,255,.09))}
+html[data-tt-tier="business_starter"] .app-content>.tt-page-frame :where(.card,.panel,.section-card,.feature-card){border-color:color-mix(in srgb,var(--tt-tier-accent) 12%,rgba(255,255,255,.09));box-shadow:0 8px 24px rgba(0,0,0,.08)}
+html[data-tt-tier="business_plus"] .app-content>.tt-page-frame :where(.card,.panel,.section-card,.feature-card){border-color:color-mix(in srgb,var(--tt-tier-accent) 16%,rgba(255,255,255,.09));box-shadow:0 10px 28px rgba(0,0,0,.1),0 0 22px var(--tt-tier-glow)}
+html[data-tt-tier="business_advanced"] .app-content>.tt-page-frame :where(.card,.panel,.section-card,.feature-card){border-color:color-mix(in srgb,var(--tt-tier-accent) 20%,rgba(255,255,255,.09));box-shadow:0 12px 32px rgba(0,0,0,.11),0 0 28px var(--tt-tier-glow)}
+
+/* Business Advanced gets a restrained flagship cue rather than a neon effect. */
+html[data-tt-tier="business_advanced"] .app-brand-primary{color:#fff7dc}
+html[data-tt-tier="business_advanced"] .app-brand-secondary{color:rgba(240,201,104,.72)}
+html[data-tt-tier="business_advanced"] .app-navigation-section-label{color:color-mix(in srgb,var(--tt-tier-accent) 58%,rgba(208,199,213,.42))}
+
 @media(max-width:700px){
   .app-content>.tt-page-frame>.page-container,.app-content>.tt-page-frame>.page-shell{padding-inline:0}
   .app-content>.tt-page-frame :where(.page-header,.section-header,.content-header,.tt-page-header){margin-bottom:17px}
   .app-content>.tt-page-frame>.page-container>h1:first-of-type,.app-content>.tt-page-frame>.page-shell>h1:first-of-type{font-size:1.52rem}
+  html[data-tt-tier] .app-content>.tt-page-frame:before{margin-bottom:7px}
 }
+
+@media(prefers-reduced-motion:reduce){html[data-tt-tier] .app-content>.tt-page-frame:before{transition:none}}
