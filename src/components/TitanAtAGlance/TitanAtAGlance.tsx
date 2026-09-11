@@ -88,7 +88,6 @@ function routeFor(slice: TitanAtAGlanceSliceId, snakeId?: string): string {
 
 function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): SliceView {
   const id = snake?.id;
-  const feed = latest<FeedingRecord>(snake?.feedingHistory);
   const weight = latest<WeightRecord>(snake?.weightHistory);
   const shed = latest<ShedRecord>(snake?.shedHistory);
   switch (slice) {
