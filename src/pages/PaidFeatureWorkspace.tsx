@@ -91,6 +91,7 @@ function WorkspaceFeature({ feature }: { feature: FeatureConfig }) {
   useEffect(() => { let active = true; setLoading(true); void getPaidBusinessWorkspace(section).then((result) => { if (active) setWorkspace(result.workspace ?? {}); }).catch((err) => { if (active) setError(errorMessage(err)); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [section]);
   if (loading) return <FeatureScaffold title={feature.title} icon={feature.icon} description={feature.description}><p>Loading your workspace…</p></FeatureScaffold>;
   if (error) return <FeatureScaffold title={feature.title} icon={feature.icon} description={feature.description}><div className="paid-inline-error">{error}</div></FeatureScaffold>;
+  if (section === "analytics") return <AnalyticsFeature />;
   if (section === "export") return <DataExportFeature />;
   if (section === "seller") return <SettingsForm section="seller" title={feature.title} description={feature.description} initial={(workspace.sellerProfile as Record<string, unknown>) ?? { acceptingEnquiries: true }} fields={[{ key: "businessName", label: "Business name" }, { key: "displayName", label: "Public display name" }, { key: "bio", label: "About you", type: "textarea" }, { key: "location", label: "Location" }, { key: "website", label: "Website" }, { key: "contactEmail", label: "Contact email" }, { key: "acceptingEnquiries", label: "Accepting enquiries", type: "checkbox" }]}/>;
   if (section === "marketplace") return <SettingsForm section="marketplace" title={feature.title} description={feature.description} initial={(workspace.marketplace as Record<string, unknown>) ?? { enabled: false, currency: "GBP", showLocation: true, showContactEmail: true }} fields={[{ key: "enabled", label: "Marketplace seller presence", type: "checkbox" }, { key: "currency", label: "Display currency" }, { key: "showLocation", label: "Show location", type: "checkbox" }, { key: "showContactEmail", label: "Show contact email", type: "checkbox" }, { key: "sellerNote", label: "Seller note", type: "textarea" }]}/>;
@@ -123,3 +124,4 @@ export default function PaidFeatureWorkspace() {
   const feature = FEATURES[location.pathname] ?? FEATURES["/paid/analytics"];
   return <WrappedFeature feature={feature}/>;
 }
+
