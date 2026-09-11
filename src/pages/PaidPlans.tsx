@@ -17,9 +17,9 @@ function toMillis(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function trialDaysRemaining(value: unknown) {
+function trialDaysRemaining(value: unknown, nowMillis: number) {
   const millis = toMillis(value);
-  return millis ? Math.max(0, Math.ceil((millis - Date.now()) / 86400000)) : 0;
+  return millis ? Math.max(0, Math.ceil((millis - nowMillis) / 86400000)) : 0;
 }
 
 export default function PaidPlans() {
@@ -28,6 +28,7 @@ export default function PaidPlans() {
   const [selectedTier, setSelectedTier] = useState<PaidTierId>("titan_pro");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [nowMillis, setNowMillis] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -49,6 +50,14 @@ export default function PaidPlans() {
       active = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!access?.trial?.expiresAt) {
+      setNowMillis(null);
+      return;
+    }
+    setNowMillis(Date.now());
+  }, [access?.trial?.expiresAt]);
 
   const selected = useMemo(() => getPaidTierDefinition(selectedTier), [selectedTier]);
 
@@ -76,6 +85,9 @@ export default function PaidPlans() {
       : access?.source === "trial"
         ? "Creator trial"
         : "Current plan";
+  const trialExpiryMillis = toMillis(access?.trial?.expiresAt);
+  const trialDays = trialExpiryMillis && nowMillis != null ? trialDaysRemaining(access?.trial?.expiresAt, nowMillis) : 0;
+  const trialEndsLabel = trialExpiryMillis ? new Date(trialExpiryMillis).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "an unavailable date";
 
   return (
     <main className="paid-plans-page">
@@ -97,7 +109,7 @@ export default function PaidPlans() {
         <section className="paid-message">
           <strong>🎁 You are currently trialling {effective.name}</strong>
           <p>
-            You have about <strong>{trialDaysRemaining(access.trial.expiresAt)} day{trialDaysRemaining(access.trial.expiresAt) === 1 ? "" : "s"}</strong> remaining. The trial ends {new Date(toMillis(access.trial.expiresAt) || Date.now()).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} and does not create a Stripe subscription.
+            You have about <strong>{trialDays} day{trialDays === 1 ? "" : "s"}</strong> remaining. The trial ends {trialEndsLabel} and does not create a Stripe subscription.
           </p>
         </section>
       )}
