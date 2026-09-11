@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { getUserSnakes } from "../../services/snakeService";
 import type { Snake } from "../../types/Snake";
-import type { FeedingRecord } from "../../types/Feeding";
 import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../../utils/feedingSummary";
 import type { WeightRecord } from "../../types/Weight";
 import type { ShedRecord } from "../../types/Shed";
@@ -308,3 +307,4 @@ export default function TitanAtAGlance() {
     </section>
   );
 }
+
