@@ -28,7 +28,7 @@ export default function MySnakes() {
   }, [view]);
 
   const openRoomEditor = () => navigate("/reptile-room");
-  const openVivariumBuilder = (slotId: string) => navigate(`/reptile-room/vivarium/${encodeURIComponent(slotId)}`);
+  const openVivariumBuilder = () => navigate("/reptile-room");
 
   return (
     <div className={`my-snakes-workspace my-snakes-workspace-${view}`}>
