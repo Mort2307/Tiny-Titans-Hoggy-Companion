@@ -57,8 +57,6 @@ export async function createNotificationMicroSystemChecks(uid: string): Promise<
       category: "notifications",
       severity: "high",
       run: async () => {
-        // The live probe check owns creation of the event. This check verifies
-        // that the same Firestore event contract can be read back afterwards.
         try {
           const snapshot = await getDocs(collection(db, "users", uid, "notificationEvents"));
           const botEvents = snapshot.docs.filter((item) => item.data().type === "notification-bot-probe");
@@ -96,9 +94,26 @@ export async function createNotificationMicroSystemChecks(uid: string): Promise<
       run: async () => {
         try {
           const snapshot = await getDocs(collection(db, "users", uid, "notificationEvents"));
-          const invalid = snapshot.docs.filter((item) => !item.id || !item.data().type);
+          const invalid = snapshot.docs.filter((item) => {
+            const data = item.data() as Record<string, unknown>;
+            const eventIdentity = typeof data.type === "string" && data.type.trim()
+              ? data.type.trim()
+              : typeof data.eventType === "string" && data.eventType.trim()
+                ? data.eventType.trim()
+                : "";
+            const validIdentity = /^[a-z0-9][a-z0-9-]{1,80}$/.test(eventIdentity);
+            return !item.id || !validIdentity;
+          });
+          const canonicalCount = snapshot.docs.filter((item) => {
+            const data = item.data() as Record<string, unknown>;
+            return typeof data.type === "string" && data.type.trim();
+          }).length;
+          const eventTypeCount = snapshot.docs.filter((item) => {
+            const data = item.data() as Record<string, unknown>;
+            return !(typeof data.type === "string" && data.type.trim()) && typeof data.eventType === "string" && data.eventType.trim();
+          }).length;
           return invalid.length === 0
-            ? { status: "pass", message: `Notification event collection is readable; ${snapshot.size} existing event records inspected.` }
+            ? { status: "pass", message: `Notification event collection is readable; ${snapshot.size} existing records inspected (${canonicalCount} type records, ${eventTypeCount} eventType records).` }
             : { status: "fail", message: `${invalid.length} notification event records have an invalid event identity/type.` };
         } catch (error) {
           return { status: "fail", message: error instanceof Error ? error.message : "Notification event records could not be read." };
