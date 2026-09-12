@@ -25,8 +25,10 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const requestedUid = String(request.data?.uid || request.auth.uid); if (requestedUid !== request.auth.uid && !isOwnerRequest(request)) throw new HttpsError("permission-denied", "You cannot inspect another user's paid access.");
   const snapshot = await db.collection("users").doc(requestedUid).get(); const data = snapshot.exists ? snapshot.data() : {};
-  const actualTier = VALID_TIERS.has(String(data.subscriptionTier || "")) ? String(data.subscriptionTier) : "free";
-  const status = String(data.subscriptionStatus || (actualTier === "free" ? "free" : "active"));
+  const entitlementSnapshot = await db.collection("paidEntitlements").doc(requestedUid).get(); const entitlement = entitlementSnapshot.exists ? entitlementSnapshot.data() || {} : {};
+  const storedTier = VALID_TIERS.has(String(entitlement.tier || "")) ? String(entitlement.tier) : String(data.subscriptionTier || "");
+  const actualTier = VALID_TIERS.has(storedTier) ? storedTier : "free";
+  const status = String(entitlement.status || data.subscriptionStatus || (actualTier === "free" ? "free" : "active"));
   const statusAllowsPaidAccess = actualTier === "free" || status === "active" || status === "trialing";
   const overrideSnapshot = await db.collection("paidTesterOverrides").doc(requestedUid).get();
   const override = overrideSnapshot.exists ? overrideSnapshot.data() || null : null;
@@ -36,7 +38,7 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   const trialEnabled = trial?.enabled === true && VALID_TIERS.has(String(trial?.tier || "")) && String(trial?.tier || "") !== "free" && isActiveExpiry(trial.expiresAt);
   const effectiveTier = overrideEnabled ? String(override.tier) : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
   const source = overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
-  return { success: true, uid: requestedUid, actualTier, effectiveTier, source, subscriptionStatus: status, currentPeriodEnd: data.subscriptionCurrentPeriodEnd, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null, trial: trialEnabled ? { ...trial, tier: String(trial.tier), enabled: true } : null };
+  return { success: true, uid: requestedUid, actualTier, effectiveTier, source, subscriptionStatus: status, currentPeriodEnd: entitlement.currentPeriodEnd || data.subscriptionCurrentPeriodEnd, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null, trial: trialEnabled ? { ...trial, tier: String(trial.tier), enabled: true } : null };
 });
 
 Object.assign(exports, require("./paidSubscriptions"));
