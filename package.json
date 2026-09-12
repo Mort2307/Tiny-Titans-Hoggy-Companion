@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc -b --pretty false",
     "validate:morphs": "node scripts/validate-morph-database.mjs",
     "validate:morph-taxonomy": "node scripts/validate-hognose-morph-taxonomy.mjs",
     "validate:morph-sources": "node scripts/validate-morph-source-audit.mjs",
