@@ -1,14 +1,15 @@
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getFamilyForUser } from "./familyService";
-import { defaultAdultPermissions, defaultChildPermissions, getMemberPermissions } from "./familyPermissionsService";
+import { defaultAdultPermissions, defaultChildPermissions, getMemberPermissions, permissionActions, permissionAreas } from "./familyPermissionsService";
 import { getSandboxExperiments } from "./sandboxService";
 import type { TesterCheck } from "./testerBotService";
 
-const REQUIRED_AREAS = ["snakes", "weights", "feeding", "sheds", "breeding", "genetics"] as const;
-const REQUIRED_ACTIONS = ["view", "create", "edit", "delete"] as const;
+const REQUIRED_AREAS = permissionAreas.map((area) => area.id);
+const REQUIRED_ACTIONS = permissionActions.map((action) => action.id);
 const VALID_MODES = new Set(["allow", "deny", "verify"]);
 const VALID_ROLES = new Set(["owner", "adult", "child"]);
+const VALID_INVITE_STATUSES = new Set(["pending", "accepted", "declined", "revoked"]);
 
 export async function createFamilyAccountChecks(uid: string): Promise<TesterCheck[]> {
   if (!uid) throw new Error("Family Account BOT requires an authenticated UID.");
@@ -97,7 +98,7 @@ export async function createFamilyAccountChecks(uid: string): Promise<TesterChec
     },
     {
       checkId: "family-permission-model",
-      name: "Family permissions expose Allow, Deny and Verify for every data area/action",
+      name: "Family permissions expose Allow, Deny and Verify for every canonical data area/action",
       category: "firebase",
       severity: "critical",
       run: async () => {
@@ -107,14 +108,18 @@ export async function createFamilyAccountChecks(uid: string): Promise<TesterChec
         if (!members.length) return { status: "blocked", message: "No non-owner family member exists yet; member permission records cannot be exercised." };
         const findings: string[] = [];
         for (const member of members) {
-          const permissions = await getMemberPermissions(member.uid);
-          for (const area of REQUIRED_AREAS) for (const action of REQUIRED_ACTIONS) {
-            const key = `${area}.${action}` as keyof typeof permissions;
-            if (!VALID_MODES.has(permissions[key])) findings.push(`${member.uid}:${key}`);
+          try {
+            const permissions = await getMemberPermissions(member.uid);
+            for (const area of REQUIRED_AREAS) for (const action of REQUIRED_ACTIONS) {
+              const key = `${area}.${action}` as keyof typeof permissions;
+              if (!VALID_MODES.has(permissions[key])) findings.push(`${member.uid}:${key}=${String(permissions[key] ?? "missing")}`);
+            }
+          } catch (error) {
+            findings.push(`${member.uid}:unable-to-read-permissions:${error instanceof Error ? error.message : "unknown error"}`);
           }
         }
         return findings.length === 0
-          ? { status: "pass", message: `Permission matrix is valid for ${members.length} non-owner family member${members.length === 1 ? "" : "s"}; every area/action resolves to Allow, Deny or Verify.` }
+          ? { status: "pass", message: `Permission matrix is valid for ${members.length} non-owner family member${members.length === 1 ? "" : "s"}; all ${REQUIRED_AREAS.length * REQUIRED_ACTIONS.length} canonical area/action combinations resolve to Allow, Deny or Verify.` }
           : { status: "fail", message: `Invalid family permission values found at ${findings.slice(0, 8).join(", ")}${findings.length > 8 ? "…" : ""}.` };
       },
     },
@@ -125,11 +130,14 @@ export async function createFamilyAccountChecks(uid: string): Promise<TesterChec
       severity: "high",
       run: async () => {
         const expectedCount = REQUIRED_AREAS.length * REQUIRED_ACTIONS.length;
-        const childCount = Object.keys(defaultChildPermissions).length;
-        const adultCount = Object.keys(defaultAdultPermissions).length;
-        return childCount === expectedCount && adultCount === expectedCount
-          ? { status: "pass", message: `Child and adult defaults each define all ${expectedCount} area/action permissions.` }
-          : { status: "fail", message: `Permission defaults are incomplete: child=${childCount}, adult=${adultCount}, expected=${expectedCount}.` };
+        const childKeys = Object.keys(defaultChildPermissions);
+        const adultKeys = Object.keys(defaultAdultPermissions);
+        const expectedKeys = new Set(REQUIRED_AREAS.flatMap((area) => REQUIRED_ACTIONS.map((action) => `${area}.${action}`)));
+        const childComplete = childKeys.length === expectedCount && childKeys.every((key) => expectedKeys.has(key) && VALID_MODES.has(defaultChildPermissions[key as keyof typeof defaultChildPermissions]));
+        const adultComplete = adultKeys.length === expectedCount && adultKeys.every((key) => expectedKeys.has(key) && VALID_MODES.has(defaultAdultPermissions[key as keyof typeof defaultAdultPermissions]));
+        return childComplete && adultComplete
+          ? { status: "pass", message: `Child and adult defaults each define all ${expectedCount} canonical area/action permissions.` }
+          : { status: "fail", message: `Permission defaults are incomplete: child=${childKeys.length}, adult=${adultKeys.length}, expected=${expectedCount}.` };
       },
     },
     {
@@ -166,7 +174,8 @@ export async function createFamilyAccountChecks(uid: string): Promise<TesterChec
           const snapshot = await getDocs(query(collection(db, "familyInvites"), where("familyId", "==", familyCache.id)));
           const invalid = snapshot.docs.filter((item) => {
             const data = item.data() as Record<string, unknown>;
-            return data.familyId !== familyCache!.id || data.ownerUid !== familyCache!.ownerUid || typeof data.targetEmail !== "string" || !["pending", "accepted", "declined"].includes(String(data.status));
+            const targetEmail = typeof data.targetEmail === "string" ? data.targetEmail.trim().toLowerCase() : "";
+            return data.familyId !== familyCache!.id || data.ownerUid !== familyCache!.ownerUid || !targetEmail || !VALID_INVITE_STATUSES.has(String(data.status));
           });
           return invalid.length === 0
             ? { status: "pass", message: `Family invitation records are correctly bound; ${snapshot.size} invitation record${snapshot.size === 1 ? "" : "s"} inspected.` }
