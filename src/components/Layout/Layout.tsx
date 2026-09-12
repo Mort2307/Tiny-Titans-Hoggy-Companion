@@ -44,6 +44,7 @@ function LayoutChrome() {
   const morphDetailMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/?$/);
   const isEnclosureIntelligence = location.pathname === "/enclosure-intelligence" || location.pathname.startsWith("/enclosure-intelligence/");
   const isTitanWeekPage = location.pathname === "/titan-intelligence/feature/this-week";
+  const isHomeOrRecordLogPage = location.pathname === "/" || ["/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry"].some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isPaidPlansPage = location.pathname === "/plans";
   const isBillingPage = location.pathname === "/account/billing";
   const isPaidMarketplacePage = location.pathname === "/paid/marketplace";
@@ -77,7 +78,7 @@ function LayoutChrome() {
     <a className="skip-link" href="#main-content">Skip to main content</a><Header/><Navigation/>
     <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
       {!isEasyNav && <AdaptiveGuideBar/>}{!isEasyNav && <CreatorTesterInvitationBanner/>}{!isEasyNav && <CreatorCommandBar/>}{!isEasyNav && <CreatorStatusBar/>}{!isEasyNav && <TitanQuickActions/>}{!isEasyNav && <SupportNotificationCenter/>}
-      <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}<WorldIntelligenceContext/>{!isTitanWeekPage && <TitanAtAGlance/>}<div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>
+      <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}<WorldIntelligenceContext/>{isHomeOrRecordLogPage && <TitanAtAGlance/>}<div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>
         {specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre/> : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary/> : morphGalleryMatch ? <SpeciesMorphGallery/> : morphDetailMatch ? <SpeciesMorphDetail/> : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence/> : gatedOutlet)}
         <TinyTitansEvidenceNotice/>
       </div>
