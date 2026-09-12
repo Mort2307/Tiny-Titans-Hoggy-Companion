@@ -15,6 +15,26 @@ function tierFromPrice(price) { const lookup = String(price?.lookup_key || ""); 
 function timestampOrNull(unixSeconds) { return Number.isFinite(Number(unixSeconds)) && Number(unixSeconds) > 0 ? Timestamp.fromMillis(Number(unixSeconds) * 1000) : null; }
 async function findRecurringPrice(stripe, tier) { const lookup = LOOKUP_KEYS[tier]; const result = await stripe.prices.list({ lookup_keys: [lookup], active: true, type: "recurring", limit: 1 }); const price = result.data[0]; if (!price || !price.recurring) throw new HttpsError("failed-precondition", `${tier} is not configured in Stripe yet. Create its recurring monthly price using lookup key ${lookup}.`); return price; }
 
+exports.getPaidTierPricing = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  try {
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+    const prices = {};
+    for (const tier of TIERS) {
+      const lookupKey = LOOKUP_KEYS[tier];
+      const result = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, type: "recurring", limit: 1 });
+      const price = result.data[0];
+      prices[tier] = price && price.recurring
+        ? { configured: true, priceId: price.id, unitAmount: price.unit_amount, currency: price.currency, interval: price.recurring.interval, intervalCount: price.recurring.interval_count, lookupKey }
+        : { configured: false, lookupKey };
+    }
+    return { success: true, prices };
+  } catch (error) {
+    console.error("Paid tier pricing lookup failed", error);
+    throw new HttpsError("internal", "Unable to read the live Stripe tier pricing.");
+  }
+});
+
 exports.createPaidSubscriptionCheckout = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const tier = String(request.data?.tier || ""); if (!TIERS.has(tier)) throw new HttpsError("invalid-argument", "Invalid paid subscription tier.");
