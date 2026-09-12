@@ -1,9 +1,10 @@
-import { collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { Reminder, ReminderInput, ReminderKind } from "../types/Reminder";
 import { getDetectedTimezone, getWorldTimeSnapshot } from "./worldTimeService";
 
 function remindersCollection(uid: string) { return collection(db, "users", uid, "reminders"); }
+function careLogsCollection(uid: string) { return collection(db, "users", uid, "careLogs"); }
 
 function addCalendarDays(dateKey: string, days: number): string {
   const value = new Date(`${dateKey}T00:00:00Z`);
@@ -104,7 +105,7 @@ export function feedingReminderSchedule(input: Pick<ReminderInput, "kind" | "fre
 }
 
 function legacyFlagFor(kind: ReminderKind): string | null {
-  return ({ weight: "weightRemindersEnabled", feeding: "feedingRemindersEnabled", shedding: "shedRemindersEnabled", health: "healthRemindersEnabled", husbandry: null, custom: null } as Record<ReminderKind, string | null>)[kind];
+  return ({ weight: "weightRemindersEnabled", feeding: "feedingRemindersEnabled", shedding: "shedRemindersEnabled", health: "healthRemindersEnabled", husbandry: null, "water-change": null, custom: null } as Record<ReminderKind, string | null>)[kind];
 }
 
 async function handOffLegacyStream(uid: string, kind: ReminderKind) {
@@ -114,7 +115,7 @@ async function handOffLegacyStream(uid: string, kind: ReminderKind) {
 }
 
 export function defaultReminderInput(kind: ReminderKind, snakeId: string | null = null): ReminderInput {
-  const definition = ({ weight: "Weight check", feeding: "Feeding check", shedding: "Shed check", health: "Health check", husbandry: "Husbandry check", custom: "Custom reminder" } as Record<ReminderKind, string>)[kind];
+  const definition = ({ weight: "Weight check", feeding: "Feeding check", shedding: "Shed check", health: "Health check", husbandry: "Husbandry check", "water-change": "Water change", custom: "Custom reminder" } as Record<ReminderKind, string>)[kind];
   const now = new Date();
   const timezone = getDetectedTimezone();
   const startDate = getWorldTimeSnapshot(now, timezone).localDateKey;
@@ -225,6 +226,48 @@ export async function setReminderPaused(uid: string, reminder: Reminder, paused:
     schedule = nextSchedule(input, occurrenceDate, phase);
   }
   await updateDoc(ref, { status: "active", nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lockedUntil: null, updatedAt: serverTimestamp() });
+}
+
+export async function completeWaterChange(uid: string, reminder: Reminder, notes = ""): Promise<{ completedDate: string; nextDate: string }> {
+  if (!uid || reminder.kind !== "water-change") throw new Error("A valid water change reminder is required.");
+  if (reminder.status !== "active") throw new Error("Resume this water change reminder before logging it.");
+
+  const timezone = reminder.timezone || "Europe/London";
+  const completedDate = localDateKey(new Date(), timezone);
+  const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1)));
+  const nextDate = addCalendarDays(completedDate, frequencyDays);
+  const safeNotes = notes.trim();
+  const batch = writeBatch(db);
+  const reminderRef = doc(db, "users", uid, "reminders", reminder.id);
+  const logRef = doc(careLogsCollection(uid));
+  batch.update(reminderRef, {
+    nextNotificationAt: zonedTimeToUtc(nextDate, reminder.time || "09:00", timezone).toISOString(),
+    nextOccurrenceDate: nextDate,
+    nextPhase: "due",
+    lastCompletedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  batch.set(logRef, {
+    kind: "water-change",
+    title: "Water change completed",
+    date: completedDate,
+    snakeId: reminder.snakeId ?? null,
+    snakeName: reminder.snakeName ?? null,
+    reminderId: reminder.id,
+    notes: safeNotes || null,
+    createdAt: serverTimestamp(),
+  });
+  await batch.commit();
+  return { completedDate, nextDate };
+}
+
+export async function listWaterChangeLogs(uid: string, limit = 20) {
+  if (!uid) return [];
+  const snapshot = await getDocs(query(careLogsCollection(uid), orderBy("date", "desc")));
+  return snapshot.docs
+    .map((item) => ({ id: item.id, ...(item.data() as { kind?: string; title?: string; date?: string; snakeId?: string | null; snakeName?: string | null; reminderId?: string; notes?: string | null; createdAt?: unknown }) }))
+    .filter((item) => item.kind === "water-change")
+    .slice(0, Math.max(1, Math.min(100, limit)));
 }
 
 export async function deleteReminder(uid: string, reminderId: string): Promise<void> {
