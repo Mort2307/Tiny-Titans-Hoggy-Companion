@@ -1,6 +1,5 @@
 import {
   getMasterCalculatorMorphs,
-  getMasterHetGenes,
   getMasterVisualMorphs,
   type MasterMorphDefinition,
 } from "../masterMorphDatabase";
