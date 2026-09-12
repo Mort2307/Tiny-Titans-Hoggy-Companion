@@ -6,7 +6,8 @@ import { createGeneticsJourneyChecks, createMorphLibraryChecks } from "./testerG
 import { createFeedbackAttachmentChecks } from "./testerFeedbackSuitesService";
 import { createNotificationMicroSystemChecks } from "./testerNotificationSuitesService";
 import { createCreatorFunctionChecks } from "./testerCreatorSuitesService";
-import { createApplicationCoverageChecks, createBreedingPlannerChecks, createPaidTierRegressionChecks } from "./testerApplicationSuitesService";
+import { createApplicationCoverageChecks, createBreedingPlannerChecks } from "./testerApplicationSuitesService";
+import { createPaidTierRegressionChecks } from "./paidTierRegressionSuites";
 import { createFamilyAccountChecks } from "./testerFamilySuitesService";
 import { createVisualUxChecks } from "./visualUxBotService";
 import { createOverlordIntelligenceChecks } from "./botIntelligenceService";
