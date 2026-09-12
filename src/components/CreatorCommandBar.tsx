@@ -7,6 +7,7 @@ const sections = [
   ["Operations", "/creator/issues", "🧰"],
   ["Community", "/creator/community", "📢"],
   ["Testing", "/creator/tester", "🤖"],
+  ["Paid tiers", "/creator/tester/paid-tiers", "💳"],
   ["Privacy & data", "/creator/privacy-data", "🔐"],
 ] as const;
 
