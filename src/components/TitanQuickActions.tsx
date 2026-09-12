@@ -17,7 +17,8 @@ function actionsForPath(path: string): Action[] {
 
 export default function TitanQuickActions() {
   const { pathname } = useLocation();
-  if (pathname.startsWith("/creator") || pathname.startsWith("/login") || pathname === "/account-setup") return null;
+  const recordLogPage = ["/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry"].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  if (pathname.startsWith("/creator") || pathname.startsWith("/login") || pathname === "/account-setup" || (pathname !== "/" && !recordLogPage)) return null;
   const actions = actionsForPath(pathname);
   return <nav className="tt-quick-dock" aria-label="Quick actions"><span className="tt-quick-dock__label">TITAN TOOLS</span>{actions.map((action) => <Link key={action.to + action.label} to={action.to}><span aria-hidden="true">{action.icon}</span>{action.label}</Link>)}</nav>;
 }
