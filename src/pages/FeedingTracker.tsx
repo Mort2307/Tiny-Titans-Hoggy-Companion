@@ -217,11 +217,6 @@ export default function FeedingTracker() {
     }
   }
 
-  function daysSince(value: string) {
-    const d = new Date(`${value}T00:00:00`);
-    return Math.max(0, Math.floor((new Date().setHours(0, 0, 0, 0) - d.getTime()) / 86400000));
-  }
-
   if (loading || profileLoading || (Boolean(user) && loadingSnakes)) return <div className="tt-tracker-page"><BackHomeButton /><div className="tt-tracker-panel"><p className="tt-tracker-eyebrow">Keeper records</p><h1>🍽️ Feeding Tracker</h1><p className="tt-tracker-panel-muted">Loading feeding records…</p></div></div>;
 
   return <main className="tt-tracker-page">
