@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import type { ReptileRoomObject } from "../../services/reptileRoomService";
 import type { Room3DAssetPreset } from "../../types/reptileRoom3D";
 
@@ -32,7 +31,6 @@ const categories: Category[] = [
 ];
 
 export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate, onSpawn }: RoomBuildPanelProps) {
-  const navigate = useNavigate();
   const [openCategory, setOpenCategory] = useState<string | null>("vivariums");
   const [minimized, setMinimized] = useState(false);
   const selected = objects.find((item) => item.id === selectedId);
@@ -44,11 +42,14 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate, onS
 
   const buttonProps = { onPointerDown: (event: React.PointerEvent) => event.stopPropagation() };
   const spawn = (preset: Preset) => {
-    if (preset[0] === "vivarium") {
-      navigate("/reptile-room");
-      return;
-    }
-    onSpawn?.({ kind: preset[0] as Room3DAssetPreset["kind"], label: preset[1], icon: "", width: preset[2], depth: preset[3], height: preset[4] });
+    onSpawn?.({
+      kind: preset[0] as Room3DAssetPreset["kind"],
+      label: preset[1],
+      icon: "",
+      width: preset[2],
+      depth: preset[3],
+      height: preset[4],
+    });
   };
 
   return (
@@ -69,7 +70,7 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate, onS
                 <span style={{ opacity: .6 }}>{counts[category.id] ? `${counts[category.id]} · ` : ""}{open ? "⌃" : "⌄"}</span>
               </button>
               {open && <div style={{ padding: "7px", background: "rgba(255,255,255,.025)" }}>
-                {category.id === "vivariums" && <button type="button" onClick={() => spawn(["vivarium", "Front-opening Glass", 90, 45, 45])} style={{ width: "100%", minHeight: 50, textAlign: "left" }} {...buttonProps}>＋ Start a new Vivarium<br /><span style={{ opacity: .65, fontSize: 11 }}>Opens the canonical 3D enclosure builder</span></button>}
+                {category.id === "vivariums" && <button type="button" onClick={() => spawn(["vivarium", "Front-opening Glass", 90, 45, 45])} style={{ width: "100%", minHeight: 50, textAlign: "left" }} {...buttonProps}>＋ Start a new Vivarium<br /><span style={{ opacity: .65, fontSize: 11 }}>Adds the enclosure through the current builder</span></button>}
                 {category.items.length > 0 ? <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{category.items.map((preset) => <button key={preset[0]} type="button" onClick={() => spawn(preset)} style={{ fontSize: 11, minHeight: 42 }} {...buttonProps}>{preset[1]}<br /><span style={{ opacity: .6 }}>{preset[2]}×{preset[3]}×{preset[4]} cm</span></button>)}</div> : category.id !== "vivariums" && <div style={{ padding: 8, fontSize: 11, opacity: .55 }}>More specialised keeper assets are available from the dedicated asset library.</div>}
               </div>}
             </div>
