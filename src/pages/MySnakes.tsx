@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import MySnakesTiles from "./MySnakesTiles";
 import ReptileRoomPOVViewer from "../components/reptile-room-3d/ReptileRoomPOVViewer";
 import "../styles/my-snakes-workspace.css";
@@ -17,7 +17,6 @@ function readView(): WorkspaceView {
 
 export default function MySnakes() {
   const [view, setView] = useState<WorkspaceView>(() => readView());
-  const navigate = useNavigate();
 
   useEffect(() => {
     try {
