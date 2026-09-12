@@ -10,6 +10,7 @@ const commands = [
   ["Security contracts", ["run", "validate:security"]],
   ["Intelligence consent contracts", ["run", "validate:intelligence-consent"]],
   ["Intelligence journey contracts", ["run", "validate:intelligence-journey"]],
+  ["Water change reminder contract", ["run", "test:water-change-reminders"]],
   ["Production build", ["run", "build"]],
 ];
 
