@@ -1,7 +1,6 @@
 import type { TesterCheck } from "./testerBotService";
 
 type JourneyOutcome = "PASS" | "NO_OP" | "LOOP" | "WRONG_DESTINATION" | "RUNTIME_ERROR";
-
 type Candidate = { element: Element; label: string; href: string | null };
 
 const DESTRUCTIVE = /^(delete|remove|sign out|logout|submit|save|add\b|create\b|confirm|accept|deny|allow|send|publish|upload|buy|pay|checkout|remove|reset|clear)/i;
@@ -113,6 +112,22 @@ async function waitStable(frame: HTMLIFrameElement): Promise<void> {
   });
 }
 
+async function waitForRenderedApplication(frame: HTMLIFrameElement, timeoutMs = 3500): Promise<void> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const doc = frame.contentDocument;
+    const win = frame.contentWindow;
+    if (!doc || !win) return;
+    const path = currentPath(win);
+    if (/\/login\/?$/i.test(path)) return;
+    const rootText = (doc.querySelector("#root")?.textContent || "").replace(/\s+/g, " ").trim();
+    const hasControls = candidates(doc).length > 0;
+    const stillHydrating = /checking (tester )?authorization|checking authentication|loading tiny titans|initialising|initializing/i.test(rootText);
+    if (hasControls || (rootText.length > 180 && !stillHydrating)) return;
+    await new Promise((resolve) => window.setTimeout(resolve, 150));
+  }
+}
+
 function sameOriginPath(href: string | null, baseUrl: string): string | null {
   if (!href) return null;
   try {
@@ -139,6 +154,7 @@ async function runTarget(path: string): Promise<string> {
     frame.src = new URL(path, window.location.origin).toString();
     await waitForLoad(frame);
     await waitStable(frame);
+    await waitForRenderedApplication(frame);
 
     const win = frame.contentWindow;
     const doc = frame.contentDocument;
@@ -192,6 +208,7 @@ async function runTarget(path: string): Promise<string> {
       frame.src = new URL(startedAtPath, window.location.origin).toString();
       await waitForLoad(frame);
       await waitStable(frame);
+      await waitForRenderedApplication(frame);
     }
 
     const summary = {
