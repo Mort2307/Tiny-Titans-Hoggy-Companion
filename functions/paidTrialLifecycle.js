@@ -31,20 +31,21 @@ async function recordOwnerEvent({ id, title, body, targetUid, targetName, tier, 
 }
 
 exports.processPaidTrialLifecycle = onSchedule({ schedule: "every day 03:20", timeZone: "Europe/London", region: "europe-west2" }, async () => {
-  const snapshot = await db.collection("users").where("paidTrial.enabled", "==", true).get();
+  const snapshot = await db.collection("paidTrials").where("enabled", "==", true).get();
   const now = Date.now();
   let checked = 0; let expired = 0; let warned = 0;
   for (const document of snapshot.docs) {
     checked += 1;
-    const data = document.data() || {};
-    const trial = data.paidTrial || {};
+    const trial = document.data() || {};
     const tier = String(trial.tier || "");
     if (!PAID_TIERS.has(tier)) continue;
     const expiresAt = millis(trial.expiresAt);
     if (expiresAt === null) continue;
+    const userSnapshot = await db.collection("users").doc(document.id).get();
+    const data = userSnapshot.exists ? userSnapshot.data() || {} : {};
     const targetName = String(data.displayName || data.name || data.email || "A Tiny Titans user");
     if (expiresAt <= now) {
-      await document.ref.set({ paidTrial: { ...trial, enabled: false, expiredAt: FieldValue.serverTimestamp() }, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      await document.ref.set({ enabled: false, expiredAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       await recordOwnerEvent({ id: eventId(document.id, "expired", expiresAt), title: "⌛ Paid trial expired", body: `${targetName}'s ${tierName(tier)} trial has expired and paid access has ended unless another entitlement applies.`, targetUid: document.id, targetName, tier, kind: "trial-expired" });
       expired += 1;
       continue;
