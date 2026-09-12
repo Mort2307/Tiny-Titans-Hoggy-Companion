@@ -16,9 +16,9 @@ exports.setPaidTesterOverride = onCall({ region: "europe-west2" }, async (reques
   if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can manage paid-feature testing.");
   const targetUid = String(request.data?.targetUid || "").trim(); const enabled = request.data?.enabled === true; const tier = String(request.data?.tier || "free"); const mode = String(request.data?.mode || "visible");
   if (!targetUid) throw new HttpsError("invalid-argument", "A target user ID is required."); if (!VALID_TIERS.has(tier)) throw new HttpsError("invalid-argument", "Invalid paid tester tier."); if (!VALID_MODES.has(mode)) throw new HttpsError("invalid-argument", "Invalid tester visibility mode.");
-  await adminAuth.getUser(targetUid); const userRef = db.collection("users").doc(targetUid);
-  if (!enabled) { const current = await userRef.get(); const actualTier = current.exists && VALID_TIERS.has(String(current.data()?.subscriptionTier || "")) ? String(current.data().subscriptionTier) : "free"; await userRef.set({ paidTesterOverride: { enabled: false, tier: "free", mode, revokedAt: FieldValue.serverTimestamp(), revokedByUid: request.auth.uid } }, { merge: true }); await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_paid_tier_tester_override", createdAt: FieldValue.serverTimestamp() }); return { success: true, targetUid, effectiveTier: actualTier, enabled: false }; }
-  const expiresAt = normaliseExpiry(request.data?.expiresAt); await userRef.set({ paidTesterOverride: { enabled: true, tier, mode, grantedAt: FieldValue.serverTimestamp(), grantedByUid: request.auth.uid, expiresAt } }, { merge: true }); await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "grant_paid_tier_tester_override", tier, mode, expiresAt, createdAt: FieldValue.serverTimestamp() }); return { success: true, targetUid, effectiveTier: tier, enabled: true };
+  await adminAuth.getUser(targetUid); const overrideRef = db.collection("paidTesterOverrides").doc(targetUid);
+  if (!enabled) { await overrideRef.set({ enabled: false, tier: "free", mode, revokedAt: FieldValue.serverTimestamp(), revokedByUid: request.auth.uid, updatedAt: FieldValue.serverTimestamp() }, { merge: true }); await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "revoke_paid_tier_tester_override", createdAt: FieldValue.serverTimestamp() }); return { success: true, targetUid, effectiveTier: null, enabled: false }; }
+  const expiresAt = normaliseExpiry(request.data?.expiresAt); await overrideRef.set({ uid: targetUid, enabled: true, tier, mode, grantedAt: FieldValue.serverTimestamp(), grantedByUid: request.auth.uid, expiresAt, updatedAt: FieldValue.serverTimestamp() }, { merge: true }); await db.collection("creatorAudit").add({ actorUid: request.auth.uid, targetUid, action: "grant_paid_tier_tester_override", tier, mode, expiresAt, createdAt: FieldValue.serverTimestamp() }); return { success: true, targetUid, effectiveTier: tier, enabled: true };
 });
 
 exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) => {
@@ -28,7 +28,9 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   const actualTier = VALID_TIERS.has(String(data.subscriptionTier || "")) ? String(data.subscriptionTier) : "free";
   const status = String(data.subscriptionStatus || (actualTier === "free" ? "free" : "active"));
   const statusAllowsPaidAccess = actualTier === "free" || status === "active" || status === "trialing";
-  const override = data.paidTesterOverride || null; const overrideEnabled = override?.enabled === true && VALID_TIERS.has(String(override?.tier || "")) && (!override.expiresAt || isActiveExpiry(override.expiresAt));
+  const overrideSnapshot = await db.collection("paidTesterOverrides").doc(requestedUid).get();
+  const override = overrideSnapshot.exists ? overrideSnapshot.data() || null : null;
+  const overrideEnabled = override?.enabled === true && VALID_TIERS.has(String(override?.tier || "")) && (!override.expiresAt || isActiveExpiry(override.expiresAt));
   const trial = data.paidTrial || null; const trialEnabled = trial?.enabled === true && VALID_TIERS.has(String(trial?.tier || "")) && String(trial?.tier || "") !== "free" && isActiveExpiry(trial.expiresAt);
   const effectiveTier = overrideEnabled ? String(override.tier) : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
   const source = overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
