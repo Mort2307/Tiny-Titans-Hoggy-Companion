@@ -28,6 +28,7 @@ import PaidSupportFeature from "../../pages/PaidSupportFeature";
 import PaidTierGate from "../PaidTierGate";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
+import "../../styles/tierIdentity.css";
 
 const speciesAwarePrefixes = [
   "/snakes", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding", "/behaviour", "/health",
