@@ -51,6 +51,17 @@ function getResultStatus(results: TesterResult[]): TesterRun["status"] {
   return "passed";
 }
 
+function deduplicateChecks(checks: TesterCheck[]): TesterCheck[] {
+  const seen = new Set<string>();
+  const unique: TesterCheck[] = [];
+  for (const check of checks) {
+    if (seen.has(check.checkId)) continue;
+    seen.add(check.checkId);
+    unique.push(check);
+  }
+  return unique;
+}
+
 async function persistTesterRun(uid: string, run: TesterRun): Promise<void> {
   if (!uid) throw new Error("Tester run cannot be persisted without an owner UID.");
   const runRef = doc(collection(db, "users", uid, "testerRuns"), run.id);
@@ -130,13 +141,14 @@ export function createCoreDiagnosticChecks(input: {
 
 export async function runTesterSuite(uid: string, suite: string, checks: TesterCheck[]): Promise<TesterRun> {
   if (!uid) throw new Error("Tester Bot requires an authenticated UID.");
-  if (!checks.length) throw new Error(`Tester suite '${suite}' contains no checks.`);
+  const uniqueChecks = deduplicateChecks(checks);
+  if (!uniqueChecks.length) throw new Error(`Tester suite '${suite}' contains no checks.`);
 
   const started = Date.now();
   const startedAt = new Date(started).toISOString();
   const results: TesterResult[] = [];
 
-  for (const check of checks) {
+  for (const check of uniqueChecks) {
     const checkStarted = Date.now();
     let outcome: { status: TesterStatus; message: string };
     try {
