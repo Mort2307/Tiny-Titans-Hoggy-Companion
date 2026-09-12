@@ -27,8 +27,7 @@ export default function MySnakes() {
     }
   }, [view]);
 
-  const openRoomEditor = () => navigate("/reptile-room");
-  const openVivariumBuilder = () => navigate("/reptile-room");
+  const openRoomEditor = () => setView("snakes");
 
   return (
     <div className={`my-snakes-workspace my-snakes-workspace-${view}`}>
@@ -56,7 +55,7 @@ export default function MySnakes() {
         {view === "snakes" ? (
           <MySnakesTiles />
         ) : (
-          <ReptileRoomPOVViewer onEdit={openRoomEditor} onOpenVivariumBuilder={openVivariumBuilder} />
+          <ReptileRoomPOVViewer onEdit={openRoomEditor} />
         )}
       </div>
     </div>
