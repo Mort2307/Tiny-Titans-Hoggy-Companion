@@ -11,3 +11,21 @@ export type { PaidAccess };
 export async function getPaidAccess(uid: string): Promise<PaidAccess> { return getStoredPaidAccess(uid); }
 export async function startPaidSubscriptionCheckout(tier: PaidTierId): Promise<{ url: string }> { if (tier === "free") throw new Error("The Free plan does not require a subscription checkout."); return (await startCheckoutCall({ tier })).data; }
 export async function openBillingPortal(): Promise<{ url: string }> { return (await billingPortalCall({})).data; }
+
+
+export type LivePaidTierPrice = {
+  configured: boolean;
+  priceId?: string;
+  unitAmount?: number | null;
+  currency?: string;
+  interval?: string;
+  intervalCount?: number;
+  lookupKey?: string;
+};
+
+const pricingCall = httpsCallable<Record<string, never>, { success: boolean; prices: Record<PaidTierId, LivePaidTierPrice> }>(functions, "getPaidTierPricing");
+
+export async function getPaidTierPricing(): Promise<Record<PaidTierId, LivePaidTierPrice>> {
+  const response = await pricingCall({});
+  return response.data.prices;
+}
