@@ -16,6 +16,9 @@ const paidTesterServerCollectionContract = /db\.collection\("paidTesterOverrides
 const paidTesterReaderContract = /db\.collection\("paidTesterOverrides"\)\.doc\(requestedUid\)\.get\(\)/;
 const paidTrialServerCollectionContract = /db\.collection\("paidTrials"\)\.doc\(targetUid\)/;
 const paidTrialReaderContract = /db\.collection\("paidTrials"\)\.doc\(requestedUid\)\.get\(\)/;
+const paidTesterUserProfileAbsenceContract = /^(?![\s\S]*data\.paidTesterOverride)/;
+const paidTrialUserProfileAbsenceContract = /^(?![\s\S]*data\.paidTrial)/;
+
 const checks = [
   ["Firestore rules are version 2", /rules_version\s*=\s*'2'/, firestore],
   ["Firestore has deny-by-default fallback", /match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/, firestore],
@@ -38,11 +41,11 @@ const checks = [
   ["Storage creator access no longer trusts mutable profileType data", /isCreator\(\)\s*\{[\s\S]*request\.auth\.token\.creator == true/, storage],
   ["Paid tester overrides are stored outside mutable user profiles", paidTesterServerCollectionContract, paidTierAccess],
   ["Paid tier access reads tester overrides only from the server-managed collection", paidTesterReaderContract, paidTierAccess],
-  ["Paid tester access cannot be sourced from users.paidTesterOverride", !/data\.paidTesterOverride/, paidTierAccess],
+  ["Paid tester access cannot be sourced from users.paidTesterOverride", paidTesterUserProfileAbsenceContract, paidTierAccess],
   ["Paid trials are stored outside mutable user profiles", paidTrialServerCollectionContract, creatorPaidTier],
   ["Paid tier access reads trials only from the server-managed collection", paidTrialReaderContract, paidTierAccess],
   ["Paid trial lifecycle reads the server-managed trial collection", /db\.collection\("paidTrials"\)\.where\("enabled", "==", true\)/, paidTrialLifecycle],
-  ["Paid trial access cannot be sourced from users.paidTrial", !/data\.paidTrial/, paidTierAccess],
+  ["Paid trial access cannot be sourced from users.paidTrial", paidTrialUserProfileAbsenceContract, paidTierAccess],
   ["Storage morph community writes require creator", /allow write: if isCreator\(\);/, storage],
   ["Intelligence is always personal-data safe at the gate", /coreTracking:\s*true/, permissionGate],
   ["Full intelligence requires explicit community consent", /personalIntelligence:\s*optedIn/, permissionGate],
