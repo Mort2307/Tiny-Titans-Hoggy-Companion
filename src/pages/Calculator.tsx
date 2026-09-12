@@ -42,7 +42,7 @@ export default function Calculator() {
   const speciesKey = selectedSpecies?.acceptedScientificName ?? selectedSpeciesId;
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const speciesDefinitions = useMemo(() => getSpeciesCalculatorMorphs(selectedSpeciesId), [selectedSpeciesId]);
-  const speciesSnakes = useMemo(() => snakes.filter((snake) => { const value = snake.species.trim().toLowerCase(); return value === selectedSpeciesId.toLowerCase() || (selectedSpecies?.commonNames.some((name) => value === name.trim().toLowerCase()) ?? false) || value === (selectedSpecies?.acceptedScientificName ?? "").toLowerCase(); }), [snakes, selectedSpeciesId, selectedSpecies]);
+  const speciesSnakes = useMemo(() => snakes.filter((snake) => findSnakeSpecies(snake.species)?.id === selectedSpeciesId), [snakes, selectedSpeciesId]);
   const geneticsEnabled = geneticsStatus !== "baseline-only";
   const hasDocumentedLoci = geneticsEnabled && speciesDefinitions.length > 0;
   const isBaselineOnly = !geneticsEnabled;
