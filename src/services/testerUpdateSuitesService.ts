@@ -94,15 +94,17 @@ export function createAllPageTargetChecks(): TesterCheck[] {
 }
 
 export async function createUpdateSmokeChecks(uid: string): Promise<TesterCheck[]> {
+  const coreChecks = createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: true });
+
   return [
-    ...await createApplicationCoverageChecks(),
-    ...await createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: true }).then((checks) => checks.filter((check) =>
+    ...createApplicationCoverageChecks(),
+    ...coreChecks.filter((check) =>
       ["auth-current-user", "auth-token-refresh", "account-profile-readable", "firebase-user-scope"].includes(check.checkId),
-    )),
-    ...await createNotificationMicroSystemChecks(),
-    ...await createMorphLibraryChecks(),
+    ),
+    ...await createNotificationMicroSystemChecks(uid),
+    ...createMorphLibraryChecks(),
     ...await createTrackerRegressionChecks(uid),
-    ...await createCreatorFunctionChecks(),
+    ...createCreatorFunctionChecks(),
     ...await createFamilyAccountChecks(uid),
   ];
 }
