@@ -1,4 +1,4 @@
-export type ReminderKind = "weight" | "feeding" | "shedding" | "health" | "husbandry" | "custom";
+export type ReminderKind = "weight" | "feeding" | "shedding" | "health" | "husbandry" | "water-change" | "custom";
 export type ReminderStatus = "active" | "paused";
 export type ReminderPhase = "lead-up" | "due";
 
@@ -35,5 +35,6 @@ export const REMINDER_DEFINITIONS: Array<{ kind: ReminderKind; icon: string; lab
   { kind: "shedding", icon: "🐍", label: "Shedding", description: "Keep shed-cycle checks and routine shed observations on schedule.", defaultTitle: "Shed check" },
   { kind: "health", icon: "🩺", label: "Health", description: "Remember routine health, treatment or vet follow-ups.", defaultTitle: "Health check" },
   { kind: "husbandry", icon: "🌡️", label: "Husbandry", description: "Create recurring enclosure and husbandry checks.", defaultTitle: "Husbandry check" },
+  { kind: "water-change", icon: "💧", label: "Water Change", description: "Keep fresh-water refreshes and dish hygiene on a schedule you control.", defaultTitle: "Water change" },
   { kind: "custom", icon: "📌", label: "Custom", description: "Write your own recurring keeper reminder.", defaultTitle: "Custom reminder" },
 ];
