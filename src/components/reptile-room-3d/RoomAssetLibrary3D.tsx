@@ -111,7 +111,7 @@ export function RoomAssetLibrary3D({ room, onAddAsset }: Props) {
         : [nextRoom];
 
       await saveReptileRooms(user.uid, nextRooms);
-      navigate(`/reptile-room/vivarium/${encodeURIComponent(id)}`);
+      navigate("/reptile-room");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to create vivarium.");
     } finally {
@@ -128,7 +128,7 @@ export function RoomAssetLibrary3D({ room, onAddAsset }: Props) {
             <button type="button" aria-label={minimized ? "Expand room assets" : "Minimize room assets"} title={minimized ? "Expand" : "Minimize"} onClick={() => setMinimized((current) => !current)} style={{ width: 28, height: 28, display: "grid", placeItems: "center", padding: 0, border: "1px solid rgba(255,255,255,.14)", borderRadius: 7, background: "rgba(255,255,255,.06)", color: "#fff", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>{minimized ? "+" : "−"}</button>
           </div>
           {!minimized && <>
-            <div style={{ fontSize: 11, opacity: .65, padding: "0 5px 8px" }}>{creatingVivarium ? "Creating vivarium and opening its 3D builder..." : "Choose an asset. New vivariums open their dedicated 3D builder before setup is complete."}</div>
+            <div style={{ fontSize: 11, opacity: .65, padding: "0 5px 8px" }}>{creatingVivarium ? "Creating vivarium and returning to the 3D room builder..." : "Choose an asset. New vivariums are added directly to the canonical 3D room builder."}</div>
             {CATEGORIES.map((category) => {
               const open = openCategory === category.id;
               return (
