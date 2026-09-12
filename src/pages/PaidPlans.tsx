@@ -78,7 +78,7 @@ export default function PaidPlans() {
   function formatLivePrice(tierId: PaidTierId): string {
     if (tierId === "free") return "Free";
     const live = livePrices?.[tierId];
-    if (!live?.configured || live.unitAmount == null || !live.currency) return getPaidTierDefinition(tierId).priceLabel;
+    if (!live?.configured || live.unitAmount == null || !live.currency) return `Planned ${getPaidTierDefinition(tierId).priceLabel}`;
     const amount = live.unitAmount / 100;
     const currency = live.currency.toUpperCase();
     const formatted = new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
@@ -207,6 +207,7 @@ export default function PaidPlans() {
 
         <aside>
           <strong>{formatLivePrice(selectedTier)}</strong>
+          {selectedTier !== "free" && <small className="paid-live-price-status">{selectedStripeReady ? "Live Stripe recurring price verified" : "Stripe recurring price not connected yet"}</small>}
           {pricingError && <p className="paid-note">Live Stripe pricing could not be verified: {pricingError}</p>}
           {selectedTier === "free" ? (
             <>
