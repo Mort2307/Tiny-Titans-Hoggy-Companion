@@ -12,7 +12,6 @@ export async function getPaidAccess(uid: string): Promise<PaidAccess> { return g
 export async function startPaidSubscriptionCheckout(tier: PaidTierId): Promise<{ url: string }> { if (tier === "free") throw new Error("The Free plan does not require a subscription checkout."); return (await startCheckoutCall({ tier })).data; }
 export async function openBillingPortal(): Promise<{ url: string }> { return (await billingPortalCall({})).data; }
 
-
 export type LivePaidTierPrice = {
   configured: boolean;
   priceId?: string;
@@ -23,9 +22,19 @@ export type LivePaidTierPrice = {
   lookupKey?: string;
 };
 
-const pricingCall = httpsCallable<Record<string, never>, { success: boolean; prices: Record<PaidTierId, LivePaidTierPrice> }>(functions, "getPaidTierPricing");
+export type PaidTierPricingResponse = {
+  mode: "test" | "live";
+  prices: Record<PaidTierId, LivePaidTierPrice>;
+};
+
+const pricingCall = httpsCallable<Record<string, never>, { success: boolean; mode: "test" | "live"; prices: Record<PaidTierId, LivePaidTierPrice> }>(functions, "getPaidTierPricing");
 
 export async function getPaidTierPricing(): Promise<Record<PaidTierId, LivePaidTierPrice>> {
   const response = await pricingCall({});
   return response.data.prices;
+}
+
+export async function getPaidTierPricingEnvironment(): Promise<PaidTierPricingResponse> {
+  const response = await pricingCall({});
+  return { mode: response.data.mode, prices: response.data.prices };
 }
