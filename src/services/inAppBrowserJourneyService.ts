@@ -147,7 +147,12 @@ async function runTarget(path: string): Promise<string> {
       return "BLOCKED: the current authenticated Creator session was not available inside the same-origin test frame.";
     }
 
-    for (const candidate of candidates(doc)) {
+    const targetCandidates = candidates(doc);
+    if (targetCandidates.length === 0) {
+      return `BLOCKED: no safe actionable controls were found on ${startedAtPath}; browser interaction evidence was not established.`;
+    }
+
+    for (const candidate of targetCandidates) {
       const beforePath = currentPath(win);
       const beforeSignature = signature(doc);
       const expectedPath = sameOriginPath(candidate.href, win.location.href);
@@ -199,6 +204,13 @@ async function runTarget(path: string): Promise<string> {
       runtimeErrors: outcomes.filter((item) => item.outcome === "RUNTIME_ERROR").length,
       details: outcomes.slice(0, 18),
     };
+
+    // A browser journey is evidence of interaction, not merely evidence that a route rendered.
+    // Never allow an empty interaction set to become a false PASS.
+    if (summary.controlsExercised < 1) {
+      return `BLOCKED: no safe controls were exercised on ${startedAtPath}; browser interaction evidence was not established.\n${JSON.stringify(summary, null, 2)}`;
+    }
+
     const hasCriticalFinding = summary.noOp > 0 || summary.loops > 0 || summary.wrongDestination > 0 || summary.runtimeErrors > 0;
     return `${hasCriticalFinding ? "FAIL" : "PASS"}: REAL BROWSER JOURNEY\n${JSON.stringify(summary, null, 2)}`;
   } finally {
