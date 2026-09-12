@@ -1,0 +1,61 @@
+name: Tiny Titans Route Crawl BOT
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  route-crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright runner
+        run: npm install --no-save --no-package-lock playwright@latest
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start preview server
+        shell: bash
+        run: |
+          nohup npm run dev -- --host 127.0.0.1 --port 4173 > ci-route-crawl-server.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat ci-route-crawl-server.log
+          exit 1
+
+      - name: Run Route Crawl BOT
+        env:
+          TINY_TITANS_TEST_URL: http://127.0.0.1:4173
+          TINY_TITANS_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
+          TINY_TITANS_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
+          TINY_TITANS_ROUTE_CRAWL_MAX_PAGES: 250
+        run: node scripts/run-route-crawl-bot.mjs
+
+      - name: Upload Route Crawl report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiny-titans-route-crawl-${{ github.run_id }}
+          path: |
+            artifacts/route-crawl/
+            ci-route-crawl-server.log
+          if-no-files-found: warn
