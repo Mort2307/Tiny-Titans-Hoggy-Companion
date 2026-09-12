@@ -6,7 +6,7 @@ import { createGeneticsJourneyChecks, createMorphLibraryChecks } from "./testerG
 import { createFeedbackAttachmentChecks } from "./testerFeedbackSuitesService";
 import { createNotificationMicroSystemChecks } from "./testerNotificationSuitesService";
 import { createCreatorFunctionChecks } from "./testerCreatorSuitesService";
-import { createApplicationCoverageChecks, createBreedingPlannerChecks } from "./testerApplicationSuitesService";
+import { createApplicationCoverageChecks, createBreedingPlannerChecks, createPaidTierRegressionChecks } from "./testerApplicationSuitesService";
 import { createFamilyAccountChecks } from "./testerFamilySuitesService";
 import { createVisualUxChecks } from "./visualUxBotService";
 import { createOverlordIntelligenceChecks } from "./botIntelligenceService";
@@ -110,10 +110,10 @@ export function getBotDefinition(id: string | undefined): BotDefinition | undefi
 export async function buildBotChecks(bot: BotDefinition, suiteId: string, uid: string): Promise<TesterCheck[]> {
   const suite = bot.suites.find((item) => item.id === suiteId);
   if (!suite) throw new Error(`Unknown ${bot.label} test suite: ${suiteId}`);
-  return suite.build(uid);
+  return [...createPaidTierRegressionChecks(), ...await suite.build(uid)];
 }
 
 export async function buildFullBotChecks(bot: BotDefinition, uid: string): Promise<TesterCheck[]> {
   const batches = await Promise.all(bot.suites.map((suite) => suite.build(uid)));
-  return batches.flat();
+  return [...createPaidTierRegressionChecks(), ...batches.flat()];
 }
