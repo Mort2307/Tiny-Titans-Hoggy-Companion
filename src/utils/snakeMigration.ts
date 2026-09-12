@@ -1,13 +1,20 @@
 import type { Snake } from "../types/Snake";
 import { generateId } from "./generateId";
 
+function normaliseSnakeSex(value: unknown): Snake["sex"] {
+  const normalised = String(value ?? "").trim().toLowerCase();
+  if (normalised === "male" || normalised === "m") return "Male";
+  if (normalised === "female" || normalised === "f") return "Female";
+  return "Unknown";
+}
+
 export function migrateSnake(snake: Partial<Snake>): Snake {
   return {
     id: typeof snake.id === "string" && snake.id.trim() ? snake.id.trim() : generateId(),
     name: snake.name ?? "Unnamed Snake",
     species: snake.species ?? "Western Hognose",
     photo: snake.photo ?? "",
-    sex: snake.sex ?? "Unknown",
+    sex: normaliseSnakeSex(snake.sex),
     nickname: snake.nickname ?? "",
     breeder: snake.breeder ?? "",
     origin: snake.origin ?? "",
