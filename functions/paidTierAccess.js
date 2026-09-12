@@ -31,7 +31,9 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   const overrideSnapshot = await db.collection("paidTesterOverrides").doc(requestedUid).get();
   const override = overrideSnapshot.exists ? overrideSnapshot.data() || null : null;
   const overrideEnabled = override?.enabled === true && VALID_TIERS.has(String(override?.tier || "")) && (!override.expiresAt || isActiveExpiry(override.expiresAt));
-  const trial = data.paidTrial || null; const trialEnabled = trial?.enabled === true && VALID_TIERS.has(String(trial?.tier || "")) && String(trial?.tier || "") !== "free" && isActiveExpiry(trial.expiresAt);
+  const trialSnapshot = await db.collection("paidTrials").doc(requestedUid).get();
+  const trial = trialSnapshot.exists ? trialSnapshot.data() || null : null;
+  const trialEnabled = trial?.enabled === true && VALID_TIERS.has(String(trial?.tier || "")) && String(trial?.tier || "") !== "free" && isActiveExpiry(trial.expiresAt);
   const effectiveTier = overrideEnabled ? String(override.tier) : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
   const source = overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
   return { success: true, uid: requestedUid, actualTier, effectiveTier, source, subscriptionStatus: status, currentPeriodEnd: data.subscriptionCurrentPeriodEnd, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null, trial: trialEnabled ? { ...trial, tier: String(trial.tier), enabled: true } : null };
