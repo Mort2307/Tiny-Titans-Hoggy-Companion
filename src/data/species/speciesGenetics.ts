@@ -138,7 +138,7 @@ export function getSpeciesVisualMorphs(speciesId: string | null | undefined): Ma
 }
 
 export function getSpeciesHetGenes(speciesId: string | null | undefined): MasterMorphDefinition[] {
-  if (isHognose(speciesId)) return getMasterHetGenes();
+  if (isHognose(speciesId)) return getMasterVisualMorphs().filter((morph) => morph.isGene && morph.kind === "Gene" && morph.hetPossible === true);
   return getCatalogue(speciesId).filter((morph) => morph.isGene && morph.hetPossible === true);
 }
 
