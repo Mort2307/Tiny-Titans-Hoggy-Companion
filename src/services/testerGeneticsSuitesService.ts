@@ -1,6 +1,7 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getGenes, morphs } from "../data/morphs";
+import { getSpeciesHetGenes } from "../data/species/speciesGenetics";
 import type { TesterCheck } from "./testerBotService";
 
 const VALID_VERIFICATION = new Set(["Confirmed", "Recognised", "Unverified", "Disputed"]);
@@ -57,6 +58,25 @@ export async function createGeneticsJourneyChecks(uid: string): Promise<TesterCh
 
   return [
     ...createMorphLibraryChecks(),
+    {
+      checkId: "hognose-het-catalogue-complete",
+      name: "Western Hognose recognised het catalogue is complete",
+      category: "genetics",
+      severity: "critical",
+      run: async () => {
+        const expected = [
+          "Albino", "Axanthic", "Lavender", "Caramel", "Cinnamon", "Toffeebelly", "Sable",
+          "Dutch Hypo", "Evans Hypo", "Leucistic", "Pink Pastel Albino", "Pistachio",
+          "Swiss Chocolate", "True Hypo",
+        ];
+        const actual = getSpeciesHetGenes("heterodon-nasicus").map((morph) => morph.name);
+        const missing = expected.filter((name) => !actual.some((item) => item.trim().toLowerCase() === name.trim().toLowerCase()));
+        const unexpected = actual.filter((name) => !expected.some((item) => item.trim().toLowerCase() === name.trim().toLowerCase()));
+        return !missing.length && !unexpected.length
+          ? { status: "pass", message: `Western Hognose exposes all ${expected.length} recognised het-capable genes in the parent selector.` }
+          : { status: "fail", message: `Hognose het catalogue mismatch. Missing: [${missing.join(", ")}]; unexpected: [${unexpected.join(", ")}].` };
+      },
+    },
     {
       checkId: "genetics-events-readable",
       name: "Persisted genetics calculation events are structurally valid",
