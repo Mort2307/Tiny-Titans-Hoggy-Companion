@@ -8,6 +8,7 @@ import TitanQuickActions from "../TitanQuickActions";
 import CreatorCommandBar from "../CreatorCommandBar";
 import CreatorStatusBar from "../CreatorStatusBar";
 import SupportNotificationCenter from "../SupportNotificationCenter";
+import CreatorPaidTierOperations from "../CreatorPaidTierOperations";
 import SpeciesContextBar from "../SpeciesContextBar";
 import SpeciesContextRouteSync from "../SpeciesContextRouteSync";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
@@ -84,6 +85,7 @@ function LayoutChrome() {
         <TinyTitansEvidenceNotice/>
       </div>
     </div></main>
+    <CreatorPaidTierOperations />
   </div>;
 }
 
