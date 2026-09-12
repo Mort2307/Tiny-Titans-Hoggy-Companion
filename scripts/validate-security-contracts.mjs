@@ -7,11 +7,15 @@ const accessService = readFileSync("src/services/intelligenceAccessService.ts", 
 const communityIntelligence = readFileSync("functions/communityIntelligence.js", "utf8");
 const trackerStats = readFileSync("src/services/trackerStatsService.ts", "utf8");
 const paidTierAccess = readFileSync("functions/paidTierAccess.js", "utf8");
+const paidTrialLifecycle = readFileSync("functions/paidTrialLifecycle.js", "utf8");
+const creatorPaidTier = readFileSync("functions/creatorPaidTier.js", "utf8");
 
 const familyAccessContract = /function (?:canAccessUserData|familyMemberOf)\([^)]*userId[^)]*\)/;
 const storageCreatorContract = /function ownerAccount\(\)\s*\{[^}]*request\.auth\.token\.email == 'tinytitans\.exotics@gmail\.com'[^}]*\}[\s\S]*function isCreator\(\)\s*\{[^}]*ownerAccount\(\)[^}]*request\.auth\.token\.admin == true[^}]*request\.auth\.token\.creator == true[^}]*\}/;
 const paidTesterServerCollectionContract = /db\.collection\("paidTesterOverrides"\)\.doc\(targetUid\)/;
 const paidTesterReaderContract = /db\.collection\("paidTesterOverrides"\)\.doc\(requestedUid\)\.get\(\)/;
+const paidTrialServerCollectionContract = /db\.collection\("paidTrials"\)\.doc\(targetUid\)/;
+const paidTrialReaderContract = /db\.collection\("paidTrials"\)\.doc\(requestedUid\)\.get\(\)/;
 const checks = [
   ["Firestore rules are version 2", /rules_version\s*=\s*'2'/, firestore],
   ["Firestore has deny-by-default fallback", /match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/, firestore],
@@ -34,7 +38,11 @@ const checks = [
   ["Storage creator access no longer trusts mutable profileType data", /isCreator\(\)\s*\{[\s\S]*request\.auth\.token\.creator == true/, storage],
   ["Paid tester overrides are stored outside mutable user profiles", paidTesterServerCollectionContract, paidTierAccess],
   ["Paid tier access reads tester overrides only from the server-managed collection", paidTesterReaderContract, paidTierAccess],
-  ["Paid tester access cannot be sourced from users.paidTesterOverride", /!data\.paidTesterOverride|paidTesterOverride.*users/, paidTierAccess],
+  ["Paid tester access cannot be sourced from users.paidTesterOverride", !/data\.paidTesterOverride/, paidTierAccess],
+  ["Paid trials are stored outside mutable user profiles", paidTrialServerCollectionContract, creatorPaidTier],
+  ["Paid tier access reads trials only from the server-managed collection", paidTrialReaderContract, paidTierAccess],
+  ["Paid trial lifecycle reads the server-managed trial collection", /db\.collection\("paidTrials"\)\.where\("enabled", "==", true\)/, paidTrialLifecycle],
+  ["Paid trial access cannot be sourced from users.paidTrial", !/data\.paidTrial/, paidTierAccess],
   ["Storage morph community writes require creator", /allow write: if isCreator\(\);/, storage],
   ["Intelligence is always personal-data safe at the gate", /coreTracking:\s*true/, permissionGate],
   ["Full intelligence requires explicit community consent", /personalIntelligence:\s*optedIn/, permissionGate],
