@@ -123,7 +123,7 @@ export default function WeightGrowthIntelligence({ snake, history }: Props) {
         const dataset = await getCommunityBenchmarkDataset({ species: snake.species, sex: snake.sex, morph: snake.morphs?.[0], ageBand });
         if (cancelled) return;
         setBenchmark(dataset);
-      } catch (error) {
+      } catch {
         if (!cancelled) setBenchmarkError("Tiny Titans could not retrieve the community comparison right now. Your personal analysis is unaffected.");
       } finally {
         if (!cancelled) setBenchmarkLoading(false);
