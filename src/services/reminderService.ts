@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { Reminder, ReminderInput, ReminderKind } from "../types/Reminder";
 import { getDetectedTimezone, getWorldTimeSnapshot } from "./worldTimeService";
@@ -228,7 +228,7 @@ export async function setReminderPaused(uid: string, reminder: Reminder, paused:
   await updateDoc(ref, { status: "active", nextNotificationAt: schedule.at, nextOccurrenceDate: schedule.occurrenceDate, nextPhase: schedule.phase, lockedUntil: null, updatedAt: serverTimestamp() });
 }
 
-export async function completeWaterChange(uid: string, reminder: Reminder, notes = ""): Promise<{ completedDate: string; nextDate: string }> {
+export async function completeWaterChange(uid: string, reminder: Reminder): Promise<{ completedDate: string; nextDate: string }> {
   if (!uid || reminder.kind !== "water-change") throw new Error("A valid water change reminder is required.");
   if (reminder.status !== "active") throw new Error("Resume this water change reminder before logging it.");
 
@@ -236,7 +236,6 @@ export async function completeWaterChange(uid: string, reminder: Reminder, notes
   const completedDate = localDateKey(new Date(), timezone);
   const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1)));
   const nextDate = addCalendarDays(completedDate, frequencyDays);
-  const safeNotes = notes.trim();
   const batch = writeBatch(db);
   const reminderRef = doc(db, "users", uid, "reminders", reminder.id);
   const logRef = doc(careLogsCollection(uid));
@@ -254,7 +253,6 @@ export async function completeWaterChange(uid: string, reminder: Reminder, notes
     snakeId: reminder.snakeId ?? null,
     snakeName: reminder.snakeName ?? null,
     reminderId: reminder.id,
-    notes: safeNotes || null,
     createdAt: serverTimestamp(),
   });
   await batch.commit();
@@ -265,7 +263,7 @@ export async function listWaterChangeLogs(uid: string, limit = 20) {
   if (!uid) return [];
   const snapshot = await getDocs(query(careLogsCollection(uid), orderBy("date", "desc")));
   return snapshot.docs
-    .map((item) => ({ id: item.id, ...(item.data() as { kind?: string; title?: string; date?: string; snakeId?: string | null; snakeName?: string | null; reminderId?: string; notes?: string | null; createdAt?: unknown }) }))
+    .map((item) => ({ id: item.id, ...(item.data() as { kind?: string; title?: string; date?: string; snakeId?: string | null; snakeName?: string | null; reminderId?: string; createdAt?: unknown }) }))
     .filter((item) => item.kind === "water-change")
     .slice(0, Math.max(1, Math.min(100, limit)));
 }
