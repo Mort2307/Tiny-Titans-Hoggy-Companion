@@ -9,10 +9,7 @@ const outputDir = path.resolve(process.env.TINY_TITANS_ROUTE_CRAWL_OUTPUT || "ar
 const maxPages = Number(process.env.TINY_TITANS_ROUTE_CRAWL_MAX_PAGES || 250);
 const clickTimeout = Number(process.env.TINY_TITANS_ROUTE_CRAWL_CLICK_TIMEOUT_MS || 5000);
 
-const ignoredPathPatterns = [
-  /\/login(?:\/|$)/i,
-  /\/logout(?:\/|$)/i,
-];
+const ignoredPathPatterns = [/\/login(?:\/|$)/i, /\/logout(?:\/|$)/i];
 const ignoredButtonText = /^(delete|remove|sign out|logout|submit|save|add |create |confirm|accept|deny|allow|send|publish|upload|buy|pay|checkout)/i;
 
 function normaliseUrl(url) {
@@ -23,47 +20,16 @@ function normaliseUrl(url) {
 function pageCategory(pathname) {
   const first = pathname.split("/").filter(Boolean)[0];
   const map = {
-    account: "Account",
-    snakes: "My Snakes",
-    reminders: "Reminders",
-    feeding: "Feeding",
-    shedding: "Shedding",
-    weights: "Weights",
-    health: "Health",
-    behaviour: "Behaviour",
-    husbandry: "Husbandry",
-    enclosure-intelligence: "Enclosure Intelligence",
-    breeding: "Breeding",
-    morph-library: "Morph Library",
-    calculator: "Genetics Calculator",
-    knowledge-base: "Knowledge Base",
-    keeper-handbook: "Keeper Handbook",
-    learn: "Learning",
-    adaptive-learning: "Adaptive Learning",
-    challenge: "Titans Challenge",
-    community: "Community",
-    feedback: "Feedback",
-    report-bug: "Bug Reporting",
-    report-issue: "Issue Reporting",
-    creator: "Creator Centre",
-    educator: "Educator",
-    paid: "Paid Features",
-    "titan-intelligence": "Titan Intelligence",
-    "reptile-room": "Reptile Room",
-    founder: "Founder",
-    "become-a-titan": "Become a Titan",
-    sandbox: "Sandbox",
-    "behaviour-observatory": "Behaviour Observatory",
-    "make-contribution": "Contributions",
-    "submit-species": "Species Submission",
-    conversations: "Conversations",
-    "wall-of-titans": "Wall of Titans",
+    account: "Account", snakes: "My Snakes", reminders: "Reminders", feeding: "Feeding", shedding: "Shedding", weights: "Weights",
+    health: "Health", behaviour: "Behaviour", husbandry: "Husbandry", "enclosure-intelligence": "Enclosure Intelligence",
+    breeding: "Breeding", "morph-library": "Morph Library", calculator: "Genetics Calculator", "knowledge-base": "Knowledge Base",
+    "keeper-handbook": "Keeper Handbook", learn: "Learning", "adaptive-learning": "Adaptive Learning", challenge: "Titans Challenge",
+    community: "Community", feedback: "Feedback", "report-bug": "Bug Reporting", "report-issue": "Issue Reporting", creator: "Creator Centre",
+    educator: "Educator", paid: "Paid Features", "titan-intelligence": "Titan Intelligence", "reptile-room": "Reptile Room", founder: "Founder",
+    "become-a-titan": "Become a Titan", sandbox: "Sandbox", "behaviour-observatory": "Behaviour Observatory", "make-contribution": "Contributions",
+    "submit-species": "Species Submission", conversations: "Conversations", "wall-of-titans": "Wall of Titans",
   };
   return map[first] || (pathname === "/" ? "Main Page" : first ? first.replaceAll("-", " ").replace(/\b\w/g, (m) => m.toUpperCase()) : "Main Page");
-}
-
-function cleanText(text) {
-  return (text || "").replace(/\s+/g, " ").trim().slice(0, 180);
 }
 
 async function signIn(page) {
@@ -76,8 +42,8 @@ async function signIn(page) {
   if (/\/login\/?$/.test(new URL(page.url()).pathname)) throw new Error("Route Crawl BOT could not authenticate.");
 }
 
-async function snapshotPage(page) {
-  return page.evaluate(() => {
+async function snapshotPage(page, markCandidates = false) {
+  return page.evaluate((mark) => {
     const visible = (el) => {
       const style = getComputedStyle(el);
       const rect = el.getBoundingClientRect();
@@ -89,58 +55,68 @@ async function snapshotPage(page) {
       const aria = el.getAttribute("aria-label") || "";
       const testId = el.getAttribute("data-testid") || "";
       const rect = el.getBoundingClientRect();
-      return {
-        text, href, aria, testId,
-        tag: el.tagName.toLowerCase(),
-        className: String(el.className || "").slice(0, 160),
-        x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height),
-      };
+      return { text, href, aria, testId, tag: el.tagName.toLowerCase(), className: String(el.className || "").slice(0, 160), x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) };
     };
     const heading = document.querySelector("main h1, [role='main'] h1, h1")?.textContent?.trim() || document.title || "Untitled page";
-    const selectors = [
-      "a[href]",
-      "button",
-      "[role='button']",
-      "[data-testid*='tile']",
-      "[class*='tile']",
-      "[class*='card']",
-    ];
+    const selectors = ["a[href]", "button:not([type='submit'])", "[role='button']", "[data-testid*='tile']", "[class*='tile']", "[class*='card']"];
     const seen = new Set();
     const items = [];
+    let candidateIndex = 0;
     for (const el of document.querySelectorAll(selectors.join(","))) {
       if (!visible(el)) continue;
       const info = identity(el);
       const key = `${info.tag}|${info.href}|${info.aria}|${info.testId}|${info.text}|${info.x}|${info.y}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      const isLink = info.tag === "a";
-      const isNavigation = isLink && info.href && !info.href.startsWith("#") && !info.href.startsWith("mailto:") && !info.href.startsWith("tel:") && !info.href.startsWith("javascript:");
       const classes = `${info.className} ${info.testId}`.toLowerCase();
+      const isLink = info.tag === "a";
+      const hrefIsNavigable = isLink && info.href && !info.href.startsWith("#") && !info.href.startsWith("mailto:") && !info.href.startsWith("tel:") && !info.href.startsWith("javascript:");
+      const buttonText = info.text || info.aria || info.testId || "";
+      const safeButton = (info.tag === "button" || el.getAttribute("role") === "button") && !el.disabled && !/submit|reset/i.test(el.getAttribute("type") || "") && !ignoredButtonText.test(buttonText);
       const looksLikeTile = /tile|card|panel|feature|shortcut|action/.test(classes) || (info.width >= 120 && info.height >= 60 && !!info.text);
-      const role = isNavigation ? "link" : "button";
-      items.push({ ...info, role, isNavigation, looksLikeTile });
+      const actionable = Boolean(hrefIsNavigable || safeButton);
+      if (mark && actionable) el.setAttribute("data-tt-route-crawl-id", String(candidateIndex));
+      items.push({ ...info, hrefIsNavigable: Boolean(hrefIsNavigable), safeButton, looksLikeTile, actionable, crawlId: actionable ? candidateIndex : null });
+      if (actionable) candidateIndex += 1;
     }
     const tileCandidates = items.filter((item) => item.looksLikeTile);
-    const navigationTargets = items.filter((item) => item.isNavigation && new URL(item.href, location.href).origin === location.origin);
-    return { heading, title: document.title, tiles: tileCandidates, navigationTargets, allInteractive: items };
-  });
+    return {
+      heading,
+      title: document.title,
+      pageSignature: `${heading}|${document.querySelector("main, [role='main']")?.textContent?.replace(/\s+/g, " ").trim().slice(0, 900) || document.body.innerText.slice(0, 900)}`,
+      tiles: tileCandidates,
+      navigationTargets: items.filter((item) => item.actionable && (!item.href || new URL(item.href, location.href).origin === location.origin)),
+      allInteractive: items,
+    };
+  }, markCandidates);
 }
 
 async function waitForStablePage(page) {
   await page.waitForLoadState("domcontentloaded").catch(() => undefined);
   await page.waitForLoadState("networkidle").catch(() => undefined);
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(300);
 }
 
-function classifyOutcome({ before, after, expectedHref, errors }) {
-  const beforeState = normaliseUrl(before);
-  const afterState = normaliseUrl(after);
-  const expected = expectedHref ? normaliseUrl(new URL(expectedHref, before).toString()) : null;
-  if (errors.length) return { status: "RUNTIME_ERROR", reason: `${errors.length} runtime/console error(s) captured.` };
-  if (expected && afterState !== expected && afterState === beforeState) return { status: "NO_OP", reason: "Click produced no route/state change." };
-  if (expected && afterState !== expected) return { status: "WRONG_DESTINATION", reason: `Expected ${expected}, reached ${afterState}.` };
-  if (!expected && afterState === beforeState) return { status: "NO_OP", reason: "Click produced no observable route change." };
-  return { status: "PASS", reason: `Destination reached: ${afterState}.` };
+async function clickCandidate(page, target) {
+  const locator = page.locator(`[data-tt-route-crawl-id="${target.crawlId}"]`).first();
+  if (!(await locator.count())) throw new Error("The targeted tile/control disappeared before it could be clicked.");
+  await locator.scrollIntoViewIfNeeded().catch(() => undefined);
+  await locator.click({ timeout: clickTimeout });
+}
+
+function classifyOutcome({ beforeUrl, afterUrl, beforeSignature, afterSignature, expectedHref, errors, returnedToEarlierState }) {
+  if (errors.length) return { status: "RUNTIME_ERROR", reason: `${errors.length} runtime/console/click error(s) captured.` };
+  const before = normaliseUrl(beforeUrl);
+  const after = normaliseUrl(afterUrl);
+  const expected = expectedHref ? normaliseUrl(new URL(expectedHref, beforeUrl).toString()) : null;
+  if (expected && after === expected && afterSignature === beforeSignature) return { status: "LOOP", reason: "The click returned to an equivalent page state instead of reaching a new destination." };
+  if (expected && after !== expected) {
+    if (returnedToEarlierState || after === before) return { status: "LOOP", reason: `Expected ${expected}, but navigation returned to an earlier state (${after}).` };
+    return { status: "WRONG_DESTINATION", reason: `Expected ${expected}, reached ${after}.` };
+  }
+  if (!expected && after === before && afterSignature === beforeSignature) return { status: "NO_OP", reason: "Click produced no observable route or page-state change." };
+  if (!expected && after === before) return { status: "PASS", reason: "Control produced a measurable in-page state change without changing the URL." };
+  return { status: "PASS", reason: `Destination/state reached: ${after}.` };
 }
 
 async function main() {
@@ -152,11 +128,10 @@ async function main() {
   const pages = [];
   const clickResults = [];
   const globalErrors = [];
+  const stateHistory = new Map();
 
   page.on("pageerror", (error) => globalErrors.push({ type: "pageerror", message: error.message, url: page.url() }));
-  page.on("console", (message) => {
-    if (message.type() === "error") globalErrors.push({ type: "console", message: message.text(), url: page.url() });
-  });
+  page.on("console", (message) => { if (message.type() === "error") globalErrors.push({ type: "console", message: message.text(), url: page.url() }); });
 
   try {
     await signIn(page);
@@ -167,84 +142,69 @@ async function main() {
       const pageErrorsBefore = globalErrors.length;
       await page.goto(new URL(route, baseURL).toString(), { waitUntil: "domcontentloaded" });
       await waitForStablePage(page);
-      const snapshot = await snapshotPage(page);
+      const snapshot = await snapshotPage(page, true);
       const routeErrors = globalErrors.slice(pageErrorsBefore);
+      const currentUrl = normaliseUrl(page.url());
       const category = pageCategory(new URL(page.url()).pathname);
+      const signature = `${currentUrl}|${snapshot.pageSignature}`;
+      stateHistory.set(signature, (stateHistory.get(signature) || 0) + 1);
 
-      const reportPage = {
-        route: normaliseUrl(page.url()),
-        category,
-        heading: snapshot.heading,
-        title: snapshot.title,
+      pages.push({
+        route: currentUrl, category, heading: snapshot.heading, title: snapshot.title,
         tileCount: snapshot.tiles.length,
         navigationCount: snapshot.navigationTargets.length,
         runtimeErrors: routeErrors,
-        tiles: snapshot.tiles.map((tile) => ({
-          label: tile.text || tile.aria || tile.testId || "Unlabelled control",
-          type: tile.role,
-          href: tile.href || null,
-          testId: tile.testId || null,
-          className: tile.className,
-        })),
-      };
-      pages.push(reportPage);
+        tiles: snapshot.tiles.map((tile) => ({ label: tile.text || tile.aria || tile.testId || "Unlabelled control", type: tile.href ? "link" : "button", href: tile.href || null, testId: tile.testId || null, className: tile.className })),
+      });
 
       for (const target of snapshot.navigationTargets) {
-        const hrefUrl = new URL(target.href, page.url());
-        if (ignoredPathPatterns.some((pattern) => pattern.test(hrefUrl.pathname))) continue;
+        const hrefUrl = target.href ? new URL(target.href, page.url()) : null;
+        if (hrefUrl && ignoredPathPatterns.some((pattern) => pattern.test(hrefUrl.pathname))) continue;
         const before = page.url();
-        const beforeSignature = `${normaliseUrl(before)}|${snapshot.heading}`;
+        const beforeSnapshot = await snapshotPage(page, false);
+        const beforeSignature = `${normaliseUrl(before)}|${beforeSnapshot.pageSignature}`;
         const beforeErrors = globalErrors.length;
         let clickError = null;
         try {
-          const locator = page.locator(`a[href=${JSON.stringify(target.href)}]`).first();
-          if (await locator.count()) {
-            await locator.click({ timeout: clickTimeout });
-          } else {
-            continue;
-          }
+          await clickCandidate(page, target);
           await waitForStablePage(page);
         } catch (error) {
           clickError = error instanceof Error ? error.message : String(error);
         }
         const after = page.url();
-        const destinationSnapshot = await snapshotPage(page).catch(() => ({ heading: "", title: "", navigationTargets: [], tiles: [], allInteractive: [] }));
+        const destinationSnapshot = await snapshotPage(page, false).catch(() => ({ heading: "", title: "", pageSignature: "", navigationTargets: [], tiles: [], allInteractive: [] }));
+        const afterSignature = `${normaliseUrl(after)}|${destinationSnapshot.pageSignature}`;
         const errors = [...globalErrors.slice(beforeErrors), ...(clickError ? [{ type: "click", message: clickError }] : [])];
-        const outcome = classifyOutcome({ before, after, expectedHref: hrefUrl.toString(), errors });
-        const afterSignature = `${normaliseUrl(after)}|${destinationSnapshot.heading}`;
-        const loopsBackToCurrent = outcome.status === "PASS" && afterSignature === beforeSignature;
-        if (loopsBackToCurrent) outcome.status = "LOOP";
+        const returnedToEarlierState = Boolean(stateHistory.get(afterSignature));
+        const outcome = classifyOutcome({ beforeUrl: before, afterUrl: after, beforeSignature, afterSignature, expectedHref: hrefUrl?.toString() || null, errors, returnedToEarlierState });
         const destinationPath = normaliseUrl(after);
-        if (outcome.status === "PASS" && !visited.has(destinationPath)) queued.push(destinationPath);
-        if (outcome.status === "PASS" || outcome.status === "LOOP") {
-          // Verify a second hop cannot immediately return to the originating state.
-          const destinationNav = destinationSnapshot.navigationTargets.find((item) => item.href && normaliseUrl(new URL(item.href, after).toString()) === normaliseUrl(before));
-          if (destinationNav && afterSignature === beforeSignature) outcome.status = "LOOP";
-        }
+        const isDiscoverable = outcome.status === "PASS" && destinationPath !== normaliseUrl(before) && !visited.has(destinationPath);
+        if (isDiscoverable) queued.push(destinationPath);
+        if (outcome.status === "PASS") stateHistory.set(afterSignature, (stateHistory.get(afterSignature) || 0) + 1);
+
         clickResults.push({
-          source: before,
-          sourceCategory: category,
-          label: target.text || target.aria || target.testId || target.href,
-          href: hrefUrl.pathname + hrefUrl.search,
-          status: outcome.status,
-          reason: outcome.reason,
-          destination: destinationPath,
-          destinationHeading: destinationSnapshot.heading,
-          runtimeErrors: errors,
-          tileLike: target.looksLikeTile,
+          source: before, sourceCategory: category, sourceHeading: beforeSnapshot.heading,
+          label: target.text || target.aria || target.testId || target.href || "Unlabelled control",
+          elementType: target.href ? "link" : "button", href: hrefUrl ? hrefUrl.pathname + hrefUrl.search : null,
+          status: outcome.status, reason: outcome.reason, destination: destinationPath,
+          destinationHeading: destinationSnapshot.heading, runtimeErrors: errors, tileLike: target.looksLikeTile,
         });
+
         await page.goto(before, { waitUntil: "domcontentloaded" });
         await waitForStablePage(page);
+        await snapshotPage(page, true);
       }
     }
 
-    const categorySummary = [...new Set(pages.map((item) => item.category))].map((category) => {
+    const categoryNames = [...new Set(pages.map((item) => item.category))];
+    const categorySummary = categoryNames.map((category) => {
       const categoryPages = pages.filter((item) => item.category === category);
       const categoryClicks = clickResults.filter((item) => item.sourceCategory === category);
       return {
         category,
         pageCount: categoryPages.length,
         totalTiles: categoryPages.reduce((sum, item) => sum + item.tileCount, 0),
+        averageTilesPerPage: categoryPages.length ? Number((categoryPages.reduce((sum, item) => sum + item.tileCount, 0) / categoryPages.length).toFixed(1)) : 0,
         totalNavigationTargets: categoryPages.reduce((sum, item) => sum + item.navigationCount, 0),
         passed: categoryClicks.filter((item) => item.status === "PASS").length,
         noOp: categoryClicks.filter((item) => item.status === "NO_OP").length,
@@ -273,31 +233,30 @@ async function main() {
       pages,
       clickResults,
       globalRuntimeErrors: globalErrors,
+      methodology: [
+        "Links and safe React/button controls are exercised, not merely inspected.",
+        "A PASS requires a new expected route or a measurable in-page state change.",
+        "NO_OP means the control produced no observable change.",
+        "LOOP means the control returns to an already-seen equivalent state or unexpected earlier state.",
+        "WRONG_DESTINATION means navigation occurred but did not reach the declared href.",
+        "Runtime and console errors always override an otherwise successful navigation.",
+        "Destructive controls such as Save/Delete/Submit/Pay are excluded from automatic mutation testing and are reported as intentionally skipped by safety policy.",
+      ],
       verdict: clickResults.some((item) => ["WRONG_DESTINATION", "LOOP", "RUNTIME_ERROR"].includes(item.status)) ? "FAILED" : clickResults.some((item) => item.status === "NO_OP") ? "INCOMPLETE" : "PASSED",
     };
 
     await fs.writeFile(path.join(outputDir, "route-crawl-report.json"), JSON.stringify(report, null, 2), "utf8");
     const lines = [
-      "TINY TITANS · ROUTE CRAWL BOT REPORT",
-      "======================================",
-      `Generated: ${report.generatedAt}`,
-      `Pages visited: ${report.pagesVisited}`,
-      `Tiles detected: ${report.tileCount}`,
-      `Navigation targets tested: ${report.navigationTargetsTested}`,
-      `PASS: ${report.outcomes.pass}`,
-      `NO-OP: ${report.outcomes.noOp}`,
-      `LOOP: ${report.outcomes.loops}`,
-      `WRONG DESTINATION: ${report.outcomes.wrongDestination}`,
-      `RUNTIME ERROR: ${report.outcomes.runtimeErrors}`,
-      `VERDICT: ${report.verdict}`,
-      "",
-      "PAGE INVENTORY",
-      "==============",
-      ...pages.map((item) => `${item.category} > ${item.heading} > ${item.tileCount} tiles > ${item.navigationCount} navigation targets`),
-      "",
-      "FAILURES / INCOMPLETE",
-      "====================",
-      ...clickResults.filter((item) => item.status !== "PASS").map((item) => `[${item.status}] ${item.source} > ${item.label} > ${item.href} :: ${item.reason}`),
+      "TINY TITANS · ROUTE CRAWL BOT REPORT", "======================================",
+      `Generated: ${report.generatedAt}`, `Pages visited: ${report.pagesVisited}`, `Tiles detected: ${report.tileCount}`,
+      `Navigation / action targets tested: ${report.navigationTargetsTested}`, `PASS: ${report.outcomes.pass}`, `NO-OP: ${report.outcomes.noOp}`,
+      `LOOP: ${report.outcomes.loops}`, `WRONG DESTINATION: ${report.outcomes.wrongDestination}`, `RUNTIME ERROR: ${report.outcomes.runtimeErrors}`, `VERDICT: ${report.verdict}`,
+      "", "PAGE INVENTORY", "==============",
+      ...pages.map((item) => `${item.category} > ${item.heading} > ${item.tileCount} tiles > ${item.navigationCount} actions`),
+      "", "CATEGORY SUMMARY", "================",
+      ...categorySummary.map((item) => `${item.category} > ${item.pageCount} pages > ${item.totalTiles} tiles > avg ${item.averageTilesPerPage}/page > ${item.passed} pass / ${item.loops} loops / ${item.noOp} no-op / ${item.wrongDestination} wrong / ${item.runtimeErrors} runtime`),
+      "", "FAILURES / INCOMPLETE", "====================",
+      ...clickResults.filter((item) => item.status !== "PASS").map((item) => `[${item.status}] ${item.source} > ${item.label} > ${item.href || "button-state"} :: ${item.reason}`),
     ];
     await fs.writeFile(path.join(outputDir, "route-crawl-report.txt"), `${lines.join("\n")}\n`, "utf8");
     console.log(lines.join("\n"));
