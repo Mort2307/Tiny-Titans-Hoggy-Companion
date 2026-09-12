@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidTierId } from "../config/paidTiers";
 import { useAuth } from "../context/useAuth";
-import { getPaidAccess, startPaidSubscriptionCheckout, type PaidAccess } from "../services/paidSubscriptionService";
+import { getPaidAccess, getPaidTierPricing, startPaidSubscriptionCheckout, type LivePaidTierPrice, type PaidAccess } from "../services/paidSubscriptionService";
 import PageBackButton from "../components/PageBackButton";
 import "../styles/PaidPlans.css";
 import { PAID_PROMOTIONS } from "../config/paidPromotions";
@@ -29,6 +29,8 @@ export default function PaidPlans() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [nowMillis, setNowMillis] = useState<number | null>(null);
+  const [livePrices, setLivePrices] = useState<Record<PaidTierId, LivePaidTierPrice> | null>(null);
+  const [pricingError, setPricingError] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -52,6 +54,17 @@ export default function PaidPlans() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+    let active = true;
+    void getPaidTierPricing().then((prices) => {
+      if (active) { setLivePrices(prices); setPricingError(""); }
+    }).catch((err) => {
+      if (active) setPricingError(err instanceof Error ? err.message : "Live Stripe pricing could not be loaded.");
+    });
+    return () => { active = false; };
+  }, [user]);
+
+  useEffect(() => {
     if (!access?.trial?.expiresAt) {
       setNowMillis(null);
       return;
@@ -60,12 +73,25 @@ export default function PaidPlans() {
   }, [access?.trial?.expiresAt]);
 
   const selected = useMemo(() => getPaidTierDefinition(selectedTier), [selectedTier]);
+  const selectedLivePrice = selectedTier === "free" ? null : livePrices?.[selectedTier];
+  const selectedStripeReady = selectedTier === "free" || selectedLivePrice?.configured === true;
+  function formatLivePrice(tierId: PaidTierId): string {
+    if (tierId === "free") return "Free";
+    const live = livePrices?.[tierId];
+    if (!live?.configured || live.unitAmount == null || !live.currency) return getPaidTierDefinition(tierId).priceLabel;
+    const amount = live.unitAmount / 100;
+    const currency = live.currency.toUpperCase();
+    const formatted = new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
+    const suffix = live.intervalCount === 1 ? ` / ${live.interval || "month"}` : ` / ${live.intervalCount ?? 1} ${live.interval || "month"}`;
+    return `${formatted}${suffix}`;
+  }
 
   async function subscribe() {
     if (!user || selectedTier === "free") return;
     setBusy(true);
     setError("");
     try {
+      if (selectedTier !== "free" && !selectedStripeReady) throw new Error("This tier is not connected to an active Stripe recurring price yet.");
       const result = await startPaidSubscriptionCheckout(selectedTier);
       if (!result.url) throw new Error("Stripe did not return a checkout URL.");
       window.location.assign(result.url);
@@ -159,8 +185,7 @@ export default function PaidPlans() {
               <span className="paid-kicker">{tier.eyebrow}</span>
               <h2><span className="tier-crest" aria-hidden="true">{tier.crest}</span> {tier.name}</h2>
               <strong className="paid-price">
-                {tier.priceGbpMonthly === 0 ? "Free" : `£${tier.priceGbpMonthly.toFixed(2)}`}
-                <small>{tier.priceGbpMonthly === 0 ? "" : " / month"}</small>
+                {formatLivePrice(tierId)}
               </strong>
               <p>{tier.description}</p>
               <small className="paid-audience">{tier.audience}</small>
@@ -181,7 +206,8 @@ export default function PaidPlans() {
         </div>
 
         <aside>
-          <strong>{selected.priceLabel}</strong>
+          <strong>{formatLivePrice(selectedTier)}</strong>
+          {pricingError && <p className="paid-note">Live Stripe pricing could not be verified: {pricingError}</p>}
           {selectedTier === "free" ? (
             <>
               <p>No subscription required. Your existing core app continues to work.</p>
@@ -194,10 +220,11 @@ export default function PaidPlans() {
                 type="button"
                 className="paid-primary"
                 onClick={() => void subscribe()}
-                disabled={busy || access?.source === "subscription"}
+                disabled={busy || access?.source === "subscription" || !selectedStripeReady}
               >
                 {busy ? "Opening secure checkout…" : access?.source === "subscription" ? "Manage existing subscription" : `Start ${selected.name}`}
               </button>
+              {!selectedStripeReady && <p className="paid-note">Stripe recurring pricing is not configured for this tier yet. Checkout is disabled until the live Stripe price exists.</p>}
               {access?.source === "subscription" && (
                 <button type="button" onClick={() => window.location.assign("/account/billing")}>Manage existing subscription</button>
               )}
