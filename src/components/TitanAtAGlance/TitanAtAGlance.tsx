@@ -97,7 +97,7 @@ function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): Slic
         label: "Last feed attempt",
         value: attempt?.date ? formatDaysSinceFeeding(attempt.date) : "Not recorded",
         secondary: attempt ? "Latest recorded feeding attempt" : "Log a feeding attempt",
-        feedSecondary: successful?.date ? `Last successful feed · ${formatDaysSinceFeeding(successful.date)}` : "Last successful feed · Not recorded",
+        feedSecondary: successful?.date ? `Successful: ${formatDaysSinceFeeding(successful.date)}` : "Successful: Not recorded",
         route: routeFor(slice, id),
       };
     }
