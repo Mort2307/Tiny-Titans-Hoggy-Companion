@@ -8,6 +8,7 @@ const communityIntelligence = readFileSync("functions/communityIntelligence.js",
 const trackerStats = readFileSync("src/services/trackerStatsService.ts", "utf8");
 
 const familyAccessContract = /function (?:canAccessUserData|familyMemberOf)\([^)]*userId[^)]*\)/;
+const storageCreatorContract = /function ownerAccount\(\)\s*\{[^}]*request\.auth\.token\.email == 'tinytitans\.exotics@gmail\.com'[^}]*\}[\s\S]*function isCreator\(\)\s*\{[^}]*ownerAccount\(\)[^}]*request\.auth\.token\.admin == true[^}]*request\.auth\.token\.creator == true[^}]*\}/;
 const checks = [
   ["Firestore rules are version 2", /rules_version\s*=\s*'2'/, firestore],
   ["Firestore has deny-by-default fallback", /match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/, firestore],
@@ -26,6 +27,8 @@ const checks = [
   ["Sandbox experiments are isolated from user records", /match \/sandboxExperiments\/\{experimentId\}/, firestore],
   ["Sandbox experiments are owner-bound", /request\.resource\.data\.ownerUid == request\.auth\.uid/, firestore],
   ["Storage user snake files are owner-bound", /request\.auth\.uid\s*==\s*userId/, storage],
+  ["Storage creator access requires the same owner-issued claim model as Firestore", storageCreatorContract, storage],
+  ["Storage creator access no longer trusts mutable profileType data", /isCreator\(\)\s*\{[\s\S]*request\.auth\.token\.creator == true/, storage],
   ["Storage morph community writes require creator", /allow write: if isCreator\(\);/, storage],
   ["Intelligence is always personal-data safe at the gate", /coreTracking:\s*true/, permissionGate],
   ["Full intelligence requires explicit community consent", /personalIntelligence:\s*optedIn/, permissionGate],
