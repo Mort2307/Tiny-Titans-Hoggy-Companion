@@ -16,6 +16,7 @@ const tools = [
   ["🛡️", "Creator Privacy Data", "/creator/privacy-data", "Review consent-controlled creator data and privacy tools."],
   ["📊", "Creator Benchmarks", "/creator/benchmarks", "Inspect app performance and intelligence benchmarks."],
   ["🤖", "Tester Centre", "/creator/tester", "Run focused QA, diagnostics and regression checks."],
+  ["💳", "Paid Tier Control", "/creator/tester/paid-tiers", "See effective user tiers, grant controlled trials and test paid features without creating Stripe charges."],
   ["💬", "Creator Conversations", "/creator/conversations", "Handle creator-facing conversations and follow-ups."],
 ];
 
