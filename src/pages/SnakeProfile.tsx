@@ -117,6 +117,7 @@ function SnakeProfile() {
   const morphText = snake.morphs?.length ? snake.morphs.join(", ") : "No morphs listed";
   const hetText = snake.hets?.length ? snake.hets.join(", ") : "No hets recorded";
   const reminderWeightRoute = `/reminders/weight?snakeId=${encodeURIComponent(snake.id)}`;
+  const waterChangeRoute = `/reminders/water-change?snakeId=${encodeURIComponent(snake.id)}`;
 
   return (
     <div className="page-container snake-profile-page">
@@ -147,6 +148,7 @@ function SnakeProfile() {
         <button type="button" onClick={() => navigate(`/shedding/${snake.id}`)}>🐍<span className="snake-profile-quick-label">Shed</span></button>
         <button type="button" onClick={() => navigate(`/behaviour/${snake.id}`)}>👀<span className="snake-profile-quick-label">Behaviour</span></button>
         <button type="button" onClick={() => navigate(`/health/${snake.id}`)}>🩺<span className="snake-profile-quick-label">Health & Vet</span></button>
+        <button type="button" onClick={() => navigate(waterChangeRoute)}>💧<span className="snake-profile-quick-label">Water</span></button>
         <button type="button" onClick={() => navigate(`/snakes/${snake.id}/timeline`)}>📅<span className="snake-profile-quick-label">Timeline</span></button>
         <button type="button" onClick={openSnakeEditor}>✏️<span className="snake-profile-quick-label">Edit</span></button>
         <button type="button" onClick={() => navigate(reminderWeightRoute)}>⏰<span className="snake-profile-quick-label">Reminders</span></button>
@@ -157,6 +159,7 @@ function SnakeProfile() {
         <button type="button" className="snake-profile-card" onClick={openSnakeEditor}><div className="snake-profile-card-icon">🧬</div><h2>Genetics</h2><p><strong>{morphText}</strong></p><p>{snake.hets?.length ?? 0} het{snake.hets?.length !== 1 ? "s" : ""}</p>{snake.customMorph && <p>{snake.customMorph}</p>}</button>
         <button type="button" className="snake-profile-card" onClick={() => navigate(`/weights/${snake.id}`)}><div className="snake-profile-card-icon">⚖️</div><h2>Weight</h2><p className="snake-profile-big-value">{snake.weight != null ? formatWeight(snake.weight) : "—"}</p><p>{snake.lastWeighedDate ? `Last weighed ${snake.lastWeighedDate}` : "No weight recorded"}</p><div className="snake-profile-mini-chart"><WeightMiniChart history={weightHistory} /></div></button>
         <button type="button" className="snake-profile-card" onClick={() => navigate(reminderWeightRoute)}><div className="snake-profile-card-icon">⏰</div><h2>Weight Reminders</h2><p>{snake.weightTracking?.enabled ? "Legacy cadence available" : "Not configured yet"}</p>{snake.weightTracking?.enabled && <p>{snake.weightTracking.frequency}</p>}{reminder.status !== "disabled" && <p>{reminder.status === "overdue" ? "🔴 Weight overdue" : reminder.status === "due" ? "🟡 Due today" : `🟢 Due in ${reminder.daysRemaining} days`}</p>}<p className="tt-intelligence-action">Open Weight Reminders →</p></button>
+        <button type="button" className="snake-profile-card" onClick={() => navigate(waterChangeRoute)}><div className="snake-profile-card-icon">💧</div><h2>Water Care</h2><p>Track this Titan's recurring water-change routine.</p><p>Keep the schedule alongside the rest of {snake.name}'s care records.</p><p className="tt-intelligence-action">Open Water Care →</p></button>
         <button type="button" className="snake-profile-card" onClick={() => navigate(`/snakes/${snake.id}/timeline`)}><div className="snake-profile-card-icon">📅</div><h2>Timeline</h2>{snake.hatchDate ? <><p>🥚 {snake.hatchDate}</p><p>🎂 {calculateAge(snake.hatchDate)}</p></> : <p>No hatch date recorded</p>}<p className="tt-intelligence-action">Open full timeline →</p></button>
         <button type="button" className="snake-profile-card" onClick={() => navigate(`/health/${snake.id}`)}><div className="snake-profile-card-icon">📚</div><h2>Records</h2><p>🍽️ Feeding: <strong>{snake.feedingHistory?.length ?? 0}</strong></p><p>🐍 Sheds: <strong>{snake.shedHistory?.length ?? 0}</strong></p><p>🩺 Health & vet records</p><p className="tt-intelligence-action">Open health record →</p></button>
         <button type="button" className="snake-profile-card snake-profile-card-notes" onClick={openSnakeEditor}><div className="snake-profile-card-icon">📝</div><h2>Notes</h2><p>{snake.notes || "No notes added"}</p></button>
