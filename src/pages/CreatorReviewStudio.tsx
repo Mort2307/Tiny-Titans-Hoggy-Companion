@@ -130,10 +130,12 @@ export default function CreatorReviewStudio() {
         return a.name.localeCompare(b.name, "en", { sensitivity: "base", numeric: true });
       });
   }, [speciesIdForMorphs, morphSearch]);
+  const draftMorphId = draft?.morphId;
+  const draftMorphName = draft?.morphName;
   const currentCanonical = useMemo(() => {
-    if (!draft?.morphId && !draft?.morphName) return null;
-    return resolveMasterMorph(draft.morphId || draft.morphName) ?? masterMorphs.find((morph) => morph.geneId === draft.morphId) ?? null;
-  }, [draft?.morphId, draft?.morphName]);
+    if (!draftMorphId && !draftMorphName) return null;
+    return resolveMasterMorph(draftMorphId || draftMorphName) ?? masterMorphs.find((morph) => morph.geneId === draftMorphId) ?? null;
+  }, [draftMorphId, draftMorphName]);
 
   const load = useCallback(async () => {
     if (!user) return;
