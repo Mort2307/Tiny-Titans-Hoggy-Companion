@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
+const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:5173";
 const email = process.env.TINY_TITANS_BOT_EMAIL;
 const password = process.env.TINY_TITANS_BOT_PASSWORD;
 const APP_READY_TIMEOUT = 20000;
