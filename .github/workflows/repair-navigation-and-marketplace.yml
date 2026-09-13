@@ -16,49 +16,32 @@ jobs:
         with:
           ref: master
           fetch-depth: 1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Restore navigation contracts and Marketplace entry points
+      - name: Patch route contracts
+        shell: bash
         run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-
-          function replaceOnce(path, find, replacement) {
-            const source = fs.readFileSync(path, 'utf8');
-            if (!source.includes(find)) throw new Error(`Expected text not found in ${path}: ${find.slice(0, 140)}`);
-            fs.writeFileSync(path, source.replace(find, replacement));
-          }
-
-          replaceOnce(
-            'src/routes/AppRouter.tsx',
-            'import TitanIntelligence from "../pages/TitanIntelligence";import TitanFeatureExperience from "../pages/TitanFeatureExperience";import PaidPlans from "../pages/PaidPlans";import AccountBilling from "../pages/AccountBilling";import PaidFeatureWorkspace from "../pages/PaidFeatureWorkspace";import PaidMarketplaceFeature from "../pages/PaidMarketplaceFeature";import PaidSupportFeature from "../pages/PaidSupportFeature";import PaidTimelineFeature from "../pages/PaidTimelineFeature";',
-            'import TitanIntelligence from "../pages/TitanIntelligence";import TitanFeatureExperience from "../pages/TitanFeatureExperience";import PaidPlans from "../pages/PaidPlans";import AccountBilling from "../pages/AccountBilling";import PaidFeatureWorkspace from "../pages/PaidFeatureWorkspace";import PaidMarketplaceFeature from "../pages/PaidMarketplaceFeature";import PaidSupportFeature from "../pages/PaidSupportFeature";import PaidTimelineFeature from "../pages/PaidTimelineFeature";import Marketplace from "../pages/Marketplace";'
-          );
-
-          replaceOnce(
-            'src/routes/AppRouter.tsx',
-            '<Route path="/plans" element={<PaidPlans/>}/><Route path="/paid/marketplace" element={<PaidMarketplaceFeature/>}/>',
-            '<Route path="/plans" element={<PaidPlans/>}/><Route path="/marketplace" element={<Marketplace/>}/><Route path="/paid/marketplace" element={<PaidMarketplaceFeature/>}/>'
-          );
-
-          replaceOnce(
-            'src/components/Layout/Navigation.tsx',
-            '{ label: "Account", links: [["/account", "●", "My Account"], ["/plans", "◇", "Plans & Features"], ["/account/billing", "▣", "Billing & Subscription"], ["/account/family", "👨‍👩‍👧", "My Family"], ["/become-a-titan", "✦", "Become a Titan"]] },',
-            '{ label: "Account", links: [["/account", "●", "My Account"], ["/plans", "◇", "Plans & Features"], ["/marketplace", "🛒", "Marketplace"], ["/account/billing", "▣", "Billing & Subscription"], ["/account/family", "👨‍👩‍👧", "My Family"], ["/become-a-titan", "✦", "Become a Titan"]] },'
-          );
-
-          replaceOnce(
-            'src/data/quickNavigation.ts',
-            '{ id: "community", label: "Community Hub", icon: "🌍", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },',
-            '{ id: "community", label: "Community Hub", icon: "🌍", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },\n  { id: "marketplace", label: "Marketplace", icon: "🛒", path: "/marketplace", group: "Community", description: "Browse active reptile marketplace listings.", keywords: ["market", "seller", "listing", "shop"] },'
-          );
-          NODE
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/routes/AppRouter.tsx src/components/Layout/Navigation.tsx src/data/quickNavigation.ts
-          git commit -m "fix: restore marketplace and navigation routes"
-          git push origin master
+          python3 - <<'PY'
+          from pathlib import Path
+          def patch(path, old, new):
+              p = Path(path); s = p.read_text()
+              if new in s: return
+              if old not in s: raise SystemExit(f'Could not find expected text in {path}: {old}')
+              p.write_text(s.replace(old, new, 1))
+          app='src/routes/AppRouter.tsx'; quick='src/data/quickNavigation.ts'
+          patch(app,
+                'import TitanIntelligence from "../pages/TitanIntelligence";import TitanFeatureExperience from "../pages/TitanFeatureExperience";import PaidPlans from "../pages/PaidPlans";import AccountBilling from "../pages/AccountBilling";import PaidFeatureWorkspace from "../pages/PaidFeatureWorkspace";import PaidMarketplaceFeature from "../pages/PaidMarketplaceFeature";import PaidSupportFeature from "../pages/PaidSupportFeature";import PaidTimelineFeature from "../pages/PaidTimelineFeature";',
+                'import TitanIntelligence from "../pages/TitanIntelligence";import TitanFeatureExperience from "../pages/TitanFeatureExperience";import PaidPlans from "../pages/PaidPlans";import AccountBilling from "../pages/AccountBilling";import PaidFeatureWorkspace from "../pages/PaidFeatureWorkspace";import PaidMarketplaceFeature from "../pages/PaidMarketplaceFeature";import PaidSupportFeature from "../pages/PaidSupportFeature";import PaidTimelineFeature from "../pages/PaidTimelineFeature";import Marketplace from "../pages/Marketplace";')
+          patch(app,
+                '<Route path="/plans" element={<PaidPlans/>}/><Route path="/paid/marketplace" element={<PaidMarketplaceFeature/>}/>',
+                '<Route path="/plans" element={<PaidPlans/>}/><Route path="/marketplace" element={<Marketplace/>}/><Route path="/paid/marketplace" element={<PaidMarketplaceFeature/>}/>')
+          patch(quick,
+                '{ id: "community", label: "Community Hub", icon: "🌍", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },',
+                '{ id: "community", label: "Community Hub", icon: "🌍", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },\n  { id: "marketplace", label: "Marketplace", icon: "🛒", path: "/marketplace", group: "Community", description: "Browse active reptile marketplace listings.", keywords: ["market", "seller", "listing", "shop"] },')
+          PY
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/AppRouter.tsx src/data/quickNavigation.ts
+          git commit -m "fix: restore public marketplace route" || true
+          git push origin master || true
+          rm -f .github/workflows/repair-navigation-and-marketplace.yml scripts/recovery-repair-trigger.txt scripts/recovery-repair-trigger-2.txt
+          git add -A
+          git commit -m "chore: remove temporary recovery repair files" || true
+          git push origin master || true
