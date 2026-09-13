@@ -8,7 +8,7 @@ export type TesterCategory =
   | "auth" | "account" | "firebase" | "snakes" | "weights" | "feeding" | "sheds"
   | "genetics" | "morphs" | "community" | "mobile" | "creator" | "feedback"
   | "notifications" | "application" | "learning" | "trackers" | "breeding"
-  | "permissions" | "visual" | "paid-tiers";
+  | "permissions" | "visual" | "paid-tiers" | "stripe";
 
 export type TesterCheck = {
   checkId: string;
