@@ -13,8 +13,10 @@ import { createVisualUxChecks } from "./visualUxBotService";
 import { createOverlordIntelligenceChecks } from "./botIntelligenceService";
 import { createAllPageTargetChecks, createUpdateSmokeChecks, UPDATE_TARGETS } from "./testerUpdateSuitesService";
 import { createBrowserJourneyCheck } from "./inAppBrowserJourneyService";
+import { approveMorphImageSubmission } from "./creatorService";
+import type { MorphImageSubmission } from "../types/morphSubmission";
 
-export type TesterBotId = "creator" | "user" | "app" | "security" | "overlord" | "visual" | "update";
+export type TesterBotId = "creator" | "user" | "app" | "security" | "overlord" | "visual" | "update" | "action-chain";
 export type BotSuiteDefinition = { id: string; label: string; description: string; category: string; safety: "read-only" | "sandbox"; build: (uid: string) => Promise<TesterCheck[]> | TesterCheck[] };
 export type BotDefinition = { id: TesterBotId; label: string; icon: string; description: string; purpose: string; suites: BotSuiteDefinition[] };
 
@@ -78,6 +80,52 @@ const updateSuites: BotSuiteDefinition[] = [
   ...UPDATE_TARGETS.map((target) => ({ id: `page:${target.id}`, label: target.label, description: `Targeted QA for ${target.path}, including real safe browser interaction evidence.`, category: "Page Target", safety: "sandbox" as const, build: async () => [createAllPageTargetChecks().find((check) => check.checkId === `update-page-${target.id}`)!, createBrowserJourneyCheck(target.path, target.label)] })),
 ];
 
+const actionChainTargets = UPDATE_TARGETS.filter((target) => !target.path.includes(":") && !target.path.includes("*"));
+
+const actionChainSuites: BotSuiteDefinition[] = [
+  {
+    id: "full-action-chain",
+    label: `Full Action Chain (${actionChainTargets.length} routes)`,
+    description: "Exercises the static application surface through the same in-app browser interaction model used to detect no-ops, loops, wrong destinations and runtime failures.",
+    category: "Action Chains",
+    safety: "sandbox",
+    build: async () => actionChainTargets.map((target) => createBrowserJourneyCheck(target.path, target.label)),
+  },
+  {
+    id: "morph-approval",
+    label: "Morph Approval Guard",
+    description: "Checks the approval service rejects already-reviewed records before any server write, protecting the Creator Approve chain from invalid transitions.",
+    category: "Morph Review",
+    safety: "read-only",
+    build: async () => [{
+      checkId: "action-chain-morph-approval-guard",
+      name: "Morph approval handler guard",
+      category: "creator",
+      severity: "critical",
+      run: async () => {
+        const fixture = {
+          id: "action-chain-guard-fixture",
+          status: "Approved",
+          morphName: "Action Chain Guard Fixture",
+          morphId: "fixture-morph",
+          speciesId: "western-hognose",
+          speciesName: "Western Hognose",
+          attachment: { path: "action-chain/fixture.jpg", type: "image", sizeBytes: 1 },
+        } as MorphImageSubmission;
+        try {
+          await approveMorphImageSubmission(fixture, "action-chain-bot");
+          return { status: "fail", message: "Approve unexpectedly continued past the already-reviewed state guard." };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          return message === "This submission is no longer awaiting approval."
+            ? { status: "pass", message: "Approve Morph is correctly guarded against an invalid post-review transition before the server call." }
+            : { status: "fail", message: `Unexpected approval guard error: ${message}` };
+        }
+      },
+    }],
+  },
+];
+
 export const BOT_DEFINITIONS: BotDefinition[] = [
   { id: "overlord", label: "Overlord BOT", icon: "🤖", description: "Full functional, integration and application intelligence QA.", purpose: "Runs the broadest safe functional coverage and synthesises evidence into an application verdict.", suites: overlordSuites },
   { id: "visual", label: "Visual BOT", icon: "👁️", description: "Intelligent visual, responsive and regional UI QA.", purpose: "Understands the rendered page and responsive behaviour.", suites: visualSuites },
@@ -86,6 +134,7 @@ export const BOT_DEFINITIONS: BotDefinition[] = [
   { id: "app", label: "App BOT", icon: "🧭", description: "Route and application-topology auditing.", purpose: "Checks route inventory and executes real safe browser journeys against the current authenticated session.", suites: appSuites },
   { id: "security", label: "Security BOT", icon: "🛡️", description: "Defensive application security checks.", purpose: "Tests safe security boundaries without attacking production.", suites: securitySuites },
   { id: "update", label: "Update BOT", icon: "⚡", description: "Fast post-update smoke tests plus one-click page targeting and real browser journeys.", purpose: "Use after any change: run the quick smoke, the full page sweep, one exact page target, or real browser interaction evidence.", suites: updateSuites },
+  { id: "action-chain", label: "Action Chain BOT", icon: "🔗", description: "End-to-end UI action-chain hardening against no-ops, loops, wrong destinations and runtime failures.", purpose: "Use this when a button or control looks present but you need to prove its action actually produces the expected observable result.", suites: actionChainSuites },
 ];
 
 export function getBotDefinition(id: string | undefined): BotDefinition | undefined { return BOT_DEFINITIONS.find((bot) => bot.id === id); }
