@@ -53,6 +53,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "achievements", label: "Achievements", icon: "🏆", path: "/learn/achievements", group: "Learn & Intelligence", description: "View your keeper achievements." },
 
   { id: "community", label: "Community Hub", icon: "🌍", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },
+  { id: "marketplace", label: "Marketplace", icon: "🛒", path: "/marketplace", group: "Community", description: "Browse active reptile marketplace listings.", keywords: ["market", "marketplace", "seller", "listing", "shop"] },
   { id: "feature-voting", label: "Feature Voting", icon: "💡", path: "/community/features", group: "Community", description: "Vote on what Tiny Titans builds next." },
   { id: "vivarium-showcase", label: "Vivarium Showcase", icon: "🏡", path: "/community/vivarium-showcase", group: "Community", description: "Explore keeper setups." },
   { id: "mentorship", label: "Mentorship", icon: "↔", path: "/community/mentorship", group: "Community", description: "Connect with experienced keepers." },
@@ -107,6 +108,6 @@ export function quickNavSearchItems(query: string, authorisedCapabilities: Set<Q
     const capability = item.capability ?? "everyone";
     if (capability !== "everyone" && !authorisedCapabilities.has(capability)) return false;
     if (!normalised) return true;
-    return [item.label, item.group, item.description, ...(item.keywords ?? [])].join(" ").toLowerCase().includes(normalised);
+    return [item.label, item.group, item.description, item.path, ...(item.keywords ?? [])].join(" ").toLowerCase().includes(normalised);
   });
 }
