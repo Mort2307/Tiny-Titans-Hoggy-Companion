@@ -10,7 +10,7 @@ import { canTransitionMorphSubmission, isAwaitingMorphReview, validateMorphSubmi
 import { getCreatorUserDisplayNames } from "../services/creatorUserDirectoryService";
 import { getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { searchSnakeSpecies } from "../data/species/speciesRegistry";
-import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
+import { masterMorphs, resolveMasterMorph, type MasterMorphDefinition } from "../data/masterMorphDatabase";
 import { storage } from "../firebase/config";
 import type { MorphImageSubmission } from "../types/morphSubmission";
 import "../styles/CreatorTools.css";
@@ -19,11 +19,36 @@ const normalise = (value: string) => value.trim().toLowerCase();
 const normaliseSearch = (value: string) => normalise(value).replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 const isUnknownMorph = (morph: MasterMorphDefinition) => normaliseSearch(morph.name) === "unknown" || normaliseSearch(morph.geneId) === "unknown";
 
+function editDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a) return b.length;
+  if (!b) return a.length;
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= a.length; i += 1) {
+    const current = [i];
+    for (let j = 1; j <= b.length; j += 1) {
+      current[j] = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    for (let j = 0; j < current.length; j += 1) previous[j] = current[j];
+  }
+  return previous[b.length];
+}
+
 function matchesMorphSearch(morph: MasterMorphDefinition, search: string) {
-  const needle = normaliseSearch(search);
-  if (!needle) return true;
-  const haystack = normaliseSearch([morph.geneId, morph.name, ...(morph.aliases ?? [])].join(" "));
-  return needle.split(" ").every((term) => haystack.includes(term));
+  const terms = normaliseSearch(search).split(" ").filter(Boolean);
+  if (!terms.length) return true;
+  const values = [morph.geneId, morph.name, ...(morph.aliases ?? [])].map(normaliseSearch);
+  return terms.every((term) =>
+    values.some((value) =>
+      value.includes(term) ||
+      value.split(" ").some((word) => word.startsWith(term)) ||
+      value.split(" ").some((word) => Math.min(term.length, word.length) >= 4 && editDistance(term, word) <= 1),
+    ),
+  );
 }
 
 type Draft = {
@@ -105,7 +130,10 @@ export default function CreatorReviewStudio() {
         return a.name.localeCompare(b.name, "en", { sensitivity: "base", numeric: true });
       });
   }, [speciesIdForMorphs, morphSearch]);
-  const currentCanonical = useMemo(() => masterMorphs.find((morph) => morph.geneId === draft?.morphId) ?? null, [draft?.morphId]);
+  const currentCanonical = useMemo(() => {
+    if (!draft?.morphId && !draft?.morphName) return null;
+    return resolveMasterMorph(draft.morphId || draft.morphName) ?? masterMorphs.find((morph) => morph.geneId === draft.morphId) ?? null;
+  }, [draft?.morphId, draft?.morphName]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -140,7 +168,11 @@ export default function CreatorReviewStudio() {
     patch({ speciesId, speciesName: species?.commonNames[0] ?? "", morphId: "", morphName: "" });
     setMorphSearch("");
   }
-  function selectMorph(morph: MasterMorphDefinition) { patch({ morphId: morph.geneId, morphName: morph.name }); setMorphSearch(morph.name); }
+  function selectMorph(morph: MasterMorphDefinition) {
+    const canonical = resolveMasterMorph(morph.geneId) ?? resolveMasterMorph(morph.name) ?? morph;
+    patch({ morphId: canonical.geneId, morphName: canonical.name });
+    setMorphSearch(canonical.name);
+  }
 
   async function saveDraft(status?: "Pending" | "NeedsInfo") {
     if (!selected || !draft) return false;
