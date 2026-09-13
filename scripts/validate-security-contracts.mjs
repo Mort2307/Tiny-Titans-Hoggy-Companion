@@ -11,6 +11,7 @@ const paidTrialLifecycle = readFileSync("functions/paidTrialLifecycle.js", "utf8
 const creatorPaidTier = readFileSync("functions/creatorPaidTier.js", "utf8");
 
 const familyAccessContract = /function (?:canAccessUserData|familyMemberOf)\([^)]*userId[^)]*\)/;
+const familyPermissionOwnerContract = /function familyOwner\(familyId\)\s*\{[\s\S]*?ownerUid[\s\S]*?request\.auth\.uid[\s\S]*?\}\s*\n\s*match \/families\/\{familyId\}[\s\S]*?match \/permissions\/\{memberUid\}[\s\S]*?allow create, update: if familyOwner\(familyId\)/;
 const storageCreatorContract = /function ownerAccount\(\)\s*\{[^}]*request\.auth\.token\.email == 'tinytitans\.exotics@gmail\.com'[^}]*\}[\s\S]*function isCreator\(\)\s*\{[^}]*ownerAccount\(\)[^}]*request\.auth\.token\.admin == true[^}]*request\.auth\.token\.creator == true[^}]*\}/;
 const paidTesterServerCollectionContract = /db\.collection\("paidTesterOverrides"\)\.doc\(targetUid\)/;
 const paidTesterReaderContract = /db\.collection\("paidTesterOverrides"\)\.doc\(requestedUid\)\.get\(\)/;
@@ -31,7 +32,7 @@ const checks = [
   ["Family invitations are owner-bound", /request\.resource\.data\.ownerUid == request\.auth\.uid/, firestore],
   ["Family invite acceptance is email-bound", /request\.resource\.data\.get\('acceptingInviteId'/, firestore],
   ["Family permissions are enforced in Firestore", /function familyPermission\(userId, area, action\)/, firestore],
-  ["Family permission documents are owner-controlled", /allow create, update: if signedIn\(\) && get\(\/databases\/\$\(database\)\/documents\/families\/\$\(familyId\)\)\.data\.ownerUid == request\.auth\.uid/, firestore],
+  ["Family permission documents are owner-controlled", familyPermissionOwnerContract, firestore],
   ["Family approval requests are authenticated and family-bound", /request\.resource\.data\.requesterUid == request\.auth\.uid.*request\.resource\.data\.familyId == userRecord\(\)\.get\('familyId'/s, firestore],
   ["Approved family changes are owner-controlled", /function decideFamilyApproval|familyApprovals/, readFileSync("src/services/familyPermissionsService.ts", "utf8")],
   ["Sandbox experiments are isolated from user records", /match \/sandboxExperiments\/\{experimentId\}/, firestore],
