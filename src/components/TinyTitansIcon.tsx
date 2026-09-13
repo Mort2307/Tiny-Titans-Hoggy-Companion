@@ -43,11 +43,12 @@ type Props = SVGProps<SVGSVGElement> & {
   title?: string;
 };
 
-const common = {
+const common: SVGProps<SVGSVGElement> = {
   viewBox: "0 0 48 48",
   fill: "none",
   xmlns: "http://www.w3.org/2000/svg",
-  focusable: "false",
+  focusable: false,
+  "aria-hidden": true,
 };
 
 function SnakeFace({ className = "", ...props }: SVGProps<SVGSVGElement>) {
@@ -67,7 +68,7 @@ function SnakeFace({ className = "", ...props }: SVGProps<SVGSVGElement>) {
 }
 
 function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<SVGSVGElement>) {
-  const commonProps = { ...common, ...props };
+  const commonProps: SVGProps<SVGSVGElement> = { ...common, ...props };
   switch (name) {
     case "home":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-organic" d="m8 21 16-13 16 13v17H28V28h-8v10H8V21Z" /><path className="tt-icon-line" d="M5.5 23 24 8l18.5 15" /><circle className="tt-icon-spark" cx="24" cy="19" r="2.3" /></svg>;
