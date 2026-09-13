@@ -33,12 +33,12 @@ function resolveLocalModule(fromFile, request) {
 
 function analyseModule(filePath) {
   const source = readFileSync(filePath, "utf8");
-  const imports = new Set();
+  const reexports = new Set();
   const exports = new Set();
 
-  for (const match of source.matchAll(/require\(["'](\.[^"']+)["']\)/g)) {
+  for (const match of source.matchAll(/Object\.assign\(\s*exports\s*,\s*require\(["'](\.[^"']+)["']\)\s*\)/g)) {
     const target = resolveLocalModule(filePath, match[1]);
-    if (target) imports.add(target);
+    if (target) reexports.add(target);
   }
 
   for (const match of source.matchAll(/\bexports\.([A-Za-z_$][\w$]*)\s*=/g)) {
@@ -49,32 +49,36 @@ function analyseModule(filePath) {
     if (/^[A-Za-z_$][\w$]*$/.test(match[1])) exports.add(match[1]);
   }
 
-  return { imports, exports };
+  return { reexports, exports };
 }
 
-const visited = new Set();
-const moduleAnalyses = new Map();
+const analyses = new Map();
 
-function walkModule(filePath) {
+function getAnalysis(filePath) {
   const normalized = resolve(filePath);
-  if (visited.has(normalized)) return;
-  visited.add(normalized);
-
+  const existing = analyses.get(normalized);
+  if (existing) return existing;
   const analysis = analyseModule(normalized);
-  moduleAnalyses.set(normalized, analysis);
-  for (const importedFile of analysis.imports) walkModule(importedFile);
+  analyses.set(normalized, analysis);
+  return analysis;
 }
 
-walkModule(entryFile);
+function collectExports(filePath, seen = new Set()) {
+  const normalized = resolve(filePath);
+  if (seen.has(normalized)) return new Set();
+  seen.add(normalized);
 
-const allExports = new Set();
-for (const [filePath, analysis] of moduleAnalyses) {
-  if (filePath.startsWith(functionsRoot)) {
-    for (const exportName of analysis.exports) allExports.add(exportName);
+  const analysis = getAnalysis(normalized);
+  const result = new Set(analysis.exports);
+
+  for (const reexport of analysis.reexports) {
+    for (const exportName of collectExports(reexport, seen)) result.add(exportName);
   }
+
+  return result;
 }
 
-const functions = [...allExports].sort((a, b) => a.localeCompare(b));
+const functions = [...collectExports(entryFile)].sort((a, b) => a.localeCompare(b));
 
 if (functions.length === 0) {
   throw new Error("No Firebase Functions exports were discovered from functions/index.js.");
