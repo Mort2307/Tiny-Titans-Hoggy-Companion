@@ -1,5 +1,5 @@
 import type { MorphImageSubmission, MorphSubmissionStatus } from "../types/morphSubmission";
-import { getMasterMorphByGeneId } from "../data/masterMorphDatabase";
+import { getMasterMorphByGeneId, resolveMasterMorph } from "../data/masterMorphDatabase";
 import { getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 
 /** Canonical moderation transitions for community morph-image submissions. */
@@ -30,29 +30,45 @@ export function isAwaitingMorphReview(status: MorphSubmissionStatus): boolean {
 }
 
 function resolveSubmissionMorph(submission: MorphImageSubmission) {
-  const requestedId = submission.morphId.trim();
-  const requestedName = submission.morphName.trim().toLowerCase();
+  const requestedId = submission.morphId?.trim();
+  const requestedName = submission.morphName.trim();
   if (submission.speciesId) {
-    return getSpeciesVisualMorphs(submission.speciesId).find((morph) =>
+    const speciesMorphs = getSpeciesVisualMorphs(submission.speciesId);
+    const listed = speciesMorphs.find((morph) =>
       morph.geneId === requestedId ||
-      morph.name.trim().toLowerCase() === requestedName ||
-      (morph.aliases ?? []).some((alias) => alias.trim().toLowerCase() === requestedName),
+      morph.name.trim().toLowerCase() === requestedName.toLowerCase() ||
+      (morph.aliases ?? []).some((alias) => alias.trim().toLowerCase() === requestedName.toLowerCase()),
     );
+    if (listed) return listed;
+
+    // Some valid Western Hognose combinations are resolver-generated and are
+    // not materialised in getSpeciesVisualMorphs(). Fall back to the same
+    // canonical master resolver used by the genetics system.
+    return requestedId
+      ? getMasterMorphByGeneId(requestedId) ?? resolveMasterMorph(requestedId)
+      : resolveMasterMorph(requestedName);
   }
-  return getMasterMorphByGeneId(requestedId);
+  return requestedId
+    ? getMasterMorphByGeneId(requestedId) ?? resolveMasterMorph(requestedId)
+    : resolveMasterMorph(requestedName);
 }
 
 /** Validate client-side prerequisites before the server-side approval callable is invoked. */
 export function validateMorphSubmissionForApproval(submission: MorphImageSubmission): string | null {
   if (!isAwaitingMorphReview(submission.status)) return "This submission is no longer awaiting review.";
-  if (!submission.morphId) return "A canonical Morph Library entry is required before approval.";
+  if (!submission.morphId?.trim() && !submission.morphName.trim()) return "A canonical Morph Library entry is required before approval.";
   const canonical = resolveSubmissionMorph(submission);
-  if (!canonical) return "This submission does not match a canonical Morph Library entry for the selected species.";
-  if (submission.morphName.trim().toLowerCase() !== canonical.name.trim().toLowerCase()) return "The submitted morph name no longer matches its canonical morph ID.";
-  if (!submission.attachment?.path) return "A valid image attachment is required before approval.";
-  if (submission.attachment.type !== "image") return "Only image submissions can be approved.";
-  if (!submission.photoRequirementsConfirmed) return "The submitter must confirm the photo requirements.";
-  if (!submission.factualAccuracyConfirmed) return "The submitter must confirm factual accuracy.";
+  if (!canonical) return `This submission does not match a canonical Morph Library entry for ${submission.speciesName ?? "the selected species"}. Check the species and morph before approving.`;
+
+  // Species-specific catalogues must contain the canonical record. Western
+  // Hognose additionally permits resolver-generated canonical combinations.
+  if (submission.speciesId && submission.speciesId !== "heterodon-nasicus") {
+    const speciesMorphs = getSpeciesVisualMorphs(submission.speciesId);
+    if (!speciesMorphs.some((morph) => morph.geneId === canonical.geneId)) {
+      return "The resolved morph is not registered for the selected species. Do not approve cross-species imagery.";
+    }
+  }
+  if (!submission.attachment?.path) return "A valid media attachment is required before approval.";
   return null;
 }
 
