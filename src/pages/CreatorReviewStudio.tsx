@@ -93,19 +93,18 @@ export default function CreatorReviewStudio() {
     const needle = normaliseSearch(speciesSearch);
     return searchSnakeSpecies("").filter((species) => !needle || [species.id, ...species.commonNames, species.acceptedScientificName].some((value) => normaliseSearch(String(value)).includes(needle))).slice(0, 60);
   }, [speciesSearch]);
+  const speciesIdForMorphs = draft?.speciesId ?? "";
   const morphOptions = useMemo(() => {
-    const speciesId = draft?.speciesId ?? "";
-    if (!speciesId) return [];
-    return [...getSpeciesVisualMorphs(speciesId)]
+    if (!speciesIdForMorphs) return [];
+    return [...getSpeciesVisualMorphs(speciesIdForMorphs)]
       .filter((morph) => matchesMorphSearch(morph, morphSearch))
       .sort((a, b) => {
         const aUnknown = isUnknownMorph(a);
         const bUnknown = isUnknownMorph(b);
         if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;
         return a.name.localeCompare(b.name, "en", { sensitivity: "base", numeric: true });
-      })
-      .slice(0, 100);
-  }, [draft, morphSearch]);
+      });
+  }, [speciesIdForMorphs, morphSearch]);
   const currentCanonical = useMemo(() => masterMorphs.find((morph) => morph.geneId === draft?.morphId) ?? null, [draft?.morphId]);
 
   const load = useCallback(async () => {
