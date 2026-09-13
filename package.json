@@ -74,7 +74,7 @@
     "test:feeding-reminders": "node scripts/test-feeding-reminder-anchoring.mjs",
     "test:water-change-reminders": "node scripts/test-water-change-reminders.mjs",
     "test:world-time": "node --experimental-strip-types scripts/test-world-time-intelligence.ts",
-    "test:world-intelligence-context": "node --experimental-strip-types scripts/test-world-intelligence-context.ts",
+    "test:world-intelligence-context": "node scripts/test-world-intelligence-context.ts",
     "test:room-photo": "node scripts/check-room-photo-render-contract.mjs",
     "test:bot:contracts": "node scripts/run-bot-test-contract.mjs",
     "test:overlord": "node scripts/run-overlord-bot.mjs",
@@ -106,7 +106,6 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@playwright/test": "^1.55.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.4",
