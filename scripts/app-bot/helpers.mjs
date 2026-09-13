@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
+const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:5173";
 const email = process.env.TINY_TITANS_BOT_EMAIL;
 const password = process.env.TINY_TITANS_BOT_PASSWORD;
 
@@ -94,12 +94,23 @@ export async function signIn(page) {
     test.skip(true, "Authenticated Overlord BOT requires TINY_TITANS_BOT_EMAIL and TINY_TITANS_BOT_PASSWORD.");
     return;
   }
+  console.log(`[OVERLORD] Signing in BOT account: ${email}`);
   await page.goto(`${baseURL}/login`, { waitUntil: "domcontentloaded" });
   await expect(page.getByLabel("Email Address")).toBeVisible({ timeout: 10_000 });
   await page.getByLabel("Email Address").fill(email);
   await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: /sign in/i }).click();
-  await expect(page).not.toHaveURL(/\/login\/?$/, { timeout: 15_000 });
+
+  try {
+    await expect(page).not.toHaveURL(/\/login\/?$/, { timeout: 15_000 });
+  } catch (error) {
+    const alert = page.getByRole("alert").first();
+    const alertText = await alert.textContent().catch(() => null);
+    const bodyText = await page.locator("body").innerText().catch(() => "");
+    const usefulText = (alertText || bodyText).replace(/\s+/g, " ").trim();
+    throw new Error(`[OVERLORD] BOT authentication did not leave /login. ${usefulText ? `Login page reported: ${usefulText}` : "No visible login error was reported; inspect Firebase auth/network events."}`);
+  }
+
   await establishAuthenticatedApp(page);
   await dismissPrivacyConsent(page);
 }
