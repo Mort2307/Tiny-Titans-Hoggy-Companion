@@ -1,6 +1,4 @@
 import { Link, useLocation } from "react-router-dom";
-import AnimatedReptileIcon from "./ui/AnimatedReptileIcon";
-import { useSpeciesContext } from "../context/SpeciesContext";
 
 type Action = { to: string; label: string; icon: string };
 
@@ -19,9 +17,8 @@ function actionsForPath(path: string): Action[] {
 
 export default function TitanQuickActions() {
   const { pathname } = useLocation();
-  const { selectedSpeciesId } = useSpeciesContext();
   const recordLogPage = ["/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry"].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   if (pathname.startsWith("/creator") || pathname.startsWith("/login") || pathname === "/account-setup" || (pathname !== "/" && !recordLogPage)) return null;
   const actions = actionsForPath(pathname);
-  return <nav className="tt-quick-dock" aria-label="Quick actions"><span className="tt-quick-dock__label">TITAN TOOLS</span>{actions.map((action) => <Link key={action.to + action.label} to={action.to}><span className="app-navigation-icon" aria-hidden="true">{action.to.startsWith("/feeding") ? <AnimatedReptileIcon kind="feed" speciesId={selectedSpeciesId} /> : action.to.startsWith("/weights") ? <AnimatedReptileIcon kind="weight" /> : action.to.startsWith("/shedding") ? <AnimatedReptileIcon kind="shed" speciesId={selectedSpeciesId} /> : action.to.startsWith("/breeding") ? <AnimatedReptileIcon kind="breeding" /> : action.to.startsWith("/calculator") || action.to.startsWith("/morph-library") ? <AnimatedReptileIcon kind="genetics" /> : action.to.startsWith("/enclosure") || action.to.startsWith("/husbandry") ? <AnimatedReptileIcon kind="vivarium" /> : action.to.startsWith("/health") ? <AnimatedReptileIcon kind="health" /> : action.to.startsWith("/behaviour") ? <AnimatedReptileIcon kind="snake" speciesId={selectedSpeciesId} /> : action.icon}</span>{action.label}</Link>)}</nav>;
+  return <nav className="tt-quick-dock" aria-label="Quick actions"><span className="tt-quick-dock__label">TITAN TOOLS</span>{actions.map((action) => <Link key={action.to + action.label} to={action.to}><span aria-hidden="true">{action.icon}</span>{action.label}</Link>)}</nav>;
 }
