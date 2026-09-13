@@ -7,6 +7,7 @@ import { getTitanDecisionState, type TitanDecision } from "../../services/titanD
 import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiveIntelligenceService";
 import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
 import LiveWorldClockBadge from "../LiveWorldClockBadge";
+import TinyTitansTierCrest from "../TinyTitansTierCrest";
 import { getPaidAccess, type PaidAccess } from "../../services/paidTierService";
 import { getPaidTierDefinition } from "../../config/paidTiers";
 import "./Header.css";
@@ -80,7 +81,7 @@ function Header() {
         <LiveWorldClockBadge />
         {!creatorMode && paidAccess && (
           <Link className="paid-tier-header-badge" to="/plans" aria-label={`Your Tiny Titans tier: ${getPaidTierDefinition(paidAccess.effectiveTier).name}`} title={paidAccess.source === "tester" ? "Creator tester access" : paidAccess.source === "trial" ? "Trial access" : "Your Tiny Titans tier"}>
-            <span aria-hidden="true">{getPaidTierDefinition(paidAccess.effectiveTier).crest}</span>
+            <TinyTitansTierCrest tier={paidAccess.effectiveTier} size={21} />
             <strong>{getPaidTierDefinition(paidAccess.effectiveTier).shortLabel}</strong>
             {paidAccess.source !== "subscription" && <small>{paidAccess.source === "tester" ? "TEST" : paidAccess.source === "trial" ? "TRIAL" : "FREE"}</small>}
           </Link>
