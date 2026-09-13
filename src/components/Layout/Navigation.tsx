@@ -7,6 +7,8 @@ import { useEasyNav } from "../../context/EasyNavContext";
 import { quickNavSearchItems, type QuickNavCapability } from "../../data/quickNavigation";
 import communityUpdates from "../../data/communityUpdates.json";
 import "./Navigation.css";
+import AnimatedReptileIcon from "../ui/AnimatedReptileIcon";
+import { useSpeciesContext } from "../../context/SpeciesContext";
 
 type NavigationLink = [string, string, string];
 type NavigationSection = { label: string; links: NavigationLink[] };
@@ -18,6 +20,7 @@ function Navigation() {
   const { profile, user, loading, profileLoading } = useAuth();
   const { isEasyNav } = useEasyNav();
   const navigate = useNavigate();
+  const { selectedSpeciesId } = useSpeciesContext();
   const [creatorAuthorized, setCreatorAuthorized] = useState(false);
   const [testerAuthorized, setTesterAuthorized] = useState(false);
   const [educatorAuthorized, setEducatorAuthorized] = useState(false);
@@ -54,7 +57,7 @@ function Navigation() {
     const openMore = () => setMoreOpen((current) => !current);
     const openQuickItem = (path: string) => { setMoreOpen(false); setQuickSearch(""); navigate(path); };
     return <>
-      <nav className="app-navigation tt-easy-nav-strip" aria-label="Quick Mode navigation"><div className="tt-easy-nav-inner"><NavLink to="/" end className="tt-easy-nav-link"><span>🏠</span><small>At a Glance</small></NavLink><NavLink to="/snakes" className="tt-easy-nav-link"><span>🐍</span><small>My Snakes</small></NavLink><NavLink to="/reminders" className="tt-easy-nav-link"><span>🔔</span><small>Due</small></NavLink><button type="button" data-route-guide-target="quick-more" className={`tt-easy-nav-link tt-easy-nav-more${moreOpen ? " active" : ""}`} onClick={openMore} aria-expanded={moreOpen} aria-controls="tt-easy-more-menu"><span>☰</span><small>Everything</small></button></div></nav>
+      <nav className="app-navigation tt-easy-nav-strip" aria-label="Quick Mode navigation"><div className="tt-easy-nav-inner"><NavLink to="/" end className="tt-easy-nav-link"><span>🏠</span><small>At a Glance</small></NavLink><NavLink to="/snakes" className="tt-easy-nav-link"><AnimatedReptileIcon kind="snake" speciesId={selectedSpeciesId} /><small>My Snakes</small></NavLink><NavLink to="/reminders" className="tt-easy-nav-link"><AnimatedReptileIcon kind="reminder" /><small>Due</small></NavLink><button type="button" data-route-guide-target="quick-more" className={`tt-easy-nav-link tt-easy-nav-more${moreOpen ? " active" : ""}`} onClick={openMore} aria-expanded={moreOpen} aria-controls="tt-easy-more-menu"><span>☰</span><small>Everything</small></button></div></nav>
       {moreOpen && <div className="tt-easy-more-backdrop" role="presentation" onClick={() => setMoreOpen(false)}><section id="tt-easy-more-menu" className="tt-easy-more" role="dialog" aria-modal="true" aria-label="Quick Mode full app navigation" onClick={(event) => event.stopPropagation()}><div className="tt-easy-more-head"><div><span>QUICK MODE · FULL APP</span><h2>Everything in Tiny Titans</h2><p>Quick Mode changes how you navigate — it never removes a feature.</p></div><button type="button" onClick={() => setMoreOpen(false)} aria-label="Close full navigation">×</button></div><label className="tt-easy-search"><span aria-hidden="true">⌕</span><input value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="Find anything in Tiny Titans…" aria-label="Search the full Tiny Titans app" autoFocus /></label>{Object.entries(quickGroups).map(([group, items]) => <section className="tt-easy-more-group" key={group}><h3>{group}</h3><div className="tt-easy-more-grid">{items.map((item) => <button type="button" data-route-guide-target={item.id === "account" ? "quick-my-account" : undefined} className="tt-easy-feature-link" key={item.id} onClick={() => openQuickItem(item.path)}><span className="app-navigation-icon" aria-hidden="true">{item.icon}</span><span><strong>{item.label}</strong><small>{item.description}</small></span></button>)}</div></section>)}{quickItems.length === 0 && <div className="tt-easy-no-results"><strong>Nothing matched.</strong><span>Try a broader search such as feeding, genetics, community or account.</span></div>}<div className="tt-easy-more-foot"><button type="button" onClick={() => { setMoreOpen(false); navigate("/account/personalise?quick-mode=1"); }}>⚡ Customise Quick Mode</button></div></section></div>}
     </>;
   }
