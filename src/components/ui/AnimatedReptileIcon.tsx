@@ -100,3 +100,5 @@ export default function AnimatedReptileIcon({ kind, speciesId, label, title, cla
     </svg>
   );
 }
+
+import './animatedReptileIcon.css';
