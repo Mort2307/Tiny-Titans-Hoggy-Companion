@@ -1,6 +1,8 @@
 import { collection, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getIdTokenResult } from "firebase/auth";
 import { auth, db } from "../firebase/config";
+import { hasCreatorTesterClaim } from "./creatorTesterAuthService";
+import { createPaidTierRegressionChecks } from "./paidTierRegressionSuites";
 
 export type TesterStatus = "pass" | "fail" | "blocked" | "not-tested";
 export type TesterSeverity = "info" | "low" | "medium" | "high" | "critical";
@@ -96,7 +98,20 @@ export function createCoreDiagnosticChecks(input: {
     },
     {
       checkId: "auth-creator-claim", name: "Creator authorization claim is present", category: "creator", severity: "critical",
-      run: async () => creatorClaim ? { status: "pass", message: "Creator/admin authorization claim is active." } : { status: "fail", message: "Creator/admin authorization claim is missing." },
+      run: async () => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) return { status: "blocked", message: "No authenticated Firebase user is available to inspect Creator authorization." };
+        try {
+          const token = await getIdTokenResult(currentUser, true);
+          const claims = token.claims as Record<string, unknown>;
+          const active = claims.creator === true || claims.creatorTester === true || claims.admin === true || claims.tester === true || creatorClaim === true;
+          return active
+            ? { status: "pass", message: "Creator/admin authorization claim is active." }
+            : { status: "fail", message: "Creator/admin authorization claim is missing." };
+        } catch (error) {
+          return { status: "fail", message: error instanceof Error ? error.message : "Unable to inspect Creator authorization claim." };
+        }
+      },
     },
     {
       checkId: "auth-token-refresh", name: "Firebase ID token can be refreshed", category: "auth", severity: "high",
@@ -141,7 +156,38 @@ export function createCoreDiagnosticChecks(input: {
 
 export async function runTesterSuite(uid: string, suite: string, checks: TesterCheck[]): Promise<TesterRun> {
   if (!uid) throw new Error("Tester Bot requires an authenticated UID.");
-  const uniqueChecks = deduplicateChecks(checks);
+
+  let suiteChecks = checks;
+  if (suite === "overlord:full") {
+    try {
+      const { BOT_DEFINITIONS } = await import("./testerBotRegistry");
+      const broadChecks: TesterCheck[] = [...createPaidTierRegressionChecks()];
+      const includedBotIds = new Set(["creator", "user", "app", "security", "visual", "update"]);
+
+      for (const bot of BOT_DEFINITIONS) {
+        if (!includedBotIds.has(bot.id)) continue;
+        for (const suiteDefinition of bot.suites) {
+          broadChecks.push(...await suiteDefinition.build(uid));
+        }
+      }
+
+      const realCreatorClaim = await hasCreatorTesterClaim(true);
+      suiteChecks = [
+        ...suiteChecks.filter((check) => check.checkId !== "auth-creator-claim"),
+        ...createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: realCreatorClaim }),
+        ...broadChecks,
+      ];
+    } catch (error) {
+      console.warn("Tiny Titans: Overlord full-app expansion unavailable", error);
+      const realCreatorClaim = await hasCreatorTesterClaim(true).catch(() => false);
+      suiteChecks = [
+        ...suiteChecks.filter((check) => check.checkId !== "auth-creator-claim"),
+        ...createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: realCreatorClaim }),
+      ];
+    }
+  }
+
+  const uniqueChecks = deduplicateChecks(suiteChecks);
   if (!uniqueChecks.length) throw new Error(`Tester suite '${suite}' contains no checks.`);
 
   const started = Date.now();
