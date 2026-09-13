@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { getPrivacyPreferences } from "../services/privacyService";
 import { getUserFeedback, getUserIssueReports } from "../services/creatorService";
@@ -7,21 +8,35 @@ import { getUserMorphSubmissions } from "../services/morphUserSubmissionService"
 import { getUserSnakes } from "../services/snakeService";
 import { getPublicCommunityContributionFeed, getPublicCommunityContributionSnapshot, type PublicContributionEntry, type PublicContributionSnapshot } from "../services/communityIntelligenceService";
 import { useAuth } from "../context/useAuth";
+import { db } from "../firebase/config";
 import type { PrivacyPreferences } from "../types/privacy";
 import type { Feedback } from "../types/feedback";
 import type { ReportIssue } from "../types/reportIssue";
 import type { KeeperObservation } from "../types/keeperObservation";
 import type { Snake } from "../types/Snake";
-import type { UserMorphSubmission } from "../types/morphSubmission";
+import type { UserMorphSubmission, MorphImageSubmission } from "../types/morphSubmission";
 import "../styles/contribution-pulse.css";
 
 type ModalMode = "personal" | "global" | null;
 type PersonalContribution = { id: string; category: string; title: string; snippet: string; status?: string; link?: string; createdAt?: unknown };
+type FounderContribution = { id: string; status?: string; createdAt?: unknown; updatedAt?: unknown };
 
 function safeCount(value: unknown): number { return typeof value === "number" && Number.isFinite(value) ? value : 0; }
 function normaliseStatus(value: unknown): string | undefined { return typeof value === "string" && value.trim() ? value.trim() : undefined; }
 function contributionDate(value: unknown): number { if (!value) return 0; if (typeof value === "number" && Number.isFinite(value)) return value; if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return value.toMillis(); const parsed = Date.parse(String(value)); return Number.isFinite(parsed) ? parsed : 0; }
 function formatContributionDate(value: unknown): string { const millis = contributionDate(value); if (!millis) return "Date not recorded"; return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(millis); }
+
+async function getUserMorphImageSubmissions(uid: string): Promise<MorphImageSubmission[]> {
+  if (!uid) return [];
+  const snapshot = await getDocs(query(collection(db, "morphImageSubmissions"), where("userId", "==", uid)));
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<MorphImageSubmission, "id">) }));
+}
+
+async function getUserFounderApplications(uid: string): Promise<FounderContribution[]> {
+  if (!uid) return [];
+  const snapshot = await getDocs(query(collection(db, "founderApplications"), where("uid", "==", uid)));
+  return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<FounderContribution, "id">) }));
+}
 
 export default function ContributionPulse() {
   const { user } = useAuth();
@@ -29,6 +44,8 @@ export default function ContributionPulse() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [bugs, setBugs] = useState<ReportIssue[]>([]);
   const [morphSubmissions, setMorphSubmissions] = useState<UserMorphSubmission[]>([]);
+  const [morphImageSubmissions, setMorphImageSubmissions] = useState<MorphImageSubmission[]>([]);
+  const [founderApplications, setFounderApplications] = useState<FounderContribution[]>([]);
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [privacy, setPrivacy] = useState<PrivacyPreferences | null>(null);
   const [globalFeed, setGlobalFeed] = useState<PublicContributionEntry[]>([]);
@@ -39,17 +56,19 @@ export default function ContributionPulse() {
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    const [nextObservations, nextFeedback, nextBugs, nextMorphSubmissions, nextPrivacy, nextSnakes, nextGlobalFeed, nextGlobalSnapshot] = await Promise.all([
+    const [nextObservations, nextFeedback, nextBugs, nextMorphSubmissions, nextMorphImages, nextFounders, nextPrivacy, nextSnakes, nextGlobalFeed, nextGlobalSnapshot] = await Promise.all([
       getUserKeeperObservations(user.uid).catch(() => [] as KeeperObservation[]),
       getUserFeedback(user.uid).catch(() => [] as Feedback[]),
       getUserIssueReports(user.uid).catch(() => [] as ReportIssue[]),
       getUserMorphSubmissions(user.uid).catch(() => [] as UserMorphSubmission[]),
+      getUserMorphImageSubmissions(user.uid).catch(() => [] as MorphImageSubmission[]),
+      getUserFounderApplications(user.uid).catch(() => [] as FounderContribution[]),
       getPrivacyPreferences(user.uid).catch(() => null),
       getUserSnakes(user.uid).catch(() => [] as Snake[]),
       getPublicCommunityContributionFeed().catch(() => ({ entries: [] as PublicContributionEntry[] })),
       getPublicCommunityContributionSnapshot().catch(() => null),
     ]);
-    setObservations(nextObservations); setFeedback(nextFeedback); setBugs(nextBugs); setMorphSubmissions(nextMorphSubmissions); setPrivacy(nextPrivacy); setSnakes(nextSnakes); setGlobalFeed(nextGlobalFeed.entries ?? []); setGlobalSnapshot(nextGlobalSnapshot); setLoading(false);
+    setObservations(nextObservations); setFeedback(nextFeedback); setBugs(nextBugs); setMorphSubmissions(nextMorphSubmissions); setMorphImageSubmissions(nextMorphImages); setFounderApplications(nextFounders); setPrivacy(nextPrivacy); setSnakes(nextSnakes); setGlobalFeed(nextGlobalFeed.entries ?? []); setGlobalSnapshot(nextGlobalSnapshot); setLoading(false);
   }, [user]);
 
   useEffect(() => {
@@ -66,8 +85,9 @@ export default function ContributionPulse() {
     const sheds = snakes.reduce((total, snake) => total + safeCount(snake.shedHistory?.length), 0);
     const health = snakes.reduce((total, snake) => total + safeCount(snake.healthHistory?.length), 0);
     const intelligenceRecords = privacy?.communityHusbandryData === true ? weights + feedings + sheds + health : 0;
-    return { contributions: observations.length + feedback.length + bugs.length + morphSubmissions.length, observations: observations.length, feedback: feedback.length, bugs: bugs.length, morphs: morphSubmissions.length, intelligenceRecords, snakes: snakes.length, weights, feedings, sheds, health };
-  }, [observations, feedback, bugs, morphSubmissions, snakes, privacy]);
+    const publicContributions = observations.length + feedback.length + bugs.length + morphSubmissions.length + morphImageSubmissions.length + founderApplications.length;
+    return { contributions: publicContributions, observations: observations.length, feedback: feedback.length, bugs: bugs.length, morphs: morphSubmissions.length, morphImages: morphImageSubmissions.length, founders: founderApplications.length, intelligenceRecords, snakes: snakes.length, weights, feedings, sheds, health };
+  }, [observations, feedback, bugs, morphSubmissions, morphImageSubmissions, founderApplications, snakes, privacy]);
 
   const personalItems = useMemo<PersonalContribution[]>(() => {
     const items: PersonalContribution[] = [];
@@ -75,19 +95,22 @@ export default function ContributionPulse() {
     feedback.forEach((item) => { const data = item as Feedback & Record<string, unknown>; items.push({ id: `feedback-${String(data.id || data.createdAt || items.length)}`, category: "Feedback", title: String(data.subject || data.title || "Feedback sent to Tiny Titans"), snippet: String(data.message || data.description || "Feedback contribution."), status: normaliseStatus(data.status), link: "/feedback", createdAt: data.createdAt || data.updatedAt }); });
     bugs.forEach((item) => { const data = item as ReportIssue & Record<string, unknown>; items.push({ id: `bug-${String(data.id || data.createdAt || items.length)}`, category: "Bug report", title: String(data.title || data.subject || "Bug report"), snippet: String(data.description || data.details || "Issue reported to Tiny Titans."), status: normaliseStatus(data.status), link: "/my-issue-reports", createdAt: data.createdAt || data.updatedAt }); });
     morphSubmissions.forEach((item) => items.push({ id: `morph-${item.id}`, category: "Morph Library", title: item.submittedName, snippet: item.description || "Keeper-submitted Morph Library evidence or terminology.", status: normaliseStatus(item.status), link: "/morph-library", createdAt: item.createdAt }));
+    morphImageSubmissions.forEach((item) => { const data = item as MorphImageSubmission & Record<string, unknown>; items.push({ id: `morph-image-${item.id}`, category: "Morph image", title: String(data.morphName || data.morphId || "Morph image submission"), snippet: String(data.description || "Community reference image submitted to the Morph Library."), status: normaliseStatus(data.status), link: "/morph-library", createdAt: data.createdAt || data.submittedAt || data.reviewedAt }); });
+    founderApplications.forEach((item) => { items.push({ id: `founder-${item.id}`, category: "Founder / Support", title: "Founder application", snippet: "Your Founder/support contribution to Tiny Titans.", status: normaliseStatus(item.status), link: "/founder", createdAt: item.createdAt || item.updatedAt }); });
     if (personalCounts.intelligenceRecords > 0) items.push({ id: "intelligence-aggregate", category: "Tiny Titans Intelligence", title: `${personalCounts.intelligenceRecords} records contributing globally`, snippet: `${personalCounts.weights} weight, ${personalCounts.feedings} feeding, ${personalCounts.sheds} shed and ${personalCounts.health} health records are contributing to community intelligence because you enabled optional husbandry contribution. The individual records remain yours and are not publicly displayed.`, status: "Enabled by you", link: "/account/data-privacy" });
     return items.sort((a, b) => contributionDate(b.createdAt) - contributionDate(a.createdAt)).slice(0, 80);
-  }, [observations, feedback, bugs, morphSubmissions, personalCounts]);
+  }, [observations, feedback, bugs, morphSubmissions, morphImageSubmissions, founderApplications, personalCounts]);
 
   const personalDisplayItems = personalItems.length ? personalItems : [{ id: "empty", category: "Community", title: "No contributions recorded yet", snippet: "Your future observations, feedback and community contributions will appear here." }];
   const globalIntelligence = safeCount(globalSnapshot?.intelligenceContributions);
   const publicCommunityRecords = safeCount(globalSnapshot?.publicCommunityRecords);
+  const totalPersonal = personalCounts.contributions + personalCounts.intelligenceRecords;
 
   return <>
     <section className="contribution-pulse" aria-label="Tiny Titans contribution tracker">
       <div className="contribution-pulse-heading"><div><span>🌍 TINY TITANS CONTRIBUTION PULSE</span><strong>{loading ? "Loading contribution activity…" : "See what keepers are contributing"}</strong></div><Link to="/make-contribution">＋ Make a Contribution</Link></div>
       <div className="contribution-pulse-grid">
-        <button type="button" className={`contribution-pulse-card contribution-pulse-card--button ${personalCounts.contributions || personalCounts.intelligenceRecords ? "is-active" : "is-muted"}`} onClick={() => setModal("personal")}><small>YOUR CONTRIBUTION</small><strong>{loading ? "…" : personalCounts.contributions + personalCounts.intelligenceRecords}</strong><span>public contributions + opted-in Intelligence records</span><div className="contribution-pulse-mini"><b>{personalCounts.snakes}</b> {personalCounts.snakes === 1 ? "snake" : "snakes"} tracked · Click to view yours →</div></button>
+        <button type="button" className={`contribution-pulse-card contribution-pulse-card--button ${totalPersonal ? "is-active" : "is-muted"}`} onClick={() => setModal("personal")}><small>YOUR CONTRIBUTION</small><strong>{loading ? "…" : totalPersonal}</strong><span>public submissions + opted-in Intelligence records</span><div className="contribution-pulse-mini"><b>{personalCounts.snakes}</b> {personalCounts.snakes === 1 ? "snake" : "snakes"} tracked · Click to view yours →</div></button>
         <button type="button" className="contribution-pulse-card contribution-pulse-card--button global-card" onClick={() => setModal("global")}><small>GLOBAL CONTRIBUTIONS</small><strong>{loading ? "…" : safeCount(globalSnapshot?.totalRecords)}</strong><span>public community contributions + consented Intelligence records</span><div className="contribution-pulse-mini"><b>{safeCount(globalSnapshot?.contributors)}</b> contributing keepers · Click to explore →</div></button>
       </div>
     </section>
