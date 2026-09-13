@@ -52,7 +52,7 @@ async function snapshotPage(page, markCandidates = false) {
       const rect = el.getBoundingClientRect();
       return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0 && rect.width > 0 && rect.height > 0;
     };
-    const cleanText = (value) => value
+    const cleanText = (value) => String(value || "")
       .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "[time]")
       .replace(/\b\d{4}-\d{2}-\d{2}(?:T[^\s]+)?\b/g, "[date]")
       .replace(/\b\d{10,}\b/g, "[number]")
@@ -122,43 +122,49 @@ async function snapshotPage(page, markCandidates = false) {
 }
 
 async function actionState(locator, page) {
-  return page.evaluate((el) => {
-    const visible = (node) => {
-      const style = getComputedStyle(node);
-      const rect = node.getBoundingClientRect();
-      return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0 && rect.width > 0 && rect.height > 0;
-    };
-    const clean = (value) => String(value || "")
-      .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "[time]")
-      .replace(/\b\d{4}-\d{2}-\d{2}(?:T[^\s]+)?\b/g, "[date]")
-      .replace(/\b\d{10,}\b/g, "[number]")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 4000);
-    const main = document.querySelector("main, [role='main']");
-    const surfaces = [...document.querySelectorAll("[role='dialog'], [role='alert'], [role='status'], [aria-live], [data-testid*='toast'], [class*='toast'], [class*='modal'], [class*='drawer']")]
-      .filter(visible)
-      .map((node) => clean(node.innerText || node.textContent || ""))
-      .filter(Boolean)
-      .slice(0, 20);
-    const elementText = clean(el.innerText || el.textContent || el.value || "");
-    return {
-      url: `${location.pathname}${location.search}`,
-      mainText: clean(main?.innerText || document.body.innerText || ""),
-      surfaces,
-      elementText,
-      disabled: Boolean(el.disabled) || el.getAttribute("aria-disabled") === "true",
-      ariaExpanded: el.getAttribute("aria-expanded"),
-      ariaPressed: el.getAttribute("aria-pressed"),
-      ariaBusy: el.getAttribute("aria-busy"),
-      className: String(el.className || "").slice(0, 180),
-      value: String(el.value || "").slice(0, 180),
-      activeTag: document.activeElement?.tagName || "",
-      visibleDialogCount: document.querySelectorAll("[role='dialog']").length,
-      visibleButtonCount: [...document.querySelectorAll("button, [role='button'], input[type='button'], input[type='submit']")].filter(visible).length,
-      visibleTextHash: [clean(document.body.innerText || ""), ...surfaces].join("|").slice(0, 6000),
-    };
-  }, await locator.elementHandle());
+  const handle = await locator.elementHandle();
+  if (!handle) throw new Error("Action target disappeared before state capture.");
+  try {
+    return await page.evaluate((el) => {
+      const visible = (node) => {
+        const style = getComputedStyle(node);
+        const rect = node.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) > 0 && rect.width > 0 && rect.height > 0;
+      };
+      const clean = (value) => String(value || "")
+        .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "[time]")
+        .replace(/\b\d{4}-\d{2}-\d{2}(?:T[^\s]+)?\b/g, "[date]")
+        .replace(/\b\d{10,}\b/g, "[number]")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 4000);
+      const main = document.querySelector("main, [role='main']");
+      const surfaces = [...document.querySelectorAll("[role='dialog'], [role='alert'], [role='status'], [aria-live], [data-testid*='toast'], [class*='toast'], [class*='modal'], [class*='drawer']")]
+        .filter(visible)
+        .map((node) => clean(node.innerText || node.textContent || ""))
+        .filter(Boolean)
+        .slice(0, 20);
+      const elementText = clean(el.innerText || el.textContent || el.value || "");
+      return {
+        url: `${location.pathname}${location.search}`,
+        mainText: clean(main?.innerText || document.body.innerText || ""),
+        surfaces,
+        elementText,
+        disabled: Boolean(el.disabled) || el.getAttribute("aria-disabled") === "true",
+        ariaExpanded: el.getAttribute("aria-expanded"),
+        ariaPressed: el.getAttribute("aria-pressed"),
+        ariaBusy: el.getAttribute("aria-busy"),
+        className: String(el.className || "").slice(0, 180),
+        value: String(el.value || "").slice(0, 180),
+        activeTag: document.activeElement?.tagName || "",
+        visibleDialogCount: document.querySelectorAll("[role='dialog']").length,
+        visibleButtonCount: [...document.querySelectorAll("button, [role='button'], input[type='button'], input[type='submit']")].filter(visible).length,
+        visibleTextHash: [clean(document.body.innerText || ""), ...surfaces].join("|").slice(0, 6000),
+      };
+    }, handle);
+  } finally {
+    await handle.dispose();
+  }
 }
 
 function observableDelta(before, after) {
@@ -226,7 +232,7 @@ async function main() {
         category,
         heading: snapshot.heading,
         actionCount: snapshot.navigationTargets.length,
-        buttons: snapshot.buttons.map((item) => ({ label: item.label, type: item.type || "button", href: item.href || null, mutationCandidate: item.mutationCandidate, skipped: item.destructive && mutationMode !== "safe" })),
+        buttons: snapshot.buttons.map((item) => ({ label: item.label, type: item.type || "button", href: item.href || null, mutationCandidate: item.mutationCandidate, skipped: item.mutationCandidate && !item.safeMutation && mutationMode !== "all" })),
       });
 
       for (const target of snapshot.navigationTargets) {
@@ -234,6 +240,10 @@ async function main() {
         if (hrefUrl && ignoredPathPatterns.some((pattern) => pattern.test(hrefUrl.pathname))) continue;
         if (target.destructive && mutationMode !== "all") {
           actionResults.push({ source: normaliseUrl(page.url()), sourceCategory: category, label: target.label, elementType: target.isLink ? "link" : "button", href: target.href || null, status: "SKIPPED_DESTRUCTIVE", reason: `Destructive action is protected by mutation mode '${mutationMode}'.` });
+          continue;
+        }
+        if (target.mutationCandidate && !target.safeMutation && mutationMode !== "all") {
+          actionResults.push({ source: normaliseUrl(page.url()), sourceCategory: category, label: target.label, elementType: target.isLink ? "link" : "button", href: target.href || null, status: "SKIPPED_MUTATION", reason: `Potentially state-changing form/control is protected by mutation mode '${mutationMode}'.` });
           continue;
         }
 
@@ -244,12 +254,17 @@ async function main() {
         }
 
         await locator.scrollIntoViewIfNeeded().catch(() => undefined);
-        const before = await actionState(locator, page);
+        let before;
+        try {
+          before = await actionState(locator, page);
+        } catch (error) {
+          actionResults.push({ source: normaliseUrl(page.url()), sourceCategory: category, label: target.label, elementType: target.isLink ? "link" : "button", href: target.href || null, status: "RUNTIME_ERROR", reason: error instanceof Error ? error.message : String(error) });
+          continue;
+        }
+
         const beforeErrors = globalErrors.length;
         let requestCount = 0;
-        const requestListener = (request) => {
-          if (["xhr", "fetch"].includes(request.resourceType())) requestCount += 1;
-        };
+        const requestListener = (request) => { if (["xhr", "fetch"].includes(request.resourceType())) requestCount += 1; };
         page.on("request", requestListener);
         let clickError = null;
         try {
@@ -263,14 +278,25 @@ async function main() {
           page.off("request", requestListener);
         }
 
+        let after;
         const afterTarget = page.locator(`[data-tt-action-chain-id="${target.crawlId}"]`).first();
-        const after = await actionState(afterTarget, page).catch(async () => ({
-          ...(await snapshotPage(page, false)),
-          url: normaliseUrl(page.url()),
-          elementText: "",
-          disabled: null, ariaExpanded: null, ariaPressed: null, ariaBusy: null, className: "", value: "",
-          activeTag: "", visibleDialogCount: 0, visibleButtonCount: 0, visibleTextHash: "",
-        }));
+        try {
+          if (await afterTarget.count()) {
+            after = await actionState(afterTarget, page);
+          } else {
+            const afterSnapshot = await snapshotPage(page, false);
+            after = {
+              url: normaliseUrl(page.url()), mainText: afterSnapshot.mainText, surfaces: afterSnapshot.visibleSurfaces,
+              elementText: "", disabled: null, ariaExpanded: null, ariaPressed: null, ariaBusy: null,
+              className: "", value: "", activeTag: "", visibleDialogCount: afterSnapshot.visibleSurfaces.filter((value) => value).length,
+              visibleButtonCount: afterSnapshot.buttons.length, visibleTextHash: afterSnapshot.mainText,
+            };
+          }
+        } catch (error) {
+          clickError ||= error instanceof Error ? error.message : String(error);
+          after = { ...before, url: normaliseUrl(page.url()) };
+        }
+
         const errors = [...globalErrors.slice(beforeErrors), ...(clickError ? [{ type: "click", message: clickError }] : [])];
         const outcome = classifyAction({ target, before, after, errors, expectedHref: hrefUrl?.toString() || null, requestCount });
 
@@ -303,10 +329,8 @@ async function main() {
       }
     }
 
-    const outcomes = Object.fromEntries(["PASS", "NO_OP", "PARTIAL_ACTION", "INCOMPLETE_RESULT", "WRONG_DESTINATION", "RUNTIME_ERROR", "SKIPPED_DESTRUCTIVE"].map((status) => [
-      status,
-      actionResults.filter((item) => item.status === status).length,
-    ]));
+    const statusNames = ["PASS", "NO_OP", "PARTIAL_ACTION", "INCOMPLETE_RESULT", "WRONG_DESTINATION", "RUNTIME_ERROR", "SKIPPED_MUTATION", "SKIPPED_DESTRUCTIVE"];
+    const outcomes = Object.fromEntries(statusNames.map((status) => [status, actionResults.filter((item) => item.status === status).length]));
     const blockingStatuses = new Set(["NO_OP", "PARTIAL_ACTION", "INCOMPLETE_RESULT", "WRONG_DESTINATION", "RUNTIME_ERROR"]);
     const failed = actionResults.some((item) => blockingStatuses.has(item.status));
 
@@ -317,7 +341,7 @@ async function main() {
       authenticated: true,
       mutationMode,
       pagesVisited: pages.length,
-      actionTargetsTested: actionResults.filter((item) => item.status !== "SKIPPED_DESTRUCTIVE").length,
+      actionTargetsTested: actionResults.filter((item) => !item.status.startsWith("SKIPPED_")).length,
       outcomes,
       failures: actionResults.filter((item) => blockingStatuses.has(item.status)),
       pages,
@@ -326,14 +350,14 @@ async function main() {
       methodology: [
         "Every visible link and enabled button/input action is considered, including type=submit controls.",
         "Safe approval/verification-style mutations are exercised when mutation mode is 'safe'.",
-        "Destructive actions remain protected unless mutation mode is explicitly 'all'.",
+        "Destructive and other potentially state-changing mutations remain protected unless mutation mode is explicitly 'all', with protected controls reported rather than silently ignored.",
         "A PASS requires navigation to the declared href or an observable UI/accessibility/state result.",
         "NO_OP catches controls whose click produces no observable result.",
         "PARTIAL_ACTION catches local changes without expected success feedback or a network request for mutation candidates.",
         "INCOMPLETE_RESULT catches network activity without an observable result.",
         "Runtime and console errors override an otherwise successful UI transition.",
       ],
-      verdict: failed ? "FAILED" : actionResults.some((item) => item.status === "NO_OP" || item.status === "INCOMPLETE_RESULT" || item.status === "PARTIAL_ACTION") ? "INCOMPLETE" : "PASSED",
+      verdict: failed ? "FAILED" : actionResults.some((item) => ["NO_OP", "INCOMPLETE_RESULT", "PARTIAL_ACTION"].includes(item.status)) ? "INCOMPLETE" : "PASSED",
     };
 
     await fs.writeFile(path.join(outputDir, "action-chain-report.json"), JSON.stringify(report, null, 2), "utf8");
@@ -348,6 +372,7 @@ async function main() {
       `INCOMPLETE RESULT: ${outcomes.INCOMPLETE_RESULT || 0}`,
       `WRONG DESTINATION: ${outcomes.WRONG_DESTINATION || 0}`,
       `RUNTIME ERROR: ${outcomes.RUNTIME_ERROR || 0}`,
+      `SKIPPED MUTATION: ${outcomes.SKIPPED_MUTATION || 0}`,
       `SKIPPED DESTRUCTIVE: ${outcomes.SKIPPED_DESTRUCTIVE || 0}`,
       `VERDICT: ${report.verdict}`,
       "",
