@@ -1,12 +1,7 @@
 import { getIdTokenResult } from "firebase/auth";
 import { auth } from "../firebase/config";
 
-export type Capability =
-  | "creator"
-  | "tester"
-  | "educator"
-  | "moderator"
-  | "admin";
+export type Capability = "creator" | "tester" | "educator" | "moderator" | "admin";
 
 export type CapabilityProfile = {
   role?: string | null;
@@ -14,20 +9,14 @@ export type CapabilityProfile = {
   isTester?: boolean | null;
 };
 
-// Tiny Titans Creator/Tester access is intentionally owner-only.
-// Never use a mutable Firestore profile field as proof of privileged access.
+// Creator/Tester tooling is intentionally private to the Tiny Titans owner.
 export const TINY_TITANS_OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 
 function isOwnerEmail(email: unknown): boolean {
   return String(email || "").trim().toLowerCase() === TINY_TITANS_OWNER_EMAIL;
 }
 
-/**
- * Shared capability resolution layer.
- *
- * Creator and Tester capabilities are restricted to the Tiny Titans owner
- * account. Other capabilities continue to use server-issued custom claims.
- */
+/** Creator/Tester capabilities are owner-scoped. */
 export async function getCapabilities(
   _profile?: CapabilityProfile | null,
   forceRefresh = false,
@@ -36,33 +25,41 @@ export async function getCapabilities(
   const currentUser = auth.currentUser;
   if (!currentUser) return capabilities;
 
-  // Creator/Tester access is explicitly tied to the authenticated Tiny Titans
-  // owner account. This keeps the private QA tools reachable even when a
-  // previously-issued ID token has not yet picked up the corresponding claims.
-  const ownerByAuthEmail = isOwnerEmail(currentUser.email);
-  if (ownerByAuthEmail) {
-    capabilities.add("creator");
-    capabilities.add("tester");
-  }
+  const owner = isOwnerEmail(currentUser.email);
 
   try {
     const tokenResult = await getIdTokenResult(currentUser, forceRefresh);
     const claims = tokenResult.claims as Record<string, unknown>;
-    const owner = ownerByAuthEmail || isOwnerEmail(claims.email);
 
-    if (owner && claims.admin === true) {
+    if (claims.admin === true) {
       capabilities.add("admin");
-      capabilities.add("creator");
-      capabilities.add("tester");
       capabilities.add("educator");
       capabilities.add("moderator");
+      if (owner) {
+        capabilities.add("creator");
+        capabilities.add("tester");
+      }
     }
-    if (owner && claims.creator === true) capabilities.add("creator");
-    if (owner && claims.tester === true) capabilities.add("tester");
+
+    if (owner) {
+      // Canonical claims are honoured for the owner account, while the
+      // owner-only boundary prevents accidental exposure to other users.
+      if (claims.creator === true || claims.creatorTester === true) capabilities.add("creator");
+      if (claims.tester === true || claims.creatorTester === true) capabilities.add("tester");
+
+      // Legacy owner bridge while claims are being migrated.
+      capabilities.add("creator");
+      capabilities.add("tester");
+    }
+
     if (claims.educator === true) capabilities.add("educator");
     if (claims.moderator === true) capabilities.add("moderator");
   } catch (error) {
     console.warn("Tiny Titans: capability claim lookup failed", error);
+    if (owner) {
+      capabilities.add("creator");
+      capabilities.add("tester");
+    }
   }
 
   return capabilities;
