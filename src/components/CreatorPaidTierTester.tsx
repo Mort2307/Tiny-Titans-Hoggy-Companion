@@ -11,11 +11,12 @@ import "../styles/CreatorUsers.css";
 type UserRow = { uid: string; displayName: string; profileType?: string; platform?: string; appVersion?: string };
 
 export default function CreatorPaidTierTester() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]); const [selectedUid, setSelectedUid] = useState(""); const [access, setAccess] = useState<PaidAccess | null>(null);
   const [search, setSearch] = useState(""); const [tier, setTier] = useState<PaidTierId>("titan_pro"); const [mode, setMode] = useState<PaidTierTesterMode>("visible"); const [expiry, setExpiry] = useState("never"); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [error, setError] = useState("");
 
   const loadUsers = useCallback(async () => {
+    if (!user) return;
     const snapshot = await getDocs(collection(db, "users"));
     const next = snapshot.docs.map((item) => {
       const data = item.data();
@@ -23,11 +24,11 @@ export default function CreatorPaidTierTester() {
     });
     next.sort((a, b) => a.displayName.localeCompare(b.displayName));
     setUsers(next);
-    setSelectedUid((current) => current || user?.uid || "");
+    setSelectedUid((current) => current || user.uid || "");
   }, [user?.uid]);
 
   async function loadAccess(uid: string) { if (!uid) { setAccess(null); return; } setAccess(await getPaidAccess(uid)); }
-  useEffect(() => { if (!user || (profile?.role !== "admin" && profile?.profileType !== "creator")) return; void loadUsers().catch((err) => setError(err instanceof Error ? err.message : "Users could not be loaded.")); }, [profile?.profileType, profile?.role, user, loadUsers]);
+  useEffect(() => { if (!user) return; void loadUsers().catch((err) => setError(err instanceof Error ? err.message : "Users could not be loaded.")); }, [user, loadUsers]);
   useEffect(() => { if (!selectedUid) return; void loadAccess(selectedUid).catch((err) => setError(err instanceof Error ? err.message : "Paid access could not be loaded.")); }, [selectedUid]);
 
   const filtered = useMemo(() => { const term = search.trim().toLowerCase(); return term ? users.filter((item) => [item.displayName, item.profileType, item.platform, item.appVersion].some((value) => String(value || "").toLowerCase().includes(term))) : users; }, [search, users]);
@@ -35,7 +36,6 @@ export default function CreatorPaidTierTester() {
   function expiryValue(): string | null { if (expiry === "never") return null; const date = new Date(); date.setDate(date.getDate() + Number(expiry)); return date.toISOString(); }
   async function applyOverride(enabled: boolean) { if (!selectedUid) return; setBusy(true); setMessage(""); setError(""); try { await setPaidTesterOverride(selectedUid, enabled, tier, mode, expiryValue()); setAccess(await getPaidAccess(selectedUid)); setMessage(enabled ? `${selectedUser?.displayName || "User"} is now testing ${selectedDefinition.name}.` : `${selectedUser?.displayName || "User"} tester access is OFF. Their normal subscription tier is restored.`); } catch (err) { setError(err instanceof Error ? err.message : "Paid tester access could not be changed."); } finally { setBusy(false); } }
 
-  if (!user || (profile?.role !== "admin" && profile?.profileType !== "creator")) return null;
   return <section className="creator-tools-page"><div className="creator-tools-card"><PageBackButton fallbackPath="/creator/tester" label="Back to Tester Centre" /><div className="creator-tools-header"><span>🧪</span><div><h1>Paid Tier Tester</h1><p>Grant any selected user a real paid-tier experience without changing their subscription or creating any Stripe charge.</p></div></div>
     {message && <div className="creator-success" role="status">{message}</div>}{error && <div className="creator-error" role="alert">{error}</div>}
     <div className="creator-founder-grid"><div><h2>1. Select user</h2><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search users…" aria-label="Search users for paid tier testing" /><div className="creator-list" style={{ marginTop: 10, maxHeight: 360, overflow: "auto" }}>{filtered.map((item) => <button key={item.uid} type="button" className="creator-user-row" onClick={() => { setSelectedUid(item.uid); setMessage(""); setError(""); }} aria-pressed={selectedUid === item.uid}><span className="creator-user-avatar">{item.displayName.charAt(0).toUpperCase()}</span><span className="creator-user-main"><strong>{item.displayName}</strong><small>{item.profileType || "user"} · {item.platform || "platform unknown"}</small></span><span aria-hidden="true">{selectedUid === item.uid ? "✓" : "→"}</span></button>)}{filtered.length === 0 && <div className="creator-list-item"><strong>No users found</strong><span>Try another search.</span></div>}</div></div>
