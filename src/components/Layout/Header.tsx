@@ -7,6 +7,7 @@ import { getTitanDecisionState, type TitanDecision } from "../../services/titanD
 import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiveIntelligenceService";
 import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
 import LiveWorldClockBadge from "../LiveWorldClockBadge";
+import TinyTitansIcon from "../TinyTitansIcon";
 import TinyTitansTierCrest from "../TinyTitansTierCrest";
 import { getPaidAccess, type PaidAccess } from "../../services/paidTierService";
 import { getPaidTierDefinition } from "../../config/paidTiers";
@@ -86,8 +87,8 @@ function Header() {
             {paidAccess.source !== "subscription" && <small>{paidAccess.source === "tester" ? "TEST" : paidAccess.source === "trial" ? "TRIAL" : "FREE"}</small>}
           </Link>
         )}
-        {!creatorMode && decision && <Link className="titan-proactive-header-link" to={decision.destination || `/snakes/${decision.animalId}/master-record`} aria-label={`Tiny Titans noticed something for ${decision.animalName ?? "your Titan"}: ${decision.title}`} title={decision.why}><span aria-hidden="true">⚡</span><span className="titan-proactive-header-copy"><strong>{decision.animalName ?? "Titan"}</strong><small>{decision.title}</small></span></Link>}
-        <Link className="submission-mailbox-link" to="/conversations" aria-label={unread > 0 ? `Message Centre, ${unread} unread submission message${unread === 1 ? "" : "s"}` : "Open Message Centre"} title={unread > 0 ? `${unread} unread submission message${unread === 1 ? "" : "s"}` : "Message Centre"}><span aria-hidden="true">💬</span>{unread > 0 && <span className="submission-mailbox-badge" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}</Link>
+        {!creatorMode && decision && <Link className="titan-proactive-header-link" to={decision.destination || `/snakes/${decision.animalId}/master-record`} aria-label={`Tiny Titans noticed something for ${decision.animalName ?? "your Titan"}: ${decision.title}`} title={decision.why}><TinyTitansIcon name="titan" size={20} /><span className="titan-proactive-header-copy"><strong>{decision.animalName ?? "Titan"}</strong><small>{decision.title}</small></span></Link>}
+        <Link className="submission-mailbox-link" to="/conversations" aria-label={unread > 0 ? `Message Centre, ${unread} unread submission message${unread === 1 ? "" : "s"}` : "Open Message Centre"} title={unread > 0 ? `${unread} unread submission message${unread === 1 ? "" : "s"}` : "Message Centre"}><TinyTitansIcon name="messages" size={20} />{unread > 0 && <span className="submission-mailbox-badge" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>}</Link>
         <TitanCommandPalette />
       </div>
     </header>
