@@ -24,7 +24,7 @@ export default defineConfig([
       'no-useless-escape': 'warn',
       'preserve-caught-error': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
   {
