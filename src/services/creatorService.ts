@@ -41,20 +41,39 @@ function resolveSpeciesMorph(submission: MorphImageSubmission) {
   const speciesId = submission.speciesId?.trim();
   const requestedId = submission.morphId?.trim();
   const requestedName = normaliseMorphIdentity(submission.morphName);
+  const requestedIdentity = normaliseMorphIdentity(requestedId || submission.morphName);
+
   if (speciesId) {
     const speciesMorphs = getSpeciesVisualMorphs(speciesId);
-    const exact = speciesMorphs.find((entry) => entry.geneId === requestedId || normaliseMorphIdentity(entry.name) === requestedName || (entry.aliases ?? []).some((alias) => normaliseMorphIdentity(alias) === requestedName));
+    const exact = speciesMorphs.find((entry) =>
+      normaliseMorphIdentity(entry.geneId) === requestedIdentity ||
+      normaliseMorphIdentity(entry.name) === requestedName ||
+      (entry.aliases ?? []).some((alias) => normaliseMorphIdentity(alias) === requestedName),
+    );
     if (exact) return exact;
+
+    if (speciesId === "heterodon-nasicus") {
+      return (requestedId ? resolveMasterMorph(requestedId) : undefined) ??
+        resolveMasterMorph(submission.morphName) ??
+        null;
+    }
+
     return null;
   }
-  return requestedId ? resolveMasterMorph(requestedId) ?? resolveMasterMorph(submission.morphName) : resolveMasterMorph(submission.morphName);
+
+  return (requestedId ? resolveMasterMorph(requestedId) : undefined) ??
+    resolveMasterMorph(submission.morphName) ??
+    null;
 }
 
 export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage | null> {
   if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval.");
   const resolvedMorph = resolveSpeciesMorph(submission);
   if (!resolvedMorph) throw new Error(`Could not match “${submission.morphName}” to a canonical Morph Library entry for the selected species. Check the species and morph before approving.`);
-  if (submission.speciesId && resolvedMorph.geneId !== submission.morphId) throw new Error("The submitted morph does not match the selected species' canonical morph ID. Do not approve cross-species imagery.");
+  // The morph has already been resolved against the selected species catalogue
+  // (or the Western Hognose canonical resolver for resolver-backed combinations).
+  // Do not compare raw IDs here because aliases and legacy IDs can resolve to
+  // the same species-safe canonical morph identity.
   const functions = getFunctions(undefined, "europe-west2");
   const approveCallable = httpsCallable<{ submissionId: string }, { success: boolean; published: boolean; approvedImageId: string | null; morphId: string; morphName: string; storagePath: string }>(functions, "approveMorphImageSubmission");
   try {
