@@ -25,7 +25,7 @@ export default function CreatorPaidTierTester() {
     next.sort((a, b) => a.displayName.localeCompare(b.displayName));
     setUsers(next);
     setSelectedUid((current) => current || user.uid || "");
-  }, [user?.uid]);
+  }, [user]);
 
   async function loadAccess(uid: string) { if (!uid) { setAccess(null); return; } setAccess(await getPaidAccess(uid)); }
   useEffect(() => { if (!user) return; void loadUsers().catch((err) => setError(err instanceof Error ? err.message : "Users could not be loaded.")); }, [user, loadUsers]);
