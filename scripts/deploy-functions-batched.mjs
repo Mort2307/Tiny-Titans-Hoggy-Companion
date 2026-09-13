@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, dirname, extname, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -100,28 +100,39 @@ function deployBatch(batch, batchNumber, attempt) {
     const child = spawn("firebase", ["deploy", "--only", target], {
       cwd: projectRoot,
       env: process.env,
-      stdio: "inherit",
+      stdio: ["inherit", "pipe", "pipe"],
       shell: process.platform === "win32",
       windowsHide: false,
     });
 
+    let output = "";
+    const capture = (chunk) => {
+      const text = chunk.toString();
+      output += text;
+      process.stdout.write(text);
+    };
+
+    child.stdout.on("data", capture);
+    child.stderr.on("data", capture);
     child.on("error", reject);
     child.on("exit", (code, signal) => {
       if (signal) {
-        reject(new Error(`Firebase deployment for batch ${batchNumber} was terminated by ${signal}.`));
+        reject(new Error(`Firebase deployment for batch ${batchNumber} was terminated by ${signal}.\n${output}`));
         return;
       }
       if (code === 0) {
         resolvePromise();
         return;
       }
-      reject(new Error(`Firebase deployment for batch ${batchNumber} exited with code ${code ?? 1}.`));
+      const error = new Error(`Firebase deployment for batch ${batchNumber} exited with code ${code ?? 1}.\n${output}`);
+      error.cause = output;
+      reject(error);
     });
   });
 }
 
 function isQuotaFailure(error) {
-  const message = String(error?.message || error || "").toLowerCase();
+  const message = String(error?.cause || error?.message || error || "").toLowerCase();
   return message.includes("429") || message.includes("quota exceeded") || message.includes("per project mutation requests");
 }
 
