@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [master]
+  pull_request:
+    branches: [master]
 
 permissions:
   contents: read
@@ -50,6 +52,16 @@ jobs:
           TINY_TITANS_ROUTE_CRAWL_MAX_PAGES: 250
         run: node scripts/run-route-crawl-bot.mjs
 
+      - name: Run Action Chain BOT
+        if: ${{ always() }}
+        env:
+          TINY_TITANS_TEST_URL: http://127.0.0.1:4173
+          TINY_TITANS_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
+          TINY_TITANS_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
+          TINY_TITANS_ACTION_CHAIN_MAX_PAGES: 250
+          TINY_TITANS_BOT_MUTATION_MODE: safe
+        run: node scripts/run-action-chain-bot.mjs
+
       - name: Upload Route Crawl report
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
@@ -58,4 +70,12 @@ jobs:
           path: |
             artifacts/route-crawl/
             ci-route-crawl-server.log
+          if-no-files-found: warn
+
+      - name: Upload Action Chain report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiny-titans-action-chain-${{ github.run_id }}
+          path: artifacts/action-chain/
           if-no-files-found: warn
