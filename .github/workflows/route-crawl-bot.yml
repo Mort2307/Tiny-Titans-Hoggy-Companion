@@ -36,9 +36,9 @@ jobs:
       - name: Start preview server
         shell: bash
         run: |
-          nohup npm run dev -- --host 127.0.0.1 --port 4173 > ci-route-crawl-server.log 2>&1 &
+          nohup npm run dev -- --host 127.0.0.1 --port 5173 > ci-route-crawl-server.log 2>&1 &
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            if curl -fsS http://127.0.0.1:5173/ >/dev/null; then exit 0; fi
             sleep 1
           done
           cat ci-route-crawl-server.log
@@ -46,7 +46,7 @@ jobs:
 
       - name: Run Route Crawl BOT
         env:
-          TINY_TITANS_TEST_URL: http://127.0.0.1:4173
+          TINY_TITANS_TEST_URL: http://127.0.0.1:5173
           TINY_TITANS_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
           TINY_TITANS_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
           TINY_TITANS_ROUTE_CRAWL_MAX_PAGES: 250
@@ -55,7 +55,7 @@ jobs:
       - name: Run Action Chain BOT
         if: ${{ always() }}
         env:
-          TINY_TITANS_TEST_URL: http://127.0.0.1:4173
+          TINY_TITANS_TEST_URL: http://127.0.0.1:5173
           TINY_TITANS_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
           TINY_TITANS_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
           TINY_TITANS_ACTION_CHAIN_MAX_PAGES: 250
