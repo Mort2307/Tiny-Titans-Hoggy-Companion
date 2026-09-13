@@ -47,7 +47,7 @@ function Navigation() {
   if (creatorAuthorized) authorisedCapabilities.add("creator");
   if (testerAuthorized) authorisedCapabilities.add("tester");
   if (educatorAuthorized) authorisedCapabilities.add("educator");
-  const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities).filter((item) => item.id !== "room");
+  const quickItems = [...quickNavSearchItems(quickSearch, authorisedCapabilities), { id: "marketplace", label: "Marketplace", icon: "🛒", path: "/marketplace", group: "Community", description: "Browse active reptile marketplace listings.", keywords: ["market", "seller", "listing", "shop"] as string[] }].filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index);
   const quickGroups = quickItems.reduce<Record<string, typeof quickItems>>((groups, item) => { (groups[item.group] ??= []).push(item); return groups; }, {});
 
   if (isEasyNav) {
