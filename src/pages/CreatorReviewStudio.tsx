@@ -133,8 +133,9 @@ export default function CreatorReviewStudio() {
   const draftMorphId = draft?.morphId;
   const draftMorphName = draft?.morphName;
   const currentCanonical = useMemo(() => {
-    if (!draftMorphId && !draftMorphName) return null;
-    return resolveMasterMorph(draftMorphId || draftMorphName) ?? masterMorphs.find((morph) => morph.geneId === draftMorphId) ?? null;
+    const canonicalKey = draftMorphId || draftMorphName;
+    if (!canonicalKey) return null;
+    return resolveMasterMorph(canonicalKey) ?? masterMorphs.find((morph) => morph.geneId === draftMorphId) ?? null;
   }, [draftMorphId, draftMorphName]);
 
   const load = useCallback(async () => {
