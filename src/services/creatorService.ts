@@ -70,7 +70,10 @@ export async function approveMorphImageSubmission(submission: MorphImageSubmissi
   if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new Error("This submission is no longer awaiting approval.");
   const resolvedMorph = resolveSpeciesMorph(submission);
   if (!resolvedMorph) throw new Error(`Could not match “${submission.morphName}” to a canonical Morph Library entry for the selected species. Check the species and morph before approving.`);
-  if (submission.speciesId && resolvedMorph.geneId !== submission.morphId) throw new Error("The submitted morph does not match the selected species' canonical morph ID. Do not approve cross-species imagery.");
+  // The morph has already been resolved against the selected species catalogue
+  // (or the Western Hognose canonical resolver for resolver-backed combinations).
+  // Do not compare raw IDs here because aliases and legacy IDs can resolve to
+  // the same species-safe canonical morph identity.
   const functions = getFunctions(undefined, "europe-west2");
   const approveCallable = httpsCallable<{ submissionId: string }, { success: boolean; published: boolean; approvedImageId: string | null; morphId: string; morphName: string; storagePath: string }>(functions, "approveMorphImageSubmission");
   try {
