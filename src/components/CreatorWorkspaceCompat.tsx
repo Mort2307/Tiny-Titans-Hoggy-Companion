@@ -12,8 +12,9 @@ import { AuthContext } from "../context/AuthContextValue";
 export default function CreatorWorkspaceCompat({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const profile = auth.profile;
+  const isCreatorHubHome = window.location.pathname === "/creator";
 
-  if (!profile || profile.role === "admin" || profile.profileType !== "creator") {
+  if (isCreatorHubHome || !profile || profile.role === "admin" || profile.profileType !== "creator") {
     return <>{children}</>;
   }
 
