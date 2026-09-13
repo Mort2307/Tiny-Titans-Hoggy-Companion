@@ -41,13 +41,29 @@ function resolveSpeciesMorph(submission: MorphImageSubmission) {
   const speciesId = submission.speciesId?.trim();
   const requestedId = submission.morphId?.trim();
   const requestedName = normaliseMorphIdentity(submission.morphName);
+  const requestedIdentity = normaliseMorphIdentity(requestedId || submission.morphName);
+
   if (speciesId) {
     const speciesMorphs = getSpeciesVisualMorphs(speciesId);
-    const exact = speciesMorphs.find((entry) => entry.geneId === requestedId || normaliseMorphIdentity(entry.name) === requestedName || (entry.aliases ?? []).some((alias) => normaliseMorphIdentity(alias) === requestedName));
+    const exact = speciesMorphs.find((entry) =>
+      normaliseMorphIdentity(entry.geneId) === requestedIdentity ||
+      normaliseMorphIdentity(entry.name) === requestedName ||
+      (entry.aliases ?? []).some((alias) => normaliseMorphIdentity(alias) === requestedName),
+    );
     if (exact) return exact;
+
+    if (speciesId === "heterodon-nasicus") {
+      return (requestedId ? resolveMasterMorph(requestedId) : undefined) ??
+        resolveMasterMorph(submission.morphName) ??
+        null;
+    }
+
     return null;
   }
-  return requestedId ? resolveMasterMorph(requestedId) ?? resolveMasterMorph(submission.morphName) : resolveMasterMorph(submission.morphName);
+
+  return (requestedId ? resolveMasterMorph(requestedId) : undefined) ??
+    resolveMasterMorph(submission.morphName) ??
+    null;
 }
 
 export async function approveMorphImageSubmission(submission: MorphImageSubmission, reviewerUid?: string): Promise<ApprovedMorphImage | null> {
