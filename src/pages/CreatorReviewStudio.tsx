@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getDownloadURL, ref } from "firebase/storage";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -16,6 +16,15 @@ import type { MorphImageSubmission } from "../types/morphSubmission";
 import "../styles/CreatorTools.css";
 
 const normalise = (value: string) => value.trim().toLowerCase();
+const normaliseSearch = (value: string) => normalise(value).replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+const isUnknownMorph = (morph: MasterMorphDefinition) => normaliseSearch(morph.name) === "unknown" || normaliseSearch(morph.geneId) === "unknown";
+
+function matchesMorphSearch(morph: MasterMorphDefinition, search: string) {
+  const needle = normaliseSearch(search);
+  if (!needle) return true;
+  const haystack = normaliseSearch([morph.geneId, morph.name, ...(morph.aliases ?? [])].join(" "));
+  return needle.split(" ").every((term) => haystack.includes(term));
+}
 
 type Draft = {
   speciesId: string;
@@ -58,7 +67,7 @@ function formatDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("en-GB");
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label><strong style={{ display: "block", marginBottom: 6, color: "var(--secondary,#F5B642)", fontSize: ".75rem", letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</strong>{children}</label>;
 }
 
@@ -81,30 +90,41 @@ export default function CreatorReviewStudio() {
   const selected = useMemo(() => items.find((item) => item.id === selectedId) ?? null, [items, selectedId]);
   const visible = useMemo(() => queueFilter === "pending" ? items.filter((item) => isAwaitingMorphReview(item.status)) : items, [items, queueFilter]);
   const speciesOptions = useMemo(() => {
-    const needle = normalise(speciesSearch);
-    return searchSnakeSpecies("").filter((species) => !needle || [species.id, ...species.commonNames, species.acceptedScientificName].some((value) => normalise(String(value)).includes(needle))).slice(0, 60);
+    const needle = normaliseSearch(speciesSearch);
+    return searchSnakeSpecies("").filter((species) => !needle || [species.id, ...species.commonNames, species.acceptedScientificName].some((value) => normaliseSearch(String(value)).includes(needle))).slice(0, 60);
   }, [speciesSearch]);
   const morphOptions = useMemo(() => {
-    if (!draft?.speciesId) return [];
-    const needle = normalise(morphSearch);
-    return getSpeciesVisualMorphs(draft.speciesId).filter((morph) => !needle || [morph.geneId, morph.name, ...(morph.aliases ?? [])].some((value) => normalise(value).includes(needle))).slice(0, 100);
-  }, [draft?.speciesId, morphSearch]);
+    const speciesId = draft?.speciesId ?? "";
+    if (!speciesId) return [];
+    return [...getSpeciesVisualMorphs(speciesId)]
+      .filter((morph) => matchesMorphSearch(morph, morphSearch))
+      .sort((a, b) => {
+        const aUnknown = isUnknownMorph(a);
+        const bUnknown = isUnknownMorph(b);
+        if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;
+        return a.name.localeCompare(b.name, "en", { sensitivity: "base", numeric: true });
+      })
+      .slice(0, 100);
+  }, [draft, morphSearch]);
   const currentCanonical = useMemo(() => masterMorphs.find((morph) => morph.geneId === draft?.morphId) ?? null, [draft?.morphId]);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     setLoading(true); setError("");
     try {
       const next = await getMorphImageSubmissions();
       setItems(next);
       setNames(await getCreatorUserDisplayNames(next.map((item) => item.userId).filter((uid): uid is string => Boolean(uid))));
-      if (!selectedId && next[0]) setSelectedId(next[0].id);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to load morph submissions.");
     } finally { setLoading(false); }
-  }
+  }, [user]);
 
-  useEffect(() => { if (profile?.role === "admin" && user) void load(); }, [profile?.role, user]);
+  useEffect(() => { if (profile?.role === "admin" && user) void load(); }, [profile?.role, user, load]);
+
+  useEffect(() => {
+    if (!selectedId && items[0]) setSelectedId(items[0].id);
+  }, [items, selectedId]);
 
   useEffect(() => {
     if (!selected) return;
@@ -113,7 +133,7 @@ export default function CreatorReviewStudio() {
     let active = true;
     void getDownloadURL(ref(storage, selected.attachment.path)).then((url) => active && setImageUrl(url)).catch(() => active && setImageUrl(""));
     return () => { active = false; };
-  }, [selectedId]);
+  }, [selected]);
 
   function patch(partial: Partial<Draft>) { setDraft((current) => current ? { ...current, ...partial } : current); setDirty(true); setNotice(""); setError(""); }
   function selectSpecies(speciesId: string) {
@@ -121,7 +141,7 @@ export default function CreatorReviewStudio() {
     patch({ speciesId, speciesName: species?.commonNames[0] ?? "", morphId: "", morphName: "" });
     setMorphSearch("");
   }
-  function selectMorph(morph: MasterMorphDefinition) { patch({ morphId: morph.geneId, morphName: morph.name }); }
+  function selectMorph(morph: MasterMorphDefinition) { patch({ morphId: morph.geneId, morphName: morph.name }); setMorphSearch(morph.name); }
 
   async function saveDraft(status?: "Pending" | "NeedsInfo") {
     if (!selected || !draft) return false;
@@ -205,7 +225,14 @@ export default function CreatorReviewStudio() {
             {imageUrl ? <div className="creator-submission-preview"><img src={imageUrl} alt={`Submitted ${draft.morphName}`} /></div> : <div className="creator-list-item"><strong>Preview unavailable</strong><span>The submitted media could not be loaded.</span></div>}
             <div className="creator-form" style={{ marginTop: 18 }}>
               <Field label="Species"><input value={speciesSearch} onChange={(event) => setSpeciesSearch(event.target.value)} placeholder={draft.speciesName || draft.speciesId} /><select value={draft.speciesId} onChange={(event) => selectSpecies(event.target.value)}><option value="">Select species…</option>{speciesOptions.map((species) => <option key={species.id} value={species.id}>{species.commonNames[0]} · {species.id}</option>)}</select></Field>
-              <Field label="Canonical Morph"><input value={morphSearch} onChange={(event) => setMorphSearch(event.target.value)} placeholder="Search canonical name, alias or ID…" /><select value={draft.morphId} onChange={(event) => { const match = morphOptions.find((morph) => morph.geneId === event.target.value); if (match) selectMorph(match); }}><option value="">Select canonical morph…</option>{morphOptions.map((morph) => <option key={morph.geneId} value={morph.geneId}>{morph.name} · {morph.kind}</option>)}</select>{currentCanonical && <small>{currentCanonical.kind} · {currentCanonical.inheritance} · {currentCanonical.geneId}</small>}</Field>
+              <Field label="Canonical Morph"><input value={morphSearch} onChange={(event) => setMorphSearch(event.target.value)} placeholder="Search canonical name, alias or ID…" autoComplete="off" />
+                <select value={draft.morphId} onChange={(event) => { const match = getSpeciesVisualMorphs(draft.speciesId).find((morph) => morph.geneId === event.target.value); if (match) selectMorph(match); }}>
+                  <option value="">Select canonical morph…</option>
+                  {morphOptions.map((morph) => <option key={morph.geneId} value={morph.geneId}>{morph.name} · {morph.kind}</option>)}
+                </select>
+                {morphSearch && <small>Search matches name, aliases and canonical ID. Results are A–Z with Unknown kept at the bottom.</small>}
+                {currentCanonical && <small>{currentCanonical.kind} · {currentCanonical.inheritance} · {currentCanonical.geneId}</small>}
+              </Field>
               <Field label="Public morph name"><input value={draft.morphName} onChange={(event) => patch({ morphName: event.target.value })} /></Field>
               <Field label="Description"><textarea rows={4} value={draft.description} onChange={(event) => patch({ description: event.target.value })} /></Field>
               <Field label="Genetics notes"><textarea rows={3} value={draft.geneticsNotes} onChange={(event) => patch({ geneticsNotes: event.target.value })} /></Field>
