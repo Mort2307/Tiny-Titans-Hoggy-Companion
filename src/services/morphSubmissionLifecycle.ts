@@ -30,8 +30,7 @@ export function isAwaitingMorphReview(status: MorphSubmissionStatus): boolean {
 }
 
 function resolveSubmissionMorph(submission: MorphImageSubmission) {
-  if (!submission.morphId) return undefined;
-  const requestedId = submission.morphId.trim();
+  const requestedId = submission.morphId?.trim();
   const requestedName = submission.morphName.trim().toLowerCase();
   if (submission.speciesId) {
     return getSpeciesVisualMorphs(submission.speciesId).find((morph) =>
@@ -40,20 +39,17 @@ function resolveSubmissionMorph(submission: MorphImageSubmission) {
       (morph.aliases ?? []).some((alias) => alias.trim().toLowerCase() === requestedName),
     );
   }
-  return getMasterMorphByGeneId(requestedId);
+  return requestedId ? getMasterMorphByGeneId(requestedId) : undefined;
 }
 
 /** Validate client-side prerequisites before the server-side approval callable is invoked. */
 export function validateMorphSubmissionForApproval(submission: MorphImageSubmission): string | null {
   if (!isAwaitingMorphReview(submission.status)) return "This submission is no longer awaiting review.";
-  if (!submission.morphId) return "A canonical Morph Library entry is required before approval.";
+  if (!submission.morphId?.trim()) return "A canonical Morph Library entry is required before approval.";
   const canonical = resolveSubmissionMorph(submission);
   if (!canonical) return "This submission does not match a canonical Morph Library entry for the selected species.";
-  if (submission.morphName.trim().toLowerCase() !== canonical.name.trim().toLowerCase()) return "The submitted morph name no longer matches its canonical morph ID.";
-  if (!submission.attachment?.path) return "A valid image attachment is required before approval.";
-  if (submission.attachment.type !== "image") return "Only image submissions can be approved.";
-  if (!submission.photoRequirementsConfirmed) return "The submitter must confirm the photo requirements.";
-  if (!submission.factualAccuracyConfirmed) return "The submitter must confirm factual accuracy.";
+  if (submission.speciesId && canonical.geneId !== submission.morphId.trim()) return "The submitted morph does not match the selected species' canonical morph ID.";
+  if (!submission.attachment?.path) return "A valid media attachment is required before approval.";
   return null;
 }
 
