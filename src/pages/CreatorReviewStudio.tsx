@@ -224,12 +224,26 @@ export default function CreatorReviewStudio() {
             {imageUrl ? <div className="creator-submission-preview"><img src={imageUrl} alt={`Submitted ${draft.morphName}`} /></div> : <div className="creator-list-item"><strong>Preview unavailable</strong><span>The submitted media could not be loaded.</span></div>}
             <div className="creator-form" style={{ marginTop: 18 }}>
               <Field label="Species"><input value={speciesSearch} onChange={(event) => setSpeciesSearch(event.target.value)} placeholder={draft.speciesName || draft.speciesId} /><select value={draft.speciesId} onChange={(event) => selectSpecies(event.target.value)}><option value="">Select species…</option>{speciesOptions.map((species) => <option key={species.id} value={species.id}>{species.commonNames[0]} · {species.id}</option>)}</select></Field>
-              <Field label="Canonical Morph"><input value={morphSearch} onChange={(event) => setMorphSearch(event.target.value)} placeholder="Search canonical name, alias or ID…" autoComplete="off" />
-                <select value={draft.morphId} onChange={(event) => { const match = getSpeciesVisualMorphs(draft.speciesId).find((morph) => morph.geneId === event.target.value); if (match) selectMorph(match); }}>
-                  <option value="">Select canonical morph…</option>
-                  {morphOptions.map((morph) => <option key={morph.geneId} value={morph.geneId}>{morph.name} · {morph.kind}</option>)}
-                </select>
-                {morphSearch && <small>Search matches name, aliases and canonical ID. Results are A–Z with Unknown kept at the bottom.</small>}
+              <Field label="Canonical Morph">
+                <input value={morphSearch} onChange={(event) => setMorphSearch(event.target.value)} placeholder="Search canonical name, alias or ID…" autoComplete="off" aria-label="Search canonical morph library" />
+                <div role="listbox" aria-label="Canonical morph library" style={{ maxHeight: 360, overflowY: "auto", border: "1px solid var(--tt-tier-edge, rgba(255,255,255,.14))", borderRadius: 12, padding: 6, background: "rgba(0,0,0,.16)" }}>
+                  {morphOptions.length === 0 ? (
+                    <div style={{ padding: 14, opacity: .75 }}>No canonical morphs match that search.</div>
+                  ) : morphOptions.map((morph) => (
+                    <button
+                      key={morph.geneId}
+                      type="button"
+                      role="option"
+                      aria-selected={draft.morphId === morph.geneId}
+                      onClick={() => selectMorph(morph)}
+                      style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, border: 0, borderRadius: 9, padding: "9px 10px", background: draft.morphId === morph.geneId ? "var(--tt-tier-glow, rgba(255,255,255,.08))" : "transparent", color: "inherit", textAlign: "left", cursor: "pointer" }}
+                    >
+                      <span><strong>{morph.name}</strong><small style={{ display: "block", opacity: .72 }}>{morph.kind} · {morph.geneId}</small></span>
+                      {draft.morphId === morph.geneId && <span aria-hidden="true">✓</span>}
+                    </button>
+                  ))}
+                </div>
+                <small>{morphOptions.length} canonical morph{morphOptions.length === 1 ? "" : "s"} shown. Results are A–Z with Unknown kept at the bottom.</small>
                 {currentCanonical && <small>{currentCanonical.kind} · {currentCanonical.inheritance} · {currentCanonical.geneId}</small>}
               </Field>
               <Field label="Public morph name"><input value={draft.morphName} onChange={(event) => patch({ morphName: event.target.value })} /></Field>
