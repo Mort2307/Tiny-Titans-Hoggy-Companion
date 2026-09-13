@@ -3,6 +3,9 @@ import fs from 'node:fs';
 const router = fs.readFileSync('src/routes/AppRouter.tsx', 'utf8');
 const morphLibrary = fs.readFileSync('src/pages/MorphLibrary.tsx', 'utf8');
 const creatorSubmissions = fs.readFileSync('src/pages/CreatorSubmissions.tsx', 'utf8');
+const creatorReviewStudio = fs.readFileSync('src/pages/CreatorReviewStudio.tsx', 'utf8');
+const creatorReviewService = fs.readFileSync('src/services/creatorReviewStudioService.ts', 'utf8');
+const creatorApproval = fs.readFileSync('functions/creatorReviewStudio.js', 'utf8');
 const submissionService = fs.readFileSync('src/services/morphSubmissionServiceV2.ts', 'utf8');
 const userSubmissionService = fs.readFileSync('src/services/morphUserSubmissionService.ts', 'utf8');
 const submissionTypes = fs.readFileSync('src/types/morphSubmission.ts', 'utf8');
@@ -38,10 +41,20 @@ const requiredContracts = [
   ['Submission type stores speciesId', submissionTypes.includes('speciesId: string')],
   ['Submission type stores Morph Library link consent', submissionTypes.includes('allowMorphLibraryLink?: boolean')],
   ['Species selector reads the canonical species registry', speciesSelector.includes('INITIAL_SNAKE_SPECIES')],
-  ['Creator submissions loads both photo and terminology queues', creatorSubmissions.includes('Promise.all([getMorphImageSubmissions(), getAllUserMorphSubmissions()])')],
-  ['Creator submissions displays species context', creatorSubmissions.includes('displaySpecies(item.speciesId, item.speciesName)')],
-  ['Creator submissions validates photo approval', creatorSubmissions.includes('validateMorphSubmissionForApproval')],
-  ['Creator submissions guards approval transition', creatorSubmissions.includes('canTransitionMorphSubmission')],
+  ['Creator submissions uses the Review Studio', creatorSubmissions.includes('CreatorReviewStudio')],
+  ['Creator Review Studio loads photo queue', creatorReviewStudio.includes('getMorphImageSubmissions()')],
+  ['Creator Review Studio provides live editable draft state', creatorReviewStudio.includes('setDraft') && creatorReviewStudio.includes('function patch(')],
+  ['Creator Review Studio provides canonical morph selection', creatorReviewStudio.includes('getSpeciesVisualMorphs') && creatorReviewStudio.includes('selectMorph')],
+  ['Creator Review Studio validates edited approval state', creatorReviewStudio.includes('validateMorphSubmissionForApproval') && creatorReviewStudio.includes('const proposed = { ...selected, ...draft }')],
+  ['Creator Review Studio guards approval transition', creatorReviewStudio.includes('canTransitionMorphSubmission')],
+  ['Creator Review Studio provides Save Draft', creatorReviewStudio.includes('saveDraft') && creatorReviewStudio.includes('Save Draft')],
+  ['Creator Review Studio provides Needs Info', creatorReviewStudio.includes('requestInfo') && creatorReviewStudio.includes('NeedsInfo')],
+  ['Creator Review Studio provides Approve & Publish', creatorReviewStudio.includes('Approve & Publish')],
+  ['Creator Review Studio keeps Creator notes private', creatorReviewStudio.includes('creatorReviewerNotes')],
+  ['Review service calls secure save function', creatorReviewService.includes('saveMorphSubmissionReview') && creatorReviewService.includes('europe-west2')],
+  ['Review function is Creator-authorized', creatorApproval.includes('Only the Tiny Titans owner can edit Creator submissions.')],
+  ['Review function whitelists editable fields', creatorApproval.includes('EDITABLE_KEYS')],
+  ['Review function records field-level audit changes', creatorApproval.includes('changes') && creatorApproval.includes('creatorAudit') && creatorApproval.includes('before: beforeValue')],
 ];
 
 const failures = [];
