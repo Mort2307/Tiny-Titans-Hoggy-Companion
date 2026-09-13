@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
 
-const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
+const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:5173";
 const email = process.env.TINY_TITANS_BOT_EMAIL || process.env.TINY_TITANS_VISUAL_BOT_EMAIL;
 const password = process.env.TINY_TITANS_BOT_PASSWORD || process.env.TINY_TITANS_VISUAL_BOT_PASSWORD;
 const outputDir = path.resolve(process.env.TINY_TITANS_ROUTE_CRAWL_OUTPUT || "artifacts/route-crawl");
@@ -27,7 +27,7 @@ function pageCategory(pathname) {
     community: "Community", feedback: "Feedback", "report-bug": "Bug Reporting", "report-issue": "Issue Reporting", creator: "Creator Centre",
     educator: "Educator", paid: "Paid Features", "titan-intelligence": "Titan Intelligence", "reptile-room": "Reptile Room", founder: "Founder",
     "become-a-titan": "Become a Titan", sandbox: "Sandbox", "behaviour-observatory": "Behaviour Observatory", "make-contribution": "Contributions",
-    "submit-species": "Species Submission", conversations: "Conversations", "wall-of-titans": "Wall of Titans",
+    "submit-species": "Species Submission", conversations: "Conversations", "wall-of-titans": "Wall of Titans", marketplace: "Marketplace",
   };
   return map[first] || (pathname === "/" ? "Main Page" : first ? first.replaceAll("-", " ").replace(/\b\w/g, (m) => m.toUpperCase()) : "Main Page");
 }
@@ -238,32 +238,17 @@ async function main() {
         "A PASS requires a new expected route or a measurable in-page state change.",
         "NO_OP means the control produced no observable change.",
         "LOOP means the control returns to an already-seen equivalent state or unexpected earlier state.",
-        "WRONG_DESTINATION means navigation occurred but did not reach the declared href.",
-        "Runtime and console errors always override an otherwise successful navigation.",
-        "Destructive controls such as Save/Delete/Submit/Pay are excluded from automatic mutation testing and are reported as intentionally skipped by safety policy.",
       ],
-      verdict: clickResults.some((item) => ["WRONG_DESTINATION", "LOOP", "RUNTIME_ERROR"].includes(item.status)) ? "FAILED" : clickResults.some((item) => item.status === "NO_OP") ? "INCOMPLETE" : "PASSED",
     };
-
-    await fs.writeFile(path.join(outputDir, "route-crawl-report.json"), JSON.stringify(report, null, 2), "utf8");
-    const lines = [
-      "TINY TITANS · ROUTE CRAWL BOT REPORT", "======================================",
-      `Generated: ${report.generatedAt}`, `Pages visited: ${report.pagesVisited}`, `Tiles detected: ${report.tileCount}`,
-      `Navigation / action targets tested: ${report.navigationTargetsTested}`, `PASS: ${report.outcomes.pass}`, `NO-OP: ${report.outcomes.noOp}`,
-      `LOOP: ${report.outcomes.loops}`, `WRONG DESTINATION: ${report.outcomes.wrongDestination}`, `RUNTIME ERROR: ${report.outcomes.runtimeErrors}`, `VERDICT: ${report.verdict}`,
-      "", "PAGE INVENTORY", "==============",
-      ...pages.map((item) => `${item.category} > ${item.heading} > ${item.tileCount} tiles > ${item.navigationCount} actions`),
-      "", "CATEGORY SUMMARY", "================",
-      ...categorySummary.map((item) => `${item.category} > ${item.pageCount} pages > ${item.totalTiles} tiles > avg ${item.averageTilesPerPage}/page > ${item.passed} pass / ${item.loops} loops / ${item.noOp} no-op / ${item.wrongDestination} wrong / ${item.runtimeErrors} runtime`),
-      "", "FAILURES / INCOMPLETE", "====================",
-      ...clickResults.filter((item) => item.status !== "PASS").map((item) => `[${item.status}] ${item.source} > ${item.label} > ${item.href || "button-state"} :: ${item.reason}`),
-    ];
-    await fs.writeFile(path.join(outputDir, "route-crawl-report.txt"), `${lines.join("\n")}\n`, "utf8");
-    console.log(lines.join("\n"));
-    if (report.verdict === "FAILED") process.exitCode = 1;
+    await fs.writeFile(path.join(outputDir, "route-crawl-report.json"), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify({ bot: report.bot, pagesVisited: report.pagesVisited, navigationTargetsTested: report.navigationTargetsTested, outcomes: report.outcomes }, null, 2));
+    if (report.outcomes.loops || report.outcomes.wrongDestination || report.outcomes.runtimeErrors) process.exitCode = 1;
   } finally {
     await browser.close();
   }
 }
 
-await main();
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
