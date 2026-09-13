@@ -5,7 +5,9 @@ const command = isWindows ? "npx.cmd" : "npx";
 const args = ["--yes", "playwright", "test", "scripts/app-bot/overlord.spec.mjs", "scripts/app-bot/overlord-form-matrix.spec.mjs"];
 const env = {
   ...process.env,
-  TINY_TITANS_TEST_URL: process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:5173",
+  // Overlord always targets the standard Vite dev port. Do not let a stale
+  // shell/user-level TINY_TITANS_TEST_URL redirect the suite to an old port.
+  TINY_TITANS_TEST_URL: "http://127.0.0.1:5173",
 };
 
 const result = spawnSync(command, args, {
