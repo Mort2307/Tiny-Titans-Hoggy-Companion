@@ -1,0 +1,70 @@
+name: Recovery navigation repair
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.after == '8c6c488d3105f6cf497434670ff1e9592fdf8f1c'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore navigation contracts and Marketplace entry points
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function replaceOnce(path, find, replacement) {
+            const source = fs.readFileSync(path, 'utf8');
+            if (!source.includes(find)) throw new Error(`Expected text not found in ${path}: ${find.slice(0, 140)}`);
+            const next = source.replace(find, replacement);
+            fs.writeFileSync(path, next);
+          }
+
+          replaceOnce(
+            'src/routes/AppRouter.tsx',
+            'import TitanIntelligence from "../pages/TitanIntelligence";import TitanFeatureExperience from "../pages/TitanFeatureExperience";import PaidPlans from "../pages/PaidPlans";import AccountBilling from "../pages/AccountBilling";import PaidFeatureWorkspace from "../pages/PaidFeatureWorkspace";import PaidMarketplaceFeature from "../pages/PaidMarketplaceFeature";import PaidSupportFeature from "../pages/PaidSupportFeature";import PaidTimelineFeature from "../pages/PaidTimelineFeature";',
+            'import TitanIntelligence from "../pages/TitanIntelligence";import TitanFeatureExperience from "../pages/TitanFeatureExperience";import PaidPlans from "../pages/PaidPlans";import AccountBilling from "../pages/AccountBilling";import PaidFeatureWorkspace from "../pages/PaidFeatureWorkspace";import PaidMarketplaceFeature from "../pages/PaidMarketplaceFeature";import PaidSupportFeature from "../pages/PaidSupportFeature";import PaidTimelineFeature from "../pages/PaidTimelineFeature";import Marketplace from "../pages/Marketplace";'
+          );
+
+          replaceOnce(
+            'src/routes/AppRouter.tsx',
+            '<Route path="/plans" element={<PaidPlans/>}/><Route path="/paid/marketplace" element={<PaidMarketplaceFeature/>}/>',
+            '<Route path="/plans" element={<PaidPlans/>}/><Route path="/marketplace" element={<Marketplace/>}/><Route path="/paid/marketplace" element={<PaidMarketplaceFeature/>}/>'
+          );
+
+          replaceOnce(
+            'src/components/Layout/Navigation.tsx',
+            '{ label: "Account", links: [["/account", "●", "My Account"], ["/plans", "◇", "Plans & Features"], ["/account/billing", "▣", "Billing & Subscription"], ["/account/family", "👨‍👩‍👧", "My Family"], ["/become-a-titan", "✦", "Become a Titan"]] },',
+            '{ label: "Account", links: [["/account", "●", "My Account"], ["/plans", "◇", "Plans & Features"], ["/marketplace", "🛒", "Marketplace"], ["/account/billing", "▣", "Billing & Subscription"], ["/account/family", "👨‍👩‍👧", "My Family"], ["/become-a-titan", "✦", "Become a Titan"]] },'
+          );
+
+          replaceOnce(
+            'src/data/quickNavigation.ts',
+            '{ id: "community", label: "Community Hub", icon: "🌍", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },',
+            '{ id: "community", label: "Community Hub", icon: "🌍", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },\n  { id: "marketplace", label: "Marketplace", icon: "🛒", path: "/marketplace", group: "Community", description: "Browse active reptile marketplace listings.", keywords: ["market", "seller", "listing", "shop"] },'
+          );
+          NODE
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/AppRouter.tsx src/components/Layout/Navigation.tsx src/data/quickNavigation.ts
+          git commit -m "fix: restore marketplace and navigation routes"
+          git push origin master
+
+          rm .github/workflows/repair-navigation-and-marketplace.yml
+          git add .github/workflows/repair-navigation-and-marketplace.yml
+          git commit -m "chore: remove one-time recovery repair workflow"
+          git push origin master
