@@ -30,6 +30,7 @@ export function isAwaitingMorphReview(status: MorphSubmissionStatus): boolean {
 }
 
 function resolveSubmissionMorph(submission: MorphImageSubmission) {
+  if (!submission.morphId) return undefined;
   const requestedId = submission.morphId.trim();
   const requestedName = submission.morphName.trim().toLowerCase();
   if (submission.speciesId) {
