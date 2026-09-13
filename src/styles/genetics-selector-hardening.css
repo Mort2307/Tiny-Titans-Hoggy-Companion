@@ -6,50 +6,6 @@
   margin-top: 8px;
 }
 
-.genetics-gene-copy-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--background);
-}
-
-.genetics-gene-copy-controls > span {
-  margin: 0 2px 0 6px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  opacity: 0.62;
-}
-
-.genetics-gene-copy-controls button {
-  min-width: 42px;
-  min-height: 30px;
-  padding: 4px 8px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.genetics-gene-copy-controls button:hover,
-.genetics-gene-copy-controls button:focus-visible {
-  border-color: var(--border-strong);
-  background: var(--surface-elevated, var(--surface));
-  outline: none;
-}
-
-.genetics-gene-copy-controls button.is-selected {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--background);
-}
-
 .genetics-result-card-bounded {
   border-style: dashed;
 }
