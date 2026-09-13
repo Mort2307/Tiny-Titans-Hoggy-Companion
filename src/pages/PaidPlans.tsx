@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidTierId } from "../config/paidTiers";
+import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { useAuth } from "../context/useAuth";
 import { getPaidAccess, getPaidTierPricing, startPaidSubscriptionCheckout, type LivePaidTierPrice, type PaidAccess } from "../services/paidSubscriptionService";
 import PageBackButton from "../components/PageBackButton";
