@@ -3,16 +3,18 @@ import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidTierId } from "../conf
 import { useAuth } from "../context/useAuth";
 import { getPaidAccess, getPaidTierPricing, startPaidSubscriptionCheckout, type LivePaidTierPrice, type PaidAccess } from "../services/paidSubscriptionService";
 import PageBackButton from "../components/PageBackButton";
+import PaidTierBadge from "../components/PaidTierBadge";
 import "../styles/PaidPlans.css";
 import { PAID_PROMOTIONS } from "../config/paidPromotions";
 import { claimPaidPromotion } from "../services/paidPromotionService";
 
+const PLAN_DISPLAY_ORDER: PaidTierId[] = ["free", "titan_seller", "titan_pro", "business_starter", "business_plus", "business_advanced"];
+const PRESTIGE_LABELS: Record<PaidTierId, string> = { free: "CORE", titan_seller: "PLUS", titan_pro: "PRO", business_starter: "ELITE", business_plus: "ELITE+", business_advanced: "TITAN" };
+
 function toMillis(value: unknown): number | null {
   if (!value) return null;
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  if (typeof value === "object" && value !== null && "toMillis" in value && typeof (value as { toMillis?: unknown }).toMillis === "function") {
-    return Number((value as { toMillis: () => number }).toMillis());
-  }
+  if (typeof value === "object" && value !== null && "toMillis" in value && typeof (value as { toMillis?: unknown }).toMillis === "function") return Number((value as { toMillis: () => number }).toMillis());
   const parsed = new Date(String(value)).getTime();
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -99,13 +101,7 @@ export default function PaidPlans() {
   if (!user) return null;
 
   const effective = getPaidTierDefinition(access?.effectiveTier ?? "free");
-  const statusLabel = access?.source === "tester"
-    ? "Creator tester override"
-    : access?.source === "subscription"
-      ? "Active subscription"
-      : access?.source === "trial"
-        ? "Creator trial"
-        : "Current plan";
+  const statusLabel = access?.source === "tester" ? "Creator tester override" : access?.source === "subscription" ? "Active subscription" : access?.source === "trial" ? "Creator trial" : "Current plan";
   const trialExpiryMillis = toMillis(access?.trial?.expiresAt);
   const trialDays = trialExpiryMillis && nowMillis != null ? trialDaysRemaining(access?.trial?.expiresAt, nowMillis) : 0;
   const trialEndsLabel = trialExpiryMillis ? new Date(trialExpiryMillis).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "an unavailable date";
@@ -115,7 +111,7 @@ export default function PaidPlans() {
       <PageBackButton fallbackPath="/account" label="Back to My Account" />
       <header className="paid-plans-hero">
         <div><span className="paid-kicker">TINY TITANS · PLANS</span><h1>Choose your Tiny Titans tier</h1><p>Every plan is built around a useful reptile keeper experience. Paid tiers add capability; they do not remove the core app just to force an upgrade.</p></div>
-        <div className="paid-plan-status"><strong>{effective.name}</strong><span>{statusLabel}</span></div>
+        <div className="paid-plan-status"><PaidTierBadge tierId={effective.id} size="md" /><strong>{effective.name}</strong><span>{statusLabel}</span></div>
       </header>
       {access?.source === "trial" && access.trial && <section className="paid-message"><strong>🎁 You are currently trialling {effective.name}</strong><p>You have about <strong>{trialDays} day{trialDays === 1 ? "" : "s"}</strong> remaining. The trial ends {trialEndsLabel} and does not create a Stripe subscription.</p></section>}
       {error && <section className="paid-message paid-error" role="alert">{error}</section>}
@@ -123,14 +119,16 @@ export default function PaidPlans() {
         <section className="paid-message" key={promotion.id}><strong>🎁 {promotion.name}</strong><p>{promotion.description}</p><button type="button" className="paid-primary" disabled={busy} onClick={async () => { setBusy(true); setError(""); try { await claimPaidPromotion(promotion.id); window.location.reload(); } catch (err) { setError(err instanceof Error ? err.message : "This promotion could not be claimed."); setBusy(false); } }}>Start free trial</button></section>
       ))}
       <section className="paid-plan-grid" aria-label="Tiny Titans subscription plans">
-        {PAID_TIER_ORDER.map((tierId) => { const tier = getPaidTierDefinition(tierId); const current = access?.effectiveTier === tierId; const selected = selectedTier === tierId; return (
-          <button key={tierId} type="button" className={`paid-plan-card tier-${tierId} ${selected ? "is-selected" : ""} ${current ? "is-current" : ""}`} onClick={() => setSelectedTier(tierId)} aria-pressed={selected}>
-            <span className="paid-kicker">{tier.eyebrow}</span><h2><span className="tier-crest" aria-hidden="true">{tier.crest}</span> {tier.name}</h2><strong className="paid-price">{formatLivePrice(tierId)}</strong><p>{tier.description}</p><small className="paid-audience">{tier.audience}</small><div className="paid-highlights">{tier.highlights.map((item) => <span key={item}>✓ {item}</span>)}</div>{current && <span className="paid-current-badge">CURRENT ACCESS</span>}
+        {PLAN_DISPLAY_ORDER.map((tierId) => { const tier = getPaidTierDefinition(tierId); const current = access?.effectiveTier === tierId; const selectedCard = selectedTier === tierId; return (
+          <button key={tierId} type="button" className={`paid-plan-card tier-${tierId} ${selectedCard ? "is-selected" : ""} ${current ? "is-current" : ""}`} onClick={() => setSelectedTier(tierId)} aria-pressed={selectedCard}>
+            <span className="paid-tier-identity"><PaidTierBadge tierId={tierId} size="lg" /><span className="paid-tier-identity__copy"><span className="paid-tier-prestige">{PRESTIGE_LABELS[tierId]}</span><span className="paid-kicker">{tier.eyebrow}</span><h2>{tier.name}</h2></span></span>
+            <strong className="paid-price">{formatLivePrice(tierId)}</strong><p>{tier.description}</p><small className="paid-audience">{tier.audience}</small><div className="paid-highlights">{tier.highlights.map((item) => <span key={item}>✓ {item}</span>)}</div>{current && <span className="paid-current-badge">CURRENT ACCESS</span>}
+            {selectedCard && <span className="paid-selection-halo" aria-hidden="true" />}
           </button>
         ); })}
       </section>
       <section className="paid-plan-detail">
-        <div><span className="paid-kicker"><span className="tier-crest" aria-hidden="true">{selected.crest}</span> SELECTED PLAN</span><h2>{selected.name}</h2><p>{selected.description}</p><div className="paid-entitlement-grid">{selected.entitlements.map((item) => <span key={item}>{item.replaceAll("_", " ")}</span>)}</div>{selected.note && <p className="paid-note">{selected.note}</p>}</div>
+        <div><span className="paid-kicker"><PaidTierBadge tierId={selectedTier} size="sm" /> SELECTED PLAN</span><h2>{selected.name}</h2><p>{selected.description}</p><div className="paid-entitlement-grid">{selected.entitlements.map((item) => <span key={item}>{item.replaceAll("_", " ")}</span>)}</div>{selected.note && <p className="paid-note">{selected.note}</p>}</div>
         <aside>
           <strong>{formatLivePrice(selectedTier)}</strong>
           {selectedTier !== "free" && <small className="paid-live-price-status">{selectedStripeReady ? "Live Stripe recurring price verified" : "Stripe recurring price not connected yet"}</small>}
