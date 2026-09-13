@@ -77,6 +77,8 @@ async function snapshotPage(page, markCandidates = false) {
       };
     };
 
+    const destructiveText = /^(delete|remove|destroy|reset|clear|sign out|logout|pay|checkout|buy|purchase|refund|wipe|revoke)/i;
+    const knownSafeMutationText = /^(approve|approved|reject|rejected|accept|verify|verified|mark (?:as )?(?:approved|verified|complete|completed|read|done))/i;
     const seen = new Set();
     const items = [];
     let candidateIndex = 0;
@@ -212,7 +214,7 @@ async function main() {
   const globalErrors = [];
 
   page.on("pageerror", (error) => globalErrors.push({ type: "pageerror", message: error.message, url: page.url() }));
-  page.on("console", (message) => { if (message.type() === "error") globalErrors.push({ type: "console", message: message.text(), url: page.url() }); });
+  page.on("console", (message) => { if (message.type() === "error") globalErrors.push({ type: "console", message: message.text(), url: page.url() }));
 
   try {
     await signIn(page);
