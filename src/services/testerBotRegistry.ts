@@ -122,7 +122,7 @@ const actionChainSuites: BotSuiteDefinition[] = [
             : { status: "fail", message: `Unexpected approval guard error: ${message}` };
         }
       },
-    }] }],
+    }],
   },
 ];
 
