@@ -138,7 +138,7 @@ async function calculatePublicSnapshot() {
   for (const doc of morphNameDocs.docs) {
     const item = doc.data() || {};
     const status = String(item.status || "").toLowerCase();
-    if (status && status !== "approved") continue;
+    if (status !== "approved") continue;
     if (item.visibility && !["community", "public"].includes(String(item.visibility).toLowerCase())) continue;
     morphContributions += 1;
     contributors.add(contributorKey(item, doc.id));
@@ -195,7 +195,7 @@ async function calculatePublicFeed() {
   for (const doc of morphNameDocs.docs) {
     const item = doc.data() || {};
     const status = String(item.status || "").toLowerCase();
-    if (status && status !== "approved") continue;
+    if (status !== "approved") continue;
     if (item.visibility && !["community", "public"].includes(String(item.visibility).toLowerCase())) continue;
     feed.push({ id: doc.id, category: "Morph Library", title: String(item.submittedName || item.morphName || "Morph contribution"), snippet: String(item.description || item.knownGenetics || "Keeper-submitted Morph Library contribution.").slice(0, 180), contributor: publicAttribution(item, "Anonymous keeper"), createdAt: isoDate(item.reviewedAt || item.updatedAt || item.createdAt), source: "Morph Library" });
   }
