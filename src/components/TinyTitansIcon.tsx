@@ -38,7 +38,7 @@ export type TinyTitansIconName =
   | "menu";
 
 type Props = SVGProps<SVGSVGElement> & {
-  name: TinyTitansIconName;
+  name: TinyTitansIconName | string;
   size?: number;
   title?: string;
 };
@@ -50,6 +50,76 @@ const common: SVGProps<SVGSVGElement> = {
   focusable: false,
   "aria-hidden": true,
 };
+
+const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
+  "🏠": "home",
+  "⌂": "home",
+  "🐍": "reptile",
+  "💬": "messages",
+  "📨": "messages",
+  "📥": "messages",
+  "🔔": "reminders",
+  "🌡️": "husbandry",
+  "⚖️": "weight",
+  "📊": "weight",
+  "🍽️": "feeding",
+  "🥄": "feeding",
+  "❤️": "health",
+  "◉": "behaviour",
+  "👁️": "behaviour",
+  "🔭": "observatory",
+  "🔎": "observatory",
+  "⌘": "enclosure",
+  "🏡": "enclosure",
+  "🧬": "genetics",
+  "∑": "genetics",
+  "🥚": "breeding",
+  "📦": "marketplace",
+  "▣": "academy",
+  "🎓": "academy",
+  "📋": "academy",
+  "📖": "handbook",
+  "📚": "knowledge",
+  "▤": "knowledge",
+  "◆": "challenge",
+  "✓": "challenge",
+  "🏆": "wall",
+  "★": "wall",
+  "🌍": "community",
+  "👥": "community",
+  "◌": "community",
+  "◈": "community",
+  "↔": "mentorship",
+  "🤝": "mentorship",
+  "🛒": "marketplace",
+  "⚙️": "account",
+  "👤": "account",
+  "📝": "contribution",
+  "＋": "contribution",
+  "✦": "titan",
+  "✨": "titan",
+  "🧠": "titan",
+  "🔐": "account",
+  "🛡️": "account",
+  "🌱": "husbandry",
+  "🧪": "testing",
+  "🛠️": "creator",
+  "⚒": "creator",
+  "🖼️": "morph",
+  "◇": "plans",
+  "●": "account",
+};
+
+const ICON_NAMES = new Set<TinyTitansIconName>([
+  "home", "reptile", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
+  "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
+  "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan",
+  "educator", "creator", "testing", "search", "menu",
+]);
+
+function resolveIconName(value: string): TinyTitansIconName {
+  return LEGACY_ICON_ALIASES[value] ?? (ICON_NAMES.has(value as TinyTitansIconName) ? value as TinyTitansIconName : "reptile");
+}
 
 function SnakeFace({ className = "", ...props }: SVGProps<SVGSVGElement>) {
   return (
@@ -144,9 +214,10 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
 }
 
 export function TinyTitansIcon({ name, size = 24, title, className = "", ...props }: Props) {
+  const resolvedName = resolveIconName(name);
   return (
     <SimpleIcon
-      name={name}
+      name={resolvedName}
       className={`tt-icon ${className}`.trim()}
       width={size}
       height={size}
