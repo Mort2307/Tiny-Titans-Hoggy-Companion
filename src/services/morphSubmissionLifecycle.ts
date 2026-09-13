@@ -1,5 +1,6 @@
 import type { MorphImageSubmission, MorphSubmissionStatus } from "../types/morphSubmission";
 import { getMasterMorphByGeneId } from "../data/masterMorphDatabase";
+import { getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 
 /** Canonical moderation transitions for community morph-image submissions. */
 const TERMINAL = new Set<MorphSubmissionStatus>(["Rejected", "Removed"]);
@@ -28,12 +29,25 @@ export function isAwaitingMorphReview(status: MorphSubmissionStatus): boolean {
   return status === "Pending" || status === "NeedsInfo";
 }
 
+function resolveSubmissionMorph(submission: MorphImageSubmission) {
+  const requestedId = submission.morphId.trim();
+  const requestedName = submission.morphName.trim().toLowerCase();
+  if (submission.speciesId) {
+    return getSpeciesVisualMorphs(submission.speciesId).find((morph) =>
+      morph.geneId === requestedId ||
+      morph.name.trim().toLowerCase() === requestedName ||
+      (morph.aliases ?? []).some((alias) => alias.trim().toLowerCase() === requestedName),
+    );
+  }
+  return getMasterMorphByGeneId(requestedId);
+}
+
 /** Validate client-side prerequisites before the server-side approval callable is invoked. */
 export function validateMorphSubmissionForApproval(submission: MorphImageSubmission): string | null {
   if (!isAwaitingMorphReview(submission.status)) return "This submission is no longer awaiting review.";
   if (!submission.morphId) return "A canonical Morph Library entry is required before approval.";
-  const canonical = getMasterMorphByGeneId(submission.morphId);
-  if (!canonical) return "This submission points to a morph that no longer exists in the canonical master library.";
+  const canonical = resolveSubmissionMorph(submission);
+  if (!canonical) return "This submission does not match a canonical Morph Library entry for the selected species.";
   if (submission.morphName.trim().toLowerCase() !== canonical.name.trim().toLowerCase()) return "The submitted morph name no longer matches its canonical morph ID.";
   if (!submission.attachment?.path) return "A valid image attachment is required before approval.";
   if (submission.attachment.type !== "image") return "Only image submissions can be approved.";
