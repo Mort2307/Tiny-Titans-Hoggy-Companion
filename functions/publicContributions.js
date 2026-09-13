@@ -104,6 +104,7 @@ async function calculateConsentEligibleIntelligence() {
 
   return {
     contributingKeepers: contributingKeepers.size,
+    contributingKeeperIds: Array.from(contributingKeepers),
     weightRecords,
     feedingRecords,
     shedRecords,
@@ -150,13 +151,17 @@ async function calculatePublicSnapshot() {
   }
 
   const publicCommunityRecords = behaviourContributions + morphContributions + communityContributions;
-  const publicIdentifiedContributors = new Set(Array.from(contributors).filter((key) => !String(key).startsWith("anonymous:")));
-  const uniqueContributorCount = publicIdentifiedContributors.size + intelligence.contributingKeepers;
+  const publicIdentifiedContributors = new Set(
+    Array.from(contributors).filter((key) => !String(key).startsWith("anonymous:")),
+  );
+  const identifiedContributors = new Set(publicIdentifiedContributors);
+  intelligence.contributingKeeperIds.forEach((uid) => identifiedContributors.add(uid));
   const anonymousPublicContributors = Array.from(contributors).filter((key) => String(key).startsWith("anonymous:")).length;
   const totalRecords = publicCommunityRecords + intelligence.totalRecords;
+
   return {
     available: true,
-    contributors: uniqueContributorCount + anonymousPublicContributors,
+    contributors: identifiedContributors.size + anonymousPublicContributors,
     totalRecords,
     publicCommunityRecords,
     behaviourContributions,
