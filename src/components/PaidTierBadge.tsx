@@ -1,4 +1,5 @@
-import type { PaidTierId } from "../config/paidTiers";
+import type { CSSProperties } from "react";
+import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 
 type PaidTierBadgeProps = { tierId: PaidTierId; size?: "sm" | "md" | "lg" };
 
@@ -31,7 +32,9 @@ function tierShape(tierId: PaidTierId) {
 
 export default function PaidTierBadge({ tierId, size = "md" }: PaidTierBadgeProps) {
   const prestige = PRESTIGE_BY_TIER[tierId];
-  return <span className={`paid-tier-badge paid-tier-badge--${prestige} paid-tier-badge--${size}`} aria-hidden="true">
+  const accent = getPaidTierDefinition(tierId).accent;
+  const style = { "--tt-tier-accent": accent } as CSSProperties;
+  return <span className={`paid-tier-badge paid-tier-badge--${prestige} paid-tier-badge--${size}`} style={style} aria-hidden="true">
     <span className="paid-tier-badge__orbit paid-tier-badge__orbit--one" />
     <span className="paid-tier-badge__orbit paid-tier-badge__orbit--two" />
     <svg className="paid-tier-badge__art" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">{tierShape(tierId)}</svg>
