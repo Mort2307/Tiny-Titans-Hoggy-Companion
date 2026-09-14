@@ -267,7 +267,7 @@ function Home() {
               <div>
                 <span>{selectedSnakeRecords} recorded {selectedSnakeRecords === 1 ? "event" : "events"}</span>
                 <strong>{selectedSnake?.name}</strong>
-                <small>Western Hognose · individual keeper record</small>
+                <small>Individual keeper record</small>
               </div>
             </div>
             <div className="tt-home-current-status">
