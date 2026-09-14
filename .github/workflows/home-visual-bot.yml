@@ -1,0 +1,60 @@
+name: Tiny Titans Home Visual BOT
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  home-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start preview server
+        shell: bash
+        run: |
+          nohup npm run dev -- --host 127.0.0.1 --port 4173 > ci-home-visual-server.log 2>&1 &
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:4173/login >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat ci-home-visual-server.log
+          exit 1
+
+      - name: Capture Home visuals
+        env:
+          TINY_TITANS_TEST_URL: http://127.0.0.1:4173
+          TINY_TITANS_VISUAL_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
+          TINY_TITANS_VISUAL_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
+        run: npm run test:visual-home
+
+      - name: Upload Home visual artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiny-titans-home-visual-${{ github.run_id }}
+          path: |
+            artifacts/home-visual/
+            ci-home-visual-server.log
+          if-no-files-found: warn
