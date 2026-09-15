@@ -1,0 +1,19 @@
+/* Purpose-focused product shell presentation. Access remains enforced by server-backed paid/rescue gates. */
+html[data-tt-workspace="personal"]{--tt-workspace-accent:#92a0ad;--tt-workspace-glow:rgba(146,160,173,.08);--tt-workspace-label:"🐍 TINY TITANS · KEEPER";}
+html[data-tt-workspace="titan_pro"]{--tt-workspace-accent:#62d6c7;--tt-workspace-glow:rgba(98,214,199,.11);--tt-workspace-label:"⚡ TINY TITANS PRO · POWER KEEPER";}
+html[data-tt-workspace="titan_seller"]{--tt-workspace-accent:#e5b35b;--tt-workspace-glow:rgba(229,179,91,.12);--tt-workspace-label:"🛍️ TINY TITANS SELLER · COMMERCIAL";}
+html[data-tt-workspace="business_starter"]{--tt-workspace-accent:#6fb0ff;--tt-workspace-glow:rgba(111,176,255,.11);--tt-workspace-label:"🏢 TINY TITANS BUSINESS · STARTER";}
+html[data-tt-workspace="business_plus"]{--tt-workspace-accent:#b98cff;--tt-workspace-glow:rgba(185,140,255,.12);--tt-workspace-label:"🏢 TINY TITANS BUSINESS · PLUS";}
+html[data-tt-workspace="business_advanced"]{--tt-workspace-accent:#f0c968;--tt-workspace-glow:rgba(240,201,104,.13);--tt-workspace-label:"👑 TINY TITANS BUSINESS · ADVANCED";}
+html[data-tt-workspace="rescue"]{--tt-workspace-accent:#7ad7a0;--tt-workspace-glow:rgba(122,215,160,.13);--tt-workspace-label:"🚑 TINY TITANS RESCUE · OPERATIONS";}
+
+.app-shell{border-top:2px solid color-mix(in srgb,var(--tt-workspace-accent) 34%,transparent);box-shadow:inset 0 1px 0 var(--tt-workspace-glow),0 12px 40px color-mix(in srgb,var(--tt-workspace-glow) 60%,transparent);}
+.app-shell .app-navigation{position:relative;border-bottom-color:color-mix(in srgb,var(--tt-workspace-accent) 20%,transparent);}
+.app-shell .app-navigation::before{content:var(--tt-workspace-label);display:block;max-width:1200px;margin:0 auto;padding:.55rem 1rem .35rem;color:var(--tt-workspace-accent);font-size:.71rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;}
+.app-shell .app-navigation-inner{border-top:1px solid color-mix(in srgb,var(--tt-workspace-accent) 14%,transparent);}
+.app-shell .app-navigation-link:hover,.app-shell .app-navigation-link.active{background:var(--tt-workspace-glow);color:var(--tt-workspace-accent);}
+.app-shell .app-navigation-icon{color:var(--tt-workspace-accent);}
+.app-shell .app-main::before{background:radial-gradient(circle at 85% 5%,var(--tt-workspace-glow),transparent 30%),radial-gradient(circle at 12% 20%,var(--tt-workspace-glow),transparent 24%);}
+html[data-tt-workspace="rescue"] .app-shell{border-top-width:3px;}
+html[data-tt-workspace="business_advanced"] .app-shell{box-shadow:inset 0 1px 0 var(--tt-workspace-glow),0 0 48px rgba(240,201,104,.06);}
+@media(max-width:760px){.app-shell .app-navigation::before{padding-inline:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}}
