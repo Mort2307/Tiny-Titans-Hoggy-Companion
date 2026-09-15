@@ -92,8 +92,8 @@
     "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "deploy:functions": "npm run build && node scripts/deploy-functions-batched.mjs",
     "deploy:functions:batched": "npm run build && node scripts/deploy-functions-batched.mjs",
-    "deploy:rules": "firebase deploy --only firestore,storage",
-    "deploy:app": "npm run build && firebase deploy --only hosting,firestore,storage && node scripts/deploy-functions-batched.mjs",
+    "deploy:rules": "node scripts/assemble-firestore-rules.mjs && firebase deploy --only firestore,storage",
+    "deploy:app": "node scripts/assemble-firestore-rules.mjs && npm run build && firebase deploy --only hosting,firestore,storage && node scripts/deploy-functions-batched.mjs",
     "test:visual-home": "node scripts/run-home-visual-bot.mjs"
   },
   "dependencies": {
