@@ -52,6 +52,11 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "challenge", label: "Titans Challenge", icon: "◆", path: "/challenge", group: "Learn & Intelligence", description: "Test your knowledge." },
   { id: "achievements", label: "Achievements", icon: "🏆", path: "/learn/achievements", group: "Learn & Intelligence", description: "View your keeper achievements." },
 
+  { id: "rescue", label: "Rescue Centre", icon: "🏥", path: "/rescue", group: "Rescue", description: "Species-agnostic rescue operations, animal passports and QR identity.", keywords: ["rescue","animals","QR","passport","rehoming"] },
+  { id: "rescue-animals", label: "Rescue Animal Register", icon: "🐍", path: "/rescue/animals", group: "Rescue", description: "Search rescue animals and open read-only passports.", keywords: ["rescue","animals","register"] },
+  { id: "rescue-scan", label: "Rescue QR Scanner", icon: "🔎", path: "/rescue/scan", group: "Rescue", description: "Open an animal passport from a TinyTitans QR identity.", keywords: ["QR","scan","passport"] },
+  { id: "rescue-incubator", label: "Species Incubator", icon: "🧬", path: "/rescue/species-incubator", group: "Rescue", description: "Turn unsupported rescue species into verified evidence candidates.", keywords: ["species","discovery","verification"] },
+
   { id: "community", label: "Community Hub", icon: "🌍", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },
   { id: "marketplace", label: "Marketplace", icon: "🛒", path: "/marketplace", group: "Community", description: "Browse active reptile marketplace listings.", keywords: ["market", "marketplace", "seller", "listing", "shop"] },
   { id: "feature-voting", label: "Feature Voting", icon: "💡", path: "/community/features", group: "Community", description: "Vote on what Tiny Titans builds next." },
