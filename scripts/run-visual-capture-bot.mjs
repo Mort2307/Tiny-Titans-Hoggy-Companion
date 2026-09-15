@@ -260,7 +260,7 @@ async function main() {
 
   await fs.writeFile(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
   await writeGallery(results);
-  await fs.writeFile(path.join(outputDir, "README.md"), `# Tiny Titans Universal Visual Capture\n\nOpen \\`index.html\\` for the rendered screenshot gallery. \\`report.json\\` contains route, viewport, DOM and runtime evidence.\n`, "utf8");
+  await fs.writeFile(path.join(outputDir, "README.md"), "# Tiny Titans Universal Visual Capture\n\nOpen index.html for the rendered screenshot gallery. report.json contains route, viewport, DOM and runtime evidence.\n", "utf8");
 }
 
 main().catch((error) => {
