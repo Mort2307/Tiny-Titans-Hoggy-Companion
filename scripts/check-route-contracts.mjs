@@ -47,7 +47,15 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
 if (!routes.length) errors.push("No application routes were detected in AppRouter.tsx.");
 
 const importedComponents = new Set();
-for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) importedComponents.add(match[1]);
+for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
+  importedComponents.add(match[1]);
+}
+for (const match of router.matchAll(/import\s*\{([\s\S]*?)\}\s*from\s*["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
+  for (const imported of match[1].split(",")) {
+    const name = imported.trim().split(/\s+as\s+/)[0].trim();
+    if (/^[A-Za-z][A-Za-z0-9]*$/.test(name)) importedComponents.add(name);
+  }
+}
 
 for (const route of routes) {
   if (route.component && !importedComponents.has(route.component) && route.component !== "Navigate") errors.push(`Route ${route.route} references <${route.component}> but that component is not imported locally in AppRouter.tsx.`);
