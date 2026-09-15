@@ -2,12 +2,12 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase/config";
 import { getPaidAccess, type PaidAccess } from "./paidTierService";
 import { getMyRescueWorkspace } from "./rescueWorkspaceService";
-import { getWorkspaceProduct, type WorkspaceProductId, type WorkspacePermission } from "../config/workspaceProducts";
+import { getWorkspaceProduct, type WorkspaceProduct, type WorkspaceProductId, type WorkspacePermission } from "../config/workspaceProducts";
 
-export type WorkspacePresentation = { productId: WorkspaceProductId; permissions: WorkspacePermission[]; access: PaidAccess | null; rescueWorkspace: boolean };
+export type WorkspacePresentation = { productId: WorkspaceProductId; product: WorkspaceProduct; permissions: WorkspacePermission[]; access: PaidAccess | null; rescueWorkspace: boolean };
 const PATH_EVENT = "tinytitans:workspace-path-changed";
 const WORKSPACE_EVENT = "tinytitans:workspace-changed";
-let current: WorkspacePresentation = { productId: "personal", permissions: [], access: null, rescueWorkspace: false };
+let current: WorkspacePresentation = { productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false };
 let started = false;
 
 function rescueIsActive(workspace: { organisation: { accountStatus?: string; pilotStatus?: string; pilotEndsAt?: string } | null }) {
@@ -20,7 +20,7 @@ function rescueIsActive(workspace: { organisation: { accountStatus?: string; pil
 }
 function isRescuePath() { return window.location.pathname === "/rescue" || window.location.pathname.startsWith("/rescue/"); }
 function publish() {
-  const product = getWorkspaceProduct(current.productId);
+  const product = current.product;
   document.documentElement.dataset.ttTier = current.access?.effectiveTier ?? product.tierId;
   document.documentElement.dataset.ttWorkspace = product.id;
   document.documentElement.dataset.ttWorkspacePurpose = product.eyebrow;
@@ -29,11 +29,12 @@ function publish() {
   window.dispatchEvent(new CustomEvent(WORKSPACE_EVENT, { detail: current }));
 }
 async function sync(uid: string | null) {
-  if (!uid) { current = { productId: "personal", permissions: [], access: null, rescueWorkspace: false }; publish(); return; }
+  if (!uid) { current = { productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false }; publish(); return; }
   const [access, workspace] = await Promise.all([getPaidAccess(uid), getMyRescueWorkspace().catch(() => ({ organisation: null, role: null }))]);
   const rescue = rescueIsActive(workspace) && isRescuePath();
   const productId: WorkspaceProductId = rescue ? "rescue" : access.effectiveTier === "free" ? "personal" : access.effectiveTier;
-  current = { productId, permissions: getWorkspaceProduct(productId).permissions, access, rescueWorkspace: rescue };
+  const product = getWorkspaceProduct(productId);
+  current = { productId, product, permissions: product.permissions, access, rescueWorkspace: rescue };
   publish();
 }
 function watchPath() { void sync(auth.currentUser?.uid ?? null); }
