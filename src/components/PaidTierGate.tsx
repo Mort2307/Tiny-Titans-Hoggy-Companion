@@ -4,6 +4,8 @@ import { useAuth } from "../context/useAuth";
 import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidEntitlement } from "../config/paidTiers";
+import "../styles/rescue.css";
+import "../styles/rescue-access.css";
 
 function isRescueEntitlement(entitlement: PaidEntitlement) {
   return entitlement.startsWith("rescue_") || entitlement === "species_incubator";
@@ -23,7 +25,7 @@ function activeRescueWorkspace(workspace: { organisation: { accountStatus?: stri
 }
 
 function RescueAccessFallback() {
-  return <main className="rescue-page rescue-access-page">
+  return <main className="rescue-access-page">
     <header className="rescue-hero rescue-access-hero">
       <div>
         <span className="rescue-eyebrow">TINY TITANS · RESCUE OPERATIONS</span>
