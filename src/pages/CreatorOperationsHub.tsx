@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import CreatorPromoCodes from "../components/CreatorPromoCodes";
 import "../styles/creatorOperations.css";
 
 const groups = [
@@ -16,6 +17,7 @@ export default function CreatorOperationsHub() {
     <header className="creator-ops-header"><div><span className="creator-ops-eyebrow">PRIVATE CREATOR CENTRE</span><h1>🛠️ TinyTitans Operations</h1><p>A clean command centre for content, reviews, intelligence, community, QA and partner operations.</p></div><div className="creator-ops-header-actions"><span className="creator-ops-chip">{profile?.displayName || "Creator"}</span><Link to="/creator/admin" className="creator-ops-secondary">Deep admin dashboard →</Link></div></header>
     <section className="creator-ops-grid">{groups.flatMap((group) => group.tiles.map(([icon,title,description,to]) => <Link className="creator-ops-card" to={to} key={to+title}><span className="creator-ops-card-icon">{icon}</span><div className="creator-ops-card-copy"><span className="creator-ops-card-eyebrow">{group.eyebrow}</span><h2>{title}</h2><p>{description}</p></div><span className="creator-ops-card-arrow">→</span></Link>))}</section>
     <section className="creator-ops-grid"><Link className="creator-ops-card" to="/creator/rescue-pilots"><span className="creator-ops-card-icon">🚑</span><div className="creator-ops-card-copy"><span className="creator-ops-card-eyebrow">RESCUE COMMERCIAL CONTROL</span><h2>Rescue Pilot Control</h2><p>Run a tightly capped 30-day Rescue pilot, stop new pilots, make Rescue read-only and convert a successful pilot without deleting its data.</p></div><span className="creator-ops-card-arrow">→</span></Link></section>
+    <CreatorPromoCodes />
     <section className="creator-ops-footer-grid"><Link to="/creator/partner-branding" className="creator-ops-feature"><span>🎨</span><div><strong>Customer-facing partner pages</strong><small>Business and rescue accounts can publish a branded landing screen with logos, opening hours, credentials, contact information and custom CTAs.</small></div></Link><Link to="/creator/qa" className="creator-ops-feature"><span>📸</span><div><strong>BOT evidence lives here</strong><small>The Playwright BOT remains independent. This dashboard is the review surface, not the automation engine.</small></div></Link></section>
   </main>;
 }
