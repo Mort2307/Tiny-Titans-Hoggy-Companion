@@ -13,6 +13,7 @@ const crownLevel: Record<PaidTierId, number> = {
   business_starter: 2,
   business_plus: 2,
   business_advanced: 3,
+  rescue: 3,
 };
 
 export default function TinyTitansTierCrest({ tier, size = 22 }: Props) {
