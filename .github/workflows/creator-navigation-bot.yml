@@ -27,7 +27,8 @@ jobs:
       - name: Start preview server
         run: npm run preview -- --host 127.0.0.1 --port 4173 > creator-navigation-vite.log 2>&1 &
       - name: Wait for preview
-        run: npx playwright wait-for-server http://127.0.0.1:4173
+        run: |
+          node -e "const http=require('http');let n=0;const ping=()=>{http.get('http://127.0.0.1:4173',r=>{process.exit(r.statusCode>=200&&r.statusCode<500?0:1)}).on('error',()=>{if(++n>60)process.exit(1);setTimeout(ping,1000)})};ping()"
       - name: Run Creator Navigation BOT
         run: npm run test:creator-navigation
       - name: Upload navigation evidence
