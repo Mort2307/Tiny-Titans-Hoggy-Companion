@@ -47,13 +47,27 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
 if (!routes.length) errors.push("No application routes were detected in AppRouter.tsx.");
 
 const importedComponents = new Set();
-for (const match of router.matchAll(/import\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
+
+// Default imports: import Component from "../pages/Component";
+for (const match of router.matchAll(/\bimport\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/[^"']+["']/g)) {
   importedComponents.add(match[1]);
 }
-for (const match of router.matchAll(/import\s*\{([\s\S]*?)\}\s*from\s*["']\.\.(?:\/pages|\/components)\/([^"']+)["']/g)) {
-  for (const imported of match[1].split(",")) {
-    const name = imported.trim().split(/\s+as\s+/)[0].trim();
-    if (/^[A-Za-z][A-Za-z0-9]*$/.test(name)) importedComponents.add(name);
+
+// Named imports: import { Foo, Bar as Baz } from "../pages/Module";
+// Keep this deliberately syntax-tolerant: AppRouter has grown large and import
+// formatting should not change whether a route is considered locally imported.
+for (const match of router.matchAll(/\bimport\s*\{([\s\S]*?)\}\s*from\s*["']\.\.(?:\/pages|\/components)\/[^"']+["']/g)) {
+  const specifiers = match[1]
+    .split(",")
+    .map((specifier) => specifier.replace(/\/\*[\s\S]*?\*\//g, "").trim())
+    .filter(Boolean);
+
+  for (const specifier of specifiers) {
+    const withoutType = specifier.replace(/^type\s+/, "");
+    const localName = withoutType.includes(" as ")
+      ? withoutType.split(/\s+as\s+/i).pop()?.trim()
+      : withoutType.trim();
+    if (localName && /^[A-Za-z][A-Za-z0-9]*$/.test(localName)) importedComponents.add(localName);
   }
 }
 
