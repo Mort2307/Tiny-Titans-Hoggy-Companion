@@ -80,6 +80,7 @@
     "test:overlord": "node scripts/run-overlord-bot.mjs",
     "test:visual-ux": "node scripts/run-visual-ux-bot-local.mjs",
     "test:visual-capture": "node scripts/run-visual-capture-bot.mjs",
+    "test:creator-navigation": "node scripts/run-creator-navigation-bot.mjs",
     "test:update-bot": "node scripts/run-update-bot.mjs",
     "test:route-crawl": "node scripts/run-route-crawl-bot.mjs",
     "test:route-crawl:quick": "node scripts/run-route-crawl-quick.mjs",
