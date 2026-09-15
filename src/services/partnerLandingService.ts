@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDoc, getDocs, limit, query, setDoc, where, writeBatch } from "firebase/firestore";
+import { doc, getDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { PartnerLandingProfile, PartnerLandingKind, PartnerOpeningHours } from "../types/partnerLanding";
 
