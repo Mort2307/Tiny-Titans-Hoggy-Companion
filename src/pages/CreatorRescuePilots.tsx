@@ -15,7 +15,7 @@ export default function CreatorRescuePilots() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [controls, setControls] = useState<RescuePilotControls>({ pilotsEnabled: true, writesEnabled: true, maxActivePilots: 1 });
-  const [now, setNow] = useState(() => now);
+  const [now, setNow] = useState(() => Date.now());
 
   async function load() {
     setError("");
