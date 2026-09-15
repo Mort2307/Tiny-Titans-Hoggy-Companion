@@ -1,0 +1,136 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { getPaidAccess } from "../services/paidTierService";
+import PaidTierGate from "../components/PaidTierGate";
+import { useAuth } from "../context/useAuth";
+import { getOwnedRescueOrganisation } from "../services/rescueService";
+import { createDefaultPartnerLanding, getPartnerLandingByOwner, normalisePartnerSlug, savePartnerLanding } from "../services/partnerLandingService";
+import type { PartnerLandingKind, PartnerLandingProfile } from "../types/partnerLanding";
+import "../styles/partnerLanding.css";
+
+const DAYS: Array<[keyof PartnerLandingProfile["openingHours"], string]> = [
+  ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"],
+  ["friday", "Friday"], ["saturday", "Saturday"], ["sunday", "Sunday"],
+];
+
+function Field({ label, value, onChange, placeholder, multiline = false }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; multiline?: boolean }) {
+  return <label className="partner-editor-field"><span>{label}</span>{multiline ? <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} rows={5} /> : <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />}</label>;
+}
+
+function buildProfileValue(profile: PartnerLandingProfile, key: string, value: string): PartnerLandingProfile {
+  const paths: Record<string, (next: string) => PartnerLandingProfile> = {
+    brandName: (next) => ({ ...profile, brandName: next }),
+    slug: (next) => ({ ...profile, slug: normalisePartnerSlug(next) }),
+    tagline: (next) => ({ ...profile, tagline: next }),
+    description: (next) => ({ ...profile, description: next }),
+    logoUrl: (next) => ({ ...profile, logoUrl: next }),
+    heroImageUrl: (next) => ({ ...profile, heroImageUrl: next }),
+    accentColor: (next) => ({ ...profile, accentColor: next }),
+    primaryCtaLabel: (next) => ({ ...profile, primaryCtaLabel: next }),
+    primaryCtaUrl: (next) => ({ ...profile, primaryCtaUrl: next }),
+    secondaryCtaLabel: (next) => ({ ...profile, secondaryCtaLabel: next }),
+    secondaryCtaUrl: (next) => ({ ...profile, secondaryCtaUrl: next }),
+    email: (next) => ({ ...profile, contact: { ...profile.contact, email: next } }),
+    phone: (next) => ({ ...profile, contact: { ...profile.contact, phone: next } }),
+    website: (next) => ({ ...profile, contact: { ...profile.contact, website: next } }),
+    addressLine1: (next) => ({ ...profile, contact: { ...profile.contact, addressLine1: next } }),
+    addressLine2: (next) => ({ ...profile, contact: { ...profile.contact, addressLine2: next } }),
+    townCity: (next) => ({ ...profile, contact: { ...profile.contact, townCity: next } }),
+    countyState: (next) => ({ ...profile, contact: { ...profile.contact, countyState: next } }),
+    postcode: (next) => ({ ...profile, contact: { ...profile.contact, postcode: next } }),
+    country: (next) => ({ ...profile, contact: { ...profile.contact, country: next } }),
+    instagram: (next) => ({ ...profile, social: { ...profile.social, instagram: next } }),
+    facebook: (next) => ({ ...profile, social: { ...profile.social, facebook: next } }),
+    tiktok: (next) => ({ ...profile, social: { ...profile.social, tiktok: next } }),
+    youtube: (next) => ({ ...profile, social: { ...profile.social, youtube: next } }),
+    registrationNumber: (next) => ({ ...profile, businessDetails: { ...profile.businessDetails, registrationNumber: next } }),
+    rescueLicenseNumber: (next) => ({ ...profile, businessDetails: { ...profile.businessDetails, rescueLicenseNumber: next } }),
+    charityNumber: (next) => ({ ...profile, businessDetails: { ...profile.businessDetails, charityNumber: next } }),
+    vatNumber: (next) => ({ ...profile, businessDetails: { ...profile.businessDetails, vatNumber: next } }),
+    insuranceNumber: (next) => ({ ...profile, businessDetails: { ...profile.businessDetails, insuranceNumber: next } }),
+    CITESRegistrationNumber: (next) => ({ ...profile, businessDetails: { ...profile.businessDetails, CITESRegistrationNumber: next } }),
+    responsiblePerson: (next) => ({ ...profile, businessDetails: { ...profile.businessDetails, responsiblePerson: next } }),
+  };
+  return paths[key]?.(value) || profile;
+}
+
+export default function PartnerLandingEditor({ creatorMode = false }: { creatorMode?: boolean }) {
+  const { user, profile } = useAuth();
+  const [params] = useSearchParams();
+  const [targetUid, setTargetUid] = useState("");
+  const [draft, setDraft] = useState<PartnerLandingProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [tierLabel, setTierLabel] = useState("Checking access…");
+  const [copyMessage, setCopyMessage] = useState("");
+
+  const isCreator = creatorMode;
+
+  useEffect(() => {
+    let active = true;
+    const owner = creatorMode && params.get("uid") ? String(params.get("uid")) : String(user?.uid || "");
+    if (!owner) { setLoading(false); return () => { active = false; }; }
+    setTargetUid(owner); setLoading(true); setError("");
+    void Promise.all([
+      getPartnerLandingByOwner(owner),
+      owner === user?.uid ? getOwnedRescueOrganisation(owner) : Promise.resolve(null),
+      owner === user?.uid ? getPaidAccess(owner) : Promise.resolve(null),
+    ]).then(([existing, rescue, access]) => {
+      if (!active) return;
+      if (access) setTierLabel(access.effectiveTier.replaceAll("_", " "));
+      setDraft(existing || createDefaultPartnerLanding({ ownerUid: owner, brandName: rescue?.name || profile?.displayName || "", kind: rescue ? "rescue" : "business", organisationId: rescue?.id }));
+    }).catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "Partner profile could not be loaded."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [creatorMode, params, user?.uid, profile?.displayName]);
+
+  const publicUrl = useMemo(() => draft?.slug ? `${window.location.origin}/partner/${draft.slug}` : "", [draft?.slug]);
+
+  function update(key: string, value: string) {
+    setSaved(false); setDraft((current) => current ? buildProfileValue(current, key, value) : current);
+  }
+
+  function updateHours(key: keyof PartnerLandingProfile["openingHours"], value: string) {
+    setSaved(false); setDraft((current) => current ? { ...current, openingHours: { ...current.openingHours, [key]: value } } : current);
+  }
+
+  async function save() {
+    if (!draft || !user) return;
+    if (!isCreator && draft.ownerUid !== user.uid) return;
+    setSaving(true); setSaved(false); setError("");
+    try { setDraft(await savePartnerLanding(draft)); setSaved(true); } catch (saveError) { setError(saveError instanceof Error ? saveError.message : "The partner page could not be saved."); } finally { setSaving(false); }
+  }
+
+  async function copyLink() {
+    if (!publicUrl) return;
+    try { await navigator.clipboard.writeText(publicUrl); setCopyMessage("Public link copied."); } catch { setCopyMessage(publicUrl); }
+  }
+
+  return <PaidTierGate entitlement="custom_branding"><main className="partner-editor-page">
+    <header className="partner-editor-header">
+      <div><span className="partner-eyebrow">{isCreator ? "CREATOR CENTRE · PARTNER BRANDING" : "BUSINESS & RESCUE BRANDING"}</span><h1>Build your customer landing page</h1><p>Give customers a polished first screen with your own identity, opening hours, credentials and contact details.</p></div>
+      <div className="partner-editor-actions">{!isCreator && <Link className="partner-secondary-button" to="/">Back to app</Link>}{isCreator && <Link className="partner-secondary-button" to="/creator">Creator Centre</Link>}<button type="button" onClick={()=>void save()} disabled={saving || loading || !draft}>{saving ? "Saving…" : "Save changes"}</button></div>
+    </header>
+    {loading && <div className="partner-editor-message">Loading partner profile…</div>}
+    {error && <div className="partner-editor-message partner-editor-error">{error}</div>}
+    {saved && <div className="partner-editor-message partner-editor-success">✓ Saved. The public page is now using the latest profile data.</div>}
+    {!loading && draft && <>
+      <section className="partner-editor-shell">
+        <div className="partner-editor-main">
+          <section className="partner-editor-card"><div className="partner-editor-card-heading"><div><span className="partner-eyebrow">IDENTITY</span><h2>Your brand</h2></div><span className="partner-editor-tier">{tierLabel}</span></div><div className="partner-editor-grid"><Field label="Organisation name" value={draft.brandName} onChange={(v)=>update("brandName",v)} placeholder="Example Reptiles Ltd"/><Field label="Public URL slug" value={draft.slug} onChange={(v)=>update("slug",v)} placeholder="example-reptiles"/><Field label="Tagline" value={draft.tagline} onChange={(v)=>update("tagline",v)} placeholder="Trusted reptile care, breeding and support."/><Field label="Accent colour" value={draft.accentColor} onChange={(v)=>update("accentColor",v)} placeholder="#62d6c7"/></div><Field label="About / welcome message" value={draft.description} onChange={(v)=>update("description",v)} multiline placeholder="Tell customers what you do, what you stand for and what they can expect."/></section>
+          <section className="partner-editor-card"><div><span className="partner-eyebrow">VISUAL IDENTITY</span><h2>Logo &amp; hero image</h2></div><div className="partner-editor-grid"><Field label="Logo image URL" value={draft.logoUrl || ""} onChange={(v)=>update("logoUrl",v)} placeholder="https://…/logo.png"/><Field label="Hero image URL" value={draft.heroImageUrl || ""} onChange={(v)=>update("heroImageUrl",v)} placeholder="https://…/hero.jpg"/></div><p className="partner-editor-help">Use public HTTPS image URLs for this first release. Image upload/storage can be added later without changing the public profile format.</p></section>
+          <section className="partner-editor-card"><div><span className="partner-eyebrow">CONTACT &amp; LOCATION</span><h2>Make it easy for customers to reach you</h2></div><div className="partner-editor-grid"><Field label="Email" value={draft.contact.email || ""} onChange={(v)=>update("email",v)}/><Field label="Phone" value={draft.contact.phone || ""} onChange={(v)=>update("phone",v)}/><Field label="Website" value={draft.contact.website || ""} onChange={(v)=>update("website",v)}/><Field label="Address line 1" value={draft.contact.addressLine1 || ""} onChange={(v)=>update("addressLine1",v)}/><Field label="Address line 2" value={draft.contact.addressLine2 || ""} onChange={(v)=>update("addressLine2",v)}/><Field label="Town / city" value={draft.contact.townCity || ""} onChange={(v)=>update("townCity",v)}/><Field label="County / state" value={draft.contact.countyState || ""} onChange={(v)=>update("countyState",v)}/><Field label="Postcode" value={draft.contact.postcode || ""} onChange={(v)=>update("postcode",v)}/><Field label="Country" value={draft.contact.country || ""} onChange={(v)=>update("country",v)}/></div></section>
+          <section className="partner-editor-card"><div><span className="partner-eyebrow">OPENING HOURS</span><h2>Customer-facing hours</h2></div><div className="partner-editor-hours">{DAYS.map(([key,label])=><Field key={key} label={label} value={draft.openingHours[key]} onChange={(v)=>updateHours(key,v)} placeholder="09:00–17:00 or Closed"/>)}</div></section>
+          <section className="partner-editor-card"><div><span className="partner-eyebrow">REGISTRATION &amp; COMPLIANCE</span><h2>Relevant credentials</h2></div><div className="partner-editor-grid"><Field label="Business registration number" value={draft.businessDetails.registrationNumber || ""} onChange={(v)=>update("registrationNumber",v)}/><Field label="Rescue licence number" value={draft.businessDetails.rescueLicenseNumber || ""} onChange={(v)=>update("rescueLicenseNumber",v)}/><Field label="Charity number" value={draft.businessDetails.charityNumber || ""} onChange={(v)=>update("charityNumber",v)}/><Field label="VAT number" value={draft.businessDetails.vatNumber || ""} onChange={(v)=>update("vatNumber",v)}/><Field label="Insurance reference" value={draft.businessDetails.insuranceNumber || ""} onChange={(v)=>update("insuranceNumber",v)}/><Field label="CITES registration" value={draft.businessDetails.CITESRegistrationNumber || ""} onChange={(v)=>update("CITESRegistrationNumber",v)}/><Field label="Responsible person" value={draft.businessDetails.responsiblePerson || ""} onChange={(v)=>update("responsiblePerson",v)}/></div></section>
+          <section className="partner-editor-card"><div><span className="partner-eyebrow">SOCIAL</span><h2>Bring customers to your channels</h2></div><div className="partner-editor-grid"><Field label="Instagram" value={draft.social.instagram || ""} onChange={(v)=>update("instagram",v)}/><Field label="Facebook" value={draft.social.facebook || ""} onChange={(v)=>update("facebook",v)}/><Field label="TikTok" value={draft.social.tiktok || ""} onChange={(v)=>update("tiktok",v)}/><Field label="YouTube" value={draft.social.youtube || ""} onChange={(v)=>update("youtube",v)}/></div></section>
+          <section className="partner-editor-card"><div><span className="partner-eyebrow">CALL TO ACTIONS</span><h2>Decide what customers should do next</h2></div><div className="partner-editor-grid"><Field label="Primary button label" value={draft.primaryCtaLabel} onChange={(v)=>update("primaryCtaLabel",v)}/><Field label="Primary button URL" value={draft.primaryCtaUrl} onChange={(v)=>update("primaryCtaUrl",v)} placeholder="mailto: or https://"/><Field label="Secondary button label" value={draft.secondaryCtaLabel || ""} onChange={(v)=>update("secondaryCtaLabel",v)}/><Field label="Secondary button URL" value={draft.secondaryCtaUrl || ""} onChange={(v)=>update("secondaryCtaUrl",v)} placeholder="https://"/></div></section>
+        </div>
+        <aside className="partner-editor-preview"><div className="partner-preview-sticky"><span className="partner-eyebrow">LIVE PREVIEW</span><h2>Customer opening screen</h2><div className="partner-mini-preview" style={{ ["--partner-accent" as string]: draft.accentColor }}>
+          {draft.heroImageUrl && <img src={draft.heroImageUrl} alt=""/>}<div className="partner-mini-preview-body">{draft.logoUrl ? <img className="partner-mini-logo" src={draft.logoUrl} alt=""/> : <div className="partner-mini-logo partner-logo-fallback">{draft.brandName.slice(0,1).toUpperCase()}</div>}<span className="partner-kind">{draft.kind === "rescue" ? "RESCUE CENTRE" : "REPTILE BUSINESS"}</span><h3>{draft.brandName || "Your organisation"}</h3><p>{draft.tagline || "Your customer-facing tagline"}</p><div className="partner-mini-actions"><span>{draft.primaryCtaLabel || "Contact us"}</span><span>{draft.secondaryCtaLabel || "Visit website"}</span></div></div></div>
+          <div className="partner-publish-row"><label><input type="checkbox" checked={draft.publicEnabled} onChange={(event)=>{setSaved(false);setDraft({...draft,publicEnabled:event.target.checked});}}/> Publish this public page</label><button type="button" onClick={()=>void copyLink()} disabled={!publicUrl}>Copy public link</button></div>{copyMessage&&<p className="partner-editor-help">{copyMessage}</p>}{publicUrl&&<a className="partner-public-url" href={publicUrl} target="_blank" rel="noreferrer">{publicUrl}</a>}</div></aside>
+      </section>
+    </>}
+  </main></PaidTierGate>;
+}
