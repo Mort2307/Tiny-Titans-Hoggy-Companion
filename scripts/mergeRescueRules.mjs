@@ -9,13 +9,16 @@ if (start < 0 || end < 0 || end <= start) throw new Error("Rescue rules merge re
 
 const block = `    function activeRescueTier(uid) {
       return signedIn() && (
-        (get(/databases/$(database)/documents/paidEntitlements/$(uid)).data.get('active', false) == true
+        (exists(/databases/$(database)/documents/paidEntitlements/$(uid))
+          && get(/databases/$(database)/documents/paidEntitlements/$(uid)).data.get('active', false) == true
           && get(/databases/$(database)/documents/paidEntitlements/$(uid)).data.get('tier', '') == 'rescue'
           && get(/databases/$(database)/documents/paidEntitlements/$(uid)).data.get('status', '') in ['active', 'trialing'])
-        || (get(/databases/$(database)/documents/paidTrials/$(uid)).data.get('enabled', false) == true
+        || (exists(/databases/$(database)/documents/paidTrials/$(uid))
+          && get(/databases/$(database)/documents/paidTrials/$(uid)).data.get('enabled', false) == true
           && get(/databases/$(database)/documents/paidTrials/$(uid)).data.get('tier', '') == 'rescue'
           && get(/databases/$(database)/documents/paidTrials/$(uid)).data.get('expiresAt', null) > request.time)
-        || (get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('enabled', false) == true
+        || (exists(/databases/$(database)/documents/paidTesterOverrides/$(uid))
+          && get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('enabled', false) == true
           && get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('tier', '') == 'rescue'
           && (!get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('expiresAt', null) || get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('expiresAt', null) > request.time))
       );
@@ -37,7 +40,7 @@ const block = `    function activeRescueTier(uid) {
       return signedIn() && rescueWorkspaceEnabled(orgId) && (org.get('ownerUid', '') == request.auth.uid || request.auth.uid in org.get('staffUids', []) || request.auth.uid in org.get('medicalUids', []));
     }
     function rescueWritesEnabled() {
-      return get(/databases/$(database)/documents/platformControls/rescue).data.get('writesEnabled', true) != false;
+      return !exists(/databases/$(database)/documents/platformControls/rescue) || get(/databases/$(database)/documents/platformControls/rescue).data.get('writesEnabled', true) != false;
     }
     match /rescueOrganisations/{orgId} {
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.accountType == 'rescue' && request.resource.data.accountStatus in ['pilot_pending', 'pilot_active', 'pilot_expired', 'pilot_suspended', 'paid_active', 'cancelled'];
