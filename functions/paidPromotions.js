@@ -78,7 +78,8 @@ exports.createCreatorPromoCode = onCall({ region: "europe-west2", secrets: [STRI
     const stripe = new Stripe(STRIPE_SECRET_KEY.value());
     const coupon = await stripe.coupons.create({ name: `TinyTitans Rescue · ${percentOff}% Off`, percent_off: percentOff, duration: "forever", max_redemptions: maxRedemptions || undefined, applies_to: { products: [RESCUE_PRODUCT_ID] }, metadata: { tier_id: "rescue", audience: "creator_managed", created_by: request.auth.uid } });
     const promotionCode = await stripe.promotionCodes.create({ code: code || undefined, promotion: { type: "coupon", coupon: coupon.id }, max_redemptions: maxRedemptions || undefined, expires_at: expiresAt || undefined, metadata: { tier_id: "rescue", product_id: RESCUE_PRODUCT_ID, created_by: request.auth.uid } });
-    return { success: true, promotionCode: mapPromotionCode(promotionCode) };
+    const completePromotionCode = await stripe.promotionCodes.retrieve(promotionCode.id, { expand: ["promotion.coupon"] });
+    return { success: true, promotionCode: mapPromotionCode(completePromotionCode) };
   } catch (error) {
     console.error("Creator promotion-code creation failed", error);
     const message = String(error?.message || "Unable to create promotion code.");
