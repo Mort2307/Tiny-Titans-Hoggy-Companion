@@ -8,8 +8,8 @@ import "../styles/PaidPlans.css";
 import { PAID_PROMOTIONS } from "../config/paidPromotions";
 import { claimPaidPromotion } from "../services/paidPromotionService";
 
-const PLAN_DISPLAY_ORDER: PaidTierId[] = ["free", "titan_seller", "titan_pro", "business_starter", "business_plus", "business_advanced"];
-const PRESTIGE_LABELS: Record<PaidTierId, string> = { free: "CORE", titan_seller: "PLUS", titan_pro: "PRO", business_starter: "ELITE", business_plus: "ELITE+", business_advanced: "TITAN" };
+const PLAN_DISPLAY_ORDER: PaidTierId[] = ["free", "titan_seller", "titan_pro", "business_starter", "business_plus", "business_advanced", "rescue"];
+const PRESTIGE_LABELS: Record<PaidTierId, string> = { free: "CORE", titan_seller: "PLUS", titan_pro: "PRO", business_starter: "ELITE", business_plus: "ELITE+", business_advanced: "TITAN", rescue: "RESCUE" };
 
 function toMillis(value: unknown): number | null {
   if (!value) return null;
@@ -37,19 +37,14 @@ export default function PaidPlans() {
   useEffect(() => {
     if (!user) return;
     let active = true;
-    void getPaidAccess(user.uid)
-      .then((next) => {
-        if (active) {
-          setAccess(next);
-          setSelectedTier(next.effectiveTier === "free" ? "titan_pro" : next.effectiveTier);
-        }
-      })
-      .catch((err) => {
-        if (active) {
-          setAccess(null);
-          setError(err instanceof Error ? err.message : "Your current paid access could not be loaded.");
-        }
-      });
+    void getPaidAccess(user.uid).then((next) => {
+      if (active) {
+        setAccess(next);
+        setSelectedTier(next.effectiveTier === "free" ? "titan_pro" : next.effectiveTier);
+      }
+    }).catch((err) => {
+      if (active) { setAccess(null); setError(err instanceof Error ? err.message : "Your current paid access could not be loaded."); }
+    });
     return () => { active = false; };
   }, [user]);
 
@@ -75,7 +70,7 @@ export default function PaidPlans() {
   function formatLivePrice(tierId: PaidTierId): string {
     if (tierId === "free") return "Free";
     const live = livePrices?.[tierId];
-    if (!live?.configured || live.unitAmount == null || !live.currency) return `Planned ${getPaidTierDefinition(tierId).priceLabel}`;
+    if (!live?.configured || live.unitAmount == null || !live.currency) return getPaidTierDefinition(tierId).priceLabel === "Custom pricing" ? "Custom pricing" : `Planned ${getPaidTierDefinition(tierId).priceLabel}`;
     const amount = live.unitAmount / 100;
     const currency = live.currency.toUpperCase();
     const formatted = new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
@@ -85,8 +80,7 @@ export default function PaidPlans() {
 
   async function subscribe() {
     if (!user || selectedTier === "free") return;
-    setBusy(true);
-    setError("");
+    setBusy(true); setError("");
     try {
       if (!selectedStripeReady) throw new Error("This tier is not connected to an active Stripe recurring price yet.");
       const result = await startPaidSubscriptionCheckout(selectedTier);
@@ -99,7 +93,6 @@ export default function PaidPlans() {
   }
 
   if (!user) return null;
-
   const effective = getPaidTierDefinition(access?.effectiveTier ?? "free");
   const statusLabel = access?.source === "tester" ? "Creator tester override" : access?.source === "subscription" ? "Active subscription" : access?.source === "trial" ? "Creator trial" : "Current plan";
   const trialExpiryMillis = toMillis(access?.trial?.expiresAt);
@@ -115,26 +108,18 @@ export default function PaidPlans() {
       </header>
       {access?.source === "trial" && access.trial && <section className="paid-message"><strong>🎁 You are currently trialling {effective.name}</strong><p>You have about <strong>{trialDays} day{trialDays === 1 ? "" : "s"}</strong> remaining. The trial ends {trialEndsLabel} and does not create a Stripe subscription.</p></section>}
       {error && <section className="paid-message paid-error" role="alert">{error}</section>}
-      {Object.values(PAID_PROMOTIONS).filter((promotion) => promotion.enabled && promotion.tier === "titan_pro").map((promotion) => (
-        <section className="paid-message" key={promotion.id}><strong>🎁 {promotion.name}</strong><p>{promotion.description}</p><button type="button" className="paid-primary" disabled={busy} onClick={async () => { setBusy(true); setError(""); try { await claimPaidPromotion(promotion.id); window.location.reload(); } catch (err) { setError(err instanceof Error ? err.message : "This promotion could not be claimed."); setBusy(false); } }}>Start free trial</button></section>
-      ))}
+      {Object.values(PAID_PROMOTIONS).filter((promotion) => promotion.enabled && promotion.tier === "titan_pro").map((promotion) => <section className="paid-message" key={promotion.id}><strong>🎁 {promotion.name}</strong><p>{promotion.description}</p><button type="button" className="paid-primary" disabled={busy} onClick={async () => { setBusy(true); setError(""); try { await claimPaidPromotion(promotion.id); window.location.reload(); } catch (err) { setError(err instanceof Error ? err.message : "This promotion could not be claimed."); setBusy(false); } }}>Start free trial</button></section>)}
       <section className="paid-plan-grid" aria-label="Tiny Titans subscription plans">
         {PLAN_DISPLAY_ORDER.map((tierId) => { const tier = getPaidTierDefinition(tierId); const current = access?.effectiveTier === tierId; const selectedCard = selectedTier === tierId; return (
           <button key={tierId} type="button" className={`paid-plan-card tier-${tierId} ${selectedCard ? "is-selected" : ""} ${current ? "is-current" : ""}`} onClick={() => setSelectedTier(tierId)} aria-pressed={selectedCard}>
             <span className="paid-tier-identity"><PaidTierBadge tierId={tierId} size="lg" /><span className="paid-tier-identity__copy"><span className="paid-tier-prestige">{PRESTIGE_LABELS[tierId]}</span><span className="paid-kicker">{tier.eyebrow}</span><h2>{tier.name}</h2></span></span>
-            <strong className="paid-price">{formatLivePrice(tierId)}</strong><p>{tier.description}</p><small className="paid-audience">{tier.audience}</small><div className="paid-highlights">{tier.highlights.map((item) => <span key={item}>✓ {item}</span>)}</div>{current && <span className="paid-current-badge">CURRENT ACCESS</span>}
-            {selectedCard && <span className="paid-selection-halo" aria-hidden="true" />}
+            <strong className="paid-price">{formatLivePrice(tierId)}</strong><p>{tier.description}</p><small className="paid-audience">{tier.audience}</small><div className="paid-highlights">{tier.highlights.map((item) => <span key={item}>✓ {item}</span>)}</div>{current && <span className="paid-current-badge">CURRENT ACCESS</span>}{selectedCard && <span className="paid-selection-halo" aria-hidden="true" />}
           </button>
         ); })}
       </section>
       <section className="paid-plan-detail">
         <div><span className="paid-kicker"><PaidTierBadge tierId={selectedTier} size="sm" /> SELECTED PLAN</span><h2>{selected.name}</h2><p>{selected.description}</p><div className="paid-entitlement-grid">{selected.entitlements.map((item) => <span key={item}>{item.replaceAll("_", " ")}</span>)}</div>{selected.note && <p className="paid-note">{selected.note}</p>}</div>
-        <aside>
-          <strong>{formatLivePrice(selectedTier)}</strong>
-          {selectedTier !== "free" && <small className="paid-live-price-status">{selectedStripeReady ? "Live Stripe recurring price verified" : "Stripe recurring price not connected yet"}</small>}
-          {pricingError && <p className="paid-note">Live Stripe pricing could not be verified: {pricingError}</p>}
-          {selectedTier === "free" ? <><p>No subscription required. Your existing core app continues to work.</p><button type="button" onClick={() => window.location.assign("/account/billing")}>Go to billing</button></> : <><p>Checkout is hosted securely by Stripe. Tiny Titans does not handle your card details.</p><button type="button" className="paid-primary" onClick={() => void subscribe()} disabled={busy || access?.source === "subscription" || !selectedStripeReady}>{busy ? "Opening secure checkout…" : access?.source === "subscription" ? "Manage existing subscription" : `Start ${selected.name}`}</button>{!selectedStripeReady && <p className="paid-note">Stripe recurring pricing is not configured for this tier yet. Checkout is disabled until the live Stripe price exists.</p>}{access?.source === "subscription" && <button type="button" onClick={() => window.location.assign("/account/billing")}>Manage existing subscription</button>}</>}
-        </aside>
+        <aside><strong>{formatLivePrice(selectedTier)}</strong>{selectedTier !== "free" && <small className="paid-live-price-status">{selectedStripeReady ? "Live Stripe recurring price verified" : "Stripe recurring price not connected yet"}</small>}{pricingError && <p className="paid-note">Live Stripe pricing could not be verified: {pricingError}</p>}{selectedTier === "free" ? <><p>No subscription required. Your existing core app continues to work.</p><button type="button" onClick={() => window.location.assign("/account/billing")}>Go to billing</button></> : selectedStripeReady ? <><p>Checkout is hosted securely by Stripe. Tiny Titans does not handle your card details.</p><button type="button" className="paid-primary" onClick={() => void subscribe()} disabled={busy || access?.source === "subscription"}>{busy ? "Opening secure checkout…" : access?.source === "subscription" ? "Manage existing subscription" : `Start ${selected.name}`}</button>{access?.source === "subscription" && <button type="button" onClick={() => window.location.assign("/account/billing")}>Manage existing subscription</button>}</> : <><p>This Rescue plan is not commercially activated yet. Creator-granted Rescue pilots can test the full workspace without Stripe billing.</p><button type="button" onClick={() => window.location.assign("/creator/tester/paid-tiers")}>Open Creator paid-tier control</button></>}</aside>
       </section>
       <section className="paid-message"><strong>🧪 Want to test the paid experience first?</strong><p>Creator testing can temporarily grant any plan to an account without touching Stripe billing. Test access is stored separately from the real subscription.</p></section>
     </main>
