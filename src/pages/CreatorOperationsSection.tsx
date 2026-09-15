@@ -27,8 +27,7 @@ function QADashboard() {
 
 export default function CreatorOperationsSection({ mode }: { mode: Mode }) {
   const [params] = useSearchParams();
-  if (mode === "configuration") return <main className="creator-section-page"><section className="creator-config-banner"><span>CONFIGURATION</span><h1>⚙️ App configuration</h1><p>Centralised navigation for deliberate operational controls. Configuration writes stay behind their owning service instead of being scattered across UI components.</p></section><CreatorOperationsSection mode="configuration-content" asInternal/></main>;
-  if (mode === "qa") return <QADashboard />;
+  if (mode === "qa" as Mode) return <QADashboard />;
   const data = SECTION_DATA[mode];
   const search = params.get("q")?.trim().toLowerCase();
   const cards = data.cards.filter((card)=>!search||card.join(" ").toLowerCase().includes(search));
@@ -40,5 +39,3 @@ export function CreatorAnalytics() {
   useEffect(()=>{let active=true;void getGlobalStats().then((next)=>{if(active)setStats(next);}).catch((e)=>{if(active)setError(e instanceof Error?e.message:"Analytics unavailable.");});return()=>{active=false;};},[]);
   return <main className="creator-section-page"><header className="creator-section-header"><div><span>CREATOR ANALYTICS</span><h1>📊 Operational analytics</h1><p>Core platform totals plus clear links to the deeper operational dashboards.</p></div><Link to="/creator" className="creator-ops-secondary">← Creator Centre</Link></header>{error&&<div className="creator-section-error">{error}</div>}<section className="creator-metrics-grid"><Metric label="Registered users" value={stats?.registeredUsers??"—"} detail="Global user population"/><Metric label="Active users" value={stats?.activeUsers??"—"} detail="Recorded active population"/><Metric label="Snake profiles" value={stats?.snakeProfiles??"—"} detail="Tracked reptile records"/><Metric label="Meals logged" value={stats?.mealsFed??"—"} detail="Feeding records"/><Metric label="Weight logs" value={stats?.weightLogs??"—"} detail="Weight records"/><Metric label="Sheds logged" value={stats?.shedsLogged??"—"} detail="Shed records"/><Metric label="Genetics calculations" value={stats?.geneticsCalculations??"—"} detail="Calculator activity"/><Metric label="Total recorded weight" value={stats?`${stats.totalWeightKg.toLocaleString("en-GB")} kg`:"—"} detail="Canonical aggregate"/></section><section className="creator-section-card-grid"><Link to="/creator/admin" className="creator-section-card"><span>👥</span><div><h2>User analytics</h2><p>Open the deep creator dashboard for profiles, activity bands, setup completion and consent signals.</p></div><b>→</b></Link><Link to="/creator/benchmarks" className="creator-section-card"><span>📈</span><div><h2>Benchmark analytics</h2><p>Compare health and operational baselines over time.</p></div><b>→</b></Link></section></main>;
 }
-
-export function CreatorConfigurationContent() { return <></>; }
