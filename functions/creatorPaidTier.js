@@ -6,8 +6,8 @@ const { recordPaidTierActivationNotification } = require("./paidTierNotification
 const db = getFirestore();
 const adminAuth = getAuth();
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
-const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
-const PAID_TIERS = new Set(["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
+const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"]);
+const PAID_TIERS = new Set(["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"]);
 
 function isOwnerRequest(request) { return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL; }
 function millis(value) { if (!value) return null; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : null; }
@@ -17,12 +17,10 @@ async function accessForUser(data, uid) {
   const actualTier = VALID_TIERS.has(String(data.subscriptionTier || "")) ? String(data.subscriptionTier) : "free";
   const subscriptionStatus = String(data.subscriptionStatus || (actualTier === "free" ? "free" : "active"));
   const subscriptionActive = actualTier !== "free" && (subscriptionStatus === "active" || subscriptionStatus === "trialing");
-  const overrideSnapshot = await db.collection("paidTesterOverrides").doc(uid).get();
-  const override = overrideSnapshot.exists ? overrideSnapshot.data() : null;
+  const overrideSnapshot = await db.collection("paidTesterOverrides").doc(uid).get(); const override = overrideSnapshot.exists ? overrideSnapshot.data() : null;
   const overrideTier = VALID_TIERS.has(String(override?.tier || "")) ? String(override.tier) : "free";
   const overrideActive = override?.enabled === true && PAID_TIERS.has(overrideTier) && (!override.expiresAt || activeExpiry(override.expiresAt));
-  const trial = await trialForUser(uid);
-  const trialTier = VALID_TIERS.has(String(trial?.tier || "")) ? String(trial.tier) : "free";
+  const trial = await trialForUser(uid); const trialTier = VALID_TIERS.has(String(trial?.tier || "")) ? String(trial.tier) : "free";
   const trialActive = trial?.enabled === true && PAID_TIERS.has(trialTier) && activeExpiry(trial.expiresAt);
   let effectiveTier = "free"; let source = "free";
   if (overrideActive) { effectiveTier = overrideTier; source = "tester"; } else if (subscriptionActive) { effectiveTier = actualTier; source = "subscription"; } else if (trialActive) { effectiveTier = trialTier; source = "trial"; }
@@ -32,12 +30,9 @@ exports.getCreatorPaidTierUsers = onCall({ region: "europe-west2" }, async (requ
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can inspect paid-tier users.");
   const snapshot = await db.collection("users").get();
-  const users = await Promise.all(snapshot.docs.map(async (item) => {
-    const data = item.data() || {}; const access = await accessForUser(data, item.id);
-    return { uid: item.id, displayName: String(data.displayName || data.name || "Unnamed user"), email: String(data.email || ""), role: String(data.role || ""), profileType: String(data.profileType || "user"), actualTier: access.actualTier, effectiveTier: access.effectiveTier, source: access.source, subscriptionStatus: access.subscriptionStatus, currentPeriodEnd: millis(access.currentPeriodEnd), testerExpiry: millis(access.testerOverride?.expiresAt), trialExpiry: millis(access.trial?.expiresAt), trialStartedAt: millis(access.trial?.startedAt || access.trial?.grantedAt) };
-  }));
+  const users = await Promise.all(snapshot.docs.map(async (item) => { const data = item.data() || {}; const access = await accessForUser(data, item.id); return { uid: item.id, displayName: String(data.displayName || data.name || "Unnamed user"), email: String(data.email || ""), role: String(data.role || ""), profileType: String(data.profileType || "user"), actualTier: access.actualTier, effectiveTier: access.effectiveTier, source: access.source, subscriptionStatus: access.subscriptionStatus, currentPeriodEnd: millis(access.currentPeriodEnd), testerExpiry: millis(access.testerOverride?.expiresAt), trialExpiry: millis(access.trial?.expiresAt), trialStartedAt: millis(access.trial?.startedAt || access.trial?.grantedAt) }; }));
   users.sort((a, b) => a.displayName.localeCompare(b.displayName) || a.email.localeCompare(b.email));
-  const summary = users.reduce((result, account) => { result.total += 1; result[account.effectiveTier] = (result[account.effectiveTier] || 0) + 1; if (account.source === "trial") result.trials += 1; if (account.source === "subscription") result.paid += 1; if (account.source === "tester") result.testers += 1; return result; }, { total: 0, trials: 0, paid: 0, testers: 0, free: 0, titan_pro: 0, titan_seller: 0, business_starter: 0, business_plus: 0, business_advanced: 0 });
+  const summary = users.reduce((result, account) => { result.total += 1; result[account.effectiveTier] = (result[account.effectiveTier] || 0) + 1; if (account.source === "trial") result.trials += 1; if (account.source === "subscription") result.paid += 1; if (account.source === "tester") result.testers += 1; return result; }, { total: 0, trials: 0, paid: 0, testers: 0, free: 0, titan_pro: 0, titan_seller: 0, business_starter: 0, business_plus: 0, business_advanced: 0, rescue: 0 });
   return { success: true, users, summary, generatedAt: Date.now() };
 });
 exports.getCreatorPaidTierNotifications = onCall({ region: "europe-west2" }, async (request) => {
