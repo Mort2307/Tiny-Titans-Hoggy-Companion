@@ -13,7 +13,7 @@ if ([string]::IsNullOrWhiteSpace($password)) {
 
 $env:TINY_TITANS_VISUAL_BOT_EMAIL = $email
 $env:TINY_TITANS_VISUAL_BOT_PASSWORD = $password
-$env:TINY_TITANS_TEST_URL = if ($env:TINY_TITANS_TEST_URL) { $env:TINY_TITANS_TEST_URL } else { "http://127.0.0.1:4173" }
+$env:TINY_TITANS_TEST_URL = if ($env:TINY_TITANS_TEST_URL) { $env:TINY_TITANS_TEST_URL } else { "http://127.0.0.1:5173" }
 
 Write-Host "Starting Creator Navigation BOT against $($env:TINY_TITANS_TEST_URL)"
 npm run test:creator-navigation
