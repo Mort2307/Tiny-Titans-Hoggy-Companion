@@ -5,7 +5,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const db = getFirestore();
 const adminAuth = getAuth();
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
-const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
+const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"]);
 const VALID_MODES = new Set(["silent", "visible"]);
 function isOwnerRequest(request) { return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL; }
 function normaliseExpiry(value) { if (value === null || value === undefined || value === "") return null; const millis = new Date(String(value)).getTime(); if (!Number.isFinite(millis)) throw new HttpsError("invalid-argument", "Tester expiry must be a valid date/time."); if (millis <= Date.now()) throw new HttpsError("invalid-argument", "Tester expiry must be in the future."); return Timestamp.fromMillis(millis); }
