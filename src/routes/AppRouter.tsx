@@ -111,7 +111,7 @@ import PaidMarketplaceFeature from "../pages/PaidMarketplaceFeature";
 import PaidSupportFeature from "../pages/PaidSupportFeature";
 import PaidTimelineFeature from "../pages/PaidTimelineFeature";
 import Marketplace from "../pages/Marketplace";
-import { RescueCentre, RescueAnimals, RescueAnimalPassport, RescueAnimalManage, RescueScanner, RescueSpeciesIncubator, RescueOperationalPage } from "../pages/RescuePages";
+import { RescueCentre, RescueAnimals, RescueAnimalPassport, RescueAnimalManage, RescueAnimalQR, RescueScanner, RescueSpeciesIncubator, RescueOperationalPage } from "../pages/RescuePages";
 
 function hasLocalPrivacyConsent(userId: string) {
   try {
@@ -159,6 +159,7 @@ function AppRouterGate() {
     <Route path="/rescue" element={<RescueCentre />} />
     <Route path="/rescue/animals" element={<RescueAnimals />} />
     <Route path="/rescue/animals/:animalId/manage" element={<RescueAnimalManage />} />
+    <Route path="/rescue/animals/:animalId/qr" element={<RescueAnimalQR />} />
     <Route path="/rescue/scan" element={<RescueScanner />} />
     <Route path="/rescue/species-incubator" element={<RescueSpeciesIncubator />} />
     <Route path="/rescue/team" element={<RescueOperationalPage kind="team" />} />
