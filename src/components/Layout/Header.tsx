@@ -11,6 +11,7 @@ import TinyTitansIcon from "../TinyTitansIcon";
 import TinyTitansTierCrest from "../TinyTitansTierCrest";
 import { getPaidAccess, type PaidAccess } from "../../services/paidTierService";
 import { getPaidTierDefinition } from "../../config/paidTiers";
+import { getWorkspaceProduct } from "../../config/workspaceProducts";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../../services/workspacePresentationService";
 import "./Header.css";
 
@@ -50,6 +51,7 @@ function Header() {
   }, [user]);
 
   const product = getWorkspacePresentation();
+  const workspaceProduct = getWorkspaceProduct(workspace.productId);
   const isPersonal = workspace.productId === "personal";
   const productName = isPersonal ? "Tiny Titans" : product.productId === "rescue" ? "TinyTitans Rescue" : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").name;
   const productSubtitle = isPersonal ? "Reptile Companion" : product.productId === "rescue" ? "Rescue Operations" : product.productId === "titan_pro" ? "Advanced Keeper Workspace" : product.productId === "titan_seller" ? "Seller Workspace" : product.productId === "business_advanced" ? "Full Business Workspace" : product.productId === "business_plus" ? "Growing Business Workspace" : "Business Workspace";
@@ -65,7 +67,7 @@ function Header() {
         <span className="app-brand-name"><span className="app-brand-primary">{productName}</span><span className="app-brand-secondary">{productSubtitle}</span></span>
         <span className="app-brand-tagline">{tagline}</span>
       </div>
-      {!isPersonal && <Link className="workspace-purpose-pill" to={workspace.productId === "rescue" ? "/rescue" : "/plans"}><span aria-hidden="true">{product.productId === "rescue" ? "🚑" : product.productId === "titan_pro" ? "⚡" : product.productId === "titan_seller" ? "🛍️" : product.productId === "business_advanced" ? "👑" : "🏢"}</span><strong>{product.eyebrow}</strong><small>Workspace active</small></Link>}
+      {!isPersonal && <Link className="workspace-purpose-pill" to={workspace.productId === "rescue" ? "/rescue" : "/plans"}><span aria-hidden="true">{product.productId === "rescue" ? "🚑" : product.productId === "titan_pro" ? "⚡" : product.productId === "titan_seller" ? "🛍️" : product.productId === "business_advanced" ? "👑" : "🏢"}</span><strong>{workspaceProduct.eyebrow}</strong><small>Workspace active</small></Link>}
       <div className="app-header-actions">
         <LiveWorldClockBadge />
         {!creatorMode && paidAccess && <Link className="paid-tier-header-badge" to="/plans" aria-label={`Your Tiny Titans tier: ${getPaidTierDefinition(paidAccess.effectiveTier).name}`} title={paidAccess.source === "tester" ? "Creator tester access" : paidAccess.source === "trial" ? "Trial access" : "Your Tiny Titans tier"}><TinyTitansTierCrest tier={paidAccess.effectiveTier} size={21} /><strong>{getPaidTierDefinition(paidAccess.effectiveTier).shortLabel}</strong>{paidAccess.source !== "subscription" && <small>{paidAccess.source === "tester" ? "TEST" : paidAccess.source === "trial" ? "TRIAL" : "FREE"}</small>}</Link>}
