@@ -66,6 +66,11 @@ import CreatorSubmissions from "../pages/CreatorSubmissions";
 import CreatorReviewStudio from "../pages/CreatorReviewStudio";
 import CreatorObservationReview from "../pages/CreatorObservationReview";
 import CreatorIssueQueues from "../pages/CreatorIssueQueues";
+import CreatorOperationsHub from "../pages/CreatorOperationsHub";
+import CreatorOperationsSection, { CreatorAnalytics } from "../pages/CreatorOperationsSection";
+import CreatorPartnerBranding from "../pages/CreatorPartnerBranding";
+import PartnerLanding from "../pages/PartnerLanding";
+import PartnerLandingEditor from "../pages/PartnerLandingEditor";
 import EducatorDashboard from "../pages/EducatorDashboard";
 import TitansChallenge from "../pages/TitansChallenge";
 import ChallengeSession from "../pages/ChallengeSession";
@@ -113,13 +118,7 @@ import PaidTimelineFeature from "../pages/PaidTimelineFeature";
 import Marketplace from "../pages/Marketplace";
 import { RescueCentre, RescueAnimals, RescueAnimalPassport, RescueAnimalManage, RescueAnimalQR, RescueScanner, RescueSpeciesIncubator, RescueOperationalPage } from "../pages/RescuePages";
 
-function hasLocalPrivacyConsent(userId: string) {
-  try {
-    return window.localStorage.getItem(`tinytitans:privacy-consent:${userId}`) === CONSENT_VERSION;
-  } catch {
-    return false;
-  }
-}
+function hasLocalPrivacyConsent(userId: string) { try { return window.localStorage.getItem(`tinytitans:privacy-consent:${userId}`) === CONSENT_VERSION; } catch { return false; } }
 
 function AppRouterGate() {
   const location = useLocation();
@@ -134,19 +133,12 @@ function AppRouterGate() {
     let active = true;
     setPrivacyConsentVersion(null);
     if (!user) return () => { active = false; };
-    void getPrivacyPreferences(user.uid)
-      .then((preferences) => {
-        if (active) setPrivacyConsentVersion(preferences.consentVersion || profile?.privacyConsentVersion || profile?.dataCollectionPreferences?.consentVersion || "");
-      })
-      .catch(() => {
-        if (active) setPrivacyConsentVersion(profile?.privacyConsentVersion || profile?.dataCollectionPreferences?.consentVersion || "");
-      });
+    void getPrivacyPreferences(user.uid).then((preferences) => { if (active) setPrivacyConsentVersion(preferences.consentVersion || profile?.privacyConsentVersion || profile?.dataCollectionPreferences?.consentVersion || ""); }).catch(() => { if (active) setPrivacyConsentVersion(profile?.privacyConsentVersion || profile?.dataCollectionPreferences?.consentVersion || ""); });
     return () => { active = false; };
   }, [user, profile?.privacyConsentVersion, profile?.dataCollectionPreferences?.consentVersion]);
 
-  if (loading || profileLoading || (user && privacyConsentVersion === null)) {
-    return <div className="page-container"><div className="welcome-card"><h1>Loading Tiny Titans...</h1></div></div>;
-  }
+  if (location.pathname.startsWith("/partner/")) return <Routes><Route path="/partner/:slug" element={<PartnerLanding />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes>;
+  if (loading || profileLoading || (user && privacyConsentVersion === null)) return <div className="page-container"><div className="welcome-card"><h1>Loading Tiny Titans...</h1></div></div>;
   if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="/rescue/animals/:animalId" element={<RescueAnimalPassport />} /><Route path="*" element={<Navigate to={loginRedirect} replace />} /></Routes>;
   if (!profile || !profile.setupComplete) return <Routes><Route path="/account-setup" element={<AccountSetup />} /><Route path="*" element={<Navigate to={setupRedirect} replace />} /></Routes>;
 
@@ -156,6 +148,7 @@ function AppRouterGate() {
   return <UnitProvider><Routes><Route element={<Layout />}>
     <Route path="/" element={<Home />} />
     <Route path="/account" element={<MyAccount />} />
+    <Route path="/account/partner-landing" element={<PartnerLandingEditor />} />
     <Route path="/rescue" element={<RescueCentre />} />
     <Route path="/rescue/animals" element={<RescueAnimals />} />
     <Route path="/rescue/animals/:animalId/manage" element={<RescueAnimalManage />} />
@@ -268,7 +261,18 @@ function AppRouterGate() {
     <Route path="/conversations/submissions" element={<SubmissionConversationInbox />} />
     <Route path="/founder" element={<Founder />} />
     <Route path="/become-a-titan" element={<BecomeATitan />} />
-    <Route path="/creator" element={<CreatorRouteGuard>{profile.role === "admin" ? <CreatorAdmin /> : <CreatorLanding />}</CreatorRouteGuard>} />
+
+    <Route path="/creator" element={<CreatorRouteGuard><CreatorOperationsHub /></CreatorRouteGuard>} />
+    <Route path="/creator/admin" element={<CreatorRouteGuard><CreatorAdmin /></CreatorRouteGuard>} />
+    <Route path="/creator/content" element={<CreatorRouteGuard><CreatorOperationsSection mode="content" /></CreatorRouteGuard>} />
+    <Route path="/creator/review-queues" element={<CreatorRouteGuard><CreatorOperationsSection mode="reviews" /></CreatorRouteGuard>} />
+    <Route path="/creator/intelligence" element={<CreatorRouteGuard><CreatorOperationsSection mode="intelligence" /></CreatorRouteGuard>} />
+    <Route path="/creator/moderation" element={<CreatorRouteGuard><CreatorOperationsSection mode="moderation" /></CreatorRouteGuard>} />
+    <Route path="/creator/configuration" element={<CreatorRouteGuard><CreatorOperationsSection mode="configuration" /></CreatorRouteGuard>} />
+    <Route path="/creator/analytics" element={<CreatorRouteGuard><CreatorAnalytics /></CreatorRouteGuard>} />
+    <Route path="/creator/qa" element={<CreatorRouteGuard><CreatorOperationsSection mode="qa" /></CreatorRouteGuard>} />
+    <Route path="/creator/partner-branding" element={<CreatorRouteGuard><CreatorPartnerBranding /></CreatorRouteGuard>} />
+    <Route path="/creator/partner-branding/edit" element={<CreatorRouteGuard><PartnerLandingEditor creatorMode /></CreatorRouteGuard>} />
     <Route path="/creator/species-preview" element={<CreatorRouteGuard><CreatorSpeciesPreview /></CreatorRouteGuard>} />
     <Route path="/creator/morph-library" element={<CreatorRouteGuard><CreatorMorphLibrary /></CreatorRouteGuard>} />
     <Route path="/creator/privacy-data" element={<CreatorRouteGuard><CreatorPrivacyData /></CreatorRouteGuard>} />
@@ -294,6 +298,4 @@ function AppRouterGate() {
   </Route></Routes>{consentRequired && <DataPrivacyConsentModal onAccepted={() => { setConsentAccepted(true); setPrivacyConsentVersion(PRIVACY_CONSENT_VERSION); }} />}{!consentRequired && <CreatorTesterInvitation />}</UnitProvider>;
 }
 
-export default function AppRouter() {
-  return <BrowserRouter><AppRouterGate /></BrowserRouter>;
-}
+export default function AppRouter() { return <BrowserRouter><AppRouterGate /></BrowserRouter>; }
