@@ -26,7 +26,7 @@ export default function CreatorRescuePilots() {
   useEffect(() => { if (profile?.role === "admin") void load(); }, [profile?.role]);
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 60000); return () => window.clearInterval(timer); }, []);
 
-  const active = useMemo(() => snapshot?.organisations.filter((item) => item.pilotStatus === "pilot_active" && (item.pilotEndsAt || 0) > now).length ?? 0, [snapshot]);
+  const active = useMemo(() => snapshot?.organisations.filter((item) => item.pilotStatus === "pilot_active" && (item.pilotEndsAt || 0) > now).length ?? 0, [snapshot, now]);
   if (profile?.role !== "admin") return <Navigate to="/" replace />;
 
   async function saveControls(patch: Partial<RescuePilotControls>) {
@@ -61,7 +61,7 @@ export default function CreatorRescuePilots() {
       </div>
     </section>
     <section className="creator-admin-section"><div className="creator-section-heading"><div><span className="creator-admin-kicker">ORGANISATIONS</span><h2>Rescue workspaces</h2></div></div>
-      {!snapshot?.organisations.length ? <div className="creator-loading">No Rescue organisations exist yet.</div> : <div className="creator-global-grid creator-tools-grid">{snapshot.organisations.map((org) => { const activePilot = org.pilotStatus === "pilot_active" && (org.pilotEndsAt || 0) > Date.now(); const expired = org.pilotStatus === "pilot_active" && !activePilot; return <article className="creator-global-card creator-feature-tile" key={org.id}><span>🚑</span><strong>{org.name}</strong><label>{org.pilotStatus.replaceAll("_", " ")}</label><small>Staff {org.staffLimit} · Animals {org.animalLimit} · Storage {org.storageMbLimit} MB</small><small>Started {dateLabel(org.pilotStartsAt)}<br />Ends {dateLabel(org.pilotEndsAt)}</small>{(activePilot || expired) && <button type="button" disabled={busyId === org.id} onClick={() => void configure(org.id, !activePilot)}>{busyId === org.id ? "Saving…" : activePilot ? "Suspend pilot" : "Restart 30-day pilot"}</button>}<button type="button" disabled={busyId === org.id} onClick={() => void convert(org.id)}>{busyId === org.id ? "Saving…" : "Convert to paid"}</button></article>; })}</div>}
+      {!snapshot?.organisations.length ? <div className="creator-loading">No Rescue organisations exist yet.</div> : <div className="creator-global-grid creator-tools-grid">{snapshot.organisations.map((org) => { const activePilot = org.pilotStatus === "pilot_active" && (org.pilotEndsAt || 0) > now; const expired = org.pilotStatus === "pilot_active" && !activePilot; return <article className="creator-global-card creator-feature-tile" key={org.id}><span>🚑</span><strong>{org.name}</strong><label>{org.pilotStatus.replaceAll("_", " ")}</label><small>Staff {org.staffLimit} · Animals {org.animalLimit} · Storage {org.storageMbLimit} MB</small><small>Started {dateLabel(org.pilotStartsAt)}<br />Ends {dateLabel(org.pilotEndsAt)}</small>{(activePilot || expired) && <button type="button" disabled={busyId === org.id} onClick={() => void configure(org.id, !activePilot)}>{busyId === org.id ? "Saving…" : activePilot ? "Suspend pilot" : "Restart 30-day pilot"}</button>}<button type="button" disabled={busyId === org.id} onClick={() => void convert(org.id)}>{busyId === org.id ? "Saving…" : "Convert to paid"}</button></article>; })}</div>}
     </section>
   </main>;
 }
