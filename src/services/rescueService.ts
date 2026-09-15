@@ -1,10 +1,13 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
-import { auth, db } from "../firebase/config";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { auth, db, app } from "../firebase/config";
 import type { RescueAccess, RescueAnimal, RescueOrganisation, RescueRole, RescueTimelineEvent } from "../types/rescue";
 
 const organisations = "rescueOrganisations";
 const animals = "rescueAnimals";
 const publicAnimals = "rescueAnimalPublic";
+const functions = getFunctions(app, "europe-west2");
+const createRescueAnimalCall = httpsCallable<{ organisationId: string; animal: Omit<RescueAnimal, "id" | "organisationId" | "createdAt" | "updatedAt" | "timeline"> }, { success: boolean; id: string; animalId: string; rescueId: string }>(functions, "createRescueAnimal");
 const now = () => new Date().toISOString();
 
 function roleFor(org: RescueOrganisation, uid: string): RescueRole | null {
@@ -141,15 +144,9 @@ export async function getRescueAnimal(id: string) {
   } catch { return getPublicRescueAnimal(id); }
 }
 export async function createRescueAnimal(input: Omit<RescueAnimal, "id" | "createdAt" | "updatedAt" | "timeline">, recordedByUid: string) {
-  const timestamp = now();
-  const intake: RescueTimelineEvent = { id: crypto.randomUUID(), type: "intake", occurredAt: input.intakeDate || timestamp, title: "Rescue intake", summary: "Animal added to the rescue record.", details: input.publicSummary || "Initial intake record.", recordedByUid, visibility: "staff" };
-  const ref = doc(collection(db, animals));
-  const animal = { ...input, timeline: [intake], createdAt: timestamp, updatedAt: timestamp } as RescueAnimal;
-  const batch = writeBatch(db);
-  batch.set(ref, animal);
-  if (input.publicPreview) batch.set(doc(db, publicAnimals, ref.id), { organisationId: animal.organisationId, publicPreview: true, name: animal.name, speciesCommonName: animal.speciesCommonName, scientificName: animal.scientificName, sex: animal.sex, morphOrColour: animal.morphOrColour, estimatedAge: animal.estimatedAge, status: animal.status, intakeDate: animal.intakeDate, publicSummary: animal.publicSummary, timeline: [], createdAt: timestamp, updatedAt: timestamp });
-  await batch.commit();
-  return ref.id;
+  void recordedByUid;
+  const result = await createRescueAnimalCall({ organisationId: input.organisationId, animal: input });
+  return result.data.animalId || result.data.id;
 }
 export async function updateRescueAnimal(id: string, patch: Partial<Pick<RescueAnimal, "name" | "speciesCommonName" | "scientificName" | "sex" | "morphOrColour" | "estimatedAge" | "status" | "enclosure" | "publicPreview" | "publicSummary" | "husbandrySummary" | "privateNotes">>) {
   await updateDoc(doc(db, animals, id), { ...patch, updatedAt: now() });
