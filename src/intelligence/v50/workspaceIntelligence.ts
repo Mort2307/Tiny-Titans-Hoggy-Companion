@@ -24,11 +24,11 @@ export function createWorkspaceSignal(input: Omit<WorkspaceIntelligenceSignal, "
 }
 
 export function canContributeToCreatorIntelligence(signal: WorkspaceIntelligenceSignal, intelligenceConsent: boolean): boolean {
-  if (!intelligenceConsent) return false;
-  return signal.visibility !== "private";
+  return intelligenceConsent && signal.visibility !== "private";
 }
 
 export function anonymisedSignal(signal: WorkspaceIntelligenceSignal): Omit<WorkspaceIntelligenceSignal, "subjectId"> & { subjectId?: undefined } {
-  const { subjectId: _subjectId, payload, ...safe } = signal;
-  return { ...safe, payload: { ...payload } };
+  const safe = { ...signal } as Omit<WorkspaceIntelligenceSignal, "subjectId"> & { subjectId?: string };
+  delete safe.subjectId;
+  return safe as Omit<WorkspaceIntelligenceSignal, "subjectId"> & { subjectId?: undefined };
 }
