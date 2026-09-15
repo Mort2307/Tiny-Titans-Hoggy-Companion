@@ -1,0 +1,12 @@
+    match /partnerLandings/{landingId} {
+      allow get: if resource.data.publicEnabled == true || (signedIn() && (resource.data.ownerUid == request.auth.uid || isCreator()));
+      allow list: if isCreator() || (signedIn() && resource.data.publicEnabled == true) || (signedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isCreator() || (signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid);
+      allow delete: if isCreator() || (signedIn() && resource.data.ownerUid == request.auth.uid);
+    }
+    match /qaRuns/{runId} {
+      allow get, list: if isCreator();
+      allow create, update: if isCreator();
+      allow delete: if isCreator();
+    }
