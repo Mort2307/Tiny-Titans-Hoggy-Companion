@@ -16,7 +16,7 @@
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json",
-    "predeploy": ["node scripts/mergeMentorshipRules.mjs"]
+    "predeploy": ["node scripts/mergeMentorshipRules.mjs", "node scripts/mergeRescueRules.mjs"]
   },
   "storage": { "rules": "storage.rules" }
 }
