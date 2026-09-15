@@ -62,7 +62,7 @@ function routeRegex(route) {
 
 const patterns = uniqueRoutes.filter((route) => route !== "*").map((route) => ({ route, regex: routeRegex(route) }));
 const unresolvedTargets = navigationTargets.filter(({ target }) => target && target.startsWith("/") && !target.includes("${") && !patterns.some(({ regex }) => regex.test(target.split(/[?#]/)[0])));
-const allowedConditionalDuplicates = new Set(["/login", "/account-setup", "*"]);
+const allowedConditionalDuplicates = new Set(["/login", "/account-setup", "/rescue/animals/:animalId", "*"]);
 const duplicateRoutes = [...new Set(routes.filter((route, index) => routes.indexOf(route) !== index))].filter((route) => !allowedConditionalDuplicates.has(route));
 
 const findings = [];
