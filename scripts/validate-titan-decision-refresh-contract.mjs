@@ -29,7 +29,13 @@ for (const symbol of [
 if (!homeContract.includes("getTitanDecisionState(user.uid)")) findings.push("Home is not reading the canonical decision state before refreshing.");
 if (!homeContract.includes("if(existing.decisions.length>0)")) findings.push("Home refresh guard is missing; it may rewrite the decision state on every visit.");
 if (!homeContract.includes("if(existing.decisions.length>0){setDecision(existingActive);}else{constrefreshed=awaitrefreshTitanDecisionStateForAnimals")) findings.push("Home does not retain first-run decision generation when canonical state is empty.");
-if (!homeContract.includes("constevent=detail.event") || !homeContract.includes("event?.animalId&&event.occurredAt") || !homeContract.includes("refreshTitanDecisionStateForAnimals(user.uid,[event.animalId],{type:event.type,occurredAt:event.occurredAt}")) findings.push("Home reactive event handling does not refresh the affected animal from the real event timestamp.");
+const hasReactiveEvent = homeContract.includes("constevent=detail.event");
+const hasAffectedAnimalGuard = homeContract.includes("event?.animalId&&event.occurredAt");
+const hasTimestampPayload = homeContract.includes("type:event.type") && homeContract.includes("occurredAt:event.occurredAt");
+const hasAffectedAnimalRefresh = homeContract.includes("refreshTitanDecisionStateForAnimals(user.uid,[event.animalId]");
+if (!hasReactiveEvent || !hasAffectedAnimalGuard || !hasTimestampPayload || !hasAffectedAnimalRefresh) {
+  findings.push("Home reactive event handling does not refresh the affected animal from the real event timestamp.");
+}
 
 const triggerGuardPattern = /const\s+triggerAt\s*=\s*trigger\?\.occurredAt\s*\?\s*Date\.parse\(trigger\.occurredAt\)\s*:\s*NaN/;
 const guardedLastEventPattern = /lastEventAt\s*:\s*hasTriggerTimestamp\s*\?\s*triggerAt\s*:\s*undefined/;
