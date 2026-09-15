@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { RescueAccess, RescueAnimal, RescueOrganisation, RescueRole, RescueTimelineEvent } from "../types/rescue";
 const organisations="rescueOrganisations"; const animals="rescueAnimals"; const now=()=>new Date().toISOString();
