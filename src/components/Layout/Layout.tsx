@@ -27,6 +27,7 @@ import PaidTimelineFeature from "../../pages/PaidTimelineFeature";
 import PaidMarketplaceFeature from "../../pages/PaidMarketplaceFeature";
 import PaidSupportFeature from "../../pages/PaidSupportFeature";
 import PaidTierGate from "../PaidTierGate";
+import WorkspaceProductShell from "../WorkspaceProductShell";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 import "../../styles/tierIdentity.css";
@@ -81,7 +82,7 @@ function LayoutChrome() {
     <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
       {!isEasyNav && <AdaptiveGuideBar/>}{!isEasyNav && <CreatorTesterInvitationBanner/>}{!isEasyNav && <CreatorCommandBar/>}{!isEasyNav && <CreatorStatusBar/>}{!isEasyNav && <TitanQuickActions/>}{!isEasyNav && <SupportNotificationCenter/>}
       <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}<WorldIntelligenceContext/>{isHomeOrRecordLogPage && <TitanAtAGlance/>}<div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>
-        {specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre/> : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary/> : morphGalleryMatch ? <SpeciesMorphGallery/> : morphDetailMatch ? <SpeciesMorphDetail/> : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence/> : gatedOutlet)}
+        <WorkspaceProductShell>{specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre/> : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary/> : morphGalleryMatch ? <SpeciesMorphGallery/> : morphDetailMatch ? <SpeciesMorphDetail/> : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence/> : gatedOutlet)}</WorkspaceProductShell>
         <TinyTitansEvidenceNotice/>
       </div>
     </div></main>
