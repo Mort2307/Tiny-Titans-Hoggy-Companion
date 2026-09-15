@@ -2,7 +2,7 @@ import { chromium } from "playwright";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const baseUrl = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
+const baseUrl = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:5173";
 const email = process.env.TINY_TITANS_VISUAL_BOT_EMAIL || process.env.BOT_EMAIL || "";
 const password = process.env.TINY_TITANS_VISUAL_BOT_PASSWORD || process.env.BOT_PASSWORD || "";
 const outputDir = process.env.TINY_TITANS_NAV_OUTPUT || "artifacts/creator-navigation";
@@ -55,8 +55,9 @@ page.on("console", (message) => { if (message.type() === "error") runtimeErrors.
 const results = [];
 try {
   await page.goto(`${baseUrl}/login?redirect=%2Fcreator`, { waitUntil: "domcontentloaded" });
-  await page.getByLabel("Email Address").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.locator("#email").waitFor({ state: "visible", timeout: 30000 });
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill(password);
   await page.getByRole("button", { name: /sign in/i }).click();
   await page.waitForURL(/\/creator(?:$|[/?])/, { timeout: 30000 });
   if (!(await isUsable(page))) throw new Error("Creator Centre produced an application error after login.");
