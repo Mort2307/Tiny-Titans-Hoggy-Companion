@@ -1,57 +1,11 @@
-/* Tiny Titans Tier Identity — app-wide prestige layer */
-:root {
-  --tt-tier-accent: #92a0ad;
-  --tt-tier-glow: rgba(146,160,173,.08);
-  --tt-tier-edge: rgba(146,160,173,.22);
-}
-html[data-tt-tier="titan_pro"] { --tt-tier-accent:#62d6c7; --tt-tier-glow:rgba(98,214,199,.10); --tt-tier-edge:rgba(98,214,199,.28); }
-html[data-tt-tier="titan_seller"] { --tt-tier-accent:#e5b35b; --tt-tier-glow:rgba(229,179,91,.10); --tt-tier-edge:rgba(229,179,91,.28); }
-html[data-tt-tier="business_starter"] { --tt-tier-accent:#6fb0ff; --tt-tier-glow:rgba(111,176,255,.10); --tt-tier-edge:rgba(111,176,255,.28); }
-html[data-tt-tier="business_plus"] { --tt-tier-accent:#b98cff; --tt-tier-glow:rgba(185,140,255,.11); --tt-tier-edge:rgba(185,140,255,.30); }
-html[data-tt-tier="business_advanced"] { --tt-tier-accent:#f0c968; --tt-tier-glow:rgba(240,201,104,.12); --tt-tier-edge:rgba(240,201,104,.34); }
-
-.app-shell {
-  border-top: 2px solid var(--tt-tier-edge);
-  box-shadow: inset 0 1px 0 var(--tt-tier-glow);
-}
-.app-shell .app-header {
-  box-shadow: 0 8px 28px var(--tt-tier-glow);
-}
-.app-shell .app-main {
-  position: relative;
-}
-.app-shell .app-main::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(circle at 50% -10%, var(--tt-tier-glow), transparent 36%);
-  opacity: .55;
-}
-.app-shell .app-content,
-.app-shell .app-header,
-.app-shell nav,
-.app-shell button,
-.app-shell a {
-  --tt-active-tier-accent: var(--tt-tier-accent);
-}
-.app-shell .app-header::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--tt-tier-edge), transparent);
-  opacity: .85;
-}
-html[data-tt-tier="titan_pro"] .app-shell .app-main::before { opacity:.72; }
-html[data-tt-tier="titan_seller"] .app-shell .app-main::before { opacity:.70; }
-html[data-tt-tier="business_starter"] .app-shell .app-main::before { opacity:.76; }
-html[data-tt-tier="business_plus"] .app-shell .app-main::before { opacity:.82; }
-html[data-tt-tier="business_advanced"] .app-shell .app-main::before { opacity:.92; }
-html[data-tt-tier="business_advanced"] .app-shell { box-shadow: inset 0 1px 0 rgba(240,201,104,.12), 0 0 45px rgba(240,201,104,.06); }
-@media (prefers-reduced-motion: reduce) {
-  .app-shell::before { transition:none; }
-}
+/* Tiny Titans product/workspace identity layer. Entitlements remain the security boundary. */
+:root{--tt-tier-accent:#92a0ad;--tt-tier-glow:rgba(146,160,173,.08);--tt-tier-edge:rgba(146,160,173,.22)}
+html[data-tt-tier="titan_pro"]{--tt-tier-accent:#62d6c7;--tt-tier-glow:rgba(98,214,199,.10);--tt-tier-edge:rgba(98,214,199,.28)}
+html[data-tt-tier="titan_seller"]{--tt-tier-accent:#e5b35b;--tt-tier-glow:rgba(229,179,91,.10);--tt-tier-edge:rgba(229,179,91,.28)}
+html[data-tt-tier="business_starter"]{--tt-tier-accent:#6fb0ff;--tt-tier-glow:rgba(111,176,255,.10);--tt-tier-edge:rgba(111,176,255,.28)}
+html[data-tt-tier="business_plus"]{--tt-tier-accent:#b98cff;--tt-tier-glow:rgba(185,140,255,.11);--tt-tier-edge:rgba(185,140,255,.30)}
+html[data-tt-tier="business_advanced"]{--tt-tier-accent:#f0c968;--tt-tier-glow:rgba(240,201,104,.12);--tt-tier-edge:rgba(240,201,104,.34)}
+html[data-tt-tier="rescue"]{--tt-tier-accent:#7ad7a0;--tt-tier-glow:rgba(122,215,160,.11);--tt-tier-edge:rgba(122,215,160,.30)}
+.app-shell{border-top:2px solid var(--tt-tier-edge);box-shadow:inset 0 1px 0 var(--tt-tier-glow)}.app-shell .app-header{box-shadow:0 8px 28px var(--tt-tier-glow)}.app-shell .app-main{position:relative}.app-shell .app-main::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle at 50% -10%,var(--tt-tier-glow),transparent 36%);opacity:.55}.app-shell .app-content,.app-shell .app-header,.app-shell nav,.app-shell button,.app-shell a{--tt-active-tier-accent:var(--tt-tier-accent)}.app-shell .app-header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,var(--tt-tier-edge),transparent);opacity:.85}
+html[data-tt-tier="titan_pro"] .app-shell .app-main::before{opacity:.72}html[data-tt-tier="titan_seller"] .app-shell .app-main::before{opacity:.70}html[data-tt-tier="business_starter"] .app-shell .app-main::before{opacity:.76}html[data-tt-tier="business_plus"] .app-shell .app-main::before{opacity:.82}html[data-tt-tier="business_advanced"] .app-shell .app-main::before{opacity:.92}html[data-tt-tier="rescue"] .app-shell .app-main::before{opacity:.78}html[data-tt-tier="business_advanced"] .app-shell{box-shadow:inset 0 1px 0 rgba(240,201,104,.12),0 0 45px rgba(240,201,104,.06)}
+@media(prefers-reduced-motion:reduce){.app-shell::before{transition:none}}
