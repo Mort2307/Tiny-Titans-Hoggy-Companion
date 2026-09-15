@@ -1,9 +1,12 @@
+    function partnerOwner(uid) {
+      return signedIn() && request.auth.uid == uid && exists(/databases/$(database)/documents/users/$(uid)) && get(/databases/$(database)/documents/users/$(uid)).data.profileType == 'professional';
+    }
     match /partnerLandings/{landingId} {
-      allow get: if resource.data.publicEnabled == true || (signedIn() && (resource.data.ownerUid == request.auth.uid || isCreator()));
-      allow list: if isCreator() || (signedIn() && resource.data.publicEnabled == true) || (signedIn() && resource.data.ownerUid == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isCreator() || (signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid);
-      allow delete: if isCreator() || (signedIn() && resource.data.ownerUid == request.auth.uid);
+      allow get: if resource.data.publicEnabled == true || (isCreator() && resource.data.recordType == 'owner') || partnerOwner(resource.data.ownerUid);
+      allow list: if isCreator() && resource.data.recordType == 'owner';
+      allow create: if partnerOwner(request.resource.data.ownerUid) && request.resource.data.recordType == 'owner';
+      allow update: if isCreator() || (partnerOwner(resource.data.ownerUid) && resource.data.recordType == 'owner' && request.resource.data.ownerUid == resource.data.ownerUid && request.resource.data.recordType == 'owner');
+      allow delete: if isCreator() || (partnerOwner(resource.data.ownerUid) && resource.data.recordType == 'owner');
     }
     match /qaRuns/{runId} {
       allow get, list: if isCreator();
