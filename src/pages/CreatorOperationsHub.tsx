@@ -1,0 +1,80 @@
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
+import "../styles/creatorOperations.css";
+
+const groups = [
+  {
+    eyebrow: "CONTENT",
+    title: "Content management",
+    description: "Keep public knowledge, species data, morph data, terminology and official updates organised and reviewable.",
+    tiles: [
+      ["📚", "Knowledge & updates", "Publish official community information and known issues.", "/creator/community"],
+      ["🧬", "Species submissions", "Review evidence-backed species intake before canonical publication.", "/creator/species-submissions"],
+      ["🖼️", "Morph submissions", "Review photographs, evidence and genetics notes before approval.", "/creator/submissions"],
+      ["🔬", "Morph evidence", "Audit sources, terminology and calculator eligibility.", "/morph-library/evidence"],
+    ],
+  },
+  {
+    eyebrow: "OPERATIONS",
+    title: "Review & moderation",
+    description: "One deliberate place for queues, reports, conversations and community operations.",
+    tiles: [
+      ["📥", "Unified review queues", "Route submissions, reports, observations and feedback into a single triage view.", "/creator/review-queues"],
+      ["🛡️", "Community moderation", "Manage official communications, reports and moderation workflows.", "/creator/moderation"],
+      ["💬", "Conversations", "Continue creator/user conversations and submission follow-up.", "/creator/conversations"],
+      ["🐛", "Issue queues", "Review bugs, severity, reproduction detail and user evidence.", "/creator/issues"],
+    ],
+  },
+  {
+    eyebrow: "INTELLIGENCE",
+    title: "Intelligence & administration",
+    description: "Control what TinyTitans is learning from, what is protected and how operational decisions are surfaced.",
+    tiles: [
+      ["🧠", "Intelligence controls", "Inspect contribution signals, consent, evidence and intelligence tooling.", "/creator/intelligence"],
+      ["⚙️", "App configuration", "Central index for feature configuration, operational defaults and rollout controls.", "/creator/configuration"],
+      ["👥", "Creator permissions", "Manage creator/tester entry points and account-level operational access.", "/creator/admin"],
+      ["📊", "Creator analytics", "Operational metrics, usage signals and queue health in one view.", "/creator/analytics"],
+    ],
+  },
+  {
+    eyebrow: "QA",
+    title: "Quality & release readiness",
+    description: "The external BOT stays outside production. Creator Centre becomes the place to read its evidence and decide whether a release is ready.",
+    tiles: [
+      ["🤖", "QA status dashboard", "Read visual, route, runtime and release checks without putting Playwright into the app bundle.", "/creator/qa"],
+      ["🧪", "Tester Centre", "Run authorised in-app tester suites and diagnostics.", "/creator/tester"],
+      ["🖥️", "Visual capture", "Review captured route screenshots and responsive evidence from the universal visual BOT.", "/creator/qa?view=visual"],
+      ["✅", "Release checks", "Open the existing benchmarks, species and security review tools.", "/creator/benchmarks"],
+    ],
+  },
+  {
+    eyebrow: "PARTNERS",
+    title: "Business & rescue presentation",
+    description: "Give commercial and rescue customers a branded first screen instead of making them feel like another generic app account.",
+    tiles: [
+      ["🏢", "Partner branding", "Manage public landing pages, logos, hours, credentials, contact details and customer CTAs.", "/creator/partner-branding"],
+      ["🚑", "Rescue workspace", "Open rescue operational tools, animal registers and QR workflows.", "/rescue"],
+      ["🛒", "Marketplace", "Open the seller/customer-facing marketplace layer.", "/marketplace"],
+      ["💳", "Paid tier control", "Inspect effective tiers, trials and tester access.", "/creator/tester/paid-tiers"],
+    ],
+  },
+];
+
+export default function CreatorOperationsHub() {
+  const { profile } = useAuth();
+  return <main className="creator-ops-page">
+    <header className="creator-ops-header">
+      <div><span className="creator-ops-eyebrow">PRIVATE CREATOR CENTRE</span><h1>🛠️ TinyTitans Operations</h1><p>A clean command centre for content, reviews, intelligence, community, QA and partner operations.</p></div>
+      <div className="creator-ops-header-actions"><span className="creator-ops-chip">{profile?.displayName || "Creator"}</span><Link to="/creator/admin" className="creator-ops-secondary">Deep admin dashboard →</Link></div>
+    </header>
+    <section className="creator-ops-grid">
+      {groups.flatMap((group) => group.tiles.map(([icon,title,description,to]) => <Link className="creator-ops-card" to={to} key={to+title}>
+        <span className="creator-ops-card-icon">{icon}</span><div className="creator-ops-card-copy"><span className="creator-ops-card-eyebrow">{group.eyebrow}</span><h2>{title}</h2><p>{description}</p></div><span className="creator-ops-card-arrow">→</span>
+      </Link>))}
+    </section>
+    <section className="creator-ops-footer-grid">
+      <Link to="/creator/partner-branding" className="creator-ops-feature"><span>🎨</span><div><strong>Customer-facing partner pages</strong><small>Business and rescue accounts can publish a branded landing screen with logos, opening hours, credentials, contact information and custom CTAs.</small></div></Link>
+      <Link to="/creator/qa" className="creator-ops-feature"><span>📸</span><div><strong>BOT evidence lives here</strong><small>The Playwright BOT remains independent. This dashboard is the review surface, not the automation engine.</small></div></Link>
+    </section>
+  </main>;
+}
