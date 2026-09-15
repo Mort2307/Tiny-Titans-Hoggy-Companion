@@ -69,7 +69,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "mentorship-intelligence", label: "Mentorship Intelligence", icon: "🧠", path: "/community/mentorship/intelligence", group: "Community", description: "Open mentorship intelligence tools." },
   { id: "wall-of-titans", label: "Wall of Titans", icon: "★", path: "/community/wall-of-titans", group: "Community", description: "Recognised community supporters." },
   { id: "contribute", label: "Make a Contribution", icon: "＋", path: "/make-contribution", group: "Community", description: "Help improve Tiny Titans." },
-  { id: "submit-species", label: "Submit a Species", icon: "🦎", path: "/submit-species", group: "Community", description: "Suggest species data for review." },
+  { id: "submit-species", label: "Submit a Species", icon: "🐍", path: "/submit-species", group: "Community", description: "Suggest species data for review." },
   { id: "report", label: "Report an Issue", icon: "🛠️", path: "/report-bug", group: "Community", description: "Report bugs and problems." },
   { id: "feedback", label: "Send Feedback", icon: "💬", path: "/feedback", group: "Community", description: "Share product feedback." },
   { id: "my-issue-reports", label: "My Issue Reports", icon: "📝", path: "/my-issue-reports", group: "Community", description: "Track the issues you have reported." },
