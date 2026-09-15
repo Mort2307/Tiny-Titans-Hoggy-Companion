@@ -15,6 +15,7 @@ export default function CreatorRescuePilots() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [controls, setControls] = useState<RescuePilotControls>({ pilotsEnabled: true, writesEnabled: true, maxActivePilots: 1 });
+  const [now, setNow] = useState(() => now);
 
   async function load() {
     setError("");
@@ -23,8 +24,9 @@ export default function CreatorRescuePilots() {
   }
 
   useEffect(() => { if (profile?.role === "admin") void load(); }, [profile?.role]);
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 60000); return () => window.clearInterval(timer); }, []);
 
-  const active = useMemo(() => snapshot?.organisations.filter((item) => item.pilotStatus === "pilot_active" && (item.pilotEndsAt || 0) > Date.now()).length ?? 0, [snapshot]);
+  const active = useMemo(() => snapshot?.organisations.filter((item) => item.pilotStatus === "pilot_active" && (item.pilotEndsAt || 0) > now).length ?? 0, [snapshot]);
   if (profile?.role !== "admin") return <Navigate to="/" replace />;
 
   async function saveControls(patch: Partial<RescuePilotControls>) {
