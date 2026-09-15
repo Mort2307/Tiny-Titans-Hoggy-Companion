@@ -79,9 +79,15 @@ export async function listRescueAnimals(organisationId: string) {
 }
 
 function publicTimeline(timeline: RescueTimelineEvent[]): Array<Omit<RescueTimelineEvent, "recordedByUid">> {
-  return timeline
-    .filter((event) => event.visibility === "public")
-    .map(({ recordedByUid: _recordedByUid, ...event }) => event);
+  return timeline.filter((event) => event.visibility === "public").map((event) => ({
+    id: event.id,
+    type: event.type,
+    occurredAt: event.occurredAt,
+    title: event.title,
+    summary: event.summary,
+    details: event.details,
+    visibility: event.visibility,
+  }));
 }
 
 function toPublicAnimal(id: string, data: Record<string, unknown>): RescueAnimal {
