@@ -26,10 +26,10 @@ for (const symbol of [
 ]) {
   if (!collection.includes(symbol)) findings.push(`Collection is not wired to canonical reactive refresh: ${symbol}`);
 }
-if (!homeContract.includes("getTitanDecisionState")) findings.push("Home is not reading the canonical decision state before refreshing.");
-if (!homeContract.includes("existing.decisions.length>0")) findings.push("Home refresh guard is missing; it may rewrite the decision state on every visit.");
-if (!homeContract.includes("else{constrefreshed=awaitrefreshTitanDecisionStateForAnimals")) findings.push("Home does not retain first-run decision generation when canonical state is empty.");
-if (!homeContract.includes("constevent=detail.event") || !homeContract.includes("event?.animalId&&event.occurredAt") || !homeContract.includes("refreshTitanDecisionStateForAnimals(user.uid,[event.animalId],{type:event.type,occurredAt:event.occurredAt})")) findings.push("Home reactive event handling does not refresh the affected animal from the real event timestamp.");
+if (!/getTitanDecisionState\\(user\.uid\\)/.test(homeContract)) findings.push("Home is not reading the canonical decision state before refreshing.");
+if (!/existing\.decisions\.length\s*>\s*0/.test(homeContract)) findings.push("Home refresh guard is missing; it may rewrite the decision state on every visit.");
+if (!/if\s*\(\s*existing\.decisions\.length\s*>\s*0\s*\)[\\s\\S]*?setDecision\(existingActive\)[\\s\\S]*?else\s*\{[\\s\\S]*?refreshTitanDecisionStateForAnimals/.test(home)) findings.push("Home does not retain first-run decision generation when canonical state is empty.");
+if (!/const\\s+event\\s*=\\s*detail\.event/.test(home) || !/event\?\.animalId\s*&&\s*event\.occurredAt/.test(home) || !/refreshTitanDecisionStateForAnimals\\(user\.uid,\\s*\\[event\.animalId\\]\\s*,\\s*\\{\\s*type:\\s*event\.type,\\s*occurredAt:\\s*event\.occurredAt\\s*\\}/.test(home)) findings.push("Home reactive event handling does not refresh the affected animal from the real event timestamp.");
 
 const triggerGuardPattern = /const\s+triggerAt\s*=\s*trigger\?\.occurredAt\s*\?\s*Date\.parse\(trigger\.occurredAt\)\s*:\s*NaN/;
 const guardedLastEventPattern = /lastEventAt\s*:\s*hasTriggerTimestamp\s*\?\s*triggerAt\s*:\s*undefined/;
