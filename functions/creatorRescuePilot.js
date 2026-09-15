@@ -1,0 +1,71 @@
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { getFirestore, FieldValue, Timestamp } = require("firebase-admin/firestore");
+
+const db = getFirestore();
+const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
+const DEFAULTS = Object.freeze({ durationDays: 30, staffLimit: 5, animalLimit: 100, storageMbLimit: 512, maxActivePilots: 1 });
+
+function owner(request) { return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL; }
+function millis(value) { if (!value) return null; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : null; }
+function activePilot(data) { return data?.pilotStatus === "pilot_active" && (millis(data.pilotEndsAt) || 0) > Date.now(); }
+
+exports.getCreatorRescuePilots = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!owner(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can inspect Rescue pilot controls.");
+  const [orgSnapshot, controlSnapshot] = await Promise.all([db.collection("rescueOrganisations").get(), db.collection("platformControls").doc("rescue").get()]);
+  const controls = controlSnapshot.exists ? controlSnapshot.data() || {} : { pilotsEnabled: true, writesEnabled: true, maxActivePilots: DEFAULTS.maxActivePilots };
+  const organisations = orgSnapshot.docs.map((item) => { const data = item.data() || {}; return { id: item.id, name: String(data.name || "Unnamed Rescue"), ownerUid: String(data.ownerUid || ""), accountType: String(data.accountType || "rescue"), pilotStatus: String(data.pilotStatus || "inactive"), pilotStartsAt: millis(data.pilotStartsAt), pilotEndsAt: millis(data.pilotEndsAt), staffLimit: Number(data.staffLimit || DEFAULTS.staffLimit), animalLimit: Number(data.animalLimit || DEFAULTS.animalLimit), storageMbLimit: Number(data.storageMbLimit || DEFAULTS.storageMbLimit), updatedAt: millis(data.updatedAt) }; });
+  return { success: true, controls: { pilotsEnabled: controls.pilotsEnabled !== false, writesEnabled: controls.writesEnabled !== false, maxActivePilots: Number(controls.maxActivePilots || DEFAULTS.maxActivePilots) }, activePilots: organisations.filter((item) => item.pilotStatus === "pilot_active" && (item.pilotEndsAt || 0) > Date.now()).length, organisations };
+});
+
+exports.setRescuePlatformControls = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!owner(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can change Rescue pilot controls.");
+  const current = await db.collection("platformControls").doc("rescue").get();
+  const next = { ...(current.exists ? current.data() || {} : {}), pilotsEnabled: request.data?.pilotsEnabled !== false, writesEnabled: request.data?.writesEnabled !== false, maxActivePilots: Math.min(100, Math.max(0, Math.floor(Number(request.data?.maxActivePilots ?? DEFAULTS.maxActivePilots)))), updatedAt: FieldValue.serverTimestamp(), updatedByUid: request.auth.uid };
+  await db.collection("platformControls").doc("rescue").set(next, { merge: true });
+  await db.collection("creatorAudit").add({ actorUid: request.auth.uid, action: "set_rescue_platform_controls", controls: { pilotsEnabled: next.pilotsEnabled, writesEnabled: next.writesEnabled, maxActivePilots: next.maxActivePilots }, createdAt: FieldValue.serverTimestamp() });
+  return { success: true, controls: { pilotsEnabled: next.pilotsEnabled, writesEnabled: next.writesEnabled, maxActivePilots: next.maxActivePilots } };
+});
+
+exports.configureRescuePilot = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!owner(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can configure Rescue pilots.");
+  const organisationId = String(request.data?.organisationId || "").trim();
+  const enabled = request.data?.enabled === true;
+  if (!organisationId) throw new HttpsError("invalid-argument", "A Rescue organisation ID is required.");
+  const orgRef = db.collection("rescueOrganisations").doc(organisationId); const orgSnapshot = await orgRef.get();
+  if (!orgSnapshot.exists) throw new HttpsError("not-found", "Rescue organisation not found.");
+  const org = orgSnapshot.data() || {};
+  if (String(org.accountType || "rescue") !== "rescue") throw new HttpsError("failed-precondition", "This organisation is not configured as a Rescue workspace.");
+  if (!enabled) {
+    await orgRef.set({ pilotStatus: "pilot_suspended", pilotSuspendedAt: FieldValue.serverTimestamp(), pilotSuspendedByUid: request.auth.uid, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection("creatorAudit").add({ actorUid: request.auth.uid, organisationId, action: "suspend_rescue_pilot", createdAt: FieldValue.serverTimestamp() });
+    return { success: true, organisationId, pilotStatus: "pilot_suspended" };
+  }
+  const controlsSnapshot = await db.collection("platformControls").doc("rescue").get();
+  const controls = controlsSnapshot.exists ? controlsSnapshot.data() || {} : {};
+  if (controls.pilotsEnabled === false) throw new HttpsError("failed-precondition", "New Rescue pilots are currently disabled by Creator controls.");
+  const durationDays = Math.min(365, Math.max(1, Math.floor(Number(request.data?.durationDays || DEFAULTS.durationDays))));
+  const staffLimit = Math.min(100, Math.max(1, Math.floor(Number(request.data?.staffLimit || DEFAULTS.staffLimit))));
+  const animalLimit = Math.min(5000, Math.max(1, Math.floor(Number(request.data?.animalLimit || DEFAULTS.animalLimit))));
+  const storageMbLimit = Math.min(10240, Math.max(64, Math.floor(Number(request.data?.storageMbLimit || DEFAULTS.storageMbLimit))));
+  const maxActivePilots = Math.max(1, Math.floor(Number(controls.maxActivePilots || DEFAULTS.maxActivePilots)));
+  const allOrgs = await db.collection("rescueOrganisations").get();
+  const activeCount = allOrgs.docs.filter((item) => item.id !== organisationId && activePilot(item.data() || {})).length;
+  if (!activePilot(org) && activeCount >= maxActivePilots) throw new HttpsError("resource-exhausted", `The current Rescue pilot limit of ${maxActivePilots} active organisation${maxActivePilots === 1 ? "" : "s"} has been reached.`);
+  const start = new Date(); const end = new Date(start.getTime() + durationDays * 86400000);
+  await orgRef.set({ accountType: "rescue", pilotStatus: "pilot_active", pilotStartsAt: Timestamp.fromDate(start), pilotEndsAt: Timestamp.fromDate(end), staffLimit, animalLimit, storageMbLimit, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  await db.collection("creatorAudit").add({ actorUid: request.auth.uid, organisationId, action: "configure_rescue_pilot", durationDays, staffLimit, animalLimit, storageMbLimit, pilotEndsAt: Timestamp.fromDate(end), createdAt: FieldValue.serverTimestamp() });
+  return { success: true, organisationId, pilotStatus: "pilot_active", pilotStartsAt: start.toISOString(), pilotEndsAt: end.toISOString(), staffLimit, animalLimit, storageMbLimit };
+});
+
+exports.convertRescuePilotToPaid = onCall({ region: "europe-west2" }, async (request) => {
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
+  if (!owner(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can convert Rescue pilots.");
+  const organisationId = String(request.data?.organisationId || "").trim(); if (!organisationId) throw new HttpsError("invalid-argument", "A Rescue organisation ID is required.");
+  const orgRef = db.collection("rescueOrganisations").doc(organisationId); const snapshot = await orgRef.get(); if (!snapshot.exists) throw new HttpsError("not-found", "Rescue organisation not found.");
+  await orgRef.set({ pilotStatus: "paid_active", pilotConvertedAt: FieldValue.serverTimestamp(), pilotConvertedByUid: request.auth.uid, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  await db.collection("creatorAudit").add({ actorUid: request.auth.uid, organisationId, action: "convert_rescue_pilot_to_paid", createdAt: FieldValue.serverTimestamp() });
+  return { success: true, organisationId, accountStatus: "paid_active" };
+});
