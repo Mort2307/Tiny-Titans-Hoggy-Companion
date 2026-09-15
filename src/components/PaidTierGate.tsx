@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
-import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidEntitlement } from "../config/paidTiers";
+import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidEntitlement, type PaidTierId } from "../config/paidTiers";
+import PaidTierBadge from "./PaidTierBadge";
+import "../styles/PaidPlans.css";
 
 function isRescueEntitlement(entitlement: PaidEntitlement) {
   return entitlement.startsWith("rescue_") || entitlement === "species_incubator";
@@ -22,31 +24,36 @@ function activeRescueWorkspace(workspace: { organisation: { accountStatus?: stri
   return Number.isFinite(end) && end > Date.now();
 }
 
-function RescueAccessFallback() {
-  return <main className="rescue-page rescue-access-page">
-    <header className="rescue-hero rescue-access-hero">
+function TierAccessFallback({ tierId, access, entitlement }: { tierId: PaidTierId; access: PaidAccess | null; entitlement: PaidEntitlement }) {
+  const tier = getPaidTierDefinition(tierId);
+  const isRescue = tierId === "rescue";
+  const heading = isRescue ? "TinyTitans Rescue access is not active" : `${tier.name} access is not active`;
+  const description = isRescue
+    ? "Rescue is a dedicated organisation workspace. The organisation owns the workspace while its invited staff, veterinary users, fosters and volunteers keep their own TinyTitans accounts."
+    : `${tier.name} unlocks this capability for the account. Your Free account remains intact; upgrading adds the tier's capabilities without removing the core Tiny Titans experience.`;
+  const currentLabel = access?.source === "tester" ? `Creator tester override: ${getPaidTierDefinition(access.effectiveTier).name}` : access?.source === "trial" ? `Creator trial: ${getPaidTierDefinition(access.effectiveTier).name}` : `Current access: ${getPaidTierDefinition(access?.effectiveTier ?? "free").name}`;
+
+  return <main className="paid-access-page">
+    <section className={`paid-access-hero paid-access-hero--${tierId}`}>
       <div>
-        <span className="rescue-eyebrow">TINY TITANS · RESCUE OPERATIONS</span>
-        <h1>🐍🦎 Rescue Centre</h1>
-        <p>A separate operational workspace for rescue organisations — not another version of the personal keeper dashboard.</p>
+        <span className="paid-kicker">TINY TITANS · TIER ACCESS</span>
+        <div className="paid-access-identity"><PaidTierBadge tierId={tier.id} size="md" /><div><span className="paid-tier-prestige">{tier.eyebrow}</span><h1>{heading}</h1></div></div>
+        <p>{description}</p>
       </div>
-      <span className="rescue-role-badge">ACCESS CONTROL</span>
-    </header>
-    <section className="rescue-card rescue-access-card">
-      <span className="rescue-eyebrow">RESCUE WORKSPACE ACCESS</span>
-      <h2>Your Rescue workspace is not active on this account</h2>
-      <p>Rescue access is organisation-based. The organisation pays for the workspace, while invited staff, veterinary users, fosters and volunteers keep their own TinyTitans accounts.</p>
-      <div className="rescue-access-grid">
-        <div><strong>🏠 Organisation workspace</strong><span>Animal register, passports, intake and operational records live here.</span></div>
-        <div><strong>👥 Team access</strong><span>Roles are assigned by the rescue. Staff do not need individual Rescue subscriptions.</span></div>
-        <div><strong>🩺 Care &amp; medical</strong><span>Private operational history stays behind the Rescue access boundary.</span></div>
-        <div><strong>🏷️ QR identity</strong><span>Animal labels identify records without carrying permissions or private data.</span></div>
+      <div className="paid-access-status"><strong>{tier.priceLabel}</strong><span>{currentLabel}</span></div>
+    </section>
+
+    <section className="paid-access-card">
+      <div className="paid-access-card-heading"><div><span className="paid-kicker">THIS CAPABILITY</span><h2>{entitlement.replace(/[-_]/g, " ")}</h2><p>{tier.audience}</p></div><PaidTierBadge tierId={tier.id} size="sm" /></div>
+      <div className="paid-access-highlight-grid">{tier.highlights.map((item) => <div key={item}><span>✓</span><strong>{item}</strong></div>)}</div>
+      <div className="paid-access-capabilities"><span className="paid-kicker">FULL {tier.name.toUpperCase()} CAPABILITY SET</span><div>{tier.entitlements.map((item) => <span key={item}>{item.replaceAll("_", " ")}</span>)}</div></div>
+      {tier.note && <div className="paid-access-note"><strong>Tier information</strong><span>{tier.note}</span></div>}
+      {access?.source === "tester" && access.testerOverride && <div className="paid-access-note"><strong>🧪 Creator tester access</strong><span>{tier.name} is being tested without changing billing. The account's real commercial tier remains {getPaidTierDefinition(access.actualTier).name}.</span></div>}
+      <div className="paid-access-actions">
+        <Link className="paid-primary" to="/plans">View {tier.name} →</Link>
+        <Link to="/account/billing">Billing &amp; access</Link>
       </div>
-      <div className="rescue-inline-actions">
-        <Link className="rescue-primary-link" to="/plans">View TinyTitans Rescue</Link>
-        <Link className="rescue-secondary-link" to="/account/billing">Check billing &amp; access</Link>
-      </div>
-      <div className="rescue-preview-note"><strong>Already invited by a rescue?</strong><span>Open the invitation link from the rescue and accept it using the invited email address. Your personal TinyTitans account remains yours.</span></div>
+      {isRescue && <div className="paid-access-note"><strong>Already invited by a Rescue organisation?</strong><span>Use the invitation link sent to your invited email address. Accepting the invitation grants the organisation role while keeping your personal TinyTitans account separate.</span></div>}
     </section>
   </main>;
 }
@@ -85,13 +92,14 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
   }, [entitlement, user]);
 
   if (loading || profileLoading || checking) return <div aria-live="polite">Checking Tiny Titans access…</div>;
+  const rescueEntitlement = isRescueEntitlement(entitlement);
   const paidAllowed = Boolean(access && getPaidTierDefinition(access.effectiveTier).entitlements.includes(entitlement));
-  const allowed = paidAllowed || rescueWorkspace || isRescueInvitationRoute(entitlement);
+  const allowed = paidAllowed || (rescueEntitlement && (rescueWorkspace || isRescueInvitationRoute(entitlement)));
   const requiredTier = PAID_TIER_ORDER.find((tierId) => tierId !== "free" && getPaidTierDefinition(tierId).entitlements.includes(entitlement)) ?? "titan_pro";
 
   if (!allowed) {
-    if (isRescueEntitlement(entitlement) && !fallback) return <RescueAccessFallback />;
-    return <>{fallback ?? <section aria-label="Paid feature"><strong>🔒 {isRescueEntitlement(entitlement) ? "TinyTitans Rescue" : entitlement.replace(/[-_]/g, " ")} requires {getPaidTierDefinition(requiredTier).name} or an active Rescue workspace.</strong><p>Rescue access belongs to the organisation workspace, so invited staff can use their own TinyTitans login without buying a separate Rescue subscription.</p><div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><Link to="/plans">Compare plans</Link><Link to="/account/billing">Billing &amp; access</Link></div></section>}</>;
+    if (fallback) return <>{fallback}</>;
+    return <TierAccessFallback tierId={requiredTier} access={access} entitlement={entitlement} />;
   }
 
   return <>{children}</>;
