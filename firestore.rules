@@ -52,6 +52,21 @@ service cloud.firestore {
     match /mentorshipWorkspaces/{workspaceId} { allow create: if signedIn() && (isCreator() || request.resource.data.participants.any(p, p.userId == request.auth.uid)); allow get: if signedIn() && (isCreator() || resource.data.participants.any(p, p.userId == request.auth.uid)); allow list: if false; allow update: if signedIn() && (isCreator() || resource.data.participants.any(p, p.userId == request.auth.uid)); allow delete: if isCreator(); }
     match /mentorshipEvents/{eventId} { allow create: if isCreator(); allow get, list: if isCreator(); allow update, delete: if isCreator(); }
     match /keeperObservations/{observationId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "pending" && request.resource.data.educationalConsent == true; allow get, list: if signedIn() && ((resource.data.status == "approved" && resource.data.educationalConsent == true) || resource.data.userId == request.auth.uid || isCreator()); allow update: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid && resource.data.status == "pending" && request.resource.data.status == "pending" && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['media', 'updatedAt'])); allow delete: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid && resource.data.status == "pending"); }
+    function rescueOrgMember(orgId) { return signedIn() && (get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.ownerUid == request.auth.uid || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.staffUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.medicalUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.fosterUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.viewerUids); }
+    function rescueOrgEditor(orgId) { return signedIn() && (get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.ownerUid == request.auth.uid || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.staffUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.medicalUids); }
+    match /rescueOrganisations/{orgId} {
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow get, list: if signedIn() && (resource.data.ownerUid == request.auth.uid || rescueOrgMember(orgId));
+      allow update: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+    match /rescueAnimals/{animalId} {
+      allow get: if resource.data.publicPreview == true || rescueOrgMember(resource.data.organisationId);
+      allow list: if rescueOrgMember(resource.data.organisationId);
+      allow create: if rescueOrgEditor(request.resource.data.organisationId) && request.resource.data.organisationId is string;
+      allow update: if rescueOrgEditor(resource.data.organisationId) && request.resource.data.organisationId == resource.data.organisationId;
+      allow delete: if signedIn() && get(/databases/$(database)/documents/rescueOrganisations/$(resource.data.organisationId)).data.ownerUid == request.auth.uid;
+    }
     match /{document=**} { allow read, write: if false; }
   }
 }
