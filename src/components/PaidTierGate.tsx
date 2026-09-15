@@ -16,13 +16,16 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
     let active = true;
     if (!user) { setAccess(null); setRescuePilot(false); setChecking(false); return () => { active = false; }; }
     setChecking(true);
-    const requests = [getPaidAccess(user.uid)];
-    if (isRescueEntitlement(entitlement)) requests.push(hasActiveRescuePilot(user.uid) as Promise<PaidAccess>);
-    void Promise.all(requests).then(([nextAccess, pilotResult]) => {
+    void Promise.all([
+      getPaidAccess(user.uid),
+      isRescueEntitlement(entitlement) ? hasActiveRescuePilot(user.uid) : Promise.resolve(false),
+    ]).then(([nextAccess, pilotActive]) => {
       if (!active) return;
       setAccess(nextAccess);
-      setRescuePilot(isRescueEntitlement(entitlement) && pilotResult === true);
-    }).catch(() => { if (active) { setAccess(null); setRescuePilot(false); } }).finally(() => { if (active) setChecking(false); });
+      setRescuePilot(isRescueEntitlement(entitlement) && pilotActive);
+    }).catch(() => {
+      if (active) { setAccess(null); setRescuePilot(false); }
+    }).finally(() => { if (active) setChecking(false); });
     return () => { active = false; };
   }, [entitlement, user]);
   if (loading || profileLoading || checking) return <div aria-live="polite">Checking Tiny Titans access…</div>;
