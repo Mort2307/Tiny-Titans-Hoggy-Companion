@@ -13,7 +13,7 @@ const SECTION_DATA = {
   configuration: { eyebrow: "APP CONFIGURATION", title: "App configuration", description: "A central operations surface for settings that should be deliberate, auditable and easy to find.", cards: [["💳","Paid tier control","Review paid-tier access and tester overrides.","/creator/tester/paid-tiers"],["🤖","Tester controls","Manage authorised QA entry points.","/creator/tester"],["🔒","Privacy data","Inspect contribution and privacy controls.","/creator/privacy-data"],["🐍","Species registry QA","Preview canonical species behaviour before release.","/creator/species-preview"],["🧬","Morph registry QA","Review morphology, terminology and evidence state.","/morph-library/evidence"],["📣","Release communications","Publish release notes, tester updates and known issues.","/creator/community"]]},
 } as const;
 
-type Mode = keyof typeof SECTION_DATA;
+type Mode = keyof typeof SECTION_DATA | "qa";
 type QaRun = { id:string; name?:string; status?:string; completedAt?:string; routes?:number; failures?:number; screenshots?:number; note?:string };
 
 function Metric({ label, value, detail }: { label:string; value:string|number; detail:string }) { return <div className="creator-metric"><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>; }
@@ -27,7 +27,7 @@ function QADashboard() {
 
 export default function CreatorOperationsSection({ mode }: { mode: Mode }) {
   const [params] = useSearchParams();
-  if (mode === "qa" as Mode) return <QADashboard />;
+  if (mode === "qa") return <QADashboard />;
   const data = SECTION_DATA[mode];
   const search = params.get("q")?.trim().toLowerCase();
   const cards = data.cards.filter((card)=>!search||card.join(" ").toLowerCase().includes(search));
