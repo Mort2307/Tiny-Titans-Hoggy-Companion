@@ -4,6 +4,8 @@ import "./tinyTitansModern.css";
 import "./styles/species-layout-hardening.css";
 import "./styles/mobileNavigation.css";
 import "./styles/creatorPaidTierOperations.css";
+import "./styles/workspaceShell.css";
+import "./services/workspacePresentationService";
 import AppRouter from "./routes/AppRouter";
 import ExplainThis from "./components/ExplainThis/ExplainThis";
 import NotificationOnboarding from "./components/NotificationOnboarding";
