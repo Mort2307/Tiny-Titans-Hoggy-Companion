@@ -111,6 +111,7 @@ import PaidMarketplaceFeature from "../pages/PaidMarketplaceFeature";
 import PaidSupportFeature from "../pages/PaidSupportFeature";
 import PaidTimelineFeature from "../pages/PaidTimelineFeature";
 import Marketplace from "../pages/Marketplace";
+import { RescueCentre, RescueAnimals, RescueAnimalPassport, RescueAnimalManage, RescueScanner, RescueSpeciesIncubator, RescueOperationalPage } from "../pages/RescuePages";
 
 function hasLocalPrivacyConsent(userId: string) {
   try {
@@ -155,9 +156,18 @@ function AppRouterGate() {
   return <UnitProvider><Routes><Route element={<Layout />}>
     <Route path="/" element={<Home />} />
     <Route path="/account" element={<MyAccount />} />
+    <Route path="/rescue" element={<RescueCentre />} />
+    <Route path="/rescue/animals" element={<RescueAnimals />} />
+    <Route path="/rescue/animals/:animalId/manage" element={<RescueAnimalManage />} />
+    <Route path="/rescue/scan" element={<RescueScanner />} />
+    <Route path="/rescue/species-incubator" element={<RescueSpeciesIncubator />} />
+    <Route path="/rescue/team" element={<RescueOperationalPage kind="team" />} />
+    <Route path="/rescue/reports" element={<RescueOperationalPage kind="reports" />} />
+    <Route path="/rescue/adoption" element={<RescueOperationalPage kind="adoption" />} />
     <Route path="/account/billing" element={<AccountBilling />} />
     <Route path="/plans" element={<PaidPlans />} />
     <Route path="/marketplace" element={<Marketplace />} />
+    <Route path="/rescue/animals/:animalId" element={<RescueAnimalPassport />} />
     <Route path="/paid/marketplace" element={<PaidMarketplaceFeature />} />
     <Route path="/paid/support" element={<PaidSupportFeature />} />
     <Route path="/paid/timeline" element={<PaidTimelineFeature />} />
