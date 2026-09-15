@@ -62,8 +62,13 @@ export async function createRescueOrganisation(uid: string, name: string): Promi
 }
 
 export async function getRescueOrganisation(id: string) {
-  const snap = await getDoc(doc(db, organisations, id));
-  return snap.exists() ? ({ ...snap.data(), id: snap.id } as RescueOrganisation) : null;
+  if (!auth.currentUser) return null;
+  try {
+    const snap = await getDoc(doc(db, organisations, id));
+    return snap.exists() ? ({ ...snap.data(), id: snap.id } as RescueOrganisation) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function listRescueAnimals(organisationId: string) {
