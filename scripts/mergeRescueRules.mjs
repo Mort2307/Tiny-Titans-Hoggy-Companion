@@ -58,12 +58,12 @@ const block = `    function activeRescueTier(uid) {
     match /rescueAnimalPublic/{animalId} {
       allow get: if resource.data.publicPreview == true;
       allow list: if false;
-      allow create: if rescueWritesEnabled() && rescueOrgEditor(request.resource.data.organisationId) && request.resource.data.publicPreview == true;
-      allow update: if rescueWritesEnabled() && rescueOrgEditor(resource.data.organisationId) && request.resource.data.organisationId == resource.data.organisationId && request.resource.data.publicPreview == true;
+      allow create: if rescueWritesEnabled() && rescueOrgEditor(request.resource.data.organisationId) && request.resource.data.publicPreview == true && request.resource.data.keys().hasOnly(['organisationId', 'publicPreview', 'name', 'speciesCommonName', 'scientificName', 'sex', 'morphOrColour', 'estimatedAge', 'status', 'intakeDate', 'publicSummary', 'timeline', 'createdAt', 'updatedAt']);
+      allow update: if rescueWritesEnabled() && rescueOrgEditor(resource.data.organisationId) && request.resource.data.organisationId == resource.data.organisationId && request.resource.data.publicPreview == true && request.resource.data.keys().hasOnly(['organisationId', 'publicPreview', 'name', 'speciesCommonName', 'scientificName', 'sex', 'morphOrColour', 'estimatedAge', 'status', 'intakeDate', 'publicSummary', 'timeline', 'createdAt', 'updatedAt']);
       allow delete: if rescueWritesEnabled() && rescueOrgEditor(resource.data.organisationId);
     }
 `;
 
 rules = rules.slice(0, start) + block + rules.slice(end);
 fs.writeFileSync(path, rules, "utf8");
-console.log("Tiny Titans: Rescue paid-access, pilot, membership and record-write rules merged.");
+console.log("Tiny Titans: Rescue paid-access, pilot, membership, record-write and public-projection rules merged.");
