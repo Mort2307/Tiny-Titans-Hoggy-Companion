@@ -49,8 +49,7 @@ function serialisePromotionCode(item) {
 function isRescuePromotion(item) {
   const promotion = item.promotion || {};
   const coupon = typeof promotion.coupon === "object" ? promotion.coupon : null;
-  const metadata = coupon?.metadata || item.metadata || {};
-  return metadata.tier_id === "rescue" || coupon?.applies_to?.products?.includes(RESCUE_PRODUCT_ID);
+  return coupon?.applies_to?.products?.includes(RESCUE_PRODUCT_ID) === true;
 }
 
 exports.listCreatorPromoCodes = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
