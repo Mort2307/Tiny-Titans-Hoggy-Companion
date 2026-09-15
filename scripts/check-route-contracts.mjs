@@ -46,27 +46,22 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
 
 if (!routes.length) errors.push("No application routes were detected in AppRouter.tsx.");
 
+// The router's import block is all that matters for this contract. Parse the
+// complete block before the first executable function so formatting, aliases,
+// line wrapping, and named-vs-default import syntax cannot create false misses.
+const firstExecutableIndex = router.search(/\b(?:function|const|let|var)\s+[A-Za-z]/);
+const importSection = firstExecutableIndex >= 0 ? router.slice(0, firstExecutableIndex) : router;
 const importedComponents = new Set();
 
-// Default imports: import Component from "../pages/Component";
-for (const match of router.matchAll(/\bimport\s+([A-Za-z][A-Za-z0-9]*)\s+from\s+["']\.\.(?:\/pages|\/components)\/[^"']+["']/g)) {
+for (const match of importSection.matchAll(/\bimport\s+([A-Za-z][A-Za-z0-9]*)\b(?:\s*,\s*)?/g)) {
   importedComponents.add(match[1]);
 }
 
-// Named imports: import { Foo, Bar as Baz } from "../pages/Module";
-// Keep this deliberately syntax-tolerant: AppRouter has grown large and import
-// formatting should not change whether a route is considered locally imported.
-for (const match of router.matchAll(/\bimport\s*\{([\s\S]*?)\}\s*from\s*["']\.\.(?:\/pages|\/components)\/[^"']+["']/g)) {
-  const specifiers = match[1]
-    .split(",")
-    .map((specifier) => specifier.replace(/\/\*[\s\S]*?\*\//g, "").trim())
-    .filter(Boolean);
-
-  for (const specifier of specifiers) {
-    const withoutType = specifier.replace(/^type\s+/, "");
-    const localName = withoutType.includes(" as ")
-      ? withoutType.split(/\s+as\s+/i).pop()?.trim()
-      : withoutType.trim();
+for (const match of importSection.matchAll(/\bimport\s*\{([\s\S]*?)\}\s*from\s*["'][^"']+["']/g)) {
+  for (const specifier of match[1].split(",")) {
+    const cleaned = specifier.replace(/\/\*[\s\S]*?\*\//g, "").trim();
+    if (!cleaned) continue;
+    const localName = cleaned.split(/\s+as\s+/i).pop()?.trim().replace(/^type\s+/, "");
     if (localName && /^[A-Za-z][A-Za-z0-9]*$/.test(localName)) importedComponents.add(localName);
   }
 }
