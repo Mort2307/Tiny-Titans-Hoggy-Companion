@@ -4,8 +4,6 @@ import { useAuth } from "../context/useAuth";
 import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidEntitlement } from "../config/paidTiers";
-import "../styles/rescue.css";
-import "../styles/rescue-access.css";
 
 function isRescueEntitlement(entitlement: PaidEntitlement) {
   return entitlement.startsWith("rescue_") || entitlement === "species_incubator";
@@ -25,7 +23,7 @@ function activeRescueWorkspace(workspace: { organisation: { accountStatus?: stri
 }
 
 function RescueAccessFallback() {
-  return <main className="rescue-access-page">
+  return <main className="rescue-page rescue-access-page">
     <header className="rescue-hero rescue-access-hero">
       <div>
         <span className="rescue-eyebrow">TINY TITANS · RESCUE OPERATIONS</span>
@@ -93,7 +91,8 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
 
   if (!allowed) {
     if (isRescueEntitlement(entitlement) && !fallback) return <RescueAccessFallback />;
-    return <>{fallback ?? <section aria-label="Paid feature"><strong>🔒 {isRescueEntitlement(entitlement) ? "TinyTitans Rescue" : entitlement.replace(/[-_]/g, " ")} requires {getPaidTierDefinition(requiredTier).name} or an active Rescue workspace.</strong><p>Rescue access belongs to the organisation workspace, so invited staff can use their own TinyTitans login without buying a separate Rescue subscription.</p><div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><Link to="/plans">Compare plans</Link><Link to="/account/billing">Billing &amp; access</Link></div></section>};
+    return <>{fallback ?? <section aria-label="Paid feature"><strong>🔒 {isRescueEntitlement(entitlement) ? "TinyTitans Rescue" : entitlement.replace(/[-_]/g, " ")} requires {getPaidTierDefinition(requiredTier).name} or an active Rescue workspace.</strong><p>Rescue access belongs to the organisation workspace, so invited staff can use their own TinyTitans login without buying a separate Rescue subscription.</p><div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}><Link to="/plans">Compare plans</Link><Link to="/account/billing">Billing &amp; access</Link></div></section>}</>;
   }
+
   return <>{children}</>;
 }
