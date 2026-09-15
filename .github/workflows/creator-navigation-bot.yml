@@ -1,0 +1,41 @@
+name: Tiny Titans Creator Navigation BOT
+
+on:
+  workflow_dispatch:
+
+jobs:
+  creator-navigation:
+    runs-on: ubuntu-latest
+    env:
+      TINY_TITANS_VISUAL_BOT_EMAIL: ${{ secrets.TINY_TITANS_VISUAL_BOT_EMAIL }}
+      TINY_TITANS_VISUAL_BOT_PASSWORD: ${{ secrets.TINY_TITANS_VISUAL_BOT_PASSWORD }}
+      TINY_TITANS_TEST_URL: http://127.0.0.1:4173
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build application
+        run: npm run build
+      - name: Start preview server
+        run: npm run preview -- --host 127.0.0.1 --port 4173 > creator-navigation-vite.log 2>&1 &
+      - name: Wait for preview
+        run: npx playwright wait-for-server http://127.0.0.1:4173
+      - name: Run Creator Navigation BOT
+        run: npm run test:creator-navigation
+      - name: Upload navigation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creator-navigation-bot
+          path: |
+            artifacts/creator-navigation/
+            creator-navigation-vite.log
+          if-no-files-found: warn
