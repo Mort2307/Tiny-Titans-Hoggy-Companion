@@ -17,6 +17,19 @@ function roleFor(org: RescueOrganisation, uid: string): RescueRole | null {
   return null;
 }
 
+function normaliseOrganisation(id: string, data: Record<string, unknown>): RescueOrganisation {
+  return {
+    ...(data as Omit<RescueOrganisation, "id">),
+    id,
+    managerUids: Array.isArray(data.managerUids) ? (data.managerUids as string[]) : [],
+    staffUids: Array.isArray(data.staffUids) ? (data.staffUids as string[]) : [],
+    medicalUids: Array.isArray(data.medicalUids) ? (data.medicalUids as string[]) : [],
+    fosterUids: Array.isArray(data.fosterUids) ? (data.fosterUids as string[]) : [],
+    viewerUids: Array.isArray(data.viewerUids) ? (data.viewerUids as string[]) : [],
+    speciesDiscovered: Array.isArray(data.speciesDiscovered) ? (data.speciesDiscovered as string[]) : [],
+  };
+}
+
 export function getRescueAccess(org: RescueOrganisation | null, uid?: string | null): RescueAccess {
   const role = org && uid ? roleFor(org, uid) : null;
   return {
@@ -30,18 +43,19 @@ export function getRescueAccess(org: RescueOrganisation | null, uid?: string | n
 
 function dateIsFuture(value: unknown) { const parsed = new Date(String(value || "")).getTime(); return Number.isFinite(parsed) && parsed > Date.now(); }
 
+const membershipQueries = (uid: string) => [
+  query(collection(db, organisations), where("ownerUid", "==", uid)),
+  query(collection(db, organisations), where("managerUids", "array-contains", uid)),
+  query(collection(db, organisations), where("staffUids", "array-contains", uid)),
+  query(collection(db, organisations), where("medicalUids", "array-contains", uid)),
+  query(collection(db, organisations), where("fosterUids", "array-contains", uid)),
+  query(collection(db, organisations), where("viewerUids", "array-contains", uid)),
+];
+
 export async function hasActiveRescuePilot(uid: string): Promise<boolean> {
   if (!uid) return false;
-  const queries = [
-    query(collection(db, organisations), where("ownerUid", "==", uid)),
-    query(collection(db, organisations), where("managerUids", "array-contains", uid)),
-    query(collection(db, organisations), where("staffUids", "array-contains", uid)),
-    query(collection(db, organisations), where("medicalUids", "array-contains", uid)),
-    query(collection(db, organisations), where("fosterUids", "array-contains", uid)),
-    query(collection(db, organisations), where("viewerUids", "array-contains", uid)),
-  ];
   try {
-    const snapshots = await Promise.all(queries.map((item) => getDocs(item)));
+    const snapshots = await Promise.all(membershipQueries(uid).map((item) => getDocs(item)));
     return snapshots.some((snap) => snap.docs.some((item) => {
       const data = item.data();
       return String(data.accountType || "rescue") === "rescue" && ((String(data.accountStatus || "") === "paid_active") || (String(data.pilotStatus || "") === "pilot_active" && dateIsFuture(data.pilotEndsAt)));
@@ -52,7 +66,26 @@ export async function hasActiveRescuePilot(uid: string): Promise<boolean> {
 export async function getOwnedRescueOrganisation(uid: string) {
   const snap = await getDocs(query(collection(db, organisations), where("ownerUid", "==", uid)));
   const item = snap.docs.find((d) => d.data().ownerUid === uid);
-  return item ? ({ ...item.data(), id: item.id, managerUids: Array.isArray(item.data().managerUids) ? item.data().managerUids : [] } as RescueOrganisation) : null;
+  return item ? normaliseOrganisation(item.id, item.data()) : null;
+}
+
+export async function getRescueOrganisationForUser(uid: string): Promise<RescueOrganisation | null> {
+  if (!uid) return null;
+  try {
+    const snapshots = await Promise.all(membershipQueries(uid).map((item) => getDocs(item)));
+    const matches = new Map<string, RescueOrganisation>();
+    for (const snap of snapshots) {
+      for (const item of snap.docs) {
+        const data = item.data();
+        if (String(data.accountType || "rescue") !== "rescue") continue;
+        const org = normaliseOrganisation(item.id, data);
+        if (roleFor(org, uid)) matches.set(item.id, org);
+      }
+    }
+    return matches.values().next().value ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function createRescueOrganisation(uid: string, name: string): Promise<RescueOrganisation> {
@@ -71,8 +104,7 @@ export async function getRescueOrganisation(id: string) {
   try {
     const snap = await getDoc(doc(db, organisations, id));
     if (!snap.exists()) return null;
-    const data = snap.data();
-    return { ...data, id: snap.id, managerUids: Array.isArray(data.managerUids) ? data.managerUids : [] } as RescueOrganisation;
+    return normaliseOrganisation(snap.id, snap.data());
   } catch { return null; }
 }
 
