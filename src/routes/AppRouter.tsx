@@ -147,7 +147,7 @@ function AppRouterGate() {
   if (loading || profileLoading || (user && privacyConsentVersion === null)) {
     return <div className="page-container"><div className="welcome-card"><h1>Loading Tiny Titans...</h1></div></div>;
   }
-  if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="*" element={<Navigate to={loginRedirect} replace />} /></Routes>;
+  if (!user) return <Routes><Route path="/login" element={<Login />} /><Route path="/rescue/animals/:animalId" element={<RescueAnimalPassport />} /><Route path="*" element={<Navigate to={loginRedirect} replace />} /></Routes>;
   if (!profile || !profile.setupComplete) return <Routes><Route path="/account-setup" element={<AccountSetup />} /><Route path="*" element={<Navigate to={setupRedirect} replace />} /></Routes>;
 
   const consentAlreadyStored = privacyConsentVersion === PRIVACY_CONSENT_VERSION || profile.privacyConsentVersion === CONSENT_VERSION || profile.dataCollectionPreferences?.consentVersion === CONSENT_VERSION || hasLocalPrivacyConsent(user.uid);
