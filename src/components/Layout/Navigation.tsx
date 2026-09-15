@@ -17,6 +17,7 @@ const QUICK_ICON_MAP: Record<string, TinyTitansIconName> = {
   weights: "weight", feeding: "feeding", "feeding-preparation": "feeding", shedding: "shed", health: "health", behaviour: "behaviour",
   "behaviour-observatory": "observatory", enclosure: "enclosure", morphs: "morph", "morph-evidence": "observatory", calculator: "genetics",
   breeding: "breeding", "breeding-academy": "academy", "breeding-readiness": "challenge", "breeding-timeline": "reminders", "breeding-cycle": "breeding", "breeding-production": "marketplace",
+  rescue: "health", "rescue-animals": "reptile", "rescue-scan": "observatory", "rescue-incubator": "genetics",
   intelligence: "titan", "this-week": "titan", "keeper-handbook": "handbook", knowledge: "knowledge", learn: "academy", "adaptive-learning": "titan", challenge: "challenge", achievements: "wall",
   community: "community", marketplace: "marketplace", "feature-voting": "challenge", "vivarium-showcase": "enclosure", mentorship: "mentorship", "mentor-directory": "community", "become-mentor": "titan", "mentor-dashboard": "account", "my-mentees": "community", "mentorship-intelligence": "titan", "wall-of-titans": "wall", contribute: "contribution", "submit-species": "reptile", report: "testing", feedback: "messages", "my-issue-reports": "knowledge", "submission-messages": "messages",
   account: "account", profile: "account", settings: "account", personalise: "titan", family: "family", security: "health", privacy: "health", "intelligence-contribution": "titan", "become-titan": "titan",
@@ -50,6 +51,7 @@ function Navigation() {
     { label: "Care", links: [["/reminders", "reminders", "Reminder Hub"], ["/husbandry", "husbandry", "Husbandry & Care"], ["/weights", "weight", "Weight Records"], ["/feeding", "feeding", "Feeding Tracker"], ["/shedding", "shed", "Shed Intelligence"], ["/behaviour", "behaviour", "Behaviour Journal"], ["/health", "health", "Health & Vet"], ["/enclosure-intelligence", "enclosure", "Enclosure Intelligence"]] },
     { label: "Genetics & Breeding", links: [["/morph-library", "morph", "Morph Library"], ["/calculator", "genetics", "Genetics Calculator"], ["/breeding", "breeding", "Breeding Planner"], ["/breeding/academy", "academy", "Breeding Academy"]] },
     { label: "Learn & Community", links: [["/keeper-handbook", "handbook", "Keeper Behaviour Handbook"], ["/behaviour-observatory", "observatory", "Behaviour Observatory"], ["/make-contribution", "contribution", "Make a Contribution"], ["/knowledge-base", "knowledge", "Knowledge Base"], ["/challenge", "challenge", "Titans Challenge"], ["/community", "community", "Community Hub"], ["/marketplace", "marketplace", "Marketplace"], ["/community/mentorship", "mentorship", "Mentorship"], ["/community/wall-of-titans", "wall", "Wall of Titans"]] },
+    { label: "Rescue", links: [["/rescue", "health", "Rescue Centre"]] },
     { label: "Account", links: [["/account", "account", "My Account"], ["/plans", "plans", "Plans & Features"], ["/account/billing", "billing", "Billing & Subscription"], ["/account/family", "family", "My Family"], ["/become-a-titan", "titan", "Become a Titan"]] },
   ];
   const restricted: NavigationSection[] = [];
