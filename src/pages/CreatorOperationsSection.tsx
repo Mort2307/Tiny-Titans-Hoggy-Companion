@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getGlobalStats, type GlobalStats } from "../services/creatorService";
 import { getCreatorQaRuns } from "../services/creatorOperationsService";
