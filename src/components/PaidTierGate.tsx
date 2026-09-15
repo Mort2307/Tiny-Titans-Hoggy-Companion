@@ -6,6 +6,7 @@ import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidEntitlement, type PaidTierId } from "../config/paidTiers";
 import PaidTierBadge from "./PaidTierBadge";
 import "../styles/PaidPlans.css";
+import "../styles/PaidTierGate.css";
 
 function isRescueEntitlement(entitlement: PaidEntitlement) {
   return entitlement.startsWith("rescue_") || entitlement === "species_incubator";
