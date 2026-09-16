@@ -2,6 +2,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 const db = getFirestore();
+const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 const PAID_TIERS = new Set(["titan_seller", "business_starter", "business_plus", "business_advanced"]);
 
 function cleanText(value, max = 500) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
@@ -9,6 +10,7 @@ function expiryMillis(value) { if (!value) return null; if (typeof value === "ob
 async function requireSeller(uid) {
   const snapshot = await db.collection("users").doc(uid).get();
   const data = snapshot.exists ? snapshot.data() : {};
+  if (String(data.email || "").trim().toLowerCase() === OWNER_EMAIL) return "business_advanced";
   const subscriptionTier = String(data.subscriptionTier || "free");
   const subscriptionStatus = String(data.subscriptionStatus || (subscriptionTier === "free" ? "free" : "active"));
   const subscriptionActive = PAID_TIERS.has(subscriptionTier) && ["active", "trialing"].includes(subscriptionStatus);
