@@ -1,0 +1,66 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
+import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
+import { updateRescueDirectoryProfile } from "../services/rescueDirectoryService";
+import "../styles/rescue.css";
+
+export default function RescueDirectoryProfile() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [organisationId, setOrganisationId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [locationLabel, setLocationLabel] = useState("");
+  const [postcode, setPostcode] = useState("");
+  const [region, setRegion] = useState("");
+  const [country, setCountry] = useState("United Kingdom");
+  const [website, setWebsite] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [description, setDescription] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [directoryVisible, setDirectoryVisible] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    void getMyRescueWorkspace().then((result) => {
+      const org = result.organisation;
+      if (!org || result.role !== "owner") { setLoading(false); return; }
+      setOrganisationId(org.id); setName(org.name || ""); setLocationLabel(String((org as unknown as Record<string, unknown>).locationLabel || ""));
+      setPostcode(String((org as unknown as Record<string, unknown>).postcode || "")); setRegion(String((org as unknown as Record<string, unknown>).region || "")); setCountry(String((org as unknown as Record<string, unknown>).country || "United Kingdom"));
+      setWebsite(String((org as unknown as Record<string, unknown>).website || "")); setContactEmail(String((org as unknown as Record<string, unknown>).contactEmail || "")); setDescription(String((org as unknown as Record<string, unknown>).directoryDescription || "")); setLogoUrl(String((org as unknown as Record<string, unknown>).logoUrl || "")); setDirectoryVisible((org as unknown as Record<string, unknown>).directoryVisible !== false);
+      setLoading(false);
+    }).catch((error) => { setMessage(error instanceof Error ? error.message : "Unable to load your Rescue listing."); setLoading(false); });
+  }, [user]);
+
+  async function save() {
+    if (!organisationId) { setMessage("Create or activate your Rescue workspace before editing its directory listing."); return; }
+    if (!locationLabel.trim()) { setMessage("Add a searchable location first."); return; }
+    setSaving(true); setMessage("");
+    try { await updateRescueDirectoryProfile({ locationLabel, postcode, region, country, website, contactEmail, description, logoUrl, directoryVisible }); setMessage("✅ Rescue directory listing updated."); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "Could not update the directory listing."); }
+    finally { setSaving(false); }
+  }
+
+  if (!user) return <main className="rescue-page"><section className="rescue-card"><h1>Rescue directory listing</h1><p>Sign in to manage a Rescue listing.</p></section></main>;
+  if (loading) return <main className="rescue-page"><section className="rescue-card"><p>Loading Rescue listing…</p></section></main>;
+  if (!organisationId) return <main className="rescue-page"><section className="rescue-card"><span className="rescue-eyebrow">RESCUE ACCESS</span><h1>Set up your Rescue workspace first</h1><p>This area is only for an approved Rescue organisation owner.</p><Link to="/rescue?manage=1">Open Rescue setup →</Link></section></main>;
+
+  return <main className="rescue-page"><header className="rescue-subhead"><div><span className="rescue-eyebrow">DIRECTORY PROFILE</span><h1>{name || "Rescue listing"}</h1><p>This is the public-safe information keepers will see when searching for your Rescue.</p></div><Link to="/rescue">← Rescue directory</Link></header>
+    {message && <div className="rescue-message" role="status">{message}</div>}
+    <section className="rescue-card"><div className="rescue-form-grid">
+      <label>Searchable location<input value={locationLabel} onChange={(e) => setLocationLabel(e.target.value)} placeholder="Town / city / area" /></label>
+      <label>Postcode<input value={postcode} onChange={(e) => setPostcode(e.target.value)} placeholder="Optional" /></label>
+      <label>Region / county<input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Optional" /></label>
+      <label>Country<input value={country} onChange={(e) => setCountry(e.target.value)} /></label>
+      <label>Website<input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" /></label>
+      <label>Public contact email<input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} /></label>
+      <label>Logo URL<input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="Optional image URL" /></label>
+      <label className="rescue-form-grid-span">Public description<textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tell keepers what your Rescue does…" /></label>
+    </div>
+    <label className="rescue-check"><input type="checkbox" checked={directoryVisible} onChange={(e) => setDirectoryVisible(e.target.checked)} /> Show this Rescue in the public directory</label>
+    <div className="rescue-form-actions"><button type="button" disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : "Save directory listing"}</button><button type="button" onClick={() => navigate("/rescue")}>View directory</button></div></section>
+  </main>;
+}
