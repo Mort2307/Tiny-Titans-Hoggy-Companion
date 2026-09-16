@@ -50,7 +50,6 @@ function LayoutChrome() {
   const morphDetailMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/?$/);
   const isEnclosureIntelligence = location.pathname === "/enclosure-intelligence" || location.pathname.startsWith("/enclosure-intelligence/");
   const isTitanWeekPage = location.pathname === "/titan-intelligence/feature/this-week";
-  const isHomeOrRecordLogPage = location.pathname === "/" || ["/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry"].some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isPaidPlansPage = location.pathname === "/plans";
   const isBillingPage = location.pathname === "/account/billing";
   const isPaidMarketplacePage = location.pathname === "/paid/marketplace";
