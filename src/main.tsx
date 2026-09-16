@@ -38,7 +38,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { WorldTimeProvider } from "./context/WorldTimeContext";
 import { CopyQualityGuard } from "./utils/copyQuality";
 
-const updateServiceWorker = registerSW({
+const updateServiceWorker = import.meta.env.DEV ? async (_reloadPage = false) => undefined : registerSW({
   immediate: true,
   onNeedRefresh() { notifyTinyTitansUpdateAvailable(); },
   onRegisteredSW(_swUrl, registration) {
