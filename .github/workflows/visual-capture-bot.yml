@@ -1,36 +1,40 @@
-name: Tiny Titans Universal Visual Capture BOT
+name: Tiny Titans Visual Review BOT
 
 on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/run-visual-review-bot.mjs'
+      - 'docs/visual-design-contract.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/visual-capture-bot.yml'
   workflow_dispatch:
     inputs:
       routes:
-        description: "Routes to capture, comma-separated (for example: /,/snakes,/feeding)"
+        description: "Routes to capture, comma-separated (for example: /,/rescue,/weights)"
         required: true
-        default: "/"
+        default: "/,/rescue,/rescue/animals,/rescue/qr,/weights,/feeding"
       note:
-        description: "Optional reason/context for this visual capture run"
+        description: "Optional reason/context for this visual review run"
         required: false
         default: ""
-  workflow_run:
-    workflows: ["Tiny Titans CI"]
-    types: [completed]
 
 permissions:
   contents: read
 
 env:
-  VISUAL_ROUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.routes || '/' }}
+  VISUAL_ROUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.routes || '/,/rescue,/rescue/animals,/rescue/qr,/weights,/feeding' }}
 
 jobs:
   capture:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || 'master' }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -50,30 +54,30 @@ jobs:
       - name: Start preview server
         shell: bash
         run: |
-          nohup npm run dev -- --host 127.0.0.1 --port 4173 > ci-visual-capture-server.log 2>&1 &
+          nohup npm run dev -- --host 127.0.0.1 --port 4173 > ci-visual-review-server.log 2>&1 &
           for i in {1..45}; do
             if curl -fsS http://127.0.0.1:4173/login >/dev/null; then exit 0; fi
             sleep 1
           done
-          cat ci-visual-capture-server.log
+          cat ci-visual-review-server.log
           exit 1
 
-      - name: Capture requested rendered pages
+      - name: Capture rendered screenshots and journeys
         env:
           TINY_TITANS_TEST_URL: http://127.0.0.1:4173
           TINY_TITANS_VISUAL_ROUTES: ${{ env.VISUAL_ROUTES }}
           TINY_TITANS_VISUAL_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
           TINY_TITANS_VISUAL_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
-        run: node scripts/run-visual-capture-bot.mjs
+        run: node scripts/run-visual-review-bot.mjs
 
-      - name: Write capture metadata
+      - name: Write run metadata
         shell: bash
         env:
           VISUAL_ROUTES: ${{ env.VISUAL_ROUTES }}
-          VISUAL_NOTE: ${{ github.event_name == 'workflow_dispatch' && inputs.note || 'Automatic capture after successful Tiny Titans CI' }}
+          VISUAL_NOTE: ${{ github.event_name == 'workflow_dispatch' && inputs.note || 'Automatic visual review after UI/application changes' }}
         run: |
-          cat > artifacts/visual-capture/run-metadata.txt <<EOF
-          Tiny Titans Universal Visual Capture BOT
+          cat > artifacts/visual-review/run-metadata.txt <<EOF
+          Tiny Titans Visual Review BOT
           Routes: ${VISUAL_ROUTES}
           Context: ${VISUAL_NOTE}
           Commit: ${GITHUB_SHA}
@@ -81,12 +85,21 @@ jobs:
           Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
           EOF
 
-      - name: Upload rendered visual artifact
+      - name: Upload rendered visual evidence
+        id: upload
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: tiny-titans-visual-capture-${{ github.run_id }}
+          name: tiny-titans-visual-review-${{ github.run_id }}
           path: |
-            artifacts/visual-capture/
-            ci-visual-capture-server.log
+            artifacts/visual-review/
+            ci-visual-review-server.log
           if-no-files-found: warn
+
+      - name: Link visual evidence from the run summary
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Rendered evidence" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Open / download the visual review artifact](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${{ steps.upload.outputs.artifact-id }})" >> "$GITHUB_STEP_SUMMARY"
