@@ -3,51 +3,17 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
 const db = getFirestore();
 const ROLES = new Set(["owner", "manager", "staff", "medical", "foster", "viewer"]);
-
-function millis(value) {
-  if (!value) return null;
-  if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis();
-  const parsed = new Date(String(value)).getTime();
-  return Number.isFinite(parsed) ? parsed : null;
-}
+function millis(value) { if (!value) return null; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : null; }
 function activePilot(org) { return org.pilotStatus === "pilot_active" && millis(org.pilotEndsAt) !== null && millis(org.pilotEndsAt) > Date.now(); }
 function activeDirectoryOrg(org) { return org.accountType === "rescue" && (org.accountStatus === "paid_active" || activePilot(org)); }
-function roleFor(org, uid) {
-  if (org.ownerUid === uid) return "owner";
-  for (const role of ROLES) {
-    const field = `${role}Uids`;
-    if (Array.isArray(org[field]) && org[field].includes(uid)) return role;
-  }
-  return null;
-}
-function cleanDirectoryOrg(doc) {
-  const data = doc.data() || {};
-  return {
-    id: doc.id,
-    name: String(data.name || "TinyTitans Rescue"),
-    accountStatus: String(data.accountStatus || "pilot_pending"),
-    locationLabel: String(data.locationLabel || data.city || data.town || "Location not listed"),
-    postcode: String(data.postcode || ""),
-    region: String(data.region || ""),
-    country: String(data.country || ""),
-    website: String(data.website || ""),
-    contactEmail: String(data.contactEmail || ""),
-    description: String(data.directoryDescription || data.publicDescription || ""),
-    logoUrl: String(data.logoUrl || ""),
-    speciesDiscovered: Array.isArray(data.speciesDiscovered) ? data.speciesDiscovered : [],
-    pilot: activePilot(data),
-  };
-}
+function roleFor(org, uid) { if (org.ownerUid === uid) return "owner"; for (const role of ROLES) { const field = `${role}Uids`; if (Array.isArray(org[field]) && org[field].includes(uid)) return role; } return null; }
+function cleanDirectoryOrg(doc) { const data = doc.data() || {}; return { id: doc.id, name: String(data.name || "TinyTitans Rescue"), accountStatus: String(data.accountStatus || "pilot_pending"), locationLabel: String(data.locationLabel || data.city || data.town || ""), postcode: String(data.postcode || ""), region: String(data.region || ""), country: String(data.country || ""), website: String(data.website || ""), contactEmail: String(data.contactEmail || ""), description: String(data.directoryDescription || data.publicDescription || ""), logoUrl: String(data.logoUrl || ""), speciesDiscovered: Array.isArray(data.speciesDiscovered) ? data.speciesDiscovered : [], pilot: activePilot(data) }; }
 
 exports.listRescueDirectory = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in to browse Rescue organisations.");
   const queryText = String(request.data?.query || "").trim().toLowerCase();
   const snapshot = await db.collection("rescueOrganisations").limit(200).get();
-  const organisations = snapshot.docs
-    .filter((doc) => activeDirectoryOrg(doc.data() || {}) && (doc.data()?.directoryVisible !== false))
-    .map(cleanDirectoryOrg)
-    .filter((org) => !queryText || [org.name, org.locationLabel, org.postcode, org.region, org.country, org.description].join(" ").toLowerCase().includes(queryText))
-    .sort((a, b) => a.name.localeCompare(b.name) || a.locationLabel.localeCompare(b.locationLabel));
+  const organisations = snapshot.docs.filter((doc) => { const data = doc.data() || {}; return activeDirectoryOrg(data) && data.directoryVisible === true && Boolean(String(data.locationLabel || data.city || data.town || "").trim()); }).map(cleanDirectoryOrg).filter((org) => !queryText || [org.name, org.locationLabel, org.postcode, org.region, org.country, org.description].join(" ").toLowerCase().includes(queryText)).sort((a, b) => a.name.localeCompare(b.name) || a.locationLabel.localeCompare(b.locationLabel));
   return { success: true, organisations, count: organisations.length };
 });
 
@@ -57,20 +23,8 @@ exports.updateRescueDirectoryProfile = onCall({ region: "europe-west2" }, async 
   const owned = await db.collection("rescueOrganisations").where("ownerUid", "==", uid).limit(1).get();
   if (owned.empty) throw new HttpsError("not-found", "You do not own a Rescue organisation.");
   const ref = owned.docs[0].ref;
-  const org = owned.docs[0].data() || {};
-  const fields = {
-    locationLabel: String(request.data?.locationLabel || "").trim(),
-    postcode: String(request.data?.postcode || "").trim(),
-    region: String(request.data?.region || "").trim(),
-    country: String(request.data?.country || "").trim(),
-    website: String(request.data?.website || "").trim(),
-    contactEmail: String(request.data?.contactEmail || "").trim(),
-    directoryDescription: String(request.data?.description || "").trim(),
-    logoUrl: String(request.data?.logoUrl || "").trim(),
-    directoryVisible: request.data?.directoryVisible !== false,
-    updatedAt: FieldValue.serverTimestamp(),
-  };
+  const fields = { locationLabel: String(request.data?.locationLabel || "").trim(), postcode: String(request.data?.postcode || "").trim(), region: String(request.data?.region || "").trim(), country: String(request.data?.country || "").trim(), website: String(request.data?.website || "").trim(), contactEmail: String(request.data?.contactEmail || "").trim(), directoryDescription: String(request.data?.description || "").trim(), logoUrl: String(request.data?.logoUrl || "").trim(), directoryVisible: request.data?.directoryVisible !== false, updatedAt: FieldValue.serverTimestamp() };
   if (!fields.locationLabel) throw new HttpsError("invalid-argument", "A searchable Rescue location is required.");
   await ref.set(fields, { merge: true });
-  return { success: true, organisation: { id: ref.id, ...org, ...fields } };
+  return { success: true, organisationId: ref.id };
 });
