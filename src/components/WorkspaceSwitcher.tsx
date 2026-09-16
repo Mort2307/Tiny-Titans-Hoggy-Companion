@@ -58,7 +58,7 @@ export default function WorkspaceSwitcher() {
       {open && <div className="workspace-switcher__menu" role="menu">
         <button type="button" role="menuitem" onClick={() => switchMode("personal", "/")}><span>🐍</span><span><strong>Personal Reptile Companion</strong><small>Your private keeper workspace</small></span></button>
         {workAvailable && <button type="button" role="menuitem" onClick={() => switchMode("work", workPath)}><span>{hasRescue ? "🚑" : workspace.product.icon}</span><span><strong>{hasRescue ? "Rescue Workspace" : workspace.product.name}</strong><small>Purpose-built work mode</small></span></button>}
-        {isOwner && <Link role="menuitem" to="/creator" onClick={() => setOpen(false)}><span>🧠</span><span><strong>Creator Centre</strong><small>Owner control &amp; intelligence</small></span></Link>}
+        {isOwner && <Link role="menuitem" to="/creator" onClick={() => { setActiveWorkspaceMode(user.uid, "personal"); setOpen(false); }}><span>🧠</span><span><strong>Creator Centre</strong><small>Owner control &amp; intelligence</small></span></Link>}
         <Link role="menuitem" to="/account" onClick={() => setOpen(false)}><span>⚙️</span><span><strong>Account</strong><small>Personal account settings</small></span></Link>
       </div>}
     </div>
