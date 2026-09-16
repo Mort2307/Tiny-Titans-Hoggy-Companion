@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
-import { getWorkspaceProduct, type WorkspaceProduct } from "../config/workspaceProducts";
+import { workspaceProductForTier, type WorkspaceProduct } from "../config/workspaceProducts";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import WorkspaceDashboard from "./WorkspaceDashboard";
 import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
@@ -32,7 +32,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
 
   const rescueRoute = location.pathname === "/rescue" || location.pathname.startsWith("/rescue/");
   const product = workspace.productId === "rescue" && !rescueRoute
-    ? getWorkspaceProduct(workspace.access?.effectiveTier ?? "free")
+    ? workspaceProductForTier(workspace.access?.effectiveTier ?? "free")
     : workspace.product;
   const tier = product.tierId;
   const tierDefinition = getPaidTierDefinition(tier);
