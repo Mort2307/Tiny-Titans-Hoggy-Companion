@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type CSSProperties, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { workspaceProductForTier, type WorkspaceProduct } from "../config/workspaceProducts";
@@ -41,8 +41,9 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
   const showNormalChrome = product.id === "personal";
   const visibleNav = useMemo(() => product.nav.filter((item) => !item.path.startsWith("/creator/") && !item.path.startsWith("/creator")), [product.nav]);
   const shellClass = `workspace-product-shell workspace-product-shell--${product.id}${rescue ? " workspace-product-shell--rescue" : ""}${showNormalChrome ? " workspace-product-shell--personal" : ""}`;
+  const shellStyle = { "--tt-workspace-accent": tierDefinition.accent } as CSSProperties;
 
-  return <div className={shellClass} data-workspace={product.id} data-tier={tier} style={{ ["--tt-workspace-accent" as string]: tierDefinition.accent } as React.CSSProperties}>
+  return <div className={shellClass} data-workspace={product.id} data-tier={tier} style={shellStyle}>
     <header className="workspace-product-header">
       <div className="workspace-product-brand">
         <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={workspaceIcon(product.id)} size={29} /></span>
