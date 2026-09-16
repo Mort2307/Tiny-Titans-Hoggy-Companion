@@ -16,15 +16,60 @@ const LOOKUP_KEYS = Object.freeze({
   business_advanced: "tinytitans_business_advanced_monthly",
   rescue: "tinytitans_rescue_monthly",
 });
+const PRICE_IDS = Object.freeze({
+  titan_pro: "price_1UGOyLI4DKNMJVXDHyHPiP9L",
+  titan_seller: "price_1UGMnlI4DKNMJVXDu6Jk8j7G",
+  business_starter: "price_1UGOyPI4DKNMJVXD61h9P4WX",
+  business_plus: "price_1UGOyRI4DKNMJVXDWQC1EIY0",
+  business_advanced: "price_1UGOyTI4DKNMJVXD5QXuppJe",
+  rescue: "price_1UG0zPI4DKNMJVXDEjjgN1T9",
+});
 const ORIGINS = new Set(["https://tinytitans-hoggy-companion.web.app", "https://tinytitans-hoggy-companion.firebaseapp.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
 const ACTIVE_ACCESS_STATUSES = new Set(["active", "trialing"]);
 const SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due", "unpaid", "incomplete", "incomplete_expired", "canceled"]);
 
 function origin(request) { const value = request.rawRequest?.headers?.origin || ""; return ORIGINS.has(value) ? value : "https://tinytitans-hoggy-companion.web.app"; }
-function tierFromPrice(price) { const lookup = String(price?.lookup_key || ""); const found = Object.entries(LOOKUP_KEYS).find(([, value]) => value === lookup); return found?.[0] || String(price?.metadata?.tinyTitansTier || ""); }
+function tierFromPrice(price) {
+  const priceId = String(price?.id || "");
+  const byId = Object.entries(PRICE_IDS).find(([, value]) => value === priceId);
+  if (byId) return byId[0];
+  const lookup = String(price?.lookup_key || "");
+  const byLookup = Object.entries(LOOKUP_KEYS).find(([, value]) => value === lookup);
+  return byLookup?.[0] || String(price?.metadata?.tinyTitansTier || "");
+}
 function timestampOrNull(unixSeconds) { return Number.isFinite(Number(unixSeconds)) && Number(unixSeconds) > 0 ? Timestamp.fromMillis(Number(unixSeconds) * 1000) : null; }
 function normaliseStatus(status) { const value = String(status || "").trim(); return SUBSCRIPTION_STATUSES.has(value) ? value : "active"; }
-async function findRecurringPrice(stripe, tier) { const lookup = LOOKUP_KEYS[tier]; const result = await stripe.prices.list({ lookup_keys: [lookup], active: true, type: "recurring", limit: 1 }); const price = result.data[0]; if (!price || !price.recurring) throw new HttpsError("failed-precondition", `${tier} is not configured in Stripe yet. Create its recurring monthly price using lookup key ${lookup}.`); return price; }
+async function findRecurringPrice(stripe, tier) {
+  const configuredPriceId = PRICE_IDS[tier];
+  if (configuredPriceId) {
+    try {
+      const price = await stripe.prices.retrieve(configuredPriceId);
+      if (price?.active && price?.recurring) return price;
+    } catch (error) {
+      console.warn(`Configured Stripe price ${configuredPriceId} could not be retrieved for ${tier}; falling back to lookup key.`, error?.message || error);
+    }
+  }
+  const lookup = LOOKUP_KEYS[tier];
+  const result = await stripe.prices.list({ lookup_keys: [lookup], active: true, type: "recurring", limit: 1 });
+  const price = result.data[0];
+  if (!price || !price.recurring) throw new HttpsError("failed-precondition", `${tier} is not configured in Stripe yet. Create its recurring monthly price using the configured Stripe price ID or lookup key ${lookup}.`);
+  return price;
+}
+async function resolveRecurringPriceForPricing(stripe, tier) {
+  const configuredPriceId = PRICE_IDS[tier];
+  if (configuredPriceId) {
+    try {
+      const price = await stripe.prices.retrieve(configuredPriceId);
+      if (price?.active && price?.recurring) return price;
+    } catch (error) {
+      console.warn(`Configured Stripe price ${configuredPriceId} could not be retrieved for pricing lookup; falling back to lookup key.`, error?.message || error);
+    }
+  }
+  const lookupKey = LOOKUP_KEYS[tier];
+  const result = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, type: "recurring", limit: 1 });
+  const price = result.data[0];
+  return price && price.recurring ? price : null;
+}
 
 async function writeSubscriptionState({ uid, tier, status, customerId, subscriptionId, currentPeriodEnd, cancelAtPeriodEnd, sourceEventId }) {
   const safeTier = TIERS.has(String(tier || "")) ? String(tier) : "free";
@@ -32,7 +77,7 @@ async function writeSubscriptionState({ uid, tier, status, customerId, subscript
   const periodEnd = timestampOrNull(currentPeriodEnd);
   const update = { subscriptionTier: safeTier, subscriptionStatus: safeStatus, stripeCustomerId: customerId || null, stripeSubscriptionId: subscriptionId || null, subscriptionCurrentPeriodEnd: periodEnd, cancelAtPeriodEnd: cancelAtPeriodEnd === true, subscriptionUpdatedAt: FieldValue.serverTimestamp() };
   const subscriptionRecord = { uid, tier: safeTier, status: safeStatus, stripeCustomerId: customerId || null, stripeSubscriptionId: subscriptionId || null, currentPeriodEnd: periodEnd, cancelAtPeriodEnd: cancelAtPeriodEnd === true, sourceEventId: sourceEventId || null, updatedAt: FieldValue.serverTimestamp() };
-  const entitlementRecord = { uid, tier: safeTier, source: safeTier === "free" ? "free" : "subscription", status: safeStatus, active: safeTier !== "free" && ACTIVE_ACCESS_STATUSES.has(safeStatus), stripeSubscriptionId: subscriptionId || null, updatedAt: FieldValue.serverTimestamp() };
+  const entitlementRecord = { uid, tier: safeTier, source: safeTier === "free" ? "free" : "subscription", status: safeStatus, active: safeTier !== "free" && ACTIVE_ACCESS_STATUSES.has(safeStatus), stripeSubscriptionId: subscriptionId || null, currentPeriodEnd: periodEnd, updatedAt: FieldValue.serverTimestamp() };
   await db.runTransaction(async (transaction) => { transaction.set(db.collection("users").doc(uid), update, { merge: true }); transaction.set(db.collection("paidSubscriptions").doc(uid), subscriptionRecord, { merge: true }); transaction.set(db.collection("paidEntitlements").doc(uid), entitlementRecord, { merge: true }); });
 }
 
@@ -51,8 +96,8 @@ exports.getPaidTierPricing = onCall({ region: "europe-west2", secrets: [STRIPE_S
   try {
     const stripe = new Stripe(STRIPE_SECRET_KEY.value()); const prices = {};
     for (const tier of TIERS) {
-      const lookupKey = LOOKUP_KEYS[tier]; const result = await stripe.prices.list({ lookup_keys: [lookupKey], active: true, type: "recurring", limit: 1 }); const price = result.data[0];
-      prices[tier] = price && price.recurring ? { configured: true, priceId: price.id, unitAmount: price.unit_amount, currency: price.currency, interval: price.recurring.interval, intervalCount: price.recurring.interval_count, lookupKey } : { configured: false, lookupKey };
+      const lookupKey = LOOKUP_KEYS[tier]; const price = await resolveRecurringPriceForPricing(stripe, tier);
+      prices[tier] = price ? { configured: true, priceId: price.id, unitAmount: price.unit_amount, currency: price.currency, interval: price.recurring.interval, intervalCount: price.recurring.interval_count, lookupKey } : { configured: false, priceId: PRICE_IDS[tier], lookupKey };
     }
     return { success: true, mode: STRIPE_SECRET_KEY.value().startsWith("sk_test_") ? "test" : "live", prices };
   } catch (error) { console.error("Paid tier pricing lookup failed", error); throw new HttpsError("internal", "Unable to read Stripe paid-tier pricing."); }
