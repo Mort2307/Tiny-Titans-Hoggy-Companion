@@ -39,6 +39,10 @@ function rescueIsActive(workspace: { organisation: { accountStatus?: string; pil
   return Number.isFinite(end) && end > Date.now();
 }
 function isRescuePath() { return window.location.pathname === "/rescue" || window.location.pathname.startsWith("/rescue/"); }
+function isWorkspaceSurfacePath() {
+  const pathname = window.location.pathname;
+  return isRescuePath() || pathname === "/plans" || pathname === "/account/billing" || pathname === "/paid" || pathname.startsWith("/paid/");
+}
 export function getActiveWorkspaceMode(uid?: string | null): WorkspaceMode {
   if (!uid || typeof window === "undefined") return "personal";
   return getStoredMode(uid);
@@ -56,11 +60,12 @@ export function workspaceSwitchTargets(uid: string | null, rescueAvailable: bool
 }
 function publish() {
   const product = current.product;
+  const workspaceSurface = current.mode === "work" && isWorkspaceSurfacePath();
   document.documentElement.dataset.ttTier = current.access?.effectiveTier ?? product.tierId;
-  document.documentElement.dataset.ttWorkspace = product.id;
-  document.documentElement.dataset.ttWorkspacePurpose = product.eyebrow;
-  document.documentElement.dataset.ttWorkspacePermissions = product.permissions.join(",");
-  document.documentElement.dataset.ttWorkspaceRole = current.rescueWorkspace ? "organisation_member" : "account_owner";
+  document.documentElement.dataset.ttWorkspace = workspaceSurface ? product.id : "personal";
+  document.documentElement.dataset.ttWorkspacePurpose = workspaceSurface ? product.eyebrow : getWorkspaceProduct("personal").eyebrow;
+  document.documentElement.dataset.ttWorkspacePermissions = workspaceSurface ? product.permissions.join(",") : getWorkspaceProduct("personal").permissions.join(",");
+  document.documentElement.dataset.ttWorkspaceRole = workspaceSurface && current.rescueWorkspace ? "organisation_member" : "account_owner";
   document.documentElement.dataset.ttWorkspaceMode = current.mode;
   window.dispatchEvent(new CustomEvent(WORKSPACE_EVENT, { detail: current }));
 }
