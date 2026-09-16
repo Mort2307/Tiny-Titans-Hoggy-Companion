@@ -1,0 +1,69 @@
+/* Cross-cutting visual hardening for the shell/navigation layer. */
+.app-navigation {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  pointer-events: auto;
+}
+
+.app-navigation-inner {
+  min-height: max-content;
+}
+
+.app-navigation-link,
+.tt-easy-nav-link,
+.tt-easy-feature-link {
+  touch-action: manipulation;
+}
+
+.tt-global-next-action {
+  position: relative;
+  z-index: 30;
+  isolation: isolate;
+  pointer-events: auto;
+  margin-bottom: 1rem;
+}
+
+.tt-global-next-action .hoggie-titan-next-action {
+  position: relative;
+  z-index: 31;
+  min-height: 44px;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+/* Keep the workspace shell from ever creating an accidental page-width overflow. */
+.workspace-product-shell {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.workspace-product-content,
+.workspace-product-content > * {
+  min-width: 0;
+}
+
+@media (max-width: 800px) {
+  .app-navigation {
+    height: auto;
+    max-height: none;
+    overflow: hidden;
+    touch-action: pan-x;
+  }
+
+  .app-navigation-inner {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-global-next-action .hoggie-titan-next-action {
+    transition: none;
+  }
+}
