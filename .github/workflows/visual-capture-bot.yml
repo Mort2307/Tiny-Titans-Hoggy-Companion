@@ -15,9 +15,9 @@ on:
   workflow_dispatch:
     inputs:
       routes:
-        description: "Routes to capture, comma-separated (for example: /,/rescue,/weights)"
+        description: "Routes to capture, comma-separated"
         required: true
-        default: "/,/rescue,/rescue/animals,/rescue/qr,/weights,/feeding"
+        default: "/,/snakes,/weights,/feeding,/shedding,/behaviour,/health,/husbandry,/enclosure-intelligence,/morph-library,/calculator,/breeding,/learn,/challenge,/community,/account,/rescue,/rescue/animals,/rescue/qr,/rescue/team"
       note:
         description: "Optional reason/context for this visual review run"
         required: false
@@ -31,7 +31,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  VISUAL_ROUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.routes || '/,/rescue,/rescue/animals,/rescue/qr,/weights,/feeding' }}
+  VISUAL_ROUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.routes || '/,/snakes,/weights,/feeding,/shedding,/behaviour,/health,/husbandry,/enclosure-intelligence,/morph-library,/calculator,/breeding,/learn,/challenge,/community,/account,/rescue,/rescue/animals,/rescue/qr,/rescue/team' }}
 
 jobs:
   capture:
