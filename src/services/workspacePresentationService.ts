@@ -63,7 +63,7 @@ async function sync(uid: string | null) {
   let productId: WorkspaceProductId = "personal";
   if (rescue) {
     productId = "rescue";
-  } else if (mode === "work" && access.effectiveTier !== "free" && access.effectiveTier !== "personal") {
+  } else if (mode === "work" && access.effectiveTier !== "free") {
     productId = access.effectiveTier;
   }
 
