@@ -1,10 +1,12 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
-import { auth, db } from "../firebase/config";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { auth, db, app } from "../firebase/config";
 import type { RescueAccess, RescueAnimal, RescueOrganisation, RescueRole, RescueTimelineEvent } from "../types/rescue";
 
 const organisations = "rescueOrganisations";
 const animals = "rescueAnimals";
 const publicAnimals = "rescueAnimalPublic";
+const functions = getFunctions(app, "europe-west2");
 const now = () => new Date().toISOString();
 
 function roleFor(org: RescueOrganisation, uid: string): RescueRole | null {
@@ -54,7 +56,18 @@ export async function hasActiveRescuePilot(uid: string): Promise<boolean> {
 }
 export async function getOwnedRescueOrganisation(uid: string) { const snap = await getDocs(query(collection(db, organisations), where("ownerUid", "==", uid))); const item = snap.docs.find((d) => d.data().ownerUid === uid); return item ? normaliseOrganisation(item.id, item.data()) : null; }
 export async function getRescueOrganisationForUser(uid: string): Promise<RescueOrganisation | null> { if (!uid) return null; try { const snapshots = await Promise.all(membershipQueries(uid).map((item) => getDocs(item))); const matches = new Map<string, RescueOrganisation>(); for (const snap of snapshots) for (const item of snap.docs) { const data = item.data(); if (String(data.accountType || "rescue") !== "rescue") continue; const org = normaliseOrganisation(item.id, data); if (roleFor(org, uid)) matches.set(item.id, org); } return matches.values().next().value ?? null; } catch { return null; } }
-export async function createRescueOrganisation(uid: string, name: string): Promise<RescueOrganisation> { const timestamp = now(); const clean = name.trim() || "My Rescue Centre"; const ref = await addDoc(collection(db, organisations), { accountType: "rescue", accountStatus: "pilot_pending", pilotStatus: "pilot_pending", name: clean, ownerUid: uid, managerUids: [], staffUids: [], medicalUids: [], fosterUids: [], viewerUids: [], speciesDiscovered: [], staffLimit: 5, animalLimit: 100, storageMbLimit: 512, createdAt: timestamp, updatedAt: timestamp }); return { id: ref.id, accountType: "rescue", accountStatus: "pilot_pending", pilotStatus: "pilot_pending", name: clean, ownerUid: uid, managerUids: [], staffUids: [], medicalUids: [], fosterUids: [], viewerUids: [], speciesDiscovered: [], staffLimit: 5, animalLimit: 100, storageMbLimit: 512, createdAt: timestamp, updatedAt: timestamp }; }
+export async function createRescueOrganisation(uid: string, name: string): Promise<RescueOrganisation> {
+  void uid;
+  const call = httpsCallable<{ name: string }, { success: boolean; organisation: Record<string, unknown> | null }>(functions, "createRescueOrganisation");
+  try {
+    const result = await call({ name: name.trim() || "My Rescue Centre" });
+    const organisation = result.data.organisation;
+    if (!organisation) throw new Error("Rescue organisation was not returned.");
+    return normaliseOrganisation(String(organisation.id || ""), organisation);
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "Could not create the Rescue workspace.");
+  }
+}
 export async function getRescueOrganisation(id: string) { if (!auth.currentUser) return null; try { const snap = await getDoc(doc(db, organisations, id)); return snap.exists() ? normaliseOrganisation(snap.id, snap.data()) : null; } catch { return null; } }
 export async function listRescueAnimals(organisationId: string) { const snap = await getDocs(query(collection(db, animals), where("organisationId", "==", organisationId))); return snap.docs.sort((a, b) => String(b.data().updatedAt || "").localeCompare(String(a.data().updatedAt || ""))).map((d) => ({ ...d.data(), id: d.id, timeline: Array.isArray(d.data().timeline) ? d.data().timeline : [] } as RescueAnimal)); }
 function publicTimeline(timeline: RescueTimelineEvent[]): Array<Omit<RescueTimelineEvent, "recordedByUid">> { return timeline.filter((event) => event.visibility === "public").map((event) => ({ id: event.id, type: event.type, occurredAt: event.occurredAt, title: event.title, summary: event.summary, details: event.details, visibility: event.visibility })); }
