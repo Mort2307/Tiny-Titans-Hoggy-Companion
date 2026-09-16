@@ -43,7 +43,8 @@ function LayoutChrome() {
   const { isEasyNav } = useEasyNav();
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
-  const workMode = workspace.productId !== "personal";
+  const rescuePath = location.pathname === "/rescue" || location.pathname.startsWith("/rescue/");
+  const workMode = workspace.productId !== "personal" && (workspace.productId !== "rescue" || rescuePath);
   const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isSpeciesAwareMorphLibrary = location.pathname === "/morph-library";
   const morphGalleryMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
