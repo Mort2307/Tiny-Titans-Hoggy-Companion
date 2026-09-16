@@ -19,7 +19,6 @@ import SpeciesMorphDetail from "../../pages/SpeciesMorphDetail";
 import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
 import SpeciesSafeEnclosureIntelligence from "../../pages/SpeciesSafeEnclosureIntelligence";
 import TitanWeekCommandCentre from "../../pages/TitanWeekCommandCentre";
-import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
 import PaidPlans from "../../pages/PaidPlans";
 import AccountBilling from "../../pages/AccountBilling";
 import PaidFeatureWorkspace from "../../pages/PaidFeatureWorkspace";
@@ -85,7 +84,8 @@ function LayoutChrome() {
     <a className="skip-link" href="#main-content">Skip to main content</a><Header/><Navigation/>
     <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
       {!workMode && !isEasyNav && <AdaptiveGuideBar/>}{!workMode && !isEasyNav && <CreatorTesterInvitationBanner/>}{!workMode && !isEasyNav && <CreatorCommandBar/>}{!workMode && !isEasyNav && <CreatorStatusBar/>}{!workMode && !isEasyNav && <TitanQuickActions/>}{!workMode && !isEasyNav && <SupportNotificationCenter/>}
-      <div className={`tt-page-frame${workMode ? " tt-workspace-page-frame" : ""}`}>{!workMode && speciesAware && <SpeciesContextBar/>}{!workMode && <WorldIntelligenceContext/>}{!workMode && isHomeOrRecordLogPage && <TitanAtAGlance/>}{!workMode && <div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>}
+      <div className={`tt-page-frame${workMode ? " tt-workspace-page-frame" : ""}`}>{!workMode && speciesAware && <SpeciesContextBar/>}{!workMode && <WorldIntelligenceContext/>}
+        <div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>
         <WorkspaceProductShell>{specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre/> : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary/> : morphGalleryMatch ? <SpeciesMorphGallery/> : morphDetailMatch ? <SpeciesMorphDetail/> : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence/> : gatedOutlet)}</WorkspaceProductShell>
         {!workMode && <TinyTitansEvidenceNotice/>}
       </div>
