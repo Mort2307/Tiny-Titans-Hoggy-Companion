@@ -6,6 +6,7 @@ import TitanCommandPalette from "../TitanCommandPalette/TitanCommandPalette";
 import LiveWorldClockBadge from "../LiveWorldClockBadge";
 import TinyTitansIcon from "../TinyTitansIcon";
 import TinyTitansTierCrest from "../TinyTitansTierCrest";
+import WorkspaceSwitcher from "../WorkspaceSwitcher";
 import { getPaidAccess, type PaidAccess } from "../../services/paidTierService";
 import { getPaidTierDefinition } from "../../config/paidTiers";
 import { getWorkspaceProduct } from "../../config/workspaceProducts";
@@ -28,7 +29,6 @@ function Header() {
   const creatorMode = profile?.role === "admin";
 
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
-
   useEffect(() => {
     if (!user) { setPaidAccess(null); return () => undefined; }
     let active = true;
@@ -51,9 +51,7 @@ function Header() {
 
   return (
     <header className={`app-header app-header--${workspace.productId}`}>
-      <Link to={product.productId === "rescue" ? "/rescue" : "/"} className="logo-link" aria-label={`${productName} home`}>
-        <img src={logo} alt="Tiny Titans Reptile Companion" className="tiny-titans-logo" />
-      </Link>
+      <Link to={product.productId === "rescue" ? "/rescue" : "/"} className="logo-link" aria-label={`${productName} home`}><img src={logo} alt="Tiny Titans Reptile Companion" className="tiny-titans-logo" /></Link>
       <div className="app-brand-lockup" aria-label={productName}>
         <span className="app-brand-overline">{isPersonal ? "TINY TITANS" : `${product.productId === "rescue" ? "RESCUE" : "TINY TITANS"} WORKSPACE`}</span>
         <span className="app-brand-name"><span className="app-brand-primary">{workspaceLabel}</span><span className="app-brand-secondary">{productSubtitle}</span></span>
@@ -62,11 +60,11 @@ function Header() {
       {!isPersonal && <Link className="workspace-purpose-pill" to={product.productId === "rescue" ? "/rescue" : "/plans"} aria-label={`${workspaceProduct.eyebrow} active`}><TinyTitansIcon name={workspaceIcon(product.productId)} size={20} aria-hidden="true" /><span><strong>{workspaceProduct.eyebrow}</strong><small>Workspace active</small></span></Link>}
       <div className="app-header-actions">
         <LiveWorldClockBadge />
+        <WorkspaceSwitcher />
         {!creatorMode && paidAccess && <Link className="paid-tier-header-badge" to="/plans" aria-label={`Your Tiny Titans tier: ${customerTierDefinition.name}`} title={showTesterTier ? "Creator tester access is enabled for workspace QA" : paidAccess.source === "trial" ? "Trial access" : "Your Tiny Titans tier"}><TinyTitansTierCrest tier={displayTier} size={21} /><strong>{displayTierDefinition.shortLabel}</strong>{showTesterTier && <small>TEST · {displayTierDefinition.shortLabel}</small>}</Link>}
         <TitanCommandPalette />
       </div>
     </header>
   );
 }
-
 export default Header;
