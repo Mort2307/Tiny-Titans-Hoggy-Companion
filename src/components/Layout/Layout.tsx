@@ -45,8 +45,7 @@ function LayoutChrome() {
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
 
   const rescuePath = location.pathname === "/rescue" || location.pathname.startsWith("/rescue/");
-  const paidPath = location.pathname === "/paid" || location.pathname.startsWith("/paid/") || location.pathname === "/plans" || location.pathname === "/account/billing";
-  const workMode = rescuePath || (paidPath && workspace.productId !== "personal");
+  const workMode = workspace.mode === "work";
   const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isSpeciesAwareMorphLibrary = location.pathname === "/morph-library";
   const morphGalleryMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
