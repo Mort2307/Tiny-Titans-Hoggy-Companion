@@ -23,9 +23,10 @@ export default function WorkspaceSwitcher() {
 
   useEffect(() => {
     if (!user) return;
+    const uid = user.uid;
     let active = true;
     void Promise.all([
-      getPaidAccess(user.uid).catch(() => null),
+      getPaidAccess(uid).catch(() => null),
       getMyRescueWorkspace().catch(() => ({ organisation: null, role: null })),
     ]).then(([nextAccess, rescue]) => {
       if (!active) return;
@@ -36,15 +37,16 @@ export default function WorkspaceSwitcher() {
   }, [user]);
 
   if (!user) return null;
+  const uid = user.uid;
   const isOwner = user.email?.trim().toLowerCase() === OWNER_EMAIL;
   const workAvailable = hasRescue || Boolean(access && access.effectiveTier !== "free");
-  const currentMode = getActiveWorkspaceMode(user.uid);
+  const currentMode = getActiveWorkspaceMode(uid);
   const workPath = hasRescue ? "/rescue" : "/";
   const currentLabel = workspace.product.id === "personal" ? "Personal" : workspace.product.name;
 
   function switchMode(mode: "personal" | "work", path: string) {
     setOpen(false);
-    setActiveWorkspaceMode(user.uid, mode);
+    setActiveWorkspaceMode(uid, mode);
     navigate(path);
   }
 
@@ -58,7 +60,7 @@ export default function WorkspaceSwitcher() {
       {open && <div className="workspace-switcher__menu" role="menu">
         <button type="button" role="menuitem" onClick={() => switchMode("personal", "/")}><span>🐍</span><span><strong>Personal Reptile Companion</strong><small>Your private keeper workspace</small></span></button>
         {workAvailable && <button type="button" role="menuitem" onClick={() => switchMode("work", workPath)}><span>{hasRescue ? "🚑" : workspace.product.icon}</span><span><strong>{hasRescue ? "Rescue Workspace" : workspace.product.name}</strong><small>Purpose-built work mode</small></span></button>}
-        {isOwner && <Link role="menuitem" to="/creator" onClick={() => { setActiveWorkspaceMode(user.uid, "personal"); setOpen(false); }}><span>🧠</span><span><strong>Creator Centre</strong><small>Owner control &amp; intelligence</small></span></Link>}
+        {isOwner && <Link role="menuitem" to="/creator" onClick={() => { setActiveWorkspaceMode(uid, "personal"); setOpen(false); }}><span>🧠</span><span><strong>Creator Centre</strong><small>Owner control &amp; intelligence</small></span></Link>}
         <Link role="menuitem" to="/account" onClick={() => setOpen(false)}><span>⚙️</span><span><strong>Account</strong><small>Personal account settings</small></span></Link>
       </div>}
     </div>
