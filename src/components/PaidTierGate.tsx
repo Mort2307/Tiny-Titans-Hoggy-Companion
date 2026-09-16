@@ -8,6 +8,8 @@ import PaidTierBadge from "./PaidTierBadge";
 import "../styles/PaidPlans.css";
 import "../styles/PaidTierGate.css";
 
+const CREATOR_EMAIL = "tinytitans.exotics@gmail.com";
+
 function isRescueEntitlement(entitlement: PaidEntitlement) {
   return entitlement.startsWith("rescue_") || entitlement === "species_incubator";
 }
@@ -65,6 +67,7 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
   const [access, setAccess] = useState<PaidAccess | null>(null);
   const [rescueWorkspace, setRescueWorkspace] = useState(false);
   const [checking, setChecking] = useState(true);
+  const isCreator = user?.email?.trim().toLowerCase() === CREATOR_EMAIL;
 
   useEffect(() => {
     let active = true;
@@ -72,6 +75,11 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
       setAccess(null);
       setRescueWorkspace(false);
       setChecking(false);
+      return () => { active = false; };
+    }
+    if (isCreator) {
+      setChecking(false);
+      setRescueWorkspace(true);
       return () => { active = false; };
     }
     setChecking(true);
@@ -91,9 +99,11 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
       if (active) setChecking(false);
     });
     return () => { active = false; };
-  }, [entitlement, user]);
+  }, [entitlement, isCreator, user]);
 
   if (loading || profileLoading || checking) return <div aria-live="polite">Checking Tiny Titans access…</div>;
+  if (isCreator) return <>{children}</>;
+
   const rescueEntitlement = isRescueEntitlement(entitlement);
   const paidAllowed = Boolean(access && getPaidTierDefinition(access.effectiveTier).entitlements.includes(entitlement));
   const allowed = paidAllowed || (rescueEntitlement && (rescueWorkspace || isRescueInvitationRoute(entitlement)));
