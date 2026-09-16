@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect } from "react";
 import Header from "./Header";
 import Navigation from "./Navigation";
 import AdaptiveGuideBar from "../AdaptiveGuideBar";
@@ -26,10 +26,8 @@ import PaidTimelineFeature from "../../pages/PaidTimelineFeature";
 import PaidMarketplaceFeature from "../../pages/PaidMarketplaceFeature";
 import PaidSupportFeature from "../../pages/PaidSupportFeature";
 import PaidTierGate from "../PaidTierGate";
-import WorkspaceProductShell from "../WorkspaceProductShell";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
-import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../../services/workspacePresentationService";
 import "../../styles/tierIdentity.css";
 
 const speciesAwarePrefixes = [
@@ -41,10 +39,6 @@ const speciesAwarePrefixes = [
 function LayoutChrome() {
   const location = useLocation();
   const { isEasyNav } = useEasyNav();
-  const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
-  useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
-
-  const workMode = workspace.mode === "work";
   const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isSpeciesAwareMorphLibrary = location.pathname === "/morph-library";
   const morphGalleryMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
@@ -58,8 +52,6 @@ function LayoutChrome() {
   const isPaidTimelinePage = location.pathname === "/paid/timeline";
   const isPaidFeaturePage = location.pathname === "/paid" || (location.pathname.startsWith("/paid/") && !isPaidMarketplacePage && !isPaidSupportPage && !isPaidTimelinePage);
   const isRetiredReptileRoom = location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/");
-  const workspaceSurface = workMode && (location.pathname === "/rescue" || location.pathname.startsWith("/rescue/") || isPaidPlansPage || isBillingPage || isPaidMarketplacePage || isPaidSupportPage || isPaidTimelinePage || isPaidFeaturePage);
-  const showNormalChrome = !workspaceSurface;
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -82,16 +74,17 @@ function LayoutChrome() {
   const outlet = <Outlet />;
   const gatedOutlet = outletEntitlement ? <PaidTierGate entitlement={outletEntitlement}>{outlet}</PaidTierGate> : outlet;
   const pageContent = specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre/> : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary/> : morphGalleryMatch ? <SpeciesMorphGallery/> : morphDetailMatch ? <SpeciesMorphDetail/> : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence/> : gatedOutlet);
-  const renderedContent = workspaceSurface ? <WorkspaceProductShell>{pageContent}</WorkspaceProductShell> : pageContent;
 
-  return <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"} data-workspace-surface={workspaceSurface ? "true" : "false"}>
-    <a className="skip-link" href="#main-content">Skip to main content</a>{showNormalChrome && <Header/>}{showNormalChrome && <Navigation/>}
+  return <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"} data-workspace-surface="false">
+    <a className="skip-link" href="#main-content">Skip to main content</a>
+    <Header/>
+    <Navigation/>
     <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
-      {showNormalChrome && !isEasyNav && <AdaptiveGuideBar/>}{showNormalChrome && !isEasyNav && <CreatorTesterInvitationBanner/>}{showNormalChrome && !isEasyNav && <CreatorCommandBar/>}{showNormalChrome && !isEasyNav && <CreatorStatusBar/>}{showNormalChrome && !isEasyNav && <TitanQuickActions/>}{showNormalChrome && !isEasyNav && <SupportNotificationCenter/>}
-      <div className={`tt-page-frame${workspaceSurface ? " tt-workspace-page-frame" : ""}`}>{showNormalChrome && speciesAware && <SpeciesContextBar/>}{showNormalChrome && <WorldIntelligenceContext/>}
+      {!isEasyNav && <AdaptiveGuideBar/>}{!isEasyNav && <CreatorTesterInvitationBanner/>}{!isEasyNav && <CreatorCommandBar/>}{!isEasyNav && <CreatorStatusBar/>}{!isEasyNav && <TitanQuickActions/>}{!isEasyNav && <SupportNotificationCenter/>}
+      <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}{<WorldIntelligenceContext/>}
         <div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>
-        {renderedContent}
-        {showNormalChrome && <TinyTitansEvidenceNotice/>}
+        {pageContent}
+        <TinyTitansEvidenceNotice/>
       </div>
     </div></main>
     <CreatorPaidTierOperations />
