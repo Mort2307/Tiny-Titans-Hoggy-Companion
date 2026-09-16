@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { getPaidAccess, setPaidTesterOverride, type PaidAccess } from "../services/paidTierService";
+import { setPaidTesterOverride, type PaidAccess } from "../services/paidTierService";
 import { PAID_TIER_ORDER, getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
-import { getActiveWorkspaceMode, setActiveWorkspaceMode, type WorkspacePresentation, getWorkspacePresentation, subscribeToWorkspacePresentation } from "../services/workspacePresentationService";
+import { setActiveWorkspaceMode, type WorkspacePresentation, getWorkspacePresentation, subscribeToWorkspacePresentation } from "../services/workspacePresentationService";
 import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
@@ -39,7 +39,7 @@ export default function WorkspaceSwitcher() {
     const uid = user.uid;
     let active = true;
     void Promise.all([
-      getPaidAccess(uid).catch(() => null),
+      import("../services/paidTierService").then(({ getPaidAccess }) => getPaidAccess(uid)).catch(() => null),
       getMyRescueWorkspace().catch(() => ({ organisation: null, role: null })),
     ]).then(([nextAccess, rescue]) => {
       if (!active) return;
@@ -53,7 +53,7 @@ export default function WorkspaceSwitcher() {
   const uid = user.uid;
   const isOwner = user.email?.trim().toLowerCase() === OWNER_EMAIL;
   const workAvailable = hasRescue || Boolean(access && access.effectiveTier !== "free");
-  const currentMode = getActiveWorkspaceMode(uid);
+  const currentMode = workspace.mode;
   const workPath = hasRescue ? "/rescue" : "/";
   const currentLabel = workspace.product.id === "personal" ? "Personal" : workspace.product.name;
 
