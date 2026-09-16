@@ -1,0 +1,77 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import { useAuth } from "../context/useAuth";
+import { getPaidAccess } from "../services/paidTierService";
+import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
+import { listRescueDirectory, type RescueDirectoryEntry } from "../services/rescueDirectoryService";
+import "../styles/rescue.css";
+
+function normaliseLocation(value: string) { return value.trim().toLowerCase(); }
+
+export default function RescueDirectory() {
+  const { user } = useAuth();
+  const [query, setQuery] = useState("");
+  const [rescues, setRescues] = useState<RescueDirectoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [effectiveTier, setEffectiveTier] = useState("free");
+  const [myRescueId, setMyRescueId] = useState<string | null>(null);
+
+  async function refresh(nextQuery = query) {
+    setLoading(true);
+    setMessage("");
+    try {
+      const results = await listRescueDirectory(nextQuery);
+      setRescues(results);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The Rescue directory could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    void Promise.all([getPaidAccess(user.uid).catch(() => null), getMyRescueWorkspace().catch(() => ({ organisation: null }))]).then(([access, workspace]) => {
+      setEffectiveTier(access?.effectiveTier || "free");
+      setMyRescueId(workspace.organisation?.id || null);
+    });
+    void refresh("");
+  }, [user]);
+
+  const locationHint = normaliseLocation(query);
+  const visibleRescues = locationHint ? rescues.filter((rescue) => normaliseLocation(`${rescue.locationLabel} ${rescue.postcode} ${rescue.region} ${rescue.country}`).includes(locationHint)) : rescues;
+  const hasRescueWorkspace = myRescueId !== null || effectiveTier === "rescue";
+
+  return (
+    <main className="rescue-page">
+      <header className="rescue-subhead">
+        <div>
+          <span className="rescue-eyebrow">RESCUE DIRECTORY</span>
+          <h1><TinyTitansIcon name="health" size={35}/> Find a Rescue</h1>
+          <p>Search Rescue organisations by town, region or postcode and open the public information they have chosen to share.</p>
+        </div>
+        {hasRescueWorkspace && <Link className="rescue-primary-link" to="/rescue/animals">Manage my Rescue →</Link>}
+      </header>
+
+      <section className="rescue-card rescue-directory-search-card">
+        <label className="rescue-search"><TinyTitansIcon name="search" size={21}/><input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void refresh(query); }} placeholder="Search by town, county, region or postcode…" aria-label="Search Rescue organisations by location" /><button type="button" onClick={() => void refresh(query)}>Search</button></label>
+        <div className="rescue-directory-meta"><span>{loading ? "Searching…" : `${visibleRescues.length} Rescue organisation${visibleRescues.length === 1 ? "" : "s"}`}</span><button type="button" onClick={() => { setQuery(""); void refresh(""); }}>Show all</button></div>
+      </section>
+
+      {message && <div className="rescue-message rescue-message-error" role="alert">{message}</div>}
+      <section className="rescue-grid rescue-directory-grid">
+        {!loading && visibleRescues.map((rescue) => <article className="rescue-card rescue-directory-card" key={rescue.id}>
+          <div className="rescue-directory-card-head">{rescue.logoUrl ? <img src={rescue.logoUrl} alt="" className="rescue-directory-logo" /> : <span className="rescue-directory-logo rescue-directory-logo-fallback"><TinyTitansIcon name="health" size={25}/></span>}<div><span className="rescue-eyebrow">RESCUE CENTRE</span><h2>{rescue.name}</h2></div></div>
+          <p className="rescue-directory-location"><TinyTitansIcon name="location" size={18}/> {rescue.locationLabel}{rescue.postcode ? ` · ${rescue.postcode}` : ""}</p>
+          {rescue.description && <p>{rescue.description}</p>}
+          <div className="rescue-directory-tags">{rescue.speciesDiscovered.slice(0, 4).map((species) => <span key={species}>{species}</span>)}{rescue.speciesDiscovered.length > 4 && <span>+{rescue.speciesDiscovered.length - 4} species</span>}</div>
+          <div className="rescue-directory-actions">{rescue.website && <a href={rescue.website} target="_blank" rel="noreferrer">Website ↗</a>}{rescue.contactEmail && <a href={`mailto:${rescue.contactEmail}`}>Email</a>}<span className="rescue-directory-status">{rescue.pilot ? "Pilot Rescue" : "Verified Rescue workspace"}</span></div>
+        </article>)}
+      </section>
+      {!loading && !visibleRescues.length && <section className="rescue-card rescue-empty"><strong>No Rescue organisations match that location.</strong><span>Try a wider town, county or postcode search.</span></section>}
+      <section className="rescue-card rescue-directory-footer"><span className="rescue-eyebrow">RUN A RESCUE?</span><h2>Rescue workspace access is separate</h2><p>Rescue discovery is available to every keeper. Creating and operating a Rescue organisation requires an approved Rescue entitlement or authorised pilot access.</p>{!hasRescueWorkspace && <Link to="/plans">View Rescue access →</Link>}</section>
+    </main>
+  );
+}
