@@ -3,6 +3,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 const db = getFirestore();
+const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
 const PAID_TIERS = new Set(["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
 const ENTITLEMENTS = new Set([
@@ -26,13 +27,15 @@ const TIER_ENTITLEMENTS = {
   business_plus: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence", "breeding_suite", "morph_intelligence", "reptile_room", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "priority_support"]),
   business_advanced: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence", "breeding_suite", "morph_intelligence", "reptile_room", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "api_access", "priority_support", "custom_branding"]),
 };
+function isOwnerEmail(value) { return String(value || "").trim().toLowerCase() === OWNER_EMAIL; }
 function expiryMillis(value) {
   if (!value) return null;
   if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis();
   const parsed = new Date(String(value)).getTime();
   return Number.isFinite(parsed) ? parsed : null;
 }
-function entitlementFromUser(data) {
+function entitlementFromUser(data, owner = false) {
+  if (owner) return { tier: "business_advanced", effectiveTier: "business_advanced", source: "owner", statusAllowsAccess: true, entitlements: TIER_ENTITLEMENTS.business_advanced };
   const tier = VALID_TIERS.has(String(data.subscriptionTier || "")) ? String(data.subscriptionTier) : "free";
   const status = String(data.subscriptionStatus || (tier === "free" ? "free" : "active"));
   const subscriptionActive = PAID_TIERS.has(tier) && ["active", "trialing"].includes(status);
@@ -52,9 +55,13 @@ function entitlementFromUser(data) {
 async function requireEntitlement(uid, entitlement) {
   if (!ENTITLEMENTS.has(entitlement)) throw new HttpsError("invalid-argument", "Unknown paid entitlement.");
   const snapshot = await db.collection("users").doc(uid).get();
-  const access = entitlementFromUser(snapshot.exists ? snapshot.data() : {});
+  const access = entitlementFromUser(snapshot.exists ? snapshot.data() : {}, false);
   if (!access.statusAllowsAccess || !access.entitlements.has(entitlement)) throw new HttpsError("permission-denied", `This action requires the ${entitlement} paid feature.`);
   return access;
+}
+async function requireEntitlementForRequest(request, entitlement) {
+  if (isOwnerEmail(request.auth?.token?.email)) return entitlementFromUser({}, true);
+  return requireEntitlement(request.auth.uid, entitlement);
 }
 function cleanText(value, max = 500) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 function cleanEmail(value) { return cleanText(value, 160).toLowerCase(); }
@@ -65,7 +72,7 @@ exports.getPaidBusinessWorkspace = onCall({ region: "europe-west2" }, async (req
   const uid = request.auth.uid;
   const requested = String(request.data?.section || "hub");
   const requirement = { analytics: "advanced_analytics", export: "data_export", seller: "seller_profile", marketplace: "marketplace_seller", business: "business_reporting", team: "multi_user", automation: "automation", support: "priority_support", api: "api_access", branding: "custom_branding" }[requested];
-  if (requirement) await requireEntitlement(uid, requirement);
+  if (requirement) await requireEntitlementForRequest(request, requirement);
   const ref = db.collection("paidWorkspaces").doc(uid);
   const snapshot = await ref.get();
   const workspace = snapshot.exists ? snapshot.data() : {};
@@ -82,7 +89,7 @@ exports.savePaidBusinessWorkspace = onCall({ region: "europe-west2" }, async (re
   const payload = request.data?.payload && typeof request.data.payload === "object" ? request.data.payload : {};
   const requirement = { seller: "seller_profile", marketplace: "marketplace_seller", business: "business_reporting", branding: "custom_branding" }[section];
   if (!requirement) throw new HttpsError("invalid-argument", "This workspace section is not directly editable.");
-  await requireEntitlement(uid, requirement);
+  await requireEntitlementForRequest(request, requirement);
   const safePayload = {};
   if (section === "seller") safePayload.sellerProfile = { businessName: cleanText(payload.businessName, 120), displayName: cleanText(payload.displayName, 120), bio: cleanText(payload.bio, 1000), location: cleanText(payload.location, 160), website: cleanText(payload.website, 240), contactEmail: cleanEmail(payload.contactEmail), acceptingEnquiries: cleanBoolean(payload.acceptingEnquiries) };
   if (section === "marketplace") safePayload.marketplace = { enabled: cleanBoolean(payload.enabled), currency: cleanText(payload.currency, 8).toUpperCase() || "GBP", showLocation: cleanBoolean(payload.showLocation), showContactEmail: cleanBoolean(payload.showContactEmail), sellerNote: cleanText(payload.sellerNote, 700) };
@@ -98,7 +105,7 @@ exports.savePaidBusinessWorkspace = onCall({ region: "europe-west2" }, async (re
 exports.upsertPaidTeamMember = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const uid = request.auth.uid;
-  const access = await requireEntitlement(uid, "multi_user");
+  const access = await requireEntitlementForRequest(request, "multi_user");
   const canManageRoles = access.entitlements.has("team_permissions");
   const payload = request.data?.payload && typeof request.data.payload === "object" ? request.data.payload : {};
   const id = cleanText(payload.id, 120); const email = cleanEmail(payload.email); const displayName = cleanText(payload.displayName, 120); const role = cleanText(payload.role, 40) || "member";
@@ -112,14 +119,14 @@ exports.upsertPaidTeamMember = onCall({ region: "europe-west2" }, async (request
 
 exports.removePaidTeamMember = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  await requireEntitlement(request.auth.uid, "multi_user");
+  await requireEntitlementForRequest(request, "multi_user");
   const id = cleanText(request.data?.id, 120); if (!id) throw new HttpsError("invalid-argument", "A team member ID is required.");
   await db.collection("paidWorkspaces").doc(request.auth.uid).collection("teamMembers").doc(id).delete(); return { success: true, id };
 });
 
 exports.upsertPaidAutomation = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  const uid = request.auth.uid; await requireEntitlement(uid, "automation");
+  const uid = request.auth.uid; await requireEntitlementForRequest(request, "automation");
   const payload = request.data?.payload && typeof request.data.payload === "object" ? request.data.payload : {};
   const id = cleanText(payload.id, 120); const name = cleanText(payload.name, 120); const trigger = cleanText(payload.trigger, 80); const action = cleanText(payload.action, 80);
   if (!name || !trigger || !action) throw new HttpsError("invalid-argument", "Automation name, trigger and action are required.");
@@ -129,17 +136,17 @@ exports.upsertPaidAutomation = onCall({ region: "europe-west2" }, async (request
 
 exports.removePaidAutomation = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  await requireEntitlement(request.auth.uid, "automation"); const id = cleanText(request.data?.id, 120); if (!id) throw new HttpsError("invalid-argument", "An automation ID is required.");
+  await requireEntitlementForRequest(request, "automation"); const id = cleanText(request.data?.id, 120); if (!id) throw new HttpsError("invalid-argument", "An automation ID is required.");
   await db.collection("paidWorkspaces").doc(request.auth.uid).collection("automations").doc(id).delete(); return { success: true, id };
 });
 
 exports.createPaidApiKey = onCall({ region: "europe-west2" }, async (request) => {
-  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in."); const uid = request.auth.uid; await requireEntitlement(uid, "api_access");
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in."); const uid = request.auth.uid; await requireEntitlementForRequest(request, "api_access");
   const name = cleanText(request.data?.name, 80) || "Tiny Titans API key"; const rawSecret = `tt_live_${crypto.randomBytes(24).toString("base64url")}`; const hash = crypto.createHash("sha256").update(rawSecret).digest("hex"); const prefix = rawSecret.slice(0, 14);
   const ref = db.collection("paidWorkspaces").doc(uid).collection("apiKeys").doc(); await ref.set({ name, prefix, secretHash: hash, createdAt: FieldValue.serverTimestamp(), revoked: false }); await db.collection("creatorAudit").add({ actorUid: uid, targetUid: uid, action: "create_paid_api_key", createdAt: FieldValue.serverTimestamp() }); return { success: true, id: ref.id, name, secret: rawSecret };
 });
 
 exports.revokePaidApiKey = onCall({ region: "europe-west2" }, async (request) => {
-  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in."); const uid = request.auth.uid; await requireEntitlement(uid, "api_access"); const id = cleanText(request.data?.id, 120); if (!id) throw new HttpsError("invalid-argument", "An API key ID is required.");
+  if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in."); const uid = request.auth.uid; await requireEntitlementForRequest(request, "api_access"); const id = cleanText(request.data?.id, 120); if (!id) throw new HttpsError("invalid-argument", "An API key ID is required.");
   await db.collection("paidWorkspaces").doc(uid).collection("apiKeys").doc(id).set({ revoked: true, revokedAt: FieldValue.serverTimestamp() }, { merge: true }); return { success: true, id };
 });
