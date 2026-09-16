@@ -7,13 +7,24 @@ const adminAuth = getAuth();
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"]);
 const VALID_MODES = new Set(["silent", "visible"]);
-function isOwnerRequest(request) { return String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL; }
+async function isOwnerRequest(request) {
+  const tokenEmail = String(request.auth?.token?.email || "").trim().toLowerCase();
+  if (tokenEmail === OWNER_EMAIL) return true;
+  if (!request.auth?.uid) return false;
+  try {
+    const user = await adminAuth.getUser(request.auth.uid);
+    return String(user.email || "").trim().toLowerCase() === OWNER_EMAIL;
+  } catch (error) {
+    console.warn("Tiny Titans: unable to resolve Firebase Auth owner email", error?.message || error);
+    return false;
+  }
+}
 function normaliseExpiry(value) { if (value === null || value === undefined || value === "") return null; const millis = new Date(String(value)).getTime(); if (!Number.isFinite(millis)) throw new HttpsError("invalid-argument", "Tester expiry must be a valid date/time."); if (millis <= Date.now()) throw new HttpsError("invalid-argument", "Tester expiry must be in the future."); return Timestamp.fromMillis(millis); }
 function isActiveExpiry(value) { if (!value) return false; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis() > Date.now(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) && parsed > Date.now(); }
 
 exports.setPaidTesterOverride = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  if (!isOwnerRequest(request)) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can manage paid-feature testing.");
+  if (!(await isOwnerRequest(request))) throw new HttpsError("permission-denied", "Only the Tiny Titans owner can manage paid-feature testing.");
   const targetUid = String(request.data?.targetUid || "").trim(); const enabled = request.data?.enabled === true; const tier = String(request.data?.tier || "free"); const mode = String(request.data?.mode || "visible");
   if (!targetUid) throw new HttpsError("invalid-argument", "A target user ID is required."); if (!VALID_TIERS.has(tier)) throw new HttpsError("invalid-argument", "Invalid paid tester tier."); if (!VALID_MODES.has(mode)) throw new HttpsError("invalid-argument", "Invalid tester visibility mode.");
   await adminAuth.getUser(targetUid); const overrideRef = db.collection("paidTesterOverrides").doc(targetUid);
@@ -23,7 +34,8 @@ exports.setPaidTesterOverride = onCall({ region: "europe-west2" }, async (reques
 
 exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  const requestedUid = String(request.data?.uid || request.auth.uid); if (requestedUid !== request.auth.uid && !isOwnerRequest(request)) throw new HttpsError("permission-denied", "You cannot inspect another user's paid access.");
+  const ownerRequest = await isOwnerRequest(request);
+  const requestedUid = String(request.data?.uid || request.auth.uid); if (requestedUid !== request.auth.uid && !ownerRequest) throw new HttpsError("permission-denied", "You cannot inspect another user's paid access.");
   const snapshot = await db.collection("users").doc(requestedUid).get(); const data = snapshot.exists ? snapshot.data() : {};
   const entitlementSnapshot = await db.collection("paidEntitlements").doc(requestedUid).get(); const entitlement = entitlementSnapshot.exists ? entitlementSnapshot.data() || {} : {};
   const storedTier = VALID_TIERS.has(String(entitlement.tier || "")) ? String(entitlement.tier) : String(data.subscriptionTier || "");
@@ -36,7 +48,7 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   const trialSnapshot = await db.collection("paidTrials").doc(requestedUid).get();
   const trial = trialSnapshot.exists ? trialSnapshot.data() || null : null;
   const trialEnabled = trial?.enabled === true && VALID_TIERS.has(String(trial?.tier || "")) && String(trial?.tier || "") !== "free" && isActiveExpiry(trial.expiresAt);
-  const ownerOwnAccount = isOwnerRequest(request) && requestedUid === request.auth.uid;
+  const ownerOwnAccount = ownerRequest && requestedUid === request.auth.uid;
   const effectiveTier = ownerOwnAccount ? "business_advanced" : overrideEnabled ? String(override.tier) : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
   const source = ownerOwnAccount ? "owner" : overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
   return { success: true, uid: requestedUid, actualTier, effectiveTier, source, subscriptionStatus: status, currentPeriodEnd: entitlement.currentPeriodEnd || data.subscriptionCurrentPeriodEnd, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null, trial: trialEnabled ? { ...trial, tier: String(trial.tier), enabled: true } : null };
