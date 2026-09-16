@@ -16,7 +16,8 @@ function isRescueInvitationRoute(entitlement: PaidEntitlement) {
   return isRescueEntitlement(entitlement) && window.location.pathname === "/rescue/team" && new URLSearchParams(window.location.search).has("invite");
 }
 
-function activeRescueWorkspace(workspace: { organisation: { accountStatus?: string; pilotStatus?: string; pilotEndsAt?: string } | null }) {
+function activeRescueWorkspace(workspace: { organisation: { accountStatus?: string; pilotStatus?: string; pilotEndsAt?: string } | null }, access: PaidAccess | null) {
+  if (access?.effectiveTier === "rescue") return true;
   const org = workspace.organisation;
   if (!org) return false;
   if (org.accountStatus === "paid_active") return true;
@@ -80,7 +81,7 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
     ]).then(([nextAccess, workspace]) => {
       if (!active) return;
       setAccess(nextAccess);
-      setRescueWorkspace(activeRescueWorkspace(workspace));
+      setRescueWorkspace(activeRescueWorkspace(workspace, nextAccess));
     }).catch(() => {
       if (active) {
         setAccess(null);
