@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import PaidTierGate from "../components/PaidTierGate";
 import { useAuth } from "../context/useAuth";
-import { appendRescueTimelineEvent, createRescueAnimal, getRescueAccess, getRescueAnimal, getRescueOrganisation, listRescueAnimals } from "../services/rescueService";
+import { appendRescueTimelineEvent, createRescueAnimal, createRescueOrganisation, getRescueAccess, getRescueAnimal, getRescueOrganisation, listRescueAnimals } from "../services/rescueService";
 import { acceptRescueInvitation, getMyRescueWorkspace, getRescueInvitation, getRescueTeam, inviteRescueStaff } from "../services/rescueWorkspaceService";
 import type { RescueAnimal, RescueOrganisation, RescueRole, RescueTimelineType } from "../types/rescue";
 import "../styles/rescue.css";
@@ -46,16 +46,15 @@ export function RescueCentre() {
   <div className="rescue-form-grid rescue-intake-grid"><label>Rescue centre name<input value={orgName} onChange={e=>setOrgName(e.target.value)} placeholder="e.g. Happy Hogs Rescue"/></label></div>
   <div className="rescue-form-actions"><button type="button" onClick={()=>void createWorkspace()} disabled={setupBusy}>{setupBusy?"Creating…":"Create Rescue workspace"}</button></div>
   {setupMessage&&<div className="rescue-message" role="status">{setupMessage}</div>}
-</section> : <><section className="rescue-card"><div className="rescue-detail-grid"><div><small>Organisation</small><strong>{workspace?.name || "Rescue workspace"}</strong></div><div><small>Your role</small><strong>{role ? roleLabels[role] : "Loading…"}</strong></div><div><small>Workspace status</small><strong>{workspace?.accountStatus?.replaceAll("_", " ") || "Loading…"}</strong></div><div><small>Pilot end</small><strong>{formatDate(workspace?.pilotEndsAt)}</strong></div></div><p>Staff use their own permanent TinyTitans accounts. Their Rescue permissions belong to this organisation and can be removed without deleting their personal account.</p></section>
-    <section className="rescue-grid">
+</section> : <section className="rescue-card"><div className="rescue-detail-grid"><div><small>Organisation</small><strong>{workspace?.name || "Rescue workspace"}</strong></div><div><small>Your role</small><strong>{role ? roleLabels[role] : "Loading…"}</strong></div><div><small>Workspace status</small><strong>{workspace?.accountStatus?.replaceAll("_", " ") || "Loading…"}</strong></div><div><small>Pilot end</small><strong>{formatDate(workspace?.pilotEndsAt)}</strong></div></div><p>Staff use their own permanent TinyTitans accounts. Their Rescue permissions belong to this organisation and can be removed without deleting their personal account.</p></section>}
+    {workspace && <section className="rescue-grid">
       <Link className="rescue-card rescue-nav-card" to="/rescue/animals"><span className="rescue-eyebrow">ANIMAL REGISTER</span><h2>Animal Register</h2><p>Intake, search and open passports for any species, including unknown or pending identification.</p><span>Open register →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/animals?intake=1"><span className="rescue-eyebrow">NEW INTAKE</span><h2>New Intake</h2><p>Open the intake form directly and create the animal record without an extra navigation step.</p><span>Start intake →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/qr"><span className="rescue-eyebrow">QR IDENTITY</span><h2>Scan / Create QR</h2><p>Generate printable standard QR labels and resolve existing labels to the correct passport.</p><span>Open QR centre →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/team"><span className="rescue-eyebrow">ACCESS CONTROL</span><h2>Team &amp; Permissions</h2><p>Invite staff, assign roles and keep organisational membership separate from personal accounts.</p><span>{roleCanInvite(role) ? "Manage team →" : "View team →"}</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/reports"><span className="rescue-eyebrow">OPERATIONS</span><h2>Rescue Reports</h2><p>Live status counts, intake overview and recent record activity built from the animal register.</p><span>Open reports →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/adoption"><span className="rescue-eyebrow">PUBLIC PROFILES</span><h2>Adoption Profiles</h2><p>Preview the public-safe side of eligible animals without exposing private care records.</p><span>Open adoption →</span></Link>
-    </section>
-    </>}
+    </section>}
   </main></PaidTierGate>;
 }
 
@@ -96,7 +95,7 @@ export function RescueAnimals() {
       await createRescueAnimal({ organisationId: org.id, publicPreview, name: cleanName, speciesCommonName: cleanSpecies, scientificName: scientific.trim(), sex, morphOrColour: "", estimatedAge: "", status, intakeDate, enclosure: enclosure.trim(), publicSummary: summary.trim(), husbandrySummary: "", privateNotes: "" }, user.uid);
       await refresh();
       setName(""); setSpecies(""); setScientific(""); setSex("Unknown"); setStatus("in_care"); setEnclosure(""); setSummary(""); setPublicPreview(false); toggleIntake(false);
-      setMessage(`Animal added to the Rescue register. QR identity is available from the animal passport.`);
+      setMessage("Animal added to the Rescue register. QR identity is available from the animal passport.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not add the animal."); }
     finally { setBusy(false); }
   }
