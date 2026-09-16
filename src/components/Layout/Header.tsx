@@ -39,6 +39,11 @@ function Header() {
   const product = workspace;
   const workspaceProduct = getWorkspaceProduct(workspace.productId);
   const isPersonal = workspace.productId === "personal";
+  const customerTier = paidAccess?.actualTier ?? "free";
+  const customerTierDefinition = getPaidTierDefinition(customerTier);
+  const showTesterTier = !isPersonal && paidAccess?.source === "tester";
+  const displayTier = showTesterTier ? paidAccess!.effectiveTier : customerTier;
+  const displayTierDefinition = getPaidTierDefinition(displayTier);
   const productName = isPersonal ? "Tiny Titans" : product.productId === "rescue" ? "TinyTitans Rescue" : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").name;
   const productSubtitle = isPersonal ? "Reptile Companion" : product.productId === "rescue" ? "Rescue Operations" : product.productId === "titan_pro" ? "Advanced Keeper Workspace" : product.productId === "titan_seller" ? "Seller Workspace" : product.productId === "business_advanced" ? "Full Business Workspace" : product.productId === "business_plus" ? "Growing Business Workspace" : "Business Workspace";
   const tagline = isPersonal ? "Know your reptiles. Understand their patterns. Keep better records." : product.productId === "rescue" ? "Run rescue operations around the animals, not the paperwork." : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").description;
@@ -57,7 +62,7 @@ function Header() {
       {!isPersonal && <Link className="workspace-purpose-pill" to={product.productId === "rescue" ? "/rescue" : "/plans"} aria-label={`${workspaceProduct.eyebrow} active`}><TinyTitansIcon name={workspaceIcon(product.productId)} size={20} aria-hidden="true" /><span><strong>{workspaceProduct.eyebrow}</strong><small>Workspace active</small></span></Link>}
       <div className="app-header-actions">
         <LiveWorldClockBadge />
-        {!creatorMode && paidAccess && <Link className="paid-tier-header-badge" to="/plans" aria-label={`Your Tiny Titans tier: ${getPaidTierDefinition(paidAccess.effectiveTier).name}`} title={paidAccess.source === "tester" ? "Creator tester access" : paidAccess.source === "trial" ? "Trial access" : "Your Tiny Titans tier"}><TinyTitansTierCrest tier={paidAccess.effectiveTier} size={21} /><strong>{getPaidTierDefinition(paidAccess.effectiveTier).shortLabel}</strong>{paidAccess.source !== "subscription" && <small>{paidAccess.source === "tester" ? "TEST" : paidAccess.source === "trial" ? "TRIAL" : "FREE"}</small>}</Link>}
+        {!creatorMode && paidAccess && <Link className="paid-tier-header-badge" to="/plans" aria-label={`Your Tiny Titans tier: ${customerTierDefinition.name}`} title={showTesterTier ? "Creator tester access is enabled for workspace QA" : paidAccess.source === "trial" ? "Trial access" : "Your Tiny Titans tier"}><TinyTitansTierCrest tier={displayTier} size={21} /><strong>{displayTierDefinition.shortLabel}</strong>{showTesterTier && <small>TEST · {displayTierDefinition.shortLabel}</small>}</Link>}
         <TitanCommandPalette />
       </div>
     </header>
