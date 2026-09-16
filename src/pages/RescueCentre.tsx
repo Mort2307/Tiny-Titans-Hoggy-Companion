@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import PaidTierGate from "../components/PaidTierGate";
+import { useAuth } from "../context/useAuth";
 import { createRescueAnimal, createRescueOrganisation, getRescueAccess, getRescueOrganisationForUser, listRescueAnimals } from "../services/rescueService";
 import type { RescueAnimal, RescueOrganisation } from "../types/rescue";
 import "../styles/rescue.css";
@@ -73,7 +74,7 @@ export default function RescueCentre() {
     setBusy(true);
     setMessage("");
     try {
-      await createRescueAnimal({ organisationId: org.id, ...animal }, user.uid);
+      await createRescueAnimal({ ...animal, organisationId: org.id }, user.uid);
       await refresh(user.uid);
       setAnimal({ name: "", speciesCommonName: "", scientificName: "", sex: "Unknown", morphOrColour: "", estimatedAge: "", status: "in_care", enclosure: "", intakeDate: new Date().toISOString().slice(0, 10), publicPreview: false, publicSummary: "", husbandrySummary: "", privateNotes: "" });
       setMessage("Animal added to the Rescue register.");
