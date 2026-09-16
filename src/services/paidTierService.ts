@@ -10,6 +10,7 @@ type ServerPaidAccess = { success: boolean; uid: string; actualTier: PaidTierId;
 const functions = getFunctions(app, "europe-west2");
 const getPaidTierAccessCall = httpsCallable<{ uid?: string }, ServerPaidAccess>(functions, "getPaidTierAccess");
 const setTesterOverrideCall = httpsCallable<{ targetUid: string; enabled: boolean; tier: PaidTierId; mode: PaidTierTesterMode; expiresAt?: string | null }, { success: boolean; targetUid: string; effectiveTier: PaidTierId | null; enabled: boolean }>(functions, "setPaidTesterOverride");
+const ensureCreatorClaimCall = httpsCallable<undefined, { success: boolean; uid: string; creator: boolean; admin: boolean; creatorTester: boolean; refreshRequired: boolean }>(functions, "ensureCreatorClaim");
 
 export async function getPaidAccess(uid: string): Promise<PaidAccess> {
   if (!uid) throw new Error("A user ID is required to resolve paid access.");
@@ -19,6 +20,14 @@ export async function getPaidAccess(uid: string): Promise<PaidAccess> {
 }
 
 export async function hasPaidEntitlement(uid: string, entitlement: PaidEntitlement): Promise<boolean> { const access = await getPaidAccess(uid); return getPaidTierDefinition(access.effectiveTier).entitlements.includes(entitlement); }
+
+export async function ensureCreatorClaim() {
+  if (!auth.currentUser) throw new Error("You must be signed in to refresh Creator access.");
+  await auth.currentUser.getIdToken(true);
+  const response = await ensureCreatorClaimCall(undefined);
+  await auth.currentUser.getIdToken(true);
+  return response.data;
+}
 
 export async function setPaidTesterOverride(targetUid: string, enabled: boolean, tier: PaidTierId = "free", mode: PaidTierTesterMode = "visible", expiresAt?: string | null) {
   if (!isPaidTierId(tier)) throw new Error("Invalid paid tester tier.");
