@@ -7,6 +7,7 @@ on:
       - 'src/**'
       - 'public/**'
       - 'scripts/run-visual-review-bot.mjs'
+      - 'scripts/run-visual-journey-recorder.mjs'
       - 'docs/visual-design-contract.json'
       - 'package.json'
       - 'package-lock.json'
@@ -31,7 +32,7 @@ env:
 jobs:
   capture:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -62,13 +63,21 @@ jobs:
           cat ci-visual-review-server.log
           exit 1
 
-      - name: Capture rendered screenshots and journeys
+      - name: Capture rendered screenshots and DOM evidence
         env:
           TINY_TITANS_TEST_URL: http://127.0.0.1:4173
           TINY_TITANS_VISUAL_ROUTES: ${{ env.VISUAL_ROUTES }}
           TINY_TITANS_VISUAL_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
           TINY_TITANS_VISUAL_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
         run: node scripts/run-visual-review-bot.mjs
+
+      - name: Record rendered viewport journeys
+        env:
+          TINY_TITANS_TEST_URL: http://127.0.0.1:4173
+          TINY_TITANS_VISUAL_ROUTES: ${{ env.VISUAL_ROUTES }}
+          TINY_TITANS_VISUAL_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
+          TINY_TITANS_VISUAL_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
+        run: node scripts/run-visual-journey-recorder.mjs
 
       - name: Write run metadata
         shell: bash
@@ -83,6 +92,7 @@ jobs:
           Commit: ${GITHUB_SHA}
           Run: ${GITHUB_RUN_ID}
           Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          Evidence: viewport screenshots, full-page screenshots, DOM metrics, runtime errors and WebM viewport journey recordings.
           EOF
 
       - name: Upload rendered visual evidence
@@ -103,3 +113,5 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "## Rendered evidence" >> "$GITHUB_STEP_SUMMARY"
           echo "[Open / download the visual review artifact](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${{ steps.upload.outputs.artifact-id }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The artifact contains per-route viewport/full-page PNGs, DOM/runtime evidence, and mobile/tablet/desktop WebM journey recordings." >> "$GITHUB_STEP_SUMMARY"
