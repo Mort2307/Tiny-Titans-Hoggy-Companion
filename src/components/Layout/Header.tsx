@@ -13,58 +13,17 @@ import { getWorkspaceProduct } from "../../config/workspaceProducts";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../../services/workspacePresentationService";
 import "./Header.css";
 
-function workspaceIcon(productId: WorkspacePresentation["productId"]) {
-  if (productId === "rescue") return "health" as const;
-  if (productId === "titan_seller") return "marketplace" as const;
-  if (productId.startsWith("business_")) return "community" as const;
-  if (productId === "titan_pro") return "titan" as const;
-  return "reptile" as const;
-}
-
+function workspaceIcon(productId: WorkspacePresentation["productId"]) { if (productId === "rescue") return "health" as const; if (productId === "titan_seller") return "marketplace" as const; if (productId.startsWith("business_")) return "community" as const; if (productId === "titan_pro") return "titan" as const; return "reptile" as const; }
 function Header() {
-  const { user, profile } = useAuth();
-  const location = useLocation();
-  const [paidAccess, setPaidAccess] = useState<PaidAccess | null>(null);
-  const [workspace, setWorkspace] = useState<WorkspacePresentation>(getWorkspacePresentation);
-  const creatorMode = profile?.role === "admin";
-
+  const { user, profile } = useAuth(); const location = useLocation(); const [paidAccess, setPaidAccess] = useState<PaidAccess | null>(null); const [workspace, setWorkspace] = useState<WorkspacePresentation>(getWorkspacePresentation); const creatorMode = profile?.role === "admin";
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
-  useEffect(() => {
-    if (!user) { setPaidAccess(null); return () => undefined; }
-    let active = true;
-    void getPaidAccess(user.uid).then((access) => { if (active) setPaidAccess(access); }).catch(() => { if (active) setPaidAccess(null); });
-    return () => { active = false; };
-  }, [user]);
-
-  const product = workspace;
-  const workspaceProduct = getWorkspaceProduct(workspace.productId);
-  const isPersonal = workspace.productId === "personal";
-  const customerTier = paidAccess?.actualTier ?? "free";
-  const customerTierDefinition = getPaidTierDefinition(customerTier);
-  const showTesterTier = !isPersonal && paidAccess?.source === "tester";
-  const displayTier = showTesterTier ? paidAccess!.effectiveTier : customerTier;
-  const displayTierDefinition = getPaidTierDefinition(displayTier);
-  const productName = isPersonal ? "Tiny Titans" : product.productId === "rescue" ? "TinyTitans Rescue" : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").name;
-  const productSubtitle = isPersonal ? "Reptile Companion" : product.productId === "rescue" ? "Rescue Operations" : product.productId === "titan_pro" ? "Advanced Keeper Workspace" : product.productId === "titan_seller" ? "Seller Workspace" : product.productId === "business_advanced" ? "Full Business Workspace" : product.productId === "business_plus" ? "Growing Business Workspace" : "Business Workspace";
-  const tagline = isPersonal ? "Know your reptiles. Understand their patterns. Keep better records." : product.productId === "rescue" ? "Run rescue operations around the animals, not the paperwork." : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").description;
-  const workspaceLabel = location.pathname.startsWith("/rescue") && product.productId === "rescue" ? "Rescue" : productName;
-
-  return (
-    <header className={`app-header app-header--${workspace.productId}`}>
-      <Link to={product.productId === "rescue" ? "/rescue" : "/"} className="logo-link" aria-label={`${productName} home`}><img src={logo} alt="Tiny Titans Reptile Companion" className="tiny-titans-logo" /></Link>
-      <div className="app-brand-lockup" aria-label={productName}>
-        <span className="app-brand-overline">{isPersonal ? "TINY TITANS" : `${product.productId === "rescue" ? "RESCUE" : "TINY TITANS"} WORKSPACE`}</span>
-        <span className="app-brand-name"><span className="app-brand-primary">{workspaceLabel}</span><span className="app-brand-secondary">{productSubtitle}</span></span>
-        <span className="app-brand-tagline">{tagline}</span>
-      </div>
-      {!isPersonal && <Link className="workspace-purpose-pill" to={product.productId === "rescue" ? "/rescue" : "/plans"} aria-label={`${workspaceProduct.eyebrow} active`}><TinyTitansIcon name={workspaceIcon(product.productId)} size={20} aria-hidden="true" /><span><strong>{workspaceProduct.eyebrow}</strong><small>Workspace active</small></span></Link>}
-      <div className="app-header-actions">
-        <LiveWorldClockBadge />
-        <WorkspaceSwitcher />
-        {!creatorMode && paidAccess && <Link className="paid-tier-header-badge" to="/plans" aria-label={`Your Tiny Titans tier: ${customerTierDefinition.name}`} title={showTesterTier ? "Creator tester access is enabled for workspace QA" : paidAccess.source === "trial" ? "Trial access" : "Your Tiny Titans tier"}><TinyTitansTierCrest tier={displayTier} size={21} /><strong>{displayTierDefinition.shortLabel}</strong>{showTesterTier && <small>TEST · {displayTierDefinition.shortLabel}</small>}</Link>}
-        <TitanCommandPalette />
-      </div>
-    </header>
-  );
+  useEffect(() => { if (!user) { setPaidAccess(null); return () => undefined; } let active = true; void getPaidAccess(user.uid).then((access) => { if (active) setPaidAccess(access); }).catch(() => { if (active) setPaidAccess(null); }); return () => { active = false; }; }, [user]);
+  const product = workspace; const workspaceProduct = getWorkspaceProduct(workspace.productId); const isPersonal = workspace.productId === "personal"; const customerTier = paidAccess?.actualTier ?? "free"; const customerTierDefinition = getPaidTierDefinition(customerTier); const showTesterTier = paidAccess?.source === "tester"; const displayTier = showTesterTier ? paidAccess!.effectiveTier : customerTier; const displayTierDefinition = getPaidTierDefinition(displayTier); const productName = isPersonal ? "Tiny Titans" : product.productId === "rescue" ? "TinyTitans Rescue" : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").name; const productSubtitle = isPersonal ? "Reptile Companion" : product.productId === "rescue" ? "Rescue Operations" : product.productId === "titan_pro" ? "Advanced Keeper Workspace" : product.productId === "titan_seller" ? "Seller Workspace" : product.productId === "business_advanced" ? "Full Business Workspace" : product.productId === "business_plus" ? "Growing Business Workspace" : "Business Workspace"; const tagline = isPersonal ? "Know your reptiles. Understand their patterns. Keep better records." : product.productId === "rescue" ? "Run rescue operations around the animals, not the paperwork." : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").description; const workspaceLabel = location.pathname.startsWith("/rescue") && product.productId === "rescue" ? "Rescue" : productName;
+  return <header className={`app-header app-header--${workspace.productId}`}>
+    <Link to={product.productId === "rescue" ? "/rescue" : "/"} className="logo-link" aria-label={`${productName} home`}><img src={logo} alt="Tiny Titans Reptile Companion" className="tiny-titans-logo" /></Link>
+    <div className="app-brand-lockup" aria-label={productName}><span className="app-brand-overline">{isPersonal ? "TINY TITANS" : `${product.productId === "rescue" ? "RESCUE" : "TINY TITANS"} WORKSPACE`}</span><span className="app-brand-name"><span className="app-brand-primary">{workspaceLabel}</span><span className="app-brand-secondary">{productSubtitle}</span></span><span className="app-brand-tagline">{tagline}</span></div>
+    {!isPersonal && <Link className="workspace-purpose-pill" to={product.productId === "rescue" ? "/rescue" : "/plans"} aria-label={`${workspaceProduct.eyebrow} active`}><TinyTitansIcon name={workspaceIcon(product.productId)} size={20} aria-hidden="true"/><span><strong>{workspaceProduct.eyebrow}</strong><small>Workspace active</small></span></Link>}
+    <div className="app-header-actions"><LiveWorldClockBadge/><WorkspaceSwitcher/>{!creatorMode && paidAccess && <Link className="paid-tier-header-badge" to="/plans" aria-label={`Your Tiny Titans tier: ${showTesterTier ? displayTierDefinition.name : customerTierDefinition.name}`} title={showTesterTier ? "Creator tester access is enabled for tier QA" : paidAccess.source === "trial" ? "Trial access" : "Your Tiny Titans tier"}><TinyTitansTierCrest tier={displayTier} size={21}/><strong>{displayTierDefinition.shortLabel}</strong>{showTesterTier && <small>TEST · {displayTierDefinition.shortLabel}</small>}</Link>}<TitanCommandPalette/></div>
+  </header>;
 }
 export default Header;
