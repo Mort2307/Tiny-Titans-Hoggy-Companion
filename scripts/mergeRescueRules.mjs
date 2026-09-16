@@ -2,6 +2,19 @@ import fs from "node:fs";
 
 const path = "firestore.rules";
 let rules = fs.readFileSync(path, "utf8");
+rules = rules
+  .replace(
+    "function hasCapability(capability) { return signedIn() && (request.auth.token.admin == true || request.auth.token[capability] == true); }",
+    "function hasCapability(capability) { return signedIn() && (ownerAccount() || request.auth.token.admin == true || request.auth.token[capability] == true); }",
+  )
+  .replace(
+    "function isCreator() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.creator == true); }",
+    "function isCreator() { return ownerAccount(); }",
+  )
+  .replace(
+    "function isTester() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.tester == true); }",
+    "function isTester() { return ownerAccount(); }",
+  );
 const marker = "    match /{document=**} { allow read, write: if false; }";
 const legacyStart = rules.indexOf("    function rescueWorkspaceAccess()");
 const rescueStart = rules.indexOf("    function rescueOrgMember(orgId)");
