@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { auth, db, app } from "../firebase/config";
 import type { RescueAccess, RescueAnimal, RescueOrganisation, RescueRole, RescueTimelineEvent } from "../types/rescue";
@@ -65,7 +65,7 @@ export async function createRescueOrganisation(uid: string, name: string): Promi
     if (!organisation) throw new Error("Rescue organisation was not returned.");
     return normaliseOrganisation(String(organisation.id || ""), organisation);
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Could not create the Rescue workspace.");
+    throw new Error(error instanceof Error ? error.message : "Could not create the Rescue workspace.", { cause: error });
   }
 }
 export async function getRescueOrganisation(id: string) { if (!auth.currentUser) return null; try { const snap = await getDoc(doc(db, organisations, id)); return snap.exists() ? normaliseOrganisation(snap.id, snap.data()) : null; } catch { return null; } }
