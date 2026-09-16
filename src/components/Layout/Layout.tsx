@@ -12,7 +12,6 @@ import CreatorPaidTierOperations from "../CreatorPaidTierOperations";
 import SpeciesContextBar from "../SpeciesContextBar";
 import SpeciesContextRouteSync from "../SpeciesContextRouteSync";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
-import WorldIntelligenceContext from "../WorldIntelligenceContext";
 import SpeciesAwareMorphLibrary from "../../pages/SpeciesAwareMorphLibrary";
 import SpeciesMorphDetail from "../../pages/SpeciesMorphDetail";
 import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
@@ -85,7 +84,7 @@ function LayoutChrome() {
     <Navigation/>
     <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
       {!isEasyNav && <AdaptiveGuideBar/>}{!isEasyNav && <CreatorTesterInvitationBanner/>}{!isEasyNav && <CreatorCommandBar/>}{!isEasyNav && <CreatorStatusBar/>}{!isEasyNav && <TitanQuickActions/>}{!isEasyNav && <SupportNotificationCenter/>}
-      <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}{<WorldIntelligenceContext/>}
+      <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}
         {pageContent}
         <TinyTitansEvidenceNotice/>
       </div>
