@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { workspaceProductForTier, type WorkspaceProduct } from "../config/workspaceProducts";
@@ -42,20 +42,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
   const visibleNav = useMemo(() => product.nav.filter((item) => !item.path.startsWith("/creator/") && !item.path.startsWith("/creator")), [product.nav]);
   const shellClass = `workspace-product-shell workspace-product-shell--${product.id}${rescue ? " workspace-product-shell--rescue" : ""}${showNormalChrome ? " workspace-product-shell--personal" : ""}`;
 
-  useEffect(() => {
-    document.documentElement.dataset.ttTier = tier;
-    document.documentElement.dataset.ttWorkspace = product.id;
-    document.documentElement.style.setProperty("--tt-workspace-accent", tierDefinition.accent);
-    document.documentElement.style.setProperty("--tt-workspace-tier", tier);
-    return () => {
-      delete document.documentElement.dataset.ttTier;
-      delete document.documentElement.dataset.ttWorkspace;
-      document.documentElement.style.removeProperty("--tt-workspace-accent");
-      document.documentElement.style.removeProperty("--tt-workspace-tier");
-    };
-  }, [product.id, tier, tierDefinition.accent]);
-
-  return <div className={shellClass} data-workspace={product.id} data-tier={tier}>
+  return <div className={shellClass} data-workspace={product.id} data-tier={tier} style={{ ["--tt-workspace-accent" as string]: tierDefinition.accent } as React.CSSProperties}>
     <header className="workspace-product-header">
       <div className="workspace-product-brand">
         <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={workspaceIcon(product.id)} size={29} /></span>
