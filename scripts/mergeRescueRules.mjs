@@ -15,13 +15,25 @@ rules = rules
     "function isTester() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.tester == true); }",
     "function isTester() { return ownerAccount(); }",
   );
+
 const marker = "    match /{document=**} { allow read, write: if false; }";
+const alreadyMerged = rules.includes("    function activeRescueTier(uid)")
+  && rules.includes("    function rescueWorkspaceEnabled(orgId)")
+  && rules.includes("    match /rescueOrganisations/{orgId}");
+
+if (alreadyMerged) {
+  fs.writeFileSync(path, rules, "utf8");
+  console.log("Tiny Titans: Rescue rules already merged; existing block retained.");
+  process.exit(0);
+}
+
 const legacyStart = rules.indexOf("    function rescueWorkspaceAccess()");
 const rescueStart = rules.indexOf("    function rescueOrgMember(orgId)");
 const end = rules.indexOf(marker);
-if (legacyStart < 0 || rescueStart < 0 || end < 0 || end <= rescueStart) throw new Error("Rescue rules merge refused: required Rescue rule boundaries were not found.");
+if (rescueStart < 0 || end < 0 || end <= rescueStart) throw new Error("Rescue rules merge refused: required Rescue rule boundaries were not found.");
 
-rules = rules.slice(0, legacyStart) + rules.slice(rescueStart);
+if (legacyStart >= 0) rules = rules.slice(0, legacyStart) + rules.slice(rescueStart);
+
 const start = rules.indexOf("    function rescueOrgMember(orgId)");
 const mergeEnd = rules.indexOf(marker);
 const block = `    function activeRescueTier(uid) {
