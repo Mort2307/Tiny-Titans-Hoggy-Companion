@@ -3,7 +3,94 @@ export type RescueRole = "owner" | "manager" | "staff" | "medical" | "foster" | 
 export type RescueTimelineType = "intake" | "feeding" | "weight" | "shed" | "husbandry" | "medical" | "behaviour" | "transfer" | "note";
 export type RescueAccountType = "rescue";
 export type RescueAccountStatus = "pilot_pending" | "pilot_active" | "pilot_expired" | "pilot_suspended" | "paid_active" | "cancelled";
-export type RescueTimelineEvent = { id:string; type:RescueTimelineType; occurredAt:string; title:string; summary:string; details:string; recordedByUid:string; visibility:"public"|"staff"|"medical" };
-export type RescueAnimal = { id:string; organisationId:string; publicPreview:boolean; name:string; speciesCommonName:string; scientificName:string; sex:string; morphOrColour:string; estimatedAge:string; status:RescueAnimalStatus; intakeDate:string; enclosure:string; publicSummary:string; husbandrySummary:string; privateNotes:string; timeline:RescueTimelineEvent[]; createdAt:string; updatedAt:string };
+export type RescueVisibility = "public" | "staff" | "medical";
+export type RescueTimelineEvent = { id:string; type:RescueTimelineType; occurredAt:string; title:string; summary:string; details:string; recordedByUid:string; visibility:RescueVisibility };
+
+export type RescueCareRecordType = "feeding" | "weight" | "shed" | "health" | "behaviour" | "husbandry" | "note";
+export type RescueCareRecord = {
+  id:string;
+  type:RescueCareRecordType;
+  occurredAt:string;
+  title:string;
+  summary:string;
+  details:string;
+  recordedByUid:string;
+  visibility:RescueVisibility;
+  value?:number | null;
+  unit?:string;
+  accepted?:boolean | null;
+  response?:string;
+  foodType?:string;
+  bodyCondition?:string;
+};
+export type RescueReminderPriority = "low" | "normal" | "high" | "urgent";
+export type RescueReminder = {
+  id:string;
+  title:string;
+  dueAt:string;
+  kind:string;
+  priority:RescueReminderPriority;
+  completed:boolean;
+  notes:string;
+  createdByUid:string;
+  completedAt?:string;
+};
+export type RescueTransferRecord = {
+  id:string;
+  occurredAt:string;
+  direction:"incoming" | "outgoing";
+  organisationOrPerson:string;
+  reason:string;
+  reference:string;
+  notes:string;
+  recordedByUid:string;
+  visibility:RescueVisibility;
+};
+export type RescueFosterPlacement = {
+  id:string;
+  startedAt:string;
+  endedAt?:string;
+  fosterName:string;
+  contact:string;
+  notes:string;
+  status:"active" | "ended";
+  recordedByUid:string;
+  visibility:RescueVisibility;
+};
+export type RescueDocument = {
+  id:string;
+  title:string;
+  category:"medical" | "intake" | "transfer" | "adoption" | "other";
+  note:string;
+  addedAt:string;
+  addedByUid:string;
+  visibility:RescueVisibility;
+};
+
+export type RescueAnimal = {
+  id:string;
+  organisationId:string;
+  publicPreview:boolean;
+  name:string;
+  speciesCommonName:string;
+  scientificName:string;
+  sex:string;
+  morphOrColour:string;
+  estimatedAge:string;
+  status:RescueAnimalStatus;
+  intakeDate:string;
+  enclosure:string;
+  publicSummary:string;
+  husbandrySummary:string;
+  privateNotes:string;
+  timeline:RescueTimelineEvent[];
+  careRecords?:RescueCareRecord[];
+  reminders?:RescueReminder[];
+  transfers?:RescueTransferRecord[];
+  fosterPlacements?:RescueFosterPlacement[];
+  documents?:RescueDocument[];
+  createdAt:string;
+  updatedAt:string;
+};
 export type RescueOrganisation = { id:string; accountType:RescueAccountType; accountStatus:RescueAccountStatus; name:string; ownerUid:string; managerUids:string[]; staffUids:string[]; medicalUids:string[]; fosterUids:string[]; viewerUids:string[]; speciesDiscovered:string[]; pilotStatus?:RescueAccountStatus; pilotStartsAt?:string; pilotEndsAt?:string; staffLimit?:number; animalLimit?:number; storageMbLimit?:number; createdAt:string; updatedAt:string };
 export type RescueAccess = { role:RescueRole|null; canViewFullHistory:boolean; canEdit:boolean; canManageOrganisation:boolean; isMember:boolean };
