@@ -36,9 +36,9 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   const trialSnapshot = await db.collection("paidTrials").doc(requestedUid).get();
   const trial = trialSnapshot.exists ? trialSnapshot.data() || null : null;
   const trialEnabled = trial?.enabled === true && VALID_TIERS.has(String(trial?.tier || "")) && String(trial?.tier || "") !== "free" && isActiveExpiry(trial.expiresAt);
-  const owner = isOwnerRequest(request);
-  const effectiveTier = owner ? "business_advanced" : overrideEnabled ? String(override.tier) : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
-  const source = owner ? "owner" : overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
+  const ownerOwnAccount = isOwnerRequest(request) && requestedUid === request.auth.uid;
+  const effectiveTier = ownerOwnAccount ? "business_advanced" : overrideEnabled ? String(override.tier) : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
+  const source = ownerOwnAccount ? "owner" : overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
   return { success: true, uid: requestedUid, actualTier, effectiveTier, source, subscriptionStatus: status, currentPeriodEnd: entitlement.currentPeriodEnd || data.subscriptionCurrentPeriodEnd, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null, trial: trialEnabled ? { ...trial, tier: String(trial.tier), enabled: true } : null };
 });
 
