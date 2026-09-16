@@ -30,6 +30,7 @@ import PaidTierGate from "../PaidTierGate";
 import WorkspaceProductShell from "../WorkspaceProductShell";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
+import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../../services/workspacePresentationService";
 import "../../styles/tierIdentity.css";
 
 const speciesAwarePrefixes = [
@@ -41,6 +42,9 @@ const speciesAwarePrefixes = [
 function LayoutChrome() {
   const location = useLocation();
   const { isEasyNav } = useEasyNav();
+  const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
+  useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
+  const workMode = workspace.productId !== "personal";
   const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isSpeciesAwareMorphLibrary = location.pathname === "/morph-library";
   const morphGalleryMatch = location.pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
@@ -80,10 +84,10 @@ function LayoutChrome() {
   return <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"}>
     <a className="skip-link" href="#main-content">Skip to main content</a><Header/><Navigation/>
     <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
-      {!isEasyNav && <AdaptiveGuideBar/>}{!isEasyNav && <CreatorTesterInvitationBanner/>}{!isEasyNav && <CreatorCommandBar/>}{!isEasyNav && <CreatorStatusBar/>}{!isEasyNav && <TitanQuickActions/>}{!isEasyNav && <SupportNotificationCenter/>}
-      <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}<WorldIntelligenceContext/>{isHomeOrRecordLogPage && <TitanAtAGlance/>}<div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>
+      {!workMode && !isEasyNav && <AdaptiveGuideBar/>}{!workMode && !isEasyNav && <CreatorTesterInvitationBanner/>}{!workMode && !isEasyNav && <CreatorCommandBar/>}{!workMode && !isEasyNav && <CreatorStatusBar/>}{!workMode && !isEasyNav && <TitanQuickActions/>}{!workMode && !isEasyNav && <SupportNotificationCenter/>}
+      <div className={`tt-page-frame${workMode ? " tt-workspace-page-frame" : ""}`}>{!workMode && speciesAware && <SpeciesContextBar/>}{!workMode && <WorldIntelligenceContext/>}{!workMode && isHomeOrRecordLogPage && <TitanAtAGlance/>}{!workMode && <div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>}
         <WorkspaceProductShell>{specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre/> : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary/> : morphGalleryMatch ? <SpeciesMorphGallery/> : morphDetailMatch ? <SpeciesMorphDetail/> : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence/> : gatedOutlet)}</WorkspaceProductShell>
-        <TinyTitansEvidenceNotice/>
+        {!workMode && <TinyTitansEvidenceNotice/>}
       </div>
     </div></main>
     <CreatorPaidTierOperations />
