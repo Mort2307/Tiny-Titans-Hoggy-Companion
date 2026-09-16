@@ -6,6 +6,7 @@ import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { workspaceProductForTier, type WorkspaceProduct } from "../config/workspaceProducts";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
+import WorkspaceDashboard from "./WorkspaceDashboard";
 import "../styles/workspaceProductShell.css";
 
 function rescueActive(workspace: { organisation: { accountStatus?: string; pilotStatus?: string; pilotEndsAt?: string } | null }) {
@@ -115,6 +116,6 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
       <Link className="workspace-product-upgrade" to="/plans">Plans &amp; workspace options</Link>
     </section>}
 
-    <div className="workspace-product-content">{children}</div>
+    <div className="workspace-product-content">{location.pathname === "/" && product.id !== "personal" && product.id !== "rescue" ? <WorkspaceDashboard productId={product.id as Exclude<WorkspaceProduct["id"], "personal" | "rescue">} /> : children}</div>
   </div>;
 }
