@@ -44,7 +44,6 @@ function LayoutChrome() {
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
 
-  const rescuePath = location.pathname === "/rescue" || location.pathname.startsWith("/rescue/");
   const workMode = workspace.mode === "work";
   const speciesAware = location.pathname === "/" || speciesAwarePrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   const isSpeciesAwareMorphLibrary = location.pathname === "/morph-library";
