@@ -97,4 +97,3 @@ export function startWorkspacePresentation() {
   installHistoryHooks();
   onAuthStateChanged(auth, (user) => { void sync(user?.uid ?? null).catch(() => publish()); });
 }
-startWorkspacePresentation();
