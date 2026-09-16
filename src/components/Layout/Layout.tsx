@@ -68,7 +68,7 @@ function LayoutChrome() {
   const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidMarketplacePage ? <PaidMarketplaceFeature /> : isPaidSupportPage ? <PaidSupportFeature /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
   const outletEntitlement = location.pathname === "/reminders" || location.pathname.startsWith("/reminders/") ? "smart_reminders"
     : /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname) ? "advanced_timeline"
-      : location.pathname === "/breeding" || location.pathname.startsWith("/breeding/") ? "breeding_suite"
+      : ["/breeding/readiness", "/breeding/timeline", "/breeding/cycle", "/breeding/production"].some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`)) ? "breeding_suite"
         : location.pathname === "/morph-library/evidence" ? "morph_intelligence" : null;
   const outlet = <Outlet />;
   const gatedOutlet = outletEntitlement ? <PaidTierGate entitlement={outletEntitlement}>{outlet}</PaidTierGate> : outlet;
