@@ -15,7 +15,7 @@ const checks = [
   ["export paid surface exists", workspace.includes('"/paid/export"') && workspace.includes("<DataExportFeature />")],
   ["all commercial surfaces represented", ["/paid/analytics","/paid/seller","/paid/marketplace","/paid/business","/paid/team","/paid/automation","/paid/support","/paid/api","/paid/branding"].every((route) => workspace.includes(route))],
   ["every workspace has My Account navigation", ["titan_pro","titan_seller","business_starter","business_plus","business_advanced","rescue"].every((id) => workspaceProducts.includes(`id:"${id}"`) && workspaceProducts.includes(`label:"My Account",path:"/account"`))],
-  ["actionable paywall", gate.includes("View") && gate.includes('to="/plans"')],
+  ["actionable paywall", gate.includes("Compare plans") && gate.includes('to="/plans"')],
   ["retired room not in paid catalogue", !config.includes('"reptile_room"')],
   ["retired room not in paid feature centre", !workspace.includes("Open Reptile Room") && !workspace.includes('to="/reptile-room"')],
   ["promotion catalogue exists", fs.existsSync(path.join(root, "src", "config", "paidPromotions.ts"))],
