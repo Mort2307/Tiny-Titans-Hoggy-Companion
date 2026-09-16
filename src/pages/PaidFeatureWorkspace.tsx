@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { getPaidAccess } from "../services/paidTierService";
-import { getPaidBusinessWorkspace, savePaidBusinessWorkspace, upsertPaidTeamMember, removePaidTeamMember, upsertPaidAutomation, removePaidAutomation, createPaidApiKey, revokePaidApiKey } from "../services/paidBusinessService";
+import { getPaidBusinessWorkspace, savePaidBusinessWorkspace } from "../services/paidBusinessService";
 import { getUserSnakes } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
 import PaidTierGate from "../components/PaidTierGate";
@@ -40,17 +40,6 @@ const SUPPORT_LINKS = [
 
 function errorMessage(error: unknown): string { return error instanceof Error ? error.message : "Something went wrong. Please try again."; }
 function humanize(value: string): string { return value.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
-
-function PaidHub() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [tier, setTier] = useState("free");
-  const [effectiveTier, setEffectiveTier] = useState("free");
-  const [loading, setLoading] = useState(true);
-  useEffect(() => { if (!user) return; let active = true; void getPaidAccess(user.uid).then((access) => { if (!active) return; setTier(access.actualTier); setEffectiveTier(access.effectiveTier); }).catch(() => undefined).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [user]);
-  const definition = getPaidTierDefinition(effectiveTier as Parameters<typeof getPaidTierDefinition>[0]);
-  return <section className="paid-workspace-page"><header className="paid-workspace-hero"><div><span className="paid-workspace-kicker">Titan paid features</span><h1>Paid Feature Centre</h1><p>Every paid capability has a proper home. Locked features stay visible so you can see exactly what each tier unlocks, while authorised testers can exercise the real product without billing.</p></div><div className="paid-access-pill"><span>Actual tier</span><strong>{loading ? "Checking…" : getPaidTierDefinition(tier as Parameters<typeof getPaidTierDefinition>[0]).name}</strong><small>Effective access: {loading ? "Checking…" : definition.name}</small></div></header><div className="paid-workspace-actions"><button type="button" onClick={() => navigate("/plans")}>Compare all plans</button><button type="button" onClick={() => navigate("/account/billing")}>Billing &amp; access</button></div><div className="paid-feature-grid">{Object.entries(FEATURES).map(([path, feature]) => <FeatureTile key={path} path={path} feature={feature}/>)}</div><div className="paid-existing-grid"><article><span>🧠</span><div><h2>Titan Intelligence</h2><p>The existing intelligence layer is now one of the core paid-product surfaces.</p><Link to="/titan-intelligence">Open Titan Intelligence →</Link></div></article><article><span>🧬</span><div><h2>Breeding Suite</h2><p>Use the existing breeding planner, readiness, timeline and production workflows under the business entitlement.</p><Link to="/breeding">Open Breeding Suite →</Link></div></article><article><span>🧬</span><div><h2>Morph Intelligence</h2><p>Your existing species-aware morph library remains the foundation for advanced morph tooling.</p><Link to="/morph-library">Open Morph Library →</Link></div></article></div></section>;
-}
 
 function FeatureTile({ path, feature }: { path: string; feature: FeatureConfig }) {
   const [allowed, setAllowed] = useState(false);
