@@ -26,6 +26,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: tiny-titans-visual-review-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   VISUAL_ROUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.routes || '/,/rescue,/rescue/animals,/rescue/qr,/weights,/feeding' }}
 
