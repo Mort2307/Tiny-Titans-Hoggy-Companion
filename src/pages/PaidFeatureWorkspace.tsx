@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getPaidAccess } from "../services/paidTierService";
 import { getPaidBusinessWorkspace, savePaidBusinessWorkspace } from "../services/paidBusinessService";
 import { getUserSnakes } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
 import PaidTierGate from "../components/PaidTierGate";
-import { getPaidTierDefinition, type PaidEntitlement } from "../config/paidTiers";
+import { type PaidEntitlement } from "../config/paidTiers";
 import { useAuth } from "../context/useAuth";
 import "../styles/PaidFeatureWorkspace.css";
 
@@ -40,15 +39,6 @@ const SUPPORT_LINKS = [
 
 function errorMessage(error: unknown): string { return error instanceof Error ? error.message : "Something went wrong. Please try again."; }
 function humanize(value: string): string { return value.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
-
-function FeatureTile({ path, feature }: { path: string; feature: FeatureConfig }) {
-  const [allowed, setAllowed] = useState(false);
-  const { user } = useAuth();
-  useEffect(() => { if (!user) return; let active = true; void getPaidAccess(user.uid).then((access) => { if (!active) return; const def = getPaidTierDefinition(access.effectiveTier as Parameters<typeof getPaidTierDefinition>[0]); setAllowed(def.entitlements.includes(feature.entitlement)); }).catch(() => setAllowed(false)); return () => { active = false; }; }, [user, feature.entitlement]);
-  const checkoutTier = feature.section === "seller" || feature.section === "marketplace" ? "titan_seller" : feature.entitlement === "advanced_analytics" || feature.entitlement === "advanced_timeline" || feature.entitlement === "data_export" ? "titan_pro" : feature.entitlement === "priority_support" || feature.entitlement === "automation" || feature.entitlement === "multi_user" ? "business_plus" : feature.entitlement === "api_access" || feature.entitlement === "custom_branding" ? "business_advanced" : "business_starter";
-  const destination = allowed ? path : `/plans?tier=${checkoutTier}`;
-  return <Link className={`paid-feature-tile${allowed ? " is-available" : ""}`} to={destination}><span className="paid-feature-icon" aria-hidden="true">{feature.icon}</span><span className="paid-feature-copy"><strong>{feature.title}</strong><small>{feature.description}</small><em>{allowed ? "Included in your effective access" : `View ${getPaidTierDefinition(checkoutTier as Parameters<typeof getPaidTierDefinition>[0]).name} &amp; checkout`}</em></span><span aria-hidden="true">→</span></Link>;
-}
 
 function AnalyticsFeature() {
   const { user } = useAuth();
