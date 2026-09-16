@@ -6,6 +6,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const config = read("src/config/paidTiers.ts");
 const workspace = read("src/pages/PaidFeatureWorkspace.tsx");
+const workspaceProducts = read("src/config/workspaceProducts.ts");
 const gate = read("src/components/PaidTierGate.tsx");
 const checks = [
   ["tier catalogue exists", config.includes("PAID_TIER_CATALOG")],
@@ -13,7 +14,8 @@ const checks = [
   ["export entitlement exists", config.includes('"data_export"')],
   ["export paid surface exists", workspace.includes('"/paid/export"') && workspace.includes("<DataExportFeature />")],
   ["all commercial surfaces represented", ["/paid/analytics","/paid/seller","/paid/marketplace","/paid/business","/paid/team","/paid/automation","/paid/support","/paid/api","/paid/branding"].every((route) => workspace.includes(route))],
-  ["actionable paywall", gate.includes("Compare plans") && gate.includes('to="/plans"')],
+  ["every workspace has My Account navigation", ["titan_pro","titan_seller","business_starter","business_plus","business_advanced","rescue"].every((id) => workspaceProducts.includes(`id:"${id}"`) && workspaceProducts.includes(`label:"My Account",path:"/account"`))],
+  ["actionable paywall", gate.includes("View") && gate.includes('to="/plans"')],
   ["retired room not in paid catalogue", !config.includes('"reptile_room"')],
   ["retired room not in paid feature centre", !workspace.includes("Open Reptile Room") && !workspace.includes('to="/reptile-room"')],
   ["promotion catalogue exists", fs.existsSync(path.join(root, "src", "config", "paidPromotions.ts"))],
