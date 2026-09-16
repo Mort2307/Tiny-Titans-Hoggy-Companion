@@ -1,0 +1,335 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import PaidTierGate from "../components/PaidTierGate";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import { useAuth } from "../context/useAuth";
+import {
+  addRescueDocument,
+  addRescueFosterPlacement,
+  addRescueReminder,
+  addRescueTransfer,
+  appendRescueCareRecord,
+  getRescueAccess,
+  getRescueAnimal,
+  getRescueOrganisation,
+  listRescueAnimals,
+  setRescueReminderComplete,
+  updateRescueAnimal,
+} from "../services/rescueService";
+import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
+import type {
+  RescueAnimal,
+  RescueAnimalStatus,
+  RescueCareRecordType,
+  RescueDocument,
+  RescueOrganisation,
+  RescueReminder,
+  RescueReminderPriority,
+  RescueVisibility,
+} from "../types/rescue";
+import "../styles/rescue-enhanced.css";
+
+const STATUS_LABELS: Record<RescueAnimalStatus, string> = {
+  in_care: "In care",
+  quarantine: "Quarantine",
+  under_observation: "Under observation",
+  adopted: "Adopted",
+  transferred: "Transferred",
+  deceased: "Deceased",
+};
+
+const RECORD_LABELS: Record<RescueCareRecordType, string> = {
+  feeding: "Feeding",
+  weight: "Weight",
+  shed: "Shedding",
+  health: "Health / medical",
+  behaviour: "Behaviour",
+  husbandry: "Husbandry",
+  note: "General note",
+};
+
+const VISIBILITY_LABELS: Record<RescueVisibility, string> = {
+  public: "Public-safe",
+  staff: "Staff only",
+  medical: "Medical / vet",
+};
+
+function formatDate(value: string | undefined | null, includeTime = false) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return includeTime ? date.toLocaleString("en-GB") : date.toLocaleDateString("en-GB");
+}
+
+function roleLabel(role: ReturnType<typeof getRescueAccess>["role"]) {
+  if (!role) return "Not authorised";
+  return role === "owner" ? "Owner / Admin" : role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function daysBetween(a: string, b: string) {
+  const start = new Date(a).getTime();
+  const end = new Date(b).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  return Math.round(Math.abs(end - start) / 86400000);
+}
+
+function calculateIndividualProfile(animal: RescueAnimal) {
+  const records = animal.careRecords || [];
+  const feeds = records.filter((r) => r.type === "feeding").sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+  const weights = records.filter((r) => r.type === "weight" && typeof r.value === "number").sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+  const sheds = records.filter((r) => r.type === "shed").sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+  const behaviour = records.filter((r) => r.type === "behaviour");
+  const accepted = feeds.filter((r) => r.accepted === true).length;
+  const feedRate = feeds.length ? Math.round((accepted / feeds.length) * 100) : null;
+  const lastWeight = weights.length ? weights[weights.length - 1].value ?? null : null;
+  const firstWeight = weights.length ? weights[0].value ?? null : null;
+  const weightChange = firstWeight !== null && lastWeight !== null ? Number((lastWeight - firstWeight).toFixed(1)) : null;
+  const shedGaps = sheds.length > 1 ? sheds.slice(1).map((event, index) => daysBetween(sheds[index].occurredAt, event.occurredAt)).filter((value): value is number => value !== null) : [];
+  const averageShedDays = shedGaps.length ? Math.round(shedGaps.reduce((sum, value) => sum + value, 0) / shedGaps.length) : null;
+  const feedGaps = feeds.length > 1 ? feeds.slice(1).map((event, index) => daysBetween(feeds[index].occurredAt, event.occurredAt)).filter((value): value is number => value !== null) : [];
+  const averageFeedDays = feedGaps.length ? Math.round(feedGaps.reduce((sum, value) => sum + value, 0) / feedGaps.length) : null;
+  const totalSignals = records.length;
+  const confidence = totalSignals >= 12 ? "Strong" : totalSignals >= 6 ? "Developing" : totalSignals >= 2 ? "Early" : "Insufficient";
+  const upcomingReminders = (animal.reminders || []).filter((item) => !item.completed && new Date(item.dueAt).getTime() >= Date.now()).sort((a, b) => a.dueAt.localeCompare(b.dueAt));
+  return { feeds, weights, sheds, behaviour, accepted, feedRate, lastWeight, firstWeight, weightChange, averageShedDays, averageFeedDays, confidence, upcomingReminders };
+}
+
+export function RescueOperationsCentre() {
+  const { user } = useAuth();
+  const [organisation, setOrganisation] = useState<RescueOrganisation | null>(null);
+  const [animals, setAnimals] = useState<RescueAnimal[]>([]);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<RescueAnimalStatus | "all">("all");
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+
+  const refresh = useCallback(async () => {
+    if (!user) return;
+    const result = await getMyRescueWorkspace();
+    setOrganisation(result.organisation);
+    if (result.organisation) setAnimals(await listRescueAnimals(result.organisation.id));
+    else setAnimals([]);
+  }, [user]);
+
+  useEffect(() => {
+    setLoading(true);
+    void refresh().catch((error) => setMessage(error instanceof Error ? error.message : "Could not load Rescue operations.")) .finally(() => setLoading(false));
+  }, [refresh]);
+
+  const filtered = useMemo(() => animals.filter((animal) => {
+    const haystack = [animal.name, animal.speciesCommonName, animal.scientificName, animal.enclosure, animal.status].join(" ").toLowerCase();
+    return (status === "all" || animal.status === status) && haystack.includes(query.toLowerCase());
+  }), [animals, query, status]);
+
+  const stats = useMemo(() => {
+    const allReminders = animals.flatMap((animal) => animal.reminders || []);
+    const overdue = allReminders.filter((item) => !item.completed && new Date(item.dueAt).getTime() < Date.now()).length;
+    const activeFosters = animals.filter((animal) => (animal.fosterPlacements || []).some((placement) => placement.status === "active")).length;
+    const publicProfiles = animals.filter((animal) => animal.publicPreview && animal.status !== "deceased").length;
+    return {
+      total: animals.length,
+      inCare: animals.filter((animal) => animal.status === "in_care").length,
+      quarantine: animals.filter((animal) => animal.status === "quarantine").length,
+      observation: animals.filter((animal) => animal.status === "under_observation").length,
+      adopted: animals.filter((animal) => animal.status === "adopted").length,
+      overdue,
+      activeFosters,
+      publicProfiles,
+    };
+  }, [animals]);
+
+  return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page rescue-enhanced-page">
+    <header className="rescue-enhanced-hero">
+      <div>
+        <span className="rescue-eyebrow">RESCUE OPERATIONS</span>
+        <h1><TinyTitansIcon name="reptile" size={35}/> {organisation?.name || "Rescue Centre"}</h1>
+        <p>One operational workspace for intake, individual care, medical history, fosters, adoption and every day-to-day record.</p>
+      </div>
+      <div className="rescue-enhanced-actions"><Link className="rescue-enhanced-button" to="/rescue/animals?intake=1">+ New intake</Link><Link className="rescue-enhanced-button secondary" to="/rescue/qr">QR centre</Link></div>
+    </header>
+
+    {message && <div className="rescue-message rescue-message-error" role="alert">{message}</div>}
+    {loading ? <section className="rescue-card"><p role="status">Loading Rescue operations…</p></section> : !organisation ? <section className="rescue-card"><h2>Rescue workspace not configured</h2><p>Create the Rescue organisation first, then this command centre becomes the working hub for the team.</p></section> : <>
+      <section className="rescue-stat-grid">
+        <article><span>Total animals</span><strong>{stats.total}</strong><small>Every current and historical rescue record</small></article>
+        <article><span>In care</span><strong>{stats.inCare}</strong><small>Active care records</small></article>
+        <article><span>Quarantine</span><strong>{stats.quarantine}</strong><small>Isolation / intake stage</small></article>
+        <article><span>Observation</span><strong>{stats.observation}</strong><small>Animals being monitored</small></article>
+        <article><span>Active fosters</span><strong>{stats.activeFosters}</strong><small>Current foster placements</small></article>
+        <article data-alert={stats.overdue > 0}><span>Overdue tasks</span><strong>{stats.overdue}</strong><small>Reminder follow-ups needing attention</small></article>
+      </section>
+
+      <section className="rescue-ops-grid">
+        <Link to="/rescue/animals" className="rescue-ops-card"><span>🐍 REGISTER</span><h2>Animal register</h2><p>Search the complete rescue population and open any individual record.</p><strong>Open register →</strong></Link>
+        <Link to="/rescue/reports" className="rescue-ops-card"><span>📊 REPORTING</span><h2>Rescue reports</h2><p>Operational status, recent activity, adoption readiness and follow-up workload.</p><strong>Open reports →</strong></Link>
+        <Link to="/rescue/team" className="rescue-ops-card"><span>👥 PEOPLE</span><h2>Team & permissions</h2><p>Role-based access for owners, managers, staff, medical, foster and volunteers.</p><strong>Manage team →</strong></Link>
+        <Link to="/rescue/adoption" className="rescue-ops-card"><span>❤️ ADOPTION</span><h2>Adoption profiles</h2><p>Keep public-safe details separate from private care and medical history.</p><strong>Open adoption →</strong></Link>
+        <Link to="/rescue/qr" className="rescue-ops-card"><span>🏷️ IDENTIFICATION</span><h2>QR identity centre</h2><p>Print labels and move from physical enclosure to the correct animal record.</p><strong>Open QR centre →</strong></Link>
+        <Link to="/rescue/species-incubator" className="rescue-ops-card"><span>🔎 DISCOVERY</span><h2>Species / ID workflow</h2><p>Use unknown or pending identification without forcing a guessed species into the record.</p><strong>Open workflow →</strong></Link>
+      </section>
+
+      <section className="rescue-card rescue-register-panel">
+        <div className="rescue-panel-heading"><div><span className="rescue-eyebrow">LIVE REGISTER</span><h2>Animals needing attention</h2></div><span>{filtered.length} shown</span></div>
+        <div className="rescue-filter-row"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, species, enclosure or status…"/><select value={status} onChange={(e) => setStatus(e.target.value as RescueAnimalStatus | "all")}><option value="all">All statuses</option>{Object.entries(STATUS_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></div>
+        <div className="rescue-register-list">{filtered.slice(0, 12).map((animal) => {
+          const profile = calculateIndividualProfile(animal);
+          const overdue = (animal.reminders || []).filter((item) => !item.completed && new Date(item.dueAt).getTime() < Date.now()).length;
+          return <Link key={animal.id} to={`/rescue/animals/${animal.id}/manage`} className="rescue-register-row"><span className="rescue-register-icon">🐍</span><span><strong>{animal.name}</strong><small>{animal.speciesCommonName} · {STATUS_LABELS[animal.status]} · {animal.enclosure || "Location not recorded"}</small></span><span className="rescue-register-meta"><small>{(animal.careRecords || []).length} care logs</small>{profile.lastWeight !== null && <small>{profile.lastWeight} g latest</small>}{overdue > 0 && <b>{overdue} overdue</b>}<em>Open →</em></span></Link>;
+        })}{!filtered.length && <div className="rescue-empty"><strong>No matching animals</strong><span>Try another filter or create a new intake.</span></div>}</div>
+        {filtered.length > 12 && <div className="rescue-panel-footer"><Link to="/rescue/animals">View all {filtered.length} matching animals →</Link></div>}
+      </section>
+
+      <section className="rescue-card rescue-principles">
+        <span className="rescue-eyebrow">HOW THE RESCUE MODEL WORKS</span>
+        <div className="rescue-principles-grid"><div><strong>Animal → Event → Actor → Timestamp → Context → Result</strong><span>Every care record stays attached to the individual animal, building a usable longitudinal history rather than isolated notes.</span></div><div><strong>Private by default</strong><span>Medical, staff, foster and internal operational information stays inside the authorised Rescue workspace.</span></div><div><strong>Unknown stays unknown</strong><span>Species, age, sex or background can remain pending until evidence supports an update.</span></div><div><strong>Insights are observational</strong><span>TinyTitans can build a rough individual baseline from recorded patterns without pretending the data is a diagnosis.</span></div></div>
+      </section>
+    </>}
+  </main></PaidTierGate>;
+}
+
+export function RescueAnimalWorkspace() {
+  const { animalId } = useParams<{ animalId: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [animal, setAnimal] = useState<RescueAnimal | null>(null);
+  const [organisation, setOrganisation] = useState<RescueOrganisation | null>(null);
+  const [tab, setTab] = useState<"overview" | "care" | "tasks" | "foster" | "transfer" | "documents" | "adoption">("overview");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [recordType, setRecordType] = useState<RescueCareRecordType>("note");
+  const [recordTitle, setRecordTitle] = useState("");
+  const [recordSummary, setRecordSummary] = useState("");
+  const [recordDetails, setRecordDetails] = useState("");
+  const [recordValue, setRecordValue] = useState("");
+  const [recordFood, setRecordFood] = useState("");
+  const [recordAccepted, setRecordAccepted] = useState("unknown");
+  const [recordVisibility, setRecordVisibility] = useState<RescueVisibility>("staff");
+  const [reminderTitle, setReminderTitle] = useState("");
+  const [reminderDue, setReminderDue] = useState("");
+  const [reminderKind, setReminderKind] = useState("follow-up");
+  const [reminderPriority, setReminderPriority] = useState<RescueReminderPriority>("normal");
+  const [reminderNotes, setReminderNotes] = useState("");
+  const [fosterName, setFosterName] = useState("");
+  const [fosterContact, setFosterContact] = useState("");
+  const [fosterNotes, setFosterNotes] = useState("");
+  const [transferDirection, setTransferDirection] = useState<"incoming" | "outgoing">("outgoing");
+  const [transferParty, setTransferParty] = useState("");
+  const [transferReason, setTransferReason] = useState("");
+  const [transferReference, setTransferReference] = useState("");
+  const [transferNotes, setTransferNotes] = useState("");
+  const [documentTitle, setDocumentTitle] = useState("");
+  const [documentCategory, setDocumentCategory] = useState<RescueDocument["category"]>("other");
+  const [documentNote, setDocumentNote] = useState("");
+  const [editSummary, setEditSummary] = useState("");
+  const [editEnclosure, setEditEnclosure] = useState("");
+  const [editStatus, setEditStatus] = useState<RescueAnimalStatus>("in_care");
+
+  const load = useCallback(async () => {
+    if (!animalId) return;
+    const current = await getRescueAnimal(animalId);
+    setAnimal(current);
+    if (current) {
+      setOrganisation(await getRescueOrganisation(current.organisationId));
+      setEditSummary(current.publicSummary || "");
+      setEditEnclosure(current.enclosure || "");
+      setEditStatus(current.status);
+    }
+  }, [animalId]);
+
+  useEffect(() => { void load().catch((error) => setMessage(error instanceof Error ? error.message : "Could not load this animal record.")); }, [load]);
+
+  const access = getRescueAccess(organisation, user?.uid);
+  const profile = useMemo(() => animal ? calculateIndividualProfile(animal) : null, [animal]);
+  const isEditor = access.canEdit && Boolean(user);
+
+  async function withBusy(action: () => Promise<void>, success: string) {
+    setBusy(true); setMessage("");
+    try { await action(); await load(); setMessage(success); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "The record could not be saved."); }
+    finally { setBusy(false); }
+  }
+
+  async function saveCareRecord() {
+    if (!animal || !user || !isEditor) return;
+    const occurredAt = new Date().toISOString();
+    await withBusy(async () => { await appendRescueCareRecord(animal.id, { type: recordType, occurredAt, title: recordTitle.trim() || RECORD_LABELS[recordType], summary: recordSummary.trim(), details: recordDetails.trim(), recordedByUid: user.uid, visibility: recordVisibility, value: recordValue.trim() ? Number(recordValue) : null, unit: recordType === "weight" ? "g" : undefined, foodType: recordFood.trim() || undefined, accepted: recordType === "feeding" ? (recordAccepted === "unknown" ? null : recordAccepted === "accepted") : undefined }); setRecordTitle(""); setRecordSummary(""); setRecordDetails(""); setRecordValue(""); setRecordFood(""); setRecordAccepted("unknown"); }, "Care record added to the animal timeline.");
+  }
+
+  async function saveReminder() {
+    if (!animal || !user || !isEditor || !reminderTitle.trim() || !reminderDue) return;
+    await withBusy(async () => { await addRescueReminder(animal.id, { title: reminderTitle.trim(), dueAt: new Date(reminderDue).toISOString(), kind: reminderKind.trim() || "follow-up", priority: reminderPriority, completed: false, notes: reminderNotes.trim(), createdByUid: user.uid }); setReminderTitle(""); setReminderDue(""); setReminderNotes(""); }, "Reminder added.");
+  }
+
+  async function toggleReminder(item: RescueReminder) {
+    if (!animal || !isEditor) return;
+    await withBusy(async () => { await setRescueReminderComplete(animal.id, item.id, !item.completed); }, item.completed ? "Reminder reopened." : "Reminder completed.");
+  }
+
+  async function saveFoster() {
+    if (!animal || !user || !isEditor || !fosterName.trim()) return;
+    await withBusy(async () => { await addRescueFosterPlacement(animal.id, { id: undefined as never, startedAt: new Date().toISOString(), fosterName: fosterName.trim(), contact: fosterContact.trim(), notes: fosterNotes.trim(), status: "active", recordedByUid: user.uid, visibility: "staff" }); setFosterName(""); setFosterContact(""); setFosterNotes(""); }, "Foster placement recorded.");
+  }
+
+  async function saveTransfer() {
+    if (!animal || !user || !isEditor || !transferParty.trim()) return;
+    await withBusy(async () => { await addRescueTransfer(animal.id, { id: undefined as never, occurredAt: new Date().toISOString(), direction: transferDirection, organisationOrPerson: transferParty.trim(), reason: transferReason.trim(), reference: transferReference.trim(), notes: transferNotes.trim(), recordedByUid: user.uid, visibility: "staff" }); await updateRescueAnimal(animal.id, { status: transferDirection === "outgoing" ? "transferred" : "in_care" }); setTransferParty(""); setTransferReason(""); setTransferReference(""); setTransferNotes(""); }, "Transfer recorded and animal status updated.");
+  }
+
+  async function saveDocument() {
+    if (!animal || !user || !isEditor || !documentTitle.trim()) return;
+    await withBusy(async () => { await addRescueDocument(animal.id, { id: undefined as never, title: documentTitle.trim(), category: documentCategory, note: documentNote.trim(), addedAt: new Date().toISOString(), addedByUid: user.uid, visibility: documentCategory === "medical" ? "medical" : "staff" }); setDocumentTitle(""); setDocumentNote(""); }, "Document entry added.");
+  }
+
+  async function saveAnimalCore() {
+    if (!animal || !isEditor) return;
+    await withBusy(async () => { await updateRescueAnimal(animal.id, { publicSummary: editSummary.trim(), enclosure: editEnclosure.trim(), status: editStatus }); }, "Animal core updated.");
+  }
+
+  if (!animal) return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page"><section className="rescue-card"><p role="status">Loading animal workspace…</p></section></main></PaidTierGate>;
+  if (!access.isMember) return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page"><section className="rescue-card"><h1>Authorisation required</h1><p>This animal record belongs to a Rescue workspace you do not currently have access to.</p><button type="button" onClick={() => navigate("/rescue")}>Back to Rescue Centre</button></section></main></PaidTierGate>;
+
+  return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page rescue-enhanced-page">
+    <header className="rescue-enhanced-hero animal-hero">
+      <div><Link to="/rescue/animals" className="rescue-back-link">← Animal register</Link><span className="rescue-eyebrow">INDIVIDUAL ANIMAL WORKSPACE</span><h1>🐍 {animal.name}</h1><p>{animal.speciesCommonName} · {animal.scientificName || "Scientific name pending"} · {animal.sex || "Sex unknown"}</p></div>
+      <div className="animal-hero-actions"><span className={`rescue-status-chip status-${animal.status}`}>{STATUS_LABELS[animal.status]}</span><Link className="rescue-enhanced-button secondary" to={`/rescue/animals/${animal.id}/qr`}>QR label</Link></div>
+    </header>
+
+    <section className="rescue-animal-summary-grid">
+      <article><span>Role</span><strong>{roleLabel(access.role)}</strong><small>Current Rescue permissions</small></article>
+      <article><span>Enclosure</span><strong>{animal.enclosure || "Not recorded"}</strong><small>Update after room moves</small></article>
+      <article><span>Intake</span><strong>{formatDate(animal.intakeDate)}</strong><small>Original Rescue intake date</small></article>
+      <article><span>Data profile</span><strong>{profile?.confidence || "Insufficient"}</strong><small>Based on individual observations</small></article>
+      <article><span>Latest weight</span><strong>{profile?.lastWeight !== null && profile?.lastWeight !== undefined ? `${profile.lastWeight} g` : "Not recorded"}</strong><small>{profile?.weightChange !== null && profile?.weightChange !== undefined ? `${profile.weightChange >= 0 ? "+" : ""}${profile.weightChange} g since first recorded weight` : "Build a baseline"}</small></article>
+      <article data-alert={(profile?.upcomingReminders.length || 0) > 0}><span>Open tasks</span><strong>{profile?.upcomingReminders.length || 0}</strong><small>Reminders attached to this animal</small></article>
+    </section>
+
+    <nav className="rescue-tabbar" aria-label="Animal workspace sections">{(["overview", "care", "tasks", "foster", "transfer", "documents", "adoption"] as const).map((item) => <button key={item} type="button" className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item === "overview" ? "Overview" : item === "care" ? "Care & records" : item === "tasks" ? "Reminders" : item === "foster" ? "Foster" : item === "transfer" ? "Transfers" : item === "documents" ? "Documents" : "Adoption"}</button>)}</nav>
+
+    {message && <div className="rescue-message" role="status">{message}</div>}
+
+    {tab === "overview" && <div className="rescue-workspace-layout">
+      <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">INDIVIDUAL PROFILE</span><h2>What TinyTitans knows about {animal.name}</h2></div><span>{profile?.confidence || "Insufficient"} confidence</span></div>
+        <div className="rescue-insight-grid"><article><span>🍽️ Feeding pattern</span><strong>{profile?.feedRate === null || profile?.feedRate === undefined ? "No baseline yet" : `${profile.feedRate}% accepted`}</strong><small>{profile?.averageFeedDays ? `Observed average interval: ${profile.averageFeedDays} days` : `${profile?.feeds.length || 0} feeding records`}</small></article><article><span>⚖️ Weight trend</span><strong>{profile?.weightChange === null || profile?.weightChange === undefined ? "Need 2+ weights" : `${profile.weightChange >= 0 ? "+" : ""}${profile.weightChange} g`}</strong><small>Descriptive trend from recorded weights, not a diagnosis.</small></article><article><span>🐍 Shedding</span><strong>{profile?.averageShedDays ? `${profile.averageShedDays} days` : "Building baseline"}</strong><small>{profile?.sheds.length || 0} shed records</small></article><article><span>👀 Behaviour</span><strong>{profile?.behaviour.length ? `${profile.behaviour.length} observations` : "No observations"}</strong><small>Observed behaviour stays separate from medical interpretation.</small></article></div>
+        <div className="rescue-profile-note"><strong>How the individual profile works:</strong><span>Insights are calculated from this animal's own recorded history. TinyTitans does not invent missing background information, and confidence increases as more quality observations accumulate.</span></div>
+      </section>
+      <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">ANIMAL CORE</span><h2>Identity & status</h2></div></div><div className="rescue-form-grid"><label>Enclosure / location<input value={editEnclosure} onChange={(e) => setEditEnclosure(e.target.value)} disabled={!isEditor}/></label><label>Status<select value={editStatus} onChange={(e) => setEditStatus(e.target.value as RescueAnimalStatus)} disabled={!isEditor}>{Object.entries(STATUS_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label className="rescue-span-2">Public-safe summary<textarea value={editSummary} onChange={(e) => setEditSummary(e.target.value)} disabled={!isEditor} placeholder="Safe information suitable for the public adoption profile"/></label></div>{isEditor && <button type="button" onClick={() => void saveAnimalCore()} disabled={busy}>{busy ? "Saving…" : "Save animal core"}</button>}</section>
+      <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">RECENT HISTORY</span><h2>Living timeline</h2></div><Link to={`/rescue/animals/${animal.id}`}>Public preview →</Link></div><div className="rescue-timeline-enhanced">{animal.timeline.slice(0, 10).map((event) => <article key={event.id}><span>{event.type}</span><div><strong>{event.title}</strong><small>{formatDate(event.occurredAt, true)} · {VISIBILITY_LABELS[event.visibility]}</small><p>{event.summary || "No summary supplied."}</p></div></article>)}</div></section>
+    </div>}
+
+    {tab === "care" && <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">LONGITUDINAL CARE</span><h2>Feeding, weight, shedding, health, behaviour & husbandry</h2></div><span>{animal.careRecords?.length || 0} records</span></div>{isEditor && <div className="rescue-workspace-form"><div className="rescue-form-grid"><label>Record type<select value={recordType} onChange={(e) => setRecordType(e.target.value as RescueCareRecordType)}>{Object.entries(RECORD_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>Visibility<select value={recordVisibility} onChange={(e) => setRecordVisibility(e.target.value as RescueVisibility)}>{Object.entries(VISIBILITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>Title<input value={recordTitle} onChange={(e) => setRecordTitle(e.target.value)} placeholder={`${RECORD_LABELS[recordType]} record`} /></label><label>Value {recordType === "weight" ? "(g)" : "(optional)"}<input type="number" step="0.1" value={recordValue} onChange={(e) => setRecordValue(e.target.value)} placeholder={recordType === "weight" ? "e.g. 86.5" : ""} /></label>{recordType === "feeding" && <><label>Food type<input value={recordFood} onChange={(e) => setRecordFood(e.target.value)} placeholder="Mouse, rat, insect, prepared diet…" /></label><label>Feeding response<select value={recordAccepted} onChange={(e) => setRecordAccepted(e.target.value)}><option value="unknown">Unknown / not logged</option><option value="accepted">Accepted</option><option value="refused">Refused</option></select></label></>}<label className="rescue-span-2">Summary<textarea value={recordSummary} onChange={(e) => setRecordSummary(e.target.value)} /></label><label className="rescue-span-2">Details / context<textarea value={recordDetails} onChange={(e) => setRecordDetails(e.target.value)} /></label></div><button type="button" onClick={() => void saveCareRecord()} disabled={busy}>{busy ? "Saving…" : "Add care record"}</button></div>}
+      <div className="rescue-record-list">{(animal.careRecords || []).map((record) => <article key={record.id}><header><strong>{record.title}</strong><span>{RECORD_LABELS[record.type]}</span></header><small>{formatDate(record.occurredAt, true)} · {VISIBILITY_LABELS[record.visibility]}</small><p>{record.summary || "No summary supplied."}</p>{record.value !== null && record.value !== undefined && <b>{record.value} {record.unit || ""}</b>}{record.foodType && <span> · {record.foodType}{record.accepted === true ? " · Accepted" : record.accepted === false ? " · Refused" : ""}</span>}<details><summary>View details</summary><p>{record.details || "No additional context."}</p></details></article>)}{!(animal.careRecords || []).length && <div className="rescue-empty"><strong>No individual care records yet</strong><span>Start with a feed, weight, shed, health, behaviour or husbandry entry.</span></div>}</div></section>}
+
+    {tab === "tasks" && <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">FOLLOW-UP</span><h2>Reminders & next actions</h2></div><span>{animal.reminders?.filter((item) => !item.completed).length || 0} open</span></div>{isEditor && <div className="rescue-workspace-form"><div className="rescue-form-grid"><label>Task title<input value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)} placeholder="e.g. Re-weigh after feeding trial" /></label><label>Due date & time<input type="datetime-local" value={reminderDue} onChange={(e) => setReminderDue(e.target.value)} /></label><label>Kind<input value={reminderKind} onChange={(e) => setReminderKind(e.target.value)} placeholder="vet, medication, weigh, foster review…" /></label><label>Priority<select value={reminderPriority} onChange={(e) => setReminderPriority(e.target.value as RescueReminderPriority)}><option>low</option><option>normal</option><option>high</option><option>urgent</option></select></label><label className="rescue-span-2">Notes<textarea value={reminderNotes} onChange={(e) => setReminderNotes(e.target.value)} /></label></div><button type="button" onClick={() => void saveReminder()} disabled={busy || !reminderTitle.trim() || !reminderDue}>{busy ? "Saving…" : "Add reminder"}</button></div>}
+      <div className="rescue-reminder-list">{(animal.reminders || []).sort((a, b) => a.dueAt.localeCompare(b.dueAt)).map((item) => <article className={item.completed ? "completed" : new Date(item.dueAt).getTime() < Date.now() ? "overdue" : ""} key={item.id}><div><strong>{item.title}</strong><small>{item.kind} · {item.priority} · due {formatDate(item.dueAt, true)}</small><p>{item.notes || "No notes"}</p></div>{isEditor && <button type="button" onClick={() => void toggleReminder(item)}>{item.completed ? "Reopen" : "Complete"}</button>}</article>)}{!(animal.reminders || []).length && <div className="rescue-empty"><strong>No reminders yet</strong><span>Attach the next action directly to the animal so follow-up does not live in someone's head.</span></div>}</div></section>}
+
+    {tab === "foster" && <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">FOSTER HANDOVER</span><h2>Placement history</h2></div><span>{animal.fosterPlacements?.length || 0} placements</span></div>{isEditor && <div className="rescue-workspace-form"><div className="rescue-form-grid"><label>Foster name<input value={fosterName} onChange={(e) => setFosterName(e.target.value)} /></label><label>Contact<input value={fosterContact} onChange={(e) => setFosterContact(e.target.value)} placeholder="Phone / email" /></label><label className="rescue-span-2">Handover notes<textarea value={fosterNotes} onChange={(e) => setFosterNotes(e.target.value)} placeholder="Care instructions, concerns, current routine…"/></label></div><button type="button" onClick={() => void saveFoster()} disabled={busy || !fosterName.trim()}>{busy ? "Saving…" : "Start foster placement"}</button></div>}<div className="rescue-record-list">{(animal.fosterPlacements || []).map((placement) => <article key={placement.id}><header><strong>{placement.fosterName}</strong><span>{placement.status}</span></header><small>{formatDate(placement.startedAt, true)}{placement.endedAt ? ` → ${formatDate(placement.endedAt, true)}` : ""}</small><p>{placement.contact || "No contact recorded"}</p><p>{placement.notes || "No handover notes."}</p></article>)}{!(animal.fosterPlacements || []).length && <div className="rescue-empty"><strong>No foster placements recorded</strong><span>Start a placement here when an animal leaves the centre for foster care.</span></div>}</div></section>}
+
+    {tab === "transfer" && <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">MOVEMENT & PROVENANCE</span><h2>Transfers in and out</h2></div><span>{animal.transfers?.length || 0} transfers</span></div>{isEditor && <div className="rescue-workspace-form"><div className="rescue-form-grid"><label>Direction<select value={transferDirection} onChange={(e) => setTransferDirection(e.target.value as "incoming" | "outgoing")}><option value="incoming">Incoming</option><option value="outgoing">Outgoing</option></select></label><label>Organisation / person<input value={transferParty} onChange={(e) => setTransferParty(e.target.value)} /></label><label>Reason<input value={transferReason} onChange={(e) => setTransferReason(e.target.value)} placeholder="Rehome, transfer, surrender, intake…" /></label><label>Reference<input value={transferReference} onChange={(e) => setTransferReference(e.target.value)} placeholder="Internal / external reference" /></label><label className="rescue-span-2">Notes<textarea value={transferNotes} onChange={(e) => setTransferNotes(e.target.value)} /></label></div><button type="button" onClick={() => void saveTransfer()} disabled={busy || !transferParty.trim()}>{busy ? "Saving…" : "Record transfer"}</button></div>}<div className="rescue-record-list">{(animal.transfers || []).map((item) => <article key={item.id}><header><strong>{item.direction === "incoming" ? "Incoming" : "Outgoing"} · {item.organisationOrPerson}</strong><span>{formatDate(item.occurredAt)}</span></header><p>{item.reason || "No reason recorded."}</p>{item.reference && <small>Reference: {item.reference}</small>}{item.notes && <p>{item.notes}</p>}</article>)}{!(animal.transfers || []).length && <div className="rescue-empty"><strong>No transfers recorded</strong><span>Keep movement history with the animal instead of relying on separate paperwork alone.</span></div>}</div></section>}
+
+    {tab === "documents" && <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">EVIDENCE & DOCUMENTS</span><h2>Document register</h2></div><span>{animal.documents?.length || 0} entries</span></div><p className="rescue-form-hint">This pilot stores document metadata and notes against the animal. A later storage layer can attach the actual files without changing the animal history model.</p>{isEditor && <div className="rescue-workspace-form"><div className="rescue-form-grid"><label>Document title<input value={documentTitle} onChange={(e) => setDocumentTitle(e.target.value)} /></label><label>Category<select value={documentCategory} onChange={(e) => setDocumentCategory(e.target.value as RescueDocument["category"])}><option value="medical">Medical</option><option value="intake">Intake</option><option value="transfer">Transfer</option><option value="adoption">Adoption</option><option value="other">Other</option></select></label><label className="rescue-span-2">Reference / note<textarea value={documentNote} onChange={(e) => setDocumentNote(e.target.value)} placeholder="Where the original is stored, what it proves, expiry date, reference number…" /></label></div><button type="button" onClick={() => void saveDocument()} disabled={busy || !documentTitle.trim()}>{busy ? "Saving…" : "Add document entry"}</button></div>}<div className="rescue-record-list">{(animal.documents || []).map((item) => <article key={item.id}><header><strong>{item.title}</strong><span>{item.category} · {VISIBILITY_LABELS[item.visibility]}</span></header><small>Added {formatDate(item.addedAt, true)}</small><p>{item.note || "No note supplied."}</p></article>)}{!(animal.documents || []).length && <div className="rescue-empty"><strong>No document entries yet</strong><span>Use this register for medical paperwork, intake evidence, transfer references and adoption records.</span></div>}</div></section>}
+
+    {tab === "adoption" && <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">PUBLIC / PRIVATE BOUNDARY</span><h2>Adoption profile</h2></div><span>{animal.publicPreview ? "Public preview ON" : "Private"}</span></div><div className="rescue-adoption-preview"><div><span className="rescue-eyebrow">PUBLIC-SAFE VIEW</span><h2>{animal.name}</h2><p>{animal.speciesCommonName} · {animal.sex || "Sex unknown"}</p><span className="rescue-status-chip">{STATUS_LABELS[animal.status]}</span><p>{animal.publicSummary || "No public summary has been prepared yet."}</p></div><div className="rescue-privacy-box"><strong>Never expose from this profile</strong><span>Private notes, medical records, foster contact details, enclosure location, internal staff information and other operational data remain inside the Rescue workspace.</span></div></div><div className="rescue-form-actions"><label className="rescue-check"><input type="checkbox" checked={animal.publicPreview} onChange={(e) => void withBusy(async () => { await updateRescueAnimal(animal.id, { publicPreview: e.target.checked }); }, e.target.checked ? "Public adoption preview enabled." : "Public adoption preview disabled.")} disabled={!isEditor || busy}/> Publish public-safe animal preview</label><Link className="rescue-enhanced-button secondary" to={`/rescue/animals/${animal.id}`}>Open public preview</Link></div></section>}
+
+    <section className="rescue-audit-strip"><span>Last updated {formatDate(animal.updatedAt, true)}</span><span>{animal.timeline.length} timeline events</span><span>Recorded by authorised Rescue users</span></section>
+  </main></PaidTierGate>;
+}
