@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useAuth } from "../context/useAuth";
@@ -13,7 +13,7 @@ function normaliseLocation(value: string) { return value.trim().toLowerCase(); }
 export default function RescueDirectory() {
   const { user } = useAuth();
   const [query, setQuery] = useState(""); const [rescues, setRescues] = useState<RescueDirectoryEntry[]>([]); const [loading, setLoading] = useState(true); const [message, setMessage] = useState(""); const [effectiveTier, setEffectiveTier] = useState("free"); const [myRescueId, setMyRescueId] = useState<string | null>(null);
-  async function refresh(nextQuery = query) { setLoading(true); setMessage(""); try { setRescues(await listRescueDirectory(nextQuery)); } catch (error) { setMessage(error instanceof Error ? error.message : "The Rescue directory could not be loaded."); } finally { setLoading(false); } }
+  const refresh = useCallback(async (nextQuery = "") => { setLoading(true); setMessage(""); try { setRescues(await listRescueDirectory(nextQuery)); } catch (error) { setMessage(error instanceof Error ? error.message : "The Rescue directory could not be loaded."); } finally { setLoading(false); } }
   useEffect(() => { if (!user) return; void Promise.all([getPaidAccess(user.uid).catch(() => null), getMyRescueWorkspace().catch(() => ({ organisation: null }))]).then(([access, workspace]) => { setEffectiveTier(access?.effectiveTier || "free"); setMyRescueId(workspace.organisation?.id || null); }); void refresh(""); }, [user]);
   const locationHint = normaliseLocation(query); const visibleRescues = locationHint ? rescues.filter((rescue) => normaliseLocation(`${rescue.locationLabel} ${rescue.postcode} ${rescue.region} ${rescue.country}`).includes(locationHint)) : rescues; const hasRescueWorkspace = myRescueId !== null || effectiveTier === "rescue";
   return <main className="rescue-page"><header className="rescue-subhead"><div><span className="rescue-eyebrow">RESCUE DIRECTORY</span><h1><TinyTitansIcon name="health" size={35}/> Find a Rescue</h1><p>Search Rescue organisations by town, region or postcode and open the public information they have chosen to share.</p></div>{hasRescueWorkspace && <div className="rescue-form-actions"><Link className="rescue-primary-link" to="/rescue?manage=1">Manage my Rescue →</Link>{myRescueId && <Link className="rescue-primary-link" to="/rescue?manage=directory">Edit my listing</Link>}</div>}</header>
