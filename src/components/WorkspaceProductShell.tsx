@@ -1,27 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
-import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
-import { workspaceProductForTier, type WorkspaceProduct } from "../config/workspaceProducts";
+import { WorkspaceProduct, workspaceProductForTier } from "../config/workspaceProducts";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import WorkspaceDashboard from "./WorkspaceDashboard";
+import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
 import "../styles/workspaceProductShell.css";
-
-function rescueActive(workspace: { organisation: { accountStatus?: string; pilotStatus?: string; pilotEndsAt?: string } | null }) {
-  const org = workspace.organisation;
-  if (!org) return false;
-  if (org.accountStatus === "paid_active") return true;
-  if (org.pilotStatus !== "pilot_active") return false;
-  const expiry = org.pilotEndsAt ? new Date(org.pilotEndsAt).getTime() : 0;
-  return Number.isFinite(expiry) && expiry > Date.now();
-}
-
-function resolveProduct(access: PaidAccess | null, rescueWorkspace: boolean): WorkspaceProduct {
-  if (rescueWorkspace) return workspaceProductForTier("rescue");
-  return workspaceProductForTier(access?.effectiveTier ?? "free");
-}
 
 const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; heading: string; description: string; actions: Array<{ title: string; path: string }> }> = {
   titan_pro: { label: "TITAN PRO COMMAND", heading: "A deeper keeper workspace", description: "Your records stay central. Pro brings the intelligence, analysis and advanced keeper workflows around them.", actions: [{ title: "My Animals", path: "/snakes" }, { title: "Intelligence", path: "/titan-intelligence" }, { title: "Records", path: "/weights" }, { title: "Breeding", path: "/breeding" }] },
@@ -35,32 +20,18 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
 export default function WorkspaceProductShell({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
-  const [access, setAccess] = useState<PaidAccess | null>(null);
-  const [rescueWorkspace, setRescueWorkspace] = useState(false);
+  const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
 
-  useEffect(() => {
-    let active = true;
-    if (!user) {
-      setAccess(null);
-      setRescueWorkspace(false);
-      return () => { active = false; };
-    }
-    void Promise.all([
-      getPaidAccess(user.uid).catch(() => null),
-      getMyRescueWorkspace().catch(() => ({ organisation: null, role: null })),
-    ]).then(([nextAccess, workspace]) => {
-      if (!active) return;
-      setAccess(nextAccess);
-      setRescueWorkspace(rescueActive(workspace));
-    });
-    return () => { active = false; };
-  }, [user]);
+  useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
 
-  const product = useMemo(() => resolveProduct(access, rescueWorkspace), [access, rescueWorkspace]);
-  const tier: PaidTierId = product.tierId;
+  const product = workspace.product;
+  const tier = product.tierId;
   const tierDefinition = getPaidTierDefinition(tier);
-  const rescue = product.id === "rescue" && location.pathname.startsWith("/rescue");
+  const rescue = product.id === "rescue" && (location.pathname === "/rescue" || location.pathname.startsWith("/rescue/"));
   const commandCopy = product.id === "personal" ? null : tierCommandCopy[product.id];
+  const showNormalChrome = product.id === "personal";
+  const visibleNav = useMemo(() => product.nav.filter((item) => !item.path.startsWith("/creator/") && !item.path.startsWith("/creator")), [product.nav]);
+  const shellClass = `workspace-product-shell workspace-product-shell--${product.id}${rescue ? " workspace-product-shell--rescue" : ""}${showNormalChrome ? " workspace-product-shell--personal" : ""}`;
 
   useEffect(() => {
     document.documentElement.dataset.ttTier = tier;
@@ -75,9 +46,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
     };
   }, [product.id, tier, tierDefinition.accent]);
 
-  const visibleNav = product.nav.filter((item) => !item.path.startsWith("/creator/") && !item.path.startsWith("/creator"));
-
-  return <div className={`workspace-product-shell workspace-product-shell--${product.id}${rescue ? " workspace-product-shell--rescue" : ""}`} data-workspace={product.id} data-tier={tier}>
+  return <div className={shellClass} data-workspace={product.id} data-tier={tier}>
     <header className="workspace-product-header">
       <div className="workspace-product-brand">
         <span className="workspace-product-icon" aria-hidden="true">{product.icon}</span>
@@ -90,9 +59,9 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
       <div className="workspace-product-tools"><WorkspaceSwitcher /></div>
       <div className="workspace-product-status">
         <span className="workspace-product-tier">{tierDefinition.shortLabel}</span>
-        {access?.source === "tester" && <span className="workspace-product-live workspace-product-live--test">CREATOR TEST</span>}
-        {access?.source === "trial" && <span className="workspace-product-live">TRIAL</span>}
-        {rescueWorkspace && <span className="workspace-product-live">● WORKSPACE ACTIVE</span>}
+        {workspace.access?.source === "tester" && <span className="workspace-product-live workspace-product-live--test">CREATOR TEST</span>}
+        {workspace.access?.source === "trial" && <span className="workspace-product-live">TRIAL</span>}
+        {workspace.rescueWorkspace && <span className="workspace-product-live">● WORKSPACE ACTIVE</span>}
       </div>
     </header>
 
