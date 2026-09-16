@@ -59,7 +59,14 @@ async function sync(uid: string | null) {
   const rescueAvailable = rescueIsActive(workspace);
   const mode = isRescuePath() && rescueAvailable ? "work" : getStoredMode(uid);
   const rescue = rescueAvailable && mode === "work" && isRescuePath();
-  const productId: WorkspaceProductId = mode === "personal" || (access.effectiveTier === "free" && !rescue) ? "personal" : rescue ? "rescue" : access.effectiveTier;
+
+  let productId: WorkspaceProductId = "personal";
+  if (rescue) {
+    productId = "rescue";
+  } else if (mode === "work" && access.effectiveTier !== "free" && access.effectiveTier !== "personal") {
+    productId = access.effectiveTier;
+  }
+
   const product = getWorkspaceProduct(productId);
   current = { productId, product, permissions: product.permissions, access, rescueWorkspace: rescue };
   publish();
