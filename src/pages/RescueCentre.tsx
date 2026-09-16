@@ -55,9 +55,9 @@ export default function RescueCentre() {
       await createRescueOrganisation(user.uid, name.trim() || "My Rescue Centre");
       await refresh(user.uid);
       setName("");
-      setMessage("Rescue workspace created. Your command centre is ready.");
+      setMessage("Organisation created. Your Rescue command centre is ready.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not create the Rescue workspace.");
+      setMessage(error instanceof Error ? error.message : "Could not create the Rescue organisation.");
     } finally {
       setBusy(false);
     }
@@ -90,7 +90,7 @@ export default function RescueCentre() {
 
   return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page">
     <header className="rescue-subhead"><div><span className="rescue-eyebrow">RESCUE WORKSPACE</span><h1><TinyTitansIcon name="reptile" size={35}/> {org?.name || "Rescue Centre"}</h1><p>One organisation workspace for every species, every animal identity and the operational record around it.</p></div></header>
-    {!org ? <section className="rescue-card rescue-onboarding-card"><span className="rescue-eyebrow">FIRST-RUN SETUP</span><h2>Set up your Rescue workspace</h2><p>This account has Rescue access but no organisation workspace yet. Create it once and your staff, animals, QR identities, records and reports will all belong to that organisation.</p><label>Rescue centre name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Happy Hogs Rescue" /></label><button type="button" onClick={() => void createWorkspace()} disabled={busy}>{busy ? "Creating…" : "Create Rescue workspace"}</button>{message && <div className="rescue-message" role="status">{message}</div>}</section> : <>
+    {!org ? <section className="rescue-card rescue-onboarding-card"><span className="rescue-eyebrow">ORGANISATION SETUP</span><h2>Set up your Rescue organisation</h2><p>This setup appears automatically the first time a Rescue-enabled account reaches the Rescue Centre. Create the organisation once and your staff, animals, QR identities, records and reports will all belong to it.</p><label>Rescue organisation name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Happy Hogs Rescue" autoFocus /></label><button type="button" onClick={() => void createWorkspace()} disabled={busy}>{busy ? "Creating…" : "Create Rescue organisation"}</button>{message && <div className="rescue-message" role="status">{message}</div>}</section> : <>
       <section className="rescue-card"><div className="rescue-detail-grid"><div><small>Organisation</small><strong>{org.name}</strong></div><div><small>Your role</small><strong>{access.role || "Unknown"}</strong></div><div><small>Workspace status</small><strong>{org.accountStatus?.replaceAll("_", " ") || "Unknown"}</strong></div><div><small>Pilot end</small><strong>{formatDate(org.pilotEndsAt)}</strong></div></div></section>
       <section className="rescue-grid"><Link className="rescue-card rescue-nav-card" to="/rescue/animals"><span className="rescue-eyebrow">ANIMAL REGISTER</span><h2>Animal Register</h2><p>Intake, search and open passports for any species, including unknown or pending identification.</p><span>Open register →</span></Link><Link className="rescue-card rescue-nav-card" to="/rescue/animals?intake=1"><span className="rescue-eyebrow">NEW INTAKE</span><h2>New Intake</h2><p>Create the animal record without an extra navigation step.</p><span>Start intake →</span></Link><Link className="rescue-card rescue-nav-card" to="/rescue/qr"><span className="rescue-eyebrow">QR IDENTITY</span><h2>Scan / Create QR</h2><p>Generate printable QR labels and resolve existing labels.</p><span>Open QR centre →</span></Link><Link className="rescue-card rescue-nav-card" to="/rescue/team"><span className="rescue-eyebrow">ACCESS CONTROL</span><h2>Team &amp; Permissions</h2><p>Manage organisational staff access and roles.</p><span>Open team →</span></Link></section>
       {message && <div className="rescue-message" role="status">{message}</div>}
