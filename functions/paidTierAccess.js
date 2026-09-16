@@ -48,3 +48,4 @@ Object.assign(exports, require("./paidMarketplace"));
 Object.assign(exports, require("./paidSupport"));
 Object.assign(exports, require("./creatorPaidTier"));
 Object.assign(exports, require("./paidTrialLifecycle"));
+Object.assign(exports, require("./rescueDirectory"));
