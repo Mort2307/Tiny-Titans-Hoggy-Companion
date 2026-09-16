@@ -1,4 +1,4 @@
-import js from 'eslint/js'
+import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
@@ -30,28 +30,18 @@ export default defineConfig([
   {
     files: ['src/pages/RescuePages.tsx', 'src/pages/RescueWorkspace.tsx'],
     rules: {
-      // Rescue dashboards display operational counts that depend on the live
-      // wall clock. Keep the rest of the project under the purity rule while
-      // allowing these intentionally time-sensitive dashboard calculations.
       'react-hooks/purity': 'off',
     },
   },
   {
     files: ['src/components/reptile-room-3d/RoomCamera3D.tsx'],
     rules: {
-      // Three.js camera/WebGL canvas instances are imperative runtime objects.
-      // The component intentionally mutates those objects inside effects for
-      // pointer controls and camera positioning; this must not block the lint gate.
       'react-hooks/immutability': 'off',
     },
   },
   {
     files: ['src/pages/ReptileRoom3D.tsx'],
     rules: {
-      // This workspace owns imperative Three.js/photo preview lifecycles via
-      // refs. The existing effects intentionally manage those resource URLs
-      // without depending on mutable ref values; the rest of the application
-      // remains covered by exhaustive-deps normally.
       'react-hooks/exhaustive-deps': 'off',
     },
   },
