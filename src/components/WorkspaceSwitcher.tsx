@@ -4,8 +4,17 @@ import { useAuth } from "../context/useAuth";
 import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getActiveWorkspaceMode, setActiveWorkspaceMode, type WorkspacePresentation, getWorkspacePresentation, subscribeToWorkspacePresentation } from "../services/workspacePresentationService";
+import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
+
+function workspaceIcon(productId: WorkspacePresentation["product"]["id"]): TinyTitansIconName {
+  if (productId === "personal") return "reptile";
+  if (productId === "rescue") return "health";
+  if (productId === "titan_seller") return "marketplace";
+  if (productId.startsWith("business_")) return "community";
+  return "titan";
+}
 
 export default function WorkspaceSwitcher() {
   const { user } = useAuth();
@@ -53,15 +62,15 @@ export default function WorkspaceSwitcher() {
   return (
     <div className="workspace-switcher">
       <button type="button" className="workspace-switcher__button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="menu">
-        <span aria-hidden="true">{workspace.product.icon}</span>
+        <TinyTitansIcon name={workspaceIcon(workspace.product.id)} size={21} aria-hidden="true" />
         <span><strong>{currentLabel}</strong><small>{currentMode === "personal" ? "Personal mode" : "Work mode"}</small></span>
         <span aria-hidden="true">⌄</span>
       </button>
       {open && <div className="workspace-switcher__menu" role="menu">
-        <button type="button" role="menuitem" onClick={() => switchMode("personal", "/")}><span>🐍</span><span><strong>Personal Reptile Companion</strong><small>Your private keeper workspace</small></span></button>
-        {workAvailable && <button type="button" role="menuitem" onClick={() => switchMode("work", workPath)}><span>{hasRescue ? "🚑" : workspace.product.icon}</span><span><strong>{hasRescue ? "Rescue Workspace" : workspace.product.name}</strong><small>Purpose-built work mode</small></span></button>}
-        {isOwner && <Link role="menuitem" to="/creator" onClick={() => { setActiveWorkspaceMode(uid, "personal"); setOpen(false); }}><span>🧠</span><span><strong>Creator Centre</strong><small>Owner control &amp; intelligence</small></span></Link>}
-        <Link role="menuitem" to="/account" onClick={() => setOpen(false)}><span>⚙️</span><span><strong>Account</strong><small>Personal account settings</small></span></Link>
+        <button type="button" role="menuitem" onClick={() => switchMode("personal", "/")}><TinyTitansIcon name="reptile" size={20} aria-hidden="true" /><span><strong>Personal Reptile Companion</strong><small>Your private keeper workspace</small></span></button>
+        {workAvailable && <button type="button" role="menuitem" onClick={() => switchMode("work", workPath)}><TinyTitansIcon name={hasRescue ? "health" : workspaceIcon(workspace.product.id)} size={20} aria-hidden="true" /><span><strong>{hasRescue ? "Rescue Workspace" : workspace.product.name}</strong><small>Purpose-built work mode</small></span></button>}
+        {isOwner && <Link role="menuitem" to="/creator" onClick={() => { setActiveWorkspaceMode(uid, "personal"); setOpen(false); }}><TinyTitansIcon name="creator" size={20} aria-hidden="true" /><span><strong>Creator Centre</strong><small>Owner control &amp; intelligence</small></span></Link>}
+        <Link role="menuitem" to="/account" onClick={() => setOpen(false)}><TinyTitansIcon name="account" size={20} aria-hidden="true" /><span><strong>Account</strong><small>Personal account settings</small></span></Link>
       </div>}
     </div>
   );
