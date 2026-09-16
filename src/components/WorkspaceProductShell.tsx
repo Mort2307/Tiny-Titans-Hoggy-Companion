@@ -5,6 +5,7 @@ import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { workspaceProductForTier, type WorkspaceProduct } from "../config/workspaceProducts";
+import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import "../styles/workspaceProductShell.css";
 
 function rescueActive(workspace: { organisation: { accountStatus?: string; pilotStatus?: string; pilotEndsAt?: string } | null }) {
@@ -27,7 +28,7 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
   business_starter: { label: "BUSINESS COMMAND", heading: "Operate the business, not just the animals.", description: "Bring animals, breeding, reporting and your public business presence into one workspace.", actions: [{ title: "Animals", path: "/snakes" }, { title: "Marketplace", path: "/marketplace" }, { title: "Breeding", path: "/breeding" }, { title: "Reports", path: "/paid/business-reporting" }] },
   business_plus: { label: "BUSINESS PLUS COMMAND", heading: "A workspace built for shared operations.", description: "Your team, workflows, reporting and customer-facing presence stay connected to the animal records.", actions: [{ title: "Animals", path: "/snakes" }, { title: "Breeding", path: "/breeding" }, { title: "Reports", path: "/paid/business-reporting" }, { title: "Organisation", path: "/account/partner-landing" }] },
   business_advanced: { label: "BUSINESS ADVANCED COMMAND", heading: "The operating layer for a professional reptile business.", description: "Advanced intelligence, business controls and organisation-wide workflows in one environment.", actions: [{ title: "Animals", path: "/snakes" }, { title: "Intelligence", path: "/titan-intelligence" }, { title: "Reports", path: "/paid/business-reporting" }, { title: "API & Tools", path: "/paid" }] },
-  rescue: { label: "RESCUE COMMAND", heading: "Rescue operations around the animals, not the paperwork.", description: "Intake, quarantine, care, medical, movement, adoption and animal identity belong together here.", actions: [{ title: "Animal Register", path: "/rescue/animals" }, { title: "New Intake", path: "/rescue/animals?intake=1" }, { title: "Scan QR", path: "/rescue/scan" }, { title: "Team", path: "/rescue/team" }] },
+  rescue: { label: "RESCUE COMMAND", heading: "Rescue operations around the animals, not the paperwork.", description: "Intake, quarantine, care, medical, movement, adoption and animal identity belong together here.", actions: [{ title: "Animal Register", path: "/rescue/animals" }, { title: "New Intake", path: "/rescue/animals?intake=1" }, { title: "Scan / Create QR", path: "/rescue/qr" }, { title: "Team", path: "/rescue/team" }] },
 };
 
 export default function WorkspaceProductShell({ children }: { children: ReactNode }) {
@@ -85,6 +86,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
           <small>{product.audience}</small>
         </div>
       </div>
+      <div className="workspace-product-tools"><WorkspaceSwitcher /></div>
       <div className="workspace-product-status">
         <span className="workspace-product-tier">{tierDefinition.shortLabel}</span>
         {access?.source === "tester" && <span className="workspace-product-live workspace-product-live--test">CREATOR TEST</span>}
