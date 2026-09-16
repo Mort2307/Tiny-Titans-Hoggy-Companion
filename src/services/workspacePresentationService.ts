@@ -4,20 +4,30 @@ import { getPaidAccess, type PaidAccess } from "./paidTierService";
 import { getMyRescueWorkspace } from "./rescueWorkspaceService";
 import { getWorkspaceProduct, type WorkspaceProduct, type WorkspaceProductId, type WorkspacePermission } from "../config/workspaceProducts";
 
-export type WorkspacePresentation = { productId: WorkspaceProductId; product: WorkspaceProduct; permissions: WorkspacePermission[]; access: PaidAccess | null; rescueWorkspace: boolean };
+export type WorkspaceMode = "personal" | "work";
+export type WorkspacePresentation = { mode: WorkspaceMode; productId: WorkspaceProductId; product: WorkspaceProduct; permissions: WorkspacePermission[]; access: PaidAccess | null; rescueWorkspace: boolean };
 const PATH_EVENT = "tinytitans:workspace-path-changed";
 const WORKSPACE_EVENT = "tinytitans:workspace-changed";
-const MODE_KEY_PREFIX = "tinytitans:active-workspace:";
+const MODE_KEY_PREFIX = "tinytitans:active-workspace:v2:";
+const LEGACY_MODE_KEY_PREFIX = "tinytitans:active-workspace:";
 
-type WorkspaceMode = "personal" | "work";
 function modeKey(uid: string) { return `${MODE_KEY_PREFIX}${uid}`; }
+function legacyModeKey(uid: string) { return `${LEGACY_MODE_KEY_PREFIX}${uid}`; }
 function getStoredMode(uid: string): WorkspaceMode {
-  try { return window.localStorage.getItem(modeKey(uid)) === "work" ? "work" : "personal"; } catch { return "personal"; }
+  try {
+    const stored = window.localStorage.getItem(modeKey(uid));
+    if (stored === "work" || stored === "personal") return stored;
+    window.localStorage.removeItem(legacyModeKey(uid));
+  } catch { /* best effort */ }
+  return "personal";
 }
 function storeMode(uid: string, mode: WorkspaceMode) {
-  try { window.localStorage.setItem(modeKey(uid), mode); } catch { /* best effort */ }
+  try {
+    window.localStorage.setItem(modeKey(uid), mode);
+    window.localStorage.removeItem(legacyModeKey(uid));
+  } catch { /* best effort */ }
 }
-let current: WorkspacePresentation = { productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false };
+let current: WorkspacePresentation = { mode: "personal", productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false };
 let started = false;
 
 function rescueIsActive(workspace: { organisation: { accountStatus?: string; pilotStatus?: string; pilotEndsAt?: string } | null }) {
@@ -51,24 +61,31 @@ function publish() {
   document.documentElement.dataset.ttWorkspacePurpose = product.eyebrow;
   document.documentElement.dataset.ttWorkspacePermissions = product.permissions.join(",");
   document.documentElement.dataset.ttWorkspaceRole = current.rescueWorkspace ? "organisation_member" : "account_owner";
+  document.documentElement.dataset.ttWorkspaceMode = current.mode;
   window.dispatchEvent(new CustomEvent(WORKSPACE_EVENT, { detail: current }));
 }
 async function sync(uid: string | null) {
-  if (!uid) { current = { productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false }; publish(); return; }
+  if (!uid) {
+    current = { mode: "personal", productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false };
+    publish();
+    return;
+  }
   const [access, workspace] = await Promise.all([getPaidAccess(uid), getMyRescueWorkspace().catch(() => ({ organisation: null, role: null }))]);
   const rescueAvailable = rescueIsActive(workspace);
-  const mode = isRescuePath() && rescueAvailable ? "work" : getStoredMode(uid);
-  const rescue = rescueAvailable && mode === "work" && isRescuePath();
+  const rescuePath = isRescuePath();
+  let mode: WorkspaceMode = getStoredMode(uid);
 
-  let productId: WorkspaceProductId = "personal";
-  if (rescue) {
-    productId = "rescue";
-  } else if (mode === "work" && access.effectiveTier !== "free") {
-    productId = access.effectiveTier;
+  if (rescuePath && rescueAvailable) {
+    mode = "work";
+  } else if (mode === "work" && access.effectiveTier === "free") {
+    mode = "personal";
+    storeMode(uid, mode);
   }
 
+  const rescue = mode === "work" && rescuePath && rescueAvailable;
+  const productId: WorkspaceProductId = rescue ? "rescue" : mode === "work" && access.effectiveTier !== "free" ? access.effectiveTier : "personal";
   const product = getWorkspaceProduct(productId);
-  current = { productId, product, permissions: product.permissions, access, rescueWorkspace: rescue };
+  current = { mode, productId, product, permissions: product.permissions, access, rescueWorkspace: rescue };
   publish();
 }
 function watchPath() { void sync(auth.currentUser?.uid ?? null); }
