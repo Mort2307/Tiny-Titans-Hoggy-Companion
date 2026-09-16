@@ -57,7 +57,7 @@ async function sync(uid: string | null) {
   if (!uid) { current = { productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false }; publish(); return; }
   const [access, workspace] = await Promise.all([getPaidAccess(uid), getMyRescueWorkspace().catch(() => ({ organisation: null, role: null }))]);
   const rescueAvailable = rescueIsActive(workspace);
-  const mode = getStoredMode(uid);
+  const mode = isRescuePath() && rescueAvailable ? "work" : getStoredMode(uid);
   const rescue = rescueAvailable && mode === "work" && isRescuePath();
   const productId: WorkspaceProductId = mode === "personal" || (access.effectiveTier === "free" && !rescue) ? "personal" : rescue ? "rescue" : access.effectiveTier;
   const product = getWorkspaceProduct(productId);
