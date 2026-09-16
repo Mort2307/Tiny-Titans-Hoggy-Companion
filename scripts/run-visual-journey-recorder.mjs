@@ -25,10 +25,6 @@ function routes() {
   return [...new Set(raw.split(/[\n,;]+/).map((route) => route.trim()).filter(Boolean).map((route) => route.startsWith("/") ? route : `/${route}`))];
 }
 
-function safeName(route) {
-  return route === "/" ? "home" : route.replace(/^\//, "").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "route";
-}
-
 async function signIn(page) {
   if (!email || !password) throw new Error("Visual journey recorder requires TINY_TITANS_VISUAL_BOT_EMAIL and TINY_TITANS_VISUAL_BOT_PASSWORD (or the generic BOT variables).");
   await page.goto(`${baseURL}/login`, { waitUntil: "domcontentloaded" });
@@ -68,46 +64,50 @@ async function completeAccountSetup(page) {
 
 await fs.mkdir(outputDir, { recursive: true });
 const generated = [];
+const browser = await chromium.launch({ headless: true });
 
-for (const viewport of viewports) {
-  const viewportDir = path.join(outputDir, "journeys");
-  await fs.mkdir(viewportDir, { recursive: true });
-  const context = await chromium.launchPersistentContext("", {
-    headless: true,
-    viewport: { width: viewport.width, height: viewport.height },
-    recordVideo: { dir: viewportDir, size: { width: viewport.width, height: viewport.height } },
-  });
-  const page = await context.newPage();
+try {
+  for (const viewport of viewports) {
+    const viewportDir = path.join(outputDir, "journeys");
+    await fs.mkdir(viewportDir, { recursive: true });
+    const context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      recordVideo: { dir: viewportDir, size: { width: viewport.width, height: viewport.height } },
+    });
+    const page = await context.newPage();
 
-  try {
-    await signIn(page);
-    await completeAccountSetup(page);
-    await dismissPrivacyConsent(page);
-
-    for (const route of routes()) {
-      console.log(`[VISUAL JOURNEY] ${viewport.name} · ${route}`);
-      await page.goto(new URL(route, baseURL).toString(), { waitUntil: "domcontentloaded" });
-      await page.waitForLoadState("networkidle").catch(() => undefined);
-      await page.waitForTimeout(550);
-      await dismissPrivacyConsent(page);
+    try {
+      await signIn(page);
       await completeAccountSetup(page);
-      await page.waitForTimeout(250);
-    }
-  } finally {
-    const video = page.video();
-    await context.close();
-    if (video) {
-      const sourcePath = await video.path().catch(() => null);
-      if (sourcePath) {
-        const finalPath = path.join(viewportDir, `${viewport.name}-journey.webm`);
-        await fs.rename(sourcePath, finalPath).catch(async () => {
-          await fs.copyFile(sourcePath, finalPath);
-          await fs.rm(sourcePath, { force: true });
-        });
-        generated.push({ viewport, path: path.relative(outputDir, finalPath).replaceAll(path.sep, "/") });
+      await dismissPrivacyConsent(page);
+
+      for (const route of routes()) {
+        console.log(`[VISUAL JOURNEY] ${viewport.name} · ${route}`);
+        await page.goto(new URL(route, baseURL).toString(), { waitUntil: "domcontentloaded" });
+        await page.waitForLoadState("networkidle").catch(() => undefined);
+        await page.waitForTimeout(550);
+        await dismissPrivacyConsent(page);
+        await completeAccountSetup(page);
+        await page.waitForTimeout(250);
+      }
+    } finally {
+      const video = page.video();
+      await context.close();
+      if (video) {
+        const sourcePath = await video.path().catch(() => null);
+        if (sourcePath) {
+          const finalPath = path.join(viewportDir, `${viewport.name}-journey.webm`);
+          await fs.rename(sourcePath, finalPath).catch(async () => {
+            await fs.copyFile(sourcePath, finalPath);
+            await fs.rm(sourcePath, { force: true });
+          });
+          generated.push({ viewport, path: path.relative(outputDir, finalPath).replaceAll(path.sep, "/") });
+        }
       }
     }
   }
+} finally {
+  await browser.close();
 }
 
 await fs.writeFile(
