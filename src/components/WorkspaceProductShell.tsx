@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
-import { WorkspaceProduct, workspaceProductForTier } from "../config/workspaceProducts";
+import type { WorkspaceProduct } from "../config/workspaceProducts";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import WorkspaceDashboard from "./WorkspaceDashboard";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
@@ -18,7 +17,6 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
 };
 
 export default function WorkspaceProductShell({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
   const location = useLocation();
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
 
