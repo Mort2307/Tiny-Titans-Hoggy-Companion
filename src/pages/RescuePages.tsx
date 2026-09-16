@@ -46,7 +46,7 @@ export function RescueCentre() {
   <div className="rescue-form-grid rescue-intake-grid"><label>Rescue centre name<input value={orgName} onChange={e=>setOrgName(e.target.value)} placeholder="e.g. Happy Hogs Rescue"/></label></div>
   <div className="rescue-form-actions"><button type="button" onClick={()=>void createWorkspace()} disabled={setupBusy}>{setupBusy?"Creating…":"Create Rescue workspace"}</button></div>
   {setupMessage&&<div className="rescue-message" role="status">{setupMessage}</div>}
-</section> : <section className="rescue-card"><div className="rescue-detail-grid"><div><small>Organisation</small><strong>{workspace?.name || "Rescue workspace"}</strong></div><div><small>Your role</small><strong>{role ? roleLabels[role] : "Loading…"}</strong></div><div><small>Workspace status</small><strong>{workspace?.accountStatus?.replaceAll("_", " ") || "Loading…"}</strong></div><div><small>Pilot end</small><strong>{formatDate(workspace?.pilotEndsAt)}</strong></div></div><p>Staff use their own permanent TinyTitans accounts. Their Rescue permissions belong to this organisation and can be removed without deleting their personal account.</p></section>
+</section> : <><section className="rescue-card"><div className="rescue-detail-grid"><div><small>Organisation</small><strong>{workspace?.name || "Rescue workspace"}</strong></div><div><small>Your role</small><strong>{role ? roleLabels[role] : "Loading…"}</strong></div><div><small>Workspace status</small><strong>{workspace?.accountStatus?.replaceAll("_", " ") || "Loading…"}</strong></div><div><small>Pilot end</small><strong>{formatDate(workspace?.pilotEndsAt)}</strong></div></div><p>Staff use their own permanent TinyTitans accounts. Their Rescue permissions belong to this organisation and can be removed without deleting their personal account.</p></section>
     <section className="rescue-grid">
       <Link className="rescue-card rescue-nav-card" to="/rescue/animals"><span className="rescue-eyebrow">ANIMAL REGISTER</span><h2>Animal Register</h2><p>Intake, search and open passports for any species, including unknown or pending identification.</p><span>Open register →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/animals?intake=1"><span className="rescue-eyebrow">NEW INTAKE</span><h2>New Intake</h2><p>Open the intake form directly and create the animal record without an extra navigation step.</p><span>Start intake →</span></Link>
@@ -55,6 +55,7 @@ export function RescueCentre() {
       <Link className="rescue-card rescue-nav-card" to="/rescue/reports"><span className="rescue-eyebrow">OPERATIONS</span><h2>Rescue Reports</h2><p>Live status counts, intake overview and recent record activity built from the animal register.</p><span>Open reports →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/adoption"><span className="rescue-eyebrow">PUBLIC PROFILES</span><h2>Adoption Profiles</h2><p>Preview the public-safe side of eligible animals without exposing private care records.</p><span>Open adoption →</span></Link>
     </section>
+    </>
   </main></PaidTierGate>;
 }
 
