@@ -3,6 +3,7 @@ const { getFirestore } = require("firebase-admin/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
 
 const db = getFirestore();
+const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 const TIER_ENTITLEMENTS = {
   free: new Set(["core_tracking", "core_genetics", "core_learning", "core_community"]),
   titan_pro: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence", "data_export"]),
@@ -15,8 +16,10 @@ const TIER_ENTITLEMENTS = {
 function sendJson(response, status, payload) { response.status(status).set("Cache-Control", "no-store").json(payload); }
 function bearerToken(request) { const header = String(request.get("authorization") || ""); return header.startsWith("Bearer ") ? header.slice(7).trim() : ""; }
 function expiryMillis(value) { if (!value) return null; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : null; }
+function isOwnerData(data) { return String(data?.email || "").trim().toLowerCase() === OWNER_EMAIL; }
 function hasActiveTrial(data) { const trial = data.paidTrial || null; const tier = String(trial?.tier || "free"); const expiresAt = expiryMillis(trial?.expiresAt); return trial?.enabled === true && tier !== "free" && Boolean(TIER_ENTITLEMENTS[tier]) && expiresAt !== null && expiresAt > Date.now(); }
 function resolveEffectiveTier(data) {
+  if (isOwnerData(data)) return { effectiveTier: "business_advanced", source: "owner" };
   const subscriptionTier = String(data.subscriptionTier || "free");
   const subscriptionStatus = String(data.subscriptionStatus || (subscriptionTier === "free" ? "free" : "active"));
   const subscriptionActive = Boolean(TIER_ENTITLEMENTS[subscriptionTier]) && subscriptionTier !== "free" && ["active", "trialing"].includes(subscriptionStatus);
