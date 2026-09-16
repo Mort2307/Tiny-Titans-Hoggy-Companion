@@ -12,7 +12,7 @@ const MODE_KEY_PREFIX = "tinytitans:active-workspace:";
 type WorkspaceMode = "personal" | "work";
 function modeKey(uid: string) { return `${MODE_KEY_PREFIX}${uid}`; }
 function getStoredMode(uid: string): WorkspaceMode {
-  try { return window.localStorage.getItem(modeKey(uid)) === "personal" ? "personal" : "work"; } catch { return "work"; }
+  try { return window.localStorage.getItem(modeKey(uid)) === "work" ? "work" : "personal"; } catch { return "personal"; }
 }
 function storeMode(uid: string, mode: WorkspaceMode) {
   try { window.localStorage.setItem(modeKey(uid), mode); } catch { /* best effort */ }
@@ -30,7 +30,7 @@ function rescueIsActive(workspace: { organisation: { accountStatus?: string; pil
 }
 function isRescuePath() { return window.location.pathname === "/rescue" || window.location.pathname.startsWith("/rescue/"); }
 export function getActiveWorkspaceMode(uid?: string | null): WorkspaceMode {
-  if (!uid || typeof window === "undefined") return "work";
+  if (!uid || typeof window === "undefined") return "personal";
   return getStoredMode(uid);
 }
 export function setActiveWorkspaceMode(uid: string, mode: WorkspaceMode) {
