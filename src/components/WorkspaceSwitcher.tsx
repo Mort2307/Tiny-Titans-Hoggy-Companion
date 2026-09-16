@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getPaidAccess, setPaidTesterOverride, type PaidAccess } from "../services/paidTierService";
 import { PAID_TIER_ORDER, getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
@@ -18,8 +18,13 @@ function workspaceIcon(productId: WorkspacePresentation["product"]["id"]): TinyT
   return "titan";
 }
 
+function isWorkspaceSurfacePath(pathname: string) {
+  return pathname === "/rescue" || pathname.startsWith("/rescue/") || pathname === "/plans" || pathname === "/account/billing" || pathname === "/paid" || pathname.startsWith("/paid/");
+}
+
 export default function WorkspaceSwitcher() {
   const { user } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
   const [access, setAccess] = useState<PaidAccess | null>(workspace.access);
@@ -53,9 +58,10 @@ export default function WorkspaceSwitcher() {
   const uid = user.uid;
   const isOwner = user.email?.trim().toLowerCase() === OWNER_EMAIL;
   const workAvailable = hasRescue || Boolean(access && access.effectiveTier !== "free");
-  const currentMode = workspace.mode;
+  const surfaceIsWorkspace = workspace.mode === "work" && isWorkspaceSurfacePath(location.pathname);
+  const currentMode = surfaceIsWorkspace ? "work" : "personal";
   const workPath = hasRescue ? "/rescue" : "/";
-  const currentLabel = workspace.product.id === "personal" ? "Personal" : workspace.product.name;
+  const currentLabel = surfaceIsWorkspace && workspace.product.id !== "personal" ? workspace.product.name : "Personal";
 
   function switchMode(mode: "personal" | "work", path: string) {
     setOpen(false);
@@ -86,7 +92,7 @@ export default function WorkspaceSwitcher() {
   return (
     <div className="workspace-switcher">
       <button type="button" className="workspace-switcher__button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="menu">
-        <TinyTitansIcon name={workspaceIcon(workspace.product.id)} size={21} aria-hidden="true" />
+        <TinyTitansIcon name={workspaceIcon(surfaceIsWorkspace ? workspace.product.id : "personal")} size={21} aria-hidden="true" />
         <span><strong>{currentLabel}</strong><small>{currentMode === "personal" ? "Personal mode" : "Work mode"}</small></span>
         <span aria-hidden="true">⌄</span>
       </button>
