@@ -8,108 +8,18 @@ import { setActiveWorkspaceMode, type WorkspacePresentation, getWorkspacePresent
 import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
-const QA_TIERS = PAID_TIER_ORDER.filter((tier): tier is Exclude<PaidTierId, "free" | "rescue"> => tier !== "free" && tier !== "rescue");
-
-function workspaceIcon(productId: WorkspacePresentation["product"]["id"]): TinyTitansIconName {
-  if (productId === "personal") return "reptile";
-  if (productId === "rescue") return "health";
-  if (productId === "titan_seller") return "marketplace";
-  if (productId.startsWith("business_")) return "community";
-  return "titan";
-}
-
-function isWorkspaceSurfacePath(pathname: string) {
-  return pathname === "/rescue" || pathname.startsWith("/rescue/") || pathname === "/plans" || pathname === "/account/billing" || pathname === "/paid" || pathname.startsWith("/paid/");
-}
+const QA_TIERS = PAID_TIER_ORDER.filter((tier): tier is Exclude<PaidTierId, "free"> => tier !== "free");
+function workspaceIcon(productId: WorkspacePresentation["product"]["id"]): TinyTitansIconName { if (productId === "personal") return "reptile"; if (productId === "rescue") return "health"; if (productId === "titan_seller") return "marketplace"; if (productId.startsWith("business_")) return "community"; return "titan"; }
+function isWorkspaceSurfacePath(pathname: string) { return pathname === "/rescue" || pathname.startsWith("/rescue/") || pathname === "/plans" || pathname === "/account/billing" || pathname === "/paid" || pathname.startsWith("/paid/"); }
 
 export default function WorkspaceSwitcher() {
-  const { user } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
-  const [access, setAccess] = useState<PaidAccess | null>(workspace.access);
-  const [hasRescue, setHasRescue] = useState(workspace.rescueWorkspace);
-  const [open, setOpen] = useState(false);
-  const [qaBusy, setQaBusy] = useState(false);
-  const [qaMessage, setQaMessage] = useState("");
-
-  useEffect(() => subscribeToWorkspacePresentation((next) => {
-    setWorkspace(next);
-    setAccess(next.access);
-    setHasRescue(next.rescueWorkspace);
-  }), []);
-
-  useEffect(() => {
-    if (!user) return;
-    const uid = user.uid;
-    let active = true;
-    void Promise.all([
-      getPaidAccess(uid).catch(() => null),
-      getMyRescueWorkspace().catch(() => ({ organisation: null, role: null })),
-    ]).then(([nextAccess, rescue]) => {
-      if (!active) return;
-      setAccess(nextAccess);
-      setHasRescue(Boolean(rescue.organisation));
-    });
-    return () => { active = false; };
-  }, [user]);
-
+  const { user } = useAuth(); const location = useLocation(); const navigate = useNavigate();
+  const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation()); const [access, setAccess] = useState<PaidAccess | null>(workspace.access); const [hasRescue, setHasRescue] = useState(workspace.rescueWorkspace); const [open, setOpen] = useState(false); const [qaBusy, setQaBusy] = useState(false); const [qaMessage, setQaMessage] = useState("");
+  useEffect(() => subscribeToWorkspacePresentation((next) => { setWorkspace(next); setAccess(next.access); setHasRescue(next.rescueWorkspace); }), []);
+  useEffect(() => { if (!user) return; const uid = user.uid; let active = true; void Promise.all([getPaidAccess(uid).catch(() => null), getMyRescueWorkspace().catch(() => ({ organisation: null, role: null }))]).then(([nextAccess, rescue]) => { if (!active) return; setAccess(nextAccess); setHasRescue(Boolean(rescue.organisation)); }); return () => { active = false; }; }, [user]);
   if (!user) return null;
-  const uid = user.uid;
-  const isOwner = user.email?.trim().toLowerCase() === OWNER_EMAIL;
-  const workAvailable = hasRescue || Boolean(access && access.effectiveTier !== "free");
-  const surfaceIsWorkspace = workspace.mode === "work" && isWorkspaceSurfacePath(location.pathname);
-  const currentMode = surfaceIsWorkspace ? "work" : "personal";
-  const workPath = hasRescue ? "/rescue" : "/";
-  const currentLabel = surfaceIsWorkspace && workspace.product.id !== "personal" ? workspace.product.name : "Personal";
-
-  function switchMode(mode: "personal" | "work", path: string) {
-    setOpen(false);
-    setActiveWorkspaceMode(uid, mode);
-    navigate(path);
-  }
-
-  async function switchQaTier(tier: PaidTierId) {
-    if (!isOwner || qaBusy) return;
-    setQaBusy(true);
-    setQaMessage("");
-    try {
-      if (tier === "free") {
-        await setPaidTesterOverride(uid, false, "free", "silent", null);
-        setActiveWorkspaceMode(uid, "personal");
-      } else {
-        await setPaidTesterOverride(uid, true, tier, "silent", null);
-        setActiveWorkspaceMode(uid, "work");
-      }
-      setQaMessage(`${getPaidTierDefinition(tier).name} QA active`);
-      window.setTimeout(() => window.location.reload(), 120);
-    } catch (error) {
-      setQaMessage(error instanceof Error ? error.message : "Could not change the QA tier.");
-      setQaBusy(false);
-    }
-  }
-
-  return (
-    <div className="workspace-switcher">
-      <button type="button" className="workspace-switcher__button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="menu">
-        <TinyTitansIcon name={workspaceIcon(surfaceIsWorkspace ? workspace.product.id : "personal")} size={21} aria-hidden="true" />
-        <span><strong>{currentLabel}</strong><small>{currentMode === "personal" ? "Personal mode" : "Work mode"}</small></span>
-        <span aria-hidden="true">⌄</span>
-      </button>
-      {open && <div className="workspace-switcher__menu" role="menu">
-        <button type="button" role="menuitem" onClick={() => switchMode("personal", "/")}><TinyTitansIcon name="reptile" size={20} aria-hidden="true" /><span><strong>Personal Reptile Companion</strong><small>Your private keeper workspace</small></span></button>
-        {workAvailable && <button type="button" role="menuitem" onClick={() => switchMode("work", workPath)}><TinyTitansIcon name={hasRescue ? "health" : workspaceIcon(workspace.product.id)} size={20} aria-hidden="true" /><span><strong>{hasRescue ? "Rescue Workspace" : workspace.product.name}</strong><small>Purpose-built work mode</small></span></button>}
-        {isOwner && <section className="workspace-switcher__qa" aria-label="Creator QA tier switch">
-          <div className="workspace-switcher__qa-heading"><strong>🧪 QUICK QA TIER SWITCH</strong><small>Owner only · visual regression testing</small></div>
-          <div className="workspace-switcher__qa-grid">
-            {QA_TIERS.map((tier) => <button key={tier} type="button" role="menuitem" disabled={qaBusy} aria-label={`Switch to ${getPaidTierDefinition(tier).name} QA`} onClick={() => void switchQaTier(tier)}><span>{getPaidTierDefinition(tier).crest}</span><span>{getPaidTierDefinition(tier).shortLabel}</span></button>)}
-            <button type="button" role="menuitem" disabled={qaBusy} aria-label="Return to Free personal mode" onClick={() => void switchQaTier("free")}><span>◇</span><span>Free</span></button>
-          </div>
-          {qaMessage && <small className="workspace-switcher__qa-status" role="status">{qaMessage}</small>}
-        </section>}
-        {isOwner && <Link role="menuitem" to="/creator" onClick={() => { setActiveWorkspaceMode(uid, "personal"); setOpen(false); }}><TinyTitansIcon name="creator" size={20} aria-hidden="true" /><span><strong>Creator Centre</strong><small>Owner control &amp; intelligence</small></span></Link>}
-        <Link role="menuitem" to="/account" onClick={() => setOpen(false)}><TinyTitansIcon name="account" size={20} aria-hidden="true" /><span><strong>Account</strong><small>Personal account settings</small></span></Link>
-      </div>}
-    </div>
-  );
+  const uid = user.uid; const isOwner = user.email?.trim().toLowerCase() === OWNER_EMAIL; const workAvailable = hasRescue || Boolean(access && access.effectiveTier !== "free"); const surfaceIsWorkspace = workspace.mode === "work" && isWorkspaceSurfacePath(location.pathname); const currentMode = surfaceIsWorkspace ? "work" : "personal"; const workPath = hasRescue ? "/rescue?manage=1" : "/"; const currentLabel = surfaceIsWorkspace && workspace.product.id !== "personal" ? workspace.product.name : "Personal";
+  function switchMode(mode: "personal" | "work", path: string) { setOpen(false); setActiveWorkspaceMode(uid, mode); navigate(path); }
+  async function switchQaTier(tier: PaidTierId) { if (!isOwner || qaBusy) return; setQaBusy(true); setQaMessage(""); try { await setPaidTesterOverride(uid, tier !== "free", tier, "silent", null); setActiveWorkspaceMode(uid, tier === "free" ? "personal" : "work"); setQaMessage(`${getPaidTierDefinition(tier).name} QA active`); window.setTimeout(() => window.location.reload(), 120); } catch (error) { setQaMessage(error instanceof Error ? error.message : "Could not change the QA tier."); setQaBusy(false); } }
+  return <div className="workspace-switcher"><button type="button" className="workspace-switcher__button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="menu"><TinyTitansIcon name={workspaceIcon(surfaceIsWorkspace ? workspace.product.id : "personal")} size={20} aria-hidden="true" /><span><strong>{currentLabel}</strong><small>{currentMode === "personal" ? "Personal mode" : "Work mode"}</small></span><span aria-hidden="true">⌄</span></button>{open && <div className="workspace-switcher__menu" role="menu"><button type="button" role="menuitem" onClick={() => switchMode("personal", "/")}><TinyTitansIcon name="reptile" size={20} aria-hidden="true" /><span><strong>Personal Reptile Companion</strong><small>Your private keeper workspace</small></span></button>{workAvailable && <button type="button" role="menuitem" onClick={() => switchMode("work", workPath)}><TinyTitansIcon name={hasRescue ? "health" : workspaceIcon(workspace.product.id)} size={20} aria-hidden="true" /><span><strong>{hasRescue ? "Rescue Workspace" : workspace.product.name}</strong><small>Purpose-built work mode</small></span></button>}{isOwner && <section className="workspace-switcher__qa" aria-label="Creator QA tier switch"><div className="workspace-switcher__qa-heading"><strong>🧪 QUICK QA TIER SWITCH</strong><small>Owner only · visual regression testing</small></div><div className="workspace-switcher__qa-grid">{QA_TIERS.map((tier) => <button key={tier} type="button" role="menuitem" disabled={qaBusy} aria-label={`Switch to ${getPaidTierDefinition(tier).name} QA`} onClick={() => void switchQaTier(tier)}><span>{getPaidTierDefinition(tier).crest}</span><span>{getPaidTierDefinition(tier).shortLabel}</span></button>)}<button type="button" role="menuitem" disabled={qaBusy} aria-label="Return to Free personal mode" onClick={() => void switchQaTier("free")}><span>◇</span><span>Free</span></button></div>{qaMessage && <small className="workspace-switcher__qa-status" role="status">{qaMessage}</small>}</section>}{isOwner && <Link role="menuitem" to="/creator" onClick={() => { setActiveWorkspaceMode(uid, "personal"); setOpen(false); }}><TinyTitansIcon name="creator" size={20} aria-hidden="true" /><span><strong>Creator Centre</strong><small>Owner control &amp; intelligence</small></span></Link>}<Link role="menuitem" to="/account" onClick={() => setOpen(false)}><TinyTitansIcon name="account" size={20} aria-hidden="true" /><span><strong>Account</strong><small>Personal account settings</small></span></Link></div>}</div>;
 }
