@@ -58,6 +58,8 @@ function LayoutChrome() {
   const isPaidTimelinePage = location.pathname === "/paid/timeline";
   const isPaidFeaturePage = location.pathname === "/paid" || (location.pathname.startsWith("/paid/") && !isPaidMarketplacePage && !isPaidSupportPage && !isPaidTimelinePage);
   const isRetiredReptileRoom = location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/");
+  const workspaceSurface = workMode && (location.pathname === "/rescue" || location.pathname.startsWith("/rescue/") || isPaidPlansPage || isBillingPage || isPaidMarketplacePage || isPaidSupportPage || isPaidTimelinePage || isPaidFeaturePage);
+  const showNormalChrome = !workspaceSurface;
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -80,16 +82,16 @@ function LayoutChrome() {
   const outlet = <Outlet />;
   const gatedOutlet = outletEntitlement ? <PaidTierGate entitlement={outletEntitlement}>{outlet}</PaidTierGate> : outlet;
   const pageContent = specialPage ?? (isTitanWeekPage ? <TitanWeekCommandCentre/> : isSpeciesAwareMorphLibrary ? <SpeciesAwareMorphLibrary/> : morphGalleryMatch ? <SpeciesMorphGallery/> : morphDetailMatch ? <SpeciesMorphDetail/> : isEnclosureIntelligence ? <SpeciesSafeEnclosureIntelligence/> : gatedOutlet);
-  const renderedContent = workMode ? <WorkspaceProductShell>{pageContent}</WorkspaceProductShell> : pageContent;
+  const renderedContent = workspaceSurface ? <WorkspaceProductShell>{pageContent}</WorkspaceProductShell> : pageContent;
 
-  return <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"}>
-    <a className="skip-link" href="#main-content">Skip to main content</a><Header/><Navigation/>
+  return <div className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`} data-navigation-mode={isEasyNav ? "quick" : "classic"} data-quick-mode={isEasyNav ? "true" : "false"} data-workspace-surface={workspaceSurface ? "true" : "false"}>
+    <a className="skip-link" href="#main-content">Skip to main content</a>{showNormalChrome && <Header/>}{showNormalChrome && <Navigation/>}
     <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
-      {!workMode && !isEasyNav && <AdaptiveGuideBar/>}{!workMode && !isEasyNav && <CreatorTesterInvitationBanner/>}{!workMode && !isEasyNav && <CreatorCommandBar/>}{!workMode && !isEasyNav && <CreatorStatusBar/>}{!workMode && !isEasyNav && <TitanQuickActions/>}{!workMode && !isEasyNav && <SupportNotificationCenter/>}
-      <div className={`tt-page-frame${workMode ? " tt-workspace-page-frame" : ""}`}>{!workMode && speciesAware && <SpeciesContextBar/>}{!workMode && <WorldIntelligenceContext/>}
+      {showNormalChrome && !isEasyNav && <AdaptiveGuideBar/>}{showNormalChrome && !isEasyNav && <CreatorTesterInvitationBanner/>}{showNormalChrome && !isEasyNav && <CreatorCommandBar/>}{showNormalChrome && !isEasyNav && <CreatorStatusBar/>}{showNormalChrome && !isEasyNav && <TitanQuickActions/>}{showNormalChrome && !isEasyNav && <SupportNotificationCenter/>}
+      <div className={`tt-page-frame${workspaceSurface ? " tt-workspace-page-frame" : ""}`}>{showNormalChrome && speciesAware && <SpeciesContextBar/>}{showNormalChrome && <WorldIntelligenceContext/>}
         <div className={isEasyNav ? "tt-easy-intelligence" : undefined}><TitanGlobalNextAction/></div>
         {renderedContent}
-        {!workMode && <TinyTitansEvidenceNotice/>}
+        {showNormalChrome && <TinyTitansEvidenceNotice/>}
       </div>
     </div></main>
     <CreatorPaidTierOperations />
