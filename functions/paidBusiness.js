@@ -1,8 +1,10 @@
 const crypto = require("node:crypto");
+const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 const db = getFirestore();
+const adminAuth = getAuth();
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
 const PAID_TIERS = new Set(["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
@@ -55,12 +57,21 @@ function entitlementFromUser(data, owner = false) {
 async function requireEntitlement(uid, entitlement) {
   if (!ENTITLEMENTS.has(entitlement)) throw new HttpsError("invalid-argument", "Unknown paid entitlement.");
   const snapshot = await db.collection("users").doc(uid).get();
-  const access = entitlementFromUser(snapshot.exists ? snapshot.data() : {}, false);
+  const data = snapshot.exists ? snapshot.data() : {};
+  if (isOwnerEmail(data.email)) return entitlementFromUser(data, true);
+  const access = entitlementFromUser(data, false);
   if (!access.statusAllowsAccess || !access.entitlements.has(entitlement)) throw new HttpsError("permission-denied", `This action requires the ${entitlement} paid feature.`);
   return access;
 }
 async function requireEntitlementForRequest(request, entitlement) {
+  if (!ENTITLEMENTS.has(entitlement)) throw new HttpsError("invalid-argument", "Unknown paid entitlement.");
   if (isOwnerEmail(request.auth?.token?.email)) return entitlementFromUser({}, true);
+  try {
+    const authUser = await adminAuth.getUser(request.auth.uid);
+    if (isOwnerEmail(authUser.email)) return entitlementFromUser({}, true);
+  } catch (error) {
+    console.warn("Tiny Titans: unable to resolve Firebase Auth owner email; falling back to user document", error?.message || error);
+  }
   return requireEntitlement(request.auth.uid, entitlement);
 }
 function cleanText(value, max = 500) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
