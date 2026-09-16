@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { setPaidTesterOverride, type PaidAccess } from "../services/paidTierService";
+import { getPaidAccess, setPaidTesterOverride, type PaidAccess } from "../services/paidTierService";
 import { PAID_TIER_ORDER, getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { setActiveWorkspaceMode, type WorkspacePresentation, getWorkspacePresentation, subscribeToWorkspacePresentation } from "../services/workspacePresentationService";
@@ -39,7 +39,7 @@ export default function WorkspaceSwitcher() {
     const uid = user.uid;
     let active = true;
     void Promise.all([
-      import("../services/paidTierService").then(({ getPaidAccess }) => getPaidAccess(uid)).catch(() => null),
+      getPaidAccess(uid).catch(() => null),
       getMyRescueWorkspace().catch(() => ({ organisation: null, role: null })),
     ]).then(([nextAccess, rescue]) => {
       if (!active) return;
