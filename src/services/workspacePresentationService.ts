@@ -61,10 +61,12 @@ export function workspaceSwitchTargets(uid: string | null, rescueAvailable: bool
 function publish() {
   const product = current.product;
   const workspaceSurface = current.mode === "work" && isWorkspaceSurfacePath();
-  document.documentElement.dataset.ttTier = current.access?.effectiveTier ?? product.tierId;
+  const presentationTier = workspaceSurface ? (current.access?.effectiveTier ?? product.tierId) : (current.access?.actualTier ?? "free");
+  const presentationProduct = workspaceSurface ? product : getWorkspaceProduct("personal");
+  document.documentElement.dataset.ttTier = presentationTier;
   document.documentElement.dataset.ttWorkspace = workspaceSurface ? product.id : "personal";
-  document.documentElement.dataset.ttWorkspacePurpose = workspaceSurface ? product.eyebrow : getWorkspaceProduct("personal").eyebrow;
-  document.documentElement.dataset.ttWorkspacePermissions = workspaceSurface ? product.permissions.join(",") : getWorkspaceProduct("personal").permissions.join(",");
+  document.documentElement.dataset.ttWorkspacePurpose = workspaceSurface ? product.eyebrow : presentationProduct.eyebrow;
+  document.documentElement.dataset.ttWorkspacePermissions = workspaceSurface ? product.permissions.join(",") : presentationProduct.permissions.join(",");
   document.documentElement.dataset.ttWorkspaceRole = workspaceSurface && current.rescueWorkspace ? "organisation_member" : "account_owner";
   document.documentElement.dataset.ttWorkspaceMode = current.mode;
   window.dispatchEvent(new CustomEvent(WORKSPACE_EVENT, { detail: current }));
