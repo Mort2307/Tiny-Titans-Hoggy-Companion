@@ -26,6 +26,9 @@ import PaidTimelineFeature from "../../pages/PaidTimelineFeature";
 import PaidMarketplaceFeature from "../../pages/PaidMarketplaceFeature";
 import PaidSupportFeature from "../../pages/PaidSupportFeature";
 import PaidTierGate from "../PaidTierGate";
+import RescueDirectory from "../../pages/RescueDirectory";
+import RescueDirectoryProfile from "../../pages/RescueDirectoryProfile";
+import { RescueCentre } from "../../pages/RescuePages";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 
@@ -50,6 +53,9 @@ function LayoutChrome() {
   const isPaidSupportPage = location.pathname === "/paid/support";
   const isPaidTimelinePage = location.pathname === "/paid/timeline";
   const isPaidFeaturePage = location.pathname === "/paid" || (location.pathname.startsWith("/paid/") && !isPaidMarketplacePage && !isPaidSupportPage && !isPaidTimelinePage);
+  const isRescueDirectoryPage = location.pathname === "/rescue" && !location.search.includes("manage=");
+  const isRescueSetupPage = location.pathname === "/rescue" && location.search.includes("manage=1");
+  const isRescueDirectoryProfilePage = location.pathname === "/rescue" && location.search.includes("manage=directory");
   const isRetiredReptileRoom = location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/");
 
   useLayoutEffect(() => {
@@ -65,7 +71,7 @@ function LayoutChrome() {
 
   if (isRetiredReptileRoom) return <Navigate to="/snakes" replace />;
 
-  const specialPage = isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidMarketplacePage ? <PaidMarketplaceFeature /> : isPaidSupportPage ? <PaidSupportFeature /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
+  const specialPage = isRescueDirectoryPage ? <RescueDirectory /> : isRescueDirectoryProfilePage ? <RescueDirectoryProfile /> : isRescueSetupPage ? <RescueCentre /> : isPaidPlansPage ? <PaidPlans /> : isBillingPage ? <AccountBilling /> : isPaidMarketplacePage ? <PaidMarketplaceFeature /> : isPaidSupportPage ? <PaidSupportFeature /> : isPaidTimelinePage ? <PaidTimelineFeature /> : isPaidFeaturePage ? <PaidFeatureWorkspace /> : null;
   const outletEntitlement = location.pathname === "/reminders" || location.pathname.startsWith("/reminders/") ? "smart_reminders"
     : /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname) ? "advanced_timeline"
       : ["/breeding/readiness", "/breeding/timeline", "/breeding/cycle", "/breeding/production"].some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`)) ? "breeding_suite"
