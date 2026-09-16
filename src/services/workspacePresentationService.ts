@@ -7,6 +7,16 @@ import { getWorkspaceProduct, type WorkspaceProduct, type WorkspaceProductId, ty
 export type WorkspacePresentation = { productId: WorkspaceProductId; product: WorkspaceProduct; permissions: WorkspacePermission[]; access: PaidAccess | null; rescueWorkspace: boolean };
 const PATH_EVENT = "tinytitans:workspace-path-changed";
 const WORKSPACE_EVENT = "tinytitans:workspace-changed";
+const MODE_KEY_PREFIX = "tinytitans:active-workspace:";
+
+type WorkspaceMode = "personal" | "work";
+function modeKey(uid: string) { return `${MODE_KEY_PREFIX}${uid}`; }
+function getStoredMode(uid: string): WorkspaceMode {
+  try { return window.localStorage.getItem(modeKey(uid)) === "personal" ? "personal" : "work"; } catch { return "work"; }
+}
+function storeMode(uid: string, mode: WorkspaceMode) {
+  try { window.localStorage.setItem(modeKey(uid), mode); } catch { /* best effort */ }
+}
 let current: WorkspacePresentation = { productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false };
 let started = false;
 
@@ -19,6 +29,21 @@ function rescueIsActive(workspace: { organisation: { accountStatus?: string; pil
   return Number.isFinite(end) && end > Date.now();
 }
 function isRescuePath() { return window.location.pathname === "/rescue" || window.location.pathname.startsWith("/rescue/"); }
+export function getActiveWorkspaceMode(uid?: string | null): WorkspaceMode {
+  if (!uid || typeof window === "undefined") return "work";
+  return getStoredMode(uid);
+}
+export function setActiveWorkspaceMode(uid: string, mode: WorkspaceMode) {
+  storeMode(uid, mode);
+  void sync(uid);
+}
+export function workspaceSwitchTargets(uid: string | null, rescueAvailable: boolean, paid: boolean) {
+  const targets: Array<{ id: WorkspaceMode; label: string; path: string; available: boolean }> = [
+    { id: "personal", label: "Personal Reptile Companion", path: "/", available: Boolean(uid) },
+    { id: "work", label: "Work Workspace", path: rescueAvailable ? "/rescue" : "/", available: rescueAvailable || paid },
+  ];
+  return targets;
+}
 function publish() {
   const product = current.product;
   document.documentElement.dataset.ttTier = current.access?.effectiveTier ?? product.tierId;
@@ -31,8 +56,10 @@ function publish() {
 async function sync(uid: string | null) {
   if (!uid) { current = { productId: "personal", product: getWorkspaceProduct("personal"), permissions: [], access: null, rescueWorkspace: false }; publish(); return; }
   const [access, workspace] = await Promise.all([getPaidAccess(uid), getMyRescueWorkspace().catch(() => ({ organisation: null, role: null }))]);
-  const rescue = rescueIsActive(workspace) && isRescuePath();
-  const productId: WorkspaceProductId = rescue ? "rescue" : access.effectiveTier === "free" ? "personal" : access.effectiveTier;
+  const rescueAvailable = rescueIsActive(workspace);
+  const mode = getStoredMode(uid);
+  const rescue = rescueAvailable && mode === "work" && isRescuePath();
+  const productId: WorkspaceProductId = mode === "personal" || (access.effectiveTier === "free" && !rescue) ? "personal" : rescue ? "rescue" : access.effectiveTier;
   const product = getWorkspaceProduct(productId);
   current = { productId, product, permissions: product.permissions, access, rescueWorkspace: rescue };
   publish();
