@@ -58,7 +58,7 @@ function Navigation() {
   const workspaceLinks: NavigationLink[] = workspace.productId === "personal" ? [] : workspace.product.nav.map(({ path, label }) => [path, quickIconFor(path.split("/").filter(Boolean).pop() ?? "home"), label]);
   const focusedSections: NavigationSection[] = workspaceLinks.length ? [
     { label: workspace.product.eyebrow, links: workspaceLinks },
-    { label: "TinyTitans", links: [["/community", "community", "Community Hub"], ["/learn", "academy", "Learn"], ["/account", "account", workspace.product.terminology.settings || "Account"]] },
+    { label: "TinyTitans", links: [["/community", "community", "Community Hub"], ["/learn", "academy", "Learn"], ["/account", "account", "My Account"]] },
   ] : sections;
   const restricted: NavigationSection[] = [];
   if (educatorAuthorized) restricted.push({ label: "Educator", links: [["/educator", "educator", "Educator Centre"]] });
