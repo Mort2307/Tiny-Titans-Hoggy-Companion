@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import Header from "./Header";
 import Navigation from "./Navigation";
 import AdaptiveGuideBar from "../AdaptiveGuideBar";
