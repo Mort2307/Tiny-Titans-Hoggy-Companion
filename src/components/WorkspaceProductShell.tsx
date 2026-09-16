@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
-import type { WorkspaceProduct } from "../config/workspaceProducts";
+import { getWorkspaceProduct, type WorkspaceProduct } from "../config/workspaceProducts";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import WorkspaceDashboard from "./WorkspaceDashboard";
+import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
 import "../styles/workspaceProductShell.css";
 
@@ -16,16 +17,26 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
   rescue: { label: "RESCUE COMMAND", heading: "Rescue operations around the animals, not the paperwork.", description: "Intake, quarantine, care, medical, movement, adoption and animal identity belong together here.", actions: [{ title: "Animal Register", path: "/rescue/animals" }, { title: "New Intake", path: "/rescue/animals?intake=1" }, { title: "Scan / Create QR", path: "/rescue/qr" }, { title: "Team", path: "/rescue/team" }] },
 };
 
+function workspaceIcon(productId: WorkspaceProduct["id"]): TinyTitansIconName {
+  if (productId === "personal") return "reptile";
+  if (productId === "rescue") return "health";
+  if (productId === "titan_seller") return "marketplace";
+  if (productId.startsWith("business_")) return "community";
+  return "titan";
+}
+
 export default function WorkspaceProductShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(() => getWorkspacePresentation());
-
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
 
-  const product = workspace.product;
+  const rescueRoute = location.pathname === "/rescue" || location.pathname.startsWith("/rescue/");
+  const product = workspace.productId === "rescue" && !rescueRoute
+    ? getWorkspaceProduct(workspace.access?.effectiveTier ?? "free")
+    : workspace.product;
   const tier = product.tierId;
   const tierDefinition = getPaidTierDefinition(tier);
-  const rescue = product.id === "rescue" && (location.pathname === "/rescue" || location.pathname.startsWith("/rescue/"));
+  const rescue = product.id === "rescue" && rescueRoute;
   const commandCopy = product.id === "personal" ? null : tierCommandCopy[product.id];
   const showNormalChrome = product.id === "personal";
   const visibleNav = useMemo(() => product.nav.filter((item) => !item.path.startsWith("/creator/") && !item.path.startsWith("/creator")), [product.nav]);
@@ -47,7 +58,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
   return <div className={shellClass} data-workspace={product.id} data-tier={tier}>
     <header className="workspace-product-header">
       <div className="workspace-product-brand">
-        <span className="workspace-product-icon" aria-hidden="true">{product.icon}</span>
+        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={workspaceIcon(product.id)} size={29} /></span>
         <div>
           <span className="workspace-product-eyebrow">{product.eyebrow}</span>
           <strong>{product.name}</strong>
@@ -57,9 +68,9 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
       <div className="workspace-product-tools"><WorkspaceSwitcher /></div>
       <div className="workspace-product-status">
         <span className="workspace-product-tier">{tierDefinition.shortLabel}</span>
-        {workspace.access?.source === "tester" && <span className="workspace-product-live workspace-product-live--test">CREATOR TEST</span>}
-        {workspace.access?.source === "trial" && <span className="workspace-product-live">TRIAL</span>}
-        {workspace.rescueWorkspace && <span className="workspace-product-live">● WORKSPACE ACTIVE</span>}
+        {workspace.access?.source === "tester" && product.id !== "personal" && <span className="workspace-product-live workspace-product-live--test">CREATOR TEST</span>}
+        {workspace.access?.source === "trial" && product.id !== "personal" && <span className="workspace-product-live">TRIAL</span>}
+        {rescue && <span className="workspace-product-live">● WORKSPACE ACTIVE</span>}
       </div>
     </header>
 
