@@ -25,6 +25,17 @@ export function RescueCentre() {
   const [loadError, setLoadError] = useState("");
   const loadWorkspace = useCallback(async () => { if (!user) return; setLoadError(""); const result = await getMyRescueWorkspace(); setWorkspace(result.organisation); setRole(result.role); }, [user]);
   useEffect(() => { void loadWorkspace().catch((error) => setLoadError(error instanceof Error ? error.message : "Rescue workspace could not be loaded.")); }, [loadWorkspace]);
+  async function createWorkspace() {
+    if (!user) return;
+    setSetupBusy(true); setSetupMessage("");
+    try {
+      await createRescueOrganisation(user.uid, orgName.trim() || "My Rescue Centre");
+      await loadWorkspace();
+      setSetupMessage("Rescue workspace created. Your command centre is ready.");
+    } catch (error) {
+      setSetupMessage(error instanceof Error ? error.message : "Could not create the Rescue workspace.");
+    } finally { setSetupBusy(false); }
+  }
   return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page">
     <header className="rescue-subhead"><div><span className="rescue-eyebrow">RESCUE WORKSPACE</span><h1><TinyTitansIcon name="reptile" size={35}/> {workspace?.name || "Rescue Centre"}</h1><p>One organisation workspace for every species, every animal identity and the operational record around it.</p></div></header>
     {loadError && <div className="rescue-message rescue-message-error" role="alert"><strong>Rescue workspace error</strong><span>{loadError}</span></div>}
@@ -39,7 +50,7 @@ export function RescueCentre() {
     <section className="rescue-grid">
       <Link className="rescue-card rescue-nav-card" to="/rescue/animals"><span className="rescue-eyebrow">ANIMAL REGISTER</span><h2>Animal Register</h2><p>Intake, search and open passports for any species, including unknown or pending identification.</p><span>Open register →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/animals?intake=1"><span className="rescue-eyebrow">NEW INTAKE</span><h2>New Intake</h2><p>Open the intake form directly and create the animal record without an extra navigation step.</p><span>Start intake →</span></Link>
-      <Link className="rescue-card rescue-nav-card" to="/rescue/scan"><span className="rescue-eyebrow">QR IDENTITY</span><h2>QR Scanner</h2><p>Resolve a printed animal label to the correct passport. Scanning never grants edit rights.</p><span>Open scanner →</span></Link>
+      <Link className="rescue-card rescue-nav-card" to="/rescue/scan"><span className="rescue-eyebrow">QR IDENTITY</span><h2>Scan / Create QR</h2><p>Generate printable standard QR labels and resolve existing labels to the correct passport.</p><span>Open QR centre →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/team"><span className="rescue-eyebrow">ACCESS CONTROL</span><h2>Team &amp; Permissions</h2><p>Invite staff, assign roles and keep organisational membership separate from personal accounts.</p><span>{roleCanInvite(role) ? "Manage team →" : "View team →"}</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/reports"><span className="rescue-eyebrow">OPERATIONS</span><h2>Rescue Reports</h2><p>Live status counts, intake overview and recent record activity built from the animal register.</p><span>Open reports →</span></Link>
       <Link className="rescue-card rescue-nav-card" to="/rescue/adoption"><span className="rescue-eyebrow">PUBLIC PROFILES</span><h2>Adoption Profiles</h2><p>Preview the public-safe side of eligible animals without exposing private care records.</p><span>Open adoption →</span></Link>
