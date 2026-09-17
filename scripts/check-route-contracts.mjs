@@ -23,6 +23,7 @@ const LAYOUT_SPECIAL_ROUTES = [
   "/paid/support",
   "/paid/api",
   "/paid/branding",
+  "/rescue/log",
 ];
 
 function walk(directory) {
@@ -46,9 +47,6 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
 
 if (!routes.length) errors.push("No application routes were detected in AppRouter.tsx.");
 
-// The router's import block is all that matters for this contract. Parse the
-// complete block before the first executable function so formatting, aliases,
-// line wrapping, and named-vs-default import syntax cannot create false misses.
 const firstExecutableIndex = router.search(/\b(?:function|const|let|var)\s+[A-Za-z]/);
 const importSection = firstExecutableIndex >= 0 ? router.slice(0, firstExecutableIndex) : router;
 const importedComponents = new Set();
