@@ -29,6 +29,7 @@ export default function RescueInvitationBridge() {
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [loading, setLoading] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -38,6 +39,7 @@ export default function RescueInvitationBridge() {
 
   useEffect(() => {
     let active = true;
+    setDismissed(false);
     if (!invitationId || !user) {
       setInvitation(null);
       setLoading(false);
@@ -63,13 +65,18 @@ export default function RescueInvitationBridge() {
     return () => { active = false; };
   }, [invitationId, user]);
 
-  if (!invitationId || !user) return null;
+  function dismiss() {
+    setDismissed(true);
+    removeInviteFromUrl();
+  }
+
+  if (!invitationId || !user || dismissed) return null;
   if (loading) {
     return <div className="rescue-invite-backdrop"><section className="rescue-invite-modal" role="dialog" aria-modal="true" aria-labelledby="rescue-invite-title"><span className="rescue-invite-eyebrow">RESCUE INVITATION</span><h2 id="rescue-invite-title">Checking your invitation…</h2><p>Please wait while Tiny Titans checks the invitation against your signed-in account.</p></section></div>;
   }
 
   if (error) {
-    return <div className="rescue-invite-backdrop"><section className="rescue-invite-modal rescue-invite-modal-error" role="alert"><span className="rescue-invite-eyebrow">RESCUE INVITATION</span><h2>Invitation unavailable</h2><p>{error}</p><button type="button" onClick={removeInviteFromUrl}>Close invitation</button></section></div>;
+    return <div className="rescue-invite-backdrop"><section className="rescue-invite-modal rescue-invite-modal-error" role="alert"><span className="rescue-invite-eyebrow">RESCUE INVITATION</span><h2>Invitation unavailable</h2><p>{error}</p><button type="button" onClick={dismiss}>Close invitation</button></section></div>;
   }
 
   if (!invitation) return null;
@@ -90,5 +97,5 @@ export default function RescueInvitationBridge() {
     }
   }
 
-  return <div className="rescue-invite-backdrop"><section className="rescue-invite-modal" role="dialog" aria-modal="true" aria-labelledby="rescue-invite-title"><span className="rescue-invite-eyebrow">RESCUE INVITATION</span><h2 id="rescue-invite-title">Join {invitation.organisationName}</h2><p className="rescue-invite-lead">You have been invited to join this Rescue workspace as <strong>{invitation.role}</strong>.</p><div className="rescue-invite-details"><div><small>Invited account</small><strong>{invitation.targetEmail}</strong></div><div><small>Invitation expires</small><strong>{formatExpiry(invitation.expiresAt)}</strong></div></div>{error && <p className="rescue-invite-error" role="alert">{error}</p>}{message ? <p className="rescue-invite-success" role="status">{message}</p> : <div className="rescue-invite-actions"><button type="button" className="rescue-invite-primary" onClick={() => void accept()} disabled={accepting}>{accepting ? "Joining…" : "Accept invitation"}</button><button type="button" className="rescue-invite-secondary" onClick={removeInviteFromUrl} disabled={accepting}>Not now</button></div>}</section></div>;
+  return <div className="rescue-invite-backdrop"><section className="rescue-invite-modal" role="dialog" aria-modal="true" aria-labelledby="rescue-invite-title"><span className="rescue-invite-eyebrow">RESCUE INVITATION</span><h2 id="rescue-invite-title">Join {invitation.organisationName}</h2><p className="rescue-invite-lead">You have been invited to join this Rescue workspace as <strong>{invitation.role}</strong>.</p><div className="rescue-invite-details"><div><small>Invited account</small><strong>{invitation.targetEmail}</strong></div><div><small>Invitation expires</small><strong>{formatExpiry(invitation.expiresAt)}</strong></div></div>{error && <p className="rescue-invite-error" role="alert">{error}</p>}{message ? <p className="rescue-invite-success" role="status">{message}</p> : <div className="rescue-invite-actions"><button type="button" className="rescue-invite-primary" onClick={() => void accept()} disabled={accepting}>{accepting ? "Joining…" : "Accept invitation"}</button><button type="button" className="rescue-invite-secondary" onClick={dismiss} disabled={accepting}>Not now</button></div>}</section></div>;
 }
