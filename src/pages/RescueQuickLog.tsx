@@ -145,73 +145,78 @@ export default function RescueQuickLog() {
           <Link className="rescue-enhanced-button secondary" to="/rescue/animals">Open Animal Register</Link>
         </header>
 
-        {loading ? <section className="rescue-card"><p role="status">Loading Rescue animals…</p></section> : error && !animals.length ? <section className="rescue-card"><div className="rescue-message rescue-message-error" role="alert">{error}</div></section> : !organisationId ? <section className="rescue-card"><h2>Rescue workspace not configured</h2><p>Set up the Rescue organisation before logging animal care.</p></section> : !roleCanEdit ? <section className="rescue-card"><h2>View-only Rescue access</h2><p>Your current Rescue role can view records but cannot create care logs.</p></section> : (
+        {loading ? <section className="rescue-card"><p role="status">Loading Rescue animals…</p></section> : error && !animals.length ? <section className="rescue-card"><div className="rescue-message rescue-message-error" role="alert">{error}</div></section> : !organisationId ? <section className="rescue-card"><h2>Rescue workspace not configured</h2><p>Set up the Rescue organisation before logging animal care.</p></section> : (
           <>
             {error && <div className="rescue-message rescue-message-error" role="alert">{error}</div>}
             {message && <div className="rescue-message" role="status">{message}</div>}
 
             <RescueLogIntelligence records={selectedAnimal?.careRecords} animalName={selectedAnimal?.name || "this animal"} />
 
-            <section className="rescue-quick-log-type-grid" aria-label="Record type">
-              {RECORD_TYPES.map((item) => (
-                <button key={item.type} type="button" className={recordType === item.type ? "active" : ""} onClick={() => setRecordType(item.type)}>
-                  <span className="rescue-quick-log-type-icon" aria-hidden="true">{item.icon}</span>
-                  <span><strong>{item.label}</strong><small>{item.description}</small></span>
-                </button>
-              ))}
-            </section>
+            {!roleCanEdit ? <section className="rescue-card">
+              <h2>View-only Rescue access</h2>
+              <p>Your current Rescue role can view records and log intelligence but cannot create care logs.</p>
+            </section> : <>
+              <section className="rescue-quick-log-type-grid" aria-label="Record type">
+                {RECORD_TYPES.map((item) => (
+                  <button key={item.type} type="button" className={recordType === item.type ? "active" : ""} onClick={() => setRecordType(item.type)}>
+                    <span className="rescue-quick-log-type-icon" aria-hidden="true">{item.icon}</span>
+                    <span><strong>{item.label}</strong><small>{item.description}</small></span>
+                  </button>
+                ))}
+              </section>
 
-            <section className="rescue-card rescue-quick-log-form-card">
-              <div className="rescue-panel-heading">
-                <div><span className="rescue-eyebrow">NEW {selectedType.label.toUpperCase()} RECORD</span><h2>{selectedAnimal?.name || "Choose an animal"}</h2></div>
-                {selectedAnimal && <span>{selectedAnimal.speciesCommonName || "Species pending"}</span>}
-              </div>
-              <div className="rescue-form-grid">
-                <label>Animal
-                  <select value={animalId} onChange={(event) => setAnimalId(event.target.value)}>
-                    <option value="">Choose an animal…</option>
-                    {animals.map((animal) => <option key={animal.id} value={animal.id}>{animal.name || "Unnamed animal"}{animal.rescueId ? ` · ${animal.rescueId}` : ""}</option>)}
-                  </select>
-                </label>
-                <label>Date & time
-                  <input type="datetime-local" value={occurredAt} onChange={(event) => setOccurredAt(event.target.value)} />
-                </label>
-                <label>Title
-                  <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={defaultTitle(recordType)} />
-                </label>
-                <label>Value {recordType === "weight" ? "(g)" : "(optional)"}
-                  <input type="number" step="0.1" value={value} onChange={(event) => setValue(event.target.value)} placeholder={recordType === "weight" ? "e.g. 86.5" : ""} />
-                </label>
-                {recordType === "feeding" && <>
-                  <label>Food type
-                    <input value={foodType} onChange={(event) => setFoodType(event.target.value)} placeholder="Mouse, rat, insect, prepared diet…" />
-                  </label>
-                  <label>Feeding response
-                    <select value={accepted} onChange={(event) => setAccepted(event.target.value)}>
-                      <option value="unknown">Unknown / not logged</option><option value="accepted">Accepted</option><option value="refused">Refused</option>
+              <section className="rescue-card rescue-quick-log-form-card">
+                <div className="rescue-panel-heading">
+                  <div><span className="rescue-eyebrow">NEW {selectedType.label.toUpperCase()} RECORD</span><h2>{selectedAnimal?.name || "Choose an animal"}</h2></div>
+                  {selectedAnimal && <span>{selectedAnimal.speciesCommonName || "Species pending"}</span>}
+                </div>
+                <div className="rescue-form-grid">
+                  <label>Animal
+                    <select value={animalId} onChange={(event) => setAnimalId(event.target.value)}>
+                      <option value="">Choose an animal…</option>
+                      {animals.map((animal) => <option key={animal.id} value={animal.id}>{animal.name || "Unnamed animal"}{animal.rescueId ? ` · ${animal.rescueId}` : ""}</option>)}
                     </select>
                   </label>
-                </>}
-                <label>Record visibility
-                  <select value={visibility} onChange={(event) => setVisibility(event.target.value as RescueVisibility)}>{Object.entries(VISIBILITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
-                </label>
-                <label className="rescue-span-2">Summary
-                  <textarea value={summary} onChange={(event) => setSummary(event.target.value)} placeholder={`What happened during this ${selectedType.label.toLowerCase()} record?`} />
-                </label>
-                <label className="rescue-span-2">Details / context
-                  <textarea value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Useful context for the next person reading the animal history." />
-                </label>
-              </div>
-              <div className="rescue-quick-log-form-actions">
-                <span>Saved to <strong>{selectedAnimal?.name || "the selected animal"}</strong>'s private Rescue history.</span>
-                <button type="button" onClick={() => void save()} disabled={saving || !selectedAnimal}>{saving ? "Saving…" : `Add ${selectedType.label} record`}</button>
-              </div>
-            </section>
+                  <label>Date & time
+                    <input type="datetime-local" value={occurredAt} onChange={(event) => setOccurredAt(event.target.value)} />
+                  </label>
+                  <label>Title
+                    <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={defaultTitle(recordType)} />
+                  </label>
+                  <label>Value {recordType === "weight" ? "(g)" : "(optional)"}
+                    <input type="number" step="0.1" value={value} onChange={(event) => setValue(event.target.value)} placeholder={recordType === "weight" ? "e.g. 86.5" : ""} />
+                  </label>
+                  {recordType === "feeding" && <>
+                    <label>Food type
+                      <input value={foodType} onChange={(event) => setFoodType(event.target.value)} placeholder="Mouse, rat, insect, prepared diet…" />
+                    </label>
+                    <label>Feeding response
+                      <select value={accepted} onChange={(event) => setAccepted(event.target.value)}>
+                        <option value="unknown">Unknown / not logged</option><option value="accepted">Accepted</option><option value="refused">Refused</option>
+                      </select>
+                    </label>
+                  </>}
+                  <label>Record visibility
+                    <select value={visibility} onChange={(event) => setVisibility(event.target.value as RescueVisibility)}>{Object.entries(VISIBILITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
+                  </label>
+                  <label className="rescue-span-2">Summary
+                    <textarea value={summary} onChange={(event) => setSummary(event.target.value)} placeholder={`What happened during this ${selectedType.label.toLowerCase()} record?`} />
+                  </label>
+                  <label className="rescue-span-2">Details / context
+                    <textarea value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Useful context for the next person reading the animal history." />
+                  </label>
+                </div>
+                <div className="rescue-quick-log-form-actions">
+                  <span>Saved to <strong>{selectedAnimal?.name || "the selected animal"}</strong>'s private Rescue history.</span>
+                  <button type="button" onClick={() => void save()} disabled={saving || !selectedAnimal}>{saving ? "Saving…" : `Add ${selectedType.label} record`}</button>
+                </div>
+              </section>
 
-            <section className="rescue-card rescue-quick-log-guidance">
-              <strong>One record, one animal, one timeline.</strong>
-              <span>Quick Logging uses the existing Rescue care-record model, so feeding, weight, shedding, health, behaviour, husbandry and notes continue to contribute to the individual profile and longitudinal timeline.</span>
-            </section>
+              <section className="rescue-card rescue-quick-log-guidance">
+                <strong>One record, one animal, one timeline.</strong>
+                <span>Quick Logging uses the existing Rescue care-record model, so feeding, weight, shedding, health, behaviour, husbandry and notes continue to contribute to the individual profile and longitudinal timeline.</span>
+              </section>
+            </>}
           </>
         )}
       </main>
