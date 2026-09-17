@@ -10,10 +10,25 @@ import "../styles/rescue.css";
 import "../styles/rescue-community.css";
 
 type FormState = {
-  name:string; logoUrl:string; heroImageUrl:string; directoryDescription:string; website:string; contactEmail:string; phone:string;
-  locationLabel:string; postcode:string; region:string; country:string; openingHours:string;
-  charityNumber:string; companyNumber:string; localAuthorityLicence:string; otherRegistrationNumber:string; registrationAuthority:string;
-  registrationsPublic:boolean; directoryVisible:boolean;
+  name:string;
+  logoUrl:string;
+  heroImageUrl:string;
+  directoryDescription:string;
+  website:string;
+  contactEmail:string;
+  phone:string;
+  locationLabel:string;
+  postcode:string;
+  region:string;
+  country:string;
+  openingHours:string;
+  charityNumber:string;
+  companyNumber:string;
+  localAuthorityLicence:string;
+  otherRegistrationNumber:string;
+  registrationAuthority:string;
+  registrationsPublic:boolean;
+  directoryVisible:boolean;
 };
 
 const EMPTY: FormState = {
@@ -64,12 +79,11 @@ function BrandingPicker({ label, value, kind, organisationId, disabled, hint, on
       {value && <button type="button" className="rescue-secondary-button" onClick={() => onChange("")} disabled={disabled || uploading}>Remove</button>}
     </div>
     {value && <img className="rescue-branding-preview" src={value} alt={`${label} preview`} />}
-    <div className="rescue-branding-picker-actions">
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={disabled || uploading} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void chooseImage(file); }} />
-      <button type="button" className="rescue-primary-link rescue-branding-library-button" onClick={() => inputRef.current?.click()} disabled={disabled || uploading}>{uploading ? "Adding image…" : "Choose from image library"}</button>
-      <span>or paste a public HTTPS URL below</span>
-    </div>
-    <input type="url" value={value} onChange={(event)=>onChange(event.target.value)} placeholder="https://…" disabled={disabled || uploading} aria-label={`${label} URL`} />
+    <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={disabled || uploading} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void chooseImage(file); }} />
+    <button type="button" className="rescue-branding-upload-button" onClick={() => inputRef.current?.click()} disabled={disabled || uploading}>
+      <span aria-hidden="true">{uploading ? "⏳" : "＋"}</span>
+      <span><strong>{uploading ? "Adding image…" : value ? `Replace ${label.toLowerCase()}` : `Add ${label.toLowerCase()}`}</strong><small>Choose a JPG, PNG or WebP image from your device</small></span>
+    </button>
   </div>;
 }
 
