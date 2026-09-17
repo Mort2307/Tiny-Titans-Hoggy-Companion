@@ -55,11 +55,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-async function waitForApplicationShell(page, timeoutMs = 15_000) {
-  await page.locator("#root > *").first().waitFor({ state: "attached", timeout: timeoutMs });
-  await page.locator("body").waitFor({ state: "visible", timeout: timeoutMs });
-}
-
 async function dismissPrivacyConsent(page) {
   const dialog = page.locator('.privacy-consent-backdrop[role="dialog"]');
   if (!(await dialog.isVisible().catch(() => false))) return false;
@@ -151,7 +146,7 @@ async function collectMetrics(page) {
     const nextAction = document.querySelector(".tt-global-next-action");
     const nextActionRect = nextAction?.getBoundingClientRect();
     const nextActionStyle = nextAction ? getComputedStyle(nextAction) : null;
-    const visualSignals = {
+    return {
       primaryHeading: headings[0] || "",
       contentTextLength: contentText.length,
       contentInteractiveCount: contentInteractive.length,
@@ -172,7 +167,6 @@ async function collectMetrics(page) {
         bottom: Math.round(nextActionRect.bottom),
       } : null,
     };
-    return visualSignals;
   });
 }
 
@@ -249,8 +243,8 @@ async function writeGallery(results) {
       <h2>${escapeHtml(result.route)} · ${escapeHtml(result.viewport.name)}</h2>
       <p>${escapeHtml(result.metrics.primaryHeading || result.metrics.documentTitle)} · ${result.viewport.width}×${result.viewport.height} · workspace: ${escapeHtml(result.metrics.workspace)}</p>
       <div class="shots">
-        <figure><figcaption>Viewport</figcaption><a href="${escapeHtml(path.basename(result.viewportScreenshot))}"><img loading="lazy" src="${escapeHtml(path.basename(result.viewportScreenshot))}" alt="${escapeHtml(result.route)} viewport"></a></figure>
-        <figure><figcaption>Full page</figcaption><a href="${escapeHtml(path.basename(result.fullPageScreenshot))}"><img loading="lazy" src="${escapeHtml(path.basename(result.fullPageScreenshot))}" alt="${escapeHtml(result.route)} full page"></a></figure>
+        <figure><figcaption>Viewport</figcaption><a href="${escapeHtml(result.viewportScreenshot)}"><img loading="lazy" src="${escapeHtml(result.viewportScreenshot)}" alt="${escapeHtml(result.route)} viewport"></a></figure>
+        <figure><figcaption>Full page</figcaption><a href="${escapeHtml(result.fullPageScreenshot)}"><img loading="lazy" src="${escapeHtml(result.fullPageScreenshot)}" alt="${escapeHtml(result.route)} full page"></a></figure>
       </div>
       <pre>${escapeHtml(JSON.stringify(result.findings, null, 2))}</pre>
     </article>`).join("\n");
