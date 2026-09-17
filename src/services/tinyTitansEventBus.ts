@@ -37,11 +37,18 @@ export type TinyTitansEventName = keyof TinyTitansEventMap;
 export type TinyTitansEvent<K extends TinyTitansEventName = TinyTitansEventName> = { type: K; payload: TinyTitansEventMap[K] };
 type Listener<K extends TinyTitansEventName> = (event: TinyTitansEvent<K>) => void;
 
-export const TINY_TITANS_EVENT_NAMES = Object.freeze(Object.keys({} as TinyTitansEventMap) as TinyTitansEventName[]);
+export const TINY_TITANS_EVENT_NAMES: TinyTitansEventName[] = [
+  "SnakeCreated", "WeightRecorded", "FeedingRecorded", "ShedRecorded", "BehaviourRecorded", "HealthRecordCreated",
+  "MicroclimateRecorded", "EnclosureUpdated", "MorphConfirmed", "GeneticsChanged", "BreedingProjectCreated",
+  "BreedingProjectChanged", "HatchlingRecorded", "MarketplaceListingCreated", "AchievementUnlocked", "NotificationScheduled",
+  "RescueIntakeRecorded", "RescueCareRecorded", "RescueStatusChanged", "RescueReminderChanged", "RescueTransferRecorded",
+  "RescueFosterRecorded", "RescueDocumentRecorded", "WorkspaceChanged",
+];
+
 export const TITAN_INTELLIGENCE_UPDATED_EVENT = "titan:intelligence-updated";
 
 class TinyTitansEventBus {
-  private readonly listeners = new Map<TinyTitansEventName, Set<Listener<TinyTitansEventName>>>();
+  private readonly listeners = new Map<TinyTitansEventName | "__any__", Set<Listener<TinyTitansEventName>>>();
 
   on<K extends TinyTitansEventName>(type: K, listener: Listener<K>): () => void {
     const existing = this.listeners.get(type) ?? new Set<Listener<TinyTitansEventName>>();
@@ -51,11 +58,10 @@ class TinyTitansEventBus {
   }
 
   onAny(listener: (event: TinyTitansEvent<TinyTitansEventName>) => void): () => void {
-    const type = "__any__" as TinyTitansEventName;
-    const existing = this.listeners.get(type) ?? new Set<Listener<TinyTitansEventName>>();
+    const existing = this.listeners.get("__any__") ?? new Set<Listener<TinyTitansEventName>>();
     existing.add(listener);
-    this.listeners.set(type, existing);
-    return () => { existing.delete(listener); if (existing.size === 0) this.listeners.delete(type); };
+    this.listeners.set("__any__", existing);
+    return () => { existing.delete(listener); if (existing.size === 0) this.listeners.delete("__any__"); };
   }
 
   emit<K extends TinyTitansEventName>(event: TinyTitansEvent<K>): void {
