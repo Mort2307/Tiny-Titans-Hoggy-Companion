@@ -19,6 +19,7 @@ Object.assign(exports,require("./communityBenchmarks"));
 Object.assign(exports,require("./titanGoals"));
 Object.assign(exports,require("./reminders"));
 Object.assign(exports,require("./mailDelivery"));
+Object.assign(exports,require("./staffManagement"));
 const creatorTesterInvitation=require("./creatorTesterInvitation"); Object.assign(exports,{getCreatorTesterInvitation:creatorTesterInvitation.getCreatorTesterInvitation,acceptCreatorTesterInvitation:creatorTesterInvitation.acceptCreatorTesterInvitation,declineCreatorTesterInvitation:creatorTesterInvitation.declineCreatorTesterInvitation});
 Object.assign(exports,require("./paidTierAccess"));
 Object.assign(exports,require("./paidPromotions"));
