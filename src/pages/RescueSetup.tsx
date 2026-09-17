@@ -8,8 +8,6 @@ import { getRescueSetupState, updateRescuePublicProfile } from "../services/resc
 import "../styles/rescue.css";
 import "../styles/rescue-community.css";
 
-const STAFF_ROLES = new Set(["owner", "manager", "staff", "medical"]);
-
 type FormState = {
   name:string; logoUrl:string; directoryDescription:string; website:string; contactEmail:string; phone:string;
   locationLabel:string; postcode:string; region:string; country:string; openingHours:string;
