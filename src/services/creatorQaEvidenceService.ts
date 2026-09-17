@@ -62,7 +62,6 @@ export async function getQaEvidenceBlobUrl(run: CreatorQaRun, relativePath: stri
   if (!run.storagePrefix || !relativePath) throw new Error("This QA run does not expose a usable evidence path.");
   const objectPath = `${run.storagePrefix.replace(/\/+$/, "")}/${relativePath.replace(/^\/+/, "")}`;
   const bytes = await getBytes(ref(storage, objectPath));
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
+  const copy = new Uint8Array(bytes);
   return URL.createObjectURL(new Blob([copy.buffer], { type: imageMimeType(relativePath) }));
 }
