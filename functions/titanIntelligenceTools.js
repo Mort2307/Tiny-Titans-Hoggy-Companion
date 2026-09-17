@@ -1,14 +1,14 @@
 const DECLARATIONS = [
-  { name: "list_my_animals", description: "List the reptiles this authenticated Tiny Titans account can access. Use this before asking about an animal when the user has not supplied an ID.", parameters: { type: "object", properties: {}, required: [] } },
-  { name: "get_collection_overview", description: "Summarise the authenticated keeper's animal collection without exposing photos or unrelated account data.", parameters: { type: "object", properties: {}, required: [] } },
-  { name: "get_animal_profile", description: "Retrieve the selected reptile's recorded profile. Use the exact animal ID from list_my_animals.", parameters: { type: "object", properties: { animalId: { type: "string", description: "Tiny Titans animal ID." } }, required: ["animalId"] } },
-  { name: "get_animal_records", description: "Retrieve the selected reptile's recorded weight, feeding, shedding, health and behaviour history. Missing data must remain missing.", parameters: { type: "object", properties: { animalId: { type: "string", description: "Tiny Titans animal ID." } }, required: ["animalId"] } },
-  { name: "get_animal_intelligence_snapshot", description: "Run deterministic analysis over one recorded animal's history, including weight summary, record counts and clearly labelled temporal associations. Never treat associations as proof of causation.", parameters: { type: "object", properties: { animalId: { type: "string", description: "Tiny Titans animal ID." } }, required: ["animalId"] } },
-  { name: "get_workspace_context", description: "Return the current organisation/workspace context available to the authenticated user. This does not expose unrelated private records.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "list_my_animals", description: "List the reptiles this authenticated Tiny Titans account can access. Use this before asking about an animal when the user has not supplied an ID.", parameters: { type: "OBJECT", properties: {}, required: [] } },
+  { name: "get_collection_overview", description: "Summarise the authenticated keeper's animal collection without exposing photos or unrelated account data.", parameters: { type: "OBJECT", properties: {}, required: [] } },
+  { name: "get_animal_profile", description: "Retrieve the selected reptile's recorded profile. Use the exact animal ID from list_my_animals.", parameters: { type: "OBJECT", properties: { animalId: { type: "STRING", description: "Tiny Titans animal ID." } }, required: ["animalId"] } },
+  { name: "get_animal_records", description: "Retrieve the selected reptile's recorded weight, feeding, shedding, health and behaviour history. Missing data must remain missing.", parameters: { type: "OBJECT", properties: { animalId: { type: "STRING", description: "Tiny Titans animal ID." } }, required: ["animalId"] } },
+  { name: "get_animal_intelligence_snapshot", description: "Run deterministic analysis over one recorded animal's history, including weight summary, record counts and clearly labelled temporal associations. Never treat associations as proof of causation.", parameters: { type: "OBJECT", properties: { animalId: { type: "STRING", description: "Tiny Titans animal ID." } }, required: ["animalId"] } },
+  { name: "get_workspace_context", description: "Return the current organisation/workspace context available to the authenticated user. This does not expose unrelated private records.", parameters: { type: "OBJECT", properties: {}, required: [] } },
 ];
 
 function getDeclarations() {
-  return [{ function_declarations: DECLARATIONS }];
+  return [{ functionDeclarations: DECLARATIONS }];
 }
 
 async function executeTool(uid, name, args, workspaceKind) {
