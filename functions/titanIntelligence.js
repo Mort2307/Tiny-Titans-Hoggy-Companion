@@ -90,6 +90,7 @@ exports.askTitan = onCall({ region: "europe-west2", secrets: [GEMINI_API_KEY], t
   const provenance = buildTitanProvenance({ toolCalls, webSources });
   return {
     success: true,
+    responseId: crypto.randomUUID(),
     text,
     model: MODEL,
     sources: webSources,
