@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import PaidTierGate from "../components/PaidTierGate";
+import RescueLogIntelligence from "../components/rescue/RescueLogIntelligence";
 import { useAuth } from "../context/useAuth";
 import { appendRescueCareRecord, getRescueAccess, listRescueAnimals } from "../services/rescueService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
@@ -148,6 +149,8 @@ export default function RescueQuickLog() {
           <>
             {error && <div className="rescue-message rescue-message-error" role="alert">{error}</div>}
             {message && <div className="rescue-message" role="status">{message}</div>}
+
+            <RescueLogIntelligence records={selectedAnimal?.careRecords} animalName={selectedAnimal?.name || "this animal"} />
 
             <section className="rescue-quick-log-type-grid" aria-label="Record type">
               {RECORD_TYPES.map((item) => (
