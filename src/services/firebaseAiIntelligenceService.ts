@@ -33,9 +33,9 @@ export async function explainTinyTitansIntelligence(params: {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Firebase AI Logic could not generate an explanation.";
     if (/app.?check|permission|403|unauthenticated|not.?configured|firebasevertexai/i.test(message)) {
-      throw new Error("Tiny Titans AI is not configured for this app yet. Enable Firebase AI Logic and App Check for the Firebase project, then try again.");
+      throw new Error("Tiny Titans AI is not configured for this app yet. Enable Firebase AI Logic and App Check for the Firebase project, then try again.", { cause: error });
     }
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   }
 }
 

@@ -5,9 +5,9 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function ownerAccount() { return signedIn() && request.auth.token.email == 'tinytitans.exotics@gmail.com'; }
     function userRecord() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function hasCapability(capability) { return signedIn() && (request.auth.token.admin == true || request.auth.token[capability] == true); }
-    function isCreator() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.creator == true); }
-    function isTester() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.tester == true); }
+    function hasCapability(capability) { return signedIn() && (ownerAccount() || request.auth.token.admin == true || request.auth.token[capability] == true); }
+    function isCreator() { return ownerAccount(); }
+    function isTester() { return ownerAccount(); }
     function isEducator() { return hasCapability('educator'); }
     function isModerator() { return hasCapability('moderator'); }
     function familyMemberOf(userId) { return signedIn() && request.auth.uid != userId && userRecord().get('familyId', '') != '' && userRecord().get('familyId', '') == get(/databases/$(database)/documents/users/$(userId)).data.get('familyId', '') && get(/databases/$(database)/documents/families/$(userRecord().get('familyId', ''))).data.memberUids.hasAll([request.auth.uid, userId]); }
@@ -53,47 +53,50 @@ service cloud.firestore {
     match /mentorshipEvents/{eventId} { allow create: if isCreator(); allow get, list: if isCreator(); allow update, delete: if isCreator(); }
     match /keeperObservations/{observationId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.status == "pending" && request.resource.data.educationalConsent == true; allow get, list: if signedIn() && ((resource.data.status == "approved" && resource.data.educationalConsent == true) || resource.data.userId == request.auth.uid || isCreator()); allow update: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid && resource.data.status == "pending" && request.resource.data.status == "pending" && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['media', 'updatedAt'])); allow delete: if isCreator() || (signedIn() && resource.data.userId == request.auth.uid && resource.data.status == "pending"); }
 
-    function rescueWorkspaceAccess() {
-      return ownerAccount()
-        || (exists(/databases/$(database)/documents/paidEntitlements/$(request.auth.uid))
-          && get(/databases/$(database)/documents/paidEntitlements/$(request.auth.uid)).data.get('active', false) == true
-          && get(/databases/$(database)/documents/paidEntitlements/$(request.auth.uid)).data.get('tier', '') == 'rescue'
-          && get(/databases/$(database)/documents/paidEntitlements/$(request.auth.uid)).data.get('status', '') in ['active', 'trialing'])
-        || (exists(/databases/$(database)/documents/paidTrials/$(request.auth.uid))
-          && get(/databases/$(database)/documents/paidTrials/$(request.auth.uid)).data.get('enabled', false) == true
-          && get(/databases/$(database)/documents/paidTrials/$(request.auth.uid)).data.get('tier', '') == 'rescue'
-          && get(/databases/$(database)/documents/paidTrials/$(request.auth.uid)).data.get('expiresAt', request.time) > request.time)
-        || (exists(/databases/$(database)/documents/paidTesterOverrides/$(request.auth.uid))
-          && get(/databases/$(database)/documents/paidTesterOverrides/$(request.auth.uid)).data.get('enabled', false) == true
-          && get(/databases/$(database)/documents/paidTesterOverrides/$(request.auth.uid)).data.get('tier', '') == 'rescue'
-          && (!('expiresAt' in get(/databases/$(database)/documents/paidTesterOverrides/$(request.auth.uid)).data) || get(/databases/$(database)/documents/paidTesterOverrides/$(request.auth.uid)).data.expiresAt == null || get(/databases/$(database)/documents/paidTesterOverrides/$(request.auth.uid)).data.expiresAt > request.time));
+    function activeRescueTier(uid) {
+      return signedIn() && (
+        (exists(/databases/$(database)/documents/paidEntitlements/$(uid)) && get(/databases/$(database)/documents/paidEntitlements/$(uid)).data.get('active', false) == true && get(/databases/$(database)/documents/paidEntitlements/$(uid)).data.get('tier', '') == 'rescue' && get(/databases/$(database)/documents/paidEntitlements/$(uid)).data.get('status', '') in ['active', 'trialing'])
+        || (exists(/databases/$(database)/documents/paidTrials/$(uid)) && get(/databases/$(database)/documents/paidTrials/$(uid)).data.get('enabled', false) == true && get(/databases/$(database)/documents/paidTrials/$(uid)).data.get('tier', '') == 'rescue' && get(/databases/$(database)/documents/paidTrials/$(uid)).data.get('expiresAt', null) > request.time)
+        || (exists(/databases/$(database)/documents/paidTesterOverrides/$(uid)) && get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('enabled', false) == true && get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('tier', '') == 'rescue' && (!get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('expiresAt', null) || get(/databases/$(database)/documents/paidTesterOverrides/$(uid)).data.get('expiresAt', null) > request.time))
+      );
     }
-    function rescueOrgMember(orgId) { return signedIn() && (get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.ownerUid == request.auth.uid || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.managerUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.staffUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.medicalUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.fosterUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.viewerUids); }
-    function rescueOrgEditor(orgId) { return signedIn() && (get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.ownerUid == request.auth.uid || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.managerUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.staffUids || request.auth.uid in get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.medicalUids); }
+    function rescuePilotActive(orgId) {
+      return get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.get('pilotStatus', '') == 'pilot_active' && get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data.get('pilotEndsAt', null) > request.time;
+    }
+    function rescueWorkspaceEnabled(orgId) {
+      let org = get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data;
+      return org.get('accountType', 'rescue') == 'rescue' && (ownerAccount() || rescuePilotActive(orgId) || activeRescueTier(request.auth.uid) || activeRescueTier(org.get('ownerUid', '')));
+    }
+    function rescueOrgMember(orgId) {
+      let org = get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data;
+      return signedIn() && rescueWorkspaceEnabled(orgId) && (org.get('ownerUid', '') == request.auth.uid || request.auth.uid in org.get('managerUids', []) || request.auth.uid in org.get('staffUids', []) || request.auth.uid in org.get('medicalUids', []) || request.auth.uid in org.get('fosterUids', []) || request.auth.uid in org.get('viewerUids', []));
+    }
+    function rescueOrgEditor(orgId) {
+      let org = get(/databases/$(database)/documents/rescueOrganisations/$(orgId)).data;
+      return signedIn() && rescueWorkspaceEnabled(orgId) && (org.get('ownerUid', '') == request.auth.uid || request.auth.uid in org.get('managerUids', []) || request.auth.uid in org.get('staffUids', []) || request.auth.uid in org.get('medicalUids', []));
+    }
+    function rescueWritesEnabled() {
+      return !exists(/databases/$(database)/documents/platformControls/rescue) || get(/databases/$(database)/documents/platformControls/rescue).data.get('writesEnabled', true) != false;
+    }
     match /rescueOrganisations/{orgId} {
-      allow create: if rescueWorkspaceAccess() && request.resource.data.ownerUid == request.auth.uid;
-      allow get, list: if signedIn() && (resource.data.ownerUid == request.auth.uid || rescueOrgMember(orgId));
-      allow update: if signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid;
-      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.accountType == 'rescue' && (request.resource.data.accountStatus == 'pilot_pending' || (request.resource.data.accountStatus == 'paid_active' && activeRescueTier(request.auth.uid)));
+      allow get, list: if signedIn() && (resource.data.ownerUid == request.auth.uid || rescueOrgMember(orgId) || isCreator());
+      allow update: if signedIn() && resource.data.ownerUid == request.auth.uid && rescueWorkspaceEnabled(orgId) && request.resource.data.ownerUid == resource.data.ownerUid && request.resource.data.accountType == 'rescue' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'managerUids', 'staffUids', 'medicalUids', 'fosterUids', 'viewerUids', 'speciesDiscovered', 'staffLimit', 'animalLimit', 'storageMbLimit', 'animalCount', 'updatedAt']) && request.resource.data.managerUids.size() + request.resource.data.staffUids.size() + request.resource.data.medicalUids.size() + request.resource.data.fosterUids.size() + request.resource.data.viewerUids.size() <= request.resource.data.get('staffLimit', 5);
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid && (activeRescueTier(request.auth.uid) || ownerAccount());
     }
     match /rescueAnimals/{animalId} {
       allow get: if rescueOrgMember(resource.data.organisationId);
       allow list: if rescueOrgMember(resource.data.organisationId);
-      allow create: if rescueOrgEditor(request.resource.data.organisationId) && request.resource.data.organisationId is string;
-      allow update: if rescueOrgEditor(resource.data.organisationId) && request.resource.data.organisationId == resource.data.organisationId;
-      allow delete: if signedIn() && get(/databases/$(database)/documents/rescueOrganisations/$(resource.data.organisationId)).data.ownerUid == request.auth.uid;
+      allow create: if rescueWritesEnabled() && signedIn() && request.resource.data.organisationId is string && rescueOrgEditor(request.resource.data.organisationId) && request.resource.data.publicPreview is bool;
+      allow update: if rescueWritesEnabled() && rescueOrgEditor(resource.data.organisationId) && request.resource.data.organisationId == resource.data.organisationId && request.resource.data.publicPreview is bool;
+      allow delete: if rescueWritesEnabled() && signedIn() && get(/databases/$(database)/documents/rescueOrganisations/$(resource.data.organisationId)).data.ownerUid == request.auth.uid && rescueWorkspaceEnabled(resource.data.organisationId);
     }
     match /rescueAnimalPublic/{animalId} {
       allow get: if resource.data.publicPreview == true;
       allow list: if false;
-      allow create: if rescueOrgEditor(request.resource.data.organisationId)
-        && request.resource.data.keys().hasOnly(['organisationId', 'publicPreview', 'name', 'speciesCommonName', 'scientificName', 'sex', 'morphOrColour', 'estimatedAge', 'status', 'intakeDate', 'publicSummary', 'timeline', 'createdAt', 'updatedAt'])
-        && request.resource.data.publicPreview == true;
-      allow update: if rescueOrgEditor(resource.data.organisationId)
-        && request.resource.data.organisationId == resource.data.organisationId
-        && request.resource.data.keys().hasOnly(['organisationId', 'publicPreview', 'name', 'speciesCommonName', 'scientificName', 'sex', 'morphOrColour', 'estimatedAge', 'status', 'intakeDate', 'publicSummary', 'timeline', 'createdAt', 'updatedAt'])
-        && request.resource.data.publicPreview == true;
-      allow delete: if rescueOrgEditor(resource.data.organisationId);
+      allow create: if rescueWritesEnabled() && rescueOrgEditor(request.resource.data.organisationId) && request.resource.data.publicPreview == true && request.resource.data.keys().hasOnly(['organisationId', 'publicPreview', 'name', 'speciesCommonName', 'scientificName', 'sex', 'morphOrColour', 'estimatedAge', 'status', 'intakeDate', 'publicSummary', 'timeline', 'createdAt', 'updatedAt']);
+      allow update: if rescueWritesEnabled() && rescueOrgEditor(resource.data.organisationId) && request.resource.data.organisationId == resource.data.organisationId && request.resource.data.publicPreview == true && request.resource.data.keys().hasOnly(['organisationId', 'publicPreview', 'name', 'speciesCommonName', 'scientificName', 'sex', 'morphOrColour', 'estimatedAge', 'status', 'intakeDate', 'publicSummary', 'timeline', 'createdAt', 'updatedAt']);
+      allow delete: if rescueWritesEnabled() && rescueOrgEditor(resource.data.organisationId);
     }
     match /{document=**} { allow read, write: if false; }
   }

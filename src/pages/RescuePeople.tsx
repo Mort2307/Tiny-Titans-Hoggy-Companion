@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import PaidTierGate from "../components/PaidTierGate";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useAuth } from "../context/useAuth";
 import { getRescueAccess } from "../services/rescueService";
 import { getMyRescueWorkspace, getRescueTeam, inviteRescueStaff } from "../services/rescueWorkspaceService";
 import { getRescueApplicationQueue, getRescueCommunity, updateRescueApplication } from "../services/rescueCommunityService";
-import { getRescueSetupState } from "../services/rescueSetupService";
 import type { RescueApplication, RescueOrganisation, RescueRole } from "../types/rescue";
 import "../styles/rescue.css";
-import "../styles/rescue-community.css";
 
 const staffRoleLabels: Record<Exclude<RescueRole, "owner" | "foster" | "viewer">, string> = { manager: "Manager", staff: "Staff", medical: "Medical / Vet" };
 const tabLabels = { staff: "Staff", community: "Community", applications: "Applications" } as const;
@@ -24,7 +22,6 @@ export default function RescuePeople() {
   const [team, setTeam] = useState<Array<{ uid:string; email:string; displayName:string; role:RescueRole }>>([]);
   const [community, setCommunity] = useState<Array<{ uid:string; email:string; displayName:string; relationship:"viewer"|"foster"; joinedAt:number|null; updatedAt:number|null }>>([]);
   const [applications, setApplications] = useState<RescueApplication[]>([]);
-  const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Exclude<RescueRole, "owner" | "foster" | "viewer">>("staff");
   const [busy, setBusy] = useState(false);
@@ -36,13 +33,9 @@ export default function RescuePeople() {
     if (!user) return;
     const workspace = await getMyRescueWorkspace();
     setOrg(workspace.organisation);
-    setSetupComplete(null);
     if (!workspace.organisation) return;
     const access = getRescueAccess(workspace.organisation, user.uid);
     if (!access.canManageOrganisation) return;
-    const setup = await getRescueSetupState(workspace.organisation.id);
-    setSetupComplete(setup.organisation.setupComplete);
-    if (!setup.organisation.setupComplete) return;
     const [nextTeam, nextCommunity, nextApplications] = await Promise.all([
       getRescueTeam(workspace.organisation.id),
       getRescueCommunity(workspace.organisation.id),
@@ -71,8 +64,6 @@ export default function RescuePeople() {
   }
 
   if (!user || !org || !access.canManageOrganisation) return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page"><section className="rescue-card"><span className="rescue-eyebrow">PEOPLE & ACCESS</span><h1>Rescue management access required</h1><p>Only Rescue owners and managers can manage staff, community members and applications.</p><Link className="rescue-primary-link" to="/rescue">Back to Rescue →</Link></section></main></PaidTierGate>;
-  if (setupComplete === null) return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page"><section className="rescue-card"><p>Checking Rescue setup…</p></section></main></PaidTierGate>;
-  if (!setupComplete) return <Navigate to="/rescue" replace state={{ setupRequired:true, from:"/rescue/team" }} />;
 
   return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page">
     <header className="rescue-subhead"><Link to="/rescue">← Rescue Centre</Link><div><span className="rescue-eyebrow">PEOPLE & ACCESS</span><h1><TinyTitansIcon name="health" size={35}/> {org.name}</h1><p>Staff permissions stay separate from the people who follow, foster for, or apply to adopt from your Rescue.</p></div></header>
