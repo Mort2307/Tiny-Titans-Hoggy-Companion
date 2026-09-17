@@ -43,6 +43,10 @@ export default function NotificationBridge() {
     let refreshBusy = false;
 
     const refresh = async () => {
+      // Development uses Vite/HMR and the Firebase messaging worker should not
+      // be re-registered on every focus/online/visibility event. Production keeps
+      // the normal self-healing registration refresh behaviour.
+      if (import.meta.env.DEV) return;
       if (!user?.uid || refreshBusy || typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
       refreshBusy = true;
       try {
