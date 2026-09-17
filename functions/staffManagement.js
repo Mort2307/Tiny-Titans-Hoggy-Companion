@@ -156,9 +156,10 @@ exports.clearRescueStaffInvitation = onCall({ region: "europe-west2" }, async (r
   if (String(invitation.organisationId || "") !== organisationId) throw new HttpsError("permission-denied", "This invitation belongs to a different organisation.");
 
   const mailSnapshot = await db.collection("mail").where("rescueInvitationId", "==", invitationId).get();
-  if (!mailSnapshot.empty) {
+  const unsentMailDocs = mailSnapshot.docs.filter((mailDoc) => String(mailDoc.data()?.delivery?.state || "").toUpperCase() !== "SUCCESS");
+  if (unsentMailDocs.length) {
     const batch = db.batch();
-    mailSnapshot.docs.forEach((mailDoc) => batch.delete(mailDoc.ref));
+    unsentMailDocs.forEach((mailDoc) => batch.delete(mailDoc.ref));
     await batch.commit();
   }
   await ref.set({
@@ -222,37 +223,22 @@ exports.saveBusinessStaffMember = onCall({ region: "europe-west2" }, async (requ
     role,
     note,
     status: cleanText(payload.status, 40) || before?.status || "invited",
+    updatedByUid: request.auth.uid,
     updatedAt: FieldValue.serverTimestamp(),
   };
   if (!beforeSnapshot.exists) next.createdAt = FieldValue.serverTimestamp();
   await ref.set(next, { merge: true });
-  await writeHistory("business", request.auth.uid, {
-    action: before ? "member_updated" : "member_created",
-    subjectType: "member",
-    subjectId: ref.id,
-    subjectEmail: email,
-    subjectName: displayName,
-    fromRole: cleanText(before?.role, 40),
-    toRole: role,
-    fromStatus: cleanText(before?.status, 40),
-    toStatus: next.status,
-    actorUid: request.auth.uid,
-    source: "staff-management",
-    note,
-  });
   return { success: true, id: ref.id };
 });
 
 exports.clearBusinessStaffMember = onCall({ region: "europe-west2" }, async (request) => {
-  const access = await businessAccess(request);
+  await businessAccess(request);
   const id = cleanText(request.data?.id, 120);
   if (!id) throw new HttpsError("invalid-argument", "A Business team member ID is required.");
-  if (!access.tier) throw new HttpsError("permission-denied", "Business access is required.");
   const ref = db.collection("paidWorkspaces").doc(request.auth.uid).collection("teamMembers").doc(id);
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new HttpsError("not-found", "That team record no longer exists.");
-  const member = snapshot.data() || {};
-  await writeHistory("business", request.auth.uid, { action: "member_cleared", subjectType: "member", subjectId: id, subjectEmail: cleanEmail(member.email), subjectName: cleanText(member.displayName, 160), fromRole: cleanText(member.role, 40), fromStatus: cleanText(member.status, 40), actorUid: request.auth.uid, source: "staff-management", note: "Team record cleared by organisation owner." });
+  await ref.set({ updatedByUid: request.auth.uid, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   await ref.delete();
   return { success: true, id, cleared: true };
 });
