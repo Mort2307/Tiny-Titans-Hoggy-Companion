@@ -127,9 +127,13 @@ exports.publishCreatorQaRun = onRequest({ region: "europe-west2", timeoutSeconds
   if (!runId || !storagePrefix || !storagePrefix.startsWith("qa-evidence/runs/")) return response.status(400).json({ error: "A valid QA run ID and storage prefix are required." });
 
   const latestSnapshot = await db.collection("qaRuns").orderBy("completedAt", "desc").limit(1).get();
-  const previous = latestSnapshot.empty ? null : latestSnapshot.docs[0].data() || {};
-  if (previous.storagePrefix && previous.storagePrefix !== storagePrefix) {
+  const previousDoc = latestSnapshot.empty ? null : latestSnapshot.docs[0];
+  const previous = previousDoc ? previousDoc.data() || {} : null;
+  if (previous?.storagePrefix && previous.storagePrefix !== storagePrefix) {
     await bucket.deleteFiles({ prefix: String(previous.storagePrefix).replace(/^\/+|\/+$/g, "") }).catch((error) => console.warn("Previous QA evidence cleanup failed", error));
+    if (previousDoc && previousDoc.id !== runId) {
+      await previousDoc.ref.set({ qaEvidenceAvailable: false, evidenceRetiredAt: FieldValue.serverTimestamp() }, { merge: true });
+    }
   }
 
   const safeSummary = {
