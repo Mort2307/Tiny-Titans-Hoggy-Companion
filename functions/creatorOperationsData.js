@@ -1,11 +1,15 @@
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getStorage } = require("firebase-admin/storage");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 
 const db = getFirestore();
 const bucket = getStorage().bucket();
+const GITHUB_ACTIONS_TOKEN = defineSecret("TINY_TITANS_GITHUB_ACTIONS_TOKEN");
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 const CREATOR_TIERS = new Set(["business_starter", "business_plus", "business_advanced", "rescue"]);
+const VISUAL_WORKFLOW = "visual-capture-bot.yml";
+const VISUAL_REPOSITORY = "Mort2307/Tiny-Titans-Hoggy-Companion";
 
 function isCreator(request) {
   return Boolean(request.auth?.uid) && String(request.auth?.token?.email || "").trim().toLowerCase() === OWNER_EMAIL && (request.auth.token.admin === true || request.auth.token.creator === true);
@@ -91,6 +95,42 @@ exports.getPublicPartnerLanding = onCall({ region: "europe-west2" }, async (requ
   const data = snapshot.exists ? snapshot.data() || {} : null;
   if (!data || data.recordType !== "public" || data.publicEnabled !== true) return { success: true, profile: null };
   return { success: true, profile: cleanProfile(data, snapshot.id) };
+});
+
+exports.triggerCreatorVisualQa = onCall({ region: "europe-west2", secrets: [GITHUB_ACTIONS_TOKEN] }, async (request) => {
+  if (!isCreator(request)) throw new HttpsError("permission-denied", "Creator authorization is required.");
+
+  const token = String(GITHUB_ACTIONS_TOKEN.value() || "").trim();
+  if (!token) throw new HttpsError("failed-precondition", "GitHub Actions trigger is not configured yet.");
+
+  const requestedRoutes = String(request.data?.routes || "").trim();
+  const note = String(request.data?.note || "").trim().slice(0, 500);
+  const inputs = { routes: requestedRoutes, note: note || "Visual QA run triggered from Creator Centre" };
+  const endpoint = `https://api.github.com/repos/${VISUAL_REPOSITORY}/actions/workflows/${VISUAL_WORKFLOW}/dispatches`;
+
+  const githubResponse = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2026-03-10",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ref: "master", inputs }),
+  });
+
+  if (!githubResponse.ok) {
+    const detail = (await githubResponse.text()).slice(0, 800);
+    console.error("Visual QA workflow dispatch failed", githubResponse.status, detail);
+    throw new HttpsError("internal", "The visual QA workflow could not be started.");
+  }
+
+  return {
+    success: true,
+    status: "QUEUED",
+    workflow: "Tiny Titans Visual Review BOT",
+    actionsUrl: `https://github.com/${VISUAL_REPOSITORY}/actions/workflows/${VISUAL_WORKFLOW}`,
+  };
 });
 
 exports.getCreatorQaRuns = onCall({ region: "europe-west2" }, async (request) => {
