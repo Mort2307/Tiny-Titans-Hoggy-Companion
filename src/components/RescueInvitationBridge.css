@@ -1,0 +1,19 @@
+.rescue-invite-backdrop{position:fixed;inset:0;z-index:5000;display:grid;place-items:center;padding:24px;background:rgba(8,10,11,.78);backdrop-filter:blur(8px)}
+.rescue-invite-modal{width:min(560px,100%);padding:30px;border:1px solid rgba(213,170,75,.3);border-radius:22px;background:linear-gradient(145deg,#1b1f20,#121516);box-shadow:0 24px 80px rgba(0,0,0,.5);color:#f3f1e8}
+.rescue-invite-modal h2{margin:8px 0 12px;font-size:30px;line-height:1.12}
+.rescue-invite-modal p{margin:0;color:#c9c8c1;line-height:1.6}
+.rescue-invite-eyebrow{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.12em;color:#d5aa4b}
+.rescue-invite-lead{font-size:16px;margin-bottom:22px!important}
+.rescue-invite-details{display:grid;gap:12px;margin:22px 0;padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.025)}
+.rescue-invite-details div{display:grid;gap:4px}
+.rescue-invite-details small{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8f908a}
+.rescue-invite-details strong{font-size:14px;overflow-wrap:anywhere}
+.rescue-invite-actions{display:flex;gap:10px;margin-top:24px}
+.rescue-invite-actions button,.rescue-invite-modal-error button{min-height:46px;padding:0 18px;border-radius:12px;border:1px solid transparent;font:inherit;font-weight:800;cursor:pointer}
+.rescue-invite-primary{background:#d5aa4b;color:#111315}
+.rescue-invite-secondary{background:transparent;color:#e8e7df;border-color:rgba(255,255,255,.14)!important}
+.rescue-invite-actions button:disabled{opacity:.55;cursor:wait}
+.rescue-invite-error{margin-top:18px!important;color:#ffb4ac!important}
+.rescue-invite-success{margin-top:18px!important;color:#a9dfb0!important}
+.rescue-invite-modal-error button{margin-top:20px;background:transparent;color:#e8e7df;border-color:rgba(255,255,255,.14)}
+@media(max-width:560px){.rescue-invite-backdrop{padding:14px}.rescue-invite-modal{padding:24px;border-radius:18px}.rescue-invite-modal h2{font-size:26px}.rescue-invite-actions{flex-direction:column}.rescue-invite-actions button{width:100%}}
