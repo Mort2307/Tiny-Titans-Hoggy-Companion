@@ -23,5 +23,8 @@ service firebase.storage {
     }
     match /morphLibrary/{speciesId}/{morphId}/community/{fileName} { allow read: if signedIn(); allow write: if isCreator(); }
     match /morphLibrary/{morphId}/community/{fileName} { allow read: if signedIn(); allow write: if isCreator(); }
+    match /qa-evidence/{runId}/{fileName=**} {
+      allow read, write: if isCreator();
+    }
   }
 }
