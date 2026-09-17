@@ -159,6 +159,7 @@ export default function RescueInvitationBridge() {
   async function accept() {
     if (accepting) return;
     const currentInvitation = invitation;
+    if (!currentInvitation) return;
     setAccepting(true);
     setError("");
     try {
