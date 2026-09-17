@@ -65,7 +65,7 @@ export default function RescueInvitation() {
   }
 
   if (accepted) {
-    return <main className="rescue-page rescue-invitation-page"><section className="rescue-card rescue-invitation-card"><div className="rescue-invitation-success">✓</div><span className="rescue-eyebrow">INVITATION ACCEPTED</span><h1>Welcome to {invitation?.organisationName || "the Rescue Centre"}.</h1><p>Your <strong>{invitation ? ROLE_LABELS[invitation.role] : "Rescue"}</strong> role has been added to the organisation. Your personal TinyTitans account remains separate.</p><div className="rescue-invitation-actions"><button type="button" onClick={() => navigate("/rescue", { replace: true })}>Open Rescue Centre →</button><Link className="rescue-secondary-link" to="/account">My Account</Link></div></section></main>;
+    return <main className="rescue-page rescue-invitation-page"><section className="rescue-card rescue-invitation-card"><div className="rescue-invitation-success">✓</div><span className="rescue-eyebrow">INVITATION ACCEPTED</span><h1>Welcome to {invitation?.organisationName || "the Rescue Centre"}.</h1><p>Your <strong>{invitation ? ROLE_LABELS[invitation.role] : "Rescue"}</strong> role has been added to the organisation. Your personal TinyTitans account remains separate.</p><div className="rescue-invitation-actions"><button type="button" onClick={() => navigate("/rescue?manage=1", { replace: true })}>Open Rescue Centre →</button><Link className="rescue-secondary-link" to="/account">My Account</Link></div></section></main>;
   }
 
   if (error || !invitation) {
