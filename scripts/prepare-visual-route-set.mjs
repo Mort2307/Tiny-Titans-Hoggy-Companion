@@ -27,6 +27,7 @@ const layoutSpecialRoutes = [
   "/paid/support",
   "/paid/api",
   "/paid/branding",
+  "/rescue/log",
 ];
 
 const ignoredPathPatterns = [/^\/login(?:\/|$)/i, /^\/logout(?:\/|$)/i, /^\/account-setup(?:\/|$)/i];
@@ -197,7 +198,6 @@ async function main() {
             queued.push(after);
           }
         } catch {
-          // Discovery misses are not final visual failures; the rendered capture reports the actual evidence.
         }
         await page.goto(before, { waitUntil: "domcontentloaded" }).catch(() => undefined);
         await waitForStable(page);
@@ -219,21 +219,17 @@ async function main() {
     declaredRouteCount: declared.length,
     seedRouteCount: seedRoutes.length,
     discoveredRouteCount: routes.length,
-    dynamicDeclaredRoutes,
-    maxPages,
-    discoveryPages,
     routes,
+    dynamicDeclaredRoutes,
+    discoveryPages,
+    skippedPatterns: ignoredPathPatterns.map((pattern) => String(pattern)),
   };
-
   await fs.mkdir(outputDir, { recursive: true });
   await fs.writeFile(outputPath, `${JSON.stringify(routeReport, null, 2)}\n`, "utf8");
-  console.log(`Discovered ${routes.length} concrete routes from ${declared.length} router declarations across ${discoveryPages.length} visited pages.`);
+  console.log(`Discovered ${routes.length} concrete visual routes from ${seedRoutes.length} declared/layout-special seeds.`);
   const exitCode = runCapture(routes);
   if (exitCode === 0) await annotateCaptureReport("router-plus-authenticated-runtime-discovery");
   process.exitCode = exitCode;
 }
 
-main().catch((error) => {
-  console.error(error.stack || error.message || error);
-  process.exitCode = 1;
-});
+await main();
