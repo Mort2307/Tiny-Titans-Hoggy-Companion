@@ -10,7 +10,6 @@ const SMTP_CONNECTION_URI = defineString("TINY_TITANS_SMTP_CONNECTION_URI", {
 const SMTP_PASSWORD = defineSecret("TINY_TITANS_SMTP_PASSWORD");
 
 let transporter = null;
-let transporterKey = "";
 
 function listAddresses(value) {
   if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean);
@@ -48,11 +47,7 @@ function createTransporter() {
 }
 
 function getTransporter() {
-  const key = `${SMTP_CONNECTION_URI.value()}::${SMTP_PASSWORD.value()}`;
-  if (!transporter || transporterKey !== key) {
-    transporter = createTransporter();
-    transporterKey = key;
-  }
+  if (!transporter) transporter = createTransporter();
   return transporter;
 }
 
