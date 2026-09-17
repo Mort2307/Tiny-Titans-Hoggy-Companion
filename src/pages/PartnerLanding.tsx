@@ -4,93 +4,15 @@ import { getPublicPartnerLandingBySlug } from "../services/partnerLandingService
 import type { PartnerLandingProfile } from "../types/partnerLanding";
 import "../styles/partnerLanding.css";
 
-const HOURS: Array<[keyof PartnerLandingProfile["openingHours"], string]> = [
-  ["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"],
-  ["friday", "Friday"], ["saturday", "Saturday"], ["sunday", "Sunday"],
-];
-
-function safeExternalHref(value: string | undefined): string {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  if (raw.startsWith("mailto:") || raw.startsWith("tel:") || raw.startsWith("https://") || raw.startsWith("http://")) return raw;
-  return `https://${raw}`;
-}
-
-function SocialLinks({ profile }: { profile: PartnerLandingProfile }) {
-  const links = [
-    ["Instagram", profile.social.instagram], ["Facebook", profile.social.facebook], ["TikTok", profile.social.tiktok], ["YouTube", profile.social.youtube],
-  ].filter((item): item is [string, string] => Boolean(item[1]?.trim()));
-  if (!links.length) return null;
-  return <div className="partner-socials">{links.map(([name, url]) => <a key={name} href={safeExternalHref(url)} target="_blank" rel="noreferrer">{name}</a>)}</div>;
-}
+const HOURS: Array<[keyof PartnerLandingProfile["openingHours"], string]> = [["monday", "Monday"], ["tuesday", "Tuesday"], ["wednesday", "Wednesday"], ["thursday", "Thursday"], ["friday", "Friday"], ["saturday", "Saturday"], ["sunday", "Sunday"]];
+function safeExternalHref(value: string | undefined): string { const raw = String(value || "").trim(); if (!raw) return ""; if (raw.startsWith("mailto:") || raw.startsWith("tel:") || raw.startsWith("https://") || raw.startsWith("http://")) return raw; return `https://${raw}`; }
+function SocialLinks({ profile }: { profile: PartnerLandingProfile }) { const links = [["Instagram", profile.social.instagram], ["Facebook", profile.social.facebook], ["TikTok", profile.social.tiktok], ["YouTube", profile.social.youtube]].filter((item): item is [string, string] => Boolean(item[1]?.trim())); if (!links.length) return null; return <div className="partner-socials">{links.map(([name, url]) => <a key={name} href={safeExternalHref(url)} target="_blank" rel="noreferrer">{name}</a>)}</div>; }
 
 export default function PartnerLanding() {
-  const { slug = "" } = useParams();
-  const [profile, setProfile] = useState<PartnerLandingProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true); setError("");
-    void getPublicPartnerLandingBySlug(slug)
-      .then((next) => { if (active) setProfile(next); })
-      .catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "This partner page is unavailable."); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [slug]);
-
+  const { slug = "" } = useParams(); const [profile, setProfile] = useState<PartnerLandingProfile | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
+  useEffect(() => { let active = true; setLoading(true); setError(""); void getPublicPartnerLandingBySlug(slug).then((next) => { if (active) setProfile(next); }).catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "This partner page is unavailable."); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [slug]);
   if (loading) return <main className="partner-public-page"><div className="partner-public-shell"><div className="partner-loading">Loading partner page…</div></div></main>;
   if (error || !profile) return <main className="partner-public-page"><div className="partner-public-shell"><section className="partner-not-found"><span>404</span><h1>Partner page unavailable</h1><p>{error || "This public page may not have been published yet."}</p><Link to="/">Return to TinyTitans</Link></section></div></main>;
-
-  const primaryHref = safeExternalHref(profile.primaryCtaUrl);
-  const secondaryHref = safeExternalHref(profile.secondaryCtaUrl);
-  const address = [profile.contact.addressLine1, profile.contact.addressLine2, profile.contact.townCity, profile.contact.countyState, profile.contact.postcode, profile.contact.country].filter(Boolean).join(", ");
-  const details = [
-    [profile.kind === "rescue" ? "Rescue licence" : "Business registration", profile.businessDetails.rescueLicenseNumber || profile.businessDetails.registrationNumber],
-    ["Charity number", profile.businessDetails.charityNumber],
-    ["VAT number", profile.businessDetails.vatNumber],
-    ["CITES registration", profile.businessDetails.CITESRegistrationNumber],
-    ["Insurance", profile.businessDetails.insuranceNumber],
-    ["Responsible person", profile.businessDetails.responsiblePerson],
-  ].filter((item): item is [string, string] => Boolean(item[1]?.trim()));
-
-  return <main className="partner-public-page" style={{ ["--partner-accent" as string]: profile.accentColor }}>
-    <div className="partner-public-shell">
-      <header className="partner-hero">
-        {profile.heroImageUrl && <img className="partner-hero-image" src={profile.heroImageUrl} alt="" />}
-        <div className="partner-hero-overlay" />
-        <div className="partner-hero-content">
-          <div className="partner-brand-row">
-            {profile.logoUrl ? <img className="partner-logo" src={profile.logoUrl} alt={`${profile.brandName} logo`} /> : <div className="partner-logo partner-logo-fallback">{profile.brandName.slice(0, 1).toUpperCase()}</div>}
-            <div><span className="partner-kind">{profile.kind === "rescue" ? "RESCUE CENTRE" : "REPTILE BUSINESS"}</span><h1>{profile.brandName}</h1></div>
-          </div>
-          <p className="partner-tagline">{profile.tagline}</p>
-          <div className="partner-hero-actions">
-            {primaryHref && <a className="partner-primary-button" href={primaryHref}>{profile.primaryCtaLabel}</a>}
-            {secondaryHref && <a className="partner-secondary-button" href={secondaryHref} target="_blank" rel="noreferrer">{profile.secondaryCtaLabel || "Visit website"}</a>}
-          </div>
-        </div>
-      </header>
-
-      <section className="partner-content-grid">
-        <div className="partner-main-column">
-          <section className="partner-card partner-about"><span className="partner-eyebrow">ABOUT</span><h2>{profile.kind === "rescue" ? "Our rescue" : "About us"}</h2><p>{profile.description}</p></section>
-          {(address || profile.contact.email || profile.contact.phone || profile.contact.website) && <section className="partner-card"><span className="partner-eyebrow">CONTACT</span><h2>Find and contact us</h2><div className="partner-contact-list">
-            {address && <div><strong>Address</strong><span>{address}</span></div>}
-            {profile.contact.email && <div><strong>Email</strong><a href={`mailto:${profile.contact.email}`}>{profile.contact.email}</a></div>}
-            {profile.contact.phone && <div><strong>Phone</strong><a href={`tel:${profile.contact.phone}`}>{profile.contact.phone}</a></div>}
-            {profile.contact.website && <div><strong>Website</strong><a href={safeExternalHref(profile.contact.website)} target="_blank" rel="noreferrer">{profile.contact.website}</a></div>}
-          </div><SocialLinks profile={profile} /></section>}
-          {details.length > 0 && <section className="partner-card"><span className="partner-eyebrow">REGISTRATION &amp; COMPLIANCE</span><h2>Credentials</h2><div className="partner-credential-grid">{details.map(([label, value]) => <div key={label}><small>{label}</small><strong>{value}</strong></div>)}</div></section>}
-        </div>
-        <aside className="partner-side-column">
-          <section className="partner-card partner-hours"><span className="partner-eyebrow">OPENING HOURS</span><h2>When we're open</h2><div>{HOURS.map(([key, label]) => <div key={key}><span>{label}</span><strong>{profile.openingHours[key] || "Closed"}</strong></div>)}</div></section>
-          {profile.businessDetails.responsiblePerson && <section className="partner-card"><span className="partner-eyebrow">RESPONSIBLE CONTACT</span><h2>{profile.businessDetails.responsiblePerson}</h2><p>Authorised contact for this TinyTitans partner profile.</p></section>}
-        </aside>
-      </section>
-
-      <footer className="partner-footer"><span>{profile.showTinyTitansBadge ? "Powered by TinyTitans Reptile Companion 🐍🦎" : ""}</span><span>Public partner profile</span></footer>
-    </div>
-  </main>;
+  const primaryHref = safeExternalHref(profile.primaryCtaUrl); const secondaryHref = safeExternalHref(profile.secondaryCtaUrl); const address = [profile.contact.addressLine1, profile.contact.addressLine2, profile.contact.townCity, profile.contact.countyState, profile.contact.postcode, profile.contact.country].filter(Boolean).join(", "); const details = [[profile.kind === "rescue" ? "Rescue licence" : "Business registration", profile.businessDetails.rescueLicenseNumber || profile.businessDetails.registrationNumber], ["Charity number", profile.businessDetails.charityNumber], ["VAT number", profile.businessDetails.vatNumber], ["CITES registration", profile.businessDetails.CITESRegistrationNumber], ["Insurance", profile.businessDetails.insuranceNumber], ["Responsible person", profile.businessDetails.responsiblePerson]].filter((item): item is [string, string] => Boolean(item[1]?.trim()));
+  return <main className="partner-public-page" style={{ ["--partner-accent" as string]: profile.accentColor }}><div className="partner-public-shell"><header className="partner-hero">{profile.heroImageUrl && <img className="partner-hero-image" src={profile.heroImageUrl} alt=""/>}<div className="partner-hero-overlay"/><div className="partner-hero-content"><div className="partner-brand-row">{profile.logoUrl ? <img className="partner-logo" src={profile.logoUrl} alt={`${profile.brandName} logo`}/> : <div className="partner-logo partner-logo-fallback">{profile.brandName.slice(0, 1).toUpperCase()}</div>}<div><span className="partner-kind">{profile.kind === "rescue" ? "RESCUE CENTRE" : "REPTILE BUSINESS"}</span><h1>{profile.brandName}</h1></div></div><div className="partner-trust-row"><span className="partner-trust-pill">{profile.kind === "rescue" ? "Rescue public profile" : "Business public profile"}</span><span>{details.length ? "Organisation credentials published" : "Organisation identity published"}</span></div><p className="partner-tagline">{profile.tagline}</p><div className="partner-hero-actions">{primaryHref && <a className="partner-primary-button" href={primaryHref}>{profile.primaryCtaLabel}</a>}{secondaryHref && <a className="partner-secondary-button" href={secondaryHref} target="_blank" rel="noreferrer">{profile.secondaryCtaLabel || "Visit website"}</a>}</div></div></header><section className="partner-content-grid"><div className="partner-main-column"><section className="partner-card partner-about"><span className="partner-eyebrow">ABOUT</span><h2>{profile.kind === "rescue" ? "Our rescue" : "About us"}</h2><p>{profile.description}</p></section>{(address || profile.contact.email || profile.contact.phone || profile.contact.website) && <section className="partner-card"><span className="partner-eyebrow">CONTACT</span><h2>Find and contact us</h2><div className="partner-contact-list">{address && <div><strong>Address</strong><span>{address}</span></div>}{profile.contact.email && <div><strong>Email</strong><a href={`mailto:${profile.contact.email}`}>{profile.contact.email}</a></div>}{profile.contact.phone && <div><strong>Phone</strong><a href={`tel:${profile.contact.phone}`}>{profile.contact.phone}</a></div>}{profile.contact.website && <div><strong>Website</strong><a href={safeExternalHref(profile.contact.website)} target="_blank" rel="noreferrer">{profile.contact.website}</a></div>}</div><SocialLinks profile={profile}/></section>}{details.length > 0 && <section className="partner-card"><span className="partner-eyebrow">REGISTRATION &amp; COMPLIANCE</span><h2>Credentials</h2><div className="partner-credential-grid">{details.map(([label, value]) => <div key={label}><small>{label}</small><strong>{value}</strong></div>)}</div><p className="partner-trust-note">These details are displayed as supplied by the organisation. A public TinyTitans profile does not by itself certify regulatory status or replace independent checks where they are appropriate.</p></section>}</div><aside className="partner-side-column"><section className="partner-card partner-hours"><span className="partner-eyebrow">OPENING HOURS</span><h2>When we're open</h2><div>{HOURS.map(([key, label]) => <div key={key}><span>{label}</span><strong>{profile.openingHours[key] || "Closed"}</strong></div>)}</div></section>{profile.businessDetails.responsiblePerson && <section className="partner-card"><span className="partner-eyebrow">RESPONSIBLE CONTACT</span><h2>{profile.businessDetails.responsiblePerson}</h2><p>Authorised contact for this TinyTitans partner profile.</p></section>}</aside></section><footer className="partner-footer"><span>{profile.showTinyTitansBadge ? "Powered by TinyTitans Reptile Companion 🐍🦎" : ""}</span><span>Public partner profile</span></footer></div></main>;
 }
