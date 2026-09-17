@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { RescueCentre } from "./RescuePages";
 import { useAuth } from "../context/useAuth";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
-import { getMyRescueCommunityState, getPublicRescueProfile } from "../services/rescueCommunityService";
+import { getMyRescueCommunityState } from "../services/rescueCommunityService";
 import type { RescueApplication, RescueRole } from "../types/rescue";
 import "../styles/rescue.css";
 import "../styles/rescue-community.css";
