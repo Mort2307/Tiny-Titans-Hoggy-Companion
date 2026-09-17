@@ -29,6 +29,7 @@ import RescueDirectoryProfile from "../../pages/RescueDirectoryProfile";
 import { RescueCentre } from "../../pages/RescuePages";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
+import WorkspaceIdentityStrip from "../WorkspaceIdentityStrip";
 
 const speciesAwarePrefixes = [
   "/snakes", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding", "/behaviour", "/health",
@@ -84,11 +85,11 @@ function LayoutChrome() {
     <Navigation/>
     <main id="main-content" className="app-main" tabIndex={-1}><div className="app-content">
       {!isEasyNav && <AdaptiveGuideBar/>}{!isEasyNav && <CreatorTesterInvitationBanner/>}{!isEasyNav && <CreatorCommandBar/>}{!isEasyNav && <CreatorStatusBar/>}{!isEasyNav && <TitanQuickActions/>}{!isEasyNav && <SupportNotificationCenter/>}
-      <div className="tt-page-frame">{speciesAware && <SpeciesContextBar/>}
+      <div className="tt-page-frame"><WorkspaceIdentityStrip/>{speciesAware && <SpeciesContextBar/>}
         {pageContent}
         <TinyTitansEvidenceNotice/>
       </div>
-    </div></main>
+    </main>
     <CreatorPaidTierOperations />
   </div>;
 }
