@@ -26,3 +26,6 @@ artifacts/app-bot-results.json
 *.njsproj
 *.sln
 *.sw?
+
+functions/.env.tinytitans-hoggy-companion
+reports/
