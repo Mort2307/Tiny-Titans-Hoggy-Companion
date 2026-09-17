@@ -9,6 +9,13 @@ import { TITAN_CHAT_STARTERS } from "../../intelligence/askTitan/titanChatStarte
 import type { TitanWorkspaceKind } from "../../intelligence/askTitan/titanChatContracts";
 import "./AskTitan.css";
 
+function workspaceLabel(kind: TitanWorkspaceKind) {
+  if (kind === "rescue") return "RESCUE CENTRE";
+  if (kind === "business") return "BUSINESS";
+  if (kind === "seller") return "SELLER";
+  return "PERSONAL";
+}
+
 export default function AskTitan({ workspaceKind, animalId }: { workspaceKind?: TitanWorkspaceKind; animalId?: string }) {
   const activeWorkspaceKind = useTitanWorkspaceKind();
   const resolvedWorkspaceKind = workspaceKind ?? activeWorkspaceKind;
@@ -22,7 +29,10 @@ export default function AskTitan({ workspaceKind, animalId }: { workspaceKind?: 
           <h2>Ask Titan</h2>
           <p>Titan can use your authorised Tiny Titans records, deterministic analysis and relevant web evidence to help you investigate a question.</p>
         </div>
-        <button className="ask-titan-reset" type="button" onClick={reset} disabled={busy || messages.length === 0}>New chat</button>
+        <div className="ask-titan-header-actions">
+          <span className="titan-workspace-pill">{workspaceLabel(resolvedWorkspaceKind)}</span>
+          <button className="ask-titan-reset" type="button" onClick={reset} disabled={busy || messages.length === 0}>New chat</button>
+        </div>
       </header>
 
       <TitanDataUseNotice />
