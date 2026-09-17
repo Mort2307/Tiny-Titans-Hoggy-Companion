@@ -4,7 +4,7 @@ import type { RescueApplication, RescueApplicationStatus, RescueCommunityMember,
 
 const functions = getFunctions(app, "europe-west2");
 function err(error: unknown, fallback: string) { const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code || "") : ""; const message = error instanceof Error ? error.message : typeof error === "string" ? error : ""; return new Error(`${fallback}${code ? ` (${code})` : ""}${message ? `: ${message}` : "."}`); }
-type PublicOrganisation = { id:string; name:string; locationLabel:string; postcode:string; region:string; country:string; website:string; contactEmail:string; description:string; logoUrl:string; speciesDiscovered:string[]; charityNumber:string; companyNumber:string; localAuthorityLicence:string; registrationAuthority:string };
+type PublicOrganisation = { id:string; name:string; locationLabel:string; postcode:string; region:string; country:string; website:string; contactEmail:string; phone:string; openingHours:string; description:string; logoUrl:string; speciesDiscovered:string[]; charityNumber:string; companyNumber:string; localAuthorityLicence:string; registrationAuthority:string };
 export type PublicRescueAnimal = { id:string; name:string; speciesCommonName:string; scientificName:string; sex:string; morphOrColour:string; estimatedAge:string; status:string; publicSummary:string };
 export type PublicRescueProfile = { organisation:PublicOrganisation; animals:PublicRescueAnimal[] };
 export type RescueCommunityState = { relationship:RescueCommunityRelationship|null; operationalRole:RescueRole|null; applications:RescueApplication[] };
