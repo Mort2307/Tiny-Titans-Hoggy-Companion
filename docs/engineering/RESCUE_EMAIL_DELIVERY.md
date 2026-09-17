@@ -1,49 +1,70 @@
 # TinyTitans Rescue email delivery
 
-The Rescue staff invitation flow writes an email job to the Firestore `mail` collection. The repository does not send SMTP mail itself; Firebase Trigger Email must consume that queue.
+The Rescue staff invitation flow writes an email job to the Firestore `mail` collection. TinyTitans now consumes that queue with the first-party `sendQueuedMail` Cloud Function and Nodemailer rather than relying on the deprecated Firebase Extensions service.
 
 ## Production setup
 
-Install the Firebase Trigger Email extension once for the Firebase project:
+The mail sender uses these Firebase Functions parameters:
 
-```powershell
-firebase ext:install firebase/firestore-send-email --project=tinytitans-hoggy-companion
+```text
+TINY_TITANS_SMTP_CONNECTION_URI
+TINY_TITANS_SMTP_PASSWORD
 ```
 
-During configuration use these values:
+The connection URI is parameterised and defaults to:
 
-- Firestore mail collection: `mail`
-- Default FROM address: `Tiny Titans <tinytitans.exotics@gmail.com>`
-- Default REPLY-TO address: `tinytitans.exotics@gmail.com`
-- Users collection: leave empty for the current Rescue invitation implementation, because the invitation document already supplies `to` as an email address.
-- Templates collection: leave empty; the trusted Cloud Function currently supplies the HTML and plaintext message.
-- SMTP connection: use the SMTP service chosen for TinyTitans.
-- SMTP password: supply the provider credential through the extension setup; never commit it to the repository.
+```text
+smtps://tinytitans.exotics@gmail.com@smtp.gmail.com:465
+```
 
-Firebase's Trigger Email extension watches the configured Firestore collection and sends an email when a new document is added. It requires an SMTP service such as SendGrid, Mailgun, Mailchimp Transactional, or another SMTP server. urlFirebase Trigger Email documentationhttps://firebase.google.com/docs/extensions/official/firestore-send-email
+The SMTP password is a Firebase Secret and must never be committed to source control.
 
-For an early internal test, Gmail SMTP can be used with an app password on the TinyTitans sender account. Google requires 2-Step Verification before an app password can be created. A transactional email provider should be preferred for production delivery volume and sender reputation.
+For an early internal test, Gmail SMTP can be used with an App Password on the TinyTitans sender account. Google requires 2-Step Verification before an App Password can be created. urlGoogle App Password helphttps://support.google.com/accounts/answer/185833
+
+A transactional provider such as SendGrid or Mailgun can be used later by changing the SMTP connection parameter and provider credential. The mail delivery function does not expose SMTP credentials to the frontend.
+
+## Configure the sender
+
+From the TinyTitans project directory:
+
+```powershell
+firebase use tinytitans-hoggy-companion
+firebase functions:secrets:set TINY_TITANS_SMTP_PASSWORD --project=tinytitans-hoggy-companion
+```
+
+Enter the SMTP password when Firebase prompts for it. Do not put that password in `.env`, Git, PowerShell history, screenshots, or source files.
+
+The default connection URI already points at the TinyTitans Gmail sender. A different provider can supply `TINY_TITANS_SMTP_CONNECTION_URI` during deployment if required.
+
+Deploy the mail worker:
+
+```powershell
+firebase deploy --only functions:sendQueuedMail --project=tinytitans-hoggy-companion
+```
 
 ## Rescue invitation flow
 
 1. A Rescue owner or manager enters the staff email and role in `/rescue/team`.
-2. `inviteRescueStaff` creates `rescueInvitations/{invitationId}` with a seven-day expiry.
+2. `inviteRescueStaff` creates `rescueInvitations/{invitationId}` with the invitation expiry.
 3. The function creates a `mail/{mailId}` document addressed to the invited email.
-4. The email link is the canonical Firebase Hosting URL:
+4. `sendQueuedMail` detects the new mail document and sends it through SMTP.
+5. The email link is the canonical Firebase Hosting URL:
 
 ```text
 https://tinytitans-hoggy-companion.web.app/rescue/team?invite={invitationId}
 ```
 
-5. The application routes that URL through the dedicated Rescue invitation acceptance surface before the normal Team page is rendered.
-6. The invited person must be signed in with the same email address the organisation invited.
-7. `acceptRescueInvitation` adds the user's UID to the selected organisation role and marks the invitation accepted. Personal account data remains separate from the Rescue organisation.
+6. The application routes that URL through the dedicated Rescue invitation acceptance surface before the normal Team page is rendered.
+7. The invited person must be signed in with the same email address the organisation invited.
+8. `acceptRescueInvitation` adds the user's UID to the selected organisation role and marks the invitation accepted. Personal account data remains separate from the Rescue organisation.
+
+The same `mail` queue is also used by the existing family invitation email flow, so the mail worker restores delivery for both flows rather than creating a second email pipeline.
 
 ## Verify delivery
 
 After sending a test invitation, open the corresponding document in Firestore under `mail`.
 
-The Trigger Email extension adds a `delivery` object. Normal progression is:
+The mail worker writes a `delivery` object with states matching the existing queue contract:
 
 ```text
 PENDING → PROCESSING → SUCCESS
@@ -55,16 +76,12 @@ or:
 PENDING → PROCESSING → ERROR
 ```
 
-For errors, inspect `delivery.error` and `delivery.info.response`. The extension also records delivery attempts and accepted/rejected recipients. urlFirebase email delivery status documentationhttps://firebase.google.com/docs/extensions/official/firestore-send-email/delivery-status
+A successful record includes the SMTP message ID, accepted recipients and the SMTP response. A failed record includes a bounded error message so the delivery failure can be diagnosed without storing the invitation message body again.
 
-## Important security note
+## Security
 
-The `mail` collection should not be writable by normal client users. TinyTitans creates invitation mail documents server-side from trusted Cloud Functions. Keep the collection locked down in Firestore rules so arbitrary users cannot send mail from the TinyTitans sender address.
+The `mail` collection should not be writable by normal client users. TinyTitans creates mail documents server-side from trusted Cloud Functions. Firestore rules should continue to deny arbitrary client writes to this collection so users cannot send mail from the TinyTitans sender address.
 
 ## Current invitation URL contract
 
-The invitation URL intentionally remains `/rescue/team?invite=...` because the existing router, login redirect and account-setup redirect already preserve that path. The dedicated invitation surface now handles the query parameter and performs the invitation-specific verification and acceptance flow.
-
-## Firebase Extensions lifecycle
-
-Firebase has announced that the managed Firebase Extensions service will shut down on **March 31, 2027**. Already-deployed extensions will continue executing, but Firebase says management capabilities will no longer be available after that date. Treat the Trigger Email extension as the immediate delivery bridge, with a future migration to a directly managed Cloud Function/SMTP implementation planned before extension management becomes unavailable. urlFirebase Extensions deprecation FAQhttps://firebase.google.com/docs/extensions/faq-and-troubleshooting
+The invitation URL remains `/rescue/team?invite=...` because the existing router, login redirect and account-setup redirect already preserve that path. The dedicated invitation surface now consumes the query parameter, checks the invited email address, and performs the acceptance action.
