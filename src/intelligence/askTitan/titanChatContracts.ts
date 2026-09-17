@@ -37,6 +37,7 @@ export type TitanAskRequest = {
 
 export type TitanAskResponse = {
   success: true;
+  responseId: string;
   text: string;
   model: string;
   sources: TitanSource[];
