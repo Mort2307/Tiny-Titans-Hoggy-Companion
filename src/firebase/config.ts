@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -15,14 +16,26 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
+// Firebase AI Logic should be protected by App Check in production. The site
+// key is public and belongs in the Vite environment, not in source control.
+// Local development should use Firebase App Check's debug-token flow instead
+// of registering localhost on the production reCAPTCHA Enterprise key.
+const appCheckSiteKey = String(import.meta.env.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY || "").trim();
+const appCheck = typeof window !== "undefined" && appCheckSiteKey
+  ? initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey), isTokenAutoRefreshEnabled: true })
+  : null;
+
+if (typeof window !== "undefined" && import.meta.env.PROD && !appCheckSiteKey) {
+  console.warn("Tiny Titans App Check is not configured. Set VITE_RECAPTCHA_ENTERPRISE_SITE_KEY before enforcing App Check or enabling production Firebase AI Logic.");
+}
+
 const auth = getAuth(app);
-
 const db = getFirestore(app);
-
 const storage = getStorage(app);
 
 export {
   app,
+  appCheck,
   auth,
   db,
   storage,
