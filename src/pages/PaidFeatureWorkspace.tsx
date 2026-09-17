@@ -4,6 +4,7 @@ import { getPaidBusinessWorkspace, savePaidBusinessWorkspace } from "../services
 import { getUserSnakes } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
 import PaidTierGate from "../components/PaidTierGate";
+import OrganisationStaffManager from "../components/staff/OrganisationStaffManager";
 import { type PaidEntitlement } from "../config/paidTiers";
 import { useAuth } from "../context/useAuth";
 import "../styles/PaidFeatureWorkspace.css";
@@ -70,6 +71,7 @@ function WorkspaceFeature({ feature }: { feature: FeatureConfig }) {
   const [error, setError] = useState<string | null>(null);
   const section = feature.section!;
   useEffect(() => { let active = true; setLoading(true); void getPaidBusinessWorkspace(section).then((result) => { if (active) setWorkspace(result.workspace ?? {}); }).catch((err) => { if (active) setError(errorMessage(err)); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [section]);
+  if (section === "team") return <OrganisationStaffManager mode="business" />;
   if (loading) return <FeatureScaffold title={feature.title} icon={feature.icon} description={feature.description}><p>Loading your workspace…</p></FeatureScaffold>;
   if (error) return <FeatureScaffold title={feature.title} icon={feature.icon} description={feature.description}><div className="paid-inline-error">{error}</div></FeatureScaffold>;
   if (section === "analytics") return <AnalyticsFeature />;
