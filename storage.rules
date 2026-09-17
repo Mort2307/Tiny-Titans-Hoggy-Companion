@@ -7,6 +7,12 @@ service firebase.storage {
     function ownerAccount() { return signedIn() && request.auth.token.email == 'tinytitans.exotics@gmail.com'; }
     function isCreator() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.creator == true); }
     function canAccessUserFiles(userId) { return signedIn() && (request.auth.uid == userId || (creatorRecord().get('familyId', '') != '' && creatorRecord().get('familyId', '') == firestore.get(/databases/(default)/documents/users/$(userId)).data.get('familyId', '') && firestore.get(/databases/(default)/documents/families/$(creatorRecord().get('familyId', ''))).data.memberUids.hasAll([request.auth.uid, userId])) || isCreator()); }
+    function rescueBrandingEditor(orgId) {
+      let org = firestore.get(/databases/(default)/documents/rescueOrganisations/$(orgId)).data;
+      return signedIn()
+        && (org.get('ownerUid', '') == request.auth.uid || request.auth.uid in org.get('managerUids', []) || request.auth.uid in org.get('staffUids', []) || request.auth.uid in org.get('medicalUids', []))
+        && (ownerAccount() || org.get('accountStatus', '') == 'paid_active' || (org.get('pilotStatus', '') == 'pilot_active' && org.get('pilotEndsAt', null) > request.time));
+    }
 
     match /users/{userId}/snakes/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /snakePhotos/{userId}/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
@@ -23,6 +29,13 @@ service firebase.storage {
     }
     match /morphLibrary/{speciesId}/{morphId}/community/{fileName} { allow read: if signedIn(); allow write: if isCreator(); }
     match /morphLibrary/{morphId}/community/{fileName} { allow read: if signedIn(); allow write: if isCreator(); }
+    match /rescueBranding/{organisationId}/{fileName} {
+      allow read: if true;
+      allow create, update: if rescueBrandingEditor(organisationId)
+        && request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType.matches('^image/(jpeg|png|webp)$');
+      allow delete: if rescueBrandingEditor(organisationId);
+    }
     match /qa-evidence/{runId}/{fileName=**} {
       allow read, write: if isCreator();
     }
