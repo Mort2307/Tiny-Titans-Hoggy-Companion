@@ -6,10 +6,10 @@ async function generateTitanTurn({ apiKey, contents, tools, systemInstruction })
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemInstruction }] },
+      systemInstruction: { parts: [{ text: systemInstruction }] },
       contents,
       tools: [...tools, { googleSearch: {} }],
-      toolConfig: { functionCallingConfig: { mode: "VALIDATED" } },
+      toolConfig: { includeServerSideToolInvocations: true },
       generationConfig: { temperature: 0.25, maxOutputTokens: 1800 },
       store: false,
     }),
