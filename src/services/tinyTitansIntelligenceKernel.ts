@@ -17,9 +17,7 @@ export interface TinyTitansInsight {
   actionRoute?: string;
 }
 
-type InsightHandler<K extends TinyTitansEventName> = (
-  event: TinyTitansEvent<K>,
-) => TinyTitansInsight | TinyTitansInsight[] | null;
+type InsightHandler<K extends TinyTitansEventName> = (event: TinyTitansEvent<K>) => TinyTitansInsight | TinyTitansInsight[] | null;
 
 /**
  * App-wide intelligence orchestration layer.
@@ -32,8 +30,8 @@ class TinyTitansIntelligenceKernel {
   private readonly handlers = new Map<TinyTitansEventName, Set<InsightHandler<TinyTitansEventName>>>();
   private readonly insights: TinyTitansInsight[] = [];
   private readonly growthEvents: IntelligenceGrowthEvent[] = [];
+  private readonly subscriptions = new Map<TinyTitansEventName, () => void>();
   private started = false;
-  private stopListeners: Array<() => void> = [];
 
   register<K extends TinyTitansEventName>(eventName: K, handler: InsightHandler<K>): () => void {
     const handlers = this.handlers.get(eventName) ?? new Set<InsightHandler<TinyTitansEventName>>();
@@ -53,17 +51,9 @@ class TinyTitansIntelligenceKernel {
     return () => this.stop();
   }
 
-  getRecent(limit = 20): TinyTitansInsight[] {
-    return this.insights.slice(-limit).reverse();
-  }
-
-  getGrowthSnapshot(now = Date.now()): IntelligenceGrowthSnapshot {
-    return calculateIntelligenceGrowth(this.growthEvents, now);
-  }
-
-  getGrowthEvents(limit = 100): IntelligenceGrowthEvent[] {
-    return this.growthEvents.slice(-limit);
-  }
+  getRecent(limit = 20): TinyTitansInsight[] { return this.insights.slice(-limit).reverse(); }
+  getGrowthSnapshot(now = Date.now()): IntelligenceGrowthSnapshot { return calculateIntelligenceGrowth(this.growthEvents, now); }
+  getGrowthEvents(limit = 100): IntelligenceGrowthEvent[] { return this.growthEvents.slice(-limit); }
 
   clear(): void {
     this.insights.length = 0;
@@ -71,20 +61,14 @@ class TinyTitansIntelligenceKernel {
   }
 
   private ensureEventSubscription(eventName: TinyTitansEventName): void {
-    if (this.stopListeners.length && this.started && !this.handlers.has(eventName) && false) return;
-    const marker = `__tt_kernel_${eventName}`;
-    const target = this as unknown as Record<string, unknown>;
-    if (target[marker] === true) return;
-    target[marker] = true;
-    this.stopListeners.push(tinyTitansEventBus.on(eventName, (event) => this.process(event)));
+    if (this.subscriptions.has(eventName)) return;
+    this.subscriptions.set(eventName, tinyTitansEventBus.on(eventName, (event) => this.process(event)));
   }
 
   private stop(): void {
-    this.stopListeners.forEach((unsubscribe) => unsubscribe());
-    this.stopListeners = [];
+    for (const unsubscribe of this.subscriptions.values()) unsubscribe();
+    this.subscriptions.clear();
     this.started = false;
-    const target = this as unknown as Record<string, unknown>;
-    for (const eventName of TINY_TITANS_EVENT_NAMES) delete target[`__tt_kernel_${eventName}`];
   }
 
   private process(event: TinyTitansEvent<TinyTitansEventName>): void {
@@ -93,7 +77,6 @@ class TinyTitansIntelligenceKernel {
       this.growthEvents.push(growthEvent);
       if (this.growthEvents.length > 500) this.growthEvents.splice(0, this.growthEvents.length - 500);
     }
-
     const handlers = this.handlers.get(event.type);
     if (!handlers) return;
     for (const handler of handlers) {
