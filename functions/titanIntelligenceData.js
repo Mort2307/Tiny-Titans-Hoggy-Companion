@@ -132,6 +132,7 @@ const VISIBILITY_RANK = Object.freeze({ public: 0, staff: 1, medical: 2 });
 function roleVisibility(role) { return ROLE_VISIBILITY[role] || "public"; }
 function canSeeVisibility(role, visibility) { return VISIBILITY_RANK[visibility || "public"] <= VISIBILITY_RANK[roleVisibility(role)]; }
 function filterVisibility(items, role) { return (Array.isArray(items) ? items : []).filter((item) => canSeeVisibility(role, String(item?.visibility || "public"))); }
+function serialiseItems(items) { return Array.isArray(items) ? items.map((item) => serialise(item)) : []; }
 
 function sanitiseRescueAnimal(animal, role, fullHistory = false) {
   const output = {
@@ -159,19 +160,19 @@ function sanitiseRescueAnimal(animal, role, fullHistory = false) {
   if (operational) {
     output.microchipNumber = animal.microchipNumber ? String(animal.microchipNumber) : undefined;
     output.secondaryIdentifier = animal.secondaryIdentifier ? String(animal.secondaryIdentifier) : undefined;
-    output.lifecycle = filterVisibility(animal.lifecycle, role).map(serialise);
-    output.locations = filterVisibility(animal.locations, role).map(serialise);
+    output.lifecycle = serialiseItems(filterVisibility(animal.lifecycle, role));
+    output.locations = serialiseItems(filterVisibility(animal.locations, role));
     output.quarantine = ["owner", "manager", "medical", "staff"].includes(role) && animal.quarantine ? serialise(animal.quarantine) : undefined;
     if (privileged && animal.intakeRecord) output.intakeRecord = serialise(animal.intakeRecord);
     if (privileged && animal.privateNotes) output.privateNotes = String(animal.privateNotes).slice(0, 1600);
   }
   if (fullHistory) {
-    output.timeline = filterVisibility(animal.timeline, role).slice(0, 160).map(serialise);
-    output.careRecords = filterVisibility(animal.careRecords, role).slice(0, 160).map(serialise);
-    output.transfers = filterVisibility(animal.transfers, role).slice(0, 80).map(serialise);
-    output.fosterPlacements = filterVisibility(animal.fosterPlacements, role).slice(0, 80).map(serialise);
-    output.documents = filterVisibility(animal.documents, role).slice(0, 80).map(serialise);
-    output.reminders = Array.isArray(animal.reminders) ? animal.reminders.slice(0, 80).map(serialise) : [];
+    output.timeline = serialiseItems(filterVisibility(animal.timeline, role).slice(0, 160));
+    output.careRecords = serialiseItems(filterVisibility(animal.careRecords, role).slice(0, 160));
+    output.transfers = serialiseItems(filterVisibility(animal.transfers, role).slice(0, 80));
+    output.fosterPlacements = serialiseItems(filterVisibility(animal.fosterPlacements, role).slice(0, 80));
+    output.documents = serialiseItems(filterVisibility(animal.documents, role).slice(0, 80));
+    output.reminders = serialiseItems(Array.isArray(animal.reminders) ? animal.reminders.slice(0, 80) : []);
   }
   return output;
 }
