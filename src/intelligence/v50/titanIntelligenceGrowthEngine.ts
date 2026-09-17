@@ -97,7 +97,6 @@ export function calculateIntelligenceGrowth(events: readonly IntelligenceGrowthE
   const domainCoverage = clamp(domains.length / INTELLIGENCE_DOMAINS.length);
   const windowStart = now - (30 * 86400000);
   const recentWindow = recent.filter((event) => event.occurredAt >= windowStart);
-  const recentDomains = new Set(recentWindow.map((event) => event.domain));
   const freshness = recentWindow.length ? clamp(0.35 + (recentWindow.length / 30) * 0.65) : 0;
 
   let correlatedPairs = 0;
