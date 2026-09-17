@@ -48,7 +48,7 @@ function rescueWorkspaceActive(org) {
 
 async function resolveTitanAccess(uid, workspaceKind = "personal") {
   if (!uid) return { allowed: false, effectiveTier: "free", source: "free", workspaceKind };
-  if (await isOwner(uid)) return { allowed: true, effectiveTier: "business_advanced", source: "owner", workspaceKind };
+  if (await isOwner(uid)) return { allowed: true, effectiveTier: workspaceKind === "rescue" ? "rescue" : "business_advanced", source: "owner", workspaceKind };
 
   const [userSnapshot, entitlementSnapshot, trialSnapshot, overrideSnapshot] = await Promise.all([
     db.collection("users").doc(uid).get(),
@@ -66,16 +66,20 @@ async function resolveTitanAccess(uid, workspaceKind = "personal") {
   const overrideActive = override.enabled === true && PAID_TIERS.has(String(override.tier || "")) && (!override.expiresAt || activeExpiry(override.expiresAt));
   const trialActive = trial.enabled === true && PAID_TIERS.has(String(trial.tier || "")) && String(trial.tier) !== "free" && activeExpiry(trial.expiresAt);
 
-  if (overrideActive) return { allowed: true, effectiveTier: String(override.tier), source: "tester", workspaceKind, actualTier };
-  if (subscriptionActive) return { allowed: true, effectiveTier: actualTier, source: "subscription", workspaceKind, actualTier };
-  if (trialActive) return { allowed: true, effectiveTier: String(trial.tier), source: "trial", workspaceKind, actualTier };
-
+  // Rescue is a separate data boundary. A paid keeper account cannot enter
+  // Rescue AI context merely by having another paid tier; membership in an
+  // active Rescue workspace is required, and its data tools enforce ownership.
   if (workspaceKind === "rescue") {
     const membership = await rescueMembership(uid);
     if (membership && rescueWorkspaceActive(membership.organisation)) {
-      return { allowed: true, effectiveTier: "rescue", source: "rescue_workspace", workspaceKind, rescueRole: membership.role, organisationId: membership.organisationId };
+      return { allowed: true, effectiveTier: "rescue", source: "rescue_workspace", workspaceKind, rescueRole: membership.role, organisationId: membership.organisationId, actualTier };
     }
+    return { allowed: false, effectiveTier: "free", source: "free", workspaceKind, actualTier };
   }
+
+  if (overrideActive) return { allowed: true, effectiveTier: String(override.tier), source: "tester", workspaceKind, actualTier };
+  if (subscriptionActive) return { allowed: true, effectiveTier: actualTier, source: "subscription", workspaceKind, actualTier };
+  if (trialActive) return { allowed: true, effectiveTier: String(trial.tier), source: "trial", workspaceKind, actualTier };
 
   return { allowed: false, effectiveTier: "free", source: "free", workspaceKind, actualTier };
 }
