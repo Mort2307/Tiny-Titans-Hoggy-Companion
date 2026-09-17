@@ -5,6 +5,7 @@ import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidEntitlement, type PaidTierId } from "../config/paidTiers";
 import PaidTierBadge from "./PaidTierBadge";
+import RescueInvitation from "../pages/RescueInvitation";
 import "../styles/PaidPlans.css";
 import "../styles/PaidTierGate.css";
 
@@ -78,6 +79,8 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
   const [rescueWorkspace, setRescueWorkspace] = useState(false);
   const [checking, setChecking] = useState(true);
   const isCreator = user?.email?.trim().toLowerCase() === CREATOR_EMAIL;
+  const rescueEntitlement = isRescueEntitlement(entitlement);
+  const invitationRoute = isRescueInvitationRoute(entitlement);
 
   useEffect(() => {
     let active = true;
@@ -95,7 +98,7 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
     setChecking(true);
     void Promise.all([
       getPaidAccess(user.uid),
-      isRescueEntitlement(entitlement) ? getMyRescueWorkspace() : Promise.resolve({ organisation: null, role: null }),
+      rescueEntitlement ? getMyRescueWorkspace() : Promise.resolve({ organisation: null, role: null }),
     ]).then(([nextAccess, workspace]) => {
       if (!active) return;
       setAccess(nextAccess);
@@ -109,14 +112,14 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
       if (active) setChecking(false);
     });
     return () => { active = false; };
-  }, [entitlement, isCreator, user]);
+  }, [entitlement, isCreator, rescueEntitlement, user]);
 
   if (loading || profileLoading || checking) return <div aria-live="polite">Checking Tiny Titans access…</div>;
+  if (invitationRoute) return <RescueInvitation />;
   if (isCreator) return <>{children}</>;
 
-  const rescueEntitlement = isRescueEntitlement(entitlement);
   const paidAllowed = Boolean(access && getPaidTierDefinition(access.effectiveTier).entitlements.includes(entitlement));
-  const allowed = paidAllowed || (rescueEntitlement && (rescueWorkspace || isRescueInvitationRoute(entitlement)));
+  const allowed = paidAllowed || (rescueEntitlement && rescueWorkspace);
   const requiredTier = PAID_TIER_ORDER.find((tierId) => tierId !== "free" && getPaidTierDefinition(tierId).entitlements.includes(entitlement)) ?? "titan_pro";
 
   if (!allowed) {
