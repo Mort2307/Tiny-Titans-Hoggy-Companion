@@ -6,6 +6,7 @@ import {
   getMyRescueWorkspace,
   getRescueStaffManagement,
   inviteRescueStaff,
+  resendRescueStaffInvitation,
   updateRescueStaffRole,
   type RescueStaffInvitation,
   type StaffHistoryEntry,
@@ -36,8 +37,21 @@ function formatDate(value: number | null | undefined, time = true) {
   if (Number.isNaN(date.getTime())) return "—";
   return time ? date.toLocaleString("en-GB") : date.toLocaleDateString("en-GB");
 }
+function actionKey(value: string) { return value.replaceAll(" ", "_").toLowerCase(); }
 function actionLabel(value: string) { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
 function errorMessage(error: unknown, fallback: string) { return error instanceof Error ? error.message : fallback; }
+function invitationUrl(invitationId: string) { return `${window.location.origin}/rescue/team?invite=${encodeURIComponent(invitationId)}`; }
+
+function simplifyHistory(entries: StaffHistoryEntry[]): StaffHistoryEntry[] {
+  return entries
+    .filter((entry) => actionKey(entry.action) !== "deleted")
+    .map((entry) => {
+      if (actionKey(entry.action) === "status_changed" && actionKey(entry.toStatus || "") === "cleared") {
+        return { ...entry, action: "cleared" };
+      }
+      return entry;
+    });
+}
 
 export default function OrganisationStaffManager({ mode }: { mode: Mode }) {
   const [rescueName, setRescueName] = useState("");
@@ -56,6 +70,7 @@ export default function OrganisationStaffManager({ mode }: { mode: Mode }) {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [historyNoteDrafts, setHistoryNoteDrafts] = useState<Record<string, string>>({});
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,12 +84,12 @@ export default function OrganisationStaffManager({ mode }: { mode: Mode }) {
         const result = await getRescueStaffManagement(workspace.organisation.id);
         setRescueMembers(result.members);
         setRescueInvitations(result.invitations.filter((item) => item.status === "pending"));
-        setHistory(result.history);
+        setHistory(simplifyHistory(result.history));
       } else {
         const result = await getBusinessStaffManagement();
         setBusinessMembers(result.members);
         setRoleManage(result.roleManage);
-        setHistory(result.history);
+        setHistory(simplifyHistory(result.history));
       }
     } catch (error) {
       setMessage(errorMessage(error, "Staff workspace could not be loaded."));
@@ -102,16 +117,36 @@ export default function OrganisationStaffManager({ mode }: { mode: Mode }) {
       setInviteEmail("");
       setInviteDisplayName("");
       setInviteNote("");
-      setMessage("Invitation created and queued for delivery.");
+      setMessage("Invitation created and email queued.");
       await load();
     } catch (error) { setMessage(errorMessage(error, "Rescue invitation failed.")); }
     finally { setBusyKey(""); }
   }
 
+  async function resendRescue(invitation: RescueStaffInvitation) {
+    if (!rescueId) return;
+    setBusyKey(`resend-${invitation.id}`); setMessage("");
+    try {
+      await resendRescueStaffInvitation(rescueId, invitation.id);
+      setMessage(`Invitation email re-sent to ${invitation.email}.`);
+      await load();
+    } catch (error) { setMessage(errorMessage(error, "Invitation email could not be re-sent.")); }
+    finally { setBusyKey(""); }
+  }
+
+  async function copyRescueLink(invitation: RescueStaffInvitation) {
+    try {
+      await navigator.clipboard.writeText(invitationUrl(invitation.id));
+      setMessage("Invitation link copied.");
+    } catch {
+      setMessage("The invitation link could not be copied on this device.");
+    }
+  }
+
   async function clearRescue(invitation: RescueStaffInvitation) {
     if (!rescueId) return;
     setBusyKey(`clear-${invitation.id}`); setMessage("");
-    try { await clearRescueStaffInvitation(rescueId, invitation.id); setMessage(`${invitation.email} invitation completely cleared.`); await load(); }
+    try { await clearRescueStaffInvitation(rescueId, invitation.id); setMessage(`${invitation.email} invitation cleared.`); await load(); }
     catch (error) { setMessage(errorMessage(error, "Invitation could not be cleared.")); }
     finally { setBusyKey(""); }
   }
@@ -151,7 +186,7 @@ export default function OrganisationStaffManager({ mode }: { mode: Mode }) {
 
   async function clearBusiness(member: BusinessStaffMember) {
     setBusyKey(`business-clear-${member.id}`); setMessage("");
-    try { await clearBusinessStaffMember(member.id); if (editingBusinessId === member.id) startNewBusinessMember(); setMessage(`${member.email} team record completely cleared.`); await load(); }
+    try { await clearBusinessStaffMember(member.id); if (editingBusinessId === member.id) startNewBusinessMember(); setMessage(`${member.email} team record cleared.`); await load(); }
     catch (error) { setMessage(errorMessage(error, "Business team record could not be cleared.")); }
     finally { setBusyKey(""); }
   }
@@ -162,6 +197,7 @@ export default function OrganisationStaffManager({ mode }: { mode: Mode }) {
     try {
       await editOrganisationStaffHistory(mode, mode === "rescue" ? rescueId : entry.organisationId, entry.id, value);
       setMessage("History note updated.");
+      setEditingHistoryId(null);
       await load();
     } catch (error) { setMessage(errorMessage(error, "History note could not be updated.")); }
     finally { setBusyKey(""); }
@@ -169,8 +205,8 @@ export default function OrganisationStaffManager({ mode }: { mode: Mode }) {
 
   const title = mode === "rescue" ? `${rescueName || "Rescue"} staff` : "Business staff & access";
   const description = mode === "rescue"
-    ? "Invite, edit roles, clear stale invitations and keep a complete operational history for the people connected to this Rescue workspace."
-    : "Keep team records, roles, failed invitation records and an editable operational history in one place for Business tiers with staff access.";
+    ? "Invite staff, manage roles and keep a simple record of important team changes."
+    : "Manage team records, roles and important access changes in one place.";
 
   return <main className="organisation-staff-page">
     <header className="organisation-staff-hero">
@@ -178,16 +214,16 @@ export default function OrganisationStaffManager({ mode }: { mode: Mode }) {
       {mode === "business" && <button className="organisation-staff-secondary" type="button" onClick={startNewBusinessMember}>+ New team member</button>}
     </header>
 
-    {message && <div className={`organisation-staff-message ${/failed|could not|error|not found|denied/i.test(message) ? "is-error" : "is-success"}`} role="status">{message}</div>}
+    {message && <div className={`organisation-staff-message ${/failed|could not|error|not found|denied|unable/i.test(message) ? "is-error" : "is-success"}`} role="status">{message}</div>}
 
-    <section className="organisation-staff-stat-grid"><article><span>Current staff</span><strong>{stats.active}</strong></article><article><span>Pending / invited</span><strong>{stats.pending}</strong></article><article><span>History entries</span><strong>{stats.history}</strong></article></section>
+    <section className="organisation-staff-stat-grid"><article><span>Current staff</span><strong>{stats.active}</strong></article><article><span>Pending / invited</span><strong>{stats.pending}</strong></article><article><span>History</span><strong>{stats.history}</strong></article></section>
 
-    {mode === "rescue" && rescueInvitations.length > 0 && <section className="organisation-staff-card"><div className="organisation-staff-card-heading"><div><span className="organisation-staff-eyebrow">PENDING INVITATIONS</span><h2>Clear failed or stale invitations</h2><p>Clearing removes the live invitation and its queued mail record, while the lifecycle remains in history.</p></div></div><div className="organisation-staff-list">{rescueInvitations.map((invitation) => <article className="organisation-staff-row" key={invitation.id}><div className="organisation-staff-avatar">✉</div><div className="organisation-staff-row-main"><strong>{invitation.email}</strong><small>{RESCUE_ROLE_LABELS[invitation.role as keyof typeof RESCUE_ROLE_LABELS] || actionLabel(invitation.role)} · created {formatDate(invitation.invitedAt)} · expires {formatDate(invitation.expiresAt)}</small></div><button className="organisation-staff-danger" type="button" onClick={() => void clearRescue(invitation)} disabled={busyKey.length > 0}>Clear completely</button></article>)}</div></section>}
+    {mode === "rescue" && rescueInvitations.length > 0 && <section className="organisation-staff-card"><div className="organisation-staff-card-heading"><div><span className="organisation-staff-eyebrow">PENDING INVITATIONS</span><h2>Waiting for acceptance</h2><p>Resend the email, copy the direct link, or clear the invitation.</p></div></div><div className="organisation-staff-list">{rescueInvitations.map((invitation) => <article className="organisation-staff-row" key={invitation.id}><div className="organisation-staff-avatar">✉</div><div className="organisation-staff-row-main"><strong>{invitation.email}</strong><small>{RESCUE_ROLE_LABELS[invitation.role as keyof typeof RESCUE_ROLE_LABELS] || actionLabel(invitation.role)} · expires {formatDate(invitation.expiresAt)}</small></div><div className="organisation-staff-row-actions"><button type="button" onClick={() => void resendRescue(invitation)} disabled={busyKey !== ""}>{busyKey === `resend-${invitation.id}` ? "Sending…" : "Resend email"}</button><button type="button" onClick={() => void copyRescueLink(invitation)} disabled={busyKey !== ""}>Copy link</button><button className="organisation-staff-danger" type="button" onClick={() => void clearRescue(invitation)} disabled={busyKey !== ""}>{busyKey === `clear-${invitation.id}` ? "Clearing…" : "Clear"}</button></div></article>)}</div></section>}
 
-    <section className="organisation-staff-card"><div className="organisation-staff-card-heading"><div><span className="organisation-staff-eyebrow">{mode === "rescue" ? "INVITE TEAM" : "TEAM RECORD"}</span><h2>{mode === "rescue" ? "Add a staff member" : editingBusinessId ? "Edit team member" : "Add a team member"}</h2><p>{mode === "rescue" ? "Each person keeps their own TinyTitans account; organisation access is separate." : "Business staff records are owned by the Business workspace rather than the personal keeper profile."}</p></div></div><div className="organisation-staff-form-grid"><label>Email<input type="email" value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="team.member@example.com" /></label><label>Name / display name<input value={inviteDisplayName} onChange={(event) => setInviteDisplayName(event.target.value)} placeholder="Optional" /></label><label>Role<select value={inviteRole} onChange={(event) => setInviteRole(event.target.value)}>{Object.entries(mode === "rescue" ? RESCUE_ROLE_LABELS : BUSINESS_ROLE_LABELS).filter(([key]) => key !== "owner").map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label className="organisation-staff-form-span">Internal note<textarea value={inviteNote} onChange={(event) => setInviteNote(event.target.value)} placeholder="Role context, working notes or access details…" /></label></div><div className="organisation-staff-actions">{mode === "rescue" ? <button type="button" onClick={() => void rescueInvite()} disabled={busyKey !== "" || !inviteEmail.trim()}>{busyKey === "invite" ? "Creating…" : "Invite staff member"}</button> : <><button type="button" onClick={() => void saveBusiness()} disabled={busyKey !== "" || !inviteEmail.trim()}>{busyKey === "business-save" ? "Saving…" : editingBusinessId ? "Save team member" : "Create invitation record"}</button>{editingBusinessId && <button className="organisation-staff-secondary" type="button" onClick={startNewBusinessMember}>Cancel edit</button>}</>}</div></section>
+    <section className="organisation-staff-card"><div className="organisation-staff-card-heading"><div><span className="organisation-staff-eyebrow">{mode === "rescue" ? "INVITE TEAM" : "TEAM RECORD"}</span><h2>{mode === "rescue" ? "Add a staff member" : editingBusinessId ? "Edit team member" : "Add a team member"}</h2><p>{mode === "rescue" ? "Each person keeps their own TinyTitans account; organisation access is separate." : "Business staff records are owned by the Business workspace rather than the personal keeper profile."}</p></div></div><div className="organisation-staff-form-grid"><label>Email<input type="email" value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="team.member@example.com" /></label><label>Name / display name<input value={inviteDisplayName} onChange={(event) => setInviteDisplayName(event.target.value)} placeholder="Optional" /></label><label>Role<select value={inviteRole} onChange={(event) => setInviteRole(event.target.value)}>{Object.entries(mode === "rescue" ? RESCUE_ROLE_LABELS : BUSINESS_ROLE_LABELS).filter(([key]) => key !== "owner").map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label className="organisation-staff-form-span">Internal note<textarea value={inviteNote} onChange={(event) => setInviteNote(event.target.value)} placeholder="Role context or access details…" /></label></div><div className="organisation-staff-actions">{mode === "rescue" ? <button type="button" onClick={() => void rescueInvite()} disabled={busyKey !== "" || !inviteEmail.trim()}>{busyKey === "invite" ? "Creating…" : "Invite staff member"}</button> : <><button type="button" onClick={() => void saveBusiness()} disabled={busyKey !== "" || !inviteEmail.trim()}>{busyKey === "business-save" ? "Saving…" : editingBusinessId ? "Save team member" : "Create invitation record"}</button>{editingBusinessId && <button className="organisation-staff-secondary" type="button" onClick={startNewBusinessMember}>Cancel edit</button>}</>}</div></section>
 
     <section className="organisation-staff-card"><div className="organisation-staff-card-heading"><div><span className="organisation-staff-eyebrow">CURRENT STAFF</span><h2>People with workspace access</h2></div></div>{loading ? <p>Loading staff…</p> : mode === "rescue" ? <div className="organisation-staff-list">{rescueMembers.map((member) => <article className="organisation-staff-row" key={member.uid}><div className="organisation-staff-avatar">{member.role === "medical" ? "✚" : member.role === "manager" ? "◆" : "●"}</div><div className="organisation-staff-row-main"><strong>{member.displayName || member.email || member.uid}</strong><small>{member.email || "Email unavailable"}</small></div><div className="organisation-staff-inline-controls">{member.role === "owner" ? <span className="organisation-staff-role-badge">Owner / Admin</span> : <select value={member.role} onChange={(event) => void changeRescueRole(member, event.target.value as Exclude<RescueRole, "owner">)} disabled={!roleManage || busyKey !== ""}><option value="manager">Manager</option><option value="staff">Staff</option><option value="medical">Medical / Vet</option><option value="foster">Foster</option><option value="viewer">Viewer / Volunteer</option></select>}</div></article>)}{!rescueMembers.length && <div className="organisation-staff-empty">No current Rescue staff members found.</div>}</div> : <div className="organisation-staff-list">{businessMembers.map((member) => <article className="organisation-staff-row" key={member.id}><div className="organisation-staff-avatar">{member.status === "invited" ? "✉" : "●"}</div><div className="organisation-staff-row-main"><strong>{member.displayName || member.email}</strong><small>{member.email} · {BUSINESS_ROLE_LABELS[member.role] || actionLabel(member.role)} · {actionLabel(member.status)}</small>{member.note && <span className="organisation-staff-note-preview">{member.note}</span>}</div><div className="organisation-staff-row-actions"><button type="button" onClick={() => editBusiness(member)}>Edit</button><button className="organisation-staff-danger" type="button" onClick={() => void clearBusiness(member)} disabled={busyKey !== ""}>Clear</button></div></article>)}{!businessMembers.length && <div className="organisation-staff-empty">No Business team records yet.</div>}</div>}</section>
 
-    <section className="organisation-staff-card"><div className="organisation-staff-card-heading"><div><span className="organisation-staff-eyebrow">FULL STAFF HISTORY</span><h2>Operational history & notes</h2><p>Lifecycle facts remain auditable; the notes field is editable so organisations can add corrections and context without rewriting timestamps or actor data.</p></div></div><div className="organisation-staff-history">{loading ? <p>Loading history…</p> : history.length ? history.map((entry) => <article className="organisation-staff-history-row" key={entry.id}><div><div className="organisation-staff-history-top"><strong>{actionLabel(entry.action)}</strong><span>{formatDate(entry.createdAt)}</span></div><p>{entry.subjectName || entry.subjectEmail || "Staff record"}{entry.subjectEmail && entry.subjectName ? ` · ${entry.subjectEmail}` : ""}</p><small>{entry.fromRole && entry.toRole && entry.fromRole !== entry.toRole ? `${actionLabel(entry.fromRole)} → ${actionLabel(entry.toRole)}` : entry.toRole || entry.fromRole || "Role not recorded"}{entry.fromStatus || entry.toStatus ? ` · ${entry.fromStatus || "—"} → ${entry.toStatus || "—"}` : ""}</small></div><div className="organisation-staff-history-editor"><textarea value={historyNoteDrafts[entry.id] ?? entry.note ?? ""} onChange={(event) => setHistoryNoteDrafts((current) => ({ ...current, [entry.id]: event.target.value }))} placeholder="Add an editable note or correction context…" /><button type="button" onClick={() => void saveHistoryNote(entry)} disabled={busyKey !== ""}>{busyKey === `history-${entry.id}` ? "Saving…" : "Save note"}</button></div></article>) : <div className="organisation-staff-empty">New lifecycle events will appear here automatically.</div>}</div></section>
+    <section className="organisation-staff-card"><div className="organisation-staff-card-heading"><div><span className="organisation-staff-eyebrow">STAFF HISTORY</span><h2>Important changes</h2><p>System timestamps and actors stay unchanged. Low-level delete entries are hidden so the history shows the meaningful staff change.</p></div></div><div className="organisation-staff-history">{loading ? <p>Loading history…</p> : history.length ? history.map((entry) => <article className="organisation-staff-history-row" key={entry.id}><div><div className="organisation-staff-history-top"><strong>{actionLabel(entry.action)}</strong><span>{formatDate(entry.createdAt)}</span></div><p>{entry.subjectName || entry.subjectEmail || "Staff record"}{entry.subjectEmail && entry.subjectName ? ` · ${entry.subjectEmail}` : ""}</p><small>{entry.fromRole && entry.toRole && entry.fromRole !== entry.toRole ? `${actionLabel(entry.fromRole)} → ${actionLabel(entry.toRole)}` : ""}{entry.fromStatus || entry.toStatus ? `${entry.fromRole && entry.toRole && entry.fromRole !== entry.toRole ? " · " : ""}${entry.fromStatus || "—"} → ${entry.toStatus || "—"}` : ""}</small></div>{editingHistoryId === entry.id ? <div className="organisation-staff-history-editor"><textarea value={historyNoteDrafts[entry.id] ?? entry.note ?? ""} onChange={(event) => setHistoryNoteDrafts((current) => ({ ...current, [entry.id]: event.target.value }))} placeholder="Add a note…" /><div className="organisation-staff-row-actions"><button type="button" onClick={() => void saveHistoryNote(entry)} disabled={busyKey !== ""}>{busyKey === `history-${entry.id}` ? "Saving…" : "Save note"}</button><button className="organisation-staff-secondary" type="button" onClick={() => setEditingHistoryId(null)} disabled={busyKey !== ""}>Cancel</button></div></div> : <div className="organisation-staff-history-note"><span>{entry.note || ""}</span><button className="organisation-staff-secondary" type="button" onClick={() => setEditingHistoryId(entry.id)}>Edit note</button></div>}</article>) : <div className="organisation-staff-empty">New important staff changes will appear here.</div>}</div></section>
   </main>;
 }
