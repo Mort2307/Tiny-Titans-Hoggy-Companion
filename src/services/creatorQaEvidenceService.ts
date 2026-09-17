@@ -1,4 +1,4 @@
-import { getBytes, getDownloadURL, ref } from "firebase/storage";
+import { getBytes, ref } from "firebase/storage";
 import { storage } from "../firebase/config";
 import { getCreatorQaRuns } from "./creatorOperationsService";
 
@@ -53,7 +53,14 @@ export async function getQaRunReport(run: CreatorQaRun): Promise<QaReport> {
   return JSON.parse(new TextDecoder().decode(bytes)) as QaReport;
 }
 
-export async function getQaEvidenceUrl(run: CreatorQaRun, relativePath: string): Promise<string> {
+function imageMimeType(relativePath: string): string {
+  const extension = relativePath.toLowerCase().split(".").pop();
+  return extension === "jpg" || extension === "jpeg" ? "image/jpeg" : extension === "webp" ? "image/webp" : "image/png";
+}
+
+export async function getQaEvidenceBlobUrl(run: CreatorQaRun, relativePath: string): Promise<string> {
   if (!run.storagePrefix || !relativePath) throw new Error("This QA run does not expose a usable evidence path.");
-  return getDownloadURL(ref(storage, `${run.storagePrefix.replace(/\/+$/, "")}/${relativePath.replace(/^\/+/, "")}`));
+  const objectPath = `${run.storagePrefix.replace(/\/+$/, "")}/${relativePath.replace(/^\/+/, "")}`;
+  const bytes = await getBytes(ref(storage, objectPath));
+  return URL.createObjectURL(new Blob([bytes], { type: imageMimeType(relativePath) }));
 }
