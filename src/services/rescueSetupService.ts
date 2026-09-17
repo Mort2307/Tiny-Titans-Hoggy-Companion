@@ -8,6 +8,7 @@ export type RescuePublicSetup = {
   id: string;
   name: string;
   logoUrl: string;
+  heroImageUrl: string;
   directoryDescription: string;
   website: string;
   contactEmail: string;
@@ -54,6 +55,7 @@ export async function updateRescuePublicProfile(input: {
   organisationId: string;
   name: string;
   logoUrl: string;
+  heroImageUrl: string;
   directoryDescription: string;
   website: string;
   contactEmail: string;
