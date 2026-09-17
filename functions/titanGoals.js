@@ -28,5 +28,5 @@ exports.getTitanSupportStats = onCall({ region: "europe-west2" }, async (request
 
 // Keep the root function index stable while exposing the community-location functions alongside this module.
 Object.assign(exports, require("./communityLocations"));
-// Keep Titan Intelligence registered through an existing index entry without duplicating the root export wiring.
 Object.assign(exports, require("./titanIntelligence"));
+Object.assign(exports, require("./titanIntelligenceFeedback"));
