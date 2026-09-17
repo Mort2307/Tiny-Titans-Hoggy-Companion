@@ -37,6 +37,7 @@ import DateDisplayNormalizer from "./components/DateDisplayNormalizer";
 import IntelligenceRuntimeBootstrap from "./components/IntelligenceRuntimeBootstrap";
 import LiveWorldTracker from "./components/LiveWorldTracker";
 import NotificationBridge from "./components/NotificationBridge";
+import RescueInvitationBridge from "./components/RescueInvitationBridge";
 import { AuthProvider } from "./context/AuthContext";
 import { WorkspaceBrandingProvider } from "./context/WorkspaceBrandingContext";
 import { WorldTimeProvider } from "./context/WorldTimeContext";
@@ -104,6 +105,7 @@ createRoot(document.getElementById("root")!).render(
           <SelectorGrabScrollManager />
           <DateDisplayNormalizer />
           <NotificationBridge />
+          <RescueInvitationBridge />
           <CopyQualityGuard />
           <AppErrorBoundary><App /></AppErrorBoundary>
           <AppUpdatePrompt />
