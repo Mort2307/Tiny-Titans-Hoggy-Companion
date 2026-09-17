@@ -14,12 +14,17 @@ The command now runs the purpose-built route preparation step, which reads `src/
 
 The capture BOT then renders every discovered route at every responsive viewport in `docs/visual-design-contract.json`:
 
-- 320×700 — narrow mobile
-- 360×780 — mobile
-- 390×844 — mobile
-- 414×896 — large mobile
-- 834×1112 — tablet
-- 1440×1000 — desktop
+- 320×700 — narrow mobile portrait
+- 360×780 — mobile portrait
+- 390×844 — mobile portrait
+- 414×896 — large mobile portrait
+- 834×1112 — tablet portrait
+- 1112×834 — tablet landscape
+- 1366×768 — common laptop landscape
+- 1440×1000 — desktop landscape
+- 1920×1080 — wide desktop landscape
+
+That is the canonical Tiny Titans device matrix for visual QA. It is intentionally broader than a generic "mobile/tablet/desktop" trio so responsive regressions have real evidence at phone, tablet, laptop and large-screen breakpoints.
 
 For each route × viewport pair it records:
 
