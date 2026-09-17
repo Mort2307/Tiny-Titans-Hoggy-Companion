@@ -1,7 +1,3 @@
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { defineSecret } = require("firebase-functions/params");
-
-const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const MODEL = "gemini-3.8-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
@@ -14,7 +10,7 @@ async function generateTitanTurn({ apiKey, contents, tools, systemInstruction })
       contents,
       tools: [...tools, { google_search: {} }],
       generationConfig: { temperature: 0.25, maxOutputTokens: 1800 },
-      tool_config: { function_calling_config: { mode: "auto" } },
+      toolConfig: { functionCallingConfig: { mode: "AUTO" } },
     }),
   });
   const payload = await response.json().catch(() => ({}));
@@ -51,4 +47,4 @@ function extractText(candidate) {
     .trim();
 }
 
-module.exports = { GEMINI_API_KEY, MODEL, generateTitanTurn, collectFunctionCalls, collectWebSources, extractText };
+module.exports = { MODEL, generateTitanTurn, collectFunctionCalls, collectWebSources, extractText };
