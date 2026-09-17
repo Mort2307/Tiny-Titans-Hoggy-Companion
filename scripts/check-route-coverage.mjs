@@ -22,6 +22,7 @@ const LAYOUT_SPECIAL_ROUTES = [
   "/paid/support",
   "/paid/api",
   "/paid/branding",
+  "/rescue/log",
 ];
 
 const routes = [];
