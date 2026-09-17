@@ -7,13 +7,16 @@ const changes=read("src/intelligence/v50/titanChangeDetector.ts");
 const cross=read("src/intelligence/v50/titanCrossDomainEngine.ts");
 const panel=read("src/components/TitanIntelligence/TitanAnimalMasterRecord.tsx");
 const askTitan=read("src/components/TitanIntelligence/AskTitan.tsx");
+const feedbackUi=read("src/components/TitanIntelligence/TitanChatMessage.tsx");
 const workspaceHook=read("src/intelligence/askTitan/useTitanWorkspaceKind.ts");
 const chatContracts=read("src/intelligence/askTitan/titanChatContracts.ts");
+const feedbackService=read("src/intelligence/askTitan/titanFeedbackService.ts");
 const data=read("functions/titanIntelligenceData.js");
 const tools=read("functions/titanIntelligenceTools.js");
 const access=read("functions/titanIntelligenceAccess.js");
 const model=read("functions/titanIntelligenceModel.js");
 const titan=read("functions/titanIntelligence.js");
+const feedback=read("functions/titanIntelligenceFeedback.js");
 const goals=read("functions/titanGoals.js");
 const failures=[];
 const required=[
@@ -33,10 +36,13 @@ const required=[
  [panel,"Why am I seeing this?","Cross-domain signals are missing an explanation path."],
  [askTitan,"useTitanWorkspaceKind","Ask Titan does not follow the active workspace context."],
  [askTitan,"useTitanChat","Ask Titan chat wiring is missing."],
+ [feedbackUi,"recordTitanFeedback","Ask Titan feedback controls are missing."],
  [workspaceHook,"productId === \"rescue\"","Rescue workspace mapping is missing."],
  [workspaceHook,"productId === \"titan_seller\"","Seller workspace mapping is missing."],
  [workspaceHook,"business_starter","Business workspace mapping is missing."],
  [chatContracts,"TitanWorkspaceKind","Titan chat workspace contract is missing."],
+ [chatContracts,"responseId: string","Titan response identity is missing."],
+ [feedbackService,"recordTitanFeedback","Titan feedback client service is missing."],
  [data,"listRescueAnimals","Rescue animal retrieval is missing."],
  [data,"getRescueAnimalRecords","Rescue record retrieval is missing."],
  [data,"getRescueCollectionOverview","Rescue intelligence overview is missing."],
@@ -54,10 +60,15 @@ const required=[
  [titan,"executeTool","Titan function-tool execution is missing."],
  [titan,"buildTitanProvenance","Titan provenance construction is missing."],
  [titan,"workspaceKind","Titan workspace context is not carried through the callable."],
+ [titan,"responseId: crypto.randomUUID()","Titan response IDs are missing."],
+ [feedback,"recordTitanFeedback=onCall","Titan feedback callable is missing."],
+ [feedback,"titanFeedback","Titan feedback persistence is missing."],
+ [goals,"./titanIntelligenceFeedback","Titan feedback callable is not exposed through the functions index."],
  [goals,"./titanIntelligence","Titan Intelligence callable is not exposed through the functions index."],
 ];
 for(const [source,needle,message] of required)if(!source.toLowerCase().includes(String(needle).toLowerCase()))failures.push(message);
 if(!data.includes("function serialiseItems(items)")) failures.push("Rescue intelligence serialisation helper is missing.");
 if(data.includes(".map(serialise)")) failures.push("Rescue intelligence contains an unsafe Array.map(serialise) recursion-depth call.");
+if(feedback.includes("question") || feedback.includes("answer")) failures.push("Titan feedback must not persist raw private question/answer content.");
 if(failures.length){console.error(`Titan intelligence contract failed with ${failures.length} issue(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1)}
-console.log("Titan intelligence contract passed: V50 intelligence, Ask Titan, workspace context, Rescue data boundaries, Gemini tool circulation, usage controls and provenance are present.");
+console.log("Titan intelligence contract passed: V50 intelligence, Ask Titan, workspace context, Rescue data boundaries, Gemini tool circulation, usage controls, provenance and privacy-preserving feedback are present.");
