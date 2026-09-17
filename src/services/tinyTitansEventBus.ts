@@ -23,12 +23,21 @@ export type TinyTitansEventMap = {
   MarketplaceListingCreated: { listingId: string; snakeId?: string; occurredAt: string };
   AchievementUnlocked: { achievementId: string; occurredAt: string };
   NotificationScheduled: { notificationId: string; occurredAt: string };
+  RescueIntakeRecorded: { animalId: string; organisationId: string; occurredAt: string };
+  RescueCareRecorded: { animalId: string; organisationId: string; careType: string; occurredAt: string };
+  RescueStatusChanged: { animalId: string; organisationId: string; status: string; occurredAt: string };
+  RescueReminderChanged: { animalId: string; organisationId: string; action: "created" | "completed"; occurredAt: string };
+  RescueTransferRecorded: { animalId: string; organisationId: string; direction: "incoming" | "outgoing"; occurredAt: string };
+  RescueFosterRecorded: { animalId: string; organisationId: string; action: "created" | "updated"; occurredAt: string };
+  RescueDocumentRecorded: { animalId: string; organisationId: string; category: string; occurredAt: string };
+  WorkspaceChanged: { workspaceId: string; workspaceType: string; occurredAt: string };
 };
 
 export type TinyTitansEventName = keyof TinyTitansEventMap;
 export type TinyTitansEvent<K extends TinyTitansEventName = TinyTitansEventName> = { type: K; payload: TinyTitansEventMap[K] };
 type Listener<K extends TinyTitansEventName> = (event: TinyTitansEvent<K>) => void;
 
+export const TINY_TITANS_EVENT_NAMES = Object.freeze(Object.keys({} as TinyTitansEventMap) as TinyTitansEventName[]);
 export const TITAN_INTELLIGENCE_UPDATED_EVENT = "titan:intelligence-updated";
 
 class TinyTitansEventBus {
@@ -41,9 +50,19 @@ class TinyTitansEventBus {
     return () => { existing.delete(listener as Listener<TinyTitansEventName>); if (existing.size === 0) this.listeners.delete(type); };
   }
 
+  onAny(listener: (event: TinyTitansEvent<TinyTitansEventName>) => void): () => void {
+    const type = "__any__" as TinyTitansEventName;
+    const existing = this.listeners.get(type) ?? new Set<Listener<TinyTitansEventName>>();
+    existing.add(listener);
+    this.listeners.set(type, existing);
+    return () => { existing.delete(listener); if (existing.size === 0) this.listeners.delete(type); };
+  }
+
   emit<K extends TinyTitansEventName>(event: TinyTitansEvent<K>): void {
     const listeners = this.listeners.get(event.type);
     if (listeners) for (const listener of listeners) listener(event as TinyTitansEvent<TinyTitansEventName>);
+    const anyListeners = this.listeners.get("__any__");
+    if (anyListeners) for (const listener of anyListeners) listener(event as TinyTitansEvent<TinyTitansEventName>);
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(TITAN_INTELLIGENCE_UPDATED_EVENT, { detail: event }));
   }
 
