@@ -26,6 +26,7 @@ import "./styles/tiny-titans-enclosure-formatting.css";
 import "./styles/tiny-titans-brand-theme.css";
 import "./styles/tiny-titans-brand-glow.css";
 import "./styles/tiny-titans-intelligence-growth.css";
+import "./styles/workspace-identity.css";
 import "./styles/contributor-thank-you.css";
 import "./styles/tiny-titans-paid-room-retirement.css";
 
