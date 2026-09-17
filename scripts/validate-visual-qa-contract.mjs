@@ -46,8 +46,8 @@ requireText("functions", "exports.publishCreatorQaRun", "Creator Operations func
 requireText("functions", "bucket.deleteFiles", "QA publication must remove the previous binary Firebase evidence after the new run is ready.");
 requireText("storageRules", "match /qa-evidence/{runId}/{fileName=**}", "Creator-only QA evidence Storage rules must exist.");
 
-if (!Array.isArray(contract.responsiveViewports) || contract.responsiveViewports.length < 4) findings.push({ severity: "critical", message: "Visual design contract must contain the canonical responsive viewport matrix." });
-const requiredViewports = ["mobile320", "mobile360", "mobile390", "mobile414", "tablet", "desktop"];
+if (!Array.isArray(contract.responsiveViewports) || contract.responsiveViewports.length < 6) findings.push({ severity: "critical", message: "Visual design contract must contain the full canonical responsive viewport matrix." });
+const requiredViewports = ["mobile320", "mobile360", "mobile390", "mobile414", "tabletPortrait", "tabletLandscape", "laptop", "desktop", "desktopWide"];
 for (const name of requiredViewports) if (!contract.responsiveViewports.some((viewport) => viewport.name === name)) findings.push({ severity: "critical", message: `Missing canonical viewport: ${name}.` });
 
 if (!source.viewer.includes("getQaEvidenceBlobUrl")) findings.push({ severity: "critical", message: "Viewer must use authenticated screenshot blob loading rather than public download URLs." });
