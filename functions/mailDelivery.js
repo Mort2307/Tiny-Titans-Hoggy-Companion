@@ -7,7 +7,11 @@ const db = getFirestore();
 const SMTP_CONNECTION_URI = defineString("TINY_TITANS_SMTP_CONNECTION_URI", {
   default: "smtps://tinytitans.exotics@gmail.com@smtp.gmail.com:465",
 });
+const APP_ORIGIN = defineString("TINY_TITANS_APP_ORIGIN", {
+  default: "https://tinytitans-hoggy-companion.web.app",
+});
 const SMTP_PASSWORD = defineSecret("TINY_TITANS_SMTP_PASSWORD");
+const APP_NAME = "Tiny Titans Reptile Companion";
 
 let transporter = null;
 
@@ -55,6 +59,18 @@ function deliveryError(error) {
   return String(error?.response || error?.message || error || "SMTP delivery failed").slice(0, 2000);
 }
 
+function brandInvitationMessage(mail, message) {
+  if (mail.type !== "rescue-staff-invitation") return message;
+  const configuredOrigin = String(APP_ORIGIN.value() || "").trim().replace(/\/$/, "");
+  if (!configuredOrigin) return message;
+  const replaceOrigin = (value) => String(value || "").replace(/https:\/\/tinytitans-hoggy-companion\.web\.app/g, configuredOrigin);
+  return {
+    ...message,
+    text: replaceOrigin(message.text),
+    html: replaceOrigin(message.html),
+  };
+}
+
 exports.sendQueuedMail = onDocumentCreated({
   region: "europe-west2",
   document: "mail/{mailId}",
@@ -65,7 +81,7 @@ exports.sendQueuedMail = onDocumentCreated({
 
   const mailId = String(event.params.mailId || "").trim();
   const mail = snapshot.data() || {};
-  const message = mail.message && typeof mail.message === "object" ? mail.message : {};
+  const message = brandInvitationMessage(mail, mail.message && typeof mail.message === "object" ? mail.message : {});
   const to = [...listAddresses(mail.to), ...await resolveUidAddresses(mail.toUids)];
   const cc = [...listAddresses(mail.cc), ...await resolveUidAddresses(mail.ccUids)];
   const bcc = [...listAddresses(mail.bcc), ...await resolveUidAddresses(mail.bccUids)];
@@ -92,8 +108,11 @@ exports.sendQueuedMail = onDocumentCreated({
   }, { merge: true });
 
   try {
+    const brandedFrom = mail.type === "rescue-staff-invitation"
+      ? `${APP_NAME} <tinytitans.exotics@gmail.com>`
+      : (mail.from || `${APP_NAME} <tinytitans.exotics@gmail.com>`);
     const info = await getTransporter().sendMail({
-      from: mail.from || "Tiny Titans <tinytitans.exotics@gmail.com>",
+      from: brandedFrom,
       replyTo: mail.replyTo || "tinytitans.exotics@gmail.com",
       to,
       ...(cc.length ? { cc } : {}),
