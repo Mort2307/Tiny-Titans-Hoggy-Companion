@@ -19,7 +19,7 @@ smtps://tinytitans.exotics@gmail.com@smtp.gmail.com:465
 
 The SMTP password is a Firebase Secret and must never be committed to source control.
 
-For an early internal test, Gmail SMTP can be used with an App Password on the TinyTitans sender account. Google requires 2-Step Verification before an App Password can be created. urlGoogle App Password helphttps://support.google.com/accounts/answer/185833
+For an early internal test, Gmail SMTP can be used with an App Password on the TinyTitans sender account. Google requires 2-Step Verification before an App Password can be created. See Google's [App Password help](https://support.google.com/accounts/answer/185833).
 
 A transactional provider such as SendGrid or Mailgun can be used later by changing the SMTP connection parameter and provider credential. The mail delivery function does not expose SMTP credentials to the frontend.
 
@@ -35,6 +35,8 @@ firebase functions:secrets:set TINY_TITANS_SMTP_PASSWORD --project=tinytitans-ho
 Enter the SMTP password when Firebase prompts for it. Do not put that password in `.env`, Git, PowerShell history, screenshots, or source files.
 
 The default connection URI already points at the TinyTitans Gmail sender. A different provider can supply `TINY_TITANS_SMTP_CONNECTION_URI` during deployment if required.
+
+Nodemailer is used only inside the server-side mail worker. The current repository uses Nodemailer 10.x, which targets Node.js 20+ and ships its own TypeScript declarations. TinyTitans Functions run on Node.js 22.
 
 Deploy the mail worker:
 
@@ -62,9 +64,9 @@ The same `mail` queue is also used by the existing family invitation email flow,
 
 ## Verify delivery
 
-After sending a test invitation, open the corresponding document in Firestore under `mail`.
+After deploying the mail worker, send a **new** invitation. The Firestore trigger runs when the new `mail/{mailId}` document is created.
 
-The mail worker writes a `delivery` object with states matching the existing queue contract:
+Open the corresponding document in Firestore under `mail`. The worker writes a `delivery` object with these states:
 
 ```text
 PENDING → PROCESSING → SUCCESS
@@ -77,6 +79,8 @@ PENDING → PROCESSING → ERROR
 ```
 
 A successful record includes the SMTP message ID, accepted recipients and the SMTP response. A failed record includes a bounded error message so the delivery failure can be diagnosed without storing the invitation message body again.
+
+Older mail documents created before the worker was deployed are not automatically replayed because the trigger is `onDocumentCreated`. Use a fresh invitation for the first test.
 
 ## Security
 
