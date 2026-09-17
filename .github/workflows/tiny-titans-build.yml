@@ -66,6 +66,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Rescue + Intelligence contract
+        run: node scripts/validate-rescue-intelligence-contract.mjs
+
       # This already runs the project's application contracts, intelligence
       # contracts, TypeScript build and Vite production build in one command.
       - name: Production build and application contracts
