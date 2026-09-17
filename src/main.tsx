@@ -68,7 +68,12 @@ async function clearStaleDevPwaState() {
   try {
     if ("serviceWorker" in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map((registration) => registration.unregister()));
+      await Promise.all(registrations
+        .filter((registration) => {
+          const workers = [registration.active, registration.waiting, registration.installing];
+          return !workers.some((worker) => worker?.scriptURL.includes("/firebase-messaging-sw.js"));
+        })
+        .map((registration) => registration.unregister()));
     }
     if ("caches" in window) {
       const cacheKeys = await window.caches.keys();
