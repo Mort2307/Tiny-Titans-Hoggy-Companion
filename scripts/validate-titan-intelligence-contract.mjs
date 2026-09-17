@@ -35,16 +35,20 @@ const required=[
  [askTitan,"useTitanChat","Ask Titan chat wiring is missing."],
  [workspaceHook,"productId === \"rescue\"","Rescue workspace mapping is missing."],
  [workspaceHook,"productId === \"titan_seller\"","Seller workspace mapping is missing."],
+ [workspaceHook,"business_starter","Business workspace mapping is missing."],
  [chatContracts,"TitanWorkspaceKind","Titan chat workspace contract is missing."],
  [data,"listRescueAnimals","Rescue animal retrieval is missing."],
  [data,"getRescueAnimalRecords","Rescue record retrieval is missing."],
  [data,"getRescueCollectionOverview","Rescue intelligence overview is missing."],
  [data,"rescueAnimals","Rescue collection boundary is missing."],
  [data,"Medical/private records are omitted from lower-privilege views","Rescue visibility boundary is missing."],
+ [data,"function serialiseItems","Rescue record serialisation helper is missing."],
+ [data,"map(serialise)","Rescue record serialisation must not pass array indexes as recursion depth."],
  [tools,"get_workspace_animal_records","Rescue workspace tool declaration is missing."],
  [tools,"Personal animal records are not substituted into Rescue context","Cross-workspace data isolation is missing."],
  [access,"workspaceKind === \"rescue\"","Rescue access boundary is missing."],
  [access,"effectiveTier: \"rescue\"","Rescue access does not resolve to the Rescue tier."],
+ [model,"GEMINI_API_KEY","Gemini secret binding is missing."],
  [model,"mode: \"VALIDATED\"","Gemini tool-calling mode is not hardened for server-side tool circulation."],
  [model,"includeServerSideToolInvocations: true","Gemini server-side tool context circulation is missing."],
  [titan,"consumeTitanUsage","Titan usage enforcement is missing."],
@@ -53,6 +57,7 @@ const required=[
  [titan,"workspaceKind","Titan workspace context is not carried through the callable."],
  [goals,"./titanIntelligence","Titan Intelligence callable is not exposed through the functions index."],
 ];
-for(const [source,needle,message] of required)if(!source.toLowerCase().includes(String(needle).toLowerCase()))failures.push(message);
+for(const [source,needle,message] of required)if(source.toLowerCase().includes(String(needle).toLowerCase())===false)failures.push(message);
+if(!data.includes("function serialiseItems(items)") || data.includes(".map(serialise)")) failures.push("Rescue intelligence contains an unsafe Array.map(serialise) recursion-depth call.");
 if(failures.length){console.error(`Titan intelligence contract failed with ${failures.length} issue(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1)}
 console.log("Titan intelligence contract passed: V50 intelligence, Ask Titan, workspace context, Rescue data boundaries, Gemini tool circulation, usage controls and provenance are present.");
