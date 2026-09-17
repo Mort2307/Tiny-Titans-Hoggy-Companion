@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getQaEvidenceBlobUrl, getQaRunHistory, getQaRunReport, type CreatorQaRun, type QaReport, type QaVisualResult } from "../services/creatorQaEvidenceService";
+import { triggerCreatorVisualQa } from "../services/creatorOperationsService";
 import "./CreatorQaEvidenceViewer.css";
 
 function findingCounts(result: QaVisualResult) {
@@ -26,6 +27,9 @@ export default function CreatorQaEvidenceViewer() {
   const [fullPageUrl, setFullPageUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [triggering, setTriggering] = useState(false);
+  const [triggerMessage, setTriggerMessage] = useState("");
+  const [triggerActionsUrl, setTriggerActionsUrl] = useState("");
   const [error, setError] = useState("");
   const blobUrlsRef = useRef({ viewport: "", fullPage: "" });
 
@@ -41,23 +45,43 @@ export default function CreatorQaEvidenceViewer() {
     setFullPageUrl("");
   };
 
+  const loadHistory = async (initial = false) => {
+    if (initial) setLoading(true);
+    try {
+      const nextRuns = await getQaRunHistory();
+      setRuns(nextRuns);
+      setSelectedRunId((current) => current && nextRuns.some((run) => run.id === current) ? current : nextRuns[0]?.id || "");
+      return nextRuns;
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "QA history is unavailable.");
+      return [];
+    } finally {
+      if (initial) setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    void getQaRunHistory()
-      .then((nextRuns) => {
-        if (!active) return;
-        setRuns(nextRuns);
-        setSelectedRunId(nextRuns[0]?.id || "");
-      })
-      .catch((loadError) => {
-        if (active) setError(loadError instanceof Error ? loadError.message : "QA history is unavailable.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    void loadHistory(true).then(() => { if (!active) return; });
     return () => { active = false; };
   }, []);
+
+  async function runVisualQa() {
+    if (triggering) return;
+    setTriggering(true);
+    setTriggerMessage("");
+    setTriggerActionsUrl("");
+    setError("");
+    try {
+      const result = await triggerCreatorVisualQa("", "Visual QA run triggered from Creator Centre");
+      setTriggerActionsUrl(result.actionsUrl);
+      setTriggerMessage("Visual QA run queued. The evidence will appear here when the BOT finishes publishing.");
+    } catch (triggerError) {
+      setError(triggerError instanceof Error ? triggerError.message : "The visual QA run could not be started.");
+    } finally {
+      setTriggering(false);
+    }
+  }
 
   useEffect(() => {
     clearBlobEvidence();
@@ -123,6 +147,12 @@ export default function CreatorQaEvidenceViewer() {
 
   useEffect(() => () => clearBlobEvidence(), []);
 
+  useEffect(() => {
+    if (!triggerMessage || !triggerActionsUrl) return undefined;
+    const interval = window.setInterval(() => { void loadHistory(false); }, 7000);
+    return () => window.clearInterval(interval);
+  }, [triggerMessage, triggerActionsUrl]);
+
   const metrics = result?.metrics || {};
   const historicalErrors = runs.reduce((sum, run) => sum + Number(run.errors || 0), 0);
   const reportErrors = report?.results.reduce((sum, item) => sum + findingCounts(item).errors, 0) || 0;
@@ -138,13 +168,17 @@ export default function CreatorQaEvidenceViewer() {
           <h1>🤖 Release &amp; visual QA</h1>
           <p>The Playwright BOT stays independent from production. This workspace shows the rendered evidence it publishes, plus the machine findings used to guide the next change.</p>
         </div>
-        <Link to="/creator" className="creator-ops-secondary">← Creator Centre</Link>
+        <div className="creator-qa-header-actions">
+          <button type="button" className="creator-ops-primary" onClick={() => void runVisualQa()} disabled={triggering}>{triggering ? "Starting QA…" : "Run visual QA"}</button>
+          <Link to="/creator" className="creator-ops-secondary">← Creator Centre</Link>
+        </div>
       </header>
 
+      {triggerMessage && <section className="creator-section-panel" role="status"><strong>{triggerMessage}</strong>{triggerActionsUrl && <p><a href={triggerActionsUrl} target="_blank" rel="noreferrer">View running BOT in GitHub Actions ↗</a></p>}</section>}
       {loading ? <section className="creator-section-panel"><p>Loading QA history…</p></section> : error && !selectedRun ? <section className="creator-section-error" role="alert">{error}</section> : runs.length === 0 ? (
         <section className="creator-section-panel creator-section-empty">
           <strong>No QA run has been published yet.</strong>
-          <p>Run the universal visual BOT from the PC workflow. The run will publish its screenshots to temporary creator-only evidence storage and to the GitHub <code>qa-evidence</code> branch.</p>
+          <p>Use <b>Run visual QA</b> above. The universal BOT runs against the current <code>master</code> build, then publishes screenshots and machine findings to this Creator workspace and the GitHub <code>qa-evidence</code> branch.</p>
         </section>
       ) : (
         <>
