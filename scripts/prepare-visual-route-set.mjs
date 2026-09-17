@@ -7,7 +7,8 @@ const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
 const email = process.env.TINY_TITANS_VISUAL_BOT_EMAIL || process.env.TINY_TITANS_BOT_EMAIL;
 const password = process.env.TINY_TITANS_VISUAL_BOT_PASSWORD || process.env.TINY_TITANS_BOT_PASSWORD;
 const routerPath = path.resolve("src/routes/AppRouter.tsx");
-const outputPath = path.resolve(process.env.TINY_TITANS_VISUAL_ROUTE_SET_OUTPUT || "artifacts/visual-review/route-set.json");
+const outputDir = path.resolve(process.env.TINY_TITANS_VISUAL_OUTPUT || "artifacts/visual-review");
+const outputPath = path.join(outputDir, "route-set.json");
 const maxPages = Number(process.env.TINY_TITANS_VISUAL_ROUTE_DISCOVERY_MAX_PAGES || 400);
 const clickTimeout = Number(process.env.TINY_TITANS_VISUAL_ROUTE_DISCOVERY_CLICK_TIMEOUT_MS || 2500);
 
@@ -110,14 +111,34 @@ function runCapture(routes) {
   return child.status ?? 1;
 }
 
+async function annotateCaptureReport(routeSource) {
+  const reportPath = path.join(outputDir, "report.json");
+  try {
+    const report = JSON.parse(await fs.readFile(reportPath, "utf8"));
+    const routeSet = JSON.parse(await fs.readFile(outputPath, "utf8"));
+    report.routeSource = routeSource;
+    report.routeSet = {
+      discoveredRouteCount: Number(routeSet.discoveredRouteCount || routeSet.routes?.length || 0),
+      declaredRouteCount: Number(routeSet.declaredRouteCount || 0),
+      discoveryPages: Number(routeSet.discoveryPages?.length || 0),
+      dynamicDeclaredRoutes: Array.isArray(routeSet.dynamicDeclaredRoutes) ? routeSet.dynamicDeclaredRoutes : [],
+    };
+    await fs.writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  } catch (error) {
+    console.warn(`Could not annotate visual report with route provenance: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 async function main() {
   const explicitRoutes = String(process.env.TINY_TITANS_VISUAL_ROUTES || "").trim();
   if (explicitRoutes) {
     const routes = [...new Set(explicitRoutes.split(/[\n,;]+/).map((item) => normaliseRoute(item)).filter(Boolean))];
-    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    await fs.mkdir(outputDir, { recursive: true });
     await fs.writeFile(outputPath, `${JSON.stringify({ source: "explicit", generatedAt: new Date().toISOString(), routes, skippedPatterns: [], discoveryPages: 0 }, null, 2)}\n`, "utf8");
     console.log(`Using ${routes.length} explicit visual routes.`);
-    process.exitCode = runCapture(routes);
+    const exitCode = runCapture(routes);
+    if (exitCode === 0) await annotateCaptureReport("explicit-route-list");
+    process.exitCode = exitCode;
     return;
   }
 
@@ -191,7 +212,7 @@ async function main() {
 
   const routes = [...discovered].sort((left, right) => left.localeCompare(right));
   const dynamicDeclaredRoutes = declared.filter((route) => !isConcreteRoute(route));
-  const report = {
+  const routeReport = {
     source: "router-plus-authenticated-runtime-discovery",
     generatedAt: new Date().toISOString(),
     baseURL,
@@ -204,10 +225,12 @@ async function main() {
     routes,
   };
 
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  await fs.mkdir(outputDir, { recursive: true });
+  await fs.writeFile(outputPath, `${JSON.stringify(routeReport, null, 2)}\n`, "utf8");
   console.log(`Discovered ${routes.length} concrete routes from ${declared.length} router declarations across ${discoveryPages.length} visited pages.`);
-  process.exitCode = runCapture(routes);
+  const exitCode = runCapture(routes);
+  if (exitCode === 0) await annotateCaptureReport("router-plus-authenticated-runtime-discovery");
+  process.exitCode = exitCode;
 }
 
 main().catch((error) => {
