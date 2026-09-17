@@ -1,11 +1,13 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import TinyTitansIcon from "./TinyTitansIcon";
 import { useWorkspaceBranding } from "../context/WorkspaceBrandingContext";
-import { getWorkspacePresentation } from "../services/workspacePresentationService";
+import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
 
 export default function WorkspaceIdentityStrip() {
-  const presentation = getWorkspacePresentation();
   const branding = useWorkspaceBranding();
+  const [presentation, setPresentation] = useState<WorkspacePresentation>(getWorkspacePresentation);
+  useEffect(() => subscribeToWorkspacePresentation(setPresentation), []);
   if (presentation.mode !== "work" || presentation.productId === "personal") return null;
   const rescue = presentation.productId === "rescue";
   return <section className={`tt-workspace-identity-strip tt-workspace-identity-strip--${rescue ? "rescue" : "business"}`} aria-label="Active workspace">
