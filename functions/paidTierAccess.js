@@ -49,8 +49,8 @@ exports.getPaidTierAccess = onCall({ region: "europe-west2" }, async (request) =
   const trial = trialSnapshot.exists ? trialSnapshot.data() || null : null;
   const trialEnabled = trial?.enabled === true && VALID_TIERS.has(String(trial?.tier || "")) && String(trial?.tier || "") !== "free" && isActiveExpiry(trial.expiresAt);
   const ownerOwnAccount = ownerRequest && requestedUid === request.auth.uid;
-  const effectiveTier = ownerOwnAccount ? "business_advanced" : overrideEnabled ? String(override.tier) : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
-  const source = ownerOwnAccount ? "owner" : overrideEnabled ? "tester" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
+  const effectiveTier = overrideEnabled ? String(override.tier) : ownerOwnAccount ? "business_advanced" : statusAllowsPaidAccess && actualTier !== "free" ? actualTier : trialEnabled ? String(trial.tier) : "free";
+  const source = overrideEnabled ? "tester" : ownerOwnAccount ? "owner" : effectiveTier === "free" ? "free" : statusAllowsPaidAccess && actualTier !== "free" ? "subscription" : "trial";
   return { success: true, uid: requestedUid, actualTier, effectiveTier, source, subscriptionStatus: status, currentPeriodEnd: entitlement.currentPeriodEnd || data.subscriptionCurrentPeriodEnd, testerOverride: overrideEnabled ? { ...override, tier: String(override.tier) } : null, trial: trialEnabled ? { ...trial, tier: String(trial.tier), enabled: true } : null };
 });
 
@@ -62,4 +62,3 @@ Object.assign(exports, require("./paidSupport"));
 Object.assign(exports, require("./creatorPaidTier"));
 Object.assign(exports, require("./paidTrialLifecycle"));
 Object.assign(exports, require("./rescueDirectory"));
-Object.assign(exports, require("./titanIntelligence"));
