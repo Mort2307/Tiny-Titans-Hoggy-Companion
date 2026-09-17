@@ -27,6 +27,7 @@ import PaidTierGate from "../PaidTierGate";
 import RescueDirectory from "../../pages/RescueDirectory";
 import RescueDirectoryProfile from "../../pages/RescueDirectoryProfile";
 import { RescueCentre } from "../../pages/RescuePages";
+import RescueQuickLog from "../../pages/RescueQuickLog";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 import WorkspaceIdentityStrip from "../WorkspaceIdentityStrip";
@@ -88,6 +89,7 @@ function LayoutChrome() {
     location.pathname === "/rescue" && location.search.includes("manage=1");
   const isRescueDirectoryProfilePage =
     location.pathname === "/rescue" && location.search.includes("manage=directory");
+  const isRescueQuickLogPage = location.pathname === "/rescue/log";
   const isRetiredReptileRoom =
     location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/");
 
@@ -124,19 +126,21 @@ function LayoutChrome() {
       ? <RescueDirectoryProfile />
       : isRescueSetupPage
         ? <RescueCentre />
-        : isPaidPlansPage
-          ? <PaidPlans />
-          : isBillingPage
-            ? <AccountBilling />
-            : isPaidMarketplacePage
-              ? <PaidMarketplaceFeature />
-              : isPaidSupportPage
-                ? <PaidSupportFeature />
-                : isPaidTimelinePage
-                  ? <PaidTimelineFeature />
-                  : isPaidFeaturePage
-                    ? <PaidFeatureWorkspace />
-                    : null;
+        : isRescueQuickLogPage
+          ? <RescueQuickLog />
+          : isPaidPlansPage
+            ? <PaidPlans />
+            : isBillingPage
+              ? <AccountBilling />
+              : isPaidMarketplacePage
+                ? <PaidMarketplaceFeature />
+                : isPaidSupportPage
+                  ? <PaidSupportFeature />
+                  : isPaidTimelinePage
+                    ? <PaidTimelineFeature />
+                    : isPaidFeaturePage
+                      ? <PaidFeatureWorkspace />
+                      : null;
 
   const outletEntitlement =
     location.pathname === "/reminders" || location.pathname.startsWith("/reminders/")
