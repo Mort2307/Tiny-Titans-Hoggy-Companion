@@ -32,8 +32,14 @@ type CreatorQaRun = {
 };
 
 const getCreatorQaRunsCall = httpsCallable<Record<string, never>, { success: boolean; runs: CreatorQaRun[] }>(functions, "getCreatorQaRuns");
+const triggerCreatorVisualQaCall = httpsCallable<{ routes?: string; note?: string }, { success: boolean; status: string; workflow: string; actionsUrl: string }>(functions, "triggerCreatorVisualQa");
 
 export async function getCreatorQaRuns(): Promise<CreatorQaRun[]> {
   const result = await getCreatorQaRunsCall({});
   return result.data.runs;
+}
+
+export async function triggerCreatorVisualQa(routes = "", note = ""): Promise<{ status: string; workflow: string; actionsUrl: string }> {
+  const result = await triggerCreatorVisualQaCall({ routes, note });
+  return result.data;
 }
