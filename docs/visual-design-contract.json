@@ -1,7 +1,7 @@
 {
-  "version": "2026-08-20",
+  "version": "2026-09-17",
   "name": "Tiny Titans Visual UX Contract",
-  "purpose": "Keep visual identity consistent while allowing each page to use the composition best suited to its job.",
+  "purpose": "Keep visual identity consistent while allowing each page to use the composition best suited to its job, with explicit phone, tablet, laptop and desktop evidence.",
   "brand": {
     "primary": "purple",
     "secondary": "cyan/electric blue",
@@ -19,7 +19,8 @@
     "Decorative UI must never masquerade as functional UI.",
     "Progressive disclosure should be preferred over dashboard overload.",
     "Visual findings must be backed by rendered evidence where possible.",
-    "The visual bot recommends changes; it never silently edits production code."
+    "The visual bot recommends changes; it never silently edits production code.",
+    "Common device orientations and screen classes must be represented by rendered evidence rather than one generic desktop capture."
   ],
   "pageConcepts": {
     "home": "intelligence-dashboard",
@@ -35,12 +36,15 @@
     "creator": "operations-command-centre"
   },
   "responsiveViewports": [
-    {"name":"mobile320","width":320,"height":700},
-    {"name":"mobile360","width":360,"height":780},
-    {"name":"mobile390","width":390,"height":844},
-    {"name":"mobile414","width":414,"height":896},
-    {"name":"tablet","width":834,"height":1112},
-    {"name":"desktop","width":1440,"height":1000}
+    {"name":"mobile320","width":320,"height":700,"class":"mobile","orientation":"portrait"},
+    {"name":"mobile360","width":360,"height":780,"class":"mobile","orientation":"portrait"},
+    {"name":"mobile390","width":390,"height":844,"class":"mobile","orientation":"portrait"},
+    {"name":"mobile414","width":414,"height":896,"class":"mobile","orientation":"portrait"},
+    {"name":"tabletPortrait","width":834,"height":1112,"class":"tablet","orientation":"portrait"},
+    {"name":"tabletLandscape","width":1112,"height":834,"class":"tablet","orientation":"landscape"},
+    {"name":"laptop","width":1366,"height":768,"class":"laptop","orientation":"landscape"},
+    {"name":"desktop","width":1440,"height":1000,"class":"desktop","orientation":"landscape"},
+    {"name":"desktopWide","width":1920,"height":1080,"class":"desktop","orientation":"landscape"}
   ],
   "auditRules": {
     "horizontalOverflow": "fail",
