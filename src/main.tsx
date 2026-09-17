@@ -25,6 +25,7 @@ import "./styles/tiny-titans-enclosure-intelligence-polish.css";
 import "./styles/tiny-titans-enclosure-formatting.css";
 import "./styles/tiny-titans-brand-theme.css";
 import "./styles/tiny-titans-brand-glow.css";
+import "./styles/tiny-titans-intelligence-growth.css";
 import "./styles/contributor-thank-you.css";
 import "./styles/tiny-titans-paid-room-retirement.css";
 
@@ -32,9 +33,11 @@ import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import AppUpdatePrompt, { setTinyTitansUpdateHandler, notifyTinyTitansUpdateAvailable } from "./components/AppUpdatePrompt";
 import DateDisplayNormalizer from "./components/DateDisplayNormalizer";
+import IntelligenceRuntimeBootstrap from "./components/IntelligenceRuntimeBootstrap";
 import LiveWorldTracker from "./components/LiveWorldTracker";
 import NotificationBridge from "./components/NotificationBridge";
 import { AuthProvider } from "./context/AuthContext";
+import { WorkspaceBrandingProvider } from "./context/WorkspaceBrandingContext";
 import { WorldTimeProvider } from "./context/WorldTimeContext";
 import { CopyQualityGuard } from "./utils/copyQuality";
 
@@ -93,15 +96,18 @@ export function SelectorGrabScrollManager() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
-      <WorldTimeProvider>
-        <LiveWorldTracker />
-        <SelectorGrabScrollManager />
-        <DateDisplayNormalizer />
-        <NotificationBridge />
-        <CopyQualityGuard />
-        <AppErrorBoundary><App /></AppErrorBoundary>
-        <AppUpdatePrompt />
-      </WorldTimeProvider>
+      <WorkspaceBrandingProvider>
+        <WorldTimeProvider>
+          <IntelligenceRuntimeBootstrap />
+          <LiveWorldTracker />
+          <SelectorGrabScrollManager />
+          <DateDisplayNormalizer />
+          <NotificationBridge />
+          <CopyQualityGuard />
+          <AppErrorBoundary><App /></AppErrorBoundary>
+          <AppUpdatePrompt />
+        </WorldTimeProvider>
+      </WorkspaceBrandingProvider>
     </AuthProvider>
   </StrictMode>,
 );
