@@ -55,11 +55,16 @@ const titanModules = [
   "src/components/TitanIntelligence/TitanDataUseNotice.tsx",
   "src/components/TitanIntelligence/TitanUsageIndicator.tsx",
 ];
+function tierSlice(tierId) {
+  const start = config.indexOf(`${tierId}:`);
+  const next = commercialTiers.map((candidate) => config.indexOf(`${candidate}:`)).filter((position) => position > start).sort((a, b) => a - b)[0] ?? config.length;
+  return start >= 0 ? config.slice(start, next) : "";
+}
 const checks = [
   ["tier catalogue exists", config.includes("PAID_TIER_CATALOG")],
   ["all six commercial tiers registered", commercialTiers.every((id) => config.includes(id))],
-  ["all paid tiers include Titan Intelligence", commercialTiers.every((id) => config.includes(`${id}:​`) ? true : config.includes(id)) && commercialTiers.every((id) => { const start = config.indexOf(`${id}:`); const next = commercialTiers.map((candidate) => config.indexOf(`${candidate}:`)).filter((position) => position > start).sort((a, b) => a - b)[0] ?? config.length; return start >= 0 && config.slice(start, next).includes("titan_intelligence"); })],
-  ["free tier does not include Titan Intelligence entitlement", (() => { const start = config.indexOf("free:"); const next = config.indexOf("titan_pro:"); return start >= 0 && next > start && !config.slice(start, next).includes("titan_intelligence"); })()],
+  ["all paid tiers include Titan Intelligence", commercialTiers.every((id) => tierSlice(id).includes("titan_intelligence"))],
+  ["free tier does not include Titan Intelligence entitlement", !tierSlice("free").includes("titan_intelligence")],
   ["configured Stripe price IDs are present", requiredStripePriceIds.every((id) => config.includes(id) && subscriptions.includes(id))],
   ["subscription checkout callable exists", subscriptions.includes("createPaidSubscriptionCheckout")],
   ["subscription webhook updates entitlements", subscriptions.includes("paidEntitlements") && subscriptions.includes("writeSubscriptionState")],
