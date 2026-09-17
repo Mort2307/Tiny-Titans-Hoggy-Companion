@@ -26,7 +26,8 @@ exports.getTitanSupportStats = onCall({ region: "europe-west2" }, async (request
   }
 });
 
-// Keep the root function index stable while exposing the community-location functions alongside this module.
+// Community-location functions remain part of the production function surface.
 Object.assign(exports, require("./communityLocations"));
-Object.assign(exports, require("./titanIntelligence"));
-Object.assign(exports, require("./titanIntelligenceFeedback"));
+
+// Gemini-backed Ask Titan is intentionally parked. Its files remain in the repository for later reactivation,
+// but neither the chat callable nor its feedback callable is exported here, so Firebase will not deploy them.

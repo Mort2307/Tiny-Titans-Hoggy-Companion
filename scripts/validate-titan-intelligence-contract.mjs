@@ -1,74 +1,81 @@
 import fs from "node:fs";
 
-const read=(file)=>fs.readFileSync(file,"utf8");
-const master=read("src/intelligence/v50/animalMasterRecordEngine.ts");
-const confidence=read("src/intelligence/v50/titanDataConfidenceEngine.ts");
-const changes=read("src/intelligence/v50/titanChangeDetector.ts");
-const cross=read("src/intelligence/v50/titanCrossDomainEngine.ts");
-const panel=read("src/components/TitanIntelligence/TitanAnimalMasterRecord.tsx");
-const askTitan=read("src/components/TitanIntelligence/AskTitan.tsx");
-const feedbackUi=read("src/components/TitanIntelligence/TitanChatMessage.tsx");
-const workspaceHook=read("src/intelligence/askTitan/useTitanWorkspaceKind.ts");
-const chatContracts=read("src/intelligence/askTitan/titanChatContracts.ts");
-const feedbackService=read("src/intelligence/askTitan/titanFeedbackService.ts");
-const data=read("functions/titanIntelligenceData.js");
-const tools=read("functions/titanIntelligenceTools.js");
-const access=read("functions/titanIntelligenceAccess.js");
-const model=read("functions/titanIntelligenceModel.js");
-const titan=read("functions/titanIntelligence.js");
-const feedback=read("functions/titanIntelligenceFeedback.js");
-const goals=read("functions/titanGoals.js");
-const failures=[];
-const required=[
- [master,"buildAnimalMasterRecord","Master Record builder is missing."],
- [master,"dataConfidence","Master Record is not connected to evidence confidence."],
- [master,"crossDomainSignals","Master Record is not connected to cross-domain signals."],
- [master,"detectTitanChanges","Master Record is not connected to change detection."],
- [confidence,"calculateTitanDataConfidence","Data confidence engine is missing."],
- [confidence,"evidence quality","Data confidence does not explain what its score means."],
- [changes,"detectTitanChanges","Change detector is missing."],
- [changes,"not a diagnosis","Change detector is missing its non-diagnostic boundary."],
- [cross,"detectCrossDomainSignals","Cross-domain engine is missing."],
- [cross,"causalClaim","Cross-domain engine is not explicitly non-causal."],
- [cross,"explainCrossDomainSignal","Cross-domain explanation path is missing."],
- [cross,"buildHolyShitSummary","HOLY SHIT summary path is missing."],
- [panel,"What Tiny Titans sees next","Proactive surface is missing from the Master Record."],
- [panel,"Why am I seeing this?","Cross-domain signals are missing an explanation path."],
- [askTitan,"useTitanWorkspaceKind","Ask Titan does not follow the active workspace context."],
- [askTitan,"useTitanChat","Ask Titan chat wiring is missing."],
- [feedbackUi,"recordTitanFeedback","Ask Titan feedback controls are missing."],
- [workspaceHook,"productId === \"rescue\"","Rescue workspace mapping is missing."],
- [workspaceHook,"productId === \"titan_seller\"","Seller workspace mapping is missing."],
- [workspaceHook,"business_starter","Business workspace mapping is missing."],
- [chatContracts,"TitanWorkspaceKind","Titan chat workspace contract is missing."],
- [chatContracts,"responseId: string","Titan response identity is missing."],
- [feedbackService,"recordTitanFeedback","Titan feedback client service is missing."],
- [data,"listRescueAnimals","Rescue animal retrieval is missing."],
- [data,"getRescueAnimalRecords","Rescue record retrieval is missing."],
- [data,"getRescueCollectionOverview","Rescue intelligence overview is missing."],
- [data,"rescueAnimals","Rescue collection boundary is missing."],
- [data,"Medical/private records are omitted from lower-privilege views","Rescue visibility boundary is missing."],
- [data,"function serialiseItems","Rescue record serialisation helper is missing."],
- [tools,"get_workspace_animal_records","Rescue workspace tool declaration is missing."],
- [tools,"Personal animal records are not substituted into Rescue context","Cross-workspace data isolation is missing."],
- [access,"workspaceKind === \"rescue\"","Rescue access boundary is missing."],
- [access,"effectiveTier: \"rescue\"","Rescue access does not resolve to the Rescue tier."],
- [model,"GEMINI_API_KEY","Gemini secret binding is missing."],
- [model,"mode: \"VALIDATED\"","Gemini tool-calling mode is not hardened for server-side tool circulation."],
- [model,"includeServerSideToolInvocations: true","Gemini server-side tool context circulation is missing."],
- [titan,"consumeTitanUsage","Titan usage enforcement is missing."],
- [titan,"executeTool","Titan function-tool execution is missing."],
- [titan,"buildTitanProvenance","Titan provenance construction is missing."],
- [titan,"workspaceKind","Titan workspace context is not carried through the callable."],
- [titan,"responseId: crypto.randomUUID()","Titan response IDs are missing."],
- [feedback,"recordTitanFeedback=onCall","Titan feedback callable is missing."],
- [feedback,"titanFeedback","Titan feedback persistence is missing."],
- [goals,"./titanIntelligenceFeedback","Titan feedback callable is not exposed through the functions index."],
- [goals,"./titanIntelligence","Titan Intelligence callable is not exposed through the functions index."],
+const read = (file) => fs.readFileSync(file, "utf8");
+const master = read("src/intelligence/v50/animalMasterRecordEngine.ts");
+const confidence = read("src/intelligence/v50/titanDataConfidenceEngine.ts");
+const changes = read("src/intelligence/v50/titanChangeDetector.ts");
+const cross = read("src/intelligence/v50/titanCrossDomainEngine.ts");
+const panel = read("src/components/TitanIntelligence/TitanAnimalMasterRecord.tsx");
+const runtime = read("src/intelligence/v50/titanV50Runtime.ts");
+const titanPage = read("src/pages/TitanIntelligence.tsx");
+const snakePage = read("src/pages/SnakeTitanIntelligencePage.tsx");
+const data = read("functions/titanIntelligenceData.js");
+const tools = read("functions/titanIntelligenceTools.js");
+const access = read("functions/titanIntelligenceAccess.js");
+const model = read("functions/titanIntelligenceModel.js");
+const titanChatBackend = read("functions/titanIntelligence.js");
+const feedback = read("functions/titanIntelligenceFeedback.js");
+const goals = read("functions/titanGoals.js");
+const chatContracts = read("src/intelligence/askTitan/titanChatContracts.ts");
+const parkedChat = read("src/components/TitanIntelligence/AskTitan.tsx");
+const failures = [];
+
+const required = [
+  [master, "buildAnimalMasterRecord", "Master Record builder is missing."],
+  [master, "dataConfidence", "Master Record is not connected to evidence confidence."],
+  [master, "crossDomainSignals", "Master Record is not connected to cross-domain signals."],
+  [master, "detectTitanChanges", "Master Record is not connected to change detection."],
+  [confidence, "calculateTitanDataConfidence", "Data confidence engine is missing."],
+  [confidence, "evidence quality", "Data confidence does not explain what its score means."],
+  [changes, "detectTitanChanges", "Change detector is missing."],
+  [changes, "not a diagnosis", "Change detector is missing its non-diagnostic boundary."],
+  [cross, "detectCrossDomainSignals", "Cross-domain engine is missing."],
+  [cross, "causalClaim", "Cross-domain engine is not explicitly non-causal."],
+  [cross, "explainCrossDomainSignal", "Cross-domain explanation path is missing."],
+  [cross, "buildHolyShitSummary", "HOLY SHIT summary path is missing."],
+  [panel, "What Tiny Titans sees next", "Proactive surface is missing from the Master Record."],
+  [panel, "Why am I seeing this?", "Cross-domain signals are missing an explanation path."],
+  [runtime, "runTitanV50", "V50 Powerhouse runtime is missing."],
+  [runtime, "featureReady", "V50 capability readiness logic is missing."],
+  [titanPage, "POWERHOUSE INTELLIGENCE · V50", "Powerhouse Intelligence page branding is missing."],
+  [snakePage, "POWERHOUSE INTELLIGENCE", "Individual Powerhouse Intelligence surface is missing."],
+  [data, "listRescueAnimals", "Rescue animal retrieval is missing."],
+  [data, "getRescueAnimalRecords", "Rescue record retrieval is missing."],
+  [data, "getRescueCollectionOverview", "Rescue intelligence overview is missing."],
+  [data, "rescueAnimals", "Rescue collection boundary is missing."],
+  [data, "Medical/private records are omitted from lower-privilege views", "Rescue visibility boundary is missing."],
+  [data, "function serialiseItems", "Rescue record serialisation helper is missing."],
+  [tools, "get_workspace_animal_records", "Rescue workspace tool declaration is missing from the reusable intelligence data layer."],
+  [tools, "Personal animal records are not substituted into Rescue context", "Cross-workspace data isolation is missing."],
+  [access, "workspaceKind === \"rescue\"", "Rescue access boundary is missing from the reusable intelligence access layer."],
+  [access, "effectiveTier: \"rescue\"", "Rescue access does not resolve to the Rescue tier."],
+  [model, "GEMINI_API_KEY", "Parked Gemini model adapter is missing its secret binding."],
+  [titanChatBackend, "consumeTitanUsage", "Parked Titan chat backend lost its usage enforcement."],
+  [titanChatBackend, "executeTool", "Parked Titan chat backend lost its tool execution path."],
+  [titanChatBackend, "buildTitanProvenance", "Parked Titan chat backend lost its provenance path."],
+  [titanChatBackend, "responseId: crypto.randomUUID()", "Parked Titan chat backend lost response identity."],
+  [feedback, "recordTitanFeedback=onCall", "Parked Titan feedback callable is missing."],
+  [feedback, "titanFeedback", "Parked Titan feedback persistence is missing."],
+  [chatContracts, "TitanWorkspaceKind", "Parked Titan chat workspace contract is missing."],
+  [parkedChat, "useTitanChat", "Parked Ask Titan surface is missing."],
 ];
-for(const [source,needle,message] of required)if(!source.toLowerCase().includes(String(needle).toLowerCase()))failures.push(message);
-if(!data.includes("function serialiseItems(items)")) failures.push("Rescue intelligence serialisation helper is missing.");
-if(data.includes(".map(serialise)")) failures.push("Rescue intelligence contains an unsafe Array.map(serialise) recursion-depth call.");
-if(feedback.includes("question") || feedback.includes("answer")) failures.push("Titan feedback must not persist raw private question/answer content.");
-if(failures.length){console.error(`Titan intelligence contract failed with ${failures.length} issue(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1)}
-console.log("Titan intelligence contract passed: V50 intelligence, Ask Titan, workspace context, Rescue data boundaries, Gemini tool circulation, usage controls, provenance and privacy-preserving feedback are present.");
+
+for (const [source, needle, message] of required) {
+  if (!source.toLowerCase().includes(String(needle).toLowerCase())) failures.push(message);
+}
+
+if (data.includes(".map(serialise)")) failures.push("Rescue intelligence contains an unsafe Array.map(serialise) recursion-depth call.");
+if (feedback.includes("question") || feedback.includes("answer")) failures.push("Titan feedback must not persist raw private question/answer content.");
+if (/AskTitan/.test(titanPage) || /TitanAdvancedChatPreview/.test(titanPage)) failures.push("Main Powerhouse Intelligence page still actively mounts the parked Titan chat surface.");
+if (/AskTitan/.test(snakePage)) failures.push("Individual Powerhouse Intelligence page still actively mounts the parked Titan chat surface.");
+if (/require\(\"\.\/titanIntelligence\"\)/.test(goals)) failures.push("Gemini-backed Ask Titan callable is still exported through titanGoals.js.");
+if (/require\(\"\.\/titanIntelligenceFeedback\"\)/.test(goals)) failures.push("Titan chat feedback callable is still exported through titanGoals.js.");
+if (!/Gemini-backed Ask Titan is intentionally parked/.test(goals)) failures.push("The production function boundary does not document that Gemini chat is parked.");
+
+if (failures.length) {
+  console.error(`Titan intelligence contract failed with ${failures.length} issue(s):`);
+  failures.forEach((failure) => console.error(`- ${failure}`));
+  process.exit(1);
+}
+
+console.log("Titan intelligence contract passed: Powerhouse V50 intelligence remains active, core data/rescue intelligence layers remain present, and Gemini-backed chat is parked outside the production function/UI surface.");

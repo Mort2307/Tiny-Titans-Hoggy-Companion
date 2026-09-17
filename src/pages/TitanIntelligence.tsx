@@ -4,12 +4,8 @@ import { TITAN_V50_FEATURES } from "../intelligence/v50/titanV50FeatureMatrix";
 import { FEATURE_SUMMARIES } from "../intelligence/v50/titanV50Runtime";
 import TitanIntelligenceGrowthPanel from "../components/TitanIntelligence/TitanIntelligenceGrowthPanel";
 import TitanLiveIntelligencePanel from "../components/TitanIntelligence/TitanLiveIntelligencePanel";
-import AskTitan from "../components/TitanIntelligence/AskTitan";
-import TitanAdvancedChatPreview from "../components/TitanIntelligence/TitanAdvancedChatPreview";
 import SnakeTitanIntelligencePage from "./SnakeTitanIntelligencePage";
-import PaidTierGate from "../components/PaidTierGate";
 import "../components/TitanIntelligence/TitanLiveIntelligencePanel.css";
-import "../components/TitanIntelligence/TitanAdvancedChatPreview.css";
 import "./TitanIntelligence.css";
 
 const layerLabels: Record<string, string> = { animal: "🐍 Animal Intelligence", genetics: "🧬 Genetics Intelligence", husbandry: "🌡️ Husbandry Intelligence", community: "🌍 Community Intelligence", learning: "📚 Learning Intelligence", platform: "🔥 Titanverse / Platform Intelligence" };
@@ -23,8 +19,7 @@ function TitanIntelligenceContent() {
   const runtimeCovered = Object.keys(FEATURE_SUMMARIES).length;
   const grouped = Object.entries(layerLabels).map(([layer, label]) => ({ layer, label, features: TITAN_V50_FEATURES.filter((feature) => feature.layer === layer) })).filter((group) => group.features.length);
   return <main className="dashboard titan-intelligence-page">
-    <section className="titan-intelligence-hero"><div><p className="titan-eyebrow">TITAN INTELLIGENCE · V50</p><h1>The keeper brain is being built.</h1><p>One intelligence layer connects your animal records, genetics, husbandry, learning and community data. It only makes a claim when the underlying records support it.</p></div><div className="titan-progress-card" aria-label={`${runtimeCovered} of ${TITAN_V50_FEATURES.length} V50 capabilities have a runtime contract`}><strong>{runtimeCovered}/{TITAN_V50_FEATURES.length}</strong><span>Capability runtime coverage</span><small>Every V50 capability has a runtime adapter. A capability still marked planned is not being presented as production-complete merely because its adapter exists.</small></div></section>
-    <PaidTierGate entitlement="titan_intelligence" fallback={<TitanAdvancedChatPreview />}><AskTitan /></PaidTierGate>
+    <section className="titan-intelligence-hero"><div><p className="titan-eyebrow">POWERHOUSE INTELLIGENCE · V50</p><h1>The keeper brain is being built.</h1><p>One intelligence layer connects your animal records, genetics, husbandry, learning and community data. It only makes a claim when the underlying records support it.</p></div><div className="titan-progress-card" aria-label={`${runtimeCovered} of ${TITAN_V50_FEATURES.length} V50 capabilities have a runtime contract`}><strong>{runtimeCovered}/{TITAN_V50_FEATURES.length}</strong><span>Capability runtime coverage</span><small>Every V50 capability has a runtime adapter. A capability still marked planned is not being presented as production-complete merely because its adapter exists.</small></div></section>
     <TitanIntelligenceGrowthPanel/><TitanLiveIntelligencePanel/>
     <section className="titan-intelligence-stats" aria-label="V50 implementation status"><div><strong>{foundation}</strong><span>Foundation</span></div><div><strong>{wired}</strong><span>Matrix wired</span></div><div><strong>{validated}</strong><span>Validated</span></div><div><strong>{TITAN_V50_FEATURES.length - foundation - wired - validated}</strong><span>Feature build remaining</span></div></section>
     <section className="titan-intelligence-section"><div className="titan-section-heading"><div><p className="titan-eyebrow">HOW IT THINKS</p><h2>One action. Multiple consequences.</h2></div></div><div className="titan-flow"><span>📝 Record something</span><b>→</b><span>🧠 Recalculate context</span><b>→</b><span>🔎 Find supported patterns</span><b>→</b><span>⚡ Surface the useful next step</span></div><p className="titan-boundary">The intelligence layer is deliberately conservative: uncertain genetics stay uncertain, missing records stay missing, and medical signals are never presented as diagnoses.</p></section>

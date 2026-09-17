@@ -5,7 +5,6 @@ import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeM
 import { buildSnakeIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
 import TitanAnimalIntelligencePanel from "../components/TitanIntelligence/TitanAnimalIntelligencePanel";
-import AskTitan from "../components/TitanIntelligence/AskTitan";
 import "../styles/SnakeMasterRecord.css";
 
 function confidenceExplanation(value: SnakeIntelligence["confidence"], area: string, count: number, target: number) {
@@ -66,7 +65,7 @@ export default function SnakeTitanIntelligencePage() {
   if (!snakeId) return <main className="page-container"><section className="master-shell"><h1>Titan Intelligence</h1><p>No snake was selected.</p><Link to="/snakes">Back to My Snakes</Link></section></main>;
   if (access === null || loadedKey !== key) return <main className="page-container"><section className="master-shell"><p role="status">Reading this Titan's intelligence access and recorded history…</p></section></main>;
   if (!access) return <main className="page-container"><section className="master-shell">
-    <header className="master-hero"><div><p className="master-eyebrow">🧠 TITAN INTELLIGENCE</p><h1>Full Intelligence is optional</h1><p>Your core tracking still works normally. Advanced Titan Intelligence only runs when you choose the relevant optional data-sharing setting.</p></div><Link className="master-back" to={`/snakes/${snakeId}`}>Snake profile</Link></header>
+    <header className="master-hero"><div><p className="master-eyebrow">🧠 POWERHOUSE INTELLIGENCE</p><h1>Full Intelligence is optional</h1><p>Your core tracking still works normally. Advanced Titan Intelligence only runs when you choose the relevant optional data-sharing setting.</p></div><Link className="master-back" to={`/snakes/${snakeId}`}>Snake profile</Link></header>
     <section className="tt-intelligence-panel tt-intelligence-locked"><p className="tt-intelligence-kicker">YOUR CHOICE</p><h2 className="tt-intelligence-title">Intelligence access is currently off</h2><p className="tt-intelligence-meta">Tiny Titans will not calculate or display the deeper individual intelligence layer until you enable it in Data &amp; Privacy.</p><Link className="tt-intelligence-action" to="/account/data-privacy">Enable Intelligence in Data &amp; Privacy →</Link></section>
   </section></main>;
   if (error || !record || !intelligence) return <main className="page-container"><section className="master-shell"><h1>Unable to load Titan Intelligence</h1><p role="alert">{error || "No individual record is available."}</p><Link to="/snakes">Back to My Snakes</Link></section></main>;
@@ -83,7 +82,7 @@ export default function SnakeTitanIntelligencePage() {
   return <main className="page-container master-record-page">
     <section className="master-shell">
       <header className="master-hero">
-        <div><p className="master-eyebrow">🧠 TITAN INTELLIGENCE</p><h1>{snake.name}</h1><p>Living, record-derived intelligence for this individual. The same canonical engine used by the Master Record.</p></div>
+        <div><p className="master-eyebrow">🧠 POWERHOUSE INTELLIGENCE</p><h1>{snake.name}</h1><p>Living, record-derived intelligence for this individual. The same canonical engine used by the Master Record.</p></div>
         <Link className="master-back" to={`/snakes/${snake.id}/master-record`}>Master Record</Link>
       </header>
 
@@ -96,7 +95,6 @@ export default function SnakeTitanIntelligencePage() {
       </section>
 
       <TitanAnimalIntelligencePanel record={record} />
-      <AskTitan workspaceKind="personal" animalId={snake.id} />
 
       <section className="master-card">
         <div className="master-section-heading"><div><p className="master-eyebrow">Data quality</p><h2>Confidence explained</h2></div><span>{intelligence.confidence}</span></div>
