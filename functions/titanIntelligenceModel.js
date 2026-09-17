@@ -9,7 +9,10 @@ async function generateTitanTurn({ apiKey, contents, tools, systemInstruction })
       systemInstruction: { parts: [{ text: systemInstruction }] },
       contents,
       tools: [...tools, { googleSearch: {} }],
-      toolConfig: { includeServerSideToolInvocations: true },
+      toolConfig: {
+        functionCallingConfig: { mode: "VALIDATED" },
+        includeServerSideToolInvocations: true,
+      },
       generationConfig: { temperature: 0.25, maxOutputTokens: 1800 },
       store: false,
     }),
