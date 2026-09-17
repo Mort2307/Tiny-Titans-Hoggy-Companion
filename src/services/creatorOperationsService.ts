@@ -3,7 +3,33 @@ import { app } from "../firebase/config";
 
 const functions = getFunctions(app, "europe-west2");
 
-type CreatorQaRun = { id: string; name?: string; status?: string; completedAt?: string; routes?: number; failures?: number; screenshots?: number; note?: string };
+type CreatorQaRun = {
+  id: string;
+  name?: string;
+  status?: string;
+  generatedAt?: string;
+  completedAt?: string;
+  commit?: string;
+  routes?: number;
+  viewports?: Array<{ name: string; width: number; height: number }>;
+  screenshots?: number;
+  videos?: number;
+  failures?: number;
+  errors?: number;
+  warnings?: number;
+  note?: string;
+  storagePrefix?: string;
+  reportPath?: string;
+  qaEvidenceAvailable?: boolean;
+  routeSource?: string;
+  github?: {
+    repository?: string;
+    branch?: string;
+    path?: string;
+    url?: string | null;
+    actionsUrl?: string | null;
+  } | null;
+};
 
 const getCreatorQaRunsCall = httpsCallable<Record<string, never>, { success: boolean; runs: CreatorQaRun[] }>(functions, "getCreatorQaRuns");
 
