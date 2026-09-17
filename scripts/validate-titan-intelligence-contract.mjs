@@ -43,7 +43,6 @@ const required=[
  [data,"rescueAnimals","Rescue collection boundary is missing."],
  [data,"Medical/private records are omitted from lower-privilege views","Rescue visibility boundary is missing."],
  [data,"function serialiseItems","Rescue record serialisation helper is missing."],
- [data,"map(serialise)","Rescue record serialisation must not pass array indexes as recursion depth."],
  [tools,"get_workspace_animal_records","Rescue workspace tool declaration is missing."],
  [tools,"Personal animal records are not substituted into Rescue context","Cross-workspace data isolation is missing."],
  [access,"workspaceKind === \"rescue\"","Rescue access boundary is missing."],
@@ -57,7 +56,8 @@ const required=[
  [titan,"workspaceKind","Titan workspace context is not carried through the callable."],
  [goals,"./titanIntelligence","Titan Intelligence callable is not exposed through the functions index."],
 ];
-for(const [source,needle,message] of required)if(source.toLowerCase().includes(String(needle).toLowerCase())===false)failures.push(message);
-if(!data.includes("function serialiseItems(items)") || data.includes(".map(serialise)")) failures.push("Rescue intelligence contains an unsafe Array.map(serialise) recursion-depth call.");
+for(const [source,needle,message] of required)if(!source.toLowerCase().includes(String(needle).toLowerCase()))failures.push(message);
+if(!data.includes("function serialiseItems(items)")) failures.push("Rescue intelligence serialisation helper is missing.");
+if(data.includes(".map(serialise)")) failures.push("Rescue intelligence contains an unsafe Array.map(serialise) recursion-depth call.");
 if(failures.length){console.error(`Titan intelligence contract failed with ${failures.length} issue(s):`);failures.forEach(f=>console.error(`- ${f}`));process.exit(1)}
 console.log("Titan intelligence contract passed: V50 intelligence, Ask Titan, workspace context, Rescue data boundaries, Gemini tool circulation, usage controls and provenance are present.");
