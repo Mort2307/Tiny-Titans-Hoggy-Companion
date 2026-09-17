@@ -1,50 +1,15 @@
-import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import TitanChatComposer from "./TitanChatComposer";
 import TitanChatMessage from "./TitanChatMessage";
 import TitanUsageIndicator from "./TitanUsageIndicator";
-import { askTitan } from "../../intelligence/askTitan/titanChatService";
-import type { TitanAskResponse, TitanWorkspaceKind } from "../../intelligence/askTitan/titanChatContracts";
+import TitanDataUseNotice from "./TitanDataUseNotice";
+import { useTitanChat } from "../../intelligence/askTitan/useTitanChat";
+import { TITAN_CHAT_STARTERS } from "../../intelligence/askTitan/titanChatStarters";
+import type { TitanWorkspaceKind } from "../../intelligence/askTitan/titanChatContracts";
 import "./AskTitan.css";
 
-const STARTERS = [
-  "What patterns can you see in my recorded animal data?",
-  "What changed recently in my animal's records?",
-  "Explain what my feeding and weight records actually show.",
-  "Help me understand a husbandry question using the data I've recorded.",
-];
-
-type Message = { id: string; role: "user" | "model"; content: string; response?: TitanAskResponse };
-
 export default function AskTitan({ workspaceKind = "personal", animalId }: { workspaceKind?: TitanWorkspaceKind; animalId?: string }) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [usage, setUsage] = useState<{ used: number; limit: number; remaining: number } | null>(null);
-  const history = useMemo(() => messages.map((item) => ({ role: item.role, content: item.content })), [messages]);
-
-  async function submit(question: string) {
-    setBusy(true);
-    setError("");
-    const userMessage: Message = { id: `${Date.now()}-user`, role: "user", content: question };
-    setMessages((current) => [...current, userMessage]);
-    try {
-      const response = await askTitan({ question, animalId, workspaceKind, history });
-      setUsage(response.usage);
-      setMessages((current) => [...current, { id: `${Date.now()}-titan`, role: "model", content: response.text, response }]);
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "Titan Intelligence could not complete that question.";
-      setError(message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function reset() {
-    setMessages([]);
-    setError("");
-    setUsage(null);
-  }
+  const { messages, busy, error, usage, submit, reset } = useTitanChat({ workspaceKind, animalId });
 
   return (
     <section className="ask-titan-card" aria-label="Ask Titan">
@@ -57,11 +22,15 @@ export default function AskTitan({ workspaceKind = "personal", animalId }: { wor
         <button className="ask-titan-reset" type="button" onClick={reset} disabled={busy || messages.length === 0}>New chat</button>
       </header>
 
+      <TitanDataUseNotice />
+
       {messages.length === 0 && (
         <div className="ask-titan-start">
           <strong>Start with a real question.</strong>
           <p>Titan does not replace your records or invent missing information. It works from the data and evidence available for your account and clearly separates recorded facts from interpretation.</p>
-          <div className="ask-titan-starters">{STARTERS.map((starter) => <button type="button" key={starter} onClick={() => void submit(starter)} disabled={busy}>{starter}</button>)}</div>
+          <div className="ask-titan-starters">
+            {TITAN_CHAT_STARTERS.map((starter) => <button type="button" key={starter} onClick={() => void submit(starter)} disabled={busy}>{starter}</button>)}
+          </div>
         </div>
       )}
 
