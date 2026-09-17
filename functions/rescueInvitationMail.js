@@ -4,7 +4,6 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const db = getFirestore();
 const ROLES = new Set(["manager", "staff", "medical", "foster", "viewer"]);
 const ROLE_FIELDS = Object.freeze({ manager: "managerUids", staff: "staffUids", medical: "medicalUids", foster: "fosterUids", viewer: "viewerUids" });
-const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 const APP_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
 
 function membershipRole(org, uid) {
@@ -73,7 +72,7 @@ exports.resendRescueStaffInvitation = onCall({ region: "europe-west2" }, async (
     from: "Tiny Titans Reptile Companion <tinytitans.exotics@gmail.com>",
     replyTo: "tinytitans.exotics@gmail.com",
     message: { subject, text, html },
-    type: "rescue-staff-invitation-resend",
+    type: "rescue-staff-invitation",
     rescueInvitationId: invitationId,
     organisationId,
     createdByUid: request.auth.uid,
