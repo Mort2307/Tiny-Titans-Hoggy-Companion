@@ -8,9 +8,10 @@ async function generateTitanTurn({ apiKey, contents, tools, systemInstruction })
     body: JSON.stringify({
       system_instruction: { parts: [{ text: systemInstruction }] },
       contents,
-      tools: [...tools, { google_search: {} }],
+      tools: [...tools, { googleSearch: {} }],
+      toolConfig: { functionCallingConfig: { mode: "VALIDATED" } },
       generationConfig: { temperature: 0.25, maxOutputTokens: 1800 },
-      toolConfig: { functionCallingConfig: { mode: "AUTO" } },
+      store: false,
     }),
   });
   const payload = await response.json().catch(() => ({}));
