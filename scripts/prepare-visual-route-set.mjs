@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { chromium } from "playwright";
 
 const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:4173";
@@ -28,7 +29,7 @@ const layoutSpecialRoutes = [
 ];
 
 const ignoredPathPatterns = [/^\/login(?:\/|$)/i, /^\/logout(?:\/|$)/i, /^\/account-setup(?:\/|$)/i];
-const ignoredButtonText = /^(delete|remove|sign out|logout|submit|save|add |create |confirm|accept|deny|allow|send|publish|upload|buy|pay|checkout|remove|revoke)/i;
+const ignoredButtonText = /^(delete|remove|sign out|logout|submit|save|add |create |confirm|accept|deny|allow|send|publish|upload|buy|pay|checkout|revoke)/i;
 
 function normaliseRoute(value) {
   try {
@@ -40,10 +41,6 @@ function normaliseRoute(value) {
   }
 }
 
-function safeRoute(route) {
-  return route === "/" ? "home" : route.replace(/^\//, "").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "route";
-}
-
 function extractDeclaredRoutes(router) {
   const routes = [];
   for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']/g)) routes.push(match[1]);
@@ -51,7 +48,7 @@ function extractDeclaredRoutes(router) {
 }
 
 function isConcreteRoute(route) {
-  return route && !route.includes(":") && !route.includes("*") && route !== "/login" && route !== "/account-setup" && route !== "*";
+  return Boolean(route) && !route.includes(":") && !route.includes("*") && route !== "/login" && route !== "/account-setup" && route !== "*";
 }
 
 function hrefsFromSnapshot(snapshot) {
@@ -87,10 +84,7 @@ async function collectSnapshot(page) {
     const text = (element) => (element?.innerText || element?.textContent || "").replace(/\s+/g, " ").trim().slice(0, 140);
     const interactive = [...document.querySelectorAll("a[href],button,[role='button']")].filter(visible);
     const links = interactive.filter((element) => element.tagName === "A").map((element) => element.getAttribute("href") || "");
-    const buttons = interactive.filter((element) => element.tagName === "BUTTON" || element.getAttribute("role") === "button").map((element) => ({
-      text: text(element),
-      disabled: Boolean(element.disabled),
-    }));
+    const buttons = interactive.filter((element) => element.tagName === "BUTTON" || element.getAttribute("role") === "button").map((element) => ({ text: text(element), disabled: Boolean(element.disabled) }));
     return { links, buttons, title: document.title, heading: text(document.querySelector("main h1, [role='main'] h1, h1")) };
   });
 }
@@ -110,6 +104,12 @@ async function markButtons(page) {
   });
 }
 
+function runCapture(routes) {
+  const env = { ...process.env, TINY_TITANS_VISUAL_ROUTES: routes.join(",") };
+  const child = spawnSync(process.execPath, [path.resolve("scripts/run-visual-review-bot.mjs")], { stdio: "inherit", env });
+  return child.status ?? 1;
+}
+
 async function main() {
   const explicitRoutes = String(process.env.TINY_TITANS_VISUAL_ROUTES || "").trim();
   if (explicitRoutes) {
@@ -117,6 +117,7 @@ async function main() {
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
     await fs.writeFile(outputPath, `${JSON.stringify({ source: "explicit", generatedAt: new Date().toISOString(), routes, skippedPatterns: [], discoveryPages: 0 }, null, 2)}\n`, "utf8");
     console.log(`Using ${routes.length} explicit visual routes.`);
+    process.exitCode = runCapture(routes);
     return;
   }
 
@@ -147,7 +148,7 @@ async function main() {
       }
 
       const finalRoute = normaliseRoute(page.url()) || route;
-      const snapshot = await collectSnapshot(page).catch(() => ({ links: [], buttons: [], title: document.title || "", heading: "" }));
+      const snapshot = await collectSnapshot(page).catch(() => ({ links: [], buttons: [], title: "", heading: "" }));
       const linkRoutes = hrefsFromSnapshot(snapshot.links).map(normaliseRoute).filter(Boolean);
       for (const candidate of linkRoutes) {
         if (!discovered.has(candidate)) {
@@ -175,7 +176,7 @@ async function main() {
             queued.push(after);
           }
         } catch {
-          // A discovery miss is not itself a visual failure; the final capture report records rendered evidence.
+          // Discovery misses are not final visual failures; the rendered capture reports the actual evidence.
         }
         await page.goto(before, { waitUntil: "domcontentloaded" }).catch(() => undefined);
         await waitForStable(page);
@@ -201,13 +202,12 @@ async function main() {
     maxPages,
     discoveryPages,
     routes,
-    routeSetSlug: safeRoute(routes[0] || "/"),
   };
 
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  process.env.TINY_TITANS_VISUAL_ROUTES = routes.join(",");
   console.log(`Discovered ${routes.length} concrete routes from ${declared.length} router declarations across ${discoveryPages.length} visited pages.`);
+  process.exitCode = runCapture(routes);
 }
 
 main().catch((error) => {
