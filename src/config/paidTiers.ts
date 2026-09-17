@@ -5,15 +5,57 @@ export type PaidTierSource = "subscription" | "tester" | "trial" | "free";
 export type PaidTierTesterMode = "silent" | "visible";
 
 export type PaidEntitlement =
-  | "core_tracking" | "core_genetics" | "core_learning" | "core_community" | "smart_reminders" | "advanced_timeline" | "advanced_analytics" | "titan_intelligence" | "breeding_suite" | "morph_intelligence" | "data_export" | "marketplace_seller" | "seller_profile" | "business_reporting" | "multi_user" | "team_permissions" | "automation" | "api_access" | "priority_support" | "custom_branding" | "rescue_workspace" | "rescue_qr_passports" | "species_incubator" | "rescue_team" | "rescue_medical_records" | "rescue_reporting" | "rescue_adoption";
+  | "core_tracking"
+  | "core_genetics"
+  | "core_learning"
+  | "core_community"
+  | "smart_reminders"
+  | "advanced_timeline"
+  | "advanced_analytics"
+  | "titan_intelligence"
+  | "breeding_suite"
+  | "morph_intelligence"
+  | "data_export"
+  | "marketplace_seller"
+  | "seller_profile"
+  | "business_reporting"
+  | "multi_user"
+  | "team_permissions"
+  | "automation"
+  | "api_access"
+  | "priority_support"
+  | "custom_branding"
+  | "rescue_workspace"
+  | "rescue_qr_passports"
+  | "species_incubator"
+  | "rescue_team"
+  | "rescue_medical_records"
+  | "rescue_reporting"
+  | "rescue_adoption";
 
 export type PaidTierDefinition = {
-  id: PaidTierId; name: string; shortLabel: string; crest: string; prestige: "base" | "elite" | "commercial" | "business" | "executive"; accent: string; priceGbpMonthly: number; priceLabel: string; stripePriceIdMonthly?: string; stripePriceIdAnnual?: string; priceGbpAnnual?: number; eyebrow: string; description: string; audience: string; entitlements: PaidEntitlement[]; highlights: string[]; note?: string;
+  id: PaidTierId;
+  name: string;
+  shortLabel: string;
+  crest: string;
+  prestige: "base" | "elite" | "commercial" | "business" | "executive";
+  accent: string;
+  priceGbpMonthly: number;
+  priceLabel: string;
+  stripePriceIdMonthly?: string;
+  stripePriceIdAnnual?: string;
+  priceGbpAnnual?: number;
+  eyebrow: string;
+  description: string;
+  audience: string;
+  entitlements: PaidEntitlement[];
+  highlights: string[];
+  note?: string;
 };
 
 const COMMON: PaidEntitlement[] = ["core_tracking", "core_genetics", "core_learning", "core_community"];
-const PAID_INTELLIGENCE: PaidEntitlement = "titan_intelligence";
 const RESCUE: PaidEntitlement[] = ["rescue_workspace", "rescue_qr_passports", "species_incubator", "rescue_team", "rescue_medical_records", "rescue_reporting", "rescue_adoption", "multi_user", "custom_branding", "data_export"];
+const PAID_INTELLIGENCE: PaidEntitlement = "titan_intelligence";
 
 export const PAID_TIER_CATALOG: Record<PaidTierId, PaidTierDefinition> = {
   free: { id: "free", name: "Free", shortLabel: "Free Keeper", crest: "◇", prestige: "base", accent: "#92a0ad", priceGbpMonthly: 0, priceLabel: "£0 / month", eyebrow: "EVERYDAY KEEPER", description: "A genuinely useful Tiny Titans experience, not a deliberately crippled demo.", audience: "Keepers exploring the core app", entitlements: COMMON, highlights: ["Core reptile records", "Core genetics and learning", "Community access", "No card required"] },
