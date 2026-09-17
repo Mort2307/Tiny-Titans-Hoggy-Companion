@@ -6,6 +6,7 @@ import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidEntitlement, type PaidTierId } from "../config/paidTiers";
 import PaidTierBadge from "./PaidTierBadge";
 import RescueInvitation from "../pages/RescueInvitation";
+import OrganisationStaffManager from "./staff/OrganisationStaffManager";
 import "../styles/PaidPlans.css";
 import "../styles/PaidTierGate.css";
 
@@ -27,6 +28,10 @@ function isRescueEntitlement(entitlement: PaidEntitlement) {
 
 function isRescueInvitationRoute(entitlement: PaidEntitlement) {
   return isRescueEntitlement(entitlement) && window.location.pathname === "/rescue/team" && new URLSearchParams(window.location.search).has("invite");
+}
+
+function isRescueTeamManagementRoute(entitlement: PaidEntitlement) {
+  return isRescueEntitlement(entitlement) && window.location.pathname === "/rescue/team" && !new URLSearchParams(window.location.search).has("invite");
 }
 
 function activeRescueWorkspace(workspace: { organisation: { accountStatus?: string; pilotStatus?: string; pilotEndsAt?: string } | null }, access: PaidAccess | null) {
@@ -81,6 +86,7 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
   const isCreator = user?.email?.trim().toLowerCase() === CREATOR_EMAIL;
   const rescueEntitlement = isRescueEntitlement(entitlement);
   const invitationRoute = isRescueInvitationRoute(entitlement);
+  const rescueTeamManagementRoute = isRescueTeamManagementRoute(entitlement);
 
   useEffect(() => {
     let active = true;
@@ -116,6 +122,7 @@ export default function PaidTierGate({ entitlement, children, fallback }: { enti
 
   if (loading || profileLoading || checking) return <div aria-live="polite">Checking Tiny Titans access…</div>;
   if (invitationRoute) return <RescueInvitation />;
+  if (rescueTeamManagementRoute) return <OrganisationStaffManager mode="rescue" />;
   if (isCreator) return <>{children}</>;
 
   const paidAllowed = Boolean(access && getPaidTierDefinition(access.effectiveTier).entitlements.includes(entitlement));
