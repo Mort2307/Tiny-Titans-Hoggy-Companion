@@ -83,10 +83,12 @@ export default function RescueInvitationBridge() {
 
   async function accept() {
     if (accepting) return;
+    const currentInvitation = invitation;
+    if (!currentInvitation) return;
     setAccepting(true);
     setError("");
     try {
-      const result = await acceptRescueInvitation(invitation.id);
+      const result = await acceptRescueInvitation(currentInvitation.id);
       setMessage(`You have joined ${result.organisationName} as ${result.role}.`);
       removeInviteFromUrl();
       window.setTimeout(() => window.location.assign("/rescue/team"), 500);
