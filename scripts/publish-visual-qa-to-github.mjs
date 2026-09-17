@@ -86,7 +86,7 @@ async function writeGitHubReadme(destinationRoot, report) {
     const gallery = [
       `# ${viewport.name} · ${viewport.width}×${viewport.height}`,
       "",
-      `Latest visual evidence for **${viewport.width}×${viewport.height}**. Each route has both the viewport and full-page capture.",
+      `Latest visual evidence for **${viewport.width}×${viewport.height}**. Each route has both the viewport and full-page capture.`,
       "",
       "| Route | Viewport capture | Full-page capture |",
       "| --- | --- | --- |",
