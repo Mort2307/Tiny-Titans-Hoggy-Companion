@@ -5,6 +5,7 @@ import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeM
 import { buildSnakeIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
 import TitanAnimalIntelligencePanel from "../components/TitanIntelligence/TitanAnimalIntelligencePanel";
+import AskTitan from "../components/TitanIntelligence/AskTitan";
 import "../styles/SnakeMasterRecord.css";
 
 function confidenceExplanation(value: SnakeIntelligence["confidence"], area: string, count: number, target: number) {
@@ -95,6 +96,7 @@ export default function SnakeTitanIntelligencePage() {
       </section>
 
       <TitanAnimalIntelligencePanel record={record} />
+      <AskTitan workspaceKind="personal" animalId={snake.id} />
 
       <section className="master-card">
         <div className="master-section-heading"><div><p className="master-eyebrow">Data quality</p><h2>Confidence explained</h2></div><span>{intelligence.confidence}</span></div>
