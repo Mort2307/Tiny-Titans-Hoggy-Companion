@@ -6,8 +6,12 @@ on:
     paths:
       - 'src/**'
       - 'public/**'
+      - 'functions/creatorOperationsData.js'
+      - 'storage.rules'
       - 'scripts/run-visual-review-bot.mjs'
-      - 'scripts/run-visual-journey-recorder.mjs'
+      - 'scripts/prepare-visual-route-set.mjs'
+      - 'scripts/publish-visual-qa-evidence.mjs'
+      - 'scripts/publish-visual-qa-to-github.mjs'
       - 'docs/visual-design-contract.json'
       - 'package.json'
       - 'package-lock.json'
@@ -15,28 +19,28 @@ on:
   workflow_dispatch:
     inputs:
       routes:
-        description: "Routes to capture, comma-separated"
-        required: true
-        default: "/,/snakes,/weights,/feeding,/shedding,/behaviour,/health,/husbandry,/enclosure-intelligence,/morph-library,/calculator,/breeding,/learn,/challenge,/community,/account,/rescue,/rescue/animals,/rescue/qr,/rescue/team"
+        description: "Optional routes to capture, comma-separated. Leave blank for router + authenticated runtime discovery."
+        required: false
+        default: ""
       note:
         description: "Optional reason/context for this visual review run"
         required: false
         default: ""
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: tiny-titans-visual-review-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  VISUAL_ROUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.routes || '/,/snakes,/weights,/feeding,/shedding,/behaviour,/health,/husbandry,/enclosure-intelligence,/morph-library,/calculator,/breeding,/learn,/challenge,/community,/account,/rescue,/rescue/animals,/rescue/qr,/rescue/team' }}
+  VISUAL_ROUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.routes || '' }}
 
 jobs:
   capture:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -67,39 +71,58 @@ jobs:
           cat ci-visual-review-server.log
           exit 1
 
-      - name: Capture rendered screenshots and DOM evidence
+      - name: Discover routes and capture every canonical viewport
         env:
           TINY_TITANS_TEST_URL: http://127.0.0.1:4173
           TINY_TITANS_VISUAL_ROUTES: ${{ env.VISUAL_ROUTES }}
           TINY_TITANS_VISUAL_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
           TINY_TITANS_VISUAL_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
-        run: node scripts/run-visual-review-bot.mjs
-
-      - name: Record rendered viewport journeys
-        env:
-          TINY_TITANS_TEST_URL: http://127.0.0.1:4173
-          TINY_TITANS_VISUAL_ROUTES: ${{ env.VISUAL_ROUTES }}
-          TINY_TITANS_VISUAL_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
-          TINY_TITANS_VISUAL_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
-        run: node scripts/run-visual-journey-recorder.mjs
+        run: node scripts/prepare-visual-route-set.mjs
 
       - name: Write run metadata
         shell: bash
         env:
           VISUAL_ROUTES: ${{ env.VISUAL_ROUTES }}
-          VISUAL_NOTE: ${{ github.event_name == 'workflow_dispatch' && inputs.note || 'Automatic visual review after UI/application changes' }}
+          VISUAL_NOTE: ${{ github.event_name == 'workflow_dispatch' && inputs.note || 'Automatic universal visual review after UI/application changes' }}
         run: |
           cat > artifacts/visual-review/run-metadata.txt <<EOF
           Tiny Titans Visual Review BOT
-          Routes: ${VISUAL_ROUTES}
+          Route mode: ${VISUAL_ROUTES:-AUTO (router + authenticated runtime discovery)}
           Context: ${VISUAL_NOTE}
           Commit: ${GITHUB_SHA}
           Run: ${GITHUB_RUN_ID}
           Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          Evidence: viewport screenshots, full-page screenshots, DOM metrics, runtime errors and WebM viewport journey recordings.
+          Evidence: viewport screenshots, full-page screenshots, DOM metrics, runtime/console/request failures and WebM viewport journey recordings.
+          GitHub evidence branch: qa-evidence (latest run replaces previous visual files)
+          Firebase evidence: creator-only temporary QA storage; previous run evidence is removed when the next run publishes successfully.
           EOF
 
-      - name: Upload rendered visual evidence
+      - name: Publish temporary visual evidence to GitHub
+        if: ${{ always() && hashFiles('artifacts/visual-review/report.json') != '' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TINY_TITANS_VISUAL_OUTPUT: artifacts/visual-review
+          TINY_TITANS_QA_GITHUB_BRANCH: qa-evidence
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/publish-visual-qa-to-github.mjs
+
+      - name: Publish screenshots to creator-only evidence storage and QA history
+        if: ${{ always() && hashFiles('artifacts/visual-review/report.json') != '' }}
+        env:
+          TINY_TITANS_VISUAL_OUTPUT: artifacts/visual-review
+          TINY_TITANS_VISUAL_BOT_EMAIL: ${{ secrets.TINY_TITANS_BOT_EMAIL }}
+          TINY_TITANS_VISUAL_BOT_PASSWORD: ${{ secrets.TINY_TITANS_BOT_PASSWORD }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SHA: ${{ github.sha }}
+          TINY_TITANS_QA_GITHUB_BRANCH: qa-evidence
+        run: node scripts/publish-visual-qa-evidence.mjs
+
+      - name: Upload rendered visual evidence artefact
         id: upload
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
@@ -108,6 +131,7 @@ jobs:
           path: |
             artifacts/visual-review/
             ci-visual-review-server.log
+          retention-days: 7
           if-no-files-found: warn
 
       - name: Link visual evidence from the run summary
@@ -115,7 +139,9 @@ jobs:
         shell: bash
         run: |
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "## Rendered evidence" >> "$GITHUB_STEP_SUMMARY"
-          echo "[Open / download the visual review artifact](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${{ steps.upload.outputs.artifact-id }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Visual evidence" >> "$GITHUB_STEP_SUMMARY"
+          echo "The latest screenshots are published to the private \`qa-evidence\` branch and the Creator QA viewer." >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub evidence: https://github.com/${GITHUB_REPOSITORY}/tree/qa-evidence/qa/latest" >> "$GITHUB_STEP_SUMMARY"
+          echo "Actions artefact: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}#artifacts-${{ steps.upload.outputs.artifact-id }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "The artifact contains per-route viewport/full-page PNGs, DOM/runtime evidence, and mobile/tablet/desktop WebM journey recordings." >> "$GITHUB_STEP_SUMMARY"
+          echo "The artefact is retained for 7 days; the qa-evidence branch keeps only the latest screenshots." >> "$GITHUB_STEP_SUMMARY"
