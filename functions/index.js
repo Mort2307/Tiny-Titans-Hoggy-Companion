@@ -28,6 +28,7 @@ Object.assign(exports,require("./creatorRescuePilot"));
 Object.assign(exports,require("./creatorPromoCodes"));
 Object.assign(exports,require("./creatorOperationsData"));
 Object.assign(exports,require("./rescueOrganisation"));
+Object.assign(exports,require("./rescueInvitationMail"));
 Object.assign(exports,require("./rescueTeam"));
 Object.assign(exports,require("./notificationTest"));
 Object.assign(exports,require("./supportNotifications"));
