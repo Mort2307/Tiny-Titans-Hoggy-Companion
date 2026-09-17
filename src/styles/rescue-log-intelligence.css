@@ -1,0 +1,184 @@
+.rescue-log-intelligence {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+  background: linear-gradient(145deg, rgba(41, 25, 58, 0.96), rgba(18, 15, 27, 0.98));
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.rescue-log-intelligence-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.rescue-log-intelligence-heading h2 {
+  margin: 6px 0 7px;
+}
+
+.rescue-log-intelligence-heading p {
+  margin: 0;
+  max-width: 820px;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.rescue-log-intelligence-badge {
+  flex: 0 0 auto;
+  border: 1px solid rgba(74, 222, 128, 0.24);
+  background: rgba(74, 222, 128, 0.08);
+  color: #86efac;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rescue-log-intelligence-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rescue-log-intelligence-stats > div {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.rescue-log-intelligence-stats span,
+.rescue-log-intelligence-stats small {
+  display: block;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.rescue-log-intelligence-stats span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rescue-log-intelligence-stats strong {
+  display: block;
+  margin: 5px 0 3px;
+  font-size: 1.35rem;
+}
+
+.rescue-log-intelligence-stats small {
+  line-height: 1.35;
+}
+
+.rescue-log-intelligence-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.rescue-log-chart-panel {
+  min-width: 0;
+  padding: 14px 14px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.rescue-log-chart-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rescue-log-chart-heading div,
+.rescue-log-chart-heading span {
+  display: block;
+}
+
+.rescue-log-chart-heading strong {
+  display: block;
+  font-size: 0.98rem;
+}
+
+.rescue-log-chart-heading div span,
+.rescue-log-chart-heading > span {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.78rem;
+  margin-top: 2px;
+}
+
+.rescue-log-chart-heading > span {
+  white-space: nowrap;
+}
+
+.rescue-log-chart {
+  min-height: 300px;
+}
+
+.rescue-log-chart-empty {
+  min-height: 300px;
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 24px;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.rescue-log-chart-empty strong {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.rescue-log-intelligence-observation {
+  display: grid;
+  gap: 4px;
+  padding: 13px 14px;
+  border-left: 3px solid #a78bfa;
+  border-radius: 0 12px 12px 0;
+  background: rgba(167, 139, 250, 0.07);
+}
+
+.rescue-log-intelligence-observation span {
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+}
+
+.rescue-log-intelligence-observation strong {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.rescue-log-intelligence-observation small {
+  color: rgba(255, 255, 255, 0.54);
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .rescue-log-intelligence-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rescue-log-intelligence-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .rescue-log-intelligence-heading {
+    display: grid;
+  }
+
+  .rescue-log-intelligence-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .rescue-log-chart-panel {
+    padding-inline: 8px;
+  }
+}
