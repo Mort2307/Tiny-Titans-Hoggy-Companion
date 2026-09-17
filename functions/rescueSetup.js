@@ -44,6 +44,7 @@ function setupOrganisation(organisationId, org) {
     id: organisationId,
     name: clean(org.name, 120),
     logoUrl: clean(org.logoUrl, 500),
+    heroImageUrl: clean(org.heroImageUrl, 500),
     directoryDescription: clean(org.directoryDescription || org.publicDescription, 3000),
     website: clean(org.website, 500),
     contactEmail: clean(org.contactEmail, 200),
@@ -102,6 +103,7 @@ exports.updateRescuePublicProfile = onCall({ region: "europe-west2" }, async (re
   const country = clean(request.data?.country, 120);
   const openingHours = clean(request.data?.openingHours, 1000);
   const logoUrl = clean(request.data?.logoUrl, 500);
+  const heroImageUrl = clean(request.data?.heroImageUrl, 500);
   const charityNumber = clean(request.data?.charityNumber, 120);
   const companyNumber = clean(request.data?.companyNumber, 120);
   const localAuthorityLicence = clean(request.data?.localAuthorityLicence, 120);
@@ -118,12 +120,14 @@ exports.updateRescuePublicProfile = onCall({ region: "europe-west2" }, async (re
   if (country.length < 2) throw new HttpsError("invalid-argument", "Enter the public country.");
   if (website && !httpUrl(website)) throw new HttpsError("invalid-argument", "Website must be a valid http(s) address.");
   if (logoUrl && !httpUrl(logoUrl)) throw new HttpsError("invalid-argument", "Logo URL must be a valid http(s) address.");
+  if (heroImageUrl && !httpUrl(heroImageUrl)) throw new HttpsError("invalid-argument", "Hero image URL must be a valid http(s) address.");
   if (!directoryVisible && org.setupComplete !== true) throw new HttpsError("failed-precondition", "Your public Rescue profile must be enabled when completing first-time setup.");
   if (org.setupComplete !== true && role !== "owner") throw new HttpsError("permission-denied", "Only the Rescue owner can complete first-time Rescue setup.");
 
   const update = {
     name,
     logoUrl,
+    heroImageUrl,
     directoryDescription,
     publicDescription: directoryDescription,
     website,
@@ -192,6 +196,7 @@ exports.getPublicRescueProfile = onCall({ region: "europe-west2" }, async (reque
       openingHours: clean(org.openingHours, 1000),
       description: clean(org.directoryDescription || org.publicDescription, 3000),
       logoUrl: clean(org.logoUrl, 500),
+      heroImageUrl: clean(org.heroImageUrl, 500),
       speciesDiscovered: Array.isArray(org.speciesDiscovered) ? org.speciesDiscovered.filter((item) => typeof item === "string").slice(0, 20) : [],
       charityNumber: org.registrationsPublic !== false ? clean(org.charityNumber, 120) : "",
       companyNumber: org.registrationsPublic !== false ? clean(org.companyNumber, 120) : "",
