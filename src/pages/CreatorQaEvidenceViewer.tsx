@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { getQaEvidenceUrl, getQaRunHistory, getQaRunReport, type CreatorQaRun, type QaReport, type QaVisualResult } from "../services/creatorQaEvidenceService";
+import { getQaEvidenceBlobUrl, getQaRunHistory, getQaRunReport, type CreatorQaRun, type QaReport, type QaVisualResult } from "../services/creatorQaEvidenceService";
 import "./CreatorQaEvidenceViewer.css";
 
 function findingCounts(result: QaVisualResult) {
@@ -27,8 +27,19 @@ export default function CreatorQaEvidenceViewer() {
   const [loading, setLoading] = useState(true);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
   const [error, setError] = useState("");
+  const blobUrlsRef = useRef({ viewport: "", fullPage: "" });
 
   const selectedRun = useMemo(() => runs.find((run) => run.id === selectedRunId) || runs[0], [runs, selectedRunId]);
+
+  const clearBlobEvidence = () => {
+    for (const key of ["viewport", "fullPage"] as const) {
+      const url = blobUrlsRef.current[key];
+      if (url) URL.revokeObjectURL(url);
+      blobUrlsRef.current[key] = "";
+    }
+    setViewportUrl("");
+    setFullPageUrl("");
+  };
 
   useEffect(() => {
     let active = true;
@@ -49,16 +60,15 @@ export default function CreatorQaEvidenceViewer() {
   }, []);
 
   useEffect(() => {
+    clearBlobEvidence();
     if (!selectedRun) {
       setReport(null);
-      return;
+      return undefined;
     }
     let active = true;
     setEvidenceLoading(true);
     setError("");
     setReport(null);
-    setViewportUrl("");
-    setFullPageUrl("");
     void getQaRunReport(selectedRun)
       .then((nextReport) => {
         if (!active) return;
@@ -72,25 +82,30 @@ export default function CreatorQaEvidenceViewer() {
       .finally(() => {
         if (active) setEvidenceLoading(false);
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      clearBlobEvidence();
+    };
   }, [selectedRun]);
 
   const result = useMemo(() => report?.results.find((item) => item.route === selectedRoute && item.viewport.name === selectedViewport) || null, [report, selectedRoute, selectedViewport]);
 
   useEffect(() => {
-    if (!selectedRun || !result) {
-      setViewportUrl("");
-      setFullPageUrl("");
-      return;
-    }
+    clearBlobEvidence();
+    if (!selectedRun || !result) return undefined;
     let active = true;
     setEvidenceLoading(true);
     void Promise.all([
-      result.viewportScreenshot ? getQaEvidenceUrl(selectedRun, result.viewportScreenshot) : Promise.resolve(""),
-      result.fullPageScreenshot ? getQaEvidenceUrl(selectedRun, result.fullPageScreenshot) : Promise.resolve(""),
+      result.viewportScreenshot ? getQaEvidenceBlobUrl(selectedRun, result.viewportScreenshot) : Promise.resolve(""),
+      result.fullPageScreenshot ? getQaEvidenceBlobUrl(selectedRun, result.fullPageScreenshot) : Promise.resolve(""),
     ])
       .then(([nextViewportUrl, nextFullPageUrl]) => {
-        if (!active) return;
+        if (!active) {
+          if (nextViewportUrl) URL.revokeObjectURL(nextViewportUrl);
+          if (nextFullPageUrl) URL.revokeObjectURL(nextFullPageUrl);
+          return;
+        }
+        blobUrlsRef.current = { viewport: nextViewportUrl, fullPage: nextFullPageUrl };
         setViewportUrl(nextViewportUrl);
         setFullPageUrl(nextFullPageUrl);
       })
@@ -100,11 +115,16 @@ export default function CreatorQaEvidenceViewer() {
       .finally(() => {
         if (active) setEvidenceLoading(false);
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      clearBlobEvidence();
+    };
   }, [selectedRun, result]);
 
+  useEffect(() => () => clearBlobEvidence(), []);
+
   const metrics = result?.metrics || {};
-  const runErrors = runs.reduce((sum, run) => sum + Number(run.errors || 0), 0);
+  const historicalErrors = runs.reduce((sum, run) => sum + Number(run.errors || 0), 0);
   const reportErrors = report?.results.reduce((sum, item) => sum + findingCounts(item).errors, 0) || 0;
   const reportWarnings = report?.results.reduce((sum, item) => sum + findingCounts(item).warnings, 0) || 0;
   const currentRunRouteCount = report?.routes.length || selectedRun?.routes || 0;
@@ -145,11 +165,11 @@ export default function CreatorQaEvidenceViewer() {
             <div className="qa-evidence-links">
               {selectedRun?.github?.url && <a href={selectedRun.github.url} target="_blank" rel="noreferrer">Open GitHub evidence ↗</a>}
               {selectedRun?.github?.actionsUrl && <a href={selectedRun.github.actionsUrl} target="_blank" rel="noreferrer">Open Actions run ↗</a>}
-              <span>{runErrors ? `${runErrors} historical error finding(s) retained in QA metadata` : "Historical summaries retained; old screenshot files are replaced on the next publish."}</span>
+              <span>{historicalErrors ? `${historicalErrors} historical error finding(s) retained in QA metadata` : "Historical summaries retained; old screenshot files are replaced on the next publish."}</span>
             </div>
           </section>
 
-          {selectedRun?.github?.url && <section className="qa-evidence-callout"><strong>Two evidence surfaces, one run.</strong><span>The in-app viewer loads the creator-only screenshots from Firebase Storage. GitHub holds the temporary evidence branch for direct inspection, review and handoff. Each new run replaces the old visual files.</span></section>}
+          {selectedRun?.github?.url && <section className="qa-evidence-callout"><strong>Two evidence surfaces, one run.</strong><span>The in-app viewer loads creator-only screenshot bytes through authenticated Firebase access. GitHub holds the temporary evidence branch for direct review and handoff. Each new run replaces the old visual files.</span></section>}
 
           {report ? (
             <section className="qa-evidence-workspace">
