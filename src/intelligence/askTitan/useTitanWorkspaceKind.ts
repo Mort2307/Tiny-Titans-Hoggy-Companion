@@ -5,7 +5,7 @@ import type { TitanWorkspaceKind } from "./titanChatContracts";
 function toTitanWorkspaceKind(presentation: WorkspacePresentation): TitanWorkspaceKind {
   if (presentation.productId === "rescue") return "rescue";
   if (presentation.productId === "titan_seller") return "seller";
-  if (["titan_pro", "business_starter", "business_plus", "business_advanced"].includes(presentation.productId)) return "business";
+  if (["business_starter", "business_plus", "business_advanced"].includes(presentation.productId)) return "business";
   return "personal";
 }
 
