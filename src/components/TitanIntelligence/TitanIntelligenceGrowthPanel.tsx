@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { tinyTitansIntelligenceKernel } from "../../services/tinyTitansIntelligenceKernel";
 import { TITAN_INTELLIGENCE_UPDATED_EVENT } from "../../services/tinyTitansEventBus";
 import { explainTinyTitansIntelligence } from "../../services/firebaseAiIntelligenceService";
 
 function useGrowth() {
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
   useEffect(() => {
     const handler = () => setTick((value) => value + 1);
     window.addEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, handler);
     const interval = window.setInterval(() => setTick((value) => value + 1), 5000);
     return () => { window.removeEventListener(TITAN_INTELLIGENCE_UPDATED_EVENT, handler); window.clearInterval(interval); };
   }, []);
-  return useMemo(() => tinyTitansIntelligenceKernel.getGrowthSnapshot(), [tick]);
+  return tinyTitansIntelligenceKernel.getGrowthSnapshot();
 }
 
 export default function TitanIntelligenceGrowthPanel({ compact = false }: { compact?: boolean }) {
