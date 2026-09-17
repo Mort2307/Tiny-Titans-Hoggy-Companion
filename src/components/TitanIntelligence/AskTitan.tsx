@@ -3,13 +3,16 @@ import TitanChatComposer from "./TitanChatComposer";
 import TitanChatMessage from "./TitanChatMessage";
 import TitanUsageIndicator from "./TitanUsageIndicator";
 import TitanDataUseNotice from "./TitanDataUseNotice";
+import { useTitanWorkspaceKind } from "../../intelligence/askTitan/useTitanWorkspaceKind";
 import { useTitanChat } from "../../intelligence/askTitan/useTitanChat";
 import { TITAN_CHAT_STARTERS } from "../../intelligence/askTitan/titanChatStarters";
 import type { TitanWorkspaceKind } from "../../intelligence/askTitan/titanChatContracts";
 import "./AskTitan.css";
 
-export default function AskTitan({ workspaceKind = "personal", animalId }: { workspaceKind?: TitanWorkspaceKind; animalId?: string }) {
-  const { messages, busy, error, usage, submit, reset } = useTitanChat({ workspaceKind, animalId });
+export default function AskTitan({ workspaceKind, animalId }: { workspaceKind?: TitanWorkspaceKind; animalId?: string }) {
+  const activeWorkspaceKind = useTitanWorkspaceKind();
+  const resolvedWorkspaceKind = workspaceKind ?? activeWorkspaceKind;
+  const { messages, busy, error, usage, submit, reset } = useTitanChat({ workspaceKind: resolvedWorkspaceKind, animalId });
 
   return (
     <section className="ask-titan-card" aria-label="Ask Titan">
