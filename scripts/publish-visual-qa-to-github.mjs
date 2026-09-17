@@ -95,7 +95,7 @@ async function writeGitHubReadme(destinationRoot, report) {
       const safe = safePath(result.route);
       const viewportFile = path.basename(result.viewportScreenshot || "");
       const fullFile = path.basename(result.fullPageScreenshot || "");
-      gallery.push(`| ${escapeMarkdown(result.route)} | ![${safe} viewport](../${viewportFile}) | ![${safe} full page](../${fullFile}) |`);
+      gallery.push(`| ${escapeMarkdown(result.route)} | ![${safe} viewport](./${viewportFile}) | ![${safe} full page](./${fullFile}) |`);
     }
     await fs.writeFile(path.join(viewportDir, "README.md"), `${gallery.join("\n")}\n`, "utf8");
   }
