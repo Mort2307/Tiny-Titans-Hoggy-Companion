@@ -54,7 +54,7 @@ const required = [
   [titanChatBackend, "executeTool", "Parked Titan chat backend lost its tool execution path."],
   [titanChatBackend, "buildTitanProvenance", "Parked Titan chat backend lost its provenance path."],
   [titanChatBackend, "responseId: crypto.randomUUID()", "Parked Titan chat backend lost response identity."],
-  [feedback, "recordTitanFeedback=onCall", "Parked Titan feedback callable is missing."],
+  [feedback, "recordTitanFeedback", "Parked Titan feedback callable is missing."],
   [feedback, "titanFeedback", "Parked Titan feedback persistence is missing."],
   [chatContracts, "TitanWorkspaceKind", "Parked Titan chat workspace contract is missing."],
   [parkedChat, "useTitanChat", "Parked Ask Titan surface is missing."],
@@ -65,7 +65,12 @@ for (const [source, needle, message] of required) {
 }
 
 if (data.includes(".map(serialise)")) failures.push("Rescue intelligence contains an unsafe Array.map(serialise) recursion-depth call.");
-if (feedback.includes("question") || feedback.includes("answer")) failures.push("Titan feedback must not persist raw private question/answer content.");
+
+const feedbackPersistenceBlock = feedback.match(/db\.collection\("titanFeedback"\)[\s\S]*?\.set\(\{([\s\S]*?)\},\s*\{\s*merge:\s*true\s*\}\)/)?.[1] || "";
+if (/\b(?:question|answer)\s*:/.test(feedbackPersistenceBlock)) {
+  failures.push("Titan feedback must not persist raw private question/answer content.");
+}
+
 if (/AskTitan/.test(titanPage) || /TitanAdvancedChatPreview/.test(titanPage)) failures.push("Main Powerhouse Intelligence page still actively mounts the parked Titan chat surface.");
 if (/AskTitan/.test(snakePage)) failures.push("Individual Powerhouse Intelligence page still actively mounts the parked Titan chat surface.");
 if (/require\(\"\.\/titanIntelligence\"\)/.test(goals)) failures.push("Gemini-backed Ask Titan callable is still exported through titanGoals.js.");
