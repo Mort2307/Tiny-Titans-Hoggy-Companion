@@ -1,3 +1,6 @@
+const { defineSecret } = require("firebase-functions/params");
+
+const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const MODEL = "gemini-3.8-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
@@ -51,4 +54,4 @@ function extractText(candidate) {
     .trim();
 }
 
-module.exports = { MODEL, generateTitanTurn, collectFunctionCalls, collectWebSources, extractText };
+module.exports = { GEMINI_API_KEY, MODEL, generateTitanTurn, collectFunctionCalls, collectWebSources, extractText };
