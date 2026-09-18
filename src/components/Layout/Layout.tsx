@@ -143,9 +143,7 @@ function LayoutChrome() {
                       : null;
 
   const outletEntitlement =
-    location.pathname === "/reminders" || location.pathname.startsWith("/reminders/")
-      ? "smart_reminders"
-      : /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname)
+    /^\/snakes\/[^/]+\/timeline\/?$/.test(location.pathname)
         ? "advanced_timeline"
         : ["/breeding/readiness", "/breeding/timeline", "/breeding/cycle", "/breeding/production"].some(
             (path) =>
