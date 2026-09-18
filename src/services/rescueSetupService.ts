@@ -23,6 +23,8 @@ export type RescuePublicSetup = {
   localAuthorityLicence: string;
   otherRegistrationNumber: string;
   registrationAuthority: string;
+  registrationNotes: string;
+  registrationEvidenceUrl: string;
   registrationsPublic: boolean;
   directoryVisible: boolean;
   setupComplete: boolean;
