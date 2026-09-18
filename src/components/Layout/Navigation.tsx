@@ -5,6 +5,7 @@ import { hasCapability } from "../../services/capabilityService";
 import { getCommunityUnreadCount } from "../../services/communityReadStateService";
 import { useEasyNav } from "../../context/EasyNavContext";
 import { quickNavSearchItems, type QuickNavCapability } from "../../data/quickNavigation";
+import { getFreeKeeperNavigationGroups } from "../../config/freeExperience";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../../services/workspacePresentationService";
 import communityUpdates from "../../data/communityUpdates.json";
 import TinyTitansIcon, { type TinyTitansIconName } from "../TinyTitansIcon";
@@ -47,14 +48,10 @@ function Navigation() {
   useEffect(() => { if (!authReady) return; let active = true; void Promise.all([hasCapability("creator", profile), hasCapability("tester", profile), hasCapability("educator", profile)]).then(([creator, tester, educator]) => { if (!active) return; setCreatorAuthorized(creator); setTesterAuthorized(tester); setEducatorAuthorized(educator); }).catch(() => { if (!active) return; setCreatorAuthorized(false); setTesterAuthorized(false); setEducatorAuthorized(false); }); return () => { active = false; }; }, [authReady, profile]);
   useEffect(() => { if (!authReady || !userId) return; let active = true; const refresh = () => { void getCommunityUnreadCount(userId, { isTester: profile?.isTester === true, isAdmin: profile?.role === "admin" }).then((count) => { if (active) setCommunityUnreadCount(count); }).catch(() => { if (active) setCommunityUnreadCount(0); }); setUnseenProductUpdate(hasUnseenProductUpdate()); }; refresh(); window.addEventListener("focus", refresh); window.addEventListener("storage", refresh); window.addEventListener("community-read-state-changed", refresh); window.addEventListener("community-product-update-read", refresh); return () => { active = false; window.removeEventListener("focus", refresh); window.removeEventListener("storage", refresh); window.removeEventListener("community-read-state-changed", refresh); window.removeEventListener("community-product-update-read", refresh); }; }, [authReady, userId, profile?.isTester, profile?.role]);
 
-  const sections: NavigationSection[] = [
-    { label: "Overview", links: [["/", "home", "Home"], ["/snakes", "reptile", "My Snakes"], ["/conversations", "messages", "Message Centre"]] },
-    { label: "Care", links: [["/reminders", "reminders", "Reminder Hub"], ["/husbandry", "husbandry", "Husbandry & Care"], ["/weights", "weight", "Weight Records"], ["/feeding", "feeding", "Feeding Tracker"], ["/shedding", "shed", "Shed Intelligence"], ["/behaviour", "behaviour", "Behaviour Journal"], ["/health", "health", "Health & Vet"], ["/enclosure-intelligence", "enclosure", "Enclosure Intelligence"]] },
-    { label: "Genetics & Breeding", links: [["/morph-library", "morph", "Morph Library"], ["/calculator", "genetics", "Genetics Calculator"], ["/breeding", "breeding", "Breeding Planner"], ["/breeding/academy", "academy", "Breeding Academy"]] },
-    { label: "Learn & Community", links: [["/keeper-handbook", "handbook", "Keeper Behaviour Handbook"], ["/behaviour-observatory", "observatory", "Behaviour Observatory"], ["/make-contribution", "contribution", "Make a Contribution"], ["/knowledge-base", "knowledge", "Knowledge Base"], ["/challenge", "challenge", "Titans Challenge"], ["/community", "community", "Community Hub"], ["/marketplace", "marketplace", "Marketplace"], ["/community/mentorship", "mentorship", "Mentorship"], ["/community/wall-of-titans", "wall", "Wall of Titans"]] },
-    { label: "Rescue", links: [["/rescue", "health", "Rescue Centre"]] },
-    { label: "Account", links: [["/account", "account", "My Account"], ["/plans", "plans", "Plans & Features"], ["/account/billing", "billing", "Billing & Subscription"], ["/account/family", "family", "My Family"], ["/become-a-titan", "titan", "Become a Titan"]] },
-  ];
+  const sections: NavigationSection[] = getFreeKeeperNavigationGroups().map(({ group, items }) => ({
+    label: group,
+    links: items.map((item) => [item.path, item.icon, item.label] as NavigationLink),
+  }));
   const standardPaths = new Set(sections.flatMap((section) => section.links.map(([path]) => path)));
   const workspaceLinks: NavigationLink[] = workspace.productId === "personal" ? [] : workspace.product.nav
     .filter(({ path }) => !standardPaths.has(path))
