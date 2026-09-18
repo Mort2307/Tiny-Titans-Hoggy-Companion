@@ -43,7 +43,7 @@ const destinations: Record<Exclude<PaidEntitlement, "core_tracking" | "core_gene
   api_access: { label: "API Access", path: "/paid/api" },
   priority_support: { label: "Priority Support", path: "/paid/support" },
   custom_branding: { label: "Custom Branding", path: "/paid/branding" },
-  rescue_workspace: { label: "Rescue Centre", path: "/rescue" },
+  rescue_workspace: { label: "Rescue Workspace", path: "/rescue?manage=1" },
   rescue_qr_passports: { label: "Rescue QR / Animal Passports", path: "/rescue/qr" },
   species_incubator: { label: "Species Incubator", path: "/rescue/species-incubator" },
   rescue_team: { label: "Rescue Team & Permissions", path: "/rescue/team" },
