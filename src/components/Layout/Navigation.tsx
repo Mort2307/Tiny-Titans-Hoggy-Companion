@@ -55,11 +55,13 @@ function Navigation() {
     { label: "Rescue", links: [["/rescue", "health", "Rescue Centre"]] },
     { label: "Account", links: [["/account", "account", "My Account"], ["/plans", "plans", "Plans & Features"], ["/account/billing", "billing", "Billing & Subscription"], ["/account/family", "family", "My Family"], ["/become-a-titan", "titan", "Become a Titan"]] },
   ];
-  const workspaceLinks: NavigationLink[] = workspace.productId === "personal" ? [] : workspace.product.nav.map(({ path, label }) => [path, quickIconFor(path.split("/").filter(Boolean).pop() ?? "home"), label]);
-  const focusedSections: NavigationSection[] = workspaceLinks.length ? [
-    { label: workspace.product.eyebrow, links: workspaceLinks },
-    { label: "TinyTitans", links: [["/community", "community", "Community Hub"], ["/learn", "academy", "Learn"]] },
-  ] : sections;
+  const standardPaths = new Set(sections.flatMap((section) => section.links.map(([path]) => path)));
+  const workspaceLinks: NavigationLink[] = workspace.productId === "personal" ? [] : workspace.product.nav
+    .filter(({ path }) => !standardPaths.has(path))
+    .map(({ path, label }) => [path, quickIconFor(path.split("/").filter(Boolean).pop() ?? "home"), label]);
+  const visibleSections: NavigationSection[] = workspaceLinks.length
+    ? [{ label: `WORKSPACE · ${workspace.product.eyebrow}`, links: workspaceLinks }, ...sections]
+    : sections;
   const restricted: NavigationSection[] = [];
   if (educatorAuthorized) restricted.push({ label: "Educator", links: [["/educator", "educator", "Educator Centre"]] });
   if (creatorAuthorized) restricted.push({ label: "Creator", links: [["/creator", "creator", "Creator Centre"], ["/creator/morph-library", "morph", "Morph Library Editor"], ["/creator/community", "community", "Community Manager"], ["/creator/mentor-review", "mentorship", "Mentor Review"]] });
@@ -78,6 +80,6 @@ function Navigation() {
     </>;
   }
 
-  return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner">{focusedSections.concat(restricted).map((section) => <section className="app-navigation-section" key={section.label} aria-labelledby={`nav-${section.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}><h2 className="app-navigation-section-label" id={`nav-${section.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>{section.label}</h2><ul className="app-navigation-list">{section.links.map(([to, icon, label]) => <li className="app-navigation-item" key={`${to}-${label}`}><NavLink data-route-guide-target={to === "/account" ? "standard-my-account" : undefined} to={to} end={to === "/"} onClick={() => setMoreOpen(false)} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={icon} size={25} /></span><span className="app-navigation-label">{label}</span>{to === "/community" && (communityUnreadCount > 0 || unseenProductUpdate) && <span className="community-unread-dot" aria-label="New Community Hub updates" title="New Community Hub updates" />}</NavLink></li>)}</ul></section>)}</div></nav>;
+  return <nav className="app-navigation" aria-label="Main navigation"><div className="app-navigation-inner">{visibleSections.concat(restricted).map((section) => <section className="app-navigation-section" key={section.label} aria-labelledby={`nav-${section.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}><h2 className="app-navigation-section-label" id={`nav-${section.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>{section.label}</h2><ul className="app-navigation-list">{section.links.map(([to, icon, label]) => <li className="app-navigation-item" key={`${to}-${label}`}><NavLink data-route-guide-target={to === "/account" ? "standard-my-account" : undefined} to={to} end={to === "/"} onClick={() => setMoreOpen(false)} className="app-navigation-link"><span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={icon} size={25} /></span><span className="app-navigation-label">{label}</span>{to === "/community" && (communityUnreadCount > 0 || unseenProductUpdate) && <span className="community-unread-dot" aria-label="New Community Hub updates" title="New Community Hub updates" />}</NavLink></li>)}</ul></section>)}</div></nav>;
 }
 export default Navigation;
