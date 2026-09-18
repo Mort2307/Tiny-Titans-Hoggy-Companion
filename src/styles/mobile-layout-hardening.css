@@ -44,7 +44,8 @@
     a
   ) {
     max-width: 100%;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    word-break: normal;
   }
 
   .app-content :where(
