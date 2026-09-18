@@ -185,7 +185,7 @@ export default function RescueDirectoryProfile() {
   return <main className="rescue-page">
     <header className="rescue-subhead">
       <div><span className="rescue-eyebrow">ORGANISATION & BRANDING</span><h1>{name || "Rescue organisation"}</h1><p>Manage the public identity, searchable listing and registration details visitors can see.</p></div>
-      <div className="rescue-form-actions"><Link to="/rescue?manage=1">← Rescue workspace</Link><Link className="rescue-primary-link" to="/rescue/public-preview">Preview public profile →</Link></div>
+      <div className="rescue-form-actions"><Link to="/rescue?manage=1">← Rescue workspace</Link><Link className="rescue-primary-link" to="/rescue/public-preview">Preview public profile →</Link>{directoryVisible && organisationId && <Link className="rescue-primary-link" to={`/rescue/public/${organisationId}`}>Open live profile ↗</Link>}</div>
     </header>
 
     {message && <div className="rescue-message" role="status">{message}</div>}
