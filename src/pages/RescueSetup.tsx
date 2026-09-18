@@ -82,8 +82,12 @@ function BrandingPicker({ label, value, kind, organisationId, disabled, hint, on
     <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={disabled || uploading} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void chooseImage(file); }} />
     <button type="button" className="rescue-branding-upload-button" onClick={() => inputRef.current?.click()} disabled={disabled || uploading}>
       <span aria-hidden="true">{uploading ? "⏳" : "＋"}</span>
-      <span><strong>{uploading ? "Adding image…" : value ? `Replace ${label.toLowerCase()}` : `Add ${label.toLowerCase()}`}</strong><small>Choose a JPG, PNG or WebP image from your device</small></span>
+      <span><strong>{uploading ? "Adding image…" : value ? `Replace ${label.toLowerCase()}` : `Choose ${label.toLowerCase()}`}</strong><small>Choose a JPG, PNG or WebP image from your device.</small></span>
     </button>
+    <label className="rescue-branding-url-field">
+      <span>Or use a public HTTPS image URL</span>
+      <input type="url" value={value} onChange={(event) => onChange(event.target.value)} placeholder="https://…" disabled={disabled || uploading} />
+    </label>
   </div>;
 }
 
