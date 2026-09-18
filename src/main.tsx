@@ -1,4 +1,4 @@
-import { StrictMode, useEffect } from "react";
+import { lazy, StrictMode, Suspense, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 
@@ -35,14 +35,51 @@ import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import AppUpdatePrompt, { setTinyTitansUpdateHandler, notifyTinyTitansUpdateAvailable } from "./components/AppUpdatePrompt";
 import DateDisplayNormalizer from "./components/DateDisplayNormalizer";
-import IntelligenceRuntimeBootstrap from "./components/IntelligenceRuntimeBootstrap";
-import LiveWorldTracker from "./components/LiveWorldTracker";
-import NotificationBridge from "./components/NotificationBridge";
-import RescueInvitationBridge from "./components/RescueInvitationBridge";
 import { AuthProvider } from "./context/AuthContext";
 import { WorkspaceBrandingProvider } from "./context/WorkspaceBrandingContext";
 import { WorldTimeProvider } from "./context/WorldTimeContext";
 import { CopyQualityGuard } from "./utils/copyQuality";
+
+const DeferredIntelligenceRuntimeBootstrap = lazy(() => import("./components/IntelligenceRuntimeBootstrap"));
+const DeferredLiveWorldTracker = lazy(() => import("./components/LiveWorldTracker"));
+const DeferredNotificationBridge = lazy(() => import("./components/NotificationBridge"));
+const DeferredRescueInvitationBridge = lazy(() => import("./components/RescueInvitationBridge"));
+
+function DeferredRuntimeServices() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const start = () => {
+      if (!cancelled) setReady(true);
+    };
+
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(start, { timeout: 1500 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(start, 900);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
+
+  if (!ready) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <DeferredIntelligenceRuntimeBootstrap />
+      <DeferredLiveWorldTracker />
+      <DeferredNotificationBridge />
+      <DeferredRescueInvitationBridge />
+    </Suspense>
+  );
+}
 
 const updateServiceWorker = import.meta.env.DEV ? async (_reloadPage = false) => undefined : registerSW({
   immediate: true,
@@ -106,13 +143,10 @@ createRoot(document.getElementById("root")!).render(
     <AuthProvider>
       <WorkspaceBrandingProvider>
         <WorldTimeProvider>
-          <IntelligenceRuntimeBootstrap />
-          <LiveWorldTracker />
           <SelectorGrabScrollManager />
           <DateDisplayNormalizer />
-          <NotificationBridge />
-          <RescueInvitationBridge />
           <CopyQualityGuard />
+          <DeferredRuntimeServices />
           <AppErrorBoundary><App /></AppErrorBoundary>
           <AppUpdatePrompt />
         </WorldTimeProvider>
