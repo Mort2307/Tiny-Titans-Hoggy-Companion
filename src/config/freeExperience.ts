@@ -79,7 +79,7 @@ export const FREE_KEEPER_NAVIGATION_GROUPS = [
       { id: "become-titan", label: "Become a Titan", icon: "titan", path: "/become-a-titan", description: "Support Tiny Titans and see supporter goals." },
     ],
   },
-] as const satisfies readonly { group: string; items: readonly FreeKeeperNavigationItem[] }[];
+] as const satisfies readonly { group: string; items: readonly FreeKeeperNavigationDefinition[] }[];
 
 export const FREE_KEEPER_NAVIGATION_IDS = FREE_KEEPER_NAVIGATION_GROUPS.flatMap(({ items }) =>
   items.map((item) => item.id),
