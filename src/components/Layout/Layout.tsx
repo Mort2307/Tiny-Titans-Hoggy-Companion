@@ -24,6 +24,7 @@ import PaidTimelineFeature from "../../pages/PaidTimelineFeature";
 import PaidMarketplaceFeature from "../../pages/PaidMarketplaceFeature";
 import PaidSupportFeature from "../../pages/PaidSupportFeature";
 import PaidTierGate from "../PaidTierGate";
+import NotificationOnboarding from "../NotificationOnboarding";
 import RescueDirectory from "../../pages/RescueDirectory";
 import RescueDirectoryProfile from "../../pages/RescueDirectoryProfile";
 import { RescueCentre } from "../../pages/RescuePages";
@@ -197,6 +198,7 @@ function LayoutChrome() {
           {!isEasyNav && <SupportNotificationCenter />}
           <div className="tt-page-frame">
             <WorkspaceIdentityStrip />
+            <NotificationOnboarding />
             {speciesAware && <SpeciesContextBar />}
             {pageContent}
             <TinyTitansEvidenceNotice />
