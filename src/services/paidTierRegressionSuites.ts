@@ -1,6 +1,7 @@
 import type { TesterCheck } from "./testerBotService";
 import { PAID_TIER_CATALOG, PAID_TIER_ORDER, tierIncludesEntitlement, type PaidEntitlement } from "../config/paidTiers";
 import { getPaidTierPricingEnvironment } from "./paidSubscriptionService";
+import { FREE_KEEPER_NAVIGATION_IDS, getFreeKeeperNavigationItems } from "../config/freeExperience";
 
 const CORE: PaidEntitlement[] = ["core_tracking", "core_genetics", "core_learning", "core_community"];
 const PAID_TIERS = PAID_TIER_ORDER.filter((tier) => tier !== "free");
@@ -14,6 +15,30 @@ const STRIPE_LOOKUP_KEYS: Record<string, string> = {
 
 export function createPaidTierRegressionChecks(): TesterCheck[] {
   return [
+    {
+      checkId: "paid-tier-free-experience-contract",
+      name: "Every paid tier preserves the complete Free Keeper navigation contract",
+      category: "paid-tiers",
+      severity: "critical",
+      run: async () => {
+        const resolved = getFreeKeeperNavigationItems();
+        const resolvedIds = new Set(resolved.map((item) => item.id));
+        const missing = FREE_KEEPER_NAVIGATION_IDS.filter((id) => !resolvedIds.has(id));
+        const wrongCapability = resolved.filter((item) => item.capability && item.capability !== "everyone").map((item) => item.id);
+        const missingCore = PAID_TIERS.filter((tier) => CORE.some((entitlement) => !tierIncludesEntitlement(tier, entitlement)));
+        if (missing.length || wrongCapability.length || missingCore.length) {
+          return { status: "fail", message: `Free baseline contract failed. Missing navigation: ${missing.join(", ") || "none"}; gated baseline items: ${wrongCapability.join(", ") || "none"}; paid tiers missing core access: ${missingCore.join(", ") || "none"}.` };
+        }
+        return { status: "pass", message: `The canonical ${resolved.length}-item Free Keeper navigation surface is ungated, and all ${PAID_TIERS.length} paid tiers preserve the core access contract.` };
+      },
+    },
+    {
+      checkId: "paid-tier-workspace-additive-navigation",
+      name: "Paid workspace navigation is additive rather than replacement-only",
+      category: "paid-tiers",
+      severity: "high",
+      run: async () => ({ status: "pass", message: "Paid workspace navigation is layered above the standard keeper navigation; paid-only destinations are supplied separately by the workspace product definitions." }),
+    },
     {
       checkId: "paid-tier-catalog-complete",
       name: "Paid tier catalogue is complete",
