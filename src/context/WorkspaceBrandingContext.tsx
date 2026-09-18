@@ -1,8 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
 import { useAuth } from "./useAuth";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
-import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
-import { getPartnerLandingByOwner } from "../services/partnerLandingService";
 import type { PartnerLandingProfile } from "../types/partnerLanding";
 
 export type WorkspaceBranding = {
@@ -53,6 +51,10 @@ export function WorkspaceBrandingProvider({ children }: PropsWithChildren) {
         return;
       }
       try {
+        const [{ getMyRescueWorkspace }, { getPartnerLandingByOwner }] = await Promise.all([
+          import("../services/rescueWorkspaceService"),
+          import("../services/partnerLandingService"),
+        ]);
         let profile: PartnerLandingProfile | null = null;
         if (nextPresentation.productId === "rescue") {
           const rescue = await getMyRescueWorkspace().catch(() => ({ organisation: null, role: null }));
