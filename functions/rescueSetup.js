@@ -201,6 +201,7 @@ exports.getPublicRescueProfile = onCall({ region: "europe-west2" }, async (reque
       charityNumber: org.registrationsPublic !== false ? clean(org.charityNumber, 120) : "",
       companyNumber: org.registrationsPublic !== false ? clean(org.companyNumber, 120) : "",
       localAuthorityLicence: org.registrationsPublic !== false ? clean(org.localAuthorityLicence, 120) : "",
+      otherRegistrationNumber: org.registrationsPublic !== false ? clean(org.otherRegistrationNumber, 120) : "",
       registrationAuthority: org.registrationsPublic !== false ? clean(org.registrationAuthority, 160) : "",
     },
     animals,
