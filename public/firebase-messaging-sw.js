@@ -5,8 +5,10 @@
  */
 
 self.addEventListener("notificationclick", (event) => {
+  const customUrl = event.notification.data?.url;
+  if (!customUrl) return;
   event.notification.close();
-  const targetUrl = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  const targetUrl = new URL(customUrl, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
