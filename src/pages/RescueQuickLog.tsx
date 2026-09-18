@@ -137,7 +137,7 @@ export default function RescueQuickLog() {
       <main className="rescue-page rescue-quick-log-page">
         <header className="rescue-quick-log-hero">
           <div>
-            <Link to="/rescue" className="rescue-back-link">← Rescue Centre</Link>
+            <Link to="/rescue?manage=1" className="rescue-back-link">← Rescue Centre</Link>
             <span className="rescue-eyebrow">QUICK LOGGING</span>
             <h1>Record what happened today.</h1>
             <p>Choose an animal, choose the type of record, and save it straight into that animal's Rescue timeline.</p>
