@@ -18,10 +18,7 @@ async function reconcileCreatorCapability(firebaseUser: User, profile: UserProfi
   const isOwner = String(firebaseUser.email || "").trim().toLowerCase() === OWNER_EMAIL;
   if (!isOwner && profile?.profileType !== "creator") return;
   try {
-    const [{ getFunctions }, { httpsCallable }] = await Promise.all([
-      import("firebase/functions"),
-      import("firebase/functions"),
-    ]);
+    const { getFunctions, httpsCallable } = await import("firebase/functions");
     const functions = getFunctions(app, "europe-west2");
     const reconcile = httpsCallable<Record<string, never>, CreatorReconcileResponse>(functions, "reconcileCreatorClaim");
     const result = await reconcile({});
