@@ -2,8 +2,6 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
-import ContributionPulse from "../components/ContributionPulse";
-import RecommendedFeed from "../components/RecommendedFeed";
 import TitanDecisionWhyCard from "../components/TitanIntelligence/TitanDecisionWhyCard";
 import TitanDecisionQueue from "../components/TitanIntelligence/TitanDecisionQueue";
 import { useAuth } from "../context/useAuth";
@@ -16,6 +14,10 @@ import { subscribeToTitanIntelligenceUpdates } from "../services/titanReactiveIn
 import "./Home.css";
 
 const TinyTitansPinnacleGlobe = lazy(() => import("../components/TinyTitansPinnacleGlobe"));
+
+const RecommendedFeed = lazy(() => import("../components/RecommendedFeed"));
+const ContributionPulse = lazy(() => import("../components/ContributionPulse"));
+const HomeSecondaryFallback = () => <div className="tt-home-panel tt-home-loading">Opening this section…</div>;
 
 const HomeGlobeFallback = () => <section className="tt-home-panel">Loading the TinyTitans world…</section>;
 
@@ -57,6 +59,8 @@ function Home() {
   const [intelligenceAccess, setIntelligenceAccess] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
   const [worldOpen, setWorldOpen] = useState(false);
+  const [recommendedOpen, setRecommendedOpen] = useState(false);
+  const [communityPulseOpen, setCommunityPulseOpen] = useState(false);
 
   const displayName = profile?.displayName || user?.displayName || "Tiny Titan";
   const learningLabel = profile?.learningLevel === "explorer"
@@ -424,14 +428,28 @@ function Home() {
         <TitanGoalTracker compact />
       </section>
 
-      <details className="tt-home-disclosure tt-home-secondary-disclosure">
+      <details
+        className="tt-home-disclosure tt-home-secondary-disclosure"
+        onToggle={(event) => setRecommendedOpen(event.currentTarget.open)}
+      >
         <summary>✨ Recommended genetics</summary>
-        <RecommendedFeed />
+        {recommendedOpen && (
+          <Suspense fallback={<HomeSecondaryFallback />}>
+            <RecommendedFeed />
+          </Suspense>
+        )}
       </details>
 
-      <details className="tt-home-disclosure tt-home-secondary-disclosure">
+      <details
+        className="tt-home-disclosure tt-home-secondary-disclosure"
+        onToggle={(event) => setCommunityPulseOpen(event.currentTarget.open)}
+      >
         <summary>🌍 Titan community pulse</summary>
-        <ContributionPulse />
+        {communityPulseOpen && (
+          <Suspense fallback={<HomeSecondaryFallback />}>
+            <ContributionPulse />
+          </Suspense>
+        )}
       </details>
 
       {user && (
