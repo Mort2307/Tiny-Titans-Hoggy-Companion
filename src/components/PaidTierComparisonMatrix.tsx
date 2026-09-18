@@ -10,7 +10,6 @@ type FeatureEnhancement = {
 };
 
 const FREE_FEATURE_ENHANCEMENTS: Record<string, FeatureEnhancement[]> = {
-  reminders: [{ entitlement: label: "Advanced reminder intelligence" }],
   intelligence: [{ entitlement: "titan_intelligence", label: "Titan Intelligence" }],
   breeding: [{ entitlement: "breeding_suite", label: "Advanced breeding suite" }],
   morphs: [{ entitlement: "morph_intelligence", label: "Morph intelligence & evidence" }],
@@ -18,7 +17,7 @@ const FREE_FEATURE_ENHANCEMENTS: Record<string, FeatureEnhancement[]> = {
 };
 
 const PAID_ONLY_ENTITLEMENTS: readonly Exclude<PaidEntitlement, "core_tracking" | "core_genetics" | "core_learning" | "core_community">[] = [
-  "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence",
+  "advanced_timeline", "advanced_analytics", "titan_intelligence",
   "breeding_suite", "morph_intelligence", "data_export", "marketplace_seller",
   "seller_profile", "business_reporting", "multi_user", "team_permissions",
   "automation", "api_access", "priority_support", "custom_branding", "rescue_workspace",
