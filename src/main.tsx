@@ -54,18 +54,23 @@ function DeferredRuntimeServices() {
       if (!cancelled) setReady(true);
     };
 
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(start, { timeout: 1500 });
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const idleId = idleWindow.requestIdleCallback(start, { timeout: 1500 });
       return () => {
         cancelled = true;
-        window.cancelIdleCallback(idleId);
+        idleWindow.cancelIdleCallback?.(idleId);
       };
     }
 
-    const timeoutId = window.setTimeout(start, 900);
+    const timeoutId = globalThis.setTimeout(start, 900);
     return () => {
       cancelled = true;
-      window.clearTimeout(timeoutId);
+      globalThis.clearTimeout(timeoutId);
     };
   }, []);
 
