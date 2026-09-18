@@ -1,9 +1,11 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
 import TitanDecisionWhyCard from "../components/TitanIntelligence/TitanDecisionWhyCard";
 import TitanDecisionQueue from "../components/TitanIntelligence/TitanDecisionQueue";
+import ContributionPulse from "../components/ContributionPulse";
+import RecommendedFeed from "../components/RecommendedFeed";
 import { useAuth } from "../context/useAuth";
 import { useWorldTime } from "../context/WorldTimeContext";
 import { getUserSnakes } from "../services/snakeService";
@@ -14,10 +16,6 @@ import { subscribeToTitanIntelligenceUpdates } from "../services/titanReactiveIn
 import "./Home.css";
 
 const TinyTitansPinnacleGlobe = lazy(() => import("../components/TinyTitansPinnacleGlobe"));
-
-const RecommendedFeed = lazy(() => import("../components/RecommendedFeed"));
-const ContributionPulse = lazy(() => import("../components/ContributionPulse"));
-const HomeSecondaryFallback = () => <div className="tt-home-panel tt-home-loading">Opening this section…</div>;
 
 const HomeGlobeFallback = () => <section className="tt-home-panel">Loading the TinyTitans world…</section>;
 
@@ -59,8 +57,6 @@ function Home() {
   const [intelligenceAccess, setIntelligenceAccess] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
   const [worldOpen, setWorldOpen] = useState(false);
-  const [recommendedOpen, setRecommendedOpen] = useState(false);
-  const [communityPulseOpen, setCommunityPulseOpen] = useState(false);
 
   const displayName = profile?.displayName || user?.displayName || "Tiny Titan";
   const learningLabel = profile?.learningLevel === "explorer"
@@ -428,28 +424,14 @@ function Home() {
         <TitanGoalTracker compact />
       </section>
 
-      <details
-        className="tt-home-disclosure tt-home-secondary-disclosure"
-        onToggle={(event) => setRecommendedOpen(event.currentTarget.open)}
-      >
+      <details className="tt-home-disclosure tt-home-secondary-disclosure">
         <summary>✨ Recommended genetics</summary>
-        {recommendedOpen && (
-          <Suspense fallback={<HomeSecondaryFallback />}>
-            <RecommendedFeed />
-          </Suspense>
-        )}
+        <RecommendedFeed />
       </details>
 
-      <details
-        className="tt-home-disclosure tt-home-secondary-disclosure"
-        onToggle={(event) => setCommunityPulseOpen(event.currentTarget.open)}
-      >
+      <details className="tt-home-disclosure tt-home-secondary-disclosure">
         <summary>🌍 Titan community pulse</summary>
-        {communityPulseOpen && (
-          <Suspense fallback={<HomeSecondaryFallback />}>
-            <ContributionPulse />
-          </Suspense>
-        )}
+        <ContributionPulse />
       </details>
 
       {user && (
