@@ -29,6 +29,7 @@ import "./styles/tiny-titans-intelligence-growth.css";
 import "./styles/workspace-identity.css";
 import "./styles/contributor-thank-you.css";
 import "./styles/tiny-titans-paid-room-retirement.css";
+import "./styles/mobile-layout-hardening.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
