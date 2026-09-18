@@ -3,8 +3,6 @@ import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { doc, getDoc, getFirestore, serverTimestamp, updateDoc } from "firebase/firestore";
 import app from "../firebase/config";
-import { syncLearningFromCloud } from "../services/learningEngine";
-import { syncTrackerAchievementCountsFromFirestore } from "../services/trackerAchievementService";
 import type { AgeBand, ApproximateLocation, DataCollectionPreferences, EducatorProfile, LearningLevel, ProfileType } from "../types/Profile";
 import type { UnitSystem } from "./UnitContext";
 import { AuthContext, type UserInterest, type UserPlatform, type UserProfile } from "./AuthContextValue";
@@ -95,6 +93,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } catch (error) {
           console.warn("Tiny Titans: creator capability reconciliation unavailable", error);
         }
+
+        const [{ syncLearningFromCloud }, { syncTrackerAchievementCountsFromFirestore }] = await Promise.all([
+          import("../services/learningEngine"),
+          import("../services/trackerAchievementService"),
+        ]);
 
         await Promise.allSettled([
           syncLearningFromCloud(u.uid),
