@@ -15,6 +15,7 @@ export type NotificationDeviceStatus = {
   registered: boolean;
   serviceWorkerReady: boolean;
   tokenCount: number;
+  installRequired: boolean;
 };
 export type NotificationFailure = { tokenId: string; code: string; message: string };
 
