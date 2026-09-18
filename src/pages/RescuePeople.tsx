@@ -63,10 +63,10 @@ export default function RescuePeople() {
     finally { setBusy(false); }
   }
 
-  if (!user || !org || !access.canManageOrganisation) return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page"><section className="rescue-card"><span className="rescue-eyebrow">PEOPLE & ACCESS</span><h1>Rescue management access required</h1><p>Only Rescue owners and managers can manage staff, community members and applications.</p><Link className="rescue-primary-link" to="/rescue">Back to Rescue →</Link></section></main></PaidTierGate>;
+  if (!user || !org || !access.canManageOrganisation) return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page"><section className="rescue-card"><span className="rescue-eyebrow">PEOPLE & ACCESS</span><h1>Rescue management access required</h1><p>Only Rescue owners and managers can manage staff, community members and applications.</p><Link className="rescue-primary-link" to="/rescue?manage=1">Back to Rescue →</Link></section></main></PaidTierGate>;
 
   return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page">
-    <header className="rescue-subhead"><Link to="/rescue">← Rescue Centre</Link><div><span className="rescue-eyebrow">PEOPLE & ACCESS</span><h1><TinyTitansIcon name="health" size={35}/> {org.name}</h1><p>Staff permissions stay separate from the people who follow, foster for, or apply to adopt from your Rescue.</p></div></header>
+    <header className="rescue-subhead"><Link to="/rescue?manage=1">← Rescue Centre</Link><div><span className="rescue-eyebrow">PEOPLE & ACCESS</span><h1><TinyTitansIcon name="health" size={35}/> {org.name}</h1><p>Staff permissions stay separate from the people who follow, foster for, or apply to adopt from your Rescue.</p></div></header>
     {message && <div className="rescue-message" role="status">{message}</div>}
     <nav className="rescue-card rescue-people-tabs" aria-label="Rescue people sections">
       {(Object.keys(tabLabels) as Tab[]).map((item) => <button key={item} type="button" className={tab === item ? "active" : ""} onClick={() => setSearchParams({ tab: item })}>{tabLabels[item]}{item === "applications" && pending.length ? ` · ${pending.length}` : ""}</button>)}
