@@ -76,7 +76,42 @@ async function recordActivity(u: User) {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null); const [profile, setProfile] = useState<UserProfile | null>(null); const [loading, setLoading] = useState(true); const [profileLoading, setProfileLoading] = useState(false);
-  async function hydrateUser(u: User) { setProfileLoading(true); try { const loadedProfile = await loadUserProfile(u); await reconcileCreatorCapability(u, loadedProfile); const refreshedProfile = await loadUserProfile(u); await Promise.all([syncLearningFromCloud(u.uid)]); setProfile(refreshedProfile); await recordActivity(u); void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error) => console.warn("Tiny Titans: unable to sync tracker achievement counts", error)); } catch (error) { console.error("Tiny Titans: unable to hydrate user state", error); try { setProfile(await loadUserProfile(u)); } catch { setProfile(null); } } finally { setProfileLoading(false); setLoading(false); } }
+  async function hydrateUser(u: User) {
+    setProfileLoading(true);
+    try {
+      const loadedProfile = await loadUserProfile(u);
+      setProfile(loadedProfile);
+      setProfileLoading(false);
+      setLoading(false);
+
+      // Authentication and the canonical user profile are enough to render the
+      // application. Keep secondary reconciliation/sync work off the critical
+      // startup path so the first screen is not held behind background writes.
+      void (async () => {
+        try {
+          await reconcileCreatorCapability(u, loadedProfile);
+          const refreshedProfile = await loadUserProfile(u);
+          if (getAuth(app).currentUser?.uid === u.uid) setProfile(refreshedProfile);
+        } catch (error) {
+          console.warn("Tiny Titans: creator capability reconciliation unavailable", error);
+        }
+
+        await Promise.allSettled([
+          syncLearningFromCloud(u.uid),
+          recordActivity(u),
+        ]);
+
+        void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error) => {
+          console.warn("Tiny Titans: unable to sync tracker achievement counts", error);
+        });
+      })();
+    } catch (error) {
+      console.error("Tiny Titans: unable to hydrate user state", error);
+      try { setProfile(await loadUserProfile(u)); } catch { setProfile(null); }
+      setProfileLoading(false);
+      setLoading(false);
+    }
+  }
   async function refreshProfile() { const u = getAuth(app).currentUser; if (!u) { setProfile(null); return null; } setProfileLoading(true); try { const loaded = await loadUserProfile(u); await reconcileCreatorCapability(u, loaded); const refreshed = await loadUserProfile(u); setProfile(refreshed); await syncLearningFromCloud(u.uid); void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error) => console.warn("Tiny Titans: unable to sync tracker achievement counts", error)); await recordActivity(u); return refreshed; } finally { setProfileLoading(false); } }
   useEffect(() => { const unsubscribe = onAuthStateChanged(getAuth(app), async u => { setUser(u); setProfile(null); if (!u) { setProfileLoading(false); setLoading(false); return; } await hydrateUser(u); }); return unsubscribe; }, []);
   return <AuthContext.Provider value={{ user, profile, loading, profileLoading, isAuthenticated: user !== null, refreshProfile }}>{children}</AuthContext.Provider>;
