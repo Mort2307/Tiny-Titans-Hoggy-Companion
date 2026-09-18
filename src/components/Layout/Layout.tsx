@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useLayoutEffect } from "react";
+import { lazy, useLayoutEffect } from "react";
 import Header from "./Header";
 import Navigation from "./Navigation";
 import AdaptiveGuideBar from "../AdaptiveGuideBar";
@@ -12,26 +12,27 @@ import CreatorPaidTierOperations from "../CreatorPaidTierOperations";
 import SpeciesContextBar from "../SpeciesContextBar";
 import SpeciesContextRouteSync from "../SpeciesContextRouteSync";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
-import SpeciesAwareMorphLibrary from "../../pages/SpeciesAwareMorphLibrary";
-import SpeciesMorphDetail from "../../pages/SpeciesMorphDetail";
-import SpeciesMorphGallery from "../../pages/SpeciesMorphGallery";
-import SpeciesSafeEnclosureIntelligence from "../../pages/SpeciesSafeEnclosureIntelligence";
-import TitanWeekCommandCentre from "../../pages/TitanWeekCommandCentre";
-import PaidPlans from "../../pages/PaidPlans";
-import AccountBilling from "../../pages/AccountBilling";
-import PaidFeatureWorkspace from "../../pages/PaidFeatureWorkspace";
-import PaidTimelineFeature from "../../pages/PaidTimelineFeature";
-import PaidMarketplaceFeature from "../../pages/PaidMarketplaceFeature";
-import PaidSupportFeature from "../../pages/PaidSupportFeature";
 import PaidTierGate from "../PaidTierGate";
 import NotificationOnboarding from "../NotificationOnboarding";
-import RescueDirectory from "../../pages/RescueDirectory";
-import RescueDirectoryProfile from "../../pages/RescueDirectoryProfile";
-import { RescueCentre } from "../../pages/RescuePages";
-import RescueQuickLog from "../../pages/RescueQuickLog";
 import { EasyNavProvider, useEasyNav } from "../../context/EasyNavContext";
 import { SpeciesContextProvider } from "../../context/SpeciesContext";
 import WorkspaceIdentityStrip from "../WorkspaceIdentityStrip";
+
+const SpeciesAwareMorphLibrary = lazy(() => import("../../pages/SpeciesAwareMorphLibrary"));
+const SpeciesMorphDetail = lazy(() => import("../../pages/SpeciesMorphDetail"));
+const SpeciesMorphGallery = lazy(() => import("../../pages/SpeciesMorphGallery"));
+const SpeciesSafeEnclosureIntelligence = lazy(() => import("../../pages/SpeciesSafeEnclosureIntelligence"));
+const TitanWeekCommandCentre = lazy(() => import("../../pages/TitanWeekCommandCentre"));
+const PaidPlans = lazy(() => import("../../pages/PaidPlans"));
+const AccountBilling = lazy(() => import("../../pages/AccountBilling"));
+const PaidFeatureWorkspace = lazy(() => import("../../pages/PaidFeatureWorkspace"));
+const PaidTimelineFeature = lazy(() => import("../../pages/PaidTimelineFeature"));
+const PaidMarketplaceFeature = lazy(() => import("../../pages/PaidMarketplaceFeature"));
+const PaidSupportFeature = lazy(() => import("../../pages/PaidSupportFeature"));
+const RescueDirectory = lazy(() => import("../../pages/RescueDirectory"));
+const RescueDirectoryProfile = lazy(() => import("../../pages/RescueDirectoryProfile"));
+const RescueCentre = lazy(() => import("../../pages/RescuePages").then((module) => ({ default: module.RescueCentre })));
+const RescueQuickLog = lazy(() => import("../../pages/RescueQuickLog"));
 
 const speciesAwarePrefixes = [
   "/snakes",
