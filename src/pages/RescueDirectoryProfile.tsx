@@ -202,6 +202,7 @@ export default function RescueDirectoryProfile() {
         <label>Country<input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="United Kingdom" /></label>
         <label>Website<input type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" /></label>
         <label>Public contact email<input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contact@yourrescue.org" /></label>
+        <label className="rescue-form-grid-span">Opening hours / contact times<textarea maxLength={1000} value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} placeholder="e.g. Enquiries Mon–Fri 09:00–17:00. Visits by appointment." /></label>
         <label className="rescue-form-grid-span">Public description<textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tell keepers what your Rescue does…" /></label>
       </div>
     </section>
