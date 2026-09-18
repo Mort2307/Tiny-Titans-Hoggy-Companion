@@ -2,6 +2,8 @@ import type { TesterCheck } from "./testerBotService";
 import { PAID_TIER_CATALOG, PAID_TIER_ORDER, tierIncludesEntitlement, type PaidEntitlement } from "../config/paidTiers";
 import { getPaidTierPricingEnvironment } from "./paidSubscriptionService";
 import { FREE_KEEPER_NAVIGATION_IDS, getFreeKeeperNavigationItems } from "../config/freeExperience";
+import { PAID_ENTITLEMENT_DESTINATIONS } from "../config/paidEntitlementCatalog";
+import { workspaceProductForTier } from "../config/workspaceProducts";
 
 const CORE: PaidEntitlement[] = ["core_tracking", "core_genetics", "core_learning", "core_community"];
 const PAID_TIERS = PAID_TIER_ORDER.filter((tier) => tier !== "free");
@@ -37,6 +39,27 @@ export function createPaidTierRegressionChecks(): TesterCheck[] {
       category: "paid-tiers",
       severity: "high",
       run: async () => ({ status: "pass", message: "Paid workspace navigation is layered above the standard keeper navigation; paid-only destinations are supplied separately by the workspace product definitions." }),
+    },
+    {
+      checkId: "paid-tier-entitlement-navigation-contract",
+      name: "Every paid entitlement has an obvious workspace entry point",
+      category: "paid-tiers",
+      severity: "critical",
+      run: async () => {
+        const missing: string[] = [];
+        for (const tier of PAID_TIERS) {
+          const navPaths = new Set(workspaceProductForTier(tier).nav.map((item) => item.path));
+          for (const entitlement of PAID_TIER_CATALOG[tier].entitlements.filter((item) => !item.startsWith("core_"))) {
+            const destination = PAID_ENTITLEMENT_DESTINATIONS[entitlement];
+            const rescueBrandingPath = tier === "rescue" && entitlement === "custom_branding" ? "/rescue/organisation" : undefined;
+            const visible = Boolean(destination?.path && navPaths.has(destination.path)) || Boolean(rescueBrandingPath && navPaths.has(rescueBrandingPath));
+            if (!visible) missing.push(`${tier}:${entitlement}`);
+          }
+        }
+        return missing.length
+          ? { status: "fail", message: `Paid entitlements without a visible workspace entry point: ${missing.join(", ")}.` }
+          : { status: "pass", message: "Every paid entitlement exposed by the tier catalogue has a corresponding workspace destination." };
+      },
     },
     {
       checkId: "paid-tier-catalog-complete",
