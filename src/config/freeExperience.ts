@@ -9,6 +9,8 @@ export type FreeKeeperNavigationItem = {
   description: string;
 };
 
+type FreeKeeperNavigationDefinition = Omit<FreeKeeperNavigationItem, "group">;
+
 /**
  * Canonical baseline for the ordinary Tiny Titans keeper sidebar.
  *
@@ -85,7 +87,9 @@ export const FREE_KEEPER_NAVIGATION_IDS = FREE_KEEPER_NAVIGATION_GROUPS.flatMap(
 
 export type FreeKeeperNavigationId = (typeof FREE_KEEPER_NAVIGATION_IDS)[number];
 
-export const FREE_KEEPER_NAVIGATION_ITEMS = FREE_KEEPER_NAVIGATION_GROUPS.flatMap(({ items }) => items);
+export const FREE_KEEPER_NAVIGATION_ITEMS = FREE_KEEPER_NAVIGATION_GROUPS.flatMap(({ group, items }) =>
+  items.map((item) => ({ ...item, group })),
+);
 
 export function getFreeKeeperNavigationItems(): readonly FreeKeeperNavigationItem[] {
   return FREE_KEEPER_NAVIGATION_ITEMS;
