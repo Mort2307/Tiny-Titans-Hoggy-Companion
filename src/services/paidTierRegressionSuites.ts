@@ -5,7 +5,7 @@ import { FREE_KEEPER_NAVIGATION_IDS, getFreeKeeperNavigationItems } from "../con
 import { PAID_ENTITLEMENT_DESTINATIONS } from "../config/paidEntitlementCatalog";
 import { workspaceProductForTier } from "../config/workspaceProducts";
 
-const CORE: PaidEntitlement[] = ["core_tracking", "core_genetics", "core_learning", "core_community"];
+const CORE = ["core_tracking", "core_genetics", "core_learning", "core_community"] as const satisfies readonly PaidEntitlement[];
 type PaidOnlyEntitlement = Exclude<PaidEntitlement, (typeof CORE)[number]>;
 const PAID_TIERS = PAID_TIER_ORDER.filter((tier) => tier !== "free");
 const STRIPE_LOOKUP_KEYS: Record<string, string> = {
