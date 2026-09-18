@@ -4,11 +4,6 @@ import PaidTierGate from "../components/PaidTierGate";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useAuth } from "../context/useAuth";
 import {
-  addRescueFosterPlacement,
-  addRescueReminder,
-  addRescueTransfer,
-  getRescueAccess,
-  getRescueOrganisation,
   listRescueAnimals,
   setRescueReminderComplete,
   updateRescueAnimal,
@@ -18,7 +13,6 @@ import { getRescueSetupState } from "../services/rescueSetupService";
 import type {
   RescueAnimal,
   RescueAnimalStatus,
-  RescueCareRecord,
   RescueIntakeRecord,
   RescueLocationRecord,
   RescueOrganisation,
