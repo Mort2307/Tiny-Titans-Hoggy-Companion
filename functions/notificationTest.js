@@ -141,6 +141,26 @@ exports.sendNotificationTest = onCall({ region: "europe-west2", memory: "256MiB"
   return { eventKey, targetUid: target.id, kind, title: test.title, body: test.body, url: test.url, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid, failures: result.failures };
 });
 
+exports.sendOwnNotificationTest = onCall({ region: "europe-west2", memory: "256MiB", timeoutSeconds: 60 }, async (request) => {
+  const uid = String(request.auth?.uid || "").trim();
+  if (!uid) throw new HttpsError("unauthenticated", "You must be signed in to test notifications.");
+  const kind = String(request.data?.kind || "general");
+  const test = TESTS[kind];
+  if (!test) throw new HttpsError("invalid-argument", "Invalid notification test type.");
+  const userRef = db.collection("users").doc(uid);
+  const userSnapshot = await userRef.get();
+  if (!userSnapshot.exists) throw new HttpsError("not-found", "Your Tiny Titans account could not be found.");
+  if (userSnapshot.data()?.notificationSettings?.enabled !== true) throw new HttpsError("failed-precondition", "Enable Tiny Titans device notifications before running the phone test.");
+  const controlRef = userRef.collection("notificationTestControl").doc("self");
+  const control = await controlRef.get();
+  const lastTestAt = control.data()?.lastTestAt?.toMillis?.() || 0;
+  if (lastTestAt && Date.now() - lastTestAt < 30_000) throw new HttpsError("resource-exhausted", "Please wait 30 seconds between notification tests.");
+  await controlRef.set({ lastTestAt: FieldValue.serverTimestamp() }, { merge: true });
+  const eventKey = makeEventKey(kind, uid);
+  const result = await sendTestPush(uid, eventKey, test);
+  return { eventKey, kind, status: result.sent > 0 ? "sent" : "no-delivery", sentCount: result.sent, invalidTokenCount: result.invalid };
+});
+
 exports.sendNotificationTestBatch = onCall({ region: "europe-west2", memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   const requesterUid = requireTester(request);
   const requestedKinds = Array.isArray(request.data?.kinds) ? request.data.kinds.map((kind) => String(kind)) : [];
