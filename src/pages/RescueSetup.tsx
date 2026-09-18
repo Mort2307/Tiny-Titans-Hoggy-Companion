@@ -108,11 +108,11 @@ export default function RescueSetup() {
       try {
         const workspace = await getMyRescueWorkspace();
         if (!active) return;
-        if (workspace.role !== "owner" || !workspace.organisation) { navigate("/rescue", { replace:true }); return; }
+        if (workspace.role !== "owner" || !workspace.organisation) { navigate("/rescue?manage=1", { replace:true }); return; }
         setOrganisationId(workspace.organisation.id);
         const state = await getRescueSetupState(workspace.organisation.id);
         if (!active) return;
-        if (state.organisation.setupComplete) { navigate("/rescue", { replace:true }); return; }
+        if (state.organisation.setupComplete) { navigate("/rescue?manage=1", { replace:true }); return; }
         setForm(fromOrganisation(state.organisation));
       } catch (loadError) {
         if (active) setError(loadError instanceof Error ? loadError.message : "Could not load Rescue setup.");
@@ -134,7 +134,7 @@ export default function RescueSetup() {
     setSaving(true);
     try {
       await updateRescuePublicProfile({ organisationId, ...form });
-      navigate("/rescue", { replace:true });
+      navigate("/rescue?manage=1", { replace:true });
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Could not save the Rescue profile.");
     } finally {
