@@ -4,7 +4,7 @@ import { getFreeKeeperNavigationItems } from "../config/freeExperience";
 import PaidTierBadge from "./PaidTierBadge";
 import { Link } from "react-router-dom";
 
-const PAID_ONLY_ENTITLEMENTS: readonly PaidEntitlement[] = [
+const PAID_ONLY_ENTITLEMENTS: readonly Exclude<PaidEntitlement, "core_tracking" | "core_genetics" | "core_learning" | "core_community">[] = [
   "smart_reminders",
   "advanced_timeline",
   "advanced_analytics",
