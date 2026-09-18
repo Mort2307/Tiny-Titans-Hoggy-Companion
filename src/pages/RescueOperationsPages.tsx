@@ -99,7 +99,7 @@ function GatePage({ children }: { children: ReactNode }) {
 }
 
 export function RescueIntake() {
-  const { organisation, animals, loading, error } = useRescueData();
+  const { user, organisation, animals, loading, error } = useRescueData();
   const [selectedId, setSelectedId] = useState("");
   const [source, setSource] = useState<RescueIntakeRecord["source"]>("unknown");
   const [receivedAt, setReceivedAt] = useState("");
@@ -145,7 +145,7 @@ export function RescueIntake() {
         deliveredByContact: deliveredByContact.trim(), reason: reason.trim(), knownHistory: knownHistory.trim(),
         previousName: previousName.trim(), previousIdentifier: previousIdentifier.trim(), knownMedicalHistory: knownMedicalHistory.trim(),
         knownFeedingHistory: knownFeedingHistory.trim(), knownBehaviour: knownBehaviour.trim(), conditionOnArrival: conditionOnArrival.trim(),
-        quarantineReason: quarantineReason.trim(), acceptedByUid: selected.intakeRecord?.acceptedByUid || "",
+        quarantineReason: quarantineReason.trim(), acceptedByUid: selected.intakeRecord?.acceptedByUid || user?.uid || "",
         evidenceSummary: evidenceSummary.trim(),
       };
       await updateRescueAnimal(selected.id, { intakeRecord: record, previousName: record.previousName || undefined, previousIdentifier: record.previousIdentifier || undefined });
