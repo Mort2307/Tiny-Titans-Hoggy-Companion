@@ -59,6 +59,8 @@ function setupOrganisation(organisationId, org) {
     localAuthorityLicence: clean(org.localAuthorityLicence, 120),
     otherRegistrationNumber: clean(org.otherRegistrationNumber, 120),
     registrationAuthority: clean(org.registrationAuthority, 160),
+    registrationNotes: clean(org.registrationNotes, 1000),
+    registrationEvidenceUrl: clean(org.registrationEvidenceUrl, 500),
     registrationsPublic: org.registrationsPublic === true,
     directoryVisible: org.directoryVisible !== false,
     setupComplete: org.setupComplete === true,
