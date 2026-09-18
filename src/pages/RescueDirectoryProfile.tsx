@@ -183,7 +183,7 @@ export default function RescueDirectoryProfile() {
   return <main className="rescue-page">
     <header className="rescue-subhead">
       <div><span className="rescue-eyebrow">ORGANISATION & BRANDING</span><h1>{name || "Rescue organisation"}</h1><p>Manage the public identity, searchable listing and registration details visitors can see.</p></div>
-      <Link to="/rescue">← Rescue workspace</Link>
+      <Link to="/rescue?manage=1">← Rescue workspace</Link>
     </header>
 
     {message && <div className="rescue-message" role="status">{message}</div>}
@@ -257,7 +257,7 @@ export default function RescueDirectoryProfile() {
 
     <div className="rescue-form-actions">
       <button type="button" disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : "Save Organisation & Branding"}</button>
-      <button type="button" onClick={() => navigate("/rescue")}>Back to Rescue workspace</button>
+      <button type="button" onClick={() => navigate("/rescue?manage=1")}>Back to Rescue workspace</button>
     </div>
   </main>;
 }
