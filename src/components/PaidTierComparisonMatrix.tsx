@@ -10,7 +10,7 @@ type FeatureEnhancement = {
 };
 
 const FREE_FEATURE_ENHANCEMENTS: Record<string, FeatureEnhancement[]> = {
-  reminders: [{ entitlement: "smart_reminders", label: "Advanced reminder intelligence" }],
+  reminders: [{ entitlement: label: "Advanced reminder intelligence" }],
   intelligence: [{ entitlement: "titan_intelligence", label: "Titan Intelligence" }],
   breeding: [{ entitlement: "breeding_suite", label: "Advanced breeding suite" }],
   morphs: [{ entitlement: "morph_intelligence", label: "Morph intelligence & evidence" }],
