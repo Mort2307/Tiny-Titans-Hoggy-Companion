@@ -6,6 +6,7 @@ import { PAID_ENTITLEMENT_DESTINATIONS } from "../config/paidEntitlementCatalog"
 import { workspaceProductForTier } from "../config/workspaceProducts";
 
 const CORE: PaidEntitlement[] = ["core_tracking", "core_genetics", "core_learning", "core_community"];
+type PaidOnlyEntitlement = Exclude<PaidEntitlement, (typeof CORE)[number]>;
 const PAID_TIERS = PAID_TIER_ORDER.filter((tier) => tier !== "free");
 const STRIPE_LOOKUP_KEYS: Record<string, string> = {
   titan_pro: "tinytitans_titan_pro_monthly",
@@ -49,7 +50,10 @@ export function createPaidTierRegressionChecks(): TesterCheck[] {
         const missing: string[] = [];
         for (const tier of PAID_TIERS) {
           const navPaths = new Set(workspaceProductForTier(tier).nav.map((item) => item.path));
-          for (const entitlement of PAID_TIER_CATALOG[tier].entitlements.filter((item) => !item.startsWith("core_"))) {
+          const paidEntitlements = PAID_TIER_CATALOG[tier].entitlements.filter(
+            (item): item is PaidOnlyEntitlement => !item.startsWith("core_"),
+          );
+          for (const entitlement of paidEntitlements) {
             const destination = PAID_ENTITLEMENT_DESTINATIONS[entitlement];
             const rescueBrandingPath = tier === "rescue" && entitlement === "custom_branding" ? "/rescue/organisation" : undefined;
             const visible = Boolean(destination?.path && navPaths.has(destination.path)) || Boolean(rescueBrandingPath && navPaths.has(rescueBrandingPath));
