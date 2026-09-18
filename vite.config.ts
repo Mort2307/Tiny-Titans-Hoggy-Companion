@@ -60,6 +60,11 @@ export default defineConfig({
               priority: 30,
             },
             {
+              name: "firebase-functions",
+              test: /node_modules[\\/]firebase[\\/]functions(?:$|[\\/])/,
+              priority: 26,
+            },
+            {
               name: "firebase-vendor",
               test: /node_modules[\\/]firebase(?:$|[\\/])/,
               priority: 20,
