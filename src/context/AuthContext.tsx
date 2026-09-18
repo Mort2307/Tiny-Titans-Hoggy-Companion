@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
-import { getFunctions, httpsCallable } from "firebase/functions";
 import { doc, getDoc, getFirestore, serverTimestamp, updateDoc } from "firebase/firestore";
 import app from "../firebase/config";
 import type { AgeBand, ApproximateLocation, DataCollectionPreferences, EducatorProfile, LearningLevel, ProfileType } from "../types/Profile";
@@ -11,7 +10,6 @@ import packageJson from "../../package.json";
 
 type AuthProviderProps = { children: ReactNode };
 const db = getFirestore(app);
-const functions = getFunctions(app, "europe-west2");
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 
 type CreatorReconcileResponse = { success?: boolean; creator?: boolean; refreshRequired?: boolean };
@@ -20,6 +18,11 @@ async function reconcileCreatorCapability(firebaseUser: User, profile: UserProfi
   const isOwner = String(firebaseUser.email || "").trim().toLowerCase() === OWNER_EMAIL;
   if (!isOwner && profile?.profileType !== "creator") return;
   try {
+    const [{ getFunctions }, { httpsCallable }] = await Promise.all([
+      import("firebase/functions"),
+      import("firebase/functions"),
+    ]);
+    const functions = getFunctions(app, "europe-west2");
     const reconcile = httpsCallable<Record<string, never>, CreatorReconcileResponse>(functions, "reconcileCreatorClaim");
     const result = await reconcile({});
     if (result.data?.refreshRequired) await getAuth(app).currentUser?.getIdToken(true);
