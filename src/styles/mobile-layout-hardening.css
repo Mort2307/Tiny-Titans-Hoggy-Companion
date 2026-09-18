@@ -1,0 +1,248 @@
+/* Tiny Titans — final mobile layout hardening.
+   Keep dense desktop grids readable on phones without flattening every component. */
+
+@media (max-width: 640px) {
+  .app-content,
+  .app-content > *,
+  .app-content > .tt-page-frame,
+  .app-content > .tt-page-frame > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content :where(
+    .page-header,
+    .section-header,
+    .content-header,
+    .tt-page-header
+  ) {
+    min-width: 0;
+  }
+
+  .app-content :where(
+    .page-header > *,
+    .section-header > *,
+    .content-header > *,
+    .tt-page-header > *
+  ) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content :where(
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    span,
+    strong,
+    small,
+    label,
+    a
+  ) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .app-content :where(
+    .family-manager-layout,
+    .family-review-layout,
+    .rescue-grid,
+    .rescue-passport-grid,
+    .rescue-command-grid,
+    .rescue-detail-grid,
+    .rescue-onboarding-grid,
+    .rescue-floor-grid,
+    .community-action-grid,
+    .community-section-grid,
+    .community-manager-grid,
+    .dashboard-grid,
+    .nav-grid,
+    .paid-plan-grid
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-content :where(
+    .family-manager-layout > *,
+    .family-review-layout > *,
+    .rescue-grid > *,
+    .rescue-passport-grid > *,
+    .rescue-command-grid > *,
+    .community-action-grid > *,
+    .community-section-grid > *,
+    .community-manager-grid > *,
+    .dashboard-grid > *,
+    .nav-grid > *,
+    .paid-plan-grid > *
+  ) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content :where(
+    .family-manager-mode
+  ) {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .app-content :where(
+    .family-manager-mode-copy
+  ) {
+    min-width: 0;
+  }
+
+  .app-content :where(
+    .community-hero
+  ) {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+
+  .app-content :where(
+    .community-hero-copy
+  ) {
+    min-width: 0;
+  }
+
+  .app-content :where(
+    .paid-plan-detail
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-content :where(
+    .paid-plan-status
+  ) {
+    min-width: 0;
+  }
+
+  .app-content :where(
+    .paid-tier-identity,
+    .family-manager-section-head,
+    .community-section-heading,
+    .rescue-workspace-status,
+    .rescue-command-footer
+  ) {
+    min-width: 0;
+  }
+
+  .app-content :where(
+    .rescue-priority-row,
+    .rescue-health-list > div
+  ) {
+    min-width: 0;
+  }
+
+  .app-content :where(
+    .rescue-priority-row > *,
+    .rescue-health-list > *
+  ) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content :where(
+    .community-post,
+    .community-action-card,
+    .community-section-card,
+    .family-manager-card,
+    .paid-plan-card,
+    .rescue-card
+  ) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content :where(
+    .community-post-top,
+    .community-post-meta,
+    .community-feedback-card,
+    .family-manager-hero,
+    .family-manager-section-head,
+    .rescue-form-actions,
+    .rescue-command-actions,
+    .rescue-command-footer,
+    .paid-plans-hero
+  ) {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-content :where(
+    .family-manager-quick-grid,
+    .family-manager-policy-grid,
+    .family-review-summary,
+    .community-pulse,
+    .paid-free-experience__groups
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-content :where(
+    .family-manager-hero,
+    .paid-plans-hero
+  ) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-content :where(
+    .family-manager-hero-actions,
+    .community-manager-actions,
+    .rescue-command-actions,
+    .rescue-form-actions
+  ) {
+    width: 100%;
+  }
+
+  .app-content :where(
+    .family-manager-hero-actions > *,
+    .community-manager-actions > *,
+    .rescue-command-actions > *,
+    .rescue-form-actions > *
+  ) {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .app-content :where(
+    .family-manager-member,
+    .family-review-item,
+    .rescue-animal-row,
+    .rescue-activity-row
+  ) {
+    min-width: 0;
+  }
+
+  .app-content :where(
+    .family-manager-member > *,
+    .family-review-item > *,
+    .rescue-animal-row > *,
+    .rescue-activity-row > *
+  ) {
+    min-width: 0;
+  }
+}
+
+/* The paid-tier matrix is intentionally wider than a phone.
+   Let the table scroll horizontally instead of crushing words into columns. */
+.app-content :where(.paid-tier-comparison) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+  .app-content :where(.paid-tier-comparison table) {
+    min-width: 900px;
+  }
+}
