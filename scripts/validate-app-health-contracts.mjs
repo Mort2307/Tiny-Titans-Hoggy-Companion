@@ -15,18 +15,30 @@ const requiredRoutes = [
   '/account/family/manage', '/account/family/review', '/account/family/history',
 ];
 const failures = [];
+
 for (const page of requiredPages) {
-  if (!fs.existsSync(`src/pages/${page}.tsx`)) failures.push(`Missing required page file: ${page}.tsx`);
-  if (!router.includes(`import ${page} from`)) failures.push(`Router does not import required page: ${page}`);
+  if (!fs.existsSync(`src/pages/${page}.tsx`)) {
+    failures.push(`Missing required page file: ${page}.tsx`);
+  }
+
+  const staticImportPattern = new RegExp(`import\\s+${page}\\s+from\\s+["']`);
+  const lazyImportPattern = new RegExp(`const\\s+${page}\\s*=\\s*lazy\\(\\(\\)\\s*=>\\s*import\\(`);
+  if (!staticImportPattern.test(router) && !lazyImportPattern.test(router)) {
+    failures.push(`Router does not import required page: ${page}`);
+  }
 }
+
 for (const route of requiredRoutes) {
   if (!router.includes(`path="${route}"`)) failures.push(`Required route missing: ${route}`);
 }
+
 if (!router.includes('path="*"')) failures.push('Router is missing its fallback route.');
+
 if (failures.length) {
   console.error('APP HEALTH CONTRACT REPORT');
   failures.forEach((failure) => console.error(`- ${failure}`));
   process.exit(1);
 }
+
 console.log(`App health contract passed: ${requiredPages.length} core page contracts and ${requiredRoutes.length} critical route contracts checked.`);
 console.log('Note: this is structural evidence; browser journey testing remains separate.');
