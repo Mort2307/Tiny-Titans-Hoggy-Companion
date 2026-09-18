@@ -3,7 +3,6 @@ import type { PaidEntitlement } from "./paidTiers";
 export type PaidEntitlementDestination = { label: string; path?: string };
 
 export const PAID_ENTITLEMENT_LABELS: Record<Exclude<PaidEntitlement, "core_tracking" | "core_genetics" | "core_learning" | "core_community">, string> = {
-  smart_reminders: "Advanced reminder intelligence",
   advanced_timeline: "Advanced animal timeline",
   advanced_analytics: "Advanced analytics",
   titan_intelligence: "Titan Intelligence",
@@ -29,7 +28,6 @@ export const PAID_ENTITLEMENT_LABELS: Record<Exclude<PaidEntitlement, "core_trac
 };
 
 const destinations: Record<Exclude<PaidEntitlement, "core_tracking" | "core_genetics" | "core_learning" | "core_community">, PaidEntitlementDestination> = {
-  smart_reminders: { label: "Reminder Hub (baseline; no separate paid-only surface yet)", path: "/reminders" },
   advanced_timeline: { label: "Advanced Timeline", path: "/paid/timeline" },
   advanced_analytics: { label: "Advanced Analytics", path: "/paid/analytics" },
   titan_intelligence: { label: "Titan Intelligence", path: "/titan-intelligence" },
