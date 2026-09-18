@@ -47,21 +47,26 @@ for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']\s+element=\{
 
 if (!routes.length) errors.push("No application routes were detected in AppRouter.tsx.");
 
-const firstExecutableIndex = router.search(/\b(?:function|const|let|var)\s+[A-Za-z]/);
-const importSection = firstExecutableIndex >= 0 ? router.slice(0, firstExecutableIndex) : router;
 const importedComponents = new Set();
 
-for (const match of importSection.matchAll(/\bimport\s+([A-Za-z][A-Za-z0-9]*)\b(?:\s*,\s*)?/g)) {
+// Static imports can be interleaved with lazy route declarations, so scan the
+// complete router rather than stopping at the first executable declaration.
+for (const match of router.matchAll(/\bimport\s+([A-Za-z][A-Za-z0-9]*)\b(?:\s*,\s*)?/g)) {
   importedComponents.add(match[1]);
 }
 
-for (const match of importSection.matchAll(/\bimport\s*\{([\s\S]*?)\}\s*from\s*["'][^"']+["']/g)) {
+for (const match of router.matchAll(/\bimport\s*\{([\s\S]*?)\}\s*from\s*["'][^"']+["']/g)) {
   for (const specifier of match[1].split(",")) {
     const cleaned = specifier.replace(/\/\*[\s\S]*?\*\//g, "").trim();
     if (!cleaned) continue;
     const localName = cleaned.split(/\s+as\s+/i).pop()?.trim().replace(/^type\s+/, "");
     if (localName && /^[A-Za-z][A-Za-z0-9]*$/.test(localName)) importedComponents.add(localName);
   }
+}
+
+// React.lazy route/component declarations are imports for contract purposes too.
+for (const match of router.matchAll(/\bconst\s+([A-Za-z][A-Za-z0-9]*)\s*=\s*lazy\s*\(/g)) {
+  importedComponents.add(match[1]);
 }
 
 for (const route of routes) {
