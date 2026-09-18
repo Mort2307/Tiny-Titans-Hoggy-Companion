@@ -5,6 +5,7 @@ import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import { getPaidTierDefinition, PAID_TIER_ORDER, type PaidEntitlement, type PaidTierId } from "../config/paidTiers";
 import PaidTierBadge from "./PaidTierBadge";
+import { paidEntitlementLabel } from "../config/paidEntitlementCatalog";
 import RescueInvitation from "../pages/RescueInvitation";
 import OrganisationStaffManager from "./staff/OrganisationStaffManager";
 import "../styles/PaidPlans.css";
@@ -64,9 +65,9 @@ function TierAccessFallback({ tierId, access, entitlement }: { tierId: PaidTierI
     </section>
 
     <section className="paid-access-card">
-      <div className="paid-access-card-heading"><div><span className="paid-kicker">THIS CAPABILITY</span><h2>{entitlement.replace(/[-_]/g, " ")}</h2><p>{tier.audience}</p></div><PaidTierBadge tierId={tier.id} size="sm" /></div>
+      <div className="paid-access-card-heading"><div><span className="paid-kicker">THIS CAPABILITY</span><h2>{paidEntitlementLabel(entitlement)}</h2><p>{tier.audience}</p></div><PaidTierBadge tierId={tier.id} size="sm" /></div>
       <div className="paid-access-highlight-grid">{tier.highlights.map((item) => <div key={item}><span>✓</span><strong>{item}</strong></div>)}</div>
-      <div className="paid-access-capabilities"><span className="paid-kicker">FULL {tier.name.toUpperCase()} CAPABILITY SET</span><div>{tier.entitlements.map((item) => <span key={item}>{item.replaceAll("_", " ")}</span>)}</div></div>
+      <div className="paid-access-capabilities"><span className="paid-kicker">FULL {tier.name.toUpperCase()} CAPABILITY SET</span><div>{tier.entitlements.filter((item) => !item.startsWith("core_")).map((item) => <span key={item}>{paidEntitlementLabel(item)}</span>)}</div></div>
       {tier.note && <div className="paid-access-note"><strong>Tier information</strong><span>{tier.note}</span></div>}
       {access?.source === "tester" && access.testerOverride && <div className="paid-access-note"><strong>🧪 Creator tester access</strong><span>{tier.name} is being tested without changing billing. The account's real commercial tier remains {getPaidTierDefinition(access.actualTier).name}.</span></div>}
       <div className="paid-access-actions">
