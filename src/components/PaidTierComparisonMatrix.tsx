@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { PAID_TIER_CATALOG, PAID_TIER_ORDER, type PaidEntitlement } from "../config/paidTiers";
-import { PAID_ENTITLEMENT_DESTINATIONS, paidEntitlementLabel } from "../config/paidEntitlementCatalog";
+import { PAID_ENTITLEMENT_DESTINATIONS, PAID_ENTITLEMENT_LABELS, paidEntitlementLabel } from "../config/paidEntitlementCatalog";
 import { getFreeKeeperNavigationItems } from "../config/freeExperience";
 import PaidTierBadge from "./PaidTierBadge";
 
@@ -16,14 +16,9 @@ const FREE_FEATURE_ENHANCEMENTS: Record<string, FeatureEnhancement[]> = {
   marketplace: [{ entitlement: "marketplace_seller", label: "Marketplace seller tools" }, { entitlement: "seller_profile", label: "Professional seller profile" }],
 };
 
-const PAID_ONLY_ENTITLEMENTS: readonly Exclude<PaidEntitlement, "core_tracking" | "core_genetics" | "core_learning" | "core_community">[] = [
-  "advanced_timeline", "advanced_analytics", "titan_intelligence",
-  "breeding_suite", "morph_intelligence", "data_export", "marketplace_seller",
-  "seller_profile", "business_reporting", "multi_user", "team_permissions",
-  "automation", "api_access", "priority_support", "custom_branding", "rescue_workspace",
-  "rescue_qr_passports", "species_incubator", "rescue_team", "rescue_medical_records",
-  "rescue_reporting", "rescue_adoption",
-];
+const PAID_ONLY_ENTITLEMENTS = Object.keys(PAID_ENTITLEMENT_LABELS) as Array<
+  Exclude<PaidEntitlement, "core_tracking" | "core_genetics" | "core_learning" | "core_community">
+>;
 
 function included(tierId: typeof PAID_TIER_ORDER[number], entitlement: PaidEntitlement) {
   return PAID_TIER_CATALOG[tierId].entitlements.includes(entitlement);
