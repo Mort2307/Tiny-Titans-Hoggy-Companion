@@ -68,6 +68,7 @@ exports.updateRescueDirectoryProfile = onCall({ region: "europe-west2" }, async 
     country: String(request.data?.country || "").trim(),
     website: String(request.data?.website || "").trim(),
     contactEmail: String(request.data?.contactEmail || "").trim(),
+    openingHours: String(request.data?.openingHours || "").trim(),
     directoryDescription: String(request.data?.description || "").trim(),
     logoUrl,
     heroImageUrl,
