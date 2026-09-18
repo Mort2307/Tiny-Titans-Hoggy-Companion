@@ -115,7 +115,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false);
     }
   }
-  async function refreshProfile() { const u = getAuth(app).currentUser; if (!u) { setProfile(null); return null; } setProfileLoading(true); try { const loaded = await loadUserProfile(u); await reconcileCreatorCapability(u, loaded); const refreshed = await loadUserProfile(u); setProfile(refreshed); await syncLearningFromCloud(u.uid); void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error) => console.warn("Tiny Titans: unable to sync tracker achievement counts", error)); await recordActivity(u); return refreshed; } finally { setProfileLoading(false); } }
+  async function refreshProfile() {
+    const u = getAuth(app).currentUser;
+    if (!u) { setProfile(null); return null; }
+    setProfileLoading(true);
+    try {
+      const loaded = await loadUserProfile(u);
+      await reconcileCreatorCapability(u, loaded);
+      const refreshed = await loadUserProfile(u);
+      setProfile(refreshed);
+
+      const [{ syncLearningFromCloud }, { syncTrackerAchievementCountsFromFirestore }] = await Promise.all([
+        import("../services/learningEngine"),
+        import("../services/trackerAchievementService"),
+      ]);
+      await syncLearningFromCloud(u.uid);
+      void syncTrackerAchievementCountsFromFirestore(u.uid).catch((error: unknown) => {
+        console.warn("Tiny Titans: unable to sync tracker achievement counts", error);
+      });
+      await recordActivity(u);
+      return refreshed;
+    } finally {
+      setProfileLoading(false);
+    }
+  }
   useEffect(() => { const unsubscribe = onAuthStateChanged(getAuth(app), async u => { setUser(u); setProfile(null); if (!u) { setProfileLoading(false); setLoading(false); return; } await hydrateUser(u); }); return unsubscribe; }, []);
   return <AuthContext.Provider value={{ user, profile, loading, profileLoading, isAuthenticated: user !== null, refreshProfile }}>{children}</AuthContext.Provider>;
 }
