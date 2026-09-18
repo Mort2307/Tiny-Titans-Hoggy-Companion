@@ -1,7 +1,8 @@
 import { PAID_TIER_CATALOG, PAID_TIER_ORDER, type PaidEntitlement } from "../config/paidTiers";
-import { paidEntitlementLabel } from "../config/paidEntitlementCatalog";
+import { PAID_ENTITLEMENT_DESTINATIONS, paidEntitlementLabel } from "../config/paidEntitlementCatalog";
 import { getFreeKeeperNavigationItems } from "../config/freeExperience";
 import PaidTierBadge from "./PaidTierBadge";
+import { Link } from "react-router-dom";
 
 const PAID_ONLY_ENTITLEMENTS: readonly PaidEntitlement[] = [
   "smart_reminders",
@@ -75,7 +76,7 @@ export default function PaidTierComparisonMatrix() {
               <tr key={entitlement}>
                 <th scope="row">
                   <strong>{paidEntitlementLabel(entitlement)}</strong>
-                  <small>{entitlement}</small>
+                  <small>{PAID_ENTITLEMENT_DESTINATIONS[entitlement].path ? <Link to={PAID_ENTITLEMENT_DESTINATIONS[entitlement].path}>{PAID_ENTITLEMENT_DESTINATIONS[entitlement].label} →</Link> : PAID_ENTITLEMENT_DESTINATIONS[entitlement].label}</small>
                 </th>
                 {PAID_TIER_ORDER.map((tierId) => {
                   const included = PAID_TIER_CATALOG[tierId].entitlements.includes(entitlement);
