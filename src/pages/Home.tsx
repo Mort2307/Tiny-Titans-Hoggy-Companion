@@ -1,4 +1,4 @@
-import { lazy, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
