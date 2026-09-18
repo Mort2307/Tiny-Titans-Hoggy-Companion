@@ -108,7 +108,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
 @media (max-width: 800px) {
   .app-header { min-height: 64px; padding: 9px 14px; }
   .app-header img { width: 42px; height: 42px; border-radius: 12px; }
-  .app-content { padding: 16px 13px calc(52px + env(safe-area-inset-bottom)); }
+  .app-content { padding: 16px 13px calc(76px + env(safe-area-inset-bottom)); }
   .app-navigation { border-bottom: 1px solid var(--tt-border); }
   .app-navigation-link { background: rgba(38, 8, 61, 0.68); }
   .dashboard-grid { grid-template-columns: 1fr; }
