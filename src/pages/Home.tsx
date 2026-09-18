@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
 import ContributionPulse from "../components/ContributionPulse";
-import TinyTitansPinnacleGlobe from "../components/TinyTitansPinnacleGlobe";
 import RecommendedFeed from "../components/RecommendedFeed";
 import TitanDecisionWhyCard from "../components/TitanIntelligence/TitanDecisionWhyCard";
 import TitanDecisionQueue from "../components/TitanIntelligence/TitanDecisionQueue";
@@ -15,6 +14,10 @@ import { getDashboardIntelligence, type SnakeIntelligence } from "../services/sn
 import { getTitanDecisionState, refreshTitanDecisionStateForAnimals, type TitanDecision } from "../services/titanDecisionStateService";
 import { subscribeToTitanIntelligenceUpdates } from "../services/titanReactiveIntelligenceService";
 import "./Home.css";
+
+const TinyTitansPinnacleGlobe = lazy(() => import("../components/TinyTitansPinnacleGlobe"));
+
+const HomeGlobeFallback = () => <section className="tt-home-panel">Loading the TinyTitans world…</section>;
 
 type HomeSnake = {
   id: string;
@@ -53,6 +56,7 @@ function Home() {
   const [loadingIntelligence, setLoadingIntelligence] = useState(false);
   const [intelligenceAccess, setIntelligenceAccess] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
+  const [worldOpen, setWorldOpen] = useState(false);
 
   const displayName = profile?.displayName || user?.displayName || "Tiny Titan";
   const learningLabel = profile?.learningLevel === "explorer"
@@ -431,9 +435,16 @@ function Home() {
       </details>
 
       {user && (
-        <details className="tt-home-disclosure tt-home-secondary-disclosure">
+        <details
+          className="tt-home-disclosure tt-home-secondary-disclosure"
+          onToggle={(event) => setWorldOpen(event.currentTarget.open)}
+        >
           <summary>🌎 The TinyTitans world</summary>
-          <TinyTitansPinnacleGlobe uid={user.uid} />
+          {worldOpen && (
+            <Suspense fallback={<HomeGlobeFallback />}>
+              <TinyTitansPinnacleGlobe uid={user.uid} />
+            </Suspense>
+          )}
         </details>
       )}
 
