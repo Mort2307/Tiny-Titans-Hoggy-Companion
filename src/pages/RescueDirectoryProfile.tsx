@@ -82,6 +82,7 @@ export default function RescueDirectoryProfile() {
   const [country, setCountry] = useState("");
   const [website, setWebsite] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [openingHours, setOpeningHours] = useState("");
   const [description, setDescription] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [heroImageUrl, setHeroImageUrl] = useState("");
@@ -117,6 +118,7 @@ export default function RescueDirectoryProfile() {
       setCountry(String(data.country || "United Kingdom"));
       setWebsite(String(data.website || ""));
       setContactEmail(String(data.contactEmail || ""));
+      setOpeningHours(String(data.openingHours || ""));
       setDescription(String(data.directoryDescription || data.publicDescription || ""));
       setLogoUrl(String(data.logoUrl || ""));
       setHeroImageUrl(String(data.heroImageUrl || ""));
@@ -183,7 +185,7 @@ export default function RescueDirectoryProfile() {
   return <main className="rescue-page">
     <header className="rescue-subhead">
       <div><span className="rescue-eyebrow">ORGANISATION & BRANDING</span><h1>{name || "Rescue organisation"}</h1><p>Manage the public identity, searchable listing and registration details visitors can see.</p></div>
-      <Link to="/rescue?manage=1">← Rescue workspace</Link>
+      <div className="rescue-form-actions"><Link to="/rescue?manage=1">← Rescue workspace</Link><Link className="rescue-primary-link" to="/rescue/public-preview">Preview public profile →</Link></div>
     </header>
 
     {message && <div className="rescue-message" role="status">{message}</div>}
