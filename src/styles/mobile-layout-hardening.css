@@ -232,6 +232,24 @@
   }
 }
 
+/* Extra-tight phone widths: prevent dense summary/evidence cells from
+   shrinking into narrow text columns on ~320–430px devices. */
+@media (max-width: 520px) {
+  .app-content :where(.academy-v2-evidence-strip) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 440px) {
+  .app-content :where(
+    .husbandry-stats--five,
+    .tt-timeline-summary,
+    .community-pulse
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
 /* The paid-tier matrix is intentionally wider than a phone.
    Let the table scroll horizontally instead of crushing words into columns. */
 .app-content :where(.paid-tier-comparison) {
