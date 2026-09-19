@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useAuth } from "../context/useAuth";
 import { getMyRescueCommunityState, getPublicRescueProfile, joinRescueAsViewer, submitRescueApplication, type PublicRescueProfile } from "../services/rescueCommunityService";
