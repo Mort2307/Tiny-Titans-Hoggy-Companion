@@ -8,6 +8,8 @@ const checks = [
   ["user Firestore document is recursively deleted", read("functions/accountDeletion.js").includes('db.recursiveDelete(db.collection("users").doc(uid))')],
   ["user storage prefixes are cleaned", read("functions/accountDeletion.js").includes("users/\\${uid}/") && read("functions/accountDeletion.js").includes("snakePhotos/\\${uid}/")],
   ["rescue-owner safeguard exists", read("functions/accountDeletion.js").includes("Transfer ownership of your Rescue Centre organisation")],
+  ["sandbox data is cleaned", read("functions/accountDeletion.js").includes('deleteMatchingDocs("sandboxExperiments", "ownerUid", uid)') && read("functions/accountDeletion.js").includes('deleteMatchingDocs("testerSandboxes", "ownerUid", uid)')],
+  ["shared mentorship participants are scrubbed", read("functions/accountDeletion.js").includes("removeMentorshipParticipant(uid)")],
   ["in-app Security control exists", read("src/pages/Security.tsx").includes("deleteMyAccount") && read("src/pages/Security.tsx").includes("DELETE")],
   ["external deletion route exists", read("src/routes/AppRouter.tsx").includes('path="/delete-account"')],
   ["public privacy route exists", read("src/routes/AppRouter.tsx").includes('path="/privacy"')],
