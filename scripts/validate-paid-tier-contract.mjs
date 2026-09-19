@@ -81,7 +81,7 @@ const checks = [
   ["every workspace has My Account navigation", commercialTiers.every((id) => workspaceProducts.includes(`id:\"${id}\"`) && workspaceProducts.includes(`label:\"My Account\",path:\"/account\"`))],
   ["actionable paywall", gate.includes("Compare plans") && gate.includes('to="/plans"')],
   ["free intelligence page remains available", titanPage.includes("export default function TitanIntelligence()") && titanPage.includes("TitanIntelligenceGrowthPanel")],
-  ["paid Ask Titan gate exists", titanPage.includes('<PaidTierGate entitlement="titan_intelligence">') && titanPage.includes("<AskTitan />")],
+  ["parked Ask Titan remains outside the main Powerhouse page", !titanPage.includes("AskTitan") && !titanPage.includes("TitanAdvancedChatPreview")],
   ["Ask Titan callable is exported", titanFunctions.includes("exports.askTitan") && titanAccess.includes("titan_intelligence")],
   ["Gemini tool calling is wired", titanModel.includes("toolConfig") && titanModel.includes("functionCallingConfig") && titanTools.includes("function_declarations")],
   ["Gemini current model is configured", titanModel.includes('"gemini-3.8-flash"')],
