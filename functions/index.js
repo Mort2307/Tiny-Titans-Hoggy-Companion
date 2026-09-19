@@ -7,6 +7,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const Stripe = require("stripe");
 initializeApp();
 const db=getFirestore(); const adminAuth=getAuth(); const OWNER_EMAIL="tinytitans.exotics@gmail.com";
+Object.assign(exports,require("./accountDeletion"));
 Object.assign(exports,require("./creatorApproval"));
 Object.assign(exports,require("./creatorReviewStudio"));
 Object.assign(exports,require("./communityIntelligence"));
