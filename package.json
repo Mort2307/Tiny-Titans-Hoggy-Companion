@@ -99,7 +99,8 @@
     "test:visual-home": "node scripts/run-home-visual-bot.mjs",
     "test:rescue": "node scripts/run-rescue-qa-bot.mjs",
     "test:release-candidate": "npm run test:production-gate && npm run audit",
-    "validate:release-config": "node scripts/validate-release-config.mjs"
+    "validate:release-config": "node scripts/validate-release-config.mjs",
+    "validate:account-deletion": "node scripts/validate-account-deletion-contract.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
