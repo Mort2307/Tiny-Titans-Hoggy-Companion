@@ -482,8 +482,4 @@ export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorks
     ],
     updatedAt: new Date().toISOString(),
   };
-      ...(source.objects ?? []).filter((object) => !rootIds.has(object.id) && !objects.some((node) => node.id === object.id)),
-    ],
-    updatedAt: new Date().toISOString(),
-  };
 }
