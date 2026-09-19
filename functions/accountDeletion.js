@@ -1,11 +1,11 @@
 const crypto = require("node:crypto");
-const { getAuth, getFirestore, FieldValue } = (() => {
-  const { getAuth } = require("firebase-admin/auth");
-  const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-  return { getAuth, getFirestore, FieldValue };
-})();
+const { getAuth } = require("firebase-admin/auth");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getStorage } = require("firebase-admin/storage");
+const { defineSecret } = require("firebase-functions/params");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const Stripe = require("stripe");
+const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 
 const adminAuth = getAuth();
 const db = getFirestore();
@@ -83,9 +83,7 @@ async function removeFromFamily(uid, familyId) {
 async function cancelStripeSubscription(userData) {
   const subscriptionId = String(userData?.stripeSubscriptionId || "").trim();
   if (!subscriptionId) return;
-  const { defineSecret } = require("firebase-functions/params");
-  const Stripe = require("stripe");
-  const secret = defineSecret("STRIPE_SECRET_KEY").value();
+  const secret = STRIPE_SECRET_KEY.value();
   if (!secret) return;
   try {
     const stripe = new Stripe(secret);
@@ -117,7 +115,7 @@ async function deleteUserStorage(uid) {
   await Promise.all(prefixes.map((prefix) => bucket.deleteFiles({ prefix })));
 }
 
-exports.deleteMyAccount = onCall({ region: "europe-west2", secrets: ["STRIPE_SECRET_KEY"] }, async (request) => {
+exports.deleteMyAccount = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   assertRecentAuth(request);
 
@@ -152,6 +150,7 @@ exports.deleteMyAccount = onCall({ region: "europe-west2", secrets: ["STRIPE_SEC
     deleteMatchingDocs("prioritySupportTickets", "uid", uid),
     deleteMatchingDocs("familyApprovals", "requesterUid", uid),
     deleteMatchingDocs("familyInvites", "ownerUid", uid),
+    deleteMatchingDocs("familyInvites", "targetEmail", cleanEmail(authUser.email)),
     deleteMatchingDocs("paidSubscriptions", "uid", uid),
     deleteMatchingDocs("paidEntitlements", "uid", uid),
     deleteMatchingDocs("paidTrials", "uid", uid),
