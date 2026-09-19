@@ -6,7 +6,7 @@ const checks = [
   ["recent authentication is required", read("functions/accountDeletion.js").includes("assertRecentAuth(request)")],
   ["Stripe subscription cancellation is attempted before deletion", read("functions/accountDeletion.js").indexOf("await cancelStripeSubscription(userData)") < read("functions/accountDeletion.js").indexOf("await adminAuth.deleteUser(uid)")],
   ["user Firestore document is recursively deleted", read("functions/accountDeletion.js").includes('db.recursiveDelete(db.collection("users").doc(uid))')],
-  ["user storage prefixes are cleaned", read("functions/accountDeletion.js").includes("users/\\${uid}/") && read("functions/accountDeletion.js").includes("snakePhotos/\\${uid}/")],
+  ["user storage prefixes are cleaned", read("functions/accountDeletion.js").includes("`users/\\${uid}/`") && read("functions/accountDeletion.js").includes("`snakePhotos/\\${uid}/`")],
   ["rescue-owner safeguard exists", read("functions/accountDeletion.js").includes("Transfer ownership of your Rescue Centre organisation")],
   ["sandbox data is cleaned", read("functions/accountDeletion.js").includes('deleteMatchingDocs("sandboxExperiments", "ownerUid", uid)') && read("functions/accountDeletion.js").includes('deleteMatchingDocs("testerSandboxes", "ownerUid", uid)')],
   ["shared mentorship participants are scrubbed", read("functions/accountDeletion.js").includes("removeMentorshipParticipant(uid)")],
