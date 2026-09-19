@@ -9,6 +9,7 @@ const commands = [
   ["Security contracts", ["run", "validate:security"]],
   ["Account deletion contract", ["run", "validate:account-deletion"]],
   ["Paid-tier contract", ["run", "validate:paid-tiers"]],
+  ["Play billing boundary", ["run", "validate:play-billing-boundary"]],
   ["Route contract", ["run", "validate:routes"]],
   ["Route coverage", ["run", "validate:route-coverage"]],
   ["Morph database validation", ["run", "validate:morphs"]],
