@@ -1,13 +1,12 @@
 {
   "id": "/",
   "name": "Tiny Titans Reptile Companion",
-  "short_name": "Tiny Titans Reptile Companion",
+  "short_name": "Tiny Titans",
   "description": "Tiny Titans Reptile Companion — species profiles, husbandry, tracking, genetics and keeper tools for reptiles.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": [
-    "window-controls-overlay",
     "standalone"
   ],
   "orientation": "any",
