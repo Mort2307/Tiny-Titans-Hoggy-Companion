@@ -2,12 +2,12 @@ import { execFileSync } from "node:child_process";
 
 const commands = [
   ["Release configuration", ["run", "validate:release-config"]],
+  ["Account deletion contract", ["run", "validate:account-deletion"]],
   ["TypeScript typecheck", ["run", "typecheck"]],
   ["Lint", ["run", "lint"]],
   ["BOT contract suite", ["run", "test:bot:contracts"]],
   ["UI hardening contract", ["run", "validate:ui-hardening"]],
   ["Security contracts", ["run", "validate:security"]],
-  ["Account deletion contract", ["run", "validate:account-deletion"]],
   ["Paid-tier contract", ["run", "validate:paid-tiers"]],
   ["Play billing boundary", ["run", "validate:play-billing-boundary"]],
   ["Route contract", ["run", "validate:routes"]],
