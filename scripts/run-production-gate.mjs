@@ -7,6 +7,7 @@ const commands = [
   ["BOT contract suite", ["run", "test:bot:contracts"]],
   ["UI hardening contract", ["run", "validate:ui-hardening"]],
   ["Security contracts", ["run", "validate:security"]],
+  ["Account deletion contract", ["run", "validate:account-deletion"]],
   ["Paid-tier contract", ["run", "validate:paid-tiers"]],
   ["Route contract", ["run", "validate:routes"]],
   ["Route coverage", ["run", "validate:route-coverage"]],
