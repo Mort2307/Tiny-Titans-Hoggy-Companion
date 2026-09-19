@@ -1,0 +1,47 @@
+name: Spatial Habitat Builder QA
+
+on:
+  push:
+    branches:
+      - feature/spatial-habitat-builder
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "src/components/reptile-room-3d/**"
+      - "src/services/spatialHabitatService.ts"
+      - "src/services/spatialHabitatPersistenceService.ts"
+      - "src/types/spatialHabitat.ts"
+      - "src/styles/spatial-habitat-builder.css"
+      - "src/pages/ReptileRoom.tsx"
+      - "scripts/validate-spatial-habitat.mjs"
+      - "package.json"
+      - "package-lock.json"
+
+permissions:
+  contents: read
+
+jobs:
+  spatial-habitat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate spatial architecture
+        run: npm run validate:spatial-habitat
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Vite production build
+        run: npx vite build
