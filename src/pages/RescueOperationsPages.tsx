@@ -148,7 +148,7 @@ export function RescueIntake() {
         quarantineReason: quarantineReason.trim(), acceptedByUid: selected.intakeRecord?.acceptedByUid || user?.uid || "",
         evidenceSummary: evidenceSummary.trim(),
       };
-      await updateRescueAnimal(selected.id, { intakeRecord: record, previousName: record.previousName || undefined, previousIdentifier: record.previousIdentifier || undefined });
+      await updateRescueAnimal(selected.id, { intakeRecord: record });
       setMessage(`Intake provenance saved for ${animalLabel(selected)}.`);
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "Could not save the intake record.");
