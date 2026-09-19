@@ -1,6 +1,6 @@
-import RoomEditorShell3D from "../components/reptile-room-3d/RoomEditorShell3D";
+import SpatialHabitatBuilder from "../components/reptile-room-3d/SpatialHabitatBuilder";
 
-/** The 3D Digital Twin is the canonical room builder and visual source of truth. */
+/** Branch-only unified room + nested vivarium builder. */
 export default function ReptileRoom() {
-  return <RoomEditorShell3D />;
+  return <SpatialHabitatBuilder />;
 }
