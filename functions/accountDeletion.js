@@ -115,6 +115,25 @@ async function deleteUserStorage(uid) {
   await Promise.all(prefixes.map((prefix) => bucket.deleteFiles({ prefix })));
 }
 
+async function removeMentorshipParticipant(uid) {
+  const snapshot = await db.collection("mentorshipWorkspaces").get();
+  await Promise.all(snapshot.docs.map(async (document) => {
+    const data = document.data() || {};
+    if (!Array.isArray(data.participants)) return;
+    const nextParticipants = data.participants.filter((participant) => String(participant?.userId || "") !== uid);
+    if (nextParticipants.length === data.participants.length) return;
+    if (nextParticipants.length === 0) {
+      await db.recursiveDelete(document.ref);
+      return;
+    }
+    await document.ref.set({
+      participants: nextParticipants,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }));
+}
+
+
 exports.deleteMyAccount = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   assertRecentAuth(request);
@@ -135,6 +154,7 @@ exports.deleteMyAccount = onCall({ region: "europe-west2", secrets: [STRIPE_SECR
 
   const familyId = String(userData.familyId || "");
   await removeFromFamily(uid, familyId);
+  await removeMentorshipParticipant(uid);
 
   await Promise.all([
     deleteMatchingDocs("issueReports", "userId", uid),
@@ -158,6 +178,8 @@ exports.deleteMyAccount = onCall({ region: "europe-west2", secrets: [STRIPE_SECR
     deleteMatchingDocs("supporters", "uid", uid),
     deleteMatchingDocs("geneticsCalculations", "uid", uid),
     deleteMatchingDocs("rescueDirectoryMemberships", "uid", uid),
+    deleteMatchingDocs("sandboxExperiments", "ownerUid", uid),
+    deleteMatchingDocs("testerSandboxes", "ownerUid", uid),
     db.recursiveDelete(db.collection("users").doc(uid)),
     db.recursiveDelete(db.collection("paidWorkspaces").doc(uid)),
     deleteUserStorage(uid),
