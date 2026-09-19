@@ -25,3 +25,31 @@
 .rescue-onboarding-card{padding:1.5rem}.rescue-onboarding-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;margin:1.1rem 0}.rescue-onboarding-grid>div{display:grid;gap:.22rem;padding:.9rem;border-radius:15px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06)}.rescue-onboarding-grid span{color:var(--text-muted,#a9b0bb);font-size:.88rem}.rescue-quick-intake-card{padding:1.5rem}.rescue-intake-grid{margin-top:1.1rem}.rescue-command-footer{display:flex;justify-content:space-between;gap:1rem;padding:1.15rem 1.25rem;border:1px solid rgba(255,255,255,.08);border-radius:20px;background:rgba(255,255,255,.018)}.rescue-command-footer strong{display:block;margin-top:.2rem}.rescue-command-footer p{margin:.35rem 0 0;color:var(--text-muted,#a9b0bb)}.rescue-footer-links{display:flex;gap:.9rem;align-items:center;flex-wrap:wrap}.rescue-footer-links a{color:inherit;font-weight:800}
 @media(max-width:920px){.rescue-command-grid{grid-template-columns:1fr}.rescue-onboarding-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rescue-floor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.rescue-hero,.rescue-subhead{display:grid}.rescue-stat-grid,.rescue-grid,.rescue-passport-grid{grid-template-columns:1fr}.rescue-tile-grid,.rescue-form-grid,.rescue-detail-grid{grid-template-columns:1fr}.rescue-form-grid label:has(textarea){grid-column:auto}.rescue-inline{display:grid}.rescue-inline button{width:100%}.rescue-inline-actions{display:grid}.rescue-inline-actions .rescue-primary-link{justify-content:center}.rescue-command-actions{display:grid}.rescue-command-actions a{justify-content:center}.rescue-command-stats .rescue-stat-card{min-height:0}.rescue-priority-row{grid-template-columns:auto 1fr}.rescue-priority-row b{grid-column:2}.rescue-command-action-grid{grid-template-columns:1fr}.rescue-onboarding-grid,.rescue-floor-grid{grid-template-columns:1fr}.rescue-command-footer{display:grid}.rescue-footer-links{justify-content:flex-start}.rescue-workspace-nav{margin-inline:-.15rem}.rescue-form-actions{display:grid;grid-template-columns:1fr}.rescue-form-actions button{width:100%}.rescue-check{align-items:flex-start}}
+
+/* Printable animal QR labels */
+.rescue-qr-print{background:#fff;color:#111;border:0;box-shadow:none}
+.rescue-qr-label{display:grid;grid-template-columns:minmax(260px,360px) minmax(180px,1fr);gap:2rem;align-items:center;max-width:900px;margin:0 auto;padding:2rem}
+.rescue-qr-symbol{width:min(360px,100%);aspect-ratio:1/1;background:#fff;display:block}
+.rescue-qr-symbol svg{display:block;width:100%;height:auto}
+.rescue-qr-label-copy{display:grid;gap:.45rem}
+.rescue-qr-label-copy h2{margin:.1rem 0;font-size:clamp(1.5rem,3vw,2.2rem)}
+.rescue-qr-label-copy p{margin:0;color:#444}
+.rescue-qr-label-copy strong{font-size:.9rem;letter-spacing:.03em}
+.rescue-qr-label-copy code{display:block;overflow-wrap:anywhere;color:#444;font-size:.72rem;line-height:1.45}
+.rescue-qr-print > .rescue-inline{justify-content:center;margin-top:1rem}
+@media (max-width:760px){
+  .rescue-qr-label{grid-template-columns:1fr;text-align:center;padding:1.25rem}
+  .rescue-qr-symbol{justify-self:center}
+  .rescue-qr-label-copy{justify-items:center}
+}
+@media print{
+  @page{size:auto;margin:10mm}
+  body{background:#fff!important;color:#111!important}
+  body *{visibility:hidden!important}
+  .rescue-qr-print,.rescue-qr-print *{visibility:visible!important}
+  .rescue-qr-print{position:absolute;left:0;top:0;width:100%;margin:0!important;padding:0!important}
+  .rescue-qr-label{max-width:100%;grid-template-columns:minmax(55mm,75mm) 1fr;padding:0;gap:10mm}
+  .rescue-qr-symbol{width:75mm}
+  .rescue-qr-print > .rescue-inline,.rescue-qr-controls{display:none!important}
+}
+
