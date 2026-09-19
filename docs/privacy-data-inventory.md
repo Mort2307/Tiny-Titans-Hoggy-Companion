@@ -34,3 +34,4 @@ Some operational, security, financial or legal records may require limited reten
 - Confirm every Firebase Storage path created by production features is covered by deletion cleanup.
 - Confirm public/community content policy: delete, anonymise, or retain each contribution type consistently when the contributor account is deleted.
 - Confirm Stripe retention/account deletion handling separately from Tiny Titans Firestore deletion.
+- Confirm shared mentorship workspaces are retained only in de-identified form after a participant deletes their account.
