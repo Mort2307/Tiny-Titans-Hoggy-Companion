@@ -467,6 +467,7 @@ export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorks
   }
 
   const rootIds = new Set(scene.nodes.filter((node) => node.parentId === ROOT_CONTAINER_ID).map((node) => node.id));
+  const sceneNodeIds = new Set(scene.nodes.map((node) => node.id));
   return {
     ...source,
     width: root.width,
@@ -477,6 +478,10 @@ export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorks
     slots: slots.filter((slot) => rootIds.has(slot.id)),
     objects: [
       ...objects,
+      ...(source.objects ?? []).filter((object) => sceneNodeIds.has(object.id) && !objects.some((node) => node.id === object.id)),
+    ],
+    updatedAt: new Date().toISOString(),
+  };
       ...(source.objects ?? []).filter((object) => !rootIds.has(object.id) && !objects.some((node) => node.id === object.id)),
     ],
     updatedAt: new Date().toISOString(),
