@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TinyTitansIcon from "../components/TinyTitansIcon";
+import encodeQR from "../lib/qrEncoder";
 import PaidTierGate from "../components/PaidTierGate";
 import { useAuth } from "../context/useAuth";
 import { createRescueAnimal, getRescueAccess, getRescueAnimal, getRescueOrganisation, listRescueAnimals } from "../services/rescueService";
@@ -49,7 +50,65 @@ export function RescueAnimalPassport() {
   return <main className="rescue-page"><header className="rescue-subhead"><Link to={isPublic ? "/" : "/rescue/animals"}>← Back</Link><div><span className="rescue-eyebrow">{isPublic ? "PUBLIC ANIMAL PREVIEW" : "AUTHORISED FULL HISTORY"}</span><h1><TinyTitansIcon name="reptile" size={35}/> {rescueIdentity(animal)}</h1><p>{animal.speciesCommonName || "Species identification pending"} · {animal.scientificName || "Scientific name pending"} · {statusLabels[animal.status]}</p></div></header><section className="rescue-card"><div className="rescue-detail-grid"><div><small>Name</small><strong>{animal.name || "Not recorded"}</strong></div><div><small>Rescue animal ID</small><strong>{animal.rescueId || "Not recorded"}</strong></div><div><small>Sex</small><strong>{animal.sex || "Unknown"}</strong></div><div><small>Intake</small><strong>{formatDate(animal.intakeDate)}</strong></div><div><small>Public preview</small><strong>{animal.publicPreview ? "Published" : "Private"}</strong></div><div><small>Updated</small><strong>{formatDate(animal.updatedAt)}</strong></div></div><p>{animal.publicSummary || (isPublic ? "No public summary has been published." : "No public summary recorded yet.")}</p>{!isPublic && <div className="rescue-form-actions"><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Open full animal workspace →</Link><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/qr`}>QR identity →</Link>{access.canEdit && <button type="button" onClick={() => setEditing((value) => !value)}>{editing ? "Close identity editor" : "Edit identity"}</button>}</div>}{editing && access.canEdit && <div className="rescue-card"><span className="rescue-eyebrow">ANIMAL IDENTITY</span><div className="rescue-form-grid"><label>Reptile name<input value={name} onChange={(e) => setName(e.target.value)} placeholder="Optional" /></label><label>Rescue animal ID<input value={rescueId} onChange={(e) => setRescueId(e.target.value)} placeholder="Optional — rescue-owned" /></label><label>Microchip / permanent identifier<input value={microchip} onChange={(e) => setMicrochip(e.target.value)} placeholder="Optional" /></label><label>Secondary identifier<input value={secondary} onChange={(e) => setSecondary(e.target.value)} placeholder="Optional" /></label></div><p className="rescue-form-hint">TinyTitans never generates or claims ownership of the Rescue animal ID.</p><button type="button" onClick={() => void saveIdentity()}>Save identity</button></div>}</section><section className="rescue-card"><span className="rescue-eyebrow">TIMELINE</span><h2>{isPublic ? "Public-safe history" : "Full animal history"}</h2>{events.length ? <div className="rescue-timeline">{events.map((event) => <article key={event.id}><span className="rescue-timeline-icon"><TinyTitansIcon name={event.type === "medical" ? "health" : event.type === "feeding" ? "feeding" : event.type === "weight" ? "weight" : event.type === "shed" ? "shed" : "knowledge"} size={20}/></span><div><small>{formatDate(event.occurredAt)} · {event.type}</small><h3>{event.title}</h3><p>{event.summary}</p>{event.details && <details><summary>View details</summary><p>{event.details}</p></details>}</div></article>)}</div> : <div className="rescue-empty"><strong>{isPublic ? "No public history has been published" : "No history entries yet"}</strong><span>Private Rescue records never appear in the public passport.</span></div>}</section>{access.canManageOrganisation && <section className="rescue-card"><span className="rescue-eyebrow">QR IDENTITY</span><h2>{rescueIdentity(animal)}</h2><p>QR data resolves to the animal route. Permissions are checked separately, so the code itself never grants private access.</p><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/qr`}>Generate / print label →</Link><span className="rescue-form-hint">{url}</span></section>}</main>;
 }
 
-export function RescueAnimalQR() { const { animalId } = useParams(); const [animal, setAnimal] = useState<RescueAnimal | null>(null); const [error, setError] = useState(""); useEffect(() => { if (!animalId) return; void getRescueAnimal(animalId).then(setAnimal).catch((err) => setError(err instanceof Error ? err.message : "Could not load QR identity.")); }, [animalId]); if (error) return <main className="rescue-page"><div className="rescue-message rescue-message-error">{error}</div></main>; if (!animal) return <main className="rescue-page"><div className="rescue-card">Loading QR identity…</div></main>; const target = `${window.location.origin}/rescue/animals/${animal.id}`; return <PaidTierGate entitlement="rescue_qr_passports"><main className="rescue-page"><header className="rescue-subhead"><Link to={`/rescue/animals/${animal.id}/manage`}>← Animal workspace</Link><div><span className="rescue-eyebrow">QR IDENTITY</span><h1>{rescueIdentity(animal)}</h1><p>{animal.name || "Name not recorded"} · {animal.speciesCommonName || "Species identification pending"}{animal.rescueId && animal.name ? ` · ID ${animal.rescueId}` : ""}</p></div></header><section className="rescue-card rescue-qr-print"><div className="rescue-qr-frame"><strong>QR</strong></div><h2>{rescueIdentity(animal)}</h2><p>{animal.speciesCommonName || "Species identification pending"}</p><code>{target}</code><div className="rescue-inline"><button type="button" onClick={() => window.print()}>Print label</button><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Back to animal →</Link></div></section></main></PaidTierGate>; }
+function rescueQrOrigin() {
+  const configured = String(import.meta.env.VITE_PUBLIC_APP_URL || "").trim().replace(/\/+$/, "");
+  if (configured) return configured;
+  if (typeof window === "undefined") return "https://tinytitans-hoggy-companion.web.app";
+  const hostname = window.location.hostname.toLowerCase();
+  const localHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  return localHost ? "https://tinytitans-hoggy-companion.web.app" : window.location.origin.replace(/\/+$/, "");
+}
+
+export function RescueAnimalQR() {
+  const { animalId } = useParams();
+  const [animal, setAnimal] = useState<RescueAnimal | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!animalId) return;
+    void getRescueAnimal(animalId)
+      .then(setAnimal)
+      .catch((err) => setError(err instanceof Error ? err.message : "Could not load QR identity."));
+  }, [animalId]);
+
+  if (error) return <main className="rescue-page"><div className="rescue-message rescue-message-error">{error}</div></main>;
+  if (!animal) return <main className="rescue-page"><div className="rescue-card">Loading QR identity…</div></main>;
+
+  const target = `${rescueQrOrigin()}/rescue/animals/${animal.id}`;
+  const qrSvg = encodeQR(target, "svg", { ecc: "high", border: 4, scale: 8, optimize: true });
+
+  return (
+    <PaidTierGate entitlement="rescue_qr_passports">
+      <main className="rescue-page">
+        <header className="rescue-subhead rescue-qr-controls">
+          <Link to={`/rescue/animals/${animal.id}/manage`}>← Animal workspace</Link>
+          <div>
+            <span className="rescue-eyebrow">QR IDENTITY</span>
+            <h1>{rescueIdentity(animal)}</h1>
+            <p>{animal.name || "Name not recorded"} · {animal.speciesCommonName || "Species identification pending"}{animal.rescueId && animal.name ? ` · ID ${animal.rescueId}` : ""}</p>
+          </div>
+        </header>
+
+        <section className="rescue-card rescue-qr-print">
+          <div className="rescue-qr-label">
+            <div className="rescue-qr-symbol" role="img" aria-label={`QR code for ${rescueIdentity(animal)}`} dangerouslySetInnerHTML={{ __html: qrSvg }} />
+            <div className="rescue-qr-label-copy">
+              <span className="rescue-eyebrow">SCAN FOR ANIMAL PASSPORT</span>
+              <h2>{rescueIdentity(animal)}</h2>
+              <p>{animal.speciesCommonName || "Species identification pending"}</p>
+              {animal.rescueId && <strong>Rescue ID: {animal.rescueId}</strong>}
+              <code>{target}</code>
+            </div>
+          </div>
+
+          <div className="rescue-inline rescue-qr-controls">
+            <button type="button" onClick={() => window.print()}>Print label</button>
+            <Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Back to animal →</Link>
+          </div>
+        </section>
+      </main>
+    </PaidTierGate>
+  );
+}
 
 export function RescueQRCodeCentre() { return <PaidTierGate entitlement="rescue_qr_passports"><main className="rescue-page"><header className="rescue-subhead"><Link to="/rescue?manage=1">← Rescue Centre</Link><div><span className="rescue-eyebrow">QR IDENTITY</span><h1>QR centre</h1><p>Open an animal workspace to generate or print its Rescue-owned identity label.</p></div></header><section className="rescue-card"><Link className="rescue-primary-link" to="/rescue/scan">Open QR scanner →</Link><Link className="rescue-primary-link" to="/rescue/animals">Open Animal Register →</Link></section></main></PaidTierGate>; }
 
