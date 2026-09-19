@@ -13,6 +13,8 @@ const checks = [
   ["package has release candidate script", typeof pkg.scripts?.["test:release-candidate"] === "string"],
   ["manifest allows responsive orientation", manifest.orientation === "any"],
   ["vite PWA allows responsive orientation", vite.includes('orientation: "any"')],
+  ["release gate script exists", typeof pkg.scripts?.["test:production-gate"] === "string"],
+  ["release candidate script runs gate", pkg.scripts?.["test:release-candidate"] === "npm run test:production-gate && npm run audit"],
   ["legacy portrait-only PWA setting removed", !vite.includes('orientation: "portrait-primary"') && manifest.orientation !== "portrait-primary"],
 ];
 
