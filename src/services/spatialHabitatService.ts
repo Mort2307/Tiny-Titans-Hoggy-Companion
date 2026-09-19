@@ -406,6 +406,7 @@ export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorks
 
     if (node.kind === "vivarium") {
       const old = slots.find((slot) => slot.id === node.id);
+      const linkedSnakeId = typeof node.config.linkedSnakeId === "string" ? node.config.linkedSnakeId : old?.snakeId ?? null;
       const slot: ReptileRoomSlot = {
         ...(old ?? {
           id: node.id,
@@ -420,6 +421,7 @@ export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorks
           height: node.dimensions.height,
         }),
         id: node.id,
+        snakeId: linkedSnakeId,
         label: node.label,
         x: node.position.x + root.width / 2 - width / 2,
         y: node.position.z + root.depth / 2 - depth / 2,
@@ -433,7 +435,7 @@ export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorks
         stackIndex: old?.stackIndex ?? 0,
         parentSlotId: null,
         clearance: { ...node.clearance },
-        config: { ...(old?.config ?? {}), ...node.config },
+        config: { ...(old?.config ?? {}), ...node.config, linkedSnakeId },
       };
       const index = slots.findIndex((candidate) => candidate.id === slot.id);
       if (index >= 0) slots[index] = slot;
