@@ -98,7 +98,8 @@
     "deploy:app": "node scripts/assemble-firestore-rules.mjs && npm run build && firebase deploy --only hosting,firestore,storage && node scripts/deploy-functions-batched.mjs",
     "test:visual-home": "node scripts/run-home-visual-bot.mjs",
     "test:rescue": "node scripts/run-rescue-qa-bot.mjs",
-    "test:release-candidate": "npm run test:production-gate && npm run audit"
+    "test:release-candidate": "npm run test:production-gate && npm run audit",
+    "validate:release-config": "node scripts/validate-release-config.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
