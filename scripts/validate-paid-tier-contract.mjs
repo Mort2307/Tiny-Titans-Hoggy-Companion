@@ -69,7 +69,7 @@ const checks = [
   ["subscription checkout callable exists", subscriptions.includes("createPaidSubscriptionCheckout")],
   ["subscription webhook updates entitlements", subscriptions.includes("paidEntitlements") && subscriptions.includes("writeSubscriptionState")],
   ["pricing lookup accepts configured price IDs", subscriptions.includes("resolveRecurringPriceForPricing") && subscriptions.includes("stripe.prices.retrieve(configuredPriceId)")],
-  ["customer purchase CTA exists", plans.includes('"Buy now"') && plans.includes("startPaidSubscriptionCheckout")],
+  ["customer purchase CTA exists", plans.includes(">Buy now<") && plans.includes("startPaidSubscriptionCheckout")],
   ["creator purchase fallback is removed", !plans.includes("Open Creator paid-tier control")],
   ["customer locked-feature links preserve target tier", plans.includes("searchParams.get(\"tier\")") && workspace.includes("/plans?tier=")],
   ["checkout returns to billing", subscriptions.includes("/account/billing?subscription=success")],
