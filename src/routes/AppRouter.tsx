@@ -70,6 +70,7 @@ const CreatorOperationsSection = lazy(() => import("../pages/CreatorOperationsSe
 const CreatorAnalytics = lazy(() => import("../pages/CreatorOperationsSection").then((module) => ({ default: module.CreatorAnalytics })));
 const CreatorPartnerBranding = lazy(() => import("../pages/CreatorPartnerBranding"));
 import PartnerLanding from "../pages/PartnerLanding";
+import DeleteAccountRequest from "../pages/DeleteAccountRequest";
 const PartnerLandingEditor = lazy(() => import("../pages/PartnerLandingEditor"));
 const EducatorDashboard = lazy(() => import("../pages/EducatorDashboard"));
 const TitansChallenge = lazy(() => import("../pages/TitansChallenge"));
@@ -154,8 +155,10 @@ function AppRouterGate() {
   const location = useLocation(); const { user, profile, loading, profileLoading } = useAuth(); const [consentAccepted, setConsentAccepted] = useState(false); const [privacyConsentVersion, setPrivacyConsentVersion] = useState<string | null>(null);
   const currentDestination = `${location.pathname}${location.search}`; const loginRedirect = `/login?redirect=${encodeURIComponent(currentDestination)}`; const setupRedirect = `/account-setup?redirect=${encodeURIComponent(currentDestination)}`;
   const rescuePublicProfileRoute = <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile/>}/>;
+  const publicAccountDeletionRoute = <Route path="/delete-account" element={<DeleteAccountRequest/>}/>;
   useEffect(() => { let active=true; setPrivacyConsentVersion(null); if(!user)return()=>{active=false}; void getPrivacyPreferences(user.uid).then(preferences=>{if(active)setPrivacyConsentVersion(preferences.consentVersion||profile?.privacyConsentVersion||profile?.dataCollectionPreferences?.consentVersion||"")}).catch(()=>{if(active)setPrivacyConsentVersion(profile?.privacyConsentVersion||profile?.dataCollectionPreferences?.consentVersion||"")}); return()=>{active=false}; },[user,profile?.privacyConsentVersion,profile?.dataCollectionPreferences?.consentVersion]);
   if(location.pathname.startsWith("/partner/"))return <Suspense fallback={<RouteLoadingFallback />}><Routes><Route path="/partner/:slug" element={<PartnerLanding/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense>;
+  if(location.pathname === "/delete-account") return <Suspense fallback={<RouteLoadingFallback />}><Routes>{publicAccountDeletionRoute}<Route path="*" element={<Navigate to="/delete-account" replace/>}/></Routes></Suspense>;
   if(loading||profileLoading)return <div className="page-container"><div className="welcome-card"><h1>Loading Tiny Titans...</h1></div></div>;
   if(!user)return <Suspense fallback={<RouteLoadingFallback />}><Routes><Route path="/login" element={<Login/>}/>{rescuePublicProfileRoute}<Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute/>}/><Route path="*" element={<Navigate to={loginRedirect} replace/>}/></Routes></Suspense>;
   if(!profile||!profile.setupComplete)return <Suspense fallback={<RouteLoadingFallback />}><Routes><Route path="/account-setup" element={<AccountSetup/>}/>{rescuePublicProfileRoute}<Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute/>}/><Route path="*" element={<Navigate to={setupRedirect} replace/>}/></Routes></Suspense>;
