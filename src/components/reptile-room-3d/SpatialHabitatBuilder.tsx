@@ -27,6 +27,18 @@ import "../../styles/spatial-habitat-builder.css";
 
 const DRAFT_PREFIX = "tinyTitans.spatialHabitatDraft.v1:";
 
+const STRUCTURAL_ROOM_ASSETS: SpatialAssetPreset[] = [
+  { assetId: "room-door-builder", kind: "door", category: "construction", label: "Room door", icon: "🚪", width: 90, depth: 10, height: 205 },
+  { assetId: "room-window-builder", kind: "window", category: "construction", label: "Window", icon: "🪟", width: 120, depth: 10, height: 100 },
+  { assetId: "room-vent-builder", kind: "vent", category: "construction", label: "Wall vent", icon: "▦", width: 30, depth: 8, height: 20 },
+];
+
+const STRUCTURAL_VIVARIUM_ASSETS: SpatialAssetPreset[] = [
+  { assetId: "viv-background-builder", kind: "background", category: "construction", label: "Background panel", icon: "🧱", width: 100, depth: 3, height: 50 },
+  { assetId: "viv-partition-builder", kind: "partition", category: "construction", label: "Partition panel", icon: "▥", width: 60, depth: 2, height: 35 },
+  { assetId: "viv-vent-builder", kind: "vent", category: "construction", label: "Enclosure vent", icon: "▦", width: 20, depth: 3, height: 20 },
+];
+
 const toPreset = (preset: Room3DAssetPreset): SpatialAssetPreset => {
   let category: SpatialAssetPreset["category"] = "construction";
   if (preset.kind === "vivarium") category = "enclosure";
@@ -66,8 +78,10 @@ const toPreset = (preset: Room3DAssetPreset): SpatialAssetPreset => {
 
 function presetsFor(mode: SpatialBuilderMode) {
   const all = REPTILE_ROOM_ASSETS.map(toPreset);
-  if (mode === "room") return all.filter((preset) => !["hide", "cork", "branch", "plant", "water-bowl"].includes(preset.kind));
-  return all.filter((preset) => preset.kind !== "vivarium");
+  if (mode === "room") {
+    return [...STRUCTURAL_ROOM_ASSETS, ...all.filter((preset) => !["hide", "cork", "branch", "plant", "water-bowl", "vivarium"].includes(preset.kind))];
+  }
+  return [...STRUCTURAL_VIVARIUM_ASSETS, ...all.filter((preset) => preset.kind !== "vivarium")];
 }
 
 function groupsFor(mode: SpatialBuilderMode) {
@@ -210,6 +224,18 @@ export default function SpatialHabitatBuilder() {
     setDirty(true);
     if (message) setNotice(message);
   }, []);
+
+  const updateRoot = useCallback((patch: Partial<SpatialHabitatScene["root"]>) => {
+    if (!scene) return;
+    commit({
+      ...scene,
+      root: {
+        ...scene.root,
+        ...patch,
+        dimensions: { ...scene.root.dimensions, ...(patch.dimensions ?? {}) },
+      },
+    });
+  }, [commit, scene]);
 
   const update = useCallback((id: string, patch: Partial<SpatialNode>) => {
     if (scene) commit(updateNode(scene, id, patch));
@@ -398,6 +424,7 @@ export default function SpatialHabitatBuilder() {
           </div>
           <div className="spatial-mobile-actions">
             <button type="button" onClick={() => setLibraryOpen(true)}>＋ Add</button>
+            <button type="button" onClick={() => { setSelectedId(null); setInspectorOpen(true); }}>{mode === "room" ? "Room" : "Container"}</button>
             {selected && <button type="button" onClick={() => setInspectorOpen(true)}>Edit</button>}
           </div>
         </section>
@@ -413,11 +440,12 @@ export default function SpatialHabitatBuilder() {
               onEnter={() => open(selected.id)}
             />
           ) : (
-            <div className="spatial-empty">
-              <span>INSPECTOR</span>
-              <h2>Select something</h2>
-              <p>Every object uses real-world centimetres. Resize it precisely or move it with the 3D gizmo.</p>
-            </div>
+            <ContainerInspector
+              container={active}
+              onPatch={mode === "room"
+                ? updateRoot
+                : (patch) => { if (active && "id" in active) update(active.id, patch as Partial<SpatialNode>); }}
+            />
           )}
           <div className="spatial-checks">
             <b>LAYOUT CHECKS · {issues.length}</b>
@@ -465,11 +493,48 @@ export default function SpatialHabitatBuilder() {
                 onDelete={() => { removeSelected(); setInspectorOpen(false); }}
                 onEnter={() => { setInspectorOpen(false); open(selected.id); }}
               />
-            ) : null}
+            ) : (
+              <ContainerInspector
+                container={active}
+                onPatch={mode === "room"
+                  ? updateRoot
+                  : (patch) => { if (active && "id" in active) update(active.id, patch as Partial<SpatialNode>); }}
+              />
+            )}
           </div>
         </div>
       )}
     </main>
+  );
+}
+
+function ContainerInspector({
+  container,
+  onPatch,
+}: {
+  container: SpatialHabitatScene["root"] | SpatialNode | null;
+  onPatch: (patch: { label?: string; dimensions?: { width: number; depth: number; height: number } }) => void;
+}) {
+  if (!container) return null;
+  const setDimension = (key: "width" | "depth" | "height", value: string) => {
+    onPatch({ dimensions: { ...container.dimensions, [key]: Math.max(1, Number(value) || 1) } });
+  };
+  return (
+    <div className="spatial-inspector-content">
+      <div className="spatial-selected">
+        <span>{container.kind === "room" ? "ROOM SETTINGS" : "VIVARIUM SETTINGS"}</span>
+        <h2>{container.label}</h2>
+      </div>
+      <label>Name<input value={container.label} onChange={(event) => onPatch({ label: event.target.value })} /></label>
+      <div className="spatial-grid">
+        {(["width", "depth", "height"] as const).map((key) => (
+          <label key={key}>{key} (cm)
+            <input type="number" min="1" value={Math.round(container.dimensions[key])} onChange={(event) => setDimension(key, event.target.value)} />
+          </label>
+        ))}
+      </div>
+      <p className="spatial-hint">This is the real construction size used by the 3D scene. Change it before arranging furniture or building the enclosure.</p>
+    </div>
   );
 }
 
