@@ -52,7 +52,7 @@ export default function DeleteAccountRequest() {
           <Link className="personalisation-save" to="/account/security">Open Security</Link>
         </section>
         <p className="setup-help">Account deletion is permanent. Paid subscriptions are cancelled before deletion. Rescue organisation owners must transfer organisation ownership first.</p>
-        <p className="setup-help"><Link to="/login">Return to sign in</Link></p>
+        <p className="setup-help"><Link to="/privacy">Read the Privacy Policy</Link> · <Link to="/login">Return to sign in</Link></p>
       </section>
     </main>
   );
