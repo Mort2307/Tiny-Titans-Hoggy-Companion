@@ -5,6 +5,7 @@ const root = process.cwd();
 const iconSource = fs.readFileSync(path.join(root, "src", "components", "TinyTitansIcon.tsx"), "utf8");
 const workspaceProductsSource = fs.readFileSync(path.join(root, "src", "config", "workspaceProducts.ts"), "utf8");
 const paidTiersSource = fs.readFileSync(path.join(root, "src", "config", "paidTiers.ts"), "utf8");
+const paidTierBadgeSource = fs.readFileSync(path.join(root, "src", "components", "PaidTierBadge.tsx"), "utf8");
 const workspaceShellSource = fs.readFileSync(path.join(root, "src", "components", "WorkspaceProductShell.tsx"), "utf8");
 const iconCss = fs.readFileSync(path.join(root, "src", "styles", "tiny-titans-icons.css"), "utf8");
 
@@ -33,6 +34,7 @@ const tierCatalogEntries = expectedTierIds.map((id) => {
 });
 const missingTierCatalogIcons = tierCatalogEntries.filter((entry) => !entry.icon).map((entry) => entry.id);
 const invalidTierCatalogIcons = tierCatalogEntries.filter((entry) => entry.icon && !iconUnion.includes(entry.icon)).map((entry) => ({ id: entry.id, icon: entry.icon }));
+const hasSemanticTierBadge = paidTierBadgeSource.includes("name={tier.icon}") && paidTierBadgeSource.includes("from "./TinyTitansIcon"");
 const productTierIconMismatch = tierCatalogEntries.map((entry) => {
   const productId = entry.id === "free" ? "personal" : entry.id;
   const match = workspaceProductsSource.match(new RegExp("^  " + productId + ': \\{[^\\n]*?icon:"([^"]+)"'));
@@ -63,8 +65,8 @@ const duplicateVisualCases = [...caseBodies.values()].filter((names) => names.le
 
 
 const missingIcons = requiredIcons.filter((name) => !iconSource.includes(`| "${name}"`));
-if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length || missingProductIcons.length || missingWorkspaceNavIcons.length || missingTierCatalogIcons.length || invalidTierCatalogIcons.length || productTierIconMismatch.length) {
-  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases, missingProductIcons, missingWorkspaceNavIcons, missingTierCatalogIcons, invalidTierCatalogIcons, productTierIconMismatch }, null, 2));
+if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length || missingProductIcons.length || missingWorkspaceNavIcons.length || missingTierCatalogIcons.length || invalidTierCatalogIcons.length || productTierIconMismatch.length || !hasSemanticTierBadge) {
+  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases, missingProductIcons, missingWorkspaceNavIcons, missingTierCatalogIcons, invalidTierCatalogIcons, productTierIconMismatch, hasSemanticTierBadge }, null, 2));
   process.exit(1);
 }
 
