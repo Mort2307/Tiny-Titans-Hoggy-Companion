@@ -84,7 +84,7 @@ export default function BreedingReadinessIntelligence() {
       <div className={`readiness-result result-${summary.status}`}><span><TinyTitansIcon name="breedingReadiness" size={28} state={STATUS_META[summary.status].icon} /></span><strong>{summary.status === "ready" ? "Ready to review pairing" : summary.status === "review" ? "Review before proceeding" : "Hold and investigate"}</strong><small>{summary.ready} ready · {summary.review} review · {summary.hold} hold</small></div>
     </header>
 
-    {error && <section className="readiness-principle"><strong>⚠️ Unable to load records</strong><p>{error}</p></section>}
+    {error && <section className="readiness-principle"><strong><TinyTitansIcon name="warning" size={18} state="critical" /> Unable to load records</strong><p>{error}</p></section>}
 
     <section className="readiness-card">
       <div className="readiness-section-title"><div><span className="readiness-kicker">Actual animals</span><h2>Select your pairing</h2></div></div>
