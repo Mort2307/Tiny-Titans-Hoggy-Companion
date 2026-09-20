@@ -209,8 +209,6 @@ function Content(props: Props) {
             </mesh>
           )}
         </group>
-      )}}
-        </group>
       )}
 
       {!isRoot && (
