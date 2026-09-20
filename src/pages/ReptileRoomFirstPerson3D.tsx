@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useAuth } from "../context/useAuth";
+import { useNavigate } from "react-router-dom";
 import { getUserSnakes } from "../services/snakeService";
 import { loadReptileRooms, type ReptileRoomSlot, type ReptileRoomWorkspace } from "../services/reptileRoomService";
 import type { Snake } from "../types/Snake";
@@ -60,6 +61,7 @@ function FurnitureBox({ object, scale, room, eyeHeight }: { object: NonNullable<
 
 export default function ReptileRoomFirstPerson3D() {
   const { user, loading, profileLoading } = useAuth();
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState<ReptileRoomWorkspace[]>([]);
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [roomId, setRoomId] = useState("");
@@ -122,7 +124,7 @@ export default function ReptileRoomFirstPerson3D() {
         <div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · true room scale · camera at exact room centre · eye height 165 cm</p></div>
         <div className="rrfp-header-actions">
           {rooms.length > 1 && <select value={room.id} onChange={(event) => setRoomId(event.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}
-          <button type="button" onClick={() => setYaw(0)}>Centre view</button>
+          <button type="button" onClick={() => navigate("/reptile-room")}>Edit room</button><button type="button" onClick={() => setYaw(0)}>Centre view</button>
         </div>
       </header>
       {notice && <div className="rrfp-notice">{notice}</div>}
@@ -149,7 +151,7 @@ export default function ReptileRoomFirstPerson3D() {
         <button type="button" className="rrfp-close" onClick={() => setSelectedId(null)} aria-label="Close vivarium information">×</button>
         <span className="rrfp-inspector-kicker">VIVARIUM</span><h2>{selected.label}</h2>
         <div className="rrfp-inspector-grid"><div><span>Occupant</span><strong>{selectedSnake ? snakeName(selectedSnake) : "Empty"}</strong></div><div><span>Dimensions</span><strong>{slotWidth(selected)} × {slotDepth(selected)} × {slotHeight(selected)} cm</strong></div><div><span>Status</span><strong>{selected.lifecycleStatus ?? (selectedSnake ? "active" : "empty")}</strong></div><div><span>Position</span><strong>{Math.round(selected.x)}, {Math.round(selected.y)}</strong></div></div>
-        <p>First-person camera is anchored to the exact centre of the scaled room. The room geometry is positioned around that fixed point rather than moving the camera toward a vivarium.</p>
+        <p>First-person camera is anchored to the exact centre of the scaled room. The room geometry is positioned around that fixed point rather than moving the camera toward a vivarium.</p><div className="rrfp-selected-actions">{selectedSnake && <><button type="button" onClick={() => navigate(`/snakes/${encodeURIComponent(selectedSnake.id)}/feeding`)}>🍽️ Feed</button><button type="button" onClick={() => navigate(`/snakes/${encodeURIComponent(selectedSnake.id)}/shedding`)}>🐍 Shed</button><button type="button" onClick={() => navigate(`/snakes/${encodeURIComponent(selectedSnake.id)}/weights`)}>⚖️ Weight</button></>}<button type="button" onClick={() => navigate(`/reptile-room/vivarium/${encodeURIComponent(selected.id)}/3d`)}>Open vivarium builder</button><button type="button" onClick={() => navigate("/reptile-room")}>Back to room builder</button></div>
       </aside>}
     </main>
   );
