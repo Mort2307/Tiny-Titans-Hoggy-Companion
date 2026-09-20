@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { ReptileRoomSlot } from "../../services/reptileRoomService";
@@ -126,6 +126,23 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
   const [message, setMessage] = useState("");
 
   const intelligence = useMemo(() => evaluateVivariumTwin(twin), [twin]);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    setLoading(true);
+    void loadVivariumTwin(user.uid, slot.id)
+      .then((loaded) => {
+        if (active) setTwin({ ...cloneTwin(loaded), photoUrl: loaded.photoUrl ?? slot.photoUrl ?? "" });
+      })
+      .catch(() => {
+        if (active) setTwin((current) => ({ ...current, photoUrl: slot.photoUrl ?? current.photoUrl ?? "" }));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [slot.id, slot.photoUrl, user]);
   const selectedAsset = twin.assets.find((asset) => asset.id === selectedId) ?? null;
   const selectedPreset = selectedAsset ? getRoomAssetPreset(selectedAsset.assetId) : undefined;
 
