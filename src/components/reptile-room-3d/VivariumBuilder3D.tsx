@@ -5,6 +5,7 @@ import type { ReptileRoomSlot } from "../../services/reptileRoomService";
 import { saveVivariumTwin, loadVivariumTwin } from "../../services/vivariumTwinService";
 import { evaluateVivariumTwin } from "../../services/vivariumTwinIntelligence";
 import { useAuth } from "../../context/useAuth";
+import TinyTitansIcon, { type TinyTitansIconName } from "../TinyTitansIcon";
 import { DEFAULT_VIVARIUM_TWIN, type VivariumDigitalTwin, type VivariumTwinAsset } from "../../types/vivariumTwin";
 import { getRoomAssetPreset, REPTILE_ROOM_ASSETS } from "../../data/reptileRoomAssetCatalog";
 import "../../styles/vivarium-builder-3d.css";
@@ -31,6 +32,22 @@ function categoryForAsset(asset: (typeof REPTILE_ROOM_ASSETS)[number]): Vivarium
     case "weighing": return "enrichment";
     default: return "other";
   }
+}
+
+function iconForAsset(kind?: string, role?: string): TinyTitansIconName {
+  if (role === "lighting" || kind === "uvb" || kind === "ceiling-light" || kind === "led-bar") return "uvb";
+  if (role === "heating" || ["heat-mat", "rhp", "che", "halogen", "dhp", "basking-light"].includes(kind ?? "")) return "heat";
+  if (role === "thermostat" || kind === "thermostat") return "thermostat";
+  if (role === "sensor" || ["thermometer", "hygrometer", "temp-humidity"].includes(kind ?? "")) return "temperature";
+  if (role === "water" || kind === "water-bowl") return "water";
+  if (kind === "plant") return "plant";
+  if (kind === "hide" || kind === "cork") return "hide";
+  if (kind === "branch") return "substrate";
+  if (role === "weighing" || kind === "scale") return "weight";
+  if (role === "cleaning") return "maintenance";
+  if (kind === "socket" || kind === "switched-socket" || kind === "power-strip" || kind === "smart-plug" || kind === "timer") return "power";
+  if (kind === "vivarium") return "enclosure";
+  return "creator";
 }
 
 function colorForKind(kind: string) {
@@ -235,12 +252,12 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
 
             {tab === "build" && <div className="vtb-scroll">
               <div className="vtb-card"><h3>Add useful equipment</h3><p>Every prop is saved against this vivarium, not the room.</p><div className="vtb-prop-grid">
-                {REPTILE_ROOM_ASSETS.filter((asset) => asset.kind !== "vivarium").map((asset) => <button type="button" key={asset.assetId ?? asset.kind} onClick={() => addProp(asset)}><b>{asset.icon ?? "•"}</b><span>{asset.label}</span></button>)}
+                {REPTILE_ROOM_ASSETS.filter((asset) => asset.kind !== "vivarium").map((asset) => <button type="button" key={asset.assetId ?? asset.kind} onClick={() => addProp(asset)}><TinyTitansIcon name={iconForAsset(asset.kind, asset.intelligenceRole)} size={19} motion="hover" /><span>{asset.label}</span></button>)}
               </div></div>
               <div className="vtb-card"><h3>Selected prop</h3>{selectedAsset ? <>
                 <strong>{selectedAsset.label}</strong><div className="vtb-mini-meta">{selectedPreset?.description || selectedAsset.category}</div>
-                <div className="vtb-nudge"><button type="button" onClick={() => mutateSelected(-0.05, 0, 0)}>L</button><button type="button" onClick={() => mutateSelected(0.05, 0, 0)}>R</button><button type="button" onClick={() => mutateSelected(0, 0, -0.05)}>F</button><button type="button" onClick={() => mutateSelected(0, 0, 0.05)}>B</button><button type="button" onClick={() => rotateSelected(-15)}>Rotate -</button><button type="button" onClick={() => rotateSelected(15)}>Rotate +</button></div>
-                <div className="vtb-nudge"><button type="button" onClick={() => mutateSelected(0, -0.02, 0)}>Lower</button><button type="button" onClick={() => mutateSelected(0, 0.02, 0)}>Raise</button><button type="button" className="danger" onClick={removeSelected}>Remove</button></div>
+                <div className="vtb-nudge"><button type="button" aria-label="Move left" title="Move left" onClick={() => mutateSelected(-0.05, 0, 0)}><TinyTitansIcon name="move" size={16} /></button><button type="button" aria-label="Move right" title="Move right" onClick={() => mutateSelected(0.05, 0, 0)}><TinyTitansIcon name="move" size={16} /></button><button type="button" aria-label="Move forward" title="Move forward" onClick={() => mutateSelected(0, 0, -0.05)}><TinyTitansIcon name="move" size={16} /></button><button type="button" aria-label="Move backward" title="Move backward" onClick={() => mutateSelected(0, 0, 0.05)}><TinyTitansIcon name="move" size={16} /></button><button type="button" aria-label="Rotate counter-clockwise" title="Rotate counter-clockwise" onClick={() => rotateSelected(-15)}><TinyTitansIcon name="rotate" size={16} /></button><button type="button" aria-label="Rotate clockwise" title="Rotate clockwise" onClick={() => rotateSelected(15)}><TinyTitansIcon name="rotate" size={16} /></button></div>
+                <div className="vtb-nudge"><button type="button" aria-label="Lower" title="Lower" onClick={() => mutateSelected(0, -0.02, 0)}><TinyTitansIcon name="resize" size={16} /></button><button type="button" aria-label="Raise" title="Raise" onClick={() => mutateSelected(0, 0.02, 0)}><TinyTitansIcon name="resize" size={16} /></button><button type="button" className="danger" aria-label="Remove selected asset" title="Remove selected asset" onClick={removeSelected}><TinyTitansIcon name="delete" size={16} /></button></div>
               </> : <span className="vtb-muted">Select a prop in the 3D enclosure.</span>}</div>
             </div>}
 
