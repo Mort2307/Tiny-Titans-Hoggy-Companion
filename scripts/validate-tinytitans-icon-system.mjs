@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const iconSource = fs.readFileSync(path.join(root, "src", "components", "TinyTitansIcon.tsx"), "utf8");
 const workspaceProductsSource = fs.readFileSync(path.join(root, "src", "config", "workspaceProducts.ts"), "utf8");
+const paidTiersSource = fs.readFileSync(path.join(root, "src", "config", "paidTiers.ts"), "utf8");
 const workspaceShellSource = fs.readFileSync(path.join(root, "src", "components", "WorkspaceProductShell.tsx"), "utf8");
 const iconCss = fs.readFileSync(path.join(root, "src", "styles", "tiny-titans-icons.css"), "utf8");
 
@@ -25,6 +26,20 @@ const registeredNames = [...iconRegistryBlock.matchAll(/"([^"]+)"/g)].map((match
 const missingRegisteredNames = iconUnion.filter((name) => !registeredNames.includes(name));
 const missingSwitchCases = iconUnion.filter((name) => !iconSource.includes(`case "${name}":`));
 const productIcons = [...workspaceProductsSource.matchAll(/icon:"([^"]+)"/g)].map((match) => match[1]);
+const expectedTierIds = ["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"];
+const tierCatalogEntries = expectedTierIds.map((id) => {
+  const match = paidTiersSource.match(new RegExp("^  " + id + ': \\{ id: "' + id + '",[^\\n]*?icon: "([^"]+)"'));
+  return { id, icon: match?.[1] ?? null };
+});
+const missingTierCatalogIcons = tierCatalogEntries.filter((entry) => !entry.icon).map((entry) => entry.id);
+const invalidTierCatalogIcons = tierCatalogEntries.filter((entry) => entry.icon && !iconUnion.includes(entry.icon)).map((entry) => ({ id: entry.id, icon: entry.icon }));
+const productTierIconMismatch = tierCatalogEntries.map((entry) => {
+  const productId = entry.id === "free" ? "personal" : entry.id;
+  const match = workspaceProductsSource.match(new RegExp("^  " + productId + ': \\{[^\\n]*?icon:"([^"]+)"'));
+  const productIcon = match?.[1] ?? null;
+  return entry.icon && productIcon && entry.icon !== productIcon ? { id: entry.id, tierIcon: entry.icon, productIcon } : null;
+}).filter(Boolean);
+
 const missingProductIcons = productIcons.filter((name) => !iconUnion.includes(name));
 const productNavPaths = [...workspaceProductsSource.matchAll(/path:"([^"]+)"/g)].map((match) => match[1]);
 const navMapPaths = [...workspaceShellSource.matchAll(/"([^"]+)": "([^"]+)"/g)].map((match) => match[1]);
@@ -48,8 +63,8 @@ const duplicateVisualCases = [...caseBodies.values()].filter((names) => names.le
 
 
 const missingIcons = requiredIcons.filter((name) => !iconSource.includes(`| "${name}"`));
-if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length || missingProductIcons.length || missingWorkspaceNavIcons.length) {
-  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases, missingProductIcons, missingWorkspaceNavIcons }, null, 2));
+if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length || missingProductIcons.length || missingWorkspaceNavIcons.length || missingTierCatalogIcons.length || invalidTierCatalogIcons.length || productTierIconMismatch.length) {
+  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases, missingProductIcons, missingWorkspaceNavIcons, missingTierCatalogIcons, invalidTierCatalogIcons, productTierIconMismatch }, null, 2));
   process.exit(1);
 }
 
