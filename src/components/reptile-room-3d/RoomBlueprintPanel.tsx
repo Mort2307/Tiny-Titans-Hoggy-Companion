@@ -275,6 +275,7 @@ export default function RoomBlueprintPanel({ room: controlledRoom = null, onRoom
                   <div style={{ display: "grid", gap: ".25rem", minWidth: 0 }}>
                     <strong>🔌 {socket.label}</strong>
                     <small>{socket.height} cm · {socket.outlets} outlets</small>
+                    <small>{socket.maxLoadWatts && socket.maxLoadWatts > 0 ? "Planning limit: " + socket.maxLoadWatts + " W" : "Capacity unknown · 0 means not configured"}</small>
                     <label>
                       Max load (W)
                       <input
