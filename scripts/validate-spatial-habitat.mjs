@@ -7,6 +7,7 @@ const required = [
   "src/services/spatialHabitatService.ts",
   "src/services/spatialHabitatPersistenceService.ts",
   "src/services/spatialVivariumTwinBridge.ts",
+  "scripts/test-spatial-habitat-runtime.ts",
   "src/components/reptile-room-3d/SpatialHabitatScene3D.tsx",
   "src/components/reptile-room-3d/SpatialHabitatBuilder.tsx",
   "src/components/reptile-room-3d/room3DScale.ts",
@@ -26,6 +27,7 @@ if (!fail.length) {
   const renderer = read("src/components/reptile-room-3d/SpatialHabitatScene3D.tsx");
   const persistence = read("src/services/spatialHabitatPersistenceService.ts");
   const twinBridge = read("src/services/spatialVivariumTwinBridge.ts");
+  const runtimeTest = read("scripts/test-spatial-habitat-runtime.ts");
   const scale = read("src/components/reptile-room-3d/room3DScale.ts");
 
   const contracts = [
@@ -35,6 +37,8 @@ if (!fail.length) {
     [service, 'export function validateSpatialScene', "spatial validation"],
     [service, 'export function syncSceneRoomInfrastructure', "room infrastructure sync"],
     [service, 'export function mergeStoredSpatialSceneWithRoom', "stored scene reconciliation"],
+    [service, 'export function connectNodeToNearestPowerSocket', "equipment power socket connection"],
+    [service, 'export function disconnectNodeFromPowerSocket', "equipment power socket disconnect"],
     [service, 'floorPlan:', "floor-plan preservation"],
     [service, 'walls:', "wall geometry preservation"],
     [service, 'sockets:', "power socket preservation"],
@@ -53,6 +57,7 @@ if (!fail.length) {
     [twinBridge, 'mergeSpatialNodesIntoVivariumTwin', "spatial -> twin synchronization"],
     [twinBridge, 'applyVivariumTwinToSpatialScene', "twin -> spatial synchronization"],
     [builder, 'beforeunload', "unsaved-change protection"],
+    [runtimeTest, 'Spatial Habitat runtime tests passed.', "runtime spatial test suite"],
     [scale, 'CM_TO_WORLD = 0.01', "centimetre-to-metre scale"],
   ];
   for (const [text, needle, label] of contracts) {
