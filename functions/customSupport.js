@@ -39,23 +39,74 @@ function buildSupportLineItem(amountPence, label) {
 async function writePaidSupport(uid, session) {
   const amountGbp = Number(session.amount_total || 0) / 100;
   if (!uid || session.payment_status !== "paid" || amountGbp < 1) return { recorded: false, reason: "not-paid" };
+
   const tierKey = String(session.metadata?.tier || "custom");
   const tier = SUPPORT_TIERS[tierKey];
   const label = session.metadata?.label || tier?.label || "Custom Tiny Titans Support";
   const supporterRef = db.collection("supporters").doc(uid);
   const wallRef = db.collection("supporterWall").doc(uid);
   const eventRef = db.collection("stripeEvents").doc(`checkout_${session.id}`);
-  const existing = await supporterRef.get();
-  if (!existing.exists || existing.data()?.status !== "active") {
-    await supporterRef.set({ uid, status: "active", tier: tierKey, tierLabel: label, amountGbp, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await wallRef.set({ uid, displayName: "", socialUrl: "", visibility: "pending", recognitionStatus: "pending", tierLabel: label, amountGbp, supportedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await eventRef.set({ type: "support-recorded", uid, sessionId: session.id, amountGbp, processedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(amountGbp), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return { recorded: true, createdWall: true, needsRecognition: true };
+
+  // Idempotency: the browser finaliser and Stripe webhook can both process the
+  // same Checkout Session. A processed session must never count twice.
+  const processedEvent = await eventRef.get();
+  if (processedEvent.exists && processedEvent.data()?.type === "support-recorded") {
+    return { recorded: false, duplicate: true, createdWall: false, needsRecognition: false };
   }
+
+  const existing = await supporterRef.get();
+  const wasActiveSupporter = existing.exists && existing.data()?.status === "active";
+  const now = FieldValue.serverTimestamp();
+
+  await supporterRef.set({
+    uid,
+    status: "active",
+    tier: tierKey,
+    tierLabel: label,
+    amountGbp,
+    totalSupportedGbp: FieldValue.increment(amountGbp),
+    supportPaymentCount: FieldValue.increment(1),
+    stripeCustomerId: session.customer || null,
+    stripeCheckoutSessionId: session.id,
+    lastPaymentAt: now,
+    updatedAt: now,
+  }, { merge: true });
+
   const wall = await wallRef.get();
-  if (!wall.exists) await wallRef.set({ uid, displayName: "", socialUrl: "", visibility: "pending", recognitionStatus: "pending", tierLabel: label, amountGbp, supportedAt: existing.data()?.lastPaymentAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-  return { recorded: false, createdWall: !wall.exists, needsRecognition: !wall.exists };
+  const wallExists = wall.exists;
+  await wallRef.set({
+    uid,
+    displayName: wall.data()?.displayName || "",
+    socialUrl: wall.data()?.socialUrl || "",
+    visibility: wall.data()?.visibility || "pending",
+    recognitionStatus: wall.data()?.recognitionStatus || "pending",
+    tierLabel: label,
+    amountGbp,
+    supportedAt: wall.data()?.supportedAt || now,
+    updatedAt: now,
+  }, { merge: true });
+
+  await eventRef.set({
+    type: "support-recorded",
+    uid,
+    sessionId: session.id,
+    amountGbp,
+    processedAt: now,
+  }, { merge: true });
+
+  const statsUpdate = {
+    totalReceivedGbp: FieldValue.increment(amountGbp),
+    updatedAt: now,
+    ...(wasActiveSupporter ? {} : { totalSupporters: FieldValue.increment(1) }),
+  };
+  await db.collection("supporterStats").doc("global").set(statsUpdate, { merge: true });
+
+  return {
+    recorded: true,
+    duplicate: false,
+    createdWall: !wallExists,
+    needsRecognition: !wallExists || wall.data()?.recognitionStatus === "pending",
+  };
 }
 
 async function recoverLatestPaidSession(uid, stripe) {
