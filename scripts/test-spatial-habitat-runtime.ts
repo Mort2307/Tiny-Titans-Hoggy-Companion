@@ -7,6 +7,7 @@ import {
   snapNodeToCeiling,
   snapNodeToFloor,
   snapNodeToNearestWall,
+  connectNodeToNearestPowerSocket,
   validateSpatialScene,
 } from "../src/services/spatialHabitatService.ts";
 import {
@@ -36,6 +37,7 @@ const lampPreset: SpatialAssetPreset = {
   depth: 12,
   height: 5,
   capabilities: { lightSource: true, uvbSource: true, powerConsumer: true, ceilingMountable: true },
+  config: { wattage: 50 },
 };
 const sensorPreset: SpatialAssetPreset = {
   assetId: "runtime-test-sensor",
@@ -63,7 +65,7 @@ let scene: SpatialHabitatScene = {
       { x: 0, z: 300 },
     ],
     walls: [],
-    sockets: [],
+    sockets: [{ id: "socket-1", wallId: null, x: 0, z: 0, height: 45, outlets: 2, label: "Test socket", switchable: true, enabled: true, maxLoadWatts: 80 }],
   },
   nodes: [],
   updatedAt: new Date().toISOString(),
