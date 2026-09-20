@@ -120,19 +120,196 @@ export default function StableReptileRoomBuilder() {
     replaceRoom({ ...room, slots: [...slots, slot] }, `${snake.name}'s vivarium added.`); setSelected({ type: "slot", id: slot.id }); setInspectorTab("occupant"); setMobilePanel("inspector");
   }, [replaceRoom, room, slots]);
 
-  const deleteSelected = useCallback(() => {
+  const moveSelectedBy = useCallback((dx: number, dy: number, dz: number, label: string) => {
     if (!room || !selected) return;
-    const next = selected.type === "object"
-      ? { ...room, objects: objects.filter((item) => item.id !== selected.id), slots: slots.map((slot) => slot.parentSlotId === selected.id ? ({ ...slot, parentSlotId: null }) : slot) }
-      : { ...room, slots: slots.filter((item) => item.id !== selected.id) };
-    replaceRoom(next, "Selection removed."); setSelected(null); setMobilePanel(null);
+    replaceRoom(selected.type === "slot"
+      ? {
+          ...room,
+          slots: slots.map((slot) => slot.id === selected.id
+            ? {
+                ...slot,
+                x: Math.max(0, Math.min((room.width ?? 0) - Math.max(1, slot.w), slot.x + dx)),
+                y: Math.max(0, Math.min((room.depth ?? 0) - Math.max(1, slot.depth ?? slot.h), slot.y + dy)),
+                z: Math.max(0, Math.min((room.height ?? 0) - Math.max(1, slot.height ?? 1), (slot.z ?? 0) + dz)),
+              }
+            : slot),
+        }
+      : {
+          ...room,
+          objects: objects.map((object) => object.id === selected.id
+            ? {
+                ...object,
+                x: Math.max(0, Math.min((room.width ?? 0) - object.width, object.x + dx)),
+                y: Math.max(0, Math.min((room.depth ?? 0) - object.depth, object.y + dy)),
+                z: Math.max(0, Math.min((room.height ?? 0) - object.height, object.z + dz)),
+              }
+            : object),
+        });
+    setNotice(`${label} 5 cm.`);
   }, [objects, replaceRoom, room, selected, slots]);
 
+  const snapSelected = useCallback(() => {
+    if (!room || !selected) return;
+    replaceRoom(selected.type === "slot"
+      ? { ...room, slots: slots.map((slot) => slot.id === selected.id ? { ...slot, x: Math.round(slot.x / 5) * 5, y: Math.round(slot.y / 5) * 5, z: Math.round((slot.z ?? 0) / 5) * 5 } : slot) }
+      : { ...room, objects: objects.map((object) => object.id === selected.id ? { ...object, x: Math.round(object.x / 5) * 5, y: Math.round(object.y / 5) * 5, z: Math.round(object.z / 5) * 5 } : object) },
+    );
+    setNotice("Snapped to 5 cm grid.");
+  }, [objects, replaceRoom, room, selected, slots]);
+
+  const snapToWall = useCallback(() => {
+    if (!room || !selected) return;
+    const nearestWall = (x: number, y: number, width: number, depth: number, rotation: number) => {
+      const quarterTurn = Math.round((((rotation % 360) + 360) % 360) / 90) % 2;
+      const w = quarterTurn ? depth : width;
+      const d = quarterTurn ? width : depth;
+      return [
+        { distance: x, x: 0, y },
+        { distance: Math.max(0, (room.width ?? 0) - x - w), x: Math.max(0, (room.width ?? 0) - w), y },
+        { distance: y, x, y: 0 },
+        { distance: Math.max(0, (room.depth ?? 0) - y - d), x, y: Math.max(0, (room.depth ?? 0) - d) },
+      ].sort((a, b) => a.distance - b.distance)[0];
+    };
+    if (selected.type === "slot" && selectedSlot) {
+      const target = nearestWall(selectedSlot.x, selectedSlot.y, selectedSlot.w, selectedSlot.depth ?? selectedSlot.h, slotRotation(selectedSlot));
+      replaceRoom({ ...room, slots: slots.map((slot) => slot.id === selected.id ? { ...slot, x: Math.round(target.x / 5) * 5, y: Math.round(target.y / 5) * 5 } : slot) });
+    } else if (selectedObject) {
+      const target = nearestWall(selectedObject.x, selectedObject.y, selectedObject.width, selectedObject.depth, selectedObject.rotation);
+      replaceRoom({ ...room, objects: objects.map((object) => object.id === selected.id ? { ...object, x: Math.round(target.x / 5) * 5, y: Math.round(target.y / 5) * 5 } : object) });
+    }
+    setNotice("Snapped to nearest wall.");
+  }, [objects, replaceRoom, room, selected, selectedObject, selectedSlot, slots]);
+
+  const stackSnapSelected = useCallback(() => {
+    if (!room || !selectedSlot) {
+      setNotice("Select a vivarium to use shelf snap.");
+      return;
+    }
+    const shelves = objects.filter((object) => object.kind === "shelving" || object.kind === "rack");
+    if (!shelves.length) {
+      setNotice("Add a Shelving or Reptile Rack asset first.");
+      return;
+    }
+    const options = shelves.flatMap((shelf) =>
+      [0.08, 0.31, 0.54, 0.77, 0.96].map((ratio) => {
+        const level = shelf.z + shelf.height * ratio;
+        if (level + (selectedSlot.height ?? 30) > (room.height ?? 0) + 0.01) return null;
+        const x = Math.max(0, Math.min((room.width ?? 0) - selectedSlot.w, Math.round((shelf.x + (shelf.width - selectedSlot.w) / 2) / 5) * 5));
+        const y = Math.max(0, Math.min((room.depth ?? 0) - (selectedSlot.depth ?? selectedSlot.h), Math.round((shelf.y + (shelf.depth - (selectedSlot.depth ?? selectedSlot.h)) / 2) / 5) * 5));
+        return { shelf, level, x, y, distance: Math.hypot(x - selectedSlot.x, y - selectedSlot.y) + Math.abs(level - (selectedSlot.z ?? 0)) };
+      }),
+    ).filter((item): item is { shelf: ReptileRoomObject; level: number; x: number; y: number; distance: number } => item !== null)
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (!options) {
+      setNotice("No shelf level has enough vertical clearance for this vivarium.");
+      return;
+    }
+    replaceRoom({ ...room, slots: slots.map((slot) => slot.id === selectedSlot.id ? ({ ...slot, x: options.x, y: options.y, z: options.level, parentAssetId: options.shelf.id } as ReptileRoomSlot) : slot) });
+    setNotice(`Vivarium snapped to ${options.shelf.label}.`);
+  }, [objects, replaceRoom, room, selectedSlot, slots]);
+
+  const magnetLockSelected = useCallback(() => {
+    if (!room || !selectedSlot) {
+      setNotice("Select a vivarium to use magnet lock.");
+      return;
+    }
+    const candidates = slots.filter((slot) => slot.id !== selectedSlot.id);
+    if (!candidates.length) {
+      setNotice("Add another vivarium before using magnet lock.");
+      return;
+    }
+    const nearest = candidates.reduce((best, slot) =>
+      Math.hypot(slot.x - selectedSlot.x, slot.y - selectedSlot.y) + Math.abs((slot.z ?? 0) - (selectedSlot.z ?? 0)) * 0.5 <
+      Math.hypot(best.x - selectedSlot.x, best.y - selectedSlot.y) + Math.abs((best.z ?? 0) - (selectedSlot.z ?? 0)) * 0.5 ? slot : best,
+      candidates[0],
+    );
+    const groupIds = new Set([selectedSlot.stackGroupId, nearest.stackGroupId].filter((id): id is string => Boolean(id)));
+    const groupId = groupIds.values().next().value ?? idFor("mag");
+    replaceRoom({
+      ...room,
+      slots: slots.map((slot) =>
+        groupIds.has(slot.stackGroupId ?? "") || slot.id === selectedSlot.id || slot.id === nearest.id
+          ? { ...slot, stackGroupId: groupId }
+          : slot),
+    });
+    setNotice(`${selectedSlot.label} magnet-locked to ${nearest.label}.`);
+  }, [replaceRoom, room, selectedSlot, slots]);
+
+  const unlockMagnet = useCallback(() => {
+    if (!selectedSlot?.stackGroupId) {
+      setNotice("This vivarium is not magnet-locked.");
+      return;
+    }
+    const group = selectedSlot.stackGroupId;
+    replaceRoom({ ...room!, slots: slots.map((slot) => slot.stackGroupId === group ? { ...slot, stackGroupId: null, stackIndex: 0 } : slot) });
+    setNotice("Vivarium magnet lock released.");
+  }, [replaceRoom, room, selectedSlot, slots]);
+
+  const unstackSelected = useCallback(() => {
+    if (!selectedSlot?.parentSlotId) {
+      setNotice("This vivarium is not linked into another vivarium stack.");
+      return;
+    }
+    replaceRoom({ ...room!, slots: slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, parentSlotId: null, stackIndex: 0 } : slot) });
+    setNotice("Vivarium stack link released.");
+  }, [replaceRoom, room, selectedSlot, slots]);
+
+  const deleteSelected = useCallback(() => {
+    if (!room || !selected) return;
+    if (selected.type === "slot" && selectedSlot?.stackGroupId) {
+      const group = selectedSlot.stackGroupId;
+      replaceRoom({
+        ...room,
+        slots: slots.filter((slot) => slot.stackGroupId !== group),
+        objects: objects.filter((object) => object.parentAssetId !== selected.id && object.config?.linkedSlotId !== selected.id),
+      }, "Magnet-locked vivarium group removed.");
+    } else if (selected.type === "slot") {
+      replaceRoom({
+        ...room,
+        slots: slots.filter((slot) => slot.id !== selected.id),
+        objects: objects.filter((object) => object.parentAssetId !== selected.id && object.config?.linkedSlotId !== selected.id),
+      }, "Vivarium removed.");
+    } else {
+      replaceRoom({
+        ...room,
+        objects: objects.filter((item) => item.id !== selected.id),
+        slots: slots.map((slot) => slot.parentSlotId === selected.id ? ({ ...slot, parentSlotId: null }) : slot),
+      }, "Room asset removed.");
+    }
+    setSelected(null); setMobilePanel(null);
+  }, [objects, replaceRoom, room, selected, selectedSlot, slots]);
+
   const duplicateSelected = useCallback(() => {
-    if (!room || !selectedObject) return;
-    const copy = { ...selectedObject, id: idFor("asset"), label: `${selectedObject.label} Copy`, x: selectedObject.x + 10, y: selectedObject.y + 10, stackGroupId: null, parentAssetId: null };
-    replaceRoom({ ...room, objects: [...objects, copy] }, "Asset duplicated."); setSelected({ type: "object", id: copy.id });
-  }, [objects, replaceRoom, room, selectedObject]);
+    if (!room || !selected) return;
+    if (selected.type === "slot" && selectedSlot) {
+      const copy: ReptileRoomSlot = {
+        ...selectedSlot,
+        id: idFor("viv"),
+        label: `${selectedSlot.label} Copy`,
+        x: Math.max(0, Math.min((room.width ?? 0) - selectedSlot.w, selectedSlot.x + 10)),
+        stackGroupId: null,
+        stackIndex: 0,
+        parentSlotId: null,
+      };
+      replaceRoom({ ...room, slots: [...slots, copy] }, "Vivarium duplicated.");
+      setSelected({ type: "slot", id: copy.id });
+      return;
+    }
+    if (selectedObject) {
+      const copy: ReptileRoomObject = {
+        ...selectedObject,
+        id: idFor("asset"),
+        label: `${selectedObject.label} Copy`,
+        x: Math.max(0, Math.min((room.width ?? 0) - selectedObject.width, selectedObject.x + 10)),
+        y: Math.max(0, Math.min((room.depth ?? 0) - selectedObject.depth, selectedObject.y + 10)),
+        stackGroupId: null,
+        parentAssetId: null,
+        config: { ...(selectedObject.config ?? {}) },
+      };
+      replaceRoom({ ...room, objects: [...objects, copy] }, "Asset duplicated.");
+      setSelected({ type: "object", id: copy.id });
+    }
+  }, [objects, replaceRoom, room, selected, selectedObject, selectedSlot, slots]);
 
   const uploadPhoto = useCallback(async (file: File) => {
     if (!user || !room || !selected) return;
