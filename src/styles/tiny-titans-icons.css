@@ -23,3 +23,120 @@
 @keyframes ttCrestFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1px)}}
 
 @media(prefers-reduced-motion:reduce){.tt-icon,.tt-icon-snake,.tt-icon-helix,.tt-icon-heart,.tt-icon-leaf,.tt-icon-shed,.tt-icon-spark,.tt-icon-crown,.tt-icon-prey,.tt-icon-food,.tt-icon-egg,.tt-icon-avatar,.tt-icon-avatar-two,.tt-icon-dot-avatar,.tt-tier-crest svg,.app-navigation-link.active .tt-icon,.tt-easy-nav-link.active .tt-icon{animation:none;transition:none}}
+
+/* === TinyTitans Living Icon v2 ===
+   Signature environment + spatial-builder motions.
+   These remain dependency-free: SVG + CSS only.
+*/
+.tt-icon-temperature .tt-icon-thermo-mercury{fill:currentColor;transform-box:fill-box;transform-origin:bottom center;animation:ttThermoRise 3.8s ease-in-out infinite}
+.tt-icon-temperature .tt-icon-thermo-bulb{fill:currentColor}
+.tt-icon-humidity .tt-icon-drop{fill:color-mix(in srgb,currentColor 84%,#ffffff 16%)}
+.tt-icon-humidity .tt-icon-humidity-particle{fill:currentColor;transform-box:fill-box;transform-origin:center;animation:ttMoistureFloat 3.2s ease-in-out infinite}
+.tt-icon-humidity .tt-icon-humidity-particle:nth-of-type(2){animation-delay:-1.1s}
+.tt-icon-humidity .tt-icon-humidity-particle:nth-of-type(3){animation-delay:-2s}
+.tt-icon-water .tt-icon-bowl{fill:color-mix(in srgb,currentColor 72%,#ffffff 28%)}
+.tt-icon-water .tt-icon-water-surface{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;animation:ttWaterRipple 2.8s ease-in-out infinite}
+.tt-icon-water .tt-icon-drop-small{fill:currentColor;opacity:.9;animation:ttDropletDrop 3.8s ease-in-out infinite}
+.tt-icon-uvb .tt-icon-sun{fill:color-mix(in srgb,currentColor 88%,#ffffff 12%);animation:ttSunPulse 3.5s ease-in-out infinite}
+.tt-icon-uvb .tt-icon-uvb-ray{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;opacity:.7;animation:ttUVRay 3.5s ease-in-out infinite}
+.tt-icon-heat .tt-icon-lamp{fill:color-mix(in srgb,currentColor 84%,#ffffff 16%);animation:ttHeatLamp 3.8s ease-in-out infinite}
+.tt-icon-heat .tt-icon-line{animation:ttHeatWave 2.6s ease-in-out infinite}
+.tt-icon-plant .tt-icon-pot{fill:color-mix(in srgb,currentColor 76%,#ffffff 24%)}
+.tt-icon-plant .tt-icon-plant-stem{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.tt-icon-plant .tt-icon-leaf{transform-box:fill-box;transform-origin:bottom center}
+.tt-icon-plant .tt-icon-leaf-a{animation:ttLeafSway 4.2s ease-in-out infinite}
+.tt-icon-plant .tt-icon-leaf-b{animation:ttLeafSwayReverse 4.6s ease-in-out infinite}
+.tt-icon-substrate .tt-icon-substrate-bed{fill:color-mix(in srgb,currentColor 78%,#ffffff 22%)}
+.tt-icon-substrate .tt-icon-substrate-grain{fill:currentColor;transform-box:fill-box;transform-origin:center;animation:ttGrainShift 5s ease-in-out infinite}
+.tt-icon-substrate .tt-icon-substrate-grain:nth-of-type(2){animation-delay:-.8s}
+.tt-icon-substrate .tt-icon-substrate-grain:nth-of-type(3){animation-delay:-1.7s}
+.tt-icon-substrate .tt-icon-substrate-grain:nth-of-type(4){animation-delay:-2.6s}
+.tt-icon-hide .tt-icon-hide-rock{fill:color-mix(in srgb,currentColor 82%,#ffffff 18%)}
+.tt-icon-hide .tt-icon-hide-hole{fill:none;stroke:var(--tt-icon-outline,#17131b);stroke-width:2.1;stroke-linecap:round;animation:ttHidePeek 4.8s ease-in-out infinite}
+.tt-icon-builder .tt-icon-builder-frame{fill:color-mix(in srgb,currentColor 10%,transparent);stroke:currentColor;stroke-width:2.2;stroke-linejoin:round}
+.tt-icon-builder .tt-icon-builder-floor{fill:color-mix(in srgb,currentColor 66%,#ffffff 34%);animation:ttBuilderSettle 4.5s ease-in-out infinite}
+.tt-icon-builder .tt-icon-builder-plant,.tt-icon-builder .tt-icon-builder-hide{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tt-icon-builder .tt-icon-builder-plant{animation:ttBuilderPlant 4.5s ease-in-out infinite}
+.tt-icon-builder .tt-icon-builder-hide{animation:ttBuilderHide 4.5s ease-in-out infinite}
+.tt-icon-builder .tt-icon-builder-spark{animation:ttBuilderSpark 3.2s ease-in-out infinite}
+.tt-icon-room .tt-icon-room-wall{fill:color-mix(in srgb,currentColor 50%,#ffffff 50%)}
+.tt-icon-room .tt-icon-room-tank{fill:color-mix(in srgb,currentColor 12%,transparent);stroke:currentColor;stroke-width:2}
+.tt-icon-room .tt-icon-room-plant{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.tt-icon-room .tt-icon-room-plant{animation:ttRoomPlant 4.2s ease-in-out infinite}
+.tt-icon-room .tt-icon-room-light{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;animation:ttRoomLight 3.2s ease-in-out infinite}
+.tt-icon-vet .tt-icon-vet-shield{fill:color-mix(in srgb,currentColor 78%,#ffffff 22%)}
+.tt-icon-vet .tt-icon-vet-cross{fill:none;stroke:var(--tt-icon-outline,#17131b);stroke-width:3;stroke-linecap:round}
+.tt-icon-vet .tt-icon-vet-pulse{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:3 3;animation:ttVetPulse 3.2s linear infinite}
+.tt-icon-intelligence .tt-icon-intelligence-eye{fill:color-mix(in srgb,currentColor 82%,#ffffff 18%)}
+.tt-icon-intelligence .tt-icon-intelligence-pupil{fill:var(--tt-icon-outline,#17131b);animation:ttIntelligenceLook 4.4s ease-in-out infinite}
+.tt-icon-intelligence .tt-icon-intelligence-glint{fill:#fff}
+.tt-icon-intelligence .tt-icon-intelligence-spark{fill:currentColor;animation:ttBuilderSpark 3s ease-in-out infinite}
+.tt-icon-globe .tt-icon-globe-sphere{fill:color-mix(in srgb,currentColor 48%,#ffffff 52%)}
+.tt-icon-globe .tt-icon-globe-grid{fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;opacity:.66;transform-box:fill-box;transform-origin:center;animation:ttGlobeDrift 8s linear infinite}
+.tt-icon-map .tt-icon-map-panel{fill:color-mix(in srgb,currentColor 58%,#ffffff 42%)}
+.tt-icon-map .tt-icon-map-route{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-dasharray:4 3;animation:ttMapTravel 3.8s linear infinite}
+.tt-icon-map .tt-icon-map-pin{fill:currentColor;animation:ttPinPulse 2.8s ease-in-out infinite}
+.tt-icon-camera{fill:color-mix(in srgb,currentColor 74%,#ffffff 26%)}
+.tt-icon-camera-lens{fill:var(--tt-icon-outline,#17131b);stroke:currentColor;stroke-width:3}
+.tt-icon-camera-glint{fill:#fff;animation:ttSpark 2.8s ease-in-out infinite}
+.tt-icon-action-ring{fill:color-mix(in srgb,currentColor 18%,transparent)}
+.tt-icon-action-mark{transition:transform 180ms ease}
+.tt-icon-edit,.tt-icon-bin,.tt-icon-lock-body,.tt-icon-ruler,.tt-icon-warning{fill:color-mix(in srgb,currentColor 82%,#ffffff 18%)}
+.tt-icon-rotate-arrow{animation:ttRotateHint 3.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.tt-icon-rotate-core{fill:color-mix(in srgb,currentColor 70%,#ffffff 30%);transform-box:fill-box;transform-origin:center;animation:ttCoreTurn 4.6s ease-in-out infinite}
+.tt-icon-lock-dot{fill:currentColor;animation:ttLockPulse 3.8s ease-in-out infinite}
+.tt-icon-ruler{transform-box:fill-box;transform-origin:center;animation:ttMeasureTilt 4.5s ease-in-out infinite}
+.tt-icon-warning{animation:ttWarningBreathe 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.tt-icon-motion-hover:hover{transform:translateY(-2px) scale(1.05)}
+.tt-icon-motion-attention{animation:ttAttention 2.2s ease-in-out infinite}
+.tt-icon-motion-success{animation:ttSuccess 1.9s cubic-bezier(.2,.8,.2,1) both}
+.tt-icon-motion-warning{animation:ttWarning 1.8s ease-in-out infinite}
+.tt-icon-state-success{--tt-icon-accent:var(--tt-success,#6fd09a)}
+.tt-icon-state-warning{--tt-icon-accent:var(--tt-warning,#e9b65c)}
+.tt-icon-state-critical{--tt-icon-accent:var(--tt-danger,#ed7777)}
+.tt-icon-state-offline{opacity:.56;filter:grayscale(.7)}
+.tt-icon-state-offline .tt-icon-spark,.tt-icon-state-offline .tt-icon-builder-spark{display:none}
+
+@keyframes ttThermoRise{0%,100%{transform:scaleY(.78)}50%{transform:scaleY(1)}}
+@keyframes ttMoistureFloat{0%,100%{transform:translate(0,0);opacity:.55}50%{transform:translate(1px,-2px);opacity:1}}
+@keyframes ttWaterRipple{0%,100%{transform:translateX(0);opacity:.8}50%{transform:translateX(1px);opacity:1}}
+@keyframes ttDropletDrop{0%,70%,100%{transform:translateY(0);opacity:.9}78%{transform:translateY(2px);opacity:.55}}
+@keyframes ttSunPulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.08);opacity:1}}
+@keyframes ttUVRay{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes ttHeatLamp{0%,100%{transform:translateY(0)}50%{transform:translateY(1px)}}
+@keyframes ttHeatWave{0%,100%{opacity:.35}50%{opacity:.95}}
+@keyframes ttLeafSwayReverse{0%,100%{transform:rotate(0)}35%{transform:rotate(4deg)}70%{transform:rotate(-3deg)}}
+@keyframes ttGrainShift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(1px,-1px) scale(1.06)}}
+@keyframes ttHidePeek{0%,100%{transform:scaleX(1);opacity:.9}55%{transform:scaleX(.92);opacity:.72}}
+@keyframes ttBuilderSettle{0%,100%{transform:translateY(0)}25%{transform:translateY(1px)}40%{transform:translateY(0)}}
+@keyframes ttBuilderPlant{0%,100%{transform:translateY(0) scale(.94);opacity:.65}40%{transform:translateY(-1px) scale(1);opacity:1}}
+@keyframes ttBuilderHide{0%,100%{transform:translateX(0);opacity:.8}35%{transform:translateX(1px);opacity:1}}
+@keyframes ttBuilderSpark{0%,100%{opacity:.45;transform:scale(.78) rotate(0)}45%{opacity:1;transform:scale(1.18) rotate(8deg)}70%{opacity:.62;transform:scale(.9) rotate(-4deg)}}
+@keyframes ttRoomPlant{0%,100%{transform:rotate(0)}40%{transform:rotate(-3deg)}75%{transform:rotate(2deg)}}
+@keyframes ttRoomLight{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes ttVetPulse{from{stroke-dashoffset:0}to{stroke-dashoffset:-18}}
+@keyframes ttIntelligenceLook{0%,100%{transform:translateX(0)}50%{transform:translateX(1.8px)}}
+@keyframes ttGlobeDrift{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes ttMapTravel{from{stroke-dashoffset:0}to{stroke-dashoffset:-21}}
+@keyframes ttPinPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+@keyframes ttRotateHint{0%,100%{transform:rotate(0)}50%{transform:rotate(-10deg)}}
+@keyframes ttCoreTurn{0%,100%{transform:rotate(0)}45%{transform:rotate(45deg)}70%{transform:rotate(0)}}
+@keyframes ttLockPulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes ttMeasureTilt{0%,100%{transform:rotate(0)}45%{transform:rotate(-3deg)}70%{transform:rotate(2deg)}}
+@keyframes ttWarningBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes ttAttention{0%,100%{transform:translateY(0)}35%{transform:translateY(-2px) rotate(-2deg)}65%{transform:translateY(0) rotate(2deg)}}
+@keyframes ttSuccess{0%{transform:scale(.86) rotate(-5deg);opacity:.2}55%{transform:scale(1.1) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes ttWarning{0%,100%{transform:translateX(0)}20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-1px)}80%{transform:translateX(1px)}}
+
+@media(prefers-reduced-motion:reduce){
+  .tt-icon-temperature .tt-icon-thermo-mercury,.tt-icon-humidity .tt-icon-humidity-particle,.tt-icon-water .tt-icon-water-surface,.tt-icon-water .tt-icon-drop-small,
+  .tt-icon-uvb .tt-icon-sun,.tt-icon-uvb .tt-icon-uvb-ray,.tt-icon-heat .tt-icon-lamp,.tt-icon-heat .tt-icon-line,.tt-icon-plant .tt-icon-leaf-a,
+  .tt-icon-plant .tt-icon-leaf-b,.tt-icon-substrate .tt-icon-substrate-grain,.tt-icon-hide .tt-icon-hide-hole,.tt-icon-builder .tt-icon-builder-floor,
+  .tt-icon-builder .tt-icon-builder-plant,.tt-icon-builder .tt-icon-builder-hide,.tt-icon-builder .tt-icon-builder-spark,.tt-icon-room .tt-icon-room-plant,
+  .tt-icon-room .tt-icon-room-light,.tt-icon-vet .tt-icon-vet-pulse,.tt-icon-intelligence .tt-icon-intelligence-pupil,.tt-icon-intelligence .tt-icon-intelligence-spark,
+  .tt-icon-globe .tt-icon-globe-grid,.tt-icon-map .tt-icon-map-route,.tt-icon-map .tt-icon-map-pin,.tt-icon-camera-glint,.tt-icon-rotate-arrow,
+  .tt-icon-rotate-core,.tt-icon-lock-dot,.tt-icon-ruler,.tt-icon-warning,.tt-icon-motion-attention,.tt-icon-motion-success,.tt-icon-motion-warning{
+    animation:none!important
+  }
+}
+
