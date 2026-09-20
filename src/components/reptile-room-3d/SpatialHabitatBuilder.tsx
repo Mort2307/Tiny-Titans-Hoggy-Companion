@@ -436,10 +436,30 @@ export default function SpatialHabitatBuilder() {
   const handleBlueprintChange = useCallback((nextRoom: RoomWorkspace) => {
     setRoom(nextRoom);
     setRooms((current) => current.map((item) => item.id === nextRoom.id ? nextRoom : item));
-    setScene((current) => current ? syncSceneRoomInfrastructure(current, nextRoom) : current);
+    if (scene) {
+      const nextSocketIds = new Set((nextRoom.sockets ?? []).map((socket) => socket.id));
+      let disconnectedCount = 0;
+      const synced = syncSceneRoomInfrastructure(scene, nextRoom);
+      const repaired = {
+        ...synced,
+        nodes: synced.nodes.map((node) => {
+          const powerSocketId = node.config?.powerSocketId;
+          if (node.capabilities.powerConsumer && powerSocketId && !nextSocketIds.has(String(powerSocketId))) {
+            disconnectedCount += 1;
+            return { ...node, config: { ...node.config, powerSocketId: null } };
+          }
+          return node;
+        }),
+      };
+      setScene(repaired);
+      setNotice(disconnectedCount
+        ? disconnectedCount + " equipment power link" + (disconnectedCount === 1 ? " was" : "s were") + " cleared because its socket was removed. Save the spatial habitat to commit the blueprint."
+        : "Room blueprint updated. Save the spatial habitat to commit it.");
+    } else {
+      setNotice("Room blueprint updated. Save the spatial habitat to commit it.");
+    }
     setDirty(true);
-    setNotice("Room blueprint updated. Save the spatial habitat to commit it.");
-  }, []);
+  }, [scene]);
 
   const selectRoom = useCallback(async (nextRoomId: string) => {
     if (!nextRoomId || !room || nextRoomId === room.id) return;
