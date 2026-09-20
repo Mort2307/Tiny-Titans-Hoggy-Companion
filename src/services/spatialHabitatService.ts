@@ -169,7 +169,12 @@ export function mergeStoredSpatialSceneWithRoom(stored: SpatialHabitatScene, roo
       notes: node.kind === "vivarium" ? node.notes ?? storedNode.notes : storedNode.notes,
     };
   });
-  const spatialOnlyRoot = normalized.nodes.filter((node) => node.parentId === ROOT_CONTAINER_ID && !baseById.has(node.id));
+  const storedTime = Date.parse(normalized.updatedAt);
+  const roomTime = Date.parse(room.updatedAt || "");
+  const preserveSpatialOnlyRoot = Number.isFinite(storedTime) && (!Number.isFinite(roomTime) || storedTime > roomTime);
+  const spatialOnlyRoot = preserveSpatialOnlyRoot
+    ? normalized.nodes.filter((node) => node.parentId === ROOT_CONTAINER_ID && !baseById.has(node.id))
+    : [];
   const nestedStored = normalized.nodes.filter((node) => node.parentId !== ROOT_CONTAINER_ID && nodeIdsForExistingContainers(normalized, node.parentId));
   return normalizeScene({ ...normalized, root: base.root, nodes: [...mergedNodes, ...spatialOnlyRoot, ...nestedStored] });
 }
