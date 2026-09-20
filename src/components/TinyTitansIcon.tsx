@@ -61,7 +61,14 @@ export type TinyTitansIconName =
   | "resize"
   | "measure"
   | "warning"
-  | "offline";
+  | "offline"
+  | "thermostat"
+  | "maintenance"
+  | "power"
+  | "settings"
+  | "close"
+  | "upload"
+  | "save";
 
 export type TinyTitansIconState = "default" | "normal" | "active" | "success" | "warning" | "critical" | "offline";
 export type TinyTitansIconMotion = "none" | "idle" | "hover" | "attention" | "success" | "warning";
@@ -170,6 +177,7 @@ const ICON_NAMES = new Set<TinyTitansIconName>([
   "temperature", "humidity", "water", "uvb", "heat", "plant", "substrate", "hide",
   "habitatBuilder", "reptileRoom", "veterinary", "intelligence", "globe", "map", "camera",
   "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
+  "thermostat", "maintenance", "power", "settings", "close", "upload", "save",
 ]);
 
 function resolveIconName(value: string): TinyTitansIconName {
@@ -215,7 +223,7 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
     case "shed":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-shed" d="M14 34c-4-5-4-13 0-18 4-5 12-6 18-2-3 2-5 4-6 7-2 5-1 9 1 13-4 3-9 3-13 0Z" /><path className="tt-icon-line" d="M14 34c5-3 9-7 11-13 1-3 3-5 7-7" /><path className="tt-icon-tongue" d="m24 19 4-4m-4 4-1.5-4" /></svg>;
     case "behaviour":
-      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-eye" d="M6 24s6.5-10 18-10 18 10 18 10-6.5 10-18 10S6 24 6 24Z" /><circle className="tt-icon-pupil" cx="24" cy="24" r="5" /><circle className="tt-icon-highlight" cx="22.5" cy="22.5" r="1.4" /></svg>;
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-footprint" d="M15 10c4 0 6 4 5 8s-3 6-6 6c-3 0-5-3-5-7 0-4 2-7 6-7Zm17 8c4 0 6 3 5 7-1 4-4 6-7 5-3-1-4-4-3-8 1-3 2-4 5-4Z" /><path className="tt-icon-line-soft" d="M13 29c3 2 4 5 2 8m10-7c3 2 4 5 2 8m8-4c2 1 3 3 2 5" /><circle className="tt-icon-dot" cx="22" cy="15" r="1.5" /></svg>;
     case "health":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-heart" d="M24 38 9 24c-5-5 1-15 8-11 3 1.7 5 5 7 8 2-3 4-6.3 7-8 7-4 13 6 8 11L24 38Z" /><path className="tt-icon-line" d="M11 24h6l2.2-4 3.3 8 3-6 2.2 4H37" /></svg>;
     case "enclosure":
@@ -391,6 +399,20 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-warning" d="m24 7 17 31H7L24 7Z" /><path className="tt-icon-line" d="M24 17v10m0 5v1" /></svg>;
     case "offline":
       return <svg {...commonProps}><circle className="tt-icon-line" cx="24" cy="24" r="16" /><path className="tt-icon-line" d="M14 14l20 20M19 29h10" /></svg>;
+    case "thermostat":
+      return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-thermostat" x="9" y="8" width="30" height="32" rx="5" /><rect className="tt-icon-thermostat-display" x="14" y="13" width="20" height="8" rx="2" /><circle className="tt-icon-thermostat-dial" cx="24" cy="31" r="5" /><path className="tt-icon-line-soft" d="M24 26v5m-5 0h10" /></svg>;
+    case "maintenance":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-tool" d="m31 8 5 5-12 12-5-5L31 8Z" /><path className="tt-icon-line" d="m18 20-9 9c-2 2-2 5 0 7s5 2 7 0l9-9" /><path className="tt-icon-maint-bristles" d="M13 34h-5m8 2h-5m8 1h-4" /></svg>;
+    case "power":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-plug" d="M17 8h5v10h4V8h5v10c0 6-3 10-8 12v8h-5v-8c-5-2-8-6-8-12V8h7Z" /><path className="tt-icon-line" d="M24 38v3" /></svg>;
+    case "settings":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-gear" d="m21 7 3 4 4-1 2 3 4-1 2 5-4 2v4l4 2-2 5-4-1-2 3-4-1-3 4-5-2 1-4-3-3-4 1-2-5 4-2v-4l-4-2 2-5 4 1 2-3 4 1Z" /><circle className="tt-icon-cutout" cx="24" cy="24" r="6" /></svg>;
+    case "close":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-close-ring" cx="24" cy="24" r="16" /><path className="tt-icon-line" d="m17 17 14 14M31 17 17 31" /></svg>;
+    case "upload":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M12 33h24M16 38h16" /><path className="tt-icon-fill tt-icon-upload-tray" d="M10 29h28v8H10v-8Z" /><path className="tt-icon-line" d="M24 28V10m0 0-7 7m7-7 7 7" /></svg>;
+    case "save":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-save" d="M10 8h24l6 6v26H8V10l2-2Z" /><path className="tt-icon-line" d="M15 9v10h18V9M15 40V28h18v12" /></svg>;
     default:
       return <SnakeFace {...props} />;
   }
