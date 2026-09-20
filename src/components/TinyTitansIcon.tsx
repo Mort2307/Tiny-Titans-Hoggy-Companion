@@ -68,7 +68,10 @@ export type TinyTitansIconName =
   | "settings"
   | "close"
   | "upload"
-  | "save";
+  | "save"
+  | "copy"
+  | "expand"
+  | "collapse";
 
 export type TinyTitansIconState = "default" | "normal" | "active" | "success" | "warning" | "critical" | "offline";
 export type TinyTitansIconMotion = "none" | "idle" | "hover" | "attention" | "success" | "warning";
@@ -177,7 +180,7 @@ const ICON_NAMES = new Set<TinyTitansIconName>([
   "temperature", "humidity", "water", "uvb", "heat", "plant", "substrate", "hide",
   "habitatBuilder", "reptileRoom", "veterinary", "intelligence", "globe", "map", "camera",
   "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
-  "thermostat", "maintenance", "power", "settings", "close", "upload", "save",
+  "thermostat", "maintenance", "power", "settings", "close", "upload", "save", "copy", "expand", "collapse",
 ]);
 
 function resolveIconName(value: string): TinyTitansIconName {
@@ -413,6 +416,12 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-line" d="M12 33h24M16 38h16" /><path className="tt-icon-fill tt-icon-upload-tray" d="M10 29h28v8H10v-8Z" /><path className="tt-icon-line" d="M24 28V10m0 0-7 7m7-7 7 7" /></svg>;
     case "save":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-save" d="M10 8h24l6 6v26H8V10l2-2Z" /><path className="tt-icon-line" d="M15 9v10h18V9M15 40V28h18v12" /></svg>;
+    case "copy":
+      return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-copy-back" x="12" y="9" width="21" height="25" rx="3" /><rect className="tt-icon-fill tt-icon-copy-front" x="18" y="14" width="19" height="25" rx="3" /><path className="tt-icon-line-soft" d="M22 20h10m-10 6h10m-10 6h7" /></svg>;
+    case "expand":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M9 19V9h10M39 19V9H29M9 29v10h10M39 29v10H29M9 9l9 9m21-9-9 9M9 39l9-9m21 9-9-9" /></svg>;
+    case "collapse":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M18 9v9H9M30 9v9h9M18 39v-9H9M30 39v-9h9M18 18l-9-9m21 9 9-9M18 30l-9 9m21-9 9 9" /></svg>;
     default:
       return <SnakeFace {...props} />;
   }
