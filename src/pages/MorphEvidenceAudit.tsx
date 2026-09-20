@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import BackHomeButton from '../components/BackHomeButton';
+import TinyTitansIcon from "../components/TinyTitansIcon";
 import { morphSourceAudit, MORPH_SOURCE_AUDIT_LAST_REVIEWED, type MorphEvidenceStatus } from '../data/morphSourceAudit';
 import { resolveMorphEvidenceSources } from '../data/morphEvidenceSources';
 import { masterMorphs } from '../data/masterMorphDatabase';
@@ -24,8 +25,8 @@ export default function MorphEvidenceAudit() {
   return <main className="page-container morph-evidence-audit">
     <BackHomeButton />
     <header className="morph-evidence-audit__hero">
-      <span className="eyebrow">🧬 TINY TITANS · MORPH EVIDENCE</span>
-      <h1>Western Hognose Morph Evidence Audit</h1>
+      <span className="eyebrow"><TinyTitansIcon name="evidence" size={18} /> TINY TITANS · MORPH EVIDENCE</span>
+      <h1><TinyTitansIcon name="evidence" size={34} /> Western Hognose Morph Evidence Audit</h1>
       <p>Evidence is kept separate from the genetics engine. A named phenotype can be visible to keepers without being treated as a confirmed Mendelian locus.</p>
       <p className="morph-evidence-audit__reviewed">Last source review: {MORPH_SOURCE_AUDIT_LAST_REVIEWED}</p>
     </header>
@@ -44,7 +45,7 @@ export default function MorphEvidenceAudit() {
       </select>
     </section>
 
-    <section className="morph-evidence-audit__notice"><strong>Accuracy rule:</strong> source presence is not the same thing as genetic confirmation. Tiny Titans should publish a stronger claim only when the evidence supports it. Uncertain, debated, line-bred and polygenic terms remain explicitly classified.</section>
+    <section className="morph-evidence-audit__notice"><strong><TinyTitansIcon name="warning" size={18} state="warning" /> Accuracy rule:</strong> source presence is not the same thing as genetic confirmation. Tiny Titans should publish a stronger claim only when the evidence supports it. Uncertain, debated, line-bred and polygenic terms remain explicitly classified.</section>
 
     {masterWithoutAudit.length > 0 && <section className="morph-evidence-audit__gap-panel"><div><strong>Evidence backlog</strong><p>{masterWithoutAudit.length} master morph entries currently have no matching evidence-audit record. These are intentionally visible here so they can be researched rather than silently treated as verified.</p></div><details><summary>Show unmapped entries</summary><p>{masterWithoutAudit.join(' · ')}</p></details></section>}
 
