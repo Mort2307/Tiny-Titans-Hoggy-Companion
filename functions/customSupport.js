@@ -143,7 +143,8 @@ async function createCheckout(request) {
     let amountPence; let amountGbp; let label;
     if (tierKey === "custom") { amountPence = parseCustomAmountPence(request.data?.amountGbp); amountGbp = (amountPence / 100).toFixed(2); label = `Support — £${amountGbp}`; }
     else { amountPence = Math.round(tier.amount * 100); amountGbp = tier.amount.toFixed(2); label = tier.label; }
-    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [buildSupportLineItem(amountPence, label)], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label, amount_gbp: amountGbp, payment_purpose: "one_time_project_support" }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto", managed_payments: { enabled: false } });
+    const idempotencyKey = "support-checkout-" + request.auth.uid + "-" + tierKey + "-" + amountPence + "-" + Math.floor(Date.now() / 300000);
+    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [buildSupportLineItem(amountPence, label)], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label, amount_gbp: amountGbp, payment_purpose: "one_time_project_support" }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto", managed_payments: { enabled: false } }, { idempotencyKey });
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");
     return { url: session.url };
   } catch (error) {
