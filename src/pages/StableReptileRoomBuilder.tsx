@@ -35,14 +35,20 @@ function makeSlot(room: ReptileRoomWorkspace, preset: Room3DAssetPreset, snake?:
   };
 }
 
-function makeObject(room: ReptileRoomWorkspace, preset: Room3DAssetPreset): ReptileRoomObject {
+function makeObject(room: ReptileRoomWorkspace, preset: Room3DAssetPreset, linkedSlot?: ReptileRoomSlot | null): ReptileRoomObject {
+  const config = {
+    ...(preset.config ?? {}),
+    ...(linkedSlot && preset.intelligenceRole && preset.intelligenceRole !== "enclosure"
+      ? { linkedSlotId: linkedSlot.id, linkedSnakeId: linkedSlot.snakeId }
+      : {}),
+  };
   return {
     id: idFor("asset"), kind: preset.kind as ReptileRoomObject["kind"], label: preset.label,
     x: Math.max(0, Math.min((room.width ?? preset.width) - preset.width, (room.width ?? preset.width) / 2 - preset.width / 2)),
     y: Math.max(0, Math.min((room.depth ?? preset.depth) - preset.depth, (room.depth ?? preset.depth) / 2 - preset.depth / 2)),
     z: 0, width: Math.max(1, preset.width), depth: Math.max(1, preset.depth), height: Math.max(1, preset.height), rotation: 0,
-    wall: null, stackGroupId: null, stackIndex: 0, parentAssetId: null, clearance: {}, notes: "",
-    assetType: preset.assetType ?? "equipment", assetId: preset.assetId, intelligenceRole: preset.intelligenceRole, config: { ...(preset.config ?? {}) },
+    wall: null, stackGroupId: linkedSlot ? "viv-group-" + linkedSlot.id : null, stackIndex: 0, parentAssetId: linkedSlot?.id ?? null, clearance: {}, notes: "",
+    assetType: preset.assetType ?? "equipment", assetId: preset.assetId, intelligenceRole: preset.intelligenceRole, config,
   };
 }
 
@@ -94,17 +100,48 @@ export default function StableReptileRoomBuilder() {
 
   const updateSelected = useCallback((patch: Room3DTransformPatch) => {
     if (!room || !selected) return;
-    replaceRoom(selected.type === "object"
-      ? { ...room, objects: objects.map((item) => item.id === selected.id ? { ...item, ...patch } : item) }
-      : { ...room, slots: slots.map((item) => item.id === selected.id ? ({ ...item, ...patch } as ReptileRoomSlot) : item) });
-  }, [objects, replaceRoom, room, selected, slots]);
+    if (selected.type === "object") {
+      replaceRoom({ ...room, objects: objects.map((item) => item.id === selected.id ? { ...item, ...patch } : item) });
+      return;
+    }
+    const current = selectedSlot;
+    if (!current) return;
+    const nextSlot = { ...current, ...patch } as ReptileRoomSlot;
+    const dx = nextSlot.x - current.x;
+    const dy = nextSlot.y - current.y;
+    const dz = (nextSlot.z ?? 0) - (current.z ?? 0);
+    const groupId = current.stackGroupId;
+    const attachedIds = new Set(objects.filter((object) => object.parentAssetId === current.id || object.config?.linkedSlotId === current.id).map((object) => object.id));
+    const groupedSlotIds = groupId ? new Set(slots.filter((slot) => slot.stackGroupId === groupId).map((slot) => slot.id)) : new Set<string>();
+    const movedSlots = slots.map((slot) => {
+      if (slot.id === current.id) return nextSlot;
+      if (dx === 0 && dy === 0 && dz === 0) return slot;
+      if (!groupedSlotIds.has(slot.id)) return slot;
+      return {
+        ...slot,
+        x: Math.max(0, Math.min((room.width ?? 0) - slot.w, slot.x + dx)),
+        y: Math.max(0, Math.min((room.depth ?? 0) - (slot.depth ?? slot.h), slot.y + dy)),
+        z: Math.max(0, Math.min((room.height ?? 0) - (slot.height ?? 1), (slot.z ?? 0) + dz)),
+      };
+    });
+    const movedObjects = objects.map((object) => {
+      if (!attachedIds.has(object.id) || (dx === 0 && dy === 0 && dz === 0)) return object;
+      return {
+        ...object,
+        x: Math.max(0, Math.min((room.width ?? 0) - object.width, object.x + dx)),
+        y: Math.max(0, Math.min((room.depth ?? 0) - object.depth, object.y + dy)),
+        z: Math.max(0, Math.min((room.height ?? 0) - object.height, object.z + dz)),
+      };
+    });
+    replaceRoom({ ...room, slots: movedSlots, objects: movedObjects });
+  }, [objects, replaceRoom, room, selected, selectedSlot, slots]);
 
   const updateRoom = useCallback((patch: Partial<ReptileRoomWorkspace>) => { if (room) replaceRoom({ ...room, ...patch }); }, [replaceRoom, room]);
 
   const addAsset = useCallback((preset: Room3DAssetPreset) => {
     if (!room) return;
     if (preset.kind === "vivarium") { const slot = makeSlot(room, preset); replaceRoom({ ...room, slots: [...slots, slot] }, `${preset.label} added.`); setSelected({ type: "slot", id: slot.id }); }
-    else { const object = makeObject(room, preset); replaceRoom({ ...room, objects: [...objects, object] }, `${preset.label} added.`); setSelected({ type: "object", id: object.id }); }
+    else { const object = makeObject(room, preset, selectedSlot); replaceRoom({ ...room, objects: [...objects, object] }, selectedSlot && preset.intelligenceRole && preset.intelligenceRole !== "enclosure" ? `${preset.label} linked to ${selectedSlot.label}.` : `${preset.label} added.`); setSelected({ type: "object", id: object.id }); }
     setMobilePanel(null);
   }, [objects, replaceRoom, room, slots]);
 
@@ -415,7 +452,7 @@ function Inspector(props: InspectorProps) {
           <button type="button" onClick={props.stackSnapSelected}>Stack to rack/shelf</button>
           <button type="button" onClick={props.magnetLockSelected}>Magnet-lock nearest</button>
           {props.selectedSlot.stackGroupId && <button type="button" onClick={props.unlockMagnet}>Unlock magnet</button>}
-          {props.selectedSlot.parentSlotId && <button type="button" onClick={props.unstackSelected}>Unstack vivarium</button>}
+          {slotParentAssetId(props.selectedSlot) && <button type="button" onClick={props.unstackSelected}>Unstack vivarium</button>}
         </div>
       )}
     </div>
