@@ -1,4 +1,4 @@
-name: RR3D Vivarium Magnet Verification
+name: Spatial Habitat 3D Verification
 
 on:
   push:
@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   verify:
-    name: Verify Reptile Room attachment behaviour
+    name: Verify canonical Spatial Habitat 3D behaviour
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
