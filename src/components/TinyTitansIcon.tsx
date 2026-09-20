@@ -197,7 +197,8 @@ const ICON_NAMES = new Set<TinyTitansIconName>([
   "temperature", "humidity", "water", "uvb", "heat", "plant", "substrate", "hide",
   "habitatBuilder", "reptileRoom", "veterinary", "intelligence", "globe", "map", "camera",
   "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
-  "thermostat", "maintenance", "power", "settings", "close", "upload", "save", "copy", "expand", "collapse",\n  "titanIntelligence", "analytics", "timeline", "breedingReadiness", "breedingTimeline", "breedingCycle", "production", "evidence", "reporting", "sellerProfile", "marketplaceTools", "team", "automation", "support", "api", "branding", "exportData",
+  "thermostat", "maintenance", "power", "settings", "close", "upload", "save", "copy", "expand", "collapse",
+  "titanIntelligence", "analytics", "timeline", "breedingReadiness", "breedingTimeline", "breedingCycle", "production", "evidence", "reporting", "sellerProfile", "marketplaceTools", "team", "automation", "support", "api", "branding", "exportData",
 ]);
 
 function resolveIconName(value: string): TinyTitansIconName {
