@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/useAuth";
+import RoomBlueprintPanel from "./RoomBlueprintPanel";
 import { getUserSnakes } from "../../services/snakeService";
 import { loadReptileRooms, saveReptileRooms } from "../../services/reptileRoomService";
 import { loadSpatialHabitat, saveSpatialHabitat } from "../../services/spatialHabitatPersistenceService";
@@ -14,6 +15,7 @@ import {
   removeNode,
   roomToSpatialScene,
   sceneToRoom,
+  syncSceneRoomInfrastructure,
   snapCm,
   updateNode,
   validateSpatialScene,
@@ -145,7 +147,9 @@ function displayDimension(value: number, units: "metric" | "imperial") {
 
 export default function SpatialHabitatBuilder() {
   const { user, loading, profileLoading } = useAuth();
-  const [room, setRoom] = useState<Awaited<ReturnType<typeof loadReptileRooms>>[number] | null>(null);
+  type RoomWorkspace = Awaited<ReturnType<typeof loadReptileRooms>>[number];
+  const [rooms, setRooms] = useState<RoomWorkspace[]>([]);
+  const [room, setRoom] = useState<RoomWorkspace | null>(null);
   const [scene, setScene] = useState<SpatialHabitatScene | null>(null);
   const [containerId, setContainerId] = useState(ROOT_CONTAINER_ID);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -161,6 +165,7 @@ export default function SpatialHabitatBuilder() {
   const [history, setHistory] = useState<SpatialHabitatScene[]>([]);
   const [future, setFuture] = useState<SpatialHabitatScene[]>([]);
   const [snakes, setSnakes] = useState<Snake[]>([]);
+  const [blueprintOpen, setBlueprintOpen] = useState(false);
 
   const selected = useMemo(() => scene ? findNode(scene, selectedId) : null, [scene, selectedId]);
   const active = useMemo(() => {
@@ -179,6 +184,7 @@ export default function SpatialHabitatBuilder() {
       .then(async ([rooms, nextSnakes]) => {
         if (cancelled) return;
         const nextRoom = rooms[0] ?? null;
+        setRooms(rooms);
         setRoom(nextRoom);
         setSnakes(nextSnakes);
         if (!nextRoom) return;
@@ -189,8 +195,11 @@ export default function SpatialHabitatBuilder() {
         try {
           const draft = localStorage.getItem(DRAFT_PREFIX + nextRoom.id);
           if (draft) {
-            const parsed = JSON.parse(draft) as SpatialHabitatScene;
-            if (parsed.schemaVersion === 1 && Array.isArray(parsed.nodes)) nextScene = normalizeScene(parsed);
+            const parsed = JSON.parse(draft) as SpatialHabitatScene | { scene?: SpatialHabitatScene; savedAt?: string };
+            const draftScene = "scene" in parsed ? parsed.scene : parsed;
+            const draftSavedAt = "scene" in parsed ? parsed.savedAt : undefined;
+            const draftIsNewer = !draftSavedAt || !nextRoom.updatedAt || Date.parse(draftSavedAt) > Date.parse(nextRoom.updatedAt);
+            if (draftIsNewer && draftScene?.schemaVersion === 1 && Array.isArray(draftScene.nodes)) nextScene = normalizeScene(draftScene);
           }
         } catch {
           // Local draft is an optional recovery layer.
@@ -208,7 +217,7 @@ export default function SpatialHabitatBuilder() {
   useEffect(() => {
     if (!scene || !draftKey || !dirty) return;
     try {
-      localStorage.setItem(draftKey, JSON.stringify(scene));
+      localStorage.setItem(draftKey, JSON.stringify({ scene, savedAt: new Date().toISOString() }));
     } catch {
       // Cloud save remains the durable store.
     }
@@ -323,6 +332,11 @@ export default function SpatialHabitatBuilder() {
 
   const save = useCallback(async () => {
     if (!user || !room || !scene) return;
+    const blockingIssues = issues.filter((issue) => issue.severity === "error");
+    if (blockingIssues.length) {
+      setNotice("Resolve " + blockingIssues.length + " blocking spatial issue" + (blockingIssues.length === 1 ? "" : "s") + " before saving.");
+      return;
+    }
     setSaving(true);
     setNotice("");
     try {
@@ -330,6 +344,7 @@ export default function SpatialHabitatBuilder() {
       const compatibilityRoom = sceneToRoom(scene, room);
       await saveReptileRooms(user.uid, [compatibilityRoom]);
       setRoom(compatibilityRoom);
+      setRooms((current) => current.map((item) => item.id === compatibilityRoom.id ? compatibilityRoom : item));
       setDirty(false);
       try { localStorage.removeItem(DRAFT_PREFIX + room.id); } catch { /* optional */ }
       setNotice("Spatial habitat saved.");
@@ -338,7 +353,41 @@ export default function SpatialHabitatBuilder() {
     } finally {
       setSaving(false);
     }
-  }, [room, scene, user]);
+  }, [issues, room, scene, user]);
+
+  const handleBlueprintChange = useCallback((nextRoom: RoomWorkspace) => {
+    setRoom(nextRoom);
+    setRooms((current) => current.map((item) => item.id === nextRoom.id ? nextRoom : item));
+    setScene((current) => current ? syncSceneRoomInfrastructure(current, nextRoom) : current);
+    setDirty(true);
+    setNotice("Room blueprint updated. Save the spatial habitat to commit it.");
+  }, []);
+
+  const selectRoom = useCallback(async (nextRoomId: string) => {
+    if (!nextRoomId || !room || nextRoomId === room.id) return;
+    if (dirty) {
+      setNotice("Save the current spatial habitat before switching rooms.");
+      return;
+    }
+    const nextRoom = rooms.find((item) => item.id === nextRoomId);
+    if (!nextRoom || !user) return;
+    setSaving(true);
+    try {
+      const stored = await loadSpatialHabitat(user.uid, nextRoom.id).catch(() => null);
+      setRoom(nextRoom);
+      setScene(normalizeScene(stored ?? roomToSpatialScene(nextRoom)));
+      setContainerId(ROOT_CONTAINER_ID);
+      setSelectedId(null);
+      setHistory([]);
+      setFuture([]);
+      setBlueprintOpen(false);
+      setNotice("Switched to " + nextRoom.name + ".");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to switch rooms.");
+    } finally {
+      setSaving(false);
+    }
+  }, [dirty, room, rooms, user]);
 
   if (loading || profileLoading || !scene || !room) {
     return <main className="spatial-builder-loading">{notice || "Loading your spatial habitat…"}</main>;
@@ -350,7 +399,8 @@ export default function SpatialHabitatBuilder() {
         <div>
           <span>TINY TITANS · SPATIAL HABITAT BUILDER</span>
           <h1>{active?.label || "Reptile Room"}</h1>
-          <p>
+          <div className="spatial-room-heading">
+            <p>
             {displayDimension(active?.dimensions.width ?? 0, scene.units)}
             {" × "}
             {displayDimension(active?.dimensions.depth ?? 0, scene.units)}
@@ -358,7 +408,15 @@ export default function SpatialHabitatBuilder() {
             {displayDimension(active?.dimensions.height ?? 0, scene.units)}
             {" · "}
             {childrenOf(scene, containerId).length} items
-          </p>
+            </p>
+            {rooms.length > 1 && (
+              <label className="spatial-room-picker">Room
+                <select value={room.id} onChange={(event) => void selectRoom(event.target.value)}>
+                  {rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                </select>
+              </label>
+            )}
+          </div>
         </div>
         <div className="spatial-actions">
           {mode === "vivarium" && <button type="button" onClick={back}>← Room</button>}
@@ -456,6 +514,10 @@ export default function SpatialHabitatBuilder() {
             ))}
             {!issues.length && <div className="issue info"><strong>clear</strong><span>No current spatial issues.</span></div>}
           </div>
+          <details className="spatial-blueprint" open={blueprintOpen} onToggle={(event) => setBlueprintOpen((event.currentTarget as HTMLDetailsElement).open)}>
+            <summary>🏠 Room blueprint &amp; infrastructure</summary>
+            <RoomBlueprintPanel room={room} onRoomChange={handleBlueprintChange} />
+          </details>
         </aside>
       </section>
 
