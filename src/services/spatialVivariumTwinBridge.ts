@@ -63,19 +63,36 @@ export function mergeSpatialNodesIntoVivariumTwin(twin: VivariumDigitalTwin, sce
   const heatingAssets = assets.filter((asset) => asset.category === "heating");
   const monitoringAssets = assets.filter((asset) => asset.category === "monitoring");
   const lightingAssets = assets.filter((asset) => asset.category === "lighting");
+  const heatingKind = heatingAssets.map((asset) => asset.assetId).find((kind) => ["heat-mat", "che", "halogen", "dhp", "rhp", "basking-light"].includes(kind));
+  const inferredHeatingType: VivariumDigitalTwin["checklist"]["heatingType"] =
+    heatingKind === "heat-mat" ? "heat-mat"
+      : heatingKind === "che" ? "che"
+        : heatingKind === "halogen" || heatingKind === "basking-light" ? "halogen"
+          : heatingKind === "dhp" ? "dhp"
+            : heatingKind === "rhp" ? "rhp"
+              : twin.checklist.heatingType;
+  const inferredLightingType: VivariumDigitalTwin["checklist"]["lightingType"] =
+    lightingAssets.some((asset) => asset.assetId === "uvb") ? "uvb"
+      : lightingAssets.some((asset) => ["basking-light", "halogen"].includes(asset.assetId)) ? "basking"
+        : lightingAssets.some((asset) => ["led-bar", "ceiling-light", "lamp"].includes(asset.assetId)) ? "led"
+          : twin.checklist.lightingType;
+  const thermostat = assets.find((asset) => asset.assetId === "thermostat");
+  const inferredThermostatTarget = thermostat?.config?.targetTemperatureC;
   const nextChecklist = {
     ...twin.checklist,
     hideCount: kinds.filter((kind) => kind === "hide").length,
     waterBowlCount: kinds.filter((kind) => kind === "water-bowl").length,
     heatingDeviceCount: heatingAssets.length,
+    heatingType: inferredHeatingType,
     thermostatPresent: kinds.includes("thermostat") || twin.checklist.thermostatPresent,
+    thermostatTargetC: typeof inferredThermostatTarget === "number" ? inferredThermostatTarget : twin.checklist.thermostatTargetC,
     monitoring: [...new Set([
       ...(monitoringAssets.some((asset) => asset.assetId === "thermometer") ? ["thermometer"] : []),
       ...(monitoringAssets.some((asset) => asset.assetId === "hygrometer") ? ["hygrometer"] : []),
       ...(monitoringAssets.some((asset) => asset.assetId === "temp-humidity") ? ["temp-humidity"] : []),
       ...twin.checklist.monitoring,
     ])] as VivariumDigitalTwin["checklist"]["monitoring"],
-    lightingType: lightingAssets.some((asset) => asset.assetId === "uvb") ? "uvb" : twin.checklist.lightingType,
+    lightingType: inferredLightingType,
     enrichmentCount: assets.filter((asset) => asset.category === "enrichment").length,
     plantCount: kinds.filter((kind) => kind === "plant").length,
     corkCount: kinds.filter((kind) => kind === "cork").length,
