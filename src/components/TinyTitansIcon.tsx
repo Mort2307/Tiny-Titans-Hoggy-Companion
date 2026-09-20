@@ -193,15 +193,14 @@ function resolveIconName(value: string): TinyTitansIconName {
 function SnakeFace({ className = "", ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg {...common} {...props} className={`tt-icon-svg tt-icon-snake ${className}`.trim()}>
-      <path className="tt-icon-body" d="M10 28c0-8 6.2-14 14-14s14 6 14 14c0 6-4.7 10-14 10S10 34 10 28Z" />
-      <path className="tt-icon-soft" d="M17 22c2-3 12-3 14 0" />
-      <ellipse className="tt-icon-eye" cx="18.5" cy="26" rx="2.1" ry="2.7" />
-      <ellipse className="tt-icon-eye" cx="29.5" cy="26" rx="2.1" ry="2.7" />
-      <circle className="tt-icon-pupil" cx="18.7" cy="26.2" r=".75" />
-      <circle className="tt-icon-pupil" cx="29.3" cy="26.2" r=".75" />
-      <path className="tt-icon-mouth" d="M19.5 31.2c2.6 2 6.4 2 9 0" />
-      <path className="tt-icon-tongue" d="M24 33.2v5m0 0-2.1 2m2.1-2 2.1 2" />
-      <path className="tt-icon-scale" d="M8 30c-1.2 0-2.2-1-2.2-2.2S6.8 25.6 8 25.6m32 0c1.2 0 2.2 1 2.2 2.2S41.2 30 40 30" />
+      <path className="tt-icon-snake-neck" d="M12 39c1-8 4-13 10-16 5-2 8-6 9-11 1-4 4-6 8-5 3 1 4 4 3 7-2 6-6 11-11 14-4 2-6 6-6 11v2H12Z" />
+      <path className="tt-icon-snake-head" d="M29 12c4-5 10-6 14-2 3 3 3 7 0 10-3 3-9 4-14 1l-4 4-3-3 4-4c-1-2 0-4 3-6Z" />
+      <path className="tt-icon-snake-snout" d="M36 14c2 1 4 2 6 1m-6 3c2 1 4 0 6-1" />
+      <circle className="tt-icon-eye" cx="37" cy="12.5" r="2.2" />
+      <circle className="tt-icon-pupil" cx="37.5" cy="12.5" r=".8" />
+      <path className="tt-icon-snake-scale" d="M17 30c3 1 5 3 7 6m-10-3c3 1 5 3 7 5m4-16c2 1 3 2 4 4" />
+      <path className="tt-icon-tongue" d="M43 18v4m0 0-2 2m2-2 2 2" />
+      <path className="tt-icon-spark" d="m9 10 1.2 3 3 1.2-3 1.2L9 18l-1.2-2.6-3-1.2 3-1.2L9 10Z" />
     </svg>
   );
 }
