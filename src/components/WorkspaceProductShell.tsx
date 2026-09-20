@@ -4,7 +4,7 @@ import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { workspaceProductForTier, type WorkspaceProduct } from "../config/workspaceProducts";
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import WorkspaceDashboard from "./WorkspaceDashboard";
-import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
+import TinyTitansIcon from "./TinyTitansIcon";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
 import "../styles/workspaceProductShell.css";
 
@@ -16,17 +16,6 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
   business_advanced: { label: "BUSINESS ADVANCED COMMAND", heading: "The operating layer for a professional reptile business.", description: "Advanced intelligence, business controls and organisation-wide workflows in one environment.", actions: [{ title: "Animals", path: "/snakes" }, { title: "Intelligence", path: "/titan-intelligence" }, { title: "Reports", path: "/paid/business-reporting" }, { title: "API & Tools", path: "/paid" }] },
   rescue: { label: "RESCUE COMMAND", heading: "Rescue operations around the animals, not the paperwork.", description: "Intake, quarantine, care, medical, movement, adoption and animal identity belong together here.", actions: [{ title: "Animal Register", path: "/rescue/animals" }, { title: "New Intake", path: "/rescue/animals?intake=1" }, { title: "Scan / Create QR", path: "/rescue/qr" }, { title: "Team", path: "/rescue/team" }] },
 };
-
-function workspaceIcon(productId: WorkspaceProduct["id"]): TinyTitansIconName {
-  if (productId === "personal") return "reptile";
-  if (productId === "rescue") return "veterinary";
-  if (productId === "titan_seller") return "sellerProfile";
-  if (productId === "business_starter") return "reporting";
-  if (productId === "business_plus") return "team";
-  if (productId === "business_advanced") return "api";
-  if (productId === "titan_pro") return "titanIntelligence";
-  return "titan";
-}
 
 export default function WorkspaceProductShell({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -49,7 +38,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
   return <div className={shellClass} data-workspace={product.id} data-tier={tier} style={shellStyle}>
     <header className="workspace-product-header">
       <div className="workspace-product-brand">
-        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={product.icon as TinyTitansIconName} size={29} /></span>
+        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={product.icon} size={29} /></span>
         <div>
           <span className="workspace-product-eyebrow">{product.eyebrow}</span>
           <strong>{product.name}</strong>
