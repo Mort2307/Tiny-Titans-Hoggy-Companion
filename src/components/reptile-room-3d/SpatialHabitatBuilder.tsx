@@ -380,6 +380,17 @@ export default function SpatialHabitatBuilder() {
     commit(snapNodeToCeiling(scene, selected.id), "Mounted to ceiling.");
   }, [commit, scene, selected]);
 
+  const connectPowerSelected = useCallback(() => {
+    if (!scene || !selected || !selected.capabilities.powerConsumer) return;
+    const next = connectNodeToNearestPowerSocket(scene, selected.id);
+    const linkedSocketId = findNode(next, selected.id)?.config.powerSocketId;
+    if (linkedSocketId) {
+      commit(next, "Connected to nearest compatible power socket.");
+    } else {
+      setNotice("No room power socket could be linked to this equipment.");
+    }
+  }, [commit, scene, selected]);
+
   const save = useCallback(async () => {
     if (!user || !room || !scene) return;
     const blockingIssues = issues.filter((issue) => issue.severity === "error");
@@ -557,6 +568,7 @@ export default function SpatialHabitatBuilder() {
               onSnapWall={snapWallSelected}
               onSnapFloor={snapFloorSelected}
               onSnapCeiling={snapCeilingSelected}
+              onConnectPower={connectPowerSelected}
             />
           ) : (
             <ContainerInspector
@@ -622,6 +634,7 @@ export default function SpatialHabitatBuilder() {
                 onSnapWall={snapWallSelected}
                 onSnapFloor={snapFloorSelected}
                 onSnapCeiling={snapCeilingSelected}
+                onConnectPower={connectPowerSelected}
               />
             ) : (
               <ContainerInspector
@@ -678,6 +691,7 @@ function Inspector({
   onSnapWall,
   onSnapFloor,
   onSnapCeiling,
+  onConnectPower,
 }: {
   node: SpatialNode;
   parent: { width: number; depth: number; height: number };
@@ -688,6 +702,7 @@ function Inspector({
   onSnapWall: () => void;
   onSnapFloor: () => void;
   onSnapCeiling: () => void;
+  onConnectPower: () => void;
 }) {
   const setDimension = (key: "width" | "depth" | "height", value: string) => {
     onPatch({ dimensions: { ...node.dimensions, [key]: Math.max(1, Number(value) || 1) } });
@@ -749,7 +764,10 @@ function Inspector({
         <div className="spatial-power-link">
           <span>POWER</span>
           <strong>{String(node.config.powerSocketId || "Unlinked")}</strong>
-          <button type="button" onClick={() => onPatch({ config: { ...node.config, powerSocketId: null } })} disabled={!node.config.powerSocketId}>Disconnect</button>
+          <div className="spatial-power-buttons">
+            <button type="button" onClick={onConnectPower}>Connect nearest</button>
+            <button type="button" onClick={() => onPatch({ config: { ...node.config, powerSocketId: null } })} disabled={!node.config.powerSocketId}>Disconnect</button>
+          </div>
         </div>
       )}
 
