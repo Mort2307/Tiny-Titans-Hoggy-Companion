@@ -11,6 +11,7 @@ import {
   duplicateNode,
   findNode,
   normalizeScene,
+  mergeStoredSpatialSceneWithRoom,
   parentDimensions,
   removeNode,
   roomToSpatialScene,
@@ -191,7 +192,9 @@ export default function SpatialHabitatBuilder() {
         if (!nextRoom) return;
 
         const stored = await loadSpatialHabitat(user.uid, nextRoom.id).catch(() => null);
-        let nextScene = normalizeScene(stored ?? roomToSpatialScene(nextRoom));
+        let nextScene = stored
+          ? mergeStoredSpatialSceneWithRoom(stored, nextRoom)
+          : roomToSpatialScene(nextRoom);
 
         try {
           const draft = localStorage.getItem(DRAFT_PREFIX + nextRoom.id);
@@ -376,7 +379,9 @@ export default function SpatialHabitatBuilder() {
     try {
       const stored = await loadSpatialHabitat(user.uid, nextRoom.id).catch(() => null);
       setRoom(nextRoom);
-      setScene(normalizeScene(stored ?? roomToSpatialScene(nextRoom)));
+      setScene(stored
+        ? mergeStoredSpatialSceneWithRoom(stored, nextRoom)
+        : roomToSpatialScene(nextRoom));
       setContainerId(ROOT_CONTAINER_ID);
       setSelectedId(null);
       setHistory([]);
@@ -518,175 +523,3 @@ export default function SpatialHabitatBuilder() {
           </div>
           <details className="spatial-blueprint" open={blueprintOpen} onToggle={(event) => setBlueprintOpen((event.currentTarget as HTMLDetailsElement).open)}>
             <summary>🏠 Room blueprint &amp; infrastructure</summary>
-            <RoomBlueprintPanel room={blueprintRoom} onRoomChange={handleBlueprintChange} />
-          </details>
-        </aside>
-      </section>
-
-      {(libraryOpen || inspectorOpen || blueprintOpen) && (
-        <div className="spatial-sheet" role="dialog" aria-modal="true" aria-label={libraryOpen ? "Add assets" : blueprintOpen ? "Room blueprint" : "Edit selected"}>
-          <button type="button" className="spatial-sheet-backdrop" aria-label="Close panel" onClick={() => { setLibraryOpen(false); setInspectorOpen(false); setBlueprintOpen(false); }} />
-          <div className="spatial-sheet-panel">
-            <header>
-              <strong>{libraryOpen ? "Add assets" : blueprintOpen ? "Room blueprint" : "Edit selected"}</strong>
-              <button type="button" onClick={() => { setLibraryOpen(false); setInspectorOpen(false); }} aria-label="Close">×</button>
-            </header>
-            {libraryOpen ? (
-              <div className="spatial-sheet-content">
-                {groups.map((group) => (
-                  <div className="spatial-group" key={group.id}>
-                    <button type="button" onClick={() => setOpenGroups((current) => ({ ...current, [group.id]: !(current[group.id] ?? false) }))}>
-                      {group.icon} {group.label}<span>{group.items.length}</span>
-                    </button>
-                    {(openGroups[group.id] ?? false) && group.items.map((preset) => (
-                      <button type="button" className="spatial-asset" key={preset.assetId} onClick={() => add(preset)}>
-                        <span>{preset.icon ?? "◈"}</span>
-                        <div><b>{preset.label}</b><small>{preset.width} × {preset.depth} × {preset.height} cm</small></div>
-                        <b>＋</b>
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : blueprintOpen ? (
-              <div className="spatial-sheet-content">
-                <RoomBlueprintPanel room={blueprintRoom} onRoomChange={handleBlueprintChange} />
-              </div>
-            ) : selected ? (
-              <Inspector
-                node={selected}
-                parent={parentDimensions(scene, selected.parentId)}
-                onPatch={(patch) => update(selected.id, patch)}
-                onDuplicate={() => { duplicateSelected(); setInspectorOpen(false); }}
-                onDelete={() => { removeSelected(); setInspectorOpen(false); }}
-                onEnter={() => { setInspectorOpen(false); open(selected.id); }}
-              />
-            ) : (
-              <ContainerInspector
-                container={active}
-                onPatch={mode === "room"
-                  ? updateRoot
-                  : (patch) => { if (active && "id" in active) update(active.id, patch as Partial<SpatialNode>); }}
-              />
-            )}
-          </div>
-        </div>
-      )}
-    </main>
-  );
-}
-
-function ContainerInspector({
-  container,
-  onPatch,
-}: {
-  container: SpatialHabitatScene["root"] | SpatialNode | null;
-  onPatch: (patch: { label?: string; dimensions?: { width: number; depth: number; height: number } }) => void;
-}) {
-  if (!container) return null;
-  const setDimension = (key: "width" | "depth" | "height", value: string) => {
-    onPatch({ dimensions: { ...container.dimensions, [key]: Math.max(1, Number(value) || 1) } });
-  };
-  return (
-    <div className="spatial-inspector-content">
-      <div className="spatial-selected">
-        <span>{container.kind === "room" ? "ROOM SETTINGS" : "VIVARIUM SETTINGS"}</span>
-        <h2>{container.label}</h2>
-      </div>
-      <label>Name<input value={container.label} onChange={(event) => onPatch({ label: event.target.value })} /></label>
-      <div className="spatial-grid">
-        {(["width", "depth", "height"] as const).map((key) => (
-          <label key={key}>{key} (cm)
-            <input type="number" min="1" value={Math.round(container.dimensions[key])} onChange={(event) => setDimension(key, event.target.value)} />
-          </label>
-        ))}
-      </div>
-      <p className="spatial-hint">This is the real construction size used by the 3D scene. Change it before arranging furniture or building the enclosure.</p>
-    </div>
-  );
-}
-
-function Inspector({
-  node,
-  parent,
-  onPatch,
-  onDuplicate,
-  onDelete,
-  onEnter,
-}: {
-  node: SpatialNode;
-  parent: { width: number; depth: number; height: number };
-  onPatch: (patch: Partial<SpatialNode>) => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
-  onEnter: () => void;
-}) {
-  const setDimension = (key: "width" | "depth" | "height", value: string) => {
-    onPatch({ dimensions: { ...node.dimensions, [key]: Math.max(1, Number(value) || 1) } });
-  };
-  const setPosition = (key: "x" | "y" | "z", value: string) => {
-    onPatch({ position: { ...node.position, [key]: Number(value) || 0 } });
-  };
-
-  return (
-    <div className="spatial-inspector-content">
-      <div className="spatial-selected"><span>{node.category.toUpperCase()}</span><h2>{node.label}</h2></div>
-      {node.capabilities.container && <button type="button" className="spatial-enter" onClick={onEnter}>Open {node.label} →</button>}
-
-      <label>Name<input value={node.label} onChange={(event) => onPatch({ label: event.target.value })} /></label>
-
-      <div className="spatial-grid">
-        {(["width", "depth", "height"] as const).map((key) => (
-          <label key={key}>{key} (cm)
-            <input type="number" min="1" value={Math.round(node.dimensions[key])} onChange={(event) => setDimension(key, event.target.value)} />
-          </label>
-        ))}
-      </div>
-
-      <div className="spatial-grid">
-        {(["x", "y", "z"] as const).map((key) => (
-          <label key={key}>{key.toUpperCase()} (cm)
-            <input type="number" value={Math.round(node.position[key])} onChange={(event) => setPosition(key, event.target.value)} />
-          </label>
-        ))}
-      </div>
-
-      <div className="spatial-rotate">
-        <button type="button" onClick={() => onPatch({ rotation: { ...node.rotation, y: node.rotation.y - 15 } })}>↶</button>
-        <strong>{Math.round(node.rotation.y)}°</strong>
-        <button type="button" onClick={() => onPatch({ rotation: { ...node.rotation, y: node.rotation.y + 15 } })}>↷</button>
-        <button type="button" onClick={() => onPatch({ rotation: { ...node.rotation, y: 0 } })}>Reset</button>
-      </div>
-
-      {["che", "halogen", "dhp", "rhp", "heat-mat", "basking-light", "ceiling-light", "led-bar", "uvb", "power-strip", "smart-plug"].includes(node.kind) && (
-        <label>Wattage
-          <input type="number" min="0" value={Number(node.config.wattage) || 0} onChange={(event) => onPatch({ config: { ...node.config, wattage: Math.max(0, Number(event.target.value) || 0) } })} />
-        </label>
-      )}
-
-      {node.kind === "thermostat" && (
-        <div className="spatial-grid">
-          <label>Target °C<input type="number" step="0.1" value={Number(node.config.targetTemperatureC) || 30} onChange={(event) => onPatch({ config: { ...node.config, targetTemperatureC: Number(event.target.value) || 30 } })} /></label>
-          <label>Mode<select value={String(node.config.mode || "heat")} onChange={(event) => onPatch({ config: { ...node.config, mode: event.target.value } })}><option value="heat">heat</option><option value="cool">cool</option><option value="off">off</option></select></label>
-        </div>
-      )}
-
-      {node.capabilities.sensor && (
-        <div className="spatial-grid">
-          <label>Temp °C<input type="number" step="0.1" value={Number(node.config.currentTemperatureC) || 25} onChange={(event) => onPatch({ config: { ...node.config, currentTemperatureC: Number(event.target.value) || 25 } })} /></label>
-          <label>Humidity %<input type="number" min="0" max="100" value={Number(node.config.humidity) || 50} onChange={(event) => onPatch({ config: { ...node.config, humidity: Math.min(100, Math.max(0, Number(event.target.value) || 50)) } })} /></label>
-        </div>
-      )}
-
-      <label>Notes<textarea rows={3} value={node.notes || ""} onChange={(event) => onPatch({ notes: event.target.value })} /></label>
-
-      <div className="spatial-actions-row">
-        <button type="button" onClick={onDuplicate}>Duplicate</button>
-        <button type="button" className="danger" onClick={onDelete}>Delete</button>
-      </div>
-      <p className="spatial-hint">
-        Parent {Math.round(parent.width)} × {Math.round(parent.depth)} × {Math.round(parent.height)} cm. X/Z are centred; Y is height above the parent floor.
-      </p>
-    </div>
-  );
-}
