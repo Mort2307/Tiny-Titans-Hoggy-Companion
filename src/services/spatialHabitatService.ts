@@ -154,6 +154,29 @@ export function roomToSpatialScene(room: ReptileRoomWorkspace): SpatialHabitatSc
   };
 }
 
+export function mergeStoredSpatialSceneWithRoom(stored: SpatialHabitatScene, room: ReptileRoomWorkspace): SpatialHabitatScene {
+  const base = roomToSpatialScene(room);
+  const normalized = normalizeScene(stored);
+  const baseById = new Map(base.nodes.map((node) => [node.id, node]));
+  const storedById = new Map(normalized.nodes.map((node) => [node.id, node]));
+  const mergedNodes = base.nodes.map((node) => {
+    const storedNode = storedById.get(node.id);
+    if (!storedNode) return node;
+    return {
+      ...storedNode,
+      label: node.kind === "vivarium" ? node.label : storedNode.label,
+      config: { ...storedNode.config, ...node.config, ...(node.kind === "vivarium" ? { linkedSnakeId: node.config.linkedSnakeId, linkedSlotId: node.id } : {}) },
+      notes: node.kind === "vivarium" ? node.notes ?? storedNode.notes : storedNode.notes,
+    };
+  });
+  const spatialOnlyRoot = normalized.nodes.filter((node) => node.parentId === ROOT_CONTAINER_ID && !baseById.has(node.id));
+  const nestedStored = normalized.nodes.filter((node) => node.parentId !== ROOT_CONTAINER_ID && nodeIdsForExistingContainers(normalized, node.parentId));
+  return normalizeScene({ ...normalized, root: base.root, nodes: [...mergedNodes, ...spatialOnlyRoot, ...nestedStored] });
+}
+
+function nodeIdsForExistingContainers(scene: SpatialHabitatScene, parentId: string): boolean {
+  return scene.nodes.some((node) => node.id === parentId && node.kind === "vivarium");
+}
 export function normalizeScene(scene: SpatialHabitatScene): SpatialHabitatScene {
   const rawDimensions = scene.root?.dimensions ?? { width: 360, depth: 300, height: 240 };
   const dimensions = {
