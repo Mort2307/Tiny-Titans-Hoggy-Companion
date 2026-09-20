@@ -136,6 +136,14 @@ export default function RoomBlueprintPanel({ room: controlledRoom = null, onRoom
     });
   };
 
+  const updateSocket = (id: string, patch: Partial<ReptileRoomSocket>) => {
+    if (!room) return;
+    void save({
+      ...room,
+      sockets: (room.sockets ?? []).map((socket) => socket.id === id ? { ...socket, ...patch } : socket),
+      updatedAt: new Date().toISOString(),
+    });
+  };
   const removeSocket = (id: string) => {
     if (!room) return;
     void save({
@@ -264,7 +272,22 @@ export default function RoomBlueprintPanel({ room: controlledRoom = null, onRoom
                     background: "rgba(255,255,255,.04)",
                   }}
                 >
-                  <span>🔌 {socket.label} · {socket.height} cm · {socket.outlets} outlets</span>
+                  <div style={{ display: "grid", gap: ".25rem", minWidth: 0 }}>
+                    <strong>🔌 {socket.label}</strong>
+                    <small>{socket.height} cm · {socket.outlets} outlets</small>
+                    <label>
+                      Max load (W)
+                      <input
+                        aria-label={`${socket.label} maximum load watts`}
+                        type="number"
+                        min="0"
+                        step="10"
+                        value={socket.maxLoadWatts ?? 0}
+                        onChange={(event) => updateSocket(socket.id, { maxLoadWatts: Math.max(0, Number(event.target.value) || 0) })}
+                        style={inputStyle}
+                      />
+                    </label>
+                  </div>
                   <button type="button" onClick={() => removeSocket(socket.id)}>Remove</button>
                 </div>
               ))}
@@ -338,32 +361,3 @@ export default function RoomBlueprintPanel({ room: controlledRoom = null, onRoom
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) void upload("wall", file);
-                  }}
-                />
-              </label>
-            </div>
-            {room.roomPhotoUrl && (
-              <img
-                src={room.roomPhotoUrl}
-                alt="Uploaded reptile room reference"
-                style={{
-                  maxWidth: 240,
-                  maxHeight: 120,
-                  objectFit: "cover",
-                  borderRadius: 8,
-                  marginTop: ".45rem",
-                }}
-              />
-            )}
-          </div>
-
-          {notice && (
-            <div role="status" style={{ fontSize: ".82rem", opacity: 0.78 }}>
-              {notice}
-            </div>
-          )}
-        </div>
-      </details>
-    </section>
-  );
-}
