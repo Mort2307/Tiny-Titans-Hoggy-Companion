@@ -1,10 +1,24 @@
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "./reptileRoomService";
-import type { SpatialAssetPreset, SpatialDimensionsCm, SpatialHabitatScene, SpatialNode, SpatialNodeCapabilities, SpatialNodeKind, SpatialValidationIssue } from "../types/spatialHabitat";
+import type { SpatialAssetPreset, SpatialDimensionsCm, SpatialFloorPoint, SpatialHabitatScene, SpatialNode, SpatialNodeCapabilities, SpatialNodeKind, SpatialValidationIssue } from "../types/spatialHabitat";
 
 export const SPATIAL_SNAP_CM = 5;
 export const ROOT_CONTAINER_ID = "root";
 const EPS = 0.01;
 const DEFAULT_CLEARANCE = { front: 30, rear: 5, left: 5, right: 5, top: 10 };
+
+function rotatedFootprint(node: SpatialNode) {
+  const angle = ((node.rotation?.y ?? 0) * Math.PI) / 180;
+  const c = Math.abs(Math.cos(angle));
+  const s = Math.abs(Math.sin(angle));
+  return {
+    width: node.dimensions.width * c + node.dimensions.depth * s,
+    depth: node.dimensions.width * s + node.dimensions.depth * c,
+  };
+}
+
+function scenePointToCentred(point: SpatialFloorPoint, room: SpatialHabitatScene["root"]) {
+  return { x: point.x - room.dimensions.width / 2, z: point.z - room.dimensions.depth / 2 };
+}
 
 export function spatialId(prefix = "node") {
   const uuid = globalThis.crypto?.randomUUID?.();
@@ -130,6 +144,11 @@ export function roomToSpatialScene(room: ReptileRoomWorkspace): SpatialHabitatSc
       kind: "room",
       label: room.name || "Reptile Room",
       dimensions: { width, depth, height },
+      floorPlan: room.floorPlan?.map((point) => ({ x: point.x, z: point.z })),
+      walls: room.walls?.map((wall) => ({ ...wall, start: { ...wall.start }, end: { ...wall.end } })),
+      sockets: room.sockets?.map((socket) => ({ ...socket })),
+      roomPhotoUrl: room.roomPhotoUrl || undefined,
+      logoUrl: room.logoUrl || undefined,
     },
     nodes,
     updatedAt: room.updatedAt || new Date().toISOString(),
@@ -146,6 +165,11 @@ export function normalizeScene(scene: SpatialHabitatScene): SpatialHabitatScene 
       kind: "room",
       label: scene.root?.label || "Reptile Room",
       dimensions,
+      floorPlan: Array.isArray(scene.root?.floorPlan) ? scene.root.floorPlan.map((point) => ({ x: Number(point.x) || 0, z: Number(point.z) || 0 })) : undefined,
+      walls: Array.isArray(scene.root?.walls) ? scene.root.walls.map((wall) => ({ ...wall, start: { x: Number(wall.start?.x) || 0, z: Number(wall.start?.z) || 0 }, end: { x: Number(wall.end?.x) || 0, z: Number(wall.end?.z) || 0 } })) : undefined,
+      sockets: Array.isArray(scene.root?.sockets) ? scene.root.sockets.map((socket) => ({ ...socket, x: Number(socket.x) || 0, z: Number(socket.z) || 0, height: Math.max(0, Number(socket.height) || 0), outlets: Math.max(1, Math.round(Number(socket.outlets) || 1)) })) : undefined,
+      roomPhotoUrl: typeof scene.root?.roomPhotoUrl === "string" ? scene.root.roomPhotoUrl : undefined,
+      logoUrl: typeof scene.root?.logoUrl === "string" ? scene.root.logoUrl : undefined,
     },
     nodes: Array.isArray(scene.nodes)
       ? scene.nodes.map((node) => ({
@@ -298,11 +322,12 @@ export function duplicateNode(scene: SpatialHabitatScene, id: string): SpatialHa
 }
 
 function aabb(node: SpatialNode) {
+  const footprint = rotatedFootprint(node);
   return {
-    l: node.position.x - node.dimensions.width / 2,
-    r: node.position.x + node.dimensions.width / 2,
-    f: node.position.z - node.dimensions.depth / 2,
-    b: node.position.z + node.dimensions.depth / 2,
+    l: node.position.x - footprint.width / 2,
+    r: node.position.x + footprint.width / 2,
+    f: node.position.z - footprint.depth / 2,
+    b: node.position.z + footprint.depth / 2,
     bo: node.position.y,
     t: node.position.y + node.dimensions.height,
   };
@@ -317,7 +342,12 @@ function intersects(a: SpatialNode, b: SpatialNode) {
 export function validateSpatialScene(scene: SpatialHabitatScene): SpatialValidationIssue[] {
   const issues: SpatialValidationIssue[] = [];
 
+  const nodeIds = new Set(scene.nodes.map((node) => node.id));
   for (const node of scene.nodes) {
+    if (node.parentId !== ROOT_CONTAINER_ID && !nodeIds.has(node.parentId)) {
+      issues.push({ severity: "error", code: "orphaned-node", message: node.label + " refers to a missing parent container.", nodeIds: [node.id] });
+      continue;
+    }
     const parent = parentDimensions(scene, node.parentId);
     const bounds = aabb(node);
     if (
@@ -332,6 +362,26 @@ export function validateSpatialScene(scene: SpatialHabitatScene): SpatialValidat
         severity: "error",
         code: "outside-container",
         message: node.label + " extends outside its parent space.",
+        nodeIds: [node.id],
+      });
+    }
+    const clearance = node.clearance ?? DEFAULT_CLEARANCE;
+    const envelope = {
+      l: bounds.l - Math.max(0, clearance.left),
+      r: bounds.r + Math.max(0, clearance.right),
+      f: bounds.f - Math.max(0, clearance.rear),
+      b: bounds.b + Math.max(0, clearance.front),
+    };
+    if (
+      envelope.l < -parent.width / 2 ||
+      envelope.r > parent.width / 2 ||
+      envelope.f < -parent.depth / 2 ||
+      envelope.b > parent.depth / 2
+    ) {
+      issues.push({
+        severity: "warning",
+        code: "clearance",
+        message: node.label + " is within the container but its configured access/clearance envelope is not.",
         nodeIds: [node.id],
       });
     }
@@ -475,6 +525,11 @@ export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorks
     height: root.height,
     name: scene.root.label,
     unit: scene.units,
+    floorPlan: scene.root.floorPlan?.map((point) => ({ x: point.x, z: point.z })),
+    walls: scene.root.walls?.map((wall) => ({ ...wall, start: { ...wall.start }, end: { ...wall.end } })),
+    sockets: scene.root.sockets?.map((socket) => ({ ...socket })),
+    roomPhotoUrl: scene.root.roomPhotoUrl || "",
+    logoUrl: scene.root.logoUrl || "",
     slots: slots.filter((slot) => rootIds.has(slot.id)),
     objects: [
       ...objects,
@@ -482,4 +537,24 @@ export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorks
     ],
     updatedAt: new Date().toISOString(),
   };
+}
+
+export function syncSceneRoomInfrastructure(scene: SpatialHabitatScene, room: ReptileRoomWorkspace): SpatialHabitatScene {
+  return normalizeScene({
+    ...scene,
+    root: {
+      ...scene.root,
+      label: room.name || scene.root.label,
+      dimensions: {
+        width: Math.max(100, room.width ?? scene.root.dimensions.width),
+        depth: Math.max(100, room.depth ?? scene.root.dimensions.depth),
+        height: Math.max(100, room.height ?? scene.root.dimensions.height),
+      },
+      floorPlan: room.floorPlan?.map((point) => ({ x: point.x, z: point.z })),
+      walls: room.walls?.map((wall) => ({ ...wall, start: { ...wall.start }, end: { ...wall.end } })),
+      sockets: room.sockets?.map((socket) => ({ ...socket })),
+      roomPhotoUrl: room.roomPhotoUrl || undefined,
+      logoUrl: room.logoUrl || undefined,
+    },
+  });
 }
