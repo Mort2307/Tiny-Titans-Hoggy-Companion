@@ -124,6 +124,7 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
   const [tab, setTab] = useState<"build" | "checklist" | "intelligence">("build");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [dirty, setDirty] = useState(false);
 
   const intelligence = useMemo(() => evaluateVivariumTwin(twin), [twin]);
 
@@ -133,10 +134,10 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
     setLoading(true);
     void loadVivariumTwin(user.uid, slot.id)
       .then((loaded) => {
-        if (active) setTwin({ ...cloneTwin(loaded), photoUrl: loaded.photoUrl ?? slot.photoUrl ?? "" });
+        if (active) { setTwin({ ...cloneTwin(loaded), photoUrl: loaded.photoUrl ?? slot.photoUrl ?? "" }); setDirty(false); }
       })
       .catch(() => {
-        if (active) setTwin((current) => ({ ...current, photoUrl: slot.photoUrl ?? current.photoUrl ?? "" }));
+        if (active) { setTwin((current) => ({ ...current, photoUrl: slot.photoUrl ?? current.photoUrl ?? "" })); setDirty(false); }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -146,7 +147,22 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
   const selectedAsset = twin.assets.find((asset) => asset.id === selectedId) ?? null;
   const selectedPreset = selectedAsset ? getRoomAssetPreset(selectedAsset.assetId) : undefined;
 
-  const patchChecklist = <K extends keyof VivariumDigitalTwin["checklist"]>(key: K, value: VivariumDigitalTwin["checklist"][K]) => setTwin((current) => ({ ...current, checklist: { ...current.checklist, [key]: value } }));
+  useEffect(() => {
+    const handler = (event: BeforeUnloadEvent) => {
+      if (!dirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  const requestClose = () => {
+    if (dirty && !window.confirm("You have unsaved vivarium changes. Close without saving?")) return;
+    onClose();
+  };
+
+  const patchChecklist = <K extends keyof VivariumDigitalTwin["checklist"]>(key: K, value: VivariumDigitalTwin["checklist"][K]) => { setDirty(true); setTwin((current) => ({ ...current, checklist: { ...current.checklist, [key]: value } })); };
 
   const addProp = (asset: (typeof REPTILE_ROOM_ASSETS)[number]) => {
     const preset = asset;
@@ -164,6 +180,8 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
       lockedToVivarium: true,
       config: preset.config ? { ...preset.config } : {},
     };
+    setDirty(true);
+    setDirty(true);
     setTwin((current) => ({ ...current, assets: [...current.assets, next] }));
     setSelectedId(next.id);
     setMessage(`${preset.label} added to this vivarium.`);
@@ -184,6 +202,7 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
 
   const removeSelected = () => {
     if (!selectedAsset) return;
+    setDirty(true);
     setTwin((current) => ({ ...current, assets: current.assets.filter((asset) => asset.id !== selectedAsset.id) }));
     setSelectedId(null);
     setMessage(`${selectedAsset.label} removed.`);
@@ -212,6 +231,7 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
       const next = { ...twin, intelligence, updatedAt: new Date().toISOString(), photoUrl: twin.photoUrl || slot.photoUrl || "" } as VivariumDigitalTwin;
       await saveVivariumTwin(user.uid, slot.id, next);
       setTwin(next);
+      setDirty(false);
       setMessage("Vivarium digital twin saved.");
       onSaved?.(next);
     } catch (error) {
@@ -232,7 +252,7 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
           </div>
           <div className="vtb-header-actions">
             <button type="button" className="vtb-secondary" onClick={() => void loadExisting()} disabled={loading}>{loading ? "Loading..." : "Reload"}</button>
-            <button type="button" className="vtb-close" onClick={onClose} aria-label="Close">X</button>
+            <button type="button" className="vtb-close" onClick={requestClose} aria-label="Close">X</button>
           </div>
         </header>
 
@@ -283,7 +303,7 @@ export function VivariumBuilder3D({ slot, onClose, onSaved }: Props) {
           </aside>
         </div>
 
-        <footer className="vtb-footer"><span className="vtb-message">{message}</span><div><button type="button" className="vtb-secondary" onClick={onClose}>Cancel</button><button type="button" className="vtb-save" onClick={() => void save()} disabled={saving}>{saving ? "Saving..." : "Save digital twin"}</button></div></footer>
+        <footer className="vtb-footer"><span className="vtb-message">{message}</span><div><button type="button" className="vtb-secondary" onClick={requestClose}>Cancel</button><button type="button" className="vtb-save" onClick={() => void save()} disabled={saving}>{saving ? "Saving..." : dirty ? "Save digital twin" : "Saved"}</button></div></footer>
       </div>
     </div>
   );
