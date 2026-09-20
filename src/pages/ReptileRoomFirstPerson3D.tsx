@@ -3,6 +3,8 @@ import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
 import { getUserSnakes } from "../services/snakeService";
 import { loadReptileRooms, type ReptileRoomSlot, type ReptileRoomWorkspace, type ReptileRoomWall } from "../services/reptileRoomService";
+import { loadSpatialHabitat } from "../services/spatialHabitatPersistenceService";
+import { mergeStoredSpatialSceneWithRoom, sceneToRoom } from "../services/spatialHabitatService";
 import type { Snake } from "../types/Snake";
 import "../styles/reptile-room-first-person.css";
 
@@ -110,7 +112,11 @@ export default function ReptileRoomFirstPerson3D() {
     if (!user) return;
     try {
       const [loadedRooms, loadedSnakes] = await Promise.all([loadReptileRooms(user.uid), getUserSnakes(user.uid)]);
-      setRooms(loadedRooms);
+      const spatialRooms = await Promise.all(loadedRooms.map(async (workspace) => {
+        const storedScene = await loadSpatialHabitat(user.uid, workspace.id).catch(() => null);
+        return storedScene ? sceneToRoom(mergeStoredSpatialSceneWithRoom(storedScene, workspace), workspace) : workspace;
+      }));
+      setRooms(spatialRooms);
       setSnakes(loadedSnakes);
       if (loadedRooms.length) setRoomId((current) => loadedRooms.some((item) => item.id === current) ? current : loadedRooms[0].id);
     } catch (error) {
