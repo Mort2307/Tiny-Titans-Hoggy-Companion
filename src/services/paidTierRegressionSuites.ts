@@ -14,6 +14,7 @@ const STRIPE_LOOKUP_KEYS: Record<string, string> = {
   business_starter: "tinytitans_business_starter_monthly",
   business_plus: "tinytitans_business_plus_monthly",
   business_advanced: "tinytitans_business_advanced_monthly",
+  rescue: "tinytitans_rescue_monthly",
 };
 
 export function createPaidTierRegressionChecks(): TesterCheck[] {
