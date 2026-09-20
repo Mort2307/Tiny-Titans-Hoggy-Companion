@@ -54,6 +54,10 @@ function workspaceNavIcon(path: string): TinyTitansIconName {
   return WORKSPACE_NAV_ICONS[path] ?? "knowledge";
 }
 
+function commandIcon(path: string): TinyTitansIconName {
+  return workspaceNavIcon(path);
+}
+
 const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; heading: string; description: string; actions: Array<{ title: string; path: string }> }> = {
   titan_pro: { label: "TITAN PRO COMMAND", heading: "A deeper keeper workspace", description: "Your records stay central. Pro brings the intelligence, analysis and advanced keeper workflows around them.", actions: [{ title: "My Animals", path: "/snakes" }, { title: "Intelligence", path: "/titan-intelligence" }, { title: "Records", path: "/weights" }, { title: "Breeding", path: "/breeding" }] },
   titan_seller: { label: "SELLER COMMAND", heading: "Animals in one side. Customers on the other.", description: "Move from animal record to listing, conversation and seller workflow without leaving TinyTitans.", actions: [{ title: "Animals", path: "/snakes" }, { title: "Marketplace", path: "/marketplace" }, { title: "Seller Tools", path: "/paid/marketplace" }, { title: "Messages", path: "/conversations" }] },
@@ -111,7 +115,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
         <p>{commandCopy.description}</p>
       </div>
       <div className="workspace-command-actions">
-        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><strong>{item.title}</strong><span>Open →</span></Link>)}
+        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><TinyTitansIcon name={commandIcon(item.path)} size={21} motion="hover" /><strong>{item.title}</strong><span>Open →</span></Link>)}
       </div>
     </section>}
 
