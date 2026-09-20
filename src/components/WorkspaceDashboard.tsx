@@ -79,12 +79,27 @@ function dashboardIcon(label: string): TinyTitansIconName {
   }
 }
 
+function dashboardItemIcon(title: string): TinyTitansIconName {
+  if (/animal|animals/i.test(title)) return "reptile";
+  if (/intelligence/i.test(title)) return "titanIntelligence";
+  if (/genetics/i.test(title)) return "genetics";
+  if (/breeding/i.test(title)) return "breeding";
+  if (/marketplace|listings/i.test(title)) return "marketplaceTools";
+  if (/messages|enquir/i.test(title)) return "messages";
+  if (/seller/i.test(title)) return "sellerProfile";
+  if (/report/i.test(title)) return "reporting";
+  if (/brand|public page/i.test(title)) return "branding";
+  if (/organisation|team/i.test(title)) return "team";
+  if (/api/i.test(title)) return "api";
+  return "knowledge";
+}
+
 export default function WorkspaceDashboard({ productId }: { productId: Exclude<WorkspaceProductId, "personal" | "rescue"> }) {
   const data = DATA[productId];
   return <main className={"workspace-dashboard workspace-dashboard--" + productId}>
     <section className="workspace-dashboard__hero"><div><span className="workspace-dashboard__eyebrow">WORKSPACE HOME</span><h1>{data.title}</h1><p>{data.intro}</p></div><Link className="workspace-dashboard__primary" to="/plans">Workspace plan →</Link></section>
     <section className="workspace-dashboard__stats">{data.stats.map(([label,action])=><Link to={label==="Animals"?"/snakes":label==="Intelligence"?"/titan-intelligence":label==="Breeding"?"/breeding":label==="Records"?"/weights":label==="Listings"?"/marketplace":label==="Messages"?"/conversations":label==="Seller tools"?"/paid/marketplace":label==="Team"?"/account/partner-landing":label==="Reports"?"/paid/business-reporting":label==="Public page"?"/account/partner-landing":"/paid"} key={label}><small>{label}</small><strong>{action}</strong><span><TinyTitansIcon name={dashboardIcon(label)} size={17} /> Open →</span></Link>)}</section>
-    <section className="workspace-dashboard__grid">{data.items.map((item)=><article key={item.title}><span>{item.eyebrow}</span><h2>{item.title}</h2><p>{item.text}</p><Link to={item.path}>{item.action || "Open →"}</Link></article>)}</section>
+    <section className="workspace-dashboard__grid">{data.items.map((item)=><article key={item.title}><span>{item.eyebrow}</span><h2><TinyTitansIcon name={dashboardItemIcon(item.title)} size={23} motion="hover" /> {item.title}</h2><p>{item.text}</p><Link to={item.path}><TinyTitansIcon name={dashboardItemIcon(item.title)} size={17} /> {item.action || "Open →"}</Link></article>)}</section>
     <section className="workspace-dashboard__intelligence"><div><span>SHARED TINY TITANS INTELLIGENCE</span><h2>Your workspace stays connected to the wider TinyTitans intelligence ecosystem.</h2><p>Workspace-specific context stays separate from private records while eligible, consented signals can contribute to Creator-governed intelligence.</p></div><Link to="/account/intelligence">Intelligence &amp; privacy →</Link></section>
   </main>;
 }
