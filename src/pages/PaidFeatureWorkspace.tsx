@@ -6,6 +6,7 @@ import type { Snake } from "../types/Snake";
 import PaidTierGate from "../components/PaidTierGate";
 import TinyTitansIcon, { type TinyTitansIconName } from "../components/TinyTitansIcon";
 import OrganisationStaffManager from "../components/staff/OrganisationStaffManager";
+import TinyTitansIcon, { type TinyTitansIconName } from "../components/TinyTitansIcon";
 import { type PaidEntitlement } from "../config/paidTiers";
 import { useAuth } from "../context/useAuth";
 import "../styles/PaidFeatureWorkspace.css";
@@ -72,7 +73,7 @@ function WorkspaceFeature({ feature }: { feature: FeatureConfig }) {
   const [error, setError] = useState<string | null>(null);
   const section = feature.section!;
   useEffect(() => { let active = true; setLoading(true); void getPaidBusinessWorkspace(section).then((result) => { if (active) setWorkspace(result.workspace ?? {}); }).catch((err) => { if (active) setError(errorMessage(err)); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [section]);
-  if (section === "team") return <OrganisationStaffManager mode="business" />;
+  if (section === "team") return <FeatureScaffold title={feature.title} icon={feature.icon} description={feature.description}><OrganisationStaffManager mode="business" /></FeatureScaffold>;
   if (loading) return <FeatureScaffold title={feature.title} icon={feature.icon} description={feature.description}><p>Loading your workspace…</p></FeatureScaffold>;
   if (error) return <FeatureScaffold title={feature.title} icon={feature.icon} description={feature.description}><div className="paid-inline-error">{error}</div></FeatureScaffold>;
   if (section === "analytics") return <AnalyticsFeature />;
