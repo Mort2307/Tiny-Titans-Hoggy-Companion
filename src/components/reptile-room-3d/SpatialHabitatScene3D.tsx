@@ -92,6 +92,86 @@ function Visual({ node, selected, onSelect, onEnter }: { node: SpatialNode; sele
         </mesh>
       )}
 
+      {["door", "window"].includes(node.kind) && (
+        <group position={[0, height * 0.5, 0]}>
+          <mesh>
+            <boxGeometry args={[width * 0.94, height * 0.9, Math.max(0.018, depth * 0.7)]} />
+            <meshStandardMaterial color={node.kind === "window" ? "#9cc1c9" : "#604936"} roughness={node.kind === "window" ? 0.2 : 0.85} transparent={node.kind === "window"} opacity={node.kind === "window" ? 0.38 : 1} />
+          </mesh>
+          <mesh position={[-width * 0.47, 0, depth * 0.01]}>
+            <boxGeometry args={[Math.max(0.01, width * 0.03), height, Math.max(0.02, depth * 0.9)]} />
+            <meshStandardMaterial color="#282d2e" roughness={0.7} />
+          </mesh>
+          <mesh position={[width * 0.47, 0, depth * 0.01]}>
+            <boxGeometry args={[Math.max(0.01, width * 0.03), height, Math.max(0.02, depth * 0.9)]} />
+            <meshStandardMaterial color="#282d2e" roughness={0.7} />
+          </mesh>
+        </group>
+      )}
+
+      {["heat-mat", "che", "halogen", "dhp", "rhp", "basking-light"].includes(node.kind) && (
+        <group>
+          {node.kind === "heat-mat" ? (
+            <mesh position={[0, 0.02, 0]}>
+              <boxGeometry args={[width * 0.92, 0.035, depth * 0.92]} />
+              <meshStandardMaterial color="#4c3430" roughness={0.95} />
+            </mesh>
+          ) : (
+            <mesh position={[0, height * 0.58, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[Math.max(0.025, Math.min(width, depth) * 0.18), Math.max(0.025, Math.min(width, depth) * 0.22), Math.max(0.06, height * 0.7), 12]} />
+              <meshStandardMaterial color="#553e2d" emissive="#b96c32" emissiveIntensity={node.kind === "halogen" || node.kind === "basking-light" ? 0.32 : 0.18} roughness={0.65} />
+            </mesh>
+          )}
+        </group>
+      )}
+
+      {["ceiling-light", "led-bar", "lamp"].includes(node.kind) && (
+        <mesh position={[0, Math.max(0.01, height * 0.7), 0]}>
+          <boxGeometry args={[width * 0.9, Math.max(0.025, height * 0.18), Math.max(0.025, depth * 0.3)]} />
+          <meshStandardMaterial color="#e3d6af" emissive="#d2b35f" emissiveIntensity={0.45} roughness={0.4} />
+        </mesh>
+      )}
+
+      {["thermostat", "thermometer", "hygrometer", "temp-humidity"].includes(node.kind) && (
+        <group position={[0, height * 0.62, 0]}>
+          <mesh>
+            <boxGeometry args={[Math.max(0.035, width * 0.45), Math.max(0.035, height * 0.48), Math.max(0.02, depth * 0.35)]} />
+            <meshStandardMaterial color="#38464b" roughness={0.52} />
+          </mesh>
+          <mesh position={[0, 0, Math.max(0.012, depth * 0.2)]}>
+            <boxGeometry args={[Math.max(0.018, width * 0.28), Math.max(0.018, height * 0.22), 0.008]} />
+            <meshStandardMaterial color="#c6d4d2" emissive="#a9cbc4" emissiveIntensity={0.2} roughness={0.25} />
+          </mesh>
+        </group>
+      )}
+
+      {["socket", "switched-socket", "power-strip", "timer", "smart-plug"].includes(node.kind) && (
+        <group position={[0, height * 0.56, 0]}>
+          <mesh>
+            <boxGeometry args={[Math.max(0.05, width * 0.7), Math.max(0.04, height * 0.42), Math.max(0.025, depth * 0.45)]} />
+            <meshStandardMaterial color="#202427" roughness={0.64} />
+          </mesh>
+          <mesh position={[0, 0, Math.max(0.014, depth * 0.25)]}>
+            <boxGeometry args={[Math.max(0.025, width * 0.3), Math.max(0.02, height * 0.16), 0.008]} />
+            <meshStandardMaterial color="#b7c2c1" roughness={0.34} />
+          </mesh>
+        </group>
+      )}
+
+      {["hide", "cork"].includes(node.kind) && (
+        <mesh position={[0, height * 0.42, 0]} scale={[1, 0.72, 1]} castShadow>
+          <sphereGeometry args={[Math.max(0.05, Math.min(width, depth) * 0.32), 16, 10]} />
+          <meshStandardMaterial color="#5f4a36" roughness={1} />
+        </mesh>
+      )}
+
+      {node.kind === "scale" && (
+        <mesh position={[0, Math.max(0.02, height * 0.18), 0]}>
+          <boxGeometry args={[width * 0.9, Math.max(0.025, height * 0.22), depth * 0.9]} />
+          <meshStandardMaterial color="#b9bab2" roughness={0.42} />
+        </mesh>
+      )}
+
       {node.kind === "uvb" && (
         <mesh position={[0, height * 0.55, 0]}>
           <boxGeometry args={[width * 0.9, Math.max(0.012, height * 0.16), Math.max(0.012, depth * 0.25)]} />
