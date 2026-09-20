@@ -73,7 +73,7 @@ export default function BreedingTimeline() {
       <button type="button" onClick={() => navigate("/breeding")}>Open Breeding Planner</button>
     </header>
 
-    {error && <div className="breeding-timeline-alert" role="alert">⚠️ {error}</div>}
+    {error && <div className="breeding-timeline-alert" role="alert"><TinyTitansIcon name="warning" size={18} state="critical" /> {error}</div>}
 
     {!projects.length ? <section className="breeding-timeline-card"><h2>No breeding projects yet</h2><p>Create a project first. The timeline will build itself from the records you add.</p><button type="button" onClick={() => navigate("/breeding")}>Create a breeding project</button></section> : <>
       <section className="breeding-timeline-card">
