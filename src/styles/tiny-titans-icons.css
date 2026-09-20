@@ -24,6 +24,46 @@
 
 @media(prefers-reduced-motion:reduce){.tt-icon,.tt-icon-snake,.tt-icon-helix,.tt-icon-heart,.tt-icon-leaf,.tt-icon-shed,.tt-icon-spark,.tt-icon-crown,.tt-icon-prey,.tt-icon-food,.tt-icon-egg,.tt-icon-avatar,.tt-icon-avatar-two,.tt-icon-dot-avatar,.tt-tier-crest svg,.app-navigation-link.active .tt-icon,.tt-easy-nav-link.active .tt-icon{animation:none;transition:none}}
 
+/* === Semantic visual identity palette ===
+   The glyph remains theme-aware, but each need has a recognisable colour family.
+   State colours below intentionally override these semantic defaults.
+*/
+.tt-icon-name-home{--tt-icon-accent:#d6a85c}.tt-icon-name-reptile{--tt-icon-accent:#8fbf79}
+.tt-icon-name-messages{--tt-icon-accent:#79a9d8}.tt-icon-name-reminders{--tt-icon-accent:#e8b65d}
+.tt-icon-name-husbandry{--tt-icon-accent:#78b96d}.tt-icon-name-weight{--tt-icon-accent:#c7a16a}
+.tt-icon-name-feeding{--tt-icon-accent:#d98d62}.tt-icon-name-shed{--tt-icon-accent:#b7a3d8}
+.tt-icon-name-behaviour{--tt-icon-accent:#6fb7c8}.tt-icon-name-health{--tt-icon-accent:#e58ca1}
+.tt-icon-name-enclosure{--tt-icon-accent:#90a9b8}.tt-icon-name-morph{--tt-icon-accent:#c68fd1}
+.tt-icon-name-genetics{--tt-icon-accent:#a982d1}.tt-icon-name-breeding{--tt-icon-accent:#d7866e}
+.tt-icon-name-academy{--tt-icon-accent:#82a9dc}.tt-icon-name-handbook{--tt-icon-accent:#b99b70}
+.tt-icon-name-observatory{--tt-icon-accent:#7da2c9}.tt-icon-name-contribution{--tt-icon-accent:#67b9aa}
+.tt-icon-name-knowledge{--tt-icon-accent:#88a9c1}.tt-icon-name-challenge{--tt-icon-accent:#d9b45f}
+.tt-icon-name-community{--tt-icon-accent:#66b8a0}.tt-icon-name-marketplace{--tt-icon-accent:#d39b55}
+.tt-icon-name-mentorship{--tt-icon-accent:#78a8c8}.tt-icon-name-wall{--tt-icon-accent:#d8a954}
+.tt-icon-name-account{--tt-icon-accent:#91a6b8}.tt-icon-name-plans{--tt-icon-accent:#d7b365}
+.tt-icon-name-billing{--tt-icon-accent:#90a8bd}.tt-icon-name-family{--tt-icon-accent:#a38cc8}
+.tt-icon-name-titan{--tt-icon-accent:#e3b65f}.tt-icon-name-educator{--tt-icon-accent:#7fa8da}
+.tt-icon-name-creator{--tt-icon-accent:#a7aeb5}.tt-icon-name-testing{--tt-icon-accent:#7ebc98}
+.tt-icon-name-search{--tt-icon-accent:#93b8c8}.tt-icon-name-menu{--tt-icon-accent:#b0a79b}
+.tt-icon-name-temperature{--tt-icon-accent:#e58d5b}.tt-icon-name-humidity{--tt-icon-accent:#70acc8}
+.tt-icon-name-water{--tt-icon-accent:#64a9c5}.tt-icon-name-uvb{--tt-icon-accent:#e2ba62}
+.tt-icon-name-heat{--tt-icon-accent:#db765d}.tt-icon-name-plant{--tt-icon-accent:#78b86e}
+.tt-icon-name-substrate{--tt-icon-accent:#ad865e}.tt-icon-name-hide{--tt-icon-accent:#8b8f98}
+.tt-icon-name-habitatBuilder{--tt-icon-accent:#c39a68}.tt-icon-name-reptileRoom{--tt-icon-accent:#8298a8}
+.tt-icon-name-veterinary{--tt-icon-accent:#d77d8d}.tt-icon-name-intelligence{--tt-icon-accent:#8e92d8}
+.tt-icon-name-globe{--tt-icon-accent:#6fae9d}.tt-icon-name-map{--tt-icon-accent:#83a8c9}
+.tt-icon-name-camera{--tt-icon-accent:#a4a8ad}.tt-icon-name-add{--tt-icon-accent:#74c08a}
+.tt-icon-name-edit{--tt-icon-accent:#d0a460}.tt-icon-name-delete{--tt-icon-accent:#d67979}
+.tt-icon-name-eye{--tt-icon-accent:#78aebd}.tt-icon-name-lock{--tt-icon-accent:#a39b91}
+.tt-icon-name-rotate{--tt-icon-accent:#9e8fc7}.tt-icon-name-move{--tt-icon-accent:#8daab8}
+.tt-icon-name-resize{--tt-icon-accent:#9ba7b0}.tt-icon-name-measure{--tt-icon-accent:#c29a62}
+.tt-icon-name-warning{--tt-icon-accent:#e0a74d}.tt-icon-name-offline{--tt-icon-accent:#858990}
+.tt-icon-name-thermostat{--tt-icon-accent:#df8d58}.tt-icon-name-maintenance{--tt-icon-accent:#9eaaad}
+.tt-icon-name-power{--tt-icon-accent:#d1ab54}.tt-icon-name-settings{--tt-icon-accent:#a4a7ad}
+.tt-icon-name-close{--tt-icon-accent:#d47777}.tt-icon-name-upload{--tt-icon-accent:#78a8cb}
+.tt-icon-name-save{--tt-icon-accent:#72b486}.tt-icon-name-copy{--tt-icon-accent:#9b91c0}
+.tt-icon-name-expand{--tt-icon-accent:#8aa7b8}.tt-icon-name-collapse{--tt-icon-accent:#8aa7b8}
+
 /* === TinyTitans Living Icon v2 ===
    Signature environment + spatial-builder motions.
    These remain dependency-free: SVG + CSS only.
