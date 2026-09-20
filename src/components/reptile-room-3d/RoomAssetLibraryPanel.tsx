@@ -4,7 +4,23 @@ import type { Room3DAssetPreset } from "../../types/reptileRoom3D";
 import TinyTitansIcon, { type TinyTitansIconName } from "../TinyTitansIcon";
 import "../../styles/room-asset-library-dropdown.css";
 
-type Props = { onAddAsset: (preset: Room3DAssetPreset) => void };\n\nfunction iconForAsset(kind?: string, role?: string): TinyTitansIconName {\n  if (role === "lighting") return "uvb";\n  if (role === "heating") return "heat";\n  if (role === "sensor") return "temperature";\n  if (role === "water" || kind === "water-bowl") return "water";\n  if (kind === "plant") return "plant";\n  if (kind === "hide" || kind === "cork") return "hide";\n  if (kind === "branch") return "substrate";\n  if (kind === "scale") return "weight";\n  if (kind === "vivarium") return "enclosure";\n  return "creator";\n}\n
+type Props = { onAddAsset: (preset: Room3DAssetPreset) => void };
+
+function iconForAsset(kind?: string, role?: string): TinyTitansIconName {
+  if (role === "lighting") return "uvb";
+  if (role === "heating") return "heat";
+  if (role === "sensor") return "temperature";
+  if (role === "water" || kind === "water-bowl") return "water";
+  if (kind === "plant") return "plant";
+  if (kind === "hide" || kind === "cork") return "hide";
+  if (kind === "branch") return "substrate";
+  if (kind === "scale") return "weight";
+  if (kind === "vivarium") return "enclosure";
+  if (role === "enrichment") return "plant";
+  if (role === "cleaning") return "veterinary";
+  return "creator";
+}
+
 
 export function RoomAssetLibraryPanel({ onAddAsset }: Props) {
   const [query, setQuery] = useState("");
@@ -30,7 +46,7 @@ export function RoomAssetLibraryPanel({ onAddAsset }: Props) {
         {filtered.map((category) => {
           const open = openCategory === category.id;
           return <div className="rr3d-library-category" key={category.id}>
-            <button type="button" className="rr3d-library-category-button" aria-expanded={open} onClick={() => setOpenCategory(open ? "" : category.id)}><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><TinyTitansIcon name={iconForAsset(undefined, category.id)} size={19} motion="hover" /> {category.label}</span><small>{category.items.length} · {open ? "Hide" : "Show"}</small></button>
+            <button type="button" className="rr3d-library-category-button" aria-expanded={open} onClick={() => setOpenCategory(open ? "" : category.id)}><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><TinyTitansIcon name={category.id === "vivariums" ? "enclosure" : category.id === "enrichment" ? "plant" : category.id === "equipment" ? "heat" : category.id === "storage" ? "marketplace" : "creator"} size={19} motion="hover" /> {category.label}</span><small>{category.items.length} · {open ? "Hide" : "Show"}</small></button>
             {open && <div className="rr3d-library-items">{category.items.map((preset) => <button type="button" className="rr3d-library-item" key={preset.assetId ?? preset.label} onClick={() => onAddAsset(preset)} title={category.description}>
               <span className="rr3d-library-icon"><TinyTitansIcon name={iconForAsset(preset.kind, preset.intelligenceRole)} size={21} motion="hover" /></span>
               <span className="rr3d-library-copy"><strong>{preset.label}</strong><small>{preset.width} × {preset.depth} × {preset.height} cm{preset.intelligenceRole ? ` · ${preset.intelligenceRole}` : ""}</small></span>
