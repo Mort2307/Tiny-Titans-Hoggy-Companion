@@ -73,7 +73,7 @@ export function mergeSpatialNodesIntoVivariumTwin(twin: VivariumDigitalTwin, sce
       ...(monitoringAssets.some((asset) => asset.assetId === "hygrometer") ? ["hygrometer"] : []),
       ...(monitoringAssets.some((asset) => asset.assetId === "temp-humidity") ? ["temp-humidity"] : []),
       ...twin.checklist.monitoring,
-    ])],
+    ])] as VivariumDigitalTwin["checklist"]["monitoring"],
     lightingType: lightingAssets.some((asset) => asset.assetId === "uvb") ? "uvb" : twin.checklist.lightingType,
     enrichmentCount: assets.filter((asset) => asset.category === "enrichment").length,
     plantCount: kinds.filter((kind) => kind === "plant").length,
