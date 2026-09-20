@@ -23,6 +23,7 @@ const paidTrialUserProfileAbsenceContract = /^(?![\s\S]*data\.paidTrial)/;
 const checks = [
   ["Firestore rules are version 2", /rules_version\s*=\s*'2'/, firestore],
   ["Firestore has deny-by-default fallback", /match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/, firestore],
+  ["Spatial habitats are explicitly owner-bound", /match \/users\/\{userId\}\/spatialHabitats\/\{roomId\}[\\s\\S]*?allow read, write: if signedIn\(\) && \(request\.auth\.uid == userId \|\| isCreator\(\)\)/, firestore],
   ["Tester sandboxes require syntheticOnly", /request\.resource\.data\.syntheticOnly\s*==\s*true/, firestore],
   ["Tester sandboxes require bot-test purpose", /request\.resource\.data\.purpose\s*==\s*\"bot-test\"/, firestore],
   ["Tester sandbox writes remain owner-bound", /resource\.data\.ownerUid\s*==\s*request\.auth\.uid/, firestore],
@@ -38,6 +39,9 @@ const checks = [
   ["Sandbox experiments are isolated from user records", /match \/sandboxExperiments\/\{experimentId\}/, firestore],
   ["Sandbox experiments are owner-bound", /request\.resource\.data\.ownerUid == request\.auth\.uid/, firestore],
   ["Storage user snake files are owner-bound", /request\.auth\.uid\s*==\s*userId/, storage],
+  ["Snake photo uploads are size- and content-type constrained", /match \/snakePhotos\/\{userId\}\/\{snakeId\}\/\{fileName\}[\s\S]*?request\.resource\.size <= 25 \* 1024 \* 1024[\s\S]*?image\/(jpeg\|png\|webp)/, storage],
+  ["Vivarium photo uploads are size- and content-type constrained", /reptileRooms\/\{roomId\}\/vivariums[\s\S]*?request\.resource\.size <= 25 \* 1024 \* 1024[\s\S]*?image\/(jpeg\|png\|webp)/, storage],
+  ["Issue evidence uploads have a hard size limit", /match \/issueEvidence\/\{userId\}\/\{reportId\}\/\{fileName\}[\s\S]*?request\.resource\.size <= 25 \* 1024 \* 1024/, storage],
   ["Storage creator access requires the same owner-issued claim model as Firestore", storageCreatorContract, storage],
   ["Storage creator access no longer trusts mutable profileType data", /isCreator\(\)\s*\{[\s\S]*request\.auth\.token\.creator == true/, storage],
   ["Paid tester overrides are stored outside mutable user profiles", paidTesterServerCollectionContract, paidTierAccess],

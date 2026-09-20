@@ -16,7 +16,7 @@ export async function getPaidAccess(uid: string): Promise<PaidAccess> {
   if (!uid) throw new Error("A user ID is required to resolve paid access.");
   const response = await getPaidTierAccessCall({ uid });
   const data = response.data;
-  return { actualTier: isPaidTierId(data.actualTier) ? data.actualTier : "free", effectiveTier: isPaidTierId(data.effectiveTier) ? data.effectiveTier : "free", source: data.source === "subscription" || data.source === "tester" || data.source === "trial" ? data.source : "free", subscriptionStatus: String(data.subscriptionStatus || "free"), currentPeriodEnd: data.currentPeriodEnd, testerOverride: data.testerOverride || null, trial: data.trial || null };
+  return { actualTier: isPaidTierId(data.actualTier) ? data.actualTier : "free", effectiveTier: isPaidTierId(data.effectiveTier) ? data.effectiveTier : "free", source: data.source === "subscription" || data.source === "tester" || data.source === "trial" || data.source === "owner" ? data.source : "free", subscriptionStatus: String(data.subscriptionStatus || "free"), currentPeriodEnd: data.currentPeriodEnd, testerOverride: data.testerOverride || null, trial: data.trial || null };
 }
 
 export async function hasPaidEntitlement(uid: string, entitlement: PaidEntitlement): Promise<boolean> { const access = await getPaidAccess(uid); return getPaidTierDefinition(access.effectiveTier).entitlements.includes(entitlement); }

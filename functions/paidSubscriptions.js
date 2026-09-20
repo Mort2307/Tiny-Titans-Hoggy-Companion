@@ -71,14 +71,50 @@ async function resolveRecurringPriceForPricing(stripe, tier) {
   return price && price.recurring ? price : null;
 }
 
-async function writeSubscriptionState({ uid, tier, status, customerId, subscriptionId, currentPeriodEnd, cancelAtPeriodEnd, sourceEventId }) {
+async function writeSubscriptionState({ uid, tier, status, customerId, subscriptionId, currentPeriodEnd, cancelAtPeriodEnd, sourceEventId, sourceEventCreated }) {
   const safeTier = TIERS.has(String(tier || "")) ? String(tier) : "free";
   const safeStatus = safeTier === "free" ? "canceled" : normaliseStatus(status);
   const periodEnd = timestampOrNull(currentPeriodEnd);
+  const eventCreated = Number(sourceEventCreated || 0);
   const update = { subscriptionTier: safeTier, subscriptionStatus: safeStatus, stripeCustomerId: customerId || null, stripeSubscriptionId: subscriptionId || null, subscriptionCurrentPeriodEnd: periodEnd, cancelAtPeriodEnd: cancelAtPeriodEnd === true, subscriptionUpdatedAt: FieldValue.serverTimestamp() };
-  const subscriptionRecord = { uid, tier: safeTier, status: safeStatus, stripeCustomerId: customerId || null, stripeSubscriptionId: subscriptionId || null, currentPeriodEnd: periodEnd, cancelAtPeriodEnd: cancelAtPeriodEnd === true, sourceEventId: sourceEventId || null, updatedAt: FieldValue.serverTimestamp() };
+  const subscriptionRecord = { uid, tier: safeTier, status: safeStatus, stripeCustomerId: customerId || null, stripeSubscriptionId: subscriptionId || null, currentPeriodEnd: periodEnd, cancelAtPeriodEnd: cancelAtPeriodEnd === true, sourceEventId: sourceEventId || null, sourceEventCreated: eventCreated, updatedAt: FieldValue.serverTimestamp() };
   const entitlementRecord = { uid, tier: safeTier, source: safeTier === "free" ? "free" : "subscription", status: safeStatus, active: safeTier !== "free" && ACTIVE_ACCESS_STATUSES.has(safeStatus), stripeSubscriptionId: subscriptionId || null, currentPeriodEnd: periodEnd, updatedAt: FieldValue.serverTimestamp() };
-  await db.runTransaction(async (transaction) => { transaction.set(db.collection("users").doc(uid), update, { merge: true }); transaction.set(db.collection("paidSubscriptions").doc(uid), subscriptionRecord, { merge: true }); transaction.set(db.collection("paidEntitlements").doc(uid), entitlementRecord, { merge: true }); });
+  return db.runTransaction(async (transaction) => {
+    const subscriptionRef = db.collection("paidSubscriptions").doc(uid);
+    const existing = await transaction.get(subscriptionRef);
+    const existingCreated = Number(existing.data()?.sourceEventCreated || 0);
+    if (existing.exists && eventCreated > 0 && existingCreated > eventCreated) {
+      return { updated: false, stale: true, existingEventCreated: existingCreated };
+    }
+    transaction.set(db.collection("users").doc(uid), update, { merge: true });
+    transaction.set(subscriptionRef, subscriptionRecord, { merge: true });
+    transaction.set(db.collection("paidEntitlements").doc(uid), entitlementRecord, { merge: true });
+    return { updated: true, stale: false };
+  });
+}
+
+const CHECKOUT_LOCK_TTL_MS = 10 * 60 * 1000;
+
+async function acquireCheckoutLock(uid, tier) {
+  const lockRef = db.collection("paidCheckoutLocks").doc(uid);
+  await db.runTransaction(async (transaction) => {
+    const existing = await transaction.get(lockRef);
+    const expiresAt = existing.data()?.expiresAt;
+    const expiresMillis = expiresAt && typeof expiresAt.toMillis === "function" ? expiresAt.toMillis() : 0;
+    if (existing.exists && expiresMillis > Date.now()) {
+      const existingTier = String(existing.data()?.tier || "paid");
+      throw new HttpsError("failed-precondition", `A ${existingTier} checkout is already being prepared for this account. Complete or cancel that checkout before starting another one.`);
+    }
+    transaction.set(lockRef, { uid, tier, status: "pending", expiresAt: Timestamp.fromMillis(Date.now() + CHECKOUT_LOCK_TTL_MS), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  });
+}
+
+async function setCheckoutLockSession(uid, sessionId) {
+  await db.collection("paidCheckoutLocks").doc(uid).set({ status: "checkout_created", stripeCheckoutSessionId: sessionId, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+}
+
+async function clearCheckoutLock(uid) {
+  await db.collection("paidCheckoutLocks").doc(uid).delete().catch(() => undefined);
 }
 
 async function beginWebhookEvent(event) {
@@ -110,9 +146,25 @@ exports.createPaidSubscriptionCheckout = onCall({ region: "europe-west2", secret
     const stripe = new Stripe(STRIPE_SECRET_KEY.value()); const userRef = db.collection("users").doc(request.auth.uid); const userSnapshot = await userRef.get(); const userData = userSnapshot.exists ? userSnapshot.data() || {} : {};
     const currentTier = String(userData.subscriptionTier || "free"); const currentStatus = String(userData.subscriptionStatus || "free");
     if (TIERS.has(currentTier) && ACTIVE_ACCESS_STATUSES.has(currentStatus)) throw new HttpsError("failed-precondition", "This account already has an active Stripe subscription. Manage it from Billing & Access before starting another one.");
-    const price = await findRecurringPrice(stripe, tier); const existingCustomerId = String(userData.stripeCustomerId || "");
-    const checkout = await stripe.checkout.sessions.create({ mode: "subscription", line_items: [{ price: price.id, quantity: 1 }], ...(existingCustomerId ? { customer: existingCustomerId } : { customer_email: request.auth.token.email || undefined }), client_reference_id: request.auth.uid, allow_promotion_codes: true, billing_address_collection: "required", automatic_tax: { enabled: true }, subscription_data: { metadata: { uid: request.auth.uid, tinyTitansTier: tier, tinyTitansLookupKey: LOOKUP_KEYS[tier] } }, metadata: { uid: request.auth.uid, tinyTitansTier: tier, tinyTitansLookupKey: LOOKUP_KEYS[tier] }, success_url: `${origin(request)}/account/billing?subscription=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin(request)}/plans?subscription=cancelled` });
-    if (!checkout.url) throw new Error("Stripe did not return a checkout URL."); return { url: checkout.url };
+    await acquireCheckoutLock(request.auth.uid, tier);
+    try {
+      const lockedUserSnapshot = await userRef.get();
+      const lockedUserData = lockedUserSnapshot.exists ? lockedUserSnapshot.data() || {} : {};
+      const lockedTier = String(lockedUserData.subscriptionTier || "free");
+      const lockedStatus = String(lockedUserData.subscriptionStatus || "free");
+      if (TIERS.has(lockedTier) && ACTIVE_ACCESS_STATUSES.has(lockedStatus)) {
+        throw new HttpsError("failed-precondition", "This account already has an active Stripe subscription. Manage it from Billing & Access before starting another one.");
+      }
+      const price = await findRecurringPrice(stripe, tier); const existingCustomerId = String(lockedUserData.stripeCustomerId || "");
+      const idempotencyKey = "paid-subscription-checkout-" + request.auth.uid + "-" + tier + "-" + Math.floor(Date.now() / 600000);
+      const checkout = await stripe.checkout.sessions.create({ mode: "subscription", line_items: [{ price: price.id, quantity: 1 }], ...(existingCustomerId ? { customer: existingCustomerId } : { customer_email: request.auth.token.email || undefined }), client_reference_id: request.auth.uid, allow_promotion_codes: true, billing_address_collection: "required", automatic_tax: { enabled: true }, subscription_data: { metadata: { uid: request.auth.uid, tinyTitansTier: tier, tinyTitansLookupKey: LOOKUP_KEYS[tier] } }, metadata: { uid: request.auth.uid, tinyTitansTier: tier, tinyTitansLookupKey: LOOKUP_KEYS[tier] }, success_url: `${origin(request)}/account/billing?subscription=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin(request)}/plans?subscription=cancelled` }, { idempotencyKey });
+      if (!checkout.url) throw new Error("Stripe did not return a checkout URL.");
+      await setCheckoutLockSession(request.auth.uid, checkout.id);
+      return { url: checkout.url };
+    } catch (error) {
+      await clearCheckoutLock(request.auth.uid);
+      throw error;
+    }
   } catch (error) { console.error("Paid subscription checkout failed", error); if (error instanceof HttpsError) throw error; throw new HttpsError("internal", "Unable to start paid subscription checkout."); }
 });
 
@@ -127,9 +179,9 @@ exports.paidSubscriptionWebhook = onRequest({ region: "europe-west2", secrets: [
   let event; let eventRef;
   try {
     const stripe = new Stripe(STRIPE_SECRET_KEY.value()); event = stripe.webhooks.constructEvent(req.rawBody, signature, STRIPE_PAID_SUBSCRIPTION_WEBHOOK_SECRET.value()); const claim = await beginWebhookEvent(event); if (claim.duplicate) return res.status(200).json({ received: true, duplicate: true }); eventRef = claim.eventRef;
-    if (event.type === "checkout.session.completed") { const session = event.data.object; if (session.mode === "subscription") { const uid = String(session.metadata?.uid || session.client_reference_id || ""); const tier = String(session.metadata?.tinyTitansTier || ""); if (uid && TIERS.has(tier) && session.subscription) { const subscription = await stripe.subscriptions.retrieve(String(session.subscription)); await writeSubscriptionState({ uid, tier, status: subscription.status, customerId: subscription.customer, subscriptionId: subscription.id, currentPeriodEnd: subscription.current_period_end, cancelAtPeriodEnd: subscription.cancel_at_period_end, sourceEventId: event.id }); if (ACTIVE_ACCESS_STATUSES.has(String(subscription.status || ""))) { const userSnapshot = await db.collection("users").doc(uid).get(); const userData = userSnapshot.data() || {}; await recordPaidTierActivationNotification({ eventKey: `paid-tier-subscription-${event.id}`, targetUid: uid, targetName: String(userData.displayName || userData.name || session.customer_details?.email || "A Tiny Titans user"), tier, activationKind: "subscription", source: "stripe" }); } } } }
-    if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.created") { const subscription = event.data.object; const uid = String(subscription.metadata?.uid || ""); const tier = TIERS.has(String(subscription.metadata?.tinyTitansTier || "")) ? String(subscription.metadata.tinyTitansTier) : tierFromPrice(subscription.items?.data?.[0]?.price); if (uid && TIERS.has(tier)) { await writeSubscriptionState({ uid, tier, status: subscription.status, customerId: subscription.customer, subscriptionId: subscription.id, currentPeriodEnd: subscription.current_period_end, cancelAtPeriodEnd: subscription.cancel_at_period_end, sourceEventId: event.id }); if (event.type === "customer.subscription.updated" && ACTIVE_ACCESS_STATUSES.has(String(subscription.status || "")) && event.data.previous_attributes?.status && !ACTIVE_ACCESS_STATUSES.has(String(event.data.previous_attributes.status))) { const targetSnapshot = await db.collection("users").doc(uid).get(); const target = targetSnapshot.data() || {}; await recordPaidTierActivationNotification({ eventKey: `paid-tier-subscription-${event.id}`, targetUid: uid, targetName: String(target.displayName || target.name || "A Tiny Titans user"), tier, activationKind: "subscription", source: "stripe-status-transition" }); } } }
-    if (event.type === "customer.subscription.deleted") { const subscription = event.data.object; const uid = String(subscription.metadata?.uid || ""); if (uid) await writeSubscriptionState({ uid, tier: "free", status: "canceled", customerId: subscription.customer, subscriptionId: subscription.id, currentPeriodEnd: subscription.current_period_end, cancelAtPeriodEnd: false, sourceEventId: event.id }); }
+    if (event.type === "checkout.session.completed") { const session = event.data.object; if (session.mode === "subscription") { const uid = String(session.metadata?.uid || session.client_reference_id || ""); const tier = String(session.metadata?.tinyTitansTier || ""); if (uid && TIERS.has(tier) && session.subscription) { const subscription = await stripe.subscriptions.retrieve(String(session.subscription)); const state = await writeSubscriptionState({ uid, tier, status: subscription.status, customerId: subscription.customer, subscriptionId: subscription.id, currentPeriodEnd: subscription.current_period_end, cancelAtPeriodEnd: subscription.cancel_at_period_end, sourceEventId: event.id, sourceEventCreated: event.created }); await clearCheckoutLock(uid); if (state.updated && ACTIVE_ACCESS_STATUSES.has(String(subscription.status || ""))) { const userSnapshot = await db.collection("users").doc(uid).get(); const userData = userSnapshot.data() || {}; await recordPaidTierActivationNotification({ eventKey: `paid-tier-subscription-${event.id}`, targetUid: uid, targetName: String(userData.displayName || userData.name || session.customer_details?.email || "A Tiny Titans user"), tier, activationKind: "subscription", source: "stripe" }); } } } }
+    if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.created") { const subscription = event.data.object; const uid = String(subscription.metadata?.uid || ""); const tier = TIERS.has(String(subscription.metadata?.tinyTitansTier || "")) ? String(subscription.metadata.tinyTitansTier) : tierFromPrice(subscription.items?.data?.[0]?.price); if (uid && TIERS.has(tier)) { const state = await writeSubscriptionState({ uid, tier, status: subscription.status, customerId: subscription.customer, subscriptionId: subscription.id, currentPeriodEnd: subscription.current_period_end, cancelAtPeriodEnd: subscription.cancel_at_period_end, sourceEventId: event.id, sourceEventCreated: event.created }); if (state.updated && event.type === "customer.subscription.updated" && ACTIVE_ACCESS_STATUSES.has(String(subscription.status || "")) && event.data.previous_attributes?.status && !ACTIVE_ACCESS_STATUSES.has(String(event.data.previous_attributes.status))) { const targetSnapshot = await db.collection("users").doc(uid).get(); const target = targetSnapshot.data() || {}; await recordPaidTierActivationNotification({ eventKey: `paid-tier-subscription-${event.id}`, targetUid: uid, targetName: String(target.displayName || target.name || "A Tiny Titans user"), tier, activationKind: "subscription", source: "stripe-status-transition" }); } } }
+    if (event.type === "customer.subscription.deleted") { const subscription = event.data.object; const uid = String(subscription.metadata?.uid || ""); if (uid) { await writeSubscriptionState({ uid, tier: "free", status: "canceled", customerId: subscription.customer, subscriptionId: subscription.id, currentPeriodEnd: subscription.current_period_end, cancelAtPeriodEnd: false, sourceEventId: event.id, sourceEventCreated: event.created }); await clearCheckoutLock(uid); } }
     await eventRef.set({ status: "completed", processedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true }); return res.status(200).json({ received: true });
   } catch (error) { console.error("Paid subscription webhook failed", error); if (eventRef) { try { await eventRef.set({ status: "failed", error: String(error?.message || error), updatedAt: FieldValue.serverTimestamp() }, { merge: true }); } catch (recordError) { console.error("Unable to record failed Stripe webhook", recordError); } } return res.status(400).send("Invalid webhook signature or event"); }
 });

@@ -1,7 +1,7 @@
 export const PAID_TIER_ORDER = ["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"] as const;
 
 export type PaidTierId = (typeof PAID_TIER_ORDER)[number];
-export type PaidTierSource = "subscription" | "tester" | "trial" | "free";
+export type PaidTierSource = "subscription" | "tester" | "trial" | "owner" | "free";
 export type PaidTierTesterMode = "silent" | "visible";
 
 export type PaidEntitlement =

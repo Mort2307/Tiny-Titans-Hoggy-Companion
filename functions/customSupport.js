@@ -39,25 +39,90 @@ function buildSupportLineItem(amountPence, label) {
 async function writePaidSupport(uid, session) {
   const amountGbp = Number(session.amount_total || 0) / 100;
   if (!uid || session.payment_status !== "paid" || amountGbp < 1) return { recorded: false, reason: "not-paid" };
+  const sessionId = String(session.id || "").trim();
+  if (!sessionId) return { recorded: false, reason: "missing-session-id" };
   const tierKey = String(session.metadata?.tier || "custom");
   const tier = SUPPORT_TIERS[tierKey];
   const label = session.metadata?.label || tier?.label || "Custom Tiny Titans Support";
   const supporterRef = db.collection("supporters").doc(uid);
   const wallRef = db.collection("supporterWall").doc(uid);
-  const eventRef = db.collection("stripeEvents").doc(`checkout_${session.id}`);
-  const existing = await supporterRef.get();
-  if (!existing.exists || existing.data()?.status !== "active") {
-    await supporterRef.set({ uid, status: "active", tier: tierKey, tierLabel: label, amountGbp, stripeCustomerId: session.customer || null, stripeCheckoutSessionId: session.id, lastPaymentAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await wallRef.set({ uid, displayName: "", socialUrl: "", visibility: "pending", recognitionStatus: "pending", tierLabel: label, amountGbp, supportedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await eventRef.set({ type: "support-recorded", uid, sessionId: session.id, amountGbp, processedAt: FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection("supporterStats").doc("global").set({ totalSupporters: FieldValue.increment(1), totalReceivedGbp: FieldValue.increment(amountGbp), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return { recorded: true, createdWall: true, needsRecognition: true };
-  }
-  const wall = await wallRef.get();
-  if (!wall.exists) await wallRef.set({ uid, displayName: "", socialUrl: "", visibility: "pending", recognitionStatus: "pending", tierLabel: label, amountGbp, supportedAt: existing.data()?.lastPaymentAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-  return { recorded: false, createdWall: !wall.exists, needsRecognition: !wall.exists };
-}
+  const statsRef = db.collection("supporterStats").doc("global");
+  const paymentRef = db.collection("supportPayments").doc(sessionId);
+  const eventRef = db.collection("stripeEvents").doc(`checkout_${sessionId}`);
 
+  return db.runTransaction(async (transaction) => {
+    const paymentSnapshot = await transaction.get(paymentRef);
+    if (paymentSnapshot.exists) {
+      const wallSnapshot = await transaction.get(wallRef);
+      return { recorded: false, duplicate: true, createdWall: false, needsRecognition: false, wallExists: wallSnapshot.exists };
+    }
+
+    const supporterSnapshot = await transaction.get(supporterRef);
+    const wallSnapshot = await transaction.get(wallRef);
+    const wasActiveSupporter = supporterSnapshot.exists && supporterSnapshot.data()?.status === "active";
+
+    transaction.create(paymentRef, {
+      paymentId: sessionId,
+      uid,
+      tier: tierKey,
+      tierLabel: label,
+      amountGbp,
+      stripeCustomerId: session.customer || null,
+      stripeCheckoutSessionId: sessionId,
+      paymentStatus: session.payment_status,
+      paidAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    transaction.set(supporterRef, {
+      uid,
+      status: "active",
+      tier: tierKey,
+      tierLabel: label,
+      amountGbp,
+      stripeCustomerId: session.customer || null,
+      stripeCheckoutSessionId: sessionId,
+      lastPaymentAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    if (!wallSnapshot.exists) {
+      transaction.set(wallRef, {
+        uid,
+        displayName: "",
+        socialUrl: "",
+        visibility: "pending",
+        recognitionStatus: "pending",
+        tierLabel: label,
+        amountGbp,
+        supportedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+
+    transaction.set(statsRef, {
+      totalSupporters: FieldValue.increment(wasActiveSupporter ? 0 : 1),
+      totalReceivedGbp: FieldValue.increment(amountGbp),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    transaction.set(eventRef, {
+      type: "support-recorded",
+      uid,
+      sessionId,
+      amountGbp,
+      paymentId: sessionId,
+      processedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    return {
+      recorded: true,
+      duplicate: false,
+      createdWall: !wallSnapshot.exists,
+      needsRecognition: !wallSnapshot.exists,
+    };
+  });
+}
 async function recoverLatestPaidSession(uid, stripe) {
   const sessions = await stripe.checkout.sessions.list({ limit: 100, status: "complete" });
   const matches = sessions.data.filter((session) => { const sessionUid = String(session.metadata?.uid || session.client_reference_id || ""); return sessionUid === uid && session.payment_status === "paid" && Number(session.amount_total || 0) >= 100; });
@@ -78,7 +143,8 @@ async function createCheckout(request) {
     let amountPence; let amountGbp; let label;
     if (tierKey === "custom") { amountPence = parseCustomAmountPence(request.data?.amountGbp); amountGbp = (amountPence / 100).toFixed(2); label = `Support — £${amountGbp}`; }
     else { amountPence = Math.round(tier.amount * 100); amountGbp = tier.amount.toFixed(2); label = tier.label; }
-    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [buildSupportLineItem(amountPence, label)], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label, amount_gbp: amountGbp, payment_purpose: "one_time_project_support" }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto", managed_payments: { enabled: false } });
+    const idempotencyKey = "support-checkout-" + request.auth.uid + "-" + tierKey + "-" + amountPence + "-" + Math.floor(Date.now() / 300000);
+    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [buildSupportLineItem(amountPence, label)], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label, amount_gbp: amountGbp, payment_purpose: "one_time_project_support" }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto", managed_payments: { enabled: false } }, { idempotencyKey });
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");
     return { url: session.url };
   } catch (error) {

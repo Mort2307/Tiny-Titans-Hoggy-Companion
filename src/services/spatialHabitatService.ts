@@ -1,0 +1,713 @@
+import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "./reptileRoomService";
+import type { SpatialAssetPreset, SpatialDimensionsCm, SpatialHabitatScene, SpatialNode, SpatialNodeCapabilities, SpatialNodeKind, SpatialValidationIssue } from "../types/spatialHabitat";
+
+export const SPATIAL_SNAP_CM = 5;
+export const ROOT_CONTAINER_ID = "root";
+const EPS = 0.01;
+const DEFAULT_CLEARANCE = { front: 30, rear: 5, left: 5, right: 5, top: 10 };
+
+function rotatedFootprint(node: SpatialNode) {
+  const angle = ((node.rotation?.y ?? 0) * Math.PI) / 180;
+  const c = Math.abs(Math.cos(angle));
+  const s = Math.abs(Math.sin(angle));
+  return {
+    width: node.dimensions.width * c + node.dimensions.depth * s,
+    depth: node.dimensions.width * s + node.dimensions.depth * c,
+  };
+}
+export function spatialId(prefix = "node") {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  return uuid ? prefix + "-" + uuid : prefix + "-" + Date.now().toString(36);
+}
+export function snapCm(value: number) {
+  return Number.isFinite(value) ? Math.round(value / SPATIAL_SNAP_CM) * SPATIAL_SNAP_CM : 0;
+}
+export function clamp(value: number, min: number, max: number) {
+  return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min;
+}
+export function findNode(scene: SpatialHabitatScene, id: string | null) {
+  return id ? scene.nodes.find((n) => n.id === id) ?? null : null;
+}
+export function childrenOf(scene: SpatialHabitatScene, parentId: string) {
+  return scene.nodes.filter((n) => n.parentId === parentId && n.visible !== false);
+}
+export function parentDimensions(scene: SpatialHabitatScene, parentId: string): SpatialDimensionsCm {
+  return parentId === ROOT_CONTAINER_ID ? scene.root.dimensions : findNode(scene, parentId)?.dimensions ?? scene.root.dimensions;
+}
+
+function category(kind: string): SpatialNode["category"] {
+  if (kind === "vivarium") return "enclosure";
+  if (["rack", "shelving", "shelf", "storage-cabinet", "cabinet"].includes(kind)) return "storage";
+  if (["workbench", "equipment-station", "quarantine-area", "table", "chair"].includes(kind)) return "keeper";
+  if (["che", "halogen", "dhp", "rhp", "heat-mat", "thermostat", "basking-light"].includes(kind)) return "heating";
+  if (["ceiling-light", "led-bar", "uvb", "lamp"].includes(kind)) return "lighting";
+  if (["socket", "switched-socket", "power-strip", "timer", "smart-plug"].includes(kind)) return "power";
+  if (["thermometer", "hygrometer", "temp-humidity"].includes(kind)) return "monitoring";
+  if (["hide", "cork", "branch", "plant", "cleaning-station", "scale"].includes(kind)) return "enrichment";
+  if (kind === "water-bowl") return "water";
+  return "construction";
+}
+
+function caps(object: ReptileRoomObject): SpatialNodeCapabilities {
+  const role = object.intelligenceRole ?? "";
+  const heatKinds = ["heat-mat", "che", "halogen", "dhp", "rhp", "basking-light"];
+  const lightKinds = ["lamp", "ceiling-light", "led-bar", "uvb", "basking-light"];
+  const sensorKinds = ["thermometer", "hygrometer", "temp-humidity"];
+  const powerKinds = ["socket", "switched-socket", "power-strip", "timer", "smart-plug", "thermostat"];
+  return {
+    powerConsumer: Boolean(object.config?.wattage) || heatKinds.includes(object.kind) || lightKinds.includes(object.kind) || powerKinds.includes(object.kind),
+    heatSource: role === "heating" || heatKinds.includes(object.kind),
+    lightSource: role === "lighting" || lightKinds.includes(object.kind),
+    uvbSource: object.kind === "uvb",
+    sensor: role === "sensor" || sensorKinds.includes(object.kind),
+    waterSource: role === "water" || object.kind === "water-bowl",
+    wallMountable: ["socket", "switched-socket", "thermostat", "thermometer", "hygrometer", "temp-humidity", "timer", "smart-plug"].includes(object.kind),
+  };
+}
+
+export function roomToSpatialScene(room: ReptileRoomWorkspace): SpatialHabitatScene {
+  const width = Math.max(100, room.width ?? 360);
+  const depth = Math.max(100, room.depth ?? 300);
+  const height = Math.max(100, room.height ?? 240);
+  const nodes: SpatialNode[] = [];
+
+  for (const slot of room.slots ?? []) {
+    const w = Math.max(1, slot.w);
+    const d = Math.max(1, slot.depth ?? slot.h);
+    const h = Math.max(1, slot.height ?? 45);
+    nodes.push({
+      id: slot.id,
+      parentId: ROOT_CONTAINER_ID,
+      kind: "vivarium",
+      category: "enclosure",
+      label: slot.label || "Vivarium",
+      assetId: slot.assetId || "vivarium-front-opening",
+      dimensions: { width: w, depth: d, height: h },
+      position: {
+        x: slot.x + w / 2 - width / 2,
+        y: Math.max(0, slot.z ?? 0),
+        z: slot.y + d / 2 - depth / 2,
+      },
+      rotation: {
+        x: 0,
+        y: Number((slot as ReptileRoomSlot & { rotation?: number }).rotation) || 0,
+        z: 0,
+      },
+      clearance: { ...DEFAULT_CLEARANCE, ...(slot.clearance ?? {}) },
+      capabilities: { container: true },
+      config: {
+        ...(slot.config ?? {}),
+        linkedSlotId: slot.id,
+        linkedSnakeId: slot.snakeId,
+      },
+      notes: slot.notes,
+      visible: true,
+    });
+  }
+
+  for (const object of room.objects ?? []) {
+    const w = Math.max(1, object.width);
+    const d = Math.max(1, object.depth);
+    const parentId =
+      object.parentAssetId && (room.slots ?? []).some((slot) => slot.id === object.parentAssetId)
+        ? object.parentAssetId
+        : ROOT_CONTAINER_ID;
+
+    nodes.push({
+      id: object.id,
+      parentId,
+      kind: object.kind as SpatialNodeKind,
+      category: category(object.kind),
+      label: object.label || "Asset",
+      assetId: object.assetId,
+      dimensions: { width: w, depth: d, height: Math.max(1, object.height) },
+      position: {
+        x: object.x + w / 2 - width / 2,
+        y: Math.max(0, object.z),
+        z: object.y + d / 2 - depth / 2,
+      },
+      rotation: { x: 0, y: Number(object.rotation) || 0, z: 0 },
+      clearance: { ...DEFAULT_CLEARANCE, ...(object.clearance ?? {}) },
+      capabilities: caps(object),
+      config: { ...(object.config ?? {}) },
+      notes: object.notes,
+      visible: true,
+    });
+  }
+
+  return {
+    schemaVersion: 1,
+    units: room.unit === "imperial" ? "imperial" : "metric",
+    root: {
+      id: ROOT_CONTAINER_ID,
+      kind: "room",
+      label: room.name || "Reptile Room",
+      dimensions: { width, depth, height },
+      floorPlan: room.floorPlan?.map((point) => ({ x: point.x, z: point.z })),
+      walls: room.walls?.map((wall) => ({ ...wall, start: { ...wall.start }, end: { ...wall.end } })),
+      sockets: room.sockets?.map((socket) => ({ ...socket })),
+      roomPhotoUrl: room.roomPhotoUrl || undefined,
+      logoUrl: room.logoUrl || undefined,
+    },
+    nodes,
+    updatedAt: room.updatedAt || new Date().toISOString(),
+  };
+}
+
+export function mergeStoredSpatialSceneWithRoom(stored: SpatialHabitatScene, room: ReptileRoomWorkspace): SpatialHabitatScene {
+  const base = roomToSpatialScene(room);
+  const normalized = normalizeScene(stored);
+  const baseById = new Map(base.nodes.map((node) => [node.id, node]));
+  const storedById = new Map(normalized.nodes.map((node) => [node.id, node]));
+  const mergedNodes = base.nodes.map((node) => {
+    const storedNode = storedById.get(node.id);
+    if (!storedNode) return node;
+    return {
+      ...storedNode,
+      label: node.kind === "vivarium" ? node.label : storedNode.label,
+      config: { ...storedNode.config, ...node.config, ...(node.kind === "vivarium" ? { linkedSnakeId: node.config.linkedSnakeId, linkedSlotId: node.id } : {}) },
+      notes: node.kind === "vivarium" ? node.notes ?? storedNode.notes : storedNode.notes,
+    };
+  });
+  const storedTime = Date.parse(normalized.updatedAt);
+  const roomTime = Date.parse(room.updatedAt || "");
+  const preserveSpatialOnlyRoot = Number.isFinite(storedTime) && (!Number.isFinite(roomTime) || storedTime > roomTime);
+  const spatialOnlyRoot = preserveSpatialOnlyRoot
+    ? normalized.nodes.filter((node) => node.parentId === ROOT_CONTAINER_ID && !baseById.has(node.id))
+    : [];
+  const nestedStored = normalized.nodes.filter((node) => node.parentId !== ROOT_CONTAINER_ID && nodeIdsForExistingContainers(normalized, node.parentId));
+  return normalizeScene({ ...normalized, root: base.root, nodes: [...mergedNodes, ...spatialOnlyRoot, ...nestedStored] });
+}
+
+function nodeIdsForExistingContainers(scene: SpatialHabitatScene, parentId: string): boolean {
+  return scene.nodes.some((node) => node.id === parentId && node.kind === "vivarium");
+}
+export function normalizeScene(scene: SpatialHabitatScene): SpatialHabitatScene {
+  const rawDimensions = scene.root?.dimensions ?? { width: 360, depth: 300, height: 240 };
+  const dimensions = {
+    width: Math.max(100, Number(rawDimensions.width) || 360),
+    depth: Math.max(100, Number(rawDimensions.depth) || 300),
+    height: Math.max(100, Number(rawDimensions.height) || 240),
+  };
+  return {
+    schemaVersion: 1,
+    units: scene.units === "imperial" ? "imperial" : "metric",
+    root: {
+      id: ROOT_CONTAINER_ID,
+      kind: "room",
+      label: scene.root?.label || "Reptile Room",
+      dimensions,
+      floorPlan: Array.isArray(scene.root?.floorPlan) ? scene.root.floorPlan.map((point) => ({ x: Number(point.x) || 0, z: Number(point.z) || 0 })) : undefined,
+      walls: Array.isArray(scene.root?.walls) ? scene.root.walls.map((wall) => ({ ...wall, start: { x: Number(wall.start?.x) || 0, z: Number(wall.start?.z) || 0 }, end: { x: Number(wall.end?.x) || 0, z: Number(wall.end?.z) || 0 } })) : undefined,
+      sockets: Array.isArray(scene.root?.sockets) ? scene.root.sockets.map((socket) => ({ ...socket, x: Number(socket.x) || 0, z: Number(socket.z) || 0, height: Math.max(0, Number(socket.height) || 0), outlets: Math.max(1, Math.round(Number(socket.outlets) || 1)) })) : undefined,
+      roomPhotoUrl: typeof scene.root?.roomPhotoUrl === "string" ? scene.root.roomPhotoUrl : undefined,
+      logoUrl: typeof scene.root?.logoUrl === "string" ? scene.root.logoUrl : undefined,
+    },
+    nodes: Array.isArray(scene.nodes)
+      ? scene.nodes.map((node) => ({
+          ...node,
+          dimensions: {
+            width: Math.max(1, Number(node.dimensions?.width) || 1),
+            depth: Math.max(1, Number(node.dimensions?.depth) || 1),
+            height: Math.max(1, Number(node.dimensions?.height) || 1),
+          },
+          position: {
+            x: Number(node.position?.x) || 0,
+            y: Math.max(0, Number(node.position?.y) || 0),
+            z: Number(node.position?.z) || 0,
+          },
+          rotation: {
+            x: Number(node.rotation?.x) || 0,
+            y: Number(node.rotation?.y) || 0,
+            z: Number(node.rotation?.z) || 0,
+          },
+          clearance: { ...DEFAULT_CLEARANCE, ...(node.clearance ?? {}) },
+          capabilities: node.capabilities ?? {},
+          config: node.config ?? {},
+          visible: node.visible !== false,
+        }))
+      : [],
+    updatedAt: scene.updatedAt || new Date().toISOString(),
+  };
+}
+
+export function createSpatialNode(
+  preset: SpatialAssetPreset,
+  parentId: string,
+  dimensions: SpatialDimensionsCm,
+  index: number,
+): SpatialNode {
+  const w = Math.min(preset.width, dimensions.width);
+  const d = Math.min(preset.depth, dimensions.depth);
+  const h = Math.min(preset.height, dimensions.height);
+  const stepX = Math.max(40, w + SPATIAL_SNAP_CM);
+  const stepZ = Math.max(40, d + SPATIAL_SNAP_CM);
+  const cols = Math.max(1, Math.floor(dimensions.width / stepX));
+  const col = index % cols;
+  const row = Math.floor(index / cols);
+  const x = clamp(
+    snapCm((col + 0.5) * stepX - dimensions.width / 2),
+    -dimensions.width / 2 + w / 2,
+    dimensions.width / 2 - w / 2,
+  );
+  const z = clamp(
+    snapCm((row + 0.5) * stepZ - dimensions.depth / 2),
+    -dimensions.depth / 2 + d / 2,
+    dimensions.depth / 2 - d / 2,
+  );
+  const y = preset.capabilities?.ceilingMountable ? Math.max(0, dimensions.height - h) : 0;
+  return {
+    id: spatialId(),
+    parentId,
+    kind: preset.kind,
+    category: preset.category,
+    label: preset.label,
+    assetId: preset.assetId,
+    dimensions: { width: w, depth: d, height: h },
+    position: { x, y, z },
+    rotation: { x: 0, y: 0, z: 0 },
+    clearance: { ...DEFAULT_CLEARANCE },
+    capabilities: { ...(preset.capabilities ?? {}) },
+    config: { ...(preset.config ?? {}) },
+    visible: true,
+  };
+}
+
+export function snapNodeToNearestWall(scene: SpatialHabitatScene, id: string): SpatialHabitatScene {
+  const node = findNode(scene, id);
+  if (!node || !node.capabilities.wallMountable) return scene;
+  const parent = parentDimensions(scene, node.parentId);
+  const footprint = rotatedFootprint(node);
+  const candidates = [
+    { side: "west", distance: Math.abs(node.position.x - (-parent.width / 2 + footprint.width / 2)) },
+    { side: "east", distance: Math.abs(node.position.x - (parent.width / 2 - footprint.width / 2)) },
+    { side: "north", distance: Math.abs(node.position.z - (-parent.depth / 2 + footprint.depth / 2)) },
+    { side: "south", distance: Math.abs(node.position.z - (parent.depth / 2 - footprint.depth / 2)) },
+  ].sort((a, b) => a.distance - b.distance)[0];
+  const x = candidates.side === "west"
+    ? -parent.width / 2 + footprint.width / 2
+    : candidates.side === "east"
+      ? parent.width / 2 - footprint.width / 2
+      : clamp(node.position.x, -parent.width / 2 + footprint.width / 2, parent.width / 2 - footprint.width / 2);
+  const z = candidates.side === "north"
+    ? -parent.depth / 2 + footprint.depth / 2
+    : candidates.side === "south"
+      ? parent.depth / 2 - footprint.depth / 2
+      : clamp(node.position.z, -parent.depth / 2 + footprint.depth / 2, parent.depth / 2 - footprint.depth / 2);
+  const rotation = candidates.side === "west" || candidates.side === "east" ? 90 : 0;
+  return updateNode(scene, id, {
+    position: { x: snapCm(x), y: clamp(snapCm(node.position.y), 0, Math.max(0, parent.height - node.dimensions.height)), z: snapCm(z) },
+    rotation: { ...node.rotation, y: rotation },
+    config: { ...node.config, wallMount: candidates.side },
+  });
+}
+
+export function snapNodeToFloor(scene: SpatialHabitatScene, id: string): SpatialHabitatScene {
+  const node = findNode(scene, id);
+  if (!node) return scene;
+  return updateNode(scene, id, { position: { ...node.position, y: 0 }, config: { ...node.config, ceilingMount: false } });
+}
+
+export function snapNodeToCeiling(scene: SpatialHabitatScene, id: string): SpatialHabitatScene {
+  const node = findNode(scene, id);
+  if (!node || !node.capabilities.ceilingMountable) return scene;
+  const parent = parentDimensions(scene, node.parentId);
+  return updateNode(scene, id, { position: { ...node.position, y: Math.max(0, parent.height - node.dimensions.height) }, config: { ...node.config, ceilingMount: true } });
+}
+export function updateNode(scene: SpatialHabitatScene, id: string, patch: Partial<SpatialNode>): SpatialHabitatScene {
+  return {
+    ...scene,
+    nodes: scene.nodes.map((node) =>
+      node.id !== id
+        ? node
+        : {
+            ...node,
+            ...patch,
+            dimensions: patch.dimensions ? { ...node.dimensions, ...patch.dimensions } : node.dimensions,
+            position: patch.position ? { ...node.position, ...patch.position } : node.position,
+            rotation: patch.rotation ? { ...node.rotation, ...patch.rotation } : node.rotation,
+            clearance: patch.clearance ? { ...node.clearance, ...patch.clearance } : node.clearance,
+            capabilities: patch.capabilities ? { ...node.capabilities, ...patch.capabilities } : node.capabilities,
+            config: patch.config ? { ...node.config, ...patch.config } : node.config,
+          },
+    ),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function removeNode(scene: SpatialHabitatScene, id: string): SpatialHabitatScene {
+  const ids = new Set<string>([id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of scene.nodes) {
+      if (ids.has(node.parentId) && !ids.has(node.id)) {
+        ids.add(node.id);
+        changed = true;
+      }
+    }
+  }
+  return {
+    ...scene,
+    nodes: scene.nodes.filter((node) => !ids.has(node.id)),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function duplicateNode(scene: SpatialHabitatScene, id: string): SpatialHabitatScene {
+  const original = findNode(scene, id);
+  if (!original) return scene;
+
+  const rootCopyId = spatialId();
+  const map = new Map<string, string>([[id, rootCopyId]]);
+  const rootCopy: SpatialNode = {
+    ...original,
+    id: rootCopyId,
+    label: original.label + " Copy",
+    position: {
+      ...original.position,
+      x: original.position.x + SPATIAL_SNAP_CM,
+      z: original.position.z + SPATIAL_SNAP_CM,
+    },
+    config: { ...original.config },
+    capabilities: { ...original.capabilities },
+  };
+
+  const copies: SpatialNode[] = [rootCopy];
+  const pending = scene.nodes.filter((node) => node.parentId === id);
+  let queue = [...pending];
+
+  while (queue.length) {
+    const current = queue.shift()!;
+    const copyId = spatialId();
+    map.set(current.id, copyId);
+    copies.push({
+      ...current,
+      id: copyId,
+      parentId: map.get(current.parentId) ?? rootCopyId,
+      config: { ...current.config },
+      capabilities: { ...current.capabilities },
+    });
+    queue = queue.concat(scene.nodes.filter((node) => node.parentId === current.id));
+  }
+
+  return { ...scene, nodes: [...scene.nodes, ...copies], updatedAt: new Date().toISOString() };
+}
+
+function aabb(node: SpatialNode) {
+  const footprint = rotatedFootprint(node);
+  return {
+    l: node.position.x - footprint.width / 2,
+    r: node.position.x + footprint.width / 2,
+    f: node.position.z - footprint.depth / 2,
+    b: node.position.z + footprint.depth / 2,
+    bo: node.position.y,
+    t: node.position.y + node.dimensions.height,
+  };
+}
+
+function pointInPolygon(x: number, z: number, points: Array<{ x: number; z: number }>) {
+  const EPSILON = 0.0001;
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i) {
+    const a = points[i];
+    const b = points[j];
+    const cross = (x - a.x) * (b.z - a.z) - (z - a.z) * (b.x - a.x);
+    const onSegment = Math.abs(cross) <= EPSILON
+      && x >= Math.min(a.x, b.x) - EPSILON && x <= Math.max(a.x, b.x) + EPSILON
+      && z >= Math.min(a.z, b.z) - EPSILON && z <= Math.max(a.z, b.z) + EPSILON;
+    if (onSegment) return true;
+    const crosses = a.z > z !== b.z > z && x < ((b.x - a.x) * (z - a.z)) / (b.z - a.z) + a.x;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+function outsideConfiguredFloorPlan(node: SpatialNode, scene: SpatialHabitatScene) {
+  if (node.parentId !== ROOT_CONTAINER_ID || !scene.root.floorPlan || scene.root.floorPlan.length < 3) return false;
+  const footprint = rotatedFootprint(node);
+  const points = scene.root.floorPlan.map((point) => ({
+    x: point.x - scene.root.dimensions.width / 2,
+    z: point.z - scene.root.dimensions.depth / 2,
+  }));
+  const corners = [
+    { x: node.position.x - footprint.width / 2, z: node.position.z - footprint.depth / 2 },
+    { x: node.position.x + footprint.width / 2, z: node.position.z - footprint.depth / 2 },
+    { x: node.position.x - footprint.width / 2, z: node.position.z + footprint.depth / 2 },
+    { x: node.position.x + footprint.width / 2, z: node.position.z + footprint.depth / 2 },
+  ];
+  return corners.some((corner) => !pointInPolygon(corner.x, corner.z, points));
+}
+function intersects(a: SpatialNode, b: SpatialNode) {
+  const x = aabb(a);
+  const y = aabb(b);
+  return x.l < y.r - EPS && x.r > y.l + EPS && x.f < y.b - EPS && x.b > y.f + EPS && x.bo < y.t - EPS && x.t > y.bo + EPS;
+}
+
+function socketWorldPosition(socket: SpatialRoomSocket, root: SpatialHabitatScene["root"]) {
+  return { x: socket.x - root.dimensions.width / 2, z: socket.z - root.dimensions.depth / 2 };
+}
+
+export function nearestPowerSocket(scene: SpatialHabitatScene, nodeId: string): SpatialRoomSocket | null {
+  const node = findNode(scene, nodeId);
+  const sockets = (scene.root.sockets ?? []).filter((socket) => socket.enabled !== false);
+  if (!node || !node.capabilities.powerConsumer || !sockets.length) return null;
+  return sockets
+    .map((socket) => { const position = socketWorldPosition(socket, scene.root); return { socket, distance: Math.hypot(position.x - node.position.x, position.z - node.position.z) }; })
+    .sort((a, b) => a.distance - b.distance)[0]?.socket ?? null;
+}
+
+export function connectNodeToNearestPowerSocket(scene: SpatialHabitatScene, nodeId: string): SpatialHabitatScene {
+  const node = findNode(scene, nodeId);
+  const socket = nearestPowerSocket(scene, nodeId);
+  if (!node || !socket) return scene;
+  return updateNode(scene, nodeId, { config: { ...node.config, powerSocketId: socket.id } });
+}
+
+export function disconnectNodeFromPowerSocket(scene: SpatialHabitatScene, nodeId: string): SpatialHabitatScene {
+  const node = findNode(scene, nodeId);
+  if (!node) return scene;
+  const config = { ...node.config };
+  delete config.powerSocketId;
+  return updateNode(scene, nodeId, { config });
+}
+export function validateSpatialScene(scene: SpatialHabitatScene): SpatialValidationIssue[] {
+  const issues: SpatialValidationIssue[] = [];
+
+  const nodeIds = new Set(scene.nodes.map((node) => node.id));
+  for (const node of scene.nodes) {
+    if (node.parentId !== ROOT_CONTAINER_ID && !nodeIds.has(node.parentId)) {
+      issues.push({ severity: "error", code: "orphaned-node", message: node.label + " refers to a missing parent container.", nodeIds: [node.id] });
+      continue;
+    }
+    const parent = parentDimensions(scene, node.parentId);
+    const bounds = aabb(node);
+    if (
+      bounds.l < -parent.width / 2 ||
+      bounds.r > parent.width / 2 ||
+      bounds.f < -parent.depth / 2 ||
+      bounds.b > parent.depth / 2 ||
+      bounds.bo < 0 ||
+      bounds.t > parent.height ||
+      outsideConfiguredFloorPlan(node, scene)
+    ) {
+      issues.push({
+        severity: "error",
+        code: "outside-container",
+        message: outsideConfiguredFloorPlan(node, scene) ? node.label + " extends beyond the configured room floor plan." : node.label + " extends outside its parent space.",
+        nodeIds: [node.id],
+      });
+    }
+    const clearance = node.clearance ?? DEFAULT_CLEARANCE;
+    const envelope = {
+      l: bounds.l - Math.max(0, clearance.left),
+      r: bounds.r + Math.max(0, clearance.right),
+      f: bounds.f - Math.max(0, clearance.rear),
+      b: bounds.b + Math.max(0, clearance.front),
+    };
+    if (
+      envelope.l < -parent.width / 2 ||
+      envelope.r > parent.width / 2 ||
+      envelope.f < -parent.depth / 2 ||
+      envelope.b > parent.depth / 2
+    ) {
+      issues.push({
+        severity: "warning",
+        code: "clearance",
+        message: node.label + " is within the container but its configured access/clearance envelope is not.",
+        nodeIds: [node.id],
+      });
+    }
+  }
+
+  for (const parentId of new Set(scene.nodes.map((node) => node.parentId))) {
+    const list = childrenOf(scene, parentId);
+    for (let i = 0; i < list.length; i += 1) {
+      for (let j = i + 1; j < list.length; j += 1) {
+        const a = list[i];
+        const b = list[j];
+        if (["socket", "vent"].includes(a.kind) || ["socket", "vent"].includes(b.kind)) continue;
+        if (a.config.allowOverlap === true || b.config.allowOverlap === true) continue;
+        if (intersects(a, b)) {
+          issues.push({
+            severity: "warning",
+            code: "collision",
+            message: a.label + " overlaps " + b.label + ".",
+            nodeIds: [a.id, b.id],
+          });
+        }
+      }
+    }
+  }
+
+  const powerConsumers = scene.nodes.filter((node) => node.capabilities.powerConsumer);
+  const watts = powerConsumers.reduce((sum, node) => sum + Math.max(0, Number(node.config.wattage) || 0), 0);
+  const sockets = scene.root.sockets ?? [];
+  const socketLoads = new Map<string, number>();
+  for (const node of powerConsumers) {
+    const socketId = typeof node.config.powerSocketId === "string" ? node.config.powerSocketId : "";
+    if (!socketId) continue;
+    socketLoads.set(socketId, (socketLoads.get(socketId) ?? 0) + Math.max(0, Number(node.config.wattage) || 0));
+  }
+  for (const socket of sockets) {
+    const maxLoad = Math.max(0, Number(socket.maxLoadWatts) || 0);
+    const load = socketLoads.get(socket.id) ?? 0;
+    if (maxLoad > 0 && load > maxLoad) {
+      issues.push({
+        severity: "error",
+        code: "power-load",
+        message: socket.label + " is carrying " + load + " W against a " + maxLoad + " W planning limit.",
+        nodeIds: powerConsumers.filter((node) => node.config.powerSocketId === socket.id).map((node) => node.id),
+      });
+    }
+  }
+  const explicitLimits = powerConsumers.reduce((max, node) => Math.max(max, Number(node.config.maxLoadWatts) || 0), 0);
+  const totalSocketCapacity = sockets.reduce((sum, socket) => sum + Math.max(0, Number(socket.maxLoadWatts) || 0), 0);
+  const planningLimit = Math.max(explicitLimits, totalSocketCapacity);
+  if (planningLimit > 0 && watts > planningLimit) {
+    issues.push({
+      severity: "error",
+      code: "power-load",
+      message: "Configured equipment load is " + watts + " W, above the available room power planning capacity of " + planningLimit + " W.",
+      nodeIds: powerConsumers.map((node) => node.id),
+    });
+  }
+
+  for (const vivarium of scene.nodes.filter((node) => node.kind === "vivarium")) {
+    const child = childrenOf(scene, vivarium.id);
+    if (!child.length) {
+      issues.push({
+        severity: "info",
+        code: "empty-vivarium",
+        message: vivarium.label + " has no internal build items yet.",
+        nodeIds: [vivarium.id],
+      });
+    }
+    if (child.some((node) => node.capabilities.heatSource) && !child.some((node) => node.capabilities.sensor)) {
+      issues.push({
+        severity: "warning",
+        code: "missing-monitoring",
+        message: vivarium.label + " has configured heating but no environmental sensor in the enclosure.",
+        nodeIds: [vivarium.id],
+      });
+    }
+  }
+
+  return issues;
+}
+
+export function sceneToRoom(scene: SpatialHabitatScene, source: ReptileRoomWorkspace): ReptileRoomWorkspace {
+  const root = scene.root.dimensions;
+  const slots = [...(source.slots ?? [])];
+  const objects: ReptileRoomObject[] = [];
+
+  for (const node of scene.nodes) {
+    if (node.parentId !== ROOT_CONTAINER_ID) continue;
+
+    const width = node.dimensions.width;
+    const depth = node.dimensions.depth;
+
+    if (node.kind === "vivarium") {
+      const old = slots.find((slot) => slot.id === node.id);
+      const linkedSnakeId = typeof node.config.linkedSnakeId === "string" ? node.config.linkedSnakeId : old?.snakeId ?? null;
+      const slot: ReptileRoomSlot = {
+        ...(old ?? {
+          id: node.id,
+          snakeId: null,
+          label: node.label,
+          x: 0,
+          y: 0,
+          z: 0,
+          w: width,
+          h: depth,
+          depth,
+          height: node.dimensions.height,
+        }),
+        id: node.id,
+        snakeId: linkedSnakeId,
+        label: node.label,
+        x: node.position.x + root.width / 2 - width / 2,
+        y: node.position.z + root.depth / 2 - depth / 2,
+        z: node.position.y,
+        w: width,
+        h: depth,
+        depth,
+        height: node.dimensions.height,
+        assetId: node.assetId,
+        stackGroupId: old?.stackGroupId ?? null,
+        stackIndex: old?.stackIndex ?? 0,
+        parentSlotId: null,
+        clearance: { ...node.clearance },
+        config: { ...(old?.config ?? {}), ...node.config, linkedSnakeId },
+      };
+      const index = slots.findIndex((candidate) => candidate.id === slot.id);
+      if (index >= 0) slots[index] = slot;
+      else slots.push(slot);
+    } else {
+      const old = source.objects?.find((object) => object.id === node.id);
+      objects.push({
+        ...(old ?? {}),
+        id: node.id,
+        kind: node.kind as ReptileRoomObject["kind"],
+        label: node.label,
+        x: node.position.x + root.width / 2 - width / 2,
+        y: node.position.z + root.depth / 2 - depth / 2,
+        z: node.position.y,
+        width,
+        depth,
+        height: node.dimensions.height,
+        rotation: node.rotation.y,
+        wall: null,
+        parentAssetId: null,
+        clearance: { ...node.clearance },
+        notes: node.notes ?? "",
+        assetType: node.category === "enrichment" || node.category === "water" ? "decor" : node.category === "construction" ? "furniture" : "equipment",
+        assetId: node.assetId,
+        intelligenceRole: old?.intelligenceRole,
+        config: { ...(old?.config ?? {}), ...node.config },
+      });
+    }
+  }
+
+  const rootIds = new Set(scene.nodes.filter((node) => node.parentId === ROOT_CONTAINER_ID).map((node) => node.id));
+  const sceneNodeIds = new Set(scene.nodes.map((node) => node.id));
+  return {
+    ...source,
+    width: root.width,
+    depth: root.depth,
+    height: root.height,
+    name: scene.root.label,
+    unit: scene.units,
+    floorPlan: scene.root.floorPlan?.map((point) => ({ x: point.x, z: point.z })),
+    walls: scene.root.walls?.map((wall) => ({ ...wall, start: { ...wall.start }, end: { ...wall.end } })),
+    sockets: scene.root.sockets?.map((socket) => ({ ...socket })),
+    roomPhotoUrl: scene.root.roomPhotoUrl || "",
+    logoUrl: scene.root.logoUrl || "",
+    slots: slots.filter((slot) => rootIds.has(slot.id)),
+    objects: [
+      ...objects,
+      ...(source.objects ?? []).filter((object) => sceneNodeIds.has(object.id) && !objects.some((node) => node.id === object.id)),
+    ],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function syncSceneRoomInfrastructure(scene: SpatialHabitatScene, room: ReptileRoomWorkspace): SpatialHabitatScene {
+  return normalizeScene({
+    ...scene,
+    root: {
+      ...scene.root,
+      label: room.name || scene.root.label,
+      dimensions: {
+        width: Math.max(100, room.width ?? scene.root.dimensions.width),
+        depth: Math.max(100, room.depth ?? scene.root.dimensions.depth),
+        height: Math.max(100, room.height ?? scene.root.dimensions.height),
+      },
+      floorPlan: room.floorPlan?.map((point) => ({ x: point.x, z: point.z })),
+      walls: room.walls?.map((wall) => ({ ...wall, start: { ...wall.start }, end: { ...wall.end } })),
+      sockets: room.sockets?.map((socket) => ({ ...socket })),
+      roomPhotoUrl: room.roomPhotoUrl || undefined,
+      logoUrl: room.logoUrl || undefined,
+    },
+  });
+}

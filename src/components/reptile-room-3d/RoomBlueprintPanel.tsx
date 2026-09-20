@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useAuth } from "../../context/useAuth";
 import { loadReptileRooms, saveReptileRooms, setRoomFloorPlan, type ReptileRoomPoint, type ReptileRoomSocket, type ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { uploadReptileRoomAsset, type ReptileRoomAssetKind } from "../../services/reptileRoomAssetService";
+import { validateSpatialLayout } from "../../services/reptileRoomSpatialService";
 
 const panelStyle: CSSProperties = { margin: "0 auto .75rem", padding: ".75rem", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, background: "rgba(15,18,22,.9)", color: "inherit" };
 const inputStyle: CSSProperties = { width: "100%", boxSizing: "border-box", padding: ".42rem", borderRadius: 7, border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.06)", color: "inherit" };
@@ -14,36 +15,61 @@ function roomPoints(room: ReptileRoomWorkspace): ReptileRoomPoint[] {
   ];
 }
 
-export default function RoomBlueprintPanel() {
+type RoomBlueprintPanelProps = {
+  room?: ReptileRoomWorkspace | null;
+  onRoomChange?: (room: ReptileRoomWorkspace) => void;
+};
+
+export default function RoomBlueprintPanel({ room: controlledRoom = null, onRoomChange }: RoomBlueprintPanelProps) {
   const { user } = useAuth();
-  const [room, setRoom] = useState<ReptileRoomWorkspace | null>(null);
+  const [localRoom, setLocalRoom] = useState<ReptileRoomWorkspace | null>(null);
+  const room = controlledRoom ?? localRoom;
+  const controlled = controlledRoom !== null;
   const [points, setPoints] = useState<ReptileRoomPoint[]>([]);
   const [wallId, setWallId] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!controlled || !controlledRoom) return;
+    setPoints(roomPoints(controlledRoom));
+    setWallId(controlledRoom.walls?.[0]?.id ?? "");
+  }, [controlled, controlledRoom?.id, controlledRoom?.updatedAt]);
+
+  useEffect(() => {
+    if (controlled) return;
     if (!user) return;
     void loadReptileRooms(user.uid)
       .then((rooms) => {
         const next = rooms[0] ?? null;
-        setRoom(next);
+        setLocalRoom(next);
         setPoints(next ? roomPoints(next) : []);
         setWallId(next?.walls?.[0]?.id ?? "");
       })
       .catch((error) =>
         setNotice(error instanceof Error ? error.message : "Unable to load room settings."),
       );
-  }, [user]);
+  }, [controlled, user]);
 
   const walls = useMemo(() => room?.walls ?? [], [room]);
+  const spatialIssues = useMemo(
+    () => room
+      ? validateSpatialLayout(room.slots, room.objects ?? [], room.width ?? 0, room.depth ?? 0, room.height ?? 0)
+      : [],
+    [room],
+  );
 
   const save = async (nextRoom: ReptileRoomWorkspace) => {
+    if (controlled) {
+      onRoomChange?.(nextRoom);
+      setNotice("Room blueprint updated. Save the room to commit it to the cloud.");
+      return;
+    }
     if (!user) return;
     setBusy(true);
     try {
       await saveReptileRooms(user.uid, [nextRoom]);
-      setRoom(nextRoom);
+      setLocalRoom(nextRoom);
       setPoints(roomPoints(nextRoom));
       setWallId(nextRoom.walls?.[0]?.id ?? wallId);
       setNotice("Room blueprint saved.");
@@ -110,6 +136,14 @@ export default function RoomBlueprintPanel() {
     });
   };
 
+  const updateSocket = (id: string, patch: Partial<ReptileRoomSocket>) => {
+    if (!room) return;
+    void save({
+      ...room,
+      sockets: (room.sockets ?? []).map((socket) => socket.id === id ? { ...socket, ...patch } : socket),
+      updatedAt: new Date().toISOString(),
+    });
+  };
   const removeSocket = (id: string) => {
     if (!room) return;
     void save({
@@ -238,11 +272,45 @@ export default function RoomBlueprintPanel() {
                     background: "rgba(255,255,255,.04)",
                   }}
                 >
-                  <span>🔌 {socket.label} · {socket.height} cm · {socket.outlets} outlets</span>
+                  <div style={{ display: "grid", gap: ".25rem", minWidth: 0 }}>
+                    <strong>🔌 {socket.label}</strong>
+                    <small>{socket.height} cm · {socket.outlets} outlets</small>
+                    <small>{socket.maxLoadWatts && socket.maxLoadWatts > 0 ? "Planning limit: " + socket.maxLoadWatts + " W" : "Capacity unknown · 0 means not configured"}</small>
+                    <label>
+                      Max load (W)
+                      <input
+                        aria-label={`${socket.label} maximum load watts`}
+                        type="number"
+                        min="0"
+                        step="10"
+                        value={socket.maxLoadWatts ?? 0}
+                        onChange={(event) => updateSocket(socket.id, { maxLoadWatts: Math.max(0, Number(event.target.value) || 0) })}
+                        style={inputStyle}
+                      />
+                    </label>
+                  </div>
                   <button type="button" onClick={() => removeSocket(socket.id)}>Remove</button>
                 </div>
               ))}
             </div>
+          </div>
+
+          <div>
+            <strong>📐 Layout audit</strong>
+            {spatialIssues.length === 0 ? (
+              <div style={{ marginTop: ".4rem", padding: ".55rem", borderRadius: 8, background: "rgba(70,180,120,.1)", border: "1px solid rgba(70,180,120,.18)" }}>
+                ✓ No room-boundary or 3D overlap issues detected.
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: ".3rem", marginTop: ".4rem" }}>
+                {spatialIssues.slice(0, 12).map((issue, index) => (
+                  <div key={`${issue.message}-${index}`} style={{ padding: ".45rem .55rem", borderRadius: 8, background: issue.severity === "error" ? "rgba(210,75,75,.1)" : "rgba(220,170,70,.1)", border: `1px solid ${issue.severity === "error" ? "rgba(210,75,75,.18)" : "rgba(220,170,70,.18)"}` }}>
+                    <strong>{issue.severity === "error" ? "⚠️" : "ℹ️"} </strong>{issue.message}
+                  </div>
+                ))}
+                {spatialIssues.length > 12 && <small>{spatialIssues.length - 12} more layout issue{spatialIssues.length - 12 === 1 ? "" : "s"}.</small>}
+              </div>
+            )}
           </div>
 
           <div>
@@ -294,32 +362,3 @@ export default function RoomBlueprintPanel() {
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) void upload("wall", file);
-                  }}
-                />
-              </label>
-            </div>
-            {room.roomPhotoUrl && (
-              <img
-                src={room.roomPhotoUrl}
-                alt="Uploaded reptile room reference"
-                style={{
-                  maxWidth: 240,
-                  maxHeight: 120,
-                  objectFit: "cover",
-                  borderRadius: 8,
-                  marginTop: ".45rem",
-                }}
-              />
-            )}
-          </div>
-
-          {notice && (
-            <div role="status" style={{ fontSize: ".82rem", opacity: 0.78 }}>
-              {notice}
-            </div>
-          )}
-        </div>
-      </details>
-    </section>
-  );
-}

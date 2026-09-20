@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MySnakesTiles from "./MySnakesTiles";
 import ReptileRoomPOVViewer from "../components/reptile-room-3d/ReptileRoomPOVViewer";
 import "../styles/my-snakes-workspace.css";
@@ -17,6 +17,7 @@ function readView(): WorkspaceView {
 
 export default function MySnakes() {
   const [view, setView] = useState<WorkspaceView>(() => readView());
+  const navigate = useNavigate();
 
   useEffect(() => {
     try {
@@ -26,7 +27,8 @@ export default function MySnakes() {
     }
   }, [view]);
 
-  const openRoomEditor = () => setView("snakes");
+  const openRoomEditor = () => navigate("/reptile-room");
+  const openVivariumBuilder = (slotId: string) => navigate(`/reptile-room/vivarium/${encodeURIComponent(slotId)}/3d`);
 
   return (
     <div className={`my-snakes-workspace my-snakes-workspace-${view}`}>
@@ -54,7 +56,7 @@ export default function MySnakes() {
         {view === "snakes" ? (
           <MySnakesTiles />
         ) : (
-          <ReptileRoomPOVViewer onEdit={openRoomEditor} />
+          <ReptileRoomPOVViewer onEdit={openRoomEditor} onOpenVivariumBuilder={openVivariumBuilder} />
         )}
       </div>
     </div>

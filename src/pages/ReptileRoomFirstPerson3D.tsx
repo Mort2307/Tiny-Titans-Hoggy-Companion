@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useAuth } from "../context/useAuth";
+import { useNavigate } from "react-router-dom";
 import { getUserSnakes } from "../services/snakeService";
-import { loadReptileRooms, type ReptileRoomSlot, type ReptileRoomWorkspace } from "../services/reptileRoomService";
+import { loadReptileRooms, type ReptileRoomSlot, type ReptileRoomWorkspace, type ReptileRoomWall } from "../services/reptileRoomService";
+import { loadSpatialHabitat } from "../services/spatialHabitatPersistenceService";
+import { mergeStoredSpatialSceneWithRoom, sceneToRoom } from "../services/spatialHabitatService";
 import type { Snake } from "../types/Snake";
 import "../styles/reptile-room-first-person.css";
 
@@ -13,6 +16,25 @@ const slotWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
 const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.h);
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 
+function RoomWall({ wall, roomWidth, roomDepth, roomHeight, scale, eyeHeight }: { wall: ReptileRoomWall; roomWidth: number; roomDepth: number; roomHeight: number; scale: number; eyeHeight: number }) {
+  const dx = wall.end.x - wall.start.x;
+  const dz = wall.end.z - wall.start.z;
+  const length = Math.hypot(dx, dz) * scale;
+  const height = Math.max(1, wall.height ?? roomHeight) * scale;
+  const midX = ((wall.start.x + wall.end.x) / 2 - roomWidth / 2) * scale;
+  const midZ = ((wall.start.z + wall.end.z) / 2 - roomDepth / 2) * scale;
+  const angle = Math.atan2(dz, dx) * 180 / Math.PI;
+  return <div
+    className="rrfp-wall rrfp-custom-wall"
+    style={{
+      left: `${midX}px`,
+      width: length,
+      height,
+      transform: `translate(-50%, ${eyeHeight - height / 2}px) translateZ(${midZ}px) rotateY(${-angle}deg)`,
+      background: wall.colour ? wall.colour : undefined,
+    }}
+  />;
+}
 function RoomBox({ slot, selected, onSelect, scale, room, eyeHeight }: { slot: ReptileRoomSlot; selected: boolean; onSelect: () => void; scale: number; room: Vec3; eyeHeight: number }) {
   const width = slotWidth(slot) * scale;
   const depth = slotDepth(slot) * scale;
@@ -60,6 +82,7 @@ function FurnitureBox({ object, scale, room, eyeHeight }: { object: NonNullable<
 
 export default function ReptileRoomFirstPerson3D() {
   const { user, loading, profileLoading } = useAuth();
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState<ReptileRoomWorkspace[]>([]);
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [roomId, setRoomId] = useState("");
@@ -89,7 +112,11 @@ export default function ReptileRoomFirstPerson3D() {
     if (!user) return;
     try {
       const [loadedRooms, loadedSnakes] = await Promise.all([loadReptileRooms(user.uid), getUserSnakes(user.uid)]);
-      setRooms(loadedRooms);
+      const spatialRooms = await Promise.all(loadedRooms.map(async (workspace) => {
+        const storedScene = await loadSpatialHabitat(user.uid, workspace.id).catch(() => null);
+        return storedScene ? sceneToRoom(mergeStoredSpatialSceneWithRoom(storedScene, workspace), workspace) : workspace;
+      }));
+      setRooms(spatialRooms);
       setSnakes(loadedSnakes);
       if (loadedRooms.length) setRoomId((current) => loadedRooms.some((item) => item.id === current) ? current : loadedRooms[0].id);
     } catch (error) {
@@ -122,7 +149,7 @@ export default function ReptileRoomFirstPerson3D() {
         <div><span className="rrfp-kicker">🏠 TINY TITANS · FIRST-PERSON ROOM</span><h1>{room.name}</h1><p>{Math.round(roomWidth)} × {Math.round(roomDepth)} × {Math.round(roomHeight)} cm · true room scale · camera at exact room centre · eye height 165 cm</p></div>
         <div className="rrfp-header-actions">
           {rooms.length > 1 && <select value={room.id} onChange={(event) => setRoomId(event.target.value)} aria-label="Select room">{rooms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>}
-          <button type="button" onClick={() => setYaw(0)}>Centre view</button>
+          <button type="button" onClick={() => navigate("/reptile-room")}>Edit room</button><button type="button" onClick={() => setYaw(0)}>Centre view</button>
         </div>
       </header>
       {notice && <div className="rrfp-notice">{notice}</div>}
@@ -134,10 +161,12 @@ export default function ReptileRoomFirstPerson3D() {
         <div className="rrfp-camera" style={{ transform: `rotateY(${yaw}deg)` }}>
           <div className="rrfp-world">
             <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth, transform: `translate(-50%, ${eyeHeight}px) rotateX(90deg)` }} />
-            <div className="rrfp-wall rrfp-wall-back" style={{ width: scaledWidth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateZ(${-scaledDepth / 2}px)` }} />
-            <div className="rrfp-wall rrfp-wall-front" style={{ width: scaledWidth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateZ(${scaledDepth / 2}px) rotateY(180deg)` }} />
-            <div className="rrfp-wall rrfp-wall-left" style={{ width: scaledDepth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateX(${-scaledWidth / 2}px) rotateY(90deg)` }} />
-            <div className="rrfp-wall rrfp-wall-right" style={{ width: scaledDepth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateX(${scaledWidth / 2}px) rotateY(-90deg)` }} />
+            {room.walls?.length ? room.walls.map((wall) => <RoomWall key={wall.id} wall={wall} roomWidth={roomWidth} roomDepth={roomDepth} roomHeight={roomHeight} scale={scale} eyeHeight={eyeHeight} />) : <>
+              <div className="rrfp-wall rrfp-wall-back" style={{ width: scaledWidth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateZ(${-scaledDepth / 2}px)` }} />
+              <div className="rrfp-wall rrfp-wall-front" style={{ width: scaledWidth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateZ(${scaledDepth / 2}px) rotateY(180deg)` }} />
+              <div className="rrfp-wall rrfp-wall-left" style={{ width: scaledDepth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateX(${-scaledWidth / 2}px) rotateY(90deg)` }} />
+              <div className="rrfp-wall rrfp-wall-right" style={{ width: scaledDepth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateX(${scaledWidth / 2}px) rotateY(-90deg)` }} />
+            </>}
             <div className="rrfp-ceiling" style={{ width: scaledWidth, height: scaledDepth, transform: `translate(-50%, ${eyeHeight - scaledHeight}px) rotateX(90deg)` }} />
             {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} onSelect={() => setSelectedId(slot.id)} scale={scale} room={roomVec} eyeHeight={eyeHeight} />)}
             {objects.map((object) => <FurnitureBox key={object.id} object={object} scale={scale} room={roomVec} eyeHeight={eyeHeight} />)}
@@ -149,7 +178,7 @@ export default function ReptileRoomFirstPerson3D() {
         <button type="button" className="rrfp-close" onClick={() => setSelectedId(null)} aria-label="Close vivarium information">×</button>
         <span className="rrfp-inspector-kicker">VIVARIUM</span><h2>{selected.label}</h2>
         <div className="rrfp-inspector-grid"><div><span>Occupant</span><strong>{selectedSnake ? snakeName(selectedSnake) : "Empty"}</strong></div><div><span>Dimensions</span><strong>{slotWidth(selected)} × {slotDepth(selected)} × {slotHeight(selected)} cm</strong></div><div><span>Status</span><strong>{selected.lifecycleStatus ?? (selectedSnake ? "active" : "empty")}</strong></div><div><span>Position</span><strong>{Math.round(selected.x)}, {Math.round(selected.y)}</strong></div></div>
-        <p>First-person camera is anchored to the exact centre of the scaled room. The room geometry is positioned around that fixed point rather than moving the camera toward a vivarium.</p>
+        <p>First-person camera is anchored to the exact centre of the scaled room. The room geometry is positioned around that fixed point rather than moving the camera toward a vivarium.</p><div className="rrfp-selected-actions">{selectedSnake && <><button type="button" onClick={() => navigate(`/snakes/${encodeURIComponent(selectedSnake.id)}/feeding`)}>🍽️ Feed</button><button type="button" onClick={() => navigate(`/snakes/${encodeURIComponent(selectedSnake.id)}/shedding`)}>🐍 Shed</button><button type="button" onClick={() => navigate(`/snakes/${encodeURIComponent(selectedSnake.id)}/weights`)}>⚖️ Weight</button></>}<button type="button" onClick={() => navigate(`/reptile-room/vivarium/${encodeURIComponent(selected.id)}/3d`)}>Open vivarium builder</button><button type="button" onClick={() => navigate("/reptile-room")}>Back to room builder</button></div>
       </aside>}
     </main>
   );

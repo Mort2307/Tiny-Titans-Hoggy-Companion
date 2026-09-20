@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { loadReptileRooms } from "../services/reptileRoomService";
-import type { ReptileRoomSlot } from "../services/reptileRoomService";
+import { loadReptileRooms, saveReptileRooms } from "../services/reptileRoomService";
+import { loadSpatialHabitat, saveSpatialHabitat } from "../services/spatialHabitatPersistenceService";
+import { roomToSpatialScene, sceneToRoom } from "../services/spatialHabitatService";
+import { applyVivariumTwinToSpatialScene } from "../services/spatialVivariumTwinBridge";
+import type { ReptileRoomSlot, ReptileRoomWorkspace } from "../services/reptileRoomService";
 import { VivariumBuilder3D } from "../components/reptile-room-3d/VivariumBuilder3D";
+import type { VivariumDigitalTwin } from "../types/vivariumTwin";
 
 export default function ReptileVivarium3DEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading, profileLoading } = useAuth();
   const [slot, setSlot] = useState<ReptileRoomSlot | null>(null);
+  const [room, setRoom] = useState<ReptileRoomWorkspace | null>(null);
   const [error, setError] = useState("");
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (loading || profileLoading || !user || !id) return;
@@ -20,11 +26,14 @@ export default function ReptileVivarium3DEditor() {
     async function load() {
       try {
         const rooms = await loadReptileRooms(uid);
-        const allSlots = rooms.flatMap((room) => [...room.slots, ...room.storedSlots]);
-        const found = allSlots.find((item) => item.id === id) ?? null;
+        const containingRoom = rooms.find((candidate) => [...candidate.slots, ...candidate.storedSlots].some((item) => item.id === id)) ?? null;
+        const found = containingRoom ? [...containingRoom.slots, ...containingRoom.storedSlots].find((item) => item.id === id) ?? null : null;
         if (!cancelled) {
-          if (!found) setError("This vivarium could not be found in your Reptile Room.");
-          else setSlot(found);
+          if (!found || !containingRoom) setError("This vivarium could not be found in your Reptile Room.");
+          else {
+            setSlot(found);
+            setRoom(containingRoom);
+          }
         }
       } catch (loadError) {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load this vivarium.");
@@ -51,11 +60,36 @@ export default function ReptileVivarium3DEditor() {
     );
   }
 
+  const syncSpatialTwin = async (twin: VivariumDigitalTwin) => {
+    if (!user || !room) {
+      navigate("/reptile-room");
+      return;
+    }
+    setSyncing(true);
+    setError("");
+    try {
+      const storedScene = await loadSpatialHabitat(user.uid, room.id).catch(() => null);
+      const scene = storedScene ?? roomToSpatialScene(room);
+      const nextScene = applyVivariumTwinToSpatialScene(scene, slot.id, twin);
+      await saveSpatialHabitat(user.uid, room.id, nextScene);
+      await saveReptileRooms(user.uid, [sceneToRoom(nextScene, room)]);
+      navigate("/reptile-room");
+    } catch (syncError) {
+      setError(syncError instanceof Error ? syncError.message : "The spatial habitat could not be synchronized.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  if (syncing) {
+    return <div className="page-container"><div className="tracker-card">Synchronizing vivarium changes with the Spatial Habitat Builder…</div></div>;
+  }
+
   return (
     <VivariumBuilder3D
       slot={slot}
       onClose={() => navigate("/reptile-room")}
-      onSaved={() => navigate("/reptile-room")}
+      onSaved={(twin) => { void syncSpatialTwin(twin); }}
     />
   );
 }

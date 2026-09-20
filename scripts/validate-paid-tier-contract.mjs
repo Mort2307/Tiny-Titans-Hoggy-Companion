@@ -9,6 +9,12 @@ const config = read("src/config/paidTiers.ts");
 const plans = read("src/pages/PaidPlans.tsx");
 const billing = read("src/pages/AccountBilling.tsx");
 const subscriptions = read("functions/paidSubscriptions.js");
+const support = read("functions/customSupport.js");
+const functionsIndex = read("functions/index.js");
+const paidTierService = read("src/services/paidTierService.ts");
+const paidTiers = read("src/config/paidTiers.ts");
+const rr3d = read("src/pages/ReptileRoom3D.tsx");
+const rr3dWorkflow = read(".github/workflows/rr3d-magnet-fix.yml");
 const workspace = read("src/pages/PaidFeatureWorkspace.tsx");
 const workspaceProducts = read("src/config/workspaceProducts.ts");
 const gate = read("src/components/PaidTierGate.tsx");
@@ -70,6 +76,15 @@ const checks = [
   ["subscription webhook updates entitlements", subscriptions.includes("paidEntitlements") && subscriptions.includes("writeSubscriptionState")],
   ["pricing lookup accepts configured price IDs", subscriptions.includes("resolveRecurringPriceForPricing") && subscriptions.includes("stripe.prices.retrieve(configuredPriceId)")],
   ["customer purchase CTA exists", plans.includes('"Buy now"') && plans.includes("startPaidSubscriptionCheckout")],
+  ["owner paid-access source is modeled end-to-end", paidTiers.includes('"owner"') && paidTierService.includes('data.source === "owner"')],
+  ["hardened paid subscriptions are exported from Functions entrypoint", functionsIndex.includes('require("./paidSubscriptions")') && functionsIndex.includes("createPaidSubscriptionCheckout")],
+  ["hardened Titan support is exported from Functions entrypoint", functionsIndex.includes('require("./customSupport")') && functionsIndex.includes("createTitanCheckoutV2")],
+  ["paid subscription checkout has a server-side race lock", subscriptions.includes("acquireCheckoutLock") && subscriptions.includes("paidCheckoutLocks") && subscriptions.includes("lockedUserSnapshot")],
+  ["paid subscription webhooks reject stale Stripe events", subscriptions.includes("sourceEventCreated") && subscriptions.includes("existingCreated > eventCreated")],
+  ["paid subscription checkout locks are cleared on completion/failure", subscriptions.includes("clearCheckoutLock") && subscriptions.includes("await clearCheckoutLock(uid)")],
+  ["Titan support uses a payment ledger for idempotency", support.includes("supportPayments") && support.includes("transaction.create(paymentRef")],
+  ["RR3D verification workflow never rewrites source", rr3dWorkflow.includes("contents: read") && !rr3dWorkflow.includes("git push") && rr3dWorkflow.includes("Verify source wiring")],
+  ["RR3D attachment/magnet wiring is landed in source", rr3d.includes("viv-group-${node.id}") && rr3d.includes("object?.config?.linkedSlotId") && rr3d.includes("selectedSlotBeforeAdd ? `viv-group-${selectedSlotBeforeAdd.id}`")],
   ["creator purchase fallback is removed", !plans.includes("Open Creator paid-tier control")],
   ["customer locked-feature links preserve target tier", plans.includes("searchParams.get(\"tier\")") && workspace.includes("/plans?tier=")],
   ["checkout returns to billing", subscriptions.includes("/account/billing?subscription=success")],
