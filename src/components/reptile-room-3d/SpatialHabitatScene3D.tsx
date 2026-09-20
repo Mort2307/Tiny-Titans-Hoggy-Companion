@@ -1,7 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, TransformControls } from "@react-three/drei";
 import type { Group } from "three";
-import type { SpatialHabitatScene, SpatialNode } from "../../types/spatialHabitat";
+import type { SpatialHabitatScene, SpatialNode, SpatialRoomSocket, SpatialRoomWall } from "../../types/spatialHabitat";
 import { childrenOf, snapCm } from "../../services/spatialHabitatService";
 import { cmToWorld } from "./room3DScale";
 
@@ -130,6 +130,22 @@ function Editable({ node, selected, onSelect, onMove, onEnter }: { node: Spatial
   );
 }
 
+function wallMesh(wall: SpatialRoomWall, root: SpatialHabitatScene["root"]) {
+  const sx = cmToWorld(wall.start.x - root.dimensions.width / 2);
+  const sz = cmToWorld(wall.start.z - root.dimensions.depth / 2);
+  const ex = cmToWorld(wall.end.x - root.dimensions.width / 2);
+  const ez = cmToWorld(wall.end.z - root.dimensions.depth / 2);
+  const length = Math.hypot(ex - sx, ez - sz);
+  return {
+    position: [(sx + ex) / 2, cmToWorld((wall.height ?? root.dimensions.height) / 2), (sz + ez) / 2] as [number, number, number],
+    rotation: [0, -Math.atan2(ez - sz, ex - sx), 0] as [number, number, number],
+    size: [length, cmToWorld(wall.height ?? root.dimensions.height), cmToWorld(wall.thickness ?? 8)] as [number, number, number],
+  };
+}
+
+function socketPosition(socket: SpatialRoomSocket, root: SpatialHabitatScene["root"]) {
+  return [cmToWorld(socket.x - root.dimensions.width / 2), cmToWorld(socket.height), cmToWorld(socket.z - root.dimensions.depth / 2)] as [number, number, number];
+}
 function Content(props: Props) {
   const isRoot = props.containerId === "root";
   const container = isRoot ? props.scene.root : props.scene.nodes.find((node) => node.id === props.containerId);
@@ -153,28 +169,47 @@ function Content(props: Props) {
 
       {isRoot && (
         <group>
-          <mesh position={[0, height / 2, -depth / 2]}>
-            <boxGeometry args={[width, height, 0.08]} />
-            <meshStandardMaterial color="#454a4d" roughness={0.82} />
-          </mesh>
-          <mesh position={[-width / 2, height / 2, 0]}>
-            <boxGeometry args={[0.08, height, depth]} />
-            <meshStandardMaterial color="#414548" roughness={0.82} />
-          </mesh>
-          <mesh position={[width / 2, height / 2, 0]}>
-            <boxGeometry args={[0.08, height, depth]} />
-            <meshStandardMaterial color="#414548" roughness={0.82} />
-          </mesh>
-          <mesh position={[0, height / 2, depth / 2]}>
-            <boxGeometry args={[width, height, 0.08]} />
-            <meshStandardMaterial color="#454a4d" roughness={0.82} />
-          </mesh>
+          {(props.scene.root.walls ?? []).map((wall) => {
+            const mesh = wallMesh(wall, props.scene.root);
+            return (
+              <mesh key={wall.id} position={mesh.position} rotation={mesh.rotation}>
+                <boxGeometry args={mesh.size} />
+                <meshStandardMaterial color={wall.colour ?? "#454a4d"} roughness={0.82} />
+              </mesh>
+            );
+          })}
+          {(props.scene.root.sockets ?? []).map((socket) => (
+            <mesh key={socket.id} position={socketPosition(socket, props.scene.root)}>
+              <boxGeometry args={[cmToWorld(7), cmToWorld(10), cmToWorld(2)]} />
+              <meshStandardMaterial color="#202427" roughness={0.6} />
+            </mesh>
+          ))}
+          {!props.scene.root.walls?.length && <>
+            <mesh position={[0, height / 2, -depth / 2]}>
+              <boxGeometry args={[width, height, 0.08]} />
+              <meshStandardMaterial color="#454a4d" roughness={0.82} />
+            </mesh>
+            <mesh position={[-width / 2, height / 2, 0]}>
+              <boxGeometry args={[0.08, height, depth]} />
+              <meshStandardMaterial color="#414548" roughness={0.82} />
+            </mesh>
+            <mesh position={[width / 2, height / 2, 0]}>
+              <boxGeometry args={[0.08, height, depth]} />
+              <meshStandardMaterial color="#414548" roughness={0.82} />
+            </mesh>
+            <mesh position={[0, height / 2, depth / 2]}>
+              <boxGeometry args={[width, height, 0.08]} />
+              <meshStandardMaterial color="#454a4d" roughness={0.82} />
+            </mesh>
+          </>}
           {props.showCeiling && (
             <mesh position={[0, height, 0]}>
               <boxGeometry args={[width, 0.05, depth]} />
               <meshStandardMaterial color="#373b3d" transparent opacity={0.8} />
             </mesh>
           )}
+        </group>
+      )}}
         </group>
       )}
 
