@@ -28,6 +28,8 @@ const checks = [
   ["Spatial builder exposes numeric transforms and 5 cm snapping", spatialBuilder.includes("snapCm") && spatialRenderer.includes("TransformControls")],
   ["Legacy placement engine remains available", spatial.includes("snapArchitecturalObject") && spatial.includes("stackZ")],
   ["Spatial child nodes bridge into Vivarium Digital Twin", spatialTwinBridge.includes("mergeSpatialNodesIntoVivariumTwin") && spatialTwinBridge.includes('source: SPATIAL_SOURCE')],
+  ["Vivarium Digital Twin edits bridge back into Spatial Habitat", spatialTwinBridge.includes("applyVivariumTwinToSpatialScene")],
+  ["Spatial asset placement models wall, floor and ceiling mounts", spatialBuilder.includes("snapNodeToNearestWall") && spatialBuilder.includes("snapNodeToFloor") && spatialBuilder.includes("snapNodeToCeiling")],
   ["Spatial scene supports nested containers", spatialService.includes("parentId") && spatialService.includes("duplicateNode")],
   ["Blueprint editor supports custom floor plans", blueprint.includes('setRoomFloorPlan') && blueprint.includes('+ Wall')],
   ["Blueprint editor supports room power sockets", blueprint.includes('ReptileRoomSocket') && blueprint.includes('+ Socket')],
@@ -38,6 +40,7 @@ const checks = [
   ["First-person room has edit-room navigation", firstPerson.includes('navigate("/reptile-room")')],
   ["First-person room exposes keeper quick logs", firstPerson.includes('/feeding') && firstPerson.includes('/shedding') && firstPerson.includes('/weights')],
   ["First-person room exposes dedicated vivarium builder", firstPerson.includes('/reptile-room/vivarium/')],
+  ["First-person room consumes stored wall geometry", firstPerson.includes("room.walls?.length") && firstPerson.includes("RoomWall")],
   ["My Snakes room Edit button reaches canonical builder", mySnakes.includes('navigate("/reptile-room")')],
   ["My Snakes passes the dedicated vivarium builder callback", mySnakes.includes('onOpenVivariumBuilder={openVivariumBuilder}')],
   ["Router exposes first-person room", router.includes('path="/reptile-room/first-person"')],
@@ -46,6 +49,7 @@ const checks = [
   ["Room renderer contains a full-screen editing surface", room3d.includes('FullscreenTools') && room3d.includes('toggleFullscreen')],
   ["Legacy vivarium magnet service remains available to the 3D subsystem", magnet.includes('magnetiseObjectToVivarium') && magnet.includes('reanchorVivariumChildren')],
   ["3D asset renderer has explicit architectural and enrichment support", roomObject.includes('FurnitureModel') && roomObject.includes('VivariumModel')],
+  ["Spatial renderer follows custom floor plans", spatialRenderer.includes("SpatialFloor") && spatialRenderer.includes("floorPlan")],
 ];
 
 const failures = checks.filter(([, passed]) => !passed).map(([label]) => label);
