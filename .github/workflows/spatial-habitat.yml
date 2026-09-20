@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/spatial-habitat-builder
+      - ceo/spatial-habitat-integration-2026-09
   pull_request:
     branches:
       - master
