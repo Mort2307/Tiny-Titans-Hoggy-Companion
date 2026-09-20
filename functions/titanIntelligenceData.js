@@ -1,5 +1,6 @@
 const { getFirestore } = require("firebase-admin/firestore");
 const { rescueMembership, rescueWorkspaceActive } = require("./titanIntelligenceAccess");
+const { buildAnimalIntelligenceSnapshot } = require("./titanIntelligenceAnalysis");
 
 const db = getFirestore();
 const TRACKERS = ["weights", "feedings", "sheds", "health", "behaviours"];
@@ -79,35 +80,7 @@ async function getAnimalIntelligenceSnapshot(uid, animalId) {
   const profile = await getAnimalProfile(uid, animalId);
   if (!profile) return null;
   const records = await getAnimalRecords(uid, animalId);
-  const weights = (records.weights || [])
-    .map((item) => ({ date: Date.parse(String(item.date || item.recordedAt || item.createdAt || "")), grams: Number(item.grams ?? item.weightGrams ?? item.weight ?? NaN) }))
-    .filter((item) => Number.isFinite(item.date) && Number.isFinite(item.grams) && item.grams > 0)
-    .sort((a, b) => a.date - b.date);
-  const feedings = records.feedings || [];
-  const sheds = records.sheds || [];
-  const behaviours = records.behaviours || [];
-  const health = records.health || [];
-  const refusals = feedings.filter((item) => /refus|declin|ignore|not\s*(eat|interested)|reject/i.test(JSON.stringify(item))).length;
-  const firstWeight = weights[0]?.grams;
-  const currentWeight = weights.at(-1)?.grams;
-  const changeGrams = Number.isFinite(firstWeight) && Number.isFinite(currentWeight) ? Number((currentWeight - firstWeight).toFixed(2)) : undefined;
-  let feedRefusalAroundShed = undefined;
-  if (refusals > 0 && sheds.length > 0) {
-    const shedDates = sheds.map((item) => Date.parse(String(item.date || item.recordedAt || item.createdAt || ""))).filter(Number.isFinite);
-    const refusalDates = feedings.filter((item) => /refus|declin|ignore|not\s*(eat|interested)|reject/i.test(JSON.stringify(item))).map((item) => Date.parse(String(item.date || item.recordedAt || item.createdAt || ""))).filter(Number.isFinite);
-    let matches = 0;
-    for (const refusalDate of refusalDates) if (shedDates.some((shedDate) => Math.abs(refusalDate - shedDate) <= 7 * 86400000)) matches += 1;
-    feedRefusalAroundShed = { refusalCount: refusalDates.length, withinSevenDaysOfShed: matches, interpretation: "Temporal overlap only; this does not establish that shedding caused feeding refusal." };
-  }
-  const sampleCount = weights.length;
-  return {
-    profile,
-    recordCounts: { weights: weights.length, feedings: feedings.length, sheds: sheds.length, behaviours: behaviours.length, health: health.length },
-    weightSummary: { sampleCount, firstWeight, currentWeight, changeGrams, confidence: sampleCount >= 6 ? "High" : sampleCount >= 3 ? "Moderate" : "More data needed" },
-    feedingSummary: { total: feedings.length, refusals },
-    possibleTemporalAssociations: feedRefusalAroundShed ? [feedRefusalAroundShed] : [],
-    dataLimitations: ["Only recorded Tiny Titans data was analysed.", "Missing records are not treated as negative evidence.", "Temporal associations are not treated as causation."],
-  };
+  return buildAnimalIntelligenceSnapshot(profile, records);
 }
 
 async function getCollectionOverview(uid) {
