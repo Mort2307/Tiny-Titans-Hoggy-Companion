@@ -82,3 +82,21 @@ LottieFiles documents that its developer handoff can provide a direct asset link
 6. Preserve a TinyTitans SVG/CSS fallback and reduced-motion behaviour.
 
 This keeps third-party animation replaceable without changing the application feature architecture.
+
+## 2026-09-20 implementation update
+
+The first production pass of the TinyTitans living icon system is intentionally dependency-free. The existing `TinyTitansIcon` SVG component now exposes icon state and motion attributes and includes bespoke animated environment/spatial/editor icons for:
+
+- temperature, humidity, water, UVB and heat
+- plants, substrate and hides
+- Spatial Habitat Builder and Reptile Room
+- veterinary and Titan Intelligence
+- globe/map/camera
+- add/edit/delete/eye/lock/rotate/move/resize/measure/warning/offline
+
+These are implemented with local SVG geometry and CSS keyframes so TinyTitans does not depend on a paid icon service or a remote animation CDN for the baseline experience.
+
+Third-party libraries remain optional sources for future specialised assets. The implementation should continue to prefer open, commercially usable licences (for example MIT, Apache-2.0 or CC0) and retain asset-level licence records before release.
+
+The production build now includes `validate:icons`, which verifies the required icon set, motion tokens, state/motion API and reduced-motion coverage.
+
