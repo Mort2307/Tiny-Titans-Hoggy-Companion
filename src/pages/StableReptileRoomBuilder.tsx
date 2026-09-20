@@ -20,6 +20,7 @@ const idFor = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 
 type RotatableSlot = ReptileRoomSlot & { rotation?: number };
 const slotRotation = (slot: ReptileRoomSlot) => (slot as RotatableSlot).rotation ?? 0;
+const slotParentAssetId = (slot: ReptileRoomSlot | null) => slot?.parentSlotId ?? null;
 
 function makeSlot(room: ReptileRoomWorkspace, preset: Room3DAssetPreset, snake?: Snake): ReptileRoomSlot {
   return {
@@ -241,7 +242,7 @@ export default function StableReptileRoomBuilder() {
       setNotice("No shelf level has enough vertical clearance for this vivarium.");
       return;
     }
-    replaceRoom({ ...room, slots: slots.map((slot) => slot.id === selectedSlot.id ? ({ ...slot, x: options.x, y: options.y, z: options.level, parentAssetId: options.shelf.id } as ReptileRoomSlot) : slot) });
+    replaceRoom({ ...room, slots: slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, x: options.x, y: options.y, z: options.level } : slot) });
     setNotice(`Vivarium snapped to ${options.shelf.label}.`);
   }, [objects, replaceRoom, room, selectedSlot, slots]);
 
