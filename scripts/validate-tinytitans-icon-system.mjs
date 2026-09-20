@@ -12,7 +12,8 @@ const requiredIcons = [
 ];
 
 
-const iconUnion = [...iconSource.matchAll(/\| "([^"]+)"/g)].map((match) => match[1]).filter(Boolean);
+const iconTypeBlock = iconSource.match(/export type TinyTitansIconName =([\\s\\S]*?);/u)?.[1] ?? "";
+const iconUnion = [...iconTypeBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]).filter(Boolean);
 const missingRegisteredNames = iconUnion.filter((name) => !iconSource.includes(`  "${name}",`));
 const missingSwitchCases = iconUnion.filter((name) => !iconSource.includes(`case "${name}":`));
 
