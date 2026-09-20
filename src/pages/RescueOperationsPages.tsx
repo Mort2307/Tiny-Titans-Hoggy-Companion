@@ -134,7 +134,7 @@ export function RescueIntake() {
     setPreviousIdentifier(intake.previousIdentifier); setKnownMedicalHistory(intake.knownMedicalHistory); setKnownFeedingHistory(intake.knownFeedingHistory);
     setKnownBehaviour(intake.knownBehaviour); setConditionOnArrival(intake.conditionOnArrival); setQuarantineReason(intake.quarantineReason);
     setEvidenceSummary(intake.evidenceSummary);
-  }, [selected?.id]);
+  }, [selected]);
 
   async function save() {
     if (!selected || !organisation) return;
@@ -217,7 +217,7 @@ export function RescueQuarantine() {
     setReviewAt(quarantine?.reviewAt ? quarantine.reviewAt.slice(0,16) : "");
     setOutcome(quarantine?.outcome || "");
     setNotes(quarantine?.notes || "");
-  }, [selectedId]);
+  }, [animals, selectedId]);
 
   async function save() {
     const selected = animals.find((animal) => animal.id === selectedId);
@@ -297,7 +297,7 @@ export function RescueTasks() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
   const tasks = useMemo(() => animals.flatMap((animal) => (animal.reminders || []).map((item) => ({ animal, item }))).sort((a,b) => a.item.dueAt.localeCompare(b.item.dueAt)), [animals]);
-  const filtered = tasks.filter(({item}) => filter === "completed" ? item.completed : !item.completed && (filter === "open" || new Date(item.dueAt).getTime() < Date.now()));
+  const filtered = tasks.filter(({item}) => filter === "completed" ? item.completed : !item.completed && (filter === "open" || new Date(item.dueAt).getTime() < new Date().getTime()));
   async function toggle(animal: RescueAnimal, reminderId: string, completed: boolean) {
     setBusy(`${animal.id}:${reminderId}`); setMessage("");
     try { await setRescueReminderComplete(animal.id, reminderId, completed); await refresh(); } catch(error) { setMessage(error instanceof Error ? error.message : "Could not update the task."); } finally { setBusy(""); }
