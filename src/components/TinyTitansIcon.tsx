@@ -93,7 +93,6 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "🪵": "substrate",
   "🪨": "hide",
   "🏗️": "habitatBuilder",
-  "🏠": "reptileRoom",
   "🩺": "veterinary",
   "🌎": "globe",
   "🗺️": "map",
