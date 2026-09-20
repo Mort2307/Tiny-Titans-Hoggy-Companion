@@ -1,3 +1,5 @@
+import type { TinyTitansIconName } from "../components/TinyTitansIcon";
+
 export const PAID_TIER_ORDER = ["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"] as const;
 
 export type PaidTierId = (typeof PAID_TIER_ORDER)[number];
