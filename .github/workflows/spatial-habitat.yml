@@ -12,9 +12,15 @@ on:
       - "src/components/reptile-room-3d/**"
       - "src/services/spatialHabitatService.ts"
       - "src/services/spatialHabitatPersistenceService.ts"
+      - "src/services/spatialVivariumTwinBridge.ts"
       - "src/types/spatialHabitat.ts"
       - "src/styles/spatial-habitat-builder.css"
       - "src/pages/ReptileRoom.tsx"
+      - "src/pages/ReptileRoomFirstPerson3D.tsx"
+      - "src/pages/ReptileVivarium3DEditor.tsx"
+      - "src/components/reptile-room-3d/RoomBlueprintPanel.tsx"
+      - "src/components/reptile-room-3d/VivariumBuilder3D.tsx"
+      - "scripts/test-spatial-habitat-runtime.ts"
       - "scripts/validate-spatial-habitat.mjs"
       - "package.json"
       - "package-lock.json"
@@ -40,6 +46,9 @@ jobs:
 
       - name: Validate spatial architecture
         run: npm run validate:spatial-habitat
+
+      - name: Spatial runtime tests
+        run: npm run test:spatial-habitat-runtime
 
       - name: Typecheck
         run: npm run typecheck
