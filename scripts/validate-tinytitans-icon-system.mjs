@@ -9,7 +9,7 @@ const requiredIcons = [
   "temperature", "humidity", "water", "uvb", "heat", "plant", "substrate", "hide",
   "habitatBuilder", "reptileRoom", "veterinary", "intelligence", "globe", "map", "camera",
   "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
-  "thermostat", "maintenance", "power", "settings", "close", "upload", "save",
+  "thermostat", "maintenance", "power", "settings", "close", "upload", "save", "copy", "expand", "collapse",
 ];
 
 
