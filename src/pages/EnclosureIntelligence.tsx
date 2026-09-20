@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
+import TinyTitansIcon, { type TinyTitansIconName } from "../components/TinyTitansIcon";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes, updateUserSnake } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
@@ -12,15 +13,15 @@ type EnvironmentKey = "warmSideTemperature" | "coolSideTemperature" | "ambientTe
 type EnclosureField = "dimensions" | "enclosureType" | "heating" | "thermostat" | "substrate" | "uvb" | "hides" | "water" | "furnishings" | "bioactive" | "maintenance" | "all";
 type DraftReadings = Record<EnvironmentKey, string>;
 
-type Metric = { key: EnvironmentKey; label: string; unit: string; min: number; max: number; icon: string };
+type Metric = { key: EnvironmentKey; label: string; unit: string; min: number; max: number; icon: TinyTitansIconName };
 
 const metrics: Metric[] = [
-  { key: "warmSideTemperature", label: "Warm side", unit: "°C", min: husbandryReferenceBands.temperature.warmMinC, max: husbandryReferenceBands.temperature.warmMaxC, icon: "🌡️" },
-  { key: "coolSideTemperature", label: "Cool side", unit: "°C", min: husbandryReferenceBands.temperature.coolMinC, max: husbandryReferenceBands.temperature.coolMaxC, icon: "❄️" },
-  { key: "ambientTemperature", label: "Ambient", unit: "°C", min: husbandryReferenceBands.temperature.coolMinC, max: husbandryReferenceBands.temperature.warmMaxC, icon: "🌬️" },
-  { key: "baskingTemperature", label: "Basking / surface", unit: "°C", min: husbandryReferenceBands.temperature.baskingMinC, max: husbandryReferenceBands.temperature.baskingMaxC, icon: "☀️" },
-  { key: "nightTemperature", label: "Night", unit: "°C", min: 16, max: husbandryReferenceBands.temperature.warmMaxC, icon: "🌙" },
-  { key: "humidity", label: "Humidity", unit: "%", min: husbandryReferenceBands.humidity.minPercent, max: husbandryReferenceBands.humidity.maxPercent, icon: "💧" },
+  { key: "warmSideTemperature", label: "Warm side", unit: "°C", min: husbandryReferenceBands.temperature.warmMinC, max: husbandryReferenceBands.temperature.warmMaxC, icon: "temperature" },
+  { key: "coolSideTemperature", label: "Cool side", unit: "°C", min: husbandryReferenceBands.temperature.coolMinC, max: husbandryReferenceBands.temperature.coolMaxC, icon: "temperature" },
+  { key: "ambientTemperature", label: "Ambient", unit: "°C", min: husbandryReferenceBands.temperature.coolMinC, max: husbandryReferenceBands.temperature.warmMaxC, icon: "temperature" },
+  { key: "baskingTemperature", label: "Basking / surface", unit: "°C", min: husbandryReferenceBands.temperature.baskingMinC, max: husbandryReferenceBands.temperature.baskingMaxC, icon: "uvb" },
+  { key: "nightTemperature", label: "Night", unit: "°C", min: 16, max: husbandryReferenceBands.temperature.warmMaxC, icon: "temperature" },
+  { key: "humidity", label: "Humidity", unit: "%", min: husbandryReferenceBands.humidity.minPercent, max: husbandryReferenceBands.humidity.maxPercent, icon: "humidity" },
 ];
 
 const heatingTypes: HeatingType[] = ["Heat Mat", "CHE", "Halogen", "Deep Heat Projector", "Radiant Heat Panel", "Other"];
@@ -280,7 +281,7 @@ export default function EnclosureIntelligence() {
   }
 
   if (loadingData || loading || profileLoading) {
-    return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-hero"><p className="husbandry-eyebrow">Tiny Titans Intelligence</p><h1>🏠 Enclosure Intelligence</h1><p>Building the enclosure and environment picture…</p></section></main>;
+    return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-hero"><p className="husbandry-eyebrow">Tiny Titans Intelligence</p><h1><TinyTitansIcon name="habitatBuilder" size={34} motion="hover" /> Enclosure Intelligence</h1><p>Building the enclosure and environment picture…</p></section></main>;
   }
   if (error) {
     return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-panel"><h1>🏠 Enclosure Intelligence</h1><p>{error}</p><button className="husbandry-button" type="button" onClick={() => void loadData()}>Try again</button></section></main>;
@@ -290,17 +291,17 @@ export default function EnclosureIntelligence() {
   }
 
   const profileCards: Array<{ field: EnclosureField; icon: string; title: string; value: string; description: string }> = [
-    { field: "dimensions", icon: "📐", title: "Dimensions", value: enclosure.length && enclosure.width && enclosure.height ? `${enclosure.length} × ${enclosure.width} × ${enclosure.height} cm` : "Not recorded", description: area ? `${area.toLocaleString()} cm² floor area` : "Floor area and volume calculate automatically" },
-    { field: "enclosureType", icon: "🧱", title: "Enclosure type", value: enclosure.enclosureType || "Not recorded", description: "Actual enclosure" },
-    { field: "substrate", icon: "🪵", title: "Substrate", value: enclosure.substrate !== "Other" ? enclosure.substrate : "Not recorded", description: enclosure.substrateMix?.length ? enclosure.substrateMix.map((part) => `${part.percentage}% ${part.material}`).join(" · ") : enclosure.customSubstrate || "Tap to choose a mix" },
-    { field: "heating", icon: "🔥", title: "Heating", value: enclosure.heatingType !== "Other" ? enclosure.heatingType : "Not recorded", description: enclosure.heatingDevice || "Heat source not recorded" },
-    { field: "thermostat", icon: "🎛️", title: "Thermostat", value: enclosure.thermostat || "Not recorded", description: "Controller / model" },
-    { field: "uvb", icon: "☀️", title: "UVB / lighting", value: enclosure.uvbEnabled ? "Provided" : "Not recorded", description: enclosure.uvbDetails || "Lamp / strength / photoperiod" },
-    { field: "hides", icon: "🏠", title: "Hides", value: enclosure.hides > 0 ? String(enclosure.hides) : "Not recorded", description: "Secure cover" },
-    { field: "water", icon: "💧", title: "Water", value: enclosure.waterBowl ? "Provided" : "Not recorded", description: "Drinking water provision" },
-    { field: "furnishings", icon: "🌿", title: "Furnishings", value: enclosure.plants?.length || enclosure.decorations?.length ? "Recorded" : "Not recorded", description: "Plants / branches / decorations" },
-    { field: "bioactive", icon: "🪱", title: "Bioactive", value: enclosure.bioactive ? "Yes" : "No", description: enclosure.cleanupCrew?.length ? `${enclosure.cleanupCrew.length} cleanup-crew entries` : "Bioactive status" },
-    { field: "maintenance", icon: "🧹", title: "Last cleaned", value: enclosure.lastCleanedDate || "Not recorded", description: "Maintenance record" },
+    { field: "dimensions", icon: "measure", title: "Dimensions", value: enclosure.length && enclosure.width && enclosure.height ? `${enclosure.length} × ${enclosure.width} × ${enclosure.height} cm` : "Not recorded", description: area ? `${area.toLocaleString()} cm² floor area` : "Floor area and volume calculate automatically" },
+    { field: "enclosureType", icon: "enclosure", title: "Enclosure type", value: enclosure.enclosureType || "Not recorded", description: "Actual enclosure" },
+    { field: "substrate", icon: "substrate", title: "Substrate", value: enclosure.substrate !== "Other" ? enclosure.substrate : "Not recorded", description: enclosure.substrateMix?.length ? enclosure.substrateMix.map((part) => `${part.percentage}% ${part.material}`).join(" · ") : enclosure.customSubstrate || "Tap to choose a mix" },
+    { field: "heating", icon: "heat", title: "Heating", value: enclosure.heatingType !== "Other" ? enclosure.heatingType : "Not recorded", description: enclosure.heatingDevice || "Heat source not recorded" },
+    { field: "thermostat", icon: "settings", title: "Thermostat", value: enclosure.thermostat || "Not recorded", description: "Controller / model" },
+    { field: "uvb", icon: "uvb", title: "UVB / lighting", value: enclosure.uvbEnabled ? "Provided" : "Not recorded", description: enclosure.uvbDetails || "Lamp / strength / photoperiod" },
+    { field: "hides", icon: "hide", title: "Hides", value: enclosure.hides > 0 ? String(enclosure.hides) : "Not recorded", description: "Secure cover" },
+    { field: "water", icon: "humidity", title: "Water", value: enclosure.waterBowl ? "Provided" : "Not recorded", description: "Drinking water provision" },
+    { field: "furnishings", icon: "plant", title: "Furnishings", value: enclosure.plants?.length || enclosure.decorations?.length ? "Recorded" : "Not recorded", description: "Plants / branches / decorations" },
+    { field: "bioactive", icon: "plant", title: "Bioactive", value: enclosure.bioactive ? "Yes" : "No", description: enclosure.cleanupCrew?.length ? `${enclosure.cleanupCrew.length} cleanup-crew entries` : "Bioactive status" },
+    { field: "maintenance", icon: "cleaning, title: "Last cleaned", value: enclosure.lastCleanedDate || "Not recorded", description: "Maintenance record" },
   ];
 
   const fieldTitle = profileCards.find((card) => card.field === editingField)?.title ?? "Enclosure";
@@ -311,20 +312,20 @@ export default function EnclosureIntelligence() {
     <BackHomeButton />
     <header className="husbandry-hero">
       <div><p className="husbandry-eyebrow">Tiny Titans Intelligence</p><h1>🏠 Enclosure Intelligence</h1><p>One connected enclosure and environment workspace for <strong>{snake.name}</strong>.</p></div>
-      <div className="husbandry-badge">{environmentReview ? "🟠 Review context" : snake.enclosure ? "🟢 Profile connected" : "🔵 Build profile"}</div>
+      <div className="husbandry-badge">{environmentReview ? <><TinyTitansIcon name="warning" size={18} motion="attention" /> Review context</> : snake.enclosure ? <><TinyTitansIcon name="habitatBuilder" size={18} motion="hover" /> Profile connected</> : <><TinyTitansIcon name="habitatBuilder" size={18} motion="attention" /> Build profile</>}</div>
     </header>
 
     <section className="husbandry-panel husbandry-selector">
-      <label htmlFor="enclosure-snake">🐍 Selected Tiny Titan</label>
+      <label htmlFor="enclosure-snake"><TinyTitansIcon name="reptile" size={20} motion="hover" /> Selected Tiny Titan</label>
       <select id="enclosure-snake" value={snake.id} onChange={(event) => setSelectedId(event.target.value)}>{snakes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
       <p className="husbandry-muted">This page follows the selected snake's actual enclosure record. No generic vivarium is assumed.</p>
     </section>
 
     <section className="husbandry-panel" id="enclosure-intelligence">
-      <div className="husbandry-section-heading"><div><p className="husbandry-eyebrow">🏠 VIVARIUM / ENCLOSURE INTELLIGENCE</p><h2>{snake.name}'s enclosure</h2><p className="husbandry-muted">Track the actual setup, not a generic imaginary vivarium.</p></div><button type="button" className="husbandry-button husbandry-button--primary" onClick={() => startEnclosureEdit("all")}>✏️ Edit full enclosure</button></div>
-      <div className="husbandry-enclosure-score"><div><span>Setup record</span><strong>{completenessPercent}%</strong></div><div><span>Floor area</span><strong>{area ? `${area.toLocaleString()} cm²` : "Not recorded"}</strong></div><div><span>Volume</span><strong>{volume ? `${(volume / 1000).toFixed(1)} L` : "Not recorded"}</strong></div><p style={{ marginTop: 24 }}>Completeness is a record-coverage measure, <strong>not a husbandry or health score</strong>.</p></div>
+      <div className="husbandry-section-heading"><div><p className="husbandry-eyebrow">🏠 VIVARIUM / ENCLOSURE INTELLIGENCE</p><h2>{snake.name}'s enclosure</h2><p className="husbandry-muted">Track the actual setup, not a generic imaginary vivarium.</p></div><button type="button" className="husbandry-button husbandry-button--primary" onClick={() => startEnclosureEdit("all")}><TinyTitansIcon name="edit" size={18} motion="hover" /> Edit full enclosure</button></div>
+      <div className="husbandry-enclosure-score"><div><span><TinyTitansIcon name="habitatBuilder" size={18} /> Setup record</span><strong>{completenessPercent}%</strong></div><div><span><TinyTitansIcon name="measure" size={18} /> Floor area</span><strong>{area ? `${area.toLocaleString()} cm²` : "Not recorded"}</strong></div><div><span><TinyTitansIcon name="measure" size={18} /> Volume</span><strong>{volume ? `${(volume / 1000).toFixed(1)} L` : "Not recorded"}</strong></div><p style={{ marginTop: 24 }}><TinyTitansIcon name="knowledge" size={18} /> Completeness is a record-coverage measure, <strong>not a husbandry or health score</strong>.</p></div>
       <div className="husbandry-enclosure-grid" style={{ marginTop: 28 }}>
-        {profileCards.map((card) => <button key={card.field} type="button" className="husbandry-enclosure-tile" onClick={() => startEnclosureEdit(card.field)} aria-label={`Edit ${card.title}`}><span>{card.icon}</span><strong>{card.title}</strong><b>{card.value}</b><small>{card.description}</small><em>✏️ Tap to edit</em></button>)}
+        {profileCards.map((card) => <button key={card.field} type="button" className="husbandry-enclosure-tile" onClick={() => startEnclosureEdit(card.field)} aria-label={`Edit ${card.title}`}><span><TinyTitansIcon name={card.icon as TinyTitansIconName} size={28} motion="hover" /></span><strong>{card.title}</strong><b>{card.value}</b><small>{card.description}</small><em><TinyTitansIcon name="edit" size={15} /> Tap to edit</em></button>)}
       </div>
       <div className="husbandry-enclosure-note"><strong>🧠 Intelligent interpretation</strong><p>{!snake.enclosure ? `Tiny Titans has no saved enclosure profile for ${snake.name} yet. Build it once and the environment tiles below can use the same record.` : completeness < completenessChecks.length ? `Tiny Titans has ${completeness} of ${completenessChecks.length} useful setup areas documented. The next most valuable record is: ${nextBestRecord}` : `${snake.name}'s enclosure profile is fully documented across the tracked setup fields. Tiny Titans can now use enclosure configuration as context for environmental history rather than treating isolated readings as standalone facts.`}</p></div>
     </section>
