@@ -32,6 +32,7 @@ if (!fail.length) {
     [service, 'export function sceneToRoom', "spatial -> legacy compatibility conversion"],
     [service, 'export function validateSpatialScene', "spatial validation"],
     [service, 'export function syncSceneRoomInfrastructure', "room infrastructure sync"],
+    [service, 'export function mergeStoredSpatialSceneWithRoom', "stored scene reconciliation"],
     [service, 'floorPlan:', "floor-plan preservation"],
     [service, 'walls:', "wall geometry preservation"],
     [service, 'sockets:', "power socket preservation"],
