@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, TransformControls } from "@react-three/drei";
+import { Shape, ShapeGeometry } from "three";
 import type { Group } from "three";
 import type { SpatialHabitatScene, SpatialNode, SpatialRoomSocket, SpatialRoomWall } from "../../types/spatialHabitat";
 import { childrenOf, snapCm } from "../../services/spatialHabitatService";
@@ -223,6 +225,30 @@ function wallMesh(wall: SpatialRoomWall, root: SpatialHabitatScene["root"]) {
   };
 }
 
+function SpatialFloor({ root }: { root: SpatialHabitatScene["root"] }) {
+  const geometry = useMemo(() => {
+    const shape = new Shape();
+    const points = root.floorPlan?.length ? root.floorPlan : [
+      { x: 0, z: 0 },
+      { x: root.dimensions.width, z: 0 },
+      { x: root.dimensions.width, z: root.dimensions.depth },
+      { x: 0, z: root.dimensions.depth },
+    ];
+    points.forEach((point, index) => {
+      const x = cmToWorld(point.x - root.dimensions.width / 2);
+      const y = cmToWorld(point.z - root.dimensions.depth / 2);
+      if (index === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    });
+    shape.closePath();
+    return new ShapeGeometry(shape);
+  }, [root.dimensions.depth, root.dimensions.width, root.floorPlan]);
+  return (
+    <mesh geometry={geometry} rotation={[Math.PI / 2, 0, 0]} receiveShadow>
+      <meshStandardMaterial color="#292d30" roughness={1} />
+    </mesh>
+  );
+}
 function socketPosition(socket: SpatialRoomSocket, root: SpatialHabitatScene["root"]) {
   return [cmToWorld(socket.x - root.dimensions.width / 2), cmToWorld(socket.height), cmToWorld(socket.z - root.dimensions.depth / 2)] as [number, number, number];
 }
@@ -242,10 +268,14 @@ function Content(props: Props) {
       <hemisphereLight intensity={0.72} groundColor="#171a1c" color="#f5ede0" />
       <directionalLight position={[width * 0.7, Math.max(height * 1.7, 2), depth * 0.4]} intensity={1.5} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
 
-      <mesh position={[0, -0.02, 0]} receiveShadow>
-        <boxGeometry args={[width, 0.04, depth]} />
-        <meshStandardMaterial color={isRoot ? "#292d30" : "#5c4938"} roughness={1} />
-      </mesh>
+      {isRoot ? (
+        <SpatialFloor root={props.scene.root} />
+      ) : (
+        <mesh position={[0, -0.02, 0]} receiveShadow>
+          <boxGeometry args={[width, 0.04, depth]} />
+          <meshStandardMaterial color="#5c4938" roughness={1} />
+        </mesh>
+      )}
 
       {isRoot && (
         <group>
