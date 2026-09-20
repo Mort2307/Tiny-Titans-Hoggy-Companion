@@ -600,7 +600,7 @@ export default function SpatialHabitatBuilder() {
           <div className="spatial-sheet-panel">
             <header>
               <strong>{libraryOpen ? "Add assets" : blueprintOpen ? "Room blueprint" : "Edit selected"}</strong>
-              <button type="button" onClick={() => { setLibraryOpen(false); setInspectorOpen(false); }} aria-label="Close">×</button>
+              <button type="button" onClick={() => { setLibraryOpen(false); setInspectorOpen(false); setBlueprintOpen(false); }} aria-label="Close">×</button>
             </header>
             {libraryOpen ? (
               <div className="spatial-sheet-content">
