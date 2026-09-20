@@ -13,6 +13,7 @@ import {
   duplicateNode,
   findNode,
   normalizeScene,
+  mergeStoredSpatialSceneWithRoom,
   parentDimensions,
   removeNode,
   roomToSpatialScene,
@@ -196,7 +197,9 @@ export default function SpatialHabitatBuilder() {
         if (!nextRoom) return;
 
         const stored = await loadSpatialHabitat(user.uid, nextRoom.id).catch(() => null);
-        let nextScene = normalizeScene(stored ?? roomToSpatialScene(nextRoom));
+        let nextScene = stored
+          ? mergeStoredSpatialSceneWithRoom(stored, nextRoom)
+          : roomToSpatialScene(nextRoom);
 
         try {
           const draft = localStorage.getItem(DRAFT_PREFIX + nextRoom.id);
@@ -425,7 +428,9 @@ export default function SpatialHabitatBuilder() {
     try {
       const stored = await loadSpatialHabitat(user.uid, nextRoom.id).catch(() => null);
       setRoom(nextRoom);
-      setScene(normalizeScene(stored ?? roomToSpatialScene(nextRoom)));
+      setScene(stored
+        ? mergeStoredSpatialSceneWithRoom(stored, nextRoom)
+        : roomToSpatialScene(nextRoom));
       setContainerId(ROOT_CONTAINER_ID);
       setSelectedId(null);
       setHistory([]);
