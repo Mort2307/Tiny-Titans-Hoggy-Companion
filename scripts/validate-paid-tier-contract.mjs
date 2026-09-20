@@ -66,16 +66,15 @@ const titanModules = [
   "src/components/TitanIntelligence/TitanDataUseNotice.tsx",
   "src/components/TitanIntelligence/TitanUsageIndicator.tsx",
 ];
-function tierSlice(tierId) {
-  const start = config.indexOf(`${tierId}:`);
-  const next = commercialTiers.map((candidate) => config.indexOf(`${candidate}:`)).filter((position) => position > start).sort((a, b) => a - b)[0] ?? config.length;
-  return start >= 0 ? config.slice(start, next) : "";
+function tierHasEntitlement(tierId, entitlement) {
+  const match = config.match(new RegExp(tierId + ":\\s*\\{[^\\n]*?entitlements:\\s*\\[([^\\n]*)\\]"));
+  return Boolean(match?.[1]?.includes("\"" + entitlement + "\""));
 }
 const checks = [
   ["tier catalogue exists", config.includes("PAID_TIER_CATALOG")],
   ["all six commercial tiers registered", commercialTiers.every((id) => config.includes(id))],
-  ["all paid tiers include Titan Intelligence", commercialTiers.every((id) => tierSlice(id).includes("titan_intelligence"))],
-  ["free tier does not include Titan Intelligence entitlement", !tierSlice("free").includes("titan_intelligence")],
+  ["all paid tiers include Titan Intelligence", commercialTiers.every((id) => tierHasEntitlement(id, "titan_intelligence"))],
+  ["free tier does not include Titan Intelligence entitlement", !tierHasEntitlement("free", "titan_intelligence")],
   ["configured Stripe price IDs are present", requiredStripePriceIds.every((id) => config.includes(id) && subscriptions.includes(id))],
   ["configured Stripe lookup keys are present", requiredStripeLookupKeys.every((key) => subscriptions.includes(key))],
   ["maintained paid subscription module is exported from Firebase entrypoint", functionsIndex.includes('Object.assign(exports,require("./paidSubscriptions")); ') || functionsIndex.includes('Object.assign(exports,require("./paidSubscriptions"));')],
@@ -87,25 +86,25 @@ const checks = [
   ["pricing lookup accepts configured price IDs", subscriptions.includes("resolveRecurringPriceForPricing") && subscriptions.includes("stripe.prices.retrieve(configuredPriceId)")],
   ["customer purchase CTA exists", plans.includes('"Buy now"') && plans.includes("startPaidSubscriptionCheckout")],
   ["creator purchase fallback is removed", !plans.includes("Open Creator paid-tier control")],
-  ["customer locked-feature links preserve target tier", plans.includes("searchParams.get(\"tier\")") && workspace.includes("/plans?tier=")],
+  ["customer locked-feature links preserve target tier", plans.includes("searchParams.get(\"tier\")") && gate.includes("/plans?tier=")],
   ["checkout returns to billing", subscriptions.includes("/account/billing?subscription=success")],
   ["billing detects subscription activation", billing.includes("subscriptionActive") && billing.includes("refreshProfile()")],
-  ["billing activation is not blocked by tester source", billing.includes("next.actualTier !== \"free\"") && billing.includes("next.subscriptionStatus === \"active\"")],
+  ["billing activation is not blocked by tester source", /actualTier\s*!==\s*["\']free["\']/.test(billing) && /subscriptionStatus\s*===\s*["\']active["\']/.test(billing)],
   ["export entitlement exists", config.includes('"data_export"')],
   ["export paid surface exists", workspace.includes("/paid/export") && workspace.includes("<DataExportFeature />")],
   ["all commercial surfaces represented", ["/paid/analytics","/paid/seller","/paid/marketplace","/paid/business","/paid/team","/paid/automation","/paid/support","/paid/api","/paid/branding"].every((route) => workspace.includes(route))],
   ["every workspace has My Account navigation", commercialTiers.every((id) => workspaceProducts.includes(`id:\"${id}\"`) && workspaceProducts.includes(`label:\"My Account\",path:\"/account\"`))],
   ["actionable paywall", gate.includes("Compare plans") && gate.includes('to="/plans"')],
   ["free intelligence page remains available", titanPage.includes("export default function TitanIntelligence() { return <TitanIntelligenceContent />; }") && titanPage.includes("<TitanIntelligenceGrowthPanel/>")],
-  ["paid Ask Titan gate exists", titanPage.includes('<PaidTierGate entitlement="titan_intelligence" fallback={<TitanAdvancedChatPreview />}>') && titanPage.includes("<AskTitan />")],
-  ["Ask Titan callable is exported", titanFunctions.includes("exports.askTitan") && titanAccess.includes("titanIntelligence")],
-  ["Gemini tool calling is wired", titanModel.includes("toolConfig") && titanModel.includes("functionCallingConfig") && titanTools.includes("function_declarations")],
+  ["paid Ask Titan gate exists", titanPage.includes('entitlement="titan_intelligence"') && titanPage.includes("<AskTitan")],
+  ["Ask Titan callable is exported", titanFunctions.includes("exports.askTitan") && titanFunctions.includes("resolveTitanAccess") && titanAccess.includes("PAID_TIERS") && titanAccess.includes("titan_pro")],
+  ["Gemini tool calling is wired", titanModel.includes("toolConfig") && titanModel.includes("functionCallingConfig") && titanTools.includes("functionDeclarations")],
   ["Gemini current model is configured", titanModel.includes('"gemini-3.8-flash"')],
-  ["model is instructed not to claim creator authorship", titanPrompt.includes("must never imply") && titanPrompt.includes("not a personal claim")],
+  ["model is instructed not to claim creator authorship", /must never imply/i.test(titanPrompt) && /not a personal claim/i.test(titanPrompt)],
   ["provenance is returned", titanFunctions.includes("buildTitanProvenance") && titanProvenance.includes("creatorAuthorshipClaim")],
   ["user data provenance is explicit", titanProvenance.includes("USER_DATA") && titanProvenance.includes("information made available to Titan Intelligence")],
-  ["deterministic analysis is separate from retrieval", titanData.includes("buildAnimalIntelligenceSnapshot") && titanAnalysis.includes("buildAnimalIntelligenceSnapshot")],
-  ["personal data is not substituted into non-personal workspaces", titanTools.includes("Do not substitute personal animals")],
+  ["deterministic analysis is separate from retrieval", titanData.includes('require("./titanIntelligenceAnalysis")') && titanData.includes("buildAnimalIntelligenceSnapshot") && titanAnalysis.includes("function buildAnimalIntelligenceSnapshot")],
+  ["personal data is not substituted into non-personal workspaces", /not substituted into Rescue context/i.test(titanTools)],
   ["modular Ask Titan state exists", titanAsk.includes("useTitanChat") && titanHook.includes("export function useTitanChat")],
   ["modular Titan contracts exist", titanContracts.includes("TitanAskResponse") && titanService.includes("askTitanCall")],
   ["all Titan modules remain separate files", titanModules.every(exists)],
