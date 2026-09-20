@@ -1,10 +1,8 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
-const { defineSecret } = require("firebase-functions/params");
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
-const Stripe = require("stripe");
 initializeApp();
 const db=getFirestore(); const adminAuth=getAuth(); const OWNER_EMAIL="tinytitans.exotics@gmail.com";
 Object.assign(exports,require("./creatorApproval"));
