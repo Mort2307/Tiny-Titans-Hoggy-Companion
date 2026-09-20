@@ -64,7 +64,7 @@ const spatialWithChild = {
   nodes: heaterScene.nodes.concat(nestedSensor),
 };
 const mergedTwin = mergeSpatialNodesIntoVivariumTwin(twin, spatialWithChild, vivarium.id);
-assert.equal(mergedTwin.assets.length, 1, "spatial -> twin bridge did not import the nested asset");
+assert.equal(mergedTwin.assets.length, 2, "spatial -> twin bridge did not import all nested equipment");
 assert.equal(mergedTwin.assets[0].config?.source, "spatial-habitat", "spatial provenance marker missing");
 assert.ok(mergedTwin.checklist.heatingType === "che", "heating type was not derived from spatial equipment");
 assert.equal(mergedTwin.checklist.heatingDeviceCount, 1, "heating count was not derived from spatial equipment");
