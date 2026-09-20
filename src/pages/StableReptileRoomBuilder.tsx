@@ -263,14 +263,18 @@ export default function StableReptileRoomBuilder() {
     );
     const groupIds = new Set([selectedSlot.stackGroupId, nearest.stackGroupId].filter((id): id is string => Boolean(id)));
     const groupId = groupIds.values().next().value ?? idFor("mag");
+    const groupedSlotIds = new Set(slots
+      .filter((slot) => groupIds.has(slot.stackGroupId ?? "") || slot.id === selectedSlot.id || slot.id === nearest.id)
+      .map((slot) => slot.id));
     replaceRoom({
       ...room,
-      slots: slots.map((slot) =>
-        groupIds.has(slot.stackGroupId ?? "") || slot.id === selectedSlot.id || slot.id === nearest.id
-          ? { ...slot, stackGroupId: groupId }
-          : slot),
+      slots: slots.map((slot) => groupedSlotIds.has(slot.id) ? { ...slot, stackGroupId: groupId } : slot),
+      objects: objects.map((object) =>
+        groupedSlotIds.has(object.parentAssetId ?? object.config?.linkedSlotId ?? "")
+          ? { ...object, stackGroupId: groupId }
+          : object),
     });
-    setNotice(`${selectedSlot.label} magnet-locked to ${nearest.label}.`);
+    setNotice(`${selectedSlot.label} magnet-locked to ${nearest.label} with attached equipment.`);
   }, [replaceRoom, room, selectedSlot, slots]);
 
   const unlockMagnet = useCallback(() => {
