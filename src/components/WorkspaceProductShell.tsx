@@ -19,9 +19,12 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
 
 function workspaceIcon(productId: WorkspaceProduct["id"]): TinyTitansIconName {
   if (productId === "personal") return "reptile";
-  if (productId === "rescue") return "health";
-  if (productId === "titan_seller") return "marketplace";
-  if (productId.startsWith("business_")) return "community";
+  if (productId === "rescue") return "veterinary";
+  if (productId === "titan_seller") return "sellerProfile";
+  if (productId === "business_starter") return "reporting";
+  if (productId === "business_plus") return "team";
+  if (productId === "business_advanced") return "api";
+  if (productId === "titan_pro") return "titanIntelligence";
   return "titan";
 }
 
