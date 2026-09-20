@@ -23,6 +23,7 @@ import {
   snapNodeToNearestWall,
   snapNodeToFloor,
   snapNodeToCeiling,
+  connectNodeToNearestPowerSocket,
   updateNode,
   validateSpatialScene,
 } from "../../services/spatialHabitatService";
@@ -286,7 +287,8 @@ export default function SpatialHabitatBuilder() {
       : preset.capabilities?.ceilingMountable
         ? snapNodeToCeiling(seeded, node.id)
         : seeded;
-    commit(placed, preset.label + " added.");
+    const powered = preset.capabilities?.powerConsumer ? connectNodeToNearestPowerSocket(placed, node.id) : placed;
+    commit(powered, preset.label + " added.");
     setSelectedId(node.id);
     setLibraryOpen(false);
     setInspectorOpen(true);
@@ -740,6 +742,14 @@ function Inspector({
         <div className="spatial-grid">
           <label>Target °C<input type="number" step="0.1" value={Number(node.config.targetTemperatureC) || 30} onChange={(event) => onPatch({ config: { ...node.config, targetTemperatureC: Number(event.target.value) || 30 } })} /></label>
           <label>Mode<select value={String(node.config.mode || "heat")} onChange={(event) => onPatch({ config: { ...node.config, mode: event.target.value } })}><option value="heat">heat</option><option value="cool">cool</option><option value="off">off</option></select></label>
+        </div>
+      )}
+
+      {node.capabilities.powerConsumer && (
+        <div className="spatial-power-link">
+          <span>POWER</span>
+          <strong>{String(node.config.powerSocketId || "Unlinked")}</strong>
+          <button type="button" onClick={() => onPatch({ config: { ...node.config, powerSocketId: null } })} disabled={!node.config.powerSocketId}>Disconnect</button>
         </div>
       )}
 
