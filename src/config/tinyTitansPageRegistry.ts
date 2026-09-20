@@ -37,7 +37,7 @@ export const tinyTitansPageRegistry: readonly TinyTitansPageDefinition[] = [
   { id: "submission-messages", path: "/conversations/submissions", label: "Submission Messages", icon: "messages", group: "community", description: "Private conversations with Tiny Titans about your submissions.", navigation: "route" },
   { id: "account", path: "/account", label: "My Account", icon: "account", group: "account", description: "Account, preferences and privacy.", navigation: "route" },
   { id: "family", path: "/account/family", label: "My Family", icon: "family", group: "account", description: "Controlled shared access.", navigation: "route" },
-  { id: "become", path: "/become-a-titan", label: "Become a Titan", icon: "husbandry", group: "account", description: "Support and contribution goals.", navigation: "route" },
+  { id: "become", path: "/become-a-titan", label: "Become a Titan", icon: "titan", group: "account", description: "Support and contribution goals.", navigation: "route" },
 ];
 
 export function getTinyTitansPage(path: string): TinyTitansPageDefinition | undefined {
