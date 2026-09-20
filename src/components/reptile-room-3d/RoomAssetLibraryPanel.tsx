@@ -17,7 +17,7 @@ function iconForAsset(kind?: string, role?: string): TinyTitansIconName {
   if (kind === "scale") return "weight";
   if (kind === "vivarium") return "enclosure";
   if (role === "enrichment") return "plant";
-  if (role === "cleaning") return "veterinary";
+  if (role === "cleaning") return "maintenance";
   return "creator";
 }
 
