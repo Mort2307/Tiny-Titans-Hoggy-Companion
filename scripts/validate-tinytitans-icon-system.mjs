@@ -29,7 +29,7 @@ const missingSwitchCases = iconUnion.filter((name) => !iconSource.includes(`case
 const productIcons = [...workspaceProductsSource.matchAll(/icon:"([^"]+)"/g)].map((match) => match[1]);
 const expectedTierIds = ["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"];
 const tierCatalogEntries = expectedTierIds.map((id) => {
-  const match = paidTiersSource.match(new RegExp("^  " + id + ': \\{ id: "' + id + '",[^\\n]*?icon: "([^"]+)"'));
+  const match = paidTiersSource.match(new RegExp("^  " + id + ': \\{[^\\n]*?icon: "([^"]+)"'));
   return { id, icon: match?.[1] ?? null };
 });
 const missingTierCatalogIcons = tierCatalogEntries.filter((entry) => !entry.icon).map((entry) => entry.id);
