@@ -81,7 +81,7 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate, onS
         {selected && <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.1)" }}>
           <div style={{ fontWeight: 700 }}>{selected.label}</div>
           <div style={{ fontSize: 12, opacity: .7, margin: "4px 0 10px" }}>{selected.width} × {selected.depth} × {selected.height} cm · X {Math.round(selected.x)} · Y {Math.round(selected.y)} · Z {Math.round(selected.z ?? 0)}</div>
-          <div style={{ display: "flex", gap: 6 }}><button type="button" onClick={onDuplicate} {...buttonProps}><TinyTitansIcon name="add" size={17} motion="hover" /> Duplicate</button><button type="button" onClick={onDelete} {...buttonProps}><TinyTitansIcon name="delete" size={17} motion="hover" /> Delete</button></div>
+          <div style={{ display: "flex", gap: 6 }}><button type="button" onClick={onDuplicate} {...buttonProps}><TinyTitansIcon name="copy" size={17} motion="hover" /> Duplicate</button><button type="button" onClick={onDelete} {...buttonProps}><TinyTitansIcon name="delete" size={17} motion="hover" /> Delete</button></div>
         </div>}
       </>}
     </aside>
