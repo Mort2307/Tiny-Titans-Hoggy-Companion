@@ -54,7 +54,19 @@ function workspaceNavIcon(path: string): TinyTitansIconName {
   return WORKSPACE_NAV_ICONS[path] ?? "knowledge";
 }
 
-function commandIcon(path: string): TinyTitansIconName {
+function commandIcon(path: string, title: string): TinyTitansIconName {
+  if (/animals?/i.test(title)) return "reptile";
+  if (/intelligence/i.test(title)) return "titanIntelligence";
+  if (/records/i.test(title)) return "weight";
+  if (/breeding/i.test(title)) return "breeding";
+  if (/marketplace/i.test(title)) return "marketplaceTools";
+  if (/seller/i.test(title)) return "sellerProfile";
+  if (/message|conversation/i.test(title)) return "messages";
+  if (/report/i.test(title)) return "reporting";
+  if (/organisation|team/i.test(title)) return "team";
+  if (/api|tools/i.test(title)) return "api";
+  if (/branding|public page/i.test(title)) return "branding";
+  if (/qr|scan/i.test(title)) return "camera";
   return workspaceNavIcon(path);
 }
 
@@ -115,7 +127,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
         <p>{commandCopy.description}</p>
       </div>
       <div className="workspace-command-actions">
-        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><TinyTitansIcon name={commandIcon(item.path)} size={21} motion="hover" /><strong>{item.title}</strong><span>Open →</span></Link>)}
+        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><TinyTitansIcon name={commandIcon(item.path, item.title)} size={21} motion="hover" /><strong>{item.title}</strong><span>Open →</span></Link>)}
       </div>
     </section>}
 
