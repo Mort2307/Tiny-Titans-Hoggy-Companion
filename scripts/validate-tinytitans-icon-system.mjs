@@ -11,9 +11,14 @@ const requiredIcons = [
   "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
 ];
 
+
+const iconUnion = [...iconSource.matchAll(/\| "([^"]+)"/g)].map((match) => match[1]).filter(Boolean);
+const missingRegisteredNames = iconUnion.filter((name) => !iconSource.includes(`  "${name}",`));
+const missingSwitchCases = iconUnion.filter((name) => !iconSource.includes(`case "${name}":`));
+
 const missingIcons = requiredIcons.filter((name) => !iconSource.includes(`| "${name}"`));
-if (missingIcons.length) {
-  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons }, null, 2));
+if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length) {
+  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases }, null, 2));
   process.exit(1);
 }
 
