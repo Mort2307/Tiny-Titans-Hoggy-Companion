@@ -357,7 +357,29 @@ export default function StableReptileRoomBuilder() {
   </main>;
 }
 
-type InspectorProps = { selectedObject: ReptileRoomObject | null; selectedSlot: ReptileRoomSlot | null; onOpenVivariumBuilder: (slotId: string) => void; slots: ReptileRoomSlot[]; snakes: Snake[]; snakesById: Map<string, Snake>; inspectorTab: "edit" | "occupant"; setInspectorTab: (value: "edit" | "occupant") => void; updateSelected: (patch: Room3DTransformPatch) => void; deleteSelected: () => void; duplicateSelected: () => void; uploadPhoto: (file: File) => Promise<void>; removePhoto: () => Promise<void>; photoBusy: boolean };
+type InspectorProps = {
+  selectedObject: ReptileRoomObject | null;
+  selectedSlot: ReptileRoomSlot | null;
+  onOpenVivariumBuilder: (slotId: string) => void;
+  slots: ReptileRoomSlot[];
+  snakes: Snake[];
+  snakesById: Map<string, Snake>;
+  inspectorTab: "edit" | "occupant";
+  setInspectorTab: (value: "edit" | "occupant") => void;
+  updateSelected: (patch: Room3DTransformPatch) => void;
+  deleteSelected: () => void;
+  duplicateSelected: () => void;
+  moveSelectedBy: (dx: number, dy: number, dz: number, label: string) => void;
+  snapSelected: () => void;
+  snapToWall: () => void;
+  stackSnapSelected: () => void;
+  magnetLockSelected: () => void;
+  unlockMagnet: () => void;
+  unstackSelected: () => void;
+  uploadPhoto: (file: File) => Promise<void>;
+  removePhoto: () => Promise<void>;
+  photoBusy: boolean;
+};
 
 function Inspector(props: InspectorProps) {
   const { selectedObject, selectedSlot } = props;
@@ -373,8 +395,32 @@ function Inspector(props: InspectorProps) {
     {selectedSlot && <label className="stable-rr3d-smart-field"><span>Vivarium name</span><input type="text" value={selectedSlot.label} onChange={(event) => props.updateSelected({ label: event.target.value })} placeholder="Vivarium name" /></label>}
     <div className="stable-rr3d-editor-grid">{(["width", "depth", "height"] as const).map((field) => <label key={field}>{field[0].toUpperCase() + field.slice(1)} cm<input type="number" min="1" value={field === "width" ? width : field === "depth" ? depth : height} onChange={(event) => props.updateSelected(field === "width" ? { width: Math.max(1, toNumber(event.target.value, 1)) } : field === "depth" ? { depth: Math.max(1, toNumber(event.target.value, 1)) } : { height: Math.max(1, toNumber(event.target.value, 1)) })} /></label>)}</div>
     <div className="stable-rr3d-editor-grid"><label>X cm<input type="number" value={Math.round(entity.x)} onChange={(event) => props.updateSelected({ x: Math.max(0, toNumber(event.target.value)) })} /></label><label>Y cm<input type="number" value={Math.round(entity.y)} onChange={(event) => props.updateSelected({ y: Math.max(0, toNumber(event.target.value)) })} /></label><label>Z cm<input type="number" value={Math.round(entity.z ?? 0)} onChange={(event) => props.updateSelected({ z: Math.max(0, toNumber(event.target.value)) })} /></label></div>
+    <div className="stable-rr3d-placement-controls">
+      <div className="stable-rr3d-placement-title">Placement</div>
+      <div className="stable-rr3d-placement-grid">
+        <button type="button" onClick={() => props.moveSelectedBy(0, 0, 5, "Moved up")} aria-label="Move selected up 5 cm">↑</button>
+        <button type="button" onClick={() => props.moveSelectedBy(0, -5, 0, "Moved forward")} aria-label="Move selected forward 5 cm">↟</button>
+        <button type="button" onClick={() => props.moveSelectedBy(-5, 0, 0, "Moved left")} aria-label="Move selected left 5 cm">←</button>
+        <button type="button" onClick={() => props.moveSelectedBy(5, 0, 0, "Moved right")} aria-label="Move selected right 5 cm">→</button>
+        <button type="button" onClick={() => props.moveSelectedBy(0, 5, 0, "Moved backward")} aria-label="Move selected backward 5 cm">↡</button>
+        <button type="button" onClick={() => props.moveSelectedBy(0, 0, -5, "Moved down")} aria-label="Move selected down 5 cm">↓</button>
+      </div>
+      <div className="stable-rr3d-placement-actions">
+        <button type="button" onClick={props.snapSelected}>⌖ Snap 5 cm</button>
+        <button type="button" onClick={props.snapToWall}>🧲 Snap to wall</button>
+        {(props.selectedObject || props.selectedSlot) && <button type="button" onClick={props.duplicateSelected}>Duplicate</button>}
+      </div>
+      {props.selectedSlot && (
+        <div className="stable-rr3d-placement-actions">
+          <button type="button" onClick={props.stackSnapSelected}>Stack to rack/shelf</button>
+          <button type="button" onClick={props.magnetLockSelected}>Magnet-lock nearest</button>
+          {props.selectedSlot.stackGroupId && <button type="button" onClick={props.unlockMagnet}>Unlock magnet</button>}
+          {props.selectedSlot.parentSlotId && <button type="button" onClick={props.unstackSelected}>Unstack vivarium</button>}
+        </div>
+      )}
+    </div>
     <div className="stable-rr3d-rotation"><span>Rotation</span><button type="button" onClick={() => props.updateSelected({ rotation: rotation - 15 })}>↶</button><strong>{Math.round(rotation)}°</strong><button type="button" onClick={() => props.updateSelected({ rotation: rotation + 15 })}>↷</button><button type="button" onClick={() => props.updateSelected({ rotation: 0 })}>Reset</button></div>
-    {selectedObject && <div className="stable-rr3d-inspector-actions"><button type="button" onClick={props.duplicateSelected}>Duplicate</button></div>}
+    
     {selectedSlot && <button type="button" className="stable-rr3d-vivarium-builder-button" onClick={() => props.onOpenVivariumBuilder(selectedSlot.id)}>Open dedicated 3D vivarium builder</button>}
     {selectedSlot && <div className="stable-rr3d-tabs"><button type="button" aria-pressed={props.inspectorTab === "edit"} onClick={() => props.setInspectorTab("edit")}>Position</button><button type="button" aria-pressed={props.inspectorTab === "occupant"} onClick={() => props.setInspectorTab("occupant")}>Occupant</button>{props.inspectorTab === "occupant" && <label className="stable-rr3d-smart-field">Snake<select value={selectedSlot.snakeId ?? ""} onChange={(event) => { const snakeId = event.target.value || null; const snake = snakeId ? props.snakesById.get(snakeId) : undefined; props.updateSelected({ snakeId, label: snake ? `${snake.name}'s Vivarium` : "Empty Vivarium", lifecycleStatus: snake ? "occupied" : "empty", availability: snake ? "occupied" : "available" }); }}>{<option value="">Empty vivarium</option>}{props.snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label>}</div>}
     <div className="stable-rr3d-photo"><div><strong>Reference photo</strong><small>Choose from your device gallery. The image is stored with this asset.</small></div>{photoUrl && <img src={photoUrl} alt={`${entity.label} reference`} />}{photoUrl && <button type="button" className="stable-rr3d-photo-remove" onClick={() => void props.removePhoto()} disabled={props.photoBusy}>Remove photo</button>}<label className="stable-rr3d-photo-button">{props.photoBusy ? "Working…" : photoUrl ? "Replace photo" : "Choose photo"}<input type="file" accept="image/*" disabled={props.photoBusy} onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ""; if (file) void props.uploadPhoto(file); }} /></label></div>
