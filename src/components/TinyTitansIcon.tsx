@@ -167,10 +167,16 @@ const ICON_NAMES = new Set<TinyTitansIconName>([
   "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
   "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan",
   "educator", "creator", "testing", "search", "menu",
+  "temperature", "humidity", "water", "uvb", "heat", "plant", "substrate", "hide",
+  "habitatBuilder", "reptileRoom", "veterinary", "intelligence", "globe", "map", "camera",
+  "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
 ]);
 
 function resolveIconName(value: string): TinyTitansIconName {
-  return LEGACY_ICON_ALIASES[value] ?? (ICON_NAMES.has(value as TinyTitansIconName) ? value as TinyTitansIconName : "reptile");
+  const legacy = LEGACY_ICON_ALIASES[value];
+  if (legacy) return legacy;
+  if (ICON_NAMES.has(value as TinyTitansIconName)) return value as TinyTitansIconName;
+  return "warning";
 }
 
 function SnakeFace({ className = "", ...props }: SVGProps<SVGSVGElement>) {
