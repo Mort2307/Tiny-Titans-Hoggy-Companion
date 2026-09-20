@@ -6,6 +6,7 @@ const required = [
   "src/types/spatialHabitat.ts",
   "src/services/spatialHabitatService.ts",
   "src/services/spatialHabitatPersistenceService.ts",
+  "src/services/spatialVivariumTwinBridge.ts",
   "src/components/reptile-room-3d/SpatialHabitatScene3D.tsx",
   "src/components/reptile-room-3d/SpatialHabitatBuilder.tsx",
   "src/components/reptile-room-3d/room3DScale.ts",
@@ -24,6 +25,7 @@ if (!fail.length) {
   const builder = read("src/components/reptile-room-3d/SpatialHabitatBuilder.tsx");
   const renderer = read("src/components/reptile-room-3d/SpatialHabitatScene3D.tsx");
   const persistence = read("src/services/spatialHabitatPersistenceService.ts");
+  const twinBridge = read("src/services/spatialVivariumTwinBridge.ts");
   const scale = read("src/components/reptile-room-3d/room3DScale.ts");
 
   const contracts = [
@@ -48,6 +50,9 @@ if (!fail.length) {
     [renderer, 'SpatialRoomWall', "typed room-wall rendering"],
     [renderer, 'SpatialRoomSocket', "typed socket rendering"],
     [persistence, 'spatialHabitats', "dedicated spatial collection"],
+    [twinBridge, 'mergeSpatialNodesIntoVivariumTwin', "spatial -> twin synchronization"],
+    [twinBridge, 'applyVivariumTwinToSpatialScene', "twin -> spatial synchronization"],
+    [builder, 'beforeunload', "unsaved-change protection"],
     [scale, 'CM_TO_WORLD = 0.01', "centimetre-to-metre scale"],
   ];
   for (const [text, needle, label] of contracts) {
