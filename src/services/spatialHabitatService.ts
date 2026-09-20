@@ -444,6 +444,33 @@ function intersects(a: SpatialNode, b: SpatialNode) {
   return x.l < y.r - EPS && x.r > y.l + EPS && x.f < y.b - EPS && x.b > y.f + EPS && x.bo < y.t - EPS && x.t > y.bo + EPS;
 }
 
+function socketWorldPosition(socket: SpatialRoomSocket, root: SpatialHabitatScene["root"]) {
+  return { x: socket.x - root.dimensions.width / 2, z: socket.z - root.dimensions.depth / 2 };
+}
+
+export function nearestPowerSocket(scene: SpatialHabitatScene, nodeId: string): SpatialRoomSocket | null {
+  const node = findNode(scene, nodeId);
+  const sockets = (scene.root.sockets ?? []).filter((socket) => socket.enabled !== false && Number(socket.maxLoadWatts || 0) > 0);
+  if (!node || !node.capabilities.powerConsumer || !sockets.length) return null;
+  return sockets
+    .map((socket) => { const position = socketWorldPosition(socket, scene.root); return { socket, distance: Math.hypot(position.x - node.position.x, position.z - node.position.z) }; })
+    .sort((a, b) => a.distance - b.distance)[0]?.socket ?? null;
+}
+
+export function connectNodeToNearestPowerSocket(scene: SpatialHabitatScene, nodeId: string): SpatialHabitatScene {
+  const node = findNode(scene, nodeId);
+  const socket = nearestPowerSocket(scene, nodeId);
+  if (!node || !socket) return scene;
+  return updateNode(scene, nodeId, { config: { ...node.config, powerSocketId: socket.id } });
+}
+
+export function disconnectNodeFromPowerSocket(scene: SpatialHabitatScene, nodeId: string): SpatialHabitatScene {
+  const node = findNode(scene, nodeId);
+  if (!node) return scene;
+  const config = { ...node.config };
+  delete config.powerSocketId;
+  return updateNode(scene, nodeId, { config });
+}
 export function validateSpatialScene(scene: SpatialHabitatScene): SpatialValidationIssue[] {
   const issues: SpatialValidationIssue[] = [];
 
@@ -513,16 +540,36 @@ export function validateSpatialScene(scene: SpatialHabitatScene): SpatialValidat
     }
   }
 
-  const watts = scene.nodes
-    .filter((node) => node.capabilities.powerConsumer)
-    .reduce((sum, node) => sum + Math.max(0, Number(node.config.wattage) || 0), 0);
-  const limit = scene.nodes.reduce((max, node) => Math.max(max, Number(node.config.maxLoadWatts) || 0), 0);
-  if (limit > 0 && watts > limit) {
+  const powerConsumers = scene.nodes.filter((node) => node.capabilities.powerConsumer);
+  const watts = powerConsumers.reduce((sum, node) => sum + Math.max(0, Number(node.config.wattage) || 0), 0);
+  const sockets = scene.root.sockets ?? [];
+  const socketLoads = new Map<string, number>();
+  for (const node of powerConsumers) {
+    const socketId = typeof node.config.powerSocketId === "string" ? node.config.powerSocketId : "";
+    if (!socketId) continue;
+    socketLoads.set(socketId, (socketLoads.get(socketId) ?? 0) + Math.max(0, Number(node.config.wattage) || 0));
+  }
+  for (const socket of sockets) {
+    const maxLoad = Math.max(0, Number(socket.maxLoadWatts) || 0);
+    const load = socketLoads.get(socket.id) ?? 0;
+    if (maxLoad > 0 && load > maxLoad) {
+      issues.push({
+        severity: "error",
+        code: "power-load",
+        message: socket.label + " is carrying " + load + " W against a " + maxLoad + " W planning limit.",
+        nodeIds: powerConsumers.filter((node) => node.config.powerSocketId === socket.id).map((node) => node.id),
+      });
+    }
+  }
+  const explicitLimits = powerConsumers.reduce((max, node) => Math.max(max, Number(node.config.maxLoadWatts) || 0), 0);
+  const totalSocketCapacity = sockets.reduce((sum, socket) => sum + Math.max(0, Number(socket.maxLoadWatts) || 0), 0);
+  const planningLimit = Math.max(explicitLimits, totalSocketCapacity);
+  if (planningLimit > 0 && watts > planningLimit) {
     issues.push({
       severity: "error",
       code: "power-load",
-      message: "Configured equipment load is " + watts + " W, above the planning limit of " + limit + " W.",
-      nodeIds: scene.nodes.filter((node) => node.capabilities.powerConsumer).map((node) => node.id),
+      message: "Configured equipment load is " + watts + " W, above the available room power planning capacity of " + planningLimit + " W.",
+      nodeIds: powerConsumers.map((node) => node.id),
     });
   }
 
