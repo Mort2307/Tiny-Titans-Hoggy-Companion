@@ -4,6 +4,8 @@ import RoomBlueprintPanel from "./RoomBlueprintPanel";
 import { getUserSnakes } from "../../services/snakeService";
 import { loadReptileRooms, saveReptileRooms } from "../../services/reptileRoomService";
 import { loadSpatialHabitat, saveSpatialHabitat } from "../../services/spatialHabitatPersistenceService";
+import { loadVivariumTwin, saveVivariumTwin } from "../../services/vivariumTwinService";
+import { mergeSpatialNodesIntoVivariumTwin } from "../../services/spatialVivariumTwinBridge";
 import {
   ROOT_CONTAINER_ID,
   childrenOf,
@@ -345,6 +347,11 @@ export default function SpatialHabitatBuilder() {
     setNotice("");
     try {
       await saveSpatialHabitat(user.uid, room.id, scene);
+      const vivariums = scene.nodes.filter((node) => node.kind === "vivarium" && node.parentId === ROOT_CONTAINER_ID);
+      await Promise.all(vivariums.map(async (vivarium) => {
+        const twin = await loadVivariumTwin(user.uid, vivarium.id);
+        await saveVivariumTwin(user.uid, vivarium.id, mergeSpatialNodesIntoVivariumTwin(twin, scene, vivarium.id));
+      }));
       const compatibilityRoom = sceneToRoom(scene, room);
       await saveReptileRooms(user.uid, [compatibilityRoom]);
       setRoom(compatibilityRoom);
@@ -518,8 +525,3 @@ export default function SpatialHabitatBuilder() {
               <div className={"issue " + issue.severity} key={issue.code + index}>
                 <strong>{issue.severity}</strong><span>{issue.message}</span>
               </div>
-            ))}
-            {!issues.length && <div className="issue info"><strong>clear</strong><span>No current spatial issues.</span></div>}
-          </div>
-          <details className="spatial-blueprint" open={blueprintOpen} onToggle={(event) => setBlueprintOpen((event.currentTarget as HTMLDetailsElement).open)}>
-            <summary>🏠 Room blueprint &amp; infrastructure</summary>
