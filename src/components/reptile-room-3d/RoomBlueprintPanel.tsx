@@ -31,6 +31,12 @@ export default function RoomBlueprintPanel({ room: controlledRoom = null, onRoom
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!controlled || !controlledRoom) return;
+    setPoints(roomPoints(controlledRoom));
+    setWallId(controlledRoom.walls?.[0]?.id ?? "");
+  }, [controlled, controlledRoom?.id, controlledRoom?.updatedAt]);
+
+  useEffect(() => {
     if (controlled) return;
     if (!user) return;
     void loadReptileRooms(user.uid)
