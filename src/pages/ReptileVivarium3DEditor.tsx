@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { loadReptileRooms } from "../services/reptileRoomService";
+import { loadReptileRooms, saveReptileRooms } from "../services/reptileRoomService";
 import { loadSpatialHabitat, saveSpatialHabitat } from "../services/spatialHabitatPersistenceService";
-import { roomToSpatialScene } from "../services/spatialHabitatService";
+import { roomToSpatialScene, sceneToRoom } from "../services/spatialHabitatService";
 import { applyVivariumTwinToSpatialScene } from "../services/spatialVivariumTwinBridge";
 import type { ReptileRoomSlot, ReptileRoomWorkspace } from "../services/reptileRoomService";
 import { VivariumBuilder3D } from "../components/reptile-room-3d/VivariumBuilder3D";
@@ -72,6 +72,7 @@ export default function ReptileVivarium3DEditor() {
       const scene = storedScene ?? roomToSpatialScene(room);
       const nextScene = applyVivariumTwinToSpatialScene(scene, slot.id, twin);
       await saveSpatialHabitat(user.uid, room.id, nextScene);
+      await saveReptileRooms(user.uid, [sceneToRoom(nextScene, room)]);
       navigate("/reptile-room");
     } catch (syncError) {
       setError(syncError instanceof Error ? syncError.message : "The spatial habitat could not be synchronized.");
