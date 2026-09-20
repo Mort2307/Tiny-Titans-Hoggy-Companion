@@ -21,7 +21,7 @@ export const tinyTitansPageRegistry: readonly TinyTitansPageDefinition[] = [
   { id: "husbandry", path: "/husbandry", label: "Husbandry", icon: "husbandry", group: "care", description: "Species-aware husbandry and care.", navigation: "route" },
   { id: "weights", path: "/weights", label: "Weight", icon: "weight", group: "care", description: "Weight records and growth history.", navigation: "route" },
   { id: "feeding", path: "/feeding", label: "Feeding", icon: "feeding", group: "care", description: "Feeding records and preparation.", navigation: "route" },
-  { id: "shedding", path: "/shedding", label: "Shed Intelligence", icon: "reptile", group: "care", description: "Shed records and observations.", navigation: "route" },
+  { id: "shedding", path: "/shedding", label: "Shed Intelligence", icon: "shed", group: "care", description: "Shed records and observations.", navigation: "route" },
   { id: "behaviour", path: "/behaviour", label: "Behaviour", icon: "behaviour", group: "care", description: "Behaviour journal and patterns.", navigation: "route" },
   { id: "health", path: "/health", label: "Health & Vet", icon: "health", group: "care", description: "Health records and professional summaries.", navigation: "route" },
   { id: "enclosure", path: "/enclosure-intelligence", label: "Enclosure Intelligence", icon: "habitatBuilder", group: "care", description: "Species-aware enclosure intelligence.", navigation: "route" },
