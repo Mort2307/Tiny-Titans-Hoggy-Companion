@@ -64,6 +64,17 @@
 .tt-icon-name-save{--tt-icon-accent:#72b486}.tt-icon-name-copy{--tt-icon-accent:#9b91c0}
 .tt-icon-name-expand{--tt-icon-accent:#8aa7b8}.tt-icon-name-collapse{--tt-icon-accent:#8aa7b8}
 
+/* Business / breeding workspace identities */
+.tt-icon-name-titanIntelligence{--tt-icon-accent:#8e92d8}.tt-icon-name-analytics{--tt-icon-accent:#69b69a}
+.tt-icon-name-timeline{--tt-icon-accent:#7fa4c8}.tt-icon-name-breedingReadiness{--tt-icon-accent:#d7a85d}
+.tt-icon-name-breedingTimeline{--tt-icon-accent:#ba91cf}.tt-icon-name-breedingCycle{--tt-icon-accent:#d5828e}
+.tt-icon-name-production{--tt-icon-accent:#cf9a63}.tt-icon-name-evidence{--tt-icon-accent:#82a1bf}
+.tt-icon-name-reporting{--tt-icon-accent:#6ea8bf}.tt-icon-name-sellerProfile{--tt-icon-accent:#bc9b67}
+.tt-icon-name-marketplaceTools{--tt-icon-accent:#d29354}.tt-icon-name-team{--tt-icon-accent:#759fc0}
+.tt-icon-name-automation{--tt-icon-accent:#a38fd0}.tt-icon-name-support{--tt-icon-accent:#73aeb4}
+.tt-icon-name-api{--tt-icon-accent:#9ba9b8}.tt-icon-name-branding{--tt-icon-accent:#d17fa0}
+.tt-icon-name-exportData{--tt-icon-accent:#72b486}
+
 /* === TinyTitans Living Icon v2 ===
    Signature environment + spatial-builder motions.
    These remain dependency-free: SVG + CSS only.
