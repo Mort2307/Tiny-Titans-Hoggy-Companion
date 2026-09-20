@@ -296,8 +296,15 @@ export function RescueTasks() {
   const [filter, setFilter] = useState<"open"|"overdue"|"completed">("open");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
+  const [nowMs, setNowMs] = useState(0);
+  useEffect(() => {
+    const refreshNow = () => setNowMs(Date.now());
+    refreshNow();
+    const timer = window.setInterval(refreshNow, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const tasks = useMemo(() => animals.flatMap((animal) => (animal.reminders || []).map((item) => ({ animal, item }))).sort((a,b) => a.item.dueAt.localeCompare(b.item.dueAt)), [animals]);
-  const filtered = tasks.filter(({item}) => filter === "completed" ? item.completed : !item.completed && (filter === "open" || new Date(item.dueAt).getTime() < new Date().getTime()));
+  const filtered = tasks.filter(({item}) => filter === "completed" ? item.completed : !item.completed && (filter === "open" || (nowMs > 0 && new Date(item.dueAt).getTime() < nowMs)));
   async function toggle(animal: RescueAnimal, reminderId: string, completed: boolean) {
     setBusy(`${animal.id}:${reminderId}`); setMessage("");
     try { await setRescueReminderComplete(animal.id, reminderId, completed); await refresh(); } catch(error) { setMessage(error instanceof Error ? error.message : "Could not update the task."); } finally { setBusy(""); }
