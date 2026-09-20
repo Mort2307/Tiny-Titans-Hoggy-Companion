@@ -23,6 +23,7 @@ const paidTrialUserProfileAbsenceContract = /^(?![\s\S]*data\.paidTrial)/;
 const checks = [
   ["Firestore rules are version 2", /rules_version\s*=\s*'2'/, firestore],
   ["Firestore has deny-by-default fallback", /match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/, firestore],
+  ["Spatial habitats are explicitly owner-bound", /match \/users\/\{userId\}\/spatialHabitats\/\{roomId\}[\\s\\S]*?allow read, write: if signedIn\(\) && \(request\.auth\.uid == userId \|\| isCreator\(\)\)/, firestore],
   ["Tester sandboxes require syntheticOnly", /request\.resource\.data\.syntheticOnly\s*==\s*true/, firestore],
   ["Tester sandboxes require bot-test purpose", /request\.resource\.data\.purpose\s*==\s*\"bot-test\"/, firestore],
   ["Tester sandbox writes remain owner-bound", /resource\.data\.ownerUid\s*==\s*request\.auth\.uid/, firestore],
