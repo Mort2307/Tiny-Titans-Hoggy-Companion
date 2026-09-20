@@ -243,6 +243,18 @@ export default function SpatialHabitatBuilder() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
+  useEffect(() => {
+    if (!libraryOpen && !inspectorOpen && !blueprintOpen) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setLibraryOpen(false);
+      setInspectorOpen(false);
+      setBlueprintOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [blueprintOpen, inspectorOpen, libraryOpen]);
+
   const commit = useCallback((next: SpatialHabitatScene, message?: string) => {
     setScene((current) => {
       if (current && JSON.stringify(current) === JSON.stringify(next)) return current;
