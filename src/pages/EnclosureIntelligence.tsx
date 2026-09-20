@@ -287,7 +287,7 @@ export default function EnclosureIntelligence() {
     return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-panel"><h1><TinyTitansIcon name="habitatBuilder" size={34} motion="hover" /> Enclosure Intelligence</h1><p>{error}</p><button className="husbandry-button" type="button" onClick={() => void loadData()}>Try again</button></section></main>;
   }
   if (!snake || !enclosure) {
-    return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-panel"><h1>🏠 Enclosure Intelligence</h1><p>Add a Tiny Titan first and this page will build its enclosure and environment picture.</p></section></main>;
+    return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-panel"><h1><TinyTitansIcon name="habitatBuilder" size={34} /> Enclosure Intelligence</h1><p>Add a Tiny Titan first and this page will build its enclosure and environment picture.</p></section></main>;
   }
 
   const profileCards: Array<{ field: EnclosureField; icon: string; title: string; value: string; description: string }> = [
@@ -295,13 +295,13 @@ export default function EnclosureIntelligence() {
     { field: "enclosureType", icon: "enclosure", title: "Enclosure type", value: enclosure.enclosureType || "Not recorded", description: "Actual enclosure" },
     { field: "substrate", icon: "substrate", title: "Substrate", value: enclosure.substrate !== "Other" ? enclosure.substrate : "Not recorded", description: enclosure.substrateMix?.length ? enclosure.substrateMix.map((part) => `${part.percentage}% ${part.material}`).join(" · ") : enclosure.customSubstrate || "Tap to choose a mix" },
     { field: "heating", icon: "heat", title: "Heating", value: enclosure.heatingType !== "Other" ? enclosure.heatingType : "Not recorded", description: enclosure.heatingDevice || "Heat source not recorded" },
-    { field: "thermostat", icon: "settings", title: "Thermostat", value: enclosure.thermostat || "Not recorded", description: "Controller / model" },
+    { field: "thermostat", icon: "thermostat", title: "Thermostat", value: enclosure.thermostat || "Not recorded", description: "Controller / model" },
     { field: "uvb", icon: "uvb", title: "UVB / lighting", value: enclosure.uvbEnabled ? "Provided" : "Not recorded", description: enclosure.uvbDetails || "Lamp / strength / photoperiod" },
     { field: "hides", icon: "hide", title: "Hides", value: enclosure.hides > 0 ? String(enclosure.hides) : "Not recorded", description: "Secure cover" },
     { field: "water", icon: "water", title: "Water", value: enclosure.waterBowl ? "Provided" : "Not recorded", description: "Drinking water provision" },
     { field: "furnishings", icon: "plant", title: "Furnishings", value: enclosure.plants?.length || enclosure.decorations?.length ? "Recorded" : "Not recorded", description: "Plants / branches / decorations" },
     { field: "bioactive", icon: "plant", title: "Bioactive", value: enclosure.bioactive ? "Yes" : "No", description: enclosure.cleanupCrew?.length ? `${enclosure.cleanupCrew.length} cleanup-crew entries` : "Bioactive status" },
-    { field: "maintenance", icon: "creator", title: "Last cleaned", value: enclosure.lastCleanedDate || "Not recorded", description: "Maintenance record" },
+    { field: "maintenance", icon: "maintenance", title: "Last cleaned", value: enclosure.lastCleanedDate || "Not recorded", description: "Maintenance record" },
   ];
 
   const fieldTitle = profileCards.find((card) => card.field === editingField)?.title ?? "Enclosure";
