@@ -401,6 +401,32 @@ function aabb(node: SpatialNode) {
   };
 }
 
+function pointInPolygon(x: number, z: number, points: Array<{ x: number; z: number }>) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i) {
+    const a = points[i];
+    const b = points[j];
+    const crosses = a.z > z !== b.z > z && x < ((b.x - a.x) * (z - a.z)) / (b.z - a.z) + a.x;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+function outsideConfiguredFloorPlan(node: SpatialNode, scene: SpatialHabitatScene) {
+  if (node.parentId !== ROOT_CONTAINER_ID || !scene.root.floorPlan || scene.root.floorPlan.length < 3) return false;
+  const footprint = rotatedFootprint(node);
+  const points = scene.root.floorPlan.map((point) => ({
+    x: point.x - scene.root.dimensions.width / 2,
+    z: point.z - scene.root.dimensions.depth / 2,
+  }));
+  const corners = [
+    { x: node.position.x - footprint.width / 2, z: node.position.z - footprint.depth / 2 },
+    { x: node.position.x + footprint.width / 2, z: node.position.z - footprint.depth / 2 },
+    { x: node.position.x - footprint.width / 2, z: node.position.z + footprint.depth / 2 },
+    { x: node.position.x + footprint.width / 2, z: node.position.z + footprint.depth / 2 },
+  ];
+  return corners.some((corner) => !pointInPolygon(corner.x, corner.z, points));
+}
 function intersects(a: SpatialNode, b: SpatialNode) {
   const x = aabb(a);
   const y = aabb(b);
@@ -424,12 +450,13 @@ export function validateSpatialScene(scene: SpatialHabitatScene): SpatialValidat
       bounds.f < -parent.depth / 2 ||
       bounds.b > parent.depth / 2 ||
       bounds.bo < 0 ||
-      bounds.t > parent.height
+      bounds.t > parent.height ||
+      outsideConfiguredFloorPlan(node, scene)
     ) {
       issues.push({
         severity: "error",
         code: "outside-container",
-        message: node.label + " extends outside its parent space.",
+        message: outsideConfiguredFloorPlan(node, scene) ? node.label + " extends beyond the configured room floor plan." : node.label + " extends outside its parent space.",
         nodeIds: [node.id],
       });
     }
