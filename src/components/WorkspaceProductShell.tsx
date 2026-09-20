@@ -49,7 +49,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
   return <div className={shellClass} data-workspace={product.id} data-tier={tier} style={shellStyle}>
     <header className="workspace-product-header">
       <div className="workspace-product-brand">
-        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={workspaceIcon(product.id)} size={29} /></span>
+        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={product.icon as TinyTitansIconName} size={29} /></span>
         <div>
           <span className="workspace-product-eyebrow">{product.eyebrow}</span>
           <strong>{product.name}</strong>
