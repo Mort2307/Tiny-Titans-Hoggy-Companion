@@ -10,6 +10,7 @@ const plans = read("src/pages/PaidPlans.tsx");
 const billing = read("src/pages/AccountBilling.tsx");
 const subscriptions = read("functions/paidSubscriptions.js");
 const support = read("functions/customSupport.js");
+const functionsIndex = read("functions/index.js");
 const paidTierService = read("src/services/paidTierService.ts");
 const paidTiers = read("src/config/paidTiers.ts");
 const rr3d = read("src/pages/ReptileRoom3D.tsx");
@@ -76,6 +77,8 @@ const checks = [
   ["pricing lookup accepts configured price IDs", subscriptions.includes("resolveRecurringPriceForPricing") && subscriptions.includes("stripe.prices.retrieve(configuredPriceId)")],
   ["customer purchase CTA exists", plans.includes('"Buy now"') && plans.includes("startPaidSubscriptionCheckout")],
   ["owner paid-access source is modeled end-to-end", paidTiers.includes('"owner"') && paidTierService.includes('data.source === "owner"')],
+  ["hardened paid subscriptions are exported from Functions entrypoint", functionsIndex.includes('require("./paidSubscriptions")') && functionsIndex.includes("createPaidSubscriptionCheckout")],
+  ["hardened Titan support is exported from Functions entrypoint", functionsIndex.includes('require("./customSupport")') && functionsIndex.includes("createTitanCheckoutV2")],
   ["paid subscription checkout has a server-side race lock", subscriptions.includes("acquireCheckoutLock") && subscriptions.includes("paidCheckoutLocks") && subscriptions.includes("lockedUserSnapshot")],
   ["paid subscription webhooks reject stale Stripe events", subscriptions.includes("sourceEventCreated") && subscriptions.includes("existingCreated > eventCreated")],
   ["paid subscription checkout locks are cleared on completion/failure", subscriptions.includes("clearCheckoutLock") && subscriptions.includes("await clearCheckoutLock(uid)")],
