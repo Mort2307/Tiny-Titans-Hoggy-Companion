@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 const read = (path) => readFileSync(path, "utf8");
 
 const room = read("src/pages/StableReptileRoomBuilder.tsx");
+const canonicalRoom = read("src/pages/ReptileRoom.tsx");
+const spatialBuilder = read("src/components/reptile-room-3d/SpatialHabitatBuilder.tsx");
+const spatialService = read("src/services/spatialHabitatService.ts");
 const room3d = read("src/components/reptile-room-3d/Room3D.tsx");
 const roomShell = read("src/components/reptile-room-3d/RoomEditorShell3D.tsx");
 const blueprint = read("src/components/reptile-room-3d/RoomBlueprintPanel.tsx");
@@ -15,16 +18,15 @@ const roomObject = read("src/components/reptile-room-3d/RoomObject3D.tsx");
 const magnet = read("src/services/vivariumMagnetService.ts");
 
 const checks = [
-  ["Canonical Reptile Room uses the 3D editor shell", roomShell.includes('StableReptileRoomBuilder')],
-  ["Canonical room surfaces the blueprint/infrastructure panel", room.includes('RoomBlueprintPanel')],
-  ["Canonical room exposes first-person exploration", room.includes('/reptile-room/first-person')],
-  ["Canonical room exposes dedicated vivarium editing", room.includes('/reptile-room/vivarium/')],
-  ["Canonical room exposes 5 cm placement controls", room.includes('moveSelectedBy') && room.includes('snapSelected')],
-  ["Canonical room exposes wall snap and shelf snap", room.includes('snapToWall') && room.includes('stackSnapSelected')],
-  ["Canonical room exposes vivarium magnet lock/unlock", room.includes('magnetLockSelected') && room.includes('unlockMagnet')],
-  ["Canonical room supports reversible shelving attachment", room.includes('unstackSelected') && room.includes('slotParentAssetId(selectedSlot)')],
-  ["Canonical room moves linked equipment with its parent vivarium", room.includes('object.parentAssetId === current.id') && room.includes('object.config?.linkedSlotId === current.id')],
-  ["Canonical room preserves grouped vivarium movement", room.includes('groupedSlotIds') && room.includes('slot.stackGroupId === groupId')],
+  ["Canonical Reptile Room uses Spatial Habitat Builder", canonicalRoom.includes("SpatialHabitatBuilder")],
+  ["Spatial builder remains the canonical room source", spatialBuilder.includes("saveSpatialHabitat") && spatialBuilder.includes("sceneToRoom")],
+  ["Canonical room surfaces the blueprint/infrastructure panel", spatialBuilder.includes("RoomBlueprintPanel")],
+  ["Canonical room exposes first-person exploration", canonicalRoom.includes("SpatialHabitatBuilder") && router.includes('path="/reptile-room/first-person"')],
+  ["Canonical room exposes dedicated vivarium editing", spatialBuilder.includes("Open {node.label}") && router.includes('path="/reptile-room/vivarium/:id/3d"')],
+  ["Spatial builder exposes numeric transforms and 5 cm snapping", spatialBuilder.includes("snapCm") && spatialBuilder.includes("TransformControls")],
+  ["Legacy placement engine remains available", spatial.includes("snapArchitecturalObject") && spatial.includes("stackZ")],
+  ["Legacy vivarium magnet subsystem remains available", magnet.includes("magnetiseObjectToVivarium") && magnet.includes("reanchorVivariumChildren")],
+  ["Spatial scene supports nested containers", spatialService.includes("parentId") && spatialService.includes("duplicateNode")],
   ["Blueprint editor supports custom floor plans", blueprint.includes('setRoomFloorPlan') && blueprint.includes('+ Wall')],
   ["Blueprint editor supports room power sockets", blueprint.includes('ReptileRoomSocket') && blueprint.includes('+ Socket')],
   ["Blueprint editor reports spatial layout issues", blueprint.includes('validateSpatialLayout')],
