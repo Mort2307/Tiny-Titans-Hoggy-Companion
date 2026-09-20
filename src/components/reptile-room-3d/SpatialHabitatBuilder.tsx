@@ -267,7 +267,13 @@ export default function SpatialHabitatBuilder() {
     if (!scene) return;
     const dimensions = active?.dimensions ?? scene.root.dimensions;
     const node = createSpatialNode(preset, containerId, dimensions, childrenOf(scene, containerId).length);
-    commit({ ...scene, nodes: [...scene.nodes, node] }, preset.label + " added.");
+    const seeded = { ...scene, nodes: [...scene.nodes, node] };
+    const placed = preset.capabilities?.wallMountable
+      ? snapNodeToNearestWall(seeded, node.id)
+      : preset.capabilities?.ceilingMountable
+        ? snapNodeToCeiling(seeded, node.id)
+        : seeded;
+    commit(placed, preset.label + " added.");
     setSelectedId(node.id);
     setLibraryOpen(false);
     setInspectorOpen(true);
@@ -698,46 +704,3 @@ function Inspector({
 
       <div className="spatial-rotate">
         <button type="button" onClick={() => onPatch({ rotation: { ...node.rotation, y: node.rotation.y - 15 } })}>↶</button>
-        <strong>{Math.round(node.rotation.y)}°</strong>
-        <button type="button" onClick={() => onPatch({ rotation: { ...node.rotation, y: node.rotation.y + 15 } })}>↷</button>
-        <button type="button" onClick={() => onPatch({ rotation: { ...node.rotation, y: 0 } })}>Reset</button>
-      </div>
-
-      <div className="spatial-placement-row">
-        {node.capabilities.wallMountable && <button type="button" onClick={onSnapWall}>Wall snap</button>}
-        <button type="button" onClick={onSnapFloor}>Floor</button>
-        {node.capabilities.ceilingMountable && <button type="button" onClick={onSnapCeiling}>Ceiling</button>}
-      </div>
-
-      {["che", "halogen", "dhp", "rhp", "heat-mat", "basking-light", "ceiling-light", "led-bar", "uvb", "power-strip", "smart-plug"].includes(node.kind) && (
-        <label>Wattage
-          <input type="number" min="0" value={Number(node.config.wattage) || 0} onChange={(event) => onPatch({ config: { ...node.config, wattage: Math.max(0, Number(event.target.value) || 0) } })} />
-        </label>
-      )}
-
-      {node.kind === "thermostat" && (
-        <div className="spatial-grid">
-          <label>Target °C<input type="number" step="0.1" value={Number(node.config.targetTemperatureC) || 30} onChange={(event) => onPatch({ config: { ...node.config, targetTemperatureC: Number(event.target.value) || 30 } })} /></label>
-          <label>Mode<select value={String(node.config.mode || "heat")} onChange={(event) => onPatch({ config: { ...node.config, mode: event.target.value } })}><option value="heat">heat</option><option value="cool">cool</option><option value="off">off</option></select></label>
-        </div>
-      )}
-
-      {node.capabilities.sensor && (
-        <div className="spatial-grid">
-          <label>Temp °C<input type="number" step="0.1" value={Number(node.config.currentTemperatureC) || 25} onChange={(event) => onPatch({ config: { ...node.config, currentTemperatureC: Number(event.target.value) || 25 } })} /></label>
-          <label>Humidity %<input type="number" min="0" max="100" value={Number(node.config.humidity) || 50} onChange={(event) => onPatch({ config: { ...node.config, humidity: Math.min(100, Math.max(0, Number(event.target.value) || 50)) } })} /></label>
-        </div>
-      )}
-
-      <label>Notes<textarea rows={3} value={node.notes || ""} onChange={(event) => onPatch({ notes: event.target.value })} /></label>
-
-      <div className="spatial-actions-row">
-        <button type="button" onClick={onDuplicate}>Duplicate</button>
-        <button type="button" className="danger" onClick={onDelete}>Delete</button>
-      </div>
-      <p className="spatial-hint">
-        Parent {Math.round(parent.width)} × {Math.round(parent.depth)} × {Math.round(parent.height)} cm. X/Z are centred; Y is height above the parent floor.
-      </p>
-    </div>
-  );
-}
