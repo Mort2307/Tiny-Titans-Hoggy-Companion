@@ -11,8 +11,11 @@ on:
       - "src/pages/ReptileVivarium3DEditor.tsx"
       - "src/services/reptileRoomService.ts"
       - "src/services/spatialHabitatService.ts"
+      - "src/services/spatialHabitatPersistenceService.ts"
+      - "src/services/spatialVivariumTwinBridge.ts"
       - "scripts/validate-reptile-room-3d-contract.mjs"
       - "scripts/validate-spatial-habitat.mjs"
+      - "scripts/test-spatial-habitat-runtime.ts"
       - ".github/workflows/rr3d-magnet-fix.yml"
   pull_request:
     branches: [master]
