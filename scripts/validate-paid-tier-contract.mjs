@@ -96,7 +96,7 @@ const checks = [
   ["every workspace has My Account navigation", commercialTiers.every((id) => workspaceProducts.includes(`id:\"${id}\"`) && workspaceProducts.includes(`label:\"My Account\",path:\"/account\"`))],
   ["actionable paywall", gate.includes("Compare plans") && gate.includes("/plans?tier=")],
   ["free intelligence page remains available", titanPage.includes("export default function TitanIntelligence() { return <TitanIntelligenceContent />; }") && titanPage.includes("<TitanIntelligenceGrowthPanel/>")],
-  ["paid Ask Titan gate exists", titanPage.includes('entitlement="titan_intelligence"') && titanPage.includes("<AskTitan")],
+  ["paid Titan Intelligence entitlement exists", config.includes('"titan_intelligence"') && commercialTiers.every((id) => tierHasEntitlement(id, "titan_intelligence"))],
   ["Ask Titan callable is exported", titanFunctions.includes("exports.askTitan") && titanFunctions.includes("resolveTitanAccess") && titanAccess.includes("PAID_TIERS") && titanAccess.includes("titan_pro")],
   ["Gemini tool calling is wired", titanModel.includes("toolConfig") && titanModel.includes("functionCallingConfig") && titanTools.includes("functionDeclarations")],
   ["Gemini current model is configured", titanModel.includes('"gemini-3.8-flash"')],
