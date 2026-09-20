@@ -57,7 +57,7 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate, onS
     <aside aria-label="3D room build controls" style={{ width: 270, maxWidth: "100%", padding: 14, borderRadius: 14, background: "rgba(22,25,29,.96)", border: "1px solid rgba(255,255,255,.12)", boxSizing: "border-box", pointerEvents: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: minimized ? 0 : 4 }}>
         <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 7 }}><TinyTitansIcon name="habitatBuilder" size={22} motion="hover" /> Build Room</div>
-        <button type="button" aria-label={minimized ? "Expand room builder" : "Minimize room builder"} title={minimized ? "Expand" : "Minimize"} onClick={() => setMinimized((value) => !value)} style={{ width: 30, height: 30, padding: 0, display: "grid", placeItems: "center", fontSize: 18, lineHeight: 1 }} {...buttonProps}><TinyTitansIcon name={minimized ? "add" : "offline"} size={18} motion="hover" /></button>
+        <button type="button" aria-label={minimized ? "Expand room builder" : "Minimize room builder"} title={minimized ? "Expand" : "Minimize"} onClick={() => setMinimized((value) => !value)} style={{ width: 30, height: 30, padding: 0, display: "grid", placeItems: "center", fontSize: 18, lineHeight: 1 }} {...buttonProps}><TinyTitansIcon name={minimized ? "expand" : "collapse"} size={18} motion="hover" /></button>
       </div>
 
       {!minimized && <>
