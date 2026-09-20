@@ -29,7 +29,7 @@ const missingSwitchCases = iconUnion.filter((name) => !iconSource.includes(`case
 const productIcons = [...workspaceProductsSource.matchAll(/icon:"([^"]+)"/g)].map((match) => match[1]);
 const expectedTierIds = ["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"];
 const tierCatalogEntries = expectedTierIds.map((id) => {
-  const match = paidTiersSource.match(new RegExp("^  " + id + ': \\{[^\\n]*?icon: "([^"]+)"'));
+  const match = paidTiersSource.match(new RegExp("(?:^|\\n)  " + id + ': \\{[^\\n]*?icon: "([^"]+)"'));
   return { id, icon: match?.[1] ?? null };
 });
 const missingTierCatalogIcons = tierCatalogEntries.filter((entry) => !entry.icon).map((entry) => entry.id);
@@ -37,7 +37,7 @@ const invalidTierCatalogIcons = tierCatalogEntries.filter((entry) => entry.icon 
 const hasSemanticTierBadge = paidTierBadgeSource.includes("name={tier.icon}") && paidTierBadgeSource.includes('from "./TinyTitansIcon"');
 const productTierIconMismatch = tierCatalogEntries.map((entry) => {
   const productId = entry.id === "free" ? "personal" : entry.id;
-  const match = workspaceProductsSource.match(new RegExp("^  " + productId + ': \\{[^\\n]*?icon:"([^"]+)"'));
+  const match = workspaceProductsSource.match(new RegExp("(?:^|\\n)  " + productId + ': \\{[^\\n]*?icon:"([^"]+)"'));
   const productIcon = match?.[1] ?? null;
   return entry.icon && productIcon && entry.icon !== productIcon ? { id: entry.id, tierIcon: entry.icon, productIcon } : null;
 }).filter(Boolean);
