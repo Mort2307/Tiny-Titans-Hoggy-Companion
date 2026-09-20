@@ -439,7 +439,7 @@ export function TinyTitansIcon({
   return (
     <SimpleIcon
       name={resolvedName}
-      className={`tt-icon tt-icon-state-${state} tt-icon-motion-${motion} ${className}`.trim()}
+      className={`tt-icon tt-icon-name-${resolvedName} tt-icon-state-${state} tt-icon-motion-${motion} ${className}`.trim()}
       width={size}
       height={size}
       role={title ? "img" : "presentation"}
