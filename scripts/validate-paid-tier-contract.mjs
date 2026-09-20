@@ -94,7 +94,7 @@ const checks = [
   ["export paid surface exists", workspace.includes("/paid/export") && workspace.includes("<DataExportFeature />")],
   ["all commercial surfaces represented", ["/paid/analytics","/paid/seller","/paid/marketplace","/paid/business","/paid/team","/paid/automation","/paid/support","/paid/api","/paid/branding"].every((route) => workspace.includes(route))],
   ["every workspace has My Account navigation", commercialTiers.every((id) => workspaceProducts.includes(`id:\"${id}\"`) && workspaceProducts.includes(`label:\"My Account\",path:\"/account\"`))],
-  ["actionable paywall", gate.includes("Compare plans") && gate.includes('to="/plans"')],
+  ["actionable paywall", gate.includes("Compare plans") && gate.includes("/plans?tier=")],
   ["free intelligence page remains available", titanPage.includes("export default function TitanIntelligence() { return <TitanIntelligenceContent />; }") && titanPage.includes("<TitanIntelligenceGrowthPanel/>")],
   ["paid Ask Titan gate exists", titanPage.includes('entitlement="titan_intelligence"') && titanPage.includes("<AskTitan")],
   ["Ask Titan callable is exported", titanFunctions.includes("exports.askTitan") && titanFunctions.includes("resolveTitanAccess") && titanAccess.includes("PAID_TIERS") && titanAccess.includes("titan_pro")],
