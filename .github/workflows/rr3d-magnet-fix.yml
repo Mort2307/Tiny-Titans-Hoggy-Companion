@@ -4,16 +4,28 @@ on:
   push:
     branches: [master]
     paths:
-      - "src/pages/ReptileRoom3D.tsx"
       - "src/components/reptile-room-3d/**"
+      - "src/pages/ReptileRoom.tsx"
+      - "src/pages/ReptileRoom3D.tsx"
+      - "src/pages/ReptileRoomFirstPerson3D.tsx"
+      - "src/pages/ReptileVivarium3DEditor.tsx"
       - "src/services/reptileRoomService.ts"
+      - "src/services/spatialHabitatService.ts"
+      - "scripts/validate-reptile-room-3d-contract.mjs"
+      - "scripts/validate-spatial-habitat.mjs"
       - ".github/workflows/rr3d-magnet-fix.yml"
   pull_request:
     branches: [master]
     paths:
-      - "src/pages/ReptileRoom3D.tsx"
       - "src/components/reptile-room-3d/**"
+      - "src/pages/ReptileRoom.tsx"
+      - "src/pages/ReptileRoom3D.tsx"
+      - "src/pages/ReptileRoomFirstPerson3D.tsx"
+      - "src/pages/ReptileVivarium3DEditor.tsx"
       - "src/services/reptileRoomService.ts"
+      - "src/services/spatialHabitatService.ts"
+      - "scripts/validate-reptile-room-3d-contract.mjs"
+      - "scripts/validate-spatial-habitat.mjs"
       - ".github/workflows/rr3d-magnet-fix.yml"
 
 permissions:
@@ -37,13 +49,15 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Verify source wiring
+      - name: Verify spatial room wiring
         shell: bash
         run: |
           set -euo pipefail
-          grep -F 'viv-group-${node.id}' src/pages/ReptileRoom3D.tsx
-          grep -F 'object?.config?.linkedSlotId' src/pages/ReptileRoom3D.tsx
-          grep -F 'selectedSlotBeforeAdd ? `viv-group-${selectedSlotBeforeAdd.id}`' src/pages/ReptileRoom3D.tsx
+          grep -F 'SpatialHabitatBuilder' src/pages/ReptileRoom.tsx
+          grep -F 'validateSpatialScene' src/components/reptile-room-3d/SpatialHabitatBuilder.tsx
+          grep -F 'saveSpatialHabitat' src/components/reptile-room-3d/SpatialHabitatBuilder.tsx
+          npm run validate:spatial-habitat
+          npm run validate:reptile-room-3d
 
       - name: Lint
         run: npm run lint
