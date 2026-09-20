@@ -1,8 +1,92 @@
+import assert from "node:assert/strict";
+import {
+  ROOT_CONTAINER_ID,
+  createSpatialNode,
+  duplicateNode,
+  findNode,
+  snapNodeToCeiling,
+  snapNodeToFloor,
+  snapNodeToNearestWall,
+  connectNodeToNearestPowerSocket,
+  validateSpatialScene,
+} from "../src/services/spatialHabitatService.ts";
+import {
+  applyVivariumTwinToSpatialScene,
+  mergeSpatialNodesIntoVivariumTwin,
+} from "../src/services/spatialVivariumTwinBridge.ts";
+import { DEFAULT_VIVARIUM_TWIN } from "../src/types/vivariumTwin.ts";
+import type { SpatialAssetPreset, SpatialHabitatScene } from "../src/types/spatialHabitat.ts";
+
+const dimensions = { width: 400, depth: 300, height: 240 };
+const roomPreset: SpatialAssetPreset = {
+  assetId: "runtime-test-vivarium",
+  kind: "vivarium",
+  category: "enclosure",
+  label: "Runtime Vivarium",
+  width: 120,
+  depth: 60,
+  height: 60,
+  capabilities: { container: true },
+};
+const lampPreset: SpatialAssetPreset = {
+  assetId: "runtime-test-uvb",
+  kind: "uvb",
+  category: "lighting",
+  label: "Runtime UVB",
+  width: 90,
+  depth: 12,
+  height: 5,
+  capabilities: { lightSource: true, uvbSource: true, powerConsumer: true, ceilingMountable: true },
+  config: { wattage: 50 },
+};
+const sensorPreset: SpatialAssetPreset = {
+  assetId: "runtime-test-sensor",
+  kind: "thermometer",
+  category: "monitoring",
+  label: "Runtime Thermometer",
+  width: 6,
+  depth: 3,
+  height: 8,
+  capabilities: { sensor: true, wallMountable: true },
+};
+
+let scene: SpatialHabitatScene = {
+  schemaVersion: 1,
+  units: "metric",
+  root: {
+    id: "root",
+    kind: "room",
+    label: "Runtime Test Room",
+    dimensions,
+    floorPlan: [
+      { x: 0, z: 0 },
+      { x: 400, z: 0 },
+      { x: 400, z: 300 },
+      { x: 0, z: 300 },
+    ],
+    walls: [],
+    sockets: [{ id: "socket-1", wallId: null, x: 0, z: 0, height: 45, outlets: 2, label: "Test socket", switchable: true, enabled: true, maxLoadWatts: 80 }],
+  },
+  nodes: [],
+  updatedAt: new Date().toISOString(),
+};
+
+const vivarium = createSpatialNode(roomPreset, ROOT_CONTAINER_ID, dimensions, 0);
 scene = { ...scene, nodes: [...scene.nodes, vivarium] };
 assert.equal(findNode(scene, vivarium.id)?.kind, "vivarium", "vivarium creation failed");
 
 const lamp = createSpatialNode(lampPreset, ROOT_CONTAINER_ID, dimensions, 1);
 scene = { ...scene, nodes: [...scene.nodes, lamp] };
+
+const zeroCapacitySocketScene = {
+  ...scene,
+  root: {
+    ...scene.root,
+    sockets: [{ id: "unknown-capacity", wallId: null, x: 200, z: 150, height: 45, outlets: 1, label: "Unknown-capacity socket", switchable: true, enabled: true, maxLoadWatts: 0 }],
+  },
+};
+const zeroCapacityLinked = connectNodeToNearestPowerSocket(zeroCapacitySocketScene, lamp.id);
+assert.equal(findNode(zeroCapacityLinked, lamp.id)?.config?.powerSocketId, "unknown-capacity", "equipment could not connect to an unconfigured-capacity socket");
 scene = snapNodeToCeiling(scene, lamp.id);
 assert.equal(findNode(scene, lamp.id)?.position.y, dimensions.height - lamp.dimensions.height, "ceiling snap failed");
 
@@ -46,22 +130,9 @@ const nestedSensor = {
   parentId: vivarium.id,
   config: { ...snappedSensor!.config, source: "spatial-habitat", spatialNodeId: snappedSensor!.id },
 };
-const heaterPreset: SpatialAssetPreset = {
-  assetId: "runtime-test-heat",
-  kind: "che",
-  category: "heating",
-  label: "Runtime CHE",
-  width: 20,
-  depth: 20,
-  height: 18,
-  capabilities: { heatSource: true, powerConsumer: true },
-  config: { wattage: 20 },
-};
-const heater = createSpatialNode(heaterPreset, vivarium.id, vivarium.dimensions, 0);
-const heaterScene = connectNodeToNearestPowerSocket({ ...scene, nodes: [...scene.nodes, heater] }, heater.id);
 const spatialWithChild = {
-  ...heaterScene,
-  nodes: heaterScene.nodes.concat(nestedSensor),
+  ...scene,
+  nodes: scene.nodes.concat(nestedSensor),
 };
 const mergedTwin = mergeSpatialNodesIntoVivariumTwin(twin, spatialWithChild, vivarium.id);
 assert.equal(mergedTwin.assets.length, 2, "spatial -> twin bridge did not import all nested equipment");
