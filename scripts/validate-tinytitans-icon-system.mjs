@@ -15,7 +15,9 @@ const requiredIcons = [
 
 const iconTypeBlock = iconSource.match(/export type TinyTitansIconName =([\\s\\S]*?);/u)?.[1] ?? "";
 const iconUnion = [...iconTypeBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]).filter(Boolean);
-const missingRegisteredNames = iconUnion.filter((name) => !iconSource.includes(`  "${name}",`));
+const iconRegistryBlock = iconSource.match(/const ICON_NAMES = new Set<TinyTitansIconName>\\(\\[([\\s\\S]*?)\\]\\);/u)?.[1] ?? "";
+const registeredNames = [...iconRegistryBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]).filter(Boolean);
+const missingRegisteredNames = iconUnion.filter((name) => !registeredNames.includes(name));
 const missingSwitchCases = iconUnion.filter((name) => !iconSource.includes(`case "${name}":`));
 const caseBodies = new Map();
 for (let index = 0; index < iconUnion.length; index += 1) {
