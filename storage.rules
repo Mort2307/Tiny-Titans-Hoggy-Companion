@@ -14,7 +14,13 @@ service firebase.storage {
         && (ownerAccount() || org.get('accountStatus', '') == 'paid_active' || (org.get('pilotStatus', '') == 'pilot_active' && org.get('pilotEndsAt', null) > request.time));
     }
 
-    match /users/{userId}/snakes/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /users/{userId}/snakes/{snakeId}/{fileName} {
+      allow read: if canAccessUserFiles(userId);
+      allow create, update: if canAccessUserFiles(userId)
+        && request.resource.size <= 25 * 1024 * 1024
+        && request.resource.contentType.matches("^image/(jpeg|png|webp)$");
+      allow delete: if canAccessUserFiles(userId);
+    }
     match /snakePhotos/{userId}/{snakeId}/{fileName} {
       allow read: if canAccessUserFiles(userId);
       allow create, update: if canAccessUserFiles(userId)
@@ -29,7 +35,13 @@ service firebase.storage {
         && request.resource.contentType.matches("^image/(jpeg|png|webp)$");
       allow delete: if canAccessUserFiles(userId);
     }
-    match /users/{userId}/reptileRooms/{roomId}/assets/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /users/{userId}/reptileRooms/{roomId}/assets/{fileName} {
+      allow read: if canAccessUserFiles(userId);
+      allow create, update: if canAccessUserFiles(userId)
+        && request.resource.size <= 15 * 1024 * 1024
+        && request.resource.contentType.matches("^image/(jpeg|png|webp)$");
+      allow delete: if canAccessUserFiles(userId);
+    }
     match /morph-submissions/{userId}/{submissionId}/{fileName} {
       allow write: if signedIn() && request.auth.uid == userId && request.resource.size <= 25 * 1024 * 1024 && request.resource.contentType.matches('^(image/(jpeg|png|webp|heic|heif)|video/(mp4|webm|quicktime))$');
       allow read: if signedIn() && (request.auth.uid == userId || isCreator());
