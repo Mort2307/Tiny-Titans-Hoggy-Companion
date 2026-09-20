@@ -6,7 +6,6 @@ import type { Snake } from "../types/Snake";
 import PaidTierGate from "../components/PaidTierGate";
 import TinyTitansIcon, { type TinyTitansIconName } from "../components/TinyTitansIcon";
 import OrganisationStaffManager from "../components/staff/OrganisationStaffManager";
-import TinyTitansIcon, { type TinyTitansIconName } from "../components/TinyTitansIcon";
 import { type PaidEntitlement } from "../config/paidTiers";
 import { useAuth } from "../context/useAuth";
 import "../styles/PaidFeatureWorkspace.css";
