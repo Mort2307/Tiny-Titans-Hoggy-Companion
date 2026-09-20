@@ -9,6 +9,7 @@ const requiredIcons = [
   "temperature", "humidity", "water", "uvb", "heat", "plant", "substrate", "hide",
   "habitatBuilder", "reptileRoom", "veterinary", "intelligence", "globe", "map", "camera",
   "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
+  "thermostat", "maintenance", "power", "settings", "close", "upload", "save",
 ];
 
 
@@ -16,10 +17,26 @@ const iconTypeBlock = iconSource.match(/export type TinyTitansIconName =([\\s\\S
 const iconUnion = [...iconTypeBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]).filter(Boolean);
 const missingRegisteredNames = iconUnion.filter((name) => !iconSource.includes(`  "${name}",`));
 const missingSwitchCases = iconUnion.filter((name) => !iconSource.includes(`case "${name}":`));
+const caseBodies = new Map();
+for (let index = 0; index < iconUnion.length; index += 1) {
+  const name = iconUnion[index];
+  const start = iconSource.indexOf(`case "${name}":`);
+  if (start < 0) continue;
+  const nextCase = iconSource.indexOf("\n    case \"", start + 8);
+  const nextDefault = iconSource.indexOf("\n    default:", start + 8);
+  const endCandidates = [nextCase, nextDefault].filter((value) => value >= 0);
+  const end = endCandidates.length ? Math.min(...endCandidates) : iconSource.length;
+  const body = iconSource.slice(start, end).replace(/\\s+/g, " ").trim();
+  const previous = caseBodies.get(body);
+  if (previous) previous.push(name);
+  else caseBodies.set(body, [name]);
+}
+const duplicateVisualCases = [...caseBodies.values()].filter((names) => names.length > 1);
+
 
 const missingIcons = requiredIcons.filter((name) => !iconSource.includes(`| "${name}"`));
-if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length) {
-  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases }, null, 2));
+if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length) {
+  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases }, null, 2));
   process.exit(1);
 }
 
