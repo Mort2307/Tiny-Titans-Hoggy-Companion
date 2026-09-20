@@ -1,5 +1,5 @@
 import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "./reptileRoomService";
-import type { SpatialAssetPreset, SpatialDimensionsCm, SpatialFloorPoint, SpatialHabitatScene, SpatialNode, SpatialNodeCapabilities, SpatialNodeKind, SpatialValidationIssue } from "../types/spatialHabitat";
+import type { SpatialAssetPreset, SpatialDimensionsCm, SpatialHabitatScene, SpatialNode, SpatialNodeCapabilities, SpatialNodeKind, SpatialValidationIssue } from "../types/spatialHabitat";
 
 export const SPATIAL_SNAP_CM = 5;
 export const ROOT_CONTAINER_ID = "root";
@@ -15,11 +15,6 @@ function rotatedFootprint(node: SpatialNode) {
     depth: node.dimensions.width * s + node.dimensions.depth * c,
   };
 }
-
-function scenePointToCentred(point: SpatialFloorPoint, room: SpatialHabitatScene["root"]) {
-  return { x: point.x - room.dimensions.width / 2, z: point.z - room.dimensions.depth / 2 };
-}
-
 export function spatialId(prefix = "node") {
   const uuid = globalThis.crypto?.randomUUID?.();
   return uuid ? prefix + "-" + uuid : prefix + "-" + Date.now().toString(36);
@@ -55,13 +50,17 @@ function category(kind: string): SpatialNode["category"] {
 
 function caps(object: ReptileRoomObject): SpatialNodeCapabilities {
   const role = object.intelligenceRole ?? "";
+  const heatKinds = ["heat-mat", "che", "halogen", "dhp", "rhp", "basking-light"];
+  const lightKinds = ["lamp", "ceiling-light", "led-bar", "uvb", "basking-light"];
+  const sensorKinds = ["thermometer", "hygrometer", "temp-humidity"];
+  const powerKinds = ["socket", "switched-socket", "power-strip", "timer", "smart-plug", "thermostat"];
   return {
-    powerConsumer: Boolean(object.config?.wattage) || ["heating", "lighting"].includes(role),
-    heatSource: role === "heating",
-    lightSource: role === "lighting",
+    powerConsumer: Boolean(object.config?.wattage) || heatKinds.includes(object.kind) || lightKinds.includes(object.kind) || powerKinds.includes(object.kind),
+    heatSource: role === "heating" || heatKinds.includes(object.kind),
+    lightSource: role === "lighting" || lightKinds.includes(object.kind),
     uvbSource: object.kind === "uvb",
-    sensor: role === "sensor",
-    waterSource: role === "water",
+    sensor: role === "sensor" || sensorKinds.includes(object.kind),
+    waterSource: role === "water" || object.kind === "water-bowl",
     wallMountable: ["socket", "switched-socket", "thermostat", "thermometer", "hygrometer", "temp-humidity", "timer", "smart-plug"].includes(object.kind),
   };
 }
@@ -156,7 +155,12 @@ export function roomToSpatialScene(room: ReptileRoomWorkspace): SpatialHabitatSc
 }
 
 export function normalizeScene(scene: SpatialHabitatScene): SpatialHabitatScene {
-  const dimensions = scene.root?.dimensions ?? { width: 360, depth: 300, height: 240 };
+  const rawDimensions = scene.root?.dimensions ?? { width: 360, depth: 300, height: 240 };
+  const dimensions = {
+    width: Math.max(100, Number(rawDimensions.width) || 360),
+    depth: Math.max(100, Number(rawDimensions.depth) || 300),
+    height: Math.max(100, Number(rawDimensions.height) || 240),
+  };
   return {
     schemaVersion: 1,
     units: scene.units === "imperial" ? "imperial" : "metric",
