@@ -174,6 +174,7 @@ export default function SpatialHabitatBuilder() {
   }, [containerId, scene]);
   const groups = useMemo(() => groupsFor(mode), [mode]);
   const issues = useMemo(() => scene ? validateSpatialScene(scene) : [], [scene]);
+  const blueprintRoom = useMemo(() => (scene && room ? sceneToRoom(scene, room) : room), [room, scene]);
   const draftKey = room ? DRAFT_PREFIX + room.id : "";
 
   useEffect(() => {
@@ -483,6 +484,7 @@ export default function SpatialHabitatBuilder() {
           <div className="spatial-mobile-actions">
             <button type="button" onClick={() => setLibraryOpen(true)}>＋ Add</button>
             <button type="button" onClick={() => { setSelectedId(null); setInspectorOpen(true); }}>{mode === "room" ? "Room" : "Container"}</button>
+            {mode === "room" && <button type="button" onClick={() => { setLibraryOpen(false); setInspectorOpen(false); setBlueprintOpen(true); }}>Blueprint</button>}
             {selected && <button type="button" onClick={() => setInspectorOpen(true)}>Edit</button>}
           </div>
         </section>
@@ -516,17 +518,17 @@ export default function SpatialHabitatBuilder() {
           </div>
           <details className="spatial-blueprint" open={blueprintOpen} onToggle={(event) => setBlueprintOpen((event.currentTarget as HTMLDetailsElement).open)}>
             <summary>🏠 Room blueprint &amp; infrastructure</summary>
-            <RoomBlueprintPanel room={room} onRoomChange={handleBlueprintChange} />
+            <RoomBlueprintPanel room={blueprintRoom} onRoomChange={handleBlueprintChange} />
           </details>
         </aside>
       </section>
 
-      {(libraryOpen || inspectorOpen) && (
-        <div className="spatial-sheet" role="dialog" aria-modal="true" aria-label={libraryOpen ? "Add assets" : "Edit selected"}>
-          <button type="button" className="spatial-sheet-backdrop" aria-label="Close panel" onClick={() => { setLibraryOpen(false); setInspectorOpen(false); }} />
+      {(libraryOpen || inspectorOpen || blueprintOpen) && (
+        <div className="spatial-sheet" role="dialog" aria-modal="true" aria-label={libraryOpen ? "Add assets" : blueprintOpen ? "Room blueprint" : "Edit selected"}>
+          <button type="button" className="spatial-sheet-backdrop" aria-label="Close panel" onClick={() => { setLibraryOpen(false); setInspectorOpen(false); setBlueprintOpen(false); }} />
           <div className="spatial-sheet-panel">
             <header>
-              <strong>{libraryOpen ? "Add assets" : "Edit selected"}</strong>
+              <strong>{libraryOpen ? "Add assets" : blueprintOpen ? "Room blueprint" : "Edit selected"}</strong>
               <button type="button" onClick={() => { setLibraryOpen(false); setInspectorOpen(false); }} aria-label="Close">×</button>
             </header>
             {libraryOpen ? (
@@ -545,6 +547,10 @@ export default function SpatialHabitatBuilder() {
                     ))}
                   </div>
                 ))}
+              </div>
+            ) : blueprintOpen ? (
+              <div className="spatial-sheet-content">
+                <RoomBlueprintPanel room={blueprintRoom} onRoomChange={handleBlueprintChange} />
               </div>
             ) : selected ? (
               <Inspector
