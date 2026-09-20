@@ -268,6 +268,47 @@ export function createSpatialNode(
   };
 }
 
+export function snapNodeToNearestWall(scene: SpatialHabitatScene, id: string): SpatialHabitatScene {
+  const node = findNode(scene, id);
+  if (!node || !node.capabilities.wallMountable) return scene;
+  const parent = parentDimensions(scene, node.parentId);
+  const footprint = rotatedFootprint(node);
+  const candidates = [
+    { side: "west", distance: Math.abs(node.position.x - (-parent.width / 2 + footprint.width / 2)) },
+    { side: "east", distance: Math.abs(node.position.x - (parent.width / 2 - footprint.width / 2)) },
+    { side: "north", distance: Math.abs(node.position.z - (-parent.depth / 2 + footprint.depth / 2)) },
+    { side: "south", distance: Math.abs(node.position.z - (parent.depth / 2 - footprint.depth / 2)) },
+  ].sort((a, b) => a.distance - b.distance)[0];
+  const x = candidates.side === "west"
+    ? -parent.width / 2 + footprint.width / 2
+    : candidates.side === "east"
+      ? parent.width / 2 - footprint.width / 2
+      : clamp(node.position.x, -parent.width / 2 + footprint.width / 2, parent.width / 2 - footprint.width / 2);
+  const z = candidates.side === "north"
+    ? -parent.depth / 2 + footprint.depth / 2
+    : candidates.side === "south"
+      ? parent.depth / 2 - footprint.depth / 2
+      : clamp(node.position.z, -parent.depth / 2 + footprint.depth / 2, parent.depth / 2 - footprint.depth / 2);
+  const rotation = candidates.side === "west" || candidates.side === "east" ? 90 : 0;
+  return updateNode(scene, id, {
+    position: { x: snapCm(x), y: clamp(snapCm(node.position.y), 0, Math.max(0, parent.height - node.dimensions.height)), z: snapCm(z) },
+    rotation: { ...node.rotation, y: rotation },
+    config: { ...node.config, wallMount: candidates.side },
+  });
+}
+
+export function snapNodeToFloor(scene: SpatialHabitatScene, id: string): SpatialHabitatScene {
+  const node = findNode(scene, id);
+  if (!node) return scene;
+  return updateNode(scene, id, { position: { ...node.position, y: 0 }, config: { ...node.config, ceilingMount: false } });
+}
+
+export function snapNodeToCeiling(scene: SpatialHabitatScene, id: string): SpatialHabitatScene {
+  const node = findNode(scene, id);
+  if (!node || !node.capabilities.ceilingMountable) return scene;
+  const parent = parentDimensions(scene, node.parentId);
+  return updateNode(scene, id, { position: { ...node.position, y: Math.max(0, parent.height - node.dimensions.height) }, config: { ...node.config, ceilingMount: true } });
+}
 export function updateNode(scene: SpatialHabitatScene, id: string, patch: Partial<SpatialNode>): SpatialHabitatScene {
   return {
     ...scene,
