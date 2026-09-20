@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
 import { getUserSnakes } from "../services/snakeService";
-import { loadReptileRooms, type ReptileRoomSlot, type ReptileRoomWorkspace } from "../services/reptileRoomService";
+import { loadReptileRooms, type ReptileRoomSlot, type ReptileRoomWorkspace, type ReptileRoomWall } from "../services/reptileRoomService";
 import type { Snake } from "../types/Snake";
 import "../styles/reptile-room-first-person.css";
 
@@ -14,6 +14,25 @@ const slotWidth = (slot: ReptileRoomSlot) => Math.max(1, slot.w);
 const slotDepth = (slot: ReptileRoomSlot) => Math.max(1, slot.h);
 const slotHeight = (slot: ReptileRoomSlot) => Math.max(1, slot.height ?? 45);
 
+function RoomWall({ wall, roomWidth, roomDepth, roomHeight, scale, eyeHeight }: { wall: ReptileRoomWall; roomWidth: number; roomDepth: number; roomHeight: number; scale: number; eyeHeight: number }) {
+  const dx = wall.end.x - wall.start.x;
+  const dz = wall.end.z - wall.start.z;
+  const length = Math.hypot(dx, dz) * scale;
+  const height = Math.max(1, wall.height ?? roomHeight) * scale;
+  const midX = ((wall.start.x + wall.end.x) / 2 - roomWidth / 2) * scale;
+  const midZ = ((wall.start.z + wall.end.z) / 2 - roomDepth / 2) * scale;
+  const angle = Math.atan2(dz, dx) * 180 / Math.PI;
+  return <div
+    className="rrfp-wall rrfp-custom-wall"
+    style={{
+      left: `${midX}px`,
+      width: length,
+      height,
+      transform: `translate(-50%, ${eyeHeight - height / 2}px) translateZ(${midZ}px) rotateY(${-angle}deg)`,
+      background: wall.colour ? wall.colour : undefined,
+    }}
+  />;
+}
 function RoomBox({ slot, selected, onSelect, scale, room, eyeHeight }: { slot: ReptileRoomSlot; selected: boolean; onSelect: () => void; scale: number; room: Vec3; eyeHeight: number }) {
   const width = slotWidth(slot) * scale;
   const depth = slotDepth(slot) * scale;
@@ -136,10 +155,12 @@ export default function ReptileRoomFirstPerson3D() {
         <div className="rrfp-camera" style={{ transform: `rotateY(${yaw}deg)` }}>
           <div className="rrfp-world">
             <div className="rrfp-floor" style={{ width: scaledWidth, height: scaledDepth, transform: `translate(-50%, ${eyeHeight}px) rotateX(90deg)` }} />
-            <div className="rrfp-wall rrfp-wall-back" style={{ width: scaledWidth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateZ(${-scaledDepth / 2}px)` }} />
-            <div className="rrfp-wall rrfp-wall-front" style={{ width: scaledWidth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateZ(${scaledDepth / 2}px) rotateY(180deg)` }} />
-            <div className="rrfp-wall rrfp-wall-left" style={{ width: scaledDepth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateX(${-scaledWidth / 2}px) rotateY(90deg)` }} />
-            <div className="rrfp-wall rrfp-wall-right" style={{ width: scaledDepth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateX(${scaledWidth / 2}px) rotateY(-90deg)` }} />
+            {room.walls?.length ? room.walls.map((wall) => <RoomWall key={wall.id} wall={wall} roomWidth={roomWidth} roomDepth={roomDepth} roomHeight={roomHeight} scale={scale} eyeHeight={eyeHeight} />) : <>
+              <div className="rrfp-wall rrfp-wall-back" style={{ width: scaledWidth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateZ(${-scaledDepth / 2}px)` }} />
+              <div className="rrfp-wall rrfp-wall-front" style={{ width: scaledWidth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateZ(${scaledDepth / 2}px) rotateY(180deg)` }} />
+              <div className="rrfp-wall rrfp-wall-left" style={{ width: scaledDepth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateX(${-scaledWidth / 2}px) rotateY(90deg)` }} />
+              <div className="rrfp-wall rrfp-wall-right" style={{ width: scaledDepth, height: scaledHeight, transform: `translate(-50%, ${eyeHeight - scaledHeight / 2}px) translateX(${scaledWidth / 2}px) rotateY(-90deg)` }} />
+            </>}
             <div className="rrfp-ceiling" style={{ width: scaledWidth, height: scaledDepth, transform: `translate(-50%, ${eyeHeight - scaledHeight}px) rotateX(90deg)` }} />
             {slots.map((slot) => <RoomBox key={slot.id} slot={slot} selected={slot.id === selectedId} onSelect={() => setSelectedId(slot.id)} scale={scale} room={roomVec} eyeHeight={eyeHeight} />)}
             {objects.map((object) => <FurnitureBox key={object.id} object={object} scale={scale} room={roomVec} eyeHeight={eyeHeight} />)}
