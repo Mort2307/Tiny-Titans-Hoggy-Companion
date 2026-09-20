@@ -9,6 +9,9 @@ const config = read("src/config/paidTiers.ts");
 const plans = read("src/pages/PaidPlans.tsx");
 const billing = read("src/pages/AccountBilling.tsx");
 const subscriptions = read("functions/paidSubscriptions.js");
+const functionsIndex = read("functions/index.js");
+const customSupport = read("functions/customSupport.js");
+const becomeTitan = read("src/pages/BecomeATitan.tsx");
 const workspace = read("src/pages/PaidFeatureWorkspace.tsx");
 const workspaceProducts = read("src/config/workspaceProducts.ts");
 const gate = read("src/components/PaidTierGate.tsx");
@@ -25,6 +28,14 @@ const titanAsk = read("src/components/TitanIntelligence/AskTitan.tsx");
 const titanContracts = read("src/intelligence/askTitan/titanChatContracts.ts");
 const titanHook = read("src/intelligence/askTitan/useTitanChat.ts");
 const titanService = read("src/intelligence/askTitan/titanChatService.ts");
+const requiredStripeLookupKeys = [
+  "tinytitans_titan_pro_monthly",
+  "tinytitans_titan_seller_monthly",
+  "tinytitans_business_starter_monthly",
+  "tinytitans_business_plus_monthly",
+  "tinytitans_business_advanced_monthly",
+  "tinytitans_rescue_monthly",
+];
 const requiredStripePriceIds = [
   "price_1UGOyLI4DKNMJVXDHyHPiP9L",
   "price_1UGMnlI4DKNMJVXDu6Jk8j7G",
@@ -66,6 +77,11 @@ const checks = [
   ["all paid tiers include Titan Intelligence", commercialTiers.every((id) => tierSlice(id).includes("titan_intelligence"))],
   ["free tier does not include Titan Intelligence entitlement", !tierSlice("free").includes("titan_intelligence")],
   ["configured Stripe price IDs are present", requiredStripePriceIds.every((id) => config.includes(id) && subscriptions.includes(id))],
+  ["configured Stripe lookup keys are present", requiredStripeLookupKeys.every((key) => subscriptions.includes(key))],
+  ["maintained paid subscription module is exported from Firebase entrypoint", functionsIndex.includes('Object.assign(exports,require("./paidSubscriptions")); ') || functionsIndex.includes('Object.assign(exports,require("./paidSubscriptions"));')],
+  ["maintained custom support module is exported from Firebase entrypoint", functionsIndex.includes('Object.assign(exports,require("./customSupport")); ') || functionsIndex.includes('Object.assign(exports,require("./customSupport"));')],
+  ["optional Titan Fund donation callable exists", customSupport.includes("exports.createTitanCheckoutV2") && customSupport.includes("tierKey === \"custom\"")],
+  ["Become a Titan invokes the optional donation flow", becomeTitan.includes("createTitanCheckoutV2") && becomeTitan.includes("customMode")],
   ["subscription checkout callable exists", subscriptions.includes("createPaidSubscriptionCheckout")],
   ["subscription webhook updates entitlements", subscriptions.includes("paidEntitlements") && subscriptions.includes("writeSubscriptionState")],
   ["pricing lookup accepts configured price IDs", subscriptions.includes("resolveRecurringPriceForPricing") && subscriptions.includes("stripe.prices.retrieve(configuredPriceId)")],
