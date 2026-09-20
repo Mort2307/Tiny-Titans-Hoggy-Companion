@@ -71,7 +71,24 @@ export type TinyTitansIconName =
   | "save"
   | "copy"
   | "expand"
-  | "collapse";
+  | "collapse"
+  | "titanIntelligence"
+  | "analytics"
+  | "timeline"
+  | "breedingReadiness"
+  | "breedingTimeline"
+  | "breedingCycle"
+  | "production"
+  | "evidence"
+  | "reporting"
+  | "sellerProfile"
+  | "marketplaceTools"
+  | "team"
+  | "automation"
+  | "support"
+  | "api"
+  | "branding"
+  | "exportData";
 
 export type TinyTitansIconState = "default" | "normal" | "active" | "success" | "warning" | "critical" | "offline";
 export type TinyTitansIconMotion = "none" | "idle" | "hover" | "attention" | "success" | "warning";
@@ -180,7 +197,7 @@ const ICON_NAMES = new Set<TinyTitansIconName>([
   "temperature", "humidity", "water", "uvb", "heat", "plant", "substrate", "hide",
   "habitatBuilder", "reptileRoom", "veterinary", "intelligence", "globe", "map", "camera",
   "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
-  "thermostat", "maintenance", "power", "settings", "close", "upload", "save", "copy", "expand", "collapse",
+  "thermostat", "maintenance", "power", "settings", "close", "upload", "save", "copy", "expand", "collapse",\n  "titanIntelligence", "analytics", "timeline", "breedingReadiness", "breedingTimeline", "breedingCycle", "production", "evidence", "reporting", "sellerProfile", "marketplaceTools", "team", "automation", "support", "api", "branding", "exportData",
 ]);
 
 function resolveIconName(value: string): TinyTitansIconName {
@@ -277,6 +294,40 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
     case "menu":
       return <svg {...commonProps}><path className="tt-icon-line" d="M9 14h30M9 24h30M9 34h30" /></svg>;
 
+    case "titanIntelligence":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-titan-intel" d="M24 7 29 14l9-1-1 9 7 5-7 5 1 9-9-1-5 7-5-7-9 1 1-9-7-5 7-5-1-9 9 1 5-7Z" /><circle className="tt-icon-cutout" cx="24" cy="24" r="6" /><path className="tt-icon-line" d="M24 14v4m0 12v4M14 24h4m12 0h4" /><circle className="tt-icon-spark" cx="38" cy="9" r="2.2" /></svg>;
+    case "analytics":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-chart" d="M8 36V12h7v24H8Zm12 0V20h7v16h-7Zm12 0V8h7v28h-7Z" /><path className="tt-icon-line" d="M9 31 19 23l6 4 12-13" /><circle className="tt-icon-spark" cx="37" cy="14" r="2.3" /></svg>;
+    case "timeline":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M8 24h32" /><circle className="tt-icon-fill tt-icon-timeline-node" cx="10" cy="24" r="5" /><circle className="tt-icon-fill tt-icon-timeline-node" cx="24" cy="24" r="5" /><circle className="tt-icon-fill tt-icon-timeline-node" cx="38" cy="24" r="5" /><path className="tt-icon-line-soft" d="M10 18v-7m14 7V8m14 10v-7" /><circle className="tt-icon-spark" cx="24" cy="8" r="2" /></svg>;
+    case "breedingReadiness":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-ready-shield" d="M24 7 38 12v10c0 9-5 14-14 19C15 36 10 31 10 22V12l14-5Z" /><path className="tt-icon-line" d="m16 24 5 5 11-11" /><circle className="tt-icon-spark" cx="39" cy="9" r="2.3" /></svg>;
+    case "breedingTimeline":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M9 33c6-10 10-16 15-16 5 0 8 5 15 0" /><circle className="tt-icon-fill tt-icon-timeline-node" cx="9" cy="33" r="4" /><ellipse className="tt-icon-fill tt-icon-egg" cx="24" cy="17" rx="6" ry="8" /><path className="tt-icon-fill tt-icon-hatch" d="M39 13a7 7 0 1 0 0 14c-4 0-7-3-7-7s3-7 7-7Z" /><path className="tt-icon-line-soft" d="M37 20h5m-2.5-2.5V23" /></svg>;
+    case "breedingCycle":
+      return <svg {...commonProps}><path className="tt-icon-line tt-icon-cycle-arrow" d="M12 20a14 14 0 0 1 25-5l3 4m-4-11v7h-7M36 28a14 14 0 0 1-25 5l-3-4m4 11v-7h7" /><circle className="tt-icon-fill tt-icon-cycle-core" cx="24" cy="24" r="7" /><path className="tt-icon-line-soft" d="M21 24h6" /></svg>;
+    case "production":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-tray" d="M7 16h34v20H7V16Z" /><path className="tt-icon-line" d="M7 22h34M12 16l4-8h16l4 8" /><ellipse className="tt-icon-fill tt-icon-egg" cx="15" cy="28" rx="4" ry="5" /><ellipse className="tt-icon-fill tt-icon-egg tt-icon-egg-two" cx="24" cy="28" rx="4" ry="5" /><ellipse className="tt-icon-fill tt-icon-egg" cx="33" cy="28" rx="4" ry="5" /></svg>;
+    case "evidence":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-document" d="M11 7h19l7 7v27H11V7Z" /><path className="tt-icon-line-soft" d="M30 7v8h7M16 22h14m-14 6h14m-14 6h8" /><circle className="tt-icon-fill tt-icon-evidence-check" cx="34" cy="34" r="7" /><path className="tt-icon-line" d="m31 34 2 2 4-5" /></svg>;
+    case "reporting":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-report" d="M9 8h30v32H9V8Z" /><path className="tt-icon-line" d="M15 32v-8m7 8V18m7 14v-12m7 12V14" /><path className="tt-icon-line-soft" d="M14 14h9" /></svg>;
+    case "sellerProfile":
+      return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-profile-card" x="8" y="9" width="32" height="29" rx="4" /><circle className="tt-icon-fill tt-icon-profile-person" cx="18" cy="20" r="5" /><path className="tt-icon-line" d="M11 33c1-5 4-8 8-8s7 3 8 8m6-13h4m-4 6h4m-4 6h4" /><path className="tt-icon-spark" d="m33 9 1.2 3 3 1.2-3 1.2L33 17l-1.2-3.6-3-1.2 3-1.2L33 9Z" /></svg>;
+    case "marketplaceTools":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-tag" d="m8 14 13-7h12l7 7-17 27L8 24V14Z" /><circle className="tt-icon-cutout" cx="27" cy="14" r="2.3" /><path className="tt-icon-line" d="m18 25 7 7m-2-12 7 7" /></svg>;
+    case "team":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-team-main" cx="24" cy="16" r="6" /><circle className="tt-icon-fill tt-icon-team-side" cx="11" cy="21" r="4" /><circle className="tt-icon-fill tt-icon-team-side" cx="37" cy="21" r="4" /><path className="tt-icon-line" d="M13 37c1-7 5-11 11-11s10 4 11 11M7 37c.5-4 2-6 5-7m24 0c3 1 4.5 3 5 7" /></svg>;
+    case "automation":
+      return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-node" x="7" y="19" width="10" height="10" rx="2" /><rect className="tt-icon-fill tt-icon-node" x="31" y="8" width="10" height="10" rx="2" /><rect className="tt-icon-fill tt-icon-node" x="31" y="30" width="10" height="10" rx="2" /><path className="tt-icon-line" d="M17 24h7m0 0V13h7m-7 11v11h7" /><path className="tt-icon-line-soft" d="M33 11h6m-6 22h6" /></svg>;
+    case "support":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-headset" d="M8 28v-4c0-9 7-16 16-16s16 7 16 16v4h-5v-4c0-6-5-11-11-11s-11 5-11 11v4H8Z" /><rect className="tt-icon-fill tt-icon-headset-ear" x="6" y="25" width="8" height="12" rx="3" /><rect className="tt-icon-fill tt-icon-headset-ear" x="34" y="25" width="8" height="12" rx="3" /><path className="tt-icon-line" d="M34 37h-5c-4 0-6-2-6-5" /></svg>;
+    case "api":
+      return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-api-chip" x="8" y="11" width="32" height="26" rx="5" /><path className="tt-icon-line" d="m19 19-6 5 6 5m10-10 6 5-6 5m-5-12-4 14" /><path className="tt-icon-line-soft" d="M8 18H5m38 0h-3M8 30H5m38 0h-3" /></svg>;
+    case "branding":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-brush" d="m30 8 10 10-16 16-10-10L30 8Z" /><path className="tt-icon-line" d="m22 32-5 5c-2 2-6 2-8 0 3-1 4-3 4-6m3-19 10 10" /><circle className="tt-icon-spark" cx="36" cy="10" r="2.2" /></svg>;
+    case "exportData":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-export-tray" d="M8 28h32v10H8V28Z" /><path className="tt-icon-line" d="M24 7v22m0-22-7 7m7-7 7 7M15 28v5m18-5v5" /></svg>;
     case "temperature":
       return <svg {...commonProps} className={`tt-icon-svg tt-icon-temperature ${commonProps.className ?? ""}`.trim()}>
         <rect className="tt-icon-fill tt-icon-thermo-shell" x="18" y="7" width="12" height="27" rx="6" />
