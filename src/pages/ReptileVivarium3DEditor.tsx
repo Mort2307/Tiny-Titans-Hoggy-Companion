@@ -7,6 +7,7 @@ import { roomToSpatialScene } from "../services/spatialHabitatService";
 import { applyVivariumTwinToSpatialScene } from "../services/spatialVivariumTwinBridge";
 import type { ReptileRoomSlot, ReptileRoomWorkspace } from "../services/reptileRoomService";
 import { VivariumBuilder3D } from "../components/reptile-room-3d/VivariumBuilder3D";
+import type { VivariumDigitalTwin } from "../types/vivariumTwin";
 
 export default function ReptileVivarium3DEditor() {
   const { id } = useParams<{ id: string }>();
@@ -59,7 +60,7 @@ export default function ReptileVivarium3DEditor() {
     );
   }
 
-  const syncSpatialTwin = async (twin: Parameters<NonNullable<React.ComponentProps<typeof VivariumBuilder3D>["onSaved"]>>[0]) => {
+  const syncSpatialTwin = async (twin: VivariumDigitalTwin) => {
     if (!user || !room) {
       navigate("/reptile-room");
       return;
