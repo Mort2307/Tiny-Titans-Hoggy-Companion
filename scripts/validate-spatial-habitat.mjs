@@ -2,6 +2,7 @@
   if (!builder.includes('blockingIssues')) fail.push("Spatial save must block blocking layout errors.");
   if (!builder.includes('blueprintRoom')) fail.push("Room blueprint must consume the current spatial projection.");
   if (!builder.includes('rooms.length > 1')) fail.push("Multiple saved rooms must be selectable.");
+  if (!builder.includes('powerSocketId && !nextSocketIds.has')) fail.push("Blueprint socket removal must clear dangling equipment power links.");
 
   const featureMatrix = {
     spatialRoom: {
