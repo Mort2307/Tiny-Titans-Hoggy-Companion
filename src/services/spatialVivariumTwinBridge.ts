@@ -1,4 +1,5 @@
 import type { SpatialHabitatScene, SpatialNode } from "../types/spatialHabitat";
+import { getRoomAssetPreset } from "../data/reptileRoomAssetCatalog";
 import type { VivariumDigitalTwin, VivariumTwinAsset } from "../types/vivariumTwin";
 
 const SPATIAL_SOURCE = "spatial-habitat";
@@ -84,4 +85,69 @@ export function mergeSpatialNodesIntoVivariumTwin(twin: VivariumDigitalTwin, sce
   };
 
   return { ...twin, assets, checklist: nextChecklist, updatedAt: new Date().toISOString() };
+}
+function degrees(radians: number | undefined) {
+  return Number.isFinite(radians) ? (radians as number) * 180 / Math.PI : 0;
+}
+
+function spatialNodeFromTwinAsset(asset: VivariumTwinAsset, vivariumId: string, existingId?: string): SpatialNode {
+  const preset = getRoomAssetPreset(asset.assetId);
+  const width = Math.max(1, preset?.width ?? 20);
+  const depth = Math.max(1, preset?.depth ?? 20);
+  const height = Math.max(1, preset?.height ?? 10);
+  const category = categoryForNodeLikeAsset(asset);
+  const kind = preset?.kind ?? "custom";
+  return {
+    id: existingId ?? `spatial-from-twin-${asset.id}`,
+    parentId: vivariumId,
+    kind,
+    category,
+    label: asset.label,
+    assetId: asset.assetId,
+    dimensions: { width, depth, height },
+    position: { x: Number(asset.x || 0) * 100, y: Math.max(0, Number(asset.y || 0) * 100), z: Number(asset.z || 0) * 100 },
+    rotation: { x: degrees(asset.rotationX), y: degrees(asset.rotationY), z: degrees(asset.rotationZ) },
+    clearance: { front: 0, rear: 0, left: 0, right: 0, top: 0 },
+    capabilities: {
+      ...(kind === "vivarium" ? { container: true } : {}),
+      ...(category === "heating" ? { powerConsumer: true, heatSource: true } : {}),
+      ...(category === "lighting" ? { powerConsumer: true, lightSource: true, ceilingMountable: true } : {}),
+      ...(category === "monitoring" ? { sensor: true, wallMountable: true } : {}),
+      ...(category === "water" ? { waterSource: true } : {}),
+      ...(["thermostat", "socket", "smart-plug", "timer"].includes(kind) ? { wallMountable: true } : {}),
+    },
+    config: { ...(asset.config ?? {}), source: SPATIAL_SOURCE, spatialNodeId: existingId ?? `spatial-from-twin-${asset.id}`, twinAssetId: asset.id },
+    visible: true,
+  };
+}
+
+function categoryForNodeLikeAsset(asset: VivariumTwinAsset): SpatialNode["category"] {
+  if (asset.category === "heating") return "heating";
+  if (asset.category === "lighting") return "lighting";
+  if (asset.category === "monitoring") return "monitoring";
+  if (asset.category === "water") return "water";
+  if (asset.category === "enrichment") return "enrichment";
+  if (asset.category === "substrate") return "construction";
+  return "construction";
+}
+
+export function applyVivariumTwinToSpatialScene(scene: SpatialHabitatScene, vivariumId: string, twin: VivariumDigitalTwin): SpatialHabitatScene {
+  const children = scene.nodes.filter((node) => node.parentId === vivariumId);
+  const twinIds = new Set(twin.assets.map((asset) => asset.id));
+  const sourceChildren = children.filter((node) => node.config?.source === SPATIAL_SOURCE || node.config?.source === "vivarium-twin");
+  const preserved = scene.nodes.filter((node) => node.parentId !== vivariumId || (node.config?.source !== SPATIAL_SOURCE && node.config?.source !== "vivarium-twin"));
+  const updated = twin.assets.map((asset) => {
+    const existing = children.find((node) => node.config?.spatialNodeId === asset.config?.spatialNodeId && asset.config?.spatialNodeId)
+      ?? children.find((node) => node.config?.twinAssetId === asset.id && node.config?.source === "vivarium-twin");
+    return spatialNodeFromTwinAsset(asset, vivariumId, existing?.id);
+  });
+  const retainedNonSourceSpatial = children.filter((node) => node.config?.source !== SPATIAL_SOURCE && node.config?.source !== "vivarium-twin");
+  const retainedSource = sourceChildren.filter((node) => {
+    const twinAssetId = String(node.config?.twinAssetId ?? "");
+    const spatialNodeId = String(node.config?.spatialNodeId ?? "");
+    return twinIds.has(twinAssetId) || Boolean(spatialNodeId && twin.assets.some((asset) => asset.config?.source === SPATIAL_SOURCE && String(asset.config?.spatialNodeId ?? "") === spatialNodeId));
+  });
+  const deduped = new Map<string, SpatialNode>();
+  for (const node of [...retainedNonSourceSpatial, ...retainedSource, ...updated]) deduped.set(node.id, node);
+  return { ...scene, nodes: [...preserved.filter((node) => node.parentId !== vivariumId), ...deduped.values()], updatedAt: new Date().toISOString() };
 }
