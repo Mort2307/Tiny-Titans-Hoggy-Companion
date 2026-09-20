@@ -246,12 +246,12 @@ export default function StableReptileRoomBuilder() {
   }, [replaceRoom, room, selectedSlot, slots]);
 
   const unstackSelected = useCallback(() => {
-    if (!selectedSlot?.parentSlotId) {
-      setNotice("This vivarium is not linked into another vivarium stack.");
+    if (!selectedSlot || !slotParentAssetId(selectedSlot)) {
+      setNotice("This vivarium is not attached to shelving or a rack.");
       return;
     }
-    replaceRoom({ ...room!, slots: slots.map((slot) => slot.id === selectedSlot.id ? { ...slot, parentSlotId: null, stackIndex: 0 } : slot) });
-    setNotice("Vivarium stack link released.");
+    replaceRoom({ ...room!, slots: slots.map((slot) => slot.id === selectedSlot.id ? ({ ...slot, parentAssetId: null, stackIndex: 0 } as RotatableSlot) : slot) });
+    setNotice("Vivarium removed from shelving lock.");
   }, [replaceRoom, room, selectedSlot, slots]);
 
   const deleteSelected = useCallback(() => {
