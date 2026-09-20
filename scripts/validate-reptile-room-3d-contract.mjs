@@ -35,7 +35,7 @@ const checks = [
   ["First-person room exposes keeper quick logs", firstPerson.includes('/feeding') && firstPerson.includes('/shedding') && firstPerson.includes('/weights')],
   ["First-person room exposes dedicated vivarium builder", firstPerson.includes('/reptile-room/vivarium/')],
   ["My Snakes room Edit button reaches canonical builder", mySnakes.includes('navigate("/reptile-room")')],
-  ["My Snakes passes the dedicated vivarium builder callback", mySnakes.includes('onOpenVivariumBuilder={openVivariumBuilder}'),
+  ["My Snakes passes the dedicated vivarium builder callback", mySnakes.includes('onOpenVivariumBuilder={openVivariumBuilder}')],
   ["Router exposes first-person room", router.includes('path="/reptile-room/first-person"')],
   ["Router exposes dedicated vivarium builder", router.includes('path="/reptile-room/vivarium/:id/3d"')],
   ["Room renderer consumes linked/equipment photo and telemetry data", room3d.includes('photoForSlot') && room3d.includes('telemetryForSlot')],
