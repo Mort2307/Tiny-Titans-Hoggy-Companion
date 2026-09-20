@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { loadReptileRooms, saveReptileRooms, type ReptileRoomObject, type ReptileRoomAssetConfig, type ReptileRoomSlot, type ReptileRoomWorkspace } from "../services/reptileRoomService";
@@ -8,6 +9,7 @@ import Room3D from "../components/reptile-room-3d/Room3D";
 import { CameraDirectionPad } from "../components/reptile-room-3d/ReptileRoomPOVViewer";
 import { RoomAssetInspector } from "../components/reptile-room-3d/RoomAssetInspector";
 import { RoomAssetLibraryPanel } from "../components/reptile-room-3d/RoomAssetLibraryPanel";
+import RoomBlueprintPanel from "../components/reptile-room-3d/RoomBlueprintPanel";
 import type { Room3DAssetPreset, Room3DSelection, Room3DTransformPatch } from "../types/reptileRoom3D";
 import type { Snake } from "../types/Snake";
 import "../styles/stable-reptile-room-builder.css";
@@ -46,6 +48,7 @@ function makeObject(room: ReptileRoomWorkspace, preset: Room3DAssetPreset): Rept
 
 export default function StableReptileRoomBuilder() {
   const { user, loading, profileLoading } = useAuth();
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState<ReptileRoomWorkspace[]>([]);
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [roomId, setRoomId] = useState("");
@@ -54,7 +57,7 @@ export default function StableReptileRoomBuilder() {
   const [saving, setSaving] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [showCeiling, setShowCeiling] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState<"library" | "inspector" | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<"library" | "inspector" | "blueprint" | null>(null);
   const [inspectorTab, setInspectorTab] = useState<"edit" | "occupant">("edit");
   const [photoBusy, setPhotoBusy] = useState(false);
 
@@ -104,6 +107,10 @@ export default function StableReptileRoomBuilder() {
     else { const object = makeObject(room, preset); replaceRoom({ ...room, objects: [...objects, object] }, `${preset.label} added.`); setSelected({ type: "object", id: object.id }); }
     setMobilePanel(null);
   }, [objects, replaceRoom, room, slots]);
+
+  const openVivariumBuilder = useCallback((slotId: string) => {
+    navigate(`/reptile-room/vivarium/${encodeURIComponent(slotId)}/3d`);
+  }, [navigate]);
 
   const addSnakeVivarium = useCallback((snake: Snake) => {
     if (!room) return;
@@ -162,18 +169,18 @@ export default function StableReptileRoomBuilder() {
   if (!room) return <main className="stable-rr3d"><div className="stable-rr3d-loading">Creating your reptile room…</div></main>;
 
   return <main className="stable-rr3d">
-    <header className="stable-rr3d-header"><div><span className="stable-rr3d-kicker">TINY TITANS · 3D DIGITAL TWIN</span><h1>{room.name}</h1><p>{Math.round(room.width ?? 0)} × {Math.round(room.depth ?? 0)} × {Math.round(room.height ?? 0)} cm · {slots.length} vivariums · {objects.length} assets</p></div><div className="stable-rr3d-header-actions"><span>{saving ? "Saving…" : "✓ Saved"}</span><button type="button" onClick={() => void saveRoom()} disabled={saving}>Save Room</button></div></header>
+    <header className="stable-rr3d-header"><div><span className="stable-rr3d-kicker">TINY TITANS · 3D DIGITAL TWIN</span><h1>{room.name}</h1><p>{Math.round(room.width ?? 0)} × {Math.round(room.depth ?? 0)} × {Math.round(room.height ?? 0)} cm · {slots.length} vivariums · {objects.length} assets</p></div><div className="stable-rr3d-header-actions"><span>{saving ? "Saving…" : "✓ Saved"}</span><button type="button" onClick={() => navigate("/reptile-room/first-person")}>Explore first-person</button><button type="button" onClick={() => setMobilePanel("blueprint")}>Room Blueprint</button><button type="button" onClick={() => void saveRoom()} disabled={saving}>Save Room</button></div></header>
     {notice && <div className="stable-rr3d-notice" role="status">{notice}</div>}
     <section className="stable-rr3d-layout">
-      <aside className="stable-rr3d-sidebar stable-rr3d-desktop-library"><section className="stable-rr3d-snake-list"><div className="stable-rr3d-section-head"><h2>Your Snakes</h2><span>{snakes.length}</span></div>{snakes.map((snake) => <button key={snake.id} type="button" onClick={() => addSnakeVivarium(snake)}>🐍 {snake.name}<small>Add/select vivarium</small></button>)}</section><RoomAssetLibraryPanel onAddAsset={addAsset} /><section className="stable-rr3d-view-controls"><h2>View</h2><div><button type="button" onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide grid" : "Show grid"}</button><button type="button" onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide ceiling" : "Show ceiling"}</button></div></section></aside>
-      <section className="stable-rr3d-viewport"><Room3D room={room} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} showGrid={showGrid} showCeiling={showCeiling} onSelect={(selection) => { setSelected(selection); if (selection) setMobilePanel("inspector"); }} onTransformChange={updateSelected} onRoomChange={updateRoom} onSave={saveRoom} /><CameraDirectionPad room={room} className="stable-rr3d-camera-pad" /><div className="stable-rr3d-viewport-actions"><button type="button" onClick={() => setMobilePanel("library")}>Keeper Toolkit</button>{selected && <button type="button" onClick={() => setMobilePanel("inspector")}>Edit selected</button>}</div></section>
-      <aside className="stable-rr3d-inspector stable-rr3d-desktop-inspector"><Inspector selectedObject={selectedObject} selectedSlot={selectedSlot} slots={slots} snakes={snakes} snakesById={snakesById} inspectorTab={inspectorTab} setInspectorTab={setInspectorTab} updateSelected={updateSelected} deleteSelected={deleteSelected} duplicateSelected={duplicateSelected} uploadPhoto={uploadPhoto} removePhoto={removePhoto} photoBusy={photoBusy} /></aside>
+      <aside className="stable-rr3d-sidebar stable-rr3d-desktop-library"><RoomBlueprintPanel room={room} onRoomChange={replaceRoom} /><section className="stable-rr3d-snake-list"><div className="stable-rr3d-section-head"><h2>Your Snakes</h2><span>{snakes.length}</span></div>{snakes.map((snake) => <button key={snake.id} type="button" onClick={() => addSnakeVivarium(snake)}>🐍 {snake.name}<small>Add/select vivarium</small></button>)}</section><RoomAssetLibraryPanel onAddAsset={addAsset} /><section className="stable-rr3d-view-controls"><h2>View</h2><div><button type="button" onClick={() => setShowGrid((value) => !value)}>{showGrid ? "Hide grid" : "Show grid"}</button><button type="button" onClick={() => setShowCeiling((value) => !value)}>{showCeiling ? "Hide ceiling" : "Show ceiling"}</button></div></section></aside>
+      <section className="stable-rr3d-viewport"><Room3D room={room} objects={objects} slots={slots} selectedId={selected?.id ?? null} selectedType={selected?.type ?? null} showGrid={showGrid} showCeiling={showCeiling} onSelect={(selection) => { setSelected(selection); if (selection) setMobilePanel("inspector"); }} onTransformChange={updateSelected} onRoomChange={updateRoom} onSave={saveRoom} /><CameraDirectionPad room={room} className="stable-rr3d-camera-pad" /><div className="stable-rr3d-viewport-actions"><button type="button" onClick={() => setMobilePanel("library")}>Keeper Toolkit</button><button type="button" onClick={() => setMobilePanel("blueprint")}>Room Blueprint</button><button type="button" onClick={() => navigate("/reptile-room/first-person")}>Explore</button>{selected && <button type="button" onClick={() => setMobilePanel("inspector")}>Edit selected</button>}</div></section>
+      <aside className="stable-rr3d-inspector stable-rr3d-desktop-inspector"><Inspector selectedObject={selectedObject} selectedSlot={selectedSlot} onOpenVivariumBuilder={openVivariumBuilder} slots={slots} snakes={snakes} snakesById={snakesById} inspectorTab={inspectorTab} setInspectorTab={setInspectorTab} updateSelected={updateSelected} deleteSelected={deleteSelected} duplicateSelected={duplicateSelected} uploadPhoto={uploadPhoto} removePhoto={removePhoto} photoBusy={photoBusy} /></aside>
     </section>
-    {mobilePanel && <div className="stable-rr3d-mobile-sheet" role="dialog" aria-modal="true" aria-label={mobilePanel === "library" ? "Keeper Toolkit" : "Asset inspector"}><div className="stable-rr3d-mobile-sheet-backdrop" onClick={() => setMobilePanel(null)} /><div className="stable-rr3d-mobile-sheet-panel"><div className="stable-rr3d-mobile-sheet-head"><strong>{mobilePanel === "library" ? "Keeper Toolkit" : "Inspector"}</strong><button type="button" onClick={() => setMobilePanel(null)} aria-label="Close">×</button></div>{mobilePanel === "library" ? <RoomAssetLibraryPanel onAddAsset={addAsset} /> : <Inspector selectedObject={selectedObject} selectedSlot={selectedSlot} slots={slots} snakes={snakes} snakesById={snakesById} inspectorTab={inspectorTab} setInspectorTab={setInspectorTab} updateSelected={updateSelected} deleteSelected={deleteSelected} duplicateSelected={duplicateSelected} uploadPhoto={uploadPhoto} removePhoto={removePhoto} photoBusy={photoBusy} />}</div></div>}
+    {mobilePanel && <div className="stable-rr3d-mobile-sheet" role="dialog" aria-modal="true" aria-label={mobilePanel === "library" ? "Keeper Toolkit" : "Asset inspector"}><div className="stable-rr3d-mobile-sheet-backdrop" onClick={() => setMobilePanel(null)} /><div className="stable-rr3d-mobile-sheet-panel"><div className="stable-rr3d-mobile-sheet-head"><strong>{mobilePanel === "library" ? "Keeper Toolkit" : mobilePanel === "blueprint" ? "Room Blueprint" : "Inspector"}</strong><button type="button" onClick={() => setMobilePanel(null)} aria-label="Close">×</button></div>{mobilePanel === "library" ? <RoomAssetLibraryPanel onAddAsset={addAsset} /> : mobilePanel === "blueprint" ? <RoomBlueprintPanel room={room} onRoomChange={replaceRoom} /> : <Inspector selectedObject={selectedObject} selectedSlot={selectedSlot} slots={slots} snakes={snakes} snakesById={snakesById} inspectorTab={inspectorTab} setInspectorTab={setInspectorTab} updateSelected={updateSelected} deleteSelected={deleteSelected} duplicateSelected={duplicateSelected} uploadPhoto={uploadPhoto} removePhoto={removePhoto} photoBusy={photoBusy} />}</div></div>}
   </main>;
 }
 
-type InspectorProps = { selectedObject: ReptileRoomObject | null; selectedSlot: ReptileRoomSlot | null; slots: ReptileRoomSlot[]; snakes: Snake[]; snakesById: Map<string, Snake>; inspectorTab: "edit" | "occupant"; setInspectorTab: (value: "edit" | "occupant") => void; updateSelected: (patch: Room3DTransformPatch) => void; deleteSelected: () => void; duplicateSelected: () => void; uploadPhoto: (file: File) => Promise<void>; removePhoto: () => Promise<void>; photoBusy: boolean };
+type InspectorProps = { selectedObject: ReptileRoomObject | null; selectedSlot: ReptileRoomSlot | null; onOpenVivariumBuilder: (slotId: string) => void; slots: ReptileRoomSlot[]; snakes: Snake[]; snakesById: Map<string, Snake>; inspectorTab: "edit" | "occupant"; setInspectorTab: (value: "edit" | "occupant") => void; updateSelected: (patch: Room3DTransformPatch) => void; deleteSelected: () => void; duplicateSelected: () => void; uploadPhoto: (file: File) => Promise<void>; removePhoto: () => Promise<void>; photoBusy: boolean };
 
 function Inspector(props: InspectorProps) {
   const { selectedObject, selectedSlot } = props;
@@ -191,6 +198,7 @@ function Inspector(props: InspectorProps) {
     <div className="stable-rr3d-editor-grid"><label>X cm<input type="number" value={Math.round(entity.x)} onChange={(event) => props.updateSelected({ x: Math.max(0, toNumber(event.target.value)) })} /></label><label>Y cm<input type="number" value={Math.round(entity.y)} onChange={(event) => props.updateSelected({ y: Math.max(0, toNumber(event.target.value)) })} /></label><label>Z cm<input type="number" value={Math.round(entity.z ?? 0)} onChange={(event) => props.updateSelected({ z: Math.max(0, toNumber(event.target.value)) })} /></label></div>
     <div className="stable-rr3d-rotation"><span>Rotation</span><button type="button" onClick={() => props.updateSelected({ rotation: rotation - 15 })}>↶</button><strong>{Math.round(rotation)}°</strong><button type="button" onClick={() => props.updateSelected({ rotation: rotation + 15 })}>↷</button><button type="button" onClick={() => props.updateSelected({ rotation: 0 })}>Reset</button></div>
     {selectedObject && <div className="stable-rr3d-inspector-actions"><button type="button" onClick={props.duplicateSelected}>Duplicate</button></div>}
+    {selectedSlot && <button type="button" className="stable-rr3d-vivarium-builder-button" onClick={() => props.onOpenVivariumBuilder(selectedSlot.id)}>Open dedicated 3D vivarium builder</button>}
     {selectedSlot && <div className="stable-rr3d-tabs"><button type="button" aria-pressed={props.inspectorTab === "edit"} onClick={() => props.setInspectorTab("edit")}>Position</button><button type="button" aria-pressed={props.inspectorTab === "occupant"} onClick={() => props.setInspectorTab("occupant")}>Occupant</button>{props.inspectorTab === "occupant" && <label className="stable-rr3d-smart-field">Snake<select value={selectedSlot.snakeId ?? ""} onChange={(event) => { const snakeId = event.target.value || null; const snake = snakeId ? props.snakesById.get(snakeId) : undefined; props.updateSelected({ snakeId, label: snake ? `${snake.name}'s Vivarium` : "Empty Vivarium", lifecycleStatus: snake ? "occupied" : "empty", availability: snake ? "occupied" : "available" }); }}>{<option value="">Empty vivarium</option>}{props.snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label>}</div>}
     <div className="stable-rr3d-photo"><div><strong>Reference photo</strong><small>Choose from your device gallery. The image is stored with this asset.</small></div>{photoUrl && <img src={photoUrl} alt={`${entity.label} reference`} />}{photoUrl && <button type="button" className="stable-rr3d-photo-remove" onClick={() => void props.removePhoto()} disabled={props.photoBusy}>Remove photo</button>}<label className="stable-rr3d-photo-button">{props.photoBusy ? "Working…" : photoUrl ? "Replace photo" : "Choose photo"}<input type="file" accept="image/*" disabled={props.photoBusy} onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ""; if (file) void props.uploadPhoto(file); }} /></label></div>
     {selectedObject && <RoomAssetInspector object={selectedObject} slots={props.slots} onPatch={(patch) => props.updateSelected({ ...(patch.label !== undefined ? { label: patch.label } : {}), ...(patch.config ? { config: patch.config } : {}) })} />}
