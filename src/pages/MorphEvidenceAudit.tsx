@@ -62,7 +62,7 @@ export default function MorphEvidenceAudit() {
               return resolved ? <a key={source} href={resolved.url} target="_blank" rel="noreferrer">{source} ↗</a> : <span key={source}>{source}</span>;
             })}
           </div>
-          <small>{knownInMaster.has(entry.name.toLowerCase()) ? '✓ Present in master database' : '⚠ Evidence entry awaiting canonical master mapping'}</small>
+          <small>{knownInMaster.has(entry.name.toLowerCase()) ? <><TinyTitansIcon name="success" size={15} /> Present in master database</> : <><TinyTitansIcon name="warning" size={15} state="warning" /> Evidence entry awaiting canonical master mapping</>}</small>
         </article>;
       })}
     </section>
