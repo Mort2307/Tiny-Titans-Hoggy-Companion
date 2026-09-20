@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useAuth } from "../../context/useAuth";
+import TinyTitansIcon from "../TinyTitansIcon";
 import { loadReptileRooms, saveReptileRooms, setRoomFloorPlan, type ReptileRoomPoint, type ReptileRoomSocket, type ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import { uploadReptileRoomAsset, type ReptileRoomAssetKind } from "../../services/reptileRoomAssetService";
 
@@ -153,11 +154,11 @@ export default function RoomBlueprintPanel() {
     <section style={panelStyle} aria-label="Room blueprint and infrastructure">
       <details open>
         <summary style={{ cursor: "pointer", fontWeight: 800 }}>
-          🏠 Room blueprint · shape · power · realism
+          <TinyTitansIcon name="habitatBuilder" size={19} /> Room blueprint · shape · power · realism
         </summary>
         <div style={{ display: "grid", gap: ".7rem", marginTop: ".75rem" }}>
           <div>
-            <strong>Floor plan</strong>
+            <strong><TinyTitansIcon name="map" size={18} /> Floor plan</strong>
             <div style={{ display: "grid", gap: ".35rem", marginTop: ".4rem" }}>
               {points.map((point, index) => (
                 <div
@@ -210,7 +211,7 @@ export default function RoomBlueprintPanel() {
           </div>
 
           <div>
-            <strong>🔌 Power sockets</strong>
+            <strong><TinyTitansIcon name="power" size={18} /> Power sockets</strong>
             <div style={{ display: "flex", gap: ".4rem", marginTop: ".4rem" }}>
               <select
                 value={wallId}
@@ -238,7 +239,7 @@ export default function RoomBlueprintPanel() {
                     background: "rgba(255,255,255,.04)",
                   }}
                 >
-                  <span>🔌 {socket.label} · {socket.height} cm · {socket.outlets} outlets</span>
+                  <span><TinyTitansIcon name="power" size={16} /> {socket.label} · {socket.height} cm · {socket.outlets} outlets</span>
                   <button type="button" onClick={() => removeSocket(socket.id)}>Remove</button>
                 </div>
               ))}
@@ -246,7 +247,7 @@ export default function RoomBlueprintPanel() {
           </div>
 
           <div>
-            <strong>📸 Room visuals</strong>
+            <strong><TinyTitansIcon name="camera" size={18} /> Room visuals</strong>
             <div
               style={{
                 display: "grid",
