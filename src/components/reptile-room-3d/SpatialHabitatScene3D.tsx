@@ -244,13 +244,26 @@ function SpatialFloor({ root }: { root: SpatialHabitatScene["root"] }) {
     return new ShapeGeometry(shape);
   }, [root.dimensions.depth, root.dimensions.width, root.floorPlan]);
   return (
-    <mesh geometry={geometry} rotation={[Math.PI / 2, 0, 0]} receiveShadow>
+    <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
       <meshStandardMaterial color="#292d30" roughness={1} />
     </mesh>
   );
 }
 function socketPosition(socket: SpatialRoomSocket, root: SpatialHabitatScene["root"]) {
   return [cmToWorld(socket.x - root.dimensions.width / 2), cmToWorld(socket.height), cmToWorld(socket.z - root.dimensions.depth / 2)] as [number, number, number];
+}
+
+function boundaryWallMesh(start: { x: number; z: number }, end: { x: number; z: number }, root: SpatialHabitatScene["root"]) {
+  const sx = cmToWorld(start.x - root.dimensions.width / 2);
+  const sz = cmToWorld(start.z - root.dimensions.depth / 2);
+  const ex = cmToWorld(end.x - root.dimensions.width / 2);
+  const ez = cmToWorld(end.z - root.dimensions.depth / 2);
+  const length = Math.hypot(ex - sx, ez - sz);
+  return {
+    position: [(sx + ex) / 2, cmToWorld(root.dimensions.height / 2), (sz + ez) / 2] as [number, number, number],
+    rotation: [0, -Math.atan2(ez - sz, ex - sx), 0] as [number, number, number],
+    size: [length, cmToWorld(root.dimensions.height), cmToWorld(8)] as [number, number, number],
+  };
 }
 function Content(props: Props) {
   const isRoot = props.containerId === "root";
@@ -294,24 +307,28 @@ function Content(props: Props) {
               <meshStandardMaterial color="#202427" roughness={0.6} />
             </mesh>
           ))}
-          {!props.scene.root.walls?.length && <>
-            <mesh position={[0, height / 2, -depth / 2]}>
-              <boxGeometry args={[width, height, 0.08]} />
-              <meshStandardMaterial color="#454a4d" roughness={0.82} />
-            </mesh>
-            <mesh position={[-width / 2, height / 2, 0]}>
-              <boxGeometry args={[0.08, height, depth]} />
-              <meshStandardMaterial color="#414548" roughness={0.82} />
-            </mesh>
-            <mesh position={[width / 2, height / 2, 0]}>
-              <boxGeometry args={[0.08, height, depth]} />
-              <meshStandardMaterial color="#414548" roughness={0.82} />
-            </mesh>
-            <mesh position={[0, height / 2, depth / 2]}>
-              <boxGeometry args={[width, height, 0.08]} />
-              <meshStandardMaterial color="#454a4d" roughness={0.82} />
-            </mesh>
-          </>}
+          {!props.scene.root.walls?.length && (() => {
+            const points = props.scene.root.floorPlan?.length ? props.scene.root.floorPlan : [
+              { x: 0, z: 0 },
+              { x: props.scene.root.dimensions.width, z: 0 },
+              { x: props.scene.root.dimensions.width, z: props.scene.root.dimensions.depth },
+              { x: 0, z: props.scene.root.dimensions.depth },
+            ];
+            return (
+              <group>
+                {points.map((start, index) => {
+                  const end = points[(index + 1) % points.length];
+                  const mesh = boundaryWallMesh(start, end, props.scene.root);
+                  return (
+                    <mesh key={index} position={mesh.position} rotation={mesh.rotation}>
+                      <boxGeometry args={mesh.size} />
+                      <meshStandardMaterial color="#454a4d" roughness={0.82} />
+                    </mesh>
+                  );
+                })}
+              </group>
+            );
+          })()}
           {props.showCeiling && (
             <mesh position={[0, height, 0]}>
               <boxGeometry args={[width, 0.05, depth]} />
