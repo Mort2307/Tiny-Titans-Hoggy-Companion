@@ -132,6 +132,7 @@ function categoryForNodeLikeAsset(asset: VivariumTwinAsset): SpatialNode["catego
 }
 
 export function applyVivariumTwinToSpatialScene(scene: SpatialHabitatScene, vivariumId: string, twin: VivariumDigitalTwin): SpatialHabitatScene {
+  if (!scene.nodes.some((node) => node.id === vivariumId && node.kind === "vivarium")) return scene;
   const children = scene.nodes.filter((node) => node.parentId === vivariumId);
   const twinIds = new Set(twin.assets.map((asset) => asset.id));
   const sourceChildren = children.filter((node) => node.config?.source === SPATIAL_SOURCE || node.config?.source === "vivarium-twin");
