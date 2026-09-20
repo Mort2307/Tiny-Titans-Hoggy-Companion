@@ -5,6 +5,8 @@ const read = (path) => readFileSync(path, "utf8");
 const room = read("src/pages/StableReptileRoomBuilder.tsx");
 const canonicalRoom = read("src/pages/ReptileRoom.tsx");
 const spatialBuilder = read("src/components/reptile-room-3d/SpatialHabitatBuilder.tsx");
+const spatialRenderer = read("src/components/reptile-room-3d/SpatialHabitatScene3D.tsx");
+const spatialTwinBridge = read("src/services/spatialVivariumTwinBridge.ts");
 const spatialService = read("src/services/spatialHabitatService.ts");
 const room3d = read("src/components/reptile-room-3d/Room3D.tsx");
 const roomShell = read("src/components/reptile-room-3d/RoomEditorShell3D.tsx");
@@ -23,9 +25,9 @@ const checks = [
   ["Canonical room surfaces the blueprint/infrastructure panel", spatialBuilder.includes("RoomBlueprintPanel")],
   ["Canonical room exposes first-person exploration", canonicalRoom.includes("SpatialHabitatBuilder") && router.includes('path="/reptile-room/first-person"')],
   ["Canonical room exposes dedicated vivarium editing", spatialBuilder.includes("Open {node.label}") && router.includes('path="/reptile-room/vivarium/:id/3d"')],
-  ["Spatial builder exposes numeric transforms and 5 cm snapping", spatialBuilder.includes("snapCm") && spatialBuilder.includes("TransformControls")],
+  ["Spatial builder exposes numeric transforms and 5 cm snapping", spatialBuilder.includes("snapCm") && spatialRenderer.includes("TransformControls")],
   ["Legacy placement engine remains available", spatial.includes("snapArchitecturalObject") && spatial.includes("stackZ")],
-  ["Legacy vivarium magnet subsystem remains available", magnet.includes("magnetiseObjectToVivarium") && magnet.includes("reanchorVivariumChildren")],
+  ["Spatial child nodes bridge into Vivarium Digital Twin", spatialTwinBridge.includes("mergeSpatialNodesIntoVivariumTwin") && spatialTwinBridge.includes('source: SPATIAL_SOURCE')],
   ["Spatial scene supports nested containers", spatialService.includes("parentId") && spatialService.includes("duplicateNode")],
   ["Blueprint editor supports custom floor plans", blueprint.includes('setRoomFloorPlan') && blueprint.includes('+ Wall')],
   ["Blueprint editor supports room power sockets", blueprint.includes('ReptileRoomSocket') && blueprint.includes('+ Socket')],
@@ -42,7 +44,7 @@ const checks = [
   ["Router exposes dedicated vivarium builder", router.includes('path="/reptile-room/vivarium/:id/3d"')],
   ["Room renderer consumes linked/equipment photo and telemetry data", room3d.includes('photoForSlot') && room3d.includes('telemetryForSlot')],
   ["Room renderer contains a full-screen editing surface", room3d.includes('FullscreenTools') && room3d.includes('toggleFullscreen')],
-  ["Vivarium magnet service remains available to the 3D subsystem", magnet.includes('magnetiseObjectToVivarium') && magnet.includes('reanchorVivariumChildren')],
+  ["Legacy vivarium magnet service remains available to the 3D subsystem", magnet.includes('magnetiseObjectToVivarium') && magnet.includes('reanchorVivariumChildren')],
   ["3D asset renderer has explicit architectural and enrichment support", roomObject.includes('FurnitureModel') && roomObject.includes('VivariumModel')],
 ];
 
