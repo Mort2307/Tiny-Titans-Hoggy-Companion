@@ -31,6 +31,10 @@ if (!fail.length) {
     [service, 'export function roomToSpatialScene', "room -> spatial conversion"],
     [service, 'export function sceneToRoom', "spatial -> legacy compatibility conversion"],
     [service, 'export function validateSpatialScene', "spatial validation"],
+    [service, 'export function syncSceneRoomInfrastructure', "room infrastructure sync"],
+    [service, 'floorPlan:', "floor-plan preservation"],
+    [service, 'walls:', "wall geometry preservation"],
+    [service, 'sockets:', "power socket preservation"],
     [service, 'export function duplicateNode', "nested duplication"],
     [service, 'linkedSnakeId', "snake linkage"],
     [builder, 'saveSpatialHabitat', "spatial persistence"],
@@ -40,6 +44,8 @@ if (!fail.length) {
     [builder, 'STRUCTURAL_VIVARIUM_ASSETS', "vivarium construction library"],
     [renderer, 'TransformControls', "3D transform controls"],
     [renderer, 'OrbitControls', "3D camera controls"],
+    [renderer, 'SpatialRoomWall', "typed room-wall rendering"],
+    [renderer, 'SpatialRoomSocket', "typed socket rendering"],
     [persistence, 'spatialHabitats', "dedicated spatial collection"],
     [scale, 'CM_TO_WORLD = 0.01', "centimetre-to-metre scale"],
   ];
@@ -53,6 +59,9 @@ if (!fail.length) {
   if (!service.includes('sceneNodeIds.has(object.id)')) fail.push("Legacy object projection must remove deleted spatial objects.");
 
   if (!builder.includes('setMode("vivarium")') || !builder.includes('setMode("room")')) fail.push("Nested room/vivarium navigation contract missing.");
+  if (!builder.includes('blockingIssues')) fail.push("Spatial save must block blocking layout errors.");
+  if (!builder.includes('blueprintRoom')) fail.push("Room blueprint must consume the current spatial projection.");
+  if (!builder.includes('rooms.length > 1')) fail.push("Multiple saved rooms must be selectable.");
 }
 
 if (fail.length) {
