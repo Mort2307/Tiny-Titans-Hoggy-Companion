@@ -40,6 +40,7 @@ const checks = [
   ["Storage user snake files are owner-bound", /request\.auth\.uid\s*==\s*userId/, storage],
   ["Snake photo uploads are size- and content-type constrained", /match \/snakePhotos\/\{userId\}\/\{snakeId\}\/\{fileName\}[\s\S]*?request\.resource\.size <= 25 \* 1024 \* 1024[\s\S]*?image\/(jpeg\|png\|webp)/, storage],
   ["Vivarium photo uploads are size- and content-type constrained", /reptileRooms\/\{roomId\}\/vivariums[\s\S]*?request\.resource\.size <= 25 \* 1024 \* 1024[\s\S]*?image\/(jpeg\|png\|webp)/, storage],
+  ["Issue evidence uploads have a hard size limit", /match \/issueEvidence\/\{userId\}\/\{reportId\}\/\{fileName\}[\s\S]*?request\.resource\.size <= 25 \* 1024 \* 1024/, storage],
   ["Storage creator access requires the same owner-issued claim model as Firestore", storageCreatorContract, storage],
   ["Storage creator access no longer trusts mutable profileType data", /isCreator\(\)\s*\{[\s\S]*request\.auth\.token\.creator == true/, storage],
   ["Paid tester overrides are stored outside mutable user profiles", paidTesterServerCollectionContract, paidTierAccess],
