@@ -98,9 +98,6 @@ function LayoutChrome() {
   const isRescueDirectoryProfilePage =
     location.pathname === "/rescue" && location.search.includes("manage=directory");
   const isRescueQuickLogPage = location.pathname === "/rescue/log";
-  const isRetiredReptileRoom =
-    location.pathname === "/reptile-room" || location.pathname.startsWith("/reptile-room/");
-
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const historyWithRestoration = window.history as History & {
@@ -125,8 +122,6 @@ function LayoutChrome() {
       window.clearTimeout(timeout);
     };
   }, [location.pathname, location.search, location.hash, location.key]);
-
-  if (isRetiredReptileRoom) return <Navigate to="/snakes" replace />;
 
   const specialPage = isRescueDirectoryPage
     ? <RescueDirectory />
