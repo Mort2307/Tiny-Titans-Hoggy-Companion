@@ -34,7 +34,7 @@ const tierCatalogEntries = expectedTierIds.map((id) => {
 });
 const missingTierCatalogIcons = tierCatalogEntries.filter((entry) => !entry.icon).map((entry) => entry.id);
 const invalidTierCatalogIcons = tierCatalogEntries.filter((entry) => entry.icon && !iconUnion.includes(entry.icon)).map((entry) => ({ id: entry.id, icon: entry.icon }));
-const hasSemanticTierBadge = paidTierBadgeSource.includes("name={tier.icon}") && paidTierBadgeSource.includes("from "./TinyTitansIcon"");
+const hasSemanticTierBadge = paidTierBadgeSource.includes("name={tier.icon}") && paidTierBadgeSource.includes('from "./TinyTitansIcon"');
 const productTierIconMismatch = tierCatalogEntries.map((entry) => {
   const productId = entry.id === "free" ? "personal" : entry.id;
   const match = workspaceProductsSource.match(new RegExp("^  " + productId + ': \\{[^\\n]*?icon:"([^"]+)"'));
