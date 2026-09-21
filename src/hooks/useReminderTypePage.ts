@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { completeWaterChange,createReminder,deleteReminder,listReminders,listWaterChangeLogs,setReminderPaused,updateReminder } from "../services/reminderService";
