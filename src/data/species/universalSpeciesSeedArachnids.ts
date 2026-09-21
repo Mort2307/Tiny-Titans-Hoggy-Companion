@@ -40,9 +40,7 @@ export const UNIVERSAL_ARACHNID_SEEDS: UniversalSpeciesSeed[] = [
   spider('Pamphobeteus antinous','Bolivian Blue Leg','Theraphosidae','specialist'),
   spider('Xenesthis immanis','Colombian Giant Redleg','Theraphosidae','specialist'),
   spider('Megaphobema robustum','Colombian Giant Redleg','Theraphosidae','specialist'),
-  spider('Cyriopagopus sp. hati hati','Hati Hati Tarantula','Theraphosidae','specialist',['hati hati']),
   spider('Selenocosmia crassipes','Australian Barking Spider','Theraphosidae','specialist'),
-  spider('Selenogyrus sp.','African Baboon Tarantula','Theraphosidae','specialist'),
   spider('Haplocosmia himalayana','Himalayan Earth Tiger','Theraphosidae','specialist'),
   spider('Chilobrachys fimbriatus','Indian Violet Tarantula','Theraphosidae','specialist'),
   spider('Heterothele villosella','Usambara Baboon','Theraphosidae','specialist'),
@@ -66,7 +64,6 @@ export const UNIVERSAL_ARACHNID_SEEDS: UniversalSpeciesSeed[] = [
   spider('Phidippus audax','Bold Jumping Spider','Salticidae','companion','arboreal','carnivore'),
   spider('Hyllus diardi','Heavy Jumping Spider','Salticidae','specialist','arboreal','carnivore'),
   spider('Caribena laeta','Pinkfoot Goliath Bird-eating Spider','Theraphosidae','specialist','arboreal','carnivore'),
-  spider('Psalmopoeus cambridgei','Trinidad Chevron','Theraphosidae','specialist','arboreal','carnivore'),
   spider('Damon diadema','Giant East African Tailless Whip Scorpion','Charontidae','companion','arboreal','carnivore'),
   spider('Phrynus marginemaculatus','Tailless Whip Scorpion','Phrynidae','companion','terrestrial','carnivore'),
 
