@@ -102,40 +102,12 @@ export default function UniversalSpeciesProfile() {
             )}
           </section>
 
-          <section className="universal-species-panel universal-species-panel--wide">
-            <div className="universal-species-panel-heading">
-              <div><p className="eyebrow">BASELINE HUSBANDRY</p><h2>{care.husbandry.title}</h2></div>
-              <span className="universal-species-status">{care.husbandry.status.replace("-", " ")}</span>
-            </div>
-            <p>{care.husbandry.overview}</p>
-
-            <div className="universal-care-grid">
-              {care.husbandry.requirements.map((item) => (
-                <article className="universal-care-card" key={item.id}>
-                  <div className="universal-care-card__top">
-                    <span>{item.domain.replace("-", " ")}</span>
-                    <strong>{requirementLabel[item.priority]}</strong>
-                  </div>
-                  <h3>{item.label}</h3>
-                  <p>{item.guidance}</p>
-                  {item.conditional && <p className="universal-care-card__conditional">{item.conditional}</p>}
-                  <small>Evidence: {item.evidence.basis.replace("-", " ")}{item.evidence.sourceIds.length ? ` · ${item.evidence.sourceIds.length} mapped source(s)` : " · specialist mapping pending"}</small>
-                </article>
-              ))}
-            </div>
-
-            <div className="universal-unresolved">
-              <h3>Species-specific work still pending</h3>
-              <ul>{care.husbandry.unresolved.map((item) => <li key={item}>{item}</li>)}</ul>
-            </div>
-          </section>
-
           <section className="universal-species-panel">
             <div className="universal-species-panel-heading">
               <div><p className="eyebrow">HEALTH WATCH</p><h2>What to monitor</h2></div>
               <span className="universal-species-status">{care.health.status.replace("-", " ")}</span>
             </div>
-            <div className="universal-health-baseline">
+            <div className="universal-health-boundary"><strong>{care.health.coverage === "species" || care.health.coverage === "genus" || care.health.coverage === "taxon" ? "Scoped health evidence" : "Not a species-specific disease list"}</strong><p>{care.health.coverage === "species" || care.health.coverage === "genus" || care.health.coverage === "taxon" ? "These watch points are tied to the mapped evidence scope shown below." : "These are general veterinary/group-level warning patterns only. Species- and genus-specific disease/diagnostic mapping remains in the research queue."}</p></div><div className="universal-health-baseline">
               {care.health.baseline.map((item) => <p key={item}>• {item}</p>)}
             </div>
             <div className="universal-health-list">
