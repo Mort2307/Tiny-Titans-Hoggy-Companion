@@ -22,10 +22,6 @@ function hasLocalPrivacyConsent(userId: string) {
   }
 }
 
-function PublicRoute({ path, element }: { path: string; element: React.ReactNode }) {
-  return <Route path={path} element={element} />;
-}
-
 function AppRouterGate() {
   const location = useLocation();
   const { user, profile, loading, profileLoading } = useAuth();
@@ -74,7 +70,7 @@ function AppRouterGate() {
     return (
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
-          <PublicRoute path="/partner/:slug" element={<PartnerLanding />} />
+          <Route path="/partner/:slug" element={<PartnerLanding />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
@@ -85,7 +81,7 @@ function AppRouterGate() {
     return (
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
-          <PublicRoute path="/delete-account" element={<DeleteAccountRequest />} />
+          <Route path="/delete-account" element={<DeleteAccountRequest />} />
           <Route path="*" element={<Navigate to="/delete-account" replace />} />
         </Routes>
       </Suspense>
@@ -96,7 +92,7 @@ function AppRouterGate() {
     return (
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
-          <PublicRoute path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<Navigate to="/privacy" replace />} />
         </Routes>
       </Suspense>
@@ -117,9 +113,9 @@ function AppRouterGate() {
     return (
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
-          <PublicRoute path="/login" element={<Login />} />
-          <PublicRoute path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
-          <PublicRoute path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
+          <Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
           <Route path="*" element={<Navigate to={loginRedirect} replace />} />
         </Routes>
       </Suspense>
@@ -130,9 +126,9 @@ function AppRouterGate() {
     return (
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
-          <PublicRoute path="/account-setup" element={<AccountSetup />} />
-          <PublicRoute path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
-          <PublicRoute path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
+          <Route path="/account-setup" element={<AccountSetup />} />
+          <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
+          <Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
           <Route path="*" element={<Navigate to={setupRedirect} replace />} />
         </Routes>
       </Suspense>
