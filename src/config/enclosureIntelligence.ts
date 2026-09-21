@@ -1,18 +1,19 @@
 import type { HeatingType, SubstrateMixPart, SubstrateType } from "../types/Enclosure";
+import type { TinyTitansIconName } from "../types/tinyTitansIcon";
 import { husbandryReferenceBands } from "../data/husbandryReferences";
 
 export type EnvironmentKey = "warmSideTemperature" | "coolSideTemperature" | "ambientTemperature" | "baskingTemperature" | "nightTemperature" | "humidity";
 export type EnclosureField = "dimensions" | "enclosureType" | "heating" | "thermostat" | "substrate" | "uvb" | "hides" | "water" | "furnishings" | "bioactive" | "maintenance" | "all";
 export type DraftReadings = Record<EnvironmentKey, string>;
-export type Metric = { key: EnvironmentKey; label: string; unit: string; min: number; max: number; icon: string };
+export type Metric = { key: EnvironmentKey; label: string; unit: string; min: number; max: number; icon: TinyTitansIconName };
 
 export const metrics: Metric[] = [
-  { key:"warmSideTemperature",label:"Warm side",unit:"°C",min:husbandryReferenceBands.temperature.warmMinC,max:husbandryReferenceBands.temperature.warmMaxC,icon:"🌡️" },
-  { key:"coolSideTemperature",label:"Cool side",unit:"°C",min:husbandryReferenceBands.temperature.coolMinC,max:husbandryReferenceBands.temperature.coolMaxC,icon:"❄️" },
-  { key:"ambientTemperature",label:"Ambient",unit:"°C",min:husbandryReferenceBands.temperature.coolMinC,max:husbandryReferenceBands.temperature.warmMaxC,icon:"🌬️" },
-  { key:"baskingTemperature",label:"Basking / surface",unit:"°C",min:husbandryReferenceBands.temperature.baskingMinC,max:husbandryReferenceBands.temperature.baskingMaxC,icon:"☀️" },
-  { key:"nightTemperature",label:"Night",unit:"°C",min:16,max:husbandryReferenceBands.temperature.warmMaxC,icon:"🌙" },
-  { key:"humidity",label:"Humidity",unit:"%",min:husbandryReferenceBands.humidity.minPercent,max:husbandryReferenceBands.humidity.maxPercent,icon:"💧" },
+  { key:"warmSideTemperature",label:"Warm side",unit:"°C",min:husbandryReferenceBands.temperature.warmMinC,max:husbandryReferenceBands.temperature.warmMaxC,icon:"husbandry" },
+  { key:"coolSideTemperature",label:"Cool side",unit:"°C",min:husbandryReferenceBands.temperature.coolMinC,max:husbandryReferenceBands.temperature.coolMaxC,icon:"warning" },
+  { key:"ambientTemperature",label:"Ambient",unit:"°C",min:husbandryReferenceBands.temperature.coolMinC,max:husbandryReferenceBands.temperature.warmMaxC,icon:"husbandry" },
+  { key:"baskingTemperature",label:"Basking / surface",unit:"°C",min:husbandryReferenceBands.temperature.baskingMinC,max:husbandryReferenceBands.temperature.baskingMaxC,icon:"titan" },
+  { key:"nightTemperature",label:"Night",unit:"°C",min:16,max:husbandryReferenceBands.temperature.warmMaxC,icon:"timeline" },
+  { key:"humidity",label:"Humidity",unit:"%",min:husbandryReferenceBands.humidity.minPercent,max:husbandryReferenceBands.humidity.maxPercent,icon:"water" },
 ];
 
 export const heatingTypes: HeatingType[] = ["Heat Mat","CHE","Halogen","Deep Heat Projector","Radiant Heat Panel","Other"];
