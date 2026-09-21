@@ -246,7 +246,7 @@ export function useShedTrackerIntelligent() {
   return {
     navigate, user, loading, profileLoading, snakes, snakeId, setSnakeId, records, editingId, stage, setStage, date, setDate,
     quality, setQuality, status, setStatus, retained, setRetained, assistance, setAssistance, length, setLength, weight, setWeight,
-    notes, setNotes, busy, message, error, intelligence, active, completed, selectedSnake, reset, edit, save, remove, lengthUnit, weightUnit, lengthUnit, weightUnit,
+    notes, setNotes, busy, message, error, intelligence, active, completed, selectedSnake, reset, edit, save, remove, lengthUnit, weightUnit,
     stages: SHED_STAGES, qualities: SHED_QUALITIES, statuses: SHED_STATUSES, retainedAreas: RETAINED_SHED_AREAS, assistances: SHED_ASSISTANCES,
   };
 }
