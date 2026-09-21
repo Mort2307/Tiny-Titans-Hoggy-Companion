@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth, type ExperienceLevel, type UserCategory } from "../context/useAuth";
 import type { AgeBand, EducatorTeachingLevel, LearningLevel, ProfileType } from "../types/Profile";
-import { getLearningLevelForAge, type SetupInterest } from "../config/accountSetup";
+import type { SetupInterest } from "../config/accountSetup";
 import { saveAccountSetupProfile, type AccountSetupPayload } from "../services/accountSetupService";
 
 export function useAccountSetup() {
