@@ -67,7 +67,7 @@ export default function UniversalSpeciesProfile() {
 
   if (!species) {
     return (
-      <main className="page-container universal-species-profile">
+      <div className="page-container universal-species-profile">
         <section className="universal-species-panel">
           <p className="eyebrow">SPECIES INTELLIGENCE</p>
           <h1>Species not found</h1>
@@ -87,6 +87,13 @@ export default function UniversalSpeciesProfile() {
 
   return (
     <main className="page-container universal-species-profile">
+      <nav className="universal-species-journey" aria-label="Connected keeper workspaces">
+        <span className="universal-species-journey__label">SPECIES WORKSPACE</span>
+        <Link className="universal-species-journey__active" to="/snakes"><TinyTitansIcon name="reptiles" size={18} /> My Reptiles</Link>
+        <Link className="universal-species-journey__active" to="/species"><TinyTitansIcon name="animals" size={18} /> Species Explorer</Link>
+        <Link to="/husbandry"><TinyTitansIcon name="husbandry" size={18} /> Husbandry &amp; Care</Link>
+        <Link to="/morph-library"><TinyTitansIcon name="morph" size={18} /> Morph Library</Link>
+      </nav>
       <div className="universal-species-links"><Link className="universal-species-back" to="/species"><TinyTitansIcon name="back" size={18} /> Species Explorer</Link><Link className="universal-species-marketplace-link" to={`/marketplace?species=${encodeURIComponent(species.id)}`}>Marketplace listings for this species →</Link></div>
 
       <header className="universal-species-hero">
@@ -220,6 +227,6 @@ export default function UniversalSpeciesProfile() {
           </section>
         </div>
       )}
-    </main>
+    </div>
   );
 }
