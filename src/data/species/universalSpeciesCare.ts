@@ -481,7 +481,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     species.taxonSourceId,
   ];
 
-  if (species.knowledgeBridge === 'snake-profile') {
+  if (species.husbandryStatus !== 'taxonomy-only') {
     resolvedFrom.unshift(`species:${species.id}`);
   }
 
