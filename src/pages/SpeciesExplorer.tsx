@@ -72,7 +72,7 @@ export default function SpeciesExplorer() {
       <header className="species-explorer-hero">
         <div>
           <span className="eyebrow">TINY TITANS · SPECIES INTELLIGENCE</span>
-          <h1><TinyTitansIcon name="reptile" size={28} /> {groupView ? BROWSE_LABELS[activeGroup] : "Species Explorer"}</h1>
+          <h1><TinyTitansIcon name="animals" size={28} /> {groupView ? BROWSE_LABELS[activeGroup] : "Species Explorer"}</h1>
           <p>
             Browse the canonical species catalogue by the animal people actually look for — snakes, lizards, turtles and tortoises, frogs and toads, salamanders and newts, spiders, scorpions, insects, mammals, birds, fish and more.
             Each species is separate from the individual animals recorded in your collection.
