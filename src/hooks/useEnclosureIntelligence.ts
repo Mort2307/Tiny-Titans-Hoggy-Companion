@@ -3,9 +3,9 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes, updateUserSnake } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
-import type { Enclosure, EnvironmentHistoryEntry, SubstrateMixPart, HeatingType } from "../types/Enclosure";
-import { blankEnclosure,enclosureRecordCoverage,formatRecordedAt,nextEnclosureRecord,normaliseMix } from "../lib/enclosureIntelligence";
-import { emptyReadings,metrics,substratePresets } from "../config/enclosureIntelligence";
+import type { Enclosure, EnvironmentHistoryEntry, SubstrateMixPart } from "../types/Enclosure";
+import { blankEnclosure,enclosureRecordCoverage,formatRecordedAt,nextEnclosureRecord,normaliseMix,readingStatus } from "../lib/enclosureIntelligence";
+import { emptyReadings,metrics,substratePresets,type EnvironmentKey } from "../config/enclosureIntelligence";
 
 export function useEnclosureIntelligence(){
   const {id}=useParams();
@@ -42,11 +42,11 @@ export function useEnclosureIntelligence(){
   const volume=area>0&&enclosure&&enclosure.height>0?area*enclosure.height:0;
   const coverage=enclosureRecordCoverage(enclosure);
   const environmentHistory=useMemo(()=>[...(enclosure?.environmentHistory??[])].sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)),[enclosure]);
-  const environmentReview=snake?metrics.filter(({key,min,max})=>readingStatusSafe(snake.enclosure?.[key],min,max)==="check").length:0;
+  const environmentReview=snake?metrics.filter(({key,min,max})=>readingStatus(snake.enclosure?.[key],min,max)==="check").length:0;
   const environmentCoverage=snake?metrics.filter(({key})=>typeof snake.enclosure?.[key]==="number").length:0;
   const nextBestRecord=useMemo(()=>enclosure&&snake?nextEnclosureRecord(enclosure,snake,environmentCoverage):"Build the enclosure profile first so later environment readings have context.",[enclosure,snake,environmentCoverage]);
 
-  function openEnvironment(which:typeof editingEnvironment){
+  function openEnvironment(which:"all"|EnvironmentKey){
     if(!snake)return;
     const current={...emptyReadings};
     for(const metric of metrics){const value=snake.enclosure?.[metric.key];current[metric.key]=typeof value==="number"?String(value):"";}
@@ -61,7 +61,7 @@ export function useEnclosureIntelligence(){
 
   async function saveEnvironment(){
     if(!user||!snake)return;
-    const values:Partial<Record<NonNullable<typeof editingEnvironment> extends "all"?typeof metrics[number]["key"]:typeof metrics[number]["key"],number>>={};
+    const values:Partial<Record<EnvironmentKey,number>>={};
     for(const metric of metrics){const raw=readings[metric.key].trim();if(!raw)continue;const value=Number(raw);if(!Number.isFinite(value)||value<0){setMessage(metric.label+" must be a valid non-negative number.");return;}values[metric.key]=value;}
     if(!Object.keys(values).length){setMessage("Enter at least one measured reading before saving.");return;}
     setSavingReadings(true);setMessage("");
@@ -93,7 +93,3 @@ export function useEnclosureIntelligence(){
   return {id,user,loading,profileLoading,snakes,selectedId,setSelectedId,loadingData,error,setError,editingEnvironment,setEditingEnvironment,readings,setReadings,savingReadings,editingField,setEditingField,enclosureDraft,setEnclosureDraft,mixParts,setMixParts,savingEnclosure,message,setMessage,snake,enclosure,area,volume,coverage,environmentHistory,environmentReview,environmentCoverage,nextBestRecord,metrics,substratePresets,loadData,openEnvironment,saveEnvironment,startEnclosureEdit,updateEnclosure,applySubstratePreset,updateMix,addMixPart,removeMixPart,saveEnclosure,formatRecordedAt};
 }
 
-function readingStatusSafe(value:number|undefined,min:number,max:number){
-  if(value===undefined)return "unknown";
-  return value>=min&&value<=max?"good":"check";
-}
