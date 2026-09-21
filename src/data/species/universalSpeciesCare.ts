@@ -8,6 +8,8 @@ import type {
   UniversalCareEvidence,
   UniversalCareRequirement,
   UniversalHealthProfile,
+  UniversalCareCoverage,
+  UniversalCareStatus,
   UniversalHealthWatch,
   UniversalHusbandryProfile,
   UniversalSpeciesCare,
@@ -436,8 +438,24 @@ function resolveHealthWatch(
   };
 }
 
-function buildHealth(species: UniversalSpeciesRecord, scopeKey: string): UniversalHealthProfile {
-  const watches = CLASS_HEALTH_WATCHES[species.className].map((item) => resolveHealthWatch(species, item));
+function buildHealth(
+  species: UniversalSpeciesRecord,
+  scopeKey: string,
+  status: UniversalCareStatus,
+  coverage: UniversalCareCoverage,
+  overrideHealth: NonNullable<ReturnType<typeof getSpeciesCareOverride>>['health'] = [],
+): UniversalHealthProfile {
+  const classWatches = CLASS_HEALTH_WATCHES[species.className].map((item) => resolveHealthWatch(species, item));
+  const overrideWatches = overrideHealth.map((item) => ({
+    id: item.id,
+    concern: item.concern,
+    watchFor: item.watchFor,
+    riskFactors: item.riskFactors,
+    prevention: item.prevention,
+    priority: item.priority,
+    evidence: evidence(species, coverage === 'genus' ? 'genus-level' : 'species-specific', [], 'Species-specific health watch supplied by the mapped husbandry source set. The source list is attached to the override itself and should be retained when promoted.'),
+  }));
+  const watches = [...overrideWatches, ...classWatches];
   const baseline = [
     'Know the individual’s normal appetite/feeding pattern, activity and body condition.',
     'Track meaningful environmental changes alongside health observations so patterns can be investigated rather than guessed at.',
@@ -457,7 +475,7 @@ function buildHealth(species: UniversalSpeciesRecord, scopeKey: string): Univers
   }
 
   return {
-    status: careStatus,
+    status,
     scopeKey,
     baseline,
     watches,
@@ -554,9 +572,8 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     reviewedOn: REVIEWED_ON,
   };
 
-  const health = buildHealth(species, scopeKey);
-  health.status = husbandry.status;
-  health.coverage = override?.health?.length ? coverage : (coverage === 'species' || coverage === 'genus' || coverage === 'taxon' ? 'class' : coverage);
+  const healthCoverage = override?.health?.length ? coverage : (coverage === 'species' || coverage === 'genus' || coverage === 'taxon' ? 'class' : coverage);
+  const health = buildHealth(species, scopeKey, husbandry.status, healthCoverage, override?.health ?? []);
   const resolvedFrom = [
     ...(coverage === 'species' ? [`species:${species.id}`] : []),
     ...(coverage === 'genus' ? [`genus:${species.genus}`] : []),
@@ -571,9 +588,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
 
   return {
     status: husbandry.status,
-    coverage,
     resolvedFrom,
-    coverage,
     husbandry,
     health,
     summary: coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
