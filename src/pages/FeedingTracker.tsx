@@ -15,7 +15,7 @@ export default function FeedingTracker() {
     date, setDate, foodType, setFoodType, customFood, setCustomFood, size, setSize, quantity, setQuantity,
     weight, setWeight, feedingMethod, setFeedingMethod, response, setResponse, notes, setNotes,
     diet, feedingFoodTypes, counts, acceptanceRate, lastFeeding, lastSuccessfulFeeding, resetForm, editFeeding,
-    handleSubmit, handleDelete,
+    selectSnake, handleSubmit, handleDelete,
   } = useFeedingTracker();
 
   if (loading || profileLoading || (Boolean(user) && loadingSnakes)) {
@@ -27,7 +27,7 @@ export default function FeedingTracker() {
     <header className="tt-tracker-header">
       <p className="tt-tracker-eyebrow">Keeper records · Feeding intelligence</p>
       <div className="tt-tracker-title-row"><div><h1>🍽️ Feeding Tracker</h1><p className="tt-tracker-subtitle">Log the actual prey item, quantity and mass for every snake — from a mouse pinkie to a whole rabbit, fish, egg or bird.</p></div>
-        <div className="tt-tracker-snake"><label htmlFor="feeding-snake">Record for<select id="feeding-snake" value={selectedSnakeId} onChange={(event) => { const nextSnakeId = event.target.value; const nextSnake = snakes.find((snake) => snake.id === nextSnakeId); setSelectedSnakeId(nextSnakeId); resetForm(nextSnake ? requireDiet(nextSnake) : diet); }} disabled={saving}>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label></div>
+        <div className="tt-tracker-snake"><label htmlFor="feeding-snake">Record for<select id="feeding-snake" value={selectedSnakeId} onChange={(event) => selectSnake(event.target.value)} disabled={saving}>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label></div>
       </div>
       <nav className="tt-tracker-nav" aria-label="Tracker navigation">
         <button type="button" className="active" onClick={() => document.getElementById("feeding-overview")?.scrollIntoView({ behavior: "smooth" })}>Overview</button>
@@ -79,8 +79,3 @@ export default function FeedingTracker() {
   </main>;
 }
 
-function requireDiet(snake: import("../types/Snake").Snake) {
-  // This adapter keeps the page free of diet-service logic; the hook owns the canonical selected diet.
-  // The temporary fallback is replaced immediately when the selected snake changes.
-  return { ...require("../data/feeding/speciesDiet") };
-}
