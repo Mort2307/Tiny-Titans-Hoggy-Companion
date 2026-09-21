@@ -1,3 +1,4 @@
+import { INITIAL_SNAKE_SPECIES } from './speciesRegistry';
 import type { UniversalSpeciesRecord } from './universalSpeciesTypes';
 import type {
   CarePriority,
@@ -12,6 +13,55 @@ import type {
 } from './universalSpeciesCareTypes';
 
 const REVIEWED_ON = '2026-09-21';
+const LEGACY_SNAKES = new Map(INITIAL_SNAKE_SPECIES.map((species) => [species.id, species]));
+
+function coverageFromBasis(basis: string | undefined): import('./universalSpeciesCareTypes').UniversalCareCoverage {
+  if (basis === 'species-specific' || basis === 'locality-specific') return 'species';
+  if (basis === 'genus-level') return 'genus';
+  if (basis === 'taxon-level') return 'taxon';
+  if (basis === 'ecology-only') return 'ecology-only';
+  return 'class';
+}
+
+function rangeRecords(species: UniversalSpeciesRecord, legacy: (typeof INITIAL_SNAKE_SPECIES)[number]): NonNullable<UniversalHusbandryProfile['numericGuidance']['ranges']> {
+  const profile = legacy.knowledge.husbandry;
+  if (!profile) return [];
+  const entries: Array<[string, { min: number; max: number; unit: string; context?: string } | undefined]> = [
+    ['Basking', profile.temperature?.basking],
+    ['Warm side', profile.temperature?.warmSide],
+    ['Cool side', profile.temperature?.coolSide],
+    ['Night', profile.temperature?.night],
+    ['Humidity target', profile.humidity?.target],
+    ['Humidity acceptable', profile.humidity?.acceptable],
+  ];
+  return entries.flatMap(([label, range]) => range && Number.isFinite(range.min) && Number.isFinite(range.max)
+    ? [{ label, min: range.min, max: range.max, unit: range.unit, context: range.context, evidence: evidence(species, coverageFromBasis(profile.evidenceSummary?.basis), profile.evidenceSummary?.sourceIds ?? legacy.knowledge.sourceIds, profile.evidenceSummary?.caveat ?? 'Scoped legacy snake evidence. Confirm the source scope and species applicability before treating a range as a universal rule.') }]
+    : []);
+}
+
+function legacySnakeRequirements(species: UniversalSpeciesRecord, legacy: (typeof INITIAL_SNAKE_SPECIES)[number]): UniversalCareRequirement[] {
+  const profile = legacy.knowledge.husbandry;
+  if (!profile) return [];
+  const scopeBasis = coverageFromBasis(profile.evidenceSummary?.basis);
+  const sourceIds = profile.evidenceSummary?.sourceIds ?? legacy.knowledge.sourceIds;
+  const caveat = profile.evidenceSummary?.caveat ?? 'Existing Tiny Titans snake husbandry evidence. Preserve its stated scope; do not widen it to unrelated species.';
+  const items: UniversalCareRequirement[] = [];
+  const add = (id: string, domain: UniversalCareRequirement['domain'], label: string, guidance: string, priority: CarePriority = 'essential') => {
+    if (!guidance.trim()) return;
+    items.push({ id, domain, label, guidance, priority, evidence: evidence(species, scopeBasis, sourceIds, caveat) });
+  };
+  if (profile.enclosure?.habitatType?.length) add('verified-habitat-type','housing','Verified habitat type',profile.enclosure.habitatType.join(' · '));
+  if (profile.enclosure?.substrate?.length) add('verified-substrate','substrate','Verified substrate options',profile.enclosure.substrate.join(' · '));
+  add('verified-hides','housing','Verified retreat guidance',profile.enclosure?.hides ?? '');
+  if (profile.enclosure?.climbing === true) add('verified-climbing','enrichment','Climbing structure','Climbing structure is supported by the mapped husbandry profile.', 'important');
+  add('verified-water','water','Verified water guidance',profile.enclosure?.water ?? '');
+  add('verified-ventilation','environment','Verified ventilation guidance',profile.enclosure?.ventilation ?? '');
+  add('verified-lighting','lighting','Verified lighting guidance',profile.enclosure?.lighting ?? '','important');
+  if (profile.enclosure?.enrichment?.length) add('verified-enrichment','enrichment','Verified enrichment',profile.enclosure.enrichment.join(' · '),'important');
+  if (profile.cohabitation) add('verified-cohabitation','social','Cohabitation guidance', profile.cohabitation.rationale + ' Recommendation: ' + profile.cohabitation.recommendation, profile.cohabitation.recommendation === 'avoid' || profile.cohabitation.recommendation === 'generally-single' ? 'essential' : 'conditional');
+  return items;
+}
+
 
 const CLASS_SOURCE_IDS: Record<UniversalSpeciesRecord['className'], string[]> = {
   reptile: ['merckReptileHusbandry2026', 'merckExoticNutrition2025'],
@@ -433,6 +483,7 @@ function buildHealth(species: UniversalSpeciesRecord, scopeKey: string): Univers
 
 export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): UniversalSpeciesCare {
   const genusNote = GENUS_EMPHASIS[species.genus];
+  const legacy = LEGACY_SNAKES.get(species.id);
   const classRequirements = CLASS_REQUIREMENTS[species.className].map((item) => resolveRequirement(species, item));
   const genusRequirement = {
     id: genusNote ? 'genus-emphasis' : 'genus-research',
@@ -449,16 +500,17 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
       'Genus-level guidance is either an ecological emphasis or an explicit research placeholder. It is not a substitute for species-specific captive evidence and must not be converted into an exact numeric target.',
     ),
   };
-  const requirements = [...classRequirements, genusRequirement];
+  const specificRequirements = legacy ? legacySnakeRequirements(species, legacy) : [];
+  const requirements = specificRequirements.length ? [...specificRequirements, ...classRequirements.filter((item) => item.id === 'hygiene' || item.id === 'records')] : [...classRequirements, genusRequirement];
+  const legacyCoverage = legacy ? coverageFromBasis(legacy.knowledge.husbandry?.evidenceSummary?.basis) : 'class';
+  const coverage = specificRequirements.length ? legacyCoverage : (CLASS_SOURCE_IDS[species.className].length ? 'class' : 'not-verified');
 
-  const scopeKey = `genus:${species.genus}`;
-  const careStatus = species.husbandryStatus === 'specialist-profile'
+  const scopeKey = legacy && specificRequirements.length ? `species:${species.id}` : `genus:${species.genus}`;
+  const careStatus = coverage === 'species' && species.husbandryStatus === 'specialist-profile'
     ? 'specialist-reviewed'
-    : species.husbandryStatus !== 'taxonomy-only'
+    : coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
       ? 'sourced-profile'
-      : CLASS_SOURCE_IDS[species.className].length > 0
-        ? 'baseline'
-        : 'needs-review';
+      : 'needs-review';
   const husbandry: UniversalHusbandryProfile = {
     status: careStatus,
     scopeKey,
@@ -470,9 +522,13 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
       dietaryGuild: species.dietaryGuild,
     },
     requirements,
-    numericGuidance: {
+    numericGuidance: numericRanges.length ? {
+      available: true,
+      note: 'These numeric ranges come from a scoped existing Tiny Titans species evidence profile. They do not automatically apply to related species.',
+      ranges: numericRanges,
+    } : {
       available: false,
-      note: 'No universal numeric target is generated here. Species-specific ranges must come from a mapped evidence scope and remain separate from class/genus baseline guidance.',
+      note: 'No species/genus numeric target is published here. Numeric ranges require a mapped evidence scope and remain separate from class/genus biological context.',
     },
     unresolved: [
       'Species-specific numeric temperature/humidity/water-chemistry targets where applicable.',
@@ -487,6 +543,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
 
   const health = buildHealth(species, scopeKey);
   health.status = husbandry.status;
+  health.coverage = coverage;
   const resolvedFrom = [
     `genus:${species.genus}`,
     `class:${species.className}`,
@@ -499,6 +556,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
 
   return {
     status: husbandry.status,
+    coverage,
     resolvedFrom,
     husbandry,
     health,
