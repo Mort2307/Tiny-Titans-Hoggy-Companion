@@ -41,6 +41,9 @@ export function useEnclosureIntelligence(){
   const area=enclosure&&enclosure.length>0&&enclosure.width>0?enclosure.length*enclosure.width:0;
   const volume=area>0&&enclosure&&enclosure.height>0?area*enclosure.height:0;
   const coverage=enclosureRecordCoverage(enclosure);
+  const completeness=coverage.complete;
+  const completenessChecks=Array.from({length:coverage.total});
+  const completenessPercent=coverage.percent;
   const environmentHistory=useMemo(()=>[...(enclosure?.environmentHistory??[])].sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)),[enclosure]);
   const environmentReview=snake?metrics.filter(({key,min,max})=>readingStatus(snake.enclosure?.[key],min,max)==="check").length:0;
   const environmentCoverage=snake?metrics.filter(({key})=>typeof snake.enclosure?.[key]==="number").length:0;
@@ -90,6 +93,6 @@ export function useEnclosureIntelligence(){
     finally{setSavingEnclosure(false);}
   }
 
-  return {id,user,loading,profileLoading,snakes,selectedId,setSelectedId,loadingData,error,setError,editingEnvironment,setEditingEnvironment,readings,setReadings,savingReadings,editingField,setEditingField,enclosureDraft,setEnclosureDraft,mixParts,setMixParts,savingEnclosure,message,setMessage,snake,enclosure,area,volume,coverage,environmentHistory,environmentReview,environmentCoverage,nextBestRecord,metrics,substratePresets,loadData,openEnvironment,saveEnvironment,startEnclosureEdit,updateEnclosure,applySubstratePreset,updateMix,addMixPart,removeMixPart,saveEnclosure,formatRecordedAt};
+  return {id,user,loading,profileLoading,snakes,selectedId,setSelectedId,loadingData,error,setError,editingEnvironment,setEditingEnvironment,readings,setReadings,savingReadings,editingField,setEditingField,enclosureDraft,setEnclosureDraft,mixParts,setMixParts,savingEnclosure,message,setMessage,snake,enclosure,area,volume,coverage,environmentHistory,environmentReview,environmentCoverage,nextBestRecord,completeness,completenessChecks,completenessPercent,metrics,substratePresets,loadData,openEnvironment,saveEnvironment,startEnclosureEdit,updateEnclosure,applySubstratePreset,updateMix,addMixPart,removeMixPart,saveEnclosure,formatRecordedAt};
 }
 
