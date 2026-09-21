@@ -576,7 +576,11 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     reviewedOn: REVIEWED_ON,
   };
 
-  const healthCoverage = override?.health?.length ? coverage : (coverage === 'species' || coverage === 'genus' || coverage === 'taxon' ? 'class' : coverage);
+  const healthCoverage: UniversalCareCoverage = override?.health?.length
+    ? coverage
+    : coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
+      ? 'class'
+      : coverage;
   const health = buildHealth(species, scopeKey, husbandry.status, healthCoverage, override?.health ?? [], override?.sourceIds ?? []);
   const resolvedFrom = [
     ...(coverage === 'species' ? [`species:${species.id}`] : []),
