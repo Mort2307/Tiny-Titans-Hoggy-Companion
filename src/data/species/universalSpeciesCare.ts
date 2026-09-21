@@ -593,8 +593,8 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
       : coverage;
   const health = buildHealth(species, scopeKey, husbandry.status, healthCoverage, override?.health ?? [], override?.sourceIds ?? []);
   const resolvedFrom = [
-    ...(coverage === 'species' ? [`species:${species.id}`] : []),
-    ...(coverage === 'genus' ? [`genus:${species.genus}`] : []),
+    `species:${species.id}`,
+    `genus:${species.genus}`,
     ...(coverage === 'taxon' ? [`taxon:${species.order}`] : []),
     `class:${species.className}`,
     species.taxonSourceId,
