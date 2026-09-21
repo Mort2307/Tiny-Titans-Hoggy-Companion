@@ -3,10 +3,10 @@ import {
   useState
 } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
-import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
-import { getRescueSetupState } from "../services/rescueSetupService";
-import { GatePage, PageHeader, formatDate } from "../components/rescue/RescueOperationsShared";
+import { useAuth } from "../../context/useAuth";
+import { getMyRescueWorkspace } from "../../services/rescueWorkspaceService";
+import { getRescueSetupState } from "../../services/rescueSetupService";
+import { GatePage, PageHeader, formatDate } from "../../components/rescue/RescueOperationsShared";
 
 export function RescueCompliance() {
   const { user } = useAuth();
