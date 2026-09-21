@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const srcRoot = path.join(root, "src");
-const routerPath = path.join(srcRoot, "routes", "AppRouter.tsx");
+const routerPath = path.join(srcRoot, "routes", "AuthenticatedRoutes.tsx");
 const router = fs.readFileSync(routerPath, "utf8");
 
 const LAYOUT_SPECIAL_ROUTES = [
