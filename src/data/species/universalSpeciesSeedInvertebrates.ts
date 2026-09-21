@@ -34,13 +34,13 @@ export const UNIVERSAL_INVERTEBRATE_SEEDS: UniversalSpeciesSeed[] = [
   // Beetles.
   insect('Pachnoda marginata','Sun Beetle','Scarabaeidae','Coleoptera','companion','terrestrial','omnivore',['fruit beetle']),
   insect('Mecynorrhina torquata','Sunset Flower Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial','omnivore'),
-  insect('Goliathus goliatus','Goliath Beetle','Scarabaeidae','Coleoptera','specialist','arboreal','omnivore'),,
-  insect('Dynastes hercules','Hercules Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore'),,
-  insect('Chalcosoma atlas','Atlas Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore'),,
-  insect('Lucanus cervus','European Stag Beetle','Lucanidae','Coleoptera','specialist','terrestrial','detritivore'),,
-  insect('Prosopocoilus giraffa','Giraffe Stag Beetle','Lucanidae','Coleoptera','specialist','terrestrial','detritivore'),,
-  insect('Eudicella gralli','African Flower Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','omnivore'),,
-  insect('Cetonia aurata','Rose Chafer','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore'),,
+  insect('Goliathus goliatus','Goliath Beetle','Scarabaeidae','Coleoptera','specialist','arboreal','omnivore'),
+  insect('Dynastes hercules','Hercules Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore'),
+  insect('Chalcosoma atlas','Atlas Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore'),
+  insect('Lucanus cervus','European Stag Beetle','Lucanidae','Coleoptera','specialist','terrestrial','detritivore'),
+  insect('Prosopocoilus giraffa','Giraffe Stag Beetle','Lucanidae','Coleoptera','specialist','terrestrial','detritivore'),
+  insect('Eudicella gralli','African Flower Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','omnivore'),
+  insect('Cetonia aurata','Rose Chafer','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore'),
 
   // Cockroaches, feeder insects and colony species.
   insect('Blaptica dubia','Dubia Roach','Blaberidae','Blattodea','companion','terrestrial','omnivore',['dubia cockroach']),
@@ -64,9 +64,9 @@ export const UNIVERSAL_INVERTEBRATE_SEEDS: UniversalSpeciesSeed[] = [
   // Lepidoptera and silk moths.
   insect('Bombyx mori','Silkworm','Bombycidae','Lepidoptera','companion','terrestrial','herbivore'),
   insect('Samia ricini','Eri Silkmoth','Saturniidae','Lepidoptera','specialist','terrestrial,arboreal','herbivore'),
-  insect('Attacus atlas','Atlas Moth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore'),,
-  insect('Antheraea pernyi','Chinese Oak Silkmoth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore'),,
-  'Gonimbrasia belina','Mopane Worm Moth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore''),
+  insect('Attacus atlas','Atlas Moth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore'),
+  insect('Antheraea pernyi','Chinese Oak Silkmoth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore'),
+  insect('Gonimbrasia belina','Mopane Worm Moth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore'),
 
   // Butterflies and moths kept or bred as exotics/educational animals.
   insect('Danaus plexippus','Monarch Butterfly','Nymphalidae','Lepidoptera','specialist','arboreal','nectarivore'),
