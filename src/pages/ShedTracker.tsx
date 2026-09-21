@@ -11,7 +11,7 @@ export default function ShedTracker() {
     editingId,stage,setStage,stageDate,setStageDate,quality,setQuality,status,setStatus,retained,setRetained,
     assistance,setAssistance,shedLength,setShedLength,snakeWeight,setSnakeWeight,notes,setNotes,
     clearForm,editCycle,continueActiveCycle,handleSubmit,handleDelete,activeCycle,completedCycles,measured,
-    averageLength,averageInterval,activeDuration,
+    averageLength,averageInterval,activeDuration,stages,qualities,statuses,retainedAreas,assistances,
   } = useShedTracker();
 
   if (loading || profileLoading || (user && loadingSnakes)) return <div className="page-container"><BackHomeButton /><h1>🐍 Shed Tracker</h1><div className="tracker-card"><p>Loading Tiny Titans...</p></div></div>;
