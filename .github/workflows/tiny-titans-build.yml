@@ -2,7 +2,7 @@ name: Tiny Titans CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, release/2026-09-hardening-pass]
     paths:
       - 'src/**'
       - 'functions/**'
