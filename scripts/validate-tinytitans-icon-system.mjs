@@ -7,7 +7,6 @@ const workspaceProductsSource = fs.readFileSync(path.join(root, "src", "config",
 const paidTiersSource = fs.readFileSync(path.join(root, "src", "config", "paidTiers.ts"), "utf8");
 const paidTierBadgeSource = fs.readFileSync(path.join(root, "src", "components", "PaidTierBadge.tsx"), "utf8");
 const workspaceShellSource = fs.readFileSync(path.join(root, "src", "components", "WorkspaceProductShell.tsx"), "utf8");
-const navigationIconRegistrySource = fs.readFileSync(path.join(root, "src", "config", "tinyTitansNavigationIcons.ts"), "utf8");
 const quickNavigationSource = fs.readFileSync(path.join(root, "src", "data", "quickNavigation.ts"), "utf8");
 const iconCss = fs.readFileSync(path.join(root, "src", "styles", "tiny-titans-icons.css"), "utf8");
 
