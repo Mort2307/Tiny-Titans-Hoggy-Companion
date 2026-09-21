@@ -10,7 +10,7 @@ import "./../styles/trackerWorkspace.css";
 export default function FeedingTracker() {
   const {
     user, loading, profileLoading, navigate, isImperial, weightUnit, formatWeight,
-    snakes, selectedSnake, selectedSnakeId, setSelectedSnakeId, feedings, loadingSnakes, loadingFeedings,
+    snakes, selectedSnake, selectedSnakeId, feedings, loadingSnakes, loadingFeedings,
     saving, error, success, editingId, deleteTarget, setDeleteTarget,
     date, setDate, foodType, setFoodType, customFood, setCustomFood, size, setSize, quantity, setQuantity,
     weight, setWeight, feedingMethod, setFeedingMethod, response, setResponse, notes, setNotes,
