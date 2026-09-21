@@ -4,6 +4,7 @@ import "../styles/tiny-titans-icons.css";
 export type TinyTitansIconName =
   | "home"
   | "reptile"
+  | "reptiles"
   | "messages"
   | "reminders"
   | "husbandry"
@@ -190,7 +191,7 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
 };
 
 const ICON_NAMES = new Set<TinyTitansIconName>([
-  "home", "reptile", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
+  "home", "reptile", "reptiles", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
   "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
   "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan",
   "educator", "creator", "testing", "search", "menu",
@@ -230,6 +231,15 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-organic" d="m8 21 16-13 16 13v17H28V28h-8v10H8V21Z" /><path className="tt-icon-line" d="M5.5 23 24 8l18.5 15" /><circle className="tt-icon-spark" cx="24" cy="19" r="2.3" /></svg>;
     case "reptile":
       return <SnakeFace {...props} />;
+    case "reptiles":
+      return <svg {...commonProps} className={`tt-icon-svg tt-icon-reptiles ${commonProps.className ?? ""}`.trim()}>
+        <path className="tt-icon-fill tt-icon-reptiles-snake" d="M8 31c0-7 5-13 13-13 5 0 9 2 12 5 2 3 1 6-2 8-3 2-6 1-8-2-1-2-2-3-4-3-3 0-5 2-5 5 0 3 2 5 5 6-2 2-5 2-7 1-3-1-4-4-4-7Z" />
+        <path className="tt-icon-fill tt-icon-reptiles-lizard" d="M25 16c3-4 9-5 13-2 2 2 2 5 0 7l-4 3 5 1 4-2 2 3-4 3 3 3-2 3-5-3-5 4 1 5-3 1-2-5-5-3-4 3 1 5-3 1-2-5-5-2-4 1-2-3 4-2 2-4-1-4 3-2 3 4 5 1 3-3 1-4Z" />
+        <circle className="tt-icon-eye" cx="35.5" cy="17.2" r="1.6" />
+        <circle className="tt-icon-pupil" cx="35.7" cy="17.2" r=".65" />
+        <path className="tt-icon-line-soft" d="M10 37h28" />
+        <circle className="tt-icon-spark" cx="10" cy="11" r="2.3" />
+      </svg>;
     case "messages":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-bubble" d="M8 10.5c0-3.1 2.5-5.5 5.6-5.5h15.8c3.1 0 5.6 2.4 5.6 5.5v10c0 3.1-2.5 5.5-5.6 5.5H20l-6.8 5.3.9-5.4h-.5C10.5 25.9 8 23.5 8 20.5v-10Z" /><path className="tt-icon-line" d="M15 13.5h12M15 18.5h8" /><circle className="tt-icon-spark" cx="36" cy="10" r="4" /></svg>;
     case "reminders":
