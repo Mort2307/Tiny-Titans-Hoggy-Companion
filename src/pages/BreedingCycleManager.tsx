@@ -1,5 +1,4 @@
 import BackHomeButton from "../components/BackHomeButton";
-import TinyTitansIcon from "../components/TinyTitansIcon";
 import { BREEDING_PHASE_HELP } from "../lib/breedingCycleManager";
 import { useBreedingCycleManager } from "../hooks/useBreedingCycleManager";
 import type { BreedingCycleEvent, BreedingCycleEventKind } from "../types/BreedingCycle";
