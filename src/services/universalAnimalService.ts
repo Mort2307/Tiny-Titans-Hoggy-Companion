@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { resolveDataOwnerUid } from "./familyService";
 import type { UniversalAnimalRecord, UniversalAnimalStatus } from "../types/UniversalAnimal";
@@ -48,12 +48,13 @@ export async function getUserAnimal(uid: string, animalId: string): Promise<Univ
 
 export async function createUserAnimal(uid: string, input: Omit<UniversalAnimalRecord, "id" | "ownerUid" | "createdAt" | "updatedAt">): Promise<UniversalAnimalRecord> {
   const ownerUid = await resolveDataOwnerUid(uid);
+  const timestamp = new Date().toISOString();
   const payload = {
     ...input,
     ownerUid,
     recordKind: "universal-animal",
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
   };
   const ref = await addDoc(animalsCollection(ownerUid), payload);
   const snapshot = await getDoc(ref);
@@ -64,7 +65,7 @@ export async function createUserAnimal(uid: string, input: Omit<UniversalAnimalR
 export async function updateUserAnimal(uid: string, animalId: string, patch: Partial<Omit<UniversalAnimalRecord, "id" | "ownerUid" | "createdAt">>): Promise<UniversalAnimalRecord> {
   const ownerUid = await resolveDataOwnerUid(uid);
   const ref = doc(db, "users", ownerUid, "animals", animalId);
-  await updateDoc(ref, { ...patch, updatedAt: serverTimestamp() });
+  await updateDoc(ref, { ...patch, updatedAt: new Date().toISOString() });
   const snapshot = await getDoc(ref);
   if (!snapshot.exists()) throw new Error("The animal record could not be reloaded after saving.");
   return normaliseAnimal(snapshot.id, snapshot.data() as Record<string, unknown>);
