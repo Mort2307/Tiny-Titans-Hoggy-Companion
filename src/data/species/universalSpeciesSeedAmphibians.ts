@@ -37,7 +37,7 @@ export const UNIVERSAL_AMPHIBIAN_SEEDS: UniversalSpeciesSeed[] = [
   a('Mantella baroni','Baron’s Mantella','Mantellidae','Anura','specialist','terrestrial','insectivore'),
   a('Mantella madagascariensis','Malagasy Painted Frog','Mantellidae','Anura','specialist','terrestrial','insectivore'),
   a('Agalychnis callidryas','Red-eyed Tree Frog','Phyllomedusidae','Anura','companion','arboreal','insectivore'),
-  a('Litoria caerulea','Australian Green Tree Frog','Pelodryadidae','Anura','companion','arboreal','insectivore',['White’s tree frog']),
+  a('Pelodryas caerulea','White’s Tree Frog','Pelodryadidae','Anura','companion','arboreal','insectivore',['Litoria caerulea','Australian Green Tree Frog','White’s tree frog']),
   a('Hyla cinerea','American Green Tree Frog','Hylidae','Anura','companion','arboreal','insectivore'),
   a('Boana boans','Giant Gladiator Frog','Hylidae','Anura','specialist','semi-aquatic,arboreal','carnivore'),
   a('Ceratophrys cranwelli','Cranwell’s Horned Frog','Leptodactylidae','Anura','companion','terrestrial','carnivore',['pacman frog']),
