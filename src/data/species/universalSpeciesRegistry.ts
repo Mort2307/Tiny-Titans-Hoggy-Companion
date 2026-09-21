@@ -1,6 +1,6 @@
 import { INITIAL_SNAKE_SPECIES } from './speciesRegistry';
 import { UNIVERSAL_TAXON_SOURCE_BY_CLASS } from './universalSpeciesSources';
-import type { UniversalSpeciesRecord, UniversalSpeciesGroup, UniversalSpeciesRisk } from './universalSpeciesTypes';
+import type { UniversalSpeciesBrowseGroup, UniversalSpeciesRecord, UniversalSpeciesGroup, UniversalSpeciesRisk } from './universalSpeciesTypes';
 import type { UniversalSpeciesSeed } from './universalSpeciesSeedTypes';
 import { UNIVERSAL_REPTILE_SEEDS } from './universalSpeciesSeedReptiles';
 import { UNIVERSAL_AMPHIBIAN_SEEDS } from './universalSpeciesSeedAmphibians';
@@ -61,6 +61,26 @@ function riskToDwa(risk: UniversalSpeciesRisk): 'check' | 'potentially-regulated
   return risk === 'venomous' || risk === 'high-risk' ? 'potentially-regulated' : 'check';
 }
 
+function deriveBrowseGroup(seed: UniversalSpeciesSeed): UniversalSpeciesBrowseGroup {
+  if (seed.browseGroup) return seed.browseGroup;
+  if (seed.className === 'reptile') {
+    if (seed.order === 'Testudines') return 'turtles-tortoises';
+    if (seed.order === 'Crocodylia') return 'crocodilians';
+    if (/^(Python|Boa|Lampropeltis|Pantherophis|Pituophis|Thamnophis|Nerodia|Corallus|Eunectes|Candoia|Antaresia|Aspidites|Morelia|Naja|Bitis|Crotalus|Trimeresurus|Dendroaspis|Oxyuranus|Notechis|Acanthophis|Hydrophis|Boiga|Hapsidophrys|Heterodon|Rhamphiophis|Telescopus|Psammophis|Pseudechis|Austrelaps|Hemiaspis|Tropidolaemus|Bothrops|Daboia|Vipera|Vipera|Micrurus|Lampropeltis)$/i.test(seed.scientific.split(' ')[0] ?? '')) return 'snakes';
+    return 'lizards';
+  }
+  if (seed.className === 'amphibian') return seed.order === 'Anura' ? 'frogs-toads' : seed.order === 'Caudata' ? 'salamanders-newts' : 'caecilians';
+  return seed.className === 'arachnid' ? (seed.order === 'Araneae' ? 'spiders' : seed.order === 'Scorpiones' ? 'scorpions' : 'whip-spiders-vinegaroons')
+    : seed.className === 'myriapod' ? (seed.order === 'Scolopendromorpha' ? 'centipedes' : 'millipedes')
+    : seed.className === 'insect' ? 'insects'
+    : seed.className === 'mollusc' ? 'molluscs'
+    : seed.className === 'crustacean' ? 'crustaceans'
+    : seed.className === 'mammal' ? 'mammals'
+    : seed.className === 'bird' ? 'birds'
+    : seed.className === 'fish' ? 'fish'
+    : 'cephalopods';
+}
+
 function buildSeedRecord(seed: UniversalSpeciesSeed): UniversalSpeciesRecord {
   const id = slug(seed.scientific);
   const taxonSourceId = UNIVERSAL_TAXON_SOURCE_BY_CLASS[seed.className];
@@ -75,6 +95,7 @@ function buildSeedRecord(seed: UniversalSpeciesSeed): UniversalSpeciesRecord {
     commonNames: [seed.common],
     searchAliases: [...new Set(aliases)],
     className: seed.className,
+    browseGroup: deriveBrowseGroup(seed),
     taxonomicClass: seed.taxonomicClass,
     order: seed.order || 'not-recorded',
     family: seed.family,
@@ -121,6 +142,7 @@ function adaptSnakeRecord(snake: (typeof INITIAL_SNAKE_SPECIES)[number]): Univer
     className: 'reptile',
     taxonomicClass: 'Reptilia',
     order: 'Squamata',
+    browseGroup: 'snakes',
     family: snake.family,
     genus: snake.genus,
     speciesEpithet: snake.speciesEpithet,
@@ -211,6 +233,53 @@ export function buildUniversalSpeciesGroups(species = UNIVERSAL_SPECIES): Univer
 }
 
 export const UNIVERSAL_SPECIES_GROUPS = buildUniversalSpeciesGroups();
+const BROWSE_GROUP_LABELS: Record<UniversalSpeciesBrowseGroup, string> = {
+  snakes: 'Snakes',
+  lizards: 'Lizards',
+  'turtles-tortoises': 'Turtles & tortoises',
+  crocodilians: 'Crocodilians',
+  'frogs-toads': 'Frogs & toads',
+  'salamanders-newts': 'Salamanders & newts',
+  caecilians: 'Caecilians',
+  spiders: 'Spiders',
+  scorpions: 'Scorpions',
+  'whip-spiders-vinegaroons': 'Whip spiders & vinegaroons',
+  insects: 'Insects & bugs',
+  millipedes: 'Millipedes',
+  centipedes: 'Centipedes',
+  molluscs: 'Molluscs',
+  crustaceans: 'Crustaceans',
+  mammals: 'Mammals',
+  birds: 'Birds',
+  fish: 'Fish',
+  cephalopods: 'Cephalopods',
+};
+
+export const UNIVERSAL_SPECIES_BROWSE_GROUPS = Object.entries(
+  UNIVERSAL_SPECIES.reduce<Record<string, UniversalSpeciesRecord[]>>((acc, species) => {
+    const bucket = acc[species.browseGroup] ?? [];
+    bucket.push(species);
+    acc[species.browseGroup] = bucket;
+    return acc;
+  }, {}),
+).map(([id, species]) => ({
+  id: id as UniversalSpeciesBrowseGroup,
+  label: BROWSE_GROUP_LABELS[id as UniversalSpeciesBrowseGroup],
+  count: species.length,
+  species: [...species].sort((a, b) => (a.commonNames[0] ?? a.acceptedScientificName).localeCompare(b.commonNames[0] ?? b.acceptedScientificName)),
+}));
+
+export function searchUniversalSpeciesInBrowseGroup(group: UniversalSpeciesBrowseGroup, query = ''): UniversalSpeciesRecord[] {
+  const source = UNIVERSAL_SPECIES.filter((species) => species.browseGroup === group);
+  const raw = query.trim();
+  if (!raw) return source;
+  return rankSearchResults(raw, source, (species) => ({
+    canonical: [species.commonNames[0] ?? '', species.acceptedScientificName, species.id],
+    aliases: species.searchAliases,
+    secondary: [species.genus, species.speciesEpithet, species.family, species.order, species.className],
+  })).map(({ item }) => item);
+}
+
 export const UNIVERSAL_SPECIES_STATS = Object.fromEntries(
   Object.entries(CLASS_LABELS).map(([className, label]) => [
     className,
