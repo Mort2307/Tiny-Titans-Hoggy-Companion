@@ -2,6 +2,7 @@ export type TinyTitansIconName =
   | "home"
   | "reptile"
   | "reptiles"
+  | "animals"
   | "messages"
   | "reminders"
   | "husbandry"
