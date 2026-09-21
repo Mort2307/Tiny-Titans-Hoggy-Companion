@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type Props = {
   fallback?: string;
@@ -20,7 +21,7 @@ function BackHomeButton({ fallback = "/" }: Props) {
   return (
     <div className="back-home-button-wrap">
       <button type="button" className="back-button" onClick={goBack}>
-        <span className="back-button-arrow" aria-hidden="true">←</span>
+        <span className="back-button-arrow" aria-hidden="true"><TinyTitansIcon name="back" size={18} /></span>
         <span>Back</span>
       </button>
     </div>
