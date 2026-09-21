@@ -48,7 +48,6 @@ export async function getUserAnimal(uid: string, animalId: string): Promise<Univ
 
 export async function createUserAnimal(uid: string, input: Omit<UniversalAnimalRecord, "id" | "ownerUid" | "createdAt" | "updatedAt">): Promise<UniversalAnimalRecord> {
   const ownerUid = await resolveDataOwnerUid(uid);
-  const timestamp = new Date().toISOString();
   const payload = {
     ...input,
     ownerUid,
