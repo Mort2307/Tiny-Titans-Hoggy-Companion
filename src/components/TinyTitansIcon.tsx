@@ -255,6 +255,8 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="24" cy="24" r="15" /><path className="tt-icon-line" d="m16 24 5 5 11-12" /></svg>;
     case "compass":
       return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="24" cy="24" r="15" /><path className="tt-icon-line" d="m31 17-4 11-11 4 4-11 11-4Z" /><circle className="tt-icon-dot" cx="24" cy="24" r="2.5" /></svg>;
+    case "pin":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-pin" d="M16 9h16l-3 9 5 6-7 4v11h-6V28l-7-4 5-6-3-9Z" /><circle className="tt-icon-dot" cx="24" cy="17" r="2" /> </svg>;
     case "power":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-tool" d="M20 8h8v16h7a11 11 0 1 1-22 0h7V8Z" /><path className="tt-icon-line" d="M24 8v16M13 24a11 11 0 0 0 22 0" /></svg>;
     case "air":
