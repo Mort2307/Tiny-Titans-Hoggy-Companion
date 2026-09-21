@@ -17,6 +17,11 @@ const healthLabel: Record<HealthPriority, string> = {
   "urgent-vet": "Urgent vet",
 };
 
+
+function regulatoryLabel(value: string): string {
+  return value.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default function UniversalSpeciesProfile() {
   const { id = "" } = useParams();
   const species = UNIVERSAL_SPECIES_BY_ID[id];
@@ -131,6 +136,28 @@ export default function UniversalSpeciesProfile() {
               <p>{care.health.quarantine.guidance}</p>
               <p>{care.health.veterinary.emergencyNote}</p>
             </div>
+          </section>
+
+
+          <section className="universal-species-panel">
+            <div className="universal-species-panel-heading">
+              <div><p className="eyebrow">ACQUISITION & COMPLIANCE</p><h2>Checks before keeping, moving or listing</h2></div>
+              <span className="universal-species-status">Location-dependent</span>
+            </div>
+            <div className="universal-compliance-grid">
+              {[
+                ["UK DWA", species.regulatory.ukDwa],
+                ["CITES", species.regulatory.cites],
+                ["Invasive species", species.regulatory.invasiveSpecies],
+              ].map(([label, value]) => (
+                <div className="universal-compliance-item" key={label}>
+                  <span>{label}</span>
+                  <strong>{regulatoryLabel(value)}</strong>
+                </div>
+              ))}
+            </div>
+            <p>{species.regulatory.note}</p>
+            <small>These fields are verification prompts, not a legal opinion or a guarantee that a particular specimen may be kept or traded.</small>
           </section>
 
           <section className="universal-species-panel universal-species-panel--wide">
