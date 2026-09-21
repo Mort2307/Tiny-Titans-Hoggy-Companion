@@ -103,7 +103,8 @@
     "validate:account-deletion": "node scripts/validate-account-deletion-contract.mjs",
     "validate:play-billing-boundary": "node scripts/validate-play-billing-boundary.mjs",
     "audit:tsx-architecture": "node scripts/audit-tsx-architecture.mjs",
-    "audit:icons": "node scripts/audit-icon-system.mjs"
+    "audit:icons": "node scripts/audit-iconography.mjs",
+    "validate:icons": "node scripts/audit-iconography.mjs --strict"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
