@@ -177,6 +177,26 @@ export const UNIVERSAL_SPECIES_CARE_OVERRIDES: Record<string, SpeciesCareOverrid
   },
 };
 
+
+const UNIVERSAL_GENUS_CARE_OVERRIDES: Record<string, SpeciesCareOverride> = {
+  Hymenochirus: {
+    coverage: 'genus',
+    sourceIds: ['joshsFrogsHymenochirus2026'],
+    caveat: 'Genus-level captive husbandry source from Josh’s Frogs. Species-level differences within Hymenochirus should override this profile where evidenced.',
+    requirements: [
+      { id: 'genus-aquatic', domain: 'housing', label: 'Fully aquatic enclosure', guidance: 'African dwarf frogs of the Hymenochirus genus are fully aquatic and should be maintained in a suitable aquatic system rather than a terrestrial frog vivarium.', priority: 'essential' },
+      { id: 'genus-social', domain: 'social', label: 'Compatible social housing', guidance: 'The genus can be kept socially when the system provides adequate space and stable water quality; do not confuse sociality with permission for unlimited stocking.', priority: 'conditional' },
+      { id: 'genus-water-quality', domain: 'water', label: 'Stable aquarium water quality', guidance: 'Use an established aquarium with stable, species-appropriate water quality and avoid substrates or décor that can be ingested or trap the frogs.', priority: 'essential' },
+      { id: 'genus-humidity', domain: 'environment', label: 'Aquatic thermal environment', guidance: 'Maintain the reviewed aquatic temperature range and avoid abrupt environmental changes.', priority: 'essential' },
+      { id: 'genus-feeding', domain: 'feeding', label: 'Small aquatic animal diet', guidance: 'Use an appropriate carnivorous aquatic diet matched to frog size and life stage; do not substitute generic terrestrial frog feeding advice.', priority: 'essential' },
+    ],
+    numericRanges: [
+      { label: 'Temperature', min: 23.9, max: 27.8, unit: '°C', context: 'Josh’s Frogs gives 75–82°F as its recommended ADF temperature range for the Hymenochirus genus.' },
+      { label: 'pH', min: 6.5, max: 7.5, unit: 'pH', context: 'Josh’s Frogs gives pH 6.5–7.5 for African dwarf frogs.' },
+    ],
+  },
+};
+
 export function getSpeciesCareOverride(species: UniversalSpeciesRecord): SpeciesCareOverride | undefined {
-  return UNIVERSAL_SPECIES_CARE_OVERRIDES[species.id];
+  return UNIVERSAL_SPECIES_CARE_OVERRIDES[species.id] ?? UNIVERSAL_GENUS_CARE_OVERRIDES[species.genus];
 }
