@@ -1,6 +1,6 @@
-import type { Snapshot,TileKey,UserDetailFilter,OperationsDetailFilter } from "../../types/creatorSnapshot";
-import type { CreatorSnapshotView } from "../../lib/creatorSnapshotView";
-import { fmt,pct } from "../../lib/creatorSnapshotAnalytics";
+import type { Snapshot,TileKey,UserDetailFilter,OperationsDetailFilter } from "../types/creatorSnapshot";
+import type { CreatorSnapshotView } from "../lib/creatorSnapshotView";
+import { fmt,pct } from "../lib/creatorSnapshotAnalytics";
 
 function DetailLine({label,value,note,onClick}:{label:string;value:string|number;note?:string;onClick?:()=>void}){
  const content=<><span><strong>{label}</strong>{note&&<small>{note}</small>}</span><strong>{typeof value==="number"?fmt(value):value}</strong></>;
