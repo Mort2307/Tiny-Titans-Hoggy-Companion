@@ -2,7 +2,7 @@ import {
   useMemo
 } from "react";
 import { Link } from "react-router-dom";
-import { GatePage, PageHeader, useRescueData, animalLabel, formatDate } from "../components/rescue/RescueOperationsShared";
+import { GatePage, PageHeader, useRescueData, animalLabel, formatDate } from "../../components/rescue/RescueOperationsShared";
 
 export function RescueMedical() {
   const { animals, loading, error } = useRescueData();
