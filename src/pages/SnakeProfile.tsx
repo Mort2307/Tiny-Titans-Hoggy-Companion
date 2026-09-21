@@ -14,9 +14,9 @@ import "../styles/snake-profile.css";
 
 export default function SnakeProfile() {
   const {
-    id, loading, profileLoading, snake, loadingSnake, intelligence, intelligenceLoading,
+    loading, profileLoading, snake, loadingSnake, intelligence, intelligenceLoading,
     intelligenceAccess, benchmarkLoading, benchmarkError, deleting, confirmDelete, setConfirmDelete,
-    error, reminder, summary, weightHistory, morphText, hetText, reminderWeightRoute,
+    error, reminder, summary, morphText, hetText, reminderWeightRoute,
     waterChangeRoute, navigate, deleteSnake,
   } = useSnakeProfile();
 
