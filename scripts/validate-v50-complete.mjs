@@ -6,7 +6,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const matrix = fs.readFileSync(path.join(root, "src/intelligence/v50/titanV50FeatureMatrix.ts"), "utf8");
 const runtime = fs.readFileSync(path.join(root, "src/intelligence/v50/titanV50Runtime.ts"), "utf8");
 const experience = fs.readFileSync(path.join(root, "src/pages/TitanFeatureExperience.tsx"), "utf8");
-const router = fs.readFileSync(path.join(root, "src/routes/AppRouter.tsx"), "utf8");
+const experienceHook = fs.readFileSync(path.join(root, "src/hooks/useTitanFeatureExperience.ts"), "utf8");
+const experienceConfig = fs.readFileSync(path.join(root, "src/config/titanFeatureExperience.ts"), "utf8");
+const router = fs.readFileSync(path.join(root, "src/routes/AuthenticatedRoutes.tsx"), "utf8");
 const files = [
   "src/intelligence/v50/titanV50UnifiedRuntime.ts",
   "src/intelligence/v50/titanV50ImpactGraph.ts",
@@ -34,7 +36,11 @@ const unique = new Set(ids);
 const findings = [];
 if (unique.size !== 50) findings.push(`Canonical V50 matrix contains ${unique.size} unique features, expected 50.`);
 if (!router.includes('/titan-intelligence/feature/:featureId')) findings.push('Dedicated all-feature route is missing.');
-if (!experience.includes('TITAN_V50_FEATURES') || !experience.includes('featureById')) findings.push('Feature experience is not matrix-driven.');
+if (
+  !experienceHook.includes('featureById') ||
+  !experienceConfig.includes('TITAN_V50_FEATURES') ||
+  !experienceConfig.includes('featureById')
+) findings.push('Feature experience is not matrix-driven.');
 if (!runtime.includes('TITAN_V50_FEATURES.map')) findings.push('Runtime is not evaluating the canonical matrix.');
 if (missingFiles.length) findings.push(`Missing V50 engine/UI files: ${missingFiles.join(', ')}`);
 for (let id = 1; id <= 50; id += 1) {

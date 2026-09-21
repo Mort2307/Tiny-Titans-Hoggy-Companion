@@ -1,3 +1,4 @@
+import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { SPECIES_SOURCES } from "../data/species/speciesSources";
 import { getProfileEvidenceCoverage, getRangeEvidenceCoverage, getSpeciesEvidenceSummary } from "../data/species/speciesEvidence";
