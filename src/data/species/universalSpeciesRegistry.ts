@@ -8,6 +8,7 @@ import { UNIVERSAL_ARACHNID_SEEDS } from './universalSpeciesSeedArachnids';
 import { UNIVERSAL_INVERTEBRATE_SEEDS } from './universalSpeciesSeedInvertebrates';
 import { UNIVERSAL_EXOTIC_SEEDS } from './universalSpeciesSeedExotics';
 import { rankSearchResults } from '../../utils/searchRanking';
+import { attachUniversalSpeciesCare } from './universalSpeciesCare';
 
 const CLASS_LABELS: Record<UniversalSpeciesRecord['className'], string> = {
   reptile: 'Reptiles',
@@ -166,7 +167,7 @@ const seededRecords = SEEDS
 export const UNIVERSAL_SPECIES: UniversalSpeciesRecord[] = [
   ...existingSnakeRecords,
   ...seededRecords,
-];
+].map(attachUniversalSpeciesCare);
 
 export const UNIVERSAL_SPECIES_BY_ID = Object.fromEntries(
   UNIVERSAL_SPECIES.map((species) => [species.id, species]),
