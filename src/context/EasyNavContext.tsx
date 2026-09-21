@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "./useAuth";
 import { TINY_TITANS_OWNER_EMAIL } from "../services/capabilityService";
 import { loadEasyNavPreferences, saveEasyNavPreferences } from "../services/easyNavService";
-import { defaultEasyNavPreferences, sanitiseEasyNavPreferences, sanitiseMode, sanitiseSlices, sanitiseWeekStart, sanitiseWeeklyMetrics } from "../lib/easyNav";
+import { defaultEasyNavPreferences, sanitiseEasyNavPreferences } from "../lib/easyNav";
 import {
   DEFAULT_SLICES, DEFAULT_WEEK_START, DEFAULT_WEEKLY_METRICS, MAX_SLICES, MAX_WEEKLY_METRICS,
   MIN_SLICES, MIN_WEEKLY_METRICS, TITAN_AT_A_GLANCE_OPTIONS, TITAN_WEEKLY_METRIC_OPTIONS, WEEK_START_OPTIONS,
@@ -68,7 +68,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, [user, creatorAccess]);
 
-  const persist = async (
+  const persist = useCallback(async (
     next: import("../types/easyNav").EasyNavPreferences,
   ) => {
     if (!user) return;
@@ -80,7 +80,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
     } finally {
       try { window.localStorage.setItem(`tinytitans:easy-nav:${user.uid}`, cachePayload); } catch { /* optional cache */ }
     }
-  };
+  }, [creatorAccess, user]);
 
   const value = useMemo<EasyNavContextValue>(() => ({
     ...preferences,
@@ -92,7 +92,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
     setWeeklyMetrics: (weeklyMetrics) => persist({ ...preferences, weeklyMetrics }),
     resetSlices: () => persist({ ...preferences, slices: [...DEFAULT_SLICES] }),
     resetWeeklyPreferences: () => persist({ ...preferences, weekStartDay: DEFAULT_WEEK_START, weeklyMetrics: [...DEFAULT_WEEKLY_METRICS] }),
-  }), [loading, preferences]);
+  }), [loading, persist, preferences]);
 
   return <EasyNavContext.Provider value={value}>{children}</EasyNavContext.Provider>;
 }
