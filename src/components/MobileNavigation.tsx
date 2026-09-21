@@ -7,7 +7,7 @@ type NavItem = { to: string; label: string; icon: TinyTitansIconName };
 
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Home", icon: "home" },
-  { to: "/snakes", label: "My Snakes", icon: "reptile" },
+  { to: "/snakes", label: "My Snakes", icon: "reptiles" },
   { to: "/reptile-room", label: "Reptile Room", icon: "reptile" },
   { to: "/husbandry", label: "Husbandry & Care", icon: "husbandry" },
   { to: "/behaviour", label: "Behaviour Journal", icon: "behaviour" },
