@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
-import { searchSnakeSpecies } from "../data/species/speciesRegistry";
+import { searchUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import { submitSpeciesSubmission } from "../services/speciesSubmissionService";
 import "../styles/species-submission.css";
 
@@ -70,7 +70,7 @@ export default function SubmitSpecies() {
 
   const suggestedSpecies = useMemo(() => {
     const query = values.scientificName || values.commonName;
-    return searchSnakeSpecies(query).slice(0, 8);
+    return searchUniversalSpecies(query).slice(0, 8);
   }, [values.scientificName, values.commonName]);
 
   function update(key: SpeciesSubmissionField, value: string) {
@@ -129,9 +129,9 @@ export default function SubmitSpecies() {
     <main className="page-container species-submission-page">
       <BackHomeButton />
       <header className="species-submission-hero">
-        <span className="eyebrow">TINY TITANS · SPECIES INTELLIGENCE</span>
+        <span className="eyebrow">TINY TITANS · ANIMAL SPECIES INTELLIGENCE</span>
         <h1><TinyTitansIcon name="reptile" size={24} /> Submit a Species</h1>
-        <p>Help expand the reptile database. Give us the best evidence you have, upload useful imagery, and clearly mark anything that still needs verification.</p>
+        <p>Help expand the universal animal database. Give us the best evidence you have, upload useful imagery, and clearly mark anything that still needs verification.</p>
         <div className="species-submission-rule">Research quality beats completeness. Writing “unknown” is better than inventing a value.</div>
       </header>
 
