@@ -22,10 +22,7 @@ import {
 } from "../lib/shedTrackerIntelligent";
 
 export function useShedTrackerIntelligent() {
-  const { routeSnakeId } = (() => {
-    const params = useParams();
-    return { routeSnakeId: params.id };
-  })();
+  const { id: routeSnakeId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading, profileLoading } = useAuth();
