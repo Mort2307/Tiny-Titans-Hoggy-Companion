@@ -6,10 +6,10 @@ import "../styles/husbandry-care.css";
 
 export default function HusbandryCare() {
   const {
-    user, loading, profileLoading, snakes, selectedId, setSelectedId, loadingData, error,
+    loading, profileLoading, snakes, setSelectedId, loadingData, error,
     lengthEditing, setLengthEditing, lengthDraft, setLengthDraft, lengthSaving, message,
     snake, history, currentWeight, age, stage, growth, adultBand, adultStatus, loadData,
-    openLengthEditor, saveLength,
+    saveLength,
   } = useHusbandryCare();
 
   if (loadingData || loading || profileLoading) return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-hero"><p className="husbandry-eyebrow">Tiny Titans Intelligence</p><h1>🐍 Husbandry & Care</h1><p>Building your personalised care picture…</p></section></main>;
