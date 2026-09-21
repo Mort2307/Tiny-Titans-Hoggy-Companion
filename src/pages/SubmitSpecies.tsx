@@ -9,6 +9,9 @@ import "../styles/species-submission.css";
 
 const fields = [
   ["commonName", "Common name", "e.g. Ball Python"],
+  ["animalGroup", "Animal group", "e.g. reptile, amphibian, arachnid, insect, bird, fish"],
+  ["taxonomicClass", "Taxonomic class", "e.g. Reptilia, Amphibia, Arachnida, Insecta"],
+  ["order", "Order", "e.g. Squamata, Anura, Araneae"],
   ["scientificName", "Accepted scientific name", "e.g. Python regius"],
   ["authority", "Taxonomic authority", "Optional"],
   ["family", "Family", "e.g. Pythonidae"],
@@ -22,6 +25,10 @@ const fields = [
   ["lifespan", "Captive lifespan", "Only state a range you can support"],
   ["activityPattern", "Activity pattern", "Diurnal, nocturnal, crepuscular, seasonal etc."],
   ["terrestrialArborealAquatic", "Locomotion / habitat use", "Terrestrial, arboreal, aquatic, fossorial or mixed"],
+  ["dietaryGuild", "Dietary guild", "Carnivore, herbivore, insectivore, omnivore, piscivore, nectarivore etc."],
+  ["socialHousing", "Social / housing needs", "Solitary, pair, group, colony or species-specific context"],
+  ["waterChemistry", "Water chemistry / aquatic parameters", "Only where relevant: pH, hardness, salinity, temperature etc. with sources"],
+  ["biosecurityGuidance", "Biosecurity guidance", "Quarantine, hygiene, pathogen or cross-contamination considerations"],
   ["temperatureGuidance", "Temperature guidance", "Warm side/spot, cool side, night range and seasonal notes"],
   ["humidityGuidance", "Humidity / hydration guidance", "Typical range plus seasonal or locality caveats"],
   ["substrateGuidance", "Substrate guidance", "Suitable substrates and important cautions"],
@@ -89,7 +96,7 @@ export default function SubmitSpecies() {
     setError("");
     setSuccess("");
     if (honeypot) return;
-    const required: SpeciesSubmissionField[] = ["commonName", "scientificName", "family", "genus", "nativeRange", "habitat", "temperatureGuidance", "humidityGuidance", "enclosureGuidance", "feedingGuidance"];
+    const required: SpeciesSubmissionField[] = ["commonName", "scientificName", "family", "genus", "nativeRange", "habitat", "evidenceSummary"];
     const missing = required.filter((key) => !values[key].trim());
     if (missing.length) {
       setError("Please complete the core identity, ecology, husbandry and feeding fields before submitting.");
