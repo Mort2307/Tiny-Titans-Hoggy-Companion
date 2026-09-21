@@ -101,7 +101,8 @@
     "test:release-candidate": "npm run test:production-gate && npm run audit",
     "validate:release-config": "node scripts/validate-release-config.mjs",
     "validate:account-deletion": "node scripts/validate-account-deletion-contract.mjs",
-    "validate:play-billing-boundary": "node scripts/validate-play-billing-boundary.mjs"
+    "validate:play-billing-boundary": "node scripts/validate-play-billing-boundary.mjs",
+    "audit:tsx-architecture": "node scripts/audit-tsx-architecture.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
