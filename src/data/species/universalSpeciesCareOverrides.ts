@@ -170,9 +170,6 @@ export const UNIVERSAL_SPECIES_CARE_OVERRIDES: Record<string, SpeciesCareOverrid
       { id: 'species-cover', domain: 'housing', label: 'Multiple refugia and visual barriers', guidance: 'Provide secure hiding places and visual barriers to reduce stress and conflict, particularly where animals share a system.', priority: 'essential' },
       { id: 'species-monitoring', domain: 'monitoring', label: 'Water-quality and health records', guidance: 'Track water conditions, appetite, behaviour and body condition because environmental change can quickly affect an aquatic amphibian.', priority: 'essential' },
     ],
-    numericRanges: [
-      { label: 'Preferred housing temperature', min: 18, max: 20, unit: '°C', context: 'Merck lists 18–20°C as the preferred housing range for axolotls in its laboratory-animal reference table; this is a laboratory reference and should not be treated as a complete pet care sheet.' },
-    ],
   },
 };
 
