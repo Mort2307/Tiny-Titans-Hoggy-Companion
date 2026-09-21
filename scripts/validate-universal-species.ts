@@ -32,6 +32,7 @@ for (const species of UNIVERSAL_SPECIES) {
   assert(!/\\bsp\\.?\\b/i.test(species.acceptedScientificName), `${species.id} is a genus-level/spec placeholder rather than a species-level record.`);
   assert(species.husbandryStatus !== 'taxonomy-only' || species.husbandryNotes?.includes('numeric husbandry targets'), `${species.id} taxonomy-only state is missing its no-fabrication guard.`);
   assert(species.regulatory.locationDependent === true, `${species.id} regulatory state must remain location-dependent.`);
+  assert(species.browseGroup.trim().length > 0, `${species.id} has no human-facing browse group.`);
 }
 
 const counts = Object.fromEntries(
@@ -74,3 +75,9 @@ for (const group of UNIVERSAL_SPECIES_GROUPS) {
 }
 console.log('Policy: universal expansion records default to taxonomy-first/research-needed until species-specific husbandry evidence is reviewed.');
 console.log('Policy: legal fields are checks, not legal conclusions; current CITES/DWA/invasive status must be rechecked for the user’s jurisdiction.');
+
+const browseGroups = new Set(UNIVERSAL_SPECIES.map((species) => species.browseGroup));
+assert(browseGroups.has('snakes') && browseGroups.has('lizards'), 'Reptile browse groups do not expose both snakes and lizards.');
+assert(browseGroups.has('frogs-toads'), 'Amphibian browse groups do not expose frogs/toads.');
+assert(browseGroups.has('salamanders-newts'), 'Amphibian browse groups do not expose salamanders/newts.');
+assert(browseGroups.has('insects') && browseGroups.has('spiders'), 'Invertebrate browse groups do not expose insects and spiders.');
