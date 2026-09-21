@@ -4,6 +4,8 @@ import type {
   UniversalSpeciesClass,
 } from './universalSpeciesTypes';
 
+export type UniversalCareCoverage = 'species' | 'genus' | 'taxon' | 'class' | 'ecology-only' | 'not-verified';
+
 export type UniversalCareStatus =
   | 'baseline'
   | 'sourced-profile'
@@ -54,6 +56,7 @@ export interface UniversalCareRequirement {
 export interface UniversalHusbandryProfile {
   status: UniversalCareStatus;
   scopeKey: string;
+  coverage: UniversalCareCoverage;
   title: string;
   overview: string;
   ecologyContext: {
@@ -84,6 +87,7 @@ export interface UniversalHealthWatch {
 export interface UniversalHealthProfile {
   status: UniversalCareStatus;
   scopeKey: string;
+  coverage: UniversalCareCoverage;
   baseline: string[];
   watches: UniversalHealthWatch[];
   quarantine: {
