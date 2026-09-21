@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { Canvas } from "@react-three/fiber";
 import { useAuth } from "../../context/useAuth";
 import type { ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import type { Room3DProps } from "../../types/reptileRoom3D";
-import { buildRoomNavigationNodes, ROOM_NAVIGATION_SPACING_CM } from "./RoomNavigation3D";
-import type { RoomNavigationNode } from "./RoomNavigation3D";
-import { getRoomDimensions3D } from "./room3DScale";
+import { buildRoomNavigationNodes } from "../../lib/roomNavigation";
+import type { RoomNavigationNode } from "../../lib/roomNavigation";
+import { getRoomDimensions3D } from "../../lib/room3DScale";
 import RoomScene from "./RoomScene";
 import NavigationPad from "./NavigationPad";
 import VivariumQuickLogDock from "./VivariumQuickLogDock";
