@@ -7,6 +7,7 @@ const workspaceProductsSource = fs.readFileSync(path.join(root, "src", "config",
 const paidTiersSource = fs.readFileSync(path.join(root, "src", "config", "paidTiers.ts"), "utf8");
 const paidTierBadgeSource = fs.readFileSync(path.join(root, "src", "components", "PaidTierBadge.tsx"), "utf8");
 const workspaceShellSource = fs.readFileSync(path.join(root, "src", "components", "WorkspaceProductShell.tsx"), "utf8");
+const quickNavigationSource = fs.readFileSync(path.join(root, "src", "data", "quickNavigation.ts"), "utf8");
 const iconCss = fs.readFileSync(path.join(root, "src", "styles", "tiny-titans-icons.css"), "utf8");
 
 const requiredIcons = [
@@ -43,6 +44,9 @@ const productTierIconMismatch = tierCatalogEntries.map((entry) => {
 }).filter(Boolean);
 
 const missingProductIcons = productIcons.filter((name) => !iconUnion.includes(name));
+const invalidQuickNavigationIcons = quickIconValues.filter((name) => !iconUnion.includes(name));
+const hasNoRawQuickNavigationIcons = !/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/u.test(quickNavigationSource);
+const quickIconValues = [...quickNavigationSource.matchAll(/icon:\s*"([^"]+)"/g)].map((match) => match[1]);
 const productNavPaths = [...workspaceProductsSource.matchAll(/path:"([^"]+)"/g)].map((match) => match[1]);
 const navMapPaths = [...workspaceShellSource.matchAll(/"([^"]+)": "([^"]+)"/g)].map((match) => match[1]);
 const missingWorkspaceNavIcons = [...new Set(productNavPaths)].filter((path) => !navMapPaths.includes(path));
@@ -65,8 +69,8 @@ const duplicateVisualCases = [...caseBodies.values()].filter((names) => names.le
 
 
 const missingIcons = requiredIcons.filter((name) => !iconSource.includes(`| "${name}"`));
-if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length || missingProductIcons.length || missingWorkspaceNavIcons.length || missingTierCatalogIcons.length || invalidTierCatalogIcons.length || productTierIconMismatch.length || !hasSemanticTierBadge) {
-  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases, missingProductIcons, missingWorkspaceNavIcons, missingTierCatalogIcons, invalidTierCatalogIcons, productTierIconMismatch, hasSemanticTierBadge }, null, 2));
+if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length || missingProductIcons.length || invalidQuickNavigationIcons.length || !hasNoRawQuickNavigationIcons || missingWorkspaceNavIcons.length || missingTierCatalogIcons.length || invalidTierCatalogIcons.length || productTierIconMismatch.length || !hasSemanticTierBadge) {
+  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases, missingProductIcons, invalidQuickNavigationIcons, hasNoRawQuickNavigationIcons, missingWorkspaceNavIcons, missingTierCatalogIcons, invalidTierCatalogIcons, productTierIconMismatch, hasSemanticTierBadge }, null, 2));
   process.exit(1);
 }
 
