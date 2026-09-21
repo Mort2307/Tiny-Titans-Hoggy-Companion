@@ -57,4 +57,5 @@ export type TinyTitansIconName =
   | "ceiling"
   | "info"
   | "warning"
-  | "check";;
+  | "check"
+  | "air";;
