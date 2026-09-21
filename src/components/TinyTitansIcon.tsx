@@ -233,13 +233,14 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <SnakeFace {...props} />;
     case "reptiles":
       return <svg {...commonProps} className={`tt-icon-svg tt-icon-reptiles ${commonProps.className ?? ""}`.trim()}>
-        <circle className="tt-icon-fill tt-icon-reptiles-badge" cx="24" cy="24" r="16" />
-        <path className="tt-icon-line tt-icon-reptiles-snake" d="M11 30c2-5 6-9 11-9 3 0 5 1 7 3 2 2 4 2 7 0" />
-        <path className="tt-icon-fill tt-icon-reptiles-lizard" d="M14 20c3-4 8-5 12-2l4 3 5-2 2 3-5 2 4 4-2 2-5-4-5 2-3-2 3-3-6-1-4 2-2-2 4-3Z" />
-        <circle className="tt-icon-eye tt-icon-reptiles-eye" cx="34" cy="21" r="1.5" />
-        <circle className="tt-icon-reptiles-pupil" cx="34.3" cy="21" r=".55" />
-        <path className="tt-icon-line-soft" d="M13 34h22" />
-        <circle className="tt-icon-spark" cx="11" cy="14" r="2" />
+        <path className="tt-icon-reptiles-shell" d="M6 31c2-7 8-11 15-11 3 0 6 .7 8 2 2-3 5-5 9-5 3 0 5 1 6 3-2 1-3 3-3 5 0 4-3 7-8 7-3 0-5-.7-7-2-3 3-7 5-12 5H9c-2 0-3-1-3-2s0-1 0-2Z" />
+        <path className="tt-icon-reptiles-snake" d="M8 30c2-4 5-6 9-6 3 0 5 1 7 3" />
+        <path className="tt-icon-reptiles-lizard" d="M29 24c2-2 5-3 8-2l3 2 3-1m-4 2 3 2m-7 0-2 3" />
+        <path className="tt-icon-line" d="M15 33c4-2 8-3 12-3" />
+        <circle className="tt-icon-eye tt-icon-reptiles-eye" cx="37" cy="21" r="1.5" />
+        <circle className="tt-icon-reptiles-pupil" cx="37.3" cy="21" r=".55" />
+        <path className="tt-icon-tongue" d="M13 27v4m0 0-2 2m2-2 2 2" />
+        <circle className="tt-icon-spark" cx="10" cy="13" r="2.2" />
       </svg>;
     case "messages":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-bubble" d="M8 10.5c0-3.1 2.5-5.5 5.6-5.5h15.8c3.1 0 5.6 2.4 5.6 5.5v10c0 3.1-2.5 5.5-5.6 5.5H20l-6.8 5.3.9-5.4h-.5C10.5 25.9 8 23.5 8 20.5v-10Z" /><path className="tt-icon-line" d="M15 13.5h12M15 18.5h8" /><circle className="tt-icon-spark" cx="36" cy="10" r="4" /></svg>;
