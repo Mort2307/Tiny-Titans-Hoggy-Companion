@@ -30,7 +30,6 @@ export function useBreedingPlanner() {
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [projects, setProjects] = useState<BreedingProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
-  const selectedProject = useMemo(() => projects.find((project) => project.id === selectedProjectId), [projects, selectedProjectId]);
   const [pairings, setPairings] = useState<BreedingPairing[]>([]);
   const [clutches, setClutches] = useState<EggClutch[]>([]);
   const [hatchlings, setHatchlings] = useState<HatchlingRecord[]>([]);
