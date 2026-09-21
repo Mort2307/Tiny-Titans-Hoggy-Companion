@@ -119,7 +119,6 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "⚙️": "account",
   "👤": "account",
   "📝": "contribution",
-  "＋": "contribution",
   "✦": "titan",
   "✨": "titan",
   "🧠": "titan",
