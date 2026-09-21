@@ -1,9 +1,10 @@
-import type { UniversalDietaryGuild, UniversalLifestyle, UniversalSpeciesClass, UniversalSpeciesRisk } from './universalSpeciesTypes';
+import type { UniversalDietaryGuild, UniversalLifestyle, UniversalSpeciesBrowseGroup, UniversalSpeciesClass, UniversalSpeciesRisk } from './universalSpeciesTypes';
 
 export interface UniversalSpeciesSeed {
   scientific: string;
   common: string;
   className: UniversalSpeciesClass;
+  browseGroup?: UniversalSpeciesBrowseGroup;
   taxonomicClass: string;
   order: string;
   family: string;
@@ -24,8 +25,9 @@ export const seed = (
   lifestyle: string,
   dietaryGuild: UniversalDietaryGuild,
   aliases: string[] = [],
+  browseGroup?: UniversalSpeciesBrowseGroup,
 ): UniversalSpeciesSeed => ({
   scientific, common, className, taxonomicClass, order, family, riskClass,
   lifestyle: lifestyle.split(',') as UniversalLifestyle[],
-  dietaryGuild, aliases,
+  dietaryGuild, aliases, browseGroup,
 });
