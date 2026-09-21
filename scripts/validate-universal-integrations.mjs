@@ -32,7 +32,7 @@ const checks = [
   ["functions/titanIntelligence.js", /APP_CATALOGUE_CONTEXT/, "Ask Titan backend must carry the canonical species reference context."],
   ["functions/titanIntelligencePrompt.js", /APP_CATALOGUE_CONTEXT/, "Ask Titan prompt must preserve species evidence boundaries."],
   ["src/data/species/universalSpeciesCare.ts", /const genusRequirement/, "Every universal record must pass through genus-level resolution."],
-  ["scripts/validate-universal-care.ts", /resolvedFrom\\.length >= 3/, "Universal care validator must enforce provenance chains."],
+  ["scripts/validate-universal-care.ts", /resolvedFrom\.length >= 3/, "Universal care validator must enforce provenance chains."],
 ];
 
 for (const [relativePath, pattern, message] of checks) {
