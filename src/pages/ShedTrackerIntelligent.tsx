@@ -12,7 +12,7 @@ export default function ShedTrackerIntelligent() {
 
   if (loading || profileLoading) return <div className="tt-tracker-page"><BackHomeButton /><div className="tt-tracker-panel"><p className="tt-tracker-eyebrow">Keeper records</p><h1><TinyTitansIcon name="shed" size={26} /> Shed Intelligence</h1><p className="tt-tracker-panel-muted">Loading shedding intelligence…</p></div></div>;
   if (!user) return null;
-  return   return <main className="tt-tracker-page">
+  return <main className="tt-tracker-page">
     <BackHomeButton />
     <header className="tt-tracker-header">
       <p className="tt-tracker-eyebrow">Keeper records · Shedding intelligence</p>
