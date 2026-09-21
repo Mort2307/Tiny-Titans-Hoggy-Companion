@@ -11,15 +11,16 @@ import { submitMorphImageV2 } from "../services/morphSubmissionServiceV2";
 import { migrateSnake } from "../utils/snakeMigration";
 import { buildWeightHistory, sortWeightHistory } from "../lib/snakeWeightHistory";
 import { getFirebaseErrorDetails } from "../utils/firebaseError";
+import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 
 export type SnakeEditFormState = {
-  name: string; species: string; photo: string; sex: Snake["sex"]; morphs: string[]; customMorph: string; hets: Het[]; customHets: string;
+  name: string; species: string; universalSpeciesId: string; photo: string; sex: Snake["sex"]; morphs: string[]; customMorph: string; hets: Het[]; customHets: string;
   startingWeight: number | null; startingWeightDate: string; weight: number | null; lastWeighedDate: string; weightHistory: WeightRecord[];
   hatchDate: string; arrivalDate: string; notes: string;
 };
 
 const emptyForm: SnakeEditFormState = {
-  name: "", species: "Western Hognose", photo: "", sex: "Unknown", morphs: [], customMorph: "", hets: [], customHets: "",
+  name: "", species: "Western Hognose", universalSpeciesId: "heterodon-nasicus", photo: "", sex: "Unknown", morphs: [], customMorph: "", hets: [], customHets: "",
   startingWeight: null, startingWeightDate: "", weight: null, lastWeighedDate: "", weightHistory: [], hatchDate: "", arrivalDate: "", notes: "",
 };
 
@@ -70,7 +71,7 @@ export function useSnakeEdit() {
         const weightHistory = sortWeightHistory(migratedSnake.weightHistory ?? []);
         if (cancelled) return;
         setForm({
-          name: migratedSnake.name ?? "", species: migratedSnake.species ?? "Western Hognose", photo: migratedSnake.photo ?? "",
+          name: migratedSnake.name ?? "", species: migratedSnake.species ?? "Western Hognose", universalSpeciesId: migratedSnake.universalSpeciesId ?? findUniversalSpecies(migratedSnake.species)?.id ?? "", photo: migratedSnake.photo ?? "",
           sex: migratedSnake.sex ?? "Unknown", morphs: migratedSnake.morphs ?? [], customMorph: migratedSnake.customMorph ?? "", hets: migratedSnake.hets ?? [],
           customHets: migratedSnake.customHets ?? "", startingWeight: migratedSnake.startingWeight ?? null, startingWeightDate: migratedSnake.startingWeightDate ?? "",
           weight: migratedSnake.weight ?? null, lastWeighedDate: migratedSnake.lastWeighedDate ?? "", weightHistory, hatchDate: migratedSnake.hatchDate ?? "",
