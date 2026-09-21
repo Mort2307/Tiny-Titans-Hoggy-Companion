@@ -4,10 +4,10 @@ import { ContactShadows } from "@react-three/drei";
 import { MeasurementGrid3D } from "./MeasurementGrid3D";
 import { RoomCamera3D } from "./RoomCamera3D";
 import { RoomNavigation3D } from "./RoomNavigation3D";
-import type { RoomNavigationNode } from "./RoomNavigation3D";
+import type { RoomNavigationNode } from "../../lib/roomNavigation";
 import { RoomObject3D } from "./RoomObject3D";
 import { RoomShell3D } from "./RoomShell3D";
-import { getRoomDimensions3D } from "./room3DScale";
+import { getRoomDimensions3D } from "../../lib/room3DScale";
 
 type Props = Omit<Room3DProps,"className"> & {
   objects: ReptileRoomObject[];
