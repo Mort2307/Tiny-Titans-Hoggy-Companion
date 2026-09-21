@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useAuth } from "../context/useAuth";
+import TinyTitansIcon from "./TinyTitansIcon";
 import { db } from "../firebase/config";
 import { savePrivacyPreferences } from "../services/privacyService";
 
@@ -59,13 +60,13 @@ export default function DataPrivacyConsentModal({ onAccepted }: Props) {
   return (
     <div className="privacy-consent-backdrop" style={backdropStyle} role="dialog" aria-modal="true" aria-labelledby="privacy-consent-title">
       <section className="privacy-consent-modal" style={modalStyle}>
-        <p className="personalisation-eyebrow">TINY TITANS · YOUR CHOICE</p><h1 id="privacy-consent-title">🔐 Data &amp; Privacy</h1>
+        <p className="personalisation-eyebrow">TINY TITANS · YOUR CHOICE</p><h1 id="privacy-consent-title"><TinyTitansIcon name="health" size={22} /> Data &amp; Privacy</h1>
         <p className="privacy-consent-intro">Tiny Titans works without optional data sharing. You can make one simple choice now and change individual choices later from My Account → Data &amp; Privacy.</p>
         {!customising ? <>
-          <div className="privacy-consent-option"><strong>🌍 Community location</strong><small>If enabled, your device location is immediately converted into a coarse privacy area. Tiny Titans does not store your raw GPS position. The Creator globe shows one aggregated marker for each area.</small></div>
-          <div className="privacy-consent-option"><strong>📊 Anonymous product analytics</strong><small>Optional aggregated usage information that helps improve Tiny Titans.</small></div>
-          <div className="privacy-consent-option"><strong>🐍 Community husbandry intelligence</strong><small>If enabled, your feeding, weight and shedding records can be included anonymously in aggregate community statistics. Your individual records are never shown as community data.</small></div>
-          <div className="privacy-consent-option"><strong>📣 Product updates</strong><small>Optional Tiny Titans feature and release updates.</small></div>
+          <div className="privacy-consent-option"><strong><TinyTitansIcon name="community" size={18} /> Community location</strong><small>If enabled, your device location is immediately converted into a coarse privacy area. Tiny Titans does not store your raw GPS position. The Creator globe shows one aggregated marker for each area.</small></div>
+          <div className="privacy-consent-option"><strong><TinyTitansIcon name="weight" size={18} /> Anonymous product analytics</strong><small>Optional aggregated usage information that helps improve Tiny Titans.</small></div>
+          <div className="privacy-consent-option"><strong><TinyTitansIcon name="reptiles" size={18} /> Community husbandry intelligence</strong><small>If enabled, your feeding, weight and shedding records can be included anonymously in aggregate community statistics. Your individual records are never shown as community data.</small></div>
+          <div className="privacy-consent-option"><strong><TinyTitansIcon name="timeline" size={18} /> Product updates</strong><small>Optional Tiny Titans feature and release updates.</small></div>
           {error && <div className="setup-error" role="alert">{error}</div>}
           <button className="setup-submit" type="button" onClick={() => void saveChoices({ location: true, analytics: true, communityHusbandryData: true, updates: true })} disabled={saving}>{saving ? (locating ? "Finding your approximate area…" : "Saving your choices…") : "Accept Optional Data"}</button>
           <button className="creator-tool-button" type="button" onClick={() => void saveChoices({ location: false, analytics: false, communityHusbandryData: false, updates: false })} disabled={saving}>Decline Optional Data</button>
