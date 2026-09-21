@@ -11,7 +11,7 @@ export default function WeightRecords() {
   const {
     navigate,loading,profileLoading,loadingSnake,error,snake,history,weightInput,setWeightInput,today,typedDate,setTypedDate,dateError,
     saving,saveMessage,saveState,editingId,deletingId,deleteTarget,setDeleteTarget,isImperial,formatWeight,weightUnit,
-    reminder,currentWeight,totalGain,percentageGain,daysSinceWeigh,chartHistory,saveWeight,startEdit,removeWeight,
+    reminder,currentWeight,totalGain,percentageGain,daysSinceWeigh,chartHistory,firstWeight,saveWeight,startEdit,removeWeight,setSaveMessage,setDateError,setEditingId,
   }=useWeightRecords();
 
   if (loading || profileLoading || loadingSnake) return <div className="tt-tracker-page"><BackHomeButton /><div className="tt-tracker-panel"><p className="tt-tracker-eyebrow">Keeper records</p><h1><TinyTitansIcon name="weight" size={26} /> Weight Records</h1><p className="tt-tracker-panel-muted">Fetching this snake's canonical weight history from Firebase…</p></div></div>;
