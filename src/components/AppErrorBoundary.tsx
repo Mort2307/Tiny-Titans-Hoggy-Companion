@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type Props = { children: ReactNode };
 type State = { hasError: boolean; message: string };
@@ -31,7 +32,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
     return (
       <main className="page-container" role="alert" aria-live="assertive">
         <section className="welcome-card">
-          <p aria-hidden="true">🐍</p>
+          <p aria-hidden="true"><TinyTitansIcon name="reptile" size={44} /></p>
           <h1>Tiny Titans hit an unexpected snag</h1>
           <p>The app protected your session instead of leaving you with a blank screen.</p>
           <p>{this.state.message}</p>
