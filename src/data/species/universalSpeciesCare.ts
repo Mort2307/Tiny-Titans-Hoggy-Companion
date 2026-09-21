@@ -21,7 +21,7 @@ const CLASS_SOURCE_IDS: Record<UniversalSpeciesRecord['className'], string[]> = 
   myriapod: [],
   mollusc: [],
   crustacean: [],
-  mammal: ['merckExoticNutrition2025'],
+  mammal: ['merckSmallAnimalHusbandry2026', 'merckExoticWelfare2026', 'merckExoticNutrition2025'],
   bird: ['merckBirdOverview2026', 'merckBirdManagement2026', 'aavBirdOwners2026', 'merckExoticNutrition2025'],
   fish: ['oataFreshwater2026', 'oataMarine2026', 'oataTraining2026'],
   cephalopod: [],
