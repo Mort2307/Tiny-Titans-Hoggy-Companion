@@ -96,7 +96,7 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
 };
 
 const ICON_NAMES = new Set<TinyTitansIconName>([
-  "home", "reptile", "reptiles", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
+  "home", "reptile", "reptiles", "animals", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
   "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
   "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan",
   "educator", "creator", "testing", "search", "menu", "add", "edit", "delete", "water", "timeline", "vet", "save", "upload", "back", "forward", "close", "filter", "camera", "rotate", "move", "duplicate", "link", "lock", "unlock", "grid", "ceiling", "info", "warning", "check", "compass", "power", "air",
@@ -129,6 +129,8 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-organic" d="m8 21 16-13 16 13v17H28V28h-8v10H8V21Z" /><path className="tt-icon-line" d="M5.5 23 24 8l18.5 15" /><circle className="tt-icon-spark" cx="24" cy="19" r="2.3" /></svg>;
     case "reptile":
       return <SnakeFace {...props} />;
+    case "animals":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-avatar" cx="24" cy="23" r="12" /><path className="tt-icon-line" d="M15 13c-3-4-8-2-7 3 1 3 4 4 7 3m18-6c3-4 8-2 7 3-1 3-4 4-7 3M14 34c2 4 7 6 10 6s8-2 10-6" /><circle className="tt-icon-eye" cx="20" cy="22" r="1.8" /><circle className="tt-icon-eye" cx="28" cy="22" r="1.8" /><path className="tt-icon-line-soft" d="M21 28c2 1.5 4 1.5 6 0" /></svg>;
     case "reptiles":
       return <svg {...commonProps}>
         <path className="tt-icon-fill tt-icon-snake-collection" d="M8 29c0-5 4-9 9-9 3 0 5 1 7 3 2-2 4-3 7-3 5 0 9 4 9 9 0 6-5 10-12 10h-8C13 39 8 35 8 29Z" />
