@@ -36,14 +36,15 @@ exports.getPublicMarketplaceListings = onCall({ region: "europe-west2" }, async 
     const workspace = workspaceSnapshot.exists ? workspaceSnapshot.data() : {};
     const user = userSnapshot.exists ? userSnapshot.data() : {};
     const seller = workspace.sellerProfile && typeof workspace.sellerProfile === "object" ? workspace.sellerProfile : {};
+    const marketplace = workspace.marketplace && typeof workspace.marketplace === "object" ? workspace.marketplace : {};
     return {
       id: doc.id,
       ...doc.data(),
       seller: {
         displayName: cleanText(seller.displayName || user.displayName, 120),
         businessName: cleanText(seller.businessName, 120),
-        location: cleanText(seller.location, 160),
-        contactEmail: seller.acceptingEnquiries === false ? "" : cleanText(seller.contactEmail, 160),
+        location: marketplace.showLocation === false ? "" : cleanText(seller.location, 160),
+        contactEmail: marketplace.showContactEmail === true && seller.acceptingEnquiries !== false ? cleanText(seller.contactEmail, 160) : "",
         website: cleanText(seller.website, 240),
       },
     };
