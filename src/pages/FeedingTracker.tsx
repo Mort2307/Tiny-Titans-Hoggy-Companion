@@ -4,7 +4,7 @@ import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import FeedingHistory from "../components/Feeding/FeedingHistory";
 import FeedingLogForm from "../components/Feeding/FeedingLogForm";
 import FeedingOverviewStats from "../components/Feeding/FeedingOverviewStats";
-import { useFeedingTracker } from "../hooks/useFeedingTracker";
+import useFeedingTracker from "../hooks/useFeedingTracker";
 import "./../styles/trackerWorkspace.css";
 
 export default function FeedingTracker() {
