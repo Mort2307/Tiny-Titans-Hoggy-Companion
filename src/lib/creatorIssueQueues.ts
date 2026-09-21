@@ -22,7 +22,8 @@ export function displayCreatorQueueDate(value: unknown) {
 }
 
 export function bugStatusLabel(status: ReportIssue["status"]) {
-  return status === "Resolved" || status === "resolved" || status === "fixed"
+  const normalised = String(status ?? "").trim().toLowerCase();
+  return normalised === "resolved" || normalised === "fixed"
     ? "Fixed & Confirmed"
     : status;
 }
