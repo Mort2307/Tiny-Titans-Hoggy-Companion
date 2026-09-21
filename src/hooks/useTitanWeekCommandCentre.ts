@@ -9,7 +9,7 @@ import { getDashboardIntelligence,type SnakeIntelligence } from "../services/sna
 import { getCurrentTitanWeek } from "../utils/titanWeek";
 import type { TitanWeeklyMetricId } from "../types/easyNav";
 import { loadTitanWeekTargets,saveTitanWeekTarget } from "../services/titanWeekCommandCentreService";
-import { TARGETABLE_METRICS,actionRoute,addDays,countMetric,intelligentExpected,makeCurrentPriorities,parseDateKey,toLocalKey,type MetricSummary } from "../lib/titanWeekCommandCentre";
+import { TARGETABLE_METRICS,actionRoute,countMetric,intelligentExpected,makeCurrentPriorities,parseDateKey,toLocalKey,type MetricSummary } from "../lib/titanWeekCommandCentre";
 
 export function useTitanWeekCommandCentre(){
  const {user}=useAuth();const {weekStartDay,weeklyMetrics,setWeekStartDay,setWeeklyMetrics,loading:easyNavLoading}=useEasyNav();const [params,setParams]=useSearchParams();
@@ -24,5 +24,5 @@ export function useTitanWeekCommandCentre(){
  const updateWeek=(next:Date)=>{const nextParams=new URLSearchParams(params);nextParams.set("week",toLocalKey(next));setParams(nextParams);};const setScope=(id:string)=>{const next=new URLSearchParams(params);if(id)next.set("snake",id);else next.delete("snake");setParams(next);};
  async function saveTarget(metric:TitanWeeklyMetricId,value:string){if(!user||!TARGETABLE_METRICS.includes(metric))return;const next={...targets};if(value.trim()==="")delete next[metric];else{const parsed=Number(value);if(!Number.isFinite(parsed))return;next[metric]=Math.max(0,Math.min(52,Math.floor(parsed)));}setTargets(next);await saveTitanWeekTarget(user.uid,next);}
  const toggleMetric=(metric:TitanWeeklyMetricId)=>{const next=weeklyMetrics.includes(metric)?weeklyMetrics.filter((item)=>item!==metric):weeklyMetrics.length<6?[...weeklyMetrics,metric]:weeklyMetrics;if(next.length>=2)void setWeeklyMetrics(next);};const goCurrent=()=>{const next=new URLSearchParams(params);next.delete("week");setParams(next);};
- return{user,weekStartDay,weeklyMetrics,setWeekStartDay,setWeeklyMetrics,easyNavLoading,params,snakes,selectedSnake,setSelectedSnakeId:(id:string)=>setScope(id),scope,range,isCurrentWeek,intelligence,intelligenceAccess,targets,configOpen,setConfigOpen,loading,metrics,targetTotal,targetDone,progress,priorities,topPriority,scopedInsights,updateWeek,setScope,saveTarget,toggleMetric,goCurrent,TITAN_WEEKLY_METRIC_OPTIONS,WEEK_START_OPTIONS,actionRoute};
+ return{user,weekStartDay,weeklyMetrics,setWeekStartDay,setWeeklyMetrics,easyNavLoading,params,snakes,selectedSnake,setSelectedSnakeId:(id:string)=>setScope(id),scope,range,isCurrentWeek,intelligence,intelligenceAccess,targets,configOpen,setConfigOpen,loading,metrics,targetTotal,targetDone,progress,priorities,topPriority,scopedInsights,decision,updateWeek,setScope,saveTarget,toggleMetric,goCurrent,TITAN_WEEKLY_METRIC_OPTIONS,WEEK_START_OPTIONS,actionRoute};
 }
