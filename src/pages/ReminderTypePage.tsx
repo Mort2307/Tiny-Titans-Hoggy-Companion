@@ -3,13 +3,12 @@ import BackHomeButton from "../components/BackHomeButton";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useReminderTypePage } from "../hooks/useReminderTypePage";
 import { formatReminderDateKey, formatReminderNext } from "../lib/reminderTypePage";
-import { REMINDER_DEFINITIONS } from "../types/Reminder";
 import "./ReminderTypePage.css";
 
 export default function ReminderTypePage(){
  const state=useReminderTypePage();
  if(state.invalid)return <Navigate to="/reminders" replace />;
- const {definition,kind,loading,profileLoading,snakes,reminders,waterLogs,editingId,form,busy,message,loadingData,isFeeding,isWaterChange,activeReminders,pausedReminders,updateForm,resetForm,edit,save,logWaterChange,toggle,remove}=state;
+ const {definition,kind,loading,profileLoading,snakes,waterLogs,editingId,form,busy,message,loadingData,isFeeding,isWaterChange,activeReminders,pausedReminders,updateForm,resetForm,edit,save,logWaterChange,toggle,remove}=state;
  if(loading||profileLoading)return <main className="tt-reminder-type-page"><BackHomeButton fallback="/reminders"/><p>Loading reminders…</p></main>;
   return <main className="tt-reminder-type-page">
     <BackHomeButton fallback="/reminders" />
