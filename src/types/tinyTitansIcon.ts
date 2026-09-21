@@ -58,4 +58,4 @@ export type TinyTitansIconName =
   | "info"
   | "warning"
   | "check"
-  | "air";;
+  | "air";
