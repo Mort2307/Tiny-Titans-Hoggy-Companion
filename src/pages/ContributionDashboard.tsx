@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import useContributionDashboard from "../hooks/useContributionDashboard";
-import { formatContributionDate, safeNumber } from "../lib/contributionDashboard";
+import { formatContributionDate } from "../lib/contributionDashboard";
 import "../styles/contribution-dashboard.css";
 
 export default function ContributionDashboard() {
