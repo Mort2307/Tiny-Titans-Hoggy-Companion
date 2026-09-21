@@ -6,12 +6,10 @@ import {
   INTEREST_OPTIONS,
   PROFILE_OPTIONS,
 } from "../config/accountSetup";
-import { useAuth } from "../context/useAuth";
 import "../styles/AccountSetup.css";
 import logo from "../assets/TinyTitans-Logo.jpg";
 
 export default function AccountSetup() {
-  const { user } = useAuth();
   const {
     displayName,setDisplayName,category,setCategory,profileType,chooseProfile,ageBand,setAgeBand,
     experienceLevel,setExperienceLevel,learningLevel,setLearningLevel,interests,toggleInterest,
