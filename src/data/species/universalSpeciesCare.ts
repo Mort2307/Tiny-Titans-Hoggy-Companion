@@ -578,7 +578,9 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     coverage,
     husbandry,
     health,
-    summary: 'A structured baseline is available for this record. Species-specific evidence should override inherited requirements where the biology, locality, life stage or captive-management literature calls for it.',
+    summary: coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
+      ? 'A scoped care profile is available. More specific species/locality/life-stage evidence can supersede this profile where the literature supports it.'
+      : 'The species identity is catalogued, but a species/genus-level care profile has not yet been verified. General biological context is intentionally kept separate from the care sheet.',
   };
 }
 
