@@ -13,7 +13,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 export default function CreatorReviewStudio() {
   const {
-    profile,user,items,names,selectedId,setSelectedId,draft,imageUrl,queueFilter,setQueueFilter,
+    profile,names,setSelectedId,draft,imageUrl,queueFilter,setQueueFilter,
     speciesSearch,setSpeciesSearch,morphSearch,setMorphSearch,loading,working,dirty,error,notice,
     visible,speciesOptions,morphOptions,currentCanonical,selected,load,patch,selectSpecies,selectMorph,
     saveDraft,approve,requestInfo,reject,
