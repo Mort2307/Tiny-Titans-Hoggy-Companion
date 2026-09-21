@@ -105,8 +105,8 @@
     "audit:tsx-architecture": "node scripts/audit-tsx-architecture.mjs",
     "audit:icons": "node scripts/audit-icon-usage.mjs",
     "validate:icons": "node scripts/audit-iconography.mjs --strict",
-    "validate:universal-species": "node --experimental-strip-types scripts/validate-universal-species.ts",
-    "validate:universal-care": "node --experimental-strip-types scripts/validate-universal-care.ts",
+    "validate:universal-species": "npx --yes tsx@4.23.13 scripts/validate-universal-species.ts",
+    "validate:universal-care": "npx --yes tsx@4.23.13 scripts/validate-universal-care.ts",
     "validate:universal-integrations": "node scripts/validate-universal-integrations.mjs"
   },
   "dependencies": {
