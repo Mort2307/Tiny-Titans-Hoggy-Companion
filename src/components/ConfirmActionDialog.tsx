@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type Props = {
   open: boolean;
@@ -17,7 +18,7 @@ export default function ConfirmActionDialog({ open, title, description, confirmL
   return (
     <div className="tiny-titans-confirm-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onCancel(); }}>
       <section className="tiny-titans-confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="confirm-action-title" aria-describedby="confirm-action-description">
-        <div className="tiny-titans-confirm-icon" aria-hidden="true">{destructive ? "🗑️" : "✨"}</div>
+        <div className="tiny-titans-confirm-icon" aria-hidden="true"><TinyTitansIcon name={destructive ? "delete" : "titan"} size={28} /></div>
         <h2 id="confirm-action-title">{title}</h2>
         <div className="tiny-titans-confirm-description" id="confirm-action-description">{description}</div>
         <div className="tiny-titans-confirm-actions">
