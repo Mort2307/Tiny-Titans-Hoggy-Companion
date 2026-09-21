@@ -95,7 +95,7 @@ function buildSeedRecord(seed: UniversalSpeciesSeed): UniversalSpeciesRecord {
       locationDependent: true,
       note: genericRegulationNote,
     },
-    sourceIds: [taxonSourceId],
+    sourceIds: [taxonSourceId, 'citesSpeciesPlus2026', 'govUkCites2026', 'govUkDwa2026', 'govUkInvasiveNonNative2026'],
     reviewedOn: '2026-09-21',
   };
 }
@@ -143,7 +143,7 @@ function adaptSnakeRecord(snake: (typeof INITIAL_SNAKE_SPECIES)[number]): Univer
       locationDependent: true,
       note: genericRegulationNote,
     },
-    sourceIds: [...new Set([sourceId, ...snake.knowledge.sourceIds])],
+    sourceIds: [...new Set([sourceId, ...snake.knowledge.sourceIds, 'citesSpeciesPlus2026', 'govUkCites2026', 'govUkDwa2026', 'govUkInvasiveNonNative2026'])],
     reviewedOn: snake.knowledge.reviewedOn,
   };
 }
