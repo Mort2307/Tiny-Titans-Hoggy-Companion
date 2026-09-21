@@ -137,6 +137,7 @@ function AppRouterGate() {
           <Route path="/account-setup" element={<AccountSetup />} />
           <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
           <Route path="/species" element={<SpeciesExplorer />} />
+          <Route path="/species/group/:group" element={<SpeciesExplorer />} />
           <Route path="/species/:id" element={<UniversalSpeciesProfile />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
