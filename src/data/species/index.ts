@@ -7,3 +7,5 @@ export * from './speciesExpansionBatch1';
 export * from './universalSpeciesTypes';
 export * from './universalSpeciesSources';
 export * from './universalSpeciesRegistry';
+export * from './universalSpeciesCareTypes';
+export * from './universalSpeciesCare';
