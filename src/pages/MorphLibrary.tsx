@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import MorphDetail from "../components/morph-library/MorphDetail";
 import MorphImageSubmissionDialog from "../components/morph-library/MorphImageSubmissionDialog";
@@ -12,7 +11,7 @@ export { default as NewMorphSubmissionDialog } from "../components/morph-library
 
 export default function MorphLibrary() {
   const {
-    query,setQuery,filter,setFilter,region,setRegion,selected,setSelected,showImageSubmission,setShowImageSubmission,
+    query,setQuery,filter,setFilter,region,setRegion,selected,setSelected,showImageSubmission,
     showNewMorphSubmission,setShowNewMorphSubmission,imageSubmissionMorphId,imageSubmissionSpeciesId,
     approvedImagesByMorph,approvedImagesLoading,entries,filtered,audit,openImageSubmission,closeImageSubmission,
   } = useMorphLibrary();
