@@ -61,7 +61,7 @@ export default function SpeciesExplorer() {
     return source.filter((species) => {
       if (classFilter !== "all" && species.className !== classFilter) return false;
       if (riskFilter !== "all" && species.riskClass !== riskFilter) return false;
-      if (showOnlyResearchQueue && species.husbandryStatus !== "taxonomy-only") return false;
+      if (showOnlyResearchQueue && !["class", "ecology-only", "not-verified"].includes(species.care?.husbandry.coverage ?? "not-verified")) return false;
       return true;
     });
   }, [activeGroup, classFilter, query, riskFilter, showOnlyResearchQueue]);
@@ -121,7 +121,7 @@ export default function SpeciesExplorer() {
           <section className="species-explorer-summary">
             <div><strong>{results.length.toLocaleString()}</strong><span>species</span></div>
             <div><strong>{new Set(results.map((species) => species.genus)).size}</strong><span>genera</span></div>
-            <div><strong>{results.filter((species) => species.husbandryStatus === "taxonomy-only").length}</strong><span>care research pending</span></div>
+            <div><strong>{results.filter((species) => ["class", "ecology-only", "not-verified"].includes(species.care?.husbandry.coverage ?? "not-verified")).length}</strong><span>care research pending</span></div>
             <p>Open a species for its evidence status, care coverage, health information and acquisition checks.</p>
           </section>
           <section className="species-explorer-grid" aria-label={BROWSE_LABELS[activeGroup] + " species"}>
@@ -132,7 +132,7 @@ export default function SpeciesExplorer() {
                   <h2>{species.commonNames[0] ?? species.acceptedScientificName}</h2>
                   <p className="species-scientific">{species.acceptedScientificName}</p>
                   <dl><div><dt>Genus</dt><dd>{species.genus}</dd></div><div><dt>Family</dt><dd>{species.family}</dd></div><div><dt>Lifestyle</dt><dd>{species.lifestyle.join(" · ")}</dd></div><div><dt>Diet</dt><dd>{species.dietaryGuild.replace("-", " ")}</dd></div></dl>
-                  <div className="species-explorer-card__footer"><span>{species.husbandryStatus.replace("-", " ")}</span><span>Open profile →</span></div>
+                  <div className="species-explorer-card__footer"><span>{species.care?.husbandry.coverage === "species" ? "Species care verified" : species.care?.husbandry.coverage === "genus" ? "Genus care verified" : "Care research pending"}</span><span>Open profile →</span></div>
                 </Link>
               </article>
             )) : <div className="species-explorer-empty"><TinyTitansIcon name="titan" size={30} /><h2>No species matched</h2><p>Try another name, genus, family or search term.</p></div>}
