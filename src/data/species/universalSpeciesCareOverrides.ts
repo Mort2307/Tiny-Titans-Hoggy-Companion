@@ -172,7 +172,6 @@ export const UNIVERSAL_SPECIES_CARE_OVERRIDES: Record<string, SpeciesCareOverrid
       { id: 'species-monitoring', domain: 'monitoring', label: 'Water-quality and health records', guidance: 'Track water conditions, appetite, behaviour and body condition because environmental change can quickly affect an aquatic amphibian.', priority: 'essential' },
     ],
   },
-  ,
   'pantherophis-guttatus': {
     coverage: 'species',
     sourceIds: ['reptifilesCornSnake2024'],
