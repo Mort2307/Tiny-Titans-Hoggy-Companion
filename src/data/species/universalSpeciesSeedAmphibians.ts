@@ -1,7 +1,7 @@
 import { seed, type UniversalSpeciesSeed } from './universalSpeciesSeedTypes';
 
 const a = (s: string, c: string, f: string, o: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], aliases: string[] = []) =>
-  seed(s, c, 'amphibian', 'Amphibia', o, f, r, l, d, aliases);
+  seed(s, c, 'amphibian', 'Amphibia', o, f, r, l, d, aliases, o === 'Anura' ? 'frogs-toads' : o === 'Caudata' ? 'salamanders-newts' : 'caecilians');
 
 export const UNIVERSAL_AMPHIBIAN_SEEDS: UniversalSpeciesSeed[] = [
   a('Ambystoma mexicanum','Axolotl','Ambystomatidae','Caudata','companion','aquatic','carnivore',['mexican salamander']),
