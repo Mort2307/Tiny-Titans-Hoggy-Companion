@@ -34,6 +34,8 @@ export type UniversalDietaryGuild =
   | 'omnivore'
   | 'piscivore'
   | 'nectarivore'
+  | 'granivore'
+  | 'frugivore'
   | 'detritivore'
   | 'generalist';
 
