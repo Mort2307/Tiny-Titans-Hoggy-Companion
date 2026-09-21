@@ -82,6 +82,26 @@ export default function UniversalSpeciesProfile() {
 
       {care && (
         <div className="universal-species-content">
+          <section className="universal-species-panel">
+            <div className="universal-species-panel-heading">
+              <div><p className="eyebrow">CARE EVIDENCE</p><h2>{care.husbandry.coverage === "species" ? "Species-level care profile" : care.husbandry.coverage === "genus" ? "Genus-level care profile" : care.husbandry.coverage === "taxon" ? "Taxon-level care profile" : "Care profile not yet verified"}</h2></div>
+              <span className="universal-species-status">{care.husbandry.coverage.replace("-", " ")}</span>
+            </div>
+            {care.husbandry.coverage === "species" || care.husbandry.coverage === "genus" || care.husbandry.coverage === "taxon" ? (
+              <>
+                <p>{care.husbandry.overview}</p>
+                {care.husbandry.numericGuidance.available && care.husbandry.numericGuidance.ranges && <div className="universal-numeric-grid">{care.husbandry.numericGuidance.ranges.map((range) => <div key={range.label}><span>{range.label}</span><strong>{range.min}–{range.max} {range.unit}</strong>{range.context && <small>{range.context}</small>}<small>Scoped evidence: {range.evidence.basis.replace("-", " ")}</small></div>)}</div>}
+                <div className="universal-care-grid">{care.husbandry.requirements.map((item) => <article className="universal-care-card" key={item.id}><div className="universal-care-card__top"><span>{item.domain.replace("-", " ")}</span><strong>{requirementLabel[item.priority]}</strong></div><h3>{item.label}</h3><p>{item.guidance}</p><small>Evidence: {item.evidence.basis.replace("-", " ")}</small></article>)}</div>
+              </>
+            ) : (
+              <>
+                <p><strong>Tiny Titans does not currently have enough species- or genus-scoped husbandry evidence to present the following as a verified care sheet.</strong></p>
+                <p>The catalogue identity is available, along with ecology and legal/research context. This record stays in the research queue until appropriate species/genus husbandry evidence is reviewed.</p>
+                <div className="universal-unresolved"><h3>Research required before care is promoted</h3><ul>{care.husbandry.unresolved.map((item) => <li key={item}>{item}</li>)}</ul></div>
+              </>
+            )}
+          </section>
+
           <section className="universal-species-panel universal-species-panel--wide">
             <div className="universal-species-panel-heading">
               <div><p className="eyebrow">BASELINE HUSBANDRY</p><h2>{care.husbandry.title}</h2></div>
