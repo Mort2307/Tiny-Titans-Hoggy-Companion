@@ -22,7 +22,7 @@ function commandIcon(path: string, title: string): TinyTitansIconName {
   if (/api|tools/i.test(title)) return "api";
   if (/branding|public page/i.test(title)) return "branding";
   if (/qr|scan/i.test(title)) return "camera";
-  return workspaceNavIcon(path);
+  return tinyTitansNavigationIcon(path);
 }
 
 const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; heading: string; description: string; actions: Array<{ title: string; path: string }> }> = {
