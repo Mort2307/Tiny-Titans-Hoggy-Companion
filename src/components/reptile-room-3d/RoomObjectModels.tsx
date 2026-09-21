@@ -14,7 +14,7 @@ function MountingBar({ width, height }: { width: number; height: number }) {
   </group>;
 }
 
-function SimpleFixture({ kind, width, depth, height, selected }: { kind: string; width: number; depth: number; height: number; selected: boolean }) {
+export function SimpleFixture({ kind, width, depth, height, selected }: { kind: string; width: number; depth: number; height: number; selected: boolean }) {
   const accent = selected ? "#efbd55" : "#8a949a";
   const min = Math.min(width, depth, height);
   if (["thermostat", "thermometer", "hygrometer", "temp-humidity"].includes(kind)) {
@@ -63,7 +63,7 @@ function VivariumPhoto({ url, width, height, z }: { url: string; width: number; 
   return <mesh position={[0, 0, z]} renderOrder={3} userData={{ vivariumFaceImage: true }}><planeGeometry args={[width, height]} /><meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} depthTest side={THREE.DoubleSide} /></mesh>;
 }
 
-function VivariumModel({ width, depth, height, selected, photoUrl, onSelectGlass, enclosureStyle }: { width: number; depth: number; height: number; selected: boolean; photoUrl?: string; onSelectGlass: () => void; enclosureStyle: string }) {
+export function VivariumModel({ width, depth, height, selected, photoUrl, onSelectGlass, enclosureStyle }: { width: number; depth: number; height: number; selected: boolean; photoUrl?: string; onSelectGlass: () => void; enclosureStyle: string }) {
   const style = enclosureStyle || "front-opening";
   const frame = Math.max(Math.min(width, height) * 0.046, 0.026);
   const glassWidth = Math.max(0.01, width - frame * 2);
@@ -99,7 +99,7 @@ function VivariumModel({ width, depth, height, selected, photoUrl, onSelectGlass
   </group>;
 }
 
-function FurnitureModel({ kind, width, depth, height, selected }: { kind: string; width: number; depth: number; height: number; selected: boolean }) {
+export function FurnitureModel({ kind, width, depth, height, selected }: { kind: string; width: number; depth: number; height: number; selected: boolean }) {
   const colour = kind === "table" || kind === "workbench" ? WOOD_COLOURS.light : kind === "cabinet" || kind === "storage-cabinet" ? WOOD_COLOURS.medium : WOOD_COLOURS.dark;
   const texture = useWoodTexture(colour);
   if (kind === "chair") return <group><mesh castShadow position={[0, height * 0.45, 0]}><boxGeometry args={[width, height * 0.1, depth]} /><meshStandardMaterial color={colour} map={texture ?? undefined} roughness={0.7} /></mesh><mesh castShadow position={[0, height * 0.8, depth * 0.42]}><boxGeometry args={[width, height * 0.5, depth * 0.08]} /><meshStandardMaterial color={colour} map={texture ?? undefined} roughness={0.7} /></mesh></group>;
