@@ -74,7 +74,7 @@ export default function UniversalSpeciesProfile() {
           <p>The requested universal species record does not exist in the current catalogue.</p>
           <Link className="button button-primary" to="/species">Back to Species Explorer</Link>
         </section>
-      </main>
+      </div>
     );
   }
 
@@ -86,10 +86,10 @@ export default function UniversalSpeciesProfile() {
   ])].map((sourceId) => UNIVERSAL_SPECIES_SOURCES[sourceId]).filter(Boolean);
 
   return (
-    <main className="page-container universal-species-profile">
+    <div className="page-container universal-species-profile">
       <nav className="universal-species-journey" aria-label="Connected keeper workspaces">
         <span className="universal-species-journey__label">SPECIES WORKSPACE</span>
-        <Link className="universal-species-journey__active" to="/snakes"><TinyTitansIcon name="reptiles" size={18} /> My Reptiles</Link>
+        <Link to="/snakes"><TinyTitansIcon name="reptiles" size={18} /> My Reptiles</Link>
         <Link className="universal-species-journey__active" to="/species"><TinyTitansIcon name="animals" size={18} /> Species Explorer</Link>
         <Link to="/husbandry"><TinyTitansIcon name="husbandry" size={18} /> Husbandry &amp; Care</Link>
         <Link to="/morph-library"><TinyTitansIcon name="morph" size={18} /> Morph Library</Link>
