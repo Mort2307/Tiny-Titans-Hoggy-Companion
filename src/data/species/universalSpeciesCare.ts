@@ -434,21 +434,24 @@ function buildHealth(species: UniversalSpeciesRecord, scopeKey: string): Univers
 export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): UniversalSpeciesCare {
   const genusNote = GENUS_EMPHASIS[species.genus];
   const classRequirements = CLASS_REQUIREMENTS[species.className].map((item) => resolveRequirement(species, item));
-  const requirements = genusNote
-    ? [
-        ...classRequirements,
-        {
-          id: 'genus-emphasis',
-          domain: 'housing',
-          label: 'Genus-level design emphasis',
-          guidance: genusNote,
-          priority: 'important' as const,
-          evidence: evidence(species, 'genus-level', [], 'Ecology-derived genus emphasis only. This is not a substitute for species-specific captive evidence and must not be converted into an exact numeric target.'),
-        },
-      ]
-    : classRequirements;
+  const genusRequirement = {
+    id: genusNote ? 'genus-emphasis' : 'genus-research',
+    domain: 'housing' as const,
+    label: genusNote ? 'Genus-level design emphasis' : 'Genus-level research status',
+    guidance: genusNote
+      ? genusNote
+      : `No dedicated genus-level husbandry profile is currently mapped for ${species.genus}. Use the class baseline only until genus- or species-level evidence is reviewed.`,
+    priority: 'important' as const,
+    evidence: evidence(
+      species,
+      'genus-level',
+      [],
+      'Genus-level guidance is either an ecological emphasis or an explicit research placeholder. It is not a substitute for species-specific captive evidence and must not be converted into an exact numeric target.',
+    ),
+  };
+  const requirements = [...classRequirements, genusRequirement];
 
-  const scopeKey = genusNote ? `genus:${species.genus}` : `class:${species.className}`;
+  const scopeKey = `genus:${species.genus}`;
   const careStatus = species.husbandryStatus !== 'taxonomy-only'
     ? 'sourced-profile'
     : CLASS_SOURCE_IDS[species.className].length > 0
@@ -473,13 +476,15 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
       'Species-specific numeric temperature/humidity/water-chemistry targets where applicable.',
       'Species-specific enclosure-size and lighting calculations where applicable.',
       'Species-specific feeding quantity/frequency and supplementation.',
-      'Species-specific breeding and life-stage refinements.',
+        'Species-specific breeding and life-stage refinements.',
+      'Dedicated genus-level husbandry literature when not already mapped.',
     ],
     sourceIds: [...new Set(requirements.flatMap((item) => item.evidence.sourceIds))],
     reviewedOn: REVIEWED_ON,
   };
 
   const health = buildHealth(species, scopeKey);
+  health.status = husbandry.status;
   const resolvedFrom = [
     genusNote ? `genus:${species.genus}` : `class:${species.className}`,
     `class:${species.className}`,
