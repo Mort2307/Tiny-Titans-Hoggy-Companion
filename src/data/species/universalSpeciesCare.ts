@@ -26,6 +26,14 @@ function coverageFromBasis(basis: string | undefined): import('./universalSpecie
   return 'class';
 }
 
+function basisFromCoverage(coverage: UniversalCareCoverage): UniversalCareBasis {
+  if (coverage === "genus") return "genus-level";
+  if (coverage === "taxon") return "taxon-level";
+  if (coverage === "species") return "species-specific";
+  if (coverage === "ecology-only") return "ecology-only";
+  return "class-level";
+}
+
 function rangeRecords(species: UniversalSpeciesRecord, legacy: (typeof INITIAL_SNAKE_SPECIES)[number]): NonNullable<UniversalHusbandryProfile['numericGuidance']['ranges']> {
   const profile = legacy.knowledge.husbandry;
   if (!profile) return [];
@@ -38,7 +46,7 @@ function rangeRecords(species: UniversalSpeciesRecord, legacy: (typeof INITIAL_S
     ['Humidity acceptable', profile.humidity?.acceptable],
   ];
   return entries.flatMap(([label, range]) => range && Number.isFinite(range.min) && Number.isFinite(range.max)
-    ? [{ label, min: range.min, max: range.max, unit: range.unit, context: range.context, evidence: evidence(species, coverageFromBasis(profile.evidenceSummary?.basis), profile.evidenceSummary?.sourceIds ?? legacy.knowledge.sourceIds, profile.evidenceSummary?.caveat ?? 'Scoped legacy snake evidence. Confirm the source scope and species applicability before treating a range as a universal rule.') }]
+    ? [{ label, min: range.min, max: range.max, unit: range.unit, context: range.context, evidence: evidence(species, basisFromCoverage(coverageFromBasis(profile.evidenceSummary?.basis)), profile.evidenceSummary?.sourceIds ?? legacy.knowledge.sourceIds, profile.evidenceSummary?.caveat ?? 'Scoped legacy snake evidence. Confirm the source scope and species applicability before treating a range as a universal rule.') }]
     : []);
 }
 
