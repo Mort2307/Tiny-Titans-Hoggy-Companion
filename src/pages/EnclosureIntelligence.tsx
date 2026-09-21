@@ -10,7 +10,7 @@ export default function EnclosureIntelligence() {
     user, loading, profileLoading, snakes, selectedId, setSelectedId, loadingData, error, editingEnvironment,
     setEditingEnvironment, readings, setReadings, savingReadings, editingField, setEditingField, enclosureDraft,
     message, snake, enclosure, area, volume, coverage, environmentHistory, environmentReview,
-    environmentCoverage, nextBestRecord, loadData, openEnvironment, saveEnvironment, startEnclosureEdit,
+    environmentCoverage, nextBestRecord, completeness, completenessChecks, completenessPercent, loadData, openEnvironment, saveEnvironment, startEnclosureEdit,
     updateEnclosure, applySubstratePreset, updateMix, addMixPart, removeMixPart, mixParts, savingEnclosure,
     saveEnclosure,
   } = useEnclosureIntelligence();
