@@ -32,8 +32,10 @@ export const TINY_TITANS_NAVIGATION_ICONS: Record<string, TinyTitansIconName> = 
   "/rescue": "veterinary",
   "/account": "account",
   "/plans": "plans",
+  "/paid": "api",
   "/account/billing": "billing",
   "/account/family": "family",
+  "/account/partner-landing": "branding",
   "/become-a-titan": "titanIntelligence",
 
   "/titan-intelligence": "titanIntelligence",
