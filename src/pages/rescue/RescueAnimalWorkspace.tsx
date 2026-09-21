@@ -3,11 +3,12 @@ import PaidTierGate from "../../components/PaidTierGate";
 import TinyTitansIcon from "../../components/TinyTitansIcon";
 import { useRescueAnimalWorkspace } from "../../hooks/useRescueAnimalWorkspace";
 import { formatDate,roleLabel,RECORD_LABELS,STATUS_LABELS,VISIBILITY_LABELS } from "../../lib/rescueWorkspace";
+import type { RescueAnimalStatus, RescueCareRecordType, RescueDocument, RescueReminderPriority, RescueVisibility } from "../../types/rescue";
 import "./../../styles/rescue-enhanced.css";
 
 export function RescueAnimalWorkspace() {
   const {
-    navigate,user,animal,organisation,tab,setTab,busy,message,recordType,setRecordType,recordTitle,setRecordTitle,
+    navigate,animal,tab,setTab,busy,message,recordType,setRecordType,recordTitle,setRecordTitle,
     recordSummary,setRecordSummary,recordDetails,setRecordDetails,recordValue,setRecordValue,recordFood,setRecordFood,
     recordAccepted,setRecordAccepted,recordVisibility,setRecordVisibility,reminderTitle,setReminderTitle,reminderDue,setReminderDue,
     reminderKind,setReminderKind,reminderPriority,setReminderPriority,reminderNotes,setReminderNotes,fosterName,setFosterName,
@@ -15,7 +16,7 @@ export function RescueAnimalWorkspace() {
     transferReason,setTransferReason,transferReference,setTransferReference,transferNotes,setTransferNotes,documentTitle,setDocumentTitle,
     documentCategory,setDocumentCategory,documentNote,setDocumentNote,editSummary,setEditSummary,editEnclosure,setEditEnclosure,
     editStatus,setEditStatus,access,profile,isEditor,saveCareRecord,saveReminder,toggleReminder,saveFoster,saveTransfer,saveDocument,
-    saveAnimalCore,
+    saveAnimalCore,withBusy,updateRescueAnimal,
   }=useRescueAnimalWorkspace();
 
   if (!animal) return <PaidTierGate entitlement="rescue_workspace"><main className="rescue-page"><section className="rescue-card"><p role="status">Loading animal workspace…</p></section></main></PaidTierGate>;
