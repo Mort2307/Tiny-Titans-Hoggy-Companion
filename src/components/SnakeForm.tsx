@@ -8,6 +8,7 @@ import HetSelector from "./HetSelector";
 import TinyTitansDateInput from "./TinyTitansDateInput";
 import SpeciesSelector from "./SpeciesSelector";
 import { findSnakeSpecies } from "../data/species/speciesRegistry";
+import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import { getSpeciesHetGenes, getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { getDateDuration } from "../utils/dateDuration";
 import { compressImage } from "../utils/imageCompression";
@@ -15,7 +16,7 @@ import { useUnits } from "../context/UnitContextValue";
 import TinyTitansIcon from "./TinyTitansIcon";
 
 type SnakeFormProps = {
-  form: { name: string; species: string; photo: string; sex: Snake["sex"]; morphs: string[]; customMorph: string; hets: Het[]; customHets: string; startingWeight: number | null; startingWeightDate: string; weight: number | null; lastWeighedDate: string; weightHistory: WeightRecord[]; hatchDate: string; arrivalDate: string; notes: string };
+  form: { name: string; species: string; universalSpeciesId: string; photo: string; sex: Snake["sex"]; morphs: string[]; customMorph: string; hets: Het[]; customHets: string; startingWeight: number | null; startingWeightDate: string; weight: number | null; lastWeighedDate: string; weightHistory: WeightRecord[]; hatchDate: string; arrivalDate: string; notes: string };
   updateField: (field: string, value: unknown) => void;
   onSave: () => void;
   onMorphLibrarySubmit?: (input: MorphSubmissionInputV2) => Promise<void>;
@@ -48,7 +49,7 @@ export default function SnakeForm({ form, updateField, onSave, onMorphLibrarySub
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const toDisplayWeight = (grams: number | null) => grams == null ? "" : String(isImperial ? grams / 28.349523125 : grams);
   const toStoredWeight = (value: string) => { if (!value) return null; const number = Number(value); return Number.isFinite(number) ? isImperial ? number * 28.349523125 : number : null; };
-  function handleSpeciesChange(speciesId: string) { const species = findSnakeSpecies(speciesId); if (!species) return; updateField("species", species.commonNames[0] ?? species.acceptedScientificName); updateField("morphs", []); updateField("hets", []); setMorphLibraryMorphId(""); }
+  function handleSpeciesChange(speciesId: string) { const species = findSnakeSpecies(speciesId); if (!species) return; const universal = findUniversalSpecies(species.id); updateField("species", species.commonNames[0] ?? species.acceptedScientificName); updateField("universalSpeciesId", universal?.id ?? species.id); updateField("morphs", []); updateField("hets", []); setMorphLibraryMorphId(""); }
   function handleMorphLibraryToggle(checked: boolean) { setSubmitToMorphLibrary(checked); setMorphSubmissionStatus(""); if (!checked) { setMorphLibraryConfirmed(false); setMorphLibraryPhotoConfirmed(false); } }
   function handleMorphSelection(value: string) { setMorphLibraryMorphId(value); const option = morphLibraryOptions.find((item) => item.geneId === value); if (option && !morphLibraryDescription) setMorphLibraryDescription(`${form.name || "This animal"} — community photo submitted for ${option.name} review.`); }
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
