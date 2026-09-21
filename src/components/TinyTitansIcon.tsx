@@ -250,6 +250,8 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-star" d="m24 7 16 29H8L24 7Z" /><path className="tt-icon-line" d="M24 18v8M24 31h.01" /></svg>;
     case "check":
       return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="24" cy="24" r="15" /><path className="tt-icon-line" d="m16 24 5 5 11-12" /></svg>;
+    case "air":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M8 18h20c5 0 7-3 7-5s-2-4-5-4c-2 0-3 1-4 3M8 26h26c3 0 5 2 5 4s-2 4-5 4c-2 0-3-1-4-3M8 34h10" /></svg>;
     default:
       return <SnakeFace {...props} />;
   }
