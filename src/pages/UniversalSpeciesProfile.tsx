@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import TinyTitansIcon from "../components/TinyTitansIcon";
-import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
+import { UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
 import { UNIVERSAL_SPECIES_SOURCES } from "../data/species/universalSpeciesSources";
 import type { HealthPriority, UniversalCareRequirement } from "../data/species/universalSpeciesCareTypes";
 import "../styles/universal-species-profile.css";
@@ -19,7 +19,7 @@ const healthLabel: Record<HealthPriority, string> = {
 
 export default function UniversalSpeciesProfile() {
   const { id = "" } = useParams();
-  const species = findUniversalSpecies(id);
+  const species = UNIVERSAL_SPECIES_BY_ID[id];
 
   if (!species) {
     return (
