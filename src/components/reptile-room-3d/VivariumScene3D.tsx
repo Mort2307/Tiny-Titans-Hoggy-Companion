@@ -1,0 +1,16 @@
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import type { ReptileRoomSlot } from "../../services/reptileRoomService";
+import type { VivariumDigitalTwin, VivariumTwinAsset } from "../../types/vivariumTwin";
+import { getRoomAssetPreset } from "../../data/reptileRoomAssetCatalog";
+import { colourForVivariumAssetKind } from "../../lib/vivariumTwinEditor";
+
+function PropMesh({asset,selected}:{asset:VivariumTwinAsset;selected:boolean}){
+ const preset=getRoomAssetPreset(asset.assetId);const width=Math.max(0.04,(preset?.width??20)/100);const depth=Math.max(0.04,(preset?.depth??20)/100);const height=Math.max(0.02,(preset?.height??10)/100);const color=colourForVivariumAssetKind(preset?.kind??"other");const emission=selected?0.35:0;
+ return <group position={[asset.x,asset.y+height/2,asset.z]} rotation={[0,asset.rotationY??0,0]}><mesh castShadow receiveShadow><boxGeometry args={[width,height,depth]}/><meshStandardMaterial color={color} roughness={0.72} emissive="#efbd55" emissiveIntensity={emission}/></mesh>{preset?.kind==="water-bowl"&&<mesh position={[0,height*0.6,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[Math.min(width,depth)*0.27,Math.min(width,depth)*0.08,14,24]}/><meshStandardMaterial color="#9eb8c1" roughness={0.22} metalness={0.15}/></mesh>}{preset?.kind==="plant"&&<group>{Array.from({length:6}).map((_,index)=>{const angle=index*1.05;return <mesh key={index} position={[Math.cos(angle)*width*0.32,height*0.75,Math.sin(angle)*depth*0.32]} rotation={[0.25,angle,0.5]}><planeGeometry args={[width*0.45,height*0.35]}/><meshStandardMaterial color="#58744f" side={2} roughness={0.95}/></mesh>;})}</group>}{preset?.kind==="branch"&&<mesh rotation={[0.18,0,-0.48]} castShadow><cylinderGeometry args={[0.045,0.075,Math.max(width,depth)*1.5,10]}/><meshStandardMaterial color="#67472e" roughness={1}/></mesh>}</group>;
+}
+
+export default function VivariumScene3D({slot,twin,selectedId,onSelect}:{slot:ReptileRoomSlot;twin:VivariumDigitalTwin;selectedId:string|null;onSelect:(id:string)=>void}){
+ const width=Math.max(1,slot.w)/100;const depth=Math.max(1,slot.depth??slot.h)/100;const height=Math.max(1,slot.height??40)/100;const substrate=Math.min(height*0.18,Math.max(0.02,(twin.checklist.substrateDepthMm??20)/1000));
+ return <Canvas camera={{position:[width*1.45,height*0.9,depth*1.55],fov:44}} shadows><color attach="background" args={["#151a1d"]}/><ambientLight intensity={1.05}/><directionalLight position={[2,4,3]} intensity={2.1} castShadow/><mesh position={[0,height/2,0]}><boxGeometry args={[width,height,depth]}/><meshPhysicalMaterial color="#6e482e" transparent opacity={0.18} roughness={0.2} transmission={0.08}/></mesh><mesh position={[0,substrate/2,0]}><boxGeometry args={[width*0.92,substrate,depth*0.92]}/><meshStandardMaterial color="#76573a" roughness={1}/></mesh>{twin.assets.map((asset)=><group key={asset.id} onClick={(event)=>{event.stopPropagation();onSelect(asset.id);}}><PropMesh asset={asset} selected={selectedId===asset.id}/></group>)}<gridHelper args={[Math.max(width,depth)*1.25,12,"#485157","#293034"]} position={[0,0.005,0]}/><OrbitControls enablePan={false} minDistance={Math.min(width,depth)*1.1} maxDistance={Math.max(width,height,depth)*4.5}/></Canvas>;
+}
