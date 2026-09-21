@@ -28,7 +28,7 @@
    The glyph remains theme-aware, but each need has a recognisable colour family.
    State colours below intentionally override these semantic defaults.
 */
-.tt-icon-name-home{--tt-icon-accent:#d6a85c}.tt-icon-name-reptile{--tt-icon-accent:#8fbf79}
+.tt-icon-name-home{--tt-icon-accent:#d6a85c}.tt-icon-name-reptile{--tt-icon-accent:#8fbf79}.tt-icon-name-reptiles{--tt-icon-accent:#79b47a}
 .tt-icon-name-messages{--tt-icon-accent:#79a9d8}.tt-icon-name-reminders{--tt-icon-accent:#e8b65d}
 .tt-icon-name-husbandry{--tt-icon-accent:#78b96d}.tt-icon-name-weight{--tt-icon-accent:#c7a16a}
 .tt-icon-name-feeding{--tt-icon-accent:#d98d62}.tt-icon-name-shed{--tt-icon-accent:#b7a3d8}
@@ -74,6 +74,8 @@
 .tt-icon-name-automation{--tt-icon-accent:#a38fd0}.tt-icon-name-support{--tt-icon-accent:#73aeb4}
 .tt-icon-name-api{--tt-icon-accent:#9ba9b8}.tt-icon-name-branding{--tt-icon-accent:#d17fa0}
 .tt-icon-name-exportData{--tt-icon-accent:#72b486}
+.tt-icon-reptiles-badge{fill:color-mix(in srgb,currentColor 56%,#ffffff 44%);stroke:color-mix(in srgb,currentColor 78%,#17131b 22%);stroke-width:1.7}.tt-icon-reptiles-snake{stroke-width:2.8;opacity:.92}.tt-icon-reptiles-lizard{opacity:.98}.tt-icon-reptiles-eye{stroke-width:1.15}.tt-icon-reptiles-pupil{fill:var(--tt-icon-outline,#17131b)}
+.tt-icon-reptiles{transform-origin:center}.tt-icon-reptiles .tt-icon-spark{animation:ttSpark 3.6s ease-in-out infinite}
 
 /* === TinyTitans Living Icon v2 ===
    Signature environment + spatial-builder motions.
