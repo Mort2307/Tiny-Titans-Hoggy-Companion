@@ -1,4 +1,5 @@
 import { INITIAL_SNAKE_SPECIES } from './speciesRegistry';
+import { getSpeciesCareOverride } from './universalSpeciesCareOverrides';
 import type { UniversalSpeciesRecord } from './universalSpeciesTypes';
 import type {
   CarePriority,
@@ -484,6 +485,7 @@ function buildHealth(species: UniversalSpeciesRecord, scopeKey: string): Univers
 export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): UniversalSpeciesCare {
   const genusNote = GENUS_EMPHASIS[species.genus];
   const legacy = LEGACY_SNAKES.get(species.id);
+  const override = getSpeciesCareOverride(species);
   const classRequirements = CLASS_REQUIREMENTS[species.className].map((item) => resolveRequirement(species, item));
   const genusRequirement = {
     id: genusNote ? 'genus-emphasis' : 'genus-research',
@@ -500,14 +502,26 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
       'Genus-level guidance is either an ecological emphasis or an explicit research placeholder. It is not a substitute for species-specific captive evidence and must not be converted into an exact numeric target.',
     ),
   };
-  const specificRequirements = legacy ? legacySnakeRequirements(species, legacy) : [];
-  const requirements = specificRequirements.length ? [...specificRequirements, ...classRequirements.filter((item) => item.id === 'hygiene' || item.id === 'records')] : [...classRequirements, genusRequirement];
+  const overrideRequirements: UniversalCareRequirement[] = override
+    ? override.requirements.map((item) => ({
+        ...item,
+        evidence: evidence(species, override.coverage === 'genus' ? 'genus-level' : 'species-specific', override.sourceIds, override.caveat),
+      }))
+    : [];
+  const legacyRequirements = legacy ? legacySnakeRequirements(species, legacy) : [];
+  const specificRequirements = overrideRequirements.length ? overrideRequirements : legacyRequirements;
+  const requirements = specificRequirements.length
+    ? [...specificRequirements, ...classRequirements.filter((item) => item.id === 'hygiene' || item.id === 'records')]
+    : [...classRequirements, genusRequirement];
   const legacyCoverage = legacy ? coverageFromBasis(legacy.knowledge.husbandry?.evidenceSummary?.basis) : 'class';
-  const coverage = specificRequirements.length ? legacyCoverage : (CLASS_SOURCE_IDS[species.className].length ? 'class' : 'not-verified');
+  const coverage = override?.coverage ?? (specificRequirements.length ? legacyCoverage : (CLASS_SOURCE_IDS[species.className].length ? 'class' : 'not-verified'));
 
-  const scopeKey = legacy && specificRequirements.length ? `species:${species.id}` : `genus:${species.genus}`;
-  const numericRanges = legacy ? rangeRecords(species, legacy) : [];
-  const careStatus = coverage === 'species' && species.husbandryStatus === 'specialist-profile'
+  const scopeKey = override ? (override.coverage === 'species' ? `species:${species.id}` : `genus:${species.genus}`) : legacy && specificRequirements.length ? `species:${species.id}` : `genus:${species.genus}`;
+  const numericRanges = override?.numericRanges?.map((range) => ({
+    ...range,
+    evidence: evidence(species, override.coverage === 'genus' ? 'genus-level' : 'species-specific', override.sourceIds, override.caveat),
+  })) ?? (legacy ? rangeRecords(species, legacy) : []);
+  const careStatus = coverage === 'species' && (species.husbandryStatus === 'specialist-profile' || override?.coverage === 'species')
     ? 'specialist-reviewed'
     : coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
       ? 'sourced-profile'
@@ -544,9 +558,11 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
 
   const health = buildHealth(species, scopeKey);
   health.status = husbandry.status;
-  health.coverage = coverage;
+  health.coverage = override?.health?.length ? coverage : (coverage === 'species' || coverage === 'genus' || coverage === 'taxon' ? 'class' : coverage);
   const resolvedFrom = [
-    `genus:${species.genus}`,
+    ...(coverage === 'species' ? [`species:${species.id}`] : []),
+    ...(coverage === 'genus' ? [`genus:${species.genus}`] : []),
+    ...(coverage === 'taxon' ? [`taxon:${species.order}`] : []),
     `class:${species.className}`,
     species.taxonSourceId,
   ];
@@ -559,6 +575,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     status: husbandry.status,
     coverage,
     resolvedFrom,
+    coverage,
     husbandry,
     health,
     summary: 'A structured baseline is available for this record. Species-specific evidence should override inherited requirements where the biology, locality, life stage or captive-management literature calls for it.',
