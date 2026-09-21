@@ -8,9 +8,9 @@ type Props = { snake: Snake; history: WeightRecord[] };
 
 export default function WeightGrowthIntelligence({ snake, history }: Props) {
   const {
-    formatWeight, orderedHistory, currentWeight, trend, ageMonths, ageBand, weightContext,
+    formatWeight, orderedHistory, currentWeight, trend, ageBand, weightContext,
     longestGap, intelligenceAccess, benchmarkLoading, benchmarkError, communitySummary,
-    tooFewRecords, recentGapTooLarge, reassuring, currentAgeText,
+    recentGapTooLarge, reassuring, currentAgeText,
   } = useWeightGrowthIntelligence(snake, history);
 
   return (
