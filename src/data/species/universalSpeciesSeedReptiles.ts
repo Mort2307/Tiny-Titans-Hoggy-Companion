@@ -1,13 +1,13 @@
 import { seed, type UniversalSpeciesSeed } from './universalSpeciesSeedTypes';
 
 const snake = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'reptile', 'Reptilia', 'Squamata', f, r, l, d, a);
+  seed(s, c, 'reptile', 'Reptilia', 'Squamata', f, r, l, d, a, 'snakes');
 const lizard = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'reptile', 'Reptilia', 'Squamata', f, r, l, d, a);
+  seed(s, c, 'reptile', 'Reptilia', 'Squamata', f, r, l, d, a, 'lizards');
 const turtle = (s: string, c: string, f: string, l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'reptile', 'Reptilia', 'Testudines', f, 'specialist', l, d, a);
+  seed(s, c, 'reptile', 'Reptilia', 'Testudines', f, 'specialist', l, d, a, 'turtles-tortoises');
 const croc = (s: string, c: string, f: string, l: string, a: string[] = []) =>
-  seed(s, c, 'reptile', 'Reptilia', 'Crocodylia', f, 'high-risk', l, 'carnivore', a);
+  seed(s, c, 'reptile', 'Reptilia', 'Crocodylia', f, 'high-risk', l, 'carnivore', a, 'crocodilians');
 
 export const UNIVERSAL_REPTILE_SEEDS: UniversalSpeciesSeed[] = [
   // Snakes — additional popular, specialist and research-relevant taxa.
