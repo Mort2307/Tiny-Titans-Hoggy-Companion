@@ -9,3 +9,4 @@ export * from './universalSpeciesSources';
 export * from './universalSpeciesRegistry';
 export * from './universalSpeciesCareTypes';
 export * from './universalSpeciesCare';
+export * from './universalSpeciesCareOverrides';
