@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PaidTierGate from "../../components/PaidTierGate";
 import TinyTitansIcon from "../../components/TinyTitansIcon";
@@ -7,6 +8,8 @@ import type { RescueAnimalStatus, RescueCareRecordType, RescueDocument, RescueRe
 import "./../../styles/rescue-enhanced.css";
 
 export function RescueAnimalWorkspace() {
+  const [nowMs, setNowMs] = useState<number | null>(null);
+  useEffect(() => { const updateNow = () => setNowMs(Date.now()); updateNow(); const timer = window.setInterval(updateNow, 60_000); return () => window.clearInterval(timer); }, []);
   const {
     navigate,animal,tab,setTab,busy,message,recordType,setRecordType,recordTitle,setRecordTitle,
     recordSummary,setRecordSummary,recordDetails,setRecordDetails,recordValue,setRecordValue,recordFood,setRecordFood,
