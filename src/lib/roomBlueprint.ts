@@ -1,5 +1,4 @@
 import type { ReptileRoomPoint, ReptileRoomSocket, ReptileRoomWorkspace } from "../services/reptileRoomService";
-import type { Room3DAssetKind } from "../services/reptileRoomAssetService";
 
 export function roomBlueprintPoints(room: ReptileRoomWorkspace): ReptileRoomPoint[] {
   return room.floorPlan?.map((point) => ({ ...point })) ?? [
@@ -10,7 +9,7 @@ export function roomBlueprintPoints(room: ReptileRoomWorkspace): ReptileRoomPoin
   ];
 }
 
-export function createRoomPowerSocket(wall: ReptileRoomWorkspace["walls"][number]): ReptileRoomSocket {
+export function createRoomPowerSocket(wall: NonNullable<ReptileRoomWorkspace["walls"]>[number]): ReptileRoomSocket {
   return {
     id: "socket-" + crypto.randomUUID(),
     wallId: wall.id,
@@ -26,6 +25,3 @@ export function createRoomPowerSocket(wall: ReptileRoomWorkspace["walls"][number
   };
 }
 
-export function visualField(kind: Room3DAssetKind): "roomPhotoUrl" | "logoUrl" | "wallImage" {
-  return kind === "room-photo" ? "roomPhotoUrl" : kind === "logo" ? "logoUrl" : "wallImage";
-}
