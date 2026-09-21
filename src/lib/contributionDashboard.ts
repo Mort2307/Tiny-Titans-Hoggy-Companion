@@ -1,11 +1,3 @@
-import type { FounderApplication } from "../services/creatorService";
-import type { PublicContributionEntry, PublicContributionSnapshot } from "../services/communityIntelligenceService";
-import type { Snake } from "../types/Snake";
-import type { PrivacyPreferences } from "../types/privacy";
-import type { Feedback } from "../types/feedback";
-import type { ReportIssue } from "../types/reportIssue";
-import type { KeeperObservation } from "../types/keeperObservation";
-import type { MorphImageSubmission, UserMorphSubmission } from "../types/morphSubmission";
 
 export const EMPTY_CONTRIBUTION_PRIVACY: PrivacyPreferences = { consentVersion:"", communityLocation:false, anonymousAnalytics:false, communityHusbandryData:false, productUpdates:false };
 
