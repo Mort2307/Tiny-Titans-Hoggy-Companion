@@ -6,8 +6,8 @@ import "../styles/Personalisation.css";
 
 export default function Personalisation() {
   const {
-    user,profile,navigate,mode,slices,setMode,setSlices,resetSlices,weekStartDay,weeklyMetrics,resetWeeklyPreferences,canUseCreatorSlice,
-    setProfileType,profileType,category,setCategory,ageBand,setAgeBand,learningLevel,setLearningLevel,experience,setExperience,
+    user,navigate,mode,slices,resetSlices,weekStartDay,weeklyMetrics,resetWeeklyPreferences,canUseCreatorSlice,
+    setProfileType,profileType,category,setCategory,ageBand,setAgeBand,setLearningLevel,experience,setExperience,
     teachingLevel,setTeachingLevel,subjects,setSubjects,organisationName,setOrganisationName,saving,saved,
     profileTypes,levels,teachingLevels,chooseMode,toggleSlice,moveSlice,toggleWeeklyMetric,chooseWeekStart,
     TITAN_AT_A_GLANCE_OPTIONS,TITAN_WEEKLY_METRIC_OPTIONS,WEEK_START_OPTIONS,MAX_SLICES,MIN_SLICES,MAX_WEEKLY_METRICS,MIN_WEEKLY_METRICS,
