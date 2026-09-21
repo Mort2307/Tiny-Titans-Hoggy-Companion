@@ -11,7 +11,7 @@ export const vivHeight=(slot:ReptileRoomSlot)=>Math.max(1,slot.height??45);
 
 export type SlotTransform=ReptileRoomSlot & { rotation?:number; parentAssetId?:string|null };
 export const slotRotation=(slot:ReptileRoomSlot|null)=>slot?(slot as SlotTransform).rotation??0:0;
-export const slotParentAssetId=(slot:ReptileRoomSlot|null)=>slot?(slot as SlotTransform).parentAssetId??null;
+export const slotParentAssetId=(slot:ReptileRoomSlot|null)=>slot?(slot as SlotTransform).parentAssetId??null:null;
 
 export type NodeRef={type:"slot"|"object";id:string};
 export function entityGroup(room:ReptileRoomWorkspace,node:NodeRef){
