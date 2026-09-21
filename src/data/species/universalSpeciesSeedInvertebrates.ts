@@ -4,6 +4,8 @@ const insect = (s: string, c: string, f: string, o: string, r: UniversalSpeciesS
   seed(s, c, 'insect', 'Insecta', o, f, r, l, d, a, 'insects');
 const myri = (s: string, c: string, f: string, o: string, r: UniversalSpeciesSeed['riskClass'], a: string[] = []) =>
   seed(s, c, 'myriapod', 'Myriapoda', o, f, r, 'terrestrial,fossorial', 'detritivore', a, o === 'Scolopendromorpha' ? 'centipedes' : 'millipedes');
+const centi = (s: string, c: string, f: string, o: string, r: UniversalSpeciesSeed['riskClass'], a: string[] = []) =>
+  seed(s, c, 'myriapod', 'Myriapoda', o, f, r, 'terrestrial,fossorial', 'carnivore', a, 'centipedes');
 const moll = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l = 'terrestrial', a: string[] = []) =>
   seed(s, c, 'mollusc', 'Gastropoda', 'Stylommatophora', f, r, l, 'herbivore', a, 'molluscs');
 const crust = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
@@ -32,13 +34,13 @@ export const UNIVERSAL_INVERTEBRATE_SEEDS: UniversalSpeciesSeed[] = [
   // Beetles.
   insect('Pachnoda marginata','Sun Beetle','Scarabaeidae','Coleoptera','companion','terrestrial','omnivore',['fruit beetle']),
   insect('Mecynorrhina torquata','Sunset Flower Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial','omnivore'),
-  insect('Goliathus goliatus','Goliath Beetle','Scarabaeidae','specialist','arboreal','omnivore'),
-  insect('Dynastes hercules','Hercules Beetle','Scarabaeidae','specialist','terrestrial,arboreal','herbivore'),
-  insect('Chalcosoma atlas','Atlas Beetle','Scarabaeidae','specialist','terrestrial,arboreal','herbivore'),
-  insect('Lucanus cervus','European Stag Beetle','Lucanidae','specialist','terrestrial','detritivore'),
-  insect('Prosopocoilus giraffa','Giraffe Stag Beetle','Lucanidae','specialist','terrestrial','detritivore'),
-  insect('Eudicella gralli','African Flower Beetle','Scarabaeidae','specialist','terrestrial,arboreal','omnivore'),
-  insect('Cetonia aurata','Rose Chafer','Scarabaeidae','specialist','terrestrial,arboreal','herbivore'),
+  'Goliathus goliatus','Goliath Beetle','Scarabaeidae','Coleoptera','specialist','arboreal','omnivore''),
+  'Dynastes hercules','Hercules Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore''),
+  'Chalcosoma atlas','Atlas Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore''),
+  'Lucanus cervus','European Stag Beetle','Lucanidae','Coleoptera','specialist','terrestrial','detritivore''),
+  'Prosopocoilus giraffa','Giraffe Stag Beetle','Lucanidae','Coleoptera','specialist','terrestrial','detritivore''),
+  'Eudicella gralli','African Flower Beetle','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','omnivore''),
+  'Cetonia aurata','Rose Chafer','Scarabaeidae','Coleoptera','specialist','terrestrial,arboreal','herbivore''),
 
   // Cockroaches, feeder insects and colony species.
   insect('Blaptica dubia','Dubia Roach','Blaberidae','Blattodea','companion','terrestrial','omnivore',['dubia cockroach']),
@@ -62,9 +64,9 @@ export const UNIVERSAL_INVERTEBRATE_SEEDS: UniversalSpeciesSeed[] = [
   // Lepidoptera and silk moths.
   insect('Bombyx mori','Silkworm','Bombycidae','Lepidoptera','companion','terrestrial','herbivore'),
   insect('Samia ricini','Eri Silkmoth','Saturniidae','Lepidoptera','specialist','terrestrial,arboreal','herbivore'),
-  insect('Attacus atlas','Atlas Moth','Saturniidae','specialist','arboreal','herbivore'),
-  insect('Antheraea pernyi','Chinese Oak Silkmoth','Saturniidae','specialist','arboreal','herbivore'),
-  insect('Gonimbrasia belina','Mopane Worm Moth','Saturniidae','specialist','arboreal','herbivore'),
+  'Attacus atlas','Atlas Moth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore''),
+  'Antheraea pernyi','Chinese Oak Silkmoth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore''),
+  'Gonimbrasia belina','Mopane Worm Moth','Saturniidae','Lepidoptera','specialist','arboreal','herbivore''),
 
   // Butterflies and moths kept or bred as exotics/educational animals.
   insect('Danaus plexippus','Monarch Butterfly','Nymphalidae','Lepidoptera','specialist','arboreal','nectarivore'),
