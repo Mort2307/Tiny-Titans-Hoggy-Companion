@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import TinyTitansIcon from "../components/TinyTitansIcon";
-import { UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
+import { findUniversalSpecies, UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
 import { getUserAnimals } from "../services/universalAnimalService";
 import { getUserSnakeDirectory } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
@@ -42,7 +42,7 @@ export default function UniversalSpeciesProfile() {
       .then(([animals, snakes]) => {
         if (!active) return;
         const legacy = snakes
-          .filter((snake) => snake.universalSpeciesId === id)
+          .filter((snake) => (snake.universalSpeciesId || findUniversalSpecies(snake.species)?.id) === id)
           .map((snake) => ({
             id: snake.id,
             ownerUid: user.uid,
