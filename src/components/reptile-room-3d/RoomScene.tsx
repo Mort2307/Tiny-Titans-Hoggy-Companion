@@ -1,4 +1,4 @@
-import type { ReptileRoomObject, ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
+import type { ReptileRoomObject, ReptileRoomSlot } from "../../services/reptileRoomService";
 import type { Room3DProps, Room3DSelection } from "../../types/reptileRoom3D";
 import { ContactShadows } from "@react-three/drei";
 import { MeasurementGrid3D } from "./MeasurementGrid3D";
