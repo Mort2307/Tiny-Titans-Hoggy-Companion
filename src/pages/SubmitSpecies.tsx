@@ -1,3 +1,4 @@
+import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
@@ -129,7 +130,7 @@ export default function SubmitSpecies() {
       <BackHomeButton />
       <header className="species-submission-hero">
         <span className="eyebrow">TINY TITANS · SPECIES INTELLIGENCE</span>
-        <h1>🐍 Submit a Species</h1>
+        <h1><TinyTitansIcon name="reptile" size={24} /> Submit a Species</h1>
         <p>Help expand the reptile database. Give us the best evidence you have, upload useful imagery, and clearly mark anything that still needs verification.</p>
         <div className="species-submission-rule">Research quality beats completeness. Writing “unknown” is better than inventing a value.</div>
       </header>
