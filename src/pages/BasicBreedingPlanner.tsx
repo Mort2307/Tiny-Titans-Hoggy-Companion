@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
+import BreedingProjectManagement from "../components/BreedingProjectManagement";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { getBreedingPairings, getBreedingProjects, saveBreedingPairing, saveBreedingProject } from "../services/breedingService";
@@ -141,6 +142,7 @@ export default function BasicBreedingPlanner() {
   return (
     <main className="page-container breeding-page">
       <BackHomeButton />
+      <BreedingProjectManagement />
       <header className="breeding-hero">
         <div>
           <p className="breeding-eyebrow">Tiny Titans · Everyday Breeding</p>
