@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/useAuth";
-import { removeFamilyMember, type FamilyAccount, type FamilyMember } from "../services/familyService";
+import { removeFamilyMember, type FamilyAccount } from "../services/familyService";
 import { getFamilyManagerData, setFamilyMemberAccessMode } from "../services/familyManagerService";
 import type { FamilyAccessMode } from "../services/familyPermissionsService";
 import { FAMILY_PERMISSION_MODES } from "../config/familyManager";
