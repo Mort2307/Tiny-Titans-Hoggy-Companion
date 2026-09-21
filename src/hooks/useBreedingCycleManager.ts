@@ -140,6 +140,6 @@ export function useBreedingCycleManager() {
     eventKind,setEventKind,eventAnimal,setEventAnimal,eventWeight,setEventWeight,eventTemperature,setEventTemperature,
     eventObservation,setEventObservation,eventAction,setEventAction,eventConcern,setEventConcern,confidence,setConfidence,
     saving,error,message,project,male,female,previousPhase,nextPhase,animalOptions,concerns,latestWeight,
-    savePlan,addEvent,phases:BREEDING_CYCLE_PHASES,eventKinds:BREEDING_EVENT_KINDS,
+    currentIndex,savePlan,addEvent,phases:BREEDING_CYCLE_PHASES,eventKinds:BREEDING_EVENT_KINDS,
   };
 }
