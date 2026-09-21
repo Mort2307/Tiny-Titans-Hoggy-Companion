@@ -5,6 +5,7 @@ import {
   searchUniversalSpecies,
 } from "../data/species/universalSpeciesRegistry";
 import type { UniversalSpeciesRecord } from "../data/species/universalSpeciesTypes";
+import "../styles/universal-species-picker.css";
 
 type Props = {
   value?: string;
