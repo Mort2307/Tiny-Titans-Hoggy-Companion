@@ -52,7 +52,7 @@ export const UNIVERSAL_AMPHIBIAN_SEEDS: UniversalSpeciesSeed[] = [
   a('Bombina orientalis','Oriental Fire-bellied Toad','Bombinatoridae','companion','semi-aquatic','insectivore'),
   a('Bombina bombina','European Fire-bellied Toad','Bombinatoridae','specialist','semi-aquatic','insectivore'),
   a('Anaxyrus americanus','American Toad','Bufonidae','specialist','terrestrial','insectivore'),
-  a('Incilius alvarius','Sonoran Desert Toad','Bufonidae','venomous','terrestrial','carnivore'),
+  a('Incilius alvarius','Sonoran Desert Toad','Bufonidae','toxic','terrestrial','carnivore'),
   a('Rhinella marina','Cane Toad','Bufonidae','specialist','terrestrial,semi-aquatic','generalist'),
   a('Atelopus spumarius','Spiny Green Frog','Bufonidae','specialist','terrestrial,semi-aquatic','insectivore'),
   a('Phrynohyas venulosa','Veined Tree Frog','Hylidae','specialist','arboreal','insectivore'),
