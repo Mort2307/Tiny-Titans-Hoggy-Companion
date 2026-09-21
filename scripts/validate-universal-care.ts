@@ -49,7 +49,7 @@ for (const species of UNIVERSAL_SPECIES) {
 assert(fullyResolved > 0, 'No care profiles have any mapped veterinary/class-level evidence.');
 assert(taxonomyFirst > 0, 'Research-needed profiles unexpectedly disappeared; specialist groups need an explicit evidence queue.');
 
-for (const speciesId of ['dendrobates-tinctorius', 'litoria-caerulea', 'ceratophrys-cranwelli', 'ambystoma-mexicanum']) {
+for (const speciesId of ['dendrobates-tinctorius', 'pelodryas-caerulea', 'ceratophrys-cranwelli', 'ambystoma-mexicanum']) {
   const species = UNIVERSAL_SPECIES_BY_ID[speciesId];
   assert(species?.care?.husbandry.coverage === 'species', `${speciesId} must have a species-scoped care profile.`);
   assert((species.care.husbandry.numericGuidance.ranges ?? []).every((range) => range.evidence.basis === 'species-specific'), `${speciesId} numeric ranges must retain species-specific evidence scope.`);
