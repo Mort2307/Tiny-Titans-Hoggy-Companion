@@ -4,8 +4,6 @@ import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
 import HomeCurrentAnimalSection from "../components/Home/HomeCurrentAnimalSection";
 import HomeAttentionSection from "../components/Home/HomeAttentionSection";
-import TitanDecisionWhyCard from "../components/TitanIntelligence/TitanDecisionWhyCard";
-import TitanDecisionQueue from "../components/TitanIntelligence/TitanDecisionQueue";
 import ContributionPulse from "../components/ContributionPulse";
 import RecommendedFeed from "../components/RecommendedFeed";
 import { useHomeDashboard } from "../hooks/useHomeDashboard";
