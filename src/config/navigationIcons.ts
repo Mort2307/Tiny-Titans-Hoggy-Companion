@@ -1,4 +1,4 @@
-import type { TinyTitansIconName } from "../components/TinyTitansIcon";
+import type { TinyTitansIconName } from "../types/tinyTitansIcon";
 
 export const QUICK_ICON_MAP: Record<string, TinyTitansIconName> = {
   home: "home", snakes: "reptile", room: "enclosure", conversations: "messages", reminders: "reminders", husbandry: "husbandry",
