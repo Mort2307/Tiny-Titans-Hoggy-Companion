@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import UniversalSpeciesPicker from "../components/UniversalSpeciesPicker";
 import { getUserAnimals, createUserAnimal } from "../services/universalAnimalService";
 import { getUserSnakeDirectory } from "../services/snakeService";
@@ -12,6 +12,8 @@ type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
 
 export default function MyAnimals() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const speciesFilter = searchParams.get("species") || "";
   const [animals, setAnimals] = useState<DirectoryAnimal[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<UniversalSpeciesRecord | null>(null);
   const [name, setName] = useState("");
@@ -116,7 +118,7 @@ export default function MyAnimals() {
       <section className="universal-animals-panel">
         <p className="eyebrow">INDIVIDUALS</p>
         <h2>Your actual animals</h2>
-        {loading ? <p>Loading your animal collection…</p> : animals.length === 0 ? <p>No individual animal records yet.</p> : <div className="universal-animal-list">{animals.map((animal) => <article key={(animal.legacySnake ? "snake:" : "animal:") + animal.id} className="universal-animal-row"><div><strong>{animal.name}</strong><span>{animal.speciesCommonName || "Species awaiting identification"}</span><small>{animal.animalGroup || "animal"} · {animal.status}</small></div><Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual →</Link></article>)}</div>}
+        {loading ? <p>Loading your animal collection…</p> : visibleAnimals.length === 0 ? <p>No individual animal records yet.</p> : <div className="universal-animal-list">{visibleAnimals.map((animal) => <article key={(animal.legacySnake ? "snake:" : "animal:") + animal.id} className="universal-animal-row"><div><strong>{animal.name}</strong><span>{animal.speciesCommonName || "Species awaiting identification"}</span><small>{animal.animalGroup || "animal"} · {animal.status}</small></div><Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual →</Link></article>)}</div>}
       </section>
     </main>
   );
