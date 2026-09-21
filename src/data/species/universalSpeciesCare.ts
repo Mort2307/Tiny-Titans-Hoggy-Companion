@@ -506,6 +506,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
   const coverage = specificRequirements.length ? legacyCoverage : (CLASS_SOURCE_IDS[species.className].length ? 'class' : 'not-verified');
 
   const scopeKey = legacy && specificRequirements.length ? `species:${species.id}` : `genus:${species.genus}`;
+  const numericRanges = legacy ? rangeRecords(species, legacy) : [];
   const careStatus = coverage === 'species' && species.husbandryStatus === 'specialist-profile'
     ? 'specialist-reviewed'
     : coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
