@@ -85,6 +85,82 @@ export const UNIVERSAL_SPECIES_CARE_OVERRIDES: Record<string, SpeciesCareOverrid
       { label: 'Humidity', min: 60, max: 70, unit: '%', context: 'Josh’s Frogs describes 60–70% as the preferred humidity range.' },
     ],
   },
+  'dendrobates-auratus': {
+    coverage: 'species',
+    sourceIds: ['joshsFrogsDendrobatesAuratus2026'],
+    caveat: DART_FROG_CAVEAT,
+    requirements: [
+      { id: 'species-vivarium', domain: 'housing', label: 'Horizontal planted vivarium', guidance: 'Use a naturalistic planted vivarium with substantial leaf litter and ground structure; this species is less climbing-oriented than many other dart frogs.', priority: 'essential' },
+      { id: 'species-water-feature', domain: 'water', label: 'Clean water feature where used', guidance: 'A small water feature can be appropriate where designed safely and kept clean; it is not a substitute for controlled environmental moisture.', priority: 'conditional' },
+      { id: 'species-temperature', domain: 'environment', label: 'Cool tropical thermal regime', guidance: 'Keep temperatures within the reviewed dart-frog range and avoid overheating; temperatures above the source’s upper tolerance are dangerous.', priority: 'essential' },
+      { id: 'species-humidity', domain: 'environment', label: 'High humidity with airflow', guidance: 'Maintain a humid vivarium while preserving ventilation and safe access to water.', priority: 'essential' },
+      { id: 'species-feeding', domain: 'feeding', label: 'Small supplemented live prey', guidance: 'Provide appropriately small live invertebrate prey and a verified vitamin/mineral supplementation regime.', priority: 'essential' },
+    ],
+    numericRanges: [
+      { label: 'Temperature', min: 18.3, max: 29.4, unit: '°C', context: 'Josh’s Frogs states 65–85°F tolerance and warns that temperatures above 85°F are dangerous.' },
+      { label: 'Humidity', min: 70, max: 100, unit: '%', context: 'Josh’s Frogs states a preferred humidity range of 70–100%, with short lower periods only when water is available.' },
+    ],
+    health: [
+      { id: 'heat-stress', concern: 'Heat and dehydration stress', watchFor: ['reduced activity', 'abnormal posture or behaviour', 'unexpected rapid decline'], riskFactors: ['excessive temperature', 'inadequate water access', 'loss of humidity'], prevention: 'Keep the vivarium within the reviewed thermal range, maintain hydration and provide effective ventilation.', priority: 'urgent-vet' },
+      { id: 'skin-environment', concern: 'Skin/environment stress', watchFor: ['abnormal skin', 'reduced feeding or activity'], riskFactors: ['poor moisture management', 'stagnant conditions', 'contaminated water'], prevention: 'Keep the vivarium clean, humid and ventilated and investigate persistent changes promptly.', priority: 'prompt-vet' },
+    ],
+  },
+  'dendrobates-leucomelas': {
+    coverage: 'species',
+    sourceIds: ['joshsFrogsDendrobatesLeucomelas2026'],
+    caveat: DART_FROG_CAVEAT,
+    requirements: [
+      { id: 'species-vivarium', domain: 'housing', label: 'Naturalistic dart-frog vivarium', guidance: 'Use a planted vivarium with leaf litter, secure retreats and structure appropriate for a small terrestrial dart frog.', priority: 'essential' },
+      { id: 'species-temperature', domain: 'environment', label: 'Cool-to-moderate thermal regime', guidance: 'Keep this species within the reviewed tolerance and avoid temperatures above the dangerous upper threshold.', priority: 'essential' },
+      { id: 'species-humidity', domain: 'environment', label: 'High humidity with safe hydration', guidance: 'Maintain the reviewed humid environment and ensure safe water access; short dry periods should not become prolonged.', priority: 'essential' },
+      { id: 'species-feeding', domain: 'feeding', label: 'Small live prey and supplementation', guidance: 'Provide appropriately small invertebrate prey and verified vitamin/mineral supplementation.', priority: 'essential' },
+    ],
+    numericRanges: [
+      { label: 'Temperature', min: 18.3, max: 29.4, unit: '°C', context: 'Josh’s Frogs states 65–85°F tolerance and warns temperatures over 85°F are dangerous.' },
+      { label: 'Humidity', min: 70, max: 100, unit: '%', context: 'Josh’s Frogs states 70–100% preferred humidity and notes that brief drops can be tolerated only with water access.' },
+    ],
+    health: [
+      { id: 'heat-dehydration', concern: 'Heat/dehydration stress', watchFor: ['reduced activity', 'feeding change', 'rapid decline'], riskFactors: ['excess heat', 'poor water access', 'inadequate humidity'], prevention: 'Maintain the reviewed temperature/moisture regime and clean water access.', priority: 'urgent-vet' },
+    ],
+  },
+  'ranitomeya-imitator': {
+    coverage: 'species',
+    sourceIds: ['joshsFrogsRanitomeyaImitator2026'],
+    caveat: DART_FROG_CAVEAT,
+    requirements: [
+      { id: 'species-vivarium', domain: 'housing', label: 'Vertical thumbnail-dart vivarium', guidance: 'Use an appropriate vertical vivarium with leaf litter and climbing/resting structure for this small arboreal/terrestrial poison frog.', priority: 'essential' },
+      { id: 'species-social', domain: 'social', label: 'Careful social grouping', guidance: 'Smaller enclosures are suited to pairs; larger systems may support groups, but social stress should be monitored and animals separated if compatibility breaks down.', priority: 'conditional' },
+      { id: 'species-humidity', domain: 'environment', label: 'High humidity with ventilation', guidance: 'Maintain the reviewed humid environment and retain adequate airflow; safe water access remains essential.', priority: 'essential' },
+      { id: 'species-feeding', domain: 'feeding', label: 'Very small prey', guidance: 'Use small prey such as suitable fruit flies and springtails, with species-appropriate supplementation.', priority: 'essential' },
+    ],
+    numericRanges: [
+      { label: 'Temperature', min: 18.3, max: 26.7, unit: '°C', context: 'Josh’s Frogs states 65–80°F tolerance and warns temperatures above 85°F are dangerous.' },
+      { label: 'Humidity', min: 80, max: 100, unit: '%', context: 'Josh’s Frogs states 80–100% preferred humidity, with brief lower periods possible only with water access.' },
+    ],
+    health: [
+      { id: 'heat-dehydration', concern: 'Heat/dehydration stress', watchFor: ['reduced activity', 'feeding change', 'rapid decline'], riskFactors: ['excess heat', 'low humidity', 'inadequate water access'], prevention: 'Maintain the reviewed environmental range and clean water access.', priority: 'urgent-vet' },
+      { id: 'social-stress', concern: 'Social stress', watchFor: ['repeated avoidance', 'persistent decline in activity', 'body-condition loss'], riskFactors: ['overcrowding', 'incompatible groupings'], prevention: 'Use evidence-based group size and provide enough structure and resources for all frogs.', priority: 'prompt-vet' },
+    ],
+  },
+  'agalychnis-callidryas': {
+    coverage: 'species',
+    sourceIds: ['joshsFrogsAgalychnisCallidryas2026'],
+    caveat: WHITES_CAVEAT,
+    requirements: [
+      { id: 'species-arboreal', domain: 'housing', label: 'Large arboreal enclosure', guidance: 'Use substantial vertical space, branches and foliage for this arboreal tree frog.', priority: 'essential' },
+      { id: 'species-water', domain: 'water', label: 'Constant clean water access', guidance: 'Provide a large clean water dish that can be cleaned regularly; this species may use it as a latrine.', priority: 'essential' },
+      { id: 'species-humidity', domain: 'environment', label: 'Moderate humidity with strong ventilation', guidance: 'Maintain the reviewed humidity range and strong ventilation because stagnant humid conditions increase skin-disease risk.', priority: 'essential' },
+      { id: 'species-feeding', domain: 'feeding', label: 'Appropriately sized live prey', guidance: 'Feed species-appropriate live invertebrates matched to the size and life stage of the frog.', priority: 'essential' },
+    ],
+    numericRanges: [
+      { label: 'Temperature', min: 23.3, max: 29.4, unit: '°C', context: 'Josh’s Frogs states best results in the mid-high 70s°F and warns that mid/high-80s°F can quickly become fatal, especially with poor hydration.' },
+      { label: 'Humidity', min: 60, max: 70, unit: '%', context: 'Josh’s Frogs states 60–70% as the preferred humidity range and stresses ventilation.' },
+    ],
+    health: [
+      { id: 'skin-infection-risk', concern: 'Skin/environment disease risk', watchFor: ['abnormal skin', 'persistent lesions', 'reduced activity'], riskFactors: ['stagnant humid air', 'poor hygiene', 'contaminated water'], prevention: 'Maintain ventilation, clean water and appropriate enclosure hygiene.', priority: 'prompt-vet' },
+      { id: 'heat-stress', concern: 'Heat and dehydration stress', watchFor: ['rapid decline', 'reduced activity', 'feeding cessation'], riskFactors: ['high temperature', 'inadequate water/humidity'], prevention: 'Prevent overheating and maintain clean water access.', priority: 'urgent-vet' },
+    ],
+  },
   'ambystoma-mexicanum': {
     coverage: 'species',
     sourceIds: ['caudataAmbystomaMexicanum2026', 'merckAmphibianHusbandry2026'],
