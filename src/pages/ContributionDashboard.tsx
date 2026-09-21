@@ -3,6 +3,8 @@ import useContributionDashboard from "../hooks/useContributionDashboard";
 import { formatContributionDate } from "../lib/contributionDashboard";
 import "../styles/contribution-dashboard.css";
 
+const safeNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : 0;
+
 export default function ContributionDashboard() {
   const {
     navigate, user, preferences, globalSnapshot, globalFeed, loading, saving, message, error,
