@@ -9,7 +9,7 @@ import { useUnits } from "../context/UnitContextValue";
 import { generateId } from "../utils/generateId";
 import { getSpeciesDiet, type SpeciesDiet } from "../data/feeding/speciesDiet";
 import { categoryByFood } from "../data/feeding/feedingOptions";
-import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../utils/feedingSummary";
+import { latestFeedingAttempt, latestSuccessfulFeed } from "../utils/feedingSummary";
 import { toDisplayWeight, today } from "../lib/feedingTracker";
 
 export default function useFeedingTracker() {
