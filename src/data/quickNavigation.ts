@@ -1,4 +1,4 @@
-export type QuickNavCapability = "everyone" | "creator" | "tester" | "educator";
+﻿export type QuickNavCapability = "everyone" | "creator" | "tester" | "educator";
 
 export type QuickNavItem = {
   id: string;
@@ -19,6 +19,7 @@ export type QuickNavItem = {
 export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "home", label: "Home / At a Glance", icon: "home", path: "/", group: "Overview", description: "Your keeper command centre." },
   { id: "snakes", label: "My Snakes", icon: "reptile", path: "/snakes", group: "Overview", description: "View, add and manage every Titan.", keywords: ["snake", "animals", "collection", "new snake"] },
+  { id: "species", label: "Species Explorer", icon: "reptile", path: "/species", group: "Overview", description: "Explore the universal Tiny Titans animal catalogue.", keywords: ["species", "lizards", "turtles", "amphibians", "spiders", "insects", "exotics"] },
   { id: "room", label: "Reptile Room", icon: "enclosure", path: "/reptile-room", group: "Overview", description: "Manage your reptile room and vivariums.", keywords: ["vivarium", "enclosure", "room"] },
   { id: "conversations", label: "Message Centre", icon: "messages", path: "/conversations", group: "Overview", description: "Your community conversations." },
 
@@ -116,3 +117,4 @@ export function quickNavSearchItems(query: string, authorisedCapabilities: Set<Q
     return [item.label, item.group, item.description, item.path, ...(item.keywords ?? [])].join(" ").toLowerCase().includes(normalised);
   });
 }
+
