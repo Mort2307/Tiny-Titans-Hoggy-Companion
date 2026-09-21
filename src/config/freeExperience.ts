@@ -36,8 +36,8 @@ export const FREE_KEEPER_NAVIGATION_GROUPS = [
       { id: "feeding", label: "Feeding Tracker", icon: "feeding", path: "/feeding", description: "Log meals and feeding history." },
       { id: "shedding", label: "Shed Intelligence", icon: "shed", path: "/shedding", description: "Track shed cycles and outcomes." },
       { id: "behaviour", label: "Behaviour Journal", icon: "behaviour", path: "/behaviour", description: "Record behaviour and observations." },
-      { id: "health", label: "Health & Vet", icon: "health", path: "/health", description: "Health and veterinary records." },
-      { id: "enclosure", label: "Enclosure Intelligence", icon: "enclosure", path: "/enclosure-intelligence", description: "Review enclosure conditions and care." },
+      { id: "health", label: "Health & Vet", icon: "veterinary", path: "/health", description: "Health and veterinary records." },
+      { id: "enclosure", label: "Enclosure Intelligence", icon: "habitatBuilder", path: "/enclosure-intelligence", description: "Review enclosure conditions and care." },
     ],
   },
   {
@@ -66,7 +66,7 @@ export const FREE_KEEPER_NAVIGATION_GROUPS = [
   {
     group: "Rescue",
     items: [
-      { id: "rescue", label: "Rescue Centre", icon: "health", path: "/rescue", description: "Access rescue discovery and rescue workspace entry points." },
+      { id: "rescue", label: "Rescue Centre", icon: "veterinary", path: "/rescue", description: "Access rescue discovery and rescue workspace entry points." },
     ],
   },
   {
@@ -76,7 +76,7 @@ export const FREE_KEEPER_NAVIGATION_GROUPS = [
       { id: "plans", label: "Plans & Features", icon: "plans", path: "/plans", description: "Compare Free and paid workspaces." },
       { id: "billing", label: "Billing & Subscription", icon: "billing", path: "/account/billing", description: "Manage subscriptions and billing." },
       { id: "family", label: "My Family", icon: "family", path: "/account/family", description: "Manage family sharing." },
-      { id: "become-titan", label: "Become a Titan", icon: "titan", path: "/become-a-titan", description: "Support Tiny Titans and see supporter goals." },
+      { id: "become-titan", label: "Become a Titan", icon: "titanIntelligence", path: "/become-a-titan", description: "Support Tiny Titans and see supporter goals." },
     ],
   },
 ] as const satisfies readonly { group: string; items: readonly FreeKeeperNavigationDefinition[] }[];
