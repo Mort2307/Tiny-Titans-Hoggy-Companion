@@ -15,7 +15,8 @@ export type UniversalSpeciesRisk =
   | 'companion'
   | 'specialist'
   | 'venomous'
-  | 'high-risk';
+  | 'high-risk'
+  | 'toxic';
 
 export type UniversalLifestyle =
   | 'terrestrial'
@@ -36,6 +37,7 @@ export type UniversalDietaryGuild =
   | 'nectarivore'
   | 'granivore'
   | 'frugivore'
+  | 'amphibian-specialist'
   | 'detritivore'
   | 'generalist';
 
