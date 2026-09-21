@@ -312,7 +312,7 @@ export function useWeightRecords() {
 
   return {
     navigate,user,loading,profileLoading,snake,history,weightInput,setWeightInput,today,typedDate,setTypedDate,dateError,setDateError,
-    saving,saveMessage,setSaveMessage,saveState,editingId,setEditingId,deletingId,deleteTarget,setDeleteTarget,isImperial,formatWeight,weightUnit,reminder,
+    saving,saveMessage,setSaveMessage,saveState,editingId,setEditingId,deletingId,deleteTarget,setDeleteTarget,isImperial,formatWeight,weightUnit,reminder,error,
     currentWeight,totalGain,percentageGain,daysSinceWeigh,chartHistory,firstWeight,saveWeight,startEdit,removeWeight,loadingSnake,
   };
 }
