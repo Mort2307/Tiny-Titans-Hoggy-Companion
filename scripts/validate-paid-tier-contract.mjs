@@ -100,7 +100,7 @@ const checks = [
   ["Ask Titan callable is exported", titanFunctions.includes("exports.askTitan") && titanFunctions.includes("resolveTitanAccess") && titanAccess.includes("PAID_TIERS") && titanAccess.includes("titan_pro")],
   ["Gemini tool calling is wired", titanModel.includes("toolConfig") && titanModel.includes("functionCallingConfig") && titanTools.includes("functionDeclarations")],
   ["Gemini current model is configured", titanModel.includes('"gemini-3.8-flash"')],
-  ["model is instructed not to claim creator authorship", /must never imply/i.test(titanPrompt) && /not a personal claim/i.test(titanPrompt)],
+  ["model is instructed not to claim creator authorship", titanPrompt.includes("CREATOR_AUTHORSHIP_BOUNDARY") && /must never imply or present an AI conclusion as a personal claim/i.test(titanPrompt)],
   ["provenance is returned", titanFunctions.includes("buildTitanProvenance") && titanProvenance.includes("creatorAuthorshipClaim")],
   ["user data provenance is explicit", titanProvenance.includes("USER_DATA") && titanProvenance.includes("information made available to Titan Intelligence")],
   ["deterministic analysis is separate from retrieval", titanData.includes('require("./titanIntelligenceAnalysis")') && titanData.includes("buildAnimalIntelligenceSnapshot") && titanAnalysis.includes("function buildAnimalIntelligenceSnapshot")],
