@@ -1,14 +1,15 @@
-import BackHomeButton from "../components/BackHomeButton";
 import TinyTitansIcon from "../components/TinyTitansIcon";
-import { useShedTrackerIntelligent } from "../hooks/useShedTrackerIntelligent";
-import { displayShedDate, shedStageTitle } from "../lib/shedTrackerIntelligent";
+import BackHomeButton from "../components/BackHomeButton";
+import { useShedTrackerIntelligent, shedStageLabel } from "../hooks/useShedTrackerIntelligent";
 import "../styles/trackerWorkspace.css";
 
 export default function ShedTrackerIntelligent() {
   const {
-    navigate,user,loading,profileLoading,snakes,snakeId,setSnakeId,records,editingId,stage,setStage,date,setDate,quality,setQuality,status,setStatus,
-    retained,setRetained,assistance,setAssistance,length,setLength,weight,setWeight,notes,setNotes,busy,message,error,intelligence,active,completed,selectedSnake,
-    reset,edit,save,remove,stages,qualities,statuses,retainedAreas,assistances,
+    navigate, user, loading, profileLoading, snakes, snakeId, setSnakeId, records, editingId,
+    stage, setStage, date, setDate, quality, setQuality, status, setStatus, retained, setRetained,
+    assistance, setAssistance, length, setLength, weight, setWeight, notes, setNotes,
+    busy, message, error, selectedSnake, intelligence, active, completed, edit, continueActiveCycle,
+    reset, save, remove, lengthUnit, weightUnit, stages, qualities, statuses, retainedAreas, assistances,
   } = useShedTrackerIntelligent();
 
   if (loading || profileLoading) return <div className="tt-tracker-page"><BackHomeButton /><div className="tt-tracker-panel"><p className="tt-tracker-eyebrow">Keeper records</p><h1><TinyTitansIcon name="shed" size={26} /> Shed Intelligence</h1><p className="tt-tracker-panel-muted">Loading shedding intelligence…</p></div></div>;
@@ -22,7 +23,7 @@ export default function ShedTrackerIntelligent() {
     </header>
 
     {error && <div className="tt-tracker-message error" role="alert"><TinyTitansIcon name="warning" size={17} /> {error}</div>}{message && <div className="tt-tracker-message success" role="status"><TinyTitansIcon name="check" size={17} /> {message}</div>}
-    {snakes.length === 0 ? <section className="tt-tracker-panel"><div className="tt-empty"><h2>No snakes yet</h2><p>Add a snake before recording shedding.</p><button className="tt-tracker-button" type="button" onClick={() => navigate("/snakes")}><TinyTitansIcon name="add" size={18} /> Add Snake</button></div></section> : <>
+    {snakes.length === 0 ? <section className="tt-tracker-panel"><div className="tt-empty"><h2>No reptiles yet</h2><p>Add an animal before recording shedding.</p><button className="tt-tracker-button" type="button" onClick={() => navigate("/snakes")}><TinyTitansIcon name="add" size={18} /> Add Reptile</button></div></section> : <>
       <section id="shed-overview" className="tt-tracker-stat-grid"><div className="tt-tracker-stat"><span>Completeness</span><strong>{intelligence.completeness}%</strong></div><div className="tt-tracker-stat"><span>Completed cycles</span><strong>{completed.length}</strong></div><div className="tt-tracker-stat"><span>Average interval</span><strong>{intelligence.averageIntervalDays ?? "—"}{intelligence.averageIntervalDays != null ? "d" : ""}</strong></div><div className="tt-tracker-stat"><span>Problem cycles</span><strong>{intelligence.problematicCycleCount}</strong></div></section>
       <div className="tt-tracker-grid">
         <div className="tt-tracker-stack">
