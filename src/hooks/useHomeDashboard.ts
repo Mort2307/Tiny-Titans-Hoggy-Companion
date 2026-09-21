@@ -18,7 +18,7 @@ export function buildQuietIntelligenceSnippet(snake: HomeSnake | undefined, tota
     snake.weightRecords >= 2 && snake.feedingRecords >= 3 ? `There is more hiding in ${snake.name} weight and feeding history than either record shows on its own.` : null,
     snake.shedRecords >= 2 && snake.feedingRecords >= 3 ? `Something interesting is starting to emerge in the rhythm of ${snake.name} routine.` : null,
     snake.healthRecords > 0 && (snake.weightRecords > 0 || snake.feedingRecords > 0) ? `${snake.name} records are beginning to give a little more context than the individual entries suggest.` : null,
-    totalRecords >= 12 ? "You have logged enough here that the history is starting to look rather more interesting than simple record keeping." : null,
+    totalRecords >= 12 ? "You've logged enough here that the history is starting to look rather more interesting than simple record keeping." : null,
     totalRecords >= 7 ? "There is a little more going on in these records than first meets the eye." : null,
   ].filter((value): value is string => Boolean(value));
   if (!snippets.length) return "A few more real records and this gets surprisingly interesting.";
