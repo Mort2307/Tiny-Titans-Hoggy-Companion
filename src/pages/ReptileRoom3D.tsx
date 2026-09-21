@@ -12,7 +12,7 @@ export default function ReptileRoom3D() {
     selectedSlot,selectedObject,snakeMap,selectedDimensions,selectedPhoto,selectedRotation,
     addAsset,moveSelection,moveBy,snapSelected,snapToWall,stackSnapSelected,magnetLockSelected,unlockMagnet,unstackSelected,deleteSelected,updateRoom,
     duplicateSelected,updateSelectedDimensions,updateSelectedPosition,updateSelectedRotation,resetSelectedRotation,patchSelectedAsset,uploadPhoto,removePhoto,useSnakePhoto,
-    photoFor,telemetryFor,saveCurrentRoom,handleTeleport,
+    photoFor,telemetryFor,saveCurrentRoom,applyTransformPatch,
   }=useReptileRoom3D();
 
   if (loading || profileLoading) return <div className="rr3d-loading">Loading your reptile room…</div>;
