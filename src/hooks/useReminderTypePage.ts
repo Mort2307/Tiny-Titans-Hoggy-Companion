@@ -6,7 +6,7 @@ import { completeWaterChange,createReminder,deleteReminder,listReminders,listWat
 import type { Reminder,ReminderInput,ReminderKind } from "../types/Reminder";
 import { REMINDER_DEFINITIONS } from "../types/Reminder";
 import type { ReminderSnakeOption,WaterChangeLog } from "../types/reminderTypePage";
-import { REMINDER_DEFINITION_MAP,buildReminderInput,localReminderDateKey } from "../lib/reminderTypePage";
+import { REMINDER_DEFINITION_MAP,buildReminderInput,localReminderDateKey,formatReminderDateKey } from "../lib/reminderTypePage";
 
 export function useReminderTypePage(){
   const {kind:rawKind}=useParams<{kind:string}>(); const kind=rawKind as ReminderKind; const [searchParams]=useSearchParams(); const requestedSnakeId=searchParams.get("snakeId"); const {user,loading,profileLoading}=useAuth();
