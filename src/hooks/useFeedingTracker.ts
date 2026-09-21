@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Snake } from "../types/Snake";
-import type { FoodType, FeedingMethod, FeedingRecord, FeedingResponse, FeedingResponse as ResponseType } from "../types/Feeding";
+import type { FoodType, FeedingMethod, FeedingRecord, FeedingResponse } from "../types/Feeding";
 import { getUserSnakes } from "../services/snakeService";
 import { deleteSnakeFeeding, getSnakeFeedings, saveSnakeFeeding } from "../services/feedingService";
 import { useAuth } from "../context/useAuth";
@@ -100,6 +100,12 @@ export default function useFeedingTracker() {
     setEditingId(null); setDate(today()); setFoodType(defaultFood); setCustomFood(""); setSize(""); setQuantity("1"); setWeight(""); setFeedingMethod("Tongs"); setResponse("Accepted"); setNotes("");
   }, [diet]);
 
+  function selectSnake(nextSnakeId: string) {
+    const nextSnake = snakes.find((snake) => snake.id === nextSnakeId);
+    setSelectedSnakeId(nextSnakeId);
+    resetForm(nextSnake ? getSpeciesDiet(nextSnake) : diet);
+  }
+
   useEffect(() => {
     if (!user || !selectedSnakeId || loadingFeedings || searchParams.get("action") !== "log") return;
     queueMicrotask(() => {
@@ -152,6 +158,6 @@ export default function useFeedingTracker() {
 
   return {
     routeSnakeId, user, loading, profileLoading, navigate, searchParams, setSearchParams, isImperial, weightUnit, formatWeight, snakes, selectedSnakeId, setSelectedSnakeId, feedings, loadingSnakes, loadingFeedings, saving, error, success, editingId, deleteTarget, setDeleteTarget,
-    date, setDate, foodType, setFoodType, customFood, setCustomFood, size, setSize, quantity, setQuantity, weight, setWeight, feedingMethod, setFeedingMethod, response, setResponse, notes, setNotes, diet, feedingFoodTypes, counts, acceptanceRate, lastFeeding, lastSuccessfulFeeding, resetForm, editFeeding, handleSubmit, handleDelete, formatDaysSinceFeeding
+    date, setDate, foodType, setFoodType, customFood, setCustomFood, size, setSize, quantity, setQuantity, weight, setWeight, feedingMethod, setFeedingMethod, response, setResponse, notes, setNotes, diet, feedingFoodTypes, counts, acceptanceRate, lastFeeding, lastSuccessfulFeeding, resetForm, selectSnake, editFeeding, handleSubmit, handleDelete
   };
 }
