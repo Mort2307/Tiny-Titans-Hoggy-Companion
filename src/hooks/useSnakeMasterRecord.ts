@@ -12,8 +12,10 @@ import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } fr
 import { confidenceExplanation,formatMasterRecordDate,insightDestination,insightIconName,timelineActionLabel,timelineDestination } from "../lib/snakeMasterRecord";
 
 export function useSnakeMasterRecord() {
-
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { isImperial, formatWeight, formatLength } = useUnits();
         const [record, setRecord] = useState<SnakeMasterRecord | null>(null);
   const [loadedRecordKey, setLoadedRecordKey] = useState<string | null>(null);
   const [error, setError] = useState("");
