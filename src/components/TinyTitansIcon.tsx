@@ -234,9 +234,9 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
     case "reptiles":
       return <svg {...commonProps} className={`tt-icon-svg tt-icon-reptiles ${commonProps.className ?? ""}`.trim()}>
         <circle className="tt-icon-fill tt-icon-reptiles-badge" cx="24" cy="24" r="16" />
-        <path className="tt-icon-reptiles-snake" d="M12 30c2-5 5-9 10-9 3 0 5 1 7 3 2 2 4 2 6 0" />
-        <path className="tt-icon-reptiles-lizard" d="M14 20c3-4 8-5 12-2l4 3 5-2 2 3-5 2 4 4-2 2-5-4-5 2-3-2 3-3-6-1-4 2-2-2 4-3Z" />
-        <circle className="tt-icon-reptiles-eye" cx="34" cy="21" r="1.5" />
+        <path className="tt-icon-line tt-icon-reptiles-snake" d="M11 30c2-5 6-9 11-9 3 0 5 1 7 3 2 2 4 2 7 0" />
+        <path className="tt-icon-fill tt-icon-reptiles-lizard" d="M14 20c3-4 8-5 12-2l4 3 5-2 2 3-5 2 4 4-2 2-5-4-5 2-3-2 3-3-6-1-4 2-2-2 4-3Z" />
+        <circle className="tt-icon-eye tt-icon-reptiles-eye" cx="34" cy="21" r="1.5" />
         <circle className="tt-icon-reptiles-pupil" cx="34.3" cy="21" r=".55" />
         <path className="tt-icon-line-soft" d="M13 34h22" />
         <circle className="tt-icon-spark" cx="11" cy="14" r="2" />
