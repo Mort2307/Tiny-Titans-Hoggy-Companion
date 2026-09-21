@@ -384,6 +384,17 @@ const GENUS_EMPHASIS: Record<string, string> = {
   Hapalochlaena: 'Genus emphasis: medically hazardous cephalopod architecture; specialist professional containment, risk management and legal review are required.',
 };
 
+function basisFromCoverage(coverage: UniversalCareCoverage): UniversalCareBasis {
+  switch (coverage) {
+    case 'species': return 'species-specific';
+    case 'genus': return 'genus-level';
+    case 'taxon': return 'taxon-level';
+    case 'ecology-only': return 'ecology-only';
+    case 'class': return 'class-level';
+    case 'not-verified': return 'class-level';
+  }
+}
+
 function evidence(
   species: UniversalSpeciesRecord,
   basis: UniversalCareBasis,
@@ -454,7 +465,7 @@ function buildHealth(
     riskFactors: item.riskFactors,
     prevention: item.prevention,
     priority: item.priority,
-    evidence: evidence(species, coverage === 'genus' ? 'genus-level' : 'species-specific', [], 'Species-specific health watch supplied by the mapped husbandry source set. The source list is attached to the override itself and should be retained when promoted.'),
+    evidence: evidence(species, basisFromCoverage(coverage), overrideHealthSourceIds, 'Species-specific health watch supplied by the mapped husbandry source set. The source list is attached to the resolved override and should be retained when promoted.'),
   }));
   const watches = [...overrideWatches, ...classWatches];
   const baseline = [
@@ -478,6 +489,7 @@ function buildHealth(
   return {
     status,
     scopeKey,
+    coverage,
     baseline,
     watches,
     quarantine: {
@@ -549,6 +561,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
   const husbandry: UniversalHusbandryProfile = {
     status: careStatus,
     scopeKey,
+    coverage,
     title: `${species.commonNames[0] ?? species.acceptedScientificName} — baseline husbandry`,
     overview: CLASS_CAVEATS[species.className],
     ecologyContext: {
