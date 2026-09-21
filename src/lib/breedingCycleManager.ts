@@ -10,7 +10,7 @@ export const BREEDING_PHASE_STATUS: Partial<Record<BreedingCyclePhase, BreedingS
   Planning: "Planned", Pairing: "Paired", Gravid: "Gravid", Laying: "Laid", Complete: "Complete",
 };
 
-export const BREEDING_PHASE_HELP: Record<BreedingCyclePhase,string> = Record<BreedingCyclePhase, string> = {
+export const BREEDING_PHASE_HELP: Record<BreedingCyclePhase, string> = {
   Planning: "Define the objective, animals, records and contingency plan before changing the seasonal cycle.",
   Conditioning: "Build a stable baseline. Record feeding, weight, health and body-condition observations rather than chasing a single target number.",
   Cooling: "If you deliberately cool animals, record the method, actual temperatures, weight checks and monitoring. Cooling is not a universal requirement.",
@@ -23,8 +23,8 @@ export const BREEDING_PHASE_HELP: Record<BreedingCyclePhase,string> = Record<Bre
   Incubation: "Record the selected incubation method and actual environmental conditions. Different methods are used by experienced keepers; the system does not declare one universal recipe.",
   Hatching: "Record pipping and hatch outcomes without forcing a timetable or inventing certainty. Convert successful hatch records into individual hatchling records.",
   Complete: "Close the cycle only when the keeper considers the breeding record complete. Retrospective analysis can then compare observations without claiming causation."
-};;
-export const BREEDING_EVENT_KINDS: Array<{ value: BreedingCycleEventKind; label: string }> = Array<{ value: BreedingCycleEventKind; label: string }> = [
+};
+export const BREEDING_EVENT_KINDS: Array<{ value: BreedingCycleEventKind; label: string }> = [
   { value: "note", label: "General note" }, { value: "weight", label: "Weight check" }, { value: "feeding", label: "Feeding observation" }, { value: "health", label: "Health observation" }, { value: "temperature", label: "Temperature check" }, { value: "cooling-start", label: "Cooling started" }, { value: "cooling-check", label: "Cooling check" }, { value: "rewarming-start", label: "Rewarming started" }, { value: "pairing-observation", label: "Pairing observation" }, { value: "ovulation-observation", label: "Suspected reproductive milestone" }, { value: "shed-observation", label: "Shed observation" }, { value: "gravid-observation", label: "Gravid observation" }, { value: "laying-observation", label: "Laying observation" }, { value: "recovery-check", label: "Recovery check" }, { value: "incubation-check", label: "Incubation check" }, { value: "hatch-observation", label: "Hatch observation" }, { value: "decision", label: "Keeper decision" }
 ];;
 export const todayDateKey = () => new Date().toISOString().slice(0,10);
