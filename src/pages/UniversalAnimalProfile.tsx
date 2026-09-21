@@ -18,7 +18,7 @@ export default function UniversalAnimalProfile() {
     if (!user || !id) return;
     let active = true;
     void getUserAnimal(user.uid, id)
-      .then((result) => result ? setAnimal(result) : getUserSnake(user.uid, id).then(setLegacySnake))
+      .then((result) => { if (!active) return; return result ? setAnimal(result) : getUserSnake(user.uid, id).then((snake) => { if (active) setLegacySnake(snake); }); })
       .catch(() => undefined)
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
