@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
 import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
-import { buildSnakeIntelligence, type SnakeInsight } from "../services/snakeIntelligenceService";
+import { buildSnakeIntelligence from "../services/snakeIntelligenceService";
 import { getCanonicalBreedingTimeline } from "../services/canonicalBreedingTimeline";
 import { deleteSnakeWeight } from "../services/weightService";
 import { deleteSnakeFeeding } from "../services/feedingService";
@@ -55,6 +55,14 @@ export function useSnakeMasterRecord() {
   }, [record, searchParams]);
 
   const intelligence = useMemo(() => record ? buildSnakeIntelligence(record) : null, [record]);
+  const speciesLabel = record?.snake.species ?? "Reptile";
+  const weight = record?.overview.currentWeightG == null ? "Not recorded" : formatWeight(record.overview.currentWeightG);
+  const change = record?.overview.weightChangeG == null ? "Build baseline" : `${record.overview.weightChangeG >= 0 ? "+" : ""}${formatWeight(record.overview.weightChangeG)} since first weight`;
+  const shedLength = record?.overview.averageShedLengthCm == null ? "Not recorded" : formatLength(record.overview.averageShedLengthCm);
+  const averageShed = record?.overview.averageShedLengthCm == null ? "Build baseline" : formatLength(record.overview.averageShedLengthCm);
+  const latestFeedAttempt = record ? latestFeedingAttempt(record.feedings) : undefined;
+  const latestSuccessful = record ? latestSuccessfulFeed(record.feedings) : undefined;
+  const confidenceDetails = record ? (Object.entries(record.overview.confidenceReasons) as Array<[string, { level: SnakeMasterRecord["overview"]["confidence"]["overall"]; records: number; target: number }]>).map(([area, detail]) => [area, detail.level, detail.records, detail.target] as const) : [];
 
   const handleDeleteTimelineRecord = async (event: SnakeMasterRecord["timeline"][number]) => {
     if (!user || !id || !event.relatedRecordId || !["Weight", "Feeding", "Shed"].includes(event.type)) return;
