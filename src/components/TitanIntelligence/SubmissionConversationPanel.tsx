@@ -1,3 +1,4 @@
+import TinyTitansIcon from "../TinyTitansIcon";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
@@ -15,10 +16,10 @@ const suggestedQuestions: Record<SubmissionConversationType, string[]> = {
   "mentor-application": ["Can you provide the strongest evidence supporting the experience or verification requested?", "Which areas are you most confident mentoring, and which would you refer onward?"],
 };
 
-const DEFAULT_THANK_YOU = "🐍 Thank you for helping build Tiny Titans!\n\nWe genuinely appreciate you taking the time to share your knowledge, evidence or experience with us. Contributions like yours help us build a better reptile resource for keepers everywhere.\n\nThank you for being part of the community. ❤️\n\n— Tiny Titans";
+const DEFAULT_THANK_YOU = "Thank you for helping build Tiny Titans!\n\nWe genuinely appreciate you taking the time to share your knowledge, evidence or experience with us. Contributions like yours help us build a better reptile resource for keepers everywhere.\n\nThank you for being part of the community.\n\n— Tiny Titans";
 const DEFAULT_MORPH_VERIFICATION = "Hi! We are reviewing your morph submission and would like to verify the animal before we make any canonical genetics decision.\n\nCould you please confirm the animal's known parents, genetics and/or the breeder/lineage information you have available? Any supporting photographs, records or source details would also be helpful.\n\nThanks for helping us keep the Tiny Titans Morph Library accurate.\n\n— Tiny Titans";
 const DEFAULT_TERMINOLOGY_VERIFICATION = "Hi! We are reviewing your terminology submission and would like to verify the terminology before we map it into the Tiny Titans Morph Library.\n\nCould you please tell us where this name came from, who uses it, and whether it is intended as a recognised morph, combination name, regional alias, locality term or breeder-specific term? Any supporting source or lineage information would be very helpful.\n\nThanks for helping us keep the Tiny Titans Morph Library accurate.\n\n— Tiny Titans";
-const THANK_YOU_PREFIX = "🐍 Thank you for helping build Tiny Titans!";
+const THANK_YOU_PREFIX = "Thank you for helping build Tiny Titans!";
 
 type SubmissionConversationPanelProps = {
   submissionType: Exclude<SubmissionConversationType, "direct">;
@@ -115,13 +116,13 @@ export default function SubmissionConversationPanel({ submissionType, submission
   return <section id={`submission-conversation-${submissionType}-${submissionId}`} className={`conversation-reply submission-conversation-panel ${hasThankYou ? "submission-conversation-thanked" : ""}`}>
     <div className="conversation-detail-top">
       <div>
-        <strong>💬 {creatorMode ? `Message ${recipientName}` : "Message Tiny Titans"}</strong>
+        <strong><TinyTitansIcon name="messages" size={18} /> {creatorMode ? `Message ${recipientName}` : "Message Tiny Titans"}</strong>
         <p>{creatorMode ? `Private conversation with ${recipientName} about this submission. You can ask for evidence, verify the morph, clarify terminology or send a thank-you.` : "Private conversation with the Tiny Titans review team. Reply here for questions, evidence or submission follow-up."}</p>
       </div>
-      {conversation && <Link className="secondary-button" to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}>🗨 Open Messenger →</Link>}
+      {conversation && <Link className="secondary-button" to={`${mailboxPath}?thread=${encodeURIComponent(conversation.id)}`}><TinyTitansIcon name="messages" size={16} /> Open Messenger <TinyTitansIcon name="forward" size={14} /></Link>}
     </div>
     <div className="submission-conversation-context" aria-label="Submission details">
-      <strong>📷 Morph photo</strong>
+      <strong><TinyTitansIcon name="camera" size={17} /> Morph photo</strong>
       <div><span>Submission:</span> {submissionTitle}</div>
       <div><span>Submitted by:</span> {displayedSubmitterName}</div>
     </div>
@@ -130,25 +131,25 @@ export default function SubmissionConversationPanel({ submissionType, submission
     {!loading && error && <div className="creator-error" role="alert">{error}</div>}
     {!loading && conversation && <>
       {creatorMode && <div className="submission-smart-prompts">
-        <small>💬 Message {recipientName}</small>
+        <small><TinyTitansIcon name="messages" size={15} /> Message {recipientName}</small>
         <div className="submission-message-actions">
-          {submissionType === "morph-image" || submissionType === "morph-terminology" ? <button type="button" onClick={requestVerification} disabled={sending}>🧬 Request morph verification</button> : null}
-          <button type="button" onClick={useDefaultThankYou} disabled={sending || hasThankYou}>💌 Load thank-you template</button>
+          {submissionType === "morph-image" || submissionType === "morph-terminology" ? <button type="button" onClick={requestVerification} disabled={sending}><TinyTitansIcon name="genetics" size={16} /> Request morph verification</button> : null}
+          <button type="button" onClick={useDefaultThankYou} disabled={sending || hasThankYou}><TinyTitansIcon name="messages" size={16} /> Load thank-you template</button>
           {hasThankYou && <span className="creator-muted">Already thanked in this thread.</span>}
         </div>
       </div>}
       {creatorMode && messages.length === 0 && <div className="submission-smart-prompts">
-        <small>🧠 Suggested questions</small>
+        <small><TinyTitansIcon name="titan" size={15} /> Suggested questions</small>
         <div>{prompts.map((prompt) => <button key={prompt} type="button" onClick={() => focusComposer(prompt)} disabled={sending}>{prompt}</button>)}</div>
       </div>}
       <div className="conversation-messages submission-conversation-messages">
-        {messages.length === 0 ? <p className="creator-muted">No messages yet. Start the conversation with {recipientName} when you need clarification or want to thank the contributor.</p> : messages.slice(-8).map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "🐍 Tiny Titans" : `👤 ${recipientName}`}</strong><p>{item.message}</p></article>)}
+        {messages.length === 0 ? <p className="creator-muted">No messages yet. Start the conversation with {recipientName} when you need clarification or want to thank the contributor.</p> : messages.slice(-8).map((item) => <article key={item.id} className={item.senderRole === (creatorMode ? "creator" : "user") ? "creator-success" : "creator-tools-card"}><strong>{item.senderRole === "creator" ? "Tiny Titans" : recipientName}</strong><p>{item.message}</p></article>)}
       </div>
       <label htmlFor={composerId}><strong>{creatorMode ? `Write a message to ${recipientName}` : "Write a message to Tiny Titans"}</strong></label>
       <textarea ref={replyRef} id={composerId} value={draft} onChange={(event) => setDraft(event.target.value)} rows={6} maxLength={5000} placeholder={creatorMode ? `Write your message to ${recipientName}…` : "Reply to the Tiny Titans review team…"} disabled={sending} autoComplete="off" spellCheck="true" />
       <div className="creator-actions">
-        <button type="button" className="creator-primary" onClick={() => void send()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : `💬 Send to ${recipientName}`}</button>
-        {creatorMode && <button type="button" className="secondary-button" onClick={useDefaultThankYou} disabled={sending || hasThankYou}>Use thank-you template</button>}
+        <button type="button" className="creator-primary" onClick={() => void send()} disabled={sending || !draft.trim()}>{sending ? "Sending…" : <><TinyTitansIcon name="messages" size={16} /> Send to {recipientName}</>}</button>
+        {creatorMode && <button type="button" className="secondary-button" onClick={useDefaultThankYou} disabled={sending || hasThankYou}><TinyTitansIcon name="messages" size={16} /> Use thank-you template</button>}
       </div>
     </>}
   </section>;
