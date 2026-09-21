@@ -1,9 +1,11 @@
 
+import type { ReactNode } from "react";
 import type { ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import type { Room3DTransformPatch, VivariumTelemetry } from "../../types/reptileRoom3D";
 import VivariumPhotoDock from "./VivariumPhotoDock";
 
 type VivariumPhotoChange = (slotId: string, persistedUrl: string, previewUrl?: string) => void;
+function Field({ label, children }: { label: string; children: ReactNode }) { return <label className="rr3d-fs-field"><span>{label}</span>{children}</label>; }
 type FullscreenToolsProps = {
   room: ReptileRoomWorkspace;
   selectedVivarium: ReptileRoomSlot | null;
