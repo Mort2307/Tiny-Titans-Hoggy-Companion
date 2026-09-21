@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
 const UPDATE_TIMEOUT_MS = 15000;
@@ -178,7 +179,7 @@ export default function AppUpdatePrompt() {
         aria-labelledby="tt-update-title"
         aria-describedby="tt-update-description"
       >
-        <div className="tt-update-logo" aria-hidden="true">🦎</div>
+        <div className="tt-update-logo" aria-hidden="true"><TinyTitansIcon name="reptiles" size={54} /></div>
         <p className="tt-update-kicker">TINY TITANS UPDATE</p>
         <h2 id="tt-update-title">A newer Tiny Titans is ready</h2>
         <p id="tt-update-description">
