@@ -7,6 +7,9 @@ import DeleteAccountRequest from "../pages/DeleteAccountRequest";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
 import RescuePublicProfile from "../pages/RescuePublicProfile";
 import RescueAnimalRoute from "../pages/RescueAnimalRoute";
+import SpeciesExplorer from "../pages/SpeciesExplorer";
+import UniversalSpeciesProfile from "../pages/UniversalSpeciesProfile";
+import Marketplace from "../pages/Marketplace";
 import CreatorTesterInvitation from "../components/CreatorTesterInvitation";
 import DataPrivacyConsentModal, { CONSENT_VERSION } from "../components/DataPrivacyConsentModal";
 import { useAuth } from "../context/useAuth";
@@ -116,6 +119,9 @@ function AppRouterGate() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
+          <Route path="/species" element={<SpeciesExplorer />} />
+          <Route path="/species/:id" element={<UniversalSpeciesProfile />} />
+          <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
           <Route path="*" element={<Navigate to={loginRedirect} replace />} />
         </Routes>
@@ -129,6 +135,9 @@ function AppRouterGate() {
         <Routes>
           <Route path="/account-setup" element={<AccountSetup />} />
           <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
+          <Route path="/species" element={<SpeciesExplorer />} />
+          <Route path="/species/:id" element={<UniversalSpeciesProfile />} />
+          <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
           <Route path="*" element={<Navigate to={setupRedirect} replace />} />
         </Routes>
