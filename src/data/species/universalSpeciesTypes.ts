@@ -97,6 +97,7 @@ export interface UniversalSpeciesRecord {
   };
   sourceIds: string[];
   reviewedOn: string;
+  care?: import('./universalSpeciesCareTypes').UniversalSpeciesCare;
 }
 
 export interface UniversalSpeciesGroup {
