@@ -11,7 +11,7 @@ type Listing = Record<string, unknown> & { id: string };
 export default function PaidMarketplaceFeature() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("reptile");
+  const [category, setCategory] = useState("animal");
   const [price, setPrice] = useState("");
   const [currency, setCurrency] = useState("GBP");
   const [description, setDescription] = useState("");
