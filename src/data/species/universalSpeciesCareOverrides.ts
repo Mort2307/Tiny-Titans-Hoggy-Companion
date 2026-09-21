@@ -1,4 +1,3 @@
-import type { UniversalCareEvidence, UniversalCareRequirement, UniversalHealthWatch } from './universalSpeciesCareTypes';
 import type { UniversalSpeciesRecord } from './universalSpeciesTypes';
 
 export type SpeciesCareOverride = {
