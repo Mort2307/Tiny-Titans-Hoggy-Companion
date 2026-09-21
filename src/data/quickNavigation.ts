@@ -46,7 +46,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "breeding-production", label: "Production Manager", icon: "production", path: "/breeding/production", group: "Genetics & Breeding", description: "Manage breeding production." },
 
   { id: "intelligence", label: "Titan Intelligence", icon: "titanIntelligence", path: "/titan-intelligence", group: "Learn & Intelligence", description: "Open the intelligence command centre." },
-  { id: "this-week", label: "This Week", icon: "calendar", path: "/titan-intelligence/feature/this-week", group: "Learn & Intelligence", description: "Open the full This Week command centre." },
+  { id: "this-week", label: "This Week", icon: "timeline", path: "/titan-intelligence/feature/this-week", group: "Learn & Intelligence", description: "Open the full This Week command centre." },
   { id: "keeper-handbook", label: "Keeper Behaviour Handbook", icon: "handbook", path: "/keeper-handbook", group: "Learn & Intelligence", description: "Understand reptile behaviour." },
   { id: "knowledge", label: "Knowledge Base", icon: "knowledge", path: "/knowledge-base", group: "Learn & Intelligence", description: "Find evidence-backed answers.", keywords: ["learn", "question", "help", "information"] },
   { id: "learn", label: "Learning Hub", icon: "academy", path: "/learn", group: "Learn & Intelligence", description: "Explore learning topics." },
