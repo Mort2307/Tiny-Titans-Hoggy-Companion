@@ -1,3 +1,24 @@
+export type UniversalSpeciesBrowseGroup =
+  | 'snakes'
+  | 'lizards'
+  | 'turtles-tortoises'
+  | 'crocodilians'
+  | 'frogs-toads'
+  | 'salamanders-newts'
+  | 'caecilians'
+  | 'spiders'
+  | 'scorpions'
+  | 'whip-spiders-vinegaroons'
+  | 'insects'
+  | 'millipedes'
+  | 'centipedes'
+  | 'molluscs'
+  | 'crustaceans'
+  | 'mammals'
+  | 'birds'
+  | 'fish'
+  | 'cephalopods';
+
 export type UniversalSpeciesClass =
   | 'reptile'
   | 'amphibian'
@@ -70,6 +91,7 @@ export interface UniversalSpeciesRecord {
   commonNames: string[];
   searchAliases: string[];
   className: UniversalSpeciesClass;
+  browseGroup: UniversalSpeciesBrowseGroup;
   taxonomicClass: string;
   order: string;
   family: string;
