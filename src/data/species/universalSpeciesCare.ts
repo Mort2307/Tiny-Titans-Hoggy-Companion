@@ -521,11 +521,9 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     ...range,
     evidence: evidence(species, override.coverage === 'genus' ? 'genus-level' : 'species-specific', override.sourceIds, override.caveat),
   })) ?? (legacy ? rangeRecords(species, legacy) : []);
-  const careStatus = coverage === 'species' && (species.husbandryStatus === 'specialist-profile' || override?.coverage === 'species')
-    ? 'specialist-reviewed'
-    : coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
-      ? 'sourced-profile'
-      : 'needs-review';
+  const careStatus = coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
+    ? 'sourced-profile'
+    : 'needs-review';
   const husbandry: UniversalHusbandryProfile = {
     status: careStatus,
     scopeKey,
