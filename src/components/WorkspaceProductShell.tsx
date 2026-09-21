@@ -5,54 +5,9 @@ import { workspaceProductForTier, type WorkspaceProduct } from "../config/worksp
 import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import WorkspaceDashboard from "./WorkspaceDashboard";
 import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
+import { tinyTitansNavigationIcon } from "../config/tinyTitansNavigationIcons";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
 import "../styles/workspaceProductShell.css";
-
-const WORKSPACE_NAV_ICONS: Record<string, TinyTitansIconName> = {
-  "/snakes": "reptile",
-  "/titan-intelligence": "titanIntelligence",
-  "/paid/analytics": "analytics",
-  "/paid/timeline": "timeline",
-  "/paid/export": "exportData",
-  "/paid/seller": "sellerProfile",
-  "/paid/marketplace": "marketplaceTools",
-  "/paid/business": "reporting",
-  "/paid/business-reporting": "reporting",
-  "/paid/team": "team",
-  "/paid/automation": "automation",
-  "/paid/support": "support",
-  "/paid/api": "api",
-  "/paid/branding": "branding",
-  "/marketplace": "marketplace",
-  "/breeding": "breeding",
-  "/breeding/readiness": "breedingReadiness",
-  "/breeding/timeline": "breedingTimeline",
-  "/breeding/cycle": "breedingCycle",
-  "/breeding/production": "production",
-  "/morph-library/evidence": "evidence",
-  "/rescue?manage=1": "veterinary",
-  "/rescue/log": "edit",
-  "/rescue/animals": "reptile",
-  "/rescue/intake": "contribution",
-  "/rescue/quarantine": "lock",
-  "/rescue/medical": "veterinary",
-  "/rescue/tasks": "reminders",
-  "/rescue/foster": "family",
-  "/rescue/transfers": "move",
-  "/rescue/locations": "map",
-  "/rescue/qr": "camera",
-  "/rescue/team": "team",
-  "/rescue/reports": "reporting",
-  "/rescue/species-incubator": "knowledge",
-  "/rescue/organisation": "branding",
-  "/rescue/compliance": "evidence",
-  "/rescue/public-preview": "eye",
-  "/account": "account",
-};
-
-export function workspaceNavIcon(path: string): TinyTitansIconName {
-  return WORKSPACE_NAV_ICONS[path] ?? "knowledge";
-}
 
 function commandIcon(path: string, title: string): TinyTitansIconName {
   if (/animals?/i.test(title)) return "reptile";
@@ -117,7 +72,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
     </header>
 
     {visibleNav.length > 0 && <nav className="workspace-product-nav" aria-label={`${product.name} navigation`}>
-      {visibleNav.map((item) => <Link key={`${item.label}-${item.path}`} className={location.pathname === item.path ? "active" : undefined} to={item.path}><TinyTitansIcon name={workspaceNavIcon(item.path)} size={19} motion="hover" />{item.label}</Link>)}
+      {visibleNav.map((item) => <Link key={`${item.label}-${item.path}`} className={location.pathname === item.path ? "active" : undefined} to={item.path}><TinyTitansIcon name={tinyTitansNavigationIcon(item.path)} size={19} motion="hover" />{item.label}</Link>)}
     </nav>}
 
     {commandCopy && <section className="workspace-command-deck" aria-label={`${product.name} command deck`}>
