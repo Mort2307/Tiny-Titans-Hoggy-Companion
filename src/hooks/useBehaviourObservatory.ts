@@ -20,6 +20,7 @@ import { BEHAVIOUR_CATEGORIES, getBehaviourCategory } from "../data/behaviourTax
 import { searchTinyTitans, type UniversalSearchItem } from "../services/universalSearchService";
 import {
   BEHAVIOUR_CONTEXTS,
+  CONFIDENCE_LABELS,
   behaviourCategoryLabel,
 } from "../lib/behaviourObservatory";
 
