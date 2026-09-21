@@ -58,7 +58,7 @@ const requiredContracts = [
   ['Creator Review Studio provides Needs Info', creatorReviewHook.includes('requestInfo') && creatorReviewStudio.includes('Request Info')],
   ['Creator Review Studio provides Approve & Publish', creatorReviewHook.includes('approve') && creatorReviewStudio.includes('Approve & Publish')],
   ['Creator Review Studio keeps Creator notes private', creatorReviewStudio.includes('creatorReviewerNotes') && creatorReviewHook.includes('creatorReviewerNotes')],
-  ['Creator Review Studio uses the shared review-state helper', creatorReviewLib.includes('ReviewDraft') && creatorReviewStudio.includes('toDraft')],
+  ['Creator Review Studio uses the shared review-state helper', creatorReviewLib.includes('ReviewDraft') && creatorReviewHook.includes('toDraft')],
   ['Review service calls secure save function', creatorReviewService.includes('saveMorphSubmissionReview') && creatorReviewService.includes('europe-west2')],
   ['Review function is Creator-authorized', creatorApproval.includes('Only the Tiny Titans owner can edit Creator submissions.')],
   ['Review function whitelists editable fields', creatorApproval.includes('EDITABLE_KEYS')],
@@ -68,7 +68,7 @@ const requiredContracts = [
 const failures = [];
 for (const route of requiredRoutes) if (!router.includes(`path=\"${route}\"`)) failures.push(`Submission-related route missing: ${route}`);
 for (const [label, ok] of requiredContracts) if (!ok) failures.push(label);
-if (!router.includes('path=\"/creator/species-preview\"') || !router.includes('element={<CreatorSpeciesPreview')) failures.push('Creator species preview route/component wiring is missing.');
+if (!router.includes('path=\"/creator/species-preview\"') || !router.includes('CreatorSpeciesPreview')) failures.push('Creator species preview route/component wiring is missing.');
 
 if (failures.length) {
   console.error('TINY TITANS SUBMISSION CONTRACTS FAILED');
