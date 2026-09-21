@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
 import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
-import { buildSnakeIntelligence from "../services/snakeIntelligenceService";
+import { buildSnakeIntelligence } from "../services/snakeIntelligenceService";
 import { getCanonicalBreedingTimeline } from "../services/canonicalBreedingTimeline";
 import { deleteSnakeWeight } from "../services/weightService";
 import { deleteSnakeFeeding } from "../services/feedingService";
