@@ -24,6 +24,36 @@ async function requireSeller(uid) {
   if (!PAID_TIERS.has(effectiveTier)) throw new HttpsError("permission-denied", "Marketplace seller tools require a seller or business tier.");
   return effectiveTier;
 }
+exports.getPublicMarketplaceListings = onCall({ region: "europe-west2" }, async () => {
+  const snapshot = await db.collectionGroup("marketplaceListings").where("status", "==", "active").limit(200).get();
+  const rows = await Promise.all(snapshot.docs.map(async (doc) => {
+    const ownerUid = doc.ref.parent.parent?.id || "";
+    if (!ownerUid) return null;
+    const [workspaceSnapshot, userSnapshot] = await Promise.all([
+      db.collection("paidWorkspaces").doc(ownerUid).get(),
+      db.collection("users").doc(ownerUid).get(),
+    ]);
+    const workspace = workspaceSnapshot.exists ? workspaceSnapshot.data() : {};
+    const user = userSnapshot.exists ? userSnapshot.data() : {};
+    const seller = workspace.sellerProfile && typeof workspace.sellerProfile === "object" ? workspace.sellerProfile : {};
+    return {
+      id: doc.id,
+      ...doc.data(),
+      seller: {
+        displayName: cleanText(seller.displayName || user.displayName, 120),
+        businessName: cleanText(seller.businessName, 120),
+        location: cleanText(seller.location, 160),
+        contactEmail: seller.acceptingEnquiries === false ? "" : cleanText(seller.contactEmail, 160),
+        website: cleanText(seller.website, 240),
+      },
+    };
+  }));
+  return {
+    success: true,
+    listings: rows.filter(Boolean).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""))).slice(0, 100),
+  };
+});
+
 exports.getPaidMarketplaceListings = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   await requireSeller(request.auth.uid);
@@ -34,10 +64,10 @@ exports.upsertPaidMarketplaceListing = onCall({ region: "europe-west2" }, async 
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   await requireSeller(request.auth.uid);
   const payload = request.data?.payload && typeof request.data.payload === "object" ? request.data.payload : {};
-  const id = cleanText(payload.id, 120); const title = cleanText(payload.title, 140); const category = cleanText(payload.category, 60) || "reptile"; const description = cleanText(payload.description, 2000); const price = Number(payload.price); const currency = cleanText(payload.currency, 8).toUpperCase() || "GBP"; const status = ["draft", "active", "sold", "archived"].includes(payload.status) ? payload.status : "draft";
+  const id = cleanText(payload.id, 120); const title = cleanText(payload.title, 140); const category = cleanText(payload.category, 60) || "animal"; const speciesId = cleanText(payload.speciesId, 140); const animalGroup = cleanText(payload.animalGroup, 40); const speciesCommonName = cleanText(payload.speciesCommonName, 160); const scientificName = cleanText(payload.scientificName, 180); const description = cleanText(payload.description, 2000); const price = Number(payload.price); const currency = cleanText(payload.currency, 8).toUpperCase() || "GBP"; const status = ["draft", "active", "sold", "archived"].includes(payload.status) ? payload.status : "draft";
   if (!title) throw new HttpsError("invalid-argument", "A listing title is required."); if (!Number.isFinite(price) || price < 0) throw new HttpsError("invalid-argument", "A non-negative listing price is required.");
   const collection = db.collection("paidWorkspaces").doc(request.auth.uid).collection("marketplaceListings"); const ref = id ? collection.doc(id) : collection.doc(); const existing = await ref.get();
-  const data = { title, category, description, price, currency, status, updatedAt: FieldValue.serverTimestamp() }; if (!existing.exists) data.createdAt = FieldValue.serverTimestamp(); await ref.set(data, { merge: true }); return { success: true, id: ref.id };
+  const data = { title, category, description, price, currency, status, speciesId, animalGroup, speciesCommonName, scientificName, updatedAt: FieldValue.serverTimestamp() }; if (!existing.exists) data.createdAt = FieldValue.serverTimestamp(); await ref.set(data, { merge: true }); return { success: true, id: ref.id };
 });
 exports.removePaidMarketplaceListing = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in."); await requireSeller(request.auth.uid); const id = cleanText(request.data?.id, 120); if (!id) throw new HttpsError("invalid-argument", "A listing ID is required."); await db.collection("paidWorkspaces").doc(request.auth.uid).collection("marketplaceListings").doc(id).delete(); return { success: true, id };
