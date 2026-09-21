@@ -6,6 +6,7 @@ export type PublicMarketplaceSeller = {
   businessName: string;
   location: string;
   contactEmail: string;
+  website?: string;
 };
 
 export type PublicMarketplaceListing = {
@@ -18,6 +19,10 @@ export type PublicMarketplaceListing = {
   status: "active";
   isPromoted?: boolean;
   updatedAt?: unknown;
+  speciesId?: string;
+  animalGroup?: string;
+  speciesCommonName?: string;
+  scientificName?: string;
   seller: PublicMarketplaceSeller;
 };
 
