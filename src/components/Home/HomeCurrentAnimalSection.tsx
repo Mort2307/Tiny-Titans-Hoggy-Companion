@@ -1,0 +1,15 @@
+import { Link } from "react-router-dom";
+import type { HomeSnake } from "../../hooks/useHomeDashboard";
+import type { SnakeIntelligence } from "../../services/snakeIntelligenceService";
+import type { TitanDecision } from "../../services/titanDecisionStateService";
+
+type Props = { selectedSnake?: HomeSnake; selectedSnakeRecords: number; selectedIndex: number; snakeCount: number; intelligenceAccess: boolean; attentionDecision: TitanDecision | null; selectedIntelligence?: SnakeIntelligence; coverage: number; onMove: (direction: -1 | 1) => void; };
+function HomeCurrentAnimalSection({ selectedSnake, selectedSnakeRecords, selectedIndex, snakeCount, intelligenceAccess, attentionDecision, selectedIntelligence, coverage, onMove }: Props) {
+  return <section className="tt-home-section tt-home-current"><div className="tt-home-heading"><div><p className="tt-home-kicker">🐍 CURRENT ANIMAL</p><h2>{selectedSnake?.name}</h2></div><div className="tt-home-heading-actions"><button type="button" className="tt-home-select-button" onClick={() => onMove(-1)} aria-label="Previous animal">‹</button><span>{selectedIndex + 1}/{snakeCount}</span><button type="button" className="tt-home-select-button" onClick={() => onMove(1)} aria-label="Next animal">›</button><Link to="/snakes">View all →</Link></div></div>
+    <div className="tt-home-current-card"><div className="tt-home-current-identity"><div className="tt-home-current-avatar" aria-hidden="true">🐍</div><div><span>{selectedSnakeRecords} recorded {selectedSnakeRecords === 1 ? "event" : "events"}</span><strong>{selectedSnake?.name}</strong><small>Individual keeper record</small></div></div>
+      <div className="tt-home-current-status"><span className={attentionDecision?.animalId === selectedSnake?.id ? "is-attention" : "is-good"}>{intelligenceAccess ? attentionDecision?.animalId === selectedSnake?.id ? "⚡ Needs a look" : selectedIntelligence?.priority?.tone === "attention" ? "🟠 Worth checking" : "🟢 Tracking normally" : "📋 Keeper records"}</span>{intelligenceAccess && <small>{coverage}% average data coverage</small>}</div>
+      <p>{intelligenceAccess ? attentionDecision?.animalId === selectedSnake?.id ? attentionDecision.reason : selectedIntelligence?.summary ?? "TinyTitans is building this animal individual baseline." : `${selectedSnake?.name} has ${selectedSnake?.weightRecords ?? 0} weight, ${selectedSnake?.feedingRecords ?? 0} feeding, ${selectedSnake?.shedRecords ?? 0} shed and ${selectedSnake?.healthRecords ?? 0} health records.`}</p>
+      <div className="tt-home-current-actions"><Link to={`/snakes/${selectedSnake?.id}/master-record`}>📋 Master Record</Link><Link to={`/husbandry/${selectedSnake?.id}`}>🌡️ Husbandry</Link><Link to={`/snakes/${selectedSnake?.id}/weights`}>⚖️ Weight</Link><Link to={`/snakes/${selectedSnake?.id}/feeding`}>🍽️ Feeding</Link></div></div>
+  </section>;
+}
+export default HomeCurrentAnimalSection;
