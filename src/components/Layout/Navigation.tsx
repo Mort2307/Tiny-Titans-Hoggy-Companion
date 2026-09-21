@@ -15,6 +15,7 @@ import "./Navigation.css";
 type NavigationLink = [string, TinyTitansIconName, string];
 type NavigationSection = { label: string; links: NavigationLink[] };
 
+function quickIconFor(item: { path: string; icon?: TinyTitansIconName }): TinyTitansIconName { return item.icon ?? tinyTitansNavigationIcon(item.path); }
 const latestProductUpdateId = [...communityUpdates].sort((a, b) => b.releasedAt.localeCompare(a.releasedAt))[0]?.id ?? null;
 function hasUnseenProductUpdate() { if (!latestProductUpdateId || typeof window === "undefined") return false; try { return window.localStorage.getItem("tinytitans:community-product-update:last-seen") !== latestProductUpdateId; } catch { return false; } }
 
