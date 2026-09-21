@@ -26,7 +26,7 @@ function Home() {
     <main className="dashboard tt-home">
       <header className="tt-home-brandbar">
         <div>
-          <p className="tt-home-brand">🐍 TinyTitans Reptile Companion 🦎</p>
+          <p className="tt-home-brand"><TinyTitansIcon name="reptile" size={22} /> TinyTitans Reptile Companion</p>
           <p className="tt-home-tagline">Your reptile companion, records, learning and intelligence — in one calm place.</p>
         </div>
         <Link className="tt-home-profile-chip" to="/account" aria-label="Open My Account">
