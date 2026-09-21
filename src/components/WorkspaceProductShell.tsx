@@ -50,7 +50,7 @@ const WORKSPACE_NAV_ICONS: Record<string, TinyTitansIconName> = {
   "/account": "account",
 };
 
-function workspaceNavIcon(path: string): TinyTitansIconName {
+export function workspaceNavIcon(path: string): TinyTitansIconName {
   return WORKSPACE_NAV_ICONS[path] ?? "knowledge";
 }
 
