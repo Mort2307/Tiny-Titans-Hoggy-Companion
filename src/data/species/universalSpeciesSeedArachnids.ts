@@ -1,11 +1,21 @@
 import { seed, type UniversalSpeciesSeed } from './universalSpeciesSeedTypes';
 
-const spider = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string = 'terrestrial', d: UniversalSpeciesSeed['dietaryGuild'] = 'carnivore', aliases: string[] = []) =>
-  seed(s, c, 'arachnid', 'Arachnida', 'Araneae', f, r, l, d, aliases, 'spiders');
+const spider = (
+  s: string,
+  c: string,
+  f: string,
+  r: UniversalSpeciesSeed['riskClass'],
+  l: string | string[] = 'terrestrial',
+  d: UniversalSpeciesSeed['dietaryGuild'] | string[] = 'carnivore',
+  aliases: string[] = [],
+) => {
+  const resolvedAliases = Array.isArray(l) ? l : Array.isArray(d) ? d : aliases;
+  const resolvedLifestyle = Array.isArray(l) ? 'terrestrial' : l;
+  const resolvedDietaryGuild = Array.isArray(d) ? 'carnivore' : d;
+  return seed(s, c, 'arachnid', 'Arachnida', 'Araneae', f, r, resolvedLifestyle, resolvedDietaryGuild, resolvedAliases, 'spiders');
+};
 const scorpion = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], aliases: string[] = []) =>
   seed(s, c, 'arachnid', 'Arachnida', 'Scorpiones', f, r, 'terrestrial', 'carnivore', aliases, 'scorpions');
-const ambly = (s: string, c: string, f: string, aliases: string[] = []) =>
-  seed(s, c, 'arachnid', 'Arachnida', 'Amblypygi', f, 'specialist', 'terrestrial,arboreal', 'carnivore', aliases, 'whip-spiders-vinegaroons');
 const whip = (s: string, c: string, f: string) =>
   seed(s, c, 'arachnid', 'Arachnida', 'Thelyphonida', f, 'specialist', 'terrestrial', 'carnivore', [], 'whip-spiders-vinegaroons');
 
