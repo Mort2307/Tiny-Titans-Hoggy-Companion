@@ -232,6 +232,6 @@ export function useRescueAnimalWorkspace() {
     transferReason,setTransferReason,transferReference,setTransferReference,transferNotes,setTransferNotes,documentTitle,setDocumentTitle,
     documentCategory,setDocumentCategory,documentNote,setDocumentNote,editSummary,setEditSummary,editEnclosure,setEditEnclosure,
     editStatus,setEditStatus,access,profile,isEditor,saveCareRecord,saveReminder,toggleReminder,saveFoster,saveTransfer,saveDocument,
-    saveAnimalCore,
+    saveAnimalCore,withBusy,updateRescueAnimal,
   };
 }
