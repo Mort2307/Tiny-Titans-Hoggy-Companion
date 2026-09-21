@@ -5,7 +5,7 @@ import { getAgeBand, getCommunityBenchmarkDataset, type CommunityBenchmarkDatase
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
 import type { Snake } from "../types/Snake";
 import type { WeightRecord } from "../types/Weight";
-import { buildWeightContext, calculateAgeMonths, calculateWeightTrend, daysBetween, metricSummary, toTime, type Trend } from "../lib/weightGrowthIntelligence";
+import { buildWeightContext, calculateAgeMonths, calculateWeightTrend, daysBetween, metricSummary, toTime } from "../lib/weightGrowthIntelligence";
 
 export function useWeightGrowthIntelligence(snake: Snake, history: WeightRecord[]) {
   const { user } = useAuth();
