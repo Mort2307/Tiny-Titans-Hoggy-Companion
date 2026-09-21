@@ -94,7 +94,7 @@ export default function UniversalSpeciesProfile() {
           <div className="universal-species-badges">
             <span>{species.className}</span>
             <span>{species.riskClass.replace("-", " ")}</span>
-            <span>{species.husbandryStatus.replace("-", " ")}</span>
+            <span>Taxonomy: {species.evidenceStatus.replace("-", " ")}</span><span>Care: {care?.husbandry.coverage.replace("-", " ") ?? "not verified"}</span>
           </div>
           <p className="eyebrow">{species.order} · {species.family}</p>
           <h1>{species.commonNames[0] ?? species.acceptedScientificName}</h1>
@@ -123,7 +123,7 @@ export default function UniversalSpeciesProfile() {
         <div>
           <strong>Evidence boundary</strong>
           <p>{care?.summary ?? "The taxonomy record is available, but the structured care layer has not completed."}</p>
-          <p>Exact numeric husbandry targets are only displayed where a species-specific evidence scope has been mapped and reviewed.</p>
+          <p>Exact numeric husbandry targets are only displayed where a species- or genus-scoped evidence record has been mapped and reviewed. A taxonomy record is never treated as proof of a care sheet.</p>
         </div>
       </section>
 
