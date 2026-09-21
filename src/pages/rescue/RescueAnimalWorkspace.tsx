@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
 import PaidTierGate from "../../components/PaidTierGate";
 import TinyTitansIcon from "../../components/TinyTitansIcon";
-import { useShedTrackerIntelligent } from "../../hooks/useShedTrackerIntelligent";
 import { useRescueAnimalWorkspace } from "../../hooks/useRescueAnimalWorkspace";
-import { calculateIndividualProfile,formatDate,roleLabel,RECORD_LABELS,STATUS_LABELS,VISIBILITY_LABELS } from "../../lib/rescueWorkspace";
+import { formatDate,roleLabel,RECORD_LABELS,STATUS_LABELS,VISIBILITY_LABELS } from "../../lib/rescueWorkspace";
 import "./../../styles/rescue-enhanced.css";
 
 export function RescueAnimalWorkspace() {
