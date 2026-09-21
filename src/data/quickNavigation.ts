@@ -100,7 +100,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "creator-terminology", label: "Morph Terminology Audit", icon: "morph", path: "/creator/morph-terminology", group: "Creator", description: "Review morph terminology evidence.", capability: "creator" },
   { id: "creator-issues", label: "Issue Queues", icon: "creator", path: "/creator/issues", group: "Creator", description: "Manage app issue queues.", capability: "creator" },
   { id: "creator-community", label: "Community Manager", icon: "community", path: "/creator/community", group: "Creator", description: "Publish official Community Hub content.", capability: "creator" },
-  { id: "creator-conversations", label: "Creator Conversations", icon: "💬", path: "/creator/conversations", group: "Creator", description: "Creator-side conversations.", capability: "creator" },
+  { id: "creator-conversations", label: "Creator Conversations", icon: "messages", path: "/creator/conversations", group: "Creator", description: "Creator-side conversations.", capability: "creator" },
   { id: "creator-submission-conversations", label: "Submission Conversations", icon: "messages", path: "/creator/submission-conversations", group: "Creator", description: "Review submission conversations.", capability: "creator" },
   { id: "creator-mentor", label: "Mentor Review", icon: "mentorship", path: "/creator/mentor-review", group: "Creator", description: "Review mentor applications.", capability: "creator" },
   { id: "educator", label: "Educator Centre", icon: "academy", path: "/educator", group: "Educator", description: "Teaching and classroom tools.", capability: "educator" },
