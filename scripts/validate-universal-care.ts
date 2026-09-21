@@ -21,8 +21,10 @@ for (const species of UNIVERSAL_SPECIES) {
   assert(care.health.watches.length >= 2, `${species.id} has too few health watch records.`);
   assert(care.husbandry.reviewedOn === '2026-09-21', `${species.id} care review date is stale.`);
   assert(care.health.reviewedOn === '2026-09-21', `${species.id} health review date is stale.`);
-  assert(care.husbandry.numericGuidance.available === false, `${species.id} universal care layer must not invent a numeric target.`);
-  assert(care.resolvedFrom.length >= 2, `${species.id} has no inheritance provenance chain.`);
+  if (!care.husbandry.numericGuidance.available) assert(!care.husbandry.numericGuidance.ranges?.length, `${species.id} has hidden numeric ranges while marking them unavailable.`);
+  if (care.husbandry.numericGuidance.available) assert((care.husbandry.numericGuidance.ranges ?? []).every((range) => range.evidence.sourceIds.every((id) => Boolean(UNIVERSAL_SPECIES_SOURCES[id]))), `${species.id} has an invalid numeric evidence reference.`);
+  assert(care.resolvedFrom.length >= 3, `${species.id} has no complete species/genus/class provenance chain.`);
+  assert(['species','genus','taxon','class','ecology-only','not-verified'].includes(care.husbandry.coverage), `${species.id} has an invalid husbandry coverage level.`);
   assert(care.husbandry.unresolved.length > 0, `${species.id} must expose remaining species-specific research gaps.`);
   assert(care.health.unresolved.length > 0, `${species.id} must expose remaining health research gaps.`);
 
