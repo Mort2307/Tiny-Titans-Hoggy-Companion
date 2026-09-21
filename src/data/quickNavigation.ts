@@ -51,7 +51,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "knowledge", label: "Knowledge Base", icon: "knowledge", path: "/knowledge-base", group: "Learn & Intelligence", description: "Find evidence-backed answers.", keywords: ["learn", "question", "help", "information"] },
   { id: "learn", label: "Learning Hub", icon: "academy", path: "/learn", group: "Learn & Intelligence", description: "Explore learning topics." },
   { id: "adaptive-learning", label: "Adaptive Learning", icon: "titanIntelligence", path: "/adaptive-learning", group: "Learn & Intelligence", description: "Continue personalised learning." },
-  { id: "challenge", label: "Titans Challenge", icon: "◆", path: "/challenge", group: "Learn & Intelligence", description: "Test your knowledge." },
+  { id: "challenge", label: "Titans Challenge", icon: "challenge", path: "/challenge", group: "Learn & Intelligence", description: "Test your knowledge." },
   { id: "achievements", label: "Achievements", icon: "wall", path: "/learn/achievements", group: "Learn & Intelligence", description: "View your keeper achievements." },
 
   { id: "rescue", label: "Rescue Centre", icon: "veterinary", path: "/rescue", group: "Rescue", description: "Species-agnostic rescue operations, animal passports and QR identity.", keywords: ["rescue","animals","QR","passport","rehoming"] },
@@ -94,7 +94,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "creator-preview", label: "Species Preview", icon: "eye", path: "/creator/species-preview", group: "Creator", description: "Preview species data before publishing.", capability: "creator" },
   { id: "creator-morph", label: "Morph Library Editor", icon: "morph", path: "/creator/morph-library", group: "Creator", description: "Review and manage morph submissions.", capability: "creator" },
   { id: "creator-privacy", label: "Creator Privacy & Data", icon: "lock", path: "/creator/privacy-data", group: "Creator", description: "Creator-side privacy and data controls.", capability: "creator" },
-  { id: "creator-benchmarks", label: "Creator Benchmarks", icon: "📊", path: "/creator/benchmarks", group: "Creator", description: "Review creator and app benchmarks.", capability: "creator" },
+  { id: "creator-benchmarks", label: "Creator Benchmarks", icon: "analytics", path: "/creator/benchmarks", group: "Creator", description: "Review creator and app benchmarks.", capability: "creator" },
   { id: "creator-submissions", label: "Creator Submissions", icon: "upload", path: "/creator/submissions", group: "Creator", description: "Review submitted content.", capability: "creator" },
   { id: "creator-species-submissions", label: "Species Submissions", icon: "reptile", path: "/creator/species-submissions", group: "Creator", description: "Review species submissions.", capability: "creator" },
   { id: "creator-vivarium", label: "Vivarium Showcase Manager", icon: "habitatBuilder", path: "/creator/vivarium-showcase", group: "Creator", description: "Moderate showcase submissions.", capability: "creator" },
@@ -106,7 +106,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "creator-submission-conversations", label: "Submission Conversations", icon: "messages", path: "/creator/submission-conversations", group: "Creator", description: "Review submission conversations.", capability: "creator" },
   { id: "creator-mentor", label: "Mentor Review", icon: "mentorship", path: "/creator/mentor-review", group: "Creator", description: "Review mentor applications.", capability: "creator" },
   { id: "educator", label: "Educator Centre", icon: "academy", path: "/educator", group: "Educator", description: "Teaching and classroom tools.", capability: "educator" },
-  { id: "tester", label: "Tester Centre", icon: "◇", path: "/creator/tester", group: "Testing", description: "Tester tools and focused test flows.", capability: "tester" },
+  { id: "tester", label: "Tester Centre", icon: "testing", path: "/creator/tester", group: "Testing", description: "Tester tools and focused test flows.", capability: "tester" },
 ];
 
 export function quickNavSearchItems(query: string, authorisedCapabilities: Set<QuickNavCapability> = new Set(["everyone"])) {
