@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import { getPublicMarketplaceListings, type PublicMarketplaceListing } from "../services/publicMarketplaceService";
+import { useSearchParams } from "react-router-dom";
 
 function formatPrice(listing: PublicMarketplaceListing): string {
   try {
@@ -15,6 +16,9 @@ export default function Marketplace() {
   const [listings, setListings] = useState<PublicMarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const speciesFilter = searchParams.get("species") || "";
+  const filteredListings = useMemo(() => speciesFilter ? listings.filter((listing) => listing.speciesId === speciesFilter) : listings, [listings, speciesFilter]);
 
   useEffect(() => {
     let active = true;
@@ -49,11 +53,12 @@ export default function Marketplace() {
 
       {loading && <section className="personalisation-card"><strong>Loading Marketplace…</strong><p>Finding active listings.</p></section>}
       {!loading && error && <section className="personalisation-card"><strong>Marketplace temporarily unavailable</strong><p>{error}</p><button type="button" onClick={() => window.location.reload()}>Retry</button></section>}
+      {!loading && !error && listings.length > 0 && speciesFilter && filteredListings.length === 0 && <section className="personalisation-card"><strong>No active listings are linked to this species.</strong><p>Businesses and sellers can add a canonical species link to their listings. Other listings remain discoverable without a species link.</p><button type="button" onClick={() => setSearchParams({})}>Show all Marketplace listings</button></section>}
       {!loading && !error && listings.length === 0 && <section className="personalisation-card"><strong>No active listings yet.</strong><p>Seller inventory will appear here as marketplace listings are published.</p></section>}
 
-      {!loading && !error && listings.length > 0 && (
+      {!loading && !error && filteredListings.length > 0 && (
         <section aria-label="Active Marketplace listings" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-          {listings.map((listing) => (
+          {filteredListings.map((listing) => (
             <article key={listing.id} className="personalisation-card" style={{ height: "100%", boxSizing: "border-box" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                 <div>
