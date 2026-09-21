@@ -52,7 +52,7 @@ export default function TitanFeatureExperience() {
       <header className="titan-feature-hero">
         <div>
           <span className="titan-feature-id">Tiny Titans · Feature #{id}</span>
-          <h1>{icons[id] ?? "🧠"} {feature.name}</h1>
+          <h1>{TITAN_FEATURE_ICONS[id] ?? "🧠"} {feature.name}</h1>
           <p>{FEATURE_SUMMARIES[id] ?? "Connected intelligence capability."}</p>
         </div>
         <div className={`titan-feature-status titan-feature-status--${feature.status}`}>
