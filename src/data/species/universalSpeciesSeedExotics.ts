@@ -1,13 +1,30 @@
 import { seed, type UniversalSpeciesSeed } from './universalSpeciesSeedTypes';
 
+const MAMMAL_ORDERS: Record<string, string> = {
+  Chinchillidae:'Rodentia', Octodontidae:'Rodentia', Petauridae:'Diprotodontia', Erinaceidae:'Eulipotyphla',
+  Nesomyidae:'Rodentia', Muridae:'Rodentia', Dipodidae:'Rodentia', Heteromyidae:'Rodentia', Caviidae:'Rodentia',
+  Sciuridae:'Rodentia', Tenrecidae:'Afrosoricida', Herpestidae:'Carnivora', Viverridae:'Carnivora', Procyonidae:'Carnivora',
+  Hystricidae:'Rodentia', Callitrichidae:'Primates', Cebidae:'Primates', Mustelidae:'Carnivora'
+};
+const BIRD_ORDERS: Record<string, string> = {
+  Psittaculidae:'Psittaciformes', Cacatuidae:'Psittaciformes', Psittacidae:'Psittaciformes', Fringillidae:'Passeriformes',
+  Estrildidae:'Passeriformes', Ramphastidae:'Piciformes', Musophagidae:'Musophagiformes', Bucerotidae:'Bucerotiformes'
+};
+const FISH_ORDERS: Record<string, string> = {
+  Osphronemidae:'Anabantiformes', Poeciliidae:'Cyprinodontiformes', Cichlidae:'Cichliformes', Callichthyidae:'Siluriformes',
+  Loricariidae:'Siluriformes', Characidae:'Characiformes', Danionidae:'Cypriniformes', Cyprinidae:'Cypriniformes',
+  Botiidae:'Cypriniformes', Cobitidae:'Cypriniformes', Syngnathidae:'Syngnathiformes', Pomacentridae:'Perciformes',
+  Acanthuridae:'Acanthuriformes', Callionymidae:'Syngnathiformes'
+};
+const CEPHALOPOD_ORDERS: Record<string, string> = { Octopodidae:'Octopoda', Sepiidae:'Sepiida', Nautilidae:'Nautilida' };
 const mammal = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'mammal', 'Mammalia', '', f, r, l, d, a);
+  seed(s, c, 'mammal', 'Mammalia', MAMMAL_ORDERS[f] ?? 'Mammalia', f, r, l, d, a);
 const bird = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'bird', 'Aves', '', f, r, l, d, a);
+  seed(s, c, 'bird', 'Aves', BIRD_ORDERS[f] ?? 'Aves', f, r, l, d, a);
 const fish = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'fish', 'Actinopterygii', '', f, r, l, d, a);
+  seed(s, c, 'fish', 'Actinopterygii', FISH_ORDERS[f] ?? 'Actinopterygii', f, r, l, d, a);
 const marine = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], a: string[] = []) =>
-  seed(s, c, 'cephalopod', 'Cephalopoda', '', f, r, 'aquatic', 'carnivore', a);
+  seed(s, c, 'cephalopod', 'Cephalopoda', CEPHALOPOD_ORDERS[f] ?? 'Cephalopoda', f, r, 'aquatic', 'carnivore', a);
 
 export const UNIVERSAL_EXOTIC_SEEDS: UniversalSpeciesSeed[] = [
   // Small mammals commonly represented in specialist/exotic collections.
