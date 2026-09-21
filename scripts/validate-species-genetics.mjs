@@ -14,8 +14,8 @@ function forbidText(file, text, reason) {
   if (read(file).includes(text)) failures.push(`${file}: ${reason}`);
 }
 
-requireText("src/components/Layout/Layout.tsx", "SpeciesAwareMorphLibrary", "the /morph-library shell must use the species-aware library entry point");
-requireText("src/components/Layout/Layout.tsx", "SpeciesContextRouteSync", "the app shell must sync species context from snake-specific routes");
+requireText("src/components/Layout/LayoutChrome.tsx", "SpeciesAwareMorphLibrary", "the /morph-library shell must use the species-aware library entry point");
+requireText("src/components/Layout/Layout.tsx", "SpeciesContextRouteSync", "the provider shell must include the species route synchronisation layer");
 requireText("src/components/SnakeTile.tsx", "setSelectedSpeciesId", "snake selection must establish species context before navigation");
 requireText("src/components/SnakeTile.tsx", "findSnakeSpecies", "snake selection must resolve persisted species through the canonical registry");
 requireText("src/pages/SpeciesMorphLibrary.tsx", "getSpeciesVisualMorphs", "the non-Hognose Morph Library must consume species-scoped genetics");
