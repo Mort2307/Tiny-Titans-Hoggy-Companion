@@ -116,7 +116,7 @@ export default function UniversalSpeciesProfile() {
           <Link className="universal-species-marketplace-link" to={"/animals?species=" + encodeURIComponent(species.id)}>Open My Animals →</Link>
         </div>
         {myIndividualsLoading ? <p>Loading your individual animals…</p> : myIndividuals.length === 0 ? <p>You do not have an individual record linked to this species yet.</p> : <div className="universal-animal-species-list">{myIndividuals.map((animal) => <Link className="universal-animal-species-row" key={animal.id} to={animal.id && animal.speciesId === species.id ? "/animals/" + animal.id : "#"}><strong>{animal.name}</strong><span>{animal.speciesCommonName || species.commonNames[0]} · {animal.status}</span></Link>)}</div>}
-      </section>
+      </section>}
 
       <section className="universal-species-callout">
         <TinyTitansIcon name="info" size={20} />
