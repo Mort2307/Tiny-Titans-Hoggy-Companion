@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { Canvas } from "@react-three/fiber";
 import { useAuth } from "../../context/useAuth";
-import type { ReptileRoomSlot, ReptileRoomWorkspace } from "../../services/reptileRoomService";
+import type { ReptileRoomSlot } from "../../services/reptileRoomService";
 import type { Room3DProps } from "../../types/reptileRoom3D";
 import { buildRoomNavigationNodes } from "../../lib/roomNavigation";
 import type { RoomNavigationNode } from "../../lib/roomNavigation";
