@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import UniversalSpeciesPicker from "../components/UniversalSpeciesPicker";
 import { getUserAnimals, createUserAnimal } from "../services/universalAnimalService";
-import { getUserSnakes } from "../services/snakeService";
+import { getUserSnakeDirectory } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import type { UniversalSpeciesRecord } from "../data/species/universalSpeciesTypes";
@@ -26,7 +26,7 @@ export default function MyAnimals() {
   useEffect(() => {
     if (!user) return;
     let active = true;
-    void Promise.all([getUserAnimals(user.uid), getUserSnakes(user.uid)])
+    void Promise.all([getUserAnimals(user.uid), getUserSnakeDirectory(user.uid)])
       .then(([universalAnimals, snakes]) => {
         if (!active) return;
         const legacy: DirectoryAnimal[] = snakes.map((snake) => ({
