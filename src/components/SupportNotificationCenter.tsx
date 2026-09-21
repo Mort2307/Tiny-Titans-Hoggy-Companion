@@ -9,7 +9,11 @@ type SupportNotification = { id: string; title?: string; body?: string; url?: st
 function eventTime(value: unknown) { if (!value) return 0; if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return Number(value.toMillis()) || 0; const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : 0; }
 
 export default function SupportNotificationCenter() {
-  const { user } = useAuth(); const navigate = useNavigate(); const location = useLocation(); const [items, setItems] = useState<SupportNotification[]>([]);
+  const { user } = useAuth();
+  // Local development must not surface production notification history as a
+  // looping overlay while testing pages. Notification settings/tests remain
+  // available elsewhere in the app.
+  if (import.meta.env.DEV) return null; const navigate = useNavigate(); const location = useLocation(); const [items, setItems] = useState<SupportNotification[]>([]);
   useEffect(() => {
     if (!user) { setItems([]); return; }
     const q = query(collection(db, "users", user.uid, "notificationEvents"), orderBy("createdAt", "desc"), limit(50));
