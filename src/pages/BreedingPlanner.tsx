@@ -1,7 +1,7 @@
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import BackHomeButton from "../components/BackHomeButton";
-import BreedingProjectManagement from "../components/BreedingProjectManagement";
 import { useBreedingPlanner, outcomeLabel, traitsFor } from "../hooks/useBreedingPlanner";
+import type { BreedingProject, HatchlingRecord } from "../types/Breeding";
 import "./BreedingPlanner.css";
 
 export default function BreedingPlanner() {
