@@ -21,65 +21,6 @@ function Home() {
     loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake,
   } = useHomeDashboard();
 
-  return () => {
-      active = false;
-      unsubscribe();
-    };
-  }, [user]);
-
-  useEffect(() => {
-    if (!user || !intelligenceAccess) return () => undefined;
-    const refresh = () => setDecision(
-      getTitanDecisionState(user.uid).decisions.find((item) => item.status === "active") ?? null,
-    );
-    refresh();
-    return subscribeToTitanIntelligenceUpdates((detail) => {
-      if (detail.event) return;
-      refresh();
-    });
-  }, [user, intelligenceAccess]);
-
-  const selectedIntelligence = useMemo(
-    () => intelligence.find((item) => item.snakeId === selectedSnakeId) ?? intelligence[0],
-    [intelligence, selectedSnakeId],
-  );
-  const selectedSnake = useMemo(
-    () => snakes.find((snake) => snake.id === selectedSnakeId) ?? snakes[0],
-    [snakes, selectedSnakeId],
-  );
-  const attentionDecision = decision?.status === "active" ? decision : null;
-  const coverage = useMemo(
-    () => intelligence.length
-      ? Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length)
-      : 0,
-    [intelligence],
-  );
-  const totalRecords = useMemo(
-    () => snakes.reduce((sum, snake) => sum + snake.weightRecords + snake.feedingRecords + snake.shedRecords + snake.healthRecords, 0),
-    [snakes],
-  );
-  const snapshot = useMemo(() => ({
-    weights: snakes.reduce((sum, snake) => sum + snake.weightRecords, 0),
-    feedings: snakes.reduce((sum, snake) => sum + snake.feedingRecords, 0),
-    sheds: snakes.reduce((sum, snake) => sum + snake.shedRecords, 0),
-    health: snakes.reduce((sum, snake) => sum + snake.healthRecords, 0),
-  }), [snakes]);
-  const quietIntelligenceSnippet = useMemo(
-    () => buildQuietIntelligenceSnippet(selectedSnake, totalRecords, world.localDateKey),
-    [selectedSnake, totalRecords, world.localDateKey],
-  );
-  const selectedIndex = Math.max(0, snakes.findIndex((snake) => snake.id === selectedSnakeId));
-
-  function moveSnake(direction: -1 | 1) {
-    if (!snakes.length) return;
-    const next = (selectedIndex + direction + snakes.length) % snakes.length;
-    setSelectedSnakeId(snakes[next].id);
-  }
-
-  const selectedSnakeRecords = selectedSnake
-    ? selectedSnake.weightRecords + selectedSnake.feedingRecords + selectedSnake.shedRecords + selectedSnake.healthRecords
-    : 0;
-
   return (
     <main className="dashboard tt-home">
       <header className="tt-home-brandbar">
