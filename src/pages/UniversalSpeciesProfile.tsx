@@ -1,6 +1,11 @@
 import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
+import { getUserAnimals } from "../services/universalAnimalService";
+import { getUserSnakes } from "../services/snakeService";
+import { useAuth } from "../context/useAuth";
+import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import { UNIVERSAL_SPECIES_SOURCES } from "../data/species/universalSpeciesSources";
 import type { HealthPriority, UniversalCareRequirement } from "../data/species/universalSpeciesCareTypes";
 import "../styles/universal-species-profile.css";
@@ -24,7 +29,41 @@ function regulatoryLabel(value: string): string {
 
 export default function UniversalSpeciesProfile() {
   const { id = "" } = useParams();
+  const { user } = useAuth();
+  const [myIndividuals, setMyIndividuals] = useState<UniversalAnimalRecord[]>([]);
+  const [myIndividualsLoading, setMyIndividualsLoading] = useState(false);
   const species = UNIVERSAL_SPECIES_BY_ID[id];
+
+  useEffect(() => {
+    if (!user || !id) return;
+    let active = true;
+    setMyIndividualsLoading(true);
+    void Promise.all([getUserAnimals(user.uid), getUserSnakes(user.uid)])
+      .then(([animals, snakes]) => {
+        if (!active) return;
+        const legacy = snakes
+          .filter((snake) => snake.universalSpeciesId === id)
+          .map((snake) => ({
+            id: snake.id,
+            ownerUid: user.uid,
+            name: snake.name,
+            speciesId: id,
+            speciesCommonName: snake.species,
+            animalGroup: "reptile",
+            sex: snake.sex.toLowerCase() as UniversalAnimalRecord["sex"],
+            status: snake.status === "Sold" ? "sold" : snake.status === "Deceased" ? "deceased" : "active",
+            morphOrColour: snake.morphs?.join(", ") || snake.customMorph || undefined,
+            notes: snake.notes,
+            tags: [],
+            createdAt: "",
+            updatedAt: "",
+          } satisfies UniversalAnimalRecord));
+        setMyIndividuals([...animals.filter((animal) => animal.speciesId === id), ...legacy]);
+      })
+      .catch(() => undefined)
+      .finally(() => { if (active) setMyIndividualsLoading(false); });
+    return () => { active = false; };
+  }, [user, id]);
 
   if (!species) {
     return (
@@ -70,6 +109,14 @@ export default function UniversalSpeciesProfile() {
           <div><dt>Reviewed</dt><dd>{species.reviewedOn}</dd></div>
         </dl>
       </header>
+
+      {user && <section className="universal-species-panel">
+        <div className="universal-species-panel-heading">
+          <div><p className="eyebrow">YOUR ANIMALS</p><h2>Individuals of this species</h2></div>
+          <Link className="universal-species-marketplace-link" to={"/animals?species=" + encodeURIComponent(species.id)}>Open My Animals →</Link>
+        </div>
+        {myIndividualsLoading ? <p>Loading your individual animals…</p> : myIndividuals.length === 0 ? <p>You do not have an individual record linked to this species yet.</p> : <div className="universal-animal-species-list">{myIndividuals.map((animal) => <Link className="universal-animal-species-row" key={animal.id} to={animal.id && animal.speciesId === species.id ? "/animals/" + animal.id : "#"}><strong>{animal.name}</strong><span>{animal.speciesCommonName || species.commonNames[0]} · {animal.status}</span></Link>)}</div>}
+      </section>
 
       <section className="universal-species-callout">
         <TinyTitansIcon name="info" size={20} />
