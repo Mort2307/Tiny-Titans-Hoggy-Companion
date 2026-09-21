@@ -1,4 +1,5 @@
 import type { UniversalSpeciesRecord } from './universalSpeciesTypes';
+import type { UniversalCareRequirement, UniversalHealthWatch } from './universalSpeciesCareTypes';
 
 export type SpeciesCareOverride = {
   coverage: 'species' | 'genus';
@@ -171,9 +172,7 @@ export const UNIVERSAL_SPECIES_CARE_OVERRIDES: Record<string, SpeciesCareOverrid
       { id: 'species-monitoring', domain: 'monitoring', label: 'Water-quality and health records', guidance: 'Track water conditions, appetite, behaviour and body condition because environmental change can quickly affect an aquatic amphibian.', priority: 'essential' },
     ],
   },
-};
-
-
+  ,
   'pantherophis-guttatus': {
     coverage: 'species',
     sourceIds: ['reptifilesCornSnake2024'],
@@ -255,6 +254,8 @@ export const UNIVERSAL_SPECIES_CARE_OVERRIDES: Record<string, SpeciesCareOverrid
       { id: 'environment-feeding', concern: 'Environmental disruption and feeding change', watchFor: ['persistent appetite change', 'reduced normal activity'], riskFactors: ['inappropriate temperature or humidity', 'inadequate refuge'], prevention: 'Maintain a stable thermal/humidity gradient and provide secure retreats; investigate persistent feeding changes rather than guessing at a cause.', priority: 'prompt-vet' },
     ],
   },
+};
+
 const UNIVERSAL_GENUS_CARE_OVERRIDES: Record<string, SpeciesCareOverride> = {
   Hymenochirus: {
     coverage: 'genus',
