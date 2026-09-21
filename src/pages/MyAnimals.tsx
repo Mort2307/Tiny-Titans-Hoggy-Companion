@@ -6,6 +6,7 @@ import { getUserSnakeDirectory } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import type { UniversalSpeciesRecord } from "../data/species/universalSpeciesTypes";
+import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import "../styles/universal-animals.css";
 
 type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
@@ -35,7 +36,7 @@ export default function MyAnimals() {
           id: snake.id,
           ownerUid: user.uid,
           name: snake.name,
-          speciesId: snake.universalSpeciesId,
+          speciesId: snake.universalSpeciesId || findUniversalSpecies(snake.species)?.id,
           speciesCommonName: snake.species,
           animalGroup: "reptile",
           sex: snake.sex.toLowerCase() as DirectoryAnimal["sex"],
