@@ -34,7 +34,6 @@ function AppRouterGate() {
   const currentDestination = `${location.pathname}${location.search}`;
   const loginRedirect = `/login?redirect=${encodeURIComponent(currentDestination)}`;
   const setupRedirect = `/account-setup?redirect=${encodeURIComponent(currentDestination)}`;
-  const rescuePublicProfileRoute = <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />;
 
   useEffect(() => {
     let active = true;
