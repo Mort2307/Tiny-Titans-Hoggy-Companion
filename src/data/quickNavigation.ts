@@ -1,4 +1,4 @@
-﻿export type QuickNavCapability = "everyone" | "creator" | "tester" | "educator";
+export type QuickNavCapability = "everyone" | "creator" | "tester" | "educator";
 
 export type QuickNavItem = {
   id: string;
@@ -21,7 +21,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "snakes", label: "My Reptiles", icon: "reptiles", path: "/snakes", group: "Overview", description: "View, add and manage every Titan.", keywords: ["snake", "animals", "collection", "new snake"] },
   { id: "animals", label: "My Animals", icon: "animals", path: "/animals", group: "Overview", description: "Your individual animals across supported species.", keywords: ["animals", "pets", "collection", "individuals"] },
   { id: "species", label: "Species Explorer", icon: "reptile", path: "/species", group: "Overview", description: "Explore the universal Tiny Titans animal catalogue.", keywords: ["species", "lizards", "turtles", "amphibians", "spiders", "insects", "exotics"] },
-  { id: "room", label: "Reptile Room", icon: "enclosure", path: "/reptile-room", group: "Overview", description: "Manage your reptile room and vivariums.", keywords: ["vivarium", "enclosure", "room"] },
+  { id: "room", label: "Reptile Room", icon: "grid", path: "/reptile-room", group: "Overview", description: "Manage your reptile room and vivariums.", keywords: ["vivarium", "enclosure", "room"] },
   { id: "conversations", label: "Message Centre", icon: "messages", path: "/conversations", group: "Overview", description: "Your community conversations." },
 
   { id: "reminders", label: "Reminder Hub", icon: "reminders", path: "/reminders", group: "Care", description: "See what is due next.", keywords: ["due", "notifications", "feeding reminder", "weight reminder"] },
@@ -30,7 +30,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "feeding", label: "Feeding Tracker", icon: "feeding", path: "/feeding", group: "Care", description: "Log meals and feeding history.", keywords: ["feed", "meal", "food"] },
   { id: "feeding-preparation", label: "Feeding Preparation", icon: "feeding", path: "/feeding/preparation", group: "Care", description: "Prepare feeding workflows and records." },
   { id: "shedding", label: "Shed Intelligence", icon: "reptile", path: "/shedding", group: "Care", description: "Track shed cycles and outcomes.", keywords: ["shed", "shedding"] },
-  { id: "health", label: "Health & Vet", icon: "vet", path: "/health", group: "Care", description: "Health and veterinary records.", keywords: ["vet", "medicine", "medication"] },
+  { id: "health", label: "Health & Vet", icon: "health", path: "/health", group: "Care", description: "Health and veterinary records.", keywords: ["vet", "medicine", "medication"] },
   { id: "behaviour", label: "Behaviour Journal", icon: "behaviour", path: "/behaviour", group: "Care", description: "Record behaviour and observations.", keywords: ["behavior", "behaviour", "observation"] },
   { id: "behaviour-observatory", label: "Behaviour Observatory", icon: "observatory", path: "/behaviour-observatory", group: "Care", description: "Explore structured behaviour observations." },
   { id: "enclosure", label: "Enclosure Intelligence", icon: "enclosure", path: "/enclosure-intelligence", group: "Care", description: "Review enclosure conditions and care." },
@@ -54,7 +54,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "challenge", label: "Titans Challenge", icon: "challenge", path: "/challenge", group: "Learn & Intelligence", description: "Test your knowledge." },
   { id: "achievements", label: "Achievements", icon: "wall", path: "/learn/achievements", group: "Learn & Intelligence", description: "View your keeper achievements." },
 
-  { id: "rescue", label: "Rescue Centre", icon: "health", path: "/rescue", group: "Rescue", description: "Species-agnostic rescue operations, animal passports and QR identity.", keywords: ["rescue","animals","QR","passport","rehoming"] },
+  { id: "rescue", label: "Rescue Centre", icon: "vet", path: "/rescue", group: "Rescue", description: "Species-agnostic rescue operations, animal passports and QR identity.", keywords: ["rescue","animals","QR","passport","rehoming"] },
   { id: "rescue-animals", label: "Rescue Animal Register", icon: "reptile", path: "/rescue/animals", group: "Rescue", description: "Search rescue animals and open read-only passports.", keywords: ["rescue","animals","register"] },
   { id: "rescue-scan", label: "Rescue QR Scanner", icon: "observatory", path: "/rescue/scan", group: "Rescue", description: "Open an animal passport from a TinyTitans QR identity.", keywords: ["QR","scan","passport"] },
   { id: "rescue-incubator", label: "Species Incubator", icon: "morph", path: "/rescue/species-incubator", group: "Rescue", description: "Turn unsupported rescue species into verified evidence candidates.", keywords: ["species","discovery","verification"] },
@@ -66,14 +66,14 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "mentorship", label: "Mentorship", icon: "mentorship", path: "/community/mentorship", group: "Community", description: "Connect with experienced keepers." },
   { id: "mentor-directory", label: "Mentor Directory", icon: "community", path: "/community/mentorship/mentors", group: "Community", description: "Browse available mentors." },
   { id: "become-mentor", label: "Become a Mentor", icon: "mentorship", path: "/community/mentorship/become-a-mentor", group: "Community", description: "Apply to become a community mentor." },
-  { id: "mentor-dashboard", label: "Mentor Dashboard", icon: "handbook", path: "/community/mentorship/mentor-dashboard", group: "Community", description: "Open your mentor workspace." },
+  { id: "mentor-dashboard", label: "Mentor Dashboard", icon: "academy", path: "/community/mentorship/mentor-dashboard", group: "Community", description: "Open your mentor workspace." },
   { id: "my-mentees", label: "My Mentees", icon: "account", path: "/community/mentorship/my-mentees", group: "Community", description: "Review your current mentees." },
   { id: "mentorship-intelligence", label: "Mentorship Intelligence", icon: "titan", path: "/community/mentorship/intelligence", group: "Community", description: "Open mentorship intelligence tools." },
   { id: "wall-of-titans", label: "Wall of Titans", icon: "wall", path: "/community/wall-of-titans", group: "Community", description: "Recognised community supporters." },
   { id: "contribute", label: "Make a Contribution", icon: "add", path: "/make-contribution", group: "Community", description: "Help improve Tiny Titans." },
   { id: "submit-species", label: "Submit a Species", icon: "reptile", path: "/submit-species", group: "Community", description: "Suggest species data for review." },
   { id: "report", label: "Report an Issue", icon: "creator", path: "/report-bug", group: "Community", description: "Report bugs and problems." },
-  { id: "feedback", label: "Send Feedback", icon: "messages", path: "/feedback", group: "Community", description: "Share product feedback." },
+  { id: "feedback", label: "Send Feedback", icon: "💬", path: "/feedback", group: "Community", description: "Share product feedback." },
   { id: "my-issue-reports", label: "My Issue Reports", icon: "contribution", path: "/my-issue-reports", group: "Community", description: "Track the issues you have reported." },
   { id: "submission-messages", label: "Submission Messages", icon: "messages", path: "/conversations/submissions", group: "Community", description: "Follow submission-related conversations." },
 
@@ -98,11 +98,11 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "creator-submissions", label: "Creator Submissions", icon: "messages", path: "/creator/submissions", group: "Creator", description: "Review submitted content.", capability: "creator" },
   { id: "creator-species-submissions", label: "Species Submissions", icon: "reptile", path: "/creator/species-submissions", group: "Creator", description: "Review species submissions.", capability: "creator" },
   { id: "creator-vivarium", label: "Vivarium Showcase Manager", icon: "enclosure", path: "/creator/vivarium-showcase", group: "Creator", description: "Moderate showcase submissions.", capability: "creator" },
-  { id: "creator-observations", label: "Observation Review", icon: "observatory", path: "/creator/observations", group: "Creator", description: "Review behaviour observations.", capability: "creator" },
+  { id: "creator-observations", label: "Observation Review", icon: "🔭", path: "/creator/observations", group: "Creator", description: "Review behaviour observations.", capability: "creator" },
   { id: "creator-terminology", label: "Morph Terminology Audit", icon: "morph", path: "/creator/morph-terminology", group: "Creator", description: "Review morph terminology evidence.", capability: "creator" },
   { id: "creator-issues", label: "Issue Queues", icon: "creator", path: "/creator/issues", group: "Creator", description: "Manage app issue queues.", capability: "creator" },
   { id: "creator-community", label: "Community Manager", icon: "community", path: "/creator/community", group: "Creator", description: "Publish official Community Hub content.", capability: "creator" },
-  { id: "creator-conversations", label: "Creator Conversations", icon: "messages", path: "/creator/conversations", group: "Creator", description: "Creator-side conversations.", capability: "creator" },
+  { id: "creator-conversations", label: "Creator Conversations", icon: "💬", path: "/creator/conversations", group: "Creator", description: "Creator-side conversations.", capability: "creator" },
   { id: "creator-submission-conversations", label: "Submission Conversations", icon: "messages", path: "/creator/submission-conversations", group: "Creator", description: "Review submission conversations.", capability: "creator" },
   { id: "creator-mentor", label: "Mentor Review", icon: "mentorship", path: "/creator/mentor-review", group: "Creator", description: "Review mentor applications.", capability: "creator" },
   { id: "educator", label: "Educator Centre", icon: "academy", path: "/educator", group: "Educator", description: "Teaching and classroom tools.", capability: "educator" },
@@ -118,4 +118,3 @@ export function quickNavSearchItems(query: string, authorisedCapabilities: Set<Q
     return [item.label, item.group, item.description, item.path, ...(item.keywords ?? [])].join(" ").toLowerCase().includes(normalised);
   });
 }
-
