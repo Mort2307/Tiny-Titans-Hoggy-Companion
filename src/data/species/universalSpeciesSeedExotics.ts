@@ -18,13 +18,13 @@ const FISH_ORDERS: Record<string, string> = {
 };
 const CEPHALOPOD_ORDERS: Record<string, string> = { Octopodidae:'Octopoda', Sepiidae:'Sepiida', Nautilidae:'Nautilida' };
 const mammal = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'mammal', 'Mammalia', MAMMAL_ORDERS[f] ?? 'Mammalia', f, r, l, d, a);
+  seed(s, c, 'mammal', 'Mammalia', MAMMAL_ORDERS[f] ?? 'Mammalia', f, r, l, d, a, 'mammals');
 const bird = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'bird', 'Aves', BIRD_ORDERS[f] ?? 'Aves', f, r, l, d, a);
+  seed(s, c, 'bird', 'Aves', BIRD_ORDERS[f] ?? 'Aves', f, r, l, d, a, 'birds');
 const fish = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'fish', 'Actinopterygii', FISH_ORDERS[f] ?? 'Actinopterygii', f, r, l, d, a);
+  seed(s, c, 'fish', 'Actinopterygii', FISH_ORDERS[f] ?? 'Actinopterygii', f, r, l, d, a, 'fish');
 const marine = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], a: string[] = []) =>
-  seed(s, c, 'cephalopod', 'Cephalopoda', CEPHALOPOD_ORDERS[f] ?? 'Cephalopoda', f, r, 'aquatic', 'carnivore', a);
+  seed(s, c, 'cephalopod', 'Cephalopoda', CEPHALOPOD_ORDERS[f] ?? 'Cephalopoda', f, r, 'aquatic', 'carnivore', a, 'cephalopods');
 
 export const UNIVERSAL_EXOTIC_SEEDS: UniversalSpeciesSeed[] = [
   // Small mammals commonly represented in specialist/exotic collections.
