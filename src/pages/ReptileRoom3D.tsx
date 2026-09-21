@@ -3,7 +3,7 @@ import Room3D from "../components/reptile-room-3d/Room3D";
 import { RoomAssetInspector } from "../components/reptile-room-3d/RoomAssetInspector";
 import { useReptileRoom3D } from "../hooks/useReptileRoom3D";
 import { REPTILE_ROOM_ASSET_CATEGORIES } from "../data/reptileRoomAssetCatalog";
-import { slotParentAssetId, slotRotation, vivDepth, vivHeight, vivWidth, snakeName } from "../lib/reptileRoom3D";
+import { slotParentAssetId, snakeName } from "../lib/reptileRoom3D";
 import "../styles/reptile-room-3d-workspace.css";
 
 export default function ReptileRoom3D() {
