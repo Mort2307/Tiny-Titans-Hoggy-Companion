@@ -2,6 +2,7 @@ import type { SVGProps } from "react";
 import "../styles/tiny-titans-icons.css";
 
 import type { TinyTitansIconName } from "../types/tinyTitansIcon";
+export type { TinyTitansIconName } from "../types/tinyTitansIcon";
 
 type Props = SVGProps<SVGSVGElement> & {
   name: TinyTitansIconName | string;
