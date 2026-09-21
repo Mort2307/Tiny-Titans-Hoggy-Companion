@@ -7,6 +7,7 @@ import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService
 import { getTitanDecisionState,subscribeToTitanDecisionState,type TitanDecision } from "../services/titanDecisionStateService";
 import { getDashboardIntelligence,type SnakeIntelligence } from "../services/snakeIntelligenceService";
 import { getCurrentTitanWeek,type TitanWeekRange } from "../utils/titanWeek";
+import type { TitanWeeklyMetricId } from "../types/easyNav";
 import { loadTitanWeekTargets,saveTitanWeekTarget } from "../services/titanWeekCommandCentreService";
 import { TARGETABLE_METRICS,actionRoute,addDays,countMetric,intelligentExpected,makeCurrentPriorities,parseDateKey,toLocalKey,type MetricSummary,type Priority } from "../lib/titanWeekCommandCentre";
 
