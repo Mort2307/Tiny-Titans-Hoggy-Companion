@@ -13,7 +13,7 @@ import {
 } from "../services/creatorService";
 import { getCreatorUserDisplayNames } from "../services/creatorUserDirectoryService";
 import { sendConversationMessage } from "../services/conversationService";
-import { canTransitionReport,getReportLifecycleLabel,isActiveReportIssueStatus } from "../services/reportLifecycle";
+import { canTransitionReport,getAllowedReportTransitions,getReportLifecycleLabel,isActiveReportIssueStatus } from "../services/reportLifecycle";
 import {
   BUG_FEEDBACK_STATUSES,
   bugStatusLabel,
