@@ -174,6 +174,87 @@ export const UNIVERSAL_SPECIES_CARE_OVERRIDES: Record<string, SpeciesCareOverrid
 };
 
 
+  'pantherophis-guttatus': {
+    coverage: 'species',
+    sourceIds: ['reptifilesCornSnake2024'],
+    caveat: 'Species-specific keeper reference from ReptiFiles. Preserve its evidence scope and practical-keeper status; do not generalise the numeric ranges to unrelated Pantherophis species.',
+    requirements: [
+      { id: 'species-thermal', domain: 'environment', label: 'Measured thermal gradient', guidance: 'Provide a basking zone and cooler zone so the snake can move between temperatures. The source specifies a basking temperature around 32°C and a cool zone around 24–27°C.', priority: 'essential' },
+      { id: 'species-humidity', domain: 'environment', label: 'Species-specific humidity', guidance: 'Maintain the source’s reported average humidity range of 65–75%, with normal day/night fluctuation and a humid retreat available.', priority: 'essential' },
+      { id: 'species-lighting', domain: 'lighting', label: 'Distinct day/night cycle with optional UVB evidence', guidance: 'Provide a consistent day/night cycle. ReptiFiles recommends UVB for corn snakes, with the source specifying a maximum basking UVI of 2–3; shade and distance must be preserved.', priority: 'important' },
+      { id: 'species-enclosure', domain: 'housing', label: 'Secure semi-arboreal enclosure', guidance: 'Use a secure enclosure with climbing structure, cover, hides and sufficient space for this active semi-arboreal species.', priority: 'essential' },
+      { id: 'species-water', domain: 'water', label: 'Clean water and humidity options', guidance: 'Provide clean drinking water and a humid retreat while maintaining ventilation.', priority: 'essential' },
+    ],
+    numericRanges: [
+      { label: 'Basking', min: 32, max: 32, unit: '°C', context: 'ReptiFiles species-specific basking parameter.' },
+      { label: 'Cool zone', min: 24, max: 27, unit: '°C', context: 'ReptiFiles species-specific cool-zone parameter.' },
+      { label: 'Humidity', min: 65, max: 75, unit: '% RH', context: 'ReptiFiles species-specific average humidity range.' },
+      { label: 'Basking UV Index', min: 2, max: 3, unit: 'UVI', context: 'ReptiFiles maximum basking UVI recommendation; exact exposure depends on distance and obstruction.' },
+    ],
+  },
+  'eublepharis-macularius': {
+    coverage: 'species',
+    sourceIds: ['reptifilesLeopardGecko2025'],
+    caveat: 'Species-specific keeper reference from ReptiFiles. UVB values distinguish normal-pigmented from hypopigmented/albino animals and therefore should not be applied without considering phenotype.',
+    requirements: [
+      { id: 'species-thermal', domain: 'environment', label: 'Species-specific thermal gradient', guidance: 'Provide a basking surface, warm hide and cool end. ReptiFiles specifies 34–36°C basking surface, 32–33°C warm hide and 21–25°C cool end.', priority: 'essential' },
+      { id: 'species-humidity', domain: 'environment', label: 'Dry ambient environment with humid retreat', guidance: 'Maintain a relatively dry general environment while providing a distinct humid hide for shedding; do not simply raise the entire enclosure humidity.', priority: 'essential' },
+      { id: 'species-uvb', domain: 'lighting', label: 'Low-level UVB with phenotype awareness', guidance: 'ReptiFiles specifies a low basking UVI for leopard geckos and a lower ceiling for less-pigmented/albino animals. Measure exposure rather than relying on bulb percentage alone.', priority: 'important' },
+      { id: 'species-hides', domain: 'housing', label: 'Multiple secure hides', guidance: 'Provide at least a warm hide and cool hide, with a humid hide available for shedding.', priority: 'essential' },
+      { id: 'species-substrate', domain: 'substrate', label: 'Species-appropriate arid substrate', guidance: 'Use a safe dry substrate suited to the animal and enclosure, while keeping the humid hide separate and controlled.', priority: 'essential' },
+    ],
+    numericRanges: [
+      { label: 'Basking surface', min: 34, max: 36, unit: '°C', context: 'ReptiFiles species-specific basking surface range.' },
+      { label: 'Warm hide', min: 32, max: 33, unit: '°C', context: 'ReptiFiles species-specific warm-hide range.' },
+      { label: 'Cool end', min: 21, max: 25, unit: '°C', context: 'ReptiFiles species-specific cool-end range.' },
+      { label: 'Ambient humidity', min: 30, max: 40, unit: '% RH', context: 'ReptiFiles daytime ambient humidity range.' },
+      { label: 'Humid hide', min: 70, max: 80, unit: '% RH', context: 'ReptiFiles humid-hide range for shedding.' },
+      { label: 'Normal-pigment basking UVI', min: 0.5, max: 1.5, unit: 'UVI', context: 'ReptiFiles recommendation; lower range applies to hypopigmented/albino animals.' },
+      { label: 'Hypopigmented basking UVI', min: 0.5, max: 0.7, unit: 'UVI', context: 'ReptiFiles recommendation for albino and other less-pigmented morphs.' },
+    ],
+  },
+  'pogona-vitticeps': {
+    coverage: 'species',
+    sourceIds: ['reptifilesBeardedDragon2026'],
+    caveat: 'Species-specific keeper reference from ReptiFiles, updated January 2026. Numeric parameters are source-specific husbandry targets and should remain tied to measurement method and equipment configuration.',
+    requirements: [
+      { id: 'species-basking', domain: 'environment', label: 'Strong basking zone and gradient', guidance: 'Provide strong overhead basking access and a meaningful cooler area so the dragon can thermoregulate by moving through the enclosure.', priority: 'essential' },
+      { id: 'species-uvb', domain: 'lighting', label: 'Reliable UVB and bright white light', guidance: 'Provide strong reliable UVB plus bright white visible light as part of the day environment; measurement and mounting distance matter.', priority: 'essential' },
+      { id: 'species-humidity', domain: 'environment', label: 'Controlled ambient humidity', guidance: 'Use a generally moderate ambient humidity while preserving natural local variation and avoiding persistently wet substrate.', priority: 'essential' },
+      { id: 'species-substrate', domain: 'substrate', label: 'Species-appropriate terrestrial substrate', guidance: 'Use a stable substrate that supports digging and normal terrestrial activity without creating avoidable ingestion or hygiene hazards.', priority: 'essential' },
+      { id: 'species-enrichment', domain: 'enrichment', label: 'Climbing, basking and digging structure', guidance: 'Provide sturdy climbing/basking structures and opportunities for natural exploration and digging.', priority: 'important' },
+    ],
+    numericRanges: [
+      { label: 'Basking surface', min: 42, max: 45, unit: '°C', context: 'ReptiFiles species-specific basking surface range.' },
+      { label: 'Cool-side surface', min: 25, max: 29, unit: '°C', context: 'ReptiFiles species-specific cool-side surface range.' },
+      { label: 'Air gradient', min: 22, max: 37, unit: '°C', context: 'ReptiFiles reported enclosure air-gradient range; surface measurements remain separately specified.' },
+      { label: 'Night', min: 12, max: 24, unit: '°C', context: 'ReptiFiles reported nighttime range.' },
+      { label: 'Ambient humidity', min: 30, max: 60, unit: '% RH', context: 'ReptiFiles reported average ambient humidity range.' },
+      { label: 'Basking UVI', min: 4, max: 4.5, unit: 'UVI', context: 'ReptiFiles species-specific basking UVI range.' },
+    ],
+  },
+  'python-regius': {
+    coverage: 'species',
+    sourceIds: ['reptifilesBallPython2026'],
+    caveat: 'Species-specific keeper reference from ReptiFiles. Preserve the source’s distinction between warm-hide, cool-hide and nighttime temperatures rather than collapsing them into one enclosure target.',
+    requirements: [
+      { id: 'species-warm-hide', domain: 'environment', label: 'Warm hide thermal target', guidance: 'Provide a stable warm hide in the source’s 30–32°C range and allow movement to cooler areas.', priority: 'essential' },
+      { id: 'species-cool-hide', domain: 'environment', label: 'Cool hide and gradient', guidance: 'Provide a cool hide around 22–27°C so the snake can choose its thermal zone.', priority: 'essential' },
+      { id: 'species-humidity', domain: 'environment', label: 'Species-specific humidity', guidance: 'Use a humid environment with higher nighttime humidity and a humid hide where needed for hydration and shedding, while retaining ventilation.', priority: 'essential' },
+      { id: 'species-light', domain: 'lighting', label: 'Predictable day/night cycle and low-level UVB', guidance: 'Provide a clear day/night cycle; ReptiFiles recommends low-level UVB as an illumination source for ball pythons.', priority: 'important' },
+      { id: 'species-burrow', domain: 'housing', label: 'Burrow-like retreats', guidance: 'Provide secure, enclosed retreats that allow the snake to feel protected and select warmer/cooler conditions.', priority: 'essential' },
+    ],
+    numericRanges: [
+      { label: 'Warm hide', min: 30, max: 32, unit: '°C', context: 'ReptiFiles species-specific warm-hide range.' },
+      { label: 'Cool hide', min: 22, max: 27, unit: '°C', context: 'ReptiFiles species-specific cool-hide range.' },
+      { label: 'Night', min: 21, max: 26, unit: '°C', context: 'ReptiFiles species-specific nighttime range.' },
+      { label: 'Humidity day', min: 60, max: 80, unit: '% RH', context: 'ReptiFiles climate-derived daytime humidity range.' },
+      { label: 'Humidity night', min: 80, max: 100, unit: '% RH', context: 'ReptiFiles climate-derived nighttime humidity range.' },
+    ],
+    health: [
+      { id: 'environment-feeding', concern: 'Environmental disruption and feeding change', watchFor: ['persistent appetite change', 'reduced normal activity'], riskFactors: ['inappropriate temperature or humidity', 'inadequate refuge'], prevention: 'Maintain a stable thermal/humidity gradient and provide secure retreats; investigate persistent feeding changes rather than guessing at a cause.', priority: 'prompt-vet' },
+    ],
+  },
 const UNIVERSAL_GENUS_CARE_OVERRIDES: Record<string, SpeciesCareOverride> = {
   Hymenochirus: {
     coverage: 'genus',
