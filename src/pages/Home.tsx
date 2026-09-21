@@ -62,14 +62,6 @@ function Home() {
           <Link className="tt-home-primary" to="/snakes/new">＋ Add your first animal</Link>
         </section>
       ) : (
-        {loadingIntelligence ? (
-        <section className="tt-home-panel tt-home-loading">🧠 Checking your TinyTitans workspace…</section>
-      ) : snakes.length === 0 ? (
-        <section className="tt-home-panel tt-home-empty">
-          <div><p className="tt-home-kicker">🐍 YOUR FIRST REPTILE</p><h2>No animals added yet</h2><p>Add your first animal and Home will become personalised around its records, care and trends.</p></div>
-          <Link className="tt-home-primary" to="/snakes/new">＋ Add your first animal</Link>
-        </section>
-      ) : (
         <HomeCurrentAnimalSection
           selectedSnake={selectedSnake}
           selectedSnakeRecords={selectedSnakeRecords}
@@ -83,38 +75,7 @@ function Home() {
         />
       )}
 
-      <section className="tt-home-section tt-home-attention-section">
-        <div className="tt-home-heading">
-          <div>
-            <p className="tt-home-kicker">⚠️ NEEDS ATTENTION</p>
-            <h2>What is worth looking at now?</h2>
-          </div>
-          {intelligenceAccess && <span>{coverage}% data coverage</span>}
-        </div>
-
-        {!accessChecked ? (
-          <div className="tt-home-panel tt-home-loading">Checking intelligence access…</div>
-        ) : !intelligenceAccess ? (
-          <div className="tt-home-panel tt-home-teaser">
-            <div className="tt-home-teaser-icon" aria-hidden="true">👀</div>
-            <div>
-              <span className="tt-home-teaser-label">KEEPER VIEW</span>
-              <h3>{quietIntelligenceSnippet}</h3>
-              <p>Your records still work normally. Optional Intelligence can turn these patterns into ranked next actions later.</p>
-            </div>
-          </div>
-        ) : attentionDecision ? (
-          <article className="tt-home-panel tt-attention-card">
-            <div className="tt-attention-card-top">
-              <span>{attentionDecision.animalName ?? "Your Titan"} · {attentionDecision.domain}</span>
-              <strong>{attentionDecision.score}/100</strong>
-            </div>
-            <h3>{attentionDecision.title}</h3>
-            <p><b>Why:</b> {attentionDecision.why}</p>
-            <p><b>Next:</b> {attentionDecision.reason}</p>
-            <small>◉ {attentionDecision.confidence >= 0.9 ? "High" : attentionDecision.confidence >= 0.75 ? "Moderate" : attentionDecision.confidence >= 0.5 ? "Low" : "Insufficient"} confidence</small>
-            <Link to={attentionDecision.destination || `/snakes/${attentionDecision.animalId}/master-record`}>Open next action →</Link>
-            <TitanDecisionWhyCard decision={attentionD      <HomeAttentionSection
+      <HomeAttentionSection
         intelligenceAccess={intelligenceAccess}
         accessChecked={accessChecked}
         coverage={coverage}
