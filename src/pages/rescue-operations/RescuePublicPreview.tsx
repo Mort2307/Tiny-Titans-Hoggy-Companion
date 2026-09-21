@@ -3,13 +3,13 @@ import {
   useState
 } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
-import { listRescueAnimals } from "../services/rescueService";
-import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
-import { getRescueSetupState } from "../services/rescueSetupService";
-import type { RescueAnimal } from "../types/rescue";
-import TinyTitansIcon from "../components/TinyTitansIcon";
-import { GatePage, PageHeader, STATUS_LABELS } from "../components/rescue/RescueOperationsShared";
+import { useAuth } from "../../context/useAuth";
+import { listRescueAnimals } from "../../services/rescueService";
+import { getMyRescueWorkspace } from "../../services/rescueWorkspaceService";
+import { getRescueSetupState } from "../../services/rescueSetupService";
+import type { RescueAnimal } from "../../types/rescue";
+import TinyTitansIcon from "../../components/TinyTitansIcon";
+import { GatePage, PageHeader, STATUS_LABELS } from "../../components/rescue/RescueOperationsShared";
 
 export function RescuePublicPreview() {
   const { user } = useAuth();
