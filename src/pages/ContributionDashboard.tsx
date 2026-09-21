@@ -15,10 +15,6 @@ export default function ContributionDashboard() {
   }
   if (!user) return null;
 
-  return <main className="page-container contribution-dashboard-page"><div className="contribution-dashboard-loading">Loading your contribution centre…</div></main>;
-  }
-  if (!user) return null;
-
   const publicRecords = safeNumber(globalSnapshot?.publicCommunityRecords);
   const intelligenceRecords = safeNumber(globalSnapshot?.intelligenceContributions);
   const totalGlobal = safeNumber(globalSnapshot?.totalRecords);
