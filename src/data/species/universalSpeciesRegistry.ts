@@ -84,7 +84,7 @@ function deriveBrowseGroup(seed: UniversalSpeciesSeed): UniversalSpeciesBrowseGr
 function buildSeedRecord(seed: UniversalSpeciesSeed): UniversalSpeciesRecord {
   const id = slug(seed.scientific);
   const taxonSourceId = UNIVERSAL_TAXON_SOURCE_BY_CLASS[seed.className];
-  const aliases = [...seed.aliases, seed.common.toLowerCase(), seed.scientific.toLowerCase()];
+  const aliases = [...(seed.aliases ?? []), seed.common.toLowerCase(), seed.scientific.toLowerCase()];
   const invasiveSpecies = ['trachemys scripta', 'procambarus clarkii', 'lissachatina fulica', 'pacifastacus leniusculus'].includes(seed.scientific.toLowerCase())
     ? 'potentially-regulated' as const
     : 'check' as const;
@@ -151,7 +151,7 @@ function adaptSnakeRecord(snake: (typeof INITIAL_SNAKE_SPECIES)[number]): Univer
     taxonSourceId: sourceId,
     evidenceStatus: husbandry?.evidenceLevel === 'high' ? 'husbandry-sourced' : 'ecology-verified',
     riskClass: risk,
-    lifestyle: snake.knowledge.lifestyle ?? [],
+    lifestyle: (snake.knowledge.lifestyle ?? []).filter((value): value is UniversalSpeciesRecord['lifestyle'][number] => value !== 'unknown'),
     dietaryGuild: feedingMap[snake.knowledge.feeding?.dietaryGuild ?? 'generalist'] ?? 'generalist',
     summary: snake.knowledge.summary,
     distribution: snake.knowledge.distribution,
@@ -166,7 +166,7 @@ function adaptSnakeRecord(snake: (typeof INITIAL_SNAKE_SPECIES)[number]): Univer
       locationDependent: true,
       note: genericRegulationNote,
     },
-    sourceIds: [...new Set([sourceId, ...snake.knowledge.sourceIds, 'citesSpeciesPlus2026', 'govUkCites2026', 'govUkDwa2026', 'govUkInvasiveNonNative2026'])],
+    sourceIds: [...new Set([sourceId, ...(snake.knowledge.sourceIds ?? []), 'citesSpeciesPlus2026', 'govUkCites2026', 'govUkDwa2026', 'govUkInvasiveNonNative2026'])],
     reviewedOn: snake.knowledge.reviewedOn,
   };
 }
