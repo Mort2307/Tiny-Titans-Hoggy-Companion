@@ -2,7 +2,7 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { RescueAnimal } from "../types/rescue";
 
-export type RescueAnimalIdentityPatch = Pick<RescueAnimal, "name" | "rescueId" | "microchipNumber" | "secondaryIdentifier" | "previousName" | "previousIdentifier" | "speciesCommonName" | "scientificName" | "sex" | "morphOrColour" | "estimatedAge" | "estimatedDob">;
+export type RescueAnimalIdentityPatch = Pick<RescueAnimal, "name" | "rescueId" | "microchipNumber" | "secondaryIdentifier" | "previousName" | "previousIdentifier" | "speciesCommonName" | "scientificName" | "universalSpeciesId" | "sex" | "morphOrColour" | "estimatedAge" | "estimatedDob">;
 
 export async function updateRescueAnimalIdentity(id: string, patch: Partial<RescueAnimalIdentityPatch>) {
   const cleanPatch = Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined));
@@ -20,6 +20,7 @@ export async function updateRescueAnimalIdentity(id: string, patch: Partial<Resc
     secondaryIdentifier: String(data.secondaryIdentifier || "") || "",
     speciesCommonName: String(data.speciesCommonName || ""),
     scientificName: String(data.scientificName || ""),
+    universalSpeciesId: String(data.universalSpeciesId || "") || "",
     sex: String(data.sex || "Unknown"),
     morphOrColour: String(data.morphOrColour || ""),
     estimatedAge: String(data.estimatedAge || ""),
