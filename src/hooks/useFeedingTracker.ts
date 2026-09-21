@@ -20,6 +20,7 @@ export default function useFeedingTracker() {
   const { isImperial, weightUnit, formatWeight } = useUnits();
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [selectedSnakeId, setSelectedSnakeId] = useState("");
+  const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]);
   const [feedings, setFeedings] = useState<FeedingRecord[]>([]);
   const [loadingSnakes, setLoadingSnakes] = useState(true);
   const [loadedFeedingsKey, setLoadedFeedingsKey] = useState<string | null>(null);
@@ -157,7 +158,7 @@ export default function useFeedingTracker() {
   }
 
   return {
-    routeSnakeId, user, loading, profileLoading, navigate, searchParams, setSearchParams, isImperial, weightUnit, formatWeight, snakes, selectedSnakeId, setSelectedSnakeId, feedings, loadingSnakes, loadingFeedings, saving, error, success, editingId, deleteTarget, setDeleteTarget,
+    routeSnakeId, user, loading, profileLoading, navigate, searchParams, setSearchParams, isImperial, weightUnit, formatWeight, snakes, selectedSnake, selectedSnakeId, setSelectedSnakeId, feedings, loadingSnakes, loadingFeedings, saving, error, success, editingId, deleteTarget, setDeleteTarget,
     date, setDate, foodType, setFoodType, customFood, setCustomFood, size, setSize, quantity, setQuantity, weight, setWeight, feedingMethod, setFeedingMethod, response, setResponse, notes, setNotes, diet, feedingFoodTypes, counts, acceptanceRate, lastFeeding, lastSuccessfulFeeding, resetForm, selectSnake, editFeeding, handleSubmit, handleDelete
   };
 }
