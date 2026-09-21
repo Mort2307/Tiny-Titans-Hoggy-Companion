@@ -128,5 +128,5 @@ export function useSnakeEdit() {
     } finally { setSaving(false); saveLock.current = false; }
   }
 
-  return { id, isNew, form, loaded, saving, saveStage, saveError, loading, profileLoading, updateField, saveSnake };
+  return { id, isNew, form, loaded, saving, saveStage, saveError, loading, profileLoading, navigate, updateField, saveSnake };
 }
