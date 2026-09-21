@@ -106,7 +106,7 @@ export function useCreatorAdmin() {
 
   return {
     profile, user, stats, users, morphPending, bugPending, feedbackNew, loading, usersLoading, error,
-    panel, setPanel, selectedUser, setSelectedUser, search, setSearch, claimBusy, claimMessage, now,
+    panel, setPanel, selectedUser, setSelectedUser, search, setSearch, claimBusy, claimMessage, setClaimMessage, now,
     filteredUsers, userInsights, loadDashboard, loadUsers, grantCreatorTesterClaim,
   };
 }
