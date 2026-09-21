@@ -125,10 +125,10 @@ export default function SpeciesSafeHusbandryCare() {
           <h2>Thermal guidance</h2>
           {hasTemperature ? (
             <div className="husbandry-grid husbandry-grid--four">
-              {husbandry.temperature.basking && <RangeCard label=""Basking" range={husbandry.temperature.basking} species={selectedSpecies} />}
-              {husbandry.temperature.warmSide && <RangeCard label=""Warm side" range={husbandry.temperature.warmSide} species={selectedSpecies} />}
-              {husbandry.temperature.coolSide && <RangeCard label=""Cool side" range={husbandry.temperature.coolSide} species={selectedSpecies} />}
-              {husbandry.temperature.night && <RangeCard label=""Night" range={husbandry.temperature.night} species={selectedSpecies} />}
+              {husbandry.temperature.basking && <RangeCard label="Basking" range={husbandry.temperature.basking} species={selectedSpecies} />}
+              {husbandry.temperature.warmSide && <RangeCard label="Warm side" range={husbandry.temperature.warmSide} species={selectedSpecies} />}
+              {husbandry.temperature.coolSide && <RangeCard label="Cool side" range={husbandry.temperature.coolSide} species={selectedSpecies} />}
+              {husbandry.temperature.night && <RangeCard label="Night" range={husbandry.temperature.night} species={selectedSpecies} />}
             </div>
           ) : (
             <CoverageBadge status={getRangeEvidenceCoverage(undefined, selectedSpecies).status} detail={getRangeEvidenceCoverage(undefined, selectedSpecies).detail} />
@@ -144,8 +144,8 @@ export default function SpeciesSafeHusbandryCare() {
           <h2>Humidity guidance</h2>
           {hasHumidity ? (
             <div className="husbandry-grid husbandry-grid--four">
-              {husbandry.humidity.target && <RangeCard label=""Target" range={husbandry.humidity.target} species={selectedSpecies} />}
-              {husbandry.humidity.acceptable && <RangeCard label=""Acceptable" range={husbandry.humidity.acceptable} species={selectedSpecies} />}
+              {husbandry.humidity.target && <RangeCard label="Target" range={husbandry.humidity.target} species={selectedSpecies} />}
+              {husbandry.humidity.acceptable && <RangeCard label="Acceptable" range={husbandry.humidity.acceptable} species={selectedSpecies} />}
             </div>
           ) : (
             <CoverageBadge status={getRangeEvidenceCoverage(undefined, selectedSpecies).status} detail={getRangeEvidenceCoverage(undefined, selectedSpecies).detail} />
