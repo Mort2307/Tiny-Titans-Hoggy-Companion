@@ -1,13 +1,13 @@
 import { seed, type UniversalSpeciesSeed } from './universalSpeciesSeedTypes';
 
 const insect = (s: string, c: string, f: string, o: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'insect', 'Insecta', o, f, r, l, d, a);
+  seed(s, c, 'insect', 'Insecta', o, f, r, l, d, a, 'insects');
 const myri = (s: string, c: string, f: string, o: string, r: UniversalSpeciesSeed['riskClass'], a: string[] = []) =>
-  seed(s, c, 'myriapod', 'Myriapoda', o, f, r, 'terrestrial,fossorial', 'detritivore', a);
+  seed(s, c, 'myriapod', 'Myriapoda', o, f, r, 'terrestrial,fossorial', 'detritivore', a, o === 'Scolopendromorpha' ? 'centipedes' : 'millipedes');
 const moll = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l = 'terrestrial', a: string[] = []) =>
-  seed(s, c, 'mollusc', 'Gastropoda', 'Stylommatophora', f, r, l, 'herbivore', a);
+  seed(s, c, 'mollusc', 'Gastropoda', 'Stylommatophora', f, r, l, 'herbivore', a, 'molluscs');
 const crust = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string, d: UniversalSpeciesSeed['dietaryGuild'], a: string[] = []) =>
-  seed(s, c, 'crustacean', 'Malacostraca', 'Decapoda', f, r, l, d, a);
+  seed(s, c, 'crustacean', 'Malacostraca', 'Decapoda', f, r, l, d, a, 'crustaceans');
 
 export const UNIVERSAL_INVERTEBRATE_SEEDS: UniversalSpeciesSeed[] = [
   // Mantids.
