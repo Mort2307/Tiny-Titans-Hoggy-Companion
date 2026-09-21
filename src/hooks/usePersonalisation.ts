@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, type UserCategory } from "../context/useAuth";
+import { TINY_TITANS_OWNER_EMAIL } from "../services/capabilityService";
 import {
   MAX_SLICES,
   MIN_SLICES,
@@ -38,6 +39,7 @@ const teachingLevels: Array<[EducatorTeachingLevel, string]> = [
 export function usePersonalisation() {
   const { user, profile, refreshProfile } = useAuth();
   const easyNav = useEasyNav();
+  const canUseCreatorSlice = useMemo(() => String(user?.email || "").trim().toLowerCase() === TINY_TITANS_OWNER_EMAIL, [user?.email]);
   const navigate = useNavigate();
   const [profileType, setProfileType] = useState<ProfileType>(profile?.profileType === "creator" ? "professional" : profile?.profileType ?? "keeper");
   const [category, setCategory] = useState<UserCategory>(profile?.category ?? "adult");
@@ -91,7 +93,7 @@ export function usePersonalisation() {
   }
 
   return {
-    user, profile, navigate, ...easyNav,
+    user, profile, navigate, ...easyNav, canUseCreatorSlice,
     profileType, setProfileType, category, setCategory, ageBand, setAgeBand,
     learningLevel, setLearningLevel, experience, setExperience, teachingLevel, setTeachingLevel,
     subjects, setSubjects, organisationName, setOrganisationName, saving, saved,
