@@ -11,6 +11,7 @@ const quickNavigationSource = fs.readFileSync(path.join(root, "src", "data", "qu
 const iconCss = fs.readFileSync(path.join(root, "src", "styles", "tiny-titans-icons.css"), "utf8");
 
 const requiredIcons = [
+  "reptiles",
   "temperature", "humidity", "water", "uvb", "heat", "plant", "substrate", "hide",
   "habitatBuilder", "reptileRoom", "veterinary", "intelligence", "globe", "map", "camera",
   "add", "edit", "delete", "eye", "lock", "rotate", "move", "resize", "measure", "warning", "offline",
