@@ -1,13 +1,13 @@
 import { seed, type UniversalSpeciesSeed } from './universalSpeciesSeedTypes';
 
 const spider = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], l: string = 'terrestrial', d: UniversalSpeciesSeed['dietaryGuild'] = 'carnivore', aliases: string[] = []) =>
-  seed(s, c, 'arachnid', 'Arachnida', 'Araneae', f, r, l, d, aliases);
+  seed(s, c, 'arachnid', 'Arachnida', 'Araneae', f, r, l, d, aliases, 'spiders');
 const scorpion = (s: string, c: string, f: string, r: UniversalSpeciesSeed['riskClass'], aliases: string[] = []) =>
-  seed(s, c, 'arachnid', 'Arachnida', 'Scorpiones', f, r, 'terrestrial', 'carnivore', aliases);
+  seed(s, c, 'arachnid', 'Arachnida', 'Scorpiones', f, r, 'terrestrial', 'carnivore', aliases, 'scorpions');
 const ambly = (s: string, c: string, f: string, aliases: string[] = []) =>
-  seed(s, c, 'arachnid', 'Arachnida', 'Amblypygi', f, 'specialist', 'terrestrial,arboreal', 'carnivore', aliases);
+  seed(s, c, 'arachnid', 'Arachnida', 'Amblypygi', f, 'specialist', 'terrestrial,arboreal', 'carnivore', aliases, 'whip-spiders-vinegaroons');
 const whip = (s: string, c: string, f: string) =>
-  seed(s, c, 'arachnid', 'Arachnida', 'Thelyphonida', f, 'specialist', 'terrestrial', 'carnivore');
+  seed(s, c, 'arachnid', 'Arachnida', 'Thelyphonida', f, 'specialist', 'terrestrial', 'carnivore', [], 'whip-spiders-vinegaroons');
 
 export const UNIVERSAL_ARACHNID_SEEDS: UniversalSpeciesSeed[] = [
   // Tarantulas and other commonly kept spiders.
