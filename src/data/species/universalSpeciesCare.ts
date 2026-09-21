@@ -406,7 +406,7 @@ function buildHealth(species: UniversalSpeciesRecord, scopeKey: string): Univers
   }
 
   return {
-    status: CLASS_SOURCE_IDS[species.className].length > 0 ? 'sourced-profile' : 'needs-review',
+    status: careStatus,
     scopeKey,
     baseline,
     watches,
@@ -449,8 +449,13 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     : classRequirements;
 
   const scopeKey = genusNote ? `genus:${species.genus}` : `class:${species.className}`;
+  const careStatus = species.husbandryStatus !== 'taxonomy-only'
+    ? 'sourced-profile'
+    : CLASS_SOURCE_IDS[species.className].length > 0
+      ? 'baseline'
+      : 'needs-review';
   const husbandry: UniversalHusbandryProfile = {
-    status: CLASS_SOURCE_IDS[species.className].length > 0 ? 'sourced-profile' : 'needs-review',
+    status: careStatus,
     scopeKey,
     title: `${species.commonNames[0] ?? species.acceptedScientificName} — baseline husbandry`,
     overview: CLASS_CAVEATS[species.className],
