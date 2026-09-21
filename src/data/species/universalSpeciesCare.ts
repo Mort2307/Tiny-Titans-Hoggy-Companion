@@ -1,5 +1,6 @@
 import { INITIAL_SNAKE_SPECIES } from './speciesRegistry';
 import { getSpeciesCareOverride } from './universalSpeciesCareOverrides';
+import { UNIVERSAL_SPECIES_SOURCES } from './universalSpeciesSources';
 import type { UniversalSpeciesRecord } from './universalSpeciesTypes';
 import type {
   CarePriority,
@@ -513,6 +514,8 @@ function buildHealth(
 export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): UniversalSpeciesCare {
   const genusNote = GENUS_EMPHASIS[species.genus];
   const legacy = LEGACY_SNAKES.get(species.id);
+  const legacySourceIds = legacy?.knowledge.husbandry?.evidenceSummary?.sourceIds ?? legacy?.knowledge.sourceIds ?? [];
+  const legacyEvidenceResolvable = Boolean(legacy && legacySourceIds.length > 0 && legacySourceIds.every((id) => Boolean(UNIVERSAL_SPECIES_SOURCES[id])));
   const override = getSpeciesCareOverride(species);
   const classRequirements = CLASS_REQUIREMENTS[species.className].map((item) => resolveRequirement(species, item));
   const genusRequirement = {
@@ -536,7 +539,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
         evidence: evidence(species, override.coverage === 'genus' ? 'genus-level' : 'species-specific', override.sourceIds, override.caveat),
       }))
     : [];
-  const legacyRequirements = legacy ? legacySnakeRequirements(species, legacy) : [];
+  const legacyRequirements = legacyEvidenceResolvable && legacy ? legacySnakeRequirements(species, legacy) : [];
   const specificRequirements = overrideRequirements.length ? overrideRequirements : legacyRequirements;
   const requirementsById = new Map<string, UniversalCareRequirement>();
   for (const item of classRequirements) requirementsById.set(item.id, item);
@@ -551,7 +554,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
   const numericRanges = override?.numericRanges?.map((range) => ({
     ...range,
     evidence: evidence(species, override.coverage === 'genus' ? 'genus-level' : 'species-specific', override.sourceIds, override.caveat),
-  })) ?? (legacy ? rangeRecords(species, legacy) : []);
+  })) ?? (legacyEvidenceResolvable && legacy ? rangeRecords(species, legacy) : []);
   const careStatus = coverage === 'species' || coverage === 'genus' || coverage === 'taxon'
     ? 'sourced-profile'
     : 'needs-review';
