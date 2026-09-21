@@ -1,7 +1,7 @@
 import type { Enclosure } from "../types/Enclosure";
 import type { Snake } from "../types/Snake";
 import type { SubstrateMixPart } from "../types/Enclosure";
-import { metrics, type EnvironmentKey } from "../config/enclosureIntelligence";
+import { metrics } from "../config/enclosureIntelligence";
 
 export function readingStatus(value:number|undefined,min:number,max:number) {
   if(value===undefined)return "unknown";
