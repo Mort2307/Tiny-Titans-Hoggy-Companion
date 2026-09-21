@@ -10,7 +10,7 @@ import "../styles/husbandry-care.css";
 
 export default function EnclosureIntelligence() {
   const {
-    loading, profileLoading, snakes, selectedId, setSelectedId, loadingData, error, editingEnvironment,
+    loading, profileLoading, snakes, setSelectedId, loadingData, error, editingEnvironment,
     setEditingEnvironment, readings, setReadings, savingReadings, editingField, setEditingField, enclosureDraft,
     message, snake, enclosure, area, volume, environmentHistory, environmentReview,
     environmentCoverage, nextBestRecord, completeness, completenessChecks, completenessPercent, loadData, openEnvironment, saveEnvironment, startEnclosureEdit,
