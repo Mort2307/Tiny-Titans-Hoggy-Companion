@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getUserAnimal } from "../services/universalAnimalService";
 import { getUserSnake } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
-import { UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
+import { findUniversalSpecies, UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
 import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import "../styles/universal-animals.css";
 
@@ -27,7 +27,7 @@ export default function UniversalAnimalProfile() {
   if (loading) return <main className="page-container universal-animals-page"><section className="universal-animals-panel"><p>Loading individual animal…</p></section></main>;
   if (!animal && !legacySnake) return <main className="page-container universal-animals-page"><section className="universal-animals-panel"><h1>Animal not found</h1><Link to="/animals">Back to My Animals</Link></section></main>;
 
-  const speciesId = animal?.speciesId || legacySnake?.universalSpeciesId;
+  const speciesId = animal?.speciesId || legacySnake?.universalSpeciesId || (legacySnake ? findUniversalSpecies(legacySnake.species)?.id : undefined);
   const species = speciesId ? UNIVERSAL_SPECIES_BY_ID[speciesId] : undefined;
   const name = animal?.name || legacySnake?.name || "Animal";
   const common = animal?.speciesCommonName || legacySnake?.species || "Species awaiting identification";
