@@ -43,7 +43,7 @@ export default function UniversalSpeciesProfile() {
 
   return (
     <main className="page-container universal-species-profile">
-      <Link className="universal-species-back" to="/species"><TinyTitansIcon name="back" size={18} /> Species Explorer</Link>
+      <div className="universal-species-links"><Link className="universal-species-back" to="/species"><TinyTitansIcon name="back" size={18} /> Species Explorer</Link><Link className="universal-species-marketplace-link" to={`/marketplace?species=${encodeURIComponent(species.id)}`}>Marketplace listings for this species →</Link></div>
 
       <header className="universal-species-hero">
         <div>
