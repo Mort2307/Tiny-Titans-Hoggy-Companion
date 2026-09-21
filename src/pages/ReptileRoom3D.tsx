@@ -8,7 +8,7 @@ import "../styles/reptile-room-3d-workspace.css";
 
 export default function ReptileRoom3D() {
   const {
-    user,loading,profileLoading,rooms,snakes,roomId,setRoomId,room,slots,objects,selected,setSelected,notice,saving,showGrid,setShowGrid,showCeiling,setShowCeiling,photoBusy,
+    user,loading,profileLoading,snakes,room,slots,objects,selected,setSelected,notice,saving,showGrid,setShowGrid,showCeiling,setShowCeiling,photoBusy,
     selectedSlot,selectedObject,snakeMap,selectedDimensions,selectedPhoto,selectedRotation,
     addAsset,moveSelection,moveBy,snapSelected,snapToWall,stackSnapSelected,magnetLockSelected,unlockMagnet,unstackSelected,deleteSelected,updateRoom,
     duplicateSelected,updateSelectedDimensions,updateSelectedPosition,updateSelectedRotation,resetSelectedRotation,patchSelectedAsset,uploadPhoto,removePhoto,useSnakePhoto,
