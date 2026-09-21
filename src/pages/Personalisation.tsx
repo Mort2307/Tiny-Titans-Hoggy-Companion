@@ -1,5 +1,6 @@
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { Link } from "react-router-dom";
+import type { EducatorTeachingLevel } from "../types/Profile";
 import { usePersonalisation } from "../hooks/usePersonalisation";
 import "../styles/Personalisation.css";
 
