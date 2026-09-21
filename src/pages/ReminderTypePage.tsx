@@ -3,6 +3,7 @@ import BackHomeButton from "../components/BackHomeButton";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useReminderTypePage } from "../hooks/useReminderTypePage";
 import { formatReminderDateKey, formatReminderNext } from "../lib/reminderTypePage";
+import { REMINDER_DEFINITIONS } from "../types/Reminder";
 import "./ReminderTypePage.css";
 
 export default function ReminderTypePage(){
