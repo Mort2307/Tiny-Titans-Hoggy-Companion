@@ -9,7 +9,7 @@ import { getFreeKeeperNavigationGroups } from "../../config/freeExperience";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../../services/workspacePresentationService";
 import communityUpdates from "../../data/communityUpdates.json";
 import TinyTitansIcon, { type TinyTitansIconName } from "../TinyTitansIcon";
-import { workspaceNavIcon } from "../WorkspaceProductShell";
+import { tinyTitansNavigationIcon } from "../../config/tinyTitansNavigationIcons";
 import "./Navigation.css";
 
 type NavigationLink = [string, TinyTitansIconName, string];
@@ -44,7 +44,7 @@ function Navigation() {
   const standardPaths = new Set(sections.flatMap((section) => section.links.map(([path]) => path)));
   const workspaceLinks: NavigationLink[] = workspace.productId === "personal" ? [] : workspace.product.nav
     .filter(({ path }) => !standardPaths.has(path))
-    .map(({ path, label }) => [path, workspaceNavIcon(path), label]);
+    .map(({ path, label }) => [path, tinyTitansNavigationIcon(path), label]);
   const visibleSections: NavigationSection[] = workspaceLinks.length
     ? [{ label: `WORKSPACE · ${workspace.product.eyebrow}`, links: workspaceLinks }, ...sections]
     : sections;
