@@ -30,6 +30,7 @@ export function useBreedingPlanner() {
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [projects, setProjects] = useState<BreedingProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const selectedProject = useMemo(() => projects.find((project) => project.id === selectedProjectId), [projects, selectedProjectId]);
   const [pairings, setPairings] = useState<BreedingPairing[]>([]);
   const [clutches, setClutches] = useState<EggClutch[]>([]);
   const [hatchlings, setHatchlings] = useState<HatchlingRecord[]>([]);
@@ -281,7 +282,7 @@ export function useBreedingPlanner() {
 
   return {
     navigate,user,loading,profileLoading,
-    snakes,projects,selectedProjectId,setSelectedProjectId,pairings,clutches,hatchlings,
+    snakes,projects,selectedProjectId,setSelectedProjectId,selectedProject,pairings,clutches,hatchlings,
     maleId,setMaleId,femaleId,setFemaleId,name,setName,goal,setGoal,targetTraits,setTargetTraits,priority,setPriority,
     holdbackStrategy,setHoldbackStrategy,futurePairingNotes,setFuturePairingNotes,notes,setNotes,
     pairingDate,setPairingDate,clutchDate,setClutchDate,eggCount,setEggCount,hatchDate,setHatchDate,
