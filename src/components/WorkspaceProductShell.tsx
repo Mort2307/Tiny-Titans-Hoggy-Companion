@@ -8,7 +8,7 @@ import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
 import "../styles/workspaceProductShell.css";
 
-function commandIcon(path: string, title: string): TinyTitansIconName {
+function commandIcon(title: string): TinyTitansIconName {
   if (/animals?/i.test(title)) return "reptile";
   if (/intelligence/i.test(title)) return "titanIntelligence";
   if (/records/i.test(title)) return "weight";
@@ -81,7 +81,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
         <p>{commandCopy.description}</p>
       </div>
       <div className="workspace-command-actions">
-        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><TinyTitansIcon name={commandIcon(item.path, item.title)} size={21} motion="hover" /><strong>{item.title}</strong><span>Open →</span></Link>)}
+        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><TinyTitansIcon name={commandIcon(item.title)} size={21} motion="hover" /><strong>{item.title}</strong><span>Open →</span></Link>)}
       </div>
     </section>}
 
