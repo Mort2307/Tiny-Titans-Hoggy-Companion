@@ -4,13 +4,15 @@ import { useEnclosureIntelligence } from "../hooks/useEnclosureIntelligence";
 import { formatRecordedAt, readingStatus } from "../lib/enclosureIntelligence";
 import { heatingDevices, heatingTypes, metrics, substratePresets, substrateTypes, thermostatOptions, uvbOptions } from "../config/enclosureIntelligence";
 import type { HeatingType, SubstrateType } from "../types/Enclosure";
+
+type EnclosureField = "dimensions"|"enclosureType"|"heating"|"thermostat"|"substrate"|"uvb"|"hides"|"water"|"furnishings"|"bioactive"|"maintenance"|"all";
 import "../styles/husbandry-care.css";
 
 export default function EnclosureIntelligence() {
   const {
-    user, loading, profileLoading, snakes, selectedId, setSelectedId, loadingData, error, editingEnvironment,
+    loading, profileLoading, snakes, selectedId, setSelectedId, loadingData, error, editingEnvironment,
     setEditingEnvironment, readings, setReadings, savingReadings, editingField, setEditingField, enclosureDraft,
-    message, snake, enclosure, area, volume, coverage, environmentHistory, environmentReview,
+    message, snake, enclosure, area, volume, environmentHistory, environmentReview,
     environmentCoverage, nextBestRecord, completeness, completenessChecks, completenessPercent, loadData, openEnvironment, saveEnvironment, startEnclosureEdit,
     updateEnclosure, applySubstratePreset, updateMix, addMixPart, removeMixPart, mixParts, savingEnclosure,
     saveEnclosure,
