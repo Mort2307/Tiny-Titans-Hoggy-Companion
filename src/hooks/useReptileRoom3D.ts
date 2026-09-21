@@ -6,7 +6,6 @@ import { uploadReptileRoomVivariumPhoto } from "../services/reptileRoomPhotoServ
 import type { EnvironmentHistoryEntry } from "../types/Enclosure";
 import type { Snake } from "../types/Snake";
 import type { Room3DAssetPreset,Room3DSelection,Room3DTransformPatch,VivariumTelemetry } from "../types/reptileRoom3D";
-import { REPTILE_ROOM_ASSET_CATEGORIES } from "../data/reptileRoomAssetCatalog";
 import { clamp,getMovedRoom,getMovementMembers,heatingTypeForKind,latestDate,nextId,snap,snakeName,slotParentAssetId,slotRotation,vivDepth,vivHeight,vivWidth,type SlotTransform } from "../lib/reptileRoom3D";
 
 export function useReptileRoom3D(){
@@ -43,11 +42,10 @@ const { user, loading, profileLoading } = useAuth(); const [rooms, setRooms] = u
   const selectedDimensions = selectedSlot ? { width: vivWidth(selectedSlot), depth: vivDepth(selectedSlot), height: vivHeight(selectedSlot), x: selectedSlot.x, y: selectedSlot.y, z: selectedSlot.z } : selectedObject ? { width: selectedObject.width, depth: selectedObject.depth, height: selectedObject.height, x: selectedObject.x, y: selectedObject.y, z: selectedObject.z } : null;
   const selectedPhoto = selectedSlot ? photoFor(selectedSlot) : undefined;
   const selectedRotation = selectedSlot ? slotRotation(selectedSlot) : selectedObject?.rotation ?? 0;
-  const selectRoom = (nextRoomId:string)=>setRoomId(nextRoomId);
 
   return {
-    user,loading,profileLoading,rooms,snakes,roomId,setRoomId,room,slots,objects,selected,setSelected,notice,saving,showGrid,setShowGrid,showCeiling,setShowCeiling,photoBusy,
-    selectedSlot,selectedObject,snakeMap,selectedDimensions,selectedPhoto,selectedRotation,roomsRef,previousPhotoUrlsRef,
+    user,loading,profileLoading,snakes,room,slots,objects,selected,setSelected,notice,saving,showGrid,setShowGrid,showCeiling,setShowCeiling,photoBusy,
+    selectedSlot,selectedObject,snakeMap,selectedDimensions,selectedPhoto,selectedRotation,
     persistRooms,load,updateRoom,addAsset,moveSelection,moveBy,snapSelected,snapToWall,stackSnapSelected,magnetLockSelected,unlockMagnet,unstackSelected,
     deleteSelected,duplicateSelected,updateSelectedDimensions,updateSelectedPosition,updateSelectedRotation,resetSelectedRotation,applyTransformPatch,patchSelectedAsset,
     uploadPhoto,removePhoto,useSnakePhoto,photoFor,telemetryFor,saveCurrentRoom
