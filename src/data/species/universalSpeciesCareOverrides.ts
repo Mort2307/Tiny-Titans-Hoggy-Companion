@@ -52,7 +52,7 @@ export const UNIVERSAL_SPECIES_CARE_OVERRIDES: Record<string, SpeciesCareOverrid
       { label: 'Temperature', min: 15.6, max: 26.7, unit: '°C', context: 'Josh’s Frogs states to keep D. tinctorius above 60°F and below 80°F, with an ideal range in the low-to-mid 70s°F.' },
     ],
   },
-  'litoria-caerulea': {
+  'pelodryas-caerulea': {
     coverage: 'species',
     sourceIds: ['joshsFrogsLitoriaCaerulea2026'],
     caveat: WHITES_CAVEAT,
