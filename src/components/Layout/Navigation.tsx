@@ -54,7 +54,7 @@ function Navigation() {
   if (testerAuthorized) restricted.push({ label: "Testing", links: [["/creator/tester", "testing", "Tester Centre"]] });
   const authorisedCapabilities = new Set<QuickNavCapability>(["everyone"]);
   if (creatorAuthorized) authorisedCapabilities.add("creator"); if (testerAuthorized) authorisedCapabilities.add("tester"); if (educatorAuthorized) authorisedCapabilities.add("educator");
-  const quickItems = [...quickNavSearchItems(quickSearch, authorisedCapabilities), { id: "marketplace", label: "Marketplace", icon: "marketplace", path: "/marketplace", group: "Community", description: "Browse active reptile marketplace listings.", keywords: ["market", "seller", "listing", "shop"] as string[] }].filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index);
+  const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities);
   const quickGroups = quickItems.reduce<Record<string, typeof quickItems>>((groups, item) => { (groups[item.group] ??= []).push(item); return groups; }, {});
 
   if (isEasyNav) {
