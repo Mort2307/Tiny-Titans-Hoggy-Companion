@@ -25,6 +25,9 @@ export default function MyAnimals() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const visibleAnimals = speciesFilter
+    ? animals.filter((animal) => animal.speciesId === speciesFilter || animal.speciesCommonName?.toLowerCase() === speciesFilter.toLowerCase())
+    : animals;
 
   useEffect(() => {
     if (!user) return;
