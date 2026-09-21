@@ -59,7 +59,7 @@ function legacySnakeRequirements(species: UniversalSpeciesRecord, legacy: (typeo
   const items: UniversalCareRequirement[] = [];
   const add = (id: string, domain: UniversalCareRequirement['domain'], label: string, guidance: string, priority: CarePriority = 'essential') => {
     if (!guidance.trim()) return;
-    items.push({ id, domain, label, guidance, priority, evidence: evidence(species, scopeBasis, sourceIds, caveat) });
+    items.push({ id, domain, label, guidance, priority, evidence: evidence(species, basisFromCoverage(scopeBasis), sourceIds, caveat) });
   };
   if (profile.enclosure?.habitatType?.length) add('verified-habitat-type','housing','Verified habitat type',profile.enclosure.habitatType.join(' · '));
   if (profile.enclosure?.substrate?.length) add('verified-substrate','substrate','Verified substrate options',profile.enclosure.substrate.join(' · '));
@@ -391,17 +391,6 @@ const GENUS_EMPHASIS: Record<string, string> = {
   Sepia: 'Genus emphasis: specialist cuttlefish architecture; mature marine system, suitable substrate, prey supply and escape prevention require expert evidence.',
   Hapalochlaena: 'Genus emphasis: medically hazardous cephalopod architecture; specialist professional containment, risk management and legal review are required.',
 };
-
-function basisFromCoverage(coverage: UniversalCareCoverage): UniversalCareBasis {
-  switch (coverage) {
-    case 'species': return 'species-specific';
-    case 'genus': return 'genus-level';
-    case 'taxon': return 'taxon-level';
-    case 'ecology-only': return 'ecology-only';
-    case 'class': return 'class-level';
-    case 'not-verified': return 'class-level';
-  }
-}
 
 function evidence(
   species: UniversalSpeciesRecord,
