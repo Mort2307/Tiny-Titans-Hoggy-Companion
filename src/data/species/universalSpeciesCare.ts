@@ -444,6 +444,7 @@ function buildHealth(
   status: UniversalCareStatus,
   coverage: UniversalCareCoverage,
   overrideHealth: NonNullable<ReturnType<typeof getSpeciesCareOverride>>['health'] = [],
+  overrideHealthSourceIds: string[] = [],
 ): UniversalHealthProfile {
   const classWatches = CLASS_HEALTH_WATCHES[species.className].map((item) => resolveHealthWatch(species, item));
   const overrideWatches = overrideHealth.map((item) => ({
@@ -528,8 +529,11 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     : [];
   const legacyRequirements = legacy ? legacySnakeRequirements(species, legacy) : [];
   const specificRequirements = overrideRequirements.length ? overrideRequirements : legacyRequirements;
+  const requirementsById = new Map<string, UniversalCareRequirement>();
+  for (const item of classRequirements) requirementsById.set(item.id, item);
+  for (const item of specificRequirements) requirementsById.set(item.id, item);
   const requirements = specificRequirements.length
-    ? [...specificRequirements, ...classRequirements.filter((item) => item.id === 'hygiene' || item.id === 'records')]
+    ? [...requirementsById.values(), ...(!genusNote && !override ? [genusRequirement] : [])]
     : [...classRequirements, genusRequirement];
   const legacyCoverage = legacy ? coverageFromBasis(legacy.knowledge.husbandry?.evidenceSummary?.basis) : 'class';
   const coverage = override?.coverage ?? (specificRequirements.length ? legacyCoverage : (CLASS_SOURCE_IDS[species.className].length ? 'class' : 'not-verified'));
@@ -573,7 +577,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
   };
 
   const healthCoverage = override?.health?.length ? coverage : (coverage === 'species' || coverage === 'genus' || coverage === 'taxon' ? 'class' : coverage);
-  const health = buildHealth(species, scopeKey, husbandry.status, healthCoverage, override?.health ?? []);
+  const health = buildHealth(species, scopeKey, husbandry.status, healthCoverage, override?.health ?? [], override?.sourceIds ?? []);
   const resolvedFrom = [
     ...(coverage === 'species' ? [`species:${species.id}`] : []),
     ...(coverage === 'genus' ? [`genus:${species.genus}`] : []),
@@ -581,10 +585,6 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
     `class:${species.className}`,
     species.taxonSourceId,
   ];
-
-  if (species.husbandryStatus !== 'taxonomy-only') {
-    resolvedFrom.unshift(`species:${species.id}`);
-  }
 
   return {
     status: husbandry.status,
