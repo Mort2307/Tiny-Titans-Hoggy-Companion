@@ -98,8 +98,8 @@ export default function SubmitSpecies() {
     if (honeypot) return;
     const required: SpeciesSubmissionField[] = ["commonName", "scientificName", "family", "genus", "nativeRange", "habitat", "evidenceSummary"];
     const missing = required.filter((key) => !values[key].trim());
-    if (missing.length) {
-      setError("Please complete the core identity, ecology, husbandry and feeding fields before submitting.");
+    if (missing.length || !evidenceSummary.trim()) {
+      setError("Please complete the core identity, ecology and evidence fields before submitting.");
       return;
     }
     if (!confirmAccuracy || !confirmRights) {
