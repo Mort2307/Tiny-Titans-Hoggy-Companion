@@ -50,7 +50,7 @@ export const TINY_TITANS_NAVIGATION_ICONS: Record<string, TinyTitansIconName> = 
   "/paid/api": "api",
   "/paid/branding": "branding",
 
-  "/rescue?manage=1": "veterinary",
+  "/rescue?manage=1": "reptileRoom",
   "/rescue/log": "edit",
   "/rescue/animals": "reptile",
   "/rescue/intake": "evidence",
@@ -65,10 +65,12 @@ export const TINY_TITANS_NAVIGATION_ICONS: Record<string, TinyTitansIconName> = 
   "/rescue/reports": "reporting",
   "/rescue/species-incubator": "knowledge",
   "/rescue/organisation": "branding",
-  "/rescue/compliance": "evidence",
+  "/rescue/compliance": "settings",
   "/rescue/public-preview": "eye",
 };
 
 export function tinyTitansNavigationIcon(path: string): TinyTitansIconName {
-  return TINY_TITANS_NAVIGATION_ICONS[path] ?? "knowledge";
+  if (TINY_TITANS_NAVIGATION_ICONS[path]) return TINY_TITANS_NAVIGATION_ICONS[path];
+  const basePath = path.split("?")[0].split("#")[0];
+  return TINY_TITANS_NAVIGATION_ICONS[basePath] ?? "knowledge";
 }
