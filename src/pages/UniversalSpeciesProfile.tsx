@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import { UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
 import { getUserAnimals } from "../services/universalAnimalService";
-import { getUserSnakes } from "../services/snakeService";
+import { getUserSnakeDirectory } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import { UNIVERSAL_SPECIES_SOURCES } from "../data/species/universalSpeciesSources";
@@ -38,7 +38,7 @@ export default function UniversalSpeciesProfile() {
     if (!user || !id) return;
     let active = true;
     setMyIndividualsLoading(true);
-    void Promise.all([getUserAnimals(user.uid), getUserSnakes(user.uid)])
+    void Promise.all([getUserAnimals(user.uid), getUserSnakeDirectory(user.uid)])
       .then(([animals, snakes]) => {
         if (!active) return;
         const legacy = snakes
