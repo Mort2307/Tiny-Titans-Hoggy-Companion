@@ -1,26 +1,17 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import PaidTierGate from "../PaidTierGate";
 import TinyTitansIcon from "../TinyTitansIcon";
 import { useAuth } from "../../context/useAuth";
-import {
-  listRescueAnimals,
-  setRescueReminderComplete,
-  updateRescueAnimal,
-} from "../../services/rescueService";
+import { listRescueAnimals } from "../../services/rescueService";
 import { getMyRescueWorkspace } from "../../services/rescueWorkspaceService";
-import { getRescueSetupState } from "../../services/rescueSetupService";
 import type {
   RescueAnimal,
   RescueAnimalStatus,
-  RescueIntakeRecord,
-  RescueLocationRecord,
   RescueOrganisation,
-  RescueQuarantineRecord,
 } from "../../types/rescue";
 import "../../styles/rescue.css";
 
-const STATUS_LABELS: Record<RescueAnimalStatus, string> = {
+export const STATUS_LABELS: Record<RescueAnimalStatus, string> = {
   in_care: "In care",
   quarantine: "Quarantine",
   under_observation: "Under observation",
@@ -29,20 +20,20 @@ const STATUS_LABELS: Record<RescueAnimalStatus, string> = {
   deceased: "Deceased",
 };
 
-function formatDate(value: string | number | null | undefined, time = false) {
+export function formatDate(value: string | number | null | undefined, time = false) {
   if (!value) return "—";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "—";
   return time ? parsed.toLocaleString("en-GB") : parsed.toLocaleDateString("en-GB");
 }
 
-function animalLabel(animal: RescueAnimal) {
+export function animalLabel(animal: RescueAnimal) {
   const name = animal.name?.trim();
   const id = animal.rescueId?.trim();
   return name && id ? `${name} · ${id}` : name || id || "Unnamed animal";
 }
 
-function useRescueData() {
+export function useRescueData() {
   const { user } = useAuth();
   const [organisation, setOrganisation] = useState<RescueOrganisation | null>(null);
   const [animals, setAnimals] = useState<RescueAnimal[]>([]);
@@ -71,7 +62,7 @@ function useRescueData() {
   return { user, organisation, animals, loading, error, refresh };
 }
 
-function PageHeader({
+export function PageHeader({
   eyebrow,
   title,
   description,
@@ -94,6 +85,6 @@ function PageHeader({
   );
 }
 
-function GatePage({ children }: { children: ReactNode }) {
+export function GatePage({ children }: { children: ReactNode }) {
   return <PaidTierGate entitlement="rescue_workspace">{children}</PaidTierGate>;
 }
