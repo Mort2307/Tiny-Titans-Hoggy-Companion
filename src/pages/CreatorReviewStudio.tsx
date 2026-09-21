@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import PageBackButton from "../components/PageBackButton";
 import { useCreatorReviewStudio } from "../hooks/useCreatorReviewStudio";
 import { formatCreatorReviewDate, type ReviewDraft } from "../lib/creatorReviewStudio";
+import { isAwaitingMorphReview } from "../services/morphSubmissionLifecycle";
 import SubmissionConversationPanel from "../components/TitanIntelligence/SubmissionConversationPanel";
 import "../styles/CreatorTools.css";
 
@@ -68,7 +69,7 @@ export default function CreatorReviewStudio() {
               <Field label="Observed traits"><textarea rows={3} value={draft.observedTraits} onChange={(event) => patch({ observedTraits: event.target.value })} /></Field>
               <Field label="Proof details"><textarea rows={3} value={draft.proofDetails} onChange={(event) => patch({ proofDetails: event.target.value })} /></Field>
               <Field label="Proof reference"><input value={draft.proofReference} onChange={(event) => patch({ proofReference: event.target.value })} /></Field>
-              <Field label="Credit type"><select value={draft.creditType} onChange={(event) => patch({ creditType: event.target.value as Draft["creditType"] })}><option value="name">Name</option><option value="social">Social handle</option><option value="anonymous">Anonymous</option></select></Field>
+              <Field label="Credit type"><select value={draft.creditType} onChange={(event) => patch({ creditType: event.target.value as ReviewDraft["creditType"] })}><option value="name">Name</option><option value="social">Social handle</option><option value="anonymous">Anonymous</option></select></Field>
               {draft.creditType === "name" && <Field label="Credit name"><input value={draft.creditName} onChange={(event) => patch({ creditName: event.target.value })} /></Field>}
               {draft.creditType === "social" && <Field label="Credit social"><input value={draft.creditSocial} onChange={(event) => patch({ creditSocial: event.target.value })} /></Field>}
               <Field label="Private Creator notes"><textarea rows={3} value={draft.creatorReviewerNotes} onChange={(event) => patch({ creatorReviewerNotes: event.target.value })} placeholder="Internal moderation notes; never published." /></Field>
