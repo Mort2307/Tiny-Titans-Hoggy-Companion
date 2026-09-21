@@ -18,7 +18,7 @@ import type {
   RescueOrganisation,
   RescueQuarantineRecord,
 } from "../../types/rescue";
-import "../styles/rescue.css";
+import "../../styles/rescue.css";
 
 const STATUS_LABELS: Record<RescueAnimalStatus, string> = {
   in_care: "In care",
