@@ -44,7 +44,6 @@ const { user, loading, profileLoading } = useAuth(); const [rooms, setRooms] = u
   const selectedDimensions = selectedSlot ? { width: vivWidth(selectedSlot), depth: vivDepth(selectedSlot), height: vivHeight(selectedSlot), x: selectedSlot.x, y: selectedSlot.y, z: selectedSlot.z } : selectedObject ? { width: selectedObject.width, depth: selectedObject.depth, height: selectedObject.height, x: selectedObject.x, y: selectedObject.y, z: selectedObject.z } : null;
   const selectedPhoto = selectedSlot ? photoFor(selectedSlot) : undefined;
   const selectedRotation = selectedSlot ? slotRotation(selectedSlot) : selectedObject?.rotation ?? 0;
-  const movementButton = (label: string, dx: number, dy: number, dz: number, icon: string) => null;
   const selectRoom = (nextRoomId:string)=>setRoomId(nextRoomId);
 
   return {
@@ -52,6 +51,6 @@ const { user, loading, profileLoading } = useAuth(); const [rooms, setRooms] = u
     selectedSlot,selectedObject,snakeMap,selectedDimensions,selectedPhoto,selectedRotation,roomsRef,previousPhotoUrlsRef,
     persistRooms,load,updateRoom,addAsset,moveSelection,moveBy,snapSelected,snapToWall,stackSnapSelected,magnetLockSelected,unlockMagnet,unstackSelected,
     deleteSelected,duplicateSelected,updateSelectedDimensions,updateSelectedPosition,updateSelectedRotation,resetSelectedRotation,applyTransformPatch,patchSelectedAsset,
-    uploadPhoto,removePhoto,useSnakePhoto,photoFor,telemetryFor,saveCurrentRoom,handleTeleport,effectivePhotoForSlot,selectRoom,movementButton
+    uploadPhoto,removePhoto,useSnakePhoto,photoFor,telemetryFor,saveCurrentRoom,handleTeleport,effectivePhotoForSlot,selectRoom
   };
 }
