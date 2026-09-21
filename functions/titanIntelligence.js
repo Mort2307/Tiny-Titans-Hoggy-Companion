@@ -63,8 +63,6 @@ function historyPlusQuestion(history, question, animalId, speciesReference) {
   const speciesContext = speciesReference ? `\n\nAPP_CATALOGUE_CONTEXT — canonical Tiny Titans species reference snapshot:\n${JSON.stringify(speciesReference)}\nPreserve evidence basis, caveats and unresolved gaps from this context.` : "";
   return [...sanitiseHistory(history), { role: "user", parts: [{ text: `${question}${animalContext}${speciesContext}` }] }];
 }
-  return [...sanitiseHistory(history), { role: "user", parts: [{ text: `${question}${context}` }] }];
-}
 
 exports.askTitan = onCall({ region: "europe-west2", secrets: [GEMINI_API_KEY], timeoutSeconds: 90, memory: "512MiB" }, async (request) => {
   const uid = String(request.auth?.uid || "");
