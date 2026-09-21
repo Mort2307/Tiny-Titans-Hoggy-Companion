@@ -31,7 +31,7 @@ export default function UniversalSpeciesPicker({
 
   function choose(species: UniversalSpeciesRecord) {
     onChange(species);
-    setQuery(species.commonNames[0] ?? species.acceptedScientificName);
+    setQuery("");
   }
 
   function clear() {
