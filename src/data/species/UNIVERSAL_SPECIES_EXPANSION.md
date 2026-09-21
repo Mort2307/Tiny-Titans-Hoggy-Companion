@@ -73,3 +73,22 @@ The universal layer is deliberately designed so later passes can promote high-pr
 - Tier 5: locality-sensitive and poorly documented species after specialist evidence review
 
 Each promoted species should receive its own evidence packet rather than inheriting numeric values from a related taxon.
+
+
+## Universal husbandry + health layer
+
+Every universal species record now resolves through a class-aware care pipeline. The pipeline supplies a minimum biological-care baseline and health watch points rather than pretending a generic value is a species-specific care sheet.
+
+Resolution order is designed for future overrides: species-specific evidence can supersede genus emphasis, genus guidance can supersede class-only context, and class/general-veterinary context remains visible when more specific evidence is unavailable. Each requirement carries an evidence basis, source IDs, caveat and review date.
+
+The current baseline intentionally avoids universal numeric targets for temperature, humidity, water chemistry, enclosure dimensions, feeding quantity/frequency or supplementation. Those values are promoted only when a scoped species evidence record exists.
+
+The same species identity is now reusable across:
+- Free and paid keeper-facing species discovery/profile pages.
+- Titan Pro intelligence context as the shared canonical species foundation.
+- Titan Seller and all Business tiers through marketplace listings.
+- Rescue intake, individual animal records and public-safe animal passports.
+- Species Incubator/submission workflows for unidentified or unsupported species.
+- Creator review and research queues.
+
+This keeps species identity, care evidence and health guidance as one canonical dataset instead of creating separate seller/rescue/keeper copies.
