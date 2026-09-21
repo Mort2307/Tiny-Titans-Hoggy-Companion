@@ -14,6 +14,9 @@ export type SpeciesSubmission = {
   submittedAt: string;
   updatedAt: string;
   commonName: string;
+  animalGroup: string;
+  taxonomicClass: string;
+  order: string;
   scientificName: string;
   authority: string;
   family: string;
@@ -27,6 +30,10 @@ export type SpeciesSubmission = {
   lifespan: string;
   activityPattern: string;
   terrestrialArborealAquatic: string;
+  dietaryGuild: string;
+  socialHousing: string;
+  waterChemistry: string;
+  biosecurityGuidance: string;
   temperatureGuidance: string;
   humidityGuidance: string;
   substrateGuidance: string;
