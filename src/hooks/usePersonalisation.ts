@@ -13,7 +13,7 @@ import {
   useEasyNav,
 } from "../context/EasyNavContext";
 import type { AgeBand, EducatorTeachingLevel, LearningLevel, ProfileType } from "../types/Profile";
-import type { TitanAtAGlanceSliceId, TitanWeeklyMetricId, WeekStartDay } from "../types/easyNav";
+import type { TitanAtAGlanceSliceId, TitanWeeklyMetricId } from "../types/easyNav";
 import { savePersonalisationProfile } from "../services/personalisationService";
 import { buildPersonalisationProfileData, moveId, parseWeekStart, toggleOrderedId } from "../lib/personalisation";
 
