@@ -9,7 +9,7 @@ import "../styles/CreatorIssueQueues.css";
 
 export default function CreatorIssueQueues() {
  const {
-  user,navigate,searchParams,setSearchParams,tab,setTab,bugs,feedback,reporterNames,loading,busyId,selectedBug,setSelectedBug,
+  navigate,tab,setTab,bugs,feedback,reporterNames,loading,busyId,selectedBug,setSelectedBug,
   selectedFeedback,setSelectedFeedback,search,setSearch,bugFilter,setBugFilter,feedbackFilter,setFeedbackFilter,error,message,
   creatorNotes,setCreatorNotes,resolution,setResolution,fixedVersion,setFixedVersion,attachmentUrl,showConversations,setShowConversations,
   filteredBugs,filteredFeedback,newBugCount,archivedBugCount,newFeedbackCount,reporterName,displayCreatorQueueDate,bugStatusLabel,
