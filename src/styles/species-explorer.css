@@ -1,0 +1,37 @@
+.species-explorer-page{display:grid;gap:1rem;padding-bottom:3rem}
+.species-explorer-hero,.species-explorer-toolbar,.species-explorer-summary,.species-explorer-card,.species-explorer-empty{border:1px solid var(--border-color,#d9dde5);background:var(--card-background,#fff);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+.species-explorer-hero{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;padding:1.35rem 1.5rem}
+.species-explorer-hero h1{display:flex;align-items:center;gap:.5rem;margin:.35rem 0 .55rem}
+.species-explorer-hero p{max-width:900px;margin:0;color:var(--muted-foreground,#5f6b7a);line-height:1.6}
+.species-explorer-stat{min-width:170px;text-align:center;padding:1rem;border-radius:14px;background:var(--surface-muted,#f5f7fa)}
+.species-explorer-stat strong{display:block;font-size:2rem;line-height:1}
+.species-explorer-stat span{display:block;margin-top:.35rem;color:var(--muted-foreground,#5f6b7a);font-size:.8rem}
+.species-explorer-toolbar{display:grid;gap:1rem;padding:1rem 1.2rem}
+.species-explorer-search,.species-explorer-filter-row label{display:grid;gap:.35rem}
+.species-explorer-search>span,.species-explorer-filter-row label>span{font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-foreground,#5f6b7a)}
+.species-explorer-search input,.species-explorer-filter-row select{width:100%;box-sizing:border-box;border:1px solid var(--border-color,#d9dde5);border-radius:10px;padding:.75rem .85rem;background:var(--input-background,#fff);color:inherit}
+.species-explorer-filter-row{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr)) auto;align-items:end;gap:.75rem}
+.species-explorer-toggle{display:flex!important;align-items:center;gap:.5rem;padding:.72rem .2rem}
+.species-explorer-toggle input{width:1rem;height:1rem}
+.species-explorer-summary{display:grid;grid-template-columns:auto auto auto 1fr;align-items:center;gap:1rem;padding:.85rem 1.2rem}
+.species-explorer-summary>div{display:flex;align-items:baseline;gap:.4rem}
+.species-explorer-summary strong{font-size:1.2rem}
+.species-explorer-summary span{font-size:.8rem;color:var(--muted-foreground,#5f6b7a)}
+.species-explorer-summary p{margin:0;color:var(--muted-foreground,#5f6b7a);font-size:.82rem;line-height:1.45}
+.species-explorer-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.species-explorer-card{padding:1rem;min-width:0}
+.species-explorer-card__top{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.8rem}
+.species-risk,.species-evidence{display:inline-flex;align-items:center;border-radius:999px;padding:.28rem .55rem;font-size:.7rem;font-weight:800;text-transform:capitalize;letter-spacing:.02em}
+.species-risk{background:var(--surface-muted,#eef1f5)}
+.species-evidence{background:var(--surface-muted,#f5f7fa);color:var(--muted-foreground,#5f6b7a)}
+.species-risk--venomous,.species-risk--high-risk{font-weight:900}
+.species-explorer-card h2{margin:0 0 .2rem;font-size:1.02rem}
+.species-scientific{margin:0 0 .85rem;font-style:italic;color:var(--muted-foreground,#5f6b7a)}
+.species-explorer-card dl{display:grid;gap:.4rem;margin:0}
+.species-explorer-card dl>div{display:grid;grid-template-columns:68px 1fr;gap:.5rem}
+.species-explorer-card dt{font-size:.7rem;font-weight:800;text-transform:uppercase;color:var(--muted-foreground,#5f6b7a)}
+.species-explorer-card dd{margin:0;font-size:.82rem;overflow-wrap:anywhere}
+.species-explorer-card__footer{display:flex;justify-content:space-between;gap:.5rem;margin-top:.9rem;padding-top:.75rem;border-top:1px solid var(--border-color,#edf0f3);font-size:.68rem;color:var(--muted-foreground,#6b7280)}
+.species-explorer-empty{grid-column:1/-1;text-align:center;padding:3rem 1rem}
+@media (max-width:900px){.species-explorer-hero{align-items:flex-start;flex-direction:column}.species-explorer-stat{width:100%;box-sizing:border-box}.species-explorer-filter-row{grid-template-columns:1fr 1fr}.species-explorer-toggle{grid-column:1/-1}.species-explorer-summary{grid-template-columns:repeat(3,1fr)}.species-explorer-summary p{grid-column:1/-1}.species-explorer-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.species-explorer-hero,.species-explorer-toolbar,.species-explorer-summary,.species-explorer-card{border-radius:12px}.species-explorer-filter-row{grid-template-columns:1fr}.species-explorer-toggle{grid-column:auto}.species-explorer-summary{grid-template-columns:1fr 1fr}.species-explorer-summary>div:last-of-type{grid-column:1/-1}.species-explorer-grid{grid-template-columns:1fr}.species-explorer-card__footer{flex-direction:column}}
