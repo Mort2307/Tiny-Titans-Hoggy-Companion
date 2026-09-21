@@ -163,7 +163,7 @@ function Home() {
       </details>
 
       <details className="tt-home-disclosure tt-home-secondary-disclosure">
-        <summary>🌍 Titan community pulse</summary>
+        <summary><TinyTitansIcon name="community" size={17} /> Titan community pulse</summary>
         <ContributionPulse />
       </details>
 
@@ -172,7 +172,7 @@ function Home() {
           className="tt-home-disclosure tt-home-secondary-disclosure"
           onToggle={(event) => setWorldOpen(event.currentTarget.open)}
         >
-          <summary>🌎 The TinyTitans world</summary>
+          <summary><TinyTitansIcon name="community" size={17} /> The TinyTitans world</summary>
           {worldOpen && (
             <Suspense fallback={<HomeGlobeFallback />}>
               <TinyTitansPinnacleGlobe uid={user.uid} />
@@ -182,16 +182,16 @@ function Home() {
       )}
 
       <details className="tt-home-tools">
-        <summary>🧰 Open the full TinyTitans toolbox</summary>
+        <summary><TinyTitansIcon name="menu" size={17} /> Open the full TinyTitans toolbox</summary>
         <div className="tt-tool-grid">
-          <Link to="/morph-library">🧬 Morph Library</Link>
-          <Link to="/calculator">🧮 Genetics Calculator</Link>
-          <Link to="/sandbox">🧪 Sandbox</Link>
-          <Link to="/knowledge-base">📚 Knowledge Base</Link>
-          <Link to="/community">🌍 Community</Link>
-          <Link to="/account">⚙️ My Account</Link>
-          <Link to="/report-bug">🐛 Report a bug</Link>
-          <Link to="/feedback">💬 Feedback</Link>
+          <Link to="/morph-library"><TinyTitansIcon name="morph" size={18} /> Morph Library</Link>
+          <Link to="/calculator"><TinyTitansIcon name="genetics" size={18} /> Genetics Calculator</Link>
+          <Link to="/sandbox"><TinyTitansIcon name="testing" size={18} /> Sandbox</Link>
+          <Link to="/knowledge-base"><TinyTitansIcon name="knowledge" size={18} /> Knowledge Base</Link>
+          <Link to="/community"><TinyTitansIcon name="community" size={18} /> Community</Link>
+          <Link to="/account"><TinyTitansIcon name="account" size={18} /> My Account</Link>
+          <Link to="/report-bug"><TinyTitansIcon name="testing" size={18} /> Report a bug</Link>
+          <Link to="/feedback"><TinyTitansIcon name="messages" size={18} /> Feedback</Link>
         </div>
       </details>
     </main>
