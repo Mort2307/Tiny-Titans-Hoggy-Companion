@@ -46,12 +46,12 @@ const productTierIconMismatch = tierCatalogEntries.map((entry) => {
 }).filter(Boolean);
 
 const missingProductIcons = [...productIcons, ...workspaceNavIcons].filter((name) => !iconUnion.includes(name));
-const invalidQuickNavigationIcons = quickIconValues.filter((name) => !iconUnion.includes(name));
 const quickIconValues = [...quickNavigationSource.matchAll(/icon:\s*"([^"]+)"/g)].map((match) => match[1]);
-const productNavPaths = [...workspaceProductsSource.matchAll(/path:"([^"]+)"/g)].map((match) => match[1]);
-const navMapPaths = [...navigationIconRegistrySource.matchAll(/"([^"]+)": "([^"]+)"/g)].map((match) => match[1]);
-const missingWorkspaceNavIcons = [...new Set(productNavPaths)].filter((path) => !navMapPaths.includes(path));
-const workspaceNavigationUsesCanonicalResolver = workspaceShellSource.includes("tinyTitansNavigationIcon(item.path)") && navigationIconRegistrySource.includes("function tinyTitansNavigationIcon");
+const invalidQuickNavigationIcons = quickIconValues.filter((name) => !iconUnion.includes(name));
+const legacyWorkspaceNavItems = [...workspaceProductsSource.matchAll(/\{label:"([^"]+)",path:"([^"]+)"\}/g)].map((match) => ({ label: match[1], path: match[2] }));
+const missingWorkspaceNavIcons = legacyWorkspaceNavItems.map((item) => item.path);
+const invalidWorkspaceNavIcons = workspaceNavIcons.filter((name) => !iconUnion.includes(name));
+const workspaceNavigationUsesCanonicalResolver = workspaceShellSource.includes("name={item.icon}") && !workspaceShellSource.includes("tinyTitansNavigationIcon(item.path)");
 
 
 const caseBodies = new Map();
@@ -72,8 +72,8 @@ const duplicateVisualCases = [...caseBodies.values()].filter((names) => names.le
 
 
 const missingIcons = requiredIcons.filter((name) => !iconSource.includes(`| "${name}"`));
-if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length || missingProductIcons.length || invalidQuickNavigationIcons.length || missingWorkspaceNavIcons.length || !workspaceNavigationUsesCanonicalResolver || missingTierCatalogIcons.length || invalidTierCatalogIcons.length || productTierIconMismatch.length || !hasSemanticTierBadge) {
-  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases, missingProductIcons, invalidQuickNavigationIcons, missingWorkspaceNavIcons, workspaceNavigationUsesCanonicalResolver, missingTierCatalogIcons, invalidTierCatalogIcons, productTierIconMismatch, hasSemanticTierBadge }, null, 2));
+if (missingIcons.length || missingRegisteredNames.length || missingSwitchCases.length || duplicateVisualCases.length || missingProductIcons.length || invalidQuickNavigationIcons.length || missingWorkspaceNavIcons.length || invalidWorkspaceNavIcons.length || !workspaceNavigationUsesCanonicalResolver || missingTierCatalogIcons.length || invalidTierCatalogIcons.length || productTierIconMismatch.length || !hasSemanticTierBadge) {
+  console.error(JSON.stringify({ test: "tinytitans-icon-system", status: "fail", missingIcons, missingRegisteredNames, missingSwitchCases, duplicateVisualCases, missingProductIcons, invalidQuickNavigationIcons, missingWorkspaceNavIcons, invalidWorkspaceNavIcons, workspaceNavigationUsesCanonicalResolver, missingTierCatalogIcons, invalidTierCatalogIcons, productTierIconMismatch, hasSemanticTierBadge }, null, 2));
   process.exit(1);
 }
 
