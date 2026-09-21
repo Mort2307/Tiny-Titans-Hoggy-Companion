@@ -77,10 +77,10 @@ export const UNIVERSAL_INVERTEBRATE_SEEDS: UniversalSpeciesSeed[] = [
   myri('Centrobolus splendidus','Scarlet Millipede','Trigoniulidae','Polydesmida','companion'),
   myri('Narceus americanus','Bumblebee Millipede','Spirobolidae','Spirobolida','companion'),
   myri('Chicobolus spinigerus','Ivory Millipede','Spirobolidae','Spirobolida','companion'),
-  myri('Scolopendra subspinipes','Vietnamese Centipede','Scolopendridae','Scolopendromorpha','venomous',['asian forest centipede']),
-  myri('Scolopendra polymorpha','Desert Centipede','Scolopendridae','Scolopendromorpha','venomous'),
-  myri('Scolopendra gigantea','Giant Centipede','Scolopendridae','Scolopendromorpha','venomous'),
-  myri('Ethmostigmus rubripes','Giant Blue-legged Centipede','Ethmostigmus','Scolopendromorpha','venomous'),
+  centi('Scolopendra subspinipes','Vietnamese Centipede','Scolopendridae','Scolopendromorpha','venomous',['asian forest centipede']),
+  centi('Scolopendra polymorpha','Desert Centipede','Scolopendridae','Scolopendromorpha','venomous'),
+  centi('Scolopendra gigantea','Giant Centipede','Scolopendridae','Scolopendromorpha','venomous'),
+  centi('Ethmostigmus rubripes','Giant Blue-legged Centipede','Ethmostigmus','Scolopendromorpha','venomous'),
 
   // Terrestrial gastropods.
   moll('Lissachatina fulica','Giant African Land Snail','Achatinidae','specialist','terrestrial',['achatina fulica']),
