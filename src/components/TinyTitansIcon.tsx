@@ -21,6 +21,7 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "🏠": "home",
   "⌂": "home",
   "🐍": "reptile",
+  "🐊": "reptiles",
   "💬": "messages",
   "📨": "messages",
   "📥": "messages",
@@ -95,7 +96,7 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
 };
 
 const ICON_NAMES = new Set<TinyTitansIconName>([
-  "home", "reptile", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
+  "home", "reptile", "reptiles", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
   "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
   "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan",
   "educator", "creator", "testing", "search", "menu", "add", "edit", "delete", "water", "timeline", "vet", "save", "upload", "back", "forward", "close", "filter", "camera", "rotate", "move", "duplicate", "link", "lock", "unlock", "grid", "ceiling", "info", "warning", "check",
@@ -128,6 +129,15 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-organic" d="m8 21 16-13 16 13v17H28V28h-8v10H8V21Z" /><path className="tt-icon-line" d="M5.5 23 24 8l18.5 15" /><circle className="tt-icon-spark" cx="24" cy="19" r="2.3" /></svg>;
     case "reptile":
       return <SnakeFace {...props} />;
+    case "reptiles":
+      return <svg {...commonProps}>
+        <path className="tt-icon-fill tt-icon-snake-collection" d="M8 29c0-5 4-9 9-9 3 0 5 1 7 3 2-2 4-3 7-3 5 0 9 4 9 9 0 6-5 10-12 10h-8C13 39 8 35 8 29Z" />
+        <path className="tt-icon-line" d="M10 30c2 3 6 4 10 1 2-1 4-3 6-5m2-6c2-2 4-3 6-3" />
+        <circle className="tt-icon-eye" cx="31.5" cy="19" r="2.6" />
+        <circle className="tt-icon-pupil" cx="31.5" cy="19" r=".8" />
+        <path className="tt-icon-line-soft" d="M15 22 11 18m5 4-1-6m16 5 4-4m-5 5 1-6" />
+        <circle className="tt-icon-spark" cx="39" cy="10" r="2.4" />
+      </svg>;
     case "messages":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-bubble" d="M8 10.5c0-3.1 2.5-5.5 5.6-5.5h15.8c3.1 0 5.6 2.4 5.6 5.5v10c0 3.1-2.5 5.5-5.6 5.5H20l-6.8 5.3.9-5.4h-.5C10.5 25.9 8 23.5 8 20.5v-10Z" /><path className="tt-icon-line" d="M15 13.5h12M15 18.5h8" /><circle className="tt-icon-spark" cx="36" cy="10" r="4" /></svg>;
     case "reminders":
