@@ -10,11 +10,15 @@ function eventTime(value: unknown) { if (!value) return 0; if (typeof value === 
 
 export default function SupportNotificationCenter() {
   const { user } = useAuth();
-  // Local development must not surface production notification history as a
-  // looping overlay while testing pages. Notification settings/tests remain
-  // available elsewhere in the app.
-  if (import.meta.env.DEV) return null; const navigate = useNavigate(); const location = useLocation(); const [items, setItems] = useState<SupportNotification[]>([]);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [items, setItems] = useState<SupportNotification[]>([]);
+
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      setItems([]);
+      return undefined;
+    }
     if (!user) { setItems([]); return; }
     const q = query(collection(db, "users", user.uid, "notificationEvents"), orderBy("createdAt", "desc"), limit(50));
     return onSnapshot(q, (snap) => {
@@ -25,7 +29,10 @@ export default function SupportNotificationCenter() {
       setItems(unread);
     }, (error) => { console.warn("Tiny Titans: support notification subscription failed", error); setItems([]); });
   }, [user]);
-  if (!user || items.length === 0) return null;
+  // Local development must not surface production notification history as a
+  // looping overlay while testing pages. Notification settings/tests remain
+  // available elsewhere in the app.
+  if (import.meta.env.DEV || !user || items.length === 0) return null;
   const currentUserId = user.uid; const item = items[0];
   const href = item.url || "/conversations";
   async function markRead(userId: string, notificationId: string) {
