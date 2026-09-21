@@ -29,6 +29,7 @@ const registeredNames = [...iconRegistryBlock.matchAll(/"([^"]+)"/g)].map((match
 const missingRegisteredNames = iconUnion.filter((name) => !registeredNames.includes(name));
 const missingSwitchCases = iconUnion.filter((name) => !iconSource.includes(`case "${name}":`));
 const productIcons = [...workspaceProductsSource.matchAll(/icon:"([^"]+)"/g)].map((match) => match[1]);
+const workspaceNavIcons = [...workspaceProductsSource.matchAll(/\{label:"[^"]+",path:"[^"]+",icon:"([^"]+)"\}/g)].map((match) => match[1]);
 const expectedTierIds = ["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"];
 const tierCatalogEntries = expectedTierIds.map((id) => {
   const match = paidTiersSource.match(new RegExp("(?:^|\\n)  " + id + ': \\{[^\\n]*?icon: "([^"]+)"'));
@@ -44,7 +45,7 @@ const productTierIconMismatch = tierCatalogEntries.map((entry) => {
   return entry.icon && productIcon && entry.icon !== productIcon ? { id: entry.id, tierIcon: entry.icon, productIcon } : null;
 }).filter(Boolean);
 
-const missingProductIcons = productIcons.filter((name) => !iconUnion.includes(name));
+const missingProductIcons = [...productIcons, ...workspaceNavIcons].filter((name) => !iconUnion.includes(name));
 const invalidQuickNavigationIcons = quickIconValues.filter((name) => !iconUnion.includes(name));
 const quickIconValues = [...quickNavigationSource.matchAll(/icon:\s*"([^"]+)"/g)].map((match) => match[1]);
 const productNavPaths = [...workspaceProductsSource.matchAll(/path:"([^"]+)"/g)].map((match) => match[1]);
