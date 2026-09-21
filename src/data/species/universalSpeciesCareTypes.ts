@@ -68,6 +68,7 @@ export interface UniversalHusbandryProfile {
   numericGuidance: {
     available: boolean;
     note: string;
+    ranges?: Array<{ label: string; min: number; max: number; unit: string; context?: string; evidence: UniversalCareEvidence }>;
   };
   unresolved: string[];
   sourceIds: string[];
