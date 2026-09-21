@@ -92,3 +92,33 @@ The same species identity is now reusable across:
 - Creator review and research queues.
 
 This keeps species identity, care evidence and health guidance as one canonical dataset instead of creating separate seller/rescue/keeper copies.
+
+## Species versus individual animal architecture
+
+Species and individual animals are separate entities.
+
+Species record: canonical taxonomic/reference entity containing scientific identity, common names, aliases, taxonomy, ecology, risk/legal checks, care-evidence coverage, husbandry requirements and health-watch context.
+
+Individual animal record: one real specimen owned by a keeper or managed by a Rescue. It has its own name, identifiers, sex, status, acquisition/history, notes and future tracker data. It stores a speciesId link rather than copying the species care sheet.
+
+User flow:
+
+Animal type -> species list -> exact species -> individual animals of that species
+
+Examples:
+
+Snakes -> all snake species -> Heterodon nasicus -> the keeper's individual hognoses
+Frogs & toads -> all frog/toad species -> an exact accepted taxon -> the keeper's individual frog(s)
+Spiders -> all spider species -> Brachypelma hamorii -> the keeper's individual tarantula(s)
+
+Existing My Reptiles snake records remain in their established Firestore collection and are surfaced in the universal individual directory without duplicating the underlying animal records.
+
+### Care accuracy invariant
+
+A species can be displayed as having species-level care only when a species-scoped husbandry evidence record has been attached. A genus-level profile may be shown as genus-level. Class/ecology content is research context and must not be presented as a verified species care sheet.
+
+Numeric husbandry ranges follow the same rule: each range carries its evidence scope and source IDs. A generic class source cannot create a species-specific numeric target.
+
+### Individual-to-species linkage
+
+Keeper, Rescue, Marketplace and Titan Intelligence workflows consume the same canonical speciesId. They must not maintain parallel species dictionaries.
