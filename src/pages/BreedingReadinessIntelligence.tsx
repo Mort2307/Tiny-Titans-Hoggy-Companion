@@ -5,14 +5,15 @@ import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
 import "./BreedingReadinessIntelligence.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 type Status = "ready" | "review" | "hold";
 type Check = { id: string; title: string; category: string; status: Status; detail: string; question: string };
 
-const STATUS_META: Record<Status, { label: string; icon: string; description: string }> = {
-  ready: { label: "Ready signal", icon: "🟢", description: "No concern recorded for this item." },
-  review: { label: "Review", icon: "🟡", description: "More information or preparation would strengthen the decision." },
-  hold: { label: "Hold", icon: "🔴", description: "Do not proceed until the underlying concern is resolved or professionally assessed." },
+const STATUS_META: Record<Status, { label: string; icon: "success" | "warning" | "critical"; description: string }> = {
+  ready: { label: "Ready signal", icon: "success", description: "No concern recorded for this item." },
+  review: { label: "Review", icon: "warning", description: "More information or preparation would strengthen the decision." },
+  hold: { label: "Hold", icon: "critical", description: "Do not proceed until the underlying concern is resolved or professionally assessed." },
 };
 
 const makeChecks = (male?: Snake, female?: Snake): Check[] => {
@@ -73,17 +74,17 @@ export default function BreedingReadinessIntelligence() {
     return { ...item, status: next };
   }));
 
-  if (loading || profileLoading) return <main className="page-container readiness-page"><BackHomeButton /><h2>🧠 Breeding Readiness</h2><p>Loading your snakes…</p></main>;
-  if (!user) return <main className="page-container readiness-page"><BackHomeButton /><h2>🧠 Breeding Readiness</h2><p>Sign in to review an actual pairing.</p><button type="button" onClick={() => navigate("/login")}>Sign In</button></main>;
+  if (loading || profileLoading) return <main className="page-container readiness-page"><BackHomeButton /><h2><TinyTitansIcon name="breedingReadiness" size={28} /> Breeding Readiness</h2><p>Loading your snakes…</p></main>;
+  if (!user) return <main className="page-container readiness-page"><BackHomeButton /><h2><TinyTitansIcon name="breedingReadiness" size={28} /> Breeding Readiness</h2><p>Sign in to review an actual pairing.</p><button type="button" onClick={() => navigate("/login")}>Sign In</button></main>;
 
   return <main className="page-container readiness-page">
     <BackHomeButton />
     <header className="readiness-hero">
-      <div><span className="readiness-kicker">Tiny Titans · Breeding Intelligence</span><h1>🧠 Breeding Readiness</h1><p>Select the actual animals you are considering. Tiny Titans will use the records it has, expose missing information and leave keeper-only decisions clearly marked.</p></div>
-      <div className={`readiness-result result-${summary.status}`}><span>{STATUS_META[summary.status].icon}</span><strong>{summary.status === "ready" ? "Ready to review pairing" : summary.status === "review" ? "Review before proceeding" : "Hold and investigate"}</strong><small>{summary.ready} ready · {summary.review} review · {summary.hold} hold</small></div>
+      <div><span className="readiness-kicker">Tiny Titans · Breeding Intelligence</span><h1><TinyTitansIcon name="breedingReadiness" size={34} /> Breeding Readiness</h1><p>Select the actual animals you are considering. Tiny Titans will use the records it has, expose missing information and leave keeper-only decisions clearly marked.</p></div>
+      <div className={`readiness-result result-${summary.status}`}><span><TinyTitansIcon name="breedingReadiness" size={28} state={STATUS_META[summary.status].icon} /></span><strong>{summary.status === "ready" ? "Ready to review pairing" : summary.status === "review" ? "Review before proceeding" : "Hold and investigate"}</strong><small>{summary.ready} ready · {summary.review} review · {summary.hold} hold</small></div>
     </header>
 
-    {error && <section className="readiness-principle"><strong>⚠️ Unable to load records</strong><p>{error}</p></section>}
+    {error && <section className="readiness-principle"><strong><TinyTitansIcon name="warning" size={18} state="critical" /> Unable to load records</strong><p>{error}</p></section>}
 
     <section className="readiness-card">
       <div className="readiness-section-title"><div><span className="readiness-kicker">Actual animals</span><h2>Select your pairing</h2></div></div>
@@ -93,14 +94,14 @@ export default function BreedingReadinessIntelligence() {
       </div>
     </section>
 
-    <section className="readiness-principle"><strong>⚖️ Decision-support rule</strong><p>A green result does not guarantee fertility or a successful breeding season. Yellow means information or preparation should be improved. Red is a deliberate stop signal. The app does not diagnose illness or replace a reptile veterinarian.</p></section>
+    <section className="readiness-principle"><strong><TinyTitansIcon name="knowledge" size={18} /> Decision-support rule</strong><p>A green result does not guarantee fertility or a successful breeding season. Yellow means information or preparation should be improved. Red is a deliberate stop signal. The app does not diagnose illness or replace a reptile veterinarian.</p></section>
 
     <section className="readiness-card">
       <div className="readiness-section-title"><div><span className="readiness-kicker">Pre-breeding gate</span><h2>Review the whole picture</h2></div><button type="button" onClick={() => setShowHow((value) => !value)}>{showHow ? "Hide" : "How is this scored?"}</button></div>
       {showHow && <div className="readiness-how"><p><strong>Ready</strong> means no concern was detected or recorded for that factor.</p><p><strong>Review</strong> means the keeper should gather information or confirm a manual requirement.</p><p><strong>Hold</strong> is reserved for an explicit stop condition; Tiny Titans does not invent medical diagnoses.</p></div>}
-      <div className="readiness-list">{checks.map((item) => <article key={item.id} className={`readiness-item item-${item.status}`}><div className="readiness-item-main"><span className="readiness-icon">{STATUS_META[item.status].icon}</span><div><span className="readiness-category">{item.category}</span><h3>{item.title}</h3><p>{item.detail}</p></div></div><div className="readiness-item-action"><span title={STATUS_META[item.status].description}>{STATUS_META[item.status].label}</span><button type="button" onClick={() => cycle(item.id)}>Change</button></div><div className="readiness-question"><strong>Ask yourself</strong><span>{item.question}</span></div></article>)}</div>
+      <div className="readiness-list">{checks.map((item) => <article key={item.id} className={`readiness-item item-${item.status}`}><div className="readiness-item-main"><span className="readiness-icon"><TinyTitansIcon name="breedingReadiness" size={22} state={STATUS_META[item.status].icon} /></span><div><span className="readiness-category">{item.category}</span><h3>{item.title}</h3><p>{item.detail}</p></div></div><div className="readiness-item-action"><span title={STATUS_META[item.status].description}>{STATUS_META[item.status].label}</span><button type="button" onClick={() => cycle(item.id)}>Change</button></div><div className="readiness-question"><strong>Ask yourself</strong><span>{item.question}</span></div></article>)}</div>
     </section>
 
-    <section className="readiness-card readiness-two-col"><div><span className="readiness-kicker">Before introduction</span><h2>🛑 Stop conditions</h2><ul><li>Unresolved illness or significant unexplained decline</li><li>Suspected reproductive emergency</li><li>Unsafe or unstable environmental control</li><li>No practical separation or contingency plan</li><li>Breeding depends on an assumption presented as confirmed genetics</li></ul></div><div><span className="readiness-kicker">Next step</span><h2>🧬 Continue into the planner</h2><p>Once you've reviewed the animals, the Breeding Planner can create the project, preserve the pairing's genetic snapshot and carry the record through clutches and hatchlings.</p><button type="button" onClick={() => navigate("/breeding")}>Open Breeding Planner</button></div></section>
+    <section className="readiness-card readiness-two-col"><div><span className="readiness-kicker">Before introduction</span><h2><TinyTitansIcon name="warning" size={20} state="critical" /> Stop conditions</h2><ul><li>Unresolved illness or significant unexplained decline</li><li>Suspected reproductive emergency</li><li>Unsafe or unstable environmental control</li><li>No practical separation or contingency plan</li><li>Breeding depends on an assumption presented as confirmed genetics</li></ul></div><div><span className="readiness-kicker">Next step</span><h2><TinyTitansIcon name="breeding" size={20} /> Continue into the planner</h2><p>Once you've reviewed the animals, the Breeding Planner can create the project, preserve the pairing's genetic snapshot and carry the record through clutches and hatchlings.</p><button type="button" onClick={() => navigate("/breeding")}>Open Breeding Planner</button></div></section>
   </main>;
 }

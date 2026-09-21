@@ -134,7 +134,7 @@ export function RescueIntake() {
     setPreviousIdentifier(intake.previousIdentifier); setKnownMedicalHistory(intake.knownMedicalHistory); setKnownFeedingHistory(intake.knownFeedingHistory);
     setKnownBehaviour(intake.knownBehaviour); setConditionOnArrival(intake.conditionOnArrival); setQuarantineReason(intake.quarantineReason);
     setEvidenceSummary(intake.evidenceSummary);
-  }, [selected?.id]);
+  }, [selected]);
 
   async function save() {
     if (!selected || !organisation) return;
@@ -217,7 +217,7 @@ export function RescueQuarantine() {
     setReviewAt(quarantine?.reviewAt ? quarantine.reviewAt.slice(0,16) : "");
     setOutcome(quarantine?.outcome || "");
     setNotes(quarantine?.notes || "");
-  }, [selectedId]);
+  }, [animals, selectedId]);
 
   async function save() {
     const selected = animals.find((animal) => animal.id === selectedId);
@@ -260,7 +260,7 @@ export function RescueQuarantine() {
       <div><small>Animals without quarantine detail</small><strong>{loading ? "…" : quarantined.filter((animal) => !animal.quarantine).length}</strong></div>
     </div></section>
     <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">ACTIVE QUEUE</span><h2>Animals in quarantine</h2></div><span>{quarantined.length}</span></div>
-      <div className="rescue-animal-list">{quarantined.map((animal) => <button type="button" className="rescue-animal-row" key={animal.id} onClick={() => setSelectedId(animal.id)}><span>🛡️</span><span><strong>{animalLabel(animal)}</strong><small>{animal.quarantine?.area || "Isolation area not recorded"} · review {formatDate(animal.quarantine?.reviewAt)}</small></span><span>Review →</span></button>)}{!quarantined.length && <div className="rescue-empty"><strong>No animals currently in quarantine</strong><span>New intakes can be placed into quarantine from the animal record.</span></div>}</div>
+      <div className="rescue-animal-list">{quarantined.map((animal) => <button type="button" className="rescue-animal-row" key={animal.id} onClick={() => setSelectedId(animal.id)}><span><TinyTitansIcon name="lock" size={20} /></span><span><strong>{animalLabel(animal)}</strong><small>{animal.quarantine?.area || "Isolation area not recorded"} · review {formatDate(animal.quarantine?.reviewAt)}</small></span><span>Review →</span></button>)}{!quarantined.length && <div className="rescue-empty"><strong>No animals currently in quarantine</strong><span>New intakes can be placed into quarantine from the animal record.</span></div>}</div>
     </section>
     {selectedId && <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">REVIEW</span><h2>{animalLabel(animals.find((animal) => animal.id === selectedId)!)}</h2></div></div><div className="rescue-form-grid">
       <label>Isolation area<input value={area} onChange={(event) => setArea(event.target.value)} /></label>
@@ -296,8 +296,15 @@ export function RescueTasks() {
   const [filter, setFilter] = useState<"open"|"overdue"|"completed">("open");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
+  const [nowMs, setNowMs] = useState(0);
+  useEffect(() => {
+    const refreshNow = () => setNowMs(Date.now());
+    refreshNow();
+    const timer = window.setInterval(refreshNow, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const tasks = useMemo(() => animals.flatMap((animal) => (animal.reminders || []).map((item) => ({ animal, item }))).sort((a,b) => a.item.dueAt.localeCompare(b.item.dueAt)), [animals]);
-  const filtered = tasks.filter(({item}) => filter === "completed" ? item.completed : !item.completed && (filter === "open" || new Date(item.dueAt).getTime() < Date.now()));
+  const filtered = tasks.filter(({item}) => filter === "completed" ? item.completed : !item.completed && (filter === "open" || (nowMs > 0 && new Date(item.dueAt).getTime() < nowMs)));
   async function toggle(animal: RescueAnimal, reminderId: string, completed: boolean) {
     setBusy(`${animal.id}:${reminderId}`); setMessage("");
     try { await setRescueReminderComplete(animal.id, reminderId, completed); await refresh(); } catch(error) { setMessage(error instanceof Error ? error.message : "Could not update the task."); } finally { setBusy(""); }
@@ -382,7 +389,7 @@ export function RescueLocations() {
     <PageHeader eyebrow="LOCATIONS & MOVEMENT" title="Locations & moves" description="Track where every animal is kept and preserve a movement history whenever its enclosure changes." />
     {error && <div className="rescue-message rescue-message-error">{error}</div>}
     {message && <div className="rescue-message" role="status">{message}</div>}
-    <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">CURRENT LOCATIONS</span><h2>Population by recorded enclosure</h2></div><span>{loading ? "…" : animals.length}</span></div><div className="rescue-animal-list">{animals.map((animal)=> <Link className="rescue-animal-row" to={`/rescue/animals/${animal.id}/manage`} key={animal.id}><span>📍</span><span><strong>{animalLabel(animal)}</strong><small>{animal.enclosure || "Location not recorded"} · {STATUS_LABELS[animal.status]}</small></span><span>Open →</span></Link>)}{!animals.length && !loading && <div className="rescue-empty"><strong>No animals recorded</strong><span>Add your first intake before managing locations.</span></div>}</div></section>
+    <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">CURRENT LOCATIONS</span><h2>Population by recorded enclosure</h2></div><span>{loading ? "…" : animals.length}</span></div><div className="rescue-animal-list">{animals.map((animal)=> <Link className="rescue-animal-row" to={`/rescue/animals/${animal.id}/manage`} key={animal.id}><span><TinyTitansIcon name="map" size={20} /></span><span><strong>{animalLabel(animal)}</strong><small>{animal.enclosure || "Location not recorded"} · {STATUS_LABELS[animal.status]}</small></span><span>Open →</span></Link>)}{!animals.length && !loading && <div className="rescue-empty"><strong>No animals recorded</strong><span>Add your first intake before managing locations.</span></div>}</div></section>
     <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">RECORD A MOVE</span><h2>New location event</h2></div></div><div className="rescue-form-grid">
       <label>Animal<select value={selectedId} onChange={(event)=>setSelectedId(event.target.value)}><option value="">Choose an animal…</option>{animals.map((animal)=><option value={animal.id} key={animal.id}>{animalLabel(animal)}</option>)}</select></label>
       <label>Facility<input value={facility} onChange={(event)=>setFacility(event.target.value)} /></label>
@@ -484,7 +491,7 @@ export function RescuePublicPreview() {
     <section className="rescue-card"><span className="rescue-eyebrow">ABOUT</span><h2>About this Rescue</h2><p>{org.directoryDescription || "No public description yet."}</p></section>
     {(org.contactEmail || org.phone || org.postcode || org.openingHours) && <section className="rescue-card"><span className="rescue-eyebrow">CONTACT</span><div className="rescue-public-contact-grid">{org.contactEmail && <div><small>Email</small><strong>{org.contactEmail}</strong></div>}{org.phone && <div><small>Telephone</small><strong>{org.phone}</strong></div>}{org.postcode && <div><small>Postcode</small><strong>{org.postcode}</strong></div>}{org.openingHours && <div className="rescue-public-contact-span"><small>Opening / contact times</small><p>{org.openingHours}</p></div>}</div></section>}
     {org.registrationsPublic && (org.charityNumber || org.companyNumber || org.localAuthorityLicence || org.otherRegistrationNumber || org.registrationAuthority) && <section className="rescue-card"><span className="rescue-eyebrow">REGISTRATION</span><h2>Public registration details</h2><div className="rescue-public-contact-grid">{org.charityNumber && <div><small>Charity number</small><strong>{org.charityNumber}</strong></div>}{org.companyNumber && <div><small>Company number</small><strong>{org.companyNumber}</strong></div>}{org.localAuthorityLicence && <div><small>Local authority licence</small><strong>{org.localAuthorityLicence}</strong></div>}{org.otherRegistrationNumber && <div><small>Other registration</small><strong>{org.otherRegistrationNumber}</strong></div>}{org.registrationAuthority && <div><small>Issuing authority</small><strong>{org.registrationAuthority}</strong></div>}</div><p className="rescue-form-hint">These are entered by the Rescue and are not independently verified by TinyTitans.</p></section>}
-    <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">FEATURED ANIMALS</span><h2>Public-safe animal profiles</h2></div><span>{publicAnimals.length}</span></div><div className="rescue-animal-list">{publicAnimals.map((animal)=><article className="rescue-animal-row" key={animal.id}><span>🐍</span><span><strong>{animal.name || "Rescue animal"}</strong><small>{animal.speciesCommonName || "Species pending"} · {animal.sex || "Unknown"}</small>{animal.publicSummary && <small>{animal.publicSummary}</small>}</span><span>{STATUS_LABELS[animal.status]}</span></article>)}{!publicAnimals.length && <div className="rescue-empty"><strong>No public animal profiles</strong><span>Enable a public-safe preview on individual animal records to feature them here.</span></div>}</div></section>
+    <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">FEATURED ANIMALS</span><h2>Public-safe animal profiles</h2></div><span>{publicAnimals.length}</span></div><div className="rescue-animal-list">{publicAnimals.map((animal)=><article className="rescue-animal-row" key={animal.id}><span><TinyTitansIcon name="reptile" size={20} /></span><span><strong>{animal.name || "Rescue animal"}</strong><small>{animal.speciesCommonName || "Species pending"} · {animal.sex || "Unknown"}</small>{animal.publicSummary && <small>{animal.publicSummary}</small>}</span><span>{STATUS_LABELS[animal.status]}</span></article>)}{!publicAnimals.length && <div className="rescue-empty"><strong>No public animal profiles</strong><span>Enable a public-safe preview on individual animal records to feature them here.</span></div>}</div></section>
     <section className="rescue-card"><div className="rescue-form-actions"><Link className="rescue-primary-link" to="/rescue/organisation">Back to organisation editor →</Link>{org.directoryVisible && <Link className="rescue-primary-link" to={`/rescue/public/${setup.organisationId}`}>Open live profile ↗</Link>}</div></section>
   </main></GatePage>;
 }

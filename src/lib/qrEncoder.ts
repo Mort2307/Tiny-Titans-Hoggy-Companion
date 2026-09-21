@@ -192,7 +192,7 @@ const RS_CACHE: (RsCache | undefined)[] = [];
 // Generator and all coefficient*feedback products, shared by every symbol
 // with the same parity length; entries are generated lazily.
 function rsCached(eccWords: number): RsCache {
-  let cached = RS_CACHE[eccWords];
+  const cached = RS_CACHE[eccWords];
   if (cached !== undefined) return cached;
   const gen = rsGenerator(eccWords);
   const { exp: EXP, log: LOG } = GF256;

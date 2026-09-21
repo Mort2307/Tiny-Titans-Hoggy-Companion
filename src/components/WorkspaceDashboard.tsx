@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import TinyTitansIcon from "./TinyTitansIcon";
+import { tinyTitansNavigationIcon } from "../config/tinyTitansNavigationIcons";
 import type { WorkspaceProductId } from "../config/workspaceProducts";
 import "../styles/workspaceDashboard.css";
 
@@ -66,8 +68,8 @@ export default function WorkspaceDashboard({ productId }: { productId: Exclude<W
   const data = DATA[productId];
   return <main className={"workspace-dashboard workspace-dashboard--" + productId}>
     <section className="workspace-dashboard__hero"><div><span className="workspace-dashboard__eyebrow">WORKSPACE HOME</span><h1>{data.title}</h1><p>{data.intro}</p></div><Link className="workspace-dashboard__primary" to="/plans">Workspace plan →</Link></section>
-    <section className="workspace-dashboard__stats">{data.stats.map(([label,action])=><Link to={label==="Animals"?"/snakes":label==="Intelligence"?"/titan-intelligence":label==="Breeding"?"/breeding":label==="Records"?"/weights":label==="Listings"?"/marketplace":label==="Messages"?"/conversations":label==="Seller tools"?"/paid/marketplace":label==="Team"?"/account/partner-landing":label==="Reports"?"/paid/business-reporting":label==="Public page"?"/account/partner-landing":"/paid"} key={label}><small>{label}</small><strong>{action}</strong><span>Open →</span></Link>)}</section>
-    <section className="workspace-dashboard__grid">{data.items.map((item)=><article key={item.title}><span>{item.eyebrow}</span><h2>{item.title}</h2><p>{item.text}</p><Link to={item.path}>{item.action || "Open →"}</Link></article>)}</section>
+    <section className="workspace-dashboard__stats">{data.stats.map(([label,action])=><Link to={label==="Animals"?"/snakes":label==="Intelligence"?"/titan-intelligence":label==="Breeding"?"/breeding":label==="Records"?"/weights":label==="Listings"?"/marketplace":label==="Messages"?"/conversations":label==="Seller tools"?"/paid/marketplace":label==="Team"?"/account/partner-landing":label==="Reports"?"/paid/business-reporting":label==="Public page"?"/account/partner-landing":"/paid"} key={label}><small>{label}</small><strong>{action}</strong><span><TinyTitansIcon name={tinyTitansNavigationIcon(label === "Seller tools" ? "/paid/marketplace" : label === "Records" ? "/weights" : label === "Listings" ? "/marketplace" : label === "Messages" ? "/conversations" : label === "Animals" ? "/snakes" : label === "Intelligence" ? "/titan-intelligence" : label === "Breeding" ? "/breeding" : label === "Team" ? "/account/partner-landing" : label === "Reports" ? "/paid/business-reporting" : label === "Public page" ? "/account/partner-landing" : "/paid") } size={17} /> Open →</span></Link>)}</section>
+    <section className="workspace-dashboard__grid">{data.items.map((item)=><article key={item.title}><span>{item.eyebrow}</span><h2><TinyTitansIcon name={tinyTitansNavigationIcon(item.path)} size={23} motion="hover" /> {item.title}</h2><p>{item.text}</p><Link to={item.path}><TinyTitansIcon name={tinyTitansNavigationIcon(item.path)} size={17} /> {item.action || "Open →"}</Link></article>)}</section>
     <section className="workspace-dashboard__intelligence"><div><span>SHARED TINY TITANS INTELLIGENCE</span><h2>Your workspace stays connected to the wider TinyTitans intelligence ecosystem.</h2><p>Workspace-specific context stays separate from private records while eligible, consented signals can contribute to Creator-governed intelligence.</p></div><Link to="/account/intelligence">Intelligence &amp; privacy →</Link></section>
   </main>;
 }

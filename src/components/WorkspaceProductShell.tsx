@@ -8,6 +8,22 @@ import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 import { getWorkspacePresentation, subscribeToWorkspacePresentation, type WorkspacePresentation } from "../services/workspacePresentationService";
 import "../styles/workspaceProductShell.css";
 
+function commandIcon(title: string): TinyTitansIconName {
+  if (/animals?/i.test(title)) return "reptile";
+  if (/intelligence/i.test(title)) return "titanIntelligence";
+  if (/records/i.test(title)) return "weight";
+  if (/breeding/i.test(title)) return "breeding";
+  if (/marketplace/i.test(title)) return "marketplaceTools";
+  if (/seller/i.test(title)) return "sellerProfile";
+  if (/message|conversation/i.test(title)) return "messages";
+  if (/report/i.test(title)) return "reporting";
+  if (/organisation|team/i.test(title)) return "team";
+  if (/api|tools/i.test(title)) return "api";
+  if (/branding|public page/i.test(title)) return "branding";
+  if (/qr|scan/i.test(title)) return "camera";
+  return "knowledge";
+}
+
 const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; heading: string; description: string; actions: Array<{ title: string; path: string }> }> = {
   titan_pro: { label: "TITAN PRO COMMAND", heading: "A deeper keeper workspace", description: "Your records stay central. Pro brings the intelligence, analysis and advanced keeper workflows around them.", actions: [{ title: "My Animals", path: "/snakes" }, { title: "Intelligence", path: "/titan-intelligence" }, { title: "Records", path: "/weights" }, { title: "Breeding", path: "/breeding" }] },
   titan_seller: { label: "SELLER COMMAND", heading: "Animals in one side. Customers on the other.", description: "Move from animal record to listing, conversation and seller workflow without leaving TinyTitans.", actions: [{ title: "Animals", path: "/snakes" }, { title: "Marketplace", path: "/marketplace" }, { title: "Seller Tools", path: "/paid/marketplace" }, { title: "Messages", path: "/conversations" }] },
@@ -16,14 +32,6 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
   business_advanced: { label: "BUSINESS ADVANCED COMMAND", heading: "The operating layer for a professional reptile business.", description: "Advanced intelligence, business controls and organisation-wide workflows in one environment.", actions: [{ title: "Animals", path: "/snakes" }, { title: "Intelligence", path: "/titan-intelligence" }, { title: "Reports", path: "/paid/business-reporting" }, { title: "API & Tools", path: "/paid" }] },
   rescue: { label: "RESCUE COMMAND", heading: "Rescue operations around the animals, not the paperwork.", description: "Intake, quarantine, care, medical, movement, adoption and animal identity belong together here.", actions: [{ title: "Animal Register", path: "/rescue/animals" }, { title: "New Intake", path: "/rescue/animals?intake=1" }, { title: "Scan / Create QR", path: "/rescue/qr" }, { title: "Team", path: "/rescue/team" }] },
 };
-
-function workspaceIcon(productId: WorkspaceProduct["id"]): TinyTitansIconName {
-  if (productId === "personal") return "reptile";
-  if (productId === "rescue") return "health";
-  if (productId === "titan_seller") return "marketplace";
-  if (productId.startsWith("business_")) return "community";
-  return "titan";
-}
 
 export default function WorkspaceProductShell({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -46,7 +54,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
   return <div className={shellClass} data-workspace={product.id} data-tier={tier} style={shellStyle}>
     <header className="workspace-product-header">
       <div className="workspace-product-brand">
-        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={workspaceIcon(product.id)} size={29} /></span>
+        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={product.icon} size={29} /></span>
         <div>
           <span className="workspace-product-eyebrow">{product.eyebrow}</span>
           <strong>{product.name}</strong>
@@ -63,7 +71,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
     </header>
 
     {visibleNav.length > 0 && <nav className="workspace-product-nav" aria-label={`${product.name} navigation`}>
-      {visibleNav.map((item) => <Link key={`${item.label}-${item.path}`} className={location.pathname === item.path ? "active" : undefined} to={item.path}>{item.label}</Link>)}
+      {visibleNav.map((item) => <Link key={`${item.label}-${item.path}`} className={location.pathname === item.path ? "active" : undefined} to={item.path}><TinyTitansIcon name={item.icon} size={19} motion="hover" />{item.label}</Link>)}
     </nav>}
 
     {commandCopy && <section className="workspace-command-deck" aria-label={`${product.name} command deck`}>
@@ -73,7 +81,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
         <p>{commandCopy.description}</p>
       </div>
       <div className="workspace-command-actions">
-        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><strong>{item.title}</strong><span>Open →</span></Link>)}
+        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><TinyTitansIcon name={commandIcon(item.title)} size={21} motion="hover" /><strong>{item.title}</strong><span>Open →</span></Link>)}
       </div>
     </section>}
 

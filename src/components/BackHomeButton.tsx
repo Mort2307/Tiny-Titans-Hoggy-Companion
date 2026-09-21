@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { deleteBreedingProject, getBreedingProjects } from "../services/breedingService";
 import type { BreedingProject } from "../types/Breeding";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type Props = {
   fallback?: string;
@@ -64,7 +65,7 @@ function BackHomeButton({ fallback = "/" }: Props) {
 
   const projectManagement = location.pathname === "/breeding" && user ? (
     <details className="breeding-project-management">
-      <summary>🗑️ Manage Projects</summary>
+      <summary><TinyTitansIcon name="delete" size={18} motion="hover" /> Manage Projects</summary>
       <div className="breeding-project-management-panel">
         <label htmlFor="back-button-breeding-project">Remove breeding project</label>
         <select id="back-button-breeding-project" value={selectedProjectId} onChange={(event) => setSelectedProjectId(event.target.value)} disabled={deleting || !projects.length}>
@@ -82,7 +83,7 @@ function BackHomeButton({ fallback = "/" }: Props) {
   return (
     <div className="back-home-button-wrap">
       <button type="button" className="back-button" onClick={goBack}>
-        <span className="back-button-arrow" aria-hidden="true">←</span>
+        <span className="back-button-arrow" aria-hidden="true"><TinyTitansIcon name="move" size={18} motion="hover" /></span>
         <span>Back</span>
       </button>
       {projectsTile && projectManagement ? createPortal(projectManagement, projectsTile) : null}

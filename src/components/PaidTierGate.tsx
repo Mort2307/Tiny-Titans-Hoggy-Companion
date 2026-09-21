@@ -71,7 +71,7 @@ function TierAccessFallback({ tierId, access, entitlement }: { tierId: PaidTierI
       {tier.note && <div className="paid-access-note"><strong>Tier information</strong><span>{tier.note}</span></div>}
       {access?.source === "tester" && access.testerOverride && <div className="paid-access-note"><strong>🧪 Creator tester access</strong><span>{tier.name} is being tested without changing billing. The account's real commercial tier remains {getPaidTierDefinition(access.actualTier).name}.</span></div>}
       <div className="paid-access-actions">
-        <Link className="paid-primary" to="/plans">Compare plans →</Link>
+        <Link className="paid-primary" to={`/plans?tier=${encodeURIComponent(tier.id)}`}>Compare plans →</Link>
         <Link to="/account/billing">Billing &amp; access</Link>
       </div>
       {isRescue && <div className="paid-access-note"><strong>Already invited by a Rescue organisation?</strong><span>Use the invitation link sent to your invited email address. Accepting the invitation grants the organisation role while keeping your personal TinyTitans account separate.</span></div>}

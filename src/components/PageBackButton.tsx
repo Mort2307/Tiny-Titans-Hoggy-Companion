@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type PageBackButtonProps = {
   fallbackPath: string;
@@ -20,7 +21,7 @@ export default function PageBackButton({ fallbackPath, label = "Back" }: PageBac
 
   return (
     <button className="page-back-button" type="button" onClick={handleBack} aria-label={`${label} to previous page`}>
-      <span aria-hidden="true">←</span>
+      <span aria-hidden="true"><TinyTitansIcon name="move" size={18} motion="hover" /></span>
       {label}
     </button>
   );
