@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import {
   UNIVERSAL_SPECIES,
@@ -116,7 +117,7 @@ export default function SpeciesExplorer() {
 
       <section className="species-explorer-grid" aria-label="Species results">
         {results.length > 0 ? results.map((species) => (
-          <article key={species.id} className="species-explorer-card">
+          <article key={species.id} className="species-explorer-card"><Link className="species-explorer-card-link" to={`/species/${species.id}`} aria-label={`Open ${species.commonNames[0] ?? species.acceptedScientificName} profile`}>
             <div className="species-explorer-card__top">
               <span className={`species-risk species-risk--${species.riskClass}`}>{species.riskClass.replace("-", " ")}</span>
               <span className="species-evidence">{species.evidenceStatus.replace("-", " ")}</span>
@@ -134,7 +135,7 @@ export default function SpeciesExplorer() {
               <span>{species.husbandryStatus.replace("-", " ")}</span>
               <span>Reviewed {species.reviewedOn}</span>
             </div>
-          </article>
+          </Link></article>
         )) : (
           <div className="species-explorer-empty">
             <TinyTitansIcon name="titan" size={30} />
