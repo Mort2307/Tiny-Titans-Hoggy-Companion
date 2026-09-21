@@ -68,14 +68,21 @@ export default function SpeciesExplorer() {
 
   const groupView = activeGroup !== null;
   return (
-    <main className="page-container species-explorer-page">
+    <div className="page-container species-explorer-page">
+      <nav className="species-explorer-journey" aria-label="Connected keeper workspaces">
+        <span className="species-explorer-journey__label">SPECIES WORKSPACE</span>
+        <Link to="/snakes"><TinyTitansIcon name="reptiles" size={18} /><span>My Reptiles</span></Link>
+        <Link className="is-active" to="/species"><TinyTitansIcon name="animals" size={18} /><span>Species Explorer</span></Link>
+        <Link to="/husbandry"><TinyTitansIcon name="husbandry" size={18} /><span>Husbandry &amp; Care</span></Link>
+        <Link to="/morph-library"><TinyTitansIcon name="morph" size={18} /><span>Morph Library</span></Link>
+      </nav>
       <header className="species-explorer-hero">
         <div>
           <span className="eyebrow">TINY TITANS · SPECIES INTELLIGENCE</span>
           <h1><TinyTitansIcon name="animals" size={28} /> {groupView ? BROWSE_LABELS[activeGroup] : "Species Explorer"}</h1>
           <p>
             Browse the canonical species catalogue by the animal people actually look for — snakes, lizards, turtles and tortoises, frogs and toads, salamanders and newts, spiders, scorpions, insects, mammals, birds, fish and more.
-            Each species is separate from the individual animals recorded in your collection.
+            This is the shared reference layer behind your My Reptiles collection, Husbandry &amp; Care and the species-aware Morph Library. Each species is separate from the individual animals recorded in your collection.
           </p>
         </div>
         <div className="species-explorer-stat">
@@ -88,7 +95,7 @@ export default function SpeciesExplorer() {
         <section className="species-browse-groups" aria-label="Browse animals by type">
           <div className="species-browse-groups__heading">
             <div><p className="eyebrow">BROWSE BY ANIMAL TYPE</p><h2>Choose what you keep</h2></div>
-            <Link to="/animals">My Animals →</Link>
+            <Link to="/snakes">Back to My Reptiles →</Link>
           </div>
           <div className="species-browse-groups__grid">
             {UNIVERSAL_SPECIES_BROWSE_GROUPS.map((item) => (
@@ -145,6 +152,6 @@ export default function SpeciesExplorer() {
           {query.trim() && <span>{searchUniversalSpecies(query).length.toLocaleString()} matches for “{query.trim()}”</span>}
         </section>
       )}
-    </main>
+    </div>
   );
 }
