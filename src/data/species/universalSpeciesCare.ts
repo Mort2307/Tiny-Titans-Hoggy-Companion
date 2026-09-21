@@ -452,11 +452,13 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
   const requirements = [...classRequirements, genusRequirement];
 
   const scopeKey = `genus:${species.genus}`;
-  const careStatus = species.husbandryStatus !== 'taxonomy-only'
-    ? 'sourced-profile'
-    : CLASS_SOURCE_IDS[species.className].length > 0
-      ? 'baseline'
-      : 'needs-review';
+  const careStatus = species.husbandryStatus === 'specialist-profile'
+    ? 'specialist-reviewed'
+    : species.husbandryStatus !== 'taxonomy-only'
+      ? 'sourced-profile'
+      : CLASS_SOURCE_IDS[species.className].length > 0
+        ? 'baseline'
+        : 'needs-review';
   const husbandry: UniversalHusbandryProfile = {
     status: careStatus,
     scopeKey,
@@ -476,7 +478,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
       'Species-specific numeric temperature/humidity/water-chemistry targets where applicable.',
       'Species-specific enclosure-size and lighting calculations where applicable.',
       'Species-specific feeding quantity/frequency and supplementation.',
-        'Species-specific breeding and life-stage refinements.',
+      'Species-specific breeding and life-stage refinements.',
       'Dedicated genus-level husbandry literature when not already mapped.',
     ],
     sourceIds: [...new Set(requirements.flatMap((item) => item.evidence.sourceIds))],
@@ -486,7 +488,7 @@ export function buildUniversalSpeciesCare(species: UniversalSpeciesRecord): Univ
   const health = buildHealth(species, scopeKey);
   health.status = husbandry.status;
   const resolvedFrom = [
-    genusNote ? `genus:${species.genus}` : `class:${species.className}`,
+    `genus:${species.genus}`,
     `class:${species.className}`,
     species.taxonSourceId,
   ];
