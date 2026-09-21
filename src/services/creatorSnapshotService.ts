@@ -1,7 +1,7 @@
 import { collection,doc,getDoc,getDocs,type DocumentData,type QuerySnapshot } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getGlobalStats } from "./creatorService";
-import type { UserRecord, Snapshot, DrillRecord, ConsentState } from "../types/creatorSnapshot";
+import type { UserRecord, Snapshot, DrillRecord, ConsentState, TileKey } from "../types/creatorSnapshot";
 import { dateText, text, normalizedStatus } from "../lib/creatorSnapshotAnalytics";
 
 async function safeCollection(name:string,unavailableSources:string[]):Promise<QuerySnapshot<DocumentData>|null>{try{return await getDocs(collection(db,name));}catch{unavailableSources.push(name);return null;}}
