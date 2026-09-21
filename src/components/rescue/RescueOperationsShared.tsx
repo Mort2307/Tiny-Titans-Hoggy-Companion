@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import PaidTierGate from "../components/PaidTierGate";
-import TinyTitansIcon from "../components/TinyTitansIcon";
-import { useAuth } from "../context/useAuth";
+import PaidTierGate from "../PaidTierGate";
+import TinyTitansIcon from "../TinyTitansIcon";
+import { useAuth } from "../../context/useAuth";
 import {
   listRescueAnimals,
   setRescueReminderComplete,
   updateRescueAnimal,
-} from "../services/rescueService";
-import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
-import { getRescueSetupState } from "../services/rescueSetupService";
+} from "../../services/rescueService";
+import { getMyRescueWorkspace } from "../../services/rescueWorkspaceService";
+import { getRescueSetupState } from "../../services/rescueSetupService";
 import type {
   RescueAnimal,
   RescueAnimalStatus,
@@ -17,7 +17,7 @@ import type {
   RescueLocationRecord,
   RescueOrganisation,
   RescueQuarantineRecord,
-} from "../types/rescue";
+} from "../../types/rescue";
 import "../styles/rescue.css";
 
 const STATUS_LABELS: Record<RescueAnimalStatus, string> = {
