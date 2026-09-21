@@ -55,6 +55,13 @@ for (const speciesId of ['dendrobates-tinctorius', 'pelodryas-caerulea', 'cerato
   assert((species.care.husbandry.numericGuidance.ranges ?? []).every((range) => range.evidence.basis === 'species-specific'), `${speciesId} numeric ranges must retain species-specific evidence scope.`);
 }
 
+
+for (const speciesId of ['pantherophis-guttatus', 'eublepharis-macularius', 'pogona-vitticeps', 'python-regius']) {
+  const species = UNIVERSAL_SPECIES_BY_ID[speciesId];
+  assert(species?.care?.husbandry.coverage === 'species', `${speciesId} must have a species-scoped husbandry profile.`);
+  assert((species.care.husbandry.numericGuidance.ranges ?? []).length > 0, `${speciesId} species care must expose its mapped numeric evidence where the source supports it.`);
+}
+
 const requiredGroups = ['reptile', 'amphibian', 'arachnid', 'insect', 'myriapod', 'mollusc', 'crustacean', 'mammal', 'bird', 'fish', 'cephalopod'];
 for (const group of requiredGroups) {
   assert(UNIVERSAL_SPECIES.some((species) => species.className === group), `Missing universal animal group: ${group}`);
