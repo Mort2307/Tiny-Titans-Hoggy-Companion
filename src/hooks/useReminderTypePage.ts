@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
@@ -23,6 +22,6 @@ export function useReminderTypePage(){
   async function logWaterChange(reminder:Reminder){ if(!user||busy)return;setBusy(true);setMessage("");try{const result=await completeWaterChange(user.uid,reminder);const [loadedReminders,loadedLogs]=await Promise.all([listReminders(user.uid),listWaterChangeLogs(user.uid)]);setReminders(loadedReminders.filter((item)=>item.kind===kind));setWaterLogs(loadedLogs as WaterChangeLog[]);setMessage("Water change logged for "+formatReminderDateKey(result.completedDate)+". Next one is "+formatReminderDateKey(result.nextDate)+".");}catch(error){setMessage(error instanceof Error?error.message:"Unable to log this water change.");}finally{setBusy(false);} }
   async function toggle(reminder:Reminder){if(!user||busy)return;setBusy(true);setMessage("");try{await setReminderPaused(user.uid,reminder,reminder.status==="active");setReminders((await listReminders(user.uid)).filter((item)=>item.kind===kind));setMessage(reminder.status==="active"?reminder.title+" paused.":reminder.title+" resumed.");}catch(error){setMessage(error instanceof Error?error.message:"Unable to change reminder status.");}finally{setBusy(false);}}
   async function remove(reminder:Reminder){if(!user||busy)return;if(!window.confirm("Delete “"+reminder.title+"”? This does not remove any tracker records."))return;setBusy(true);setMessage("");try{await deleteReminder(user.uid,reminder.id);setReminders((current)=>current.filter((item)=>item.id!==reminder.id));if(editingId===reminder.id)resetForm();setMessage(reminder.title+" deleted.");}catch(error){setMessage(error instanceof Error?error.message:"Unable to delete this reminder.");}finally{setBusy(false);}}
-  if(!definition)return {invalid:true};
-  return {invalid:false,kind,definition,requestedSnakeId,user,loading,profileLoading,snakes,reminders,waterLogs,editingId,form,busy,message,loadingData,isFeeding,isWaterChange,activeReminders,pausedReminders,updateForm,resetForm,edit,save,logWaterChange,toggle,remove,definitions:REMINDER_DEFINITIONS};
+  if(!definition)return {invalid:true as const};
+  return {invalid:false as const,kind,definition,requestedSnakeId,user,loading,profileLoading,snakes,reminders,waterLogs,editingId,form,busy,message,loadingData,isFeeding,isWaterChange,activeReminders,pausedReminders,updateForm,resetForm,edit,save,logWaterChange,toggle,remove,definitions:REMINDER_DEFINITIONS};
 }
