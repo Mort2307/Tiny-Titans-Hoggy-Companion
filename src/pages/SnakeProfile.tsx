@@ -12,7 +12,7 @@ import "../styles/snake-profile.css";
 
 export default function SnakeProfile() {
   const {
-    id, user, loading, profileLoading, snake, loadingSnake, intelligence, intelligenceLoading,
+    id, loading, profileLoading, snake, loadingSnake, intelligence, intelligenceLoading,
     intelligenceAccess, benchmarkLoading, benchmarkError, deleting, confirmDelete, setConfirmDelete,
     error, reminder, summary, weightHistory, morphText, hetText, reminderWeightRoute,
     waterChangeRoute, navigate, deleteSnake,
@@ -29,8 +29,6 @@ export default function SnakeProfile() {
   const activeReminder = reminder ?? { status: "disabled" as const, nextDate: null, daysRemaining: null };
   const ageText = ageLabel(snake.hatchDate);
   const keeperTimeText = timeWithKeeperLabel(snake.arrivalDate);
-  const currentId = id ?? snake.id;
-
   return (
     <div className="page-container snake-profile-page">
       <BackHomeButton fallback="/snakes" />
@@ -57,7 +55,6 @@ export default function SnakeProfile() {
         onConfirm={() => void deleteSnake()}
         onCancel={() => { if (!deleting) setConfirmDelete(false); }}
       />
-      {currentId !== snake.id && null}
     </div>
   );
 }
