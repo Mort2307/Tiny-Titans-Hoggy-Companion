@@ -20,7 +20,6 @@ export default function useFeedingTracker() {
   const { isImperial, weightUnit, formatWeight } = useUnits();
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [selectedSnakeId, setSelectedSnakeId] = useState("");
-  const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]);
   const [feedings, setFeedings] = useState<FeedingRecord[]>([]);
   const [loadingSnakes, setLoadingSnakes] = useState(true);
   const [loadedFeedingsKey, setLoadedFeedingsKey] = useState<string | null>(null);
