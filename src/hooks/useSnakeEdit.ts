@@ -5,7 +5,7 @@ import type { Snake } from "../types/Snake";
 import type { Het } from "../types/genetics";
 import type { WeightRecord } from "../types/Weight";
 import type { MorphSubmissionInputV2 } from "../services/morphSubmissionServiceV2";
-import type { SaveStage } from "../components/SaveProgress";
+import type { SaveStage } from "../types/save";
 import { getUserSnake, saveUserSnake } from "../services/snakeService";
 import { submitMorphImageV2 } from "../services/morphSubmissionServiceV2";
 import { migrateSnake } from "../utils/snakeMigration";
