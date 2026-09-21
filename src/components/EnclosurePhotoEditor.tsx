@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import TinyTitansIcon from "./TinyTitansIcon";
 import { useAuth } from "../context/useAuth";
 import { updateUserSnake } from "../services/snakeService";
 import {
@@ -124,7 +125,7 @@ export default function EnclosurePhotoEditor({ snake, onUpdated }: Props) {
     <div className="room-photo-editor">
       <div className="room-photo-heading">
         <div>
-          <span>📷 Real Vivarium Photo</span>
+          <span><TinyTitansIcon name="camera" size={18} /> Real Vivarium Photo</span>
           <small>
             Optional. This photo belongs to {snake.name}'s enclosure record and
             follows the snake if you move them.
@@ -148,7 +149,7 @@ export default function EnclosurePhotoEditor({ snake, onUpdated }: Props) {
           <div className="room-photo-overlay">
             <strong>{snake.name}</strong>
             <span>{dimensions}</span>
-            {photo.mode !== "photo" && <span>🧠 Live Tiny Titans data</span>}
+            {photo.mode !== "photo" && <span><TinyTitansIcon name="titan" size={17} /> Live Tiny Titans data</span>}
           </div>
         </div>
       ) : (
@@ -158,7 +159,7 @@ export default function EnclosurePhotoEditor({ snake, onUpdated }: Props) {
           onClick={() => inputRef.current?.click()}
           disabled={busy || !snake.enclosure}
         >
-          <span>📸</span>
+          <span><TinyTitansIcon name="camera" size={28} /></span>
           <strong>Add a photo of this actual vivarium</strong>
           <small>We'll resize it for the room automatically.</small>
         </button>
@@ -173,7 +174,7 @@ export default function EnclosurePhotoEditor({ snake, onUpdated }: Props) {
             onClick={() => void changeMode("photo")}
             disabled={busy}
           >
-            🖼️ Photo
+            <><TinyTitansIcon name="camera" size={17} /> Photo</>
           </button>
           <button
             type="button"
@@ -181,7 +182,7 @@ export default function EnclosurePhotoEditor({ snake, onUpdated }: Props) {
             onClick={() => void changeMode("hybrid")}
             disabled={busy}
           >
-            🧠 Hybrid
+            <><TinyTitansIcon name="titan" size={17} /> Hybrid</>
           </button>
           <button
             type="button"
@@ -189,7 +190,7 @@ export default function EnclosurePhotoEditor({ snake, onUpdated }: Props) {
             onClick={() => void changeMode("minimal")}
             disabled={busy}
           >
-            🏷️ Minimal
+            <><TinyTitansIcon name="enclosure" size={17} /> Minimal</>
           </button>
           <button
             type="button"
