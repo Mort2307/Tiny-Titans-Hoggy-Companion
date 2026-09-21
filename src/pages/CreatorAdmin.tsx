@@ -11,7 +11,7 @@ import "../styles/CreatorUsers.css";
 
 export default function CreatorAdmin() {
   const {
-    profile, user, stats, users, morphPending, bugPending, feedbackNew, loading, usersLoading, error,
+    profile, stats, users, morphPending, bugPending, feedbackNew, loading, usersLoading, error,
     panel, setPanel, selectedUser, setSelectedUser, search, setSearch, claimBusy, claimMessage,
     setClaimMessage, now, filteredUsers, userInsights, loadDashboard, loadUsers, grantCreatorTesterClaim,
   } = useCreatorAdmin();
