@@ -7,7 +7,6 @@ import type { EnvironmentHistoryEntry } from "../types/Enclosure";
 import type { Snake } from "../types/Snake";
 import type { Room3DAssetPreset,Room3DSelection,Room3DTransformPatch,VivariumTelemetry } from "../types/reptileRoom3D";
 import { REPTILE_ROOM_ASSET_CATEGORIES } from "../data/reptileRoomAssetCatalog";
-import { buildRoomNavigationNodes } from "../components/reptile-room-3d/RoomNavigation3D";
 import { clamp,getMovedRoom,getMovementMembers,heatingTypeForKind,latestDate,nextId,snap,snakeName,slotParentAssetId,slotRotation,vivDepth,vivHeight,vivWidth,type SlotTransform } from "../lib/reptileRoom3D";
 
 export function useReptileRoom3D(){
@@ -51,6 +50,6 @@ const { user, loading, profileLoading } = useAuth(); const [rooms, setRooms] = u
     selectedSlot,selectedObject,snakeMap,selectedDimensions,selectedPhoto,selectedRotation,roomsRef,previousPhotoUrlsRef,
     persistRooms,load,updateRoom,addAsset,moveSelection,moveBy,snapSelected,snapToWall,stackSnapSelected,magnetLockSelected,unlockMagnet,unstackSelected,
     deleteSelected,duplicateSelected,updateSelectedDimensions,updateSelectedPosition,updateSelectedRotation,resetSelectedRotation,applyTransformPatch,patchSelectedAsset,
-    uploadPhoto,removePhoto,useSnakePhoto,photoFor,telemetryFor,saveCurrentRoom,handleTeleport,effectivePhotoForSlot,selectRoom
+    uploadPhoto,removePhoto,useSnakePhoto,photoFor,telemetryFor,saveCurrentRoom
   };
 }
