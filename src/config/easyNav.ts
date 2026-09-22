@@ -19,7 +19,7 @@ export const TITAN_AT_A_GLANCE_OPTIONS: Array<{
   { id: "intelligence", label: "Titan Intelligence", icon: "titan", description: "Open the intelligence command centre." },
   { id: "genetics", label: "Genetics", icon: "genetics", description: "Open the Morph Library and genetics tools." },
   { id: "breeding", label: "Breeding", icon: "breeding", description: "Open the breeding planner." },
-  { id: "snakes", label: "My Reptiles", icon: "reptiles", description: "Open your full reptile collection." },
+  { id: "snakes", label: "My Animals", icon: "reptiles", description: "Open your full animal collection." },
   { id: "learning", label: "Learn", icon: "academy", description: "Continue learning and challenges." },
   { id: "community", label: "Community", icon: "community", description: "Open the keeper community." },
   { id: "room", label: "Reptile Room", icon: "enclosure", description: "Open your reptile room." },
