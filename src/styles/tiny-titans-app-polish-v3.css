@@ -198,7 +198,7 @@ body{
 .tt-tracker-button.secondary{background:rgba(255,255,255,.035);}
 .tt-tracker-button.danger{background:rgba(231,123,123,.07);}
 
-/* My Snakes: polished without changing the room or snake functionality. */
+/* My Animals: polished without changing the room or snake functionality. */
 .my-snakes-page-header{margin-bottom:16px;}
 .my-snakes-add-action{border:1px solid rgba(191,139,231,.34)!important;background:rgba(166,107,210,.10)!important;color:var(--tt-v3-text)!important;}
 .my-snakes-view-switch{border-color:rgba(198,171,220,.14)!important;background:rgba(18,14,23,.92)!important;box-shadow:0 8px 24px rgba(0,0,0,.12)!important;}
