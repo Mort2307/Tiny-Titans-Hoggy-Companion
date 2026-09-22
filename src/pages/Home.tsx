@@ -26,8 +26,8 @@ function Home() {
     <main className="dashboard tt-home">
       <header className="tt-home-brandbar">
         <div>
-          <p className="tt-home-brand"><TinyTitansIcon name="reptile" size={22} /> TinyTitans Reptile Companion</p>
-          <p className="tt-home-tagline">Your reptile companion, records, learning and intelligence — in one calm place.</p>
+          <p className="tt-home-brand"><TinyTitansIcon name="reptile" size={22} /> Tiny Titans Keeper Companion</p>
+          <p className="tt-home-tagline">Your keeper companion, records, learning and intelligence — in one calm place.</p>
         </div>
         <Link className="tt-home-profile-chip" to="/account" aria-label="Open My Account">
           <span className="tt-home-avatar" aria-hidden="true">{displayName.slice(0, 1).toUpperCase()}</span>
@@ -56,7 +56,7 @@ function Home() {
       ) : snakes.length === 0 ? (
         <section className="tt-home-panel tt-home-empty">
           <div>
-            <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> YOUR FIRST REPTILE</p>
+            <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> YOUR FIRST ANIMAL</p>
             <h2>No animals added yet</h2>
             <p>Add your first animal and Home will become personalised around its records, care and trends.</p>
           </div>
@@ -132,7 +132,7 @@ function Home() {
           <Link to="/husbandry"><span><TinyTitansIcon name="husbandry" size={25} /></span><div><strong>Husbandry Library</strong><small>Species-aware care, enclosure and environmental guidance.</small></div><b>→</b></Link>
           <Link to="/behaviour-observatory"><span><TinyTitansIcon name="observatory" size={25} /></span><div><strong>Behaviour Observatory</strong><small>Keeper observations, theories and evidence.</small></div><b>→</b></Link>
           <Link to="/community"><span><TinyTitansIcon name="community" size={25} /></span><div><strong>Titan Community</strong><small>Contributions, shared learning and community intelligence.</small></div><b>→</b></Link>
-          <Link to="/challenge"><span><TinyTitansIcon name="challenge" size={25} /></span><div><strong>Titans Challenge</strong><small>Keep building your reptile knowledge at your own level.</small></div><b>→</b></Link>
+          <Link to="/challenge"><span><TinyTitansIcon name="challenge" size={25} /></span><div><strong>Titans Challenge</strong><small>Keep building your animal-keeping knowledge at your own level.</small></div><b>→</b></Link>
           <Link to="/account/family"><span><TinyTitansIcon name="family" size={25} /></span><div><strong>My Family</strong><small>Shared care with controlled access.</small></div><b>→</b></Link>
         </div>
       </section>
@@ -147,7 +147,7 @@ function Home() {
         <article className="tt-home-panel">
           <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> SPECIES-SAFE CONTEXT</p>
           <h3>Content stays attached to the animal</h3>
-          <p>Care, safety and genetics surfaces are designed to remain species-aware as TinyTitans expands beyond snakes.</p>
+          <p>Care, safety and genetics surfaces remain species-aware across the animals you keep.</p>
           <Link to="/snakes">Manage animals →</Link>
         </article>
       </section>
