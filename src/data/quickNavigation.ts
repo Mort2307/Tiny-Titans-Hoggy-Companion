@@ -18,10 +18,9 @@ export type QuickNavItem = {
  */
 export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "home", label: "Home / At a Glance", icon: "home", path: "/", group: "Overview", description: "Your keeper command centre." },
-  { id: "snakes", label: "My Reptiles", icon: "reptiles", path: "/snakes", group: "Overview", description: "View, add and manage every Titan.", keywords: ["snake", "animals", "collection", "new snake"] },
   { id: "animals", label: "My Animals", icon: "animals", path: "/animals", group: "Overview", description: "Your individual animals across supported species.", keywords: ["animals", "pets", "collection", "individuals"] },
   { id: "species", label: "Species Explorer", icon: "reptile", path: "/species", group: "Overview", description: "Explore the universal Tiny Titans animal catalogue.", keywords: ["species", "lizards", "turtles", "amphibians", "spiders", "insects", "exotics"] },
-  { id: "room", label: "Reptile Room", icon: "grid", path: "/reptile-room", group: "Overview", description: "Manage your reptile room and vivariums.", keywords: ["vivarium", "enclosure", "room"] },
+  { id: "room", label: "Reptile Room", icon: "grid", path: "/reptile-room", group: "Overview", description: "Manage your enclosure room and vivariums.", keywords: ["vivarium", "enclosure", "room"] },
   { id: "conversations", label: "Message Centre", icon: "messages", path: "/conversations", group: "Overview", description: "Your community conversations." },
 
   { id: "reminders", label: "Reminder Hub", icon: "reminders", path: "/reminders", group: "Care", description: "See what is due next.", keywords: ["due", "notifications", "feeding reminder", "weight reminder"] },
@@ -47,7 +46,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
 
   { id: "intelligence", label: "Titan Intelligence", icon: "titan", path: "/titan-intelligence", group: "Learn & Intelligence", description: "Open the intelligence command centre." },
   { id: "this-week", label: "This Week", icon: "timeline", path: "/titan-intelligence/feature/this-week", group: "Learn & Intelligence", description: "Open the full This Week command centre." },
-  { id: "keeper-handbook", label: "Keeper Behaviour Handbook", icon: "handbook", path: "/keeper-handbook", group: "Learn & Intelligence", description: "Understand reptile behaviour." },
+  { id: "keeper-handbook", label: "Keeper Behaviour Handbook", icon: "handbook", path: "/keeper-handbook", group: "Learn & Intelligence", description: "Understand animal behaviour." },
   { id: "knowledge", label: "Knowledge Base", icon: "knowledge", path: "/knowledge-base", group: "Learn & Intelligence", description: "Find evidence-backed answers.", keywords: ["learn", "question", "help", "information"] },
   { id: "learn", label: "Learning Hub", icon: "academy", path: "/learn", group: "Learn & Intelligence", description: "Explore learning topics." },
   { id: "adaptive-learning", label: "Adaptive Learning", icon: "titan", path: "/adaptive-learning", group: "Learn & Intelligence", description: "Continue personalised learning." },
@@ -60,7 +59,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "rescue-incubator", label: "Species Incubator", icon: "morph", path: "/rescue/species-incubator", group: "Rescue", description: "Turn unsupported rescue species into verified evidence candidates.", keywords: ["species","discovery","verification"] },
 
   { id: "community", label: "Community Hub", icon: "community", path: "/community", group: "Community", description: "News, updates and community features.", keywords: ["updates", "news", "community"] },
-  { id: "marketplace", label: "Marketplace", icon: "marketplace", path: "/marketplace", group: "Community", description: "Browse active reptile marketplace listings.", keywords: ["market", "marketplace", "seller", "listing", "shop"] },
+  { id: "marketplace", label: "Marketplace", icon: "marketplace", path: "/marketplace", group: "Community", description: "Browse active animal marketplace listings.", keywords: ["market", "marketplace", "seller", "listing", "shop"] },
   { id: "feature-voting", label: "Feature Voting", icon: "challenge", path: "/community/features", group: "Community", description: "Vote on what Tiny Titans builds next." },
   { id: "vivarium-showcase", label: "Vivarium Showcase", icon: "enclosure", path: "/community/vivarium-showcase", group: "Community", description: "Explore keeper setups." },
   { id: "mentorship", label: "Mentorship", icon: "mentorship", path: "/community/mentorship", group: "Community", description: "Connect with experienced keepers." },
