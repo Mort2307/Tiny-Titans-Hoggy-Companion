@@ -37,6 +37,7 @@
     "validate:cross-domain-intelligence": "node scripts/validate-titan-cross-domain-intelligence.mjs",
     "validate:v50-impact": "node scripts/validate-v50-impact-graph.mjs",
     "validate:encoding": "node scripts/check-mojibake.mjs",
+    "validate:keeper-branding": "node scripts/validate-keeper-companion-branding.mjs",
     "validate:copy-quality": "node scripts/audit-ui-copy.mjs",
     "validate:security": "node scripts/validate-security-contracts.mjs",
     "validate:paid-tiers": "node scripts/validate-paid-tier-contract.mjs",
