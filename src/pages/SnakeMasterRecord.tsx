@@ -11,7 +11,7 @@ export default function SnakeMasterRecord() {
   const {id,record,loading,error,deletingRecordId,highlightedEventId,intelligence,isImperial,speciesLabel,weight,change,shedLength,averageShed,latestFeedAttempt,latestSuccessful,confidenceDetails,formatDaysSinceFeeding,handleDeleteTimelineRecord}=useSnakeMasterRecord();
   if(loading)return <main className="page-container"><section className="master-shell"><p role="status">Loading individual record…</p></section></main>;
   if(error&&!record)return <main className="page-container"><section className="master-shell"><h1>Unable to load record</h1><p role="alert">{error}</p><Link to={`/snakes/${id}`}>Back to reptile</Link></section></main>;
-  if(!record)return <main className="page-container"><section className="master-shell"><h1>Reptile not found</h1><p>This Master Record could not be found for this account.</p><Link to="/snakes">Back to My Reptiles</Link></section></main>;
+  if(!record)return <main className="page-container"><section className="master-shell"><h1>Reptile not found</h1><p>This Master Record could not be found for this account.</p><Link to="/snakes">Back to Snake Records</Link></section></main>;
   const {snake,overview,timeline}=record;
   return <main className="page-container master-record-page"><section className="master-shell">
     <header className="master-hero"><div><p className="master-eyebrow">Individual Master Record</p><h1>{snake.name}</h1><p>{speciesLabel}</p>{snake.morphs?.length ? <small>{snake.morphs.join(" • ")}</small> : null}</div><Link className="master-back" to={`/snakes/${snake.id}`}>Reptile profile</Link></header>
