@@ -47,7 +47,7 @@ export default function BreedingReadinessIntelligence() {
 
   useEffect(() => {
     if (loading || profileLoading || !user) return;
-    void getUserSnakes(user.uid).then((items) => setSnakes(items.filter((snake) => snake?.id))).catch((err) => setError(err instanceof Error ? err.message : "Unable to load your snakes."));
+    void getUserSnakes(user.uid).then((items) => setSnakes(items.filter((snake) => snake?.id))).catch((err) => setError(err instanceof Error ? err.message : "Unable to load your animals."));
   }, [user, loading, profileLoading]);
 
   const males = useMemo(() => snakes.filter((snake) => snake.sex === "Male"), [snakes]);
@@ -73,7 +73,7 @@ export default function BreedingReadinessIntelligence() {
     return { ...item, status: next };
   }));
 
-  if (loading || profileLoading) return <main className="page-container readiness-page"><BackHomeButton /><h2>🧠 Breeding Readiness</h2><p>Loading your snakes…</p></main>;
+  if (loading || profileLoading) return <main className="page-container readiness-page"><BackHomeButton /><h2>🧠 Breeding Readiness</h2><p>Loading your animals…</p></main>;
   if (!user) return <main className="page-container readiness-page"><BackHomeButton /><h2>🧠 Breeding Readiness</h2><p>Sign in to review an actual pairing.</p><button type="button" onClick={() => navigate("/login")}>Sign In</button></main>;
 
   return <main className="page-container readiness-page">
