@@ -1,0 +1,106 @@
+/* =========================================================
+   TINY TITANS APP UPDATE CONTROL
+========================================================= */
+
+.tt-update-manual {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 100000;
+
+  min-height: 44px;
+  min-width: 148px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 10px 16px;
+
+  border: 1px solid rgba(245, 182, 66, 0.72);
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(111, 36, 184, 0.96),
+      rgba(38, 8, 61, 0.98)
+    );
+  color: #f5b642;
+
+  font-size: 0.8rem;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.3),
+    0 0 18px rgba(245, 182, 66, 0.16);
+
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.tt-update-manual::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+
+  border-radius: 50%;
+  background: #f5b642;
+
+  box-shadow: 0 0 10px rgba(245, 182, 66, 0.7);
+}
+
+.tt-update-manual:hover {
+  transform: translateY(-2px);
+
+  border-color: #f5b642;
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.34),
+    0 0 22px rgba(245, 182, 66, 0.24);
+}
+
+.tt-update-manual:active {
+  transform: scale(0.98);
+}
+
+.tt-update-manual:focus-visible {
+  outline: 3px solid rgba(0, 174, 255, 0.45);
+  outline-offset: 3px;
+}
+
+.tt-update-manual:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+@media (max-width: 700px) {
+  .tt-update-manual {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+
+    min-width: 140px;
+    min-height: 46px;
+
+    padding: 10px 14px;
+
+    font-size: 0.78rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-update-manual {
+    transition: none;
+  }
+}
