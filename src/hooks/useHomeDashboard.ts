@@ -2,14 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { useWorldTime } from "../context/WorldTimeContext";
 import { getUserSnakes } from "../services/snakeService";
+import { getUserAnimals } from "../services/universalAnimalService";
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
 import { getDashboardIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
 import { getTitanDecisionState, refreshTitanDecisionStateForAnimals, type TitanDecision } from "../services/titanDecisionStateService";
 import { subscribeToTitanIntelligenceUpdates } from "../services/titanReactiveIntelligenceService";
 
-export type HomeSnake = { id: string; name: string; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number; };
+export type HomeAnimal = { id: string; name: string; species?: string; animalGroup?: string; recordSource: "universal" | "legacy-snake"; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number; };
+export type HomeSnake = HomeAnimal;
 
-export function buildQuietIntelligenceSnippet(snake: HomeSnake | undefined, totalRecords: number, dateKey: string): string {
+export function buildQuietIntelligenceSnippet(snake: HomeAnimal | undefined, totalRecords: number, dateKey: string): string {
   if (!snake || totalRecords === 0) return "There is more useful information hiding in a well-kept record than first meets the eye.";
   const snippets = [
     snake.weightRecords >= 3 ? `${snake.name} weight history is starting to look like a pattern rather than a pile of numbers.` : null,
@@ -30,7 +32,7 @@ export function buildQuietIntelligenceSnippet(snake: HomeSnake | undefined, tota
 export function useHomeDashboard() {
   const { user, profile } = useAuth();
   const world = useWorldTime();
-  const [snakes, setSnakes] = useState<HomeSnake[]>([]);
+  const [snakes, setSnakes] = useState<HomeAnimal[]>([]);
   const [intelligence, setIntelligence] = useState<SnakeIntelligence[]>([]);
   const [decision, setDecision] = useState<TitanDecision | null>(null);
   const [selectedSnakeId, setSelectedSnakeId] = useState("");
@@ -48,22 +50,25 @@ export function useHomeDashboard() {
     setAccessChecked(false);
     const load = async () => {
       try {
-        const [hasAccess, records] = await Promise.all([hasFullIntelligenceAccess(user.uid), getUserSnakes(user.uid)]);
+        const [hasAccess, records, universalAnimals] = await Promise.all([hasFullIntelligenceAccess(user.uid), getUserSnakes(user.uid), getUserAnimals(user.uid)]);
         if (!active) return;
         setIntelligenceAccess(hasAccess);
         setAccessChecked(true);
-        const minimal = records.map((snake) => ({ id: snake.id, name: snake.name, weightRecords: snake.weightHistory?.length ?? 0, feedingRecords: snake.feedingHistory?.length ?? 0, shedRecords: snake.shedHistory?.length ?? 0, healthRecords: snake.healthHistory?.length ?? 0 }));
+        const legacyMinimal: HomeAnimal[] = records.map((snake) => ({ id: snake.id, name: snake.name, species: snake.species, animalGroup: "reptile", recordSource: "legacy-snake", weightRecords: snake.weightHistory?.length ?? 0, feedingRecords: snake.feedingHistory?.length ?? 0, shedRecords: snake.shedHistory?.length ?? 0, healthRecords: snake.healthHistory?.length ?? 0 }));
+        const universalMinimal: HomeAnimal[] = universalAnimals.map((animal) => ({ id: animal.id, name: animal.name, species: animal.speciesCommonName || animal.scientificName, animalGroup: animal.animalGroup, recordSource: "universal", weightRecords: 0, feedingRecords: 0, shedRecords: 0, healthRecords: 0 }));
+        const minimal = [...legacyMinimal, ...universalMinimal].sort((a, b) => a.name.localeCompare(b.name));
         setSnakes(minimal);
         setSelectedSnakeId((current) => minimal.some((snake) => snake.id === current) ? current : minimal[0]?.id ?? "");
         if (!hasAccess) { setIntelligence([]); setDecision(null); return; }
-        const insights = await getDashboardIntelligence(user.uid, minimal.map((snake) => snake.id));
+        const legacyIds = minimal.filter((animal) => animal.recordSource === "legacy-snake").map((animal) => animal.id);
+        const insights = await getDashboardIntelligence(user.uid, legacyIds);
         if (!active) return;
         setIntelligence(insights);
         const existing = getTitanDecisionState(user.uid);
         const existingActive = existing.decisions.find((item) => item.status === "active") ?? null;
         if (existing.decisions.length > 0) setDecision(existingActive);
         else {
-          const refreshed = await refreshTitanDecisionStateForAnimals(user.uid, minimal.map((snake) => snake.id));
+          const refreshed = await refreshTitanDecisionStateForAnimals(user.uid, minimal.filter((animal) => animal.recordSource === "legacy-snake").map((animal) => animal.id));
           if (!active) return;
           setDecision(refreshed.decisions.find((item) => item.status === "active") ?? null);
         }
