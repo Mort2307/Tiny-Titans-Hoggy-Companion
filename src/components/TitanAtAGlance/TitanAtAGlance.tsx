@@ -114,7 +114,7 @@ function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): Slic
     case "snakes": return { label: "My Animals", value: "Open", secondary: "Your collection", route: routeFor(slice, id) };
     case "learning": return { label: "Learn", value: "Open", secondary: "Continue learning", route: routeFor(slice, id) };
     case "community": return { label: "Community", value: "Open", secondary: "Keeper community", route: routeFor(slice, id) };
-    case "room": return { label: "Reptile Room", value: "Open", secondary: "Your room", route: routeFor(slice, id) };
+    case "room": return { label: "Keeper Room", value: "Open", secondary: "Your keeper room", route: routeFor(slice, id) };
     case "knowledge": return { label: "Knowledge Base", value: "Open", secondary: "Find an answer", route: routeFor(slice, id) };
     case "contribution": return { label: "Contribute", value: "Open", secondary: "Help Tiny Titans", route: routeFor(slice, id) };
     case "goals": return { label: "Titan Goals", value: "Open", secondary: "Your progress", route: routeFor(slice, id) };
