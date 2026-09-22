@@ -66,7 +66,7 @@ exports.sendEquipmentReplacementNotifications = onSchedule({ schedule: "15 9 * *
     const snakes = await userDocument.ref.collection("snakes").get();
     for (const snakeDocument of snakes.docs) {
       const snake = snakeDocument.data();
-      const snakeName = String(snake.name || "your snake");
+      const snakeName = String(snake.name || "your animal");
       const items = snake.enclosure?.equipmentMaintenance;
       if (!Array.isArray(items)) continue;
       for (const item of items) {
