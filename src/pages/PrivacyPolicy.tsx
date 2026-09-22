@@ -27,6 +27,12 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="personalisation-card">
+          <h2>Open-source icon attribution</h2>
+          <p>The animated My Animals navigation icon uses animal artwork from Game-icons.net by Lorc, licensed under CC BY 3.0. This credit is provided in accordance with the icon licence.</p>
+          <p><a href="https://game-icons.net/" target="_blank" rel="noreferrer">Game-icons.net</a> · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a></p>
+        </section>
+
+        <section className="personalisation-card">
           <h2>Your controls</h2>
           <p>You can review optional privacy choices from Data &amp; Privacy. You can also permanently delete your account from Security after a recent sign-in, or use the external deletion request page when you cannot access the app.</p>
           <p><Link to="/account/data-privacy">Open Data &amp; Privacy</Link> · <Link to="/delete-account">Request account deletion</Link></p>
