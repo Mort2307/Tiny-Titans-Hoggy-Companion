@@ -40,22 +40,6 @@ export default defineConfig({
         navigateFallback: "/index.html",
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
-        runtimeCaching: [
-          {
-            urlPattern: ({ origin }) => origin === "https://game-icons.net",
-            handler: "CacheFirst",
-            options: {
-              cacheName: "tiny-titans-game-icons",
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
-              },
-            },
-          },
-        ],
       },
       devOptions: { enabled: false },
     }),
