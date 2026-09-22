@@ -60,7 +60,7 @@ function Home() {
             <h2>No animals added yet</h2>
             <p>Add your first animal and Home will become personalised around its records, care and trends.</p>
           </div>
-          <Link className="tt-home-primary" to="/snakes/new"><TinyTitansIcon name="add" size={20} /> Add your first animal</Link>
+          <Link className="tt-home-primary" to="/animals"><TinyTitansIcon name="add" size={20} /> Add your first animal</Link>
         </section>
       ) : (
         <HomeCurrentAnimalSection
@@ -96,7 +96,7 @@ function Home() {
           <Link to="/feeding"><span><TinyTitansIcon name="feeding" size={30} /></span><strong>Feeding</strong><small>Log a feed</small></Link>
           <Link to="/shedding"><span><TinyTitansIcon name="shed" size={30} /></span><strong>Shed</strong><small>Record a stage</small></Link>
           <Link to="/husbandry"><span><TinyTitansIcon name="husbandry" size={30} /></span><strong>Environment</strong><small>Log conditions</small></Link>
-          <Link to="/snakes/new"><span><TinyTitansIcon name="add" size={30} /></span><strong>Add animal</strong><small>Grow your collection</small></Link>
+          <Link to="/animals"><span><TinyTitansIcon name="add" size={30} /></span><strong>Add animal</strong><small>Grow your collection</small></Link>
         </div>
       </section>
 
@@ -106,10 +106,10 @@ function Home() {
             <p className="tt-home-kicker"><TinyTitansIcon name="weight" size={17} /> AT A GLANCE</p>
             <h2>Your records</h2>
           </div>
-          <Link to="/snakes">Open collection →</Link>
+          <Link to="/animals">Open collection →</Link>
         </div>
         <div className="tt-home-stats">
-          <Link to="/snakes"><strong>{snakes.length}</strong><span><TinyTitansIcon name="reptile" size={16} /> Animals</span></Link>
+          <Link to="/animals"><strong>{snakes.length}</strong><span><TinyTitansIcon name="reptile" size={16} /> Animals</span></Link>
           <Link to="/weights"><strong>{snapshot.weights}</strong><span><TinyTitansIcon name="weight" size={16} /> Weight</span></Link>
           <Link to="/feeding"><strong>{snapshot.feedings}</strong><span><TinyTitansIcon name="feeding" size={16} /> Feeding</span></Link>
           <Link to="/shedding"><strong>{snapshot.sheds}</strong><span><TinyTitansIcon name="shed" size={16} /> Shed</span></Link>
@@ -148,7 +148,7 @@ function Home() {
           <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> SPECIES-SAFE CONTEXT</p>
           <h3>Content stays attached to the animal</h3>
           <p>Care, safety and genetics surfaces remain species-aware across the animals you keep.</p>
-          <Link to="/snakes">Manage animals →</Link>
+          <Link to="/animals">Manage animals →</Link>
         </article>
       </section>
 
