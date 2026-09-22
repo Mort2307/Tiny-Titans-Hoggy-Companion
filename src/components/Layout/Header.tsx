@@ -126,7 +126,7 @@ function Header() {
         >
           <img
             src={logo}
-            alt="Tiny Titans Reptile Companion"
+            alt="Tiny Titans Keeper Companion"
             className="tiny-titans-logo"
           />
         </Link>
