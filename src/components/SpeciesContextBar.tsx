@@ -18,7 +18,8 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
   const evidence = selectedSpecies ? getSpeciesEvidenceSummary(selectedSpecies) : null;
   const husbandryMapped = Boolean(knowledge?.husbandry);
   const numericFullyScoped = Boolean(evidence && evidence.numericRanges > 0 && evidence.verifiedRanges === evidence.numericRanges);
-  const speciesSelected = Boolean(selectedSpeciesId && selectedSpecies);\n  const overallReady = speciesSelected && geneticsStatus === "mapped" && husbandryMapped && numericFullyScoped;
+  const speciesSelected = Boolean(selectedSpeciesId && selectedSpecies);
+  const overallReady = speciesSelected && geneticsStatus === "mapped" && husbandryMapped && numericFullyScoped;
   const geneticsLabel = geneticsStatus === "mapped" ? "🧬 Full genetics catalogue" : geneticsStatus === "partial" ? "🧬 Genetics partially catalogued" : "🧬 Genetics catalogue pending";
 
   return (
