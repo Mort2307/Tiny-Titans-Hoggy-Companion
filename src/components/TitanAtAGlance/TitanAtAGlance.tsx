@@ -111,7 +111,7 @@ function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): Slic
     case "intelligence": return { label: "Titan Intelligence", value: "Live", secondary: "Open command centre", route: routeFor(slice, id) };
     case "genetics": return { label: "Genetics", value: snake?.morphs?.length ? snake.morphs.slice(0, 1).join(", ") : "Library", secondary: snake?.morphs?.length ? "Morph profile" : "Explore morphs", route: routeFor(slice, id) };
     case "breeding": return { label: "Breeding", value: snake?.breedingEligible ? "Eligible" : "Planner", secondary: "Open breeding tools", route: routeFor(slice, id) };
-    case "snakes": return { label: "My Snakes", value: "Open", secondary: "Your collection", route: routeFor(slice, id) };
+    case "snakes": return { label: "My Animals", value: "Open", secondary: "Your collection", route: routeFor(slice, id) };
     case "learning": return { label: "Learn", value: "Open", secondary: "Continue learning", route: routeFor(slice, id) };
     case "community": return { label: "Community", value: "Open", secondary: "Keeper community", route: routeFor(slice, id) };
     case "room": return { label: "Reptile Room", value: "Open", secondary: "Your room", route: routeFor(slice, id) };
@@ -276,7 +276,7 @@ export default function TitanAtAGlance() {
         {snakePickerOpen && (
           <div className="tt-at-glance-snake-picker" role="dialog" aria-label="Select a Tiny Titan">
             <div className="tt-at-glance-snake-picker-head">
-              <strong>Select your Titan</strong>
+              <strong>Select your animal</strong>
               <button type="button" onClick={() => setSnakePickerOpen(false)} aria-label="Close Titan selector">×</button>
             </div>
             <div className="tt-at-glance-snake-picker-list">
@@ -285,11 +285,11 @@ export default function TitanAtAGlance() {
                 return (
                   <button type="button" key={snake.id} className={snake.id === selectedSnake?.id ? "selected" : ""} onClick={() => activateSnake(snake)}>
                     <span className="tt-at-glance-snake-avatar">
-                      {photo ? <img src={photo} alt="" loading="lazy" /> : <span aria-hidden="true">🐍</span>}
+                      {photo ? <img src={photo} alt="" loading="lazy" /> : <span aria-hidden="true">🐾</span>}
                     </span>
                     <span>
                       <strong>{snake.name}</strong>
-                      <small>{snake.species || "Snake"}</small>
+                      <small>{snake.species || "Species not recorded"}</small>
                     </span>
                   </button>
                 );
@@ -302,7 +302,7 @@ export default function TitanAtAGlance() {
 
       <div className="tt-at-glance-foot">
         <span>Showing {views.length} personalised shortcuts</span>
-        <Link to="/snakes">Switch Titan</Link>
+        <Link to="/snakes">Switch animal</Link>
       </div>
     </section>
   );
