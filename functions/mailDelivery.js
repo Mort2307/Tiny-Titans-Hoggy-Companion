@@ -11,7 +11,7 @@ const APP_ORIGIN = defineString("TINY_TITANS_APP_ORIGIN", {
   default: "https://tinytitans-hoggy-companion.web.app",
 });
 const SMTP_PASSWORD = defineSecret("TINY_TITANS_SMTP_PASSWORD");
-const APP_NAME = "Tiny Titans Reptile Companion";
+const APP_NAME = "Tiny Titans Keeper Companion";
 
 let transporter = null;
 
