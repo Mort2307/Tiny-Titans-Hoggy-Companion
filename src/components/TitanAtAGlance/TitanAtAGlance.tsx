@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { getUserSnakes } from "../../services/snakeService";
 import type { Snake } from "../../types/Snake";
+import type { HomeAnimal } from "../../hooks/useHomeDashboard";
+import { getUserAnimals } from "../../services/universalAnimalService";
 import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../../utils/feedingSummary";
 import type { WeightRecord } from "../../types/Weight";
 import type { ShedRecord } from "../../types/Shed";
@@ -10,6 +12,7 @@ import { TITAN_AT_A_GLANCE_OPTIONS, useEasyNav, type TitanAtAGlanceSliceId } fro
 import "./TitanAtAGlance.css";
 
 type Point = { x: number; y: number };
+type AtAGlanceAnimal = HomeAnimal & { legacySnake?: Snake };
 type SliceView = { label: string; value: string; secondary?: string; route: string; feedSecondary?: string };
 
 function polar(cx: number, cy: number, radius: number, angle: number): Point {
@@ -59,14 +62,14 @@ function currentSnakeId(pathname: string): string | undefined {
   return segment ? decodeURIComponent(segment) : undefined;
 }
 
-function routeFor(slice: TitanAtAGlanceSliceId, snakeId?: string): string {
+function routeFor(slice: TitanAtAGlanceSliceId, animal?: AtAGlanceAnimal): string {\n  const snakeId = animal?.recordSource === "legacy-snake" ? animal.id : undefined;\n  const universalPath = animal?.recordSource === "universal" ? `/animals/${animal.id}` : undefined;
   switch (slice) {
     case "feed": return snakeId ? `/snakes/${snakeId}/feeding?action=log` : "/feeding?action=log";
-    case "weight": return snakeId ? `/snakes/${snakeId}/weights?action=log` : "/weights";
-    case "shed": return snakeId ? `/snakes/${snakeId}/shedding` : "/shedding";
-    case "health": return snakeId ? `/snakes/${snakeId}/health` : "/health";
-    case "behaviour": return snakeId ? `/snakes/${snakeId}/behaviour` : "/behaviour";
-    case "husbandry": return snakeId ? `/husbandry/${snakeId}` : "/husbandry";
+    case "weight": return snakeId ? `/snakes/${snakeId}/weights?action=log` : universalPath ?? "/weights";
+    case "shed": return snakeId ? `/snakes/${snakeId}/shedding` : universalPath ?? "/shedding";
+    case "health": return snakeId ? `/snakes/${snakeId}/health` : universalPath ?? "/health";
+    case "behaviour": return snakeId ? `/snakes/${snakeId}/behaviour` : universalPath ?? "/behaviour";
+    case "husbandry": return snakeId ? `/husbandry/${snakeId}` : universalPath ?? "/husbandry";
     case "intelligence": return "/titan-intelligence";
     case "genetics": return "/morph-library";
     case "breeding": return "/breeding";
@@ -79,7 +82,7 @@ function routeFor(slice: TitanAtAGlanceSliceId, snakeId?: string): string {
     case "goals": return "/become-a-titan";
     case "account": return "/account/personalise";
     case "reminders": return "/reminders";
-    case "thisWeek": return snakeId ? `/titan-intelligence/feature/this-week?snake=${encodeURIComponent(snakeId)}` : "/titan-intelligence/feature/this-week";
+    case "thisWeek": return snakeId ? `/titan-intelligence/feature/this-week?snake=${encodeURIComponent(snakeId)}` : universalPath ?? "/titan-intelligence/feature/this-week";
     case "creatorCentre": return "/creator";
     default: return "/";
   }
@@ -98,19 +101,19 @@ function buildView(slice: TitanAtAGlanceSliceId, snake: Snake | undefined): Slic
         value: attempt?.date ? formatDaysSinceFeeding(attempt.date) : "Not recorded",
         secondary: attempt ? "Latest recorded feeding attempt" : "Log a feeding attempt",
         feedSecondary: successful?.date ? `Successful: ${formatDaysSinceFeeding(successful.date)}` : "Successful: Not recorded",
-        route: routeFor(slice, id),
+        route: routeFor(slice, snake),
       };
     }
     case "weight": return { label: "Last Weight", value: weight ? `${weight.weight}${weight.unit}` : "Not yet", secondary: weight ? formatDate(weight.date) : "Record one", route: routeFor(slice, id) };
     case "shed": return { label: "Last Shed", value: shed ? formatDate(shed.date) : "Not yet", secondary: shed?.status ?? "Record one", route: routeFor(slice, id) };
     case "reminders": return { label: "Reminders", value: "Open", secondary: "See what's due", route: routeFor(slice, id) };
     case "thisWeek": return { label: "This Week", value: "Command Centre", secondary: "Your keeper week", route: routeFor(slice, id) };
-    case "health": return { label: "Health", value: snake?.healthHistory?.length ? `${snake.healthHistory.length} records` : "No records", secondary: "Health & Vet", route: routeFor(slice, id) };
+    case "health": return { label: "Health", value: legacy?.healthHistory?.length ? `${legacy.healthHistory.length} records` : snake?.recordSource === "universal" ? "Open record" : "No records", secondary: "Health & Vet", route: routeFor(slice, id) };
     case "behaviour": return { label: "Behaviour", value: "Open", secondary: "Journal & observations", route: routeFor(slice, id) };
     case "husbandry": return { label: "Husbandry", value: "Open", secondary: "Environment & care", route: routeFor(slice, id) };
     case "intelligence": return { label: "Titan Intelligence", value: "Live", secondary: "Open command centre", route: routeFor(slice, id) };
-    case "genetics": return { label: "Genetics", value: snake?.morphs?.length ? snake.morphs.slice(0, 1).join(", ") : "Library", secondary: snake?.morphs?.length ? "Morph profile" : "Explore morphs", route: routeFor(slice, id) };
-    case "breeding": return { label: "Breeding", value: snake?.breedingEligible ? "Eligible" : "Planner", secondary: "Open breeding tools", route: routeFor(slice, id) };
+    case "genetics": return { label: "Genetics", value: legacy?.morphs?.length ? legacy.morphs.slice(0, 1).join(", ") : "Library", secondary: legacy?.morphs?.length ? "Morph profile" : "Explore genetics", route: routeFor(slice, id) };
+    case "breeding": return { label: "Breeding", value: legacy?.breedingEligible ? "Eligible" : snake?.recordSource === "universal" ? "Open planner" : "Planner", secondary: "Open breeding tools", route: routeFor(slice, id) };
     case "snakes": return { label: "My Animals", value: "Open", secondary: "Your collection", route: routeFor(slice, id) };
     case "learning": return { label: "Learn", value: "Open", secondary: "Continue learning", route: routeFor(slice, id) };
     case "community": return { label: "Community", value: "Open", secondary: "Keeper community", route: routeFor(slice, id) };
@@ -132,7 +135,7 @@ export default function TitanAtAGlance() {
   const { isEasyNav, slices, loading } = useEasyNav();
   const location = useLocation();
   const navigate = useNavigate();
-  const [snakes, setSnakes] = useState<Snake[]>([]);
+  const [snakes, setSnakes] = useState<AtAGlanceAnimal[]>([]);
   const [loadingSnakes, setLoadingSnakes] = useState(false);
   const [snakePickerOpen, setSnakePickerOpen] = useState(false);
   const [selectedSnakeOverride, setSelectedSnakeOverride] = useState<Snake | undefined>(undefined);
@@ -289,13 +292,13 @@ export default function TitanAtAGlance() {
                     </span>
                     <span>
                       <strong>{snake.name}</strong>
-                      <small>{snake.species || "Species not recorded"}</small>
+                      <small>{snake.species || "Species not recorded"}{snake.animalGroup && !snake.species ? ` · ${snake.animalGroup}` : ""}</small>
                     </span>
                   </button>
                 );
               })}
             </div>
-            {snakes.length > 0 && <Link to="/snakes" onClick={() => setSnakePickerOpen(false)} className="tt-at-glance-snake-picker-all">Manage all Titans →</Link>}
+            {snakes.length > 0 && <Link to="/animals" onClick={() => setSnakePickerOpen(false)} className="tt-at-glance-snake-picker-all">Manage all animals →</Link>}
           </div>
         )}
       </div>
