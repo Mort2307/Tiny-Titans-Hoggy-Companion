@@ -74,7 +74,7 @@ exports.sendShedCycleReminderNotifications = onSchedule({ schedule: "*/5 * * * *
     for (const snakeDocument of snakes.docs) {
       evaluated += 1;
       const snake = snakeDocument.data();
-      const snakeName = String(snake.name || "your snake");
+      const snakeName = String(snake.name || "your animal");
       const shedSnapshot = await snakeDocument.ref.collection("sheds").get();
       const activeRecords = shedSnapshot.docs.map((document) => ({ ...document.data(), id: document.id })).filter((record) => record.currentStage && record.currentStage !== "Complete" && !record.completedAt && !record.deletedAt).sort((a, b) => String(b.cycleStartedAt || b.date || "").localeCompare(String(a.cycleStartedAt || a.date || "")));
       const active = activeRecords[0];
