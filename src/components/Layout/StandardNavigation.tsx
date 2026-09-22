@@ -39,7 +39,7 @@ function StandardNavigation({
                       onClick={onNavigate}
                       className="app-navigation-link"
                     >
-                      <span className="app-navigation-icon" aria-hidden="true">{to === "/snakes" ? <AnimatedAnimalIcon size={25} /> : <TinyTitansIcon name={icon} size={25} />}</span>
+                      <span className="app-navigation-icon" aria-hidden="true">{to === "/animals" ? <AnimatedAnimalIcon size={25} /> : <TinyTitansIcon name={icon} size={25} />}</span>
                       <span className="app-navigation-label">{label}</span>
                       {to === "/community" && (communityUnreadCount > 0 || unseenProductUpdate) && (
                         <span className="community-unread-dot" aria-label="New Community Hub updates" title="New Community Hub updates" />
