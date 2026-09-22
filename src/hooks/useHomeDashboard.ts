@@ -94,8 +94,8 @@ export function useHomeDashboard() {
     refresh();
     return subscribeToTitanIntelligenceUpdates((detail) => { if (detail.event) return; refresh(); });
   }, [user, intelligenceAccess]);
-  const selectedIntelligence = useMemo(() => intelligence.find((item) => item.snakeId === selectedSnakeId) ?? intelligence[0], [intelligence, selectedSnakeId]);
   const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId) ?? snakes[0], [snakes, selectedSnakeId]);
+  const selectedIntelligence = useMemo(() => selectedSnake?.recordSource === "legacy-snake" ? intelligence.find((item) => item.snakeId === selectedSnakeId) : undefined, [intelligence, selectedSnakeId, selectedSnake?.recordSource]);
   const attentionDecision = decision?.status === "active" ? decision : null;
   const coverage = useMemo(() => intelligence.length ? Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length) : 0, [intelligence]);
   const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + snake.weightRecords + snake.feedingRecords + snake.shedRecords + snake.healthRecords, 0), [snakes]);
