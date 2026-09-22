@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "tinytitans-hoggy-companion"
+  },
+  "targets": {
+    "tinytitans-hoggy-companion": {
+      "hosting": {
+        "legacy": [
+          "tinytitans-hoggy-companion"
+        ],
+        "keeper": [
+          "tinytitanskeeper"
+        ]
+      }
+    }
   }
 }
