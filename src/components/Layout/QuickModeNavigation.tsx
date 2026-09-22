@@ -43,7 +43,7 @@ function QuickModeNavigation({
           <a className="tt-easy-nav-link" href="/" onClick={(event) => { event.preventDefault(); onOpenItem("/"); }}>
             <TinyTitansIcon name="home" size={24} /><small>At a Glance</small>
           </a>
-          <a className="tt-easy-nav-link" href="/snakes" onClick={(event) => { event.preventDefault(); onOpenItem("/snakes"); }}>
+          <a className="tt-easy-nav-link" href="/animals" onClick={(event) => { event.preventDefault(); onOpenItem("/animals"); }}>
             <AnimatedAnimalIcon size={24} /><small>{workspace.product.terminology.animals || "My Animals"}</small>
           </a>
           <a className="tt-easy-nav-link" href="/reminders" onClick={(event) => { event.preventDefault(); onOpenItem("/reminders"); }}>
