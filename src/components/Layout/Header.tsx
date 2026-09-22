@@ -111,26 +111,6 @@ function Header() {
         ? "Rescue Centre"
         : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").name);
 
-  const productSubtitle = isPersonal
-    ? "Reptile Companion"
-    : productId === "rescue"
-      ? "Rescue Centre Workspace"
-      : productId === "titan_pro"
-        ? "Advanced Keeper Workspace"
-        : productId === "titan_seller"
-          ? "Seller Workspace"
-          : productId === "business_advanced"
-            ? "Full Business Workspace"
-            : productId === "business_plus"
-              ? "Growing Business Workspace"
-              : "Business Workspace";
-
-  const tagline = isPersonal
-    ? "Know your reptiles. Understand their patterns. Keep better records."
-    : productId === "rescue"
-      ? "Your rescue centre, its animals and its daily operations."
-      : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").description;
-
   const workspaceLabel =
     location.pathname.startsWith("/rescue") && productId === "rescue"
       ? "Rescue Centre"
