@@ -138,37 +138,36 @@ function Header() {
 
   return (
     <header className={`app-header app-header--${productId}`}>
-      <Link
-        to={productId === "rescue" ? "/rescue" : "/"}
-        className="logo-link"
-        aria-label={`${workspaceName} home`}
-      >
-        <img
-          src={logo}
-          alt="Tiny Titans Reptile Companion"
-          className="tiny-titans-logo"
-        />
-      </Link>
-
-      <div className="app-brand-lockup" aria-label={workspaceName}>
-        {!isPersonal && branding.logoUrl && (
+      <div className="app-header-identity">
+        <Link
+          to={productId === "rescue" ? "/rescue" : "/"}
+          className="logo-link"
+          aria-label={`${workspaceName} home`}
+        >
           <img
-            className="workspace-brand-avatar"
-            src={branding.logoUrl}
-            alt=""
-            aria-hidden="true"
+            src={logo}
+            alt="Tiny Titans Reptile Companion"
+            className="tiny-titans-logo"
           />
-        )}
-        <span className="app-brand-overline">
-          {isPersonal
-            ? "TINY TITANS"
-            : `${productId === "rescue" ? "RESCUE" : "TINY TITANS"} WORKSPACE`}
-        </span>
-        <span className="app-brand-name">
-          <span className="app-brand-primary">{workspaceLabel}</span>
-          <span className="app-brand-secondary">{productSubtitle}</span>
-        </span>
-        <span className="app-brand-tagline">{tagline}</span>
+        </Link>
+
+        <div className="app-brand-lockup" aria-label="Tiny Titans Reptile Companion">
+          {!isPersonal && branding.logoUrl && (
+            <img
+              className="workspace-brand-avatar"
+              src={branding.logoUrl}
+              alt=""
+              aria-hidden="true"
+            />
+          )}
+          <span className="app-brand-name">
+            <span className="app-brand-primary">Tiny Titans</span>
+            <span className="app-brand-secondary">Reptile Companion</span>
+          </span>
+          {!isPersonal && (
+            <span className="app-brand-workspace">{workspaceLabel}</span>
+          )}
+        </div>
       </div>
 
       {!isPersonal && (
