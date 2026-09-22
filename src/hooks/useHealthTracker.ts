@@ -19,7 +19,7 @@ export function useHealthTracker(){
   const selectedSnake=useMemo(()=>snakes.find((snake)=>snake.id===snakeId),[snakes,snakeId]);
   const medicationRecords=useMemo(()=>records.filter((record)=>record.eventType==="Medication"&&record.medicationSchedule?.enabled),[records]);
 
-  useEffect(()=>{ if(loading||profileLoading||!user)return; void getUserSnakes(user.uid).then((loaded)=>{ setSnakes(loaded); setSnakeId((current)=>routeSnakeId&&loaded.some((snake)=>snake.id===routeSnakeId)?routeSnakeId:loaded.some((snake)=>snake.id===current)?current:loaded[0]?.id??""); }).catch(()=>setMessage("Unable to load your snakes.")); },[loading,profileLoading,routeSnakeId,user]);
+  useEffect(()=>{ if(loading||profileLoading||!user)return; void getUserSnakes(user.uid).then((loaded)=>{ setSnakes(loaded); setSnakeId((current)=>routeSnakeId&&loaded.some((snake)=>snake.id===routeSnakeId)?routeSnakeId:loaded.some((snake)=>snake.id===current)?current:loaded[0]?.id??""); }).catch(()=>setMessage("Unable to load your animals.")); },[loading,profileLoading,routeSnakeId,user]);
   useEffect(()=>{ if(!user||!snakeId)return; void getSnakeHealthRecords(user.uid,snakeId).then(setRecords).catch(()=>setMessage("Unable to load health records.")); },[snakeId,user]);
 
   const reset=()=>{ setEditingId(null); setEventType("Observation"); setStatus("Monitoring"); setDate(healthToday()); setTitle(""); setDescription(""); setVetName(""); setFollowUpDate(""); setNotes(""); setMedicationName(""); setDose(""); setFrequency("daily"); setFirstDoseAt(""); setIntervalHours("24"); setRemindersEnabled(true); };
