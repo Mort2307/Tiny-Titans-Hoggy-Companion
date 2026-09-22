@@ -89,7 +89,7 @@ export default function UniversalSpeciesProfile() {
     <div className="page-container universal-species-profile">
       <nav className="universal-species-journey" aria-label="Connected keeper workspaces">
         <span className="universal-species-journey__label">SPECIES WORKSPACE</span>
-        <Link to="/snakes"><TinyTitansIcon name="reptiles" size={18} /> My Reptiles</Link>
+        <Link to="/animals"><TinyTitansIcon name="animals" size={18} /> My Animals</Link>
         <Link className="universal-species-journey__active" to="/species"><TinyTitansIcon name="animals" size={18} /> Species Explorer</Link>
         <Link to="/husbandry"><TinyTitansIcon name="husbandry" size={18} /> Husbandry &amp; Care</Link>
         <Link to="/morph-library"><TinyTitansIcon name="morph" size={18} /> Morph Library</Link>
