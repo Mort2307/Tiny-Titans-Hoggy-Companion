@@ -37,15 +37,15 @@ export default function MySnakes() {
       <header className="tt-page-header my-snakes-page-header">
         <div>
           <p className="tt-eyebrow">Your collection</p>
-          <h1>My Reptiles</h1>
-          <p>Your collection workspace for animals, records and the reptile room. Your species context connects the care and genetics workspaces below.</p>
+          <h1>Snake Records</h1>
+          <p>Legacy snake-record workspace. Use My Animals for your complete collection across supported animal groups.</p>
         </div>
         <div className="tt-page-actions">
           <Link className="tt-button my-snakes-add-action" to="/snakes/new">+ Add Snake</Link>
         </div>
       </header>
 
-      <div className="my-snakes-view-switch" role="tablist" aria-label="My Snakes view">
+      <div className="my-snakes-view-switch" role="tablist" aria-label="Snake records view">
         <button type="button" role="tab" aria-selected={view === "snakes"} className={view === "snakes" ? "is-active" : ""} onClick={() => setView("snakes")}>
           <span aria-hidden="true">◈</span><span>Snake Tiles</span>
         </button>
