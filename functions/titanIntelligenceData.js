@@ -156,7 +156,7 @@ async function getAnimalRecords(uid, animalId) {
 async function getAnimalIntelligenceSnapshot(uid, animalId) {
   const profile = await getAnimalProfile(uid, animalId);
   if (!profile) return null;
-  const records = await getAnimalRecords(uid, animalId);
+  const records = await getAnimalRecords(uid, animalId);\n  if (!records) return null;
   const weights = (records.weights || [])
     .map((item) => ({ date: Date.parse(String(item.date || item.recordedAt || item.createdAt || "")), grams: Number(item.grams ?? item.weightGrams ?? item.weight ?? NaN) }))
     .filter((item) => Number.isFinite(item.date) && Number.isFinite(item.grams) && item.grams > 0)
