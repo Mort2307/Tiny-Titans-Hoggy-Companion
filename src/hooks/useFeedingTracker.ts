@@ -47,7 +47,7 @@ export default function useFeedingTracker() {
       setSnakes(valid);
       setSelectedSnakeId((current) => routeSnakeId && valid.some((snake) => snake.id === routeSnakeId) ? routeSnakeId : valid.some((snake) => snake.id === current) ? current : valid[0]?.id ?? "");
     }).catch((err) => {
-      if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load your snakes.");
+      if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load your animals.");
     }).finally(() => {
       if (!cancelled) setLoadingSnakes(false);
     });
