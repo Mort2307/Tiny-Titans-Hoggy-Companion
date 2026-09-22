@@ -145,6 +145,22 @@ function buildView(slice: TitanAtAGlanceSliceId, animal: AtAGlanceAnimal | undef
 function animalPhoto(animal: AtAGlanceAnimal | undefined): string | undefined {
   return animal?.legacySnake?.photo || animal?.legacySnake?.imageUrl || animal?.legacySnake?.photoUrl || undefined;
 }
+function animalFallbackIcon(animal: AtAGlanceAnimal | undefined): string {
+  const group = (animal?.animalGroup || "").toLowerCase();
+  if (animal?.recordSource === "legacy-snake" || group.includes("reptile") || group.includes("snake") || group.includes("lizard")) return "/animal-icons/snake.svg";
+  if (group.includes("arachnid") || group.includes("spider") || group.includes("scorpion")) return "/animal-icons/spider.svg";
+  if (group.includes("bird")) return "/animal-icons/bird.svg";
+  if (group.includes("fish")) return "/animal-icons/fish.svg";
+  if (group.includes("amphib")) return "/animal-icons/amphibian.svg";
+  if (group.includes("insect")) return "/animal-icons/insect.svg";
+  if (group.includes("mammal")) return "/animal-icons/mammal.svg";
+  if (group.includes("cephalopod")) return "/animal-icons/cephalopod.svg";
+  if (group.includes("crustacean")) return "/animal-icons/crustacean.svg";
+  if (group.includes("mollusc")) return "/animal-icons/mollusc.svg";
+  if (group.includes("myriapod")) return "/animal-icons/myriapod.svg";
+  return "/animal-icons/amphibian.svg";
+}
+
 
 export default function TitanAtAGlance() {
   const { user } = useAuth();
@@ -296,7 +312,7 @@ export default function TitanAtAGlance() {
                 preserveAspectRatio="xMidYMid slice" clipPath="url(#tt-at-glance-centre-clip)" className="tt-at-glance-centre-photo" aria-hidden="true" />
             ) : (
               <image
-                href="/animal-icons/amphibian.svg"
+                href={animalFallbackIcon(selectedAnimal)}
                 x={centre - 24}
                 y={centre - 24}
                 width="48"
