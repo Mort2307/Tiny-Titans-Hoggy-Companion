@@ -26,7 +26,7 @@ function Home() {
     <main className="dashboard tt-home">
       <header className="tt-home-brandbar">
         <div>
-          <p className="tt-home-brand"><TinyTitansIcon name="reptile" size={22} /> Tiny Titans Keeper Companion</p>
+          <p className="tt-home-brand"><TinyTitansIcon name="animals" size={22} /> Tiny Titans Keeper Companion</p>
           <p className="tt-home-tagline">Your keeper companion, records, learning and intelligence — in one calm place.</p>
         </div>
         <Link className="tt-home-profile-chip" to="/account" aria-label="Open My Account">
@@ -145,7 +145,7 @@ function Home() {
           <Link to="/account/personalise">Tune learning →</Link>
         </article>
         <article className="tt-home-panel">
-          <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> SPECIES-SAFE CONTEXT</p>
+          <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> SPECIES-AWARE CONTEXT</p>
           <h3>Content stays attached to the animal</h3>
           <p>Care, safety and genetics surfaces remain species-aware across the animals you keep.</p>
           <Link to="/animals">Manage animals →</Link>
