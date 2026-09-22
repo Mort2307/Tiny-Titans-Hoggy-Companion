@@ -16,7 +16,7 @@ export default defineConfig({
         id: "/",
         name: "Tiny Titans Keeper Companion",
         short_name: "Tiny Titans",
-        description: "Tiny Titans Keeper Companion — species profiles, husbandry, tracking, genetics and keeper tools for reptiles.",
+        description: "Tiny Titans Keeper Companion — animal records, species-aware care, genetics and keeper tools.",
         theme_color: "#140022",
         background_color: "#140022",
         display: "standalone",
