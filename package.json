@@ -40,6 +40,7 @@
     "validate:copy-quality": "node scripts/audit-ui-copy.mjs",
     "validate:security": "node scripts/validate-security-contracts.mjs",
     "validate:paid-tiers": "node scripts/validate-paid-tier-contract.mjs",
+    "validate:founding-follower": "node scripts/validate-founding-follower-reward.mjs",
     "validate:ui-hardening": "node scripts/validate-ui-hardening.mjs",
     "validate:observatory": "node scripts/validate-behaviour-observatory.mjs",
     "validate:genetics-calculator-v2": "node scripts/validate-genetics-calculator-v2.mjs",
