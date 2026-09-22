@@ -57,7 +57,7 @@ function WeightMiniChart({ history }: WeightMiniChartProps) {
 
   return (
     <div className="weight-chart-container">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={180}>
         <LineChart data={data} margin={{ top: 6, right: 6, left: 0, bottom: 16 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" tick={{ fontSize: 9 }} tickMargin={4} />

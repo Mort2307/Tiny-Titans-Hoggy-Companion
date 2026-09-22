@@ -28,7 +28,7 @@ function SnakeEdit() {
         form={form}
         updateField={updateField}
         onSave={() => void saveSnake()}
-        onMorphLibrarySubmit={(submission) => void saveSnake(submission)}
+        onMorphLibrarySubmit={async (submission) => { await saveSnake(submission); }}
         editing={!isNew}
         saving={saving}
       />

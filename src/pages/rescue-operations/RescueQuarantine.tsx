@@ -3,9 +3,9 @@ import {
   useState
 } from "react";
 import { Link } from "react-router-dom";
-import { updateRescueAnimal } from "../services/rescueService";
-import type { RescueAnimalStatus, RescueQuarantineRecord } from "../types/rescue";
-import { GatePage, PageHeader, useRescueData, animalLabel, formatDate } from "../components/rescue/RescueOperationsShared";
+import { updateRescueAnimal } from "../../services/rescueService";
+import type { RescueAnimalStatus, RescueQuarantineRecord } from "../../types/rescue";
+import { GatePage, PageHeader, useRescueData, animalLabel, formatDate } from "../../components/rescue/RescueOperationsShared";
 
 export function RescueQuarantine() {
   const { user, organisation, animals, loading, error, refresh } = useRescueData();

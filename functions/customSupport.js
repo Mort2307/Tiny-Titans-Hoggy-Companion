@@ -8,12 +8,12 @@ const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 const db = getFirestore();
 
 const SUPPORT_TIERS = Object.freeze({
-  starter: { amount: 1, label: "Titan Supporter" },
-  little: { amount: 5, label: "Little Titan" },
-  growing: { amount: 10, label: "Growing Titan" },
-  champion: { amount: 20, label: "Champion Titan" },
-  legendary: { amount: 40, label: "Legendary Titan" },
-  broken: { amount: 100, label: "You Just Broke Me" },
+  starter: { amount: 1, label: "Titan Supporter", stripePriceId: "price_1U5AMqI4DKNMJVXDKv0jvq4m" },
+  little: { amount: 5, label: "Little Titan", stripePriceId: "price_1U51PDI4DKNMJVXDaEvd0OUJ" },
+  growing: { amount: 10, label: "Growing Titan", stripePriceId: "price_1U51PHI4DKNMJVXDYWQlFoRv" },
+  champion: { amount: 20, label: "Champion Titan", stripePriceId: "price_1U51PMI4DKNMJVXD014dtANW" },
+  legendary: { amount: 40, label: "Legendary Titan", stripePriceId: "price_1U51PRI4DKNMJVXDgIZKBg4k" },
+  broken: { amount: 100, label: "You Just Broke Me", stripePriceId: "price_1U51PWI4DKNMJVXD4flYcU4R" },
 });
 
 function getAllowedOrigin(request) {
@@ -32,7 +32,8 @@ function parseCustomAmountPence(value) {
   return pence;
 }
 
-function buildSupportLineItem(amountPence, label) {
+function buildSupportLineItem(amountPence, label, stripePriceId) {
+  if (stripePriceId) return { price: stripePriceId, quantity: 1 };
   return { price_data: { currency: "gbp", product_data: { name: `Tiny Titans — ${label}`, description: "One-time voluntary support contribution to Tiny Titans Hoggy Companion. This payment is project support and does not purchase goods, services, membership, or administrative access." }, unit_amount: amountPence }, quantity: 1 };
 }
 
@@ -75,10 +76,10 @@ async function createCheckout(request) {
   try {
     const stripe = new Stripe(stripeSecret);
     const origin = getAllowedOrigin(request);
-    let amountPence; let amountGbp; let label;
+    let amountPence; let amountGbp; let label; let stripePriceId = null;
     if (tierKey === "custom") { amountPence = parseCustomAmountPence(request.data?.amountGbp); amountGbp = (amountPence / 100).toFixed(2); label = `Support — £${amountGbp}`; }
-    else { amountPence = Math.round(tier.amount * 100); amountGbp = tier.amount.toFixed(2); label = tier.label; }
-    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [buildSupportLineItem(amountPence, label)], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label, amount_gbp: amountGbp, payment_purpose: "one_time_project_support" }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto", managed_payments: { enabled: false } });
+    else { amountPence = Math.round(tier.amount * 100); amountGbp = tier.amount.toFixed(2); label = tier.label; stripePriceId = tier.stripePriceId; }
+    const session = await stripe.checkout.sessions.create({ mode: "payment", line_items: [buildSupportLineItem(amountPence, label, stripePriceId)], customer_email: request.auth.token.email || undefined, client_reference_id: request.auth.uid, metadata: { uid: request.auth.uid, tier: tierKey, label, amount_gbp: amountGbp, payment_purpose: "one_time_project_support" }, success_url: `${origin}/become-a-titan?payment=success&session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/become-a-titan?payment=cancelled`, billing_address_collection: "auto", managed_payments: { enabled: false } });
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");
     return { url: session.url };
   } catch (error) {

@@ -1,6 +1,6 @@
 import type { UserCategory } from "../context/useAuth";
 import type { AgeBand, EducatorTeachingLevel, LearningLevel, ProfileType } from "../types/Profile";
-import type { TitanAtAGlanceSliceId, TitanWeeklyMetricId, WeekStartDay } from "../types/easyNav";
+import type { WeekStartDay } from "../types/easyNav";
 
 export type PersonalisationProfile = {
   profileType: ProfileType;

@@ -2,6 +2,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "../firebase/config";
 
 export type ReptileRoomAssetKind = "wall" | "logo" | "room-photo";
+export type Room3DAssetKind = ReptileRoomAssetKind;
 
 async function compressImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file);

@@ -47,19 +47,19 @@ void clearStaleDevPwaState();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthProvider>
-      <WorkspaceBrandingProvider>
-        <WorldTimeProvider>
-          <SelectorGrabScrollManager />
-          <DateDisplayNormalizer />
-          <CopyQualityGuard />
-          <DeferredRuntimeServices />
-          <AppErrorBoundary>
+    <AppErrorBoundary>
+      <AuthProvider>
+        <WorkspaceBrandingProvider>
+          <WorldTimeProvider>
+            <SelectorGrabScrollManager />
+            <DateDisplayNormalizer />
+            <CopyQualityGuard />
+            <DeferredRuntimeServices />
             <App />
-          </AppErrorBoundary>
-          <AppUpdatePrompt />
-        </WorldTimeProvider>
-      </WorkspaceBrandingProvider>
-    </AuthProvider>
+            <AppUpdatePrompt />
+          </WorldTimeProvider>
+        </WorkspaceBrandingProvider>
+      </AuthProvider>
+    </AppErrorBoundary>
   </StrictMode>,
 );

@@ -58,6 +58,7 @@ export type Snake = {
   id: string;
   name: string;
   species: string;
+  universalSpeciesId?: string;
   photo: string;
   imageUrl?: string;
   photoUrl?: string;

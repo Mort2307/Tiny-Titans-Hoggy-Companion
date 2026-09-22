@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Login from "../pages/Login";
 import AccountSetup from "../pages/AccountSetup";
 import PartnerLanding from "../pages/PartnerLanding";
@@ -7,6 +7,9 @@ import DeleteAccountRequest from "../pages/DeleteAccountRequest";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
 import RescuePublicProfile from "../pages/RescuePublicProfile";
 import RescueAnimalRoute from "../pages/RescueAnimalRoute";
+const SpeciesExplorer = lazy(() => import("../pages/SpeciesExplorer"));
+const UniversalSpeciesProfile = lazy(() => import("../pages/UniversalSpeciesProfile"));
+const Marketplace = lazy(() => import("../pages/Marketplace"));
 import CreatorTesterInvitation from "../components/CreatorTesterInvitation";
 import DataPrivacyConsentModal, { CONSENT_VERSION } from "../components/DataPrivacyConsentModal";
 import { useAuth } from "../context/useAuth";
@@ -31,7 +34,6 @@ function AppRouterGate() {
   const currentDestination = `${location.pathname}${location.search}`;
   const loginRedirect = `/login?redirect=${encodeURIComponent(currentDestination)}`;
   const setupRedirect = `/account-setup?redirect=${encodeURIComponent(currentDestination)}`;
-  const rescuePublicProfileRoute = <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />;
 
   useEffect(() => {
     let active = true;
@@ -116,6 +118,10 @@ function AppRouterGate() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
+          <Route path="/species" element={<SpeciesExplorer />} />
+          <Route path="/species/group/:group" element={<SpeciesExplorer />} />
+          <Route path="/species/:id" element={<UniversalSpeciesProfile />} />
+          <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
           <Route path="*" element={<Navigate to={loginRedirect} replace />} />
         </Routes>
@@ -129,6 +135,10 @@ function AppRouterGate() {
         <Routes>
           <Route path="/account-setup" element={<AccountSetup />} />
           <Route path="/rescue/public/:organisationId" element={<RescuePublicProfile />} />
+          <Route path="/species" element={<SpeciesExplorer />} />
+          <Route path="/species/group/:group" element={<SpeciesExplorer />} />
+          <Route path="/species/:id" element={<UniversalSpeciesProfile />} />
+          <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/rescue/animals/:animalId" element={<RescueAnimalRoute />} />
           <Route path="*" element={<Navigate to={setupRedirect} replace />} />
         </Routes>

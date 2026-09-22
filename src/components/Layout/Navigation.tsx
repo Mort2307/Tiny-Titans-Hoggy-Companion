@@ -1,3 +1,4 @@
+import "./Navigation.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEasyNav } from "../../context/EasyNavContext";

@@ -1,4 +1,3 @@
-import { useAuth } from "../context/useAuth";
 import { FULL_INTELLIGENCE_COPY } from "../services/intelligencePermissionGateService";
 import PageBackButton from "../components/PageBackButton";
 import { useDataPrivacy } from "../hooks/useDataPrivacy";

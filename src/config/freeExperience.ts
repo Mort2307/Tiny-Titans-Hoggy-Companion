@@ -24,6 +24,7 @@ export const FREE_KEEPER_NAVIGATION_GROUPS = [
     items: [
       { id: "home", label: "Home", icon: "home", path: "/", description: "Your keeper command centre." },
       { id: "snakes", label: "My Reptiles", icon: "reptiles", path: "/snakes", description: "View, add and manage every Titan." },
+      { id: "species", label: "Species Explorer", icon: "animals", path: "/species", description: "Explore the canonical species catalogue that connects your animals, care and genetics." },
       { id: "conversations", label: "Message Centre", icon: "messages", path: "/conversations", description: "Your community conversations." },
     ],
   },

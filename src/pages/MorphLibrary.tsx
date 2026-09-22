@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import MorphDetail from "../components/morph-library/MorphDetail";
 import MorphImageSubmissionDialog from "../components/morph-library/MorphImageSubmissionDialog";
@@ -12,7 +11,7 @@ export { default as NewMorphSubmissionDialog } from "../components/morph-library
 
 export default function MorphLibrary() {
   const {
-    query,setQuery,filter,setFilter,region,setRegion,selected,setSelected,showImageSubmission,setShowImageSubmission,
+    query,setQuery,filter,setFilter,region,setRegion,selected,setSelected,showImageSubmission,
     showNewMorphSubmission,setShowNewMorphSubmission,imageSubmissionMorphId,imageSubmissionSpeciesId,
     approvedImagesByMorph,approvedImagesLoading,entries,filtered,audit,openImageSubmission,closeImageSubmission,
   } = useMorphLibrary();
@@ -44,7 +43,7 @@ export default function MorphLibrary() {
             {approvedImage?<div className="morph-card__image-wrap"><img src={approvedImage.imageUrl} alt={displayName+" approved community example"} loading="lazy"/>{(approvedImage.creditName||approvedImage.creditSocial)&&<span className="morph-card__credit">Credit: {approvedImage.creditName||approvedImage.creditSocial}</span>}</div>
             :<div className="morph-card__image-empty"><span className="morph-card__image-icon">📷</span><strong>No approved image yet</strong><span>Add the first reviewed example.</span><button type="button" className="morph-card__image-submit" onClick={()=>openImageSubmission(morph.geneId)}>Submit image</button></div>}
           </div>
-          <div className="morph-card__body"><div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div><div className="morph-card__classification"><span>{morph.kind==="Combination"?"Component genetics":morph.inheritance==="Incomplete Dominant"?"Incomplete dominant":morph.inheritance}</span>{morph.hetPossible&&<span>Het-capable</span>}</div><h2>{displayName}</h2>{typed.geneticFormula&&<p className="morph-card__contains">🧬 {typed.geneticFormula}</p>}{typed.recognisedNames?.length>0&&<p className="morph-card__contains">Recognised as: {typed.recognisedNames.join(", ")}</p>}{morph.kind==="Combination"&&typed.inheritanceSummary&&<p className="morph-card__contains">Component inheritance: {typed.inheritanceSummary}</p>}<p className="morph-card__description">{morph.description??"Reference entry."}</p><div className="morph-card__footer"><span className="morph-card__source">Source: {morph.sourceLabel??"Tiny Titans canonical database"}</span>{morph.sourceUrl&&<a href={morph.sourceUrl} target="_blank" rel="noreferrer" onClick={(event)=>event.stopPropagation()}>Reference ↗</a>}</div><button type="button" className="morph-card__open" onClick={()=>setSelected(morph)}>Open genetics record <span aria-hidden="true">→</span></button></div>
+          <div className="morph-card__body"><div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div><div className="morph-card__classification"><span>{morph.kind==="Combination"?"Component genetics":morph.inheritance==="Incomplete Dominant"?"Incomplete dominant":morph.inheritance}</span>{morph.hetPossible&&<span>Het-capable</span>}</div><h2>{displayName}</h2>{typed.geneticFormula&&<p className="morph-card__contains">🧬 {typed.geneticFormula}</p>}{typed.recognisedNames?.length ? <p className="morph-card__contains">Recognised as: {typed.recognisedNames.join(", ")}</p> : null}{morph.kind==="Combination"&&typed.inheritanceSummary&&<p className="morph-card__contains">Component inheritance: {typed.inheritanceSummary}</p>}<p className="morph-card__description">{morph.description??"Reference entry."}</p><div className="morph-card__footer"><span className="morph-card__source">Source: {morph.sourceLabel??"Tiny Titans canonical database"}</span>{morph.sourceUrl&&<a href={morph.sourceUrl} target="_blank" rel="noreferrer" onClick={(event)=>event.stopPropagation()}>Reference ↗</a>}</div><button type="button" className="morph-card__open" onClick={()=>setSelected(morph)}>Open genetics record <span aria-hidden="true">→</span></button></div>
         </article>;
       })}
     </div>

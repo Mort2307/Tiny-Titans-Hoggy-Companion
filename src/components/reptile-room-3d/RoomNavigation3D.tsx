@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import {
   buildRoomNavigationNodes,
-  ROOM_NAVIGATION_SPACING_CM,
 } from "../../lib/roomNavigation";
 
 export type { RoomNavigationNode } from "../../lib/roomNavigation";

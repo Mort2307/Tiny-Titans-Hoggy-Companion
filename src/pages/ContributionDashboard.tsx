@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { useContributionDashboard } from "../hooks/useContributionDashboard";
-import { formatContributionDate, safeNumber } from "../lib/contributionDashboard";
+import useContributionDashboard from "../hooks/useContributionDashboard";
+import { formatContributionDate } from "../lib/contributionDashboard";
 import "../styles/contribution-dashboard.css";
+
+const safeNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : 0;
 
 export default function ContributionDashboard() {
   const {
@@ -15,10 +17,6 @@ export default function ContributionDashboard() {
   }
   if (!user) return null;
 
-  const publicRecords = safeNumber(globalSnapshot?.publicCommunityRecords);
-  const intelligenceRecords = safeNumber(globalSnapshot?.intelligenceContributions);
-  const totalGlobal = safeNumber(globalSnapshot?.totalRecords);
-  const globalKeepers = safeNumber(globalSnapshot?.contributors);
 
   return <main className="page-container contribution-dashboard-page">
     <button className="personalisation-back" type="button" onClick={() => navigate(-1)}>← Back</button>

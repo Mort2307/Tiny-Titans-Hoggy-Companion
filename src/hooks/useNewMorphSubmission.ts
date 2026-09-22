@@ -25,7 +25,8 @@ export function useNewMorphSubmission(initialSpeciesId="heterodon-nasicus"){
     if(!selectedSpecies){setError("Please select a recognised snake species.");return;}
     setBusy(true);setError("");
     try{
-      await createUserMorphSubmission(user.uid,{speciesId,submittedName:name,region,category,description,knownGenetics,sourceOrBreeder:source,sourceUrl});
+      const submissionRegion = region === "all" ? "global" : region;
+      await createUserMorphSubmission(user.uid,{speciesId,submittedName:name,region:submissionRegion,category,description,knownGenetics,sourceOrBreeder:source,sourceUrl});
       setSent(true);
     }catch(submitError){setError(submitError instanceof Error?submitError.message:"Unable to submit this morph.");}
     finally{setBusy(false);}

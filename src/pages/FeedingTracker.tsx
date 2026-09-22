@@ -4,13 +4,13 @@ import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import FeedingHistory from "../components/Feeding/FeedingHistory";
 import FeedingLogForm from "../components/Feeding/FeedingLogForm";
 import FeedingOverviewStats from "../components/Feeding/FeedingOverviewStats";
-import { useFeedingTracker } from "../hooks/useFeedingTracker";
+import useFeedingTracker from "../hooks/useFeedingTracker";
 import "./../styles/trackerWorkspace.css";
 
 export default function FeedingTracker() {
   const {
     user, loading, profileLoading, navigate, isImperial, weightUnit, formatWeight,
-    snakes, selectedSnake, selectedSnakeId, setSelectedSnakeId, feedings, loadingSnakes, loadingFeedings,
+    snakes, selectedSnake, selectedSnakeId, feedings, loadingSnakes, loadingFeedings,
     saving, error, success, editingId, deleteTarget, setDeleteTarget,
     date, setDate, foodType, setFoodType, customFood, setCustomFood, size, setSize, quantity, setQuantity,
     weight, setWeight, feedingMethod, setFeedingMethod, response, setResponse, notes, setNotes,

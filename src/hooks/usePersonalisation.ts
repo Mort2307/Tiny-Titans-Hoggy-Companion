@@ -13,7 +13,7 @@ import {
   useEasyNav,
 } from "../context/EasyNavContext";
 import type { AgeBand, EducatorTeachingLevel, LearningLevel, ProfileType } from "../types/Profile";
-import type { TitanAtAGlanceSliceId, TitanWeeklyMetricId, WeekStartDay } from "../types/easyNav";
+import type { TitanAtAGlanceSliceId, TitanWeeklyMetricId } from "../types/easyNav";
 import { savePersonalisationProfile } from "../services/personalisationService";
 import { buildPersonalisationProfileData, moveId, parseWeekStart, toggleOrderedId } from "../lib/personalisation";
 
@@ -97,6 +97,8 @@ export function usePersonalisation() {
     profileType, setProfileType, category, setCategory, ageBand, setAgeBand,
     learningLevel, setLearningLevel, experience, setExperience, teachingLevel, setTeachingLevel,
     subjects, setSubjects, organisationName, setOrganisationName, saving, saved,
-    profileTypes, levels, teachingLevels, chooseMode, toggleSlice, moveSlice, toggleWeeklyMetric, chooseWeekStart,
+    profileTypes, levels, teachingLevels, save, chooseMode, toggleSlice, moveSlice, toggleWeeklyMetric, chooseWeekStart,
+    TITAN_AT_A_GLANCE_OPTIONS, TITAN_WEEKLY_METRIC_OPTIONS, WEEK_START_OPTIONS,
+    MAX_SLICES, MIN_SLICES, MAX_WEEKLY_METRICS, MIN_WEEKLY_METRICS,
   };
 }

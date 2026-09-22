@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { KOFI_SUPPORT_URL, SUPPORT_PLATFORM_NAME, isSupportConfigured } from "../config/support";
 import TitanRecognitionChoice from "../components/TitanRecognitionChoice";
 import { useMyAccount } from "../hooks/useMyAccount";

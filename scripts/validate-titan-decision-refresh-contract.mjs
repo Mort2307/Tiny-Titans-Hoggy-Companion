@@ -6,7 +6,8 @@ const homePath = "src/pages/Home.tsx";
 const decision = fs.readFileSync(decisionPath, "utf8");
 const collection = fs.readFileSync(collectionPath, "utf8");
 const home = fs.readFileSync(homePath, "utf8");
-const homeContract = home.replace(/\s+/g, "");
+const homeDashboard = fs.readFileSync("src/hooks/useHomeDashboard.ts", "utf8");
+const homeContract = `${home}\n${homeDashboard}`.replace(/\s+/g, "");
 const findings = [];
 
 for (const symbol of [
@@ -28,7 +29,10 @@ for (const symbol of [
 }
 if (!homeContract.includes("getTitanDecisionState(user.uid)")) findings.push("Home is not reading the canonical decision state before refreshing.");
 if (!homeContract.includes("if(existing.decisions.length>0)")) findings.push("Home refresh guard is missing; it may rewrite the decision state on every visit.");
-if (!homeContract.includes("if(existing.decisions.length>0){setDecision(existingActive);}else{constrefreshed=awaitrefreshTitanDecisionStateForAnimals")) findings.push("Home does not retain first-run decision generation when canonical state is empty.");
+if (
+  !homeContract.includes("if(existing.decisions.length>0)setDecision(existingActive);") ||
+  !homeContract.includes("else{constrefreshed=awaitrefreshTitanDecisionStateForAnimals")
+) findings.push("Home does not retain first-run decision generation when canonical state is empty.");
 const hasReactiveEvent = homeContract.includes("constevent=detail.event");
 const hasAffectedAnimalGuard = homeContract.includes("event?.animalId&&event.occurredAt");
 const hasTimestampPayload = homeContract.includes("type:event.type") && homeContract.includes("occurredAt:event.occurredAt");

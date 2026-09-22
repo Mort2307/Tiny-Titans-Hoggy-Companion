@@ -311,8 +311,8 @@ export function useWeightRecords() {
   }
 
   return {
-    navigate,user,loading,profileLoading,snake,history,weightInput,setWeightInput,today,typedDate,setTypedDate,dateError,
-    saving,saveMessage,saveState,editingId,deletingId,deleteTarget,setDeleteTarget,isImperial,formatWeight,weightUnit,reminder,
-    currentWeight,totalGain,percentageGain,daysSinceWeigh,chartHistory,saveWeight,startEdit,removeWeight,
+    navigate,user,loading,profileLoading,snake,history,weightInput,setWeightInput,today,typedDate,setTypedDate,dateError,setDateError,
+    saving,saveMessage,setSaveMessage,saveState,editingId,setEditingId,deletingId,deleteTarget,setDeleteTarget,isImperial,formatWeight,weightUnit,reminder,error,
+    currentWeight,totalGain,percentageGain,daysSinceWeigh,chartHistory,firstWeight,saveWeight,startEdit,removeWeight,loadingSnake,
   };
 }

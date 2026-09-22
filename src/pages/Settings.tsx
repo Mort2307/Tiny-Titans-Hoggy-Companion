@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import NotificationSettingsPanel from "../components/NotificationSettingsPanel";
 import { useSettings } from "../hooks/useSettings";
 import "../styles/settingsWorkspace.css";

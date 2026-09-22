@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import type { ThreeEvent } from "@react-three/fiber";
-import type { ReptileRoomObject, ReptileRoomSlot } from "../../services/reptileRoomService";
-import type { VivariumTelemetry } from "../../types/reptileRoom3D";
 import { WOOD_COLOURS, PanelMaterial, WoodMaterial, useWoodTexture } from "./RoomObjectMaterials";
 
-type SlotWithRotation = ReptileRoomSlot & { rotation?: number };
 
 function MountingBar({ width, height }: { width: number; height: number }) {
   return <group>

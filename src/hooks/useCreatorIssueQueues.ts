@@ -13,7 +13,7 @@ import {
 } from "../services/creatorService";
 import { getCreatorUserDisplayNames } from "../services/creatorUserDirectoryService";
 import { sendConversationMessage } from "../services/conversationService";
-import { canTransitionReport,getAllowedReportTransitions,getReportLifecycleLabel,isActiveReportIssueStatus } from "../services/reportLifecycle";
+import { canTransitionReport,getReportLifecycleLabel,isActiveReportIssueStatus } from "../services/reportLifecycle";
 import {
   BUG_FEEDBACK_STATUSES,
   bugStatusLabel,
@@ -42,6 +42,6 @@ export function useCreatorIssueQueues() {
     selectedFeedback,setSelectedFeedback,search,setSearch,bugFilter,setBugFilter,feedbackFilter,setFeedbackFilter,error,message,
     creatorNotes,setCreatorNotes,resolution,setResolution,fixedVersion,setFixedVersion,attachmentUrl,showConversations,setShowConversations,
     filteredBugs,filteredFeedback,newBugCount,archivedBugCount,newFeedbackCount,reporterName,displayCreatorQueueDate,bugStatusLabel,
-    changeBugFilter,saveBugStatus,markBugFixedAndNotify,setBugArchived,saveFeedbackStatus,feedbackStatuses:BUG_FEEDBACK_STATUSES
+    load,changeBugFilter,saveBugStatus,markBugFixedAndNotify,setBugArchived,saveFeedbackStatus,feedbackStatuses:BUG_FEEDBACK_STATUSES
   };
 }

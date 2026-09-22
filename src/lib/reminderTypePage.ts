@@ -15,7 +15,7 @@ export function buildReminderInput(
   snakeId: string | null,
   snakes: ReminderSnakeOption[],
 ): ReminderInput {
-  const base = (REMINDER_DEFINITION_MAP.get(kind) && requireDefinition(kind)) || null;
+  const base = requireDefinition(kind);
   return {
     ...base,
     snakeName: snakes.find((snake) => snake.id === snakeId)?.name ?? null,

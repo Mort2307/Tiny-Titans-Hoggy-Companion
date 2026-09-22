@@ -54,8 +54,12 @@ export function loadDataCollectionPreferences(value: unknown): DataCollectionPre
 function platform(value: unknown): UserPlatform | undefined {
   return value === "iOS" || value === "Android" || value === "Windows" || value === "macOS" || value === "Linux" || value === "Other" ? value : undefined;
 }
-export function parseUserProfile(data: Record<string, any>, firebaseUser: User): UserProfile {
+export function parseUserProfile(data: Record<string, unknown>, firebaseUser: User): UserProfile {
   const interests=(Array.isArray(data.interests)?data.interests:[]).filter(isValidInterest);
+  const privacyConsent = data.privacyConsent;
+  const privacyConsentVersion = privacyConsent && typeof privacyConsent === "object" && typeof (privacyConsent as { version?: unknown }).version === "string"
+    ? (privacyConsent as { version: string }).version
+    : undefined;
   const profileType:ProfileType=isProfileType(data.profileType)
     ? data.profileType
     : interests.includes("learner") && interests.length===1 ? "learner" : "keeper";
@@ -76,7 +80,7 @@ export function parseUserProfile(data: Record<string, any>, firebaseUser: User):
     educatorProfile:loadEducatorProfile(data.educatorProfile),
     approximateLocation:loadApproximateLocation(data.approximateLocation),
     dataCollectionPreferences:loadDataCollectionPreferences(data.dataCollectionPreferences),
-    privacyConsentVersion:typeof data.privacyConsent?.version==="string"?data.privacyConsent.version:undefined,
+    privacyConsentVersion,
     platform:platform(data.platform),
     appVersion:typeof data.appVersion==="string"?data.appVersion:undefined,
     timezone:typeof data.timezone==="string"?data.timezone:undefined,

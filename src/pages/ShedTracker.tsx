@@ -1,16 +1,17 @@
 import BackHomeButton from "../components/BackHomeButton";
 import { useShedTracker } from "../hooks/useShedTracker";
-import { SHED_ASSISTANCES, SHED_QUALITIES, SHED_STATUSES, SHED_STAGES, RETAINED_SHED_AREAS, displayDate, stageLabel, daysBetweenShedStages, todayIso } from "../lib/shedTracker";
+import { displayDate, stageLabel, daysBetweenShedStages } from "../lib/shedTracker";
+import type { ShedAssistance, ShedQuality, ShedStatus } from "../types/Shed";
 import "../styles/trackerWorkspace.css";
 
 export default function ShedTracker() {
   const {
-    navigate,user,loading,profileLoading,lengthUnit,formatLength,weightUnit,isImperial,
-    snakes,selectedSnake,setSelectedSnakeId,sheds,loadingSnakes,loadingSheds,saving,error,success,
+    navigate,user,loading,profileLoading,lengthUnit,formatLength,weightUnit,
+    snakes,selectedSnake,selectedSnakeId,setSelectedSnakeId,sheds,loadingSnakes,loadingSheds,saving,error,success,
     editingId,stage,setStage,stageDate,setStageDate,quality,setQuality,status,setStatus,retained,setRetained,
     assistance,setAssistance,shedLength,setShedLength,snakeWeight,setSnakeWeight,notes,setNotes,
     clearForm,editCycle,continueActiveCycle,handleSubmit,handleDelete,activeCycle,completedCycles,measured,
-    averageLength,averageInterval,activeDuration,
+    averageLength,averageInterval,activeDuration,stages,qualities,statuses,retainedAreas,assistances,
   } = useShedTracker();
 
   if (loading || profileLoading || (user && loadingSnakes)) return <div className="page-container"><BackHomeButton /><h1>🐍 Shed Tracker</h1><div className="tracker-card"><p>Loading Tiny Titans...</p></div></div>;
@@ -40,7 +41,7 @@ export default function ShedTracker() {
       </form></div>
       <div className="tracker-card"><h3>🧠 Shedding intelligence</h3>{completedCycles.length ? <><p><strong>Completed cycles:</strong> {completedCycles.length}</p>{averageInterval !== null && <p><strong>Typical cycle-to-cycle interval:</strong> {Math.round(averageInterval)} days</p>}<p><strong>Stage model:</strong> Blue → Clear → Full Shed is counted as one cycle.</p></> : <p>Once you complete more cycles, Tiny Titans will calculate this snake's own shedding pattern rather than relying on generic assumptions.</p>}{activeCycle && <p>🔵 Current cycle is active. Tiny Titans is waiting for the next stage instead of counting another shed.</p>}</div>
       <div className="tracker-card"><h3>📏 Measurements</h3><p><strong>Measured cycles:</strong> {measured.length}</p><p><strong>Average shed length:</strong> {averageLength ? formatLength(averageLength) : "No measurements yet"}</p></div>
-      <div className="tracker-card"><h3>📋 Shed Cycle History</h3>{loadingSheds ? <p>Loading shed history...</p> : sheds.length === 0 ? <p>No shedding cycles recorded yet.</p> : sheds.map((record) => { const start = record.cycleStartedAt || record.date; const clear = record.clearPhaseAt; const complete = record.completedAt; const duration = daysBetween(start, complete); const current = record.currentStage ?? (record.shedCompleted ? "Complete" : record.eyesSkinCleared ? "Clear" : record.bluePhaseStarted ? "Blue" : "Complete"); return <article className="tracker-card" key={record.id}><h3>🐍 {selectedSnake?.name ?? "Snake"} · Cycle</h3><p><strong>{stageLabel(current)}</strong>{duration !== null ? ` · ${duration} day${duration === 1 ? "" : "s"}` : " · In progress"}</p><p>🔵 Blue: {start ? displayDate(start) : "Not recorded"} · ⚪ Clear: {clear ? displayDate(clear) : "Not recorded"} · 🟢 Full Shed: {complete ? displayDate(complete) : "Not recorded"}</p>{complete && <><p>Outcome: <strong>{record.status}</strong> · Quality: <strong>{record.quality}</strong></p>{record.retainedAreas?.length ? <p>Retained: {record.retainedAreas.join(", ")}</p> : null}{record.shedLength ? <p>Shed length: {formatLength(record.shedLength)}</p> : null}</>}<p>{record.notes || "No notes recorded."}</p><div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}><button type="button" onClick={() => editCycle(record)} disabled={saving}>✏️ Edit Cycle</button>{current !== "Complete" && <button type="button" onClick={() => editCycle(record, current === "Blue" ? "Clear" : "Complete")} disabled={saving}>➡️ Update Stage</button>}<button type="button" onClick={() => void handleDelete(record)} disabled={saving}>🗑️ Delete Cycle</button></div></article>; })}</div>
+      <div className="tracker-card"><h3>📋 Shed Cycle History</h3>{loadingSheds ? <p>Loading shed history...</p> : sheds.length === 0 ? <p>No shedding cycles recorded yet.</p> : sheds.map((record) => { const start = record.cycleStartedAt || record.date; const clear = record.clearPhaseAt; const complete = record.completedAt; const duration = daysBetweenShedStages(start, complete); const current = record.currentStage ?? (record.shedCompleted ? "Complete" : record.eyesSkinCleared ? "Clear" : record.bluePhaseStarted ? "Blue" : "Complete"); return <article className="tracker-card" key={record.id}><h3>🐍 {selectedSnake?.name ?? "Snake"} · Cycle</h3><p><strong>{stageLabel(current)}</strong>{duration !== null ? ` · ${duration} day${duration === 1 ? "" : "s"}` : " · In progress"}</p><p>🔵 Blue: {start ? displayDate(start) : "Not recorded"} · ⚪ Clear: {clear ? displayDate(clear) : "Not recorded"} · 🟢 Full Shed: {complete ? displayDate(complete) : "Not recorded"}</p>{complete && <><p>Outcome: <strong>{record.status}</strong> · Quality: <strong>{record.quality}</strong></p>{record.retainedAreas?.length ? <p>Retained: {record.retainedAreas.join(", ")}</p> : null}{record.shedLength ? <p>Shed length: {formatLength(record.shedLength)}</p> : null}</>}<p>{record.notes || "No notes recorded."}</p><div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}><button type="button" onClick={() => editCycle(record)} disabled={saving}>✏️ Edit Cycle</button>{current !== "Complete" && <button type="button" onClick={() => editCycle(record, current === "Blue" ? "Clear" : "Complete")} disabled={saving}>➡️ Update Stage</button>}<button type="button" onClick={() => void handleDelete(record)} disabled={saving}>🗑️ Delete Cycle</button></div></article>; })}</div>
     </>}
   </div>;
 }

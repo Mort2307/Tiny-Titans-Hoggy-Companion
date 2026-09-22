@@ -9,7 +9,7 @@ import { useUnits } from "../context/UnitContextValue";
 import { generateId } from "../utils/generateId";
 import { getSpeciesDiet, type SpeciesDiet } from "../data/feeding/speciesDiet";
 import { categoryByFood } from "../data/feeding/feedingOptions";
-import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../utils/feedingSummary";
+import { latestFeedingAttempt, latestSuccessfulFeed } from "../utils/feedingSummary";
 import { toDisplayWeight, today } from "../lib/feedingTracker";
 
 export default function useFeedingTracker() {
@@ -157,7 +157,7 @@ export default function useFeedingTracker() {
   }
 
   return {
-    routeSnakeId, user, loading, profileLoading, navigate, searchParams, setSearchParams, isImperial, weightUnit, formatWeight, snakes, selectedSnakeId, setSelectedSnakeId, feedings, loadingSnakes, loadingFeedings, saving, error, success, editingId, deleteTarget, setDeleteTarget,
+    routeSnakeId, user, loading, profileLoading, navigate, searchParams, setSearchParams, isImperial, weightUnit, formatWeight, snakes, selectedSnake, selectedSnakeId, setSelectedSnakeId, feedings, loadingSnakes, loadingFeedings, saving, error, success, editingId, deleteTarget, setDeleteTarget,
     date, setDate, foodType, setFoodType, customFood, setCustomFood, size, setSize, quantity, setQuantity, weight, setWeight, feedingMethod, setFeedingMethod, response, setResponse, notes, setNotes, diet, feedingFoodTypes, counts, acceptanceRate, lastFeeding, lastSuccessfulFeeding, resetForm, selectSnake, editFeeding, handleSubmit, handleDelete
   };
 }

@@ -1,15 +1,17 @@
 import { Link } from "react-router-dom";
 import { useTitanWeekCommandCentre } from "../hooks/useTitanWeekCommandCentre";
-import { actionRoute, addDays, TARGETABLE_METRICS } from "../lib/titanWeekCommandCentre";
+import { actionRoute, addDays, countMetric, intelligentExpected, TARGETABLE_METRICS } from "../lib/titanWeekCommandCentre";
+import { getCurrentTitanWeek } from "../utils/titanWeek";
+import type { WeekStartDay } from "../types/easyNav";
 import { TITAN_WEEKLY_METRIC_OPTIONS, WEEK_START_OPTIONS } from "../context/EasyNavContext";
 import "./TitanWeekCommandCentre.css";
 
 export default function TitanWeekCommandCentre() {
   const {
-    user, weekStartDay, weeklyMetrics, setWeekStartDay, setWeeklyMetrics, easyNavLoading,
+    weekStartDay, weeklyMetrics, setWeekStartDay, easyNavLoading,
     params, setScope, snakes, selectedSnake, scope, range, isCurrentWeek, intelligence,
     intelligenceAccess, targets, configOpen, setConfigOpen, loading, metrics, targetTotal,
-    targetDone, progress, priorities, topPriority, scopedInsights, updateWeek, saveTarget,
+    targetDone, progress, priorities, topPriority, scopedInsights, updateWeek, saveTarget, decision,
     toggleMetric, goCurrent,
   } = useTitanWeekCommandCentre();
 

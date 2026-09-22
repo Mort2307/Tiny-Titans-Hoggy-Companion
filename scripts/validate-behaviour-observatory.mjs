@@ -14,11 +14,13 @@ const service = readFileSync("src/services/keeperObservationService.ts", "utf8")
 const firestore = readFileSync("firestore.rules", "utf8");
 const storage = readFileSync("storage.rules", "utf8");
 const router = readFileSync("src/routes/AppRouter.tsx", "utf8");
+const authenticatedRouter = readFileSync("src/routes/AuthenticatedRoutes.tsx", "utf8");
+const routeSources = `${router}\n${authenticatedRouter}`;
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
 
 const checks = [
-  ["route", router.includes("/behaviour-observatory")],
-  ["creator review route", router.includes("/creator/observations")],
+  ["route", routeSources.includes("/behaviour-observatory")],
+  ["creator review route", routeSources.includes("/creator/observations")],
   ["resumable upload", service.includes("uploadBytesResumable")],
   ["media validation", service.includes("MAX_OBSERVATION_MEDIA_BYTES") && service.includes("MAX_OBSERVATION_MEDIA_ITEMS")],
   ["educational consent", page.includes("educationalConsent") && service.includes("Educational use permission")],

@@ -1,6 +1,6 @@
 import { doc,getDoc,getFirestore,setDoc } from "firebase/firestore";
 import app from "../firebase/config";
-import type { TitanWeeklyMetricId, WeekStartDay } from "../context/EasyNavContext";
+import type { TitanWeeklyMetricId } from "../context/EasyNavContext";
 import type { TargetMap } from "../lib/titanWeekCommandCentre";
 const db=getFirestore(app);
 export async function loadTitanWeekTargets(uid:string):Promise<TargetMap>{

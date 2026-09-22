@@ -23,9 +23,14 @@ export function useVivariumBuilder3D(slot: ReptileRoomSlot, onSaved?: (twin: Viv
 
   function addProp(asset:VivariumCatalogAsset){
     const index=twin.assets.length;
-    const next={
+    const placement: VivariumDigitalTwin["assets"][number]["placement"] = asset.intelligenceRole === "lighting"
+      ? "ceiling"
+      : ["thermostat", "sensor"].includes(asset.intelligenceRole ?? "")
+        ? "wall"
+        : "floor";
+    const next: VivariumDigitalTwin["assets"][number] = {
       id:createVivariumTwinAssetId(),assetId:asset.assetId??asset.kind,label:asset.label,category:categoryForVivariumAsset(asset),
-      placement:asset.intelligenceRole==="lighting"?"ceiling":["thermostat","sensor"].includes(asset.intelligenceRole??"")?"wall":"floor",
+      placement,
       x:clampVivariumCoordinate(-0.2+(index%5)*0.1,-0.42,0.42),
       y:asset.intelligenceRole==="lighting"?Math.max(0.03,(slot.height??40)/100-0.12):0.03,
       z:clampVivariumCoordinate(-0.15+(Math.floor(index/5)%4)*0.1,-0.38,0.38),rotationY:0,lockedToVivarium:true,config:asset.config?{...asset.config}: {},

@@ -3,12 +3,15 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { useAuth } from "../context/useAuth";
-import { searchSnakeSpecies } from "../data/species/speciesRegistry";
+import { searchUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import { submitSpeciesSubmission } from "../services/speciesSubmissionService";
 import "../styles/species-submission.css";
 
 const fields = [
   ["commonName", "Common name", "e.g. Ball Python"],
+  ["animalGroup", "Animal group", "e.g. reptile, amphibian, arachnid, insect, bird, fish"],
+  ["taxonomicClass", "Taxonomic class", "e.g. Reptilia, Amphibia, Arachnida, Insecta"],
+  ["order", "Order", "e.g. Squamata, Anura, Araneae"],
   ["scientificName", "Accepted scientific name", "e.g. Python regius"],
   ["authority", "Taxonomic authority", "Optional"],
   ["family", "Family", "e.g. Pythonidae"],
@@ -22,6 +25,10 @@ const fields = [
   ["lifespan", "Captive lifespan", "Only state a range you can support"],
   ["activityPattern", "Activity pattern", "Diurnal, nocturnal, crepuscular, seasonal etc."],
   ["terrestrialArborealAquatic", "Locomotion / habitat use", "Terrestrial, arboreal, aquatic, fossorial or mixed"],
+  ["dietaryGuild", "Dietary guild", "Carnivore, herbivore, insectivore, omnivore, piscivore, nectarivore etc."],
+  ["socialHousing", "Social / housing needs", "Solitary, pair, group, colony or species-specific context"],
+  ["waterChemistry", "Water chemistry / aquatic parameters", "Only where relevant: pH, hardness, salinity, temperature etc. with sources"],
+  ["biosecurityGuidance", "Biosecurity guidance", "Quarantine, hygiene, pathogen or cross-contamination considerations"],
   ["temperatureGuidance", "Temperature guidance", "Warm side/spot, cool side, night range and seasonal notes"],
   ["humidityGuidance", "Humidity / hydration guidance", "Typical range plus seasonal or locality caveats"],
   ["substrateGuidance", "Substrate guidance", "Suitable substrates and important cautions"],
@@ -70,7 +77,7 @@ export default function SubmitSpecies() {
 
   const suggestedSpecies = useMemo(() => {
     const query = values.scientificName || values.commonName;
-    return searchSnakeSpecies(query).slice(0, 8);
+    return searchUniversalSpecies(query).slice(0, 8);
   }, [values.scientificName, values.commonName]);
 
   function update(key: SpeciesSubmissionField, value: string) {
@@ -89,10 +96,10 @@ export default function SubmitSpecies() {
     setError("");
     setSuccess("");
     if (honeypot) return;
-    const required: SpeciesSubmissionField[] = ["commonName", "scientificName", "family", "genus", "nativeRange", "habitat", "temperatureGuidance", "humidityGuidance", "enclosureGuidance", "feedingGuidance"];
+    const required: SpeciesSubmissionField[] = ["commonName", "scientificName", "family", "genus", "nativeRange", "habitat"];
     const missing = required.filter((key) => !values[key].trim());
-    if (missing.length) {
-      setError("Please complete the core identity, ecology, husbandry and feeding fields before submitting.");
+    if (missing.length || !evidenceSummary.trim()) {
+      setError("Please complete the core identity, ecology and evidence fields before submitting.");
       return;
     }
     if (!confirmAccuracy || !confirmRights) {
@@ -129,9 +136,9 @@ export default function SubmitSpecies() {
     <main className="page-container species-submission-page">
       <BackHomeButton />
       <header className="species-submission-hero">
-        <span className="eyebrow">TINY TITANS · SPECIES INTELLIGENCE</span>
+        <span className="eyebrow">TINY TITANS · ANIMAL SPECIES INTELLIGENCE</span>
         <h1><TinyTitansIcon name="reptile" size={24} /> Submit a Species</h1>
-        <p>Help expand the reptile database. Give us the best evidence you have, upload useful imagery, and clearly mark anything that still needs verification.</p>
+        <p>Help expand the universal animal database. Give us the best evidence you have, upload useful imagery, and clearly mark anything that still needs verification.</p>
         <div className="species-submission-rule">Research quality beats completeness. Writing “unknown” is better than inventing a value.</div>
       </header>
 
@@ -139,15 +146,15 @@ export default function SubmitSpecies() {
       {success && <div className="species-submit-message species-submit-success">✓ {success}</div>}
 
       <form className="species-submission-form" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
-        <section><div className="species-submit-section-title"><span>01</span><div><h2>Taxonomy & identity</h2><p>Use the accepted name where known. Include synonyms so we can catch duplicate or historic names.</p></div></div><div className="species-submit-grid">{fields.slice(0, 9).map(([key, label, placeholder]) => <label key={key}>{label}<input value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} />{(key === "scientificName" || key === "commonName") && suggestedSpecies.length > 0 && <small>Possible existing matches: {suggestedSpecies.map((species) => species.commonNames[0]).join(", ")}</small>}</label>)}</div></section>
+        <section><div className="species-submit-section-title"><span>01</span><div><h2>Taxonomy & identity</h2><p>Use the accepted name where known. Include synonyms so we can catch duplicate or historic names.</p></div></div><div className="species-submit-grid">{fields.slice(0, 11).map(([key, label, placeholder]) => <label key={key}>{label}<input value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} />{(key === "scientificName" || key === "commonName") && suggestedSpecies.length > 0 && <small>Possible existing matches: {suggestedSpecies.map((species) => species.commonNames[0]).join(", ")}</small>}</label>)}</div></section>
 
-        <section><div className="species-submit-section-title"><span>02</span><div><h2>Ecology & natural history</h2><p>Capture the biological context first. This prevents generic husbandry being applied blindly.</p></div></div><div className="species-submit-grid">{fields.slice(9, 14).map(([key, label, placeholder]) => <label key={key}>{label}<textarea value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>)}</div></section>
+        <section><div className="species-submit-section-title"><span>02</span><div><h2>Ecology & natural history</h2><p>Capture the biological context first. This prevents generic husbandry being applied blindly.</p></div></div><div className="species-submit-grid">{fields.slice(11, 17).map(([key, label, placeholder]) => <label key={key}>{label}<textarea value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>)}</div></section>
 
-        <section><div className="species-submit-section-title"><span>03</span><div><h2>Captive husbandry</h2><p>Separate supported guidance from keeper preference. Add locality or seasonal caveats where they matter.</p></div></div><div className="species-submit-grid">{fields.slice(14, 23).map(([key, label, placeholder]) => <label key={key}>{label}<textarea value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>)}</div></section>
+        <section><div className="species-submit-section-title"><span>03</span><div><h2>Captive husbandry</h2><p>Separate supported guidance from keeper preference. Add locality or seasonal caveats where they matter.</p></div></div><div className="species-submit-grid">{fields.slice(17, 29).map(([key, label, placeholder]) => <label key={key}>{label}<textarea value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>)}</div></section>
 
-        <section><div className="species-submit-section-title"><span>04</span><div><h2>Diet, reproduction & biology</h2><p>Provide life-stage context and uncertainty rather than a single “universal” number.</p></div></div><div className="species-submit-grid">{fields.slice(23, 29).map(([key, label, placeholder]) => <label key={key}>{label}<textarea value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>)}</div></section>
+        <section><div className="species-submit-section-title"><span>04</span><div><h2>Diet, reproduction & biology</h2><p>Provide life-stage context and uncertainty rather than a single “universal” number.</p></div></div><div className="species-submit-grid">{fields.slice(29, 38).map(([key, label, placeholder]) => <label key={key}>{label}<textarea value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>)}</div></section>
 
-        <section><div className="species-submit-section-title"><span>05</span><div><h2>Health, behaviour & regulation</h2><p>Flag defensive biology, known health risks and legal issues that require country-specific verification.</p></div></div><div className="species-submit-grid">{fields.slice(29).map(([key, label, placeholder]) => <label key={key}>{label}<textarea value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>)}</div></section>
+        <section><div className="species-submit-section-title"><span>05</span><div><h2>Health, behaviour & regulation</h2><p>Flag defensive biology, known health risks and legal issues that require country-specific verification.</p></div></div><div className="species-submit-grid">{fields.slice(38).map(([key, label, placeholder]) => <label key={key}>{label}<textarea value={values[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>)}</div></section>
 
         <section><div className="species-submit-section-title"><span>06</span><div><h2>Evidence & sources</h2><p>Tell the reviewer what supports your submission. Links, papers, books, field guides, specialist resources and breeder documentation are useful.</p></div></div><div className="species-submit-wide"><label>Evidence summary<textarea value={evidenceSummary} onChange={(event) => setEvidenceSummary(event.target.value)} placeholder="What is strongly supported? What is uncertain? Are there locality differences?" /></label><label>Sources / references<textarea value={sources} onChange={(event) => setSources(event.target.value)} placeholder="Paste source titles, URLs, DOI links, books, papers or breeder/specialist references." /></label><label>Additional notes for the reviewer<textarea value={submitterNotes} onChange={(event) => setSubmitterNotes(event.target.value)} placeholder="Anything the Creator should verify, compare or treat cautiously." /></label></div></section>
 

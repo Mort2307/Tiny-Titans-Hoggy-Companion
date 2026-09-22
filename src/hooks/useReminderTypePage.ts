@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { completeWaterChange,createReminder,deleteReminder,listReminders,listWaterChangeLogs,setReminderPaused,updateReminder } from "../services/reminderService";
 import type { Reminder,ReminderInput,ReminderKind } from "../types/Reminder";
 import { REMINDER_DEFINITIONS } from "../types/Reminder";
 import type { ReminderSnakeOption,WaterChangeLog } from "../types/reminderTypePage";
-import { REMINDER_DEFINITION_MAP,buildReminderInput,localReminderDateKey } from "../lib/reminderTypePage";
+import { REMINDER_DEFINITION_MAP,buildReminderInput,localReminderDateKey,formatReminderDateKey } from "../lib/reminderTypePage";
 
 export function useReminderTypePage(){
   const {kind:rawKind}=useParams<{kind:string}>(); const kind=rawKind as ReminderKind; const [searchParams]=useSearchParams(); const requestedSnakeId=searchParams.get("snakeId"); const {user,loading,profileLoading}=useAuth();
   const definition=REMINDER_DEFINITION_MAP.get(kind); const [snakes,setSnakes]=useState<ReminderSnakeOption[]>([]); const [reminders,setReminders]=useState<Reminder[]>([]); const [waterLogs,setWaterLogs]=useState<WaterChangeLog[]>([]);
-  const [editingId,setEditingId]=useState<string|null>(null); const [form,setForm]=useState<ReminderInput>(()=>buildReminderInput(kind,requestedSnakeId,[])); const [busy,setBusy]=useState(false); const [message,setMessage]=useState(""); const [loadingData,setLoadingData]=useState(true);
+  const [editingId,setEditingId]=useState<string|null>(null); const [form,setForm]=useState<ReminderInput>(()=>definition ? buildReminderInput(kind,requestedSnakeId,[]) : buildReminderInput("custom",null,[])); const [busy,setBusy]=useState(false); const [message,setMessage]=useState(""); const [loadingData,setLoadingData]=useState(true);
   const isFeeding=kind==="feeding"; const isWaterChange=kind==="water-change";
   useEffect(()=>{ if(!user||loading||profileLoading||!definition)return; let active=true; setLoadingData(true); void Promise.all([getUserSnakes(user.uid),listReminders(user.uid),isWaterChange?listWaterChangeLogs(user.uid):Promise.resolve([])]).then(([loadedSnakes,loadedReminders,loadedWaterLogs])=>{ if(!active)return; const nextSnakes=loadedSnakes.map((snake)=>({id:snake.id,name:snake.name})); const contextualSnakeId=requestedSnakeId&&nextSnakes.some((snake)=>snake.id===requestedSnakeId)?requestedSnakeId:nextSnakes[0]?.id??null; setSnakes(nextSnakes); setReminders(loadedReminders.filter((reminder)=>reminder.kind===kind)); setWaterLogs(isWaterChange?(loadedWaterLogs as WaterChangeLog[]):[]); setForm((current)=>current.snakeId?{...current,kind}:buildReminderInput(kind,contextualSnakeId,nextSnakes)); }).catch((error)=>setMessage(error instanceof Error?error.message:"Unable to load reminders.")).finally(()=>{if(active)setLoadingData(false);}); return()=>{active=false;}; },[definition,isWaterChange,kind,loading,profileLoading,requestedSnakeId,user]);
   const activeReminders=useMemo(()=>reminders.filter((reminder)=>reminder.status==="active"),[reminders]); const pausedReminders=useMemo(()=>reminders.filter((reminder)=>reminder.status==="paused"),[reminders]);
@@ -22,6 +22,6 @@ export function useReminderTypePage(){
   async function logWaterChange(reminder:Reminder){ if(!user||busy)return;setBusy(true);setMessage("");try{const result=await completeWaterChange(user.uid,reminder);const [loadedReminders,loadedLogs]=await Promise.all([listReminders(user.uid),listWaterChangeLogs(user.uid)]);setReminders(loadedReminders.filter((item)=>item.kind===kind));setWaterLogs(loadedLogs as WaterChangeLog[]);setMessage("Water change logged for "+formatReminderDateKey(result.completedDate)+". Next one is "+formatReminderDateKey(result.nextDate)+".");}catch(error){setMessage(error instanceof Error?error.message:"Unable to log this water change.");}finally{setBusy(false);} }
   async function toggle(reminder:Reminder){if(!user||busy)return;setBusy(true);setMessage("");try{await setReminderPaused(user.uid,reminder,reminder.status==="active");setReminders((await listReminders(user.uid)).filter((item)=>item.kind===kind));setMessage(reminder.status==="active"?reminder.title+" paused.":reminder.title+" resumed.");}catch(error){setMessage(error instanceof Error?error.message:"Unable to change reminder status.");}finally{setBusy(false);}}
   async function remove(reminder:Reminder){if(!user||busy)return;if(!window.confirm("Delete “"+reminder.title+"”? This does not remove any tracker records."))return;setBusy(true);setMessage("");try{await deleteReminder(user.uid,reminder.id);setReminders((current)=>current.filter((item)=>item.id!==reminder.id));if(editingId===reminder.id)resetForm();setMessage(reminder.title+" deleted.");}catch(error){setMessage(error instanceof Error?error.message:"Unable to delete this reminder.");}finally{setBusy(false);}}
-  if(!definition)return {invalid:true};
-  return {invalid:false,kind,definition,requestedSnakeId,user,loading,profileLoading,snakes,reminders,waterLogs,editingId,form,busy,message,loadingData,isFeeding,isWaterChange,activeReminders,pausedReminders,updateForm,resetForm,edit,save,logWaterChange,toggle,remove,definitions:REMINDER_DEFINITIONS};
+  if(!definition)return {invalid:true as const};
+  return {invalid:false as const,kind,definition,requestedSnakeId,user,loading,profileLoading,snakes,reminders,waterLogs,editingId,form,busy,message,loadingData,isFeeding,isWaterChange,activeReminders,pausedReminders,updateForm,resetForm,edit,save,logWaterChange,toggle,remove,definitions:REMINDER_DEFINITIONS};
 }

@@ -1,5 +1,5 @@
 import type { TinyTitansIconName } from "../types/tinyTitansIcon";
-import type { EasyNavMode, TitanAtAGlanceSliceId, TitanWeeklyMetricId, WeekStartDay } from "../types/easyNav";
+import type { TitanAtAGlanceSliceId, TitanWeeklyMetricId, WeekStartDay } from "../types/easyNav";
 
 export const TITAN_AT_A_GLANCE_OPTIONS: Array<{
   id: TitanAtAGlanceSliceId;

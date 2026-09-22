@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../context/useAuth";
+import { useAuth } from "../context/useAuth";
 import {
   addRescueDocument,
   addRescueFosterPlacement,
@@ -12,7 +12,7 @@ import {
   getRescueOrganisation,
   setRescueReminderComplete,
   updateRescueAnimal,
-} from "../../services/rescueService";
+} from "../services/rescueService";
 import type {
   RescueAnimal,
   RescueAnimalStatus,
@@ -22,8 +22,8 @@ import type {
   RescueReminderPriority,
   RescueVisibility,
   RescueOrganisation,
-} from "../../types/rescue";
-import { calculateIndividualProfile, RECORD_LABELS } from "../../lib/rescueWorkspace";
+} from "../types/rescue";
+import { calculateIndividualProfile, RECORD_LABELS } from "../lib/rescueWorkspace";
 
 export function useRescueAnimalWorkspace() {
   const { animalId } = useParams<{ animalId: string }>();
@@ -232,6 +232,6 @@ export function useRescueAnimalWorkspace() {
     transferReason,setTransferReason,transferReference,setTransferReference,transferNotes,setTransferNotes,documentTitle,setDocumentTitle,
     documentCategory,setDocumentCategory,documentNote,setDocumentNote,editSummary,setEditSummary,editEnclosure,setEditEnclosure,
     editStatus,setEditStatus,access,profile,isEditor,saveCareRecord,saveReminder,toggleReminder,saveFoster,saveTransfer,saveDocument,
-    saveAnimalCore,
+    saveAnimalCore,withBusy,updateRescueAnimal,
   };
 }

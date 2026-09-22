@@ -12,7 +12,7 @@ import logo from "../assets/TinyTitans-Logo.jpg";
 export default function AccountSetup() {
   const {
     displayName,setDisplayName,category,setCategory,profileType,chooseProfile,ageBand,setAgeBand,
-    experienceLevel,setExperienceLevel,learningLevel,setLearningLevel,interests,toggleInterest,
+    experienceLevel,setExperienceLevel,setLearningLevel,interests,toggleInterest,
     teachingLevel,setTeachingLevel,subjects,setSubjects,studentAgeBands,toggleStudentAge,reptileExperience,
     setReptileExperience,organisationName,setOrganisationName,city,setCity,country,setCountry,
     approximateLocationConsent,setApproximateLocationConsent,analyticsConsent,setAnalyticsConsent,

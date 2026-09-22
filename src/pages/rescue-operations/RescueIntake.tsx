@@ -3,9 +3,9 @@ import {
   useState
 } from "react";
 import { Link } from "react-router-dom";
-import { updateRescueAnimal } from "../services/rescueService";
-import type { RescueIntakeRecord } from "../types/rescue";
-import { GatePage, PageHeader, useRescueData, animalLabel, STATUS_LABELS } from "../components/rescue/RescueOperationsShared";
+import { updateRescueAnimal } from "../../services/rescueService";
+import type { RescueIntakeRecord } from "../../types/rescue";
+import { GatePage, PageHeader, useRescueData, animalLabel, STATUS_LABELS } from "../../components/rescue/RescueOperationsShared";
 
 export function RescueIntake() {
   const { user, organisation, animals, loading, error } = useRescueData();

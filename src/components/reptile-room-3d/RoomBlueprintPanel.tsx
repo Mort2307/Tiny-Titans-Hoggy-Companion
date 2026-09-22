@@ -1,7 +1,6 @@
 import TinyTitansIcon from "../TinyTitansIcon";
 import { useRoomBlueprintPanel } from "../../hooks/useRoomBlueprintPanel";
 import type { Room3DAssetKind } from "../../services/reptileRoomAssetService";
-import type { ReptileRoomWorkspace } from "../../services/reptileRoomService";
 import type { CSSProperties } from "react";
 
 const panelStyle: CSSProperties = { margin: "0 auto .75rem", padding: ".75rem", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, background: "rgba(15,18,22,.9)", color: "inherit" };

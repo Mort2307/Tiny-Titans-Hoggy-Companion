@@ -3,9 +3,9 @@ import {
   useState
 } from "react";
 import { Link } from "react-router-dom";
-import { setRescueReminderComplete } from "../services/rescueService";
-import type { RescueAnimal } from "../types/rescue";
-import { GatePage, PageHeader, useRescueData, animalLabel, formatDate } from "../components/rescue/RescueOperationsShared";
+import { setRescueReminderComplete } from "../../services/rescueService";
+import type { RescueAnimal } from "../../types/rescue";
+import { GatePage, PageHeader, useRescueData, animalLabel, formatDate } from "../../components/rescue/RescueOperationsShared";
 
 export function RescueTasks() {
   const { animals, loading, error, refresh } = useRescueData();
