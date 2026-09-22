@@ -78,7 +78,7 @@ function Login() {
     <main className="auth-page">
       <div className="auth-background-glow" />
       <section className="auth-container">
-        <div className="auth-brand"><img src={logo} alt="Tiny Titans Hoggy Companion" className="auth-logo" /><h1>Tiny Titans</h1><p className="auth-tagline">Hoggy Companion</p></div>
+        <div className="auth-brand"><img src={logo} alt="Tiny Titans Keeper Companion" className="auth-logo" /><h1>Tiny Titans</h1><p className="auth-tagline">Keeper Companion</p></div>
         <div className="auth-card">
           <div className="auth-heading"><h2>{isRegistering ? "Create your account" : "Welcome back"}</h2><p>{isRegistering ? "Let's get your Tiny Titans journey started." : "Sign in to continue your Tiny Titans journey."}</p></div>
           {error && <div className="auth-message auth-error" role="alert">{error}</div>}
@@ -86,13 +86,13 @@ function Login() {
             {isRegistering && <div className="auth-field"><label htmlFor="displayName">Your Name</label><input id="displayName" type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="What should we call you?" autoComplete="name" disabled={loading} /></div>}
             <div className="auth-field"><label htmlFor="email">Email Address</label><input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" inputMode="email" disabled={loading} /></div>
             <div className="auth-field"><label htmlFor="password">Password</label><div className="password-wrapper"><input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" autoComplete={isRegistering ? "new-password" : "current-password"} disabled={loading} /><button type="button" className="password-toggle" onClick={() => setShowPassword((previous) => !previous)} aria-label={showPassword ? "Hide password" : "Show password"} disabled={loading}>{showPassword ? "🙈" : "👁️"}</button></div></div>
-            <button type="submit" className="auth-primary-button" disabled={loading}>{loading ? "Please wait..." : isRegistering ? "🐍 Create Account" : "🔐 Sign In"}</button>
+            <button type="submit" className="auth-primary-button" disabled={loading}>{loading ? "Please wait..." : isRegistering ? "Create Account" : "🔐 Sign In"}</button>
           </form>
           <div className="auth-divider"><span /><strong>OR</strong><span /></div>
           <button type="button" className="auth-google-button" onClick={handleGoogleLogin} disabled={loading}><span className="google-icon">G</span>Continue with Google</button>
           <div className="auth-switch"><span>{isRegistering ? "Already have a Tiny Titans account?" : "New to Tiny Titans?"}</span><button type="button" onClick={switchMode} disabled={loading}>{isRegistering ? "Sign In" : "Create Account"}</button></div>
         </div>
-        <footer className="auth-footer"><strong>Tiny Titans Hoggy Companion</strong><span>Learn • Track • Understand • Care</span><small>© {new Date().getFullYear()} Tiny Titans</small></footer>
+        <footer className="auth-footer"><strong>Tiny Titans Keeper Companion</strong><span>Learn • Track • Understand • Care</span><small>© {new Date().getFullYear()} Tiny Titans</small></footer>
       </section>
     </main>
   );
