@@ -6,6 +6,7 @@ import {
 } from "../data/species/universalSpeciesRegistry";
 import type { UniversalSpeciesRecord } from "../data/species/universalSpeciesTypes";
 import "../styles/universal-species-picker.css";
+import { KEEPER_COMPANION_TERMINOLOGY } from "../config/keeperTerminology";
 
 type Props = {
   value?: string;
@@ -18,8 +19,8 @@ type Props = {
 export default function UniversalSpeciesPicker({
   value = "",
   onChange,
-  label = "Species",
-  placeholder = "Search common name, scientific name, family…",
+  label = KEEPER_COMPANION_TERMINOLOGY.speciesQuestion,
+  placeholder = KEEPER_COMPANION_TERMINOLOGY.speciesSearchPlaceholder,
   allowUnknown = true,
 }: Props) {
   const [query, setQuery] = useState("");
@@ -41,8 +42,12 @@ export default function UniversalSpeciesPicker({
 
   return (
     <div className="universal-species-picker">
-      <label>
+      <div className="universal-species-picker__intro">
         <span>{label}</span>
+        <small>{KEEPER_COMPANION_TERMINOLOGY.speciesHelp}</small>
+      </div>
+      <label className="universal-species-picker__search">
+        <span>Search the Tiny Titans species catalogue</span>
         <input
           value={query || selected?.commonNames[0] || ""}
           onChange={(event) => {
@@ -73,7 +78,7 @@ export default function UniversalSpeciesPicker({
           {results.map((species) => (
             <button type="button" key={species.id} onClick={() => choose(species)}>
               <strong>{species.commonNames[0] ?? species.acceptedScientificName}</strong>
-              <span>{species.acceptedScientificName} · {species.family} · {species.className}</span>
+              <span><b className="universal-species-picker__group">{species.browseGroup.replace("-", " ")}</b> · {species.acceptedScientificName} · {species.family}</span>
               <em>{species.care?.status?.replace("-", " ") ?? "care mapping pending"}</em>
             </button>
           ))}
@@ -82,7 +87,7 @@ export default function UniversalSpeciesPicker({
 
       {query.trim() && !results.length && allowUnknown && (
         <p className="universal-species-picker__unknown">
-          No canonical species match. You can continue with an unidentified/awaiting-identification record and send the candidate through Species Incubator.
+          No canonical species matched that search. The animal can still be saved without a confirmed species and remain awaiting identification. You can review the catalogue or update the species later.
         </p>
       )}
     </div>
