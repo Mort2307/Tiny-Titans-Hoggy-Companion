@@ -1,6 +1,8 @@
 import fs from "node:fs";
 
 const read = (file) => fs.readFileSync(file, "utf8");
+const exists = (file) => fs.existsSync(file);
+const envExample = exists(".env.example") ? read(".env.example") : "";
 const master = read("src/intelligence/v50/animalMasterRecordEngine.ts");
 const confidence = read("src/intelligence/v50/titanDataConfidenceEngine.ts");
 const changes = read("src/intelligence/v50/titanChangeDetector.ts");
@@ -19,6 +21,12 @@ const goals = read("functions/titanGoals.js");
 const chatContracts = read("src/intelligence/askTitan/titanChatContracts.ts");
 const parkedChat = read("src/components/TitanIntelligence/AskTitan.tsx");
 const failures = [];
+if (exists("src/services/firebaseAiIntelligenceService.ts")) failures.push("Firebase AI Logic/Gemini explainer is still present in the active source tree.");
+if (!exists("retirement/gemini/firebaseAiIntelligenceService.ts")) failures.push("Parked Firebase AI Logic/Gemini explainer is missing from the retirement shelf.");
+if (envExample.includes("VITE_TT_GEMINI_MODEL")) failures.push("The active environment example still exposes the retired Gemini model setting.");
+if (envExample.includes("Firebase AI Logic / Gemini")) failures.push("The active environment example still advertises the retired Gemini integration.");
+if (/require\(\"\.\/titanIntelligence\"\)/.test(read("functions/index.js"))) failures.push("Gemini-backed Titan chat is still exported through functions/index.js.");
+if (/require\(\"\.\/titanIntelligenceFeedback\"\)/.test(read("functions/index.js"))) failures.push("Titan chat feedback is still exported through functions/index.js.");
 
 const required = [
   [master, "buildAnimalMasterRecord", "Master Record builder is missing."],
