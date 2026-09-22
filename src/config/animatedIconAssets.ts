@@ -24,7 +24,7 @@ export type AnimatedIconAsset = {
 export const ANIMATED_ICON_ASSETS: AnimatedIconAsset[] = [
   {
     id: "snake-primary",
-    feature: "My Snakes",
+    feature: "My Animals",
     label: "Free Snake Animation — TheSub",
     kind: "third-party",
     status: "shortlisted",
