@@ -110,7 +110,7 @@ export default function MyAnimals() {
         <h2>Add an individual animal</h2>
         <div className="universal-animal-form">
           <label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
-          <UniversalSpeciesPicker value={selectedSpecies?.id || ""} onChange={setSelectedSpecies} label="" placeholder={KEEPER_COMPANION_TERMINOLOGY.speciesSearchPlaceholder} />
+          <UniversalSpeciesPicker value={selectedSpecies?.id || ""} onChange={setSelectedSpecies} placeholder={KEEPER_COMPANION_TERMINOLOGY.speciesSearchPlaceholder} />
           <label>Sex<select value={sex} onChange={(event) => setSex(event.target.value as UniversalAnimalRecord["sex"])}><option value="unknown">Unknown</option><option value="male">Male</option><option value="female">Female</option><option value="not-applicable">Not applicable</option></select></label>
           <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as UniversalAnimalRecord["status"])}>{["active","quarantine","rehoming","sold","deceased","archived"].map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           <label>Morph / colour<input value={morphOrColour} onChange={(event) => setMorphOrColour(event.target.value)} /></label>
