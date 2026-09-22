@@ -1,0 +1,392 @@
+/* Tiny Titans — header overlay system.
+   Header menus are portalled to document.body so no app-shell stacking context
+   or mobile overflow rule can clip them. */
+
+.tt-header-overlay-root {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  pointer-events: none;
+}
+
+.workspace-switcher__desktop-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.workspace-switcher__desktop-layer .workspace-switcher__menu {
+  position: fixed;
+  top: var(--tt-workspace-top);
+  right: var(--tt-workspace-right);
+  z-index: 5010;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(70vh, 620px);
+  overflow: auto;
+  pointer-events: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.workspace-switcher__mobile-layer {
+  display: none;
+}
+
+.workspace-switcher__mobile-options {
+  display: grid;
+  gap: 8px;
+}
+
+.workspace-switcher__mobile-options > button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 13px;
+  background: rgba(255,255,255,.035);
+  color: #f7f3fb;
+  text-align: left;
+}
+
+.workspace-switcher__mobile-options > button.is-active {
+  border-color: color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 38%, rgba(255,255,255,.12));
+  background: color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 9%, rgba(255,255,255,.035));
+}
+
+.workspace-switcher__mobile-options > button > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.workspace-switcher__mobile-options strong,
+.workspace-switcher__mobile-links strong {
+  font-size: .78rem;
+}
+
+.workspace-switcher__mobile-options small,
+.workspace-switcher__mobile-links small {
+  color: rgba(255,255,255,.47);
+  font-size: .59rem;
+  line-height: 1.35;
+}
+
+.workspace-switcher__mobile-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(255,255,255,.06);
+}
+
+.workspace-switcher__mobile-check {
+  color: var(--tt-tier-accent, #92a0ad);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.workspace-switcher__mobile-links {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.workspace-switcher__mobile-links > a {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 7px 4px;
+  color: #f7f3fb;
+  text-decoration: none;
+}
+
+.workspace-switcher__mobile-links > a > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.workspace-switcher__mobile-links > a > span:last-child {
+  color: rgba(255,255,255,.4);
+  font-size: 1.2rem;
+}
+
+.workspace-switcher__mobile-qa {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.workspace-switcher__qa-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.workspace-switcher__qa-grid button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 38px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 9px;
+  background: rgba(255,255,255,.035);
+  color: #f7f3fb;
+  cursor: pointer;
+  font-size: .62rem;
+  font-weight: 800;
+}
+
+.workspace-switcher__qa-grid button:hover:not(:disabled) {
+  border-color: rgba(240,202,136,.38);
+  background: rgba(240,202,136,.08);
+}
+
+.workspace-switcher__qa-grid button:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+.workspace-switcher__qa-heading {
+  display: grid;
+  gap: 3px;
+}
+
+.workspace-switcher__qa-heading strong {
+  font-size: .72rem;
+}
+
+.workspace-switcher__qa-heading small,
+.workspace-switcher__qa-status {
+  color: rgba(255,255,255,.45);
+  font-size: .55rem;
+  line-height: 1.3;
+}
+
+.workspace-switcher__qa-status {
+  display: block;
+  margin-top: 8px;
+  color: #7ad7a0;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1001;
+  }
+
+  .app-header-actions {
+    position: relative;
+    z-index: 1002;
+  }
+
+  .workspace-switcher__desktop-layer {
+    display: none;
+  }
+
+  .workspace-switcher__mobile-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: block;
+    pointer-events: auto;
+  }
+
+  .tt-header-overlay-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-height: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(0,0,0,.62);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  .workspace-switcher__mobile-sheet {
+    position: absolute;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: 10px;
+    max-height: min(82dvh, 720px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 13px;
+    border: 1px solid color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 20%, rgba(255,255,255,.11));
+    border-radius: 18px;
+    background: linear-gradient(180deg, #1a1d20 0%, #111315 100%);
+    box-shadow: 0 26px 80px rgba(0,0,0,.48);
+    color: #f7f3fb;
+  }
+
+  .workspace-switcher__mobile-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 2px 2px 9px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+
+  .workspace-switcher__mobile-heading > div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .workspace-switcher__mobile-eyebrow {
+    color: color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 75%, #fff);
+    font-size: .52rem;
+    font-weight: 900;
+    letter-spacing: .14em;
+  }
+
+  .workspace-switcher__mobile-heading h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.02rem;
+  }
+
+  .workspace-switcher__mobile-close {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.78);
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  .workspace-switcher__mobile-links > a:active,
+  .workspace-switcher__mobile-options > button:active,
+  .workspace-switcher__mobile-close:active,
+  .workspace-switcher__qa-grid button:active {
+    transform: scale(.99);
+  }
+
+  .workspace-switcher__mobile-qa .workspace-switcher__qa-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-switcher__mobile-qa {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .tt-header-overlay-root {
+    z-index: 5000;
+  }
+
+  .tt-live-world-clock {
+    display: none !important;
+  }
+
+  .tt-command-trigger {
+    width: 44px !important;
+    min-width: 44px !important;
+    padding: 6px !important;
+    font-size: 0 !important;
+  }
+
+  .tt-command-trigger span {
+    display: none !important;
+  }
+
+  .tt-command-trigger::before {
+    content: "⌕";
+    font-size: 1.18rem;
+    line-height: 1;
+  }
+
+  .paid-tier-header-badge {
+    min-width: 40px;
+    min-height: 36px;
+    justify-content: center;
+    padding: 5px 7px;
+  }
+
+  .paid-tier-header-badge strong,
+  .paid-tier-header-badge small {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .paid-tier-header-badge {
+    display: none;
+  }
+
+  .workspace-switcher__button {
+    min-height: 36px;
+    padding: 5px 7px;
+    gap: 5px;
+  }
+
+  .workspace-switcher__button > span:nth-child(2) {
+    display: block;
+  }
+
+  .workspace-switcher__button > span:nth-child(2) small {
+    display: none;
+  }
+
+  .workspace-switcher__button strong {
+    font-size: .62rem;
+  }
+
+  .workspace-switcher__button > span:last-child {
+    font-size: .78rem;
+  }
+
+  .tt-command-trigger {
+    width: 42px !important;
+    min-width: 42px !important;
+  }
+
+  .app-header {
+    gap: 6px !important;
+  }
+
+  .app-header-actions {
+    gap: 5px !important;
+    margin-left: 6px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .workspace-switcher__button {
+    padding-inline: 6px;
+  }
+
+  .workspace-switcher__button > span:nth-child(2) {
+    max-width: 74px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-brand-name {
+    font-size: .72rem !important;
+  }
+
+  .tiny-titans-logo {
+    width: 35px !important;
+    height: 35px !important;
+  }
+}
