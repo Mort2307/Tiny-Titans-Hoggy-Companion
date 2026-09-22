@@ -36,10 +36,10 @@ export default function UniversalAnimalProfile() {
   return <main className="page-container universal-animals-page">
     <Link to="/animals">← My Animals</Link>
     <section className="universal-animals-hero">
-      <div><p className="eyebrow">INDIVIDUAL ANIMAL</p><h1>{name}</h1><p>{common}{scientific ? " · " + scientific : ""}</p></div>
+      <div><p className="eyebrow">ANIMAL RECORD</p><h1>{name}</h1><p>{common}{scientific ? " · " + scientific : ""}</p><p className="universal-animal-profile-note">Species identity is kept separate from the individual record, so one collection can contain many species.</p></div>
       <div className="universal-animals-metrics"><strong>{animal?.status || (legacySnake?.status === "Deceased" ? "deceased" : "active")}</strong><span>status</span></div>
     </section>
     {species && <section className="universal-animals-panel"><p className="eyebrow">CANONICAL SPECIES</p><h2>{species.commonNames[0]}</h2><p className="universal-scientific">{species.acceptedScientificName}</p><div className="universal-animal-links"><Link to={"/species/" + species.id}>Care & health reference →</Link><Link to={"/marketplace?species=" + encodeURIComponent(species.id)}>Marketplace listings →</Link></div></section>}
-    <section className="universal-animals-panel"><p className="eyebrow">INDIVIDUAL RECORD</p><div className="universal-individual-grid"><div><span>Group</span><strong>{animal?.animalGroup || "reptile"}</strong></div><div><span>Sex</span><strong>{animal?.sex || legacySnake?.sex || "Unknown"}</strong></div><div><span>Morph / colour</span><strong>{animal?.morphOrColour || legacySnake?.morphs?.join(", ") || legacySnake?.customMorph || "—"}</strong></div></div>{animal?.notes || legacySnake?.notes ? <p>{animal?.notes || legacySnake?.notes}</p> : null}</section>
+    <section className="universal-animals-panel"><p className="eyebrow">INDIVIDUAL RECORD</p><div className="universal-individual-grid"><div><span>Group</span><strong>{animal?.animalGroup || "Animal"}</strong></div><div><span>Sex</span><strong>{animal?.sex || legacySnake?.sex || "Unknown"}</strong></div><div><span>Morph / colour</span><strong>{animal?.morphOrColour || legacySnake?.morphs?.join(", ") || legacySnake?.customMorph || "—"}</strong></div></div>{animal?.notes || legacySnake?.notes ? <p>{animal?.notes || legacySnake?.notes}</p> : null}</section>
   </main>;
 }
