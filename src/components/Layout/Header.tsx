@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../../assets/TinyTitans-Logo.jpg";
 import { useAuth } from "../../context/useAuth";
@@ -46,12 +46,41 @@ function Header() {
   const [paidAccess, setPaidAccess] = useState<PaidAccess | null>(null);
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(getWorkspacePresentation);
   const [qaOpen, setQaOpen] = useState(false);
+  const [qaMenuTop, setQaMenuTop] = useState<number | null>(null);
+  const qaButtonRef = useRef<HTMLButtonElement | null>(null);
   const [qaBusy, setQaBusy] = useState(false);
   const [qaMessage, setQaMessage] = useState("");
 
   const creatorMode = profile?.role === "admin";
 
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
+
+  useEffect(() => {
+    if (!qaOpen) return;
+    const positionMenu = () => {
+      const button = qaButtonRef.current;
+      if (button) setQaMenuTop(button.getBoundingClientRect().bottom + 8);
+    };
+    positionMenu();
+    window.addEventListener("resize", positionMenu);
+    window.addEventListener("scroll", positionMenu, true);
+    return () => {
+      window.removeEventListener("resize", positionMenu);
+      window.removeEventListener("scroll", positionMenu, true);
+    };
+  }, [qaOpen]);
+
+  function toggleQaMenu() {
+    setQaOpen((value) => {
+      const next = !value;
+      if (!value) window.requestAnimationFrame(() => {
+        const button = qaButtonRef.current;
+        if (button) setQaMenuTop(button.getBoundingClientRect().bottom + 8);
+      });
+      return next;
+    });
+  }
+
 
   useEffect(() => {
     if (!user) {
@@ -131,7 +160,7 @@ function Header() {
           />
         </Link>
 
-        <div className="app-brand-lockup" aria-label="Tiny Titans Reptile Companion">
+        <div className="app-brand-lockup" aria-label="Tiny Titans Keeper Companion">
           {!isPersonal && branding.logoUrl && (
             <img
               className="workspace-brand-avatar"
@@ -142,7 +171,7 @@ function Header() {
           )}
           <span className="app-brand-name">
             <span className="app-brand-primary">Tiny Titans</span>
-            <span className="app-brand-secondary">Reptile Companion</span>
+            <span className="app-brand-secondary">Keeper Companion</span>
           </span>
           {!isPersonal && (
             <span className="app-brand-workspace">{workspaceLabel}</span>
@@ -177,7 +206,8 @@ function Header() {
             <button
               type="button"
               className="header-qa-button"
-              onClick={() => setQaOpen((value) => !value)}
+              ref={qaButtonRef}
+              onClick={toggleQaMenu}
               aria-expanded={qaOpen}
               aria-haspopup="menu"
               title="Quick QA tier switch"
@@ -187,7 +217,7 @@ function Header() {
             </button>
 
             {qaOpen && (
-              <div className="header-qa-menu" role="menu">
+              <div className="header-qa-menu" role="menu" style={{ "--tt-dropdown-top": `${qaMenuTop ?? 0}px` } as CSSProperties}>
                 <div className="header-qa-heading">
                   <strong>Quick QA Tier</strong>
                   <small>Owner only · swap the effective test tier</small>
