@@ -18,7 +18,7 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
 };
 
 function workspaceIcon(productId: WorkspaceProduct["id"]): TinyTitansIconName {
-  if (productId === "personal") return "reptile";
+  if (productId === "personal") return "animals";
   if (productId === "rescue") return "health";
   if (productId === "titan_seller") return "marketplace";
   if (productId.startsWith("business_")) return "community";
