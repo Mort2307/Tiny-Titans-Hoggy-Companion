@@ -5,6 +5,7 @@ import { getUserSnakes } from "../../services/snakeService";
 import type { Snake } from "../../types/Snake";
 import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../../utils/feedingSummary";
 import type { WeightRecord } from "../../types/Weight";
+import TinyTitansIcon from "../TinyTitansIcon";
 import type { ShedRecord } from "../../types/Shed";
 import { TITAN_AT_A_GLANCE_OPTIONS, useEasyNav, type TitanAtAGlanceSliceId } from "../../context/EasyNavContext";
 import "./TitanAtAGlance.css";
