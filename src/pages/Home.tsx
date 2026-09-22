@@ -56,7 +56,7 @@ function Home() {
       ) : snakes.length === 0 ? (
         <section className="tt-home-panel tt-home-empty">
           <div>
-            <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> YOUR FIRST ANIMAL</p>
+            <p className="tt-home-kicker"><TinyTitansIcon name="animals" size={17} /> YOUR FIRST ANIMAL</p>
             <h2>No animals added yet</h2>
             <p>Add your first animal and Home will become personalised around its records, care and trends.</p>
           </div>
