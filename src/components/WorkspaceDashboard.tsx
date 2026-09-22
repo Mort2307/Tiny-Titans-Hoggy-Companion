@@ -10,7 +10,7 @@ const DATA: Record<Exclude<WorkspaceProductId, "personal" | "rescue">, { title: 
     intro: "A serious keeper workspace built around deeper animal records, intelligence, genetics and breeding.",
     stats: [["Animals","Open register"],["Intelligence","Open insights"],["Breeding","Open planner"],["Records","Open records"]],
     items: [
-      { eyebrow:"ANIMAL INTELLIGENCE",title:"Animal Master Records",text:"Bring weight, feeding, shed, health and behaviour into one contextual animal view.",path:"/snakes",action:"Open animals" },
+      { eyebrow:"ANIMAL INTELLIGENCE",title:"Animal Master Records",text:"Bring weight, feeding, shed, health and behaviour into one contextual animal view.",path:"/animals",action:"Open animals" },
       { eyebrow:"GENETICS",title:"Authoritative genetics",text:"Work with species-aware genetics, bounded outcomes and evidence-gated combinations.",path:"/calculator",action:"Open calculator" },
       { eyebrow:"BREEDING",title:"Breeding command",text:"Plan pairings, readiness, cycles and production from one connected workspace.",path:"/breeding",action:"Open breeding" },
       { eyebrow:"INTELLIGENCE",title:"Titan Intelligence",text:"Review proactive decisions, cross-domain signals and animal-specific context.",path:"/titan-intelligence",action:"Open intelligence" },
@@ -21,7 +21,7 @@ const DATA: Record<Exclude<WorkspaceProductId, "personal" | "rescue">, { title: 
     intro: "A selling workspace connecting animal records, listings, conversations and customer-facing workflows.",
     stats: [["Animals","Register"],["Listings","Marketplace"],["Messages","Conversations"],["Seller tools","Workspace"]],
     items: [
-      { eyebrow:"ANIMAL REGISTER",title:"Animals ready to sell",text:"Keep the authoritative animal record underneath every listing.",path:"/snakes",action:"Open animals" },
+      { eyebrow:"ANIMAL REGISTER",title:"Animals ready to sell",text:"Keep the authoritative animal record underneath every listing.",path:"/animals",action:"Open animals" },
       { eyebrow:"LISTINGS",title:"Marketplace",text:"Create and manage customer-facing listings without leaving TinyTitans.",path:"/marketplace",action:"Open marketplace" },
       { eyebrow:"CUSTOMERS",title:"Messages & enquiries",text:"Continue conversations around animals, listings and submissions.",path:"/conversations",action:"Open messages" },
       { eyebrow:"SELLER TOOLS",title:"Seller workspace",text:"Use the paid seller workflow for listing and customer operations.",path:"/paid/marketplace",action:"Open seller tools" },
@@ -32,7 +32,7 @@ const DATA: Record<Exclude<WorkspaceProductId, "personal" | "rescue">, { title: 
     intro: "A focused business workspace for small animal-keeping businesses and breeding operations.",
     stats: [["Animals","Register"],["Marketplace","Listings"],["Breeding","Production"],["Public page","Branding"]],
     items: [
-      { eyebrow:"OPERATIONS",title:"Business animal register",text:"Connect animal records to the wider business workflow.",path:"/snakes",action:"Open animals" },
+      { eyebrow:"OPERATIONS",title:"Business animal register",text:"Connect animal records to the wider business workflow.",path:"/animals",action:"Open animals" },
       { eyebrow:"COMMERCIAL",title:"Marketplace",text:"Keep listings and customer-facing information connected to the source animal.",path:"/marketplace",action:"Open listings" },
       { eyebrow:"BREEDING",title:"Production workspace",text:"Keep breeding plans and production records alongside your organisation.",path:"/breeding",action:"Open breeding" },
       { eyebrow:"BRANDING",title:"Public business page",text:"Present your business identity, hours, credentials and contact details.",path:"/account/partner-landing",action:"Open public page" },
@@ -43,7 +43,7 @@ const DATA: Record<Exclude<WorkspaceProductId, "personal" | "rescue">, { title: 
     intro: "A shared operations workspace for established teams, reporting and repeatable workflows.",
     stats: [["Animals","Register"],["Team","Organisation"],["Reports","Operations"],["Branding","Public page"]],
     items: [
-      { eyebrow:"OPERATIONS",title:"Organisation animal register",text:"One source of truth for the animals underpinning your business.",path:"/snakes",action:"Open animals" },
+      { eyebrow:"OPERATIONS",title:"Organisation animal register",text:"One source of truth for the animals underpinning your business.",path:"/animals",action:"Open animals" },
       { eyebrow:"TEAM",title:"Organisation access",text:"Keep staff roles and workspace membership separate from personal accounts.",path:"/account/partner-landing",action:"Manage organisation" },
       { eyebrow:"REPORTING",title:"Business reporting",text:"Track operational information connected to your existing TinyTitans records.",path:"/paid/business-reporting",action:"Open reports" },
       { eyebrow:"PUBLIC PRESENCE",title:"Customer landing page",text:"Give customers a professional business-facing experience.",path:"/account/partner-landing",action:"Open page" },
