@@ -5,10 +5,10 @@ export type SetupInterest = "keeper" | "breeder" | "breeder-seller" | "learner";
 export const ACCOUNT_SETUP_CONSENT_VERSION = "2026-09-02-community-location-v4";
 
 export const PROFILE_OPTIONS: Array<{ id: ProfileType; title: string; description: string; icon: import("../types/tinyTitansIcon").TinyTitansIconName }> = [
-  { id: "keeper", icon: "reptile", title: "Keeper", description: "I keep and care for reptiles." },
-  { id: "learner", icon: "academy", title: "Learner", description: "I'm here to learn about reptiles and biology." },
-  { id: "educator", icon: "educator", title: "Educator / Teacher", description: "I want to use Tiny Titans for teaching or classes." },
-  { id: "professional", icon: "observatory", title: "Professional / Advanced", description: "I want deeper husbandry, genetics and data tools." },
+  { id: "keeper", icon: "reptile", title: "Keeper", description: "I keep and care for animals." },
+  { id: "learner", icon: "academy", title: "Learner", description: "I'm here to learn about animals, species and biology." },
+  { id: "educator", icon: "educator", title: "Educator / Teacher", description: "I want to use Tiny Titans for teaching, learning or classes." },
+  { id: "professional", icon: "observatory", title: "Professional / Advanced", description: "I want deeper husbandry, genetics and data tools across the animals I keep." },
 ];
 
 export const AGE_OPTIONS: Array<{ id: AgeBand; title: string; description: string; icon: import("../types/tinyTitansIcon").TinyTitansIconName }> = [
@@ -30,8 +30,8 @@ export const EDUCATOR_LEVELS: Array<{ id: EducatorTeachingLevel; title: string }
 
 export const INTEREST_OPTIONS: Array<{ id: SetupInterest; icon: import("../types/tinyTitansIcon").TinyTitansIconName; title: string; description: string }> = [
   { id: "keeper", icon: "reptile", title: "Keeper", description: "I keep and care for reptiles." },
-  { id: "breeder", icon: "genetics", title: "Breeder", description: "I breed reptiles and work with genetics." },
-  { id: "breeder-seller", icon: "marketplace", title: "Breeder & Seller", description: "I breed and sell reptiles." },
+  { id: "breeder", icon: "genetics", title: "Breeder", description: "I breed animals and work with genetics where supported." },
+  { id: "breeder-seller", icon: "marketplace", title: "Breeder & Seller", description: "I breed and sell animals." },
   { id: "learner", icon: "knowledge", title: "Learner", description: "I'm here to learn." },
 ];
 
