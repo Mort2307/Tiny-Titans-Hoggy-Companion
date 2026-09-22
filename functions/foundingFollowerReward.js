@@ -39,9 +39,12 @@ function validPlatform(value) {
 }
 
 function validScreenshotPath(uid, value) {
-  const path = String(value || "").trim().toLowerCase();
-  const prefix = `founding-follower-claims/${uid}/proof.`;
-  const extension = path.startsWith(prefix) ? path.slice(prefix.length) : "";
+  const path = String(value || "").trim();
+  const prefix = `founding-follower-claims/${uid}/`;
+  if (!path.startsWith(prefix)) return null;
+  const fileName = path.slice(prefix.length);
+  const extension = fileName.split(".").pop()?.toLowerCase() || "";
+  if (!/^proof-[0-9]{10,}-[a-z0-9_-]{4,}\.(jpg|jpeg|png|webp)$/i.test(fileName)) return null;
   return ["jpg", "jpeg", "png", "webp"].includes(extension) ? path : null;
 }
 
@@ -191,6 +194,9 @@ exports.submitFoundingFollowerClaim = onCall({ region: "europe-west2" }, async (
     if (data.status === "approved") throw new HttpsError("already-exists", "Your Founding Follower reward has already been approved on this account.");
     if (data.status === "pending" || data.status === "processing") throw new HttpsError("already-exists", "Your Founding Follower claim is already awaiting review.");
   }
+  if (existing.exists && existing.data()?.status === "rejected" && existing.data()?.screenshotPath && existing.data().screenshotPath !== screenshotPath) {
+    await bucket.file(String(existing.data().screenshotPath)).delete().catch(() => undefined);
+  }
   await ref.set({
     userId: uid,
     campaignId: CAMPAIGN_ID,
@@ -211,7 +217,12 @@ exports.submitFoundingFollowerClaim = onCall({ region: "europe-west2" }, async (
 exports.getCreatorFoundingFollowerClaims = onCall({ region: "europe-west2" }, async (request) => {
   requireOwner(request);
   const snapshot = await db.collection("foundingFollowerClaims").orderBy("submittedAt", "desc").limit(500).get();
-  const claims = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const claims = await Promise.all(snapshot.docs.map(async (item) => {
+    const claim = { id: item.id, ...item.data() };
+    const userSnapshot = await db.collection("users").doc(item.id).get();
+    const user = userSnapshot.exists ? userSnapshot.data() || {} : {};
+    return { ...claim, targetName: String(user.displayName || user.name || "Tiny Titans user"), targetEmail: String(user.email || "") };
+  }));
   const summary = claims.reduce((result, item) => {
     const status = String(item.status || "pending");
     if (status === "pending") result.pending += 1;
