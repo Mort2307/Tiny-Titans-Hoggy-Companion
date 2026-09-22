@@ -31,8 +31,8 @@ function applyBranding(branding: WorkspaceBranding, presentation: WorkspacePrese
   root.style.setProperty("--tt-workspace-logo", branding.logoUrl ? `url(${JSON.stringify(branding.logoUrl)})` : "none");
   root.style.setProperty("--tt-workspace-name", JSON.stringify(active ? branding.name : "Tiny Titans"));
   root.dataset.ttWorkspaceBrandName = active ? branding.name.slice(0, 80) : "Tiny Titans";
-  if (active && branding.name) document.title = `${branding.name} · Tiny Titans Reptile Companion`;
-  else document.title = "TinyTitans Reptile Companion";
+  if (active && branding.name) document.title = `${branding.name} · Tiny Titans Keeper Companion`;
+  else document.title = "Tiny Titans Keeper Companion";
 }
 
 export function WorkspaceBrandingProvider({ children }: PropsWithChildren) {
