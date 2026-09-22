@@ -7,7 +7,7 @@ type DashboardItem = { eyebrow: string; title: string; text: string; path: strin
 const DATA: Record<Exclude<WorkspaceProductId, "personal" | "rescue">, { title: string; intro: string; stats: Array<[string,string]>; items: DashboardItem[] }> = {
   titan_pro: {
     title: "Titan Command",
-    intro: "A serious keeper workspace built around deeper records, intelligence, genetics and breeding.",
+    intro: "A serious keeper workspace built around deeper animal records, intelligence, genetics and breeding.",
     stats: [["Animals","Open register"],["Intelligence","Open insights"],["Breeding","Open planner"],["Records","Open records"]],
     items: [
       { eyebrow:"ANIMAL INTELLIGENCE",title:"Animal Master Records",text:"Bring weight, feeding, shed, health and behaviour into one contextual animal view.",path:"/snakes",action:"Open animals" },
@@ -29,7 +29,7 @@ const DATA: Record<Exclude<WorkspaceProductId, "personal" | "rescue">, { title: 
   },
   business_starter: {
     title: "Business Command",
-    intro: "A focused business workspace for small reptile businesses and breeding operations.",
+    intro: "A focused business workspace for small animal-keeping businesses and breeding operations.",
     stats: [["Animals","Register"],["Marketplace","Listings"],["Breeding","Production"],["Public page","Branding"]],
     items: [
       { eyebrow:"OPERATIONS",title:"Business animal register",text:"Connect animal records to the wider business workflow.",path:"/snakes",action:"Open animals" },
@@ -51,7 +51,7 @@ const DATA: Record<Exclude<WorkspaceProductId, "personal" | "rescue">, { title: 
   },
   business_advanced: {
     title: "Business Advanced Command",
-    intro: "The professional operating layer for reptile businesses that need intelligence, controls and connected workflows.",
+    intro: "The professional operating layer for animal-keeping businesses that need intelligence, controls and connected workflows.",
     stats: [["Intelligence","Open insights"],["Reports","Operations"],["API & tools","Developer"],["Organisation","Control"]],
     items: [
       { eyebrow:"INTELLIGENCE",title:"Organisation intelligence",text:"Use advanced TinyTitans intelligence with the business context in view.",path:"/titan-intelligence",action:"Open intelligence" },
