@@ -10,7 +10,7 @@ type SpeciesContextBarProps = {
   showGeneticsStatus?: boolean;
 };
 
-export default function SpeciesContextBar({ compact = false, label = "Species context", showGeneticsStatus = true }: SpeciesContextBarProps) {
+export default function SpeciesContextBar({ compact = false, label = "Species working context", showGeneticsStatus = true }: SpeciesContextBarProps) {
   const { selectedSpeciesId, selectedSpecies, setSelectedSpeciesId } = useSpeciesContext();
   const knowledge = selectedSpecies?.knowledge;
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
@@ -24,12 +24,12 @@ export default function SpeciesContextBar({ compact = false, label = "Species co
   return (
     <section className={`tt-species-context ${compact ? "tt-species-context--compact" : ""}`} aria-label="Species context">
       <div className="tt-species-context__copy">
-        <p className="tt-species-context__eyebrow">🦎 SPECIES-SAFE CONTEXT</p>
+        <p className="tt-species-context__eyebrow">SPECIES-AWARE CONTEXT</p>
         <strong>{label}</strong>
-        {!compact && <p>Choose the species you are working with. Husbandry, safety and genetics content must stay attached to that species.</p>}
+        {!compact && <p>Choose the species you are working with for this tool. Husbandry, safety and genetics content stays attached to the selected species and is never borrowed from another species.</p>}
       </div>
       <div className="tt-species-context__selector">
-        <SpeciesSelector id="global-species-context" value={selectedSpeciesId} onChange={setSelectedSpeciesId} label="Select your species" />
+        <SpeciesSelector id="global-species-context" value={selectedSpeciesId} onChange={setSelectedSpeciesId} label="Choose the species for this tool" />
       </div>
       {showGeneticsStatus && (
         <div className={`tt-species-context__status ${overallReady ? "is-mapped" : "is-pending"}`}>
