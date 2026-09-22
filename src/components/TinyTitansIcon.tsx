@@ -271,7 +271,7 @@ export function TinyTitansIcon({ name, size = 24, title, className = "", ...prop
   return (
     <SimpleIcon
       name={resolvedName}
-      className={`tt-icon ${className}`.trim()}
+      className={`tt-icon tt-icon-name-${resolvedName} ${className}`.trim()}
       width={size}
       height={size}
       role={title ? "img" : "presentation"}
