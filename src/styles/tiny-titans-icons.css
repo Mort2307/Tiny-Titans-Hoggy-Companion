@@ -30,3 +30,189 @@
 @keyframes ttCrestFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1px)}}
 
 @media(prefers-reduced-motion:reduce){.tt-icon,.tt-icon-snake,.tt-icon-helix,.tt-icon-heart,.tt-icon-leaf,.tt-icon-shed,.tt-icon-spark,.tt-icon-crown,.tt-icon-prey,.tt-icon-food,.tt-icon-egg,.tt-icon-avatar,.tt-icon-avatar-two,.tt-icon-dot-avatar,.tt-tier-crest svg,.app-navigation-link.active .tt-icon,.tt-easy-nav-link.active .tt-icon{animation:none;transition:none}}
+
+
+/* =========================================================
+   TINY TITANS ICON LIFE SYSTEM
+   Semantic colour + subtle character treatment for every tier.
+========================================================= */
+
+.tt-icon {
+  --tt-icon-secondary: color-mix(in srgb, var(--tt-icon-accent, var(--tt-tier-accent, #f0ca88)) 52%, #ffffff 48%);
+  color: var(--tt-icon-accent, var(--tt-tier-accent, #f0ca88));
+  filter:
+    drop-shadow(0 2px 3px rgba(0, 0, 0, .22))
+    drop-shadow(0 0 5px color-mix(in srgb, currentColor 22%, transparent));
+}
+
+.tt-icon-line {
+  stroke: color-mix(in srgb, var(--tt-icon-secondary) 82%, #17131b 18%);
+}
+
+.tt-icon-line-soft {
+  stroke: color-mix(in srgb, var(--tt-icon-secondary) 76%, #17131b 24%);
+}
+
+.tt-icon-fill,
+.tt-icon-organic,
+.tt-icon-bubble,
+.tt-icon-food,
+.tt-icon-shed,
+.tt-icon-gauge,
+.tt-icon-glass,
+.tt-icon-book,
+.tt-icon-stack,
+.tt-icon-badge,
+.tt-icon-basket,
+.tt-icon-cap,
+.tt-icon-tool,
+.tt-icon-flask,
+.tt-icon-card,
+.tt-icon-crown,
+.tt-icon-horn,
+.tt-icon-leaf,
+.tt-icon-scale,
+.tt-icon-prey,
+.tt-icon-ring,
+.tt-icon-star,
+.tt-icon-heart,
+.tt-icon-egg,
+.tt-icon-avatar,
+.tt-icon-avatar-two,
+.tt-icon-dot-avatar {
+  fill: color-mix(in srgb, currentColor 82%, #fff8df 18%);
+}
+
+.tt-icon-spark,
+.tt-icon-dot {
+  fill: var(--tt-icon-secondary);
+}
+
+.tt-icon-name-home { --tt-icon-accent: #69c7ff; --tt-icon-secondary: #d8a4ff; }
+.tt-icon-name-reptile { --tt-icon-accent: #7edb83; --tt-icon-secondary: #f2c66d; }
+.tt-icon-name-reptiles { --tt-icon-accent: #72d7b3; --tt-icon-secondary: #7eb8ff; }
+.tt-icon-name-animals { --tt-icon-accent: #f2c968; --tt-icon-secondary: #70d8bd; }
+.tt-icon-name-messages { --tt-icon-accent: #8ab5ff; --tt-icon-secondary: #e2a8ff; }
+.tt-icon-name-reminders { --tt-icon-accent: #ffd166; --tt-icon-secondary: #ff9b78; }
+.tt-icon-name-husbandry { --tt-icon-accent: #7bd48c; --tt-icon-secondary: #b9e36e; }
+.tt-icon-name-weight { --tt-icon-accent: #77caff; --tt-icon-secondary: #f0ca88; }
+.tt-icon-name-feeding { --tt-icon-accent: #ff9f68; --tt-icon-secondary: #ffd166; }
+.tt-icon-name-shed { --tt-icon-accent: #ad91ff; --tt-icon-secondary: #7ed8ff; }
+.tt-icon-name-behaviour { --tt-icon-accent: #d7a1ff; --tt-icon-secondary: #75d9e8; }
+.tt-icon-name-health { --tt-icon-accent: #ff819e; --tt-icon-secondary: #83d7ff; }
+.tt-icon-name-enclosure { --tt-icon-accent: #78d6a5; --tt-icon-secondary: #78b7ff; }
+.tt-icon-name-morph { --tt-icon-accent: #ffb86b; --tt-icon-secondary: #ca94ff; }
+.tt-icon-name-genetics { --tt-icon-accent: #67e8f9; --tt-icon-secondary: #c084fc; }
+.tt-icon-name-breeding { --tt-icon-accent: #f3a6b6; --tt-icon-secondary: #ffd166; }
+.tt-icon-name-academy { --tt-icon-accent: #7dafff; --tt-icon-secondary: #f3d48a; }
+.tt-icon-name-handbook { --tt-icon-accent: #b89cff; --tt-icon-secondary: #75d6e8; }
+.tt-icon-name-observatory { --tt-icon-accent: #8cc8ff; --tt-icon-secondary: #f0c968; }
+.tt-icon-name-contribution { --tt-icon-accent: #ffcf70; --tt-icon-secondary: #8fe3c1; }
+.tt-icon-name-knowledge { --tt-icon-accent: #a7c8ff; --tt-icon-secondary: #ccb4ff; }
+.tt-icon-name-challenge { --tt-icon-accent: #ffd166; --tt-icon-secondary: #ff8fa3; }
+.tt-icon-name-community { --tt-icon-accent: #71e3c2; --tt-icon-secondary: #8ab4ff; }
+.tt-icon-name-marketplace { --tt-icon-accent: #f2b867; --tt-icon-secondary: #7cd6ff; }
+.tt-icon-name-mentorship { --tt-icon-accent: #78d7d0; --tt-icon-secondary: #c6a3ff; }
+.tt-icon-name-wall { --tt-icon-accent: #ffd166; --tt-icon-secondary: #ff8fb0; }
+.tt-icon-name-account { --tt-icon-accent: #f0ca88; --tt-icon-secondary: #8bbcff; }
+.tt-icon-name-plans { --tt-icon-accent: #f0c968; --tt-icon-secondary: #b692ff; }
+.tt-icon-name-billing { --tt-icon-accent: #7bc8ff; --tt-icon-secondary: #c3d4ff; }
+.tt-icon-name-family { --tt-icon-accent: #88d8b0; --tt-icon-secondary: #d2b4ff; }
+.tt-icon-name-titan { --tt-icon-accent: #f0ca88; --tt-icon-secondary: #b77cff; }
+.tt-icon-name-educator { --tt-icon-accent: #8ec5ff; --tt-icon-secondary: #f2c978; }
+.tt-icon-name-creator { --tt-icon-accent: #c0a0ff; --tt-icon-secondary: #71dbd3; }
+.tt-icon-name-testing { --tt-icon-accent: #b39cff; --tt-icon-secondary: #7fd4ff; }
+.tt-icon-name-water { --tt-icon-accent: #67d9ff; --tt-icon-secondary: #91bfff; }
+.tt-icon-name-timeline { --tt-icon-accent: #8ab8ff; --tt-icon-secondary: #e8b6ff; }
+.tt-icon-name-vet { --tt-icon-accent: #ff819c; --tt-icon-secondary: #7fd7ff; }
+.tt-icon-name-save { --tt-icon-accent: #7fd6b0; --tt-icon-secondary: #87baff; }
+.tt-icon-name-upload { --tt-icon-accent: #7ec7ff; --tt-icon-secondary: #f2cf81; }
+.tt-icon-name-back,
+.tt-icon-name-forward,
+.tt-icon-name-close { --tt-icon-accent: #9cb7cf; --tt-icon-secondary: #d4b2ff; }
+.tt-icon-name-filter,
+.tt-icon-name-grid { --tt-icon-accent: #88c5ff; --tt-icon-secondary: #b9a1ff; }
+.tt-icon-name-camera { --tt-icon-accent: #86d8d0; --tt-icon-secondary: #ffcb73; }
+.tt-icon-name-rotate,
+.tt-icon-name-move,
+.tt-icon-name-duplicate { --tt-icon-accent: #9db7ff; --tt-icon-secondary: #7ed6c2; }
+.tt-icon-name-link { --tt-icon-accent: #7fd8ff; --tt-icon-secondary: #ca9eff; }
+.tt-icon-name-lock,
+.tt-icon-name-unlock { --tt-icon-accent: #9aaec0; --tt-icon-secondary: #f0ca88; }
+.tt-icon-name-ceiling { --tt-icon-accent: #78d5e8; --tt-icon-secondary: #b89cff; }
+.tt-icon-name-info { --tt-icon-accent: #7ec7ff; --tt-icon-secondary: #f2c978; }
+.tt-icon-name-warning { --tt-icon-accent: #ffb35c; --tt-icon-secondary: #ff7f7f; }
+.tt-icon-name-check { --tt-icon-accent: #79d49a; --tt-icon-secondary: #7ec7ff; }
+.tt-icon-name-compass { --tt-icon-accent: #7ec7ff; --tt-icon-secondary: #d09cff; }
+.tt-icon-name-power { --tt-icon-accent: #f0ca88; --tt-icon-secondary: #78d6ff; }
+.tt-icon-name-air { --tt-icon-accent: #7fd7ff; --tt-icon-secondary: #9ce0bb; }
+
+.app-navigation-icon .tt-icon,
+.tt-easy-nav-link .tt-icon,
+.workspace-product-icon .tt-icon,
+.workspace-switcher__button .tt-icon {
+  transform-origin: center;
+}
+
+.app-navigation-link:hover .app-navigation-icon .tt-icon,
+.tt-easy-nav-link:hover .tt-icon,
+.workspace-product-icon:hover .tt-icon,
+.workspace-switcher__button:hover .tt-icon {
+  transform: translateY(-2px) rotate(-2deg) scale(1.06);
+  filter:
+    drop-shadow(0 4px 6px rgba(0, 0, 0, .24))
+    drop-shadow(0 0 9px color-mix(in srgb, currentColor 28%, transparent));
+}
+
+.workspace-product-icon {
+  position: relative;
+  isolation: isolate;
+}
+
+.workspace-product-icon::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 12px;
+  background: radial-gradient(circle, color-mix(in srgb, currentColor 19%, transparent), transparent 68%);
+  opacity: .9;
+  z-index: -1;
+  animation: ttWorkspaceIconAura 4s ease-in-out infinite;
+}
+
+.workspace-product-icon .tt-icon {
+  animation: ttWorkspaceIconLife 3.6s ease-in-out infinite;
+  filter:
+    drop-shadow(0 4px 7px rgba(0, 0, 0, .24))
+    drop-shadow(0 0 10px color-mix(in srgb, currentColor 26%, transparent));
+}
+
+.tt-tier-crest-free {
+  color: var(--tt-tier-accent, #92a0ad);
+}
+
+.tt-tier-crest-level-2 svg,
+.tt-tier-crest-level-3 svg {
+  filter:
+    drop-shadow(0 3px 5px rgba(0, 0, 0, .22))
+    drop-shadow(0 0 10px var(--tt-tier-glow, rgba(240, 202, 136, .26)));
+}
+
+@keyframes ttWorkspaceIconLife {
+  0%, 100% { transform: translateY(0) rotate(0) scale(1); }
+  24% { transform: translateY(-1px) rotate(-2deg) scale(1.025); }
+  48% { transform: translateY(0) rotate(1.5deg) scale(1.045); }
+  72% { transform: translateY(-1px) rotate(-1deg) scale(1.02); }
+}
+
+@keyframes ttWorkspaceIconAura {
+  0%, 100% { transform: scale(.9); opacity: .55; }
+  50% { transform: scale(1.08); opacity: .95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-product-icon .tt-icon,
+  .workspace-product-icon::after {
+    animation: none;
+  }
+}
