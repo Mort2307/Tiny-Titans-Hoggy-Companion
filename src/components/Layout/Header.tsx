@@ -36,7 +36,7 @@ function workspaceIcon(productId: WorkspacePresentation["productId"]) {
   if (productId === "titan_seller") return "marketplace" as const;
   if (productId.startsWith("business_")) return "community" as const;
   if (productId === "titan_pro") return "titan" as const;
-  return "reptile" as const;
+  return "animals" as const;
 }
 
 function Header() {
