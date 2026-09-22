@@ -1,0 +1,47 @@
+/* =========================================================
+   TINY TITANS · ANIMATED ANIMAL NAVIGATION ICON
+========================================================= */
+
+.tt-animated-animal-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  overflow: hidden;
+
+  filter: drop-shadow(0 0 6px rgba(245, 182, 66, 0.18));
+}
+
+.tt-animated-animal-icon img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+
+  animation: tt-animal-icon-in 260ms ease both;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@keyframes tt-animal-icon-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-animated-animal-icon img {
+    animation: none;
+  }
+}
