@@ -1,4 +1,5 @@
 import TinyTitansIcon from "../TinyTitansIcon";
+import AnimatedAnimalIcon from "../AnimatedAnimalIcon";
 import type { WorkspacePresentation } from "../../services/workspacePresentationService";
 import { quickIconFor } from "../../config/navigationIcons";
 
@@ -43,7 +44,7 @@ function QuickModeNavigation({
             <TinyTitansIcon name="home" size={24} /><small>At a Glance</small>
           </a>
           <a className="tt-easy-nav-link" href="/snakes" onClick={(event) => { event.preventDefault(); onOpenItem("/snakes"); }}>
-            <TinyTitansIcon name="reptile" size={24} /><small>{workspace.product.terminology.animals || "My Reptiles"}</small>
+            <AnimatedAnimalIcon size={24} /><small>{workspace.product.terminology.animals || "My Animals"}</small>
           </a>
           <a className="tt-easy-nav-link" href="/reminders" onClick={(event) => { event.preventDefault(); onOpenItem("/reminders"); }}>
             <TinyTitansIcon name="reminders" size={24} /><small>Due</small>
