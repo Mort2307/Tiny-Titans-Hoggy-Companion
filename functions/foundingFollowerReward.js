@@ -194,9 +194,7 @@ exports.submitFoundingFollowerClaim = onCall({ region: "europe-west2" }, async (
     if (data.status === "approved") throw new HttpsError("already-exists", "Your Founding Follower reward has already been approved on this account.");
     if (data.status === "pending" || data.status === "processing") throw new HttpsError("already-exists", "Your Founding Follower claim is already awaiting review.");
   }
-  if (existing.exists && existing.data()?.status === "rejected" && existing.data()?.screenshotPath && existing.data().screenshotPath !== screenshotPath) {
-    await bucket.file(String(existing.data().screenshotPath)).delete().catch(() => undefined);
-  }
+  const previousScreenshotPath = existing.exists && existing.data()?.status === "rejected" ? String(existing.data()?.screenshotPath || "") : "";
   await ref.set({
     userId: uid,
     campaignId: CAMPAIGN_ID,
@@ -211,6 +209,9 @@ exports.submitFoundingFollowerClaim = onCall({ region: "europe-west2" }, async (
     submittedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   }, { merge: true });
+  if (previousScreenshotPath && previousScreenshotPath !== screenshotPath) {
+    await bucket.file(previousScreenshotPath).delete().catch(() => undefined);
+  }
   return { success: true, campaignId: CAMPAIGN_ID, status: "pending", platform };
 });
 
