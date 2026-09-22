@@ -53,8 +53,7 @@ function LayoutChrome() {
 
   useLayoutScrollRestoration(`${pathname}${search}${hash}${key}`);
 
-  const speciesAware =
-    pathname === "/" || speciesAwarePrefixes.some((prefix) => matchesPrefix(pathname, prefix));
+  const speciesAware = speciesAwarePrefixes.some((prefix) => matchesPrefix(pathname, prefix));
   const isSpeciesAwareMorphLibrary = pathname === "/morph-library";
   const morphGalleryMatch = pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
   const morphDetailMatch = pathname.match(/^\/morph-library\/([^/]+)\/?$/);
