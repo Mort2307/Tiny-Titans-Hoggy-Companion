@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { FOUNDING_FOLLOWER_CAMPAIGN, FOUNDING_FOLLOWER_PLATFORM_LABELS, type FoundingFollowerPlatform } from "../config/foundingFollowerReward";
@@ -19,6 +19,22 @@ export default function FoundingFollowerReward() {
     if (!user?.uid) return;
     return subscribeToMyFoundingFollowerClaim(user.uid, setClaim);
   }, [user?.uid]);
+
+  const previousStatus = useRef<string | null>(null);
+
+  useEffect(() => {
+    const status = claim?.status || null;
+    if (status === "approved" && previousStatus.current && previousStatus.current !== "approved") {
+      window.dispatchEvent(new CustomEvent("tiny-titans-in-app-notification", {
+        detail: {
+          title: "🎁 Your Tiny Titans reward is active",
+          body: "Your Founding Follower reward has been approved and Titan Pro is now active for 30 days.",
+          url: "/founding-followers",
+        },
+      }));
+    }
+    previousStatus.current = status;
+  }, [claim?.status]);
 
   useEffect(() => {
     if (!file) {
@@ -96,7 +112,7 @@ export default function FoundingFollowerReward() {
             </div>
 
             <div className="tt-founding-platforms" role="group" aria-label="Choose the social platform">
-              {(FOUNDING_FOLLOWER_CAMPAIGN.platforms as FoundingFollowerPlatform[]).map((item) => (
+              {FOUNDING_FOLLOWER_CAMPAIGN.platforms.map((item) => (
                 <button key={item} type="button" className={platform === item ? "is-selected" : ""} onClick={() => setPlatform(item)}>
                   <strong>{item === "facebook" ? "f" : "◎"}</strong>
                   <span>{FOUNDING_FOLLOWER_PLATFORM_LABELS[item]}</span>
