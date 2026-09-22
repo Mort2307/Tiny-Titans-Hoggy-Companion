@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import TinyTitansIcon from "./TinyTitansIcon";
+import { useEffect, useRef, useState } from "react";
 import "../styles/AnimatedAnimalIcon.css";
 
 type AnimalFrame = {
@@ -8,25 +7,28 @@ type AnimalFrame = {
   src: string;
 };
 
-const GAME_ICONS_BASE = "https://game-icons.net/icons/f5b642/transparent/1x1/lorc";
-
+/**
+ * Open animal icon set sourced from Game-icons.net / Lorc and stored locally
+ * so the PWA does not depend on a third-party request at render time.
+ */
 export const MY_ANIMAL_ICON_FRAMES: readonly AnimalFrame[] = [
-  { id: "snake", label: "Snake", src: `${GAME_ICONS_BASE}/snake.svg` },
-  { id: "gecko", label: "Lizard", src: `${GAME_ICONS_BASE}/gecko.svg` },
-  { id: "crocodile", label: "Crocodilian", src: `${GAME_ICONS_BASE}/croc-jaws.svg` },
-  { id: "spider", label: "Spider", src: `${GAME_ICONS_BASE}/angular-spider.svg` },
-  { id: "bird", label: "Bird", src: `${GAME_ICONS_BASE}/bird-twitter.svg` },
-  { id: "fish", label: "Fish", src: `${GAME_ICONS_BASE}/angler-fish.svg` },
-  { id: "amphibian", label: "Amphibian", src: `${GAME_ICONS_BASE}/frog.svg` },
-  { id: "insect", label: "Insect", src: `${GAME_ICONS_BASE}/beetle-shell.svg` },
-  { id: "mammal", label: "Mammal", src: `${GAME_ICONS_BASE}/monkey.svg` },
-  { id: "cephalopod", label: "Cephalopod", src: `${GAME_ICONS_BASE}/octopus.svg` },
-  { id: "crustacean", label: "Crustacean", src: `${GAME_ICONS_BASE}/crab.svg` },
-  { id: "mollusc", label: "Mollusc", src: `${GAME_ICONS_BASE}/snail.svg` },
-  { id: "myriapod", label: "Myriapod", src: `${GAME_ICONS_BASE}/centipede.svg` },
+  { id: "snake", label: "Snake", src: "/animal-icons/snake.svg" },
+  { id: "lizard", label: "Lizard", src: "/animal-icons/gecko.svg" },
+  { id: "crocodilian", label: "Crocodilian", src: "/animal-icons/crocodile.svg" },
+  { id: "spider", label: "Spider", src: "/animal-icons/spider.svg" },
+  { id: "bird", label: "Bird", src: "/animal-icons/bird.svg" },
+  { id: "fish", label: "Fish", src: "/animal-icons/fish.svg" },
+  { id: "amphibian", label: "Amphibian", src: "/animal-icons/amphibian.svg" },
+  { id: "insect", label: "Insect", src: "/animal-icons/insect.svg" },
+  { id: "mammal", label: "Mammal", src: "/animal-icons/mammal.svg" },
+  { id: "cephalopod", label: "Cephalopod", src: "/animal-icons/cephalopod.svg" },
+  { id: "crustacean", label: "Crustacean", src: "/animal-icons/crustacean.svg" },
+  { id: "mollusc", label: "Mollusc", src: "/animal-icons/mollusc.svg" },
+  { id: "myriapod", label: "Myriapod", src: "/animal-icons/myriapod.svg" },
 ] as const;
 
-const CYCLE_MS = 1800;
+const HOLD_MS = 1650;
+const TRANSITION_MS = 550;
 
 type Props = {
   size?: number;
@@ -40,60 +42,77 @@ export default function AnimatedAnimalIcon({
   title,
 }: Props) {
   const [index, setIndex] = useState(0);
-  const [imageFailed, setImageFailed] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const indexRef = useRef(0);
 
   useEffect(() => {
-    const preload = MY_ANIMAL_ICON_FRAMES.map((frame) => {
+    const images = MY_ANIMAL_ICON_FRAMES.map((frame) => {
       const image = new Image();
       image.src = frame.src;
       return image;
     });
 
+    let cancelled = false;
+    let holdTimer: number | undefined;
+    let transitionTimer: number | undefined;
+
+    const advance = () => {
+      if (cancelled) return;
+
+      const nextIndex = (indexRef.current + 1) % MY_ANIMAL_ICON_FRAMES.length;
+      setTransitioning(true);
+
+      transitionTimer = window.setTimeout(() => {
+        if (cancelled) return;
+        indexRef.current = nextIndex;
+        setIndex(nextIndex);
+        setTransitioning(false);
+        holdTimer = window.setTimeout(advance, HOLD_MS);
+      }, TRANSITION_MS);
+    };
+
+    holdTimer = window.setTimeout(advance, HOLD_MS);
+
     return () => {
-      preload.forEach((image) => {
-        image.src = "";
+      cancelled = true;
+      if (holdTimer !== undefined) window.clearTimeout(holdTimer);
+      if (transitionTimer !== undefined) window.clearTimeout(transitionTimer);
+      images.forEach((image) => {
+        image.onload = null;
+        image.onerror = null;
       });
     };
   }, []);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setImageFailed(false);
-      setIndex((current) => (current + 1) % MY_ANIMAL_ICON_FRAMES.length);
-    }, CYCLE_MS);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  if (imageFailed) {
-    return (
-      <TinyTitansIcon
-        name="animals"
-        size={size}
-        className={className}
-        title={title}
-      />
-    );
-  }
-
-  const frame = MY_ANIMAL_ICON_FRAMES[index];
+  const current = MY_ANIMAL_ICON_FRAMES[index];
+  const next = MY_ANIMAL_ICON_FRAMES[(index + 1) % MY_ANIMAL_ICON_FRAMES.length];
 
   return (
     <span
-      className={`tt-animated-animal-icon ${className}`.trim()}
+      className={`tt-animated-animal-icon${transitioning ? " is-transitioning" : ""} ${className}`.trim()}
       style={{ width: size, height: size }}
       title={title}
-      aria-label={title ? frame.label : undefined}
+      aria-label={title ? current.label : undefined}
+      role={title ? "img" : undefined}
     >
       <img
-        key={frame.id}
-        src={frame.src}
+        className="tt-animated-animal-icon__frame tt-animated-animal-icon__current"
+        src={current.src}
         alt=""
         width={size}
         height={size}
         draggable={false}
-        onError={() => setImageFailed(true)}
       />
+      {transitioning && (
+        <img
+          className="tt-animated-animal-icon__frame tt-animated-animal-icon__next"
+          src={next.src}
+          alt=""
+          width={size}
+          height={size}
+          draggable={false}
+        />
+      )}
     </span>
   );
 }
