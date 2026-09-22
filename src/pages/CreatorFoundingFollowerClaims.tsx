@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getFoundingFollowerScreenshotUrl, loadFoundingFollowerClaims, formatClaimDate, reviewFoundingFollowerClaim, type FoundingFollowerClaim } from "../services/foundingFollowerRewardService";
 import "../styles/creatorFoundingFollowerClaims.css";
 
@@ -14,7 +14,7 @@ export default function CreatorFoundingFollowerClaims() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -30,9 +30,9 @@ export default function CreatorFoundingFollowerClaims() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   const visibleClaims = useMemo(() => claims.filter((claim) => filter === "all" || claim.status === filter), [claims, filter]);
 
