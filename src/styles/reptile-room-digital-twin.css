@@ -90,7 +90,7 @@
 .reptile-room-digital-twin .rr3d-navigation-pad { display:none!important; }
 .reptile-room-digital-twin .rr3d-navigation-grid { display:none!important; }
 
-/* Shared camera-relative directional pad used by the My Snakes viewer. */
+/* Shared camera-relative directional pad used by the My Animals viewer. */
 .reptile-room-digital-twin__camera-pad { position:absolute; left:12px; bottom:12px; z-index:90; display:grid; gap:5px; padding:7px; border:1px solid rgba(255,255,255,.12); border-radius:13px; background:rgba(10,14,16,.62); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); box-shadow:0 12px 26px rgba(0,0,0,.28); pointer-events:auto; }
 .reptile-room-digital-twin__camera-pad .camera-direction-title { padding:0 4px 2px; color:rgba(244,247,248,.6); font-size:.58rem; font-weight:900; letter-spacing:.09em; text-transform:uppercase; text-align:center; writing-mode:horizontal-tb!important; transform:none!important; white-space:nowrap; }
 .reptile-room-digital-twin__camera-pad .camera-direction-grid { display:grid; grid-template-columns:repeat(3,42px); grid-template-rows:38px 38px; gap:4px; }
