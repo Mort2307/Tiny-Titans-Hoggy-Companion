@@ -97,7 +97,7 @@ function Navigation() {
       icon: "marketplace",
       path: "/marketplace",
       group: "Community",
-      description: "Browse active reptile marketplace listings.",
+      description: "Browse active animal marketplace listings.",
       keywords: ["market", "seller", "listing", "shop"],
     },
   ].filter((item, index, items) =>
