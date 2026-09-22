@@ -8,6 +8,7 @@ import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import type { UniversalSpeciesRecord } from "../data/species/universalSpeciesTypes";
 import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import "../styles/universal-animals.css";
+import { KEEPER_COMPANION_TERMINOLOGY } from "../config/keeperTerminology";
 
 type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
 
@@ -94,22 +95,22 @@ export default function MyAnimals() {
         <div>
           <p className="eyebrow">YOUR COLLECTION</p>
           <h1>My Animals</h1>
-          <p>Species are catalogue records. Your animals are individual specimens. Existing records appear here alongside universal animals.</p>
+          <p>{KEEPER_COMPANION_TERMINOLOGY.collectionDescription} Existing snake records are preserved here alongside universal animal records.</p>
         </div>
         <div className="universal-animals-metrics">
           <strong>{animals.filter((animal) => !["deceased", "archived"].includes(animal.status)).length}</strong>
-          <span>active individuals</span>
+          <span>active animals</span>
           <strong>{new Set(animals.map((animal) => animal.speciesId).filter(Boolean)).size}</strong>
-          <span>linked species</span>
+          <span>species represented</span>
         </div>
       </header>
 
       <section className="universal-animals-panel">
         <p className="eyebrow">ADD INDIVIDUAL</p>
-        <h2>Record an actual animal</h2>
+        <h2>Add an individual animal</h2>
         <div className="universal-animal-form">
           <label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
-          <UniversalSpeciesPicker value={selectedSpecies?.id || ""} onChange={setSelectedSpecies} label="Species (recommended)" placeholder="Snakes, lizards, frogs, bugs, birds, fish…" />
+          <UniversalSpeciesPicker value={selectedSpecies?.id || ""} onChange={setSelectedSpecies} label="" placeholder={KEEPER_COMPANION_TERMINOLOGY.speciesSearchPlaceholder} />
           <label>Sex<select value={sex} onChange={(event) => setSex(event.target.value as UniversalAnimalRecord["sex"])}><option value="unknown">Unknown</option><option value="male">Male</option><option value="female">Female</option><option value="not-applicable">Not applicable</option></select></label>
           <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as UniversalAnimalRecord["status"])}>{["active","quarantine","rehoming","sold","deceased","archived"].map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           <label>Morph / colour<input value={morphOrColour} onChange={(event) => setMorphOrColour(event.target.value)} /></label>
@@ -121,8 +122,8 @@ export default function MyAnimals() {
 
       <section className="universal-animals-panel">
         <p className="eyebrow">INDIVIDUALS</p>
-        <h2>Your actual animals</h2>
-        {loading ? <p>Loading your animal collection…</p> : visibleAnimals.length === 0 ? <p>No individual animal records yet.</p> : <div className="universal-animal-list">{visibleAnimals.map((animal) => <article key={(animal.legacySnake ? "snake:" : "animal:") + animal.id} className="universal-animal-row"><div><strong>{animal.name}</strong><span>{animal.speciesCommonName || "Species awaiting identification"}</span><small>{animal.animalGroup || "animal"} · {animal.status}</small></div><Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual →</Link></article>)}</div>}
+        <h2>Your animal collection</h2>
+        {loading ? <p>Loading your animal collection…</p> : visibleAnimals.length === 0 ? <p>No individual animal records yet.</p> : <div className="universal-animal-list">{visibleAnimals.map((animal) => <article key={(animal.legacySnake ? "snake:" : "animal:") + animal.id} className="universal-animal-row"><div><strong>{animal.name}</strong><span>{animal.speciesCommonName || "Awaiting species identification"}</span><small>{animal.animalGroup || "Animal"} · {animal.status}</small></div><Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual →</Link></article>)}</div>}
       </section>
     </main>
   );
