@@ -19,8 +19,8 @@ export type QuickNavItem = {
 export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "home", label: "Home / At a Glance", icon: "home", path: "/", group: "Overview", description: "Your keeper command centre." },
   { id: "animals", label: "My Animals", icon: "animals", path: "/animals", group: "Overview", description: "Your individual animals across supported species.", keywords: ["animals", "pets", "collection", "individuals"] },
-  { id: "species", label: "Species Explorer", icon: "reptile", path: "/species", group: "Overview", description: "Explore the universal Tiny Titans animal catalogue.", keywords: ["species", "lizards", "turtles", "amphibians", "spiders", "insects", "exotics"] },
-  { id: "room", label: "Reptile Room", icon: "grid", path: "/reptile-room", group: "Overview", description: "Manage your enclosure room and vivariums.", keywords: ["vivarium", "enclosure", "room"] },
+  { id: "species", label: "Species Explorer", icon: "animals", path: "/species", group: "Overview", description: "Explore the universal Tiny Titans animal catalogue.", keywords: ["species", "lizards", "turtles", "amphibians", "spiders", "insects", "exotics"] },
+  { id: "room", label: "Keeper Room", icon: "grid", path: "/reptile-room", group: "Overview", description: "Manage your enclosure room and vivariums.", keywords: ["vivarium", "enclosure", "room"] },
   { id: "conversations", label: "Message Centre", icon: "messages", path: "/conversations", group: "Overview", description: "Your community conversations." },
 
   { id: "reminders", label: "Reminder Hub", icon: "reminders", path: "/reminders", group: "Care", description: "See what is due next.", keywords: ["due", "notifications", "feeding reminder", "weight reminder"] },
