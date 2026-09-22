@@ -13,7 +13,7 @@ function actionsForPath(path: string): Action[] {
   if (path.startsWith("/breeding")) return [{ to: "/breeding", label: "Breeding Workspace", icon: "breeding" }, { to: "/calculator", label: "Genetics Calculator", icon: "genetics" }, { to: "/morph-library", label: "Morph Library", icon: "morph" }];
   if (path.startsWith("/learn") || path.startsWith("/knowledge-base") || path.startsWith("/challenge")) return [{ to: "/challenge", label: "Continue Challenge", icon: "challenge" }, { to: "/knowledge-base", label: "Knowledge Base", icon: "knowledge" }, { to: "/morph-library", label: "Morph Library", icon: "morph" }];
   if (path.startsWith("/morph-library") || path === "/calculator") return [{ to: "/morph-library", label: "Morph Library", icon: "morph" }, { to: "/calculator", label: "Genetics Calculator", icon: "genetics" }, { to: "/breeding", label: "Breeding Planner", icon: "breeding" }];
-  return [{ to: "/weights", label: "Log Weight", icon: "weight" }, { to: "/feeding", label: "Log Feeding", icon: "feeding" }, { to: "/shedding", label: "Record Shed", icon: "shed" }, { to: "/snakes/new", label: "Add Reptile", icon: "add" }];
+  return [{ to: "/weights", label: "Log Weight", icon: "weight" }, { to: "/feeding", label: "Log Feeding", icon: "feeding" }, { to: "/shedding", label: "Record Shed", icon: "shed" }, { to: "/snakes/new", label: "Add Animal", icon: "add" }];
 }
 
 export default function TitanQuickActions() {
