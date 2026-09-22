@@ -94,7 +94,7 @@ export default function MyAnimals() {
         <div>
           <p className="eyebrow">YOUR COLLECTION</p>
           <h1>My Animals</h1>
-          <p>Species are catalogue records. Your animals are individual specimens. Existing My Reptiles records appear here alongside universal animals.</p>
+          <p>Species are catalogue records. Your animals are individual specimens. Existing records appear here alongside universal animals.</p>
         </div>
         <div className="universal-animals-metrics">
           <strong>{animals.filter((animal) => !["deceased", "archived"].includes(animal.status)).length}</strong>
