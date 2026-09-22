@@ -29,7 +29,7 @@ export const EDUCATOR_LEVELS: Array<{ id: EducatorTeachingLevel; title: string }
 ];
 
 export const INTEREST_OPTIONS: Array<{ id: SetupInterest; icon: import("../types/tinyTitansIcon").TinyTitansIconName; title: string; description: string }> = [
-  { id: "keeper", icon: "reptile", title: "Keeper", description: "I keep and care for reptiles." },
+  { id: "keeper", icon: "reptile", title: "Keeper", description: "I keep and care for animals." },
   { id: "breeder", icon: "genetics", title: "Breeder", description: "I breed animals and work with genetics where supported." },
   { id: "breeder-seller", icon: "marketplace", title: "Breeder & Seller", description: "I breed and sell animals." },
   { id: "learner", icon: "knowledge", title: "Learner", description: "I'm here to learn." },
