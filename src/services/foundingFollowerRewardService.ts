@@ -45,7 +45,7 @@ export async function submitFoundingFollowerClaim(platform: FoundingFollowerPlat
   if (!file) throw new Error("Please choose your follow screenshot.");
   const extension = extensionFor(file);
   if (file.size <= 0 || file.size > 5 * 1024 * 1024) throw new Error("Screenshots must be 5 MB or smaller.");
-  const path = `founding-follower-claims/${user.uid}/proof.${extension}`;
+  const path = `founding-follower-claims/${user.uid}/proof-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
   const storageRef = ref(storage, path);
   let uploaded = false;
   try {
