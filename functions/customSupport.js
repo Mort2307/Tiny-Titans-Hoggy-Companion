@@ -34,7 +34,7 @@ function parseCustomAmountPence(value) {
 
 function buildSupportLineItem(amountPence, label, stripePriceId) {
   if (stripePriceId) return { price: stripePriceId, quantity: 1 };
-  return { price_data: { currency: "gbp", product_data: { name: `Tiny Titans — ${label}`, description: "One-time voluntary support contribution to Tiny Titans Hoggy Companion. This payment is project support and does not purchase goods, services, membership, or administrative access." }, unit_amount: amountPence }, quantity: 1 };
+  return { price_data: { currency: "gbp", product_data: { name: `Tiny Titans — ${label}`, description: "One-time voluntary support contribution to Tiny Titans Keeper Companion. This payment is project support and does not purchase goods, services, membership, or administrative access." }, unit_amount: amountPence }, quantity: 1 };
 }
 
 async function writePaidSupport(uid, session) {
