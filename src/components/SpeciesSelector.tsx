@@ -42,7 +42,7 @@ export default function SpeciesSelector({
   id,
   value,
   onChange,
-  label = "Species",
+  label = "Species for this tool",
   className,
   disabled = false,
 }: SpeciesSelectorProps) {
@@ -54,7 +54,7 @@ export default function SpeciesSelector({
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedSpecies = sortedSpecies.find((species) => species.id === value);
   const selectedPath = useMemo(() => getSelectedPath(value), [value]);
-  const selectedName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Select species…";
+  const selectedName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Choose species…";
 
   const searchResults = useMemo(() => {
     if (!query.trim()) return [];
@@ -147,7 +147,7 @@ export default function SpeciesSelector({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search common name, scientific name or alias…"
+              placeholder="Search the supported species catalogue by common name, scientific name or alias…"
               autoComplete="off"
               spellCheck={false}
               aria-label={`Search ${label}`}
@@ -169,11 +169,11 @@ export default function SpeciesSelector({
                     <small>{species.acceptedScientificName} · {species.genus}</small>
                   </button>
                 )) : (
-                  <p className="tt-species-selector__empty">No species match “{query}”. Try a common name, scientific name or alias.</p>
+                  <p className="tt-species-selector__empty">No supported species match “{query}”. Try a common name, scientific name, genus, family or alias.</p>
                 )}
               </div>
             ) : (
-              <div className="tt-species-selector__tree" role="tree" aria-label={`${label} taxonomy`}>
+              <div className="tt-species-selector__tree" role="tree" aria-label={`${label} taxonomy and supported species`}>
                 {taxonomy.map((group) => {
                   const groupOpen = expandedGroups.has(group.id);
                   return (
