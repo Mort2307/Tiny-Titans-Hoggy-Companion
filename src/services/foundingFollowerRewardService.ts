@@ -24,6 +24,8 @@ export type FoundingFollowerClaim = {
   trialExpiresAt?: unknown;
   notificationRequired?: boolean;
   notificationSentAt?: unknown;
+  targetName?: string;
+  targetEmail?: string;
 };
 
 const functions = getFunctions(app, "europe-west2");
