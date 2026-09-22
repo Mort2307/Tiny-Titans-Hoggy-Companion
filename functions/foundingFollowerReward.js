@@ -39,9 +39,10 @@ function validPlatform(value) {
 }
 
 function validScreenshotPath(uid, value) {
-  const path = String(value || "").trim();
-  const escapedUid = uid.replace(/[.*+?^$\\{}()|[\\]\\]/g, "\\$&");
-  return new RegExp(`^founding-follower-claims/${escapedUid}/proof\\.(jpg|jpeg|png|webp)$`, "i").test(path) ? path : null;
+  const path = String(value || "").trim().toLowerCase();
+  const prefix = `founding-follower-claims/${uid}/proof.`;
+  const extension = path.startsWith(prefix) ? path.slice(prefix.length) : "";
+  return ["jpg", "jpeg", "png", "webp"].includes(extension) ? path : null;
 }
 
 async function verifyScreenshot(uid, screenshotPath) {
@@ -246,12 +247,11 @@ exports.reviewFoundingFollowerClaim = onCall({ region: "europe-west2" }, async (
   if (claim.status === "approved") return { success: true, status: "approved", targetUid, expiresAt: claim.trialExpiresAt?.toMillis?.() ?? null };
   if (claim.status !== "pending") throw new HttpsError("failed-precondition", "Only pending claims can be approved.");
 
-  const lockResult = await db.runTransaction(async (transaction) => {
+  await db.runTransaction(async (transaction) => {
     const fresh = await transaction.get(ref);
     const current = fresh.data() || {};
     if (current.status !== "pending") throw new HttpsError("aborted", "This claim is already being processed.");
     transaction.update(ref, { status: "processing", reviewedByUid: request.auth.uid, updatedAt: FieldValue.serverTimestamp() });
-    return current;
   });
 
   try {
