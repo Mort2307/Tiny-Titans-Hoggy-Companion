@@ -6,7 +6,7 @@ export default function PrivacyPolicy() {
   return (
     <main className="page-container">
       <section className="personalisation-shell" aria-labelledby="privacy-policy-title">
-        <p className="personalisation-eyebrow">Tiny Titans Reptile Companion</p>
+        <p className="personalisation-eyebrow">Tiny Titans Keeper Companion</p>
         <h1 id="privacy-policy-title">Privacy Policy</h1>
         <p>Last updated {lastUpdated}</p>
 
