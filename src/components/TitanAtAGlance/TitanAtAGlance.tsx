@@ -70,7 +70,7 @@ function routeFor(slice: TitanAtAGlanceSliceId, snakeId?: string): string {
     case "intelligence": return "/titan-intelligence";
     case "genetics": return "/morph-library";
     case "breeding": return "/breeding";
-    case "snakes": return "/snakes";
+    case "snakes": return "/animals";
     case "learning": return "/challenge";
     case "community": return "/community";
     case "room": return "/reptile-room";
@@ -302,7 +302,7 @@ export default function TitanAtAGlance() {
 
       <div className="tt-at-glance-foot">
         <span>Showing {views.length} personalised shortcuts</span>
-        <Link to="/snakes">Switch animal</Link>
+        <Link to="/animals">Switch animal</Link>
       </div>
     </section>
   );
