@@ -108,7 +108,7 @@ export default function AnimatedAnimalIcon({
       {transitioning && (
         <img
           className="tt-animated-animal-icon__frame tt-animated-animal-icon__next"
-          style={{ "--tt-animal-hue": `${next.hue}deg`, "--tt-animal-saturation": next.saturation } as React.CSSProperties}
+          style={{ "--tt-animal-hue": `${next.hue}deg`, "--tt-animal-saturation": next.saturation } as CSSProperties}
           src={next.src}
           alt=""
           width={size}
