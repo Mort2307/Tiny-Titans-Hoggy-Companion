@@ -128,7 +128,7 @@ export default function PwaInstallCard() {
   return <section className="pwa-install-card" aria-label="Install Tiny Titans Keeper Companion">
     <div className="pwa-install-icon">🐍</div>
     <div className="pwa-install-copy">
-      <p className="section-eyebrow">TINY TITANS REPTILE COMPANION</p>
+      <p className="section-eyebrow">TINY TITANS KEEPER COMPANION</p>
       <h3>Install Tiny Titans Keeper Companion</h3>
       <p>Install Tiny Titans Keeper Companion for quick access, its own app window and automatic updates.</p>
       {browserHelp && <div className="pwa-install-help" role="status">
