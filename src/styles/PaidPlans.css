@@ -45,3 +45,29 @@
 .paid-tier-enhanced{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:4px 6px;border-radius:8px;background:rgba(213,170,75,.1);border:1px solid rgba(213,170,75,.18);font-size:.66rem;font-weight:900;white-space:nowrap}
 .paid-tier-comparison__separator th{padding:10px 12px;background:rgba(255,255,255,.055);text-align:left!important}
 .paid-tier-comparison__separator span{font-size:.68rem;letter-spacing:.1em;opacity:.7}
+
+/* Unified Tiny Titans semantic tier icon layer */
+.paid-tier-badge__icon{
+  position:relative;
+  z-index:3;
+  display:block;
+  flex:0 0 auto;
+  color:var(--tt-tier-accent,#92a0ad);
+  filter:drop-shadow(0 4px 8px color-mix(in srgb,var(--tt-tier-accent,#92a0ad) 24%,transparent));
+  transform:translateY(0) scale(1);
+  transition:transform .22s ease,filter .22s ease;
+}
+.paid-tier-badge--core .paid-tier-badge__icon{opacity:.9}
+.paid-tier-badge--plus .paid-tier-badge__icon{transform:scale(1.02)}
+.paid-tier-badge--pro .paid-tier-badge__icon{transform:scale(1.04)}
+.paid-tier-badge--elite .paid-tier-badge__icon{transform:scale(1.06)}
+.paid-tier-badge--elite-plus .paid-tier-badge__icon{transform:scale(1.08)}
+.paid-tier-badge--titan .paid-tier-badge__icon{
+  transform:scale(1.1);
+  filter:drop-shadow(0 0 10px color-mix(in srgb,var(--tt-tier-accent,#92a0ad) 32%,transparent));
+}
+.paid-plan-card:hover .paid-tier-badge__icon,
+.paid-plan-card:focus-visible .paid-tier-badge__icon{
+  transform:translateY(-2px) scale(1.12) rotate(-2deg);
+  filter:drop-shadow(0 0 12px color-mix(in srgb,var(--tt-tier-accent,#92a0ad) 30%,transparent));
+}

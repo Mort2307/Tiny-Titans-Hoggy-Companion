@@ -17,12 +17,8 @@ const tierCommandCopy: Record<Exclude<PaidTierId, "free">, { label: string; head
   rescue: { label: "RESCUE COMMAND", heading: "Rescue operations around the animals, not the paperwork.", description: "Intake, quarantine, care, medical, movement, adoption and animal identity belong together here.", actions: [{ title: "Animal Register", path: "/rescue/animals" }, { title: "New Intake", path: "/rescue/animals?intake=1" }, { title: "Scan / Create QR", path: "/rescue/qr" }, { title: "Team", path: "/rescue/team" }] },
 };
 
-function workspaceIcon(productId: WorkspaceProduct["id"]): TinyTitansIconName {
-  if (productId === "personal") return "animals";
-  if (productId === "rescue") return "health";
-  if (productId === "titan_seller") return "marketplace";
-  if (productId.startsWith("business_")) return "community";
-  return "titan";
+function workspaceIcon(product: WorkspaceProduct): TinyTitansIconName {
+  return product.icon;
 }
 
 export default function WorkspaceProductShell({ children }: { children: ReactNode }) {
@@ -46,7 +42,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
   return <div className={shellClass} data-workspace={product.id} data-tier={tier} style={shellStyle}>
     <header className="workspace-product-header">
       <div className="workspace-product-brand">
-        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={workspaceIcon(product.id)} size={29} /></span>
+        <span className="workspace-product-icon" aria-hidden="true"><TinyTitansIcon name={workspaceIcon(product)} size={29} /></span>
         <div>
           <span className="workspace-product-eyebrow">{product.eyebrow}</span>
           <strong>{product.name}</strong>
