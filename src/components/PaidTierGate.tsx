@@ -13,7 +13,20 @@ import "../styles/PaidTierGate.css";
 
 const CREATOR_EMAIL = "tinytitans.exotics@gmail.com";
 const RESCUE_ENTITLEMENTS = new Set<PaidEntitlement>([
+  "advanced_timeline",
+  "advanced_analytics",
   "titan_intelligence",
+  "morph_intelligence",
+  "data_export",
+  "marketplace_seller",
+  "seller_profile",
+  "business_reporting",
+  "multi_user",
+  "team_permissions",
+  "automation",
+  "api_access",
+  "priority_support",
+  "custom_branding",
   "rescue_workspace",
   "rescue_qr_passports",
   "species_incubator",
