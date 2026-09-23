@@ -1,13 +1,14 @@
+import { getIdTokenResult } from "firebase/auth";
 import { auth } from "../firebase/config";
 
-const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
-
-function isOwnerEmail(email: unknown): boolean {
-  return String(email || "").trim().toLowerCase() === OWNER_EMAIL;
-}
-
-/** Creator/Tester tooling is private to the configured owner account. */
-export async function hasCreatorTesterClaim(_forceRefresh = false): Promise<boolean> {
+/** Creator/Tester tooling is private to accounts carrying the Firebase Creator authorization claim. */
+export async function hasCreatorTesterClaim(forceRefresh = false): Promise<boolean> {
   const currentUser = auth.currentUser;
-  return Boolean(currentUser && isOwnerEmail(currentUser.email));
+  if (!currentUser) return false;
+  try {
+    const token = await getIdTokenResult(currentUser, forceRefresh);
+    return token.claims.creator === true && token.claims.tester === true && token.claims.admin === true;
+  } catch {
+    return false;
+  }
 }
