@@ -93,7 +93,7 @@ export default function CreatorFoundingFollowerClaims() {
               <h2>{claim.targetName || claim.id}</h2>
               <p>{claim.targetEmail || claim.id} · Submitted {formatClaimDate(claim.submittedAt)}</p>
               {claim.status === "rejected" && claim.rejectionReason && <p className="tt-creator-founder-note">Reason: {claim.rejectionReason}</p>}
-              {claim.trialExpiresAt && <p>Trial expiry: {formatClaimDate(claim.trialExpiresAt)}</p>}
+              {claim.trialExpiresAt != null && <p>Trial expiry: {formatClaimDate(claim.trialExpiresAt)}</p>}
             </div>
             <div className="tt-creator-founder-actions">
               {claim.status === "pending" && <>
