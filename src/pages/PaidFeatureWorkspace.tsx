@@ -4,6 +4,7 @@ import { getPaidBusinessWorkspace, savePaidBusinessWorkspace } from "../services
 import { getUserSnakes } from "../services/snakeService";
 import type { Snake } from "../types/Snake";
 import PaidTierGate from "../components/PaidTierGate";
+import TinyTitansIcon, { type TinyTitansIconName } from "../components/TinyTitansIcon";
 import OrganisationStaffManager from "../components/staff/OrganisationStaffManager";
 import { type PaidEntitlement } from "../config/paidTiers";
 import { useAuth } from "../context/useAuth";
@@ -14,22 +15,22 @@ type FeatureConfig = {
   title: string;
   eyebrow: string;
   description: string;
-  icon: string;
+  icon: TinyTitansIconName;
   section?: "analytics" | "export" | "seller" | "marketplace" | "business" | "team" | "automation" | "support" | "api" | "branding";
 };
 
 const FEATURES: Record<string, FeatureConfig> = {
-  "/paid/analytics": { entitlement: "advanced_analytics", title: "Advanced Analytics", eyebrow: "Titan Pro · Business", description: "Turn your keeper records into useful trends without replacing the underlying records or inventing missing data.", icon: "📊", section: "analytics" },
-  "/paid/export": { entitlement: "data_export", title: "Data Export", eyebrow: "Titan Pro · Business", description: "Take your Tiny Titans records with you in a portable, explicit export.", icon: "⬇️", section: "export" },
-  "/paid/timeline": { entitlement: "advanced_timeline", title: "Advanced Timeline", eyebrow: "Titan Pro · Business", description: "A dedicated paid feature home for deeper animal history, connected records and keeper context.", icon: "🗓️" },
-  "/paid/seller": { entitlement: "seller_profile", title: "Seller Profile", eyebrow: "Titan Seller · Business", description: "Build the professional identity buyers and keepers see when they discover your reptiles.", icon: "🏪", section: "seller" },
-  "/paid/marketplace": { entitlement: "marketplace_seller", title: "Marketplace Seller Tools", eyebrow: "Titan Seller · Business", description: "Control how your marketplace presence is presented, what contact details are visible and whether you are accepting enquiries.", icon: "🛒", section: "marketplace" },
-  "/paid/business": { entitlement: "business_reporting", title: "Business Reporting", eyebrow: "Business", description: "Set up a business reporting workspace around your collection, workflow and operating rhythm.", icon: "📈", section: "business" },
-  "/paid/team": { entitlement: "multi_user", title: "Team Workspace", eyebrow: "Business", description: "Invite trusted team members and keep their access separate from your personal keeper account.", icon: "👥", section: "team" },
-  "/paid/automation": { entitlement: "automation", title: "Workflow Automation", eyebrow: "Business Plus · Advanced", description: "Create simple trigger → action rules for routine operational work. Automation stays explicit and reversible.", icon: "⚙️", section: "automation" },
-  "/paid/support": { entitlement: "priority_support", title: "Priority Support", eyebrow: "Business Plus · Advanced", description: "A dedicated support entry point for business-tier customers, while keeping ordinary community support available to everyone.", icon: "🎧", section: "support" },
-  "/paid/api": { entitlement: "api_access", title: "API Access", eyebrow: "Business Advanced", description: "Issue and revoke scoped API credentials without exposing them in the browser after creation.", icon: "🔑", section: "api" },
-  "/paid/branding": { entitlement: "custom_branding", title: "Custom Branding", eyebrow: "Business Advanced", description: "Set the business-facing name, accent and tagline used by your future branded surfaces.", icon: "🎨", section: "branding" },
+  "/paid/analytics": { entitlement: "advanced_analytics", title: "Advanced Analytics", eyebrow: "Titan Pro · Business", description: "Turn your keeper records into useful trends without replacing the underlying records or inventing missing data.", icon: "analytics", section: "analytics" },
+  "/paid/export": { entitlement: "data_export", title: "Data Export", eyebrow: "Titan Pro · Business", description: "Take your Tiny Titans records with you in a portable, explicit export.", icon: "export", section: "export" },
+  "/paid/timeline": { entitlement: "advanced_timeline", title: "Advanced Timeline", eyebrow: "Titan Pro · Business", description: "A dedicated paid feature home for deeper animal history, connected records and keeper context.", icon: "timeline" },
+  "/paid/seller": { entitlement: "seller_profile", title: "Seller Profile", eyebrow: "Titan Seller · Business", description: "Build the professional identity buyers and keepers see when they discover your reptiles.", icon: "marketplace", section: "seller" },
+  "/paid/marketplace": { entitlement: "marketplace_seller", title: "Marketplace Seller Tools", eyebrow: "Titan Seller · Business", description: "Control how your marketplace presence is presented, what contact details are visible and whether you are accepting enquiries.", icon: "marketplace", section: "marketplace" },
+  "/paid/business": { entitlement: "business_reporting", title: "Business Reporting", eyebrow: "Business", description: "Set up a business reporting workspace around your collection, workflow and operating rhythm.", icon: "analytics", section: "business" },
+  "/paid/team": { entitlement: "multi_user", title: "Team Workspace", eyebrow: "Business", description: "Invite trusted team members and keep their access separate from your personal keeper account.", icon: "community", section: "team" },
+  "/paid/automation": { entitlement: "automation", title: "Workflow Automation", eyebrow: "Business Plus · Advanced", description: "Create simple trigger → action rules for routine operational work. Automation stays explicit and reversible.", icon: "plans", section: "automation" },
+  "/paid/support": { entitlement: "priority_support", title: "Priority Support", eyebrow: "Business Plus · Advanced", description: "A dedicated support entry point for business-tier customers, while keeping ordinary community support available to everyone.", icon: "messages", section: "support" },
+  "/paid/api": { entitlement: "api_access", title: "API Access", eyebrow: "Business Advanced", description: "Issue and revoke scoped API credentials without exposing them in the browser after creation.", icon: "lock", section: "api" },
+  "/paid/branding": { entitlement: "custom_branding", title: "Custom Branding", eyebrow: "Business Advanced", description: "Set the business-facing name, accent and tagline used by your future branded surfaces.", icon: "community", section: "branding" },
 };
 
 const SUPPORT_LINKS = [
@@ -62,7 +63,7 @@ function DataExportFeature() {
 function SettingsForm({ section, title, description, initial, fields }: { section: "seller" | "marketplace" | "business" | "branding"; title: string; description: string; initial: Record<string, unknown>; fields: Array<{ key: string; label: string; type?: "text" | "textarea" | "checkbox"; placeholder?: string }> }) {
   const [form, setForm] = useState<Record<string, unknown>>(initial); const [loading, setLoading] = useState(false); const [message, setMessage] = useState("");
   async function save() { setLoading(true); setMessage(""); try { await savePaidBusinessWorkspace(section, form); setMessage("Saved."); } catch (error) { setMessage(errorMessage(error)); } finally { setLoading(false); } }
-  return <FeatureScaffold title={title} icon={section === "seller" ? "🏪" : section === "marketplace" ? "🛒" : section === "branding" ? "🎨" : "📈"} description={description}><div className="paid-form-grid">{fields.map((field) => <label key={field.key}><span>{field.label}</span>{field.type === "textarea" ? <textarea value={String(form[field.key] ?? "")} placeholder={field.placeholder} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}/> : field.type === "checkbox" ? <input type="checkbox" checked={Boolean(form[field.key])} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.checked }))}/> : <input value={String(form[field.key] ?? "")} placeholder={field.placeholder} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}/>}</label>)}</div><button className="paid-primary-action" type="button" disabled={loading} onClick={save}>{loading ? "Saving…" : "Save changes"}</button><p className="paid-status-text" aria-live="polite">{message}</p></FeatureScaffold>;
+  return <FeatureScaffold title={title} icon={section === "seller" ? "marketplace" : section === "marketplace" ? "marketplace" : section === "branding" ? "community" : "analytics"} description={description}><div className="paid-form-grid">{fields.map((field) => <label key={field.key}><span>{field.label}</span>{field.type === "textarea" ? <textarea value={String(form[field.key] ?? "")} placeholder={field.placeholder} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}/> : field.type === "checkbox" ? <input type="checkbox" checked={Boolean(form[field.key])} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.checked }))}/> : <input value={String(form[field.key] ?? "")} placeholder={field.placeholder} onChange={(event) => setForm((current) => ({ ...current, [field.key]: event.target.value }))}/>}</label>)}</div><button className="paid-primary-action" type="button" disabled={loading} onClick={save}>{loading ? "Saving…" : "Save changes"}</button><p className="paid-status-text" aria-live="polite">{message}</p></FeatureScaffold>;
 }
 
 function WorkspaceFeature({ feature }: { feature: FeatureConfig }) {
@@ -84,7 +85,7 @@ function WorkspaceFeature({ feature }: { feature: FeatureConfig }) {
   return <FeatureScaffold title={feature.title} icon={feature.icon} description={feature.description}><p>{humanize(section)} controls are ready in this workspace.</p></FeatureScaffold>;
 }
 
-function FeatureScaffold({ title, icon, description, children }: { title: string; icon: string; description: string; children: React.ReactNode }) { return <section className="paid-workspace-page"><header className="paid-workspace-hero"><div><span className="paid-workspace-kicker">Tiny Titans paid feature</span><h1>{icon} {title}</h1><p>{description}</p></div></header><div className="paid-workspace-body">{children}</div></section>; }
+function FeatureScaffold({ title, icon, description, children }: { title: string; icon: TinyTitansIconName; description: string; children: React.ReactNode }) { return <section className="paid-workspace-page"><header className="paid-workspace-hero"><div><span className="paid-workspace-kicker">Tiny Titans paid feature</span><h1><TinyTitansIcon name={icon} size={32} /> {title}</h1><p>{description}</p></div></header><div className="paid-workspace-body">{children}</div></section>; }
 
 export default function PaidFeatureWorkspace() {
   const location = useLocation(); const feature = FEATURES[location.pathname] ?? FEATURES["/paid/analytics"];
