@@ -109,7 +109,8 @@
     "validate:icons": "node scripts/audit-iconography.mjs --strict",
     "validate:universal-species": "npx --yes tsx@4.23.13 scripts/validate-universal-species.ts",
     "validate:universal-care": "npx --yes tsx@4.23.13 scripts/validate-universal-care.ts",
-    "validate:universal-integrations": "node scripts/validate-universal-integrations.mjs"
+    "validate:universal-integrations": "node scripts/validate-universal-integrations.mjs",
+    "validate:paid-tier-contract": "node scripts/validate-paid-tier-contract.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
