@@ -94,7 +94,7 @@ export default function FoundingFollowerReward() {
               <span className="tt-founding-status-kicker">CURRENT CLAIM · {claim.status.toUpperCase()}</span>
               <h2>{claim.status === "approved" ? "🎁 Titan Pro is active" : claim.status === "rejected" ? "We need a clearer screenshot" : "Claim received"}</h2>
               <p>{statusText}</p>
-              {claim.submittedAt && <small>Submitted {formatClaimDate(claim.submittedAt)} · {FOUNDING_FOLLOWER_PLATFORM_LABELS[claim.platform]}</small>}
+              {claim.submittedAt != null && <small>Submitted {formatClaimDate(claim.submittedAt)} · {FOUNDING_FOLLOWER_PLATFORM_LABELS[claim.platform]}</small>}
               {expiry && <small>Reward active until {expiry}</small>}
             </div>
             {claim.status === "approved" && <Link to="/account/billing" className="tt-founding-button">View account access →</Link>}
