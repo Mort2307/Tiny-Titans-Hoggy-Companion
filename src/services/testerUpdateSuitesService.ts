@@ -15,7 +15,8 @@ export type UpdateTarget = { id: string; label: string; path: string };
  */
 export const UPDATE_TARGETS: UpdateTarget[] = [
   ["/", "/"], ["/account", "/account"], ["/account/billing", "/account/billing"], ["/plans", "/plans"],
-  ["/paid/marketplace", "/paid/marketplace"], ["/paid/support", "/paid/support"], ["/paid/timeline", "/paid/timeline"], ["/paid/*", "/paid/*"],
+  ["/paid/timeline", "/paid/timeline"], ["/paid/analytics", "/paid/analytics"], ["/paid/marketplace", "/paid/marketplace"], ["/paid/seller", "/paid/seller"], ["/paid/business", "/paid/business"], ["/paid/team", "/paid/team"], ["/paid/automation", "/paid/automation"], ["/paid/api", "/paid/api"], ["/paid/support", "/paid/support"], ["/paid/branding", "/paid/branding"], ["/paid/export", "/paid/export"], ["/paid/*", "/paid/*"],
+  ["/rescue", "/rescue"], ["/rescue/animals", "/rescue/animals"], ["/rescue/qr", "/rescue/qr"], ["/rescue/team", "/rescue/team"], ["/rescue/reports", "/rescue/reports"], ["/rescue/adoption", "/rescue/adoption"], ["/rescue/species-incubator", "/rescue/species-incubator"],
   ["/account/family", "/account/family"], ["/account/family/manage", "/account/family/manage"], ["/account/family/review", "/account/family/review"],
   ["/account/family/history", "/account/family/history"], ["/account/family/join", "/account/family/join"], ["/account/profile", "/account/profile"],
   ["/account/security", "/account/security"], ["/account/settings", "/account/settings"], ["/account/data-privacy", "/account/data-privacy"],
