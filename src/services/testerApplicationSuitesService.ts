@@ -143,6 +143,12 @@ const APP_SURFACES = [
 ] as const;
 
 const CREATOR_SURFACES = APP_SURFACES.filter(([path]) => path.startsWith("/creator"));
+const PAID_RESCUE_SURFACES = [
+  "/paid/timeline", "/paid/analytics", "/paid/marketplace", "/paid/seller", "/paid/business",
+  "/paid/team", "/paid/automation", "/paid/api", "/paid/support", "/paid/branding", "/paid/export",
+  "/morph-library/evidence", "/rescue", "/rescue/animals", "/rescue/qr", "/rescue/scan",
+  "/rescue/team", "/rescue/reports", "/rescue/adoption", "/rescue/species-incubator",
+];
 
 export function createApplicationCoverageChecks(): TesterCheck[] {
   return [
@@ -157,6 +163,19 @@ export function createApplicationCoverageChecks(): TesterCheck[] {
         return duplicates.length
           ? { status: "fail", message: `Duplicate route definitions found: ${[...new Set(duplicates)].join(", ")}.` }
           : { status: "pass", message: `${APP_SURFACES.length} authenticated application surfaces are registered in the private QA coverage inventory.` };
+      },
+    },
+    {
+      checkId: "app-paid-rescue-surfaces-covered",
+      name: "Paid and Rescue surfaces covered",
+      category: "paid-tiers",
+      severity: "critical",
+      run: async () => {
+        const registered = new Set(APP_SURFACES.map(([path]) => path));
+        const missing = PAID_RESCUE_SURFACES.filter((path) => !registered.has(path));
+        return missing.length
+          ? { status: "fail", message: `Paid/Rescue QA coverage is missing routes: ${missing.join(", ")}.` }
+          : { status: "pass", message: `All ${PAID_RESCUE_SURFACES.length} shared paid and Rescue application surfaces are explicitly represented in the QA inventory.` };
       },
     },
     {
