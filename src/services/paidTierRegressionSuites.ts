@@ -20,6 +20,8 @@ const STRIPE_LOOKUP_KEYS: Record<string, string> = {
 
 const RESCUE_NAV_OVERRIDES: Partial<Record<PaidOnlyEntitlement, string>> = { multi_user: "/rescue/team", team_permissions: "/rescue/team", custom_branding: "/rescue/organisation", rescue_adoption: "/rescue/adoption" };
 const PRO_ICON_EXPECTATIONS: Record<string, ReturnType<typeof quickIconFor>> = { "/titan-intelligence": "titan", "/paid/analytics": "analytics", "/paid/timeline": "timeline", "/paid/export": "export" };
+const PRO_NAV_ICON_EXPECTATIONS: Record<string, ReturnType<typeof quickIconFor>> = PRO_ICON_EXPECTATIONS;
+const RESCUE_SHARED_NAV_ICON_EXPECTATIONS: Record<string, ReturnType<typeof quickIconFor>> = { "/titan-intelligence": "titan", "/paid/analytics": "analytics", "/paid/timeline": "timeline", "/paid/export": "export" };
 const RESCUE_SHARED_ENTITLEMENTS: readonly PaidOnlyEntitlement[] = [
   "advanced_timeline",
   "advanced_analytics",
@@ -93,9 +95,14 @@ export function createPaidTierRegressionChecks(): TesterCheck[] {
       severity: "high",
       run: async () => {
         const failures = Object.entries(PRO_ICON_EXPECTATIONS).filter(([path, expected]) => quickIconFor(path.split("/").filter(Boolean).pop() ?? "home") !== expected);
-        return failures.length
-          ? { status: "fail", message: `Pro icon mappings are incorrect: ${failures.map(([path, expected]) => `${path} expected ${expected}`).join(", ")}.` }
-          : { status: "pass", message: "Titan Pro Intelligence, Analytics, Timeline and Data Export all use dedicated TinyTitans semantic icons." };
+        const proNav = workspaceProductForTier("titan_pro").nav;
+        const navIconFailures = Object.entries(PRO_NAV_ICON_EXPECTATIONS).filter(([path, expected]) => proNav.find((item) => item.path === path)?.icon !== expected);
+        if (failures.length || navIconFailures.length) {
+          const mappingMessage = failures.map(([path, expected]) => `${path} mapping expected ${expected}`);
+          const navMessage = navIconFailures.map(([path, expected]) => `${path} workspace icon expected ${expected}`);
+          return { status: "fail", message: `Pro icon contract failed: ${[...mappingMessage, ...navMessage].join("; ")}.` };
+        }
+        return { status: "pass", message: "Titan Pro Intelligence, Analytics, Timeline and Data Export use the new TinyTitans semantic icon system in both route mapping and workspace navigation." };
       },
     },
     {
