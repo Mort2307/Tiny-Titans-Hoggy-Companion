@@ -63,7 +63,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
     </header>
 
     {visibleNav.length > 0 && <nav className="workspace-product-nav" aria-label={`${product.name} navigation`}>
-      {visibleNav.map((item) => <Link key={`${item.label}-${item.path}`} className={location.pathname === item.path ? "active" : undefined} to={item.path}>{item.label}</Link>)}
+      {visibleNav.map((item) => <Link key={`${item.label}-${item.path}`} className={location.pathname === item.path ? "active" : undefined} to={item.path}>{item.icon && <TinyTitansIcon name={item.icon} size={17} />}{item.label}</Link>)}
     </nav>}
 
     {commandCopy && <section className="workspace-command-deck" aria-label={`${product.name} command deck`}>
