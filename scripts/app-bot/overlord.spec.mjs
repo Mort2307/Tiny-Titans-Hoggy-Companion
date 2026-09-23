@@ -121,9 +121,9 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
       ["/paid/timeline", "tt-icon-name-timeline"],
       ["/paid/export", "tt-icon-name-export"],
     ];
-    const workspaceNav = page.locator(".app-navigation-section").filter({ hasText: /ADVANCED KEEPER WORKSPACE/i }).first();
+    const workspaceNav = page.locator('.workspace-product-shell[data-workspace="titan_pro"] .workspace-product-nav').first();
     if (await workspaceNav.count() === 0) {
-      console.log("[OVERLORD] Pro workspace navigation is not active for this account; semantic icon mapping is covered by the paid-tier regression contract.");
+      console.log("[OVERLORD] Titan Pro workspace navigation is not active for this account; semantic icon mapping is covered by the paid-tier regression contract.");
       await assertHealthy(page, errors);
       return;
     }
