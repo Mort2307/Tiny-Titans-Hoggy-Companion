@@ -14,7 +14,25 @@ const STRIPE_LOOKUP_KEYS: Record<string, string> = {
   business_starter: "tinytitans_business_starter_monthly",
   business_plus: "tinytitans_business_plus_monthly",
   business_advanced: "tinytitans_business_advanced_monthly",
+  rescue: "tinytitans_rescue_monthly",
 };
+
+const RESCUE_SHARED_ENTITLEMENTS: readonly PaidOnlyEntitlement[] = [
+  "advanced_timeline",
+  "advanced_analytics",
+  "titan_intelligence",
+  "morph_intelligence",
+  "data_export",
+  "marketplace_seller",
+  "seller_profile",
+  "business_reporting",
+  "multi_user",
+  "team_permissions",
+  "automation",
+  "api_access",
+  "priority_support",
+  "custom_branding",
+];
 
 export function createPaidTierRegressionChecks(): TesterCheck[] {
   return [
@@ -63,6 +81,18 @@ export function createPaidTierRegressionChecks(): TesterCheck[] {
         return missing.length
           ? { status: "fail", message: `Paid entitlements without a visible workspace entry point: ${missing.join(", ")}.` }
           : { status: "pass", message: "Every paid entitlement exposed by the tier catalogue has a corresponding workspace destination." };
+      },
+    },
+    {
+      checkId: "rescue-shared-paid-capabilities",
+      name: "Rescue retains the shared paid capability set",
+      category: "paid-tiers",
+      severity: "critical",
+      run: async () => {
+        const missing = RESCUE_SHARED_ENTITLEMENTS.filter((entitlement) => !tierIncludesEntitlement("rescue", entitlement));
+        return missing.length
+          ? { status: "fail", message: `Rescue is missing shared paid capabilities: ${missing.join(", ")}.` }
+          : { status: "pass", message: `Rescue includes all ${RESCUE_SHARED_ENTITLEMENTS.length} shared paid capabilities alongside its rescue-specific workspace features.` };
       },
     },
     {
@@ -139,7 +169,7 @@ export function createPaidTierRegressionChecks(): TesterCheck[] {
     },
     {
       checkId: "stripe-test-mode-pricing-ready",
-      name: "Stripe Test Mode has the five paid subscription prices",
+      name: "Stripe Test Mode has all six paid subscription prices",
       category: "stripe",
       severity: "critical",
       run: async () => {
