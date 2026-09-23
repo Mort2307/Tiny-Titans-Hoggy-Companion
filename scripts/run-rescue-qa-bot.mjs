@@ -25,11 +25,21 @@ async function main(){
   }
   await page.goto(baseURL + "/rescue",{waitUntil:"domcontentloaded",timeout:15000});
   const expected = [["Animal Register","/rescue/animals"],["New Intake","/rescue/animals?intake=1"],["Scan / Create QR","/rescue/qr"],["Rescue Team & Permissions","/rescue/team"],["Advanced Timeline","/paid/timeline"],["Advanced Analytics","/paid/analytics"],["Morph Intelligence & Evidence","/morph-library/evidence"],["Marketplace Seller Tools","/paid/marketplace"],["Professional Seller Profile","/paid/seller"],["Business Reporting","/paid/business"],["Team & Permissions","/paid/team"],["Workflow Automation","/paid/automation"],["API Access","/paid/api"],["Priority Support","/paid/support"],["Data Export","/paid/export"],["Foster & Adoption","/rescue/adoption"],["Organisation & Branding","/rescue/organisation"]];
-  const expectedProIcons = [
+  const expectedSharedIcons = [
     ["/titan-intelligence", "tt-icon-name-titan"],
     ["/paid/analytics", "tt-icon-name-analytics"],
     ["/paid/timeline", "tt-icon-name-timeline"],
+    ["/morph-library/evidence", "tt-icon-name-observatory"],
+    ["/paid/marketplace", "tt-icon-name-marketplace"],
+    ["/paid/seller", "tt-icon-name-marketplace"],
+    ["/paid/business", "tt-icon-name-analytics"],
+    ["/paid/team", "tt-icon-name-community"],
+    ["/paid/automation", "tt-icon-name-plans"],
+    ["/paid/api", "tt-icon-name-lock"],
+    ["/paid/support", "tt-icon-name-messages"],
     ["/paid/export", "tt-icon-name-export"],
+    ["/rescue/adoption", "tt-icon-name-community"],
+    ["/rescue/qr", "tt-icon-name-observatory"],
   ];
   if (email && password) {
     record(true,"navigation","Authenticated Rescue navigation assertions are executed after login.");
@@ -58,7 +68,7 @@ async function main(){
         if (await link.count() === 0) record(false,"navigation",pair[0],"Missing link");
         else record(await link.getAttribute("href") === pair[1],"navigation",pair[0],await link.getAttribute("href") || "");
       }
-      for (const [href, iconClass] of expectedProIcons) {
+      for (const [href, iconClass] of expectedSharedIcons) {
         const link = page.locator(`a[href="${href}"]`).first();
         const icon = link.locator(`svg.${iconClass}`).first();
         record(await link.count() === 1 && await icon.count() === 1,"iconography",href,await icon.count() ? iconClass : "Expected semantic icon class missing");
