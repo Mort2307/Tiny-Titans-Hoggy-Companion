@@ -19,6 +19,7 @@ const RESCUE_SHARED_CAPABILITIES = [
   "Workflow automation",
   "API access",
   "Priority support",
+  "Custom branding",
 ];
 
 const coreRoutes = [
