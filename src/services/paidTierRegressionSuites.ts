@@ -106,6 +106,19 @@ export function createPaidTierRegressionChecks(): TesterCheck[] {
       },
     },
     {
+      checkId: "rescue-shared-nav-icon-contract",
+      name: "Rescue shared workspace navigation uses the new semantic icon system",
+      category: "paid-tiers",
+      severity: "high",
+      run: async () => {
+        const rescueNav = workspaceProductForTier("rescue").nav;
+        const failures = Object.entries(RESCUE_SHARED_NAV_ICON_EXPECTATIONS).filter(([path, expected]) => rescueNav.find((item) => item.path === path)?.icon !== expected);
+        return failures.length
+          ? { status: "fail", message: `Rescue semantic icon contract failed: ${failures.map(([path, expected]) => `${path} expected ${expected}`).join("; ")}.` }
+          : { status: "pass", message: "Rescue shared Titan Intelligence, Analytics, Timeline and Data Export entries use the new TinyTitans semantic icon system." };
+      },
+    },
+    {
       checkId: "rescue-shared-paid-capabilities",
       name: "Rescue retains the shared paid capability set",
       category: "paid-tiers",
