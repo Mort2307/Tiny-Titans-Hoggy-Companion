@@ -10,6 +10,7 @@ const suites = [
   ["encoding", "validate:encoding"],
   ["security contracts", "validate:security"],
   ["behaviour observatory", "validate:observatory"],
+  ["paid tiers / Rescue capabilities", "validate:paid-tier-contract"],
 ];
 
 const results = [];
