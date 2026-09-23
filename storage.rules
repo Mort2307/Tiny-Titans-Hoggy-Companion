@@ -22,7 +22,14 @@ service firebase.storage {
       allow write: if signedIn()
         && request.auth.uid == userId
         && request.resource.size <= 5 * 1024 * 1024
-        && request.resource.contentType.matches('^image/(jpeg|png|webp) allow write: if signedIn() && request.auth.uid == userId; allow read: if signedIn() && (request.auth.uid == userId || isCreator()); }
+        && request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp'];
+      allow read: if signedIn() && (request.auth.uid == userId || isCreator());
+      allow delete: if signedIn() && (request.auth.uid == userId || isCreator());
+    }
+    match /issueEvidence/{userId}/{reportId}/{fileName} {
+      allow write: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && (request.auth.uid == userId || isCreator());
+    }
     match /keeper-observations/{userId}/{observationId}/{fileName} {
       allow write: if signedIn() && request.auth.uid == userId && request.resource.size <= 100 * 1024 * 1024 && request.resource.contentType.matches('^(video/(mp4|webm|quicktime)|image/(jpeg|png|webp))$');
       allow read: if signedIn() && (request.auth.uid == userId || isCreator());
