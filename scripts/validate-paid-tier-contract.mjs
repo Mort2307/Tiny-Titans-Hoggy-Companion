@@ -36,6 +36,9 @@ const requiredStripePriceIds = [
 const commercialTiers = ["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"];
 const rescueSharedEntitlements = ["advanced_timeline", "advanced_analytics", "titan_intelligence", "morph_intelligence", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "api_access", "priority_support", "custom_branding"];
 const rescueNavigationTargets = ["/paid/timeline", "/paid/analytics", "/morph-library/evidence", "/paid/marketplace", "/paid/seller", "/paid/business", "/paid/team", "/paid/automation", "/paid/api", "/paid/support", "/paid/export"];
+const rescueWorkspaceStart = workspaceProducts.indexOf("rescue: {");
+const rescueWorkspaceEnd = workspaceProducts.indexOf("\n};", rescueWorkspaceStart);
+const rescueWorkspaceBlock = rescueWorkspaceStart >= 0 && rescueWorkspaceEnd > rescueWorkspaceStart ? workspaceProducts.slice(rescueWorkspaceStart, rescueWorkspaceEnd) : "";
 const titanModules = [
   "functions/titanIntelligenceAccess.js",
   "functions/titanIntelligenceData.js",
@@ -79,7 +82,7 @@ const checks = [
   ["billing activation is not blocked by tester source", billing.includes("access.actualTier !== \"free\"") && billing.includes("access.subscriptionStatus === \"active\"")],
   ["export entitlement exists", config.includes('"data_export"')],
   ["Rescue includes all shared paid capabilities", rescueSharedEntitlements.every((entitlement) => tierSlice("rescue").includes(`"${entitlement}"`))],
-  ["Rescue workspace exposes shared paid destinations", rescueNavigationTargets.every((path) => workspaceProducts.includes(`path:"${path}"`))],
+  ["Rescue workspace exposes shared paid destinations", rescueWorkspaceBlock && rescueNavigationTargets.every((path) => rescueWorkspaceBlock.includes(`path:"${path}"`))],
   ["export paid surface exists", workspace.includes("/paid/export") && workspace.includes("<DataExportFeature />")],
   ["all commercial surfaces represented", ["/paid/analytics","/paid/seller","/paid/marketplace","/paid/business","/paid/team","/paid/automation","/paid/support","/paid/api","/paid/branding"].every((route) => workspace.includes(route))],
   ["every workspace has My Account navigation", commercialTiers.every((id) => workspaceProducts.includes(`id:\"${id}\"`) && workspaceProducts.includes(`label:\"My Account\",path:\"/account\"`))],
