@@ -6,8 +6,8 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const db = getFirestore();
 const adminAuth = getAuth();
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
-const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
-const PAID_TIERS = new Set(["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced"]);
+const VALID_TIERS = new Set(["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"]);
+const PAID_TIERS = new Set(["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"]);
 const ENTITLEMENTS = new Set([
   "advanced_analytics",
   "data_export",
@@ -28,6 +28,7 @@ const TIER_ENTITLEMENTS = {
   business_starter: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence", "breeding_suite", "morph_intelligence", "reptile_room", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user"]),
   business_plus: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence", "breeding_suite", "morph_intelligence", "reptile_room", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "priority_support"]),
   business_advanced: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "smart_reminders", "advanced_timeline", "advanced_analytics", "titan_intelligence", "breeding_suite", "morph_intelligence", "reptile_room", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "api_access", "priority_support", "custom_branding"]),
+  rescue: new Set(["core_tracking", "core_genetics", "core_learning", "core_community", "advanced_timeline", "advanced_analytics", "titan_intelligence", "morph_intelligence", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "api_access", "priority_support", "custom_branding"]),
 };
 function isOwnerEmail(value) { return String(value || "").trim().toLowerCase() === OWNER_EMAIL; }
 function expiryMillis(value) {
