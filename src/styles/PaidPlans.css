@@ -45,29 +45,323 @@
 .paid-tier-enhanced{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:4px 6px;border-radius:8px;background:rgba(213,170,75,.1);border:1px solid rgba(213,170,75,.18);font-size:.66rem;font-weight:900;white-space:nowrap}
 .paid-tier-comparison__separator th{padding:10px 12px;background:rgba(255,255,255,.055);text-align:left!important}
 .paid-tier-comparison__separator span{font-size:.68rem;letter-spacing:.1em;opacity:.7}
-
 /* Unified Tiny Titans semantic tier icon layer */
-.paid-tier-badge__icon{
-  position:relative;
-  z-index:3;
-  display:block;
-  flex:0 0 auto;
-  color:var(--tt-tier-accent,#92a0ad);
-  filter:drop-shadow(0 4px 8px color-mix(in srgb,var(--tt-tier-accent,#92a0ad) 24%,transparent));
-  transform:translateY(0) scale(1);
-  transition:transform .22s ease,filter .22s ease;
+.paid-tier-badge {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  isolation: isolate;
+  color: var(--tt-tier-accent, #92a0ad);
+  border-radius: 16px;
+  transform: translateZ(0);
+  filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 16%, transparent));
 }
-.paid-tier-badge--core .paid-tier-badge__icon{opacity:.9}
-.paid-tier-badge--plus .paid-tier-badge__icon{transform:scale(1.02)}
-.paid-tier-badge--pro .paid-tier-badge__icon{transform:scale(1.04)}
-.paid-tier-badge--elite .paid-tier-badge__icon{transform:scale(1.06)}
-.paid-tier-badge--elite-plus .paid-tier-badge__icon{transform:scale(1.08)}
-.paid-tier-badge--titan .paid-tier-badge__icon{
-  transform:scale(1.1);
-  filter:drop-shadow(0 0 10px color-mix(in srgb,var(--tt-tier-accent,#92a0ad) 32%,transparent));
+
+.paid-tier-badge--sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
 }
+
+.paid-tier-badge--md {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+}
+
+.paid-tier-badge--lg {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+}
+
+.paid-tier-badge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      circle at 35% 28%,
+      color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 22%, white),
+      color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 8%, transparent) 58%,
+      transparent 76%
+    );
+  border: 1px solid color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 42%, transparent);
+  box-shadow:
+    inset 0 0 16px color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 12%, transparent),
+    0 0 18px color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 12%, transparent);
+  transform: none;
+}
+
+.paid-tier-badge__orbit,
+.paid-tier-badge__spark,
+.paid-tier-badge__crown {
+  display: none !important;
+}
+
+.paid-tier-badge__icon {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 68%;
+  height: 68%;
+  color: var(--tt-tier-accent, #92a0ad);
+  transform: translateY(0) scale(1);
+  filter: drop-shadow(0 4px 7px color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 24%, transparent));
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.paid-tier-badge--core .paid-tier-badge__icon {
+  transform: scale(.94);
+}
+
+.paid-tier-badge--plus .paid-tier-badge__icon {
+  transform: scale(.98);
+}
+
+.paid-tier-badge--pro .paid-tier-badge__icon {
+  transform: scale(1.02);
+}
+
+.paid-tier-badge--elite .paid-tier-badge__icon {
+  transform: scale(1.05);
+}
+
+.paid-tier-badge--elite-plus .paid-tier-badge__icon {
+  transform: scale(1.08);
+}
+
+.paid-tier-badge--titan .paid-tier-badge__icon {
+  transform: scale(1.11);
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 34%, transparent));
+}
+
 .paid-plan-card:hover .paid-tier-badge__icon,
-.paid-plan-card:focus-visible .paid-tier-badge__icon{
-  transform:translateY(-2px) scale(1.12) rotate(-2deg);
-  filter:drop-shadow(0 0 12px color-mix(in srgb,var(--tt-tier-accent,#92a0ad) 30%,transparent));
+.paid-plan-card:focus-visible .paid-tier-badge__icon {
+  transform: translateY(-2px) scale(1.12) rotate(-2deg);
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--tt-tier-accent, #92a0ad) 32%, transparent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paid-tier-badge__icon {
+    transition: none;
+  }
+}
+/* TITAN PRO PREMIUM VISUAL SYSTEM */
+.paid-plans-hero.tier-titan_pro {
+  position: relative;
+  border-color: color-mix(in srgb, #62d6c7 58%, rgba(255,255,255,.1));
+  background:
+    radial-gradient(circle at 88% 8%, rgba(98,214,199,.18), transparent 31%),
+    radial-gradient(circle at 58% 100%, rgba(98,214,199,.06), transparent 36%),
+    linear-gradient(135deg, rgba(18,39,43,.98), rgba(15,23,27,.98) 48%, rgba(10,14,18,.98));
+  box-shadow:
+    0 28px 76px rgba(0,0,0,.28),
+    0 0 42px rgba(98,214,199,.10),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  overflow: hidden;
+}
+
+.paid-plans-hero.tier-titan_pro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, transparent 18%, rgba(98,214,199,.07) 44%, transparent 62%);
+  transform: translateX(-35%);
+  animation: ttProHeroSheen 7s ease-in-out infinite;
+}
+
+.paid-plans-hero.tier-titan_pro::after {
+  content: "PRO WORKSPACE";
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  z-index: 2;
+  padding: 6px 9px;
+  border: 1px solid rgba(98,214,199,.34);
+  border-radius: 999px;
+  background: rgba(98,214,199,.09);
+  color: #62d6c7;
+  font-size: .58rem;
+  font-weight: 950;
+  letter-spacing: .14em;
+  box-shadow: 0 0 18px rgba(98,214,199,.09);
+}
+
+.paid-plans-hero.tier-titan_pro h1 {
+  max-width: 820px;
+  font-weight: 950;
+  letter-spacing: -.045em;
+  text-shadow: 0 1px 0 rgba(255,255,255,.03);
+}
+
+.paid-plans-hero.tier-titan_pro .paid-kicker {
+  color: #62d6c7;
+  opacity: .95;
+}
+
+.paid-plans-hero.tier-titan_pro .paid-plan-status {
+  border-color: rgba(98,214,199,.32);
+  background: rgba(98,214,199,.055);
+  box-shadow:
+    0 0 28px rgba(98,214,199,.08),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.paid-plans-hero.tier-titan_pro .paid-plan-status strong {
+  color: #ecfffc;
+}
+
+.paid-plans-hero.tier-titan_pro .paid-plan-status span {
+  color: #9fe8df;
+}
+
+.paid-plan-card.tier-titan_pro {
+  position: relative;
+  border-color: rgba(98,214,199,.34);
+  border-top-width: 3px;
+  background:
+    radial-gradient(circle at 86% 8%, rgba(98,214,199,.14), transparent 34%),
+    linear-gradient(145deg, rgba(21,42,45,.92), rgba(16,25,29,.82));
+  box-shadow:
+    0 12px 34px rgba(0,0,0,.18),
+    0 0 24px rgba(98,214,199,.05),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.paid-plan-card.tier-titan_pro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(125deg, transparent 18%, rgba(98,214,199,.07) 48%, transparent 72%);
+  opacity: .7;
+  transform: translateX(-35%);
+  animation: ttProCardSheen 8s ease-in-out infinite;
+}
+
+.paid-plan-card.tier-titan_pro::after {
+  content: "PRO";
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  z-index: 2;
+  padding: 5px 8px;
+  border: 1px solid rgba(98,214,199,.34);
+  border-radius: 999px;
+  background: rgba(98,214,199,.08);
+  color: #62d6c7;
+  font-size: .57rem;
+  font-weight: 950;
+  letter-spacing: .14em;
+}
+
+.paid-plan-card.tier-titan_pro.is-selected {
+  border-color: rgba(98,214,199,.68);
+  background:
+    radial-gradient(circle at 84% 8%, rgba(98,214,199,.2), transparent 34%),
+    linear-gradient(145deg, rgba(24,49,52,.98), rgba(15,27,31,.96));
+  box-shadow:
+    0 24px 58px rgba(0,0,0,.24),
+    0 0 34px rgba(98,214,199,.14),
+    inset 0 0 0 1px rgba(98,214,199,.14);
+}
+
+.paid-plan-card.tier-titan_pro.is-current {
+  box-shadow:
+    0 18px 46px rgba(0,0,0,.22),
+    0 0 30px rgba(98,214,199,.12),
+    inset 0 0 0 1px rgba(98,214,199,.22);
+}
+
+.paid-plan-card.tier-titan_pro:hover {
+  border-color: rgba(98,214,199,.72);
+  box-shadow:
+    0 22px 50px rgba(0,0,0,.24),
+    0 0 34px rgba(98,214,199,.13);
+}
+
+.paid-plan-card.tier-titan_pro .paid-tier-prestige {
+  color: #8ff0e5;
+  border-color: rgba(98,214,199,.34);
+  background: rgba(98,214,199,.08);
+}
+
+.paid-plan-card.tier-titan_pro .paid-price {
+  color: #effffb;
+  text-shadow: 0 0 18px rgba(98,214,199,.08);
+}
+
+.paid-plan-card.tier-titan_pro .paid-current-badge {
+  color: #62d6c7;
+  border: 1px solid rgba(98,214,199,.28);
+  background: rgba(98,214,199,.08);
+}
+
+.paid-plan-card.tier-titan_pro .paid-tier-badge {
+  filter:
+    drop-shadow(0 10px 20px rgba(0,0,0,.22))
+    drop-shadow(0 0 18px rgba(98,214,199,.16));
+}
+
+.paid-tier-badge--pro {
+  box-shadow:
+    0 0 24px rgba(98,214,199,.08),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.paid-tier-badge--pro::before {
+  border-color: rgba(98,214,199,.46);
+  box-shadow:
+    inset 0 0 18px rgba(98,214,199,.12),
+    0 0 24px rgba(98,214,199,.12);
+}
+
+.paid-plan-detail.tier-titan_pro {
+  border-color: rgba(98,214,199,.28);
+  background:
+    radial-gradient(circle at 92% 10%, rgba(98,214,199,.11), transparent 28%),
+    rgba(255,255,255,.035);
+  box-shadow: 0 18px 46px rgba(0,0,0,.14);
+}
+
+.paid-plan-detail.tier-titan_pro .paid-kicker {
+  color: #62d6c7;
+}
+
+@keyframes ttProHeroSheen {
+  0%, 100% { transform: translateX(-35%); opacity: .22; }
+  50% { transform: translateX(35%); opacity: .7; }
+}
+
+@keyframes ttProCardSheen {
+  0%, 100% { transform: translateX(-40%); opacity: .18; }
+  50% { transform: translateX(40%); opacity: .7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paid-plans-hero.tier-titan_pro::before,
+  .paid-plan-card.tier-titan_pro::before {
+    animation: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .paid-plans-hero.tier-titan_pro::after {
+    position: static;
+    display: inline-flex;
+    width: max-content;
+    margin-top: 12px;
+  }
+
+  .paid-plan-card.tier-titan_pro::after {
+    top: 10px;
+    right: 10px;
+  }
 }

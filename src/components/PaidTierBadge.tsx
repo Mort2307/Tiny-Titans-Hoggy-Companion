@@ -50,9 +50,6 @@ export default function PaidTierBadge({
       style={style}
       aria-hidden="true"
     >
-      <span className="paid-tier-badge__orbit paid-tier-badge__orbit--one" />
-      <span className="paid-tier-badge__orbit paid-tier-badge__orbit--two" />
-
       <TinyTitansIcon
         name={TIER_ICONS[tierId]}
         size={ICON_SIZES[size]}
