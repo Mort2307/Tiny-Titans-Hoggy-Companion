@@ -94,12 +94,14 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "🔗": "link",
   "🔒": "lock",
   "🔓": "unlock",
+  "📤": "export",
+  "📈": "analytics",
 };
 
 const ICON_NAMES = new Set<TinyTitansIconName>([
   "home", "reptile", "reptiles", "animals", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
   "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
-  "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan",
+  "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan", "analytics", "export",
   "educator", "creator", "testing", "search", "menu", "add", "edit", "delete", "water", "timeline", "vet", "save", "upload", "back", "forward", "close", "filter", "camera", "rotate", "move", "duplicate", "link", "lock", "unlock", "grid", "ceiling", "info", "warning", "check", "compass", "power", "air",
 ]);
 
@@ -215,6 +217,10 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-drop" d="M24 7c7 9 11 14 11 20 0 7-5 12-11 12s-11-5-11-12c0-6 4-11 11-20Z" /><path className="tt-icon-line-soft" d="M18 29c1 3 3 5 6 6" /></svg>;
     case "timeline":
       return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-card" x="9" y="11" width="30" height="26" rx="4" /><path className="tt-icon-line" d="M9 19h30M17 7v8m14-8v8M16 25h4m4 0h4m-12 6h4m4 0h4" /></svg>;
+    case "analytics":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-gauge" d="M9 35V15h7v20H9Zm12 0V9h7v26h-7Zm12 0V20h7v15h-7Z" /><path className="tt-icon-line" d="m11 13 9-5 12 6 5-5" /><path className="tt-icon-spark" d="m37 7 0 5m-2.5-2.5h5" /></svg>;
+    case "export":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-card" d="M10 9h20l8 8v22H10V9Z" /><path className="tt-icon-line-soft" d="M30 9v9h8" /><path className="tt-icon-line" d="M24 17v14m0 0-6-6m6 6 6-6" /><path className="tt-icon-line-soft" d="M15 38h18" /></svg>;
     case "vet":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-heart" d="M24 39 10 26c-5-5 0-15 7-13 3 1 5 4 7 7 2-3 4-6 7-7 7-2 12 8 7 13L24 39Z" /><path className="tt-icon-line" d="M24 18v10M19 23h10" /></svg>;
     case "save":
