@@ -41,6 +41,8 @@ export type TinyTitansIconName =
   | "delete"
   | "water"
   | "timeline"
+  | "analytics"
+  | "export"
   | "vet"
   | "save"
   | "upload"
