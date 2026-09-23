@@ -25,6 +25,7 @@ const creatorTesterInvitation=require("./creatorTesterInvitation"); Object.assig
 Object.assign(exports,require("./paidTierAccess"));
 Object.assign(exports,require("./paidMarketplace"));
 Object.assign(exports,require("./paidPromotions"));
+Object.assign(exports,require("./foundingFollowerReward"));
 Object.assign(exports,require("./paidTrialLifecycle"));
 Object.assign(exports,require("./creatorRescuePilot"));
 Object.assign(exports,require("./creatorPromoCodes"));
