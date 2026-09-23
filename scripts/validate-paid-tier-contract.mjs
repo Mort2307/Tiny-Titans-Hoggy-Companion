@@ -9,6 +9,10 @@ const config = read("src/config/paidTiers.ts");
 const plans = read("src/pages/PaidPlans.tsx");
 const billing = read("src/pages/AccountBilling.tsx");
 const subscriptions = read("functions/paidSubscriptions.js");
+const paidBusiness = read("functions/paidBusiness.js");
+const paidMarketplace = read("functions/paidMarketplace.js");
+const paidPublicApi = read("functions/paidPublicApi.js");
+const paidSupport = read("functions/paidSupport.js");
 const workspace = read("src/pages/PaidFeatureWorkspace.tsx");
 const workspaceProducts = read("src/config/workspaceProducts.ts");
 const gate = read("src/components/PaidTierGate.tsx");
@@ -35,7 +39,7 @@ const requiredStripePriceIds = [
 ];
 const commercialTiers = ["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"];
 const rescueSharedEntitlements = ["advanced_timeline", "advanced_analytics", "titan_intelligence", "morph_intelligence", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "api_access", "priority_support", "custom_branding"];
-const rescueNavigationTargets = ["/paid/timeline", "/paid/analytics", "/morph-library/evidence", "/paid/marketplace", "/paid/seller", "/paid/business", "/paid/team", "/paid/automation", "/paid/api", "/paid/support", "/paid/export"];
+const rescueNavigationTargets = ["/paid/timeline", "/paid/analytics", "/morph-library/evidence", "/paid/marketplace", "/paid/seller", "/paid/business", "/paid/team", "/paid/automation", "/paid/api", "/paid/support", "/paid/export", "/rescue/adoption"];
 const rescueWorkspaceStart = workspaceProducts.indexOf("rescue: {");
 const rescueWorkspaceEnd = workspaceProducts.indexOf("\n};", rescueWorkspaceStart);
 const rescueWorkspaceBlock = rescueWorkspaceStart >= 0 && rescueWorkspaceEnd > rescueWorkspaceStart ? workspaceProducts.slice(rescueWorkspaceStart, rescueWorkspaceEnd) : "";
@@ -83,6 +87,10 @@ const checks = [
   ["export entitlement exists", config.includes('"data_export"')],
   ["Rescue includes all shared paid capabilities", rescueSharedEntitlements.every((entitlement) => tierSlice("rescue").includes(`"${entitlement}"`))],
   ["Rescue workspace exposes shared paid destinations", rescueWorkspaceBlock && rescueNavigationTargets.every((path) => rescueWorkspaceBlock.includes(`path:"${path}"`))],
+  ["Rescue backend paid-business tier map matches shared entitlements", rescueSharedEntitlements.every((entitlement) => paidBusiness.includes(`rescue: new Set(`) && paidBusiness.includes(`"${entitlement}"`)) && paidBusiness.includes(""rescue"")],
+  ["Rescue backend marketplace access is enabled", paidMarketplace.includes(""rescue"") && /PAID_TIERS/.test(paidMarketplace)],
+  ["Rescue backend API access is enabled", paidPublicApi.includes("rescue: new Set(") && paidPublicApi.includes(""api_access"")],
+  ["Rescue backend priority support is enabled", paidSupport.includes(""rescue"") && /PAID_TIERS/.test(paidSupport)],
   ["export paid surface exists", workspace.includes("/paid/export") && workspace.includes("<DataExportFeature />")],
   ["all commercial surfaces represented", ["/paid/analytics","/paid/seller","/paid/marketplace","/paid/business","/paid/team","/paid/automation","/paid/support","/paid/api","/paid/branding"].every((route) => workspace.includes(route))],
   ["every workspace has My Account navigation", commercialTiers.every((id) => workspaceProducts.includes(`id:\"${id}\"`) && workspaceProducts.includes(`label:\"My Account\",path:\"/account\"`))],
