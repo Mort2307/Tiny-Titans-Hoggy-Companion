@@ -15,7 +15,7 @@ const requiredFiles = [
   "src/pages/CreatorOperationsHub.tsx",
 ];
 
-const reads = await Promise.all(requiredFiles.map(async (path) => [path, await fs.readFile(path, "utf8")] as const));
+const reads = await Promise.all(requiredFiles.map(async (path) => [path, await fs.readFile(path, "utf8")]));
 const files = Object.fromEntries(reads);
 const assertions = [
   ["founding follower backend exists", files["functions/foundingFollowerReward.js"].includes("exports.submitFoundingFollowerClaim")],
