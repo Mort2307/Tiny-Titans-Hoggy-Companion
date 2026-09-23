@@ -24,7 +24,7 @@ function pageCategory(pathname) {
     health: "Health", behaviour: "Behaviour", husbandry: "Husbandry", "enclosure-intelligence": "Enclosure Intelligence",
     breeding: "Breeding", "morph-library": "Morph Library", calculator: "Genetics Calculator", "knowledge-base": "Knowledge Base",
     "keeper-handbook": "Keeper Handbook", learn: "Learning", "adaptive-learning": "Adaptive Learning", challenge: "Titans Challenge",
-    community: "Community", feedback: "Feedback", "report-bug": "Bug Reporting", "report-issue": "Issue Reporting", creator: "Creator Centre",
+    community: "Community", rescue: "Rescue", feedback: "Feedback", "report-bug": "Bug Reporting", "report-issue": "Issue Reporting", creator: "Creator Centre",
     educator: "Educator", paid: "Paid Features", "titan-intelligence": "Titan Intelligence", "reptile-room": "Reptile Room", founder: "Founder",
     "become-a-titan": "Become a Titan", sandbox: "Sandbox", "behaviour-observatory": "Behaviour Observatory", "make-contribution": "Contributions",
     "submit-species": "Species Submission", conversations: "Conversations", "wall-of-titans": "Wall of Titans", marketplace: "Marketplace",
