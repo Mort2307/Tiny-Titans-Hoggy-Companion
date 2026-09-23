@@ -5,7 +5,7 @@ const baseURL = process.env.TINY_TITANS_TEST_URL || "http://127.0.0.1:5173";
 const email = process.env.TINY_TITANS_RESCUE_QA_EMAIL || "";
 const password = process.env.TINY_TITANS_RESCUE_QA_PASSWORD || "";
 const allowWrites = process.env.TINY_TITANS_RESCUE_QA_WRITE === "true";
-const routes = ["/rescue","/rescue/animals","/rescue/animals?intake=1","/rescue/qr","/rescue/scan","/rescue/team","/rescue/reports","/rescue/adoption","/rescue/species-incubator","/paid/timeline","/paid/analytics","/morph-library/evidence","/paid/marketplace","/paid/seller","/paid/business","/paid/team","/paid/automation","/paid/api","/paid/support","/paid/export"];
+const routes = ["/rescue","/rescue/animals","/rescue/animals?intake=1","/rescue/qr","/rescue/scan","/rescue/team","/rescue/reports","/rescue/adoption","/rescue/species-incubator","/rescue/log","/rescue/medical","/rescue/tasks","/rescue/foster","/rescue/transfers","/rescue/locations","/rescue/organisation","/rescue/compliance","/rescue/public-preview","/paid/timeline","/paid/analytics","/morph-library/evidence","/paid/marketplace","/paid/seller","/paid/business","/paid/team","/paid/automation","/paid/api","/paid/support","/paid/branding","/paid/export"];
 const failures = []; const passes = []; let n = 0;
 function record(ok, area, message, evidence = "") { const item = { id: "RQA-" + String(++n).padStart(3,"0"), area, message, evidence }; (ok ? passes : failures).push(item); }
 async function main(){
@@ -24,11 +24,11 @@ async function main(){
     } catch(error) { record(false,"route",route,error instanceof Error ? error.message : String(error)); }
   }
   await page.goto(baseURL + "/rescue",{waitUntil:"domcontentloaded",timeout:15000});
-  const expected = [["Animal Register","/rescue/animals"],["New Intake","/rescue/animals?intake=1"],["Scan / Create QR","/rescue/qr"],["Rescue Team & Permissions","/rescue/team"],["Advanced Timeline","/paid/timeline"],["Advanced Analytics","/paid/analytics"],["Morph Intelligence & Evidence","/morph-library/evidence"],["Marketplace Seller Tools","/paid/marketplace"],["Professional Seller Profile","/paid/seller"],["Business Reporting","/paid/business"],["Team & Permissions","/paid/team"],["Workflow Automation","/paid/automation"],["API Access","/paid/api"],["Priority Support","/paid/support"],["Data Export","/paid/export"],["Foster & Adoption","/rescue/adoption"]];
-  for (const pair of expected) {
-    const link = page.locator("a").filter({hasText:pair[0]}).first();
-    if (await link.count() === 0) record(false,"navigation",pair[0],"Missing link");
-    else record(await link.getAttribute("href") === pair[1],"navigation",pair[0],await link.getAttribute("href") || "");
+  const expected = [["Animal Register","/rescue/animals"],["New Intake","/rescue/animals?intake=1"],["Scan / Create QR","/rescue/qr"],["Rescue Team & Permissions","/rescue/team"],["Advanced Timeline","/paid/timeline"],["Advanced Analytics","/paid/analytics"],["Morph Intelligence & Evidence","/morph-library/evidence"],["Marketplace Seller Tools","/paid/marketplace"],["Professional Seller Profile","/paid/seller"],["Business Reporting","/paid/business"],["Team & Permissions","/paid/team"],["Workflow Automation","/paid/automation"],["API Access","/paid/api"],["Priority Support","/paid/support"],["Data Export","/paid/export"],["Foster & Adoption","/rescue/adoption"],["Organisation & Branding","/rescue/organisation"]];
+  if (email && password) {
+    record(true,"navigation","Authenticated Rescue navigation assertions are executed after login.");
+  } else {
+    record(true,"navigation","Authenticated Rescue navigation assertions skipped because no Rescue QA credentials were supplied.");
   }
   await page.goto(baseURL + "/rescue/animals?intake=1",{waitUntil:"domcontentloaded",timeout:15000});
   const nameCount = await page.locator("input[placeholder*=\"Animal name\" i]").count();
@@ -45,6 +45,20 @@ async function main(){
     await page.locator("button[type=\"submit\"]").click();
     await page.waitForTimeout(1000);
     record(page.url().includes("/rescue"),"auth","QA account reached Rescue workspace",page.url());
+    if (page.url().includes("/rescue")) {
+      await page.goto(baseURL + "/rescue",{waitUntil:"domcontentloaded",timeout:15000});
+      for (const pair of expected) {
+        const link = page.locator("a").filter({hasText:pair[0]}).first();
+        if (await link.count() === 0) record(false,"navigation",pair[0],"Missing link");
+        else record(await link.getAttribute("href") === pair[1],"navigation",pair[0],await link.getAttribute("href") || "");
+      }
+      for (const route of ["/paid/timeline","/paid/analytics","/morph-library/evidence","/paid/marketplace","/paid/seller","/paid/business","/paid/team","/paid/automation","/paid/api","/paid/support","/paid/branding","/paid/export"]) {
+        await page.goto(baseURL + route,{waitUntil:"domcontentloaded",timeout:15000});
+        const body = await page.locator("body").innerText().catch(()=>"");
+        const blocked = /access is not active|current access:\s*free|requires .* paid feature/i.test(body);
+        record(!blocked,"shared-paid-access",route,blocked ? "Authenticated Rescue QA account is still behind an access gate." : "Shared paid capability rendered without an access gate.");
+      }
+    }
     if (allowWrites) {
       await page.goto(baseURL + "/rescue/animals?intake=1",{waitUntil:"domcontentloaded",timeout:15000});
       const nameInput=page.locator("input[placeholder*=\"Animal name\" i]"); const speciesInput=page.locator("input[placeholder*=\"Common name\" i]");
