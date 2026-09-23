@@ -80,11 +80,12 @@ export function createCoreDiagnosticChecks(input: {
   uid: string;
   authenticated: boolean;
   creatorClaim: boolean;
+  requireCreatorClaim?: boolean;
   analyticsConsent?: boolean;
 }): TesterCheck[] {
-  const { uid, authenticated, creatorClaim } = input;
+  const { uid, authenticated, creatorClaim, requireCreatorClaim = false } = input;
 
-  return [
+  const checks: TesterCheck[] = [
     {
       checkId: "auth-current-user", name: "Authenticated user is available", category: "auth", severity: "critical",
       run: async () => {
@@ -93,10 +94,6 @@ export function createCoreDiagnosticChecks(input: {
         if (currentUser.uid !== uid) return { status: "fail", message: "Authenticated UID does not match the tester owner UID." };
         return { status: "pass", message: "Authenticated user and tester UID match." };
       },
-    },
-    {
-      checkId: "auth-creator-claim", name: "Creator authorization claim is present", category: "creator", severity: "critical",
-      run: async () => creatorClaim ? { status: "pass", message: "Creator/admin authorization claim is active." } : { status: "fail", message: "Creator/admin authorization claim is missing." },
     },
     {
       checkId: "auth-token-refresh", name: "Firebase ID token can be refreshed", category: "auth", severity: "high",
@@ -137,6 +134,13 @@ export function createCoreDiagnosticChecks(input: {
       },
     },
   ];
+  if (requireCreatorClaim) {
+    checks.splice(1, 0, {
+      checkId: "auth-creator-claim", name: "Creator authorization claim is present", category: "creator", severity: "critical",
+      run: async () => creatorClaim ? { status: "pass", message: "Creator/admin authorization claim is active." } : { status: "fail", message: "Creator/admin authorization claim is missing." },
+    });
+  }
+  return checks;
 }
 
 export async function runTesterSuite(uid: string, suite: string, checks: TesterCheck[]): Promise<TesterRun> {
