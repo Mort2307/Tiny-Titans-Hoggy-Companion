@@ -111,6 +111,38 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     console.log("[OVERLORD] Rescue plan exposes all shared paid capabilities: " + RESCUE_SHARED_CAPABILITIES.join(", "));
   });
 
+  test("Rescue shared workspace icons render with semantic classes", async ({ page }) => {
+    const errors = applicationErrors(page);
+    await signIn(page);
+    await visit(page, "/rescue");
+    const rescueIconChecks = [
+      ["/titan-intelligence", "tt-icon-name-titan"],
+      ["/paid/analytics", "tt-icon-name-analytics"],
+      ["/paid/timeline", "tt-icon-name-timeline"],
+      ["/morph-library/evidence", "tt-icon-name-observatory"],
+      ["/paid/marketplace", "tt-icon-name-marketplace"],
+      ["/paid/seller", "tt-icon-name-marketplace"],
+      ["/paid/business", "tt-icon-name-analytics"],
+      ["/paid/team", "tt-icon-name-community"],
+      ["/paid/automation", "tt-icon-name-plans"],
+      ["/paid/api", "tt-icon-name-lock"],
+      ["/paid/support", "tt-icon-name-messages"],
+      ["/paid/export", "tt-icon-name-export"],
+    ];
+    const workspaceNav = page.locator('.workspace-product-shell[data-workspace="rescue"] .workspace-product-nav').first();
+    if (await workspaceNav.count() === 0) {
+      console.log("[OVERLORD] Rescue workspace navigation is not active for this account; semantic icon mapping is covered by the paid-tier regression contract and Rescue QA BOT.");
+      await assertHealthy(page, errors);
+      return;
+    }
+    for (const [href, iconClass] of rescueIconChecks) {
+      const link = workspaceNav.locator(`a[href="${href}"]`).first();
+      await expect(link, `Expected Rescue workspace link ${href}`).toHaveCount(1);
+      await expect(link.locator(`svg.${iconClass}`), `Expected semantic icon ${iconClass} for ${href}`).toHaveCount(1);
+    }
+    await assertHealthy(page, errors);
+  });
+
   test("new TinyTitans Pro workspace icons render with semantic classes", async ({ page }) => {
     const errors = applicationErrors(page);
     await signIn(page);
