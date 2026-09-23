@@ -12,7 +12,7 @@ const coreRoutes = [
   "/breeding", "/breeding/academy", "/breeding/readiness", "/breeding/timeline", "/breeding/cycle", "/breeding/production",
   "/community", "/community/features", "/community/wall-of-titans", "/report-bug", "/feedback", "/my-issue-reports", "/conversations", "/founder", "/become-a-titan",
   "/paid/timeline", "/paid/analytics", "/paid/marketplace", "/paid/seller", "/paid/business", "/paid/team", "/paid/automation", "/paid/api", "/paid/support", "/paid/branding", "/paid/export", "/morph-library/evidence",
-  "/rescue", "/rescue/animals", "/rescue/qr", "/rescue/team", "/rescue/reports", "/rescue/adoption", "/rescue/species-incubator",
+  "/rescue", "/rescue/animals", "/rescue/qr", "/rescue/scan", "/rescue/team", "/rescue/reports", "/rescue/adoption", "/rescue/species-incubator",
   "/creator", "/creator/privacy-data", "/creator/benchmarks", "/creator/submissions", "/creator/morph-terminology", "/creator/issues", "/creator/community", "/creator/conversations", "/creator/tester", "/educator",
 ];
 
