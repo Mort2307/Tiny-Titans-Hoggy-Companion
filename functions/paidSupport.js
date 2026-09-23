@@ -2,7 +2,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const db = getFirestore();
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
-const PAID_TIERS = new Set(["business_plus", "business_advanced"]);
+const PAID_TIERS = new Set(["business_plus", "business_advanced", "rescue"]);
 function cleanText(value, max = 1000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 function expiryMillis(value) { if (!value) return null; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : null; }
 async function requirePriority(uid) {
@@ -19,7 +19,7 @@ async function requirePriority(uid) {
   const trialTier = String(trial?.tier || "");
   const trialActive = trial?.enabled === true && PAID_TIERS.has(trialTier) && (expiryMillis(trial.expiresAt) || 0) > Date.now();
   const effective = overrideActive ? overrideTier : subscriptionActive ? subscriptionTier : trialActive ? trialTier : "free";
-  if (!PAID_TIERS.has(effective)) throw new HttpsError("permission-denied", "Priority support requires Business Plus or Business Advanced.");
+  if (!PAID_TIERS.has(effective)) throw new HttpsError("permission-denied", "Priority support requires Business Plus, Business Advanced or Rescue.");
   return effective;
 }
 exports.createPrioritySupportTicket = onCall({ region: "europe-west2" }, async (request) => {
