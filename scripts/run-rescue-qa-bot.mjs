@@ -24,7 +24,7 @@ async function main(){
     } catch(error) { record(false,"route",route,error instanceof Error ? error.message : String(error)); }
   }
   await page.goto(baseURL + "/rescue",{waitUntil:"domcontentloaded",timeout:15000});
-  const expected = [["Animal Register","/rescue/animals"],["New Intake","/rescue/animals?intake=1"],["Scan / Create QR","/rescue/qr"],["Team","/rescue/team"],["Advanced Timeline","/paid/timeline"],["Advanced Analytics","/paid/analytics"],["Morph Intelligence & Evidence","/morph-library/evidence"],["Marketplace Seller Tools","/paid/marketplace"],["Professional Seller Profile","/paid/seller"],["Business Reporting","/paid/business"],["Team & Permissions","/paid/team"],["Workflow Automation","/paid/automation"],["API Access","/paid/api"],["Priority Support","/paid/support"],["Data Export","/paid/export"],["Foster & Adoption","/rescue/adoption"]];
+  const expected = [["Animal Register","/rescue/animals"],["New Intake","/rescue/animals?intake=1"],["Scan / Create QR","/rescue/qr"],["Rescue Team & Permissions","/rescue/team"],["Advanced Timeline","/paid/timeline"],["Advanced Analytics","/paid/analytics"],["Morph Intelligence & Evidence","/morph-library/evidence"],["Marketplace Seller Tools","/paid/marketplace"],["Professional Seller Profile","/paid/seller"],["Business Reporting","/paid/business"],["Team & Permissions","/paid/team"],["Workflow Automation","/paid/automation"],["API Access","/paid/api"],["Priority Support","/paid/support"],["Data Export","/paid/export"],["Foster & Adoption","/rescue/adoption"]];
   for (const pair of expected) {
     const link = page.locator("a").filter({hasText:pair[0]}).first();
     if (await link.count() === 0) record(false,"navigation",pair[0],"Missing link");
