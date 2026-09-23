@@ -20,6 +20,8 @@ const SUBMISSION_TESTS = Object.freeze([
   { kind: "founder", label: "Founder application", description: "Tests Founder application notification delivery.", title: "🏆 TEST — Founder application", body: "Synthetic Founder application from the Submission Notification BOT." },
   { kind: "community", label: "Community contribution", description: "Tests wider community contribution notification delivery.", title: "🌍 TEST — Community contribution", body: "Synthetic community contribution from the Submission Notification BOT." },
   { kind: "feature", label: "Feature request", description: "Tests feature request notification delivery.", title: "💡 TEST — Feature request", body: "Synthetic feature request from the Submission Notification BOT." },
+  { kind: "species", label: "Species submission", description: "Tests Creator species submission notification delivery.", title: "🐍 TEST — Species submission", body: "Synthetic species submission from the Submission Notification BOT." },
+  { kind: "founding-follower", label: "Founding Follower claim", description: "Tests Creator Founding Follower claim notification delivery.", title: "🎁 TEST — Founding Follower claim", body: "Synthetic Founding Follower claim from the Submission Notification BOT." },
 ]);
 const TEST_BY_KIND = new Map(SUBMISSION_TESTS.map((test) => [test.kind, test]));
 
