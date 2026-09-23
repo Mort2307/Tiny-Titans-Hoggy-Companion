@@ -2,7 +2,7 @@ name: Tiny Titans CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, release/2026-09-hardening-pass]
     paths:
       - 'src/**'
       - 'functions/**'
@@ -17,7 +17,7 @@ on:
       - 'firebase.json'
       - '.github/workflows/tiny-titans-build.yml'
   pull_request:
-    branches: [master]
+    branches: [master, release/2026-09-hardening-pass]
     paths:
       - 'src/**'
       - 'functions/**'

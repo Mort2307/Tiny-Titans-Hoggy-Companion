@@ -1,80 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
-import { useAuth } from "../context/useAuth";
-import { getUserSnakes, updateUserSnake } from "../services/snakeService";
-import { getSnakeWeights } from "../services/weightService";
-import type { Snake } from "../types/Snake";
-import type { WeightRecord } from "../types/Weight";
-import { findSnakeSpecies } from "../data/species/speciesRegistry";
-import { SPECIES_SOURCES } from "../data/species/speciesSources";
-import { ageInYears, growthStageForAge, husbandryReferenceBands, husbandryReferences } from "../data/husbandryReferences";
+import SpeciesGuidance from "../components/Husbandry/SpeciesGuidance";
+import { useHusbandryCare } from "../hooks/useHusbandryCare";
+import { husbandryReferences } from "../data/husbandryReferences";
 import "../styles/husbandry-care.css";
 
-function trend(records: WeightRecord[]) { const a = [...records].sort((x, y) => new Date(x.date).getTime() - new Date(y.date).getTime()); if (a.length < 2) return { tone: "unknown", text: "Keep recording weights so Tiny Titans can establish this snake's own trajectory.", change: null as number | null }; const change = a.at(-1)!.weight - a[0].weight; return { tone: change < 0 ? "check" : "good", text: `${a.length} measurements show a ${change > 0 ? "upward" : change < 0 ? "downward" : "stable"} recorded trajectory (${change >= 0 ? "+" : ""}${change.toFixed(1)} g).`, change }; }
-
-function rangeText(range?: { min: number; max: number; unit: string; context?: string }) { if (!range) return null; return `${range.min}–${range.max}${range.unit}${range.context ? ` · ${range.context}` : ""}`; }
-
-function SpeciesGuidance({ speciesValue }: { speciesValue: string }) {
-  const species = findSnakeSpecies(speciesValue);
-  const husbandry = species?.knowledge.husbandry;
-  if (!species || !husbandry) return <section className="husbandry-panel"><div className="husbandry-section-heading"><div><p className="husbandry-eyebrow">📚 SPECIES GUIDANCE</p><h2>Species profile not yet mapped</h2></div></div><p>Tiny Titans could not confidently match <strong>{speciesValue || "this species"}</strong> to the current species registry. No generic temperature or humidity values are substituted.</p></section>;
-  const sources = species.knowledge.sourceIds.map((id) => SPECIES_SOURCES[id]).filter(Boolean);
-  const temperatureRows = [
-    ["Basking", rangeText(husbandry.temperature?.basking)],
-    ["Warm side", rangeText(husbandry.temperature?.warmSide)],
-    ["Cool side", rangeText(husbandry.temperature?.coolSide)],
-    ["Night", rangeText(husbandry.temperature?.night)],
-  ].filter((row): row is [string, string] => Boolean(row[1]));
-  const humidity = rangeText(husbandry.humidity?.target) ?? rangeText(husbandry.humidity?.acceptable);
-  const risk = species.knowledge.riskClass;
-  return <section className="husbandry-panel">
-    <div className="husbandry-section-heading"><div><p className="husbandry-eyebrow">🧬 SPECIES-SPECIFIC GUIDANCE</p><h2>{species.commonNames[0]}</h2><p className="husbandry-muted"><em>{species.acceptedScientificName}</em> · evidence confidence: <strong>{husbandry.evidenceLevel}</strong> · reviewed {species.knowledge.reviewedOn}</p></div><span className={`husbandry-assessment-badge ${risk === "venomous" || risk === "high-risk" ? "check" : "good"}`}>{risk === "venomous" ? "☠️ Venomous" : risk === "high-risk" ? "⚠️ High risk" : risk === "specialist" ? "🟠 Specialist" : "🟢 Companion"}</span></div>
-    <p>{species.knowledge.summary}</p>
-    {(risk === "venomous" || risk === "high-risk") && <div className="husbandry-callout check"><strong>Safety boundary:</strong> this species needs specialist facilities/training. Tiny Titans provides environmental context but deliberately does not provide casual handling procedures for venomous or high-risk snakes.</div>}
-    <div className="husbandry-stats husbandry-stats--five">
-      <div><span>Warm / bask</span><strong>{rangeText(husbandry.temperature?.basking) ?? rangeText(husbandry.temperature?.warmSide) ?? "Not encoded"}</strong></div>
-      <div><span>Cool side</span><strong>{rangeText(husbandry.temperature?.coolSide) ?? "Not encoded"}</strong></div>
-      <div><span>Night</span><strong>{rangeText(husbandry.temperature?.night) ?? "Not encoded"}</strong></div>
-      <div><span>Humidity</span><strong>{humidity ?? "Not encoded"}</strong></div>
-      <div><span>Cohabitation</span><strong>{husbandry.cohabitation?.recommendation ?? "Unknown"}</strong></div>
-    </div>
-    {temperatureRows.length > 0 && <div className="husbandry-growth-grid">{temperatureRows.map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}</strong><small>Species-specific reference range; allow a usable gradient rather than chasing one number.</small></article>)}</div>}
-    <div className="husbandry-grid">
-      <article className="husbandry-panel"><h3>🏠 Enclosure</h3><p><strong>Habitat:</strong> {husbandry.enclosure?.habitatType?.join(", ") || "Not encoded"}</p><p><strong>Substrate:</strong> {husbandry.enclosure?.substrate?.join(" · ") || "Not encoded"}</p><p><strong>Hides:</strong> {husbandry.enclosure?.hides || "Not encoded"}</p><p><strong>Water:</strong> {husbandry.enclosure?.water || "Not encoded"}</p><p><strong>Ventilation:</strong> {husbandry.enclosure?.ventilation || "Not encoded"}</p><p><strong>Lighting:</strong> {husbandry.enclosure?.lighting || "Not encoded"}</p><p><strong>Climbing:</strong> {husbandry.enclosure?.climbing === undefined ? "Not specified" : husbandry.enclosure.climbing ? "Provide usable structure" : "Primarily terrestrial"}</p><p><strong>Enrichment:</strong> {husbandry.enclosure?.enrichment?.join(" · ") || "Not encoded"}</p>{husbandry.enclosure?.notes && <p className="husbandry-muted">{husbandry.enclosure.notes}</p>}</article>
-      <article className="husbandry-panel"><h3>🍽️ Feeding & reproduction</h3><p><strong>Diet:</strong> {species.knowledge.feeding?.dietaryGuild || "Not encoded"}</p><p><strong>Prey profile:</strong> {species.knowledge.feeding?.preyCategories?.join(" · ") || "Not encoded"}</p>{species.knowledge.feeding?.notes && <p>{species.knowledge.feeding.notes}</p>}<p><strong>Breeding:</strong> {species.knowledge.breeding?.seasonalCycling || "Not encoded"}</p>{species.knowledge.breeding?.notes && <p className="husbandry-muted">{species.knowledge.breeding.notes}</p>}<p><strong>Cohabitation:</strong> {husbandry.cohabitation?.rationale || "Not encoded"}</p></article>
-    </div>
-    <div className="husbandry-panel husbandry-reference-explainer"><h3>🧠 Keep the evidence attached to the animal</h3><p>These are species-level starting points, not a substitute for the individual record. Compare them with your snake's actual temperature/humidity logs, feeding response, shed history, weight trajectory and veterinary findings.</p>{husbandry.temperature?.notes && <p><strong>Temperature note:</strong> {husbandry.temperature.notes}</p>}{husbandry.humidity?.notes && <p><strong>Humidity note:</strong> {husbandry.humidity.notes}</p>}{species.knowledge.safety?.handlingNotes && <p><strong>Safety:</strong> {species.knowledge.safety.handlingNotes}</p>}</div>
-    <div className="husbandry-sources">{sources.map((source) => <a key={source.id} href={source.url} target="_blank" rel="noreferrer"><strong>{source.title}</strong><span>{source.publisher} · {source.evidenceLevel} evidence · accessed {source.accessedOn}</span></a>)}</div>
-  </section>;
-}
-
 export default function HusbandryCare() {
-  const { id } = useParams();
-  const { user, loading, profileLoading } = useAuth();
-  const [snakes, setSnakes] = useState<Snake[]>([]);
-  const [weights, setWeights] = useState<Record<string, WeightRecord[]>>({});
-  const [selectedId, setSelectedId] = useState(id ?? "");
-  const [loadingData, setLoadingData] = useState(true);
-  const [error, setError] = useState("");
-  const [lengthEditing, setLengthEditing] = useState(false);
-  const [lengthDraft, setLengthDraft] = useState("");
-  const [lengthSaving, setLengthSaving] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const loadData = useCallback(async () => { if (!user) return; setLoadingData(true); setError(""); try { const loaded = await getUserSnakes(user.uid); setSnakes(loaded); const entries = await Promise.all(loaded.map(async (snake) => [snake.id, await getSnakeWeights(user.uid, snake.id)] as const)); setWeights(Object.fromEntries(entries)); setSelectedId((current) => loaded.some((snake) => snake.id === current) ? current : loaded[0]?.id ?? ""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to load husbandry data."); } finally { setLoadingData(false); } }, [user]);
-  useEffect(() => { if (!user || loading || profileLoading) return; void loadData(); }, [user, loading, profileLoading, loadData]);
-
-  const snake = useMemo(() => snakes.find((item) => item.id === selectedId) ?? snakes[0], [snakes, selectedId]);
-  const history = useMemo(() => snake ? [...(weights[snake.id] ?? snake.weightHistory ?? [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) : [], [snake, weights]);
-  const currentWeight = history.at(-1)?.weight ?? snake?.weight ?? undefined;
-  const age = snake ? ageInYears(snake.hatchDate) : 0;
-  const stage = growthStageForAge(age);
-  const growth = trend(history);
-  const adultBand = snake?.sex === "Male" ? [husbandryReferenceBands.adultObservedWeight.maleMinG, husbandryReferenceBands.adultObservedWeight.maleMaxG] : snake?.sex === "Female" ? [husbandryReferenceBands.adultObservedWeight.femaleMinG, husbandryReferenceBands.adultObservedWeight.femaleMaxG] : null;
-  const adultStatus = adultBand && age >= 2.5 && currentWeight !== undefined ? currentWeight >= adultBand[0] && currentWeight <= adultBand[1] ? "good" : "check" : "unknown";
-
-  async function saveLength() { if (!user || !snake) return; const value = Number(lengthDraft); if (!Number.isFinite(value) || value <= 0 || value > 200) { setMessage("Enter a realistic body length in centimetres."); return; } setLengthSaving(true); setMessage(""); try { const updated = await updateUserSnake(user.uid, { ...snake, lengthCm: Number(value.toFixed(1)) }); setSnakes((current) => current.map((item) => item.id === updated.id ? updated : item)); setLengthEditing(false); setMessage("Body length saved."); } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Unable to save length."); } finally { setLengthSaving(false); } }
+  const {
+    loading, profileLoading, snakes, setSelectedId, loadingData, error,
+    lengthEditing, setLengthEditing, lengthDraft, setLengthDraft, lengthSaving, message,
+    snake, history, currentWeight, age, stage, growth, adultBand, adultStatus, loadData,
+    saveLength,
+  } = useHusbandryCare();
 
   if (loadingData || loading || profileLoading) return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-hero"><p className="husbandry-eyebrow">Tiny Titans Intelligence</p><h1>🐍 Husbandry & Care</h1><p>Building your personalised care picture…</p></section></main>;
   if (error) return <main className="page-container husbandry-page"><BackHomeButton /><section className="husbandry-panel"><h1>🐍 Husbandry & Care</h1><p>{error}</p><button className="husbandry-button" type="button" onClick={() => void loadData()}>Try again</button></section></main>;

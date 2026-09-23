@@ -143,15 +143,15 @@ function calculateEvidenceConfidence(record: SnakeMasterRecord, coveragePercent:
 
 function buildConfidenceExplanation(confidence: DataConfidence): string {
   if (confidence === "High") {
-    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. High means the available records have enough quantity, history, recency and consistency to support a strong pattern. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. High means the available records have enough quantity, history, recency and consistency to support a strong pattern. It is not a rating of your keeping ability, the animal's health, or you as a keeper.";
   }
   if (confidence === "Moderate") {
-    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Moderate means useful patterns are present, but the history, consistency or time span is not yet strong enough for high confidence. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Moderate means useful patterns are present, but the history, consistency or time span is not yet strong enough for high confidence. It is not a rating of your keeping ability, the animal's health, or you as a keeper.";
   }
   if (confidence === "Low") {
-    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Low means the engine can see some evidence but should remain cautious because the dataset is limited, recent or inconsistent. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+    return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. Low means the engine can see some evidence but should remain cautious because the dataset is limited, recent or inconsistent. It is not a rating of your keeping ability, the animal's health, or you as a keeper.";
   }
-  return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. More useful history is needed before Tiny Titans can make a confident interpretation. It is not a rating of your keeping ability, your snake's health, or you as a keeper.";
+  return "Intelligence Confidence measures how reliably Tiny Titans can interpret the recorded data. More useful history is needed before Tiny Titans can make a confident interpretation. It is not a rating of your keeping ability, the animal's health, or you as a keeper.";
 }
 
 function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
@@ -166,7 +166,7 @@ function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
       id: "weight-trend",
       title: "Individual weight trend",
       value: `${direction} · ${overview.weightChangeG >= 0 ? "+" : ""}${overview.weightChangeG.toFixed(1)}g overall`,
-      why: `Calculated from ${weights.length} canonical weight records for ${snake.name}. Tiny Titans is comparing this snake with its own recorded history rather than a generic target weight.`,
+      why: `Calculated from ${weights.length} canonical weight records for ${snake.name}. Tiny Titans is comparing this animal with its own recorded history rather than a generic target weight.`,
       action: "Continue recording weights at a consistent interval so the personal trend becomes more reliable.",
       tone: direction === "downward" ? "attention" : direction === "upward" ? "positive" : "neutral",
       confidence: overview.confidence.weight,
@@ -232,9 +232,9 @@ function buildInsights(record: SnakeMasterRecord): SnakeInsight[] {
   if (!insights.length) {
     insights.push({
       id: "getting-started",
-      title: "Learning this snake",
+      title: "Learning this animal",
       value: "Collecting baseline data",
-      why: "Tiny Titans intentionally avoids generic conclusions when this snake has too little personal history.",
+      why: "Tiny Titans intentionally avoids generic conclusions when this animal has too little personal history.",
       action: "Start with a weight, feeding record or shed record to give the intelligence engine something real to work with.",
       tone: "neutral",
       confidence: "Insufficient",

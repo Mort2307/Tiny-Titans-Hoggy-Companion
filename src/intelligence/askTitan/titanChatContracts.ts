@@ -28,11 +28,31 @@ export type TitanUsage = {
   remaining: number;
 };
 
+
+export type TitanSpeciesReference = {
+  id: string;
+  commonName: string;
+  scientificName: string;
+  animalGroup: string;
+  family: string;
+  genus: string;
+  lifestyle: string[];
+  dietaryGuild: string;
+  careStatus: string;
+  careResolution: string[];
+  husbandry: Array<{ label: string; guidance: string; priority: string; basis: string; caveat: string }>;
+  healthBaseline: string[];
+  healthWatch: Array<{ concern: string; watchFor: string[]; riskFactors: string[]; prevention: string; priority: string; basis: string; caveat: string }>;
+  unresolved: string[];
+};
+
 export type TitanAskRequest = {
   question: string;
   animalId?: string;
   workspaceKind?: TitanWorkspaceKind;
   history?: readonly { role: "user" | "model"; content: string }[];
+  speciesId?: string;
+  speciesReference?: TitanSpeciesReference;
 };
 
 export type TitanAskResponse = {

@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+import fs from "node:fs";
+import path from "node:path";
+
+const root = path.resolve("src");
+const strict = process.argv.includes("--strict");
+const excluded = new Set([
+  path.resolve("src/components/TinyTitansIcon.tsx"),
+  path.resolve("src/types/tinyTitansIcon.ts"),
+]);
+const iconGlyph = /\p{Extended_Pictographic}/u;
+const legacyMetadata = /\bicon\s*:/u;
+const legacyUiGlyph = /<(?:span|button|h1|h2|h3|h4|h5|strong|label|p)[^>]*>\s*(?:\p{Extended_Pictographic}|[+×←→↻☰✕✓⚠])/u;
+
+function walk(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walk(full);
+    return /\.(?:tsx|ts)$/.test(entry.name) ? [full] : [];
+  });
+}
+
+const files = walk(root).filter((file) => !excluded.has(file));
+const findings = [];
+for (const file of files) {
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  lines.forEach((line, index) => {
+    if (!iconGlyph.test(line)) return;
+    const metadata = legacyMetadata.test(line);
+    const uiGlyph = legacyUiGlyph.test(line);
+    if (!metadata && !uiGlyph) return;
+    findings.push({
+      file: path.relative(process.cwd(), file).replaceAll(path.sep, "/"),
+      line: index + 1,
+      kind: metadata ? "legacy-icon-metadata" : "raw-ui-glyph",
+      text: line.trim().slice(0, 220),
+    });
+  });
+}
+
+const byKind = findings.reduce((acc, finding) => {
+  acc[finding.kind] = (acc[finding.kind] ?? 0) + 1;
+  return acc;
+}, {});
+
+console.log(JSON.stringify({
+  test: "iconography-boundary",
+  strict,
+  scannedFiles: files.length,
+  findings: findings.length,
+  byKind,
+  status: findings.length === 0 ? "PASS" : "WARN",
+  details: findings.slice(0, 120),
+}, null, 2));
+
+if (strict && findings.length > 0) process.exit(1);

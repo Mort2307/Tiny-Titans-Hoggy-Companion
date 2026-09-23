@@ -1,11 +1,15 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const srcRoot = path.join(root, "src");
-const routerPath = path.join(srcRoot, "routes", "AppRouter.tsx");
+const routerPath = path.join(srcRoot, "routes", "AuthenticatedRoutes.tsx");
+const appRouterPath = path.join(srcRoot, "routes", "AppRouter.tsx");
 const router = fs.readFileSync(routerPath, "utf8");
+const appRouter = fs.readFileSync(appRouterPath, "utf8");
+
+const PUBLIC_ROUTES = ["/privacy", "/delete-account", "/login", "/account-setup"];
 
 const LAYOUT_SPECIAL_ROUTES = [
   "/plans",
@@ -28,7 +32,8 @@ const LAYOUT_SPECIAL_ROUTES = [
 const routes = [];
 for (const match of router.matchAll(/<Route\s+path=["']([^"']+)["']/g)) routes.push(match[1]);
 
-const uniqueRoutes = [...new Set([...routes, ...LAYOUT_SPECIAL_ROUTES])];
+const declaredPublicRoutes = PUBLIC_ROUTES.filter((route) => appRouter.includes(`path="${route}"`));
+const uniqueRoutes = [...new Set([...routes, ...LAYOUT_SPECIAL_ROUTES, ...declaredPublicRoutes])];
 const dynamicRoutes = uniqueRoutes.filter((route) => /:[^/]+|\*/.test(route));
 const redirects = routes.filter((route) => {
   const start = router.indexOf(`<Route path="${route}"`);
@@ -73,7 +78,17 @@ if (unresolvedTargets.length) findings.push({ severity: "high", message: `${unre
 
 console.log(JSON.stringify({
   test: "app-route-coverage",
-  evidence: { declaredRoutes: uniqueRoutes.length, routerRouteOccurrences: routes.length, layoutSpecialRoutes: LAYOUT_SPECIAL_ROUTES.length, dynamicRoutes: dynamicRoutes.length, redirects: redirects.length, inspectedNavigationTargets: navigationTargets.length, unresolvedNavigationTargets: unresolvedTargets.length, allowedConditionalDuplicates: [...allowedConditionalDuplicates] },
+  evidence: {
+    declaredRoutes: uniqueRoutes.length,
+    routerRouteOccurrences: routes.length,
+    layoutSpecialRoutes: LAYOUT_SPECIAL_ROUTES.length,
+    dynamicRoutes: dynamicRoutes.length,
+    redirects: redirects.length,
+    inspectedNavigationTargets: navigationTargets.length,
+    unresolvedNavigationTargets: unresolvedTargets.length,
+    unresolvedTargets: unresolvedTargets.map(({ file, target }) => ({ file, target })),
+    allowedConditionalDuplicates: [...allowedConditionalDuplicates],
+  },
   status: findings.length ? "fail" : "pass",
   findings,
   limitation: "This is static route-contract evidence only. Layout-special routes are intentionally resolved by src/components/Layout/Layout.tsx before the nested Router outlet.",

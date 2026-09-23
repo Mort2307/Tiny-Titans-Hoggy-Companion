@@ -4,8 +4,11 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const matrix = fs.readFileSync(path.join(root, "src/intelligence/v50/titanV50FeatureMatrix.ts"), "utf8");
-const router = fs.readFileSync(path.join(root, "src/routes/AppRouter.tsx"), "utf8");
+const router = fs.readFileSync(path.join(root, "src/routes/AuthenticatedRoutes.tsx"), "utf8");
 const experience = fs.readFileSync(path.join(root, "src/pages/TitanFeatureExperience.tsx"), "utf8");
+const featureHook = fs.readFileSync(path.join(root, "src/hooks/useTitanFeatureExperience.ts"), "utf8");
+const featureConfig = fs.readFileSync(path.join(root, "src/config/titanFeatureExperience.ts"), "utf8");
+const animalIntelligence = fs.readFileSync(path.join(root, "src/intelligence/v50/animalIntelligenceEngine.ts"), "utf8");
 const geneticsWorkspace = fs.readFileSync(path.join(root, "src/components/TitanIntelligence/TitanGeneticsWorkspace.tsx"), "utf8");
 const animalMasterRecord = fs.readFileSync(path.join(root, "src/intelligence/v50/animalMasterRecordEngine.ts"), "utf8");
 const digitalTwin = fs.readFileSync(path.join(root, "src/intelligence/v50/titanDigitalTwinEngine.ts"), "utf8");
@@ -16,10 +19,10 @@ const ids = [...matrix.matchAll(/\{ id: (\d+), name:/g)].map((m) => Number(m[1])
 const findings = [];
 const canonicalRoute = "/titan-intelligence/feature/:featureId";
 if (!router.includes(canonicalRoute)) findings.push(`Router is missing canonical feature experience route: ${canonicalRoute}`);
-if (!experience.includes("featureById")) findings.push("Feature experience does not resolve through the canonical matrix.");
+if (!featureHook.includes("featureById") || !featureConfig.includes("featureById")) findings.push("Feature experience does not resolve through the canonical matrix.");
 if (!experience.includes("TitanGeneticsWorkspace") || !geneticsWorkspace.includes("searchGeneticsIntelligence")) findings.push("Feature experience is missing shared genetics intelligence integration.");
-if (!experience.includes("getGrowthInsight")) findings.push("Feature experience is missing animal/growth integration.");
-if (!experience.includes("buildAnimalMasterRecord") || !experience.includes("TitanAnimalMasterRecord") || !animalMasterRecord.includes("buildAnimalMasterRecord")) findings.push("Feature experience is missing connected animal Master Record integration.");
+if (!featureHook.includes("getGrowthInsight") || !animalIntelligence.includes("getGrowthInsight")) findings.push("Feature experience is missing animal/growth integration.");
+if (!featureHook.includes("buildAnimalMasterRecord") || !experience.includes("TitanAnimalMasterRecord") || !animalMasterRecord.includes("buildAnimalMasterRecord")) findings.push("Feature experience is missing connected animal Master Record integration.");
 if (!experience.includes("buildMissingDataFindings")) findings.push("Feature experience is missing husbandry evidence boundary integration.");
 if (!experience.includes("TitanDigitalTwinPanel") || !digitalTwin.includes("buildTitanDigitalTwin")) findings.push("Digital Twin runtime is not connected to the feature experience.");
 if (!experience.includes("TitanEcosystemPanel") || !ecosystem.includes("buildTitanEcosystemSnapshot") || !ecosystemPanel.includes("TitanEcosystemPanel")) findings.push("Bioactive / plant intelligence is missing from the feature experience.");
@@ -30,9 +33,10 @@ console.log(JSON.stringify({
   evidence: {
     canonicalFeatures: new Set(ids).size,
     dedicatedRoute: router.includes(canonicalRoute),
-    matrixResolution: experience.includes("featureById"),
+    matrixResolution: featureHook.includes("featureById") && featureConfig.includes("featureById"),
     sharedGeneticsWorkspace: experience.includes("TitanGeneticsWorkspace") && geneticsWorkspace.includes("searchGeneticsIntelligence"),
-    animalMasterRecord: experience.includes("TitanAnimalMasterRecord") && animalMasterRecord.includes("buildAnimalMasterRecord"),
+    animalGrowth: featureHook.includes("getGrowthInsight") && animalIntelligence.includes("getGrowthInsight"),
+    animalMasterRecord: featureHook.includes("buildAnimalMasterRecord") && experience.includes("TitanAnimalMasterRecord") && animalMasterRecord.includes("buildAnimalMasterRecord"),
     digitalTwin: experience.includes("TitanDigitalTwinPanel") && digitalTwin.includes("buildTitanDigitalTwin"),
     ecosystem: experience.includes("TitanEcosystemPanel") && ecosystem.includes("buildTitanEcosystemSnapshot"),
   },

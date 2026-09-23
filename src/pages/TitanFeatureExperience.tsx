@@ -1,13 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { TITAN_V50_FEATURES, type V50Feature } from "../intelligence/v50/titanV50FeatureMatrix";
+import { Link } from "react-router-dom";
 import { FEATURE_SUMMARIES } from "../intelligence/v50/titanV50Runtime";
-import { buildAnimalTimeline, buildBehaviourProfile, getGrowthInsight } from "../intelligence/v50/animalIntelligenceEngine";
-import { buildAnimalMasterRecord } from "../intelligence/v50/animalMasterRecordEngine";
 import { buildMissingDataFindings } from "../intelligence/v50/husbandryIntelligenceEngine";
-import { learningSignalsFromProgress, buildSpeciesMasterySnapshot } from "../intelligence/v50/titanLearningAdapter";
-import { getLearningProgress } from "../services/learningEngine";
-import type { ParentRecord } from "../intelligence/v50/geneticsJourneyEngine";
 import TitanMicroclimateTool from "../components/TitanIntelligence/TitanMicroclimateTool";
 import TitanDigitalTwinPanel from "../components/TitanIntelligence/TitanDigitalTwinPanel";
 import TitanEcosystemPanel from "../components/TitanIntelligence/TitanEcosystemPanel";
@@ -17,189 +10,18 @@ import TitanCommunityLearningPanel from "../components/TitanIntelligence/TitanCo
 import TitanExplanationModes from "../components/TitanIntelligence/TitanExplanationModes";
 import TitanKnowledgeGraphPanel from "../components/TitanIntelligence/TitanKnowledgeGraphPanel";
 import TitanLiveIntelligencePanel from "../components/TitanIntelligence/TitanLiveIntelligencePanel";
-import {
-  TitanFamilyTreePanel,
-  TitanShedDetectivePanel,
-  TitanHatchlingPanel,
-  TitanLearningMasteryPanel,
-  TitanResearchArchivePanel,
-} from "../components/TitanIntelligence/TitanAdvancedDomainPanels";
-import { useAuth } from "../context/useAuth";
-import { getUserSnakes } from "../services/snakeService";
-import type { Snake } from "../types/Snake";
+import { TitanFamilyTreePanel, TitanShedDetectivePanel, TitanHatchlingPanel, TitanLearningMasteryPanel, TitanResearchArchivePanel } from "../components/TitanIntelligence/TitanAdvancedDomainPanels";
+import useTitanFeatureExperience from "../hooks/useTitanFeatureExperience";
+import { TITAN_FEATURE_ICONS, geneticsFeatures, animalFeatures, husbandryFeatures, communityFeatures, learningFeatures, explanationFeatures, platformLiveFeatures } from "../config/titanFeatureExperience";
 import "../components/TitanIntelligence/TitanLiveIntelligencePanel.css";
 import "./TitanFeatureExperience.css";
 
-const icons: Record<number, string> = {
-  1: "🕵️", 2: "📷", 3: "🐉", 4: "🌳", 5: "⏳", 6: "🧠", 7: "📈", 8: "↔️", 9: "🧠", 10: "🌍",
-  11: "🧬", 12: "🛋️", 13: "🪪", 14: "🩺", 15: "🔎", 16: "🧪", 17: "🔥", 18: "⚠️", 19: "🌡️", 20: "🏠",
-  21: "🌱", 22: "🪴", 23: "📚", 24: "⚖️", 25: "🥚", 26: "🕵️", 27: "📊", 28: "🚪", 29: "🚨", 30: "🔔",
-  31: "🏗️", 32: "⚙️", 33: "🐣", 34: "📐", 35: "🏅", 36: "⚖️", 37: "🧬", 38: "📦", 39: "📓", 40: "🎓",
-  41: "🏆", 42: "🌍", 43: "🕸️", 44: "❓", 45: "📡", 46: "🧬", 47: "🌎", 48: "🔬", 49: "⚡", 50: "🤯",
-};
-
-const geneticsFeatures = new Set([1, 2, 3, 4, 5, 11, 16, 23, 24, 25, 34, 36, 37, 43, 46, 48]);
-const animalFeatures = new Set([6, 7, 8, 9, 13, 14, 15, 26, 27, 28, 29, 38, 39]);
-const husbandryFeatures = new Set([18, 19, 20, 21, 22, 30, 31, 32]);
-const communityFeatures = new Set([10, 35, 36, 42, 47]);
-const learningFeatures = new Set([40, 41, 48]);
-const explanationFeatures = new Set([12]);
-const platformLiveFeatures = new Set([17, 44, 45, 49, 50]);
-
-function featureById(id: string | undefined): V50Feature | undefined {
-  const numericId = Number(id);
-  return Number.isInteger(numericId) ? TITAN_V50_FEATURES.find((feature) => feature.id === numericId) : undefined;
-}
-
-function recordDate(value: unknown): string | number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") return value;
-  if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
-  if (value && typeof value === "object" && "toMillis" in value && typeof value.toMillis === "function") {
-    const millis = value.toMillis();
-    return Number.isFinite(millis) ? millis : "";
-  }
-  return "";
-}
-
-function recordNumber(value: unknown): number {
-  const numeric = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(numeric) ? numeric : 0;
-}
-
-function snakeRecords(snake: Snake) {
-  const structural = snake as Snake & Record<string, unknown>;
-  return {
-    weights: (snake.weightHistory ?? [])
-      .map((item) => {
-        const entry = item as Record<string, unknown>;
-        return { date: recordDate(entry.date ?? entry.recordedAt), grams: recordNumber(entry.weight ?? entry.grams) };
-      })
-      .filter((item) => item.grams > 0),
-    feedings: (snake.feedingHistory ?? []).map((item) => {
-      const entry = item as Record<string, unknown>;
-      return { date: recordDate(entry.date ?? entry.fedAt), label: String(entry.food ?? entry.type ?? "Feeding recorded") };
-    }),
-    sheds: (snake.shedHistory ?? []).map((item) => {
-      const entry = item as Record<string, unknown>;
-      return { date: recordDate(entry.date ?? entry.shedDate), label: String(entry.status ?? "Shed recorded") };
-    }),
-    behaviour: ((structural.behaviourHistory as unknown[]) ?? []).map((item) => {
-      const entry = item as Record<string, unknown>;
-      return {
-        date: recordDate(entry.date),
-        category: String(entry.category ?? ""),
-        label: String(entry.label ?? entry.behaviour ?? ""),
-      };
-    }),
-    health: (snake.healthHistory ?? []).map((item) => {
-      const entry = item as Record<string, unknown>;
-      return { date: recordDate(entry.date), label: String(entry.title ?? "Health record") };
-    }),
-  };
-}
-
-function buildFamilyRecords(snakes: readonly Snake[]): ParentRecord[] {
-  return snakes
-    .map((snake) => {
-      const structural = snake as Snake & Record<string, unknown>;
-      const parentIds = Array.isArray(structural.parentIds)
-        ? structural.parentIds.filter((value): value is string => typeof value === "string" && Boolean(value))
-        : [];
-      const motherId = typeof structural.motherId === "string" ? structural.motherId : undefined;
-      const fatherId = typeof structural.fatherId === "string" ? structural.fatherId : undefined;
-      return {
-        id: snake.id,
-        name: snake.name,
-        genes: [],
-        parentIds: [...parentIds, ...[motherId, fatherId].filter((value): value is string => Boolean(value))],
-      };
-    })
-    .map((record) => ({ ...record, parentIds: [...new Set(record.parentIds)] }));
-}
-
-function birthDateFor(snake: Snake): number | undefined {
-  const structural = snake as Snake & Record<string, unknown>;
-  const raw = structural.hatchDate ?? structural.birthDate ?? structural.dateOfBirth;
-  const date = recordDate(raw);
-  const millis = typeof date === "number" ? date : Date.parse(String(date));
-  return Number.isFinite(millis) && millis > 0 ? millis : undefined;
-}
-
 export default function TitanFeatureExperience() {
-  const { featureId } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const feature = featureById(featureId);
-  const [snakes, setSnakes] = useState<Snake[]>([]);
-  const [selectedSnakeId, setSelectedSnakeId] = useState("");
-  const [referenceNow] = useState(() => Date.now());
-  const [learningProgress, setLearningProgress] = useState(() => getLearningProgress(user?.uid));
-
-  useEffect(() => {
-    if (!user) return;
-    setLearningProgress(getLearningProgress(user.uid));
-    let active = true;
-    void getUserSnakes(user.uid)
-      .then((result) => {
-        if (!active) return;
-        setSnakes(result);
-        setSelectedSnakeId((current) => current || result[0]?.id || "");
-      })
-      .catch(() => {
-        if (active) setSnakes([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [user]);
-
-  const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId), [snakes, selectedSnakeId]);
-  const records = useMemo(() => (selectedSnake ? snakeRecords(selectedSnake) : null), [selectedSnake]);
-  const growth = useMemo(() => (records ? getGrowthInsight(records.weights) : null), [records]);
-  const timeline = useMemo(
-    () =>
-      records && selectedSnake
-        ? buildAnimalTimeline({
-            name: selectedSnake.name,
-            weights: records.weights,
-            feedings: records.feedings,
-            sheds: records.sheds,
-            behaviour: records.behaviour,
-            health: records.health,
-          })
-        : [],
-    [records, selectedSnake],
-  );
-  const behaviour = useMemo(() => (records ? buildBehaviourProfile(records.behaviour) : null), [records]);
-  const masterRecord = useMemo(
-    () =>
-      records && growth && behaviour && selectedSnake
-        ? buildAnimalMasterRecord({
-            growth,
-            behaviour,
-            timeline,
-            counts: {
-              weights: records.weights.length,
-              feedings: records.feedings.length,
-              sheds: records.sheds.length,
-              behaviour: records.behaviour.length,
-              health: records.health.length,
-              journal: timeline.length,
-              passport: timeline.length,
-            },
-          })
-        : null,
-    [records, growth, behaviour, timeline, selectedSnake],
-  );
-  const familyRecords = useMemo(() => buildFamilyRecords(snakes), [snakes]);
-  const ageDays = useMemo(() => {
-    if (!selectedSnake) return undefined;
-    const born = birthDateFor(selectedSnake);
-    return born ? Math.max(0, Math.floor((referenceNow - born) / 86400000)) : undefined;
-  }, [selectedSnake, referenceNow]);
-  const learningSignals = useMemo(() => learningSignalsFromProgress(learningProgress), [learningProgress]);
-  const mastery = useMemo(() => buildSpeciesMasterySnapshot(learningProgress), [learningProgress]);
+  const {
+    navigate, user, feature, snakes, selectedSnakeId, setSelectedSnakeId, learningProgress,
+    selectedSnake, records, growth, timeline, behaviour, masterRecord, familyRecords,
+    ageDays, learningSignals, mastery,
+  } = useTitanFeatureExperience();
 
   if (!feature) {
     return (
@@ -230,7 +52,7 @@ export default function TitanFeatureExperience() {
       <header className="titan-feature-hero">
         <div>
           <span className="titan-feature-id">Tiny Titans · Feature #{id}</span>
-          <h1>{icons[id] ?? "🧠"} {feature.name}</h1>
+          <h1>{TITAN_FEATURE_ICONS[id] ?? "🧠"} {feature.name}</h1>
           <p>{FEATURE_SUMMARIES[id] ?? "Connected intelligence capability."}</p>
         </div>
         <div className={`titan-feature-status titan-feature-status--${feature.status}`}>

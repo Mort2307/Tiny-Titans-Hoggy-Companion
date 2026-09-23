@@ -1,0 +1,43 @@
+import { collection,doc,getDoc,getDocs,type DocumentData,type QuerySnapshot } from "firebase/firestore";
+import { db } from "../firebase/config";
+import { getGlobalStats } from "./creatorService";
+import type { UserRecord, Snapshot, DrillRecord, ConsentState, TileKey } from "../types/creatorSnapshot";
+import { dateText, text, normalizedStatus } from "../lib/creatorSnapshotAnalytics";
+
+async function safeCollection(name:string,unavailableSources:string[]):Promise<QuerySnapshot<DocumentData>|null>{try{return await getDocs(collection(db,name));}catch{unavailableSources.push(name);return null;}}
+function docs(snapshot:QuerySnapshot<DocumentData>|null){return snapshot?.docs.map((item)=>({id:item.id,data:item.data() as UserRecord}))??[];}
+function displayName(user:UserRecord|undefined,fallback="Community contributor"){return text(user?.displayName??user?.name??user?.username??user?.firstName,fallback);}
+function ownerId(data:UserRecord){const candidate=data.userId??data.uid??data.ownerUid??data.authorUid??data.submittedBy??data.createdBy;return typeof candidate==="string"&&candidate?candidate:undefined;}
+function makeRecord(id:string,source:string,kind:string,data:UserRecord,usersById:Map<string,UserRecord>,explicitOwnerId?:string):DrillRecord{
+ const owner=explicitOwnerId??ownerId(data);const user=owner?usersById.get(owner):undefined;const status=data.archived===true?"Archived":text(data.status,"Recorded");const category=data.category??data.source??data.type;const date=dateText(data.createdAt??data.submittedAt??data.updatedAt??data.date??data.timestamp);const title=text(data.title??data.name??data.morphName??data.subject,kind+" record");const summary=text(data.summary??data.description??data.message??data.content,"No public summary recorded");const meta=[category?"Category: "+text(category):undefined,data.priority?"Priority: "+text(data.priority):undefined,data.source?"Area: "+text(data.source):undefined].filter((item):item is string=>Boolean(item));return {id,source,kind,ownerId:owner,ownerName:displayName(user),title,status,category:category?text(category):undefined,date,summary:summary.slice(0,220),meta};
+}
+export async function loadCreatorSnapshot():Promise<Snapshot>{
+ const unavailableSources:string[]=[];const stats=await getGlobalStats();
+ const [usersSnapshot,mentorsSnapshot,mentorApplications,mentorshipRequests,workspaces,posts,feedback,issues,morphSubmissions,approvedMorphImages,geneticsCalculations]=await Promise.all([
+  safeCollection("users",unavailableSources),safeCollection("mentors",unavailableSources),safeCollection("mentorApplications",unavailableSources),safeCollection("mentorshipRequests",unavailableSources),safeCollection("mentorshipWorkspaces",unavailableSources),safeCollection("communityPosts",unavailableSources),safeCollection("feedback",unavailableSources),safeCollection("issueReports",unavailableSources),safeCollection("morphImageSubmissions",unavailableSources),safeCollection("approvedMorphImages",unavailableSources),safeCollection("geneticsCalculations",unavailableSources)
+ ]);
+ const userDocs=docs(usersSnapshot);const users=userDocs.map((item)=>item.data);const userIds=userDocs.map((item)=>item.id);const usersById=new Map(userDocs.map((item)=>[item.id,item.data]));
+ const consentByUser:Record<string,ConsentState>={};let accepted=0,declined=0,unset=0,location=0,analytics=0;
+ await Promise.all(userIds.map(async(uid)=>{try{const privacySnapshot=await getDoc(doc(db,"users",uid,"settings","privacy"));if(!privacySnapshot.exists()){consentByUser[uid]={community:false,location:false,analytics:false,established:false};unset++;return;}const privacy=privacySnapshot.data() as UserRecord;const state={community:privacy.communityHusbandryData===true,location:privacy.communityLocation===true,analytics:privacy.anonymousAnalytics===true,established:true};consentByUser[uid]=state;if(state.community)accepted++;else declined++;if(state.location)location++;if(state.analytics)analytics++;}catch{consentByUser[uid]={community:false,location:false,analytics:false,established:false};unset++;}}));
+ const mentorRecords=docs(mentorsSnapshot),applicationRecords=docs(mentorApplications),requestRecords=docs(mentorshipRequests),workspaceRecords=docs(workspaces),postRecords=docs(posts),feedbackRecords=docs(feedback),issueRecords=docs(issues),morphRecords=docs(morphSubmissions),approvedRecords=docs(approvedMorphImages),geneticsRecords=docs(geneticsCalculations);
+ const communityEligibleUsers=userDocs.filter(({id})=>consentByUser[id]?.community);
+ const records:Record<TileKey,DrillRecord[]>={
+  users:userDocs.map(({id,data})=>makeRecord(id,"users","Account",data,usersById,id)),
+  snakes:communityEligibleUsers.map(({id,data})=>makeRecord(id,"users","Contributing keeper",data,usersById,id)),
+  husbandry:communityEligibleUsers.map(({id,data})=>makeRecord(id,"users","Husbandry contributor",data,usersById,id)),
+  community:[...postRecords.map(({id,data})=>makeRecord(id,"communityPosts","Community post",data,usersById)),...feedbackRecords.map(({id,data})=>makeRecord(id,"feedback","Feedback",data,usersById)),...issueRecords.map(({id,data})=>makeRecord(id,"issueReports","Bug / issue",data,usersById)),...morphRecords.map(({id,data})=>makeRecord(id,"morphImageSubmissions","Morph submission",data,usersById))],
+  mentorship:[...mentorRecords.map(({id,data})=>makeRecord(id,"mentors","Mentor",data,usersById)),...applicationRecords.map(({id,data})=>makeRecord(id,"mentorApplications","Mentor application",data,usersById)),...requestRecords.map(({id,data})=>makeRecord(id,"mentorshipRequests","Mentorship request",data,usersById)),...workspaceRecords.map(({id,data})=>makeRecord(id,"mentorshipWorkspaces","Mentorship workspace",data,usersById))],
+  learning:userDocs.map(({id,data})=>makeRecord(id,"users","Learning participant",data,usersById,id)),
+  genetics:[...geneticsRecords.map(({id,data})=>makeRecord(id,"geneticsCalculations","Genetics calculation",data,usersById)),...morphRecords.map(({id,data})=>makeRecord(id,"morphImageSubmissions","Morph submission",data,usersById)),...approvedRecords.map(({id,data})=>makeRecord(id,"approvedMorphImages","Approved morph image",data,usersById))],
+  operations:[...issueRecords.map(({id,data})=>makeRecord(id,"issueReports","Bug / issue",data,usersById)),...feedbackRecords.map(({id,data})=>makeRecord(id,"feedback","Feedback",data,usersById)),...postRecords.map(({id,data})=>makeRecord(id,"communityPosts","Community post",data,usersById)),...morphRecords.map(({id,data})=>makeRecord(id,"morphImageSubmissions","Morph submission",data,usersById))],
+  data:communityEligibleUsers.map(({id,data})=>makeRecord(id,"users","Data contributor",data,usersById,id)),
+  growth:userDocs.map(({id,data})=>makeRecord(id,"users","Account activity",data,usersById,id)),
+ };
+ const mentorData=mentorRecords.map((item)=>item.data),applicationData=applicationRecords.map((item)=>item.data),requestData=requestRecords.map((item)=>item.data),workspaceData=workspaceRecords.map((item)=>item.data),issueData=issueRecords.map((item)=>item.data),morphData=morphRecords.map((item)=>item.data),issueDrillRecords=records.operations.filter((record)=>record.source==="issueReports");
+ return {
+  stats:{...stats,geneticsCalculations:geneticsRecords.length||stats.geneticsCalculations},users,userIds,consentByUser,consent:{accepted,declined,unset,location,analytics},
+  mentors:{published:mentorData.length,accepting:mentorData.filter((item)=>item.acceptingNewMentees===true||item.acceptingRequests===true).length,applications:applicationData.length,pending:applicationData.filter((item)=>["pending","Pending"].includes(text(item.status,""))).length,requests:requestData.length,activeRequests:requestData.filter((item)=>["sent","accepted","active","Sent","Accepted","Active"].includes(text(item.status,""))).length,workspaces:workspaceData.length,activeWorkspaces:workspaceData.filter((item)=>normalizedStatus(item.status)==="active").length},
+  community:{posts:postRecords.length,feedback:feedbackRecords.length,issues:issueData.length,activeIssues:issueDrillRecords.filter((record)=>!["resolved","closed","archived","complete","completed"].includes(normalizedStatus(record.status))).length,morphSubmissions:morphData.length,pendingMorphs:morphData.filter((item)=>["pending","needsinfo"].includes(normalizedStatus(item.status))).length},
+  genetics:{calculations:geneticsRecords.length||stats.geneticsCalculations,approvedMorphImages:approvedRecords.length},records,unavailableSources:[...new Set(unavailableSources)]
+ };
+}

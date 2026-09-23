@@ -1,4 +1,4 @@
-# Tiny Titans Reptile Companion
+# Tiny Titans Keeper Companion
 
 ## Final Master Build Gate
 
@@ -12,4 +12,4 @@ The final CI build gate checks:
 4. Functions dependency installation
 5. JavaScript syntax validation for all Functions source files
 
-The full lint audit also uploads the exact ESLint output as a CI artifact, so a green lint gate is evidence of `0` warnings rather than hidden output.
+Live app: https://tinytitanskeeper.web.app\n\nThe full lint audit also uploads the exact ESLint output as a CI artifact, so a green lint gate is evidence of `0` warnings rather than hidden output.

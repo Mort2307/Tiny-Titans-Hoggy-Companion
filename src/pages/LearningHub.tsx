@@ -46,9 +46,9 @@ export default function LearningHub() {
 
       <section className="welcome-card">
         <h2>🐍 Learn from what you actually do</h2>
-        <p>Tiny Titans connects learning with your real husbandry journey. As your records grow, the app can use your knowledge progress alongside your snake data to surface more useful learning.</p>
+        <p>Tiny Titans connects learning with your real husbandry journey. As your records grow, the app can use your knowledge progress alongside your animal data to surface more useful learning.</p>
         <div className="button-row">
-          <Link className="secondary-button" to="/snakes">View My Snakes</Link>
+          <Link className="secondary-button" to="/snakes">View My Animals</Link>
           <Link className="secondary-button" to="/community">Visit Community Hub</Link>
         </div>
       </section>

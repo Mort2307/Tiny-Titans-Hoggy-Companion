@@ -3,22 +3,22 @@
  * Presentation only: no husbandry, genetics, intelligence or account logic.
  */
 :root{
-  --tt-v3-bg:#0b0910;
-  --tt-v3-surface:#15111b;
-  --tt-v3-surface-2:#1b1622;
-  --tt-v3-surface-3:#241d2e;
-  --tt-v3-border:rgba(198,171,220,.14);
-  --tt-v3-border-strong:rgba(198,171,220,.25);
-  --tt-v3-text:#f7f4f8;
-  --tt-v3-soft:#d0c7d5;
-  --tt-v3-muted:#978da1;
-  --tt-v3-purple:#a66bd2;
-  --tt-v3-purple-strong:#bf8be7;
-  --tt-v3-gold:#e2b66d;
+  --tt-v3-bg:#140022;
+  --tt-v3-surface:#26083d;
+  --tt-v3-surface-2:#32104f;
+  --tt-v3-surface-3:#401660;
+  --tt-v3-border:rgba(0,174,255,.28);
+  --tt-v3-border-strong:rgba(0,174,255,.52);
+  --tt-v3-text:#fff3cf;
+  --tt-v3-soft:#eadff0;
+  --tt-v3-muted:#d6a94a;
+  --tt-v3-purple:#6f24b8;
+  --tt-v3-purple-strong:#8c42d0;
+  --tt-v3-gold:#f5b642;
   --tt-v3-gold-strong:#f0ca88;
-  --tt-v3-blue:#69b6d4;
-  --tt-v3-teal:#55afa7;
-  --tt-v3-success:#63c89f;
+  --tt-v3-blue:#00aeff;
+  --tt-v3-teal:#10b8ad;
+  --tt-v3-success:#4ade80;
   --tt-v3-danger:#e77b7b;
   --tt-v3-radius:15px;
   --tt-v3-radius-sm:11px;
@@ -30,7 +30,7 @@ body{
   background:
     radial-gradient(circle at 5% -12%,rgba(166,107,210,.11),transparent 32rem),
     radial-gradient(circle at 96% 0%,rgba(105,182,212,.045),transparent 28rem),
-    linear-gradient(180deg,#0b0910 0%,#0d0b11 100%);
+    linear-gradient(180deg,#170025 0%,#12001f 55%,#0e0018 100%);
   color:var(--tt-v3-text);
   text-rendering:optimizeLegibility;
   -webkit-font-smoothing:antialiased;
@@ -87,7 +87,7 @@ body{
   min-width:0;
   border:1px solid var(--tt-v3-border)!important;
   border-radius:var(--tt-v3-radius)!important;
-  background:linear-gradient(145deg,rgba(36,29,46,.82),rgba(17,13,22,.97))!important;
+  background:linear-gradient(145deg,rgba(64,22,96,.82),rgba(27,5,48,.94))!important;
   box-shadow:0 12px 32px rgba(0,0,0,.16)!important;
 }
 .app-content :where(
@@ -111,7 +111,7 @@ body{
   padding:.68rem .82rem;
   border:1px solid var(--tt-v3-border-strong)!important;
   border-radius:var(--tt-v3-radius-sm)!important;
-  background:rgba(10,8,13,.72)!important;
+  background:rgba(20,0,34,.72)!important;
   color:var(--tt-v3-text)!important;
   line-height:1.35;
 }
@@ -154,8 +154,8 @@ body{
 
 /* Navigation and shell: tidy, quiet, obvious active state. */
 .app-navigation{
-  background:linear-gradient(180deg,rgba(26,20,32,.98),rgba(13,10,16,.99))!important;
-  border-right:1px solid rgba(198,171,220,.12)!important;
+  background:linear-gradient(180deg,rgba(38,8,61,.98),rgba(20,0,34,.99))!important;
+  border-right:1px solid rgba(0,174,255,.20)!important;
   box-shadow:12px 0 38px rgba(0,0,0,.18)!important;
 }
 .app-navigation-link{
@@ -169,12 +169,12 @@ body{
 .app-navigation-link:hover{background:rgba(166,107,210,.055)!important;border-color:rgba(198,171,220,.12)!important;color:#fff!important;}
 .app-navigation-link.active{background:linear-gradient(90deg,rgba(166,107,210,.20),rgba(105,182,212,.035))!important;border-color:rgba(191,139,231,.21)!important;box-shadow:inset 3px 0 0 var(--tt-v3-purple-strong),0 8px 22px rgba(0,0,0,.09)!important;color:#fff!important;}
 .app-navigation-link.active .app-navigation-icon{color:var(--tt-v3-gold)!important;}
-.app-header{background:rgba(12,10,15,.88)!important;border-bottom:1px solid rgba(198,171,220,.11)!important;backdrop-filter:blur(16px);}
+.app-header{background:rgba(20,0,34,.90)!important;border-bottom:1px solid rgba(0,174,255,.22)!important;backdrop-filter:blur(16px);}
 
 /* Data tables and repeated lists. */
-.app-content :where(table){width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--tt-v3-border);border-radius:14px;background:rgba(18,14,23,.70);}
+.app-content :where(table){width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--tt-v3-border);border-radius:14px;background:rgba(38,8,61,.70);}
 .app-content :where(th,td){padding:.72rem .78rem;border-bottom:1px solid rgba(255,255,255,.055);text-align:left;}
-.app-content :where(th){color:var(--tt-v3-muted);background:rgba(255,255,255,.02);font-size:.72rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase;}
+.app-content :where(th){color:var(--tt-v3-muted);background:rgba(255,255,255,.035);font-size:.72rem;font-weight:850;letter-spacing:.07em;text-transform:uppercase;}
 .app-content tr:last-child :where(th,td){border-bottom:0;}
 
 /* Status surfaces. */
@@ -198,7 +198,7 @@ body{
 .tt-tracker-button.secondary{background:rgba(255,255,255,.035);}
 .tt-tracker-button.danger{background:rgba(231,123,123,.07);}
 
-/* My Snakes: polished without changing the room or snake functionality. */
+/* My Animals: polished without changing the room or snake functionality. */
 .my-snakes-page-header{margin-bottom:16px;}
 .my-snakes-add-action{border:1px solid rgba(191,139,231,.34)!important;background:rgba(166,107,210,.10)!important;color:var(--tt-v3-text)!important;}
 .my-snakes-view-switch{border-color:rgba(198,171,220,.14)!important;background:rgba(18,14,23,.92)!important;box-shadow:0 8px 24px rgba(0,0,0,.12)!important;}

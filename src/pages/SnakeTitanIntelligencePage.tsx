@@ -62,13 +62,13 @@ export default function SnakeTitanIntelligencePage() {
   const intelligence = useMemo(() => record ? buildSnakeIntelligence(record) : null, [record]);
 
   if (!user) return <main className="page-container"><section className="master-shell"><h1>Titan Intelligence</h1><p>You must be logged in to view individual intelligence.</p></section></main>;
-  if (!snakeId) return <main className="page-container"><section className="master-shell"><h1>Titan Intelligence</h1><p>No snake was selected.</p><Link to="/snakes">Back to My Snakes</Link></section></main>;
+  if (!snakeId) return <main className="page-container"><section className="master-shell"><h1>Titan Intelligence</h1><p>No snake was selected.</p><Link to="/snakes">Back to My Animals</Link></section></main>;
   if (access === null || loadedKey !== key) return <main className="page-container"><section className="master-shell"><p role="status">Reading this Titan's intelligence access and recorded history…</p></section></main>;
   if (!access) return <main className="page-container"><section className="master-shell">
     <header className="master-hero"><div><p className="master-eyebrow">🧠 POWERHOUSE INTELLIGENCE</p><h1>Full Intelligence is optional</h1><p>Your core tracking still works normally. Advanced Titan Intelligence only runs when you choose the relevant optional data-sharing setting.</p></div><Link className="master-back" to={`/snakes/${snakeId}`}>Snake profile</Link></header>
     <section className="tt-intelligence-panel tt-intelligence-locked"><p className="tt-intelligence-kicker">YOUR CHOICE</p><h2 className="tt-intelligence-title">Intelligence access is currently off</h2><p className="tt-intelligence-meta">Tiny Titans will not calculate or display the deeper individual intelligence layer until you enable it in Data &amp; Privacy.</p><Link className="tt-intelligence-action" to="/account/data-privacy">Enable Intelligence in Data &amp; Privacy →</Link></section>
   </section></main>;
-  if (error || !record || !intelligence) return <main className="page-container"><section className="master-shell"><h1>Unable to load Titan Intelligence</h1><p role="alert">{error || "No individual record is available."}</p><Link to="/snakes">Back to My Snakes</Link></section></main>;
+  if (error || !record || !intelligence) return <main className="page-container"><section className="master-shell"><h1>Unable to load Titan Intelligence</h1><p role="alert">{error || "No individual record is available."}</p><Link to="/snakes">Back to My Animals</Link></section></main>;
 
   const { snake, overview } = record;
   const confidenceDetails = [

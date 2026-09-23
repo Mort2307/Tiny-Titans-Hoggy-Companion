@@ -32,29 +32,92 @@ async function resolveDataOwnerUid(uid) {
 
 async function listAnimals(uid) {
   const ownerUid = await resolveDataOwnerUid(uid);
-  const snapshot = await db.collection("users").doc(ownerUid).collection("snakes").get();
-  return snapshot.docs.map((doc) => {
+  const [universalSnapshot, legacySnapshot] = await Promise.all([
+    db.collection("users").doc(ownerUid).collection("animals").get(),
+    db.collection("users").doc(ownerUid).collection("snakes").get(),
+  ]);
+
+  const universal = universalSnapshot.docs.map((doc) => {
     const data = doc.data() || {};
     return {
-      id: doc.id,
+      id: `animal:${doc.id}`,
+      recordId: doc.id,
+      recordSource: "universal",
       name: String(data.name || "Unnamed animal"),
-      species: String(data.species || data.speciesName || "Unknown species"),
+      species: String(data.speciesCommonName || data.scientificName || "Species awaiting identification"),
+      scientificName: data.scientificName ? String(data.scientificName) : undefined,
+      animalGroup: data.animalGroup ? String(data.animalGroup) : undefined,
+      morph: data.morphOrColour ? String(data.morphOrColour) : undefined,
+      sex: data.sex ? String(data.sex) : undefined,
+      status: data.status ? String(data.status) : undefined,
+    };
+  });
+
+  const legacy = legacySnapshot.docs.map((doc) => {
+    const data = doc.data() || {};
+    return {
+      id: `snake:${doc.id}`,
+      recordId: doc.id,
+      recordSource: "legacy-snake",
+      name: String(data.name || "Unnamed animal"),
+      species: String(data.species || data.speciesName || "Species awaiting identification"),
+      scientificName: data.universalScientificName ? String(data.universalScientificName) : undefined,
+      animalGroup: "reptile",
       morph: data.morph ? String(data.morph) : undefined,
       sex: data.sex ? String(data.sex) : undefined,
       status: data.status ? String(data.status) : undefined,
     };
-  }).sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  return [...universal, ...legacy].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function parseAnimalToolId(animalId) {
+  const raw = String(animalId || "").trim();
+  if (raw.startsWith("animal:")) return { source: "universal", id: raw.slice(7) };
+  if (raw.startsWith("snake:")) return { source: "legacy-snake", id: raw.slice(6) };
+  return { source: "auto", id: raw };
 }
 
 async function getAnimalProfile(uid, animalId) {
   const ownerUid = await resolveDataOwnerUid(uid);
-  const snapshot = await db.collection("users").doc(ownerUid).collection("snakes").doc(animalId).get();
+  const target = parseAnimalToolId(animalId);
+
+  if (target.source === "universal" || target.source === "auto") {
+    const snapshot = await db.collection("users").doc(ownerUid).collection("animals").doc(target.id).get();
+    if (snapshot.exists) {
+      const data = snapshot.data() || {};
+      return {
+        id: `animal:${snapshot.id}`,
+        recordId: snapshot.id,
+        recordSource: "universal",
+        name: String(data.name || "Unnamed animal"),
+        species: String(data.speciesCommonName || data.scientificName || "Species awaiting identification"),
+        scientificName: data.scientificName ? String(data.scientificName) : undefined,
+        animalGroup: data.animalGroup ? String(data.animalGroup) : undefined,
+        morph: data.morphOrColour ? String(data.morphOrColour) : undefined,
+        sex: data.sex ? String(data.sex) : undefined,
+        birthDate: serialise(data.hatchOrBirthDate),
+        acquisitionDate: serialise(data.acquisitionDate),
+        status: data.status ? String(data.status) : undefined,
+        notes: data.notes ? String(data.notes).slice(0, 1200) : undefined,
+        tags: Array.isArray(data.tags) ? data.tags.slice(0, 30) : [],
+      };
+    }
+    if (target.source === "universal") return null;
+  }
+
+  const snapshot = await db.collection("users").doc(ownerUid).collection("snakes").doc(target.id).get();
   if (!snapshot.exists) return null;
   const data = snapshot.data() || {};
   return {
-    id: snapshot.id,
+    id: `snake:${snapshot.id}`,
+    recordId: snapshot.id,
+    recordSource: "legacy-snake",
     name: String(data.name || "Unnamed animal"),
-    species: String(data.species || data.speciesName || "Unknown species"),
+    species: String(data.species || data.speciesName || "Species awaiting identification"),
+    scientificName: data.universalScientificName ? String(data.universalScientificName) : undefined,
+    animalGroup: "reptile",
     morph: data.morph ? String(data.morph) : undefined,
     sex: data.sex ? String(data.sex) : undefined,
     birthDate: serialise(data.birthDate),
@@ -66,7 +129,22 @@ async function getAnimalProfile(uid, animalId) {
 
 async function getAnimalRecords(uid, animalId) {
   const ownerUid = await resolveDataOwnerUid(uid);
-  const base = db.collection("users").doc(ownerUid).collection("snakes").doc(animalId);
+  const target = parseAnimalToolId(animalId);
+
+  if (target.source === "universal") {
+    const snapshot = await db.collection("users").doc(ownerUid).collection("animals").doc(target.id).get();
+    if (!snapshot.exists) return null;
+    return { weights: [], feedings: [], sheds: [], health: [], behaviours: [], dataSource: "universal-animal-record", note: "The universal animal record exists; detailed tracker history is only available where a linked tracker service has recorded it." };
+  }
+
+  if (target.source === "auto") {
+    const universalSnapshot = await db.collection("users").doc(ownerUid).collection("animals").doc(target.id).get();
+    if (universalSnapshot.exists) {
+      return { weights: [], feedings: [], sheds: [], health: [], behaviours: [], dataSource: "universal-animal-record", note: "The universal animal record exists; detailed tracker history is only available where a linked tracker service has recorded it." };
+    }
+  }
+
+  const base = db.collection("users").doc(ownerUid).collection("snakes").doc(target.id);
   const snapshots = await Promise.all(TRACKERS.map((name) => base.collection(name).get()));
   const records = {};
   snapshots.forEach((snapshot, index) => {
@@ -79,6 +157,7 @@ async function getAnimalIntelligenceSnapshot(uid, animalId) {
   const profile = await getAnimalProfile(uid, animalId);
   if (!profile) return null;
   const records = await getAnimalRecords(uid, animalId);
+  if (!records) return null;
   const weights = (records.weights || [])
     .map((item) => ({ date: Date.parse(String(item.date || item.recordedAt || item.createdAt || "")), grams: Number(item.grams ?? item.weightGrams ?? item.weight ?? NaN) }))
     .filter((item) => Number.isFinite(item.date) && Number.isFinite(item.grams) && item.grams > 0)

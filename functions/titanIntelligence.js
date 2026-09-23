@@ -10,6 +10,45 @@ const MAX_QUESTION_LENGTH = 6000;
 const MAX_HISTORY_ITEMS = 10;
 const VALID_WORKSPACES = new Set(["personal", "rescue", "business", "seller"]);
 
+
+function sanitiseSpeciesReference(value) {
+  if (!value || typeof value !== "object") return null;
+  const cleanText = (input, max = 700) => typeof input === "string" ? input.trim().slice(0, max) : "";
+  const cleanList = (input, maxItems = 24, maxLength = 500) => Array.isArray(input) ? input.filter((item) => typeof item === "string").slice(0, maxItems).map((item) => item.slice(0, maxLength)) : [];
+  const husbandry = Array.isArray(value.husbandry) ? value.husbandry.slice(0, 16).flatMap((item) => item && typeof item === "object" ? [{
+    label: cleanText(item.label, 120),
+    guidance: cleanText(item.guidance, 900),
+    priority: cleanText(item.priority, 40),
+    basis: cleanText(item.basis, 80),
+    caveat: cleanText(item.caveat, 900),
+  }] : []) : [];
+  const healthWatch = Array.isArray(value.healthWatch) ? value.healthWatch.slice(0, 10).flatMap((item) => item && typeof item === "object" ? [{
+    concern: cleanText(item.concern, 140),
+    watchFor: cleanList(item.watchFor, 8, 180),
+    riskFactors: cleanList(item.riskFactors, 8, 180),
+    prevention: cleanText(item.prevention, 700),
+    priority: cleanText(item.priority, 40),
+    basis: cleanText(item.basis, 80),
+    caveat: cleanText(item.caveat, 900),
+  }] : []) : [];
+  return {
+    id: cleanText(value.id, 160),
+    commonName: cleanText(value.commonName, 180),
+    scientificName: cleanText(value.scientificName, 200),
+    animalGroup: cleanText(value.animalGroup, 60),
+    family: cleanText(value.family, 100),
+    genus: cleanText(value.genus, 100),
+    lifestyle: cleanList(value.lifestyle, 8, 60),
+    dietaryGuild: cleanText(value.dietaryGuild, 80),
+    careStatus: cleanText(value.careStatus, 60),
+    careResolution: cleanList(value.careResolution, 8, 160),
+    husbandry,
+    healthBaseline: cleanList(value.healthBaseline, 10, 600),
+    healthWatch,
+    unresolved: cleanList(value.unresolved, 20, 500),
+  };
+}
+
 function sanitiseHistory(history) {
   if (!Array.isArray(history)) return [];
   return history.slice(-MAX_HISTORY_ITEMS).flatMap((item) => {
@@ -19,9 +58,10 @@ function sanitiseHistory(history) {
   });
 }
 
-function historyPlusQuestion(history, question, animalId) {
-  const context = animalId ? `\nSelected Tiny Titans animal ID: ${animalId}\nUse this ID only with the authorised Tiny Titans tools; do not invent another.` : "";
-  return [...sanitiseHistory(history), { role: "user", parts: [{ text: `${question}${context}` }] }];
+function historyPlusQuestion(history, question, animalId, speciesReference) {
+  const animalContext = animalId ? `\nSelected Tiny Titans animal ID: ${animalId}\nUse this ID only with the authorised Tiny Titans tools; do not invent another.` : "";
+  const speciesContext = speciesReference ? `\n\nAPP_CATALOGUE_CONTEXT — canonical Tiny Titans species reference snapshot:\n${JSON.stringify(speciesReference)}\nPreserve evidence basis, caveats and unresolved gaps from this context.` : "";
+  return [...sanitiseHistory(history), { role: "user", parts: [{ text: `${question}${animalContext}${speciesContext}` }] }];
 }
 
 exports.askTitan = onCall({ region: "europe-west2", secrets: [GEMINI_API_KEY], timeoutSeconds: 90, memory: "512MiB" }, async (request) => {
@@ -30,6 +70,7 @@ exports.askTitan = onCall({ region: "europe-west2", secrets: [GEMINI_API_KEY], t
   const question = String(request.data?.question || "").trim();
   const workspaceKind = VALID_WORKSPACES.has(String(request.data?.workspaceKind || "personal")) ? String(request.data?.workspaceKind || "personal") : "personal";
   const animalId = typeof request.data?.animalId === "string" && request.data.animalId.trim() ? request.data.animalId.trim().slice(0, 160) : undefined;
+  const speciesReference = sanitiseSpeciesReference(request.data?.speciesReference);
   if (!question) throw new HttpsError("invalid-argument", "Enter a question for Titan Intelligence.");
   if (question.length > MAX_QUESTION_LENGTH) throw new HttpsError("invalid-argument", `Questions are limited to ${MAX_QUESTION_LENGTH} characters.`);
 
@@ -44,7 +85,7 @@ exports.askTitan = onCall({ region: "europe-west2", secrets: [GEMINI_API_KEY], t
     throw error;
   }
 
-  const contents = historyPlusQuestion(request.data?.history, question, animalId);
+  const contents = historyPlusQuestion(request.data?.history, question, animalId, speciesReference);
   const toolCalls = [];
   const webSources = [];
   let responsePayload;

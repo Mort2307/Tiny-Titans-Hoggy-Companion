@@ -1,5 +1,5 @@
 import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
-import { app } from "../firebase/config";
+import { app } from "../../src/firebase/config";
 
 const DEFAULT_MODEL = "gemini-3.8-flash";
 

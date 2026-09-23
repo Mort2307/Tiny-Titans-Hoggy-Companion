@@ -1,115 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
-import { getSnakeMasterRecord, type SnakeMasterRecord } from "../services/snakeMasterRecord";
-import { buildSnakeIntelligence, type SnakeInsight } from "../services/snakeIntelligenceService";
-import { getCanonicalBreedingTimeline } from "../services/canonicalBreedingTimeline";
-import { deleteSnakeWeight } from "../services/weightService";
-import { deleteSnakeFeeding } from "../services/feedingService";
-import { deleteSnakeShed } from "../services/shedService";
-import { useUnits } from "../context/UnitContextValue";
+import { Link } from "react-router-dom";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 import TitanAnimalIntelligencePanel from "../components/TitanIntelligence/TitanAnimalIntelligencePanel";
-import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../utils/feedingSummary";
+import { useSnakeMasterRecord } from "../hooks/useSnakeMasterRecord";
+import { confidenceExplanation,formatMasterRecordDate,insightDestination,insightIconName,timelineActionLabel,timelineDestination } from "../lib/snakeMasterRecord";
 import "../styles/SnakeMasterRecord.css";
 
 function Metric({ label, value, detail }: { label: string; value: string; detail?: string }) { return <article className="master-metric"><span>{label}</span><strong>{value}</strong>{detail && <small>{detail}</small>}</article>; }
-function formatDate(value: string | null) { if (!value) return "—"; const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(); }
-function confidenceExplanation(value: SnakeMasterRecord["overview"]["confidence"]["overall"], area: string, count: number, target: number) { if (value === "Insufficient") return `No ${area.toLowerCase()} history is recorded yet. Add records to start building this individual baseline.`; if (count >= target) return `Based on ${count} ${area.toLowerCase()} records. This is enough history for a stronger individual baseline.`; return `Based on ${count} ${area.toLowerCase()} record${count === 1 ? "" : "s"}. ${target - count} more will strengthen this baseline.`; }
-function timelineDestination(snakeId: string, type: string, recordId?: string) { const encoded = encodeURIComponent(recordId ?? ""); if (type === "Weight") return `/snakes/${snakeId}/weights?record=${encoded}`; if (type === "Feeding") return `/snakes/${snakeId}/feeding?record=${encoded}`; if (type === "Shed") return `/snakes/${snakeId}/shedding?record=${encoded}`; if (type === "Health") return `/health/${snakeId}?record=${encoded}`; if (type === "Behaviour") return `/behaviour/${snakeId}?record=${encoded}`; return `/snakes/${snakeId}`; }
-function insightDestination(snakeId: string, insight: SnakeInsight) { if (insight.category === "weight") return `/snakes/${snakeId}/weights`; if (insight.category === "feeding") return `/snakes/${snakeId}/feeding`; if (insight.category === "shedding") return `/snakes/${snakeId}/shedding`; if (insight.category === "behaviour") return `/behaviour/${snakeId}`; if (insight.category === "health") return `/health/${snakeId}`; return `/snakes/${snakeId}`; }
-function timelineActionLabel(type: string) { return ["Weight", "Feeding", "Shed", "Health", "Behaviour"].includes(type) ? "Open exact record →" : "View reptile profile →"; }
-function insightIcon(tone: SnakeInsight["tone"]) { return tone === "attention" ? "⚠️" : tone === "positive" ? "📈" : "📊"; }
 
 export default function SnakeMasterRecord() {
-  const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
-  const { user } = useAuth();
-  const { isImperial, formatWeight, formatLength } = useUnits();
-  const [record, setRecord] = useState<SnakeMasterRecord | null>(null);
-  const [loadedRecordKey, setLoadedRecordKey] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
-  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
-  const recordKey = user && id ? `${user.uid}:${id}` : null;
-  const loading = Boolean(recordKey && loadedRecordKey !== recordKey);
-
-  const loadRecord = useCallback(async () => {
-    if (!user || !id) return;
-    const [result, breedingTimeline] = await Promise.all([getSnakeMasterRecord(user.uid, id), getCanonicalBreedingTimeline(user.uid, id)]);
-    if (!result) { setRecord(null); setError(""); return; }
-    const existingIds = new Set(result.timeline.map((event) => event.id));
-    const mergedTimeline = [...result.timeline, ...breedingTimeline.filter((event) => !existingIds.has(event.id))].sort((a, b) => b.date.localeCompare(a.date));
-    setRecord({ ...result, timeline: mergedTimeline });
-    setError("");
-  }, [user, id]);
-
-  useEffect(() => {
-    if (!user || !id) return;
-    let cancelled = false;
-    void loadRecord().catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load this reptile overview."); }).finally(() => { if (!cancelled) setLoadedRecordKey(recordKey); });
-    return () => { cancelled = true; };
-  }, [user, id, recordKey, loadRecord]);
-
-  useEffect(() => {
-    const target = searchParams.get("event");
-    if (!target || !record) return;
-    const frame = window.requestAnimationFrame(() => {
-      const element = document.getElementById(`timeline-event-${target}`);
-      if (!element) return;
-      element.scrollIntoView({ behavior: "smooth", block: "center" });
-      setHighlightedEventId(target);
-      window.setTimeout(() => setHighlightedEventId((current) => current === target ? null : current), 2200);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [record, searchParams]);
-
-  const intelligence = useMemo(() => record ? buildSnakeIntelligence(record) : null, [record]);
-
-  const handleDeleteTimelineRecord = async (event: SnakeMasterRecord["timeline"][number]) => {
-    if (!user || !id || !event.relatedRecordId || !["Weight", "Feeding", "Shed"].includes(event.type)) return;
-    const label = `${event.title}${event.date ? ` on ${formatDate(event.date)}` : ""}`;
-    if (!window.confirm(`Delete this ${event.type.toLowerCase()} record?\n\n${label}\n\nThis permanently removes the individual record and updates this reptile's Master Record. This cannot be undone.`)) return;
-    setDeletingRecordId(event.id);
-    setError("");
-    try {
-      if (event.type === "Weight") await deleteSnakeWeight(user.uid, id, event.relatedRecordId);
-      else if (event.type === "Feeding") await deleteSnakeFeeding(user.uid, id, event.relatedRecordId);
-      else await deleteSnakeShed(user.uid, id, event.relatedRecordId);
-      await loadRecord();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : `Unable to delete this ${event.type.toLowerCase()} record.`);
-    } finally {
-      setDeletingRecordId(null);
-    }
-  };
-
-  if (loading) return <main className="page-container"><section className="master-shell"><p role="status">Loading individual record…</p></section></main>;
-  if (error && !record) return <main className="page-container"><section className="master-shell"><h1>Unable to load record</h1><p role="alert">{error}</p><Link to={`/snakes/${id}`}>Back to reptile</Link></section></main>;
-  if (!record) return <main className="page-container"><section className="master-shell"><h1>Reptile not found</h1><p>This Master Record could not be found for this account.</p><Link to="/snakes">Back to My Reptiles</Link></section></main>;
-
-  const { snake, overview, timeline } = record;
-  const speciesLabel = snake.species?.trim() || "Species not recorded";
-  const weight = overview.currentWeightG === null ? "—" : formatWeight(overview.currentWeightG);
-  const change = overview.weightChangeG === null ? "No baseline yet" : `${overview.weightChangeG >= 0 ? "+" : ""}${formatWeight(overview.weightChangeG)}`;
-  const shedLength = overview.totalShedLengthCm === null ? "—" : formatLength(overview.totalShedLengthCm);
-  const averageShed = overview.averageShedLengthCm === null ? "No measurements" : `${formatLength(overview.averageShedLengthCm)} avg`;
-  const latestFeedAttempt = latestFeedingAttempt(snake.feedingHistory);
-  const latestSuccessful = latestSuccessfulFeed(snake.feedingHistory);
-  const confidenceDetails = [["Weight", overview.confidence.weight, overview.totalWeightLogs, 5], ["Feeding", overview.confidence.feeding, overview.totalMeals, 8], ["Shedding", overview.confidence.shedding, overview.totalSheds, 5], ["Behaviour", overview.confidence.behaviour, overview.totalBehaviourLogs, 5], ["Health", overview.confidence.health, overview.totalHealthRecords, 3]] as const;
-
+  const {id,record,loading,error,deletingRecordId,highlightedEventId,intelligence,isImperial,speciesLabel,weight,change,shedLength,averageShed,latestFeedAttempt,latestSuccessful,confidenceDetails,formatDaysSinceFeeding,handleDeleteTimelineRecord}=useSnakeMasterRecord();
+  if(loading)return <main className="page-container"><section className="master-shell"><p role="status">Loading individual record…</p></section></main>;
+  if(error&&!record)return <main className="page-container"><section className="master-shell"><h1>Unable to load record</h1><p role="alert">{error}</p><Link to={`/snakes/${id}`}>Back to reptile</Link></section></main>;
+  if(!record)return <main className="page-container"><section className="master-shell"><h1>Reptile not found</h1><p>This Master Record could not be found for this account.</p><Link to="/snakes">Back to Snake Records</Link></section></main>;
+  const {snake,overview,timeline}=record;
   return <main className="page-container master-record-page"><section className="master-shell">
     <header className="master-hero"><div><p className="master-eyebrow">Individual Master Record</p><h1>{snake.name}</h1><p>{speciesLabel}</p>{snake.morphs?.length ? <small>{snake.morphs.join(" • ")}</small> : null}</div><Link className="master-back" to={`/snakes/${snake.id}`}>Reptile profile</Link></header>
-    <section className="master-status"><Metric label="Current weight" value={weight} detail={change} /><Metric label="Meals logged" value={String(overview.totalMeals)} detail={latestFeedAttempt?.date ? `Last feed attempt: ${formatDaysSinceFeeding(latestFeedAttempt.date)}` : "Start feeding history"} /><Metric label="Sheds logged" value={String(overview.totalSheds)} detail={overview.lastShedDate ? `Last: ${formatDate(overview.lastShedDate)}` : "Start shed history"} /><Metric label="Shed length" value={shedLength} detail={isImperial ? "Imperial" : "Metric"} /></section>
-    <section className="master-card master-feeding-summary"><div className="master-section-heading"><div><p className="master-eyebrow">🍽️ Feeding summary</p><h2>Attempt vs successful</h2></div><span>{overview.totalMeals} attempts</span></div><div className="master-grid"><article className="master-card"><span>Last feed attempt</span><strong>{latestFeedAttempt?.date ? formatDaysSinceFeeding(latestFeedAttempt.date) : "Not recorded"}</strong><small>{latestFeedAttempt ? `${latestFeedAttempt.foodType} · ${latestFeedAttempt.response}` : "No feeding attempt has been recorded."}</small></article><article className="master-card"><span>Last successful feed</span><strong>{latestSuccessful?.date ? formatDaysSinceFeeding(latestSuccessful.date) : "Not recorded"}</strong><small>{latestSuccessful ? `${latestSuccessful.foodType} · Accepted` : "No accepted feed has been recorded yet."}</small></article></div></section>
-    <section className="master-grid"><Link className="master-card" to={`/snakes/${snake.id}/weights`}><span>⚖️ Weight</span><strong>{overview.weightChangePercent === null ? "Build baseline" : `${overview.weightChangePercent >= 0 ? "+" : ""}${overview.weightChangePercent.toFixed(1)}%`}</strong><small>{overview.totalWeightLogs} weight logs • {overview.confidence.weight} confidence</small></Link><Link className="master-card" to={`/snakes/${snake.id}/feeding`}><span>🍽️ Feeding</span><strong>{overview.acceptanceRate === null ? "Build baseline" : `${overview.acceptanceRate}% accepted`}</strong><small>{overview.totalMeals} feeding logs • {overview.confidence.feeding} confidence</small></Link><Link className="master-card" to={`/snakes/${snake.id}/shedding`}><span>🐍 Shedding</span><strong>{averageShed}</strong><small>{overview.daysSinceShed === null ? "No shed history" : `${overview.daysSinceShed} days since last shed`} • {overview.confidence.shedding} confidence</small></Link><article className="master-card"><span>🧠 Overall data</span><strong>{overview.confidence.overall}</strong><small>Confidence reflects how much individual history Tiny Titans has recorded.</small></article><Link className="master-card" to={`/calculator?snakeId=${encodeURIComponent(snake.id)}`}><span>🧬 Genetics</span><strong>{snake.morphs?.length ? `${snake.morphs.length} morph${snake.morphs.length === 1 ? "" : "s"}` : "Review genetics"}</strong><small>Open the Genetics Calculator with this reptile and its recorded genetics in context.</small></Link><article className="master-card"><span>📝 Notes & observations</span><strong>{snake.notes?.trim() ? "Recorded" : "Nothing recorded"}</strong><small>Keep important observations with the reptile profile.</small><Link to={`/snakes/${snake.id}/edit`}>Edit reptile record →</Link></article></section>
+    <section className="master-status"><Metric label="Current weight" value={weight} detail={change} /><Metric label="Meals logged" value={String(overview.totalMeals)} detail={latestFeedAttempt?.date ? `Last feed attempt: ${formatDaysSinceFeeding(latestFeedAttempt.date)}` : "Start feeding history"} /><Metric label="Sheds logged" value={String(overview.totalSheds)} detail={overview.lastShedDate ? `Last: ${formatMasterRecordDate(overview.lastShedDate)}` : "Start shed history"} /><Metric label="Shed length" value={shedLength} detail={isImperial ? "Imperial" : "Metric"} /></section>
+    <section className="master-card master-feeding-summary"><div className="master-section-heading"><div><p className="master-eyebrow"><TinyTitansIcon name="feeding" size={17} /> Feeding summary</p><h2>Attempt vs successful</h2></div><span>{overview.totalMeals} attempts</span></div><div className="master-grid"><article className="master-card"><span>Last feed attempt</span><strong>{latestFeedAttempt?.date ? formatDaysSinceFeeding(latestFeedAttempt.date) : "Not recorded"}</strong><small>{latestFeedAttempt ? `${latestFeedAttempt.foodType} · ${latestFeedAttempt.response}` : "No feeding attempt has been recorded."}</small></article><article className="master-card"><span>Last successful feed</span><strong>{latestSuccessful?.date ? formatDaysSinceFeeding(latestSuccessful.date) : "Not recorded"}</strong><small>{latestSuccessful ? `${latestSuccessful.foodType} · Accepted` : "No accepted feed has been recorded yet."}</small></article></div></section>
+    <section className="master-grid"><Link className="master-card" to={`/snakes/${snake.id}/weights`}><span><TinyTitansIcon name="weight" size={17} /> Weight</span><strong>{overview.weightChangePercent === null ? "Build baseline" : `${overview.weightChangePercent >= 0 ? "+" : ""}${overview.weightChangePercent.toFixed(1)}%`}</strong><small>{overview.totalWeightLogs} weight logs • {overview.confidence.weight} confidence</small></Link><Link className="master-card" to={`/snakes/${snake.id}/feeding`}><span><TinyTitansIcon name="feeding" size={17} /> Feeding</span><strong>{overview.acceptanceRate === null ? "Build baseline" : `${overview.acceptanceRate}% accepted`}</strong><small>{overview.totalMeals} feeding logs • {overview.confidence.feeding} confidence</small></Link><Link className="master-card" to={`/snakes/${snake.id}/shedding`}><span><TinyTitansIcon name="shed" size={17} /> Shedding</span><strong>{averageShed}</strong><small>{overview.daysSinceShed === null ? "No shed history" : `${overview.daysSinceShed} days since last shed`} • {overview.confidence.shedding} confidence</small></Link><article className="master-card"><span><TinyTitansIcon name="titan" size={17} /> Overall data</span><strong>{overview.confidence.overall}</strong><small>Confidence reflects how much individual history Tiny Titans has recorded.</small></article><Link className="master-card" to={`/calculator?snakeId=${encodeURIComponent(snake.id)}`}><span><TinyTitansIcon name="genetics" size={17} /> Genetics</span><strong>{snake.morphs?.length ? `${snake.morphs.length} morph${snake.morphs.length === 1 ? "" : "s"}` : "Review genetics"}</strong><small>Open the Genetics Calculator with this reptile and its recorded genetics in context.</small></Link><article className="master-card"><span><TinyTitansIcon name="notes" size={17} /> Notes & observations</span><strong>{snake.notes?.trim() ? "Recorded" : "Nothing recorded"}</strong><small>Keep important observations with the reptile profile.</small><Link to={`/snakes/${snake.id}/edit`}>Edit reptile record →</Link></article></section>
 
-    <section className="master-card tt-intelligence-panel" data-tone={intelligence?.priority?.tone ?? "neutral"}><div className="master-section-heading"><div><p className="master-eyebrow">🧠 Central Intelligence Engine</p><h2>What Tiny Titans sees</h2></div><span>{intelligence?.confidence ?? "Insufficient"}</span></div><p>{intelligence?.summary ?? "Tiny Titans is waiting for individual records."}</p>{!intelligence || intelligence.insights.length === 0 ? <div><p>There is not enough individual history to generate useful intelligence yet.</p><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}>⚖️ Log Weight</Link><Link to={`/snakes/${snake.id}/feeding`}>🍽️ Log Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}>🐍 Record Shed</Link></div></div> : <div className="master-grid">{intelligence.insights.map((item) => <article className="master-card" key={item.id}><span>{insightIcon(item.tone)} {item.title}</span><strong>{item.value}</strong><small><b>Why:</b> {item.why}</small><small><b>Next:</b> {item.action}</small><small><b>Confidence:</b> {item.confidence}</small><Link className="master-insight-action" to={insightDestination(snake.id, item)}>Open the relevant tracker →</Link></article>)}</div>}</section>
+    <section className="master-card tt-intelligence-panel" data-tone={intelligence?.priority?.tone ?? "neutral"}><div className="master-section-heading"><div><p className="master-eyebrow"><TinyTitansIcon name="titan" size={17} /> Central Intelligence Engine</p><h2>What Tiny Titans sees</h2></div><span>{intelligence?.confidence ?? "Insufficient"}</span></div><p>{intelligence?.summary ?? "Tiny Titans is waiting for individual records."}</p>{!intelligence || intelligence.insights.length === 0 ? <div><p>There is not enough individual history to generate useful intelligence yet.</p><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}><TinyTitansIcon name="weight" size={17} /> Log Weight</Link><Link to={`/snakes/${snake.id}/feeding`}><TinyTitansIcon name="feeding" size={17} /> Log Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}><TinyTitansIcon name="reptile" size={17} /> Record Shed</Link></div></div> : <div className="master-grid">{intelligence.insights.map((item) => <article className="master-card" key={item.id}><span><TinyTitansIcon name={insightIconName(item.tone)} size={16} /> {item.title}</span><strong>{item.value}</strong><small><b>Why:</b> {item.why}</small><small><b>Next:</b> {item.action}</small><small><b>Confidence:</b> {item.confidence}</small><Link className="master-insight-action" to={insightDestination(snake.id, item)}>Open the relevant tracker →</Link></article>)}</div>}</section>
 
     <TitanAnimalIntelligencePanel record={record} />
 
     <section className="master-card"><div className="master-section-heading"><div><p className="master-eyebrow">Data quality</p><h2>Confidence explained</h2></div><span>{overview.confidence.overall}</span></div><p>Confidence is based on the amount of individual history recorded for {snake.name}; it is not a claim about the reptile's health.</p><div className="master-grid">{confidenceDetails.map(([area, level, count, target]) => <article className="master-card" key={area}><span>{area}</span><strong>{level}</strong><small>{confidenceExplanation(level, area, count, target)}</small></article>)}</div></section>
 
-    <section className="master-card master-timeline-card"><div className="master-section-heading"><div><p className="master-eyebrow">Living history</p><h2>Life Timeline</h2></div><span>{timeline.length} events</span></div>{error && <p role="alert" className="master-error">{error}</p>}{timeline.length === 0 ? <div><p>No timeline events have been recorded yet. Start building {snake.name}'s history with an individual record.</p><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}>⚖️ Log Weight</Link><Link to={`/snakes/${snake.id}/feeding`}>🍽️ Log Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}>🐍 Record Shed</Link></div></div> : <ol className="master-timeline">{timeline.map((event) => { const deletable = Boolean(event.relatedRecordId && ["Weight", "Feeding", "Shed"].includes(event.type)); const deleting = deletingRecordId === event.id; const eventId = `timeline-event-${event.id}`; return <li key={event.id} id={eventId} className={highlightedEventId === event.id ? "is-highlighted" : undefined}><div className="master-timeline-entry"><Link to={timelineDestination(snake.id, event.type, event.relatedRecordId)} className="master-timeline-link"><div className="master-timeline-dot" /><div><time>{formatDate(event.date)}</time><strong>{event.title}</strong>{event.description && <p>{event.description}</p>}<small>{timelineActionLabel(event.type)}</small></div></Link>{deletable && <div className="master-timeline-actions"><Link to={`${timelineDestination(snake.id, event.type, event.relatedRecordId)}&edit=true`} aria-label={`Edit ${event.title}`}>Edit</Link><button type="button" onClick={() => void handleDeleteTimelineRecord(event)} disabled={deleting} aria-label={`Delete ${event.title}`}>{deleting ? "Deleting…" : "Delete"}</button></div>}</div></li>; })}</ol>}</section>
-    <section className="master-card"><div className="master-section-heading"><div><p className="master-eyebrow">Keep recording</p><h2>What's next?</h2></div></div><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}>⚖️ Weight</Link><Link to={`/snakes/${snake.id}/feeding`}>🍽️ Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}>🐍 Shed</Link><Link to={`/snakes/${snake.id}`}>🐍 Reptile Profile</Link></div></section>
+    <section className="master-card master-timeline-card"><div className="master-section-heading"><div><p className="master-eyebrow">Living history</p><h2>Life Timeline</h2></div><span>{timeline.length} events</span></div>{error && <p role="alert" className="master-error">{error}</p>}{timeline.length === 0 ? <div><p>No timeline events have been recorded yet. Start building {snake.name}'s history with an individual record.</p><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}><TinyTitansIcon name="weight" size={17} /> Log Weight</Link><Link to={`/snakes/${snake.id}/feeding`}><TinyTitansIcon name="feeding" size={17} /> Log Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}><TinyTitansIcon name="reptile" size={17} /> Record Shed</Link></div></div> : <ol className="master-timeline">{timeline.map((event) => { const deletable = Boolean(event.relatedRecordId && ["Weight", "Feeding", "Shed"].includes(event.type)); const deleting = deletingRecordId === event.id; const eventId = `timeline-event-${event.id}`; return <li key={event.id} id={eventId} className={highlightedEventId === event.id ? "is-highlighted" : undefined}><div className="master-timeline-entry"><Link to={timelineDestination(snake.id, event.type, event.relatedRecordId)} className="master-timeline-link"><div className="master-timeline-dot" /><div><time>{formatMasterRecordDate(event.date)}</time><strong>{event.title}</strong>{event.description && <p>{event.description}</p>}<small>{timelineActionLabel(event.type)}</small></div></Link>{deletable && <div className="master-timeline-actions"><Link to={`${timelineDestination(snake.id, event.type, event.relatedRecordId)}&edit=true`} aria-label={`Edit ${event.title}`}>Edit</Link><button type="button" onClick={() => void handleDeleteTimelineRecord(event)} disabled={deleting} aria-label={`Delete ${event.title}`}>{deleting ? "Deleting…" : "Delete"}</button></div>}</div></li>; })}</ol>}</section>
+    <section className="master-card"><div className="master-section-heading"><div><p className="master-eyebrow">Keep recording</p><h2>What's next?</h2></div></div><div className="master-actions"><Link to={`/snakes/${snake.id}/weights`}><TinyTitansIcon name="weight" size={17} /> Weight</Link><Link to={`/snakes/${snake.id}/feeding`}><TinyTitansIcon name="feeding" size={17} /> Feeding</Link><Link to={`/snakes/${snake.id}/shedding`}><TinyTitansIcon name="reptile" size={17} /> Shed</Link><Link to={`/snakes/${snake.id}`}><TinyTitansIcon name="reptile" size={17} /> Reptile Profile</Link></div></section>
   </section></main>;
 }

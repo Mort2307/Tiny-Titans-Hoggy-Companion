@@ -1,16 +1,27 @@
 import { execFileSync } from "node:child_process";
 
 const commands = [
+  ["Release configuration", ["run", "validate:release-config"]],
+  ["Account deletion contract", ["run", "validate:account-deletion"]],
+  ["TypeScript typecheck", ["run", "typecheck"]],
   ["Lint", ["run", "lint"]],
   ["BOT contract suite", ["run", "test:bot:contracts"]],
   ["UI hardening contract", ["run", "validate:ui-hardening"]],
-  ["Morph database validation", ["run", "validate:morphs"]],
-  ["Learning content validation", ["run", "validate:learning"]],
-  ["Route contract", ["run", "validate:routes"]],
   ["Security contracts", ["run", "validate:security"]],
+  ["Paid-tier contract", ["run", "validate:paid-tiers"]],
+  ["Play billing boundary", ["run", "validate:play-billing-boundary"]],
+  ["Route contract", ["run", "validate:routes"]],
+  ["Route coverage", ["run", "validate:route-coverage"]],
+  ["Morph database validation", ["run", "validate:morphs"]],
+  ["Species integration validation", ["run", "validate:species-integration"]],
+  ["Genetics runtime contract", ["run", "test:genetics-runtime"]],
   ["Intelligence consent contracts", ["run", "validate:intelligence-consent"]],
   ["Intelligence journey contracts", ["run", "validate:intelligence-journey"]],
+  ["Notifications contract", ["run", "test:notifications"]],
+  ["Feeding reminder contract", ["run", "test:feeding-reminders"]],
   ["Water change reminder contract", ["run", "test:water-change-reminders"]],
+  ["Room photo contract", ["run", "test:room-photo"]],
+  ["Visual QA contract", ["run", "validate:visual-qa"]],
   ["Production build", ["run", "build"]],
 ];
 
@@ -37,5 +48,5 @@ if (failures.length) {
   console.error("PRODUCTION GATE: FAILED");
   process.exitCode = 1;
 } else {
-  console.log("PRODUCTION GATE: PASSED — all registered automated gates completed successfully.");
+  console.log("PRODUCTION GATE: PASSED — all registered release gates completed successfully.");
 }

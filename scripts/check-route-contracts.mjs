@@ -4,9 +4,18 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const srcRoot = path.join(root, "src");
-const routerPath = path.join(srcRoot, "routes", "AppRouter.tsx");
+const routerPath = path.join(srcRoot, "routes", "AuthenticatedRoutes.tsx");
+const appRouterPath = path.join(srcRoot, "routes", "AppRouter.tsx");
 const router = fs.readFileSync(routerPath, "utf8");
+const appRouter = fs.readFileSync(appRouterPath, "utf8");
 const errors = [];
+
+const PUBLIC_ROUTES = [
+  "/privacy",
+  "/delete-account",
+  "/login",
+  "/account-setup",
+];
 
 const LAYOUT_SPECIAL_ROUTES = [
   "/plans",
@@ -80,8 +89,17 @@ function routeToRegex(route) {
   return new RegExp(`^${pattern}$`);
 }
 const routePatterns = routes.filter(({ route }) => route !== "*").map(({ route }) => ({ route, regex: routeToRegex(route) }));
-const allKnownRoutes = [...new Set([...routes.map(({ route }) => route), ...LAYOUT_SPECIAL_ROUTES])];
-const allKnownPatterns = [...routePatterns, ...LAYOUT_SPECIAL_ROUTES.map((route) => ({ route, regex: routeToRegex(route) }))];
+const declaredPublicRoutes = PUBLIC_ROUTES.filter((route) => appRouter.includes('path="' + route + '"' ));
+const allKnownRoutes = [...new Set([
+  ...routes.map(({ route }) => route),
+  ...LAYOUT_SPECIAL_ROUTES,
+  ...declaredPublicRoutes,
+])];
+const allKnownPatterns = [
+  ...routePatterns,
+  ...LAYOUT_SPECIAL_ROUTES.map((route) => ({ route, regex: routeToRegex(route) })),
+  ...declaredPublicRoutes.map((route) => ({ route, regex: routeToRegex(route) })),
+];
 
 function normaliseDynamicPath(value) { return value.replace(/\$\{[^}]+\}/g, ":dynamic"); }
 function isKnownPath(value) {

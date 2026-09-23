@@ -1,4 +1,4 @@
-import type { TinyTitansIconName } from "../components/TinyTitansIcon";
+import type { TinyTitansIconName } from "../types/tinyTitansIcon";
 
 export type FreeKeeperNavigationItem = {
   id: string;
@@ -23,7 +23,8 @@ export const FREE_KEEPER_NAVIGATION_GROUPS = [
     group: "Overview",
     items: [
       { id: "home", label: "Home", icon: "home", path: "/", description: "Your keeper command centre." },
-      { id: "snakes", label: "My Snakes", icon: "reptile", path: "/snakes", description: "View, add and manage every Titan." },
+      { id: "snakes", label: "My Animals", icon: "animals", path: "/animals", description: "View, add and manage every animal." },
+      { id: "species", label: "Species Explorer", icon: "animals", path: "/species", description: "Explore the canonical species catalogue that connects your animals, care and genetics." },
       { id: "conversations", label: "Message Centre", icon: "messages", path: "/conversations", description: "Your community conversations." },
     ],
   },
@@ -52,13 +53,13 @@ export const FREE_KEEPER_NAVIGATION_GROUPS = [
   {
     group: "Learn & Community",
     items: [
-      { id: "keeper-handbook", label: "Keeper Behaviour Handbook", icon: "handbook", path: "/keeper-handbook", description: "Understand reptile behaviour." },
+      { id: "keeper-handbook", label: "Keeper Behaviour Handbook", icon: "handbook", path: "/keeper-handbook", description: "Understand animal behaviour." },
       { id: "behaviour-observatory", label: "Behaviour Observatory", icon: "observatory", path: "/behaviour-observatory", description: "Explore structured behaviour observations." },
       { id: "contribute", label: "Make a Contribution", icon: "contribution", path: "/make-contribution", description: "Help improve Tiny Titans." },
       { id: "knowledge", label: "Knowledge Base", icon: "knowledge", path: "/knowledge-base", description: "Find evidence-backed answers." },
       { id: "challenge", label: "Titans Challenge", icon: "challenge", path: "/challenge", description: "Test your keeper knowledge." },
       { id: "community", label: "Community Hub", icon: "community", path: "/community", description: "News, updates and community features." },
-      { id: "marketplace", label: "Marketplace", icon: "marketplace", path: "/marketplace", description: "Browse active reptile marketplace listings." },
+      { id: "marketplace", label: "Marketplace", icon: "marketplace", path: "/marketplace", description: "Browse active animal marketplace listings." },
       { id: "mentorship", label: "Mentorship", icon: "mentorship", path: "/community/mentorship", description: "Connect with experienced keepers." },
       { id: "wall-of-titans", label: "Wall of Titans", icon: "wall", path: "/community/wall-of-titans", description: "Recognised community supporters." },
     ],

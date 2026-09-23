@@ -1,0 +1,2 @@
+import type { DrillRecord } from "../types/creatorSnapshot";
+export default function CreatorSnapshotRecordCard({record,onOpen}:{record:DrillRecord;onOpen:()=>void}){return <button type="button" className="creator-snapshot-record" onClick={onOpen}><span className="creator-snapshot-record-kind">{record.kind}</span><strong>{record.title}</strong><small>{record.ownerName}{record.date?" · "+record.date:""}</small><span>{record.status}{record.category?" · "+record.category:""}</span></button>;}

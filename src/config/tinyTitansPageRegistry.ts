@@ -12,8 +12,8 @@ export interface TinyTitansPageDefinition {
 
 export const tinyTitansPageRegistry: readonly TinyTitansPageDefinition[] = [
   { id: "home", path: "/", label: "Home", icon: "⌂", group: "overview", description: "Your keeper command centre.", navigation: "route" },
-  { id: "snakes", path: "/snakes", label: "My Snakes", icon: "🐍", group: "overview", description: "Your animals and their living records.", navigation: "route" },
-  { id: "room", path: "/reptile-room", label: "Reptile Room", icon: "▦", group: "overview", description: "Your enclosures and reptile space.", navigation: "route" },
+  { id: "snakes", path: "/animals", label: "My Animals", icon: "animals", group: "overview", description: "Your animals and their living records.", navigation: "route" },
+  { id: "room", path: "/reptile-room", label: "Keeper Room", icon: "▦", group: "overview", description: "Your enclosures and keeper space.", navigation: "route" },
   { id: "intelligence", path: "/titan-intelligence", label: "Titan Intelligence", icon: "🧠", group: "intelligence", description: "The connected intelligence layer across your Tiny Titans data.", navigation: "route" },
   { id: "reminders", path: "/reminders", label: "Reminder Hub", icon: "🔔", group: "care", description: "Contextual keeper reminders.", navigation: "route" },
   { id: "husbandry", path: "/husbandry", label: "Husbandry", icon: "✦", group: "care", description: "Species-aware husbandry and care.", navigation: "route" },

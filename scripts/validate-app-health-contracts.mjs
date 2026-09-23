@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const router = fs.readFileSync('src/routes/AppRouter.tsx', 'utf8');
+const router = fs.readFileSync('src/routes/AuthenticatedRoutes.tsx', 'utf8');
 const requiredPages = [
   'Home', 'MySnakes', 'SnakeProfile', 'SnakeTimeline', 'FeedingTracker', 'ShedTracker',
   'HealthTracker', 'BehaviourTracker', 'SpeciesAwareMorphLibrary', 'MorphEvidenceAudit', 'Calculator',

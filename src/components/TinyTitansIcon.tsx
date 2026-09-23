@@ -1,41 +1,8 @@
 import type { SVGProps } from "react";
 import "../styles/tiny-titans-icons.css";
 
-export type TinyTitansIconName =
-  | "home"
-  | "reptile"
-  | "messages"
-  | "reminders"
-  | "husbandry"
-  | "weight"
-  | "feeding"
-  | "shed"
-  | "behaviour"
-  | "health"
-  | "enclosure"
-  | "morph"
-  | "genetics"
-  | "breeding"
-  | "academy"
-  | "handbook"
-  | "observatory"
-  | "contribution"
-  | "knowledge"
-  | "challenge"
-  | "community"
-  | "marketplace"
-  | "mentorship"
-  | "wall"
-  | "account"
-  | "plans"
-  | "billing"
-  | "family"
-  | "titan"
-  | "educator"
-  | "creator"
-  | "testing"
-  | "search"
-  | "menu";
+import type { TinyTitansIconName } from "../types/tinyTitansIcon";
+export type { TinyTitansIconName } from "../types/tinyTitansIcon";
 
 type Props = SVGProps<SVGSVGElement> & {
   name: TinyTitansIconName | string;
@@ -55,6 +22,7 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "🏠": "home",
   "⌂": "home",
   "🐍": "reptile",
+  "🐊": "reptiles",
   "💬": "messages",
   "📨": "messages",
   "📥": "messages",
@@ -95,7 +63,6 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "⚙️": "account",
   "👤": "account",
   "📝": "contribution",
-  "＋": "contribution",
   "✦": "titan",
   "✨": "titan",
   "🧠": "titan",
@@ -108,13 +75,32 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "🖼️": "morph",
   "◇": "plans",
   "●": "account",
+  "＋": "add",
+  "+": "add",
+  "✏️": "edit",
+  "✏": "edit",
+  "🗑": "delete",
+  "🗑️": "delete",
+  "💧": "water",
+  "📅": "timeline",
+  "🩺": "vet",
+  "💾": "save",
+  "⬆": "upload",
+  "←": "back",
+  "→": "forward",
+  "×": "close",
+  "✕": "close",
+  "⚙": "account",
+  "🔗": "link",
+  "🔒": "lock",
+  "🔓": "unlock",
 };
 
 const ICON_NAMES = new Set<TinyTitansIconName>([
-  "home", "reptile", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
+  "home", "reptile", "reptiles", "animals", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
   "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
   "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan",
-  "educator", "creator", "testing", "search", "menu",
+  "educator", "creator", "testing", "search", "menu", "add", "edit", "delete", "water", "timeline", "vet", "save", "upload", "back", "forward", "close", "filter", "camera", "rotate", "move", "duplicate", "link", "lock", "unlock", "grid", "ceiling", "info", "warning", "check", "compass", "power", "air",
 ]);
 
 function resolveIconName(value: string): TinyTitansIconName {
@@ -144,6 +130,17 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-organic" d="m8 21 16-13 16 13v17H28V28h-8v10H8V21Z" /><path className="tt-icon-line" d="M5.5 23 24 8l18.5 15" /><circle className="tt-icon-spark" cx="24" cy="19" r="2.3" /></svg>;
     case "reptile":
       return <SnakeFace {...props} />;
+    case "animals":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-avatar" cx="24" cy="23" r="12" /><path className="tt-icon-line" d="M15 13c-3-4-8-2-7 3 1 3 4 4 7 3m18-6c3-4 8-2 7 3-1 3-4 4-7 3M14 34c2 4 7 6 10 6s8-2 10-6" /><circle className="tt-icon-eye" cx="20" cy="22" r="1.8" /><circle className="tt-icon-eye" cx="28" cy="22" r="1.8" /><path className="tt-icon-line-soft" d="M21 28c2 1.5 4 1.5 6 0" /></svg>;
+    case "reptiles":
+      return <svg {...commonProps}>
+        <path className="tt-icon-fill tt-icon-snake-collection" d="M8 29c0-5 4-9 9-9 3 0 5 1 7 3 2-2 4-3 7-3 5 0 9 4 9 9 0 6-5 10-12 10h-8C13 39 8 35 8 29Z" />
+        <path className="tt-icon-line" d="M10 30c2 3 6 4 10 1 2-1 4-3 6-5m2-6c2-2 4-3 6-3" />
+        <circle className="tt-icon-eye" cx="31.5" cy="19" r="2.6" />
+        <circle className="tt-icon-pupil" cx="31.5" cy="19" r=".8" />
+        <path className="tt-icon-line-soft" d="M15 22 11 18m5 4-1-6m16 5 4-4m-5 5 1-6" />
+        <circle className="tt-icon-spark" cx="39" cy="10" r="2.4" />
+      </svg>;
     case "messages":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-bubble" d="M8 10.5c0-3.1 2.5-5.5 5.6-5.5h15.8c3.1 0 5.6 2.4 5.6 5.5v10c0 3.1-2.5 5.5-5.6 5.5H20l-6.8 5.3.9-5.4h-.5C10.5 25.9 8 23.5 8 20.5v-10Z" /><path className="tt-icon-line" d="M15 13.5h12M15 18.5h8" /><circle className="tt-icon-spark" cx="36" cy="10" r="4" /></svg>;
     case "reminders":
@@ -208,6 +205,62 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><circle className="tt-icon-line" cx="21" cy="21" r="11" /><path className="tt-icon-line" d="m29 29 10 10" /></svg>;
     case "menu":
       return <svg {...commonProps}><path className="tt-icon-line" d="M9 14h30M9 24h30M9 34h30" /></svg>;
+    case "add":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="24" cy="24" r="15" /><path className="tt-icon-line" d="M24 16v16M16 24h16" /></svg>;
+    case "edit":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-tool" d="m30 9 9 9-19 19-9 1 1-9L30 9Z" /><path className="tt-icon-line" d="m27 12 9 9M11 38h13" /></svg>;
+    case "delete":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-basket" d="M12 14h24l-2 26H14l-2-26Z" /><path className="tt-icon-line" d="M17 14V9h14v5M10 14h28M19 20v14M29 20v14" /></svg>;
+    case "water":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-drop" d="M24 7c7 9 11 14 11 20 0 7-5 12-11 12s-11-5-11-12c0-6 4-11 11-20Z" /><path className="tt-icon-line-soft" d="M18 29c1 3 3 5 6 6" /></svg>;
+    case "timeline":
+      return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-card" x="9" y="11" width="30" height="26" rx="4" /><path className="tt-icon-line" d="M9 19h30M17 7v8m14-8v8M16 25h4m4 0h4m-12 6h4m4 0h4" /></svg>;
+    case "vet":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-heart" d="M24 39 10 26c-5-5 0-15 7-13 3 1 5 4 7 7 2-3 4-6 7-7 7-2 12 8 7 13L24 39Z" /><path className="tt-icon-line" d="M24 18v10M19 23h10" /></svg>;
+    case "save":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-card" d="M9 8h26l4 4v28H9V8Z" /><path className="tt-icon-line" d="M15 9v10h14V9M16 31h16v9H16v-9Z" /></svg>;
+    case "upload":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M24 35V11m0 0-8 8m8-8 8 8M10 38h28" /></svg>;
+    case "back":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M30 10 16 24l14 14M18 24h22" /></svg>;
+    case "forward":
+      return <svg {...commonProps}><path className="tt-icon-line" d="m18 10 14 14-14 14m12-14H10" /></svg>;
+    case "close":
+      return <svg {...commonProps}><path className="tt-icon-line" d="m15 15 18 18m0-18L15 33" /></svg>;
+    case "filter":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M9 13h30M13 24h22M18 35h12" /><circle className="tt-icon-dot" cx="18" cy="13" r="2.4" /><circle className="tt-icon-dot" cx="30" cy="24" r="2.4" /><circle className="tt-icon-dot" cx="25" cy="35" r="2.4" /></svg>;
+    case "camera":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-card" d="M10 15h8l3-4h6l3 4h8v23H10V15Z" /><circle className="tt-icon-eye" cx="24" cy="26" r="6" /><circle className="tt-icon-pupil" cx="24" cy="26" r="2.2" /></svg>;
+    case "rotate":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M37 20A14 14 0 0 0 14 13l-4 4M10 17v-7m0 7h7M11 29a14 14 0 0 0 23 6l4-4m0 0v7m0-7h-7" /></svg>;
+    case "move":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M24 7v34M7 24h34M24 7l-5 5m5-5 5 5M24 41l-5-5m5 5 5-5M7 24l5-5m-5 5 5 5M41 24l-5-5m5 5-5 5" /></svg>;
+    case "duplicate":
+      return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-card" x="15" y="12" width="22" height="25" rx="3" /><path className="tt-icon-line" d="M11 33V9h20" /></svg>;
+    case "link":
+      return <svg {...commonProps}><path className="tt-icon-line" d="m19 27-4 4a7 7 0 0 1-10-10l5-5a7 7 0 0 1 10 0m-1 5 4-4a7 7 0 0 1 10 10l-5 5a7 7 0 0 1-10 0m-5-5h12" /></svg>;
+    case "lock":
+      return <svg {...commonProps}><rect className="tt-icon-fill tt-icon-card" x="11" y="20" width="26" height="20" rx="4" /><path className="tt-icon-line" d="M16 20v-6c0-5 3-8 8-8s8 3 8 8v6M24 28v5" /></svg>;
+    case "unlock":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M19 20v-6c0-5 3-8 8-8 4 0 7 2 8 6" /><rect className="tt-icon-fill tt-icon-card" x="11" y="20" width="26" height="20" rx="4" /><path className="tt-icon-line" d="M24 28v5" /></svg>;
+    case "grid":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M10 10h28v28H10zM24 10v28M10 24h28" /></svg>;
+    case "ceiling":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-glass" d="m8 11 16-5 16 5-16 5-16-5Z" /><path className="tt-icon-line" d="M8 11v7l16 5 16-5v-7M24 16v7" /></svg>;
+    case "info":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="24" cy="24" r="15" /><path className="tt-icon-line" d="M24 22v10M24 16h.01" /></svg>;
+    case "warning":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-star" d="m24 7 16 29H8L24 7Z" /><path className="tt-icon-line" d="M24 18v8M24 31h.01" /></svg>;
+    case "check":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="24" cy="24" r="15" /><path className="tt-icon-line" d="m16 24 5 5 11-12" /></svg>;
+    case "compass":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="24" cy="24" r="15" /><path className="tt-icon-line" d="m31 17-4 11-11 4 4-11 11-4Z" /><circle className="tt-icon-dot" cx="24" cy="24" r="2.5" /></svg>;
+    case "pin":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-pin" d="M16 9h16l-3 9 5 6-7 4v11h-6V28l-7-4 5-6-3-9Z" /><circle className="tt-icon-dot" cx="24" cy="17" r="2" /> </svg>;
+    case "power":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-tool" d="M20 8h8v16h7a11 11 0 1 1-22 0h7V8Z" /><path className="tt-icon-line" d="M24 8v16M13 24a11 11 0 0 0 22 0" /></svg>;
+    case "air":
+      return <svg {...commonProps}><path className="tt-icon-line" d="M8 18h20c5 0 7-3 7-5s-2-4-5-4c-2 0-3 1-4 3M8 26h26c3 0 5 2 5 4s-2 4-5 4c-2 0-3-1-4-3M8 34h10" /></svg>;
     default:
       return <SnakeFace {...props} />;
   }
@@ -218,7 +271,7 @@ export function TinyTitansIcon({ name, size = 24, title, className = "", ...prop
   return (
     <SimpleIcon
       name={resolvedName}
-      className={`tt-icon ${className}`.trim()}
+      className={`tt-icon tt-icon-name-${resolvedName} ${className}`.trim()}
       width={size}
       height={size}
       role={title ? "img" : "presentation"}

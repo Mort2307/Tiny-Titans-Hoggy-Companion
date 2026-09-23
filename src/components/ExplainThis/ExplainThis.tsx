@@ -3,6 +3,7 @@ import { useAuth } from "../../context/useAuth";
 import { TERMINOLOGY_GLOSSARY } from "../../data/terminologyGlossary";
 import { morphs } from "../../data/morphs";
 import { hasKnowledgeNote, type KnowledgeNote, type KnowledgeStatus } from "../../data/knowledgeStatus";
+import TinyTitansIcon from "../TinyTitansIcon";
 import "./ExplainThis.css";
 
 type Level = "simple" | "standard" | "advanced";
@@ -200,12 +201,12 @@ export default function ExplainThis() {
       title="Tap to learn"
       onClick={() => { setOpen((value) => !value); setExplanation(null); setShowKnowledgeNote(false); }}
     >
-      <span className="explain-this__icon">?</span>
+      <span className="explain-this__icon"><TinyTitansIcon name="info" size={20} /></span>
       <span className="explain-this__hint">Tap to learn</span>
     </button>
 
     {open && <div className="explain-this-banner" role="status">
-      <strong>🔎 What does this mean?</strong>
+      <strong><TinyTitansIcon name="observatory" size={18} /> What does this mean?</strong>
       <span>Tap any word or phrase on the page. Tiny Titans checks the curated glossary and the full morph database, including genetics terms such as <strong>polygenic</strong>, <strong>heterozygous</strong>, <strong>genotype</strong> and multi-word terms such as <strong>incomplete dominant</strong>.</span>
     </div>}
 
@@ -216,13 +217,13 @@ export default function ExplainThis() {
             <span className="explain-this-modal__eyebrow">Tiny Titans explains</span>
             <h2 id="explain-this-title">{explanation.term}</h2>
           </div>
-          <button type="button" className="explain-this-modal__close" aria-label="Close explanation" onClick={() => setExplanation(null)}>×</button>
+          <button type="button" className="explain-this-modal__close" aria-label="Close explanation" onClick={() => setExplanation(null)}><TinyTitansIcon name="close" size={18} /></button>
         </div>
 
         <div className="explain-this-levels" role="tablist" aria-label="Explanation level">
-          <button type="button" className={level === "simple" ? "active" : ""} onClick={() => changeLevel("simple")}>🟢 Simple</button>
-          <button type="button" className={level === "standard" ? "active" : ""} onClick={() => changeLevel("standard")}>🟡 More detail</button>
-          <button type="button" className={level === "advanced" ? "active" : ""} onClick={() => changeLevel("advanced")}>🔬 Advanced</button>
+          <button type="button" className={level === "simple" ? "active" : ""} onClick={() => changeLevel("simple")}><TinyTitansIcon name="check" size={16} /> Simple</button>
+          <button type="button" className={level === "standard" ? "active" : ""} onClick={() => changeLevel("standard")}><TinyTitansIcon name="info" size={16} /> More detail</button>
+          <button type="button" className={level === "advanced" ? "active" : ""} onClick={() => changeLevel("advanced")}><TinyTitansIcon name="titan" size={16} /> Advanced</button>
         </div>
 
         <p className="explain-this-modal__text">{currentText}</p>
@@ -237,7 +238,7 @@ export default function ExplainThis() {
 
         {showKnowledgeNote && knowledgeNote && <div className="explain-this-knowledge" aria-label="Terminology and evidence context">
           <div className="explain-this-knowledge__header">
-            <strong>ⓘ About this terminology</strong>
+            <strong><TinyTitansIcon name="info" size={16} /> About this terminology</strong>
             <button type="button" aria-label="Close terminology context" onClick={() => setShowKnowledgeNote(false)}>×</button>
           </div>
           <p><strong>Current understanding</strong><br />{knowledgeNote.communityNote ?? "The available information is treated according to its current evidence and community understanding."}</p>
@@ -246,7 +247,7 @@ export default function ExplainThis() {
           {knowledgeNote.lastReviewed && <p className="explain-this-knowledge__reviewed">Reviewed: {knowledgeNote.lastReviewed}</p>}
         </div>}
 
-        {!isCurated && <p className="explain-this-modal__text" style={{ opacity: .7 }}>💡 This term has been surfaced but needs a verified glossary entry before Tiny Titans treats it as authoritative.</p>}
+        {!isCurated && <p className="explain-this-modal__text" style={{ opacity: .7 }}><TinyTitansIcon name="info" size={16} /> This term has been surfaced but needs a verified glossary entry before Tiny Titans treats it as authoritative.</p>}
         <button type="button" className="explain-this-modal__done" onClick={() => setExplanation(null)}>Got it</button>
       </section>
     </div>}

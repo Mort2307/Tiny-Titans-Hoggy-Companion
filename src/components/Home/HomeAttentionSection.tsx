@@ -1,0 +1,13 @@
+import { Link } from "react-router-dom";
+import TitanDecisionWhyCard from "../TitanIntelligence/TitanDecisionWhyCard";
+import TitanDecisionQueue from "../TitanIntelligence/TitanDecisionQueue";
+import type { TitanDecision } from "../../services/titanDecisionStateService";
+
+type Props = { intelligenceAccess: boolean; accessChecked: boolean; coverage: number; quietIntelligenceSnippet: string; attentionDecision: TitanDecision | null; };
+function HomeAttentionSection({ intelligenceAccess, accessChecked, coverage, quietIntelligenceSnippet, attentionDecision }: Props) {
+  return <section className="tt-home-section tt-home-attention-section"><div className="tt-home-heading"><div><p className="tt-home-kicker">⚠️ NEEDS ATTENTION</p><h2>What is worth looking at now?</h2></div>{intelligenceAccess && <span>{coverage}% data coverage</span>}</div>
+    {!accessChecked ? <div className="tt-home-panel tt-home-loading">Checking intelligence access…</div> : !intelligenceAccess ? <div className="tt-home-panel tt-home-teaser"><div className="tt-home-teaser-icon" aria-hidden="true">👀</div><div><span className="tt-home-teaser-label">KEEPER VIEW</span><h3>{quietIntelligenceSnippet}</h3><p>Your records still work normally. Optional Intelligence can turn these patterns into ranked next actions later.</p></div></div> : attentionDecision ? <article className="tt-home-panel tt-attention-card"><div className="tt-attention-card-top"><span>{attentionDecision.animalName ?? "Your Titan"} · {attentionDecision.domain}</span><strong>{attentionDecision.score}/100</strong></div><h3>{attentionDecision.title}</h3><p><b>Why:</b> {attentionDecision.why}</p><p><b>Next:</b> {attentionDecision.reason}</p><small>◉ {attentionDecision.confidence >= 0.9 ? "High" : attentionDecision.confidence >= 0.75 ? "Moderate" : attentionDecision.confidence >= 0.5 ? "Low" : "Insufficient"} confidence</small><Link to={attentionDecision.destination || `/snakes/${attentionDecision.animalId}/master-record`}>Open next action →</Link><TitanDecisionWhyCard decision={attentionDecision} compact /></article> : <div className="tt-home-panel tt-home-good"><strong>✓ Nothing needs your attention right now.</strong><p>TinyTitans checked the supported decision queue and found no stronger next action to surface.</p></div>}
+    {intelligenceAccess && <details className="tt-home-disclosure"><summary>See the wider decision queue</summary><TitanDecisionQueue excludeDecisionId={attentionDecision?.id} limit={3} /></details>}
+  </section>;
+}
+export default HomeAttentionSection;

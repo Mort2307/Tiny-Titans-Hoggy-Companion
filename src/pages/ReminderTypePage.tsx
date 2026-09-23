@@ -1,104 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
-import { useAuth } from "../context/useAuth";
-import { getUserSnakes } from "../services/snakeService";
-import { completeWaterChange, createReminder, defaultReminderInput, deleteReminder, listReminders, listWaterChangeLogs, setReminderPaused, updateReminder } from "../services/reminderService";
-import type { Reminder, ReminderInput, ReminderKind } from "../types/Reminder";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import { useReminderTypePage } from "../hooks/useReminderTypePage";
+import { formatReminderDateKey, formatReminderNext } from "../lib/reminderTypePage";
 import { REMINDER_DEFINITIONS } from "../types/Reminder";
 import "./ReminderTypePage.css";
 
-type SnakeOption = { id: string; name: string };
-type WaterChangeLog = { id: string; date?: string; snakeName?: string | null };
-const DEFINITIONS = new Map(REMINDER_DEFINITIONS.map((item) => [item.kind, item]));
-function localDateKey() { return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
-function buildInput(kind: ReminderKind, snakeId: string | null, snakes: SnakeOption[]): ReminderInput { const base = defaultReminderInput(kind, snakeId); return { ...base, snakeName: snakes.find((snake) => snake.id === snakeId)?.name ?? null }; }
-function formatNext(value: string | undefined) { if (!value) return "—"; const date = new Date(value); if (Number.isNaN(date.getTime())) return value; return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(date); }
-function formatDateKey(value: string | undefined) { if (!value) return "Unknown date"; const date = new Date(`${value}T00:00:00Z`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(date); }
-
-export default function ReminderTypePage() {
-  const { kind: rawKind } = useParams<{ kind: string }>();
-  const kind = rawKind as ReminderKind;
-  const definition = DEFINITIONS.get(kind);
-  const [searchParams] = useSearchParams();
-  const requestedSnakeId = searchParams.get("snakeId");
-  const { user, loading, profileLoading } = useAuth();
-  const [snakes, setSnakes] = useState<SnakeOption[]>([]);
-  const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [waterLogs, setWaterLogs] = useState<WaterChangeLog[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<ReminderInput>(() => defaultReminderInput(kind, requestedSnakeId));
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [loadingData, setLoadingData] = useState(true);
-  const isFeeding = kind === "feeding";
-  const isWaterChange = kind === "water-change";
-
-  useEffect(() => {
-    if (!user || loading || profileLoading || !definition) return;
-    let active = true;
-    setLoadingData(true);
-    void Promise.all([getUserSnakes(user.uid), listReminders(user.uid), isWaterChange ? listWaterChangeLogs(user.uid) : Promise.resolve([])]).then(([loadedSnakes, loadedReminders, loadedWaterLogs]) => {
-      if (!active) return;
-      const nextSnakes = loadedSnakes.map((snake) => ({ id: snake.id, name: snake.name }));
-      const contextualSnakeId = requestedSnakeId && nextSnakes.some((snake) => snake.id === requestedSnakeId) ? requestedSnakeId : nextSnakes[0]?.id ?? null;
-      setSnakes(nextSnakes);
-      setReminders(loadedReminders.filter((reminder) => reminder.kind === kind));
-      setWaterLogs(isWaterChange ? loadedWaterLogs as WaterChangeLog[] : []);
-      setForm((current) => current.snakeId ? { ...current, kind } : buildInput(kind, contextualSnakeId, nextSnakes));
-    }).catch((error) => setMessage(error instanceof Error ? error.message : "Unable to load reminders.")).finally(() => { if (active) setLoadingData(false); });
-    return () => { active = false; };
-  }, [user, loading, profileLoading, kind, definition, requestedSnakeId, isWaterChange]);
-
-  const activeReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "active"), [reminders]);
-  const pausedReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "paused"), [reminders]);
-  if (!definition) return <Navigate to="/reminders" replace />;
-
-  function updateForm<K extends keyof ReminderInput>(key: K, value: ReminderInput[K]) { setForm((current) => ({ ...current, [key]: value })); }
-  function resetForm() { setEditingId(null); const contextualSnakeId = requestedSnakeId && snakes.some((snake) => snake.id === requestedSnakeId) ? requestedSnakeId : snakes[0]?.id ?? null; setForm(buildInput(kind, contextualSnakeId, snakes)); setMessage(""); }
-  function edit(reminder: Reminder) {
-    setEditingId(reminder.id);
-    setForm({ id: reminder.id, kind: reminder.kind, title: reminder.title, description: reminder.description ?? "", snakeId: reminder.snakeId ?? null, snakeName: reminder.snakeName ?? null, frequencyDays: reminder.frequencyDays, time: reminder.time, startDate: reminder.startDate, timezone: reminder.timezone, leadUpEnabled: reminder.kind === "feeding" ? false : reminder.leadUpEnabled, leadUpDays: reminder.kind === "feeding" ? 0 : reminder.leadUpDays, status: reminder.status });
-    setMessage("");
-  }
-  async function save() {
-    if (!user || busy) return;
-    const title = form.title.trim();
-    if (!title) { setMessage("Give this reminder a name before saving it."); return; }
-    if (isFeeding && !form.snakeId) { setMessage("Choose the specific Tiny Titan this feeding reminder should follow. Feeding cadence is anchored to that Titan's actual feeding history."); return; }
-    setBusy(true); setMessage("");
-    try {
-      const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(form.frequencyDays) || 1)));
-      const next: ReminderInput = { ...form, kind, title, description: form.description?.trim() ?? "", snakeId: form.snakeId ?? null, snakeName: snakes.find((snake) => snake.id === form.snakeId)?.name ?? null, frequencyDays, time: form.time || "09:00", startDate: form.startDate || localDateKey(), timezone: form.timezone || "Europe/London", leadUpEnabled: isFeeding ? false : Boolean(form.leadUpEnabled), leadUpDays: isFeeding ? 0 : Math.max(1, Math.min(30, Math.round(Number(form.leadUpDays) || 1))), status: "active" };
-      if (editingId) await updateReminder(user.uid, editingId, next); else await createReminder(user.uid, next);
-      setReminders((await listReminders(user.uid)).filter((reminder) => reminder.kind === kind));
-      setMessage(editingId ? "✅ Reminder updated." : "✅ Recurring reminder created.");
-      resetForm();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to save this reminder."); } finally { setBusy(false); }
-  }
-  async function logWaterChange(reminder: Reminder) {
-    if (!user || busy) return;
-    setBusy(true); setMessage("");
-    try {
-      const result = await completeWaterChange(user.uid, reminder);
-      const [loadedReminders, loadedLogs] = await Promise.all([listReminders(user.uid), listWaterChangeLogs(user.uid)]);
-      setReminders(loadedReminders.filter((item) => item.kind === kind));
-      setWaterLogs(loadedLogs as WaterChangeLog[]);
-      setMessage(`💧 Water change logged for ${formatDateKey(result.completedDate)}. Next one is ${formatDateKey(result.nextDate)}.`);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to log this water change."); } finally { setBusy(false); }
-  }
-  async function toggle(reminder: Reminder) { if (!user || busy) return; setBusy(true); setMessage(""); try { await setReminderPaused(user.uid, reminder, reminder.status === "active"); setReminders((await listReminders(user.uid)).filter((item) => item.kind === kind)); setMessage(reminder.status === "active" ? `⏸️ ${reminder.title} paused.` : `▶️ ${reminder.title} resumed.`); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to change reminder status."); } finally { setBusy(false); } }
-  async function remove(reminder: Reminder) { if (!user || busy) return; if (!window.confirm(`Delete “${reminder.title}”? This does not remove any tracker records.`)) return; setBusy(true); setMessage(""); try { await deleteReminder(user.uid, reminder.id); setReminders((current) => current.filter((item) => item.id !== reminder.id)); if (editingId === reminder.id) resetForm(); setMessage(`🗑️ ${reminder.title} deleted.`); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to delete this reminder."); } finally { setBusy(false); } }
-
+export default function ReminderTypePage(){
+ const state=useReminderTypePage();
+ if(state.invalid)return <Navigate to="/reminders" replace />;
+ const {definition,kind,loading,profileLoading,snakes,waterLogs,editingId,form,busy,message,loadingData,isFeeding,isWaterChange,activeReminders,pausedReminders,updateForm,resetForm,edit,save,logWaterChange,toggle,remove}=state;
+ if(loading||profileLoading)return <main className="tt-reminder-type-page"><BackHomeButton fallback="/reminders"/><p>Loading reminders…</p></main>;
   return <main className="tt-reminder-type-page">
     <BackHomeButton fallback="/reminders" />
-    <nav className="tt-reminder-breadcrumbs" aria-label="Reminder navigation"><Link to="/reminders">🔔 Reminder Hub</Link><span>›</span><strong>{definition.icon} {definition.label}</strong></nav>
-    <section className="tt-reminder-type-hero"><div><p className="tt-reminder-type-eyebrow">REMINDER TYPE</p><h1>{definition.icon} {definition.label} Reminders</h1><p>{definition.description}</p>{isFeeding && <div className="tt-reminder-feeding-policy"><strong>🍽️ Feeding reminder cadence</strong><span>Choose one Tiny Titan. Every X days is anchored to that animal's latest actual feeding. Feeding early moves the next reminder with the real routine instead of preserving the old calendar date.</span></div>}{isWaterChange && <div className="tt-reminder-feeding-policy"><strong>💧 Water-change routine</strong><span>There is no hard-coded universal interval here. Choose the refresh interval that fits your enclosure routine, then log each completed change so the next due date is anchored to the real change.</span></div>}</div><div className="tt-reminder-type-stats"><span><strong>{activeReminders.length}</strong> active</span><span><strong>{pausedReminders.length}</strong> paused</span>{isWaterChange && <span><strong>{waterLogs.length}</strong> logged</span>}</div></section>
+    <nav className="tt-reminder-breadcrumbs" aria-label="Reminder navigation"><Link to="/reminders">🔔 Reminder Hub</Link><span>›</span><strong><TinyTitansIcon name={definition.icon} size={20} /> {definition.label}</strong></nav>
+    <section className="tt-reminder-type-hero"><div><p className="tt-reminder-type-eyebrow">REMINDER TYPE</p><h1><TinyTitansIcon name={definition.icon} size={20} /> {definition.label} Reminders</h1><p>{definition.description}</p>{isFeeding && <div className="tt-reminder-feeding-policy"><strong>🍽️ Feeding reminder cadence</strong><span>Choose one Tiny Titan. Every X days is anchored to that animal's latest actual feeding. Feeding early moves the next reminder with the real routine instead of preserving the old calendar date.</span></div>}{isWaterChange && <div className="tt-reminder-feeding-policy"><strong> Water-change routine</strong><span>There is no hard-coded universal interval here. Choose the refresh interval that fits your enclosure routine, then log each completed change so the next due date is anchored to the real change.</span></div>}</div><div className="tt-reminder-type-stats"><span><strong>{activeReminders.length}</strong> active</span><span><strong>{pausedReminders.length}</strong> paused</span>{isWaterChange && <span><strong>{waterLogs.length}</strong> logged</span>}</div></section>
     <section className="tt-reminder-editor-card">
       <div className="tt-reminder-editor-head"><div><p className="tt-reminder-type-eyebrow">{editingId ? "EDIT REMINDER" : "NEW REMINDER"}</p><h2>{editingId ? "Change this schedule" : `Create a ${definition.label.toLowerCase()} reminder`}</h2><p>This is a separate reminder record. Creating another one never replaces an existing reminder.</p></div>{editingId && <button type="button" className="tt-reminder-secondary" onClick={resetForm}>Cancel edit</button>}</div>
       <div className="tt-reminder-editor-grid">
         <label><span>Reminder name</span><input value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder={definition.defaultTitle} /></label>
-        <label><span>Applies to</span><select value={form.snakeId ?? (isFeeding ? "" : "all")} onChange={(event) => updateForm("snakeId", event.target.value === "all" || event.target.value === "" ? null : event.target.value)} required={isFeeding}><option value="">{isFeeding ? "🐍 Choose a Tiny Titan" : "🐍 All my snakes"}</option>{!isFeeding && <option value="all">🐍 All my snakes</option>}{snakes.map((snake) => <option key={snake.id} value={snake.id}>🐍 {snake.name}</option>)}</select>{isFeeding && <small>This reminder follows this Titan's actual feeding history.</small>}</label>
+        <label><span>Applies to</span><select value={form.snakeId ?? (isFeeding ? "" : "all")} onChange={(event) => updateForm("snakeId", event.target.value === "all" || event.target.value === "" ? null : event.target.value)} required={isFeeding}><option value="">{isFeeding ? " Choose a Tiny Titan" : " All my animals"}</option>{!isFeeding && <option value="all"> All my animals</option>}{snakes.map((snake) => <option key={snake.id} value={snake.id}> {snake.name}</option>)}</select>{isFeeding && <small>This reminder follows this Titan's actual feeding history.</small>}</label>
         <label className="wide"><span>Repeat every</span><div className="tt-reminder-frequency"><input type="number" min="1" max="3650" value={form.frequencyDays} onChange={(event) => updateForm("frequencyDays", Math.max(1, Number(event.target.value) || 1))} /><strong>days</strong><small>{isFeeding ? "The next due date is calculated from the latest actual feeding logged for the selected Titan." : isWaterChange ? "This controls the interval after each logged water change." : "The schedule keeps repeating until you change or pause it."}</small></div></label>
         <label><span>First due date</span><input type="date" value={form.startDate} onChange={(event) => updateForm("startDate", event.target.value)} /></label>
         <label><span>Reminder time</span><input type="time" value={form.time} onChange={(event) => updateForm("time", event.target.value)} /></label>
@@ -110,9 +31,10 @@ export default function ReminderTypePage() {
       <div className="tt-reminder-editor-actions"><button type="button" className="tt-reminder-primary" onClick={() => void save()} disabled={busy || loadingData}>{busy ? "Saving…" : editingId ? "Save changes" : `Create ${definition.label.toLowerCase()} reminder`}</button>{message && <p className="tt-reminder-message" role="status">{message}</p>}</div>
     </section>
     <section className="tt-reminder-type-list"><div className="tt-reminder-type-list-head"><div><p className="tt-reminder-type-eyebrow">SCHEDULES</p><h2>Your {definition.label.toLowerCase()} reminders</h2></div><Link to="/reminders">View all reminder types →</Link></div>
-      {activeReminders.length === 0 && pausedReminders.length === 0 ? <div className="tt-reminder-type-empty"><strong>No {definition.label.toLowerCase()} reminders yet.</strong><p>Create one above. You can have as many independent {definition.label.toLowerCase()} schedules as you need.</p></div> : <div className="tt-reminder-type-cards">{[...activeReminders, ...pausedReminders].map((reminder) => <article key={reminder.id} className="tt-reminder-type-card"><div className="tt-reminder-type-card-icon">{definition.icon}</div><div className="tt-reminder-type-card-main"><div className="tt-reminder-type-card-title"><div><span>{reminder.snakeName ? reminder.snakeName : "All snakes"}</span><h3>{reminder.title}</h3></div><em>{reminder.status === "active" ? "🟢 Active" : "⏸️ Paused"}</em></div><p className="tt-reminder-next"><strong>Next</strong> {formatNext(reminder.nextNotificationAt)}</p><div className="tt-reminder-meta"><span>Every {reminder.frequencyDays} days</span><span>{reminder.time}</span>{isFeeding ? <span>Anchored to actual feeding</span> : isWaterChange ? <span>Completion anchored</span> : reminder.leadUpEnabled ? <span>+ {reminder.leadUpDays} day lead-up</span> : null}</div><div className="tt-reminder-actions">{isWaterChange && reminder.status === "active" && <button type="button" onClick={() => void logWaterChange(reminder)} disabled={busy}>💧 Log water change</button>}<button type="button" onClick={() => edit(reminder)} disabled={busy}>Edit</button><button type="button" onClick={() => void toggle(reminder)} disabled={busy}>{reminder.status === "active" ? "Pause" : "Resume"}</button><button type="button" className="danger" onClick={() => void remove(reminder)} disabled={busy}>Delete</button></div></div></article>)}</div>}
+      {activeReminders.length === 0 && pausedReminders.length === 0 ? <div className="tt-reminder-type-empty"><strong>No {definition.label.toLowerCase()} reminders yet.</strong><p>Create one above. You can have as many independent {definition.label.toLowerCase()} schedules as you need.</p></div> : <div className="tt-reminder-type-cards">{[...activeReminders, ...pausedReminders].map((reminder) => <article key={reminder.id} className="tt-reminder-type-card"><div className="tt-reminder-type-card-icon"><TinyTitansIcon name={definition.icon} size={20} /></div><div className="tt-reminder-type-card-main"><div className="tt-reminder-type-card-title"><div><span>{reminder.snakeName ? reminder.snakeName : "All animals"}</span><h3>{reminder.title}</h3></div><em>{reminder.status === "active" ? "🟢 Active" : "Paused"}</em></div><p className="tt-reminder-next"><strong>Next</strong> {formatReminderNext(reminder.nextNotificationAt)}</p><div className="tt-reminder-meta"><span>Every {reminder.frequencyDays} days</span><span>{reminder.time}</span>{isFeeding ? <span>Anchored to actual feeding</span> : isWaterChange ? <span>Completion anchored</span> : reminder.leadUpEnabled ? <span>+ {reminder.leadUpDays} day lead-up</span> : null}</div><div className="tt-reminder-actions">{isWaterChange && reminder.status === "active" && <button type="button" onClick={() => void logWaterChange(reminder)} disabled={busy}> Log water change</button>}<button type="button" onClick={() => edit(reminder)} disabled={busy}>Edit</button><button type="button" onClick={() => void toggle(reminder)} disabled={busy}>{reminder.status === "active" ? "Pause" : "Resume"}</button><button type="button" className="danger" onClick={() => void remove(reminder)} disabled={busy}>Delete</button></div></div></article>)}</div>}
     </section>
-    {isWaterChange && <section className="tt-reminder-type-list"><div className="tt-reminder-type-list-head"><div><p className="tt-reminder-type-eyebrow">CARE HISTORY</p><h2>Recent water changes</h2></div><span>{waterLogs.length} recorded</span></div>{waterLogs.length === 0 ? <div className="tt-reminder-type-empty"><strong>No water changes logged yet.</strong><p>When you complete a scheduled change, it will appear here with the actual completion date.</p></div> : <div className="tt-reminder-type-cards">{waterLogs.map((log) => <article key={log.id} className="tt-reminder-type-card"><div className="tt-reminder-type-card-icon">💧</div><div className="tt-reminder-type-card-main"><div className="tt-reminder-type-card-title"><div><span>{log.snakeName || "All snakes"}</span><h3>Water change completed</h3></div></div><p className="tt-reminder-next"><strong>Completed</strong> {formatDateKey(log.date)}</p></div></article>)}</div>}</section>}
-    <nav className="tt-reminder-type-switcher" aria-label="Other reminder types"><strong>Other reminder types</strong>{REMINDER_DEFINITIONS.filter((item) => item.kind !== kind).map((item) => <Link key={item.kind} to={`/reminders/${item.kind}`}>{item.icon} {item.label}</Link>)}</nav>
+    {isWaterChange && <section className="tt-reminder-type-list"><div className="tt-reminder-type-list-head"><div><p className="tt-reminder-type-eyebrow">CARE HISTORY</p><h2>Recent water changes</h2></div><span>{waterLogs.length} recorded</span></div>{waterLogs.length === 0 ? <div className="tt-reminder-type-empty"><strong>No water changes logged yet.</strong><p>When you complete a scheduled change, it will appear here with the actual completion date.</p></div> : <div className="tt-reminder-type-cards">{waterLogs.map((log) => <article key={log.id} className="tt-reminder-type-card"><div className="tt-reminder-type-card-icon"></div><div className="tt-reminder-type-card-main"><div className="tt-reminder-type-card-title"><div><span>{log.snakeName || "All animals"}</span><h3>Water change completed</h3></div></div><p className="tt-reminder-next"><strong>Completed</strong> {formatReminderDateKey(log.date)}</p></div></article>)}</div>}</section>}
+    <nav className="tt-reminder-type-switcher" aria-label="Other reminder types"><strong>Other reminder types</strong>{REMINDER_DEFINITIONS.filter((item) => item.kind !== kind).map((item) => <Link key={item.kind} to={`/reminders/${item.kind}`}><TinyTitansIcon name={item.icon} size={18} /> {item.label}</Link>)}</nav>
   </main>;
+
 }

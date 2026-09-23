@@ -1,3 +1,4 @@
+import TinyTitansIcon from "../components/TinyTitansIcon";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { SPECIES_SOURCES } from "../data/species/speciesSources";
 import { getProfileEvidenceCoverage, getRangeEvidenceCoverage, getSpeciesEvidenceSummary } from "../data/species/speciesEvidence";
@@ -78,10 +79,10 @@ export default function SpeciesSafeHusbandryCare() {
       <header className="husbandry-hero">
         <div>
           <p className="husbandry-eyebrow">Tiny Titans · Evidence-led species care</p>
-          <h1>🌡️ {speciesName} Husbandry & Care</h1>
+          <h1><TinyTitansIcon name="husbandry" size={28} /> {speciesName} Husbandry & Care</h1>
           <p>Care information is separated by evidence scope. Tiny Titans distinguishes verified species guidance from recorded values awaiting source mapping, broader taxon guidance, ecology context and genuine evidence gaps.</p>
         </div>
-        <div className="husbandry-badge">🧠 {profileCoverage.label}</div>
+        <div className="husbandry-badge"><TinyTitansIcon name="titan" size={18} /> {profileCoverage.label}</div>
       </header>
 
       <section className="husbandry-panel">
@@ -97,15 +98,15 @@ export default function SpeciesSafeHusbandryCare() {
         <CoverageBadge status={profileCoverage.status} detail={profileCoverage.detail} />
         <p>{knowledge.summary}</p>
         <div className="husbandry-links">
-          <article className="husbandry-card"><strong>🌍 Distribution</strong><p>{knowledge.distribution ?? "Not mapped yet."}</p></article>
-          <article className="husbandry-card"><strong>🌿 Habitat</strong><p>{knowledge.habitat ?? "Not mapped yet."}</p></article>
-          <article className="husbandry-card"><strong>🍽️ Feeding context</strong><p>{knowledge.feeding?.notes ?? "Species-specific feeding context has not yet been mapped."}</p></article>
-          <article className="husbandry-card"><strong>🛡️ Safety boundaries</strong><p>{knowledge.safety?.handlingNotes ?? "Species-specific safety guidance has not yet been mapped."}</p></article>
+          <article className="husbandry-card"><strong><TinyTitansIcon name="community" size={17} /> Distribution</strong><p>{knowledge.distribution ?? "Not mapped yet."}</p></article>
+          <article className="husbandry-card"><strong><TinyTitansIcon name="husbandry" size={17} /> Habitat</strong><p>{knowledge.habitat ?? "Not mapped yet."}</p></article>
+          <article className="husbandry-card"><strong><TinyTitansIcon name="feeding" size={17} /> Feeding context</strong><p>{knowledge.feeding?.notes ?? "Species-specific feeding context has not yet been mapped."}</p></article>
+          <article className="husbandry-card"><strong><TinyTitansIcon name="health" size={17} /> Safety boundaries</strong><p>{knowledge.safety?.handlingNotes ?? "Species-specific safety guidance has not yet been mapped."}</p></article>
         </div>
       </section>
 
       <section className="husbandry-panel">
-        <p className="husbandry-eyebrow">🧾 EVIDENCE LEDGER</p>
+        <p className="husbandry-eyebrow"><TinyTitansIcon name="knowledge" size={15} /> EVIDENCE LEDGER</p>
         <h2>What Tiny Titans knows — and how confidently it knows it</h2>
         <div className="husbandry-stats husbandry-stats--five">
           <div><span>Numeric ranges</span><strong>{evidenceSummary.numericRanges}</strong></div>
@@ -120,14 +121,14 @@ export default function SpeciesSafeHusbandryCare() {
 
       {husbandry?.temperature && (
         <section className="husbandry-panel">
-          <p className="husbandry-eyebrow">🌡️ TEMPERATURE</p>
+          <p className="husbandry-eyebrow"><TinyTitansIcon name="husbandry" size={15} /> TEMPERATURE</p>
           <h2>Thermal guidance</h2>
           {hasTemperature ? (
             <div className="husbandry-grid husbandry-grid--four">
-              {husbandry.temperature.basking && <RangeCard label="☀️ Basking" range={husbandry.temperature.basking} species={selectedSpecies} />}
-              {husbandry.temperature.warmSide && <RangeCard label="🔥 Warm side" range={husbandry.temperature.warmSide} species={selectedSpecies} />}
-              {husbandry.temperature.coolSide && <RangeCard label="❄️ Cool side" range={husbandry.temperature.coolSide} species={selectedSpecies} />}
-              {husbandry.temperature.night && <RangeCard label="🌙 Night" range={husbandry.temperature.night} species={selectedSpecies} />}
+              {husbandry.temperature.basking && <RangeCard label="Basking" range={husbandry.temperature.basking} species={selectedSpecies} />}
+              {husbandry.temperature.warmSide && <RangeCard label="Warm side" range={husbandry.temperature.warmSide} species={selectedSpecies} />}
+              {husbandry.temperature.coolSide && <RangeCard label="Cool side" range={husbandry.temperature.coolSide} species={selectedSpecies} />}
+              {husbandry.temperature.night && <RangeCard label="Night" range={husbandry.temperature.night} species={selectedSpecies} />}
             </div>
           ) : (
             <CoverageBadge status={getRangeEvidenceCoverage(undefined, selectedSpecies).status} detail={getRangeEvidenceCoverage(undefined, selectedSpecies).detail} />
@@ -139,12 +140,12 @@ export default function SpeciesSafeHusbandryCare() {
 
       {husbandry?.humidity && (
         <section className="husbandry-panel">
-          <p className="husbandry-eyebrow">💧 HUMIDITY</p>
+          <p className="husbandry-eyebrow"><TinyTitansIcon name="water" size={15} /> HUMIDITY</p>
           <h2>Humidity guidance</h2>
           {hasHumidity ? (
             <div className="husbandry-grid husbandry-grid--four">
-              {husbandry.humidity.target && <RangeCard label="🎯 Target" range={husbandry.humidity.target} species={selectedSpecies} />}
-              {husbandry.humidity.acceptable && <RangeCard label="✅ Acceptable" range={husbandry.humidity.acceptable} species={selectedSpecies} />}
+              {husbandry.humidity.target && <RangeCard label="Target" range={husbandry.humidity.target} species={selectedSpecies} />}
+              {husbandry.humidity.acceptable && <RangeCard label="Acceptable" range={husbandry.humidity.acceptable} species={selectedSpecies} />}
             </div>
           ) : (
             <CoverageBadge status={getRangeEvidenceCoverage(undefined, selectedSpecies).status} detail={getRangeEvidenceCoverage(undefined, selectedSpecies).detail} />
@@ -156,7 +157,7 @@ export default function SpeciesSafeHusbandryCare() {
 
       {husbandry?.enclosure && (
         <section className="husbandry-panel">
-          <p className="husbandry-eyebrow">🏠 ENCLOSURE</p>
+          <p className="husbandry-eyebrow"><TinyTitansIcon name="enclosure" size={15} /> ENCLOSURE</p>
           <h2>Species-appropriate enclosure context</h2>
           <div className="husbandry-links">
             {husbandry.enclosure.habitatType?.length ? <article className="husbandry-card"><strong>Habitat / lifestyle</strong><p>{husbandry.enclosure.habitatType.join(", ")}</p></article> : null}
@@ -173,7 +174,7 @@ export default function SpeciesSafeHusbandryCare() {
 
       {knowledge.feeding && (
         <section className="husbandry-panel">
-          <p className="husbandry-eyebrow">🍽️ FEEDING</p>
+          <p className="husbandry-eyebrow"><TinyTitansIcon name="feeding" size={15} /> FEEDING</p>
           <h2>Feeding evidence</h2>
           <p>{knowledge.feeding.notes}</p>
           {knowledge.feeding.evidenceSummary && <EvidenceNote evidence={knowledge.feeding.evidenceSummary} />}
@@ -182,7 +183,7 @@ export default function SpeciesSafeHusbandryCare() {
 
       {knowledge.breeding && (
         <section className="husbandry-panel">
-          <p className="husbandry-eyebrow">🧬 BREEDING CONTEXT</p>
+          <p className="husbandry-eyebrow"><TinyTitansIcon name="breeding" size={15} /> BREEDING CONTEXT</p>
           <h2>Breeding evidence</h2>
           <CoverageBadge status={getProfileEvidenceCoverage(selectedSpecies, knowledge.breeding.evidenceLevel, knowledge.breeding.evidenceSummary).status} detail={getProfileEvidenceCoverage(selectedSpecies, knowledge.breeding.evidenceLevel, knowledge.breeding.evidenceSummary).detail} />
           {knowledge.breeding.evidenceSummary && <EvidenceNote evidence={knowledge.breeding.evidenceSummary} />}
@@ -193,7 +194,7 @@ export default function SpeciesSafeHusbandryCare() {
 
       {husbandry?.cohabitation && (
         <section className="husbandry-panel">
-          <p className="husbandry-eyebrow">🐍 COHABITATION</p>
+          <p className="husbandry-eyebrow"><TinyTitansIcon name="reptile" size={15} /> COHABITATION</p>
           <h2>{husbandry.cohabitation.recommendation}</h2>
           <p>{husbandry.cohabitation.rationale}</p>
         </section>

@@ -9,24 +9,24 @@
 
 :root {
   /* Refined brand palette — slightly quieter, still unmistakably Tiny Titans. */
-  --tt-ui-bg: #0c0a0f;
-  --tt-ui-surface: #131017;
-  --tt-ui-surface-raised: #19151e;
-  --tt-ui-surface-soft: #201b26;
-  --tt-ui-surface-elevated: #27212f;
-  --tt-ui-border: rgba(255,255,255,.075);
-  --tt-ui-border-strong: rgba(255,255,255,.125);
-  --tt-ui-text: #f6f3f8;
-  --tt-ui-text-soft: #cbc3d1;
-  --tt-ui-text-muted: #938a9e;
-  --tt-ui-purple: #8c69ab;
-  --tt-ui-purple-strong: #b58bcf;
-  --tt-ui-blue: #69b6d4;
-  --tt-ui-gold: #e2b66d;
+  --tt-ui-bg: #140022;
+  --tt-ui-surface: #26083d;
+  --tt-ui-surface-raised: #32104f;
+  --tt-ui-surface-soft: #401660;
+  --tt-ui-surface-elevated: #4a1b6e;
+  --tt-ui-border: rgba(0,174,255,.24);
+  --tt-ui-border-strong: rgba(0,174,255,.42);
+  --tt-ui-text: #f5b642;
+  --tt-ui-text-soft: #eadff0;
+  --tt-ui-text-muted: #d6a94a;
+  --tt-ui-purple: #6f24b8;
+  --tt-ui-purple-strong: #8c42d0;
+  --tt-ui-blue: #00aeff;
+  --tt-ui-gold: #f5b642;
   --tt-ui-success: #58c59d;
-  --tt-ui-warning: #dda861;
+  --tt-ui-warning: #f5b642;
   --tt-ui-danger: #e77676;
-  --tt-ui-info: #70b9d8;
+  --tt-ui-info: #72c8ef;
   --tt-ui-radius-sm: 9px;
   --tt-ui-radius-md: 13px;
   --tt-ui-radius-lg: 17px;
@@ -37,27 +37,27 @@
   --tt-ui-content-max: 1460px;
 
   /* Quiet the original v2 design tokens without removing semantic meaning. */
-  --tt-purple-950: #0c0a0f;
-  --tt-purple-900: #15111a;
-  --tt-purple-850: #1b1621;
-  --tt-purple-800: #241d2b;
-  --tt-purple-700: #2e2437;
-  --tt-purple-600: #483757;
-  --tt-purple-500: #654b7d;
-  --tt-purple-400: #80619c;
-  --tt-purple-300: #a083bc;
+  --tt-purple-950: #140022;
+  --tt-purple-900: #1b0530;
+  --tt-purple-850: #26083d;
+  --tt-purple-800: #32104f;
+  --tt-purple-700: #401660;
+  --tt-purple-600: #522074;
+  --tt-purple-500: #6f24b8;
+  --tt-purple-400: #8c42d0;
+  --tt-purple-300: #b985df;
 
-  --tt-gold-700: #a87533;
-  --tt-gold-600: #c58e43;
-  --tt-gold-500: #e2b66d;
-  --tt-gold-400: #edc580;
-  --tt-gold-300: #f4d7a4;
+  --tt-gold-700: #b96f00;
+  --tt-gold-600: #d88900;
+  --tt-gold-500: #f0a51a;
+  --tt-gold-400: #ffb83d;
+  --tt-gold-300: #ffd27a;
 
-  --tt-blue-700: #3e829f;
-  --tt-blue-600: #4d99b9;
-  --tt-blue-500: #69b6d4;
-  --tt-blue-400: #86c8e1;
-  --tt-blue-300: #b3deed;
+  --tt-blue-700: #007bb8;
+  --tt-blue-600: #0097d7;
+  --tt-blue-500: #00b7f0;
+  --tt-blue-400: #29c8ff;
+  --tt-blue-300: #77ddff;
 
   --tt-teal-700: #176b66;
   --tt-teal-600: #278781;
@@ -117,7 +117,7 @@ body {
     radial-gradient(circle at 5% -12%, rgba(140,105,171,.15), transparent 34rem),
     radial-gradient(circle at 96% 0%, rgba(105,182,212,.055), transparent 30rem),
     radial-gradient(circle at 50% 118%, rgba(73,168,160,.04), transparent 34rem),
-    linear-gradient(180deg, #0c0a0f 0%, #0d0b10 100%);
+    linear-gradient(180deg,#170025 0%,#12001f 55%,#0e0018 100%);
   color: var(--tt-ui-text);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -257,7 +257,7 @@ body {
 .app-header {
   min-height: 68px;
   border-bottom: 1px solid rgba(181,139,207,.12) !important;
-  background: rgba(13,10,16,.86) !important;
+  background: rgba(20,0,34,.90) !important;
   box-shadow: 0 8px 28px rgba(0,0,0,.12);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);

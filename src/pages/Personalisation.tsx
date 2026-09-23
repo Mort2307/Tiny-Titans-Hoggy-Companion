@@ -1,90 +1,30 @@
-import { useState } from "react";
-import { doc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth, type UserCategory } from "../context/useAuth";
-import type { AgeBand, EducatorTeachingLevel, LearningLevel, ProfileType } from "../types/Profile";
-import app from "../firebase/config";
-import { TITAN_AT_A_GLANCE_OPTIONS, TITAN_WEEKLY_METRIC_OPTIONS, WEEK_START_OPTIONS, MAX_SLICES, MIN_SLICES, MAX_WEEKLY_METRICS, MIN_WEEKLY_METRICS, useEasyNav, type TitanAtAGlanceSliceId, type TitanWeeklyMetricId, type WeekStartDay } from "../context/EasyNavContext";
-import { TINY_TITANS_OWNER_EMAIL } from "../services/capabilityService";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import { Link } from "react-router-dom";
+import type { EducatorTeachingLevel } from "../types/Profile";
+import { usePersonalisation } from "../hooks/usePersonalisation";
 import "../styles/Personalisation.css";
 
-const db = getFirestore(app);
-const profileTypes: Array<[ProfileType, string, string]> = [["keeper", "🐍", "Keeper"], ["learner", "🎓", "Learner"], ["educator", "🧑‍🏫", "Educator"], ["professional", "🔬", "Professional"]];
-const levels: Array<[AgeBand, LearningLevel, string]> = [["7-10", "explorer", "Explorer"], ["11-14", "learner", "Learner"], ["15-18", "student", "Student"], ["adult", "adult", "Adult"]];
-const teachingLevels: Array<[EducatorTeachingLevel, string]> = [["primary", "Primary"], ["secondary", "Secondary"], ["college", "College"], ["university", "University"], ["homeschool", "Homeschool"], ["club", "Club / Group"], ["other", "Other"]];
-
 export default function Personalisation() {
-  const { user, profile, refreshProfile } = useAuth();
-  const { mode, slices, setMode, setSlices, resetSlices, weekStartDay, weeklyMetrics, setWeekStartDay, setWeeklyMetrics, resetWeeklyPreferences } = useEasyNav();
-  const navigate = useNavigate();
-  const canUseCreatorSlice = String(user?.email || "").trim().toLowerCase() === TINY_TITANS_OWNER_EMAIL;
-  const [profileType, setProfileType] = useState<ProfileType>(profile?.profileType === "creator" ? "professional" : profile?.profileType ?? "keeper");
-  const [category, setCategory] = useState<UserCategory>(profile?.category ?? "adult");
-  const [ageBand, setAgeBand] = useState<AgeBand>(profile?.ageBand ?? "adult");
-  const [learningLevel, setLearningLevel] = useState<LearningLevel>(profile?.learningLevel ?? "adult");
-  const [experience, setExperience] = useState(profile?.experienceLevel ?? "beginner");
-  const [teachingLevel, setTeachingLevel] = useState<EducatorTeachingLevel>(profile?.educatorProfile?.teachingLevel ?? "other");
-  const [subjects, setSubjects] = useState(profile?.educatorProfile?.subjects?.join(", ") ?? "Biology, Science");
-  const [organisationName, setOrganisationName] = useState(profile?.educatorProfile?.organisationName ?? "");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const {
+    user,navigate,mode,slices,resetSlices,weekStartDay,weeklyMetrics,resetWeeklyPreferences,canUseCreatorSlice,
+    setProfileType,profileType,category,setCategory,ageBand,setAgeBand,setLearningLevel,experience,setExperience,
+    teachingLevel,setTeachingLevel,subjects,setSubjects,organisationName,setOrganisationName,saving,saved,
+    profileTypes,levels,teachingLevels,save,chooseMode,toggleSlice,moveSlice,toggleWeeklyMetric,chooseWeekStart,
+    TITAN_AT_A_GLANCE_OPTIONS,TITAN_WEEKLY_METRIC_OPTIONS,WEEK_START_OPTIONS,MAX_SLICES,MIN_SLICES,MAX_WEEKLY_METRICS,MIN_WEEKLY_METRICS,
+  } = usePersonalisation();
 
-  async function save() {
-    if (!user) return;
-    setSaving(true); setSaved(false);
-    const data: Record<string, unknown> = { profileType, category, ageBand, learningLevel, experienceLevel: experience, updatedAt: serverTimestamp() };
-    if (profileType === "educator") data.educatorProfile = { teachingLevel, subjects: subjects.split(",").map((item) => item.trim()).filter(Boolean), studentAgeBands: profile?.educatorProfile?.studentAgeBands?.length ? profile.educatorProfile.studentAgeBands : ["11-14"], reptileExperience: experience === "pro" ? "advanced" : experience, organisationName: organisationName.trim() || undefined, verified: profile?.educatorProfile?.verified === true };
-    await setDoc(doc(db, "users", user.uid), data, { merge: true });
-    await refreshProfile();
-    setSaved(true); setSaving(false);
-  }
-
-  async function chooseMode(nextMode: "standard" | "easy") { await setMode(nextMode); }
-
-  async function toggleSlice(id: TitanAtAGlanceSliceId) {
-    if (slices.includes(id)) {
-      if (slices.length <= MIN_SLICES) return;
-      await setSlices(slices.filter((slice) => slice !== id));
-      return;
-    }
-    if (slices.length >= MAX_SLICES) return;
-    await setSlices([...slices, id]);
-  }
-
-  async function moveSlice(index: number, direction: -1 | 1) {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= slices.length) return;
-    const next = [...slices];
-    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-    await setSlices(next);
-  }
-
-  async function toggleWeeklyMetric(id: TitanWeeklyMetricId) {
-    if (weeklyMetrics.includes(id)) {
-      if (weeklyMetrics.length <= MIN_WEEKLY_METRICS) return;
-      await setWeeklyMetrics(weeklyMetrics.filter((metric) => metric !== id));
-      return;
-    }
-    if (weeklyMetrics.length >= MAX_WEEKLY_METRICS) return;
-    await setWeeklyMetrics([...weeklyMetrics, id]);
-  }
-
-  async function chooseWeekStart(value: string) {
-    const parsed = Number(value);
-    if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 6) await setWeekStartDay(parsed as WeekStartDay);
-  }
-
+  if (!user) return null;
   return <main className="page-container personalisation-page"><section className="personalisation-shell"><p className="personalisation-eyebrow">Tiny Titans Profile</p><h1>Personalise your experience</h1><p>Choose how Tiny Titans presents the same full feature set. Your navigation preference does not remove intelligence, records, genetics, reminders or any underlying tool.</p>
-    <section className="personalisation-card tt-nav-mode-card"><h2>⚡ App Experience</h2><p><strong>Quick Mode is the full Tiny Titans app, just easier to move around.</strong> Classic keeps the current navigation. Quick Mode adds the At a Glance command centre, compact navigation and a searchable full-app toolbox.</p><div className="personalisation-grid"><button className={mode === "standard" ? "selected" : ""} onClick={() => void chooseMode("standard")}>🧭 Classic<small>Current full navigation</small></button><button className={mode === "easy" ? "selected" : ""} onClick={() => void chooseMode("easy")}>⚡ Quick Mode<small>Full app · faster navigation</small></button></div></section>
+    <section className="personalisation-card tt-nav-mode-card"><h2><TinyTitansIcon name="titan" size={22} /> App Experience</h2><p><strong>Quick Mode is the full Tiny Titans app, just easier to move around.</strong> Classic keeps the current navigation. Quick Mode adds the At a Glance command centre, compact navigation and a searchable full-app toolbox.</p><div className="personalisation-grid"><button className={mode === "standard" ? "selected" : ""} onClick={() => void chooseMode("standard")}><TinyTitansIcon name="compass" size={20} /> Classic<small>Current full navigation</small></button><button className={mode === "easy" ? "selected" : ""} onClick={() => void chooseMode("easy")}><TinyTitansIcon name="titan" size={20} /> Quick Mode<small>Full app · faster navigation</small></button></div></section>
     {mode === "easy" && <>
-      <section className="personalisation-card tt-pie-settings"><div className="tt-pie-settings-heading"><div><h2>🥧 Your Titan Pie</h2><p>Choose {MIN_SLICES}–{MAX_SLICES} things you want at your fingertips. Each slice is a live shortcut and can open the relevant tool in one tap from any part of the app.</p></div><span>{slices.length}/{MAX_SLICES}</span></div><div className="tt-selected-slices">{slices.map((id, index) => { const option = TITAN_AT_A_GLANCE_OPTIONS.find((item) => item.id === id)!; return <div key={id} className="tt-selected-slice"><span>{option.icon}</span><strong>{option.label}</strong><div><button aria-label={`Move ${option.label} left`} onClick={() => void moveSlice(index, -1)} disabled={index === 0}>←</button><button aria-label={`Move ${option.label} right`} onClick={() => void moveSlice(index, 1)} disabled={index === slices.length - 1}>→</button><button aria-label={`Remove ${option.label}`} onClick={() => void toggleSlice(id)} disabled={slices.length <= MIN_SLICES}>×</button></div></div>; })}</div><div className="tt-pie-options"><h3>Add a slice</h3><div className="tt-pie-option-grid">{TITAN_AT_A_GLANCE_OPTIONS.filter((option) => !option.creatorOnly || canUseCreatorSlice).filter((option) => !slices.includes(option.id)).map((option) => <button key={option.id} className="tt-pie-option" onClick={() => void toggleSlice(option.id)} disabled={slices.length >= MAX_SLICES}><span>{option.icon}</span><strong>{option.label}</strong><small>{option.description}</small></button>)}</div></div><button className="tt-pie-reset" onClick={() => void resetSlices()}>Reset to essentials</button></section>
-      <section id="this-week" className="personalisation-card tt-week-settings"><div className="tt-week-settings-heading"><div><h2>📅 This Week</h2><p>Make the week match your real keeper routine. Your settings are remembered for the next week and all weekly totals come from existing records.</p></div></div><label className="tt-week-start-label" htmlFor="tt-week-start">Week starts on<select id="tt-week-start" value={String(weekStartDay)} onChange={(event) => void chooseWeekStart(event.target.value)}>{WEEK_START_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><div className="tt-week-metric-heading"><h3>Track in This Week</h3><span>{weeklyMetrics.length}/{MAX_WEEKLY_METRICS}</span></div><p className="tt-week-limit">Choose {MIN_WEEKLY_METRICS}–{MAX_WEEKLY_METRICS} weekly measures.</p><div className="tt-week-metric-grid">{TITAN_WEEKLY_METRIC_OPTIONS.map((option) => <button key={option.id} className={`tt-week-metric-option${weeklyMetrics.includes(option.id) ? " selected" : ""}`} onClick={() => void toggleWeeklyMetric(option.id)} disabled={!weeklyMetrics.includes(option.id) && weeklyMetrics.length >= MAX_WEEKLY_METRICS}><span>{option.icon}</span><strong>{option.label}</strong><small>{option.description}</small></button>)}</div><button className="tt-pie-reset" onClick={() => void resetWeeklyPreferences()}>Reset weekly preferences</button></section>
+      <section className="personalisation-card tt-pie-settings"><div className="tt-pie-settings-heading"><div><h2><TinyTitansIcon name="titan" size={22} /> Your Titan Pie</h2><p>Choose {MIN_SLICES}–{MAX_SLICES} things you want at your fingertips. Each slice is a live shortcut and can open the relevant tool in one tap from any part of the app.</p></div><span>{slices.length}/{MAX_SLICES}</span></div><div className="tt-selected-slices">{slices.map((id, index) => { const option = TITAN_AT_A_GLANCE_OPTIONS.find((item) => item.id === id)!; return <div key={id} className="tt-selected-slice"><span><TinyTitansIcon name={option.icon} size={21} /></span><strong>{option.label}</strong><div><button aria-label={`Move ${option.label} left`} onClick={() => void moveSlice(index, -1)} disabled={index === 0}><TinyTitansIcon name="back" size={16} /></button><button aria-label={`Move ${option.label} right`} onClick={() => void moveSlice(index, 1)} disabled={index === slices.length - 1}><TinyTitansIcon name="forward" size={16} /></button><button aria-label={`Remove ${option.label}`} onClick={() => void toggleSlice(id)} disabled={slices.length <= MIN_SLICES}><TinyTitansIcon name="close" size={16} /></button></div></div>; })}</div><div className="tt-pie-options"><h3>Add a slice</h3><div className="tt-pie-option-grid">{TITAN_AT_A_GLANCE_OPTIONS.filter((option) => !option.creatorOnly || canUseCreatorSlice).filter((option) => !slices.includes(option.id)).map((option) => <button key={option.id} className="tt-pie-option" onClick={() => void toggleSlice(option.id)} disabled={slices.length >= MAX_SLICES}><span><TinyTitansIcon name={option.icon} size={22} /></span><strong>{option.label}</strong><small>{option.description}</small></button>)}</div></div><button className="tt-pie-reset" onClick={() => void resetSlices()}><TinyTitansIcon name="forward" size={15} /> Reset to essentials</button></section>
+      <section id="this-week" className="personalisation-card tt-week-settings"><div className="tt-week-settings-heading"><div><h2><TinyTitansIcon name="timeline" size={22} /> This Week</h2><p>Make the week match your real keeper routine. Your settings are remembered for the next week and all weekly totals come from existing records.</p></div></div><label className="tt-week-start-label" htmlFor="tt-week-start">Week starts on<select id="tt-week-start" value={String(weekStartDay)} onChange={(event) => void chooseWeekStart(event.target.value)}>{WEEK_START_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><div className="tt-week-metric-heading"><h3>Track in This Week</h3><span>{weeklyMetrics.length}/{MAX_WEEKLY_METRICS}</span></div><p className="tt-week-limit">Choose {MIN_WEEKLY_METRICS}–{MAX_WEEKLY_METRICS} weekly measures.</p><div className="tt-week-metric-grid">{TITAN_WEEKLY_METRIC_OPTIONS.map((option) => <button key={option.id} className={`tt-week-metric-option${weeklyMetrics.includes(option.id) ? " selected" : ""}`} onClick={() => void toggleWeeklyMetric(option.id)} disabled={!weeklyMetrics.includes(option.id) && weeklyMetrics.length >= MAX_WEEKLY_METRICS}><span><TinyTitansIcon name={option.icon} size={22} /></span><strong>{option.label}</strong><small>{option.description}</small></button>)}</div><button className="tt-pie-reset" onClick={() => void resetWeeklyPreferences()}><TinyTitansIcon name="forward" size={15} /> Reset weekly preferences</button></section>
     </>}
-    <section className="personalisation-card"><h2>How do you use Tiny Titans?</h2><div className="personalisation-grid">{profileTypes.map(([id, icon, title]) => <button key={id} className={profileType === id ? "selected" : ""} onClick={() => setProfileType(id)}>{icon} {title}</button>)}</div></section>
-    <section className="personalisation-card"><h2>Who is this account for?</h2><div className="personalisation-grid"><button className={category === "adult" ? "selected" : ""} onClick={() => setCategory("adult")}>🧑 Adult</button><button className={category === "child" ? "selected" : ""} onClick={() => setCategory("child")}>👦 Child</button></div><p>Child mode uses simpler language and stronger learning scaffolding; it does not change the underlying science.</p></section>
+    <section className="personalisation-card"><h2>How do you use Tiny Titans?</h2><div className="personalisation-grid">{profileTypes.map(([id, icon, title]) => <button key={id} className={profileType === id ? "selected" : ""} onClick={() => setProfileType(id)}><TinyTitansIcon name={icon} size={20} /> {title}</button>)}</div></section>
+    <section className="personalisation-card"><h2>Who is this account for?</h2><div className="personalisation-grid"><button className={category === "adult" ? "selected" : ""} onClick={() => setCategory("adult")}><TinyTitansIcon name="account" size={20} /> Adult</button><button className={category === "child" ? "selected" : ""} onClick={() => setCategory("child")}><TinyTitansIcon name="family" size={20} /> Child</button></div><p>Child mode uses simpler language and stronger learning scaffolding; it does not change the underlying science.</p></section>
     <section className="personalisation-card"><h2>Learning layer</h2><div className="personalisation-grid">{levels.map(([age, level, title]) => <button key={age} className={ageBand === age ? "selected" : ""} onClick={() => { setAgeBand(age); setLearningLevel(level); }}>{title}<small>{age === "adult" ? "Adult" : `Approx. ages ${age}`}</small></button>)}</div></section>
-    <section className="personalisation-card"><h2>Reptile experience</h2><div className="personalisation-grid"><button className={experience === "beginner" ? "selected" : ""} onClick={() => setExperience("beginner")}>🌱 Beginner</button><button className={experience === "intermediate" ? "selected" : ""} onClick={() => setExperience("intermediate")}>🦎 Intermediate</button><button className={experience === "pro" ? "selected" : ""} onClick={() => setExperience("pro")}>🧬 Advanced</button></div></section>
-    {profileType === "educator" && <section className="personalisation-card"><h2>🧑‍🏫 Educator settings</h2><label>Teaching environment<select value={teachingLevel} onChange={(event) => setTeachingLevel(event.target.value as EducatorTeachingLevel)}>{teachingLevels.map(([id, title]) => <option key={id} value={id}>{title}</option>)}</select></label><label>Subjects<input value={subjects} onChange={(event) => setSubjects(event.target.value)} /></label><label>Organisation (optional)<input value={organisationName} onChange={(event) => setOrganisationName(event.target.value)} /></label></section>}
-    {saved && <p className="personalisation-saved">✓ Preferences saved</p>}<button className="personalisation-save" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : "Save preferences"}</button>{profileType === "educator" && <Link className="personalisation-link" to="/educator">Open Educator Centre →</Link>}<button className="personalisation-back" onClick={() => navigate(-1)}>← Back</button>
+    <section className="personalisation-card"><h2>Reptile experience</h2><div className="personalisation-grid"><button className={experience === "beginner" ? "selected" : ""} onClick={() => setExperience("beginner")}><TinyTitansIcon name="husbandry" size={20} /> Beginner</button><button className={experience === "intermediate" ? "selected" : ""} onClick={() => setExperience("intermediate")}><TinyTitansIcon name="reptile" size={20} /> Intermediate</button><button className={experience === "pro" ? "selected" : ""} onClick={() => setExperience("pro")}><TinyTitansIcon name="creator" size={20} /> Advanced</button></div></section>
+    {profileType === "educator" && <section className="personalisation-card"><h2><TinyTitansIcon name="educator" size={22} /> Educator settings</h2><label>Teaching environment<select value={teachingLevel} onChange={(event) => setTeachingLevel(event.target.value as EducatorTeachingLevel)}>{teachingLevels.map(([id, title]) => <option key={id} value={id}>{title}</option>)}</select></label><label>Subjects<input value={subjects} onChange={(event) => setSubjects(event.target.value)} /></label><label>Organisation (optional)<input value={organisationName} onChange={(event) => setOrganisationName(event.target.value)} /></label></section>}
+    {saved && <p className="personalisation-saved"><TinyTitansIcon name="check" size={16} /> Preferences saved</p>}<button className="personalisation-save" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : <><TinyTitansIcon name="save" size={18} /> Save preferences</>}</button>{profileType === "educator" && <Link className="personalisation-link" to="/educator">Open Educator Centre <TinyTitansIcon name="forward" size={15} /></Link>}<button className="personalisation-back" onClick={() => navigate(-1)}><TinyTitansIcon name="back" size={16} /> Back</button>
   </section></main>;
 }

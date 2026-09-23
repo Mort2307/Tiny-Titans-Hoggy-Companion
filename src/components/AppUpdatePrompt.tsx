@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import TinyTitansIcon from "./TinyTitansIcon";
+import "../styles/AppUpdatePrompt.css";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
 const UPDATE_TIMEOUT_MS = 15000;
@@ -23,12 +25,14 @@ declare global {
 
 export default function AppUpdatePrompt() {
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(() => Boolean(window.__tinyTitansUpdatePending));
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState(false);
   const mandatory = import.meta.env.VITE_TINY_TITANS_FORCE_UPDATE === "true";
 
   useEffect(() => {
     const show = () => {
+      setPending(true);
       setUpdateError(false);
       setOpen(true);
     };
@@ -127,12 +131,11 @@ export default function AppUpdatePrompt() {
     };
   }, []);
 
-  if (!open) return null;
-
   const updateNow = async () => {
     if (updating) return;
     setUpdating(true);
     setUpdateError(false);
+    setPending(false);
     window.__tinyTitansUpdatePending = false;
 
     try {
@@ -165,9 +168,27 @@ export default function AppUpdatePrompt() {
       console.error("[Tiny Titans] Failed to apply app update", error);
       setUpdating(false);
       setUpdateError(true);
+      setPending(true);
       window.__tinyTitansUpdatePending = true;
     }
   };
+
+  if (!open) {
+    if (!pending) return null;
+
+    return (
+      <button
+        type="button"
+        className="tt-update-manual"
+        onClick={() => void updateNow()}
+        disabled={updating}
+        aria-label="Apply the available Tiny Titans update"
+        title="A newer Tiny Titans version is ready"
+      >
+        {updating ? "Updating…" : "Update available"}
+      </button>
+    );
+  }
 
   return (
     <div className="tt-update-backdrop" role="presentation">
@@ -178,7 +199,7 @@ export default function AppUpdatePrompt() {
         aria-labelledby="tt-update-title"
         aria-describedby="tt-update-description"
       >
-        <div className="tt-update-logo" aria-hidden="true">🦎</div>
+        <div className="tt-update-logo" aria-hidden="true"><TinyTitansIcon name="reptiles" size={54} /></div>
         <p className="tt-update-kicker">TINY TITANS UPDATE</p>
         <h2 id="tt-update-title">A newer Tiny Titans is ready</h2>
         <p id="tt-update-description">

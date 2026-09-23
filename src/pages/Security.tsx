@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { sendPasswordResetEmail, updatePassword } from "firebase/auth";
+import { sendPasswordResetEmail, signOut, updatePassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { auth } from "../firebase/config";
+import { deleteMyAccount } from "../services/accountDeletionService";
 
 export default function Security() {
   const { user } = useAuth();
@@ -12,6 +13,8 @@ export default function Security() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [deleteText, setDeleteText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   async function changePassword(event: React.FormEvent) {
     event.preventDefault();
@@ -26,6 +29,19 @@ export default function Security() {
       console.error("Tiny Titans: password change failed", err);
       setError("For security, Firebase may require you to sign in again before changing your password. Use the password-reset option below if this happens.");
     } finally { setSaving(false); }
+  }
+
+  async function deleteAccount() {
+    if (!user || deleteText.trim().toUpperCase() !== "DELETE" || deleting) return;
+    setDeleting(true); setError(""); setMessage("");
+    try {
+      await deleteMyAccount();
+      await signOut(auth);
+      navigate("/login?deleted=1", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Your account could not be deleted.");
+      setDeleting(false);
+    }
   }
 
   async function sendReset() {
@@ -49,6 +65,14 @@ export default function Security() {
       {error && <p role="alert">⚠️ {error}</p>}{message && <p className="personalisation-saved">✓ {message}</p>}
       <button className="personalisation-save" type="submit" disabled={saving}>{saving ? "Saving…" : "Change password"}</button>
     </form>
+    <section className="personalisation-card">
+      <h2>Delete my account</h2>
+      <p>This permanently deletes your Tiny Titans account, personal records, uploaded personal media and paid workspace data. Active Stripe subscriptions are cancelled first.</p>
+      <p><strong>Rescue organisation owners must transfer organisation ownership before deletion.</strong></p>
+      <label>Type DELETE to confirm<input type="text" value={deleteText} onChange={(event) => setDeleteText(event.target.value)} autoCapitalize="characters" autoComplete="off" spellCheck={false} /></label>
+      <button className="personalisation-save" type="button" disabled={deleting || deleteText.trim().toUpperCase() !== "DELETE"} onClick={() => void deleteAccount()}>{deleting ? "Permanently deleting…" : "Delete my account"}</button>
+      <p className="setup-help">For your security, Firebase requires a recent sign-in before permanent deletion. Do not use this action if you only want to remove a single reptile record.</p>
+    </section>
     <section className="personalisation-card"><h2>Forgotten password</h2><p>Send a secure password-reset email to the address on your account.</p><button className="personalisation-save" type="button" onClick={() => void sendReset()} disabled={saving}>📧 Send password reset email</button></section>
     <button className="personalisation-back" type="button" onClick={() => navigate("/account")}>← Back to My Account</button>
   </section></main>;

@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { findSnakeSpecies, INITIAL_SNAKE_SPECIES } from "../data/species/speciesRegistry";
 
-const STORAGE_KEY = "tiny-titans:selected-species:v1";
-const DEFAULT_SPECIES_ID = "heterodon-nasicus";
+const STORAGE_KEY = "tiny-titans:selected-species:v2";
+const DEFAULT_SPECIES_ID = "";
 
 type SpeciesContextValue = {
   selectedSpeciesId: string;
@@ -36,7 +36,7 @@ export function SpeciesContextProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!findSnakeSpecies(selectedSpeciesId)) setSelectedSpeciesIdState(DEFAULT_SPECIES_ID);
+    if (selectedSpeciesId && !findSnakeSpecies(selectedSpeciesId)) setSelectedSpeciesIdState(DEFAULT_SPECIES_ID);
   }, [selectedSpeciesId]);
 
   const value = useMemo(() => ({

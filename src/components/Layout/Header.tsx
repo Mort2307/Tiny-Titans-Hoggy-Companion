@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../../assets/TinyTitans-Logo.jpg";
 import { useAuth } from "../../context/useAuth";
@@ -36,7 +36,7 @@ function workspaceIcon(productId: WorkspacePresentation["productId"]) {
   if (productId === "titan_seller") return "marketplace" as const;
   if (productId.startsWith("business_")) return "community" as const;
   if (productId === "titan_pro") return "titan" as const;
-  return "reptile" as const;
+  return "animals" as const;
 }
 
 function Header() {
@@ -46,12 +46,41 @@ function Header() {
   const [paidAccess, setPaidAccess] = useState<PaidAccess | null>(null);
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(getWorkspacePresentation);
   const [qaOpen, setQaOpen] = useState(false);
+  const [qaMenuTop, setQaMenuTop] = useState<number | null>(null);
+  const qaButtonRef = useRef<HTMLButtonElement | null>(null);
   const [qaBusy, setQaBusy] = useState(false);
   const [qaMessage, setQaMessage] = useState("");
 
   const creatorMode = profile?.role === "admin";
 
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
+
+  useEffect(() => {
+    if (!qaOpen) return;
+    const positionMenu = () => {
+      const button = qaButtonRef.current;
+      if (button) setQaMenuTop(button.getBoundingClientRect().bottom + 8);
+    };
+    positionMenu();
+    window.addEventListener("resize", positionMenu);
+    window.addEventListener("scroll", positionMenu, true);
+    return () => {
+      window.removeEventListener("resize", positionMenu);
+      window.removeEventListener("scroll", positionMenu, true);
+    };
+  }, [qaOpen]);
+
+  function toggleQaMenu() {
+    setQaOpen((value) => {
+      const next = !value;
+      if (!value) window.requestAnimationFrame(() => {
+        const button = qaButtonRef.current;
+        if (button) setQaMenuTop(button.getBoundingClientRect().bottom + 8);
+      });
+      return next;
+    });
+  }
+
 
   useEffect(() => {
     if (!user) {
@@ -111,26 +140,6 @@ function Header() {
         ? "Rescue Centre"
         : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").name);
 
-  const productSubtitle = isPersonal
-    ? "Reptile Companion"
-    : productId === "rescue"
-      ? "Rescue Centre Workspace"
-      : productId === "titan_pro"
-        ? "Advanced Keeper Workspace"
-        : productId === "titan_seller"
-          ? "Seller Workspace"
-          : productId === "business_advanced"
-            ? "Full Business Workspace"
-            : productId === "business_plus"
-              ? "Growing Business Workspace"
-              : "Business Workspace";
-
-  const tagline = isPersonal
-    ? "Know your reptiles. Understand their patterns. Keep better records."
-    : productId === "rescue"
-      ? "Your rescue centre, its animals and its daily operations."
-      : getPaidTierDefinition(workspace.access?.effectiveTier ?? "free").description;
-
   const workspaceLabel =
     location.pathname.startsWith("/rescue") && productId === "rescue"
       ? "Rescue Centre"
@@ -138,37 +147,36 @@ function Header() {
 
   return (
     <header className={`app-header app-header--${productId}`}>
-      <Link
-        to={productId === "rescue" ? "/rescue" : "/"}
-        className="logo-link"
-        aria-label={`${workspaceName} home`}
-      >
-        <img
-          src={logo}
-          alt="Tiny Titans Reptile Companion"
-          className="tiny-titans-logo"
-        />
-      </Link>
-
-      <div className="app-brand-lockup" aria-label={workspaceName}>
-        {!isPersonal && branding.logoUrl && (
+      <div className="app-header-identity">
+        <Link
+          to={productId === "rescue" ? "/rescue" : "/"}
+          className="logo-link"
+          aria-label={`${workspaceName} home`}
+        >
           <img
-            className="workspace-brand-avatar"
-            src={branding.logoUrl}
-            alt=""
-            aria-hidden="true"
+            src={logo}
+            alt="Tiny Titans Keeper Companion"
+            className="tiny-titans-logo"
           />
-        )}
-        <span className="app-brand-overline">
-          {isPersonal
-            ? "TINY TITANS"
-            : `${productId === "rescue" ? "RESCUE" : "TINY TITANS"} WORKSPACE`}
-        </span>
-        <span className="app-brand-name">
-          <span className="app-brand-primary">{workspaceLabel}</span>
-          <span className="app-brand-secondary">{productSubtitle}</span>
-        </span>
-        <span className="app-brand-tagline">{tagline}</span>
+        </Link>
+
+        <div className="app-brand-lockup" aria-label="Tiny Titans Keeper Companion">
+          {!isPersonal && branding.logoUrl && (
+            <img
+              className="workspace-brand-avatar"
+              src={branding.logoUrl}
+              alt=""
+              aria-hidden="true"
+            />
+          )}
+          <span className="app-brand-name">
+            <span className="app-brand-primary">Tiny Titans</span>
+            <span className="app-brand-secondary">Keeper Companion</span>
+          </span>
+          {!isPersonal && (
+            <span className="app-brand-workspace">{workspaceLabel}</span>
+          )}
+        </div>
       </div>
 
       {!isPersonal && (
@@ -198,7 +206,8 @@ function Header() {
             <button
               type="button"
               className="header-qa-button"
-              onClick={() => setQaOpen((value) => !value)}
+              ref={qaButtonRef}
+              onClick={toggleQaMenu}
               aria-expanded={qaOpen}
               aria-haspopup="menu"
               title="Quick QA tier switch"
@@ -208,7 +217,7 @@ function Header() {
             </button>
 
             {qaOpen && (
-              <div className="header-qa-menu" role="menu">
+              <div className="header-qa-menu" role="menu" style={{ "--tt-dropdown-top": `${qaMenuTop ?? 0}px` } as CSSProperties}>
                 <div className="header-qa-heading">
                   <strong>Quick QA Tier</strong>
                   <small>Owner only · swap the effective test tier</small>

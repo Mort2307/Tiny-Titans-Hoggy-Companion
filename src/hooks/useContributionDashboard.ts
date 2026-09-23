@@ -1,0 +1,36 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
+import { getPrivacyPreferences, savePrivacyPreferences } from "../services/privacyService";
+import { getUserSnakes } from "../services/snakeService";
+import { getUserFeedback, getUserIssueReports, type FounderApplication } from "../services/creatorService";
+import { getUserKeeperObservations } from "../services/keeperObservationService";
+import { getUserMorphSubmissions } from "../services/morphUserSubmissionService";
+import { getPublicCommunityContributionFeed, getPublicCommunityContributionSnapshot, type PublicContributionEntry, type PublicContributionSnapshot } from "../services/communityIntelligenceService";
+import { getUserMorphImageSubmissions, getUserFounderApplications } from "../services/contributionDashboardService";
+import type { Snake } from "../types/Snake";
+import type { PrivacyPreferences } from "../types/privacy";
+import type { Feedback } from "../types/feedback";
+import type { ReportIssue } from "../types/reportIssue";
+import type { KeeperObservation } from "../types/keeperObservation";
+import type { MorphImageSubmission, UserMorphSubmission } from "../types/morphSubmission";
+import { EMPTY_CONTRIBUTION_PRIVACY, buildContributionCategories, buildContributionEvents } from "../lib/contributionDashboard";
+
+export default function useContributionDashboard(){
+ const navigate=useNavigate();
+ const {user}=useAuth();
+ const [preferences,setPreferences]=useState<PrivacyPreferences>(EMPTY_CONTRIBUTION_PRIVACY);
+ const [snakes,setSnakes]=useState<Snake[]>([]); const [feedback,setFeedback]=useState<Feedback[]>([]); const [issues,setIssues]=useState<ReportIssue[]>([]); const [observations,setObservations]=useState<KeeperObservation[]>([]); const [morphSubmissions,setMorphSubmissions]=useState<UserMorphSubmission[]>([]); const [morphImageSubmissions,setMorphImageSubmissions]=useState<MorphImageSubmission[]>([]); const [founderApplications,setFounderApplications]=useState<FounderApplication[]>([]);
+ const [globalSnapshot,setGlobalSnapshot]=useState<PublicContributionSnapshot|null>(null); const [globalFeed,setGlobalFeed]=useState<PublicContributionEntry[]>([]);
+ const [loading,setLoading]=useState(true); const [saving,setSaving]=useState(false); const [message,setMessage]=useState(""); const [error,setError]=useState("");
+ useEffect(()=>{let active=true;if(!user){setLoading(false);return()=>{active=false;};}setLoading(true);void Promise.all([getPrivacyPreferences(user.uid).catch(()=>EMPTY_CONTRIBUTION_PRIVACY),getUserSnakes(user.uid).catch(()=>[] as Snake[]),getUserFeedback(user.uid).catch(()=>[] as Feedback[]),getUserIssueReports(user.uid).catch(()=>[] as ReportIssue[]),getUserKeeperObservations(user.uid).catch(()=>[] as KeeperObservation[]),getUserMorphSubmissions(user.uid).catch(()=>[] as UserMorphSubmission[]),getUserMorphImageSubmissions(user.uid).catch(()=>[] as MorphImageSubmission[]),getUserFounderApplications(user.uid).catch(()=>[] as FounderApplication[]),getPublicCommunityContributionSnapshot().catch(()=>null),getPublicCommunityContributionFeed().catch(()=>({entries:[] as PublicContributionEntry[]}))]).then(([privacy,a,b,c,d,e,f,g,snapshot,feed])=>{if(!active)return;setPreferences(privacy);setSnakes(a);setFeedback(b);setIssues(c);setObservations(d);setMorphSubmissions(e);setMorphImageSubmissions(f);setFounderApplications(g);setGlobalSnapshot(snapshot);setGlobalFeed(feed.entries??[]);}).catch((loadError)=>{if(active)setError(loadError instanceof Error?loadError.message:"Contribution data could not be loaded.");}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[user]);
+ const counts=useMemo(()=>{const weights=snakes.reduce((t,s)=>t+(s.weightHistory?.length??0),0);const feedings=snakes.reduce((t,s)=>t+(s.feedingHistory?.length??0),0);const sheds=snakes.reduce((t,s)=>t+(s.shedHistory?.length??0),0);const health=snakes.reduce((t,s)=>t+(s.healthHistory?.length??0),0);const morphNames=morphSubmissions.length,morphImages=morphImageSubmissions.length;const publicCommunity=observations.filter((i)=>String(i.status??"").trim().toLowerCase()==="approved").length+morphImages+morphNames;const productImprovements=feedback.length+issues.length,trackerRecords=weights+feedings+sheds+health,intelligenceRecords=preferences.communityHusbandryData?trackerRecords:0,submittedContributions=observations.length+morphNames+morphImages+feedback.length+issues.length+founderApplications.length;return{snakes:snakes.length,weights,feedings,sheds,health,morphNames,morphImages,morphLibrary:morphNames+morphImages,observations:observations.length,approvedObservations:observations.filter((i)=>String(i.status??"").trim().toLowerCase()==="approved").length,feedback:feedback.length,issues:issues.length,founders:founderApplications.length,publicCommunity,productImprovements,trackerRecords,intelligenceRecords,submittedContributions};},[snakes,observations,morphSubmissions,morphImageSubmissions,feedback,issues,founderApplications,preferences.communityHusbandryData]);
+ const events=useMemo(()=>buildContributionEvents(observations,morphSubmissions,morphImageSubmissions,feedback,issues,founderApplications,{intelligenceRecords:counts.intelligenceRecords,weights:counts.weights,feedings:counts.feedings,sheds:counts.sheds,health:counts.health}),[observations,morphSubmissions,morphImageSubmissions,feedback,issues,founderApplications,counts]);
+ const categories=useMemo(()=>buildContributionCategories(counts,morphSubmissions,morphImageSubmissions,feedback,issues),[counts,morphSubmissions,morphImageSubmissions,feedback,issues]);
+ async function toggleContribution(){if(!user||saving)return;setSaving(true);setError("");setMessage("");try{const next=!preferences.communityHusbandryData;await savePrivacyPreferences(user.uid,{communityLocation:preferences.communityLocation,anonymousAnalytics:preferences.anonymousAnalytics,communityHusbandryData:next,productUpdates:preferences.productUpdates,...(preferences.city?{city:preferences.city}:{}),...(preferences.country?{country:preferences.country}:{})});setPreferences(await getPrivacyPreferences(user.uid));setMessage(next?"Optional Intelligence contribution is active.":"Optional Intelligence contribution is now off.");}catch(saveError){setError(saveError instanceof Error?saveError.message:"Your contribution choice could not be saved.");}finally{setSaving(false);}}
+ const publicRecords=typeof globalSnapshot?.publicCommunityRecords==="number"?globalSnapshot.publicCommunityRecords:0;
+ const intelligenceRecords=typeof globalSnapshot?.intelligenceContributions==="number"?globalSnapshot.intelligenceContributions:0;
+ const totalGlobal=typeof globalSnapshot?.totalRecords==="number"?globalSnapshot.totalRecords:0;
+ const globalKeepers=typeof globalSnapshot?.contributors==="number"?globalSnapshot.contributors:0;
+ return {navigate,user,preferences,snakes,globalSnapshot,globalFeed,loading,saving,message,error,counts,events,categories,publicRecords,intelligenceRecords,totalGlobal,globalKeepers,toggleContribution};
+}

@@ -29,7 +29,8 @@ function requireText(key, text, message) {
 const packageJson = JSON.parse(source.package);
 const contract = JSON.parse(source.visualContract);
 
-requireText("package", '"test:visual-review":"node scripts/prepare-visual-route-set.mjs"', "package.json test:visual-review must run universal route discovery before capture.");
+requireText("package", '"test:visual-review"', "package.json must define the visual review command.");
+if (!packageJson.scripts?.["test:visual-review"]?.includes("prepare-visual-route-set.mjs")) findings.push({ severity: "critical", message: "package.json test:visual-review must run universal route discovery before capture." });
 requireText("router", 'path="/creator/qa"', "AppRouter must keep the Creator QA route registered.");
 requireText("section", "CreatorQaEvidenceViewer", "CreatorOperationsSection must route QA mode to the rendered evidence viewer.");
 requireText("evidenceService", "export async function getQaEvidenceBlobUrl", "Creator QA service must load screenshots through authenticated blob URLs.");
@@ -38,7 +39,7 @@ requireText("capture", "recordVideo", "Visual capture must preserve real viewpor
 requireText("routeDiscovery", "router-plus-authenticated-runtime-discovery", "Universal route discovery must remain router + authenticated runtime based.");
 requireText("firebasePublisher", "publishCreatorQaRun", "Firebase evidence publisher must call the secure Creator QA publication endpoint.");
 requireText("githubPublisher", "qa-evidence", "GitHub evidence publisher must publish to the temporary qa-evidence branch.");
-requireText("workflow", "permissions:\n  contents: write", "Visual workflow needs contents:write to replace the temporary GitHub evidence branch.");
+if (!/permissions:\s*contents:\s*write/.test(source.workflow)) findings.push({ severity: "critical", message: "Visual workflow needs contents:write to replace the temporary GitHub evidence branch." });
 requireText("workflow", "scripts/prepare-visual-route-set.mjs", "Visual workflow must use the universal route discovery runner.");
 requireText("workflow", "scripts/publish-visual-qa-to-github.mjs", "Visual workflow must publish the current evidence to GitHub.");
 requireText("workflow", "scripts/publish-visual-qa-evidence.mjs", "Visual workflow must publish the current evidence to creator-only Firebase storage and QA history.");
