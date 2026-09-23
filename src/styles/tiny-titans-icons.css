@@ -125,6 +125,8 @@
 .tt-icon-name-testing { --tt-icon-accent: #b39cff; --tt-icon-secondary: #7fd4ff; }
 .tt-icon-name-water { --tt-icon-accent: #67d9ff; --tt-icon-secondary: #91bfff; }
 .tt-icon-name-timeline { --tt-icon-accent: #8ab8ff; --tt-icon-secondary: #e8b6ff; }
+.tt-icon-name-analytics { --tt-icon-accent: #67d9ff; --tt-icon-secondary: #b8a0ff; }
+.tt-icon-name-export { --tt-icon-accent: #7fd6b0; --tt-icon-secondary: #87baff; }
 .tt-icon-name-vet { --tt-icon-accent: #ff819c; --tt-icon-secondary: #7fd7ff; }
 .tt-icon-name-save { --tt-icon-accent: #7fd6b0; --tt-icon-secondary: #87baff; }
 .tt-icon-name-upload { --tt-icon-accent: #7ec7ff; --tt-icon-secondary: #f2cf81; }
