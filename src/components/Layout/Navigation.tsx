@@ -48,9 +48,9 @@ function Navigation() {
       ? []
       : workspace.product.nav
           .filter(({ path }) => !standardPaths.has(path))
-          .map(({ path, label }) => [
+          .map(({ path, label, icon }) => [
             path,
-            quickIconFor(path.split("/").filter(Boolean).pop() ?? "home"),
+            icon ?? quickIconFor(path.split("/").filter(Boolean).pop() ?? "home"),
             label,
           ]);
 
