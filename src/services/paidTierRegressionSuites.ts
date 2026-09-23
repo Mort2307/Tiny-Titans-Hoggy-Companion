@@ -4,6 +4,7 @@ import { getPaidTierPricingEnvironment } from "./paidSubscriptionService";
 import { FREE_KEEPER_NAVIGATION_IDS, getFreeKeeperNavigationItems } from "../config/freeExperience";
 import { PAID_ENTITLEMENT_DESTINATIONS } from "../config/paidEntitlementCatalog";
 import { workspaceProductForTier } from "../config/workspaceProducts";
+import { quickIconFor } from "../config/navigationIcons";
 
 const CORE = ["core_tracking", "core_genetics", "core_learning", "core_community"] as const satisfies readonly PaidEntitlement[];
 type PaidOnlyEntitlement = Exclude<PaidEntitlement, (typeof CORE)[number]>;
@@ -17,6 +18,8 @@ const STRIPE_LOOKUP_KEYS: Record<string, string> = {
   rescue: "tinytitans_rescue_monthly",
 };
 
+const RESCUE_NAV_OVERRIDES: Partial<Record<PaidOnlyEntitlement, string>> = { multi_user: "/rescue/team", team_permissions: "/rescue/team", custom_branding: "/rescue/organisation", rescue_adoption: "/rescue/adoption" };
+const PRO_ICON_EXPECTATIONS: Record<string, ReturnType<typeof quickIconFor>> = { "/titan-intelligence": "titan", "/paid/analytics": "analytics", "/paid/timeline": "timeline", "/paid/export": "export" };
 const RESCUE_SHARED_ENTITLEMENTS: readonly PaidOnlyEntitlement[] = [
   "advanced_timeline",
   "advanced_analytics",
@@ -73,14 +76,26 @@ export function createPaidTierRegressionChecks(): TesterCheck[] {
           );
           for (const entitlement of paidEntitlements) {
             const destination = PAID_ENTITLEMENT_DESTINATIONS[entitlement];
-            const rescueBrandingPath = tier === "rescue" && entitlement === "custom_branding" ? "/rescue/organisation" : undefined;
-            const visible = Boolean(destination?.path && navPaths.has(destination.path)) || Boolean(rescueBrandingPath && navPaths.has(rescueBrandingPath));
+            const override = tier === "rescue" ? RESCUE_NAV_OVERRIDES[entitlement] : undefined;
+            const visible = Boolean(override && navPaths.has(override)) || Boolean(!override && destination?.path && navPaths.has(destination.path));
             if (!visible) missing.push(`${tier}:${entitlement}`);
           }
         }
         return missing.length
           ? { status: "fail", message: `Paid entitlements without a visible workspace entry point: ${missing.join(", ")}.` }
           : { status: "pass", message: "Every paid entitlement exposed by the tier catalogue has a corresponding workspace destination." };
+      },
+    },
+    {
+      checkId: "paid-tier-pro-icon-contract",
+      name: "TinyTitans Pro workspace uses the new semantic icon system",
+      category: "paid-tiers",
+      severity: "high",
+      run: async () => {
+        const failures = Object.entries(PRO_ICON_EXPECTATIONS).filter(([path, expected]) => quickIconFor(path.split("/").filter(Boolean).pop() ?? "home") !== expected);
+        return failures.length
+          ? { status: "fail", message: `Pro icon mappings are incorrect: ${failures.map(([path, expected]) => `${path} expected ${expected}`).join(", ")}.` }
+          : { status: "pass", message: "Titan Pro Intelligence, Analytics, Timeline and Data Export all use dedicated TinyTitans semantic icons." };
       },
     },
     {
