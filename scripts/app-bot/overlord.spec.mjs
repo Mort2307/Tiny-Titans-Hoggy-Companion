@@ -110,6 +110,30 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
     console.log("[OVERLORD] Rescue plan exposes all shared paid capabilities: " + RESCUE_SHARED_CAPABILITIES.join(", "));
   });
 
+  test("new TinyTitans Pro workspace icons render with semantic classes", async ({ page }) => {
+    const errors = applicationErrors(page);
+    await signIn(page);
+    await visit(page, "/paid/analytics");
+    const iconChecks = [
+      ["/titan-intelligence", "tt-icon-name-titan"],
+      ["/paid/analytics", "tt-icon-name-analytics"],
+      ["/paid/timeline", "tt-icon-name-timeline"],
+      ["/paid/export", "tt-icon-name-export"],
+    ];
+    const workspaceNav = page.locator(".app-navigation-section").filter({ hasText: /ADVANCED KEEPER WORKSPACE/i }).first();
+    if (await workspaceNav.count() === 0) {
+      console.log("[OVERLORD] Pro workspace navigation is not active for this account; semantic icon mapping is covered by the paid-tier regression contract.");
+      await assertHealthy(page, errors);
+      return;
+    }
+    for (const [href, iconClass] of iconChecks) {
+      const link = workspaceNav.locator(`a[href="${href}"]`).first();
+      await expect(link, `Expected Pro workspace link ${href}`).toHaveCount(1);
+      await expect(link.locator(`svg.${iconClass}`), `Expected semantic icon ${iconClass} for ${href}`).toHaveCount(1);
+    }
+    await assertHealthy(page, errors);
+  });
+
   test("every reachable static page has usable internal destinations", async ({ page }) => {
     const errors = applicationErrors(page); await signIn(page);
     const checked = new Set();
