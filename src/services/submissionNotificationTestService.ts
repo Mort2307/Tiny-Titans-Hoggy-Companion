@@ -11,7 +11,9 @@ export type SubmissionNotificationTestKind =
   | "mentor"
   | "founder"
   | "community"
-  | "feature";
+  | "feature"
+  | "species"
+  | "founding-follower";
 
 export type SubmissionNotificationTestItem = {
   id: string;
