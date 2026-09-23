@@ -14,6 +14,7 @@ import { createOverlordIntelligenceChecks } from "./botIntelligenceService";
 import { createAllPageTargetChecks, createUpdateSmokeChecks, UPDATE_TARGETS } from "./testerUpdateSuitesService";
 import { createBrowserJourneyCheck } from "./inAppBrowserJourneyService";
 import { approveMorphImageSubmission } from "./creatorService";
+import { resolveNotificationPermissionDecision } from "./notificationService";
 import type { MorphImageSubmission } from "../types/morphSubmission";
 
 export type TesterBotId = "creator" | "user" | "app" | "security" | "overlord" | "visual" | "update" | "action-chain";
@@ -64,7 +65,48 @@ const overlordSuites: BotSuiteDefinition[] = [
   { id: "morph-library", label: "Morph Library", description: "Morph database integrity and regional-library coverage checks.", category: "Morphs", safety: "read-only", build: async () => createMorphLibraryChecks() },
   { id: "health-medication", label: "Health & Medication", description: "Health and medication surfaces are included in the functional QA contract without modifying live keeper records.", category: "Health", safety: "read-only", build: async () => (await createApplicationCoverageChecks()).filter((check) => /health|medication/i.test(`${check.checkId} ${check.name}`)) },
   { id: "notifications", label: "Notifications", description: "Notification logic, deduplication and permission-aware behaviour.", category: "Notifications", safety: "read-only", build: async (uid) => createNotificationMicroSystemChecks(uid) },
-  { id: "permissions", label: "Permissions", description: "Permission contracts and safety boundaries.", category: "Permissions", safety: "sandbox", build: async () => [{ checkId: "permission-browser-flow", name: "Real permission allow/deny browser flow", category: "permissions", severity: "high", run: async () => ({ status: "blocked", message: "Permission allow/deny is intentionally not automated by this safe browser runner because browser permission prompts require explicit human/automation authority." }) }] },
+  {
+    id: "permissions",
+    label: "Permissions",
+    description: "Permission contracts and safety boundaries, including deterministic handling of browser grant/deny outcomes.",
+    category: "Permissions",
+    safety: "sandbox",
+    build: async () => [{
+      checkId: "permission-allow-deny-handling",
+      name: "Notification permission allow/deny outcome handling",
+      category: "permissions",
+      severity: "high",
+      run: async () => {
+        const cases = [
+          { current: "default" as const, requested: "granted" as const, expected: "granted" as const, label: "default ? Allow" },
+          { current: "default" as const, requested: "denied" as const, expected: "denied" as const, label: "default ? Deny" },
+          { current: "granted" as const, requested: "denied" as const, expected: "granted" as const, label: "already granted stays granted" },
+          { current: "denied" as const, requested: "granted" as const, expected: "denied" as const, label: "already denied stays denied" },
+        ];
+
+        const failures = cases.filter((item) =>
+          resolveNotificationPermissionDecision(item.current, item.requested) !== item.expected,
+        );
+
+        if (failures.length) {
+          return {
+            status: "fail",
+            message: `Permission outcome handling failed: ${failures.map((item) => item.label).join(", ")}.`,
+          };
+        }
+
+        const observed =
+          typeof Notification === "undefined"
+            ? "unsupported"
+            : Notification.permission;
+
+        return {
+          status: "pass",
+          message: `Notification permission decision handling passed for Allow/Deny transitions and terminal states; current browser state is ${observed}.`,
+        };
+      },
+    }],
+  },
 ];
 
 const visualSuites: BotSuiteDefinition[] = [

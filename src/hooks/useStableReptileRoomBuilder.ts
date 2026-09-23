@@ -39,8 +39,8 @@ export function useStableReptileRoomBuilder() {
   const [photoBusy, setPhotoBusy] = useState(false);
 
   const room = useMemo(() => rooms[0] ?? null, [rooms]);
-  const objects = room?.objects ?? [];
-  const slots = room?.slots ?? [];
+  const objects = useMemo(() => room?.objects ?? [], [room]);
+  const slots = useMemo(() => room?.slots ?? [], [room]);
   const selectedObject = selected?.type === "object" ? objects.find((item) => item.id === selected.id) ?? null : null;
   const selectedSlot = selected?.type === "slot" ? slots.find((item) => item.id === selected.id) ?? null : null;
   const snakesById = useMemo(() => new Map(snakes.map((snake) => [snake.id, snake])), [snakes]);

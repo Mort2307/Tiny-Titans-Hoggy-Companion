@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+﻿import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
 import { deleteToken, getMessaging, getToken, isSupported } from "firebase/messaging";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app, db } from "../firebase/config";
@@ -67,7 +67,20 @@ function settingsFor(value: unknown): NotificationSettings {
     healthFollowUpLeadDays: Number.isFinite(healthFollowUpLeadDays) && healthFollowUpLeadDays >= 0 && healthFollowUpLeadDays <= 30 ? Math.round(healthFollowUpLeadDays) : DEFAULT_NOTIFICATION_SETTINGS.healthFollowUpLeadDays,
   };
 }
-export function getNotificationPermissionState(): NotificationPermissionState { if (typeof window === "undefined" || !("Notification" in window)) return "unsupported"; return Notification.permission; }
+export function resolveNotificationPermissionDecision(
+  current: NotificationPermission,
+  requested: NotificationPermission,
+): NotificationPermission {
+  // Browser permissions are terminal once explicitly granted or denied.
+  // Only the default state may transition according to the user's prompt choice.
+  if (current === "default") return requested;
+  return current;
+}
+
+export function getNotificationPermissionState(): NotificationPermissionState {
+  if (typeof window === "undefined" || !("Notification" in window)) return "unsupported";
+  return Notification.permission;
+}
 export async function getNotificationSettings(uid: string): Promise<NotificationSettings> { if (!uid) return { ...DEFAULT_NOTIFICATION_SETTINGS }; const snapshot = await getDoc(doc(db, "users", uid)); return settingsFor(snapshot.data()?.[SETTINGS_FIELD]); }
 export async function saveNotificationSettings(uid: string, settings: NotificationSettings): Promise<NotificationSettings> { const next = settingsFor(settings); await setDoc(doc(db, "users", uid), { [SETTINGS_FIELD]: next, updatedAt: serverTimestamp() }, { merge: true }); return next; }
 async function tokenDocumentId(token: string): Promise<string> { const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)); return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(""); }
@@ -102,7 +115,14 @@ export async function enableNotifications(uid: string): Promise<NotificationPerm
   if (!uid) throw new Error("You must be signed in to enable notifications.");
   if (isAppleMobileDevice() && !isStandaloneWebApp()) throw new Error("On iPhone or iPad, install Tiny Titans to your Home Screen and open the Home Screen app before enabling notifications.");
   if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) return "unsupported";
-  let permission = Notification.permission; if (permission === "default") permission = await Notification.requestPermission(); if (permission !== "granted") return permission;
+  let permission = Notification.permission;
+  if (permission === "default") {
+    permission = resolveNotificationPermissionDecision(
+      permission,
+      await Notification.requestPermission(),
+    );
+  }
+  if (permission !== "granted") return permission;
   if (!(await isSupported())) return "unsupported";
   const registered = await registerCurrentDeviceToken(uid); if (!registered) throw new Error("Tiny Titans could not register this device for notifications.");
   await saveNotificationSettings(uid, { ...(await getNotificationSettings(uid)), enabled: true });

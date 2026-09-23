@@ -22,6 +22,7 @@ const APP_SURFACES = [
   ["/rescue", "/rescue"],
   ["/rescue/animals", "/rescue/animals"],
   ["/rescue/qr", "/rescue/qr"],
+  ["/rescue/scan", "/rescue/scan"],
   ["/rescue/team", "/rescue/team"],
   ["/rescue/reports", "/rescue/reports"],
   ["/rescue/adoption", "/rescue/adoption"],
@@ -171,7 +172,7 @@ export function createApplicationCoverageChecks(): TesterCheck[] {
       category: "paid-tiers",
       severity: "critical",
       run: async () => {
-        const registered = new Set(APP_SURFACES.map(([path]) => path));
+        const registered = new Set<string>(APP_SURFACES.map(([path]) => path));
         const missing = PAID_RESCUE_SURFACES.filter((path) => !registered.has(path));
         return missing.length
           ? { status: "fail", message: `Paid/Rescue QA coverage is missing routes: ${missing.join(", ")}.` }

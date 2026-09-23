@@ -6,6 +6,7 @@ const { recordPaidTierActivationNotification } = require("./paidTierNotification
 
 const db = getFirestore();
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_TEST_SECRET_KEY = defineSecret("STRIPE_TEST_SECRET_KEY");
 const STRIPE_PAID_SUBSCRIPTION_WEBHOOK_SECRET = defineSecret("STRIPE_PAID_SUBSCRIPTION_WEBHOOK_SECRET");
 const TIERS = new Set(["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"]);
 const LOOKUP_KEYS = Object.freeze({
@@ -91,18 +92,71 @@ async function beginWebhookEvent(event) {
   });
 }
 
-exports.getPaidTierPricing = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
+exports.getPaidTierPricing = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY, STRIPE_TEST_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  try {
-    const stripe = new Stripe(STRIPE_SECRET_KEY.value()); const prices = {};
-    for (const tier of TIERS) {
-      const lookupKey = LOOKUP_KEYS[tier]; const price = await resolveRecurringPriceForPricing(stripe, tier);
-      prices[tier] = price ? { configured: true, priceId: price.id, unitAmount: price.unit_amount, currency: price.currency, interval: price.recurring.interval, intervalCount: price.recurring.interval_count, lookupKey } : { configured: false, priceId: PRICE_IDS[tier], lookupKey };
-    }
-    return { success: true, mode: STRIPE_SECRET_KEY.value().startsWith("sk_test_") ? "test" : "live", prices };
-  } catch (error) { console.error("Paid tier pricing lookup failed", error); throw new HttpsError("internal", "Unable to read Stripe paid-tier pricing."); }
-});
 
+  const requestedMode = String(request.data?.mode || "live");
+  if (requestedMode !== "live" && requestedMode !== "test") {
+    throw new HttpsError("invalid-argument", "Invalid Stripe pricing mode.");
+  }
+
+  const privilegedQaUser =
+    request.auth.token?.admin === true ||
+    request.auth.token?.creator === true ||
+    request.auth.token?.tester === true;
+
+  if (requestedMode === "test" && !privilegedQaUser) {
+    throw new HttpsError("permission-denied", "Stripe Test Mode pricing is restricted to authorised Tiny Titans QA users.");
+  }
+
+  try {
+    const secret = requestedMode === "test"
+      ? STRIPE_TEST_SECRET_KEY.value()
+      : STRIPE_SECRET_KEY.value();
+
+    if (requestedMode === "test" && !secret.startsWith("sk_test_")) {
+      throw new HttpsError("failed-precondition", "Stripe Test Mode secret is not configured.");
+    }
+
+    const stripe = new Stripe(secret);
+    const prices = {};
+
+    for (const tier of TIERS) {
+      const lookupKey = LOOKUP_KEYS[tier];
+      const price = await resolveRecurringPriceForPricing(stripe, tier);
+
+      prices[tier] = price
+        ? {
+            configured: true,
+            priceId: price.id,
+            unitAmount: price.unit_amount,
+            currency: price.currency,
+            interval: price.recurring.interval,
+            intervalCount: price.recurring.interval_count,
+            lookupKey,
+          }
+        : {
+            configured: false,
+            priceId: PRICE_IDS[tier],
+            lookupKey,
+          };
+    }
+
+    return {
+      success: true,
+      mode: secret.startsWith("sk_test_") ? "test" : "live",
+      prices,
+    };
+  } catch (error) {
+    console.error("Paid tier pricing lookup failed", error);
+
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+
+    throw new HttpsError("internal", "Unable to read Stripe paid-tier pricing.");
+  }
+});
 exports.createPaidSubscriptionCheckout = onCall({ region: "europe-west2", secrets: [STRIPE_SECRET_KEY] }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const tier = String(request.data?.tier || ""); if (!TIERS.has(tier)) throw new HttpsError("invalid-argument", "Invalid paid subscription tier.");

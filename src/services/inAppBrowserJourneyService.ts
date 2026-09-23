@@ -30,7 +30,7 @@ function currentPath(win: Window): string {
 }
 
 function isSafeCandidate(element: Element): boolean {
-  if (!(element instanceof HTMLElement)) return false;
+  if (element.nodeType !== 1) return false;
   if (element.hasAttribute("disabled") || element.getAttribute("aria-disabled") === "true") return false;
   const label = labelOf(element);
   if (DESTRUCTIVE.test(label)) return false;

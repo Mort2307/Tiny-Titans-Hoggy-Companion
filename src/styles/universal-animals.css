@@ -1,1 +1,192 @@
 .universal-animals-page{display:grid;gap:1rem;padding-bottom:3rem}.universal-animals-hero,.universal-animals-panel{border:1px solid var(--border-color,#d9dde5);background:var(--card-background,#fff);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.05)}.universal-animals-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,.5fr);gap:1.5rem;padding:1.5rem}.universal-animals-panel{padding:1.25rem}.universal-animals-metrics{display:grid;grid-template-columns:auto 1fr;gap:.35rem .7rem;align-content:center}.universal-animals-metrics strong{font-size:1.4rem}.universal-animal-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}.universal-animal-form label{display:grid;gap:.35rem}.universal-primary-action{padding:.7rem 1rem;border:0;border-radius:10px;cursor:pointer;font-weight:800}.universal-empty{display:grid;gap:.3rem;padding:1rem;border:1px dashed var(--border-color,#d9dde5);border-radius:12px}.universal-animal-list{display:grid;gap:.65rem}.universal-animal-row{display:flex;justify-content:space-between;gap:1rem;align-items:center;border:1px solid var(--border-color,#e1e5eb);border-radius:12px;padding:.8rem}.universal-animal-row>div{display:grid;gap:.2rem}.universal-animal-row span,.universal-animal-row small{opacity:.72}.universal-animal-row a{font-weight:700;text-decoration:none}.universal-scientific{font-style:italic;opacity:.72}.universal-animal-links{display:flex;flex-wrap:wrap;gap:1rem}.universal-individual-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}.universal-individual-grid>div{display:grid;gap:.25rem}.universal-individual-grid span{font-size:.75rem;text-transform:uppercase;opacity:.65}@media(max-width:760px){.universal-animals-hero{grid-template-columns:1fr}.universal-animal-form,.universal-individual-grid{grid-template-columns:1fr}.universal-animal-row{align-items:flex-start;flex-direction:column}}
+/* =========================================================
+   TINY TITANS DARK THEME OVERRIDE
+   Universal My Animals surface
+========================================================= */
+
+.universal-animals-page {
+  width: 100%;
+  max-width: var(--content-max-width, 1400px);
+  margin: 0 auto;
+  color: var(--text);
+}
+
+.universal-animals-hero,
+.universal-animals-panel {
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(
+      ellipse at top right,
+      rgba(0, 174, 255, 0.10),
+      transparent 58%
+    ),
+    var(--surface);
+  border-radius: var(--radius-lg, 20px);
+  box-shadow: var(--glow-soft);
+}
+
+.universal-animals-hero {
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.universal-animals-hero h1,
+.universal-animals-panel h2 {
+  color: var(--text);
+}
+
+.universal-animals-hero p:not(.eyebrow),
+.universal-animals-panel p {
+  color: rgba(245, 182, 66, 0.82);
+}
+
+.universal-animals-metrics {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 14px);
+  background: rgba(0, 174, 255, 0.055);
+}
+
+.universal-animals-metrics strong {
+  color: var(--secondary);
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  line-height: 1.1;
+}
+
+.universal-animals-metrics span {
+  color: rgba(245, 182, 66, 0.72);
+}
+
+.universal-animals-panel {
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.universal-animal-form {
+  gap: 1rem;
+}
+
+.universal-animal-form label {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.universal-animal-form input,
+.universal-animal-form select,
+.universal-animal-form textarea {
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  box-sizing: border-box;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  background: var(--background);
+  color: var(--text);
+}
+
+.universal-animal-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.universal-animal-form input::placeholder,
+.universal-animal-form textarea::placeholder {
+  color: rgba(245, 182, 66, 0.48);
+}
+
+.universal-animal-form input:focus,
+.universal-animal-form select:focus,
+.universal-animal-form textarea:focus {
+  border-color: var(--accent);
+  box-shadow: var(--glow-soft);
+}
+
+.universal-primary-action {
+  min-height: var(--touch-target, 44px);
+  padding: 0.75rem 1.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm, 10px);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(0, 174, 255, 0.18),
+      rgba(111, 36, 184, 0.34)
+    );
+  color: var(--text);
+  box-shadow: var(--glow-soft);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.universal-primary-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  box-shadow: var(--glow-medium);
+}
+
+.universal-primary-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.universal-animal-list {
+  gap: 0.75rem;
+}
+
+.universal-animal-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 14px);
+  padding: 0.95rem 1rem;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(0, 174, 255, 0.07),
+      rgba(255, 255, 255, 0.015)
+    ),
+    var(--surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.universal-animal-row:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--glow-soft);
+}
+
+.universal-animal-row strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.universal-animal-row span {
+  color: rgba(245, 182, 66, 0.82);
+}
+
+.universal-animal-row small {
+  color: rgba(245, 182, 66, 0.58);
+}
+
+.universal-animal-row a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.universal-animal-row a:hover {
+  color: var(--secondary);
+}
+
+@media (max-width: 760px) {
+  .universal-animals-page {
+    padding-bottom: 2rem;
+  }
+
+  .universal-animal-row a {
+    width: 100%;
+  }
+}

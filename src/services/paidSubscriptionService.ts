@@ -27,14 +27,14 @@ export type PaidTierPricingResponse = {
   prices: Record<PaidTierId, LivePaidTierPrice>;
 };
 
-const pricingCall = httpsCallable<Record<string, never>, { success: boolean; mode: "test" | "live"; prices: Record<PaidTierId, LivePaidTierPrice> }>(functions, "getPaidTierPricing");
+const pricingCall = httpsCallable<{ mode?: "test" | "live" }, { success: boolean; mode: "test" | "live"; prices: Record<PaidTierId, LivePaidTierPrice> }>(functions, "getPaidTierPricing");
 
 export async function getPaidTierPricing(): Promise<Record<PaidTierId, LivePaidTierPrice>> {
-  const response = await pricingCall({});
+  const response = await pricingCall({ mode: "live" });
   return response.data.prices;
 }
 
 export async function getPaidTierPricingEnvironment(): Promise<PaidTierPricingResponse> {
-  const response = await pricingCall({});
+  const response = await pricingCall({ mode: "test" });
   return { mode: response.data.mode, prices: response.data.prices };
 }
