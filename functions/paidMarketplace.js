@@ -3,7 +3,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 const db = getFirestore();
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
-const PAID_TIERS = new Set(["titan_seller", "business_starter", "business_plus", "business_advanced"]);
+const PAID_TIERS = new Set(["titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"]);
 
 function cleanText(value, max = 500) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 function expiryMillis(value) { if (!value) return null; if (typeof value === "object" && value !== null && typeof value.toMillis === "function") return value.toMillis(); const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : null; }
@@ -21,7 +21,7 @@ async function requireSeller(uid) {
   const trialTier = String(trial?.tier || "");
   const trialActive = trial?.enabled === true && PAID_TIERS.has(trialTier) && (expiryMillis(trial.expiresAt) || 0) > Date.now();
   const effectiveTier = overrideActive ? overrideTier : subscriptionActive ? subscriptionTier : trialActive ? trialTier : "free";
-  if (!PAID_TIERS.has(effectiveTier)) throw new HttpsError("permission-denied", "Marketplace seller tools require a seller or business tier.");
+  if (!PAID_TIERS.has(effectiveTier)) throw new HttpsError("permission-denied", "Marketplace seller tools require a seller, business or rescue tier.");
   return effectiveTier;
 }
 exports.getPublicMarketplaceListings = onCall({ region: "europe-west2" }, async () => {
