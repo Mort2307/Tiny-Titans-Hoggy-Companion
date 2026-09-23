@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getPaidTierDefinition, type PaidTierId } from "../config/paidTiers";
 import { workspaceProductForTier } from "../config/workspaceProducts";
 import { useAuth } from "../context/useAuth";
@@ -37,6 +37,16 @@ export default function PaidPlans() {
     {access?.source === "trial" && access.trial && <section className="paid-message"><strong>🎁 You are currently trialling {effective.name}</strong><p>You have about <strong>{trialDays} day{trialDays === 1 ? "" : "s"}</strong> remaining. The trial ends {trialEndsLabel} and does not create a Stripe subscription.</p></section>}
     {error && <section className="paid-message paid-error" role="alert">{error}</section>}
     {Object.values(PAID_PROMOTIONS).filter((promotion) => promotion.enabled && promotion.tier === "titan_pro").map((promotion) => <section className="paid-message" key={promotion.id}><strong>🎁 {promotion.name}</strong><p>{promotion.description}</p><button type="button" className="paid-primary" disabled={busy} onClick={async () => { setBusy(true); setError(""); try { await claimPaidPromotion(promotion.id); window.location.reload(); } catch (err) { setError(err instanceof Error ? err.message : "This promotion could not be claimed."); setBusy(false); } }}>Start free trial</button></section>)}
+    <section className="paid-follower-offer" aria-labelledby="paid-follower-offer-title">
+      <div className="paid-follower-offer__copy">
+        <span className="paid-kicker">COMMUNITY THANK-YOU</span>
+        <h2 id="paid-follower-offer-title">Followers 1 Month Free</h2>
+        <p>Follow Tiny Titans on Facebook or Instagram? Claim 30 days of Titan Pro by submitting a screenshot showing your follow.</p>
+      </div>
+      <Link className="paid-follower-offer__action" to="/founding-followers">
+        Claim your free month →
+      </Link>
+    </section>
     <section className="paid-plan-grid" aria-label="Tiny Titans subscription workspaces">{PLAN_DISPLAY_ORDER.map((tierId) => { const tier = getPaidTierDefinition(tierId); const product = workspaceProductForTier(tierId); const current = access?.effectiveTier === tierId; const selectedCard = selectedTier === tierId; return <button key={tierId} type="button" className={`paid-plan-card tier-${tierId} ${selectedCard ? "is-selected" : ""} ${current ? "is-current" : ""}`} onClick={() => setSelectedTier(tierId)} aria-pressed={selectedCard}><span className="paid-tier-identity"><PaidTierBadge tierId={tierId} size="lg" /><span className="paid-tier-identity__copy"><span className="paid-tier-prestige">{PRESTIGE_LABELS[tierId]}</span><span className="paid-kicker">{product.eyebrow}</span><h2>{product.name}</h2></span></span><strong className="paid-price">{formatLivePrice(tierId)}</strong><p>{product.tagline}</p><small className="paid-audience">{product.audience}</small><span className="paid-free-included">✓ Full Free Keeper experience included</span><div className="paid-highlights">{tier.highlights.map((item) => <span key={item}>✓ {item}</span>)}</div>{current && <span className="paid-current-badge">CURRENT ACCESS</span>}{selectedCard && <span className="paid-selection-halo" aria-hidden="true" />}</button>; })}</section>
     <section className={`paid-plan-detail tier-${selectedTier}`}>
       <div>
