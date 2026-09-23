@@ -21,7 +21,7 @@ export type BotSuiteDefinition = { id: string; label: string; description: strin
 export type BotDefinition = { id: TesterBotId; label: string; icon: string; description: string; purpose: string; suites: BotSuiteDefinition[] };
 
 const creatorSuites: BotSuiteDefinition[] = [
-  { id: "core-diagnostics", label: "Core Diagnostics", description: "Authentication, creator claim, profile and Firebase access.", category: "System", safety: "read-only", build: async (uid) => createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: await hasCreatorTesterClaim(true) }) },
+  { id: "core-diagnostics", label: "Core Diagnostics", description: "Authentication, creator claim, profile and Firebase access.", category: "System", safety: "read-only", build: async (uid) => createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: await hasCreatorTesterClaim(true), requireCreatorClaim: true }) },
   { id: "creator-functions", label: "Creator Functions", description: "Creator Centre queues, moderation data, community data and approved records.", category: "Creator", safety: "read-only", build: async () => createCreatorFunctionChecks() },
   { id: "notifications", label: "Notifications", description: "Feeding-preparation notification logic, permissions and de-duplication checks.", category: "Notifications", safety: "read-only", build: async (uid) => createNotificationMicroSystemChecks(uid) },
   { id: "feedback", label: "Feedback / Attachments", description: "Feedback text, mock image and mock video validation paths.", category: "Feedback", safety: "read-only", build: async (uid) => createFeedbackAttachmentChecks(uid) },
