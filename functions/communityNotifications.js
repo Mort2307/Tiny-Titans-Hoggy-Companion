@@ -213,6 +213,26 @@ function submissionDescriptor(collectionId, data) {
         url: "/community/features",
       };
     }
+    case "speciesSubmissions": {
+      const commonName = text(data.commonName, "Species submission");
+      const scientificName = text(data.scientificName);
+      const detail = firstNonEmpty(data.submitterNotes, data.evidenceSummary, data.sources) || "New species submission requires Creator review.";
+      return {
+        type: "creator-species-submission",
+        title: `🐍 Species submission — ${commonName}${scientificName ? ` · ${scientificName}` : ""}`,
+        body: detail,
+        url: "/creator/species-submissions",
+      };
+    }
+    case "foundingFollowerClaims": {
+      const platform = text(data.platform, "social");
+      return {
+        type: "creator-founding-follower-claim",
+        title: "🎁 Founding Follower claim",
+        body: `A new ${platform} follow-verification claim is waiting for Creator review.`,
+        url: "/creator/founding-followers",
+      };
+    }
     default:
       return null;
   }
@@ -353,4 +373,12 @@ exports.notifyCreatorOnCommunityContribution = onDocumentCreated({ region: "euro
 
 exports.notifyCreatorOnFeatureRequest = onDocumentCreated({ region: "europe-west2", document: "featureRequests/{requestId}" }, async (event) => {
   await handleCreatorSubmission(event, "featureRequests");
+});
+
+exports.notifyCreatorOnSpeciesSubmission = onDocumentCreated({ region: "europe-west2", document: "users/{userId}/speciesSubmissions/{submissionId}" }, async (event) => {
+  await handleCreatorSubmission(event, "speciesSubmissions");
+});
+
+exports.notifyCreatorOnFoundingFollowerClaim = onDocumentCreated({ region: "europe-west2", document: "foundingFollowerClaims/{claimId}" }, async (event) => {
+  await handleCreatorSubmission(event, "foundingFollowerClaims");
 });
