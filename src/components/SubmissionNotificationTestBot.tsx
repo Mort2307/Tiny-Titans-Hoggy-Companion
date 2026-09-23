@@ -27,6 +27,8 @@ const TESTS: Array<{ kind: SubmissionNotificationTestKind; icon: string; label: 
   { kind: "founder", icon: "🏆", label: "Founder application", description: "Founder application notification." },
   { kind: "community", icon: "🌍", label: "Community contribution", description: "Community contribution notification." },
   { kind: "feature", icon: "💡", label: "Feature request", description: "Feature request notification." },
+  { kind: "species", icon: "🐍", label: "Species submission", description: "Creator species submission notification." },
+  { kind: "founding-follower", icon: "🎁", label: "Founding Follower claim", description: "Creator follower reward claim notification." },
 ];
 
 function formatStatus(status: string) {
