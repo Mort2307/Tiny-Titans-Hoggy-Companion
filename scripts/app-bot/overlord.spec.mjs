@@ -5,6 +5,22 @@ const syntheticName = "OVERLORD SHED TEST";
 const syntheticEditedName = "OVERLORD SHED TEST EDITED";
 let createdSnakeId = "";
 
+const RESCUE_SHARED_CAPABILITIES = [
+  "Advanced animal timeline",
+  "Advanced analytics",
+  "Titan Intelligence",
+  "Morph intelligence & evidence",
+  "Data export",
+  "Marketplace seller tools",
+  "Professional seller profile",
+  "Business reporting",
+  "Multi-user workspace",
+  "Team permissions",
+  "Workflow automation",
+  "API access",
+  "Priority support",
+];
+
 const coreRoutes = [
   "/", "/account", "/account/family", "/account/profile", "/account/security", "/account/settings", "/account/data-privacy", "/account/intelligence", "/account/personalise",
   "/snakes", "/snakes/new", "/morph-library", "/calculator", "/knowledge-base", "/learn", "/learn/topics", "/adaptive-learning", "/challenge", "/learn/achievements",
@@ -79,6 +95,19 @@ test.describe.serial("OVERLORD BOT — authenticated whole-app functional sweep"
   test("every declared static application surface renders without runtime failures", async ({ page }) => {
     const errors = applicationErrors(page); await signIn(page);
     for (const route of coreRoutes) { await visit(page, route); await assertHealthy(page, errors); console.log(`[OVERLORD] Passed route: ${route}`); }
+  });
+
+  test("Rescue workspace exposes the complete shared paid capability set", async ({ page }) => {
+    const errors = applicationErrors(page);
+    await signIn(page);
+    await visit(page, "/plans?tier=rescue");
+    const detail = page.locator(".paid-plan-detail");
+    await expect(detail).toBeVisible({ timeout: APP_READY_TIMEOUT });
+    for (const capability of RESCUE_SHARED_CAPABILITIES) {
+      await expect(detail).toContainText(capability);
+    }
+    await assertHealthy(page, errors);
+    console.log("[OVERLORD] Rescue plan exposes all shared paid capabilities: " + RESCUE_SHARED_CAPABILITIES.join(", "));
   });
 
   test("every reachable static page has usable internal destinations", async ({ page }) => {
