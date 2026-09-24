@@ -28,14 +28,14 @@ export default function CreatorReviewStudio() {
     </header>
     {error && <div className="creator-error">{error}</div>}
     {notice && <div className="creator-success">✓ {notice}</div>}
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(300px,360px) minmax(0,1fr)", gap: 18, alignItems: "start" }}>
+    <div className="creator-review-studio-layout">
       <section className="creator-admin-section" style={{ padding: 16 }}>
         <div className="creator-section-heading"><span className="creator-admin-kicker">LIVE QUEUE</span><h2>{visible.length} submissions</h2><select value={queueFilter} onChange={(event) => setQueueFilter(event.target.value as typeof queueFilter)}><option value="pending">Pending / Needs Info</option><option value="all">All submissions</option></select></div>
         {loading ? <div className="creator-loading">Loading submissions…</div> : <div className="creator-list">{visible.map((item) => <button key={item.id} type="button" className="creator-user-row" onClick={() => { if (dirty && !window.confirm("Discard unsaved edits and open another submission?")) return; setSelectedId(item.id); }}><span className="creator-user-avatar">🧬</span><span className="creator-user-main"><strong>{item.morphName}</strong><small>{item.speciesName || item.speciesId}</small><small>{names[item.userId ?? ""] || "Anonymous user"}</small></span><span className="creator-user-meta"><strong>{item.status}</strong><small>{formatCreatorReviewDate(item.submittedAt)}</small></span></button>)}</div>}
       </section>
 
       {selected && draft ? <section className="creator-admin-section" style={{ padding: 18 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.05fr) minmax(270px,.95fr)", gap: 18 }}>
+        <div className="creator-review-editor-layout">
           <div>
             <div className="creator-section-heading"><span className="creator-admin-kicker">PRIVATE EDITOR</span><h2>{draft.morphName || "Unnamed submission"}</h2><p>{selected.status} · Submitted {formatCreatorReviewDate(selected.submittedAt)}</p></div>
             {imageUrl ? <div className="creator-submission-preview"><img src={imageUrl} alt={`Submitted ${draft.morphName}`} /></div> : <div className="creator-list-item"><strong>Preview unavailable</strong><span>The submitted media could not be loaded.</span></div>}
