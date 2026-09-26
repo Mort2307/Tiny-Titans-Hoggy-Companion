@@ -4,7 +4,7 @@ import {
   MIN_SLICES, MIN_WEEKLY_METRICS, TITAN_AT_A_GLANCE_OPTIONS, TITAN_WEEKLY_METRIC_OPTIONS,
 } from "../config/easyNav";
 
-export function sanitiseMode(value: unknown): EasyNavMode {
+export function sanitiseMode(_value: unknown): EasyNavMode {
   // Quick View is the canonical navigation mode. Legacy saved values are normalised here.
   return "easy";
 }
