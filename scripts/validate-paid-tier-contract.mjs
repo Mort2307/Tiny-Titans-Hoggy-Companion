@@ -39,6 +39,7 @@ const requiredStripePriceIds = [
 ];
 const commercialTiers = ["titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"];
 const rescueSharedEntitlements = ["advanced_timeline", "advanced_analytics", "titan_intelligence", "morph_intelligence", "data_export", "marketplace_seller", "seller_profile", "business_reporting", "multi_user", "team_permissions", "automation", "api_access", "priority_support", "custom_branding"];
+const rescueEntitlementBlock = config.slice(config.indexOf("const RESCUE:"), config.indexOf("const PAID_INTELLIGENCE:"));
 const rescueNavigationTargets = ["/paid/timeline", "/paid/analytics", "/morph-library/evidence", "/paid/marketplace", "/paid/seller", "/paid/business", "/paid/team", "/paid/automation", "/paid/api", "/paid/support", "/paid/export", "/rescue/adoption"];
 const rescueWorkspaceStart = workspaceProducts.indexOf("rescue: {");
 const rescueWorkspaceEnd = workspaceProducts.indexOf("\n};", rescueWorkspaceStart);
