@@ -47,7 +47,7 @@ function prepareAnimalForFirestore(
   if (speciesId && !findUniversalSpecies(speciesId)) {
     throw new TinyTitansAppError(
       "SPECIES_ID_INVALID",
-      "Tiny Titans could not add this animal because the Species ID is not recognised by the current Tiny Titans species catalogue. Select the species from the catalogue and try again. Error code: SPECIES_ID_INVALID",
+      "Species ID error: Tiny Titans could not add this animal because the Species ID is not recognised by the current Tiny Titans species catalogue. Select the species from the catalogue and try again. Error code: SPECIES_ID_INVALID",
     );
   }
 
@@ -193,7 +193,7 @@ export async function updateUserAnimal(
       if (typeof preparedPatch.speciesId !== "string" || !preparedPatch.speciesId.trim()) {
         throw new TinyTitansAppError(
           "SPECIES_ID_MISSING",
-          "Tiny Titans could not update this animal because the Species ID is missing. Select a species from the Tiny Titans species catalogue or clear the species selection, then try again. Error code: SPECIES_ID_MISSING",
+          "Species ID error: Tiny Titans could not update this animal because the Species ID is missing. Select a species from the Tiny Titans species catalogue or clear the species selection, then try again. Error code: SPECIES_ID_MISSING",
         );
       }
 
@@ -201,7 +201,7 @@ export async function updateUserAnimal(
       if (!findUniversalSpecies(String(preparedPatch.speciesId))) {
         throw new TinyTitansAppError(
           "SPECIES_ID_INVALID",
-          "Tiny Titans could not update this animal because the Species ID is not recognised by the current Tiny Titans species catalogue. Select the species from the catalogue and try again. Error code: SPECIES_ID_INVALID",
+          "Species ID error: Tiny Titans could not update this animal because the Species ID is not recognised by the current Tiny Titans species catalogue. Select the species from the catalogue and try again. Error code: SPECIES_ID_INVALID",
         );
       }
     }
