@@ -18,9 +18,14 @@ async function prepareSnakeForFirestore(snake: Snake, firestoreId: string, dataO
 async function hydrateSnakeTrackerHistory(dataOwnerUid: string, snake: Snake): Promise<Snake> { if (!snake.id) return snake; const [weights, feedings, sheds] = await Promise.all([getDocs(snakeSubcollection(dataOwnerUid, snake.id, "weights")), getDocs(snakeSubcollection(dataOwnerUid, snake.id, "feedings")), getDocs(snakeSubcollection(dataOwnerUid, snake.id, "sheds"))]); return { ...snake, weightHistory: weights.docs.map((item) => ({ ...(item.data() as WeightRecord), id: item.id, snakeId: snake.id })), feedingHistory: feedings.docs.map((item) => ({ ...(item.data() as FeedingRecord), id: item.id, snakeId: snake.id })), shedHistory: sheds.docs.map((item) => ({ ...(item.data() as ShedRecord), id: item.id, snakeId: snake.id })) }; }
 export async function getUserSnakeDirectory(uid: string): Promise<Snake[]> {
   if (!uid) throw new Error("Cannot load snake directory without a user ID.");
-  const dataOwnerUid = await resolveDataOwnerUid(uid);
-  const snapshot = await getDocs(query(snakesCollection(dataOwnerUid), orderBy("name")));
-  return snapshot.docs.map((document) => migrateSnake({ ...(document.data() as Partial<Snake>), id: document.id }));
+  try {
+    const dataOwnerUid = await resolveDataOwnerUid(uid);
+    const snapshot = await getDocs(query(snakesCollection(dataOwnerUid), orderBy("name")));
+    return snapshot.docs.map((document) => migrateSnake({ ...(document.data() as Partial<Snake>), id: document.id }));
+  } catch (error) {
+    console.error("Tiny Titans: unable to load snake directory", error);
+    throw new Error(getTinyTitansErrorMessage(error, "Tiny Titans could not load your animal collection. Please try again."), { cause: error });
+  }
 }
 
 export async function getUserSnakes(uid: string): Promise<Snake[]> { if (!uid) throw new Error("Cannot load snakes without a user ID."); const dataOwnerUid = await resolveDataOwnerUid(uid); try { const snapshot = await getDocs(query(snakesCollection(dataOwnerUid), orderBy("name"))); const snakes = snapshot.docs.map((document) => migrateSnake({ ...(document.data() as Partial<Snake>), id: document.id })); return await Promise.all(snakes.map((snake) => hydrateSnakeTrackerHistory(dataOwnerUid, snake))); } catch (error) { console.error("Tiny Titans: unable to get user snakes", error); throw new Error(getTinyTitansErrorMessage(error, "Tiny Titans could not complete that snake request. Please try again."), { cause: error }); } }
