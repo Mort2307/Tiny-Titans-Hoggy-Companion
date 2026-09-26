@@ -9,6 +9,7 @@ import type { UniversalSpeciesRecord } from "../data/species/universalSpeciesTyp
 import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import "../styles/universal-animals.css";
 import { KEEPER_COMPANION_TERMINOLOGY } from "../config/keeperTerminology";
+import { getTinyTitansErrorMessage } from "../utils/firebaseError";
 
 type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
 
@@ -26,6 +27,7 @@ export default function MyAnimals() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageKind, setMessageKind] = useState<"success" | "error">("success");
   const visibleAnimals = speciesFilter
     ? animals.filter((animal) => animal.speciesId === speciesFilter || animal.speciesCommonName?.toLowerCase() === speciesFilter.toLowerCase())
     : animals;
@@ -63,6 +65,7 @@ export default function MyAnimals() {
     if (!user || !name.trim()) return;
     setBusy(true);
     setMessage("");
+    setMessageKind("success");
     try {
       const created = await createUserAnimal(user.uid, {
         name: name.trim(),
@@ -82,8 +85,10 @@ export default function MyAnimals() {
       setNotes("");
       setSelectedSpecies(null);
       setMessage("Animal added to My Animals.");
+      setMessageKind("success");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to add this animal.");
+      setMessage(getTinyTitansErrorMessage(error, "Tiny Titans could not add this animal. Please check the form and try again."));
+      setMessageKind("error");
     } finally {
       setBusy(false);
     }
@@ -117,7 +122,7 @@ export default function MyAnimals() {
           <label>Notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
         </div>
         <button className="universal-primary-action" type="button" disabled={!name.trim() || busy} onClick={() => void addAnimal()}>{busy ? "Saving…" : "Add animal"}</button>
-        {message && <p role="status">{message}</p>}
+        {message && <p className={`universal-animals-feedback ${messageKind === "error" ? "is-error" : "is-success"}`} role={messageKind === "error" ? "alert" : "status"}>{message}</p>}
       </section>
 
       <section className="universal-animals-panel">
