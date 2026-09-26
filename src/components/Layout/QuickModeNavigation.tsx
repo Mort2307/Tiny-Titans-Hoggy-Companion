@@ -1,7 +1,6 @@
 import TinyTitansIcon from "../TinyTitansIcon";
 import AnimatedAnimalIcon from "../AnimatedAnimalIcon";
 import type { WorkspacePresentation } from "../../services/workspacePresentationService";
-import { quickIconFor } from "../../config/navigationIcons";
 
 type QuickItem = {
   id: string;
@@ -78,7 +77,7 @@ function QuickModeNavigation({
                 <div className="tt-easy-more-grid">
                   {items.map((item) => (
                     <button type="button" data-route-guide-target={item.id === "account" ? "quick-my-account" : undefined} className="tt-easy-feature-link" key={item.id} onClick={() => onOpenItem(item.path)}>
-                      <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={quickIconFor(item.id)} size={24} /></span>
+                      <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={24} /></span>
                       <span><strong>{item.label}</strong><small>{item.description}</small></span>
                     </button>
                   ))}
