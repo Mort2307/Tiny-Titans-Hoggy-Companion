@@ -1,6 +1,7 @@
 import TinyTitansIcon from "../TinyTitansIcon";
 import AnimatedAnimalIcon from "../AnimatedAnimalIcon";
-import type { WorkspacePresentation } from "../../services/workspacePresentationService";\nimport { useLocation } from "react-router-dom";
+import type { WorkspacePresentation } from "../../services/workspacePresentationService";
+import { useLocation } from "react-router-dom";
 
 type QuickItem = {
   id: string;
@@ -35,6 +36,9 @@ function QuickModeNavigation({
   onClose,
   onOpenItem,
 }: Props) {
+  const location = useLocation();
+  const isActive = (path: string) => path === "/" ? location.pathname === "/" : location.pathname === path || location.pathname.startsWith(`${path}/`);
+
   return (
     <>
       <nav className="app-navigation tt-easy-nav-strip" aria-label="Quick View navigation">
