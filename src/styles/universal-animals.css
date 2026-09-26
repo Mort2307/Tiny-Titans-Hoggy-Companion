@@ -181,13 +181,65 @@
   color: var(--secondary);
 }
 
+.universal-animal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.universal-animal-delete {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  background: rgba(111, 36, 184, 0.12);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.universal-animal-delete:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  box-shadow: var(--glow-soft);
+}
+
+.universal-animal-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.universal-animal-delete .tt-icon {
+  flex: 0 0 auto;
+}
+
 @media (max-width: 760px) {
   .universal-animals-page {
     padding-bottom: 2rem;
   }
 
-  .universal-animal-row a {
+  .universal-animal-actions {
     width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .universal-animal-row a,
+  .universal-animal-delete {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
