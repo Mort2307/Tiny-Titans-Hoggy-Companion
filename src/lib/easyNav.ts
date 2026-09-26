@@ -5,7 +5,7 @@ import {
 } from "../config/easyNav";
 
 export function sanitiseMode(value: unknown): EasyNavMode {
-  return value === "easy" ? "easy" : "standard";
+  // Quick View is the canonical navigation mode. Legacy saved values are normalised here.\n  return "easy";
 }
 
 export function sanitiseWeekStart(value: unknown): WeekStartDay {
@@ -53,7 +53,7 @@ export function defaultEasyNavPreferences(): {
   weeklyMetrics: TitanWeeklyMetricId[];
 } {
   return {
-    mode: "standard",
+    mode: "easy",
     slices: [...DEFAULT_SLICES],
     weekStartDay: DEFAULT_WEEK_START,
     weeklyMetrics: [...DEFAULT_WEEKLY_METRICS],
