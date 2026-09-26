@@ -5,7 +5,8 @@ import {
 } from "../config/easyNav";
 
 export function sanitiseMode(value: unknown): EasyNavMode {
-  // Quick View is the canonical navigation mode. Legacy saved values are normalised here.\n  return "easy";
+  // Quick View is the canonical navigation mode. Legacy saved values are normalised here.
+  return "easy";
 }
 
 export function sanitiseWeekStart(value: unknown): WeekStartDay {
