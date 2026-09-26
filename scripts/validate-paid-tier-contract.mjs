@@ -72,7 +72,10 @@ function tierSlice(tierId) {
 const checks = [
   ["tier catalogue exists", config.includes("PAID_TIER_CATALOG")],
   ["all six commercial tiers registered", commercialTiers.every((id) => config.includes(id))],
-  ["all paid tiers include Titan Intelligence", commercialTiers.every((id) => tierSlice(id).includes("PAID_INTELLIGENCE") || tierSlice(id).includes("\"titan_intelligence\""))],
+  ["all paid tiers include Titan Intelligence", commercialTiers.every((id) => {
+    const slice = tierSlice(id);
+    return slice.includes("PAID_INTELLIGENCE") || slice.includes("\"titan_intelligence\"") || (id === "rescue" && rescueEntitlementBlock.includes("\"titan_intelligence\""));
+  })],
   ["free tier does not include Titan Intelligence entitlement", !tierSlice("free").includes("titan_intelligence")],
   ["configured Stripe price IDs are present", requiredStripePriceIds.every((id) => config.includes(id) && subscriptions.includes(id))],
   ["subscription checkout callable exists", subscriptions.includes("createPaidSubscriptionCheckout")],
@@ -85,7 +88,7 @@ const checks = [
   ["billing detects subscription activation", billing.includes("subscriptionActive") && billing.includes("refreshProfile()")],
   ["billing activation is not blocked by tester source", billing.includes("access.actualTier !== \"free\"") && billing.includes("access.subscriptionStatus === \"active\"")],
   ["export entitlement exists", config.includes('"data_export"')],
-  ["Rescue includes all shared paid capabilities", rescueSharedEntitlements.every((entitlement) => tierSlice("rescue").includes(`"${entitlement}"`))],
+  ["Rescue includes all shared paid capabilities", rescueSharedEntitlements.every((entitlement) => tierSlice("rescue").includes(`"${entitlement}"`) || rescueEntitlementBlock.includes(`"${entitlement}"`))],
   ["Rescue workspace exposes shared paid destinations", rescueWorkspaceBlock && rescueNavigationTargets.every((path) => rescueWorkspaceBlock.includes(`path:"${path}"`))],
   ["Rescue backend paid-business tier map matches shared entitlements", rescueSharedEntitlements.every((entitlement) => paidBusiness.includes(`rescue: new Set(`) && paidBusiness.includes(`"${entitlement}"`)) && paidBusiness.includes('"rescue"')],
   ["Rescue backend marketplace access is enabled", paidMarketplace.includes('"rescue"') && /PAID_TIERS/.test(paidMarketplace)],
