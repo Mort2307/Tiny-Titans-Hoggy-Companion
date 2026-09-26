@@ -190,3 +190,21 @@
     width: 100%;
   }
 }
+
+.universal-animals-feedback {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  line-height: 1.5;
+}
+
+.universal-animals-feedback.is-success {
+  border-color: var(--border-strong);
+  background: rgba(0, 174, 255, 0.08);
+}
+
+.universal-animals-feedback.is-error {
+  border-color: var(--accent);
+  background: rgba(111, 36, 184, 0.12);
+}
