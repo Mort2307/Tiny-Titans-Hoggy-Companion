@@ -1,6 +1,6 @@
 import TinyTitansIcon from "../TinyTitansIcon";
 import AnimatedAnimalIcon from "../AnimatedAnimalIcon";
-import type { WorkspacePresentation } from "../../services/workspacePresentationService";
+import type { WorkspacePresentation } from "../../services/workspacePresentationService";\nimport { useLocation } from "react-router-dom";
 
 type QuickItem = {
   id: string;
@@ -37,15 +37,15 @@ function QuickModeNavigation({
 }: Props) {
   return (
     <>
-      <nav className="app-navigation tt-easy-nav-strip" aria-label="Quick Mode navigation">
+      <nav className="app-navigation tt-easy-nav-strip" aria-label="Quick View navigation">
         <div className="tt-easy-nav-inner">
-          <a className="tt-easy-nav-link" href="/" onClick={(event) => { event.preventDefault(); onOpenItem("/"); }}>
+          <a className={`tt-easy-nav-link${isActive("/") ? " active" : ""}`} href="/" onClick={(event) => { event.preventDefault(); onOpenItem("/"); }}>
             <TinyTitansIcon name="home" size={24} /><small>At a Glance</small>
           </a>
-          <a className="tt-easy-nav-link" href="/animals" onClick={(event) => { event.preventDefault(); onOpenItem("/animals"); }}>
+          <a className={`tt-easy-nav-link${isActive("/animals") ? " active" : ""}`} href="/animals" onClick={(event) => { event.preventDefault(); onOpenItem("/animals"); }}>
             <AnimatedAnimalIcon size={24} /><small>{workspace.product.terminology.animals || "My Animals"}</small>
           </a>
-          <a className="tt-easy-nav-link" href="/reminders" onClick={(event) => { event.preventDefault(); onOpenItem("/reminders"); }}>
+          <a className={`tt-easy-nav-link${isActive("/reminders") ? " active" : ""}`} href="/reminders" onClick={(event) => { event.preventDefault(); onOpenItem("/reminders"); }}>
             <TinyTitansIcon name="reminders" size={24} /><small>Due</small>
           </a>
           <button type="button" data-route-guide-target="quick-more" className={`tt-easy-nav-link tt-easy-nav-more${moreOpen ? " active" : ""}`} onClick={onToggleMore} aria-expanded={moreOpen} aria-controls="tt-easy-more-menu">
@@ -56,14 +56,14 @@ function QuickModeNavigation({
 
       {moreOpen && (
         <div className="tt-easy-more-backdrop" role="presentation" onClick={onClose}>
-          <section id="tt-easy-more-menu" className="tt-easy-more" role="dialog" aria-modal="true" aria-label="Quick Mode full app navigation" onClick={(event) => event.stopPropagation()}>
+          <section id="tt-easy-more-menu" className="tt-easy-more" role="dialog" aria-modal="true" aria-label="Quick View full app navigation" onClick={(event) => event.stopPropagation()}>
             <div className="tt-easy-more-head">
               <div>
-                <span>QUICK MODE · FULL APP</span>
+                <span>QUICK VIEW · FULL APP</span>
                 <h2>{workspace.product.name}</h2>
-                <p>Quick Mode changes navigation only — the full TinyTitans feature set remains available.</p>
+                <p>Quick View is the TinyTitans navigation — the full feature set remains available.</p>
               </div>
-              <button type="button" onClick={onClose} aria-label="Close full navigation">×</button>
+              <button type="button" onClick={onClose} aria-label="Close full navigation"><TinyTitansIcon name="close" size={18} /></button>
             </div>
 
             <label className="tt-easy-search">
@@ -94,7 +94,7 @@ function QuickModeNavigation({
 
             <div className="tt-easy-more-foot">
               <button type="button" onClick={() => onOpenItem("/account/personalise?quick-mode=1")}>
-                Customise Quick Mode
+                Customise Quick View
               </button>
             </div>
           </section>
