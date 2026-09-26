@@ -67,7 +67,7 @@ function unsupportedFieldMessage(errorMessage: string): string | null {
   const field = match?.[1];
 
   if (field === "speciesId") {
-    return "Tiny Titans could not save this animal because the Species ID is missing. Select a species from the Tiny Titans species catalogue and try again. Error code: SPECIES_ID_MISSING";
+    return "Species ID error: Tiny Titans could not save this animal because the Species ID is missing. Select a species from the Tiny Titans species catalogue and try again. Error code: SPECIES_ID_MISSING";
   }
 
   if (field) {
