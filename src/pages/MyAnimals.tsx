@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import UniversalSpeciesPicker from "../components/UniversalSpeciesPicker";
-import { getUserAnimals, createUserAnimal } from "../services/universalAnimalService";
-import { getUserSnakeDirectory } from "../services/snakeService";
+import { getUserAnimals, createUserAnimal, deleteUserAnimal } from "../services/universalAnimalService";
+import { getUserSnakeDirectory, deleteUserSnake } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import type { UniversalSpeciesRecord } from "../data/species/universalSpeciesTypes";
@@ -10,6 +10,7 @@ import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import "../styles/universal-animals.css";
 import { KEEPER_COMPANION_TERMINOLOGY } from "../config/keeperTerminology";
 import { getTinyTitansErrorMessage } from "../utils/firebaseError";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
 
@@ -26,6 +27,7 @@ export default function MyAnimals() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [deletingAnimalId, setDeletingAnimalId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("success");
   const visibleAnimals = speciesFilter
@@ -60,6 +62,38 @@ export default function MyAnimals() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [user]);
+
+  async function deleteAnimal(animal: DirectoryAnimal) {
+    if (!user || deletingAnimalId) return;
+
+    const confirmed = window.confirm(
+      animal.legacySnake
+        ? `Delete ${animal.name}? This permanently removes the snake record and its tracker history.`
+        : `Delete ${animal.name}? This permanently removes this animal record from My Animals.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingAnimalId(animal.id);
+    setMessage("");
+    setMessageKind("success");
+
+    try {
+      if (animal.legacySnake) {
+        await deleteUserSnake(user.uid, animal.id);
+      } else {
+        await deleteUserAnimal(user.uid, animal.id);
+      }
+
+      setAnimals((current) => current.filter((item) => item.id !== animal.id || item.legacySnake !== animal.legacySnake));
+      setMessage(`${animal.name} was deleted from My Animals.`);
+      setMessageKind("success");
+    } catch (error) {
+      setMessage(getTinyTitansErrorMessage(error, `Tiny Titans could not delete ${animal.name}. Please try again.`));
+      setMessageKind("error");
+    } finally {
+      setDeletingAnimalId(null);
+    }
+  }
 
   async function addAnimal() {
     if (!user || !name.trim()) return;
@@ -128,7 +162,32 @@ export default function MyAnimals() {
       <section className="universal-animals-panel">
         <p className="eyebrow">INDIVIDUALS</p>
         <h2>Your animal collection</h2>
-        {loading ? <p>Loading your animal collection…</p> : visibleAnimals.length === 0 ? <p>No individual animal records yet.</p> : <div className="universal-animal-list">{visibleAnimals.map((animal) => <article key={(animal.legacySnake ? "snake:" : "animal:") + animal.id} className="universal-animal-row"><div><strong>{animal.name}</strong><span>{animal.speciesCommonName || "Awaiting species identification"}</span><small>{animal.animalGroup || "Animal"} · {animal.status}</small></div><Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual →</Link></article>)}</div>}
+        {loading ? <p>Loading your animal collection…</p> : visibleAnimals.length === 0 ? <p>No individual animal records yet.</p> : <div className="universal-animal-list">{visibleAnimals.map((animal) => {
+          const rowKey = (animal.legacySnake ? "snake:" : "animal:") + animal.id;
+          const isDeleting = deletingAnimalId === animal.id;
+          return (
+            <article key={rowKey} className="universal-animal-row">
+              <div>
+                <strong>{animal.name}</strong>
+                <span>{animal.speciesCommonName || "Awaiting species identification"}</span>
+                <small>{animal.animalGroup || "Animal"} · {animal.status}</small>
+              </div>
+              <div className="universal-animal-actions">
+                <Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual →</Link>
+                <button
+                  className="universal-animal-delete"
+                  type="button"
+                  onClick={() => void deleteAnimal(animal)}
+                  disabled={Boolean(deletingAnimalId)}
+                  aria-label={`Delete ${animal.name}`}
+                >
+                  <TinyTitansIcon name="delete" size={18} />
+                  <span>{isDeleting ? "Deleting…" : "Delete"}</span>
+                </button>
+              </div>
+            </article>
+          );
+        })}</div>}
       </section>
     </main>
   );
