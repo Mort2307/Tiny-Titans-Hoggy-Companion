@@ -212,7 +212,7 @@ function Header() {
               aria-haspopup="menu"
               title="Quick QA tier switch"
             >
-              <span aria-hidden="true">🧪</span>
+              <TinyTitansIcon name="testing" size={18} aria-hidden="true" />
               <strong>QA</strong>
             </button>
 
