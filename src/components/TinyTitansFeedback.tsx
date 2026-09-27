@@ -3,7 +3,7 @@ import TinyTitansIcon from "./TinyTitansIcon";
 import type { TinyTitansIconName } from "../types/tinyTitansIcon";
 import "../styles/tiny-titans-feedback.css";
 
-export type TinyTitansFeedbackKind = "success" | "error" | "warning" | "info";
+export type TinyTitansFeedbackKind = "success" | "error" | "warning" | "info" | "loading" | "offline";
 
 type Props = {
   kind?: TinyTitansFeedbackKind;
@@ -17,6 +17,8 @@ const ICONS: Record<TinyTitansFeedbackKind, TinyTitansIconName> = {
   error: "warning",
   warning: "warning",
   info: "info",
+  loading: "rotate",
+  offline: "warning",
 };
 
 export default function TinyTitansFeedback({
@@ -25,11 +27,13 @@ export default function TinyTitansFeedback({
   className = "",
   compact = false,
 }: Props) {
-  const role = kind === "error" || kind === "warning" ? "alert" : "status";
+  const role = kind === "error" || kind === "warning" || kind === "offline" ? "alert" : "status";
   return (
     <div
       className={`tt-feedback tt-feedback--${kind}${compact ? " tt-feedback--compact" : ""} ${className}`.trim()}
       role={role}
+      aria-live={role === "alert" ? "assertive" : "polite"}
+      aria-busy={kind === "loading" || undefined}
     >
       <span className="tt-feedback__icon" aria-hidden="true">
         <TinyTitansIcon name={ICONS[kind]} size={18} />
