@@ -13,6 +13,7 @@ import { getTinyTitansErrorMessage } from "../utils/firebaseError";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
+import TinyTitansFeedback from "../components/TinyTitansFeedback";
 
 type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
 
@@ -153,7 +154,7 @@ export default function MyAnimals() {
           <label>Notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
         </div>
         <button className="universal-primary-action" type="button" disabled={!name.trim() || busy} onClick={() => void addAnimal()}><TinyTitansIcon name={busy ? "save" : "add"} size={18} />{busy ? "Saving…" : "Add animal"}</button>
-        {message && <p className={`universal-animals-feedback ${messageKind === "error" ? "is-error" : "is-success"}`} role={messageKind === "error" ? "alert" : "status"}>{message}</p>}
+        {message && <TinyTitansFeedback kind={messageKind}>{message}</TinyTitansFeedback>}
       </section>
 
       <section className="universal-animals-panel">
