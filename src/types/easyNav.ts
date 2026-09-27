@@ -1,4 +1,4 @@
-export type EasyNavMode = "standard" | "easy";
+export type EasyNavMode = "easy";
 export type WeekStartDay = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type TitanWeeklyMetricId = "feed" | "weight" | "shed" | "health" | "behaviour" | "breeding" | "reminders" | "intelligence";
 export type TitanAtAGlanceSliceId =
