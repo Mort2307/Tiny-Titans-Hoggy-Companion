@@ -537,14 +537,19 @@
 
 .tt-home-disclosure summary::after,
 .tt-home-tools summary::after {
-  content: '+';
-  color: var(--tt-accent);
-  font-size: 1.05rem;
+  content: "";
+  width: .48rem;
+  height: .48rem;
+  flex: 0 0 .48rem;
+  border-right: 2px solid var(--tt-accent);
+  border-bottom: 2px solid var(--tt-accent);
+  transform: rotate(45deg);
+  transition: transform .15s ease;
 }
 
 .tt-home-disclosure[open] summary::after,
 .tt-home-tools[open] summary::after {
-  content: '−';
+  transform: rotate(225deg);
 }
 
 .tt-home-disclosure > :not(summary) {
@@ -888,3 +893,8 @@
     transform: none;
   }
 }
+
+.tt-attention-card--overdue{border-color:rgba(231,123,123,.34);background:radial-gradient(circle at 100% 0,rgba(231,123,123,.09),transparent 35%),linear-gradient(145deg,rgba(70,28,48,.9),rgba(24,3,40,.97))}
+.tt-attention-card--overdue .tt-attention-card-top span,.tt-attention-card--overdue .tt-attention-card-top strong{color:#ffd0d0}
+.tt-attention-card--due-soon{border-color:rgba(240,202,136,.32)}
+.tt-attention-card small{display:flex;align-items:center;gap:.3rem}
