@@ -106,7 +106,7 @@ function Home() {
             <p className="tt-home-kicker"><TinyTitansIcon name="weight" size={17} /> AT A GLANCE</p>
             <h2>Your records</h2>
           </div>
-          <Link to="/animals">Open collection →</Link>
+          <Link to="/animals">Open collection <TinyTitansIcon name="forward" size={14} /></Link>
         </div>
         <div className="tt-home-stats">
           <Link to="/animals"><strong>{snakes.length}</strong><span><TinyTitansIcon name="reptile" size={16} /> Animals</span></Link>
@@ -128,12 +128,12 @@ function Home() {
           </div>
         </div>
         <div className="tt-home-explore-grid">
-          <Link to="/morph-library"><span><TinyTitansIcon name="genetics" size={25} /></span><div><strong>Genetics Library</strong><small>Canonical morph identities and recognised combinations.</small></div><b>→</b></Link>
-          <Link to="/husbandry"><span><TinyTitansIcon name="husbandry" size={25} /></span><div><strong>Husbandry Library</strong><small>Species-aware care, enclosure and environmental guidance.</small></div><b>→</b></Link>
-          <Link to="/behaviour-observatory"><span><TinyTitansIcon name="observatory" size={25} /></span><div><strong>Behaviour Observatory</strong><small>Keeper observations, theories and evidence.</small></div><b>→</b></Link>
-          <Link to="/community"><span><TinyTitansIcon name="community" size={25} /></span><div><strong>Titan Community</strong><small>Contributions, shared learning and community intelligence.</small></div><b>→</b></Link>
-          <Link to="/challenge"><span><TinyTitansIcon name="challenge" size={25} /></span><div><strong>Titans Challenge</strong><small>Keep building your animal-keeping knowledge at your own level.</small></div><b>→</b></Link>
-          <Link to="/account/family"><span><TinyTitansIcon name="family" size={25} /></span><div><strong>My Family</strong><small>Shared care with controlled access.</small></div><b>→</b></Link>
+          <Link to="/morph-library"><span><TinyTitansIcon name="genetics" size={25} /></span><div><strong>Genetics Library</strong><small>Canonical morph identities and recognised combinations.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
+          <Link to="/husbandry"><span><TinyTitansIcon name="husbandry" size={25} /></span><div><strong>Husbandry Library</strong><small>Species-aware care, enclosure and environmental guidance.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
+          <Link to="/behaviour-observatory"><span><TinyTitansIcon name="observatory" size={25} /></span><div><strong>Behaviour Observatory</strong><small>Keeper observations, theories and evidence.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
+          <Link to="/community"><span><TinyTitansIcon name="community" size={25} /></span><div><strong>Titan Community</strong><small>Contributions, shared learning and community intelligence.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
+          <Link to="/challenge"><span><TinyTitansIcon name="challenge" size={25} /></span><div><strong>Titans Challenge</strong><small>Keep building your animal-keeping knowledge at your own level.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
+          <Link to="/account/family"><span><TinyTitansIcon name="family" size={25} /></span><div><strong>My Family</strong><small>Shared care with controlled access.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
         </div>
       </section>
 
@@ -142,13 +142,13 @@ function Home() {
           <p className="tt-home-kicker"><TinyTitansIcon name="academy" size={17} /> LEARNING MODE</p>
           <h3>{learningLabel} learning</h3>
           <p>Your learning level changes how TinyTitans presents information without changing the underlying scientific facts.</p>
-          <Link to="/account/personalise">Tune learning →</Link>
+          <Link to="/account/personalise">Tune learning <TinyTitansIcon name="forward" size={14} /></Link>
         </article>
         <article className="tt-home-panel">
           <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> SPECIES-AWARE CONTEXT</p>
           <h3>Content stays attached to the animal</h3>
           <p>Care, safety and genetics surfaces remain species-aware across the animals you keep.</p>
-          <Link to="/animals">Manage animals →</Link>
+          <Link to="/animals">Manage animals <TinyTitansIcon name="forward" size={14} /></Link>
         </article>
       </section>
 
