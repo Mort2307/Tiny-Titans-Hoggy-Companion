@@ -68,7 +68,7 @@ export default function Reminders() {
   return <main className="tt-reminders-page">
     <BackHomeButton fallback="/" />
     <section className="tt-reminder-hero">
-      <div><p className="tt-reminder-eyebrow">Keeper routine · reminder hub</p><h1>🔔 Reminder Hub</h1><p>Dates use the shared live world clock. Your device timezone is tracked separately from each reminder's scheduled timezone, so travel does not silently rewrite your routines.</p></div>
+      <div><p className="tt-reminder-eyebrow">Keeper routine · reminder hub</p><h1><TinyTitansIcon name="reminders" size={28} /> Reminder Hub</h1><p>Dates use the shared live world clock. Your device timezone is tracked separately from each reminder's scheduled timezone, so travel does not silently rewrite your routines.</p></div>
       <div className="tt-reminder-hero-stats">
         <span><strong>TODAY</strong><b>{fullDate(appToday)}</b></span>
         <span><strong>{world.localTime}</strong>{world.timezone} · {world.utcOffsetLabel}</span>
