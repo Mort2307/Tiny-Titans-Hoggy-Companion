@@ -3,6 +3,7 @@ import AnimatedAnimalIcon from "../AnimatedAnimalIcon";
 import type { WorkspacePresentation } from "../../services/workspacePresentationService";
 import type { QuickNavItem } from "../../data/quickNavigation";
 import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
 
 type Props = {
   workspace: WorkspacePresentation;
@@ -10,6 +11,7 @@ type Props = {
   setQuickSearch: (value: string) => void;
   quickGroups: Record<string, QuickNavItem[]>;
   quickItems: QuickNavItem[];
+  recentItems: QuickNavItem[];
   moreOpen: boolean;
   onToggleMore: () => void;
   onClose: () => void;
@@ -22,6 +24,7 @@ function QuickModeNavigation({
   setQuickSearch,
   quickGroups,
   quickItems,
+  recentItems,
   moreOpen,
   onToggleMore,
   onClose,
@@ -29,6 +32,15 @@ function QuickModeNavigation({
 }: Props) {
   const location = useLocation();
   const isActive = (path: string) => path === "/" ? location.pathname === "/" : location.pathname === path || location.pathname.startsWith(`${path}/`);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [moreOpen, onClose]);
 
   return (
     <>
@@ -66,6 +78,20 @@ function QuickModeNavigation({
               <input value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="Find anything in TinyTitans…" aria-label="Search the full TinyTitans app" autoFocus />
             </label>
 
+            {!quickSearch.trim() && recentItems.length > 0 && (
+              <section className="tt-easy-more-group tt-easy-recent">
+                <h3><TinyTitansIcon name="timeline" size={15} /> Recent</h3>
+                <div className="tt-easy-more-grid">
+                  {recentItems.map((item) => (
+                    <button type="button" className="tt-easy-feature-link" key={`recent:${item.id}`} onClick={() => onOpenItem(item.path)}>
+                      <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={24} /></span>
+                      <span><strong>{item.label}</strong><small>{item.description}</small></span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {Object.entries(quickGroups).map(([group, items]) => (
               <section className="tt-easy-more-group" key={group}>
                 <h3>{group}</h3>
@@ -88,8 +114,8 @@ function QuickModeNavigation({
             )}
 
             <div className="tt-easy-more-foot">
-              <button type="button" onClick={() => onOpenItem("/account/personalise?quick-mode=1")}>
-                Customise Quick View
+              <button type="button" onClick={() => onOpenItem("/account/personalise")}>
+                <TinyTitansIcon name="edit" size={17} /> Customise Quick View
               </button>
             </div>
           </section>
