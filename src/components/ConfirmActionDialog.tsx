@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansAction from "./TinyTitansAction";
 
 type Props = {
   open: boolean;
@@ -16,11 +17,11 @@ type Props = {
 export default function ConfirmActionDialog({ open, title, description, confirmLabel = "Confirm", cancelLabel = "Cancel", busy = false, destructive = true, onConfirm, onCancel }: Props) {
   const titleId = useId();
   const descriptionId = useId();
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    cancelRef.current?.focus();
+    cancelRef.current?.querySelector<HTMLElement>("button, a")?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !busy) onCancel();
     };
@@ -35,9 +36,9 @@ export default function ConfirmActionDialog({ open, title, description, confirmL
         <div className="tiny-titans-confirm-icon" aria-hidden="true"><TinyTitansIcon name={destructive ? "delete" : "titan"} size={28} /></div>
         <h2 id={titleId}>{title}</h2>
         <div className="tiny-titans-confirm-description" id={descriptionId}>{description}</div>
-        <div className="tiny-titans-confirm-actions">
-          <button ref={cancelRef} className="tiny-titans-confirm-cancel" type="button" onClick={onCancel} disabled={busy}><TinyTitansIcon name="close" size={16} />{cancelLabel}</button>
-          <button className={destructive ? "tiny-titans-confirm-danger" : "tiny-titans-confirm-primary"} type="button" onClick={onConfirm} disabled={busy} aria-label={confirmLabel}><TinyTitansIcon name={destructive ? "delete" : "check"} size={16} />{busy ? "Working…" : confirmLabel}</button>
+        <div ref={cancelRef} className="tiny-titans-confirm-actions">
+          <TinyTitansAction className="tiny-titans-confirm-cancel" variant="secondary" icon="close" label={cancelLabel} onClick={onCancel} disabled={busy} />
+          <TinyTitansAction className={destructive ? "tiny-titans-confirm-danger" : "tiny-titans-confirm-primary"} variant={destructive ? "danger" : "primary"} icon={destructive ? "delete" : "check"} label={confirmLabel} onClick={onConfirm} busy={busy} />
         </div>
         {destructive && <small className="tiny-titans-confirm-warning">This action cannot be undone.</small>}
       </section>
