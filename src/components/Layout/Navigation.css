@@ -24,3 +24,14 @@
 .tt-easy-pin-button:hover{color:#f0ca88;border-color:rgba(240,202,136,.22);background:rgba(240,202,136,.06)}
 .tt-easy-pin-button.active{color:#f0ca88;border-color:rgba(240,202,136,.28);background:rgba(240,202,136,.09)}
 .tt-easy-pin-button:focus-visible{outline:2px solid #f0ca88;outline-offset:2px}
+
+@media(max-width:800px){
+  .tt-easy-nav-strip{padding-bottom:max(5px,env(safe-area-inset-bottom))}
+  .tt-easy-more-backdrop{padding:clamp(.5rem,2vw,1rem);padding-bottom:max(clamp(.5rem,2vw,1rem),env(safe-area-inset-bottom))}
+  .tt-easy-more{max-height:calc(100dvh - max(1rem,env(safe-area-inset-top)) - max(1rem,env(safe-area-inset-bottom)));overscroll-behavior:contain}
+}
+@media(max-height:560px) and (orientation:landscape){
+  .tt-easy-more-backdrop{place-items:stretch center}
+  .tt-easy-more{max-height:calc(100dvh - 1rem);border-radius:14px}
+  .tt-easy-more-head p{display:none}
+}
