@@ -1,4 +1,5 @@
 import { useState } from "react";
+import TinyTitansIcon from "../TinyTitansIcon";
 import type { ApprovedMorphImage } from "../../types/morphSubmission";
 import type { EditorImage } from "../../types/creatorMorphLibraryEditor";
 
@@ -25,7 +26,7 @@ export function CreditDialog({
             <p className="creator-morph-editor-kicker">ATTRIBUTION</p>
             <h2 id="credit-title">Edit image credit</h2>
           </div>
-          <button type="button" onClick={onClose} disabled={busy}>×</button>
+          <button type="button" onClick={onClose} disabled={busy} aria-label="Close dialog"><TinyTitansIcon name="close" size={17} /></button>
         </div>
         <div className="creator-morph-editor-credit-options">
           {(["name", "social", "anonymous"] as const).map((value) => (
