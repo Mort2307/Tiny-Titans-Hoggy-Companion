@@ -3,6 +3,7 @@ import BackHomeButton from "../components/BackHomeButton";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
+import TinyTitansFeedback from "../components/TinyTitansFeedback";
 import FeedingHistory from "../components/Feeding/FeedingHistory";
 import FeedingLogForm from "../components/Feeding/FeedingLogForm";
 import FeedingOverviewStats from "../components/Feeding/FeedingOverviewStats";
@@ -41,8 +42,8 @@ export default function FeedingTracker() {
       </nav>
     </header>
 
-    {error && <div className="tt-tracker-message error" role="alert"><TinyTitansIcon name="warning" size={17} /> {error}</div>}
-    {success && <div className="tt-tracker-message success" role="status"><TinyTitansIcon name="check" size={17} /> {success}</div>}
+    {error && <TinyTitansFeedback kind="error" className="tt-tracker-message">{error}</TinyTitansFeedback>}
+    {success && <TinyTitansFeedback kind="success" className="tt-tracker-message">{success}</TinyTitansFeedback>}
 
     {snakes.length === 0 ? (
       <section className="tt-tracker-panel"><TinyTitansEmptyState icon="animals" title="No animals ready for feeding records" description="Add your first animal before recording a feeding." action={{ label: "Open My Animals", icon: "add", onClick: () => navigate("/animals") }} /></section>
