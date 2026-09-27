@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { hasFullIntelligenceAccess } from "../../services/intelligenceAccessService";
 import { refreshTitanDecisionStateForAnimals, subscribeToTitanDecisionState, type TitanDecision } from "../../services/titanDecisionStateService";
 import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiveIntelligenceService";
+import TinyTitansIcon from "../TinyTitansIcon";
+import TinyTitansAction from "../TinyTitansAction";
 import "../../styles/titanNextAction.css";
 import "../../styles/titanGlobalNextAction.css";
 
@@ -19,7 +21,6 @@ function animalIdFromPath(pathname: string): string | null {
 
 export default function TitanGlobalNextAction() {
   const { user, loading, profileLoading } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [decision, setDecision] = useState<TitanDecision | null>(null);
   const [enabled, setEnabled] = useState(false);
@@ -72,13 +73,11 @@ export default function TitanGlobalNextAction() {
   return (
     <section className="tt-global-next-action" aria-label="Current Tiny Titan next action">
       <div className="tt-global-next-action__copy">
-        <span className="tt-global-next-action__eyebrow">🧠 Tiny Titans Intelligence</span>
+        <span className="tt-global-next-action__eyebrow"><TinyTitansIcon name="titan" size={14} /> Tiny Titans Intelligence</span>
         <strong>{decision.title}</strong>
         <span>{decision.reason}</span>
       </div>
-      <button type="button" className="hoggie-titan-next-action" onClick={() => navigate(decision.destination)}>
-        Open next action →
-      </button>
+      <TinyTitansAction className="hoggie-titan-next-action" variant="primary" endIcon="forward" to={decision.destination} label="Open next action" />
     </section>
   );
 }
