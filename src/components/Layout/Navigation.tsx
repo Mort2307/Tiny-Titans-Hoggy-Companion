@@ -11,6 +11,15 @@ function Navigation() {
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [quickSearch, setQuickSearch] = useState("");
+  const [pinnedPaths, setPinnedPaths] = useState<string[]>(() => {
+    try {
+      const stored = window.localStorage.getItem("tinytitans:quick-view:pinned");
+      const parsed = stored ? JSON.parse(stored) : [];
+      return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string").slice(0, 8) : [];
+    } catch {
+      return [];
+    }
+  });
   const [recentPaths, setRecentPaths] = useState<string[]>(() => {
     try {
       const stored = window.localStorage.getItem("tinytitans:quick-view:recent");
@@ -38,6 +47,9 @@ function Navigation() {
   }, []);
 
   const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities);
+  const pinnedItems = pinnedPaths
+    .map((path) => availableQuickItems.find((item) => item.path === path))
+    .filter((item): item is QuickNavItem => Boolean(item));
   const recentItems = recentPaths
     .map((path) => availableQuickItems.find((item) => item.path === path))
     .filter((item): item is QuickNavItem => Boolean(item));
@@ -46,6 +58,17 @@ function Navigation() {
     (groups[item.group] ??= []).push(item);
     return groups;
   }, {});
+
+  const togglePinnedItem = (path: string) => {
+    if (!availableQuickItems.some((item) => item.path === path)) return;
+    setPinnedPaths((current) => {
+      const next = current.includes(path)
+        ? current.filter((itemPath) => itemPath !== path)
+        : [path, ...current].slice(0, 8);
+      try { window.localStorage.setItem("tinytitans:quick-view:pinned", JSON.stringify(next)); } catch { /* optional convenience cache */ }
+      return next;
+    });
+  };
 
   const openQuickItem = (path: string) => {
     const canonicalItem = availableQuickItems.find((item) => item.path === path);
@@ -68,11 +91,14 @@ function Navigation() {
       setQuickSearch={setQuickSearch}
       quickGroups={quickGroups}
       quickItems={quickItems}
+      pinnedItems={pinnedItems}
+      pinnedPaths={pinnedPaths}
       recentItems={recentItems}
       moreOpen={moreOpen}
       onToggleMore={() => setMoreOpen((current) => !current)}
       onClose={() => setMoreOpen(false)}
       onOpenItem={openQuickItem}
+      onTogglePin={togglePinnedItem}
     />
   );
 }
