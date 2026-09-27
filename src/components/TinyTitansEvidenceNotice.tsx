@@ -1,10 +1,11 @@
+import TinyTitansIcon from "./TinyTitansIcon";
 import "../styles/tiny-titans-evidence.css";
 
 export default function TinyTitansEvidenceNotice({ home = false }: { home?: boolean }) {
   return (
     <aside className={`tt-evidence-notice ${home ? "tt-evidence-notice--home" : ""}`} aria-label="Tiny Titans information notice">
       <div>
-        <strong>📚 Tiny Titans information & safety notice</strong>
+        <strong><TinyTitansIcon name="knowledge" size={17} /> Tiny Titans information & safety notice</strong>
         <p>
           Tiny Titans presents species information using named references where available and clearly marks the confidence or evidence level. It is a keeper-support and record-keeping tool, <strong>not a veterinarian, clinician, diagnostician or substitute for professional advice</strong>.
         </p>
