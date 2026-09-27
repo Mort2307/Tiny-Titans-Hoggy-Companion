@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import UniversalSpeciesPicker from "../components/UniversalSpeciesPicker";
-import { getUserAnimals, createUserAnimal, deleteUserAnimal } from "../services/universalAnimalService";
-import { getUserSnakeDirectory, deleteUserSnake } from "../services/snakeService";
+import { createUserAnimal, deleteUserAnimal } from "../services/universalAnimalService";
+import { deleteUserSnake } from "../services/snakeService";
+import { getUnifiedAnimalDirectory, universalAnimalToDirectory, type UnifiedAnimalDirectoryRecord } from "../services/animalDirectoryService";
 import { useAuth } from "../context/useAuth";
 import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import type { UniversalSpeciesRecord } from "../data/species/universalSpeciesTypes";
-import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import "../styles/universal-animals.css";
 import { KEEPER_COMPANION_TERMINOLOGY } from "../config/keeperTerminology";
 import { getTinyTitansErrorMessage } from "../utils/firebaseError";
@@ -15,13 +15,11 @@ import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
 import TinyTitansFeedback from "../components/TinyTitansFeedback";
 
-type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
-
 export default function MyAnimals() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const speciesFilter = searchParams.get("species") || "";
-  const [animals, setAnimals] = useState<DirectoryAnimal[]>([]);
+  const [animals, setAnimals] = useState<UnifiedAnimalDirectoryRecord[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<UniversalSpeciesRecord | null>(null);
   const [name, setName] = useState("");
   const [sex, setSex] = useState<UniversalAnimalRecord["sex"]>("unknown");
@@ -41,26 +39,10 @@ export default function MyAnimals() {
   useEffect(() => {
     if (!user) return;
     let active = true;
-    void Promise.all([getUserAnimals(user.uid), getUserSnakeDirectory(user.uid)])
-      .then(([universalAnimals, snakes]) => {
+    void getUnifiedAnimalDirectory(user.uid)
+      .then((records) => {
         if (!active) return;
-        const legacy: DirectoryAnimal[] = snakes.map((snake) => ({
-          id: snake.id,
-          ownerUid: user.uid,
-          name: snake.name,
-          speciesId: snake.universalSpeciesId || findUniversalSpecies(snake.species)?.id,
-          speciesCommonName: snake.species,
-          animalGroup: "reptile",
-          sex: snake.sex.toLowerCase() as DirectoryAnimal["sex"],
-          status: snake.status === "Sold" ? "sold" : snake.status === "Deceased" ? "deceased" : snake.status === "Archived" ? "archived" : "active",
-          morphOrColour: snake.morphs?.join(", ") || snake.customMorph || undefined,
-          notes: snake.notes,
-          tags: [],
-          createdAt: "",
-          updatedAt: "",
-          legacySnake: true,
-        }));
-        setAnimals([...universalAnimals, ...legacy].sort((a, b) => a.name.localeCompare(b.name)));
+        setAnimals(records);
       })
       .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : "Unable to load your animal collection."); })
       .finally(() => { if (active) setLoading(false); });
@@ -75,13 +57,13 @@ export default function MyAnimals() {
     setMessageKind("success");
 
     try {
-      if (animal.legacySnake) {
+      if (animal.source === "legacy-snake") {
         await deleteUserSnake(user.uid, animal.id);
       } else {
         await deleteUserAnimal(user.uid, animal.id);
       }
 
-      setAnimals((current) => current.filter((item) => item.id !== animal.id || item.legacySnake !== animal.legacySnake));
+      setAnimals((current) => current.filter((item) => item.id !== animal.id || item.source !== animal.source));
       setMessage(`${animal.name} was deleted from My Animals.`);
       setMessageKind("success");
       setPendingDelete(null);
@@ -111,7 +93,7 @@ export default function MyAnimals() {
         notes: notes.trim() || undefined,
         tags: [],
       });
-      setAnimals((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setAnimals((current) => [...current, universalAnimalToDirectory(created)].sort((a, b) => a.name.localeCompare(b.name)));
       setName("");
       setMorphOrColour("");
       setNotes("");
@@ -161,7 +143,7 @@ export default function MyAnimals() {
         <p className="eyebrow">INDIVIDUALS</p>
         <h2>Your animal collection</h2>
         {loading ? <p role="status">Loading your animal collection…</p> : visibleAnimals.length === 0 ? <TinyTitansEmptyState icon="animals" title={speciesFilter ? "No animals match this species filter" : "No animal records yet"} description={speciesFilter ? "Your collection may contain other animals. Clear the species filter to see the full collection." : "Add your first animal to start building care, health and keeper records."} action={speciesFilter ? { label: "Show all animals", icon: "animals", to: "/animals" } : { label: "Add your first animal", icon: "add", href: "#add-animal" }} /> : <div className="universal-animal-list">{visibleAnimals.map((animal) => {
-          const rowKey = (animal.legacySnake ? "snake:" : "animal:") + animal.id;
+          const rowKey = animal.source + ":" + animal.id;
           const isDeleting = deletingAnimalId === animal.id;
           return (
             <article key={rowKey} className="universal-animal-row">
@@ -171,7 +153,7 @@ export default function MyAnimals() {
                 <small>{animal.animalGroup || "Animal"} · {animal.status}</small>
               </div>
               <div className="universal-animal-actions">
-                <Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual <TinyTitansIcon name="forward" size={15} /></Link>
+                <Link to={animal.source === "legacy-snake" ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual <TinyTitansIcon name="forward" size={15} /></Link>
                 <button
                   className="universal-animal-delete"
                   type="button"
@@ -190,7 +172,7 @@ export default function MyAnimals() {
       <ConfirmActionDialog
         open={Boolean(pendingDelete)}
         title={pendingDelete ? `Delete ${pendingDelete.name}?` : "Delete animal?"}
-        description={pendingDelete?.legacySnake
+        description={pendingDelete?.source === "legacy-snake"
           ? "This permanently removes the snake record and its tracker history."
           : "This permanently removes this animal record from My Animals."}
         confirmLabel={pendingDelete ? `Delete ${pendingDelete.name}` : "Delete animal"}
