@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getDownloadURL, ref } from "firebase/storage";
 import { useAuth } from "../context/useAuth";
+import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansFeedback from "./TinyTitansFeedback";
+import TinyTitansEmptyState from "./TinyTitansEmptyState";
 import { storage } from "../firebase/config";
 import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
 import { correctMorphImageSubmission } from "../services/morphImageCorrectionService";
@@ -121,16 +124,16 @@ export default function CreatorMorphCorrections() {
       <div className="creator-actions">
         <button className="creator-tool-button" type="button" onClick={() => setOpen((value) => !value)}>{open ? "Close correction desk" : "Open correction desk"}</button>
       </div>
-      {success && <div className="creator-success" role="status">{success}</div>}
-      {error && <div className="creator-error" role="alert">{error}</div>}
+      {success && <TinyTitansFeedback kind="success" className="creator-success">{success}</TinyTitansFeedback>}
+      {error && <TinyTitansFeedback kind="error" className="creator-error">{error}</TinyTitansFeedback>}
       {open && (
         loading ? <div className="creator-loading">Loading submitted morph images...</div> : (
           <div className="creator-list">
-            {items.length === 0 ? <div className="creator-list-card"><strong>No correctable morph image submissions.</strong><span>Pending, Needs Info and Approved submissions will appear here.</span></div> : items.map((item) => (
+            {items.length === 0 ? <TinyTitansEmptyState compact icon="morph" title="No correctable morph image submissions" description="Pending, Needs Info and Approved submissions will appear here." /> : items.map((item) => (
               <button type="button" className="creator-list-card creator-global-card-button" key={item.id} onClick={() => { setSelected(item); setTarget(null); setQueryText(""); setError(""); }}>
                 <strong>{item.morphName}</strong>
                 <span>{item.status} · Submitted {when(item.submittedAt)}</span>
-                <span>👤 {displayNameFor(submitterNames, item.userId)}</span>
+                <span><TinyTitansIcon name="account" size={14} /> {displayNameFor(submitterNames, item.userId)}</span>
                 <span>{item.description}</span>
               </button>
             ))}
@@ -160,7 +163,7 @@ export default function CreatorMorphCorrections() {
                 {options.map((entry) => <button key={entry.geneId} type="button" className={`creator-list-card creator-global-card-button${target?.geneId === entry.geneId ? " is-active" : ""}`} onClick={() => setTarget(entry)}><strong>{entry.name}</strong><span>{entry.kind} · {entry.inheritance} · {entry.verification}</span></button>)}
               </div>
             </div>
-            {target && <div className="creator-success"><strong>{selected.morphName}</strong> → <strong>{target.name}</strong><p>Only the canonical identity changes. The original image file and attribution stay attached to this submission.</p></div>}
+            {target && <div className="creator-success"><strong>{selected.morphName}</strong> <TinyTitansIcon name="forward" size={14} /> <strong>{target.name}</strong><p>Only the canonical identity changes. The original image file and attribution stay attached to this submission.</p></div>}
             <div className="creator-submission-actions">
               <button type="button" onClick={() => { setSelected(null); setTarget(null); }}>Cancel</button>
               <button type="button" disabled={working || !target} onClick={() => void applyCorrection()}>{working ? "Relinking image..." : "Correct & re-link image"}</button>
