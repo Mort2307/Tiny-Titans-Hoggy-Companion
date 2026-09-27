@@ -1,4 +1,7 @@
 import { Link } from "react-router-dom";
+import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansFeedback from "./TinyTitansFeedback";
+import TinyTitansEmptyState from "./TinyTitansEmptyState";
 import { useAuth } from "../context/useAuth";
 import { useCreatorMorphLibraryEditor } from "../hooks/useCreatorMorphLibraryEditor";
 import { CropDialog } from "../components/creator-morph-editor/CropDialog";
@@ -44,15 +47,15 @@ export default function CreatorMorphLibraryEditor() {
     <main className="page-container creator-morph-editor-page">
       <div className="creator-morph-editor-header">
         <div>
-          <Link to="/creator" className="creator-morph-editor-back">← Creator Hub</Link>
+          <Link to="/creator" className="creator-morph-editor-back"><TinyTitansIcon name="back" size={15} /> Creator Hub</Link>
           <p className="creator-morph-editor-kicker">CREATOR CENTRE · MORPH LIBRARY</p>
-          <h1>🧬 Morph Library Editor</h1>
+          <h1><TinyTitansIcon name="morph" size={26} /> Morph Library Editor</h1>
           <p>Correct approved reference imagery without editing the bundled genetics database directly.</p>
         </div>
       </div>
 
-      {notice && <div className="creator-success" role="status">{notice}</div>}
-      {error && <div className="creator-error" role="alert">{error}</div>}
+      {notice && <TinyTitansFeedback kind="success" className="creator-success">{notice}</TinyTitansFeedback>}
+      {error && <TinyTitansFeedback kind="error" className="creator-error">{error}</TinyTitansFeedback>}
 
       <section className="creator-morph-editor-panel">
         <h2>Find a morph</h2>
@@ -90,10 +93,7 @@ export default function CreatorMorphLibraryEditor() {
           </div>
 
           {!loading && images.length === 0 ? (
-            <div className="creator-list-card">
-              <strong>No approved images for this morph.</strong>
-              <span>Use the submission review flow to approve a new reference image.</span>
-            </div>
+            <TinyTitansEmptyState compact icon="camera" title="No approved images for this morph" description="Use the submission review flow to approve a new reference image." />
           ) : (
             <div className="creator-morph-editor-image-list">
               {images.map((image) => (
@@ -110,12 +110,12 @@ export default function CreatorMorphLibraryEditor() {
                       </small>
                     ) : null}
                     <div className="creator-morph-editor-image-actions">
-                      <button type="button" onClick={() => setCropImage(image)} disabled={working}>✂ Crop</button>
-                      {image.editHistory?.length ? <button type="button" className="is-undo" onClick={() => void undoImageEdit(image)} disabled={working}>↶ Undo edit</button> : null}
-                      <button type="button" onClick={() => setSwapImage(image)} disabled={working}>🔄 Swap</button>
-                      <button type="button" onClick={() => setMoveImage(image)} disabled={working}>↔ Move</button>
-                      <button type="button" onClick={() => setCreditImage(image)} disabled={working}>✏ Credit</button>
-                      <button type="button" onClick={() => void removeImage(image)} disabled={working}>🗑 Remove</button>
+                      <button type="button" onClick={() => setCropImage(image)} disabled={working}><TinyTitansIcon name="camera" size={15} /> Crop</button>
+                      {image.editHistory?.length ? <button type="button" className="is-undo" onClick={() => void undoImageEdit(image)} disabled={working}><TinyTitansIcon name="rotate" size={15} /> Undo edit</button> : null}
+                      <button type="button" onClick={() => setSwapImage(image)} disabled={working}><TinyTitansIcon name="duplicate" size={15} /> Swap</button>
+                      <button type="button" onClick={() => setMoveImage(image)} disabled={working}><TinyTitansIcon name="move" size={15} /> Move</button>
+                      <button type="button" onClick={() => setCreditImage(image)} disabled={working}><TinyTitansIcon name="edit" size={15} /> Credit</button>
+                      <button type="button" onClick={() => void removeImage(image)} disabled={working}><TinyTitansIcon name="delete" size={15} /> Remove</button>
                     </div>
                   </div>
                 </article>
