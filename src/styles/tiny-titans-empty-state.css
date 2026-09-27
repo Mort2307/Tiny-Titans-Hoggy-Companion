@@ -1,0 +1,72 @@
+.tt-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: .7rem;
+  padding: 1rem;
+  border: 1px dashed rgba(198,171,220,.18);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(166,107,210,.055), rgba(105,182,212,.025));
+}
+
+.tt-empty-state--compact {
+  padding: .8rem;
+  gap: .5rem;
+}
+
+.tt-empty-state__icon {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(191,139,231,.16);
+  border-radius: 14px;
+  background: rgba(166,107,210,.08);
+  color: #f0ca88;
+}
+
+.tt-empty-state__copy {
+  display: grid;
+  gap: .25rem;
+}
+
+.tt-empty-state__copy strong {
+  font-size: .92rem;
+  line-height: 1.3;
+}
+
+.tt-empty-state__copy p {
+  margin: 0;
+  max-width: 62ch;
+  color: rgba(247,244,248,.64);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.tt-empty-state__action {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  padding: .58rem .8rem;
+  border: 1px solid rgba(240,202,136,.22);
+  border-radius: 11px;
+  background: rgba(240,202,136,.07);
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tt-empty-state__action:hover {
+  border-color: rgba(240,202,136,.4);
+  background: rgba(240,202,136,.11);
+}
+
+.tt-empty-state__action:focus-visible {
+  outline: 2px solid #f0ca88;
+  outline-offset: 2px;
+}
