@@ -3,6 +3,8 @@ import { SPECIES_SOURCES } from "../data/species/speciesSources";
 import { getSpeciesEvidenceSummary } from "../data/species/speciesEvidence";
 import { isSpeciesGeneticsMapped } from "../data/species/speciesGenetics";
 import SpeciesSourceHealthPanel from "../components/SpeciesSourceHealthPanel";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
 import EnclosureIntelligence from "./EnclosureIntelligence";
 import "../styles/husbandry-care.css";
 
@@ -18,7 +20,7 @@ export default function SpeciesSafeEnclosureIntelligence() {
   if (selectedSpeciesId === LEGACY_HUSBANDRY_SPECIES_ID && husbandry) return <EnclosureIntelligence />;
 
   if (!selectedSpecies) {
-    return <main className="page-container husbandry-page"><section className="husbandry-panel"><h1>🏠 Enclosure Intelligence</h1><p>No species is currently selected.</p></section></main>;
+    return <main className="page-container husbandry-page"><section className="husbandry-panel"><h1><TinyTitansIcon name="enclosure" size={28} /> Enclosure Intelligence</h1><TinyTitansEmptyState icon="animals" title="No species selected" description="Choose an animal or species before opening species-scoped enclosure guidance." action={{ label: "Open My Animals", icon: "animals", to: "/animals" }} /></section></main>;
   }
 
   const evidenceSummary = getSpeciesEvidenceSummary(selectedSpecies);
@@ -31,10 +33,10 @@ export default function SpeciesSafeEnclosureIntelligence() {
       <section className="husbandry-hero">
         <div>
           <p className="husbandry-eyebrow">Tiny Titans Species Intelligence</p>
-          <h1>🏠 Enclosure Intelligence · {speciesName}</h1>
+          <h1><TinyTitansIcon name="enclosure" size={28} /> Enclosure Intelligence · {speciesName}</h1>
           <p>{referenceEnabled ? `The species-safe reference engine is enabled for ${speciesName}. Environmental guidance shown here is drawn from the species' reviewed evidence scope rather than a generic snake baseline.` : `Tiny Titans has not yet enabled numeric enclosure reference checking for ${speciesName}. We will not borrow another species' temperature or humidity thresholds.`}</p>
         </div>
-        <div className="husbandry-badge">{referenceEnabled ? "🟢 Species reference enabled" : "🟠 Species-safe mode"}</div>
+        <div className="husbandry-badge"><TinyTitansIcon name={referenceEnabled ? "check" : "info"} size={16} /> {referenceEnabled ? "Species reference enabled" : "Species-safe mode"}</div>
       </section>
 
       <section className="husbandry-panel">
@@ -58,20 +60,20 @@ export default function SpeciesSafeEnclosureIntelligence() {
 
       {referenceEnabled && (
         <section className="husbandry-panel">
-          <p className="husbandry-eyebrow">🌡️ VERIFIED SPECIES REFERENCE</p>
+          <p className="husbandry-eyebrow"><TinyTitansIcon name="husbandry" size={15} /> VERIFIED SPECIES REFERENCE</p>
           <h2>Environmental reference values</h2>
           <div className="husbandry-grid husbandry-grid--four">
-            {thermal?.basking && <article className="husbandry-metric"><span>☀️ Basking / warm surface</span><strong>{thermal.basking.min}–{thermal.basking.max} {thermal.basking.unit}</strong><small>{thermal.basking.context}</small></article>}
-            {thermal?.warmSide && <article className="husbandry-metric"><span>🔥 Warm side</span><strong>{thermal.warmSide.min}–{thermal.warmSide.max} {thermal.warmSide.unit}</strong><small>{thermal.warmSide.context}</small></article>}
-            {thermal?.coolSide && <article className="husbandry-metric"><span>❄️ Cool side</span><strong>{thermal.coolSide.min}–{thermal.coolSide.max} {thermal.coolSide.unit}</strong><small>{thermal.coolSide.context}</small></article>}
-            {thermal?.night && <article className="husbandry-metric"><span>🌙 Night</span><strong>{thermal.night.min}–{thermal.night.max} {thermal.night.unit}</strong><small>{thermal.night.context}</small></article>}
-            {humidity?.target && <article className="husbandry-metric"><span>💧 Humidity target</span><strong>{humidity.target.min}–{humidity.target.max} {humidity.target.unit}</strong><small>{humidity.target.context}</small></article>}
+            {thermal?.basking && <article className="husbandry-metric"><span><TinyTitansIcon name="power" size={16} /> Basking / warm surface</span><strong>{thermal.basking.min}–{thermal.basking.max} {thermal.basking.unit}</strong><small>{thermal.basking.context}</small></article>}
+            {thermal?.warmSide && <article className="husbandry-metric"><span><TinyTitansIcon name="power" size={16} /> Warm side</span><strong>{thermal.warmSide.min}–{thermal.warmSide.max} {thermal.warmSide.unit}</strong><small>{thermal.warmSide.context}</small></article>}
+            {thermal?.coolSide && <article className="husbandry-metric"><span><TinyTitansIcon name="air" size={16} /> Cool side</span><strong>{thermal.coolSide.min}–{thermal.coolSide.max} {thermal.coolSide.unit}</strong><small>{thermal.coolSide.context}</small></article>}
+            {thermal?.night && <article className="husbandry-metric"><span><TinyTitansIcon name="info" size={16} /> Night</span><strong>{thermal.night.min}–{thermal.night.max} {thermal.night.unit}</strong><small>{thermal.night.context}</small></article>}
+            {humidity?.target && <article className="husbandry-metric"><span><TinyTitansIcon name="water" size={16} /> Humidity target</span><strong>{humidity.target.min}–{humidity.target.max} {humidity.target.unit}</strong><small>{humidity.target.context}</small></article>}
           </div>
           {husbandry?.enclosure && <div className="husbandry-links" style={{ marginTop: 12 }}>
-            {husbandry.enclosure.water && <article className="husbandry-card"><strong>💦 Water system</strong><p>{husbandry.enclosure.water}</p></article>}
-            {husbandry.enclosure.hides && <article className="husbandry-card"><strong>🪵 Retreats</strong><p>{husbandry.enclosure.hides}</p></article>}
-            {husbandry.enclosure.ventilation && <article className="husbandry-card"><strong>🌬️ Ventilation</strong><p>{husbandry.enclosure.ventilation}</p></article>}
-            {husbandry.enclosure.notes && <article className="husbandry-card"><strong>🏗️ Enclosure planning</strong><p>{husbandry.enclosure.notes}</p></article>}
+            {husbandry.enclosure.water && <article className="husbandry-card"><strong><TinyTitansIcon name="water" size={17} /> Water system</strong><p>{husbandry.enclosure.water}</p></article>}
+            {husbandry.enclosure.hides && <article className="husbandry-card"><strong><TinyTitansIcon name="enclosure" size={17} /> Retreats</strong><p>{husbandry.enclosure.hides}</p></article>}
+            {husbandry.enclosure.ventilation && <article className="husbandry-card"><strong><TinyTitansIcon name="air" size={17} /> Ventilation</strong><p>{husbandry.enclosure.ventilation}</p></article>}
+            {husbandry.enclosure.notes && <article className="husbandry-card"><strong><TinyTitansIcon name="enclosure" size={17} /> Enclosure planning</strong><p>{husbandry.enclosure.notes}</p></article>}
           </div>}
         </section>
       )}
