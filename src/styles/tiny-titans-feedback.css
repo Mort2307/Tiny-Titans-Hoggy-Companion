@@ -45,3 +45,12 @@
 .tt-feedback--warning .tt-feedback__icon { color: #f0ca88; }
 
 .tt-feedback--info .tt-feedback__icon { color: #69b6d4; }
+
+.tt-feedback--loading .tt-feedback__icon { color: #69b6d4; animation: tt-feedback-spin 1.2s linear infinite; }
+.tt-feedback--offline {
+  border-color: rgba(240,202,136,.26);
+  background: rgba(240,202,136,.07);
+}
+.tt-feedback--offline .tt-feedback__icon { color: #f0ca88; }
+@keyframes tt-feedback-spin { to { transform: rotate(360deg); } }
+@media(prefers-reduced-motion:reduce){.tt-feedback--loading .tt-feedback__icon{animation:none}}
