@@ -40,6 +40,15 @@ if (/StandardNavigation|MobileNavigation/.test(navigationSource + quickViewSourc
 if (!layoutSource.includes('data-navigation-mode="quick"')) errors.push("Layout chrome must declare Quick View as the canonical navigation mode.");
 if (layoutSource.includes('data-navigation-mode={')) errors.push("Layout chrome must not dynamically switch navigation modes.");
 
+const retiredPaths = [
+  path.join(root, "src", "components", "Layout", "StandardNavigation.tsx"),
+  path.join(root, "src", "components", "MobileNavigation.tsx"),
+  path.join(root, "src", "styles", "mobileNavigation.css"),
+];
+for (const retiredPath of retiredPaths) {
+  if (fs.existsSync(retiredPath)) errors.push(`Retired navigation file still exists: ${path.relative(root, retiredPath).replaceAll("\\", "/")}.`);
+}
+
 const retiredComponentFiles = new Set([
   path.join(root, "src", "components", "Layout", "StandardNavigation.tsx"),
   path.join(root, "src", "components", "MobileNavigation.tsx"),
