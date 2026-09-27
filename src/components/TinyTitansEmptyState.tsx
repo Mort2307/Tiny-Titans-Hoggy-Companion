@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansAction from "./TinyTitansAction";
 import type { TinyTitansIconName } from "../types/tinyTitansIcon";
 import "../styles/tiny-titans-empty-state.css";
 
@@ -26,13 +26,6 @@ export default function TinyTitansEmptyState({
   action,
   compact = false,
 }: Props) {
-  const actionContent = action ? (
-    <>
-      <TinyTitansIcon name={action.icon ?? "forward"} size={17} />
-      <span>{action.label}</span>
-    </>
-  ) : null;
-
   return (
     <div className={`tt-empty-state${compact ? " tt-empty-state--compact" : ""}`} role="status">
       <div className="tt-empty-state__icon" aria-hidden="true">
@@ -42,12 +35,16 @@ export default function TinyTitansEmptyState({
         <strong>{title}</strong>
         <p>{description}</p>
       </div>
-      {action && action.to ? (
-        <Link className="tt-empty-state__action" to={action.to}>{actionContent}</Link>
-      ) : action && action.href ? (
-        <a className="tt-empty-state__action" href={action.href}>{actionContent}</a>
-      ) : action && action.onClick ? (
-        <button className="tt-empty-state__action" type="button" onClick={action.onClick}>{actionContent}</button>
+      {action ? (
+        <TinyTitansAction
+          className="tt-empty-state__action"
+          variant="secondary"
+          icon={action.icon}
+          to={action.to}
+          href={action.href}
+          onClick={action.onClick}
+          label={action.label}
+        />
       ) : null}
     </div>
   );
