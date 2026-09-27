@@ -10,7 +10,7 @@ const excluded = new Set([
 ]);
 const iconGlyph = /\p{Extended_Pictographic}/u;
 const legacyMetadata = /\bicon\s*:/u;
-const legacyUiGlyph = /<(?:span|button|h1|h2|h3|h4|h5|strong|label|p)[^>]*>\s*(?:\p{Extended_Pictographic}|[+×←→↻☰✕✓⚠])/u;
+const legacyUiGlyph = /[×←→↻☰✕✓⚠＋]/u;
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -26,13 +26,15 @@ for (const file of files) {
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     const hasIconGlyph = iconGlyph.test(line);
+    const isTsx = file.endsWith(".tsx");
     const metadata = hasIconGlyph && legacyMetadata.test(line);
-    const uiGlyph = legacyUiGlyph.test(line);
-    if (!metadata && !uiGlyph) return;
+    const rawPictographicUi = isTsx && hasIconGlyph;
+    const rawControlGlyph = isTsx && legacyUiGlyph.test(line);
+    if (!metadata && !rawPictographicUi && !rawControlGlyph) return;
     findings.push({
       file: path.relative(process.cwd(), file).replaceAll(path.sep, "/"),
       line: index + 1,
-      kind: metadata ? "legacy-icon-metadata" : "raw-ui-glyph",
+      kind: metadata ? "legacy-icon-metadata" : rawPictographicUi ? "raw-pictographic-ui" : "raw-ui-glyph",
       text: line.trim().slice(0, 220),
     });
   });
