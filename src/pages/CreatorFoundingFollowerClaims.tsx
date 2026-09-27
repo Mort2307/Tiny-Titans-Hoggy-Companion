@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getFoundingFollowerScreenshotUrl, loadFoundingFollowerClaims, formatClaimDate, reviewFoundingFollowerClaim, type FoundingFollowerClaim } from "../services/foundingFollowerRewardService";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import TinyTitansFeedback from "../components/TinyTitansFeedback";
+import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
+import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import "../styles/creatorFoundingFollowerClaims.css";
 
 type Filter = "pending" | "all" | "approved" | "rejected";
@@ -13,6 +17,7 @@ export default function CreatorFoundingFollowerClaims() {
   const [busyUid, setBusyUid] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [approveTarget, setApproveTarget] = useState<FoundingFollowerClaim | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -40,8 +45,6 @@ export default function CreatorFoundingFollowerClaims() {
     let notes = "";
     if (action === "reject") {
       notes = window.prompt("Optional note for the user (for example: please send a screenshot with the Follow/Following state visible).", claim.reviewerNotes || "") || "";
-    } else if (!window.confirm(`Approve ${claim.id} and activate 30 days of Titan Pro?`)) {
-      return;
     }
     setBusyUid(claim.id);
     setError("");
@@ -53,6 +56,7 @@ export default function CreatorFoundingFollowerClaims() {
       } else {
         setNotice(`Rejected ${claim.id}.`);
       }
+      if (action === "approve") setApproveTarget(null);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "The claim could not be reviewed.");
@@ -66,10 +70,10 @@ export default function CreatorFoundingFollowerClaims() {
       <header className="tt-creator-founders-header">
         <div>
           <span className="tt-creator-founders-eyebrow">CREATOR CENTRE · COMMUNITY REWARD</span>
-          <h1>🦖 Founding Follower Claims</h1>
+          <h1><TinyTitansIcon name="wall" size={28} /> Founding Follower Claims</h1>
           <p>Review Facebook and Instagram follow screenshots and activate the 30-day Titan Pro reward on approval.</p>
         </div>
-        <button type="button" onClick={() => void refresh()} disabled={loading}>{loading ? "Refreshing…" : "↻ Refresh"}</button>
+        <button type="button" onClick={() => void refresh()} disabled={loading}>{loading ? "Refreshing…" : <><TinyTitansIcon name="rotate" size={16} /> Refresh</>}</button>
       </header>
 
       <section className="tt-creator-founders-summary">
@@ -79,8 +83,8 @@ export default function CreatorFoundingFollowerClaims() {
         <button type="button" className={filter === "all" ? "is-active" : ""} onClick={() => setFilter("all")}><strong>{summary.pending + summary.approved + summary.rejected + summary.processing}</strong><span>ALL</span></button>
       </section>
 
-      {error && <p className="tt-creator-founders-error" role="alert">{error}</p>}
-      {notice && <p className="tt-creator-founders-notice" role="status">{notice}</p>}
+      {error && <TinyTitansFeedback kind="error" className="tt-creator-founders-error">{error}</TinyTitansFeedback>}
+      {notice && <TinyTitansFeedback kind="success" className="tt-creator-founders-notice">{notice}</TinyTitansFeedback>}
 
       <section className="tt-creator-founders-list">
         {visibleClaims.map((claim) => (
@@ -97,16 +101,26 @@ export default function CreatorFoundingFollowerClaims() {
             </div>
             <div className="tt-creator-founder-actions">
               {claim.status === "pending" && <>
-                <button type="button" className="is-primary" onClick={() => void review(claim, "approve")} disabled={busyUid === claim.id}>{busyUid === claim.id ? "Working…" : "✓ Approve & grant Pro"}</button>
+                <button type="button" className="is-primary" onClick={() => setApproveTarget(claim)} disabled={busyUid === claim.id}>{busyUid === claim.id ? "Working…" : <><TinyTitansIcon name="check" size={15} /> Approve & grant Pro</>}</button>
                 <button type="button" onClick={() => void review(claim, "reject")} disabled={busyUid === claim.id}>Reject</button>
               </>}
               {claim.status === "processing" && <span>Processing…</span>}
-              {claim.status === "approved" && <span>🎁 Pro active</span>}
+              {claim.status === "approved" && <span><TinyTitansIcon name="plans" size={15} /> Pro active</span>}
             </div>
           </article>
         ))}
-        {!loading && visibleClaims.length === 0 && <div className="tt-creator-founders-empty">No claims in this view.</div>}
+        {!loading && visibleClaims.length === 0 && <TinyTitansEmptyState compact icon="wall" title="No claims in this view" description="Change the filter or wait for another Founding Follower submission." />}
       </section>
+      <ConfirmActionDialog
+        open={Boolean(approveTarget)}
+        title="Approve Founding Follower reward?"
+        description={approveTarget ? `Approve ${approveTarget.targetName || approveTarget.id} and activate 30 days of Titan Pro.` : "Approve this claim and activate the reward."}
+        confirmLabel="Approve & grant Pro"
+        destructive={false}
+        busy={Boolean(busyUid)}
+        onCancel={() => { if (!busyUid) setApproveTarget(null); }}
+        onConfirm={() => { if (approveTarget) void review(approveTarget, "approve"); }}
+      />
     </main>
   );
 }
