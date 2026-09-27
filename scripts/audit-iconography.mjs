@@ -10,7 +10,9 @@ const excluded = new Set([
 ]);
 const iconGlyph = /\p{Extended_Pictographic}/u;
 const legacyMetadata = /\bicon\s*:/u;
-const legacyUiGlyph = /[×←→↻☰✕✓⚠＋]/u;
+const legacyUiGlyph =
+  /<(?:button|a|Link|span|b|strong|h1|h2|h3|h4|h5)[^>]*>[^<]{0,160}[←→↻☰✕✓⚠＋][^<]{0,160}<\/(?:button|a|Link|span|b|strong|h1|h2|h3|h4|h5)>/u;
+const rawCloseGlyph = /<(?:button|span)[^>]*>\s*×\s*<\/(?:button|span)>/u;
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -29,7 +31,7 @@ for (const file of files) {
     const isTsx = file.endsWith(".tsx");
     const metadata = hasIconGlyph && legacyMetadata.test(line);
     const rawPictographicUi = isTsx && hasIconGlyph;
-    const rawControlGlyph = isTsx && legacyUiGlyph.test(line);
+    const rawControlGlyph = isTsx && (legacyUiGlyph.test(line) || rawCloseGlyph.test(line));
     if (!metadata && !rawPictographicUi && !rawControlGlyph) return;
     findings.push({
       file: path.relative(process.cwd(), file).replaceAll(path.sep, "/"),
