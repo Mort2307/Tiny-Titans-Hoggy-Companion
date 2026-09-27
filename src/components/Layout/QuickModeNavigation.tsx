@@ -35,11 +35,16 @@ function QuickModeNavigation({
 
   useEffect(() => {
     if (!moreOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [moreOpen, onClose]);
 
   return (
@@ -75,7 +80,7 @@ function QuickModeNavigation({
 
             <label className="tt-easy-search">
               <TinyTitansIcon name="search" size={20} />
-              <input value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="Find anything in TinyTitans…" aria-label="Search the full TinyTitans app" autoFocus />
+              <input value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="Find anything in TinyTitans…" aria-label="Search the full TinyTitans app" autoFocus /><kbd aria-label="Keyboard shortcut Control K">Ctrl K</kbd>
             </label>
 
             {!quickSearch.trim() && recentItems.length > 0 && (
