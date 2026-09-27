@@ -17,8 +17,7 @@ export type EasyNavContextValue = {
   weekStartDay: import("../types/easyNav").WeekStartDay;
   weeklyMetrics: import("../types/easyNav").TitanWeeklyMetricId[];
   loading: boolean;
-  isEasyNav: boolean;
-  setMode: (mode: import("../types/easyNav").EasyNavMode) => Promise<void>;
+  isEasyNav: true;
   setSlices: (slices: import("../types/easyNav").TitanAtAGlanceSliceId[]) => Promise<void>;
   setWeekStartDay: (day: import("../types/easyNav").WeekStartDay) => Promise<void>;
   setWeeklyMetrics: (metrics: import("../types/easyNav").TitanWeeklyMetricId[]) => Promise<void>;
@@ -85,8 +84,7 @@ export function EasyNavProvider({ children }: { children: ReactNode }) {
   const value = useMemo<EasyNavContextValue>(() => ({
     ...preferences,
     loading,
-    isEasyNav: preferences.mode === "easy",
-    setMode: (mode) => persist({ ...preferences, mode }),
+    isEasyNav: true,
     setSlices: (slices) => persist({ ...preferences, slices }),
     setWeekStartDay: (weekStartDay) => persist({ ...preferences, weekStartDay }),
     setWeeklyMetrics: (weeklyMetrics) => persist({ ...preferences, weeklyMetrics }),
