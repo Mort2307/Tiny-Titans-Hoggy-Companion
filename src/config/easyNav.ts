@@ -22,7 +22,7 @@ export const TITAN_AT_A_GLANCE_OPTIONS: Array<{
   { id: "snakes", label: "My Animals", icon: "animals", description: "Open your full animal collection." },
   { id: "learning", label: "Learn", icon: "academy", description: "Continue learning and challenges." },
   { id: "community", label: "Community", icon: "community", description: "Open the keeper community." },
-  { id: "room", label: "Reptile Room", icon: "enclosure", description: "Open your reptile room." },
+  { id: "room", label: "Enclosure Intelligence", icon: "enclosure", description: "Open enclosure conditions, care and habitat guidance." },
   { id: "knowledge", label: "Knowledge Base", icon: "knowledge", description: "Find an answer in the knowledge base." },
   { id: "contribution", label: "Contribute", icon: "contribution", description: "Make a contribution to Tiny Titans." },
   { id: "goals", label: "Titan Goals", icon: "challenge", description: "See your current Titan goals." },
