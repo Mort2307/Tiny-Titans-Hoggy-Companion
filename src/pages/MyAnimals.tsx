@@ -29,7 +29,7 @@ export default function MyAnimals() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [deletingAnimalId, setDeletingAnimalId] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<DirectoryAnimal | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<UnifiedAnimalDirectoryRecord | null>(null);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("success");
   const visibleAnimals = speciesFilter
@@ -49,7 +49,7 @@ export default function MyAnimals() {
     return () => { active = false; };
   }, [user]);
 
-  async function deleteAnimal(animal: DirectoryAnimal) {
+  async function deleteAnimal(animal: UnifiedAnimalDirectoryRecord) {
     if (!user || deletingAnimalId) return;
 
     setDeletingAnimalId(animal.id);
