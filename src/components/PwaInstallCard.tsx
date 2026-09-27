@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansAction from "./TinyTitansAction";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -43,27 +45,27 @@ function isChromium() {
 
 function browserHelpText() {
   if (isIosSafari()) {
-    return <>On iPhone or iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong> → <strong>Add</strong>. Tiny Titans Keeper Companion will then appear on your Home Screen and open as its own app.</>;
+    return <>On iPhone or iPad: tap <strong>Share</strong>, choose <strong>Add to Home Screen</strong>, then confirm <strong>Add</strong>. Tiny Titans Keeper Companion will then appear on your Home Screen and open as its own app.</>;
   }
 
   if (isIos()) {
-    return <>On iPhone or iPad: tap your browser's <strong>Share</strong> button → <strong>Add to Home Screen</strong> → <strong>Add</strong>. If you cannot see it, scroll down in the Share menu and select <strong>Edit Actions</strong> to add it.</>;
+    return <>On iPhone or iPad: tap your browser's <strong>Share</strong> button, choose <strong>Add to Home Screen</strong>, then confirm <strong>Add</strong>. If you cannot see it, scroll down in the Share menu and select <strong>Edit Actions</strong> to add it.</>;
   }
 
   if (isAndroid() && isSamsungInternet()) {
-    return <>Samsung Internet: tap the browser menu <strong>☰</strong> → <strong>Add page to</strong> → <strong>Home screen</strong> → <strong>Add</strong>. If Samsung offers <strong>Install app</strong>, you can use that instead.</>;
+    return <>Samsung Internet: tap the browser menu button, choose <strong>Add page to</strong>, then <strong>Home screen</strong>, then confirm <strong>Add</strong>. If Samsung offers <strong>Install app</strong>, you can use that instead.</>;
   }
 
   if (isAndroid() && isFirefox()) {
-    return <>Firefox on Android: tap the browser menu <strong>⋮</strong> → <strong>Add to Home screen</strong> → confirm <strong>Add</strong>. If Firefox offers an install option for Tiny Titans Keeper Companion, use that instead.</>;
+    return <>Firefox on Android: tap the browser menu button, choose <strong>Add to Home screen</strong>, then confirm <strong>Add</strong>. If Firefox offers an install option for Tiny Titans Keeper Companion, use that instead.</>;
   }
 
   if (isAndroid() && isChromium()) {
-    return <>Android: tap the browser menu <strong>⋮</strong> → choose <strong>Install app</strong> or <strong>Add to Home screen</strong> → confirm. Browser wording varies slightly, but the installed app is Tiny Titans Keeper Companion.</>;
+    return <>Android: tap the browser menu button, choose <strong>Install app</strong> or <strong>Add to Home screen</strong>, then confirm. Browser wording varies slightly, but the installed app is Tiny Titans Keeper Companion.</>;
   }
 
   if (isEdge()) {
-    return <>Microsoft Edge: open the <strong>⋯</strong> menu → <strong>Apps</strong> → <strong>Install Tiny Titans Keeper Companion</strong> (or <strong>Install this site as an app</strong>).</>;
+    return <>Microsoft Edge: open the browser menu, choose <strong>Apps</strong>, then <strong>Install Tiny Titans Keeper Companion</strong> (or <strong>Install this site as an app</strong>).</>;
   }
 
   if (isFirefox()) {
@@ -126,18 +128,16 @@ export default function PwaInstallCard() {
   };
 
   return <section className="pwa-install-card" aria-label="Install Tiny Titans Keeper Companion">
-    <div className="pwa-install-icon">🐍</div>
+    <div className="pwa-install-icon"><TinyTitansIcon name="reptile" size={30} /></div>
     <div className="pwa-install-copy">
       <p className="section-eyebrow">TINY TITANS KEEPER COMPANION</p>
       <h3>Install Tiny Titans Keeper Companion</h3>
       <p>Install Tiny Titans Keeper Companion for quick access, its own app window and automatic updates.</p>
       {browserHelp && <div className="pwa-install-help" role="status">
-        <strong>📲 How to add Tiny Titans Keeper Companion to your device</strong>
+        <strong><TinyTitansIcon name="info" size={17} /> How to add Tiny Titans Keeper Companion to your device</strong>
         <p>{browserHelpText()}</p>
       </div>}
     </div>
-    <button type="button" className="pwa-install-button" onClick={() => void install()}>
-      📲 Install Tiny Titans Keeper Companion
-    </button>
+    <TinyTitansAction className="pwa-install-button" variant="primary" icon="upload" label="Install Tiny Titans Keeper Companion" onClick={() => void install()} />
   </section>;
 }
