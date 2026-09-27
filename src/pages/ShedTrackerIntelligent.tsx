@@ -1,5 +1,8 @@
 import BackHomeButton from "../components/BackHomeButton";
 import TinyTitansIcon from "../components/TinyTitansIcon";
+import ConfirmActionDialog from "../components/ConfirmActionDialog";
+import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
+import TinyTitansFeedback from "../components/TinyTitansFeedback";
 import { useShedTrackerIntelligent } from "../hooks/useShedTrackerIntelligent";
 import type { ShedAssistance, ShedQuality, ShedStage, ShedStatus } from "../types/Shed";
 import { displayShedDate, shedStageTitle } from "../lib/shedTrackerIntelligent";
@@ -8,7 +11,7 @@ import "../styles/trackerWorkspace.css";
 export default function ShedTrackerIntelligent() {
   const {
     navigate,user,loading,profileLoading,snakes,snakeId,setSnakeId,records,editingId,stage,setStage,date,setDate,quality,setQuality,status,setStatus,
-    retained,setRetained,assistance,setAssistance,length,setLength,weight,setWeight,notes,setNotes,busy,lengthUnit,weightUnit,message,error,intelligence,active,completed,selectedSnake,
+    retained,setRetained,assistance,setAssistance,length,setLength,weight,setWeight,notes,setNotes,busy,lengthUnit,weightUnit,message,error,intelligence,active,completed,selectedSnake,deleteTarget,setDeleteTarget,
     reset,edit,save,remove,stages,qualities,statuses,retainedAreas,assistances,
   } = useShedTrackerIntelligent();
 
@@ -34,8 +37,17 @@ export default function ShedTrackerIntelligent() {
         <aside className="tt-tracker-stack"><section className="tt-tracker-panel"><p className="tt-tracker-eyebrow">Selected snake</p><h2><TinyTitansIcon name="reptile" size={20} /> {selectedSnake?.name}</h2><p className="tt-tracker-panel-muted">{selectedSnake?.species}</p><ul className="tt-tracker-side-list"><li><strong>Morph</strong><br />{selectedSnake?.morphs?.join(", ") || "Not recorded"}</li><li><strong>Average cycle</strong><br />{intelligence.averageDurationDays ?? "—"}{intelligence.averageDurationDays != null ? " days" : ""}</li><li><strong>Retained areas</strong><br />{intelligence.retainedAreaFrequency}% of analysed cycles</li><li><strong>Current state</strong><br />{active ? shedStageTitle(active.currentStage ?? "Blue") : "No active cycle"}</li></ul></section><section className="tt-tracker-panel"><p className="tt-tracker-eyebrow">History at a glance</p><h2><TinyTitansIcon name="knowledge" size={18} /> {records.length} recorded cycles</h2><p className="tt-tracker-panel-muted">Use the history below for the detailed lifecycle log, or jump straight back to the recording form.</p><button className="tt-tracker-button secondary" type="button" onClick={() => document.getElementById("shed-history")?.scrollIntoView({ behavior: "smooth" })}>View full history <TinyTitansIcon name="forward" size={15} /></button></section></aside>
       </div>
 
-      <section id="shed-history" className="tt-tracker-panel" style={{ marginTop: 16 }}><div className="tt-history-toolbar"><div><p className="tt-tracker-eyebrow">Canonical lifecycle history</p><h2><TinyTitansIcon name="timeline" size={18} /> Shed history</h2></div><span className="tt-tracker-panel-muted">Newest event first</span></div>{records.length === 0 ? <div className="tt-empty">No shedding cycles recorded yet. Start with the stage above.</div> : <div className="tt-history-list">{records.map((record) => <article key={record.id} className="tt-history-item"><div className="tt-history-item-header"><div><h3>{shedStageTitle(record.currentStage ?? "Complete")}</h3><p>{displayShedDate(record.completedAt || record.cycleStartedAt || record.date)}</p></div><span>{record.status ?? "Complete"}</span></div><div className="tt-history-details"><div>Quality: <strong>{record.quality ?? "Unknown"}</strong></div><div>{record.retainedAreas?.length ? `Retained: ${record.retainedAreas.join(", ")}` : "No retained areas recorded"}</div>{record.cycleDurationDays != null && <div>Cycle duration: <strong>{record.cycleDurationDays} days</strong></div>}{record.assistance && record.assistance !== "None" && <div>Assistance: {record.assistance}</div>}</div><div className="tt-tracker-actions"><button className="tt-tracker-button secondary" type="button" onClick={() => edit(record)} disabled={busy}><TinyTitansIcon name="edit" size={18} /> Edit</button><button className="tt-tracker-button danger" type="button" onClick={() => void remove(record)} disabled={busy}>🗑️ Delete</button></div></article>)}</div>}</section>
+      <section id="shed-history" className="tt-tracker-panel" style={{ marginTop: 16 }}><div className="tt-history-toolbar"><div><p className="tt-tracker-eyebrow">Canonical lifecycle history</p><h2><TinyTitansIcon name="timeline" size={18} /> Shed history</h2></div><span className="tt-tracker-panel-muted">Newest event first</span></div>{records.length === 0 ? <TinyTitansEmptyState compact icon="shed" title="No shedding cycles recorded yet" description="Start with the stage above to create this animal’s first shedding lifecycle record." /> : <div className="tt-history-list">{records.map((record) => <article key={record.id} className="tt-history-item"><div className="tt-history-item-header"><div><h3>{shedStageTitle(record.currentStage ?? "Complete")}</h3><p>{displayShedDate(record.completedAt || record.cycleStartedAt || record.date)}</p></div><span>{record.status ?? "Complete"}</span></div><div className="tt-history-details"><div>Quality: <strong>{record.quality ?? "Unknown"}</strong></div><div>{record.retainedAreas?.length ? `Retained: ${record.retainedAreas.join(", ")}` : "No retained areas recorded"}</div>{record.cycleDurationDays != null && <div>Cycle duration: <strong>{record.cycleDurationDays} days</strong></div>}{record.assistance && record.assistance !== "None" && <div>Assistance: {record.assistance}</div>}</div><div className="tt-tracker-actions"><button className="tt-tracker-button secondary" type="button" onClick={() => edit(record)} disabled={busy}><TinyTitansIcon name="edit" size={18} /> Edit</button><button className="tt-tracker-button danger" type="button" onClick={() => setDeleteTarget(record)} disabled={busy}><TinyTitansIcon name="delete" size={18} /> Delete</button></div></article>)}</div>}</section>
+      <ConfirmActionDialog
+        open={Boolean(deleteTarget)}
+        title="Delete shedding cycle?"
+        description={selectedSnake ? `This permanently removes this entire shedding cycle for ${selectedSnake.name}.` : "This permanently removes the selected shedding cycle."}
+        confirmLabel="Delete shed cycle"
+        busy={busy}
+        onCancel={() => { if (!busy) setDeleteTarget(null); }}
+        onConfirm={() => void remove()}
+      />
       <div className="tt-tracker-foot-actions"><button className="tt-tracker-button secondary" type="button" onClick={() => navigate(`/snakes/${snakeId}/weights`)}><TinyTitansIcon name="weight" size={18} /> Weight Records</button><button className="tt-tracker-button secondary" type="button" onClick={() => navigate(`/snakes/${snakeId}/feeding`)}><TinyTitansIcon name="feeding" size={18} /> Feeding Tracker</button><button className="tt-tracker-button secondary" type="button" onClick={() => navigate(`/snakes/${snakeId}/master-record`)}>Open Master Record</button></div>
     </>}
-  </main>;;
+  </main>;
 }
