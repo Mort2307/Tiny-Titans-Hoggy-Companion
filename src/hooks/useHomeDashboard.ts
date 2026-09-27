@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { useWorldTime } from "../context/WorldTimeContext";
-import { getUserSnakes } from "../services/snakeService";
-import { getUserAnimals } from "../services/universalAnimalService";
+import { getUnifiedAnimalDirectory } from "../services/animalDirectoryService";
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
 import { getDashboardIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
 import { getTitanDecisionState, refreshTitanDecisionStateForAnimals, type TitanDecision } from "../services/titanDecisionStateService";
@@ -58,14 +57,22 @@ export function useHomeDashboard() {
     setAccessChecked(false);
     const load = async () => {
       try {
-        const [hasAccess, records, universalAnimals, reminderRecords] = await Promise.all([hasFullIntelligenceAccess(user.uid), getUserSnakes(user.uid), getUserAnimals(user.uid), listReminders(user.uid).catch(() => [])]);
+        const [hasAccess, animalRecords, reminderRecords] = await Promise.all([hasFullIntelligenceAccess(user.uid), getUnifiedAnimalDirectory(user.uid, { includeTrackerHistory: true }), listReminders(user.uid).catch(() => [])]);
         if (!active) return;
         setIntelligenceAccess(hasAccess);
         setAccessChecked(true);
         setReminders(reminderRecords);
-        const legacyMinimal: HomeAnimal[] = records.map((snake) => ({ id: snake.id, name: snake.name, species: snake.species, animalGroup: "reptile", recordSource: "legacy-snake", weightRecords: snake.weightHistory?.length ?? 0, feedingRecords: snake.feedingHistory?.length ?? 0, shedRecords: snake.shedHistory?.length ?? 0, healthRecords: snake.healthHistory?.length ?? 0 }));
-        const universalMinimal: HomeAnimal[] = universalAnimals.map((animal) => ({ id: animal.id, name: animal.name, species: animal.speciesCommonName || animal.scientificName, animalGroup: animal.animalGroup, recordSource: "universal", weightRecords: 0, feedingRecords: 0, shedRecords: 0, healthRecords: 0 }));
-        const minimal = [...legacyMinimal, ...universalMinimal].sort((a, b) => a.name.localeCompare(b.name));
+        const minimal: HomeAnimal[] = animalRecords.map((animal) => ({
+          id: animal.id,
+          name: animal.name,
+          species: animal.speciesCommonName || animal.scientificName,
+          animalGroup: animal.animalGroup,
+          recordSource: animal.source,
+          weightRecords: animal.weightRecords,
+          feedingRecords: animal.feedingRecords,
+          shedRecords: animal.shedRecords,
+          healthRecords: animal.healthRecords,
+        }));
         setSnakes(minimal);
         setSelectedSnakeId((current) => minimal.some((snake) => snake.id === current) ? current : minimal[0]?.id ?? "");
         if (!hasAccess) { setIntelligence([]); setDecision(null); return; }
