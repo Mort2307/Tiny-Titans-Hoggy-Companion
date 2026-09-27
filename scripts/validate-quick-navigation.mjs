@@ -6,7 +6,7 @@ const source = fs.readFileSync(path.join(root, "src", "data", "quickNavigation.t
 const errors = [];
 
 const required = [
-  "/", "/snakes", "/reptile-room", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding", "/health", "/behaviour",
+  "/", "/animals", "/species", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding", "/health", "/behaviour",
   "/enclosure-intelligence", "/morph-library", "/calculator", "/breeding", "/breeding/academy", "/breeding/readiness", "/breeding/timeline",
   "/breeding/cycle", "/breeding/production", "/titan-intelligence", "/keeper-handbook", "/behaviour-observatory", "/knowledge-base",
   "/learn", "/adaptive-learning", "/challenge", "/learn/achievements", "/community", "/community/features", "/community/mentorship",
@@ -16,12 +16,14 @@ const required = [
 ];
 
 for (const route of required) {
-  if (!source.includes(`path: "${route}"`)) errors.push(`Missing Quick Mode destination: ${route}`);
+  if (!source.includes(`path: "${route}"`)) errors.push(`Missing Quick View destination: ${route}`);
 }
 
 const ids = [...source.matchAll(/id: "([^"]+)"/g)].map((match) => match[1]);
-if (new Set(ids).size !== ids.length) errors.push("Quick Mode feature registry contains duplicate IDs.");
-if (ids.length < required.length) errors.push(`Quick Mode registry contains ${ids.length} items but requires at least ${required.length}.`);
+if (new Set(ids).size !== ids.length) errors.push("Quick View feature registry contains duplicate IDs.");
+if (source.includes('path: "/reptile-room"')) errors.push("Quick View must not expose the retired /reptile-room route.");
+if (/Classic|Quick View/.test(source)) errors.push("Quick View registry contains retired navigation-mode terminology.");
+if (ids.length < required.length) errors.push(`Quick View registry contains ${ids.length} items but requires at least ${required.length}.`);
 
 if (errors.length) {
   console.error("Tiny Titans Quick Navigation validation FAILED:\n");
