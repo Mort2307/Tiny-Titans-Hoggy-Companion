@@ -11,11 +11,14 @@ type Props = {
   setQuickSearch: (value: string) => void;
   quickGroups: Record<string, QuickNavItem[]>;
   quickItems: QuickNavItem[];
+  pinnedItems: QuickNavItem[];
+  pinnedPaths: string[];
   recentItems: QuickNavItem[];
   moreOpen: boolean;
   onToggleMore: () => void;
   onClose: () => void;
   onOpenItem: (path: string) => void;
+  onTogglePin: (path: string) => void;
 };
 
 function QuickModeNavigation({
@@ -24,11 +27,14 @@ function QuickModeNavigation({
   setQuickSearch,
   quickGroups,
   quickItems,
+  pinnedItems,
+  pinnedPaths,
   recentItems,
   moreOpen,
   onToggleMore,
   onClose,
   onOpenItem,
+  onTogglePin,
 }: Props) {
   const location = useLocation();
   const isActive = (path: string) => path === "/" ? location.pathname === "/" : location.pathname === path || location.pathname.startsWith(`${path}/`);
@@ -83,6 +89,25 @@ function QuickModeNavigation({
               <input value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="Find anything in TinyTitans…" aria-label="Search the full TinyTitans app" autoFocus /><kbd aria-label="Keyboard shortcut Control K">Ctrl K</kbd>
             </label>
 
+            {!quickSearch.trim() && pinnedItems.length > 0 && (
+              <section className="tt-easy-more-group tt-easy-pinned">
+                <h3><TinyTitansIcon name="pin" size={15} /> Pinned</h3>
+                <div className="tt-easy-more-grid">
+                  {pinnedItems.map((item) => (
+                    <div className="tt-easy-feature-row" key={`pinned:${item.id}`}>
+                      <button type="button" className="tt-easy-feature-link" onClick={() => onOpenItem(item.path)}>
+                        <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={24} /></span>
+                        <span><strong>{item.label}</strong><small>{item.description}</small></span>
+                      </button>
+                      <button type="button" className="tt-easy-pin-button active" onClick={() => onTogglePin(item.path)} aria-label={`Unpin ${item.label}`} title={`Unpin ${item.label}`}>
+                        <TinyTitansIcon name="pin" size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {!quickSearch.trim() && recentItems.length > 0 && (
               <section className="tt-easy-more-group tt-easy-recent">
                 <h3><TinyTitansIcon name="timeline" size={15} /> Recent</h3>
@@ -102,10 +127,21 @@ function QuickModeNavigation({
                 <h3>{group}</h3>
                 <div className="tt-easy-more-grid">
                   {items.map((item) => (
-                    <button type="button" data-route-guide-target={item.id === "account" ? "quick-my-account" : undefined} className="tt-easy-feature-link" key={item.id} onClick={() => onOpenItem(item.path)}>
-                      <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={24} /></span>
-                      <span><strong>{item.label}</strong><small>{item.description}</small></span>
-                    </button>
+                    <div className="tt-easy-feature-row" key={item.id}>
+                      <button type="button" data-route-guide-target={item.id === "account" ? "quick-my-account" : undefined} className="tt-easy-feature-link" onClick={() => onOpenItem(item.path)}>
+                        <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={24} /></span>
+                        <span><strong>{item.label}</strong><small>{item.description}</small></span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`tt-easy-pin-button${pinnedPaths.includes(item.path) ? " active" : ""}`}
+                        onClick={() => onTogglePin(item.path)}
+                        aria-label={`${pinnedPaths.includes(item.path) ? "Unpin" : "Pin"} ${item.label}`}
+                        title={`${pinnedPaths.includes(item.path) ? "Unpin" : "Pin"} ${item.label}`}
+                      >
+                        <TinyTitansIcon name="pin" size={16} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </section>
