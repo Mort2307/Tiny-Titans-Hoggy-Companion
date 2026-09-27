@@ -17,7 +17,7 @@ const HomeGlobeFallback = () => <section className="tt-home-panel">Loading the T
 
 function Home() {
   const {
-    user, world, displayName, learningLabel, experience, snakes, attentionDecision, selectedIntelligence,
+    user, world, displayName, learningLabel, experience, snakes, attentionDecision, urgentReminder, selectedIntelligence,
     selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, quietIntelligenceSnippet,
     loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake,
   } = useHomeDashboard();
@@ -82,6 +82,7 @@ function Home() {
         coverage={coverage}
         quietIntelligenceSnippet={quietIntelligenceSnippet}
         attentionDecision={attentionDecision}
+        urgentReminder={urgentReminder}
       />
 
       <section className="tt-home-section">
