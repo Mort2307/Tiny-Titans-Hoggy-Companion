@@ -7,6 +7,7 @@ import SpeciesContextBar from "../SpeciesContextBar";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
 import PaidTierGate from "../PaidTierGate";
 import NotificationOnboarding from "../NotificationOnboarding";
+import NetworkStatusBanner from "../NetworkStatusBanner";
 import WorkspaceIdentityStrip from "../WorkspaceIdentityStrip";
 import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
 import { useLayoutScrollRestoration } from "../../hooks/useLayoutScrollRestoration";
@@ -133,6 +134,7 @@ function LayoutChrome() {
           <div className="tt-page-frame">
             <WorkspaceIdentityStrip />
             <NotificationOnboarding />
+            <NetworkStatusBanner />
             {speciesAware && <SpeciesContextBar />}
             {isHomeOrRecordLogPage && <TitanAtAGlance />}
             {pageContent}
