@@ -16,6 +16,9 @@ const rawCloseGlyph = /<(?:button|span)[^>]*>\s*×\s*<\/(?:button|span)>/u;
 const pictographicUi =
   /<(?:button|a|Link|span|b|strong|h1|h2|h3|h4|h5|option|div)[^>]*>[^<]{0,220}\p{Extended_Pictographic}/u;
 const pictographicStatus = /\bset(?:Message|Error|Success|Status)\s*\([^\n]*\p{Extended_Pictographic}/u;
+const legacyIconProp = /<TinyTitansIcon\b[^>]*\bname\s*=\s*["'][^"']*\p{Extended_Pictographic}[^"']*["']/u;
+const iconTypeSource = fs.readFileSync(path.resolve("src/types/tinyTitansIcon.ts"), "utf8");
+const canonicalIconNames = new Set([...iconTypeSource.matchAll(/\|\s*"([^"]+)"/g)].map((match) => match[1]));
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -35,11 +38,24 @@ for (const file of files) {
     const metadata = hasIconGlyph && legacyMetadata.test(line);
     const rawPictographicUi = isTsx && hasIconGlyph && (pictographicUi.test(line) || pictographicStatus.test(line));
     const rawControlGlyph = isTsx && (legacyUiGlyph.test(line) || rawCloseGlyph.test(line));
-    if (!metadata && !rawPictographicUi && !rawControlGlyph) return;
+    const legacyComponentAlias = isTsx && legacyIconProp.test(line);
+    const literalIconNames = isTsx
+      ? [...line.matchAll(/<TinyTitansIcon\b[^>]*\bname\s*=\s*"([^"]+)"/g)].map((match) => match[1])
+      : [];
+    const invalidLiteralIcon = literalIconNames.find((name) => !canonicalIconNames.has(name));
+    if (!metadata && !rawPictographicUi && !rawControlGlyph && !legacyComponentAlias && !invalidLiteralIcon) return;
     findings.push({
       file: path.relative(process.cwd(), file).replaceAll(path.sep, "/"),
       line: index + 1,
-      kind: metadata ? "legacy-icon-metadata" : rawPictographicUi ? "raw-pictographic-ui" : "raw-ui-glyph",
+      kind: metadata
+        ? "legacy-icon-metadata"
+        : legacyComponentAlias
+          ? "legacy-icon-component-alias"
+          : invalidLiteralIcon
+            ? "invalid-icon-name"
+            : rawPictographicUi
+              ? "raw-pictographic-ui"
+              : "raw-ui-glyph",
       text: line.trim().slice(0, 220),
     });
   });
