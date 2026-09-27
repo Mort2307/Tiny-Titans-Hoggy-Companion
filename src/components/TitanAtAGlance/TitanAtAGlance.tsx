@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import TinyTitansIcon from "../TinyTitansIcon";
 import { useAuth } from "../../context/useAuth";
-import { getUserSnakes } from "../../services/snakeService";
-import type { Snake } from "../../types/Snake";
-import { getUserAnimals } from "../../services/universalAnimalService";
+import { getUnifiedAnimalDirectory, type UnifiedAnimalDirectoryRecord } from "../../services/animalDirectoryService";
 import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../../utils/feedingSummary";
 import type { WeightRecord } from "../../types/Weight";
 import type { ShedRecord } from "../../types/Shed";
@@ -12,18 +10,7 @@ import { TITAN_AT_A_GLANCE_OPTIONS, useEasyNav, type TitanAtAGlanceSliceId } fro
 import "./TitanAtAGlance.css";
 
 type Point = { x: number; y: number };
-type AtAGlanceAnimal = {
-  id: string;
-  name: string;
-  species?: string;
-  animalGroup?: string;
-  recordSource: "universal" | "legacy-snake";
-  weightRecords: number;
-  feedingRecords: number;
-  shedRecords: number;
-  healthRecords: number;
-  legacySnake?: Snake;
-};
+type AtAGlanceAnimal = UnifiedAnimalDirectoryRecord;
 type SliceView = { label: string; value: string; secondary?: string; route: string; feedSecondary?: string };
 
 function polar(cx: number, cy: number, radius: number, angle: number): Point {
@@ -74,8 +61,8 @@ function currentAnimalId(pathname: string): string | undefined {
 }
 
 function routeFor(slice: TitanAtAGlanceSliceId, animal?: AtAGlanceAnimal): string {
-  const snakeId = animal?.recordSource === "legacy-snake" ? animal.id : undefined;
-  const universalPath = animal?.recordSource === "universal" ? `/animals/${animal.id}` : undefined;
+  const snakeId = animal?.source === "legacy-snake" ? animal.id : undefined;
+  const universalPath = animal?.source === "universal" ? `/animals/${animal.id}` : undefined;
   switch (slice) {
     case "feed": return snakeId ? `/snakes/${snakeId}/feeding?action=log` : universalPath ?? "/feeding?action=log";
     case "weight": return snakeId ? `/snakes/${snakeId}/weights?action=log` : universalPath ?? "/weights";
@@ -110,27 +97,27 @@ function buildView(slice: TitanAtAGlanceSliceId, animal: AtAGlanceAnimal | undef
       return {
         label: "Last feed attempt",
         value: attempt?.date ? formatDaysSinceFeeding(attempt.date) : "Not recorded",
-        secondary: attempt ? "Latest recorded feeding attempt" : animal?.recordSource === "universal" ? "Open animal record" : "Log a feeding attempt",
+        secondary: attempt ? "Latest recorded feeding attempt" : animal?.source === "universal" ? "Open animal record" : "Log a feeding attempt",
         feedSecondary: successful?.date ? `Successful: ${formatDaysSinceFeeding(successful.date)}` : "Successful: Not recorded",
         route: routeFor(slice, animal),
       };
     }
     case "weight": {
       const weight = latest<WeightRecord>(legacy?.weightHistory);
-      return { label: "Last Weight", value: weight ? `${weight.weight}${weight.unit}` : animal?.recordSource === "universal" ? "Open record" : "Not yet", secondary: weight ? formatDate(weight.date) : animal?.recordSource === "universal" ? "Universal animal record" : "Record one", route: routeFor(slice, animal) };
+      return { label: "Last Weight", value: weight ? `${weight.weight}${weight.unit}` : animal?.source === "universal" ? "Open record" : "Not yet", secondary: weight ? formatDate(weight.date) : animal?.source === "universal" ? "Universal animal record" : "Record one", route: routeFor(slice, animal) };
     }
     case "shed": {
       const shed = latest<ShedRecord>(legacy?.shedHistory);
-      return { label: "Last Shed", value: shed ? formatDate(shed.date) : animal?.recordSource === "universal" ? "Open record" : "Not yet", secondary: shed?.status ?? (animal?.recordSource === "universal" ? "Universal animal record" : "Record one"), route: routeFor(slice, animal) };
+      return { label: "Last Shed", value: shed ? formatDate(shed.date) : animal?.source === "universal" ? "Open record" : "Not yet", secondary: shed?.status ?? (animal?.source === "universal" ? "Universal animal record" : "Record one"), route: routeFor(slice, animal) };
     }
     case "reminders": return { label: "Reminders", value: "Open", secondary: "See what's due", route: routeFor(slice, animal) };
     case "thisWeek": return { label: "This Week", value: "Command Centre", secondary: "Your keeper week", route: routeFor(slice, animal) };
-    case "health": return { label: "Health", value: legacy?.healthHistory?.length ? `${legacy.healthHistory.length} records` : animal?.recordSource === "universal" ? "Open record" : "No records", secondary: "Health & Vet", route: routeFor(slice, animal) };
+    case "health": return { label: "Health", value: legacy?.healthHistory?.length ? `${legacy.healthHistory.length} records` : animal?.source === "universal" ? "Open record" : "No records", secondary: "Health & Vet", route: routeFor(slice, animal) };
     case "behaviour": return { label: "Behaviour", value: "Open", secondary: "Journal & observations", route: routeFor(slice, animal) };
     case "husbandry": return { label: "Husbandry", value: "Open", secondary: "Environment & care", route: routeFor(slice, animal) };
     case "intelligence": return { label: "Titan Intelligence", value: "Live", secondary: "Open command centre", route: routeFor(slice, animal) };
     case "genetics": return { label: "Genetics", value: legacy?.morphs?.length ? legacy.morphs.slice(0, 1).join(", ") : "Library", secondary: legacy?.morphs?.length ? "Morph profile" : "Explore genetics", route: routeFor(slice, animal) };
-    case "breeding": return { label: "Breeding", value: legacy?.breedingEligible ? "Eligible" : animal?.recordSource === "universal" ? "Open planner" : "Planner", secondary: "Open breeding tools", route: routeFor(slice, animal) };
+    case "breeding": return { label: "Breeding", value: legacy?.breedingEligible ? "Eligible" : animal?.source === "universal" ? "Open planner" : "Planner", secondary: "Open breeding tools", route: routeFor(slice, animal) };
     case "snakes": return { label: "My Animals", value: "Open", secondary: "Your collection", route: routeFor(slice, animal) };
     case "learning": return { label: "Learn", value: "Open", secondary: "Continue learning", route: routeFor(slice, animal) };
     case "community": return { label: "Community", value: "Open", secondary: "Keeper community", route: routeFor(slice, animal) };
@@ -144,11 +131,11 @@ function buildView(slice: TitanAtAGlanceSliceId, animal: AtAGlanceAnimal | undef
 }
 
 function animalPhoto(animal: AtAGlanceAnimal | undefined): string | undefined {
-  return animal?.legacySnake?.photo || animal?.legacySnake?.imageUrl || animal?.legacySnake?.photoUrl || undefined;
+  return animal?.photoUrl;
 }
 function animalFallbackIcon(animal: AtAGlanceAnimal | undefined): string {
   const group = (animal?.animalGroup || "").toLowerCase();
-  if (animal?.recordSource === "legacy-snake" || group.includes("reptile") || group.includes("snake") || group.includes("lizard")) return "/animal-icons/snake.svg";
+  if (animal?.source === "legacy-snake" || group.includes("reptile") || group.includes("snake") || group.includes("lizard")) return "/animal-icons/snake.svg";
   if (group.includes("arachnid") || group.includes("spider") || group.includes("scorpion")) return "/animal-icons/spider.svg";
   if (group.includes("bird")) return "/animal-icons/bird.svg";
   if (group.includes("fish")) return "/animal-icons/fish.svg";
@@ -178,32 +165,9 @@ export default function TitanAtAGlance() {
     if (!user) return undefined;
     let active = true;
     setLoadingAnimals(true);
-    void Promise.all([getUserSnakes(user.uid), getUserAnimals(user.uid)]).then(([records, universalAnimals]) => {
+    void getUnifiedAnimalDirectory(user.uid, { includeTrackerHistory: true }).then((records) => {
       if (!active) return;
-      const legacy: AtAGlanceAnimal[] = records.filter((snake) => snake.status !== "Deceased").map((snake) => ({
-        id: snake.id,
-        name: snake.name,
-        species: snake.species,
-        animalGroup: "reptile",
-        recordSource: "legacy-snake",
-        weightRecords: snake.weightHistory?.length ?? 0,
-        feedingRecords: snake.feedingHistory?.length ?? 0,
-        shedRecords: snake.shedHistory?.length ?? 0,
-        healthRecords: snake.healthHistory?.length ?? 0,
-        legacySnake: snake,
-      }));
-      const universal: AtAGlanceAnimal[] = universalAnimals.filter((animal) => !["deceased", "archived"].includes(animal.status)).map((animal) => ({
-        id: animal.id,
-        name: animal.name,
-        species: animal.speciesCommonName || animal.scientificName,
-        animalGroup: animal.animalGroup,
-        recordSource: "universal",
-        weightRecords: 0,
-        feedingRecords: 0,
-        shedRecords: 0,
-        healthRecords: 0,
-      }));
-      setAnimals([...legacy, ...universal].sort((a, b) => a.name.localeCompare(b.name)));
+      setAnimals(records.filter((animal) => !["deceased", "archived"].includes(animal.status)));
     }).catch(() => {
       if (active) setAnimals([]);
     }).finally(() => {
@@ -337,13 +301,13 @@ export default function TitanAtAGlance() {
               {animals.map((animal) => {
                 const photo = animalPhoto(animal);
                 return (
-                  <button type="button" key={`${animal.recordSource}:${animal.id}`} className={animal.id === selectedAnimal?.id ? "selected" : ""} onClick={() => activateAnimal(animal)}>
+                  <button type="button" key={`${animal.source}:${animal.id}`} className={animal.id === selectedAnimal?.id ? "selected" : ""} onClick={() => activateAnimal(animal)}>
                     <span className="tt-at-glance-snake-avatar">
                       {photo ? <img src={photo} alt="" loading="lazy" /> : <span aria-hidden="true"><TinyTitansIcon name="animals" size={27} /></span>}
                     </span>
                     <span>
                       <strong>{animal.name}</strong>
-                      <small>{animal.species || animal.animalGroup || "Species awaiting identification"}</small>
+                      <small>{animal.speciesCommonName || animal.scientificName || animal.animalGroup || "Species awaiting identification"}</small>
                     </span>
                   </button>
                 );
