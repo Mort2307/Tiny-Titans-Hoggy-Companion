@@ -1,4 +1,5 @@
 import { useState } from "react";
+import TinyTitansIcon from "../TinyTitansIcon";
 import type { MasterMorphDefinition } from "../../data/masterMorphDatabase";
 import type { EditorImage } from "../../types/creatorMorphLibraryEditor";
 import { TargetMorphPicker } from "./TargetMorphPicker";
@@ -25,7 +26,7 @@ export function MoveDialog({
             <h2 id="move-title">Move {image.morphName} image</h2>
             <p>Use this when there is no image to swap. The image will simply be assigned to the target morph.</p>
           </div>
-          <button type="button" onClick={onClose} disabled={busy}>×</button>
+          <button type="button" onClick={onClose} disabled={busy} aria-label="Close dialog"><TinyTitansIcon name="close" size={17} /></button>
         </div>
         <TargetMorphPicker currentMorphId={image.morphId} onSelect={setTarget} selectedId={target?.geneId ?? ""} />
         {target && (
