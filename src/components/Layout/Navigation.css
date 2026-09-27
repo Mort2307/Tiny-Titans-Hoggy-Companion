@@ -1,4 +1,4 @@
-.app-navigation{position:fixed;inset:0 auto 0 0;width:248px;height:100dvh;max-height:100dvh;min-height:0;box-sizing:border-box;background:linear-gradient(180deg,rgba(22,17,29,.98) 0%,rgba(11,9,15,.995) 100%);border-right:1px solid rgba(198,171,220,.13);box-shadow:14px 0 40px rgba(0,0,0,.22);z-index:1000;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;scrollbar-color:rgba(198,171,220,.18) transparent;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.app-navigation{box-sizing:border-box;z-index:1000}
 .app-navigation-icon{width:26px;display:inline-flex;align-items:center;justify-content:center;color:rgba(208,199,213,.50);font-size:1rem;line-height:1;flex-shrink:0}
 
 .tt-easy-nav-strip{display:flex;align-items:center;justify-content:center;width:100%;min-height:58px;padding:6px 10px;background:rgba(11,9,15,.96);border-bottom:1px solid rgba(198,171,220,.10);box-shadow:0 8px 22px rgba(0,0,0,.16);overflow:visible}.tt-easy-nav-inner{width:min(620px,100%);display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.tt-easy-nav-link{appearance:none;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:rgba(247,244,248,.67);text-decoration:none;border:1px solid transparent;border-radius:12px;background:transparent;font:inherit;font-size:1rem;cursor:pointer}.tt-easy-nav-link small{font-size:.63rem;font-weight:750;letter-spacing:.02em}.tt-easy-nav-link.active{color:#fff;background:rgba(166,107,210,.14);border-color:rgba(191,139,231,.18)}.tt-easy-nav-link:focus-visible{outline:2px solid #f0ca88;outline-offset:2px}.tt-easy-nav-more{color:rgba(247,244,248,.67)}
@@ -15,3 +15,12 @@
 .tt-easy-recent h3{display:flex;align-items:center;gap:.35rem}
 .tt-easy-more-foot button{display:flex;align-items:center;justify-content:center;gap:.4rem;min-height:44px}
 @media(max-width:620px){.tt-easy-search kbd{display:none}}
+
+.tt-easy-pinned h3,
+.tt-easy-recent h3{display:flex;align-items:center;gap:.35rem}
+.tt-easy-feature-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:.35rem;align-items:stretch}
+.tt-easy-feature-row .tt-easy-feature-link{min-width:0}
+.tt-easy-pin-button{min-width:38px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(198,171,220,.09);border-radius:11px;background:rgba(255,255,255,.025);color:rgba(247,244,248,.48);cursor:pointer}
+.tt-easy-pin-button:hover{color:#f0ca88;border-color:rgba(240,202,136,.22);background:rgba(240,202,136,.06)}
+.tt-easy-pin-button.active{color:#f0ca88;border-color:rgba(240,202,136,.28);background:rgba(240,202,136,.09)}
+.tt-easy-pin-button:focus-visible{outline:2px solid #f0ca88;outline-offset:2px}
