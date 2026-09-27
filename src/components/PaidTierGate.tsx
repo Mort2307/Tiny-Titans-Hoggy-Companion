@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansAction from "./TinyTitansAction";
 import { useAuth } from "../context/useAuth";
 import { getPaidAccess, type PaidAccess } from "../services/paidTierService";
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
@@ -79,12 +81,12 @@ function TierAccessFallback({ tierId, access, entitlement }: { tierId: PaidTierI
 
     <section className="paid-access-card">
       <div className="paid-access-card-heading"><div><span className="paid-kicker">THIS CAPABILITY</span><h2>{paidEntitlementLabel(entitlement)}</h2><p>{tier.audience}</p></div><PaidTierBadge tierId={tier.id} size="sm" /></div>
-      <div className="paid-access-highlight-grid">{tier.highlights.map((item) => <div key={item}><span>✓</span><strong>{item}</strong></div>)}</div>
+      <div className="paid-access-highlight-grid">{tier.highlights.map((item) => <div key={item}><span><TinyTitansIcon name="check" size={16} /></span><strong>{item}</strong></div>)}</div>
       <div className="paid-access-capabilities"><span className="paid-kicker">FULL {tier.name.toUpperCase()} CAPABILITY SET</span><div>{tier.entitlements.filter((item) => !item.startsWith("core_")).map((item) => <span key={item}>{paidEntitlementLabel(item)}</span>)}</div></div>
       {tier.note && <div className="paid-access-note"><strong>Tier information</strong><span>{tier.note}</span></div>}
-      {access?.source === "tester" && access.testerOverride && <div className="paid-access-note"><strong>🧪 Creator tester access</strong><span>{tier.name} is being tested without changing billing. The account's real commercial tier remains {getPaidTierDefinition(access.actualTier).name}.</span></div>}
+      {access?.source === "tester" && access.testerOverride && <div className="paid-access-note"><strong><TinyTitansIcon name="testing" size={16} /> Creator tester access</strong><span>{tier.name} is being tested without changing billing. The account's real commercial tier remains {getPaidTierDefinition(access.actualTier).name}.</span></div>}
       <div className="paid-access-actions">
-        <Link className="paid-primary" to={`/plans?tier=${tier.id}`}>Compare {tier.name} →</Link>
+        <TinyTitansAction className="paid-primary" variant="primary" endIcon="forward" to={`/plans?tier=${tier.id}`} label={`Compare ${tier.name}`} />
         <Link to="/account/billing">Billing &amp; access</Link>
       </div>
       {isRescue && <div className="paid-access-note"><strong>Already invited by a Rescue organisation?</strong><span>Use the invitation link sent to your invited email address. Accepting the invitation grants the organisation role while keeping your personal TinyTitans account separate.</span></div>}
