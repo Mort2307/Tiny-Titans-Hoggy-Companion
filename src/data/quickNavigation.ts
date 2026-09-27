@@ -79,7 +79,7 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "account", label: "My Account", icon: "account", path: "/account", group: "Account", description: "Profile, settings and account tools." },
   { id: "profile", label: "Edit Profile", icon: "account", path: "/account/profile", group: "Account", description: "Edit your keeper profile." },
   { id: "settings", label: "Settings", icon: "account", path: "/account/settings", group: "Account", description: "Configure app preferences." },
-  { id: "personalise", label: "Personalise Experience", icon: "titan", path: "/account/personalise", group: "Account", description: "Choose Classic or Quick Mode and customise your experience." },
+  { id: "personalise", label: "Personalise Quick View", icon: "titan", path: "/account/personalise", group: "Account", description: "Customise At a Glance, weekly metrics and your Tiny Titans experience." },
   { id: "family", label: "My Family", icon: "family", path: "/account/family", group: "Account", description: "Manage family sharing." },
   { id: "security", label: "Security", icon: "lock", path: "/account/security", group: "Account", description: "Account security controls." },
   { id: "privacy", label: "Data & Privacy", icon: "health", path: "/account/data-privacy", group: "Account", description: "Privacy and data controls." },
