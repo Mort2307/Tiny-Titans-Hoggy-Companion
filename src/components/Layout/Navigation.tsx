@@ -1,5 +1,5 @@
 import "./Navigation.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { quickNavSearchItems, type QuickNavCapability, type QuickNavItem } from "../../data/quickNavigation";
 import { useNavigationAccess } from "../../hooks/useNavigationAccess";
@@ -27,6 +27,16 @@ function Navigation() {
   if (educatorAuthorized) authorisedCapabilities.add("educator");
 
   const availableQuickItems = quickNavSearchItems("", authorisedCapabilities);
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "k") return;
+      event.preventDefault();
+      setMoreOpen(true);
+    };
+    document.addEventListener("keydown", handleShortcut);
+    return () => document.removeEventListener("keydown", handleShortcut);
+  }, []);
+
   const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities);
   const recentItems = recentPaths
     .map((path) => availableQuickItems.find((item) => item.path === path))
