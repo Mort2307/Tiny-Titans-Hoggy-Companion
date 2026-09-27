@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { getActiveTitanDecisions, subscribeToTitanDecisionState, type TitanDecision } from "../../services/titanDecisionStateService";
 import { useAuth } from "../../context/useAuth";
+import TinyTitansIcon from "../TinyTitansIcon";
+import TinyTitansAction from "../TinyTitansAction";
 import "../../styles/titanDecisionQueue.css";
 
 function confidenceLabel(value:number): string {
@@ -9,14 +10,14 @@ function confidenceLabel(value:number): string {
 }
 
 function actionLabel(decision:TitanDecision): string {
-  if (decision.destination.includes("/weights?action=log")) return "Log weight →";
-  if (decision.destination.includes("/feeding?action=log")) return "Log feeding →";
-  if (decision.destination.includes("/shedding?action=log")) return "Log shed →";
-  if (decision.destination.includes("/behaviour?action=log")) return "Log behaviour →";
-  if (decision.destination.includes("/health?action=log")) return "Open care log →";
-  if (decision.domain === "vivarium") return "Review enclosure →";
-  if (decision.domain === "genetics") return "Review genetics →";
-  return "Open →";
+  if (decision.destination.includes("/weights?action=log")) return "Log weight";
+  if (decision.destination.includes("/feeding?action=log")) return "Log feeding";
+  if (decision.destination.includes("/shedding?action=log")) return "Log shed";
+  if (decision.destination.includes("/behaviour?action=log")) return "Log behaviour";
+  if (decision.destination.includes("/health?action=log")) return "Open care log";
+  if (decision.domain === "vivarium") return "Review enclosure";
+  if (decision.domain === "genetics") return "Review genetics";
+  return "Open";
 }
 
 export default function TitanDecisionQueue({ limit = 3, animalId, excludeDecisionId }: { limit?: number; animalId?: string; excludeDecisionId?: string }) {
@@ -39,7 +40,7 @@ export default function TitanDecisionQueue({ limit = 3, animalId, excludeDecisio
     <section className="titan-decision-queue" aria-labelledby="titan-decision-queue-title">
       <div className="titan-decision-queue-heading">
         <div>
-          <p className="titan-decision-queue-kicker">🧠 ALSO WORTH CONSIDERING</p>
+          <p className="titan-decision-queue-kicker"><TinyTitansIcon name="titan" size={16} /> ALSO WORTH CONSIDERING</p>
           <h2 id="titan-decision-queue-title">Other useful next actions</h2>
           <p>Ranked from the records currently available. Position reflects supporting evidence, not biological urgency.</p>
         </div>
@@ -60,7 +61,7 @@ export default function TitanDecisionQueue({ limit = 3, animalId, excludeDecisio
               <p><strong>Next:</strong> {decision.reason}</p>
               <p className="titan-decision-queue-boundary">Record-derived prioritisation only — not a diagnosis or proof of causation.</p>
             </div>
-            <Link className="titan-decision-queue-action" to={decision.destination}>{actionLabel(decision)}</Link>
+            <TinyTitansAction className="titan-decision-queue-action" variant="secondary" endIcon="forward" to={decision.destination} label={actionLabel(decision)} />
           </article>
         ))}
       </div>
