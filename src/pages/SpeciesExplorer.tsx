@@ -95,14 +95,14 @@ export default function SpeciesExplorer() {
         <section className="species-browse-groups" aria-label="Browse animals by type">
           <div className="species-browse-groups__heading">
             <div><p className="eyebrow">BROWSE BY ANIMAL TYPE</p><h2>Choose what you keep</h2></div>
-            <Link to="/animals">Back to My Animals →</Link>
+            <Link to="/animals">Back to My Animals <TinyTitansIcon name="forward" size={14} /></Link>
           </div>
           <div className="species-browse-groups__grid">
             {UNIVERSAL_SPECIES_BROWSE_GROUPS.map((item) => (
               <Link className="species-browse-group-card" to={"/species/group/" + item.id} key={item.id}>
                 <strong>{item.label}</strong>
                 <span>{item.count.toLocaleString()} species</span>
-                <b>Open →</b>
+                <b>Open <TinyTitansIcon name="forward" size={14} /></b>
               </Link>
             ))}
           </div>
@@ -139,7 +139,7 @@ export default function SpeciesExplorer() {
                   <h2>{species.commonNames[0] ?? species.acceptedScientificName}</h2>
                   <p className="species-scientific">{species.acceptedScientificName}</p>
                   <dl><div><dt>Genus</dt><dd>{species.genus}</dd></div><div><dt>Family</dt><dd>{species.family}</dd></div><div><dt>Lifestyle</dt><dd>{species.lifestyle.join(" · ")}</dd></div><div><dt>Diet</dt><dd>{species.dietaryGuild.replace("-", " ")}</dd></div></dl>
-                  <div className="species-explorer-card__footer"><span>{species.care?.husbandry.coverage === "species" ? "Species care verified" : species.care?.husbandry.coverage === "genus" ? "Genus care verified" : "Care research pending"}</span><span>Open profile →</span></div>
+                  <div className="species-explorer-card__footer"><span>{species.care?.husbandry.coverage === "species" ? "Species care verified" : species.care?.husbandry.coverage === "genus" ? "Genus care verified" : "Care research pending"}</span><span>Open profile <TinyTitansIcon name="forward" size={14} /></span></div>
                 </Link>
               </article>
             )) : <div className="species-explorer-empty"><TinyTitansIcon name="titan" size={30} /><h2>No species matched</h2><p>Try another name, genus, family or search term.</p></div>}
