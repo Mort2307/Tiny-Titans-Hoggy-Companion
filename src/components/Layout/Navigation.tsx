@@ -1,19 +1,9 @@
 import "./Navigation.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { quickNavSearchItems, type QuickNavCapability } from "../../data/quickNavigation";
+import { quickNavSearchItems, type QuickNavCapability, type QuickNavItem } from "../../data/quickNavigation";
 import { useNavigationAccess } from "../../hooks/useNavigationAccess";
 import QuickModeNavigation from "./QuickModeNavigation";
-
-type QuickItem = {
-  id: string;
-  label: string;
-  icon: string;
-  path: string;
-  group: string;
-  description: string;
-  keywords: string[];
-};
 
 function Navigation() {
   const navigate = useNavigate();
@@ -27,9 +17,9 @@ function Navigation() {
   if (testerAuthorized) authorisedCapabilities.add("tester");
   if (educatorAuthorized) authorisedCapabilities.add("educator");
 
-  const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities) as QuickItem[];
+  const quickItems = quickNavSearchItems(quickSearch, authorisedCapabilities);
 
-  const quickGroups = quickItems.reduce<Record<string, QuickItem[]>>((groups, item) => {
+  const quickGroups = quickItems.reduce<Record<string, QuickNavItem[]>>((groups, item) => {
     (groups[item.group] ??= []).push(item);
     return groups;
   }, {});
