@@ -1,0 +1,47 @@
+.tt-feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: .55rem;
+  padding: .7rem .8rem;
+  border: 1px solid rgba(198,171,220,.14);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+  color: rgba(247,244,248,.86);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+
+.tt-feedback--compact { padding: .55rem .65rem; }
+
+.tt-feedback__icon {
+  width: 22px;
+  min-width: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tt-feedback__copy { min-width: 0; }
+
+.tt-feedback--success {
+  border-color: rgba(111,211,160,.24);
+  background: rgba(111,211,160,.07);
+}
+
+.tt-feedback--success .tt-feedback__icon { color: #7ad7a0; }
+
+.tt-feedback--error {
+  border-color: rgba(231,123,123,.28);
+  background: rgba(231,123,123,.075);
+}
+
+.tt-feedback--error .tt-feedback__icon { color: #e77b7b; }
+
+.tt-feedback--warning {
+  border-color: rgba(240,202,136,.26);
+  background: rgba(240,202,136,.07);
+}
+
+.tt-feedback--warning .tt-feedback__icon { color: #f0ca88; }
+
+.tt-feedback--info .tt-feedback__icon { color: #69b6d4; }
