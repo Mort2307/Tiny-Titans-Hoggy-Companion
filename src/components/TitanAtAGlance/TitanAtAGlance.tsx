@@ -165,7 +165,7 @@ function animalFallbackIcon(animal: AtAGlanceAnimal | undefined): string {
 
 export default function TitanAtAGlance() {
   const { user } = useAuth();
-  const { isEasyNav, slices, loading } = useEasyNav();
+  const { slices, loading } = useEasyNav();
   const location = useLocation();
   const navigate = useNavigate();
   const [animals, setAnimals] = useState<AtAGlanceAnimal[]>([]);
@@ -175,7 +175,7 @@ export default function TitanAtAGlance() {
   const activeAnimalId = currentAnimalId(location.pathname);
 
   useEffect(() => {
-    if (!user || !isEasyNav) return undefined;
+    if (!user) return undefined;
     let active = true;
     setLoadingAnimals(true);
     void Promise.all([getUserSnakes(user.uid), getUserAnimals(user.uid)]).then(([records, universalAnimals]) => {
@@ -210,7 +210,7 @@ export default function TitanAtAGlance() {
       if (active) setLoadingAnimals(false);
     });
     return () => { active = false; };
-  }, [user, isEasyNav]);
+  }, [user]);
 
   useEffect(() => {
     if (activeAnimalId) {
@@ -228,7 +228,7 @@ export default function TitanAtAGlance() {
     [slices, selectedAnimal],
   );
 
-  if (!isEasyNav || loading) return null;
+  if (loading) return null;
 
   const size = 360;
   const centre = size / 2;
