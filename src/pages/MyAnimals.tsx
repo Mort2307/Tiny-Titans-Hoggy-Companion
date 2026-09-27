@@ -12,6 +12,7 @@ import { KEEPER_COMPANION_TERMINOLOGY } from "../config/keeperTerminology";
 import { getTinyTitansErrorMessage } from "../utils/firebaseError";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
+import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
 
 type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
 
@@ -140,7 +141,7 @@ export default function MyAnimals() {
         </div>
       </header>
 
-      <section className="universal-animals-panel">
+      <section id="add-animal" className="universal-animals-panel">
         <p className="eyebrow">ADD INDIVIDUAL</p>
         <h2>Add an individual animal</h2>
         <div className="universal-animal-form">
@@ -151,14 +152,14 @@ export default function MyAnimals() {
           <label>Morph / colour<input value={morphOrColour} onChange={(event) => setMorphOrColour(event.target.value)} /></label>
           <label>Notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
         </div>
-        <button className="universal-primary-action" type="button" disabled={!name.trim() || busy} onClick={() => void addAnimal()}>{busy ? "Saving…" : "Add animal"}</button>
+        <button className="universal-primary-action" type="button" disabled={!name.trim() || busy} onClick={() => void addAnimal()}><TinyTitansIcon name={busy ? "save" : "add"} size={18} />{busy ? "Saving…" : "Add animal"}</button>
         {message && <p className={`universal-animals-feedback ${messageKind === "error" ? "is-error" : "is-success"}`} role={messageKind === "error" ? "alert" : "status"}>{message}</p>}
       </section>
 
       <section className="universal-animals-panel">
         <p className="eyebrow">INDIVIDUALS</p>
         <h2>Your animal collection</h2>
-        {loading ? <p>Loading your animal collection…</p> : visibleAnimals.length === 0 ? <p>No individual animal records yet.</p> : <div className="universal-animal-list">{visibleAnimals.map((animal) => {
+        {loading ? <p role="status">Loading your animal collection…</p> : visibleAnimals.length === 0 ? <TinyTitansEmptyState icon="animals" title={speciesFilter ? "No animals match this species filter" : "No animal records yet"} description={speciesFilter ? "Your collection may contain other animals. Clear the species filter to see the full collection." : "Add your first animal to start building care, health and keeper records."} action={speciesFilter ? { label: "Show all animals", icon: "animals", to: "/animals" } : { label: "Add your first animal", icon: "add", href: "#add-animal" }} /> : <div className="universal-animal-list">{visibleAnimals.map((animal) => {
           const rowKey = (animal.legacySnake ? "snake:" : "animal:") + animal.id;
           const isDeleting = deletingAnimalId === animal.id;
           return (
