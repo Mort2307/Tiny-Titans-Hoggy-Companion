@@ -46,3 +46,27 @@ console.log("UI hardening contract: PASS");
 console.log(`Responsive viewports: ${contract.responsiveViewports.map((item) => item.name).join(", ")}`);
 console.log(`Minimum touch target: ${contract.auditRules.minimumTouchTarget}px`);
 console.log("Overflow/clipping policy: build fails if the visual contract is violated");
+
+
+async function walkUiSource(dir) {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const nested = await Promise.all(entries.map(async (entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walkUiSource(full);
+    return /\.(?:ts|tsx)$/.test(entry.name) ? [full] : [];
+  }));
+  return nested.flat();
+}
+
+const uiSourceFiles = await walkUiSource(path.join(root, "src"));
+const nativePromptFindings = [];
+for (const file of uiSourceFiles) {
+  const source = await fs.readFile(file, "utf8");
+  if (/\bwindow\.(?:confirm|alert|prompt)\s*\(/.test(source)) {
+    nativePromptFindings.push(path.relative(root, file).replaceAll(path.sep, "/"));
+  }
+}
+if (nativePromptFindings.length) {
+  throw new Error(`UI hardening contract: browser-native prompt APIs remain in ${nativePromptFindings.join(", ")}. Use Tiny Titans shared confirmation/feedback UX.`);
+}
+console.log("Browser-native prompt boundary: PASS");
