@@ -1,24 +1,15 @@
 import TinyTitansIcon from "../TinyTitansIcon";
 import AnimatedAnimalIcon from "../AnimatedAnimalIcon";
 import type { WorkspacePresentation } from "../../services/workspacePresentationService";
+import type { QuickNavItem } from "../../data/quickNavigation";
 import { useLocation } from "react-router-dom";
-
-type QuickItem = {
-  id: string;
-  label: string;
-  icon: string;
-  path: string;
-  group: string;
-  description: string;
-  keywords: string[];
-};
 
 type Props = {
   workspace: WorkspacePresentation;
   quickSearch: string;
   setQuickSearch: (value: string) => void;
-  quickGroups: Record<string, QuickItem[]>;
-  quickItems: QuickItem[];
+  quickGroups: Record<string, QuickNavItem[]>;
+  quickItems: QuickNavItem[];
   moreOpen: boolean;
   onToggleMore: () => void;
   onClose: () => void;
