@@ -7,9 +7,16 @@ import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService
 import { getDashboardIntelligence, type SnakeIntelligence } from "../services/snakeIntelligenceService";
 import { getTitanDecisionState, refreshTitanDecisionStateForAnimals, type TitanDecision } from "../services/titanDecisionStateService";
 import { subscribeToTitanIntelligenceUpdates } from "../services/titanReactiveIntelligenceService";
+import { listReminders } from "../services/reminderService";
+import type { Reminder } from "../types/Reminder";
 
 export type HomeAnimal = { id: string; name: string; species?: string; animalGroup?: string; recordSource: "universal" | "legacy-snake"; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number; };
 export type HomeSnake = HomeAnimal;
+export type HomeUrgentReminder = {
+  reminder: Reminder;
+  urgency: "overdue" | "due-soon";
+  dueAt: number;
+};
 
 export function buildQuietIntelligenceSnippet(snake: HomeAnimal | undefined, totalRecords: number, dateKey: string): string {
   if (!snake || totalRecords === 0) return "There is more useful information hiding in a well-kept record than first meets the eye.";
@@ -35,6 +42,7 @@ export function useHomeDashboard() {
   const [snakes, setSnakes] = useState<HomeAnimal[]>([]);
   const [intelligence, setIntelligence] = useState<SnakeIntelligence[]>([]);
   const [decision, setDecision] = useState<TitanDecision | null>(null);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [selectedSnakeId, setSelectedSnakeId] = useState("");
   const [loadingIntelligence, setLoadingIntelligence] = useState(false);
   const [intelligenceAccess, setIntelligenceAccess] = useState(false);
@@ -50,10 +58,11 @@ export function useHomeDashboard() {
     setAccessChecked(false);
     const load = async () => {
       try {
-        const [hasAccess, records, universalAnimals] = await Promise.all([hasFullIntelligenceAccess(user.uid), getUserSnakes(user.uid), getUserAnimals(user.uid)]);
+        const [hasAccess, records, universalAnimals, reminderRecords] = await Promise.all([hasFullIntelligenceAccess(user.uid), getUserSnakes(user.uid), getUserAnimals(user.uid), listReminders(user.uid).catch(() => [])]);
         if (!active) return;
         setIntelligenceAccess(hasAccess);
         setAccessChecked(true);
+        setReminders(reminderRecords);
         const legacyMinimal: HomeAnimal[] = records.map((snake) => ({ id: snake.id, name: snake.name, species: snake.species, animalGroup: "reptile", recordSource: "legacy-snake", weightRecords: snake.weightHistory?.length ?? 0, feedingRecords: snake.feedingHistory?.length ?? 0, shedRecords: snake.shedHistory?.length ?? 0, healthRecords: snake.healthHistory?.length ?? 0 }));
         const universalMinimal: HomeAnimal[] = universalAnimals.map((animal) => ({ id: animal.id, name: animal.name, species: animal.speciesCommonName || animal.scientificName, animalGroup: animal.animalGroup, recordSource: "universal", weightRecords: 0, feedingRecords: 0, shedRecords: 0, healthRecords: 0 }));
         const minimal = [...legacyMinimal, ...universalMinimal].sort((a, b) => a.name.localeCompare(b.name));
@@ -74,7 +83,7 @@ export function useHomeDashboard() {
         }
       } catch {
         if (!active) return;
-        setSnakes([]); setIntelligence([]); setDecision(null); setIntelligenceAccess(false); setAccessChecked(true);
+        setSnakes([]); setReminders([]); setIntelligence([]); setDecision(null); setIntelligenceAccess(false); setAccessChecked(true);
       } finally { if (active) setLoadingIntelligence(false); }
     };
     void load();
@@ -97,6 +106,19 @@ export function useHomeDashboard() {
   const selectedSnake = useMemo(() => snakes.find((snake) => snake.id === selectedSnakeId) ?? snakes[0], [snakes, selectedSnakeId]);
   const selectedIntelligence = useMemo(() => selectedSnake?.recordSource === "legacy-snake" ? intelligence.find((item) => item.snakeId === selectedSnakeId) : undefined, [intelligence, selectedSnakeId, selectedSnake?.recordSource]);
   const attentionDecision = decision?.status === "active" ? decision : null;
+  const urgentReminder = useMemo<HomeUrgentReminder | null>(() => {
+    const now = world.observedAt.getTime();
+    const dueSoonBoundary = now + (24 * 60 * 60 * 1000);
+    const candidates = reminders
+      .filter((reminder) => reminder.status === "active")
+      .map((reminder) => ({ reminder, dueAt: Date.parse(reminder.nextNotificationAt) }))
+      .filter((item) => Number.isFinite(item.dueAt))
+      .sort((a, b) => a.dueAt - b.dueAt);
+    const overdue = candidates.find((item) => item.dueAt <= now);
+    if (overdue) return { ...overdue, urgency: "overdue" };
+    const dueSoon = candidates.find((item) => item.dueAt <= dueSoonBoundary);
+    return dueSoon ? { ...dueSoon, urgency: "due-soon" } : null;
+  }, [reminders, world.observedAt]);
   const coverage = useMemo(() => intelligence.length ? Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length) : 0, [intelligence]);
   const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + snake.weightRecords + snake.feedingRecords + snake.shedRecords + snake.healthRecords, 0), [snakes]);
   const snapshot = useMemo(() => ({ weights: snakes.reduce((sum, snake) => sum + snake.weightRecords, 0), feedings: snakes.reduce((sum, snake) => sum + snake.feedingRecords, 0), sheds: snakes.reduce((sum, snake) => sum + snake.shedRecords, 0), health: snakes.reduce((sum, snake) => sum + snake.healthRecords, 0) }), [snakes]);
@@ -104,5 +126,5 @@ export function useHomeDashboard() {
   const selectedIndex = Math.max(0, snakes.findIndex((snake) => snake.id === selectedSnakeId));
   function moveSnake(direction: -1 | 1) { if (!snakes.length) return; const next = (selectedIndex + direction + snakes.length) % snakes.length; setSelectedSnakeId(snakes[next].id); }
   const selectedSnakeRecords = selectedSnake ? selectedSnake.weightRecords + selectedSnake.feedingRecords + selectedSnake.shedRecords + selectedSnake.healthRecords : 0;
-  return { user, profile, world, displayName, learningLabel, experience, snakes, intelligence, attentionDecision, selectedIntelligence, selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, totalRecords, quietIntelligenceSnippet, loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake };
+  return { user, profile, world, displayName, learningLabel, experience, snakes, intelligence, attentionDecision, urgentReminder, selectedIntelligence, selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, totalRecords, quietIntelligenceSnippet, loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake };
 }
