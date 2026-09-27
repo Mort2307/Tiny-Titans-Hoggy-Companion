@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import TinyTitansIcon from "../TinyTitansIcon";
 import { useAuth } from "../../context/useAuth";
 import { getUserSnakes } from "../../services/snakeService";
 import type { Snake } from "../../types/Snake";
@@ -88,7 +89,7 @@ function routeFor(slice: TitanAtAGlanceSliceId, animal?: AtAGlanceAnimal): strin
     case "snakes": return "/animals";
     case "learning": return "/challenge";
     case "community": return "/community";
-    case "room": return "/reptile-room";
+    case "room": return "/enclosure-intelligence";
     case "knowledge": return "/knowledge-base";
     case "contribution": return "/make-contribution";
     case "goals": return "/become-a-titan";
@@ -133,7 +134,7 @@ function buildView(slice: TitanAtAGlanceSliceId, animal: AtAGlanceAnimal | undef
     case "snakes": return { label: "My Animals", value: "Open", secondary: "Your collection", route: routeFor(slice, animal) };
     case "learning": return { label: "Learn", value: "Open", secondary: "Continue learning", route: routeFor(slice, animal) };
     case "community": return { label: "Community", value: "Open", secondary: "Keeper community", route: routeFor(slice, animal) };
-    case "room": return { label: "Keeper Room", value: "Open", secondary: "Your keeper room", route: routeFor(slice, animal) };
+    case "room": return { label: "Enclosure Intelligence", value: "Open", secondary: "Habitat & care", route: routeFor(slice, animal) };
     case "knowledge": return { label: "Knowledge Base", value: "Open", secondary: "Find an answer", route: routeFor(slice, animal) };
     case "contribution": return { label: "Contribute", value: "Open", secondary: "Help Tiny Titans", route: routeFor(slice, animal) };
     case "goals": return { label: "Titan Goals", value: "Open", secondary: "Your progress", route: routeFor(slice, animal) };
@@ -257,7 +258,7 @@ export default function TitanAtAGlance() {
           <h1>{selectedAnimal ? selectedAnimal.name : "Your Tiny Titans"}</h1>
           <p>{loadingAnimals ? "Loading your latest records…" : selectedAnimal ? "Tap a slice to view, update or review it." : "Tap a slice to open what you need."}</p>
         </div>
-        <Link className="tt-at-glance-customise" to="/account/personalise?easy-nav=1">⚙ Customise</Link>
+        <Link className="tt-at-glance-customise" to="/account/personalise"><TinyTitansIcon name="edit" size={16} /> Customise</Link>
       </div>
 
       <div className="tt-at-glance-stage">
@@ -284,7 +285,7 @@ export default function TitanAtAGlance() {
                 aria-label={`${view.label}: ${view.value}. ${view.secondary ?? ""}`}
               >
                 <path d={sectorPath(centre, centre, outer, inner, start, end)} className="tt-at-glance-sector-shape" />
-                <text x={labelPoint.x} y={labelPoint.y - 6} className="tt-at-glance-icon" textAnchor="middle">{TITAN_AT_A_GLANCE_OPTIONS.find((option) => option.id === view.id)?.icon}</text>
+                <TinyTitansIcon name={TITAN_AT_A_GLANCE_OPTIONS.find((option) => option.id === view.id)?.icon ?? "titan"} size={22} x={labelPoint.x - 11} y={labelPoint.y - 22} className="tt-at-glance-icon-svg" />
                 <text x={labelPoint.x} y={labelPoint.y + 15} className="tt-at-glance-label" textAnchor="middle">{view.label}</text>
                 <text x={labelPoint.x} y={labelPoint.y + 34} className="tt-at-glance-value" textAnchor="middle">{view.value}</text>
                 {view.feedSecondary && <text x={labelPoint.x} y={labelPoint.y + 50} className="tt-at-glance-secondary tt-at-glance-feed-secondary" textAnchor="middle">{view.feedSecondary}</text>}
@@ -330,7 +331,7 @@ export default function TitanAtAGlance() {
           <div className="tt-at-glance-snake-picker" role="dialog" aria-label="Select an animal">
             <div className="tt-at-glance-snake-picker-head">
               <strong>Select your animal</strong>
-              <button type="button" onClick={() => setAnimalPickerOpen(false)} aria-label="Close animal selector">×</button>
+              <button type="button" onClick={() => setAnimalPickerOpen(false)} aria-label="Close animal selector"><TinyTitansIcon name="close" size={18} /></button>
             </div>
             <div className="tt-at-glance-snake-picker-list">
               {animals.map((animal) => {
@@ -338,7 +339,7 @@ export default function TitanAtAGlance() {
                 return (
                   <button type="button" key={`${animal.recordSource}:${animal.id}`} className={animal.id === selectedAnimal?.id ? "selected" : ""} onClick={() => activateAnimal(animal)}>
                     <span className="tt-at-glance-snake-avatar">
-                      {photo ? <img src={photo} alt="" loading="lazy" /> : <span aria-hidden="true">🐾</span>}
+                      {photo ? <img src={photo} alt="" loading="lazy" /> : <span aria-hidden="true"><TinyTitansIcon name="animals" size={27} /></span>}
                     </span>
                     <span>
                       <strong>{animal.name}</strong>
