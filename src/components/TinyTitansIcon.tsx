@@ -99,7 +99,7 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
 };
 
 const ICON_NAMES = new Set<TinyTitansIconName>([
-  "home", "reptile", "reptiles", "animals", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
+  "home", "reptile", "reptiles", "animals", "pin", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
   "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
   "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan", "analytics", "export",
   "educator", "creator", "testing", "search", "menu", "add", "edit", "delete", "water", "timeline", "vet", "save", "upload", "back", "forward", "close", "filter", "camera", "rotate", "move", "duplicate", "link", "lock", "unlock", "grid", "ceiling", "info", "warning", "check", "compass", "power", "air",
@@ -143,6 +143,8 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
         <path className="tt-icon-line-soft" d="M15 22 11 18m5 4-1-6m16 5 4-4m-5 5 1-6" />
         <circle className="tt-icon-spark" cx="39" cy="10" r="2.4" />
       </svg>;
+    case "pin":
+      return <svg {...commonProps}><path className="tt-icon-fill tt-icon-pin" d="M17 8h14l-2 10 6 7H13l6-7-2-10Z" /><path className="tt-icon-line" d="M24 25v15M15 25h18" /><circle className="tt-icon-spark" cx="24" cy="8" r="2" /></svg>;
     case "messages":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-bubble" d="M8 10.5c0-3.1 2.5-5.5 5.6-5.5h15.8c3.1 0 5.6 2.4 5.6 5.5v10c0 3.1-2.5 5.5-5.6 5.5H20l-6.8 5.3.9-5.4h-.5C10.5 25.9 8 23.5 8 20.5v-10Z" /><path className="tt-icon-line" d="M15 13.5h12M15 18.5h8" /><circle className="tt-icon-spark" cx="36" cy="10" r="4" /></svg>;
     case "reminders":
