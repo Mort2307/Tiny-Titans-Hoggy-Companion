@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/useAuth";
+import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansAction from "./TinyTitansAction";
+import TinyTitansFeedback from "./TinyTitansFeedback";
 import { enableNotifications, getNotificationPermissionState, getNotificationSettings, hasRegisteredNotificationDevice } from "../services/notificationService";
 import type { NotificationPermissionState } from "../types/Notifications";
 import "../styles/notificationOnboarding.css";
@@ -89,7 +92,7 @@ export default function NotificationOnboarding() {
           setGuideOpen(false);
           setMessage("");
         } else {
-          setMessage("Permission is allowed, but this device still needs its push connection repaired. Open Settings → Notifications and tap Repair connection.");
+          setMessage("Permission is allowed, but this device still needs its push connection repaired. Open Settings, then Notifications, and tap Repair connection.");
         }
       } else if (result === "denied") {
         setMessage("Notifications are blocked by your browser or device. Open the guide below for the steps to allow Tiny Titans again.");
@@ -121,21 +124,19 @@ export default function NotificationOnboarding() {
   return (
     <>
       <aside className="tt-notification-onboarding" aria-label="Tiny Titans notification setup">
-        <div className="tt-notification-onboarding-icon" aria-hidden="true">🔔</div>
+        <div className="tt-notification-onboarding-icon" aria-hidden="true"><TinyTitansIcon name="reminders" size={28} /></div>
         <div className="tt-notification-onboarding-copy">
           <div className="tt-notification-onboarding-eyebrow">Never miss a keeper reminder</div>
           <h2>Let Tiny Titans notify you</h2>
           <p>Get feeding, weight, shed and health reminders even when Tiny Titans is not the page you are looking at.</p>
-          {message && <div className="tt-notification-onboarding-message" role="status">{message}</div>}
+          {message && <TinyTitansFeedback compact className="tt-notification-onboarding-message">{message}</TinyTitansFeedback>}
           <div className="tt-notification-onboarding-actions">
-            <button type="button" className="tt-notification-primary" onClick={() => void handleEnable()} disabled={busy}>
-              {busy ? "Enabling…" : "Enable notifications"}
-            </button>
-            <button type="button" className="tt-notification-secondary" onClick={() => setGuideOpen(true)} disabled={busy}>How to enable</button>
-            <button type="button" className="tt-notification-dismiss" onClick={dismiss} disabled={busy}>Not now</button>
+            <TinyTitansAction className="tt-notification-primary" variant="primary" icon="reminders" label="Enable notifications" onClick={() => void handleEnable()} busy={busy} />
+            <TinyTitansAction className="tt-notification-secondary" variant="secondary" icon="info" label="How to enable" onClick={() => setGuideOpen(true)} disabled={busy} />
+            <TinyTitansAction className="tt-notification-dismiss" variant="ghost" label="Not now" onClick={dismiss} disabled={busy} />
           </div>
         </div>
-        <button type="button" className="tt-notification-onboarding-close" onClick={dismiss} disabled={busy} aria-label="Dismiss notification setup">×</button>
+        <button type="button" className="tt-notification-onboarding-close" onClick={dismiss} disabled={busy} aria-label="Dismiss notification setup"><TinyTitansIcon name="close" size={17} /></button>
       </aside>
       {guideOpen && <NotificationGuide permission={permission} message={message} onClose={() => setGuideOpen(false)} onEnable={() => void handleEnable()} busy={busy} />}
     </>
@@ -160,7 +161,7 @@ function NotificationGuide({ permission, message, onClose, onEnable, busy }: Not
             <h2 id="tt-notification-guide-title">Get your keeper reminders</h2>
             <p>Use the button below first. Tiny Titans will ask your browser/device for permission and then register this device for push delivery.</p>
           </div>
-          <button type="button" className="tt-notification-guide-close" onClick={onClose} aria-label="Close notification guide">×</button>
+          <button type="button" className="tt-notification-guide-close" onClick={onClose} aria-label="Close notification guide"><TinyTitansIcon name="close" size={17} /></button>
         </div>
 
         <div className="tt-notification-guide-grid">
@@ -180,7 +181,7 @@ function NotificationGuide({ permission, message, onClose, onEnable, busy }: Not
           <article>
             <div className="tt-notification-guide-step">3</div>
             <h3>Android / Chrome</h3>
-            <p>For an installed app, check <strong>Phone Settings → Notifications → Tiny Titans</strong>. If permission is already allowed but delivery is not working, use <strong>Settings → Notifications → Repair connection</strong> in Tiny Titans.</p>
+            <p>For an installed app, open <strong>Phone Settings</strong>, then <strong>Notifications</strong>, then <strong>Tiny Titans</strong>. If permission is already allowed but delivery is not working, open <strong>Settings</strong>, then <strong>Notifications</strong>, then <strong>Repair connection</strong> in Tiny Titans.</p>
           </article>
 
           <article>
