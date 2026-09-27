@@ -1,0 +1,67 @@
+.tt-action {
+  min-height: 44px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  padding: .62rem .82rem;
+  border: 1px solid rgba(198,171,220,.16);
+  border-radius: 11px;
+  background: rgba(255,255,255,.04);
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+  font-size: .79rem;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 150ms ease,border-color 150ms ease,transform 150ms ease,opacity 150ms ease;
+}
+
+.tt-action:hover:not(:disabled) { transform: translateY(-1px); }
+.tt-action:focus-visible { outline: 2px solid #f0ca88; outline-offset: 2px; }
+.tt-action:disabled { cursor: not-allowed; opacity: .5; transform: none; }
+
+.tt-action--primary {
+  border-color: rgba(191,139,231,.30);
+  background: linear-gradient(135deg,rgba(166,107,210,.24),rgba(105,182,212,.10));
+  color: #fff;
+}
+
+.tt-action--primary:hover:not(:disabled) { background: linear-gradient(135deg,rgba(166,107,210,.32),rgba(105,182,212,.14)); }
+.tt-action--secondary:hover:not(:disabled) { border-color: rgba(240,202,136,.24); background: rgba(240,202,136,.065); }
+
+.tt-action--danger {
+  border-color: rgba(231,123,123,.28);
+  background: rgba(231,123,123,.08);
+  color: #ffd9d9;
+}
+
+.tt-action--danger:hover:not(:disabled) { border-color: rgba(231,123,123,.44); background: rgba(231,123,123,.13); }
+
+.tt-action--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.tt-action--ghost:hover:not(:disabled) { background: rgba(255,255,255,.055); }
+
+.tt-action--inline {
+  min-height: 36px;
+  padding: .4rem .55rem;
+  border-color: transparent;
+  background: transparent;
+  color: inherit;
+}
+
+.tt-action--inline:hover:not(:disabled) { background: rgba(255,255,255,.05); }
+
+.tt-action--compact {
+  min-height: 36px;
+  padding: .42rem .58rem;
+  border-radius: 9px;
+  font-size: .73rem;
+}
+
+@media(prefers-reduced-motion:reduce){.tt-action{transition:none}.tt-action:hover:not(:disabled){transform:none}}
