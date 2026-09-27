@@ -40,6 +40,18 @@ export default defineConfig({
         navigateFallback: "/index.html",
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
+        globIgnores: ["**/three-vendor-*.js", "**/globe-vendor-*.js"],
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/(?:three-vendor|globe-vendor)-.*\.js$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "tinytitans-visual-runtime-v1",
+              expiration: { maxEntries: 8, maxAgeSeconds: 30 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       devOptions: { enabled: false },
     }),
@@ -70,9 +82,19 @@ export default defineConfig({
               priority: 20,
             },
             {
-              name: "visual-vendor",
-              test: /node_modules[\\/](?:three|@react-three|react-globe\.gl|recharts)(?:$|[\\/])/,
-              priority: 10,
+              name: "three-vendor",
+              test: /node_modules[\\/](?:three|@react-three)(?:$|[\\/])/,
+              priority: 14,
+            },
+            {
+              name: "globe-vendor",
+              test: /node_modules[\\/]react-globe\.gl(?:$|[\\/])/,
+              priority: 13,
+            },
+            {
+              name: "charts-vendor",
+              test: /node_modules[\\/]recharts(?:$|[\\/])/,
+              priority: 12,
             },
             {
               name: "other-vendor",
