@@ -75,7 +75,7 @@ function LayoutChrome() {
   const isRetiredReptileRoom =
     pathname === "/reptile-room" || pathname.startsWith("/reptile-room/");
 
-  if (isRetiredReptileRoom) return <Navigate to="/snakes" replace />;
+  if (isRetiredReptileRoom) return <Navigate to="/animals" replace />;
 
   const specialPage =
     isRescueDirectoryPage ? <RescueDirectory /> :
