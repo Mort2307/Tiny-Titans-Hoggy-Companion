@@ -32,6 +32,7 @@ export function useShedTrackerIntelligent() {
   const [snakeId, setSnakeId] = useState(routeSnakeId ?? "");
   const [records, setRecords] = useState<ShedRecord[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ShedRecord | null>(null);
   const [stage, setStage] = useState<ShedStage>("Blue");
   const [date, setDate] = useState(new Date().toLocaleDateString("en-GB"));
   const [quality, setQuality] = useState<ShedQuality>("Unknown");
@@ -229,24 +230,28 @@ export function useShedTrackerIntelligent() {
     assistance,date,editingId,isImperial,length,lengthUnit,notes,quality,records,reset,retained,snakeId,stage,status,user,weight,weightUnit
   ]);
 
-  const remove = useCallback(async (record: ShedRecord) => {
-    if (!user || !window.confirm(`Delete this entire shedding cycle for ${selectedSnake?.name ?? "this snake"}?`)) return;
+  const remove = useCallback(async () => {
+    const record = deleteTarget;
+    if (!user || !record) return;
     setBusy(true);
+    setError("");
     try {
       await deleteSnakeShed(user.uid, record.snakeId, record.id);
       setRecords((current) => current.filter((item) => item.id !== record.id));
+      setDeleteTarget(null);
+      if (editingId === record.id) reset();
       setMessage("Shedding cycle deleted.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to delete shedding cycle.");
     } finally {
       setBusy(false);
     }
-  }, [selectedSnake?.name, user]);
+  }, [deleteTarget, editingId, reset, user]);
 
   return {
     navigate, user, loading, profileLoading, snakes, snakeId, setSnakeId, records, editingId, stage, setStage, date, setDate,
     quality, setQuality, status, setStatus, retained, setRetained, assistance, setAssistance, length, setLength, weight, setWeight,
-    notes, setNotes, busy, message, error, intelligence, active, completed, selectedSnake, reset, edit, save, remove, lengthUnit, weightUnit,
+    notes, setNotes, busy, message, error, intelligence, active, completed, selectedSnake, deleteTarget, setDeleteTarget, reset, edit, save, remove, lengthUnit, weightUnit,
     stages: SHED_STAGES, qualities: SHED_QUALITIES, statuses: SHED_STATUSES, retainedAreas: RETAINED_SHED_AREAS, assistances: SHED_ASSISTANCES,
   };
 }
