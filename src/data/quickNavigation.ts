@@ -12,9 +12,9 @@ export type QuickNavItem = {
 };
 
 /**
- * Quick Mode is intentionally backed by a complete feature registry.
+ * Quick View is intentionally backed by a complete feature registry.
  * Stable feature destinations live here; dynamic record/profile routes remain
- * discoverable from their parent feature so Quick Mode never becomes a dead-end.
+ * discoverable from their parent feature so Quick View never becomes a dead-end.
  */
 export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "home", label: "Home / At a Glance", icon: "home", path: "/", group: "Overview", description: "Your keeper command centre." },
@@ -108,12 +108,50 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
   { id: "tester", label: "Tester Centre", icon: "plans", path: "/creator/tester", group: "Testing", description: "Tester tools and focused test flows.", capability: "tester" },
 ];
 
-export function quickNavSearchItems(query: string, authorisedCapabilities: Set<QuickNavCapability> = new Set(["everyone"])) {
+function quickNavSearchScore(item: QuickNavItem, query: string): number {
   const normalised = query.trim().toLowerCase();
-  return QUICK_NAV_ITEMS.filter((item) => {
+  if (!normalised) return 1;
+
+  const label = item.label.toLowerCase();
+  const group = item.group.toLowerCase();
+  const description = item.description.toLowerCase();
+  const path = item.path.toLowerCase();
+  const keywords = (item.keywords ?? []).map((keyword) => keyword.toLowerCase());
+  const tokens = normalised.split(/\s+/).filter(Boolean);
+
+  let score = 0;
+  if (label === normalised) score += 140;
+  else if (label.startsWith(normalised)) score += 110;
+  else if (label.includes(normalised)) score += 85;
+
+  if (keywords.some((keyword) => keyword === normalised)) score += 120;
+  if (keywords.some((keyword) => keyword.startsWith(normalised))) score += 90;
+  if (group === normalised) score += 65;
+  else if (group.includes(normalised)) score += 35;
+  if (description.includes(normalised)) score += 24;
+  if (path.includes(normalised)) score += 14;
+
+  for (const token of tokens) {
+    if (label.includes(token)) score += 24;
+    if (keywords.some((keyword) => keyword.includes(token))) score += 20;
+    if (description.includes(token)) score += 6;
+    if (group.includes(token)) score += 5;
+  }
+
+  return score;
+}
+
+export function quickNavSearchItems(query: string, authorisedCapabilities: Set<QuickNavCapability> = new Set(["everyone"])) {
+  const available = QUICK_NAV_ITEMS.filter((item) => {
     const capability = item.capability ?? "everyone";
-    if (capability !== "everyone" && !authorisedCapabilities.has(capability)) return false;
-    if (!normalised) return true;
-    return [item.label, item.group, item.description, item.path, ...(item.keywords ?? [])].join(" ").toLowerCase().includes(normalised);
+    return capability === "everyone" || authorisedCapabilities.has(capability);
   });
+  const normalised = query.trim().toLowerCase();
+  if (!normalised) return available;
+
+  return available
+    .map((item) => ({ item, score: quickNavSearchScore(item, normalised) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || a.item.label.localeCompare(b.item.label))
+    .map(({ item }) => item);
 }
