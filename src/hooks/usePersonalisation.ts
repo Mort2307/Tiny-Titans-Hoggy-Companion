@@ -71,10 +71,6 @@ export function usePersonalisation() {
     }
   }
 
-  async function chooseMode(nextMode: "standard" | "easy") {
-    await easyNav.setMode(nextMode);
-  }
-
   async function toggleSlice(id: TitanAtAGlanceSliceId) {
     await easyNav.setSlices(toggleOrderedId(easyNav.slices, id, MIN_SLICES, MAX_SLICES));
   }
@@ -97,7 +93,7 @@ export function usePersonalisation() {
     profileType, setProfileType, category, setCategory, ageBand, setAgeBand,
     learningLevel, setLearningLevel, experience, setExperience, teachingLevel, setTeachingLevel,
     subjects, setSubjects, organisationName, setOrganisationName, saving, saved,
-    profileTypes, levels, teachingLevels, save, chooseMode, toggleSlice, moveSlice, toggleWeeklyMetric, chooseWeekStart,
+    profileTypes, levels, teachingLevels, save, toggleSlice, moveSlice, toggleWeeklyMetric, chooseWeekStart,
     TITAN_AT_A_GLANCE_OPTIONS, TITAN_WEEKLY_METRIC_OPTIONS, WEEK_START_OPTIONS,
     MAX_SLICES, MIN_SLICES, MAX_WEEKLY_METRICS, MIN_WEEKLY_METRICS,
   };
