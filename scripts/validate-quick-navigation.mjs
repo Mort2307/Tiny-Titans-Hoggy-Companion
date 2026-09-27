@@ -8,6 +8,14 @@ const quickViewSource = fs.readFileSync(path.join(root, "src", "components", "La
 const layoutSource = fs.readFileSync(path.join(root, "src", "components", "Layout", "LayoutChrome.tsx"), "utf8");
 const errors = [];
 
+function walkSource(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walkSource(full);
+    return /\.(?:ts|tsx)$/.test(entry.name) ? [full] : [];
+  });
+}
+
 const required = [
   "/", "/animals", "/species", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding", "/health", "/behaviour",
   "/enclosure-intelligence", "/morph-library", "/calculator", "/breeding", "/breeding/academy", "/breeding/readiness", "/breeding/timeline",
@@ -31,6 +39,18 @@ if (ids.length < required.length) errors.push(`Quick View registry contains ${id
 if (/StandardNavigation|MobileNavigation/.test(navigationSource + quickViewSource + layoutSource)) errors.push("Active app chrome must not depend on retired navigation components.");
 if (!layoutSource.includes('data-navigation-mode="quick"')) errors.push("Layout chrome must declare Quick View as the canonical navigation mode.");
 if (layoutSource.includes('data-navigation-mode={')) errors.push("Layout chrome must not dynamically switch navigation modes.");
+
+const retiredComponentFiles = new Set([
+  path.join(root, "src", "components", "Layout", "StandardNavigation.tsx"),
+  path.join(root, "src", "components", "MobileNavigation.tsx"),
+]);
+for (const file of walkSource(path.join(root, "src"))) {
+  if (retiredComponentFiles.has(file)) continue;
+  const fileSource = fs.readFileSync(file, "utf8");
+  if (/\b(?:StandardNavigation|MobileNavigation)\b/.test(fileSource)) {
+    errors.push(`Retired navigation reference found in ${path.relative(root, file).replaceAll("\\", "/")}.`);
+  }
+}
 
 if (errors.length) {
   console.error("Tiny Titans Quick Navigation validation FAILED:\n");
