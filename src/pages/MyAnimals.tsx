@@ -11,6 +11,7 @@ import "../styles/universal-animals.css";
 import { KEEPER_COMPANION_TERMINOLOGY } from "../config/keeperTerminology";
 import { getTinyTitansErrorMessage } from "../utils/firebaseError";
 import TinyTitansIcon from "../components/TinyTitansIcon";
+import ConfirmActionDialog from "../components/ConfirmActionDialog";
 
 type DirectoryAnimal = UniversalAnimalRecord & { legacySnake?: boolean };
 
@@ -28,6 +29,7 @@ export default function MyAnimals() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [deletingAnimalId, setDeletingAnimalId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<DirectoryAnimal | null>(null);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("success");
   const visibleAnimals = speciesFilter
@@ -66,13 +68,6 @@ export default function MyAnimals() {
   async function deleteAnimal(animal: DirectoryAnimal) {
     if (!user || deletingAnimalId) return;
 
-    const confirmed = window.confirm(
-      animal.legacySnake
-        ? `Delete ${animal.name}? This permanently removes the snake record and its tracker history.`
-        : `Delete ${animal.name}? This permanently removes this animal record from My Animals.`,
-    );
-    if (!confirmed) return;
-
     setDeletingAnimalId(animal.id);
     setMessage("");
     setMessageKind("success");
@@ -87,6 +82,7 @@ export default function MyAnimals() {
       setAnimals((current) => current.filter((item) => item.id !== animal.id || item.legacySnake !== animal.legacySnake));
       setMessage(`${animal.name} was deleted from My Animals.`);
       setMessageKind("success");
+      setPendingDelete(null);
     } catch (error) {
       setMessage(getTinyTitansErrorMessage(error, `Tiny Titans could not delete ${animal.name}. Please try again.`));
       setMessageKind("error");
@@ -173,11 +169,11 @@ export default function MyAnimals() {
                 <small>{animal.animalGroup || "Animal"} · {animal.status}</small>
               </div>
               <div className="universal-animal-actions">
-                <Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual →</Link>
+                <Link to={animal.legacySnake ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual <TinyTitansIcon name="forward" size={15} /></Link>
                 <button
                   className="universal-animal-delete"
                   type="button"
-                  onClick={() => void deleteAnimal(animal)}
+                  onClick={() => setPendingDelete(animal)}
                   disabled={Boolean(deletingAnimalId)}
                   aria-label={`Delete ${animal.name}`}
                 >
@@ -189,6 +185,18 @@ export default function MyAnimals() {
           );
         })}</div>}
       </section>
+      <ConfirmActionDialog
+        open={Boolean(pendingDelete)}
+        title={pendingDelete ? `Delete ${pendingDelete.name}?` : "Delete animal?"}
+        description={pendingDelete?.legacySnake
+          ? "This permanently removes the snake record and its tracker history."
+          : "This permanently removes this animal record from My Animals."}
+        confirmLabel={pendingDelete ? `Delete ${pendingDelete.name}` : "Delete animal"}
+        busy={Boolean(deletingAnimalId)}
+        destructive
+        onConfirm={() => { if (pendingDelete) void deleteAnimal(pendingDelete); }}
+        onCancel={() => { if (!deletingAnimalId) setPendingDelete(null); }}
+      />
     </main>
   );
 }
