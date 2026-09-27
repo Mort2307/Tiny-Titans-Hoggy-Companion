@@ -349,7 +349,7 @@ export default function TitanAtAGlance() {
                 );
               })}
             </div>
-            {animals.length > 0 && <Link to="/animals" onClick={() => setAnimalPickerOpen(false)} className="tt-at-glance-snake-picker-all">Manage all animals →</Link>}
+            {animals.length > 0 && <Link to="/animals" onClick={() => setAnimalPickerOpen(false)} className="tt-at-glance-snake-picker-all">Manage all animals <TinyTitansIcon name="forward" size={14} /></Link>}
           </div>
         )}
       </div>
