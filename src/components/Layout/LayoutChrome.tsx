@@ -2,18 +2,11 @@ import { lazy } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Navigation from "./Navigation";
-import AdaptiveGuideBar from "../AdaptiveGuideBar";
-import CreatorTesterInvitationBanner from "../CreatorTesterInvitationBanner";
-import TitanQuickActions from "../TitanQuickActions";
-import CreatorCommandBar from "../CreatorCommandBar";
-import CreatorStatusBar from "../CreatorStatusBar";
-import SupportNotificationCenter from "../SupportNotificationCenter";
 import CreatorPaidTierOperations from "../CreatorPaidTierOperations";
 import SpeciesContextBar from "../SpeciesContextBar";
 import TinyTitansEvidenceNotice from "../TinyTitansEvidenceNotice";
 import PaidTierGate from "../PaidTierGate";
 import NotificationOnboarding from "../NotificationOnboarding";
-import { useEasyNav } from "../../context/EasyNavContext";
 import WorkspaceIdentityStrip from "../WorkspaceIdentityStrip";
 import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
 import { useLayoutScrollRestoration } from "../../hooks/useLayoutScrollRestoration";
@@ -48,7 +41,6 @@ function matchesPrefix(pathname: string, prefix: string) {
 
 function LayoutChrome() {
   const location = useLocation();
-  const { isEasyNav } = useEasyNav();
   const { pathname, search, hash, key } = location;
 
   useLayoutScrollRestoration(`${pathname}${search}${hash}${key}`);
@@ -128,9 +120,9 @@ function LayoutChrome() {
 
   return (
     <div
-      className={`app-shell${isEasyNav ? " easy-nav-active quick-mode-active" : ""}`}
-      data-navigation-mode={isEasyNav ? "quick" : "classic"}
-      data-quick-mode={isEasyNav ? "true" : "false"}
+      className="app-shell easy-nav-active quick-mode-active"
+      data-navigation-mode="quick"
+      data-quick-mode="true"
       data-workspace-surface="false"
     >
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -138,12 +130,6 @@ function LayoutChrome() {
       <Navigation />
       <main id="main-content" className="app-main" tabIndex={-1}>
         <div className="app-content">
-          {!isEasyNav && <AdaptiveGuideBar />}
-          {!isEasyNav && <CreatorTesterInvitationBanner />}
-          {!isEasyNav && <CreatorCommandBar />}
-          {!isEasyNav && <CreatorStatusBar />}
-          {!isEasyNav && <TitanQuickActions />}
-          {!isEasyNav && <SupportNotificationCenter />}
           <div className="tt-page-frame">
             <WorkspaceIdentityStrip />
             <NotificationOnboarding />
