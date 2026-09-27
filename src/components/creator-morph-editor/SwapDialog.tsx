@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import TinyTitansIcon from "../TinyTitansIcon";
 import type { MasterMorphDefinition } from "../../data/masterMorphDatabase";
 import type { EditorImage } from "../../types/creatorMorphLibraryEditor";
 import { normaliseMorphSearch, searchableMorphText } from "../../lib/creatorMorphLibraryEditor";
@@ -42,7 +43,7 @@ export function SwapDialog({
             <h2 id="swap-title">Swap this image</h2>
             <p>Choose the destination morph, then pick the exact approved image currently assigned there. Both assignments will swap.</p>
           </div>
-          <button type="button" onClick={onClose} disabled={busy}>×</button>
+          <button type="button" onClick={onClose} disabled={busy} aria-label="Close dialog"><TinyTitansIcon name="close" size={17} /></button>
         </div>
         <div className="creator-morph-editor-swap-current">
           <img src={image.imageUrl} alt={image.morphName} />
