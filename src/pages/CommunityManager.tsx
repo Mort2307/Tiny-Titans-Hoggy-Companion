@@ -3,6 +3,8 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { publishCommunityDraft } from "../services/communityService";
 import type { CommunityAudience, CommunityCategory, CommunityPriority, KnownIssueStatus } from "../types/community";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import TinyTitansFeedback from "../components/TinyTitansFeedback";
 import "../styles/CommunityHub.css";
 
 export default function CommunityManager() {
@@ -65,10 +67,10 @@ export default function CommunityManager() {
   const needsVersion = category === "known_issue" || category === "tester" || category === "release";
 
   return <section className="community-page">
-    <header className="community-hero"><div className="community-hero-icon">📢</div><div><p className="community-eyebrow">CREATOR CENTRE</p><h1>Community Manager</h1><p>Publish the official information users see in the Community Hub.</p></div></header>
+    <header className="community-hero"><div className="community-hero-icon"><TinyTitansIcon name="messages" size={28} /></div><div><p className="community-eyebrow">CREATOR CENTRE</p><h1>Community Manager</h1><p>Publish the official information users see in the Community Hub.</p></div></header>
     <form className="community-manager-form" onSubmit={publish}>
       <div className="community-manager-grid">
-        <label>Content type<select value={category} onChange={(e) => resetOptionalFields(e.target.value as CommunityCategory)}><option value="update">📢 Announcement / Update</option><option value="known_issue">🐛 Known Issue</option><option value="tester">🧪 Tester Update</option><option value="release">📋 Release Note</option></select></label>
+        <label>Content type<select value={category} onChange={(e) => resetOptionalFields(e.target.value as CommunityCategory)}><option value="update">Announcement / Update</option><option value="known_issue">Known Issue</option><option value="tester">Tester Update</option><option value="release">Release Note</option></select></label>
         <label>Audience<select value={audience} onChange={(e) => setAudience(e.target.value as CommunityAudience)}><option value="everyone">Everyone</option><option value="testers">Testers</option><option value="admin">Creator/Admin</option></select></label>
         <label>Priority<select value={priority} onChange={(e) => setPriority(e.target.value as CommunityPriority)}><option value="normal">Normal</option><option value="important">Important</option><option value="critical">Critical</option></select></label>
         {category === "known_issue" && <label>Status<select value={status} onChange={(e) => setStatus(e.target.value as KnownIssueStatus)}><option>Investigating</option><option>Fixing</option><option>Testing</option><option>Resolved</option></select></label>}
@@ -79,9 +81,9 @@ export default function CommunityManager() {
       {needsVersion && <div className="community-manager-grid"><label>App / affected version<input value={appVersion} onChange={(e) => setAppVersion(e.target.value)} placeholder="e.g. 0.9.8" /></label><label>Affected platform<input value={affectedPlatform} onChange={(e) => setAffectedPlatform(e.target.value)} placeholder="e.g. Android / iOS / Web" /></label></div>}
       {category === "known_issue" && <><label>Workaround<input value={workaround} onChange={(e) => setWorkaround(e.target.value)} placeholder="Optional workaround users can try" /></label><label>Resolved version<input value={resolvedVersion} onChange={(e) => setResolvedVersion(e.target.value)} placeholder="Fill this when resolved" /></label></>}
       <label>Optional image URL<input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" inputMode="url" /></label>
-      {done && <div className="community-manager-success">✓ Published successfully. It will now appear in the Community Hub for the selected audience.</div>}
-      {error && <div className="community-manager-error">{error}</div>}
-      <div className="community-manager-actions"><button type="button" onClick={() => navigate("/community")}>Back to Hub</button><button type="submit" disabled={sending || !title.trim() || !message.trim()}>{sending ? "Publishing…" : "🚀 Publish to Community Hub"}</button></div>
+      {done && <TinyTitansFeedback kind="success" className="community-manager-success">Published successfully. It will now appear in the Community Hub for the selected audience.</TinyTitansFeedback>}
+      {error && <TinyTitansFeedback kind="error" className="community-manager-error">{error}</TinyTitansFeedback>}
+      <div className="community-manager-actions"><button type="button" onClick={() => navigate("/community")}>Back to Hub</button><button type="submit" disabled={sending || !title.trim() || !message.trim()}>{sending ? "Publishing…" : <><TinyTitansIcon name="upload" size={16} /> Publish to Community Hub</>}</button></div>
     </form>
   </section>;
 }
