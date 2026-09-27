@@ -24,6 +24,7 @@ for (const route of required) {
 
 const ids = [...source.matchAll(/id: "([^"]+)"/g)].map((match) => match[1]);
 if (new Set(ids).size !== ids.length) errors.push("Quick View feature registry contains duplicate IDs.");
+if (new Set(paths).size !== paths.length) errors.push("Quick View feature registry contains duplicate destination paths.");
 if (source.includes('path: "/reptile-room"')) errors.push("Quick View must not expose the retired /reptile-room route.");
 if (/\bClassic\b|\bQuick Mode\b/.test(source)) errors.push("Quick View registry contains retired navigation-mode terminology.");
 if (ids.length < required.length) errors.push(`Quick View registry contains ${ids.length} items but requires at least ${required.length}.`);
