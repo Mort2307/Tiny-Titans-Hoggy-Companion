@@ -1,4 +1,5 @@
 import { useState } from "react";
+import TinyTitansIcon from "../TinyTitansIcon";
 import type { EditorImage } from "../../types/creatorMorphLibraryEditor";
 import { cropMorphImage } from "../../lib/creatorMorphLibraryEditor";
 
@@ -61,7 +62,7 @@ export function CropDialog({
               version is retained so you can undo it.
             </p>
           </div>
-          <button type="button" onClick={onClose} disabled={busy}>×</button>
+          <button type="button" onClick={onClose} disabled={busy} aria-label="Close dialog"><TinyTitansIcon name="close" size={17} /></button>
         </div>
         <div className="creator-crop-stage">
           <img src={image.imageUrl} alt="Crop preview" />
