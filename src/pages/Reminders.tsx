@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
 import { useAuth } from "../context/useAuth";
 import { useLiveWorldTime } from "../context/WorldTimeContext";
 import { listReminders } from "../services/reminderService";
@@ -61,7 +63,7 @@ export default function Reminders() {
   const appToday = world.localDateKey;
   const timing = nextReminder ? reminderTiming(nextReminder, world.observedAt) : null;
 
-  if (!user) return <main className="tt-reminders-page"><BackHomeButton fallback="/" /><section className="tt-reminder-hero"><h1>🔔 Reminder Hub</h1><p>Please sign in to manage your Tiny Titans reminders.</p></section></main>;
+  if (!user) return <main className="tt-reminders-page"><BackHomeButton fallback="/" /><section className="tt-reminder-hero"><h1><TinyTitansIcon name="reminders" size={28} /> Reminder Hub</h1><p>Please sign in to manage your Tiny Titans reminders.</p></section></main>;
 
   return <main className="tt-reminders-page">
     <BackHomeButton fallback="/" />
@@ -77,8 +79,8 @@ export default function Reminders() {
 
     <section className="tt-reminder-tiles" aria-label="Reminder types">
       {REMINDER_DEFINITIONS.map((item) => <Link key={item.kind} to={`/reminders/${item.kind}`} className="tt-reminder-tile">
-        <span className="tt-reminder-tile-icon" aria-hidden="true">{item.icon}</span>
-        <span className="tt-reminder-tile-copy"><strong>{item.label}</strong><small>{item.description}</small><em>{countFor(item.kind)} configured · Open →</em></span>
+        <span className="tt-reminder-tile-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={26} /></span>
+        <span className="tt-reminder-tile-copy"><strong>{item.label}</strong><small>{item.description}</small><em>{countFor(item.kind)} configured · Open <TinyTitansIcon name="forward" size={14} /></em></span>
       </Link>)}
     </section>
 
@@ -86,16 +88,13 @@ export default function Reminders() {
       <article className="tt-reminder-overview-card tt-reminder-next-card">
         <span className="tt-reminder-eyebrow">NEXT REMINDER · {world.timezone}</span>
         {nextReminder && nextDefinition && timing ? <>
-          <h2>{nextDefinition.icon} {nextReminder.title}</h2>
+          <h2><TinyTitansIcon name={nextDefinition.icon} size={22} /> {nextReminder.title}</h2>
           <p className="tt-reminder-next-snake">{nextReminder.snakeName || "All snakes"}</p>
           <div className={`tt-reminder-date-status tt-reminder-date-status--${timing.tone}`}>
             <strong>{timing.label}</strong>
             <span>{timing.detail}</span>
           </div>
-        </> : <>
-          <h2>No upcoming reminders</h2>
-          <p>Choose a reminder type above to create your first recurring schedule.</p>
-        </>}
+        </> : <TinyTitansEmptyState compact icon="reminders" title="No upcoming reminders" description="Choose a reminder type above to create your first recurring keeper schedule." />}
       </article>
       <article className="tt-reminder-overview-card"><span className="tt-reminder-eyebrow">LIVE WORLD CLOCK</span><h2>{world.localTime}</h2><p>{world.localDate} · {world.timezoneLabel}{world.dstActive ? " · DST active" : ""}</p><p>No mystery dates: the app recalculates your live local day whenever the app wakes, regains focus, comes online, or detects a timezone change.</p></article>
     </section>
