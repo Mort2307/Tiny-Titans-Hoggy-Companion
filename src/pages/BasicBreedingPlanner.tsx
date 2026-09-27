@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import BreedingProjectManagement from "../components/BreedingProjectManagement";
+import TinyTitansIcon from "../components/TinyTitansIcon";
+import TinyTitansFeedback from "../components/TinyTitansFeedback";
+import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
 import { useAuth } from "../context/useAuth";
 import { getUserSnakes } from "../services/snakeService";
 import { getBreedingPairings, getBreedingProjects, saveBreedingPairing, saveBreedingProject } from "../services/breedingService";
@@ -85,7 +88,7 @@ export default function BasicBreedingPlanner() {
       setProjects((current) => [project, ...current]);
       setSelectedProjectId(project.id);
       setName(""); setGoal(""); setTargetTraits(""); setNotes("");
-      setMessage("✅ Breeding plan saved.");
+      setMessage("Breeding plan saved.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save this breeding plan.");
     } finally {
@@ -112,7 +115,7 @@ export default function BasicBreedingPlanner() {
       setPairings((current) => [pairing, ...current]);
       setProjects((current) => current.map((project) => project.id === updatedProject.id ? updatedProject : project));
       setNotes("");
-      setMessage("🤝 Pairing recorded.");
+      setMessage("Pairing recorded.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to record this pairing.");
     } finally {
@@ -128,7 +131,7 @@ export default function BasicBreedingPlanner() {
       const updatedProject = { ...selectedProject, status: nextStatus };
       await saveBreedingProject(user.uid, updatedProject);
       setProjects((current) => current.map((project) => project.id === updatedProject.id ? updatedProject : project));
-      setMessage(`✅ Status updated to ${nextStatus}.`);
+      setMessage(`Status updated to ${nextStatus}.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to update the breeding plan.");
     } finally {
@@ -136,8 +139,8 @@ export default function BasicBreedingPlanner() {
     }
   }
 
-  if (loading || profileLoading) return <div className="page-container"><BackHomeButton /><h2>🥚 Breeding Planner</h2><p>Loading your breeding records…</p></div>;
-  if (!user) return <div className="page-container"><BackHomeButton /><h2>🥚 Breeding Planner</h2><p>Sign in to manage breeding plans.</p></div>;
+  if (loading || profileLoading) return <div className="page-container"><BackHomeButton /><h2><TinyTitansIcon name="breeding" size={25} /> Breeding Planner</h2><p>Loading your breeding records…</p></div>;
+  if (!user) return <div className="page-container"><BackHomeButton /><h2><TinyTitansIcon name="breeding" size={25} /> Breeding Planner</h2><p>Sign in to manage breeding plans.</p></div>;
 
   return (
     <main className="page-container breeding-page">
@@ -146,14 +149,14 @@ export default function BasicBreedingPlanner() {
       <header className="breeding-hero">
         <div>
           <p className="breeding-eyebrow">Tiny Titans · Everyday Breeding</p>
-          <h1>🥚 Breeding Planner</h1>
+          <h1><TinyTitansIcon name="breeding" size={28} /> Breeding Planner</h1>
           <p>Plan a pairing, record what actually happened and keep the breeding history attached to your animals.</p>
         </div>
         <div className="breeding-callout"><strong>Free Keeper</strong><div>Core breeding planning is available without a paid tier.</div></div>
       </header>
 
-      {error && <div className="breeding-card" role="alert">⚠️ {error}</div>}
-      {message && <div className="breeding-card" role="status">{message}</div>}
+      {error && <TinyTitansFeedback kind="error">{error}</TinyTitansFeedback>}
+      {message && <TinyTitansFeedback kind="success">{message}</TinyTitansFeedback>}
 
       <div className="breeding-grid">
         <section className="breeding-card">
@@ -173,7 +176,7 @@ export default function BasicBreedingPlanner() {
 
         <section className="breeding-card">
           <h2>2. Your plans</h2>
-          {!projects.length ? <p className="breeding-muted">No breeding plans yet.</p> : <div>{projects.map((project) => { const male = snakes.find((snake) => snake.id === project.maleId); const female = snakes.find((snake) => snake.id === project.femaleId); return <button key={project.id} type="button" className={`breeding-project${project.id === selectedProjectId ? " is-active" : ""}`} onClick={() => setSelectedProjectId(project.id)}><strong>{project.name}</strong><small>{male?.name || "Male"} × {female?.name || "Female"} · {project.status}</small><small>{project.goal || "No goal recorded"}</small></button>; })}</div>}
+          {!projects.length ? <TinyTitansEmptyState compact icon="breeding" title="No breeding plans yet" description="Create your first pairing plan from the animals and goals on this page." /> : <div>{projects.map((project) => { const male = snakes.find((snake) => snake.id === project.maleId); const female = snakes.find((snake) => snake.id === project.femaleId); return <button key={project.id} type="button" className={`breeding-project${project.id === selectedProjectId ? " is-active" : ""}`} onClick={() => setSelectedProjectId(project.id)}><strong>{project.name}</strong><small>{male?.name || "Male"} × {female?.name || "Female"} · {project.status}</small><small>{project.goal || "No goal recorded"}</small></button>; })}</div>}
           {selectedProject && <div className="breeding-callout"><strong>{selectedMale?.name || "Male"} × {selectedFemale?.name || "Female"}</strong><p>{selectedProject.goal || "No goal recorded."}</p><div className="breeding-actions">{statuses.map((nextStatus) => <button key={nextStatus} type="button" disabled={saving || selectedProject.status === nextStatus} onClick={() => void updateStatus(nextStatus)}>{nextStatus}</button>)}</div></div>}
         </section>
       </div>
