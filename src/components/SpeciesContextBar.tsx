@@ -1,4 +1,5 @@
 import SpeciesSelector from "./SpeciesSelector";
+import TinyTitansIcon from "./TinyTitansIcon";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesEvidenceSummary } from "../data/species/speciesEvidence";
 import { getSpeciesGeneticsStatus } from "../data/species/speciesGenetics";
@@ -20,7 +21,7 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
   const numericFullyScoped = Boolean(evidence && evidence.numericRanges > 0 && evidence.verifiedRanges === evidence.numericRanges);
   const speciesSelected = Boolean(selectedSpeciesId && selectedSpecies);
   const overallReady = speciesSelected && geneticsStatus === "mapped" && husbandryMapped && numericFullyScoped;
-  const geneticsLabel = geneticsStatus === "mapped" ? "🧬 Full genetics catalogue" : geneticsStatus === "partial" ? "🧬 Genetics partially catalogued" : "🧬 Genetics catalogue pending";
+  const geneticsLabel = geneticsStatus === "mapped" ? "Full genetics catalogue" : geneticsStatus === "partial" ? "Genetics partially catalogued" : "Genetics catalogue pending";
 
   return (
     <section className={`tt-species-context ${compact ? "tt-species-context--compact" : ""}`} aria-label="Species context">
@@ -34,7 +35,7 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
       </div>
       {showGeneticsStatus && (
         <div className={`tt-species-context__status ${overallReady ? "is-mapped" : "is-pending"}`}>
-          <span>{geneticsLabel}</span>
+          <span><TinyTitansIcon name="genetics" size={16} /> {geneticsLabel}</span>
           <small>
             {!speciesSelected
               ? "No species selected — choose one to scope this tool correctly."
