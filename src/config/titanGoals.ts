@@ -1,9 +1,11 @@
+import type { TinyTitansIconName } from "../types/tinyTitansIcon";
+
 export type TitanGoal = {
   id: string;
   targetGbp: number;
   title: string;
   shortTitle: string;
-  icon: string;
+  icon: TinyTitansIconName;
   description: string;
   fundingUse: string[];
 };
@@ -21,7 +23,7 @@ export const TITAN_GOALS: readonly TitanGoal[] = [
     targetGbp: 250,
     title: "Keep Tiny Titans Online",
     shortTitle: "Servers & Infrastructure",
-    icon: "🖥️",
+    icon: "power",
     description: "Cover the core hosting, database, storage and service costs that keep Tiny Titans reliable while the platform grows.",
     fundingUse: ["Firebase and hosting infrastructure", "Database and media storage", "Essential monitoring and maintenance"],
   },
@@ -30,7 +32,7 @@ export const TITAN_GOALS: readonly TitanGoal[] = [
     targetGbp: 750,
     title: "Improve Keeper Intelligence",
     shortTitle: "Keeper Intelligence",
-    icon: "🧠",
+    icon: "titan",
     description: "Turn more of the records keepers already enter into useful, transparent patterns, trends and warnings.",
     fundingUse: ["Intelligence engine development", "Trend and benchmark analysis", "Testing, explainability and reliability"],
   },
@@ -39,7 +41,7 @@ export const TITAN_GOALS: readonly TitanGoal[] = [
     targetGbp: 1500,
     title: "Expand Species Intelligence",
     shortTitle: "Species Intelligence",
-    icon: "🐍",
+    icon: "animals",
     description: "Research, review and progressively map more species-specific husbandry, evidence and genetics instead of relying on generic reptile rules.",
     fundingUse: ["Species research and source review", "Evidence mapping and audit tooling", "Expanded husbandry and genetics coverage"],
   },
@@ -48,7 +50,7 @@ export const TITAN_GOALS: readonly TitanGoal[] = [
     targetGbp: 2500,
     title: "Launch the Tiny Titans App",
     shortTitle: "Mobile App Launch",
-    icon: "📱",
+    icon: "grid",
     description: "Move the polished web experience towards store-distributed Android and iOS apps with dedicated mobile QA and release preparation.",
     fundingUse: ["Android and iOS packaging", "Mobile-device testing and QA", "Store submission, release and compliance work"],
   },
@@ -57,7 +59,7 @@ export const TITAN_GOALS: readonly TitanGoal[] = [
     targetGbp: 3500,
     title: "Harden Security & Backups",
     shortTitle: "Security & Reliability",
-    icon: "🛡️",
+    icon: "lock",
     description: "Strengthen the foundations as Tiny Titans becomes responsible for more keeper records, media and community activity.",
     fundingUse: ["Backup and recovery improvements", "Security and permission audits", "Performance, observability and failure testing"],
   },
@@ -66,7 +68,7 @@ export const TITAN_GOALS: readonly TitanGoal[] = [
     targetGbp: 5000,
     title: "Build the Titan Community",
     shortTitle: "Community & Creator Tools",
-    icon: "🌍",
+    icon: "community",
     description: "Develop the community, contribution and Creator systems that let keepers help improve Tiny Titans without sacrificing moderation or data quality.",
     fundingUse: ["Community contribution workflows", "Creator review and moderation tooling", "Better community discovery and collaboration"],
   },
@@ -75,7 +77,7 @@ export const TITAN_GOALS: readonly TitanGoal[] = [
     targetGbp: 7500,
     title: "Build the Keeper Marketplace",
     shortTitle: "Marketplace Foundation",
-    icon: "🛒",
+    icon: "marketplace",
     description: "Create the foundations for a serious keeper-to-breeder marketplace with safer discovery, listings and supporting infrastructure.",
     fundingUse: ["Breeder and seller profiles", "Listings, discovery and enquiry tools", "Marketplace safety, moderation and infrastructure"],
   },
@@ -84,7 +86,7 @@ export const TITAN_GOALS: readonly TitanGoal[] = [
     targetGbp: 10000,
     title: "Tiny Titans: Next Generation",
     shortTitle: "Next Generation",
-    icon: "🚀",
+    icon: "titan",
     description: "Fund a larger development push across the features, research and platform improvements that matter most to the keeper community.",
     fundingUse: ["Major feature development", "Deep performance and architecture work", "Larger research, community and mobile roadmap"],
   },
