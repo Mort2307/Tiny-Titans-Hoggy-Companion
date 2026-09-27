@@ -25,8 +25,8 @@ const findings = [];
 for (const file of files) {
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
-    if (!iconGlyph.test(line)) return;
-    const metadata = legacyMetadata.test(line);
+    const hasIconGlyph = iconGlyph.test(line);
+    const metadata = hasIconGlyph && legacyMetadata.test(line);
     const uiGlyph = legacyUiGlyph.test(line);
     if (!metadata && !uiGlyph) return;
     findings.push({
