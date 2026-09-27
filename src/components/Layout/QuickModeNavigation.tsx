@@ -74,7 +74,27 @@ function QuickModeNavigation({
 
       {moreOpen && (
         <div className="tt-easy-more-backdrop" role="presentation" onClick={onClose}>
-          <section id="tt-easy-more-menu" className="tt-easy-more" role="dialog" aria-modal="true" aria-label="Quick View full app navigation" onClick={(event) => event.stopPropagation()}>
+          <section
+            id="tt-easy-more-menu"
+            className="tt-easy-more"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Quick View full app navigation"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+              const target = event.target as HTMLElement;
+              if (target.tagName === "INPUT") return;
+              const targets = Array.from(document.querySelectorAll<HTMLElement>("#tt-easy-more-menu [data-quick-nav-target='true']"));
+              const index = targets.indexOf(target);
+              if (index < 0 || targets.length === 0) return;
+              event.preventDefault();
+              const nextIndex = event.key === "ArrowDown"
+                ? (index + 1) % targets.length
+                : (index - 1 + targets.length) % targets.length;
+              targets[nextIndex]?.focus();
+            }}
+          >
             <div className="tt-easy-more-head">
               <div>
                 <span>QUICK VIEW · FULL APP</span>
@@ -86,7 +106,23 @@ function QuickModeNavigation({
 
             <label className="tt-easy-search">
               <TinyTitansIcon name="search" size={20} />
-              <input value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="Find anything in TinyTitans…" aria-label="Search the full TinyTitans app" autoFocus /><kbd aria-label="Keyboard shortcut Control K">Ctrl K</kbd>
+              <input
+                value={quickSearch}
+                onChange={(event) => setQuickSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && quickItems[0]) {
+                    event.preventDefault();
+                    onOpenItem(quickItems[0].path);
+                  }
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    document.querySelector<HTMLElement>("#tt-easy-more-menu [data-quick-nav-target='true']")?.focus();
+                  }
+                }}
+                placeholder="Find anything in TinyTitans…"
+                aria-label="Search the full TinyTitans app"
+                autoFocus
+              /><kbd aria-label="Keyboard shortcut Control K">Ctrl K</kbd>
             </label>
 
             {!quickSearch.trim() && pinnedItems.length > 0 && (
@@ -95,7 +131,7 @@ function QuickModeNavigation({
                 <div className="tt-easy-more-grid">
                   {pinnedItems.map((item) => (
                     <div className="tt-easy-feature-row" key={`pinned:${item.id}`}>
-                      <button type="button" className="tt-easy-feature-link" onClick={() => onOpenItem(item.path)}>
+                      <button type="button" className="tt-easy-feature-link" data-quick-nav-target="true" onClick={() => onOpenItem(item.path)}>
                         <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={24} /></span>
                         <span><strong>{item.label}</strong><small>{item.description}</small></span>
                       </button>
@@ -128,7 +164,7 @@ function QuickModeNavigation({
                 <div className="tt-easy-more-grid">
                   {items.map((item) => (
                     <div className="tt-easy-feature-row" key={item.id}>
-                      <button type="button" data-route-guide-target={item.id === "account" ? "quick-my-account" : undefined} className="tt-easy-feature-link" onClick={() => onOpenItem(item.path)}>
+                      <button type="button" data-route-guide-target={item.id === "account" ? "quick-my-account" : undefined} className="tt-easy-feature-link" data-quick-nav-target="true" onClick={() => onOpenItem(item.path)}>
                         <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={24} /></span>
                         <span><strong>{item.label}</strong><small>{item.description}</small></span>
                       </button>
