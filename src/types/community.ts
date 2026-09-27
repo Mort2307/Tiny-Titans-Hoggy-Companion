@@ -1,3 +1,5 @@
+import type { TinyTitansIconName } from "./tinyTitansIcon";
+
 export type CommunityAudience = "everyone" | "testers" | "admin";
 export type CommunityCategory = "update" | "known_issue" | "tester" | "release";
 export type CommunityPriority = "normal" | "important" | "critical";
@@ -28,6 +30,6 @@ export function communityCategoryLabel(category: CommunityCategory) {
   return ({ update: "Tiny Titans Updates", known_issue: "Known Issues", tester: "Tester Updates", release: "Release Notes" })[category];
 }
 
-export function communityCategoryIcon(category: CommunityCategory) {
-  return ({ update: "📢", known_issue: "🐛", tester: "🧪", release: "📋" })[category];
+export function communityCategoryIcon(category: CommunityCategory): TinyTitansIconName {
+  return ({ update: "messages", known_issue: "testing", tester: "testing", release: "knowledge" } as const)[category];
 }
