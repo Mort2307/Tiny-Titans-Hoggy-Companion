@@ -11,8 +11,11 @@ const excluded = new Set([
 const iconGlyph = /\p{Extended_Pictographic}/u;
 const legacyMetadata = /\bicon\s*:/u;
 const legacyUiGlyph =
-  /<(?:button|a|Link|span|b|strong|h1|h2|h3|h4|h5)[^>]*>[^<]{0,160}[←→↻☰✕✓⚠＋][^<]{0,160}<\/(?:button|a|Link|span|b|strong|h1|h2|h3|h4|h5)>/u;
+  /<(?:button|a|Link|span|b|strong|h1|h2|h3|h4|h5|option)[^>]*>[^<]{0,180}[←→↻☰✕✓⚠＋][^<]{0,180}<\/(?:button|a|Link|span|b|strong|h1|h2|h3|h4|h5|option)>/u;
 const rawCloseGlyph = /<(?:button|span)[^>]*>\s*×\s*<\/(?:button|span)>/u;
+const pictographicUi =
+  /<(?:button|a|Link|span|b|strong|h1|h2|h3|h4|h5|option|div)[^>]*>[^<]{0,220}\p{Extended_Pictographic}/u;
+const pictographicStatus = /\bset(?:Message|Error|Success|Status)\s*\([^\n]*\p{Extended_Pictographic}/u;
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -30,7 +33,7 @@ for (const file of files) {
     const hasIconGlyph = iconGlyph.test(line);
     const isTsx = file.endsWith(".tsx");
     const metadata = hasIconGlyph && legacyMetadata.test(line);
-    const rawPictographicUi = isTsx && hasIconGlyph;
+    const rawPictographicUi = isTsx && hasIconGlyph && (pictographicUi.test(line) || pictographicStatus.test(line));
     const rawControlGlyph = isTsx && (legacyUiGlyph.test(line) || rawCloseGlyph.test(line));
     if (!metadata && !rawPictographicUi && !rawControlGlyph) return;
     findings.push({
