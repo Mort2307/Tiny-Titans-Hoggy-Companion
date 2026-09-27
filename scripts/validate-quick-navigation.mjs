@@ -3,6 +3,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const source = fs.readFileSync(path.join(root, "src", "data", "quickNavigation.ts"), "utf8");
+const navigationSource = fs.readFileSync(path.join(root, "src", "components", "Layout", "Navigation.tsx"), "utf8");
+const quickViewSource = fs.readFileSync(path.join(root, "src", "components", "Layout", "QuickModeNavigation.tsx"), "utf8");
+const layoutSource = fs.readFileSync(path.join(root, "src", "components", "Layout", "LayoutChrome.tsx"), "utf8");
 const errors = [];
 
 const required = [
@@ -24,6 +27,9 @@ if (new Set(ids).size !== ids.length) errors.push("Quick View feature registry c
 if (source.includes('path: "/reptile-room"')) errors.push("Quick View must not expose the retired /reptile-room route.");
 if (/\bClassic\b|\bQuick Mode\b/.test(source)) errors.push("Quick View registry contains retired navigation-mode terminology.");
 if (ids.length < required.length) errors.push(`Quick View registry contains ${ids.length} items but requires at least ${required.length}.`);
+if (/StandardNavigation|MobileNavigation/.test(navigationSource + quickViewSource + layoutSource)) errors.push("Active app chrome must not depend on retired navigation components.");
+if (!layoutSource.includes('data-navigation-mode="quick"')) errors.push("Layout chrome must declare Quick View as the canonical navigation mode.");
+if (layoutSource.includes('data-navigation-mode={')) errors.push("Layout chrome must not dynamically switch navigation modes.");
 
 if (errors.length) {
   console.error("Tiny Titans Quick Navigation validation FAILED:\n");
