@@ -35,7 +35,7 @@ function Home() {
             <strong>{displayName}</strong>
             <small>{experience} keeper · {snakes.length} {snakes.length === 1 ? "animal" : "animals"}</small>
           </span>
-          <span aria-hidden="true">›</span>
+          <span aria-hidden="true"><TinyTitansIcon name="forward" size={14} /></span>
         </Link>
       </header>
 
