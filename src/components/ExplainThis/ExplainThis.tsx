@@ -239,7 +239,7 @@ export default function ExplainThis() {
         {showKnowledgeNote && knowledgeNote && <div className="explain-this-knowledge" aria-label="Terminology and evidence context">
           <div className="explain-this-knowledge__header">
             <strong><TinyTitansIcon name="info" size={16} /> About this terminology</strong>
-            <button type="button" aria-label="Close terminology context" onClick={() => setShowKnowledgeNote(false)}>×</button>
+            <button type="button" aria-label="Close terminology context" onClick={() => setShowKnowledgeNote(false)}><TinyTitansIcon name="close" size={15} /></button>
           </div>
           <p><strong>Current understanding</strong><br />{knowledgeNote.communityNote ?? "The available information is treated according to its current evidence and community understanding."}</p>
           {knowledgeNote.evidenceNote && <p><strong>Evidence</strong><br />{knowledgeNote.evidenceNote}</p>}
