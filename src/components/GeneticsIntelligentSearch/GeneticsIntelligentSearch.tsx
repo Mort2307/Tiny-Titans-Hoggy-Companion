@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSpeciesContext } from "../../context/SpeciesContext";
 import { explainGeneticsSearch, searchGeneticsIntelligence, type GeneticsSearchResult } from "../../intelligence/v50/geneticsSearchIntelligence";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 function componentLabel(result: GeneticsSearchResult): string {
   return result.canonicalComponents.join(" × ");
@@ -37,7 +38,7 @@ export default function GeneticsIntelligentSearch() {
 
   return (
     <section className="tracker-card genetics-intelligent-search" aria-labelledby="genetics-intelligent-search-title">
-      <div className="morph-library__eyebrow">🧬 TITAN GENETICS RESOLVER</div>
+      <div className="morph-library__eyebrow"><TinyTitansIcon name="genetics" size={16} /> TITAN GENETICS RESOLVER</div>
       <div>
         <h2 id="genetics-intelligent-search-title">Search genetics like a keeper</h2>
         <p>Ask for the name you know. Tiny Titans checks the active species catalogue for canonical names, recorded aliases and recognised combinations.</p>
@@ -77,7 +78,7 @@ export default function GeneticsIntelligentSearch() {
           <p><strong>Why it matched:</strong> {explanation}</p>
           <p className="morph-detail__source-note">{primary.evidenceSummary}</p>
           <button type="button" className="morph-card__open" onClick={() => openResult(primary)}>
-            Open {primary.canonicalName} record →
+            Open {primary.canonicalName} record <TinyTitansIcon name="forward" size={14} />
           </button>
 
           {results.length > 1 && (
