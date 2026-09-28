@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/useAuth";
+import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansFeedback from "./TinyTitansFeedback";
+import TinyTitansAction from "./TinyTitansAction";
 import { acceptCreatorTesterInvitation, declineCreatorTesterInvitation, getCreatorTesterInvitation, type CreatorTesterInvitation as Invitation } from "../services/creatorTesterInvitationService";
 import "../styles/creatorTesterInvitation.css";
 
@@ -57,15 +60,15 @@ export default function CreatorTesterInvitation() {
 
   return <div className="creator-tester-invitation-backdrop" role="presentation">
     <section className="creator-tester-invitation" role="dialog" aria-modal="true" aria-labelledby="creator-tester-invitation-title">
-      <div className="creator-tester-invitation__eyebrow">🐍 TINY TITANS · CREATOR QA</div>
-      <div className="creator-tester-invitation__icon" aria-hidden="true">🤖</div>
+      <div className="creator-tester-invitation__eyebrow"><TinyTitansIcon name="testing" size={15} /> TINY TITANS · CREATOR QA</div>
+      <div className="creator-tester-invitation__icon" aria-hidden="true"><TinyTitansIcon name="testing" size={30} /></div>
       <h2 id="creator-tester-invitation-title">Creator Tester invitation</h2>
       <p>This account has a Tiny Titans Creator Tester invitation. Accepting activates the private Tester Centre for the Tiny Titans owner account.</p>
-      <div className="creator-tester-invitation__features"><span>🧪 QA testing</span><span>🔎 Diagnostics</span><span>🧬 Morph testing</span><span>🐛 Bug testing</span></div>
-      {message && <div className="creator-tester-invitation__error" role="alert">{message}</div>}
+      <div className="creator-tester-invitation__features"><span><TinyTitansIcon name="testing" size={14} /> QA testing</span><span><TinyTitansIcon name="search" size={14} /> Diagnostics</span><span><TinyTitansIcon name="genetics" size={14} /> Morph testing</span><span><TinyTitansIcon name="warning" size={14} /> Bug testing</span></div>
+      {message && <TinyTitansFeedback kind="error" className="creator-tester-invitation__error">{message}</TinyTitansFeedback>}
       <div className="creator-tester-invitation__actions">
-        <button type="button" className="creator-tester-invitation__secondary" onClick={() => void decline()} disabled={busy}>{busy ? "Please wait…" : "Not now"}</button>
-        <button type="button" className="creator-tester-invitation__primary" onClick={() => void accept()} disabled={busy}>{busy ? "Activating…" : "Accept Creator Tester Access"}</button>
+        <TinyTitansAction className="creator-tester-invitation__secondary" variant="secondary" label="Not now" onClick={() => void decline()} busy={busy} />
+        <TinyTitansAction className="creator-tester-invitation__primary" variant="primary" icon="testing" label="Accept Creator Tester Access" onClick={() => void accept()} busy={busy} />
       </div>
       <small>Access is restricted to tinytitans.exotics@gmail.com and enforced server-side.</small>
     </section>
