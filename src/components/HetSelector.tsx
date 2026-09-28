@@ -7,6 +7,7 @@ import type {
   Het,
   HetPercentage,
 } from "../types/genetics";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 import type {
   MorphDefinition,
@@ -469,7 +470,7 @@ function HetSelector({
           }`}
           aria-hidden="true"
         >
-          ▼
+          <TinyTitansIcon name="forward" size={13} />
         </span>
       </button>
 
@@ -484,7 +485,7 @@ function HetSelector({
                 key={`${het.geneId}-${het.percentage}`}
                 className="selected-tag"
               >
-                🧬{" "}
+                <TinyTitansIcon name="genetics" size={14} />{" "}
 
                 {het.percentage ===
                 "100%"
@@ -505,7 +506,7 @@ function HetSelector({
                   }
                   aria-label={`Remove ${het.displayName} ${het.percentage} het`}
                 >
-                  ❌
+                  <TinyTitansIcon name="close" size={13} />
                 </button>
               </span>
             )
@@ -630,7 +631,7 @@ function HetSelector({
                                 aria-hidden="true"
                               >
                                 {checked
-                                  ? "✓"
+                                  ? <TinyTitansIcon name="check" size={12} />
                                   : ""}
                               </span>
 
