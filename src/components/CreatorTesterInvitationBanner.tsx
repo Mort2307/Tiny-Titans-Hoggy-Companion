@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { getIdToken } from "firebase/auth";
 import { app, auth } from "../firebase/config";
+import TinyTitansIcon from "./TinyTitansIcon";
+import TinyTitansFeedback from "./TinyTitansFeedback";
+import TinyTitansAction from "./TinyTitansAction";
 import "../styles/creatorTesterInvitation.css";
 
 type Invitation = {
@@ -59,15 +62,15 @@ export default function CreatorTesterInvitationBanner() {
   }
 
   return <section className="creator-tester-invite" role="region" aria-labelledby="creator-tester-invite-title">
-    <div className="creator-tester-invite__icon" aria-hidden="true">🤖</div>
+    <div className="creator-tester-invite__icon" aria-hidden="true"><TinyTitansIcon name="testing" size={28} /></div>
     <div className="creator-tester-invite__content">
       <span className="creator-tester-invite__eyebrow">TINY TITANS · CREATOR TESTING</span>
       <h2 id="creator-tester-invite-title">You've been invited to become a Creator Tester</h2>
       <p>Help test Creator tools, community moderation, Morph Library submissions and the automated QA systems. Accepting this invitation activates tester access on this account.</p>
-      {message && <p className="creator-tester-invite__error" role="alert">{message}</p>}
+      {message && <TinyTitansFeedback kind="error" className="creator-tester-invite__error">{message}</TinyTitansFeedback>}
       <div className="creator-tester-invite__actions">
-        <button type="button" className="creator-tester-invite__accept" onClick={() => void accept()} disabled={busy}>{busy ? "Activating…" : "Accept Creator Tester Access"}</button>
-        <button type="button" className="creator-tester-invite__dismiss" onClick={() => setInvitation(null)} disabled={busy}>Later</button>
+        <TinyTitansAction className="creator-tester-invite__accept" variant="primary" icon="testing" label="Accept Creator Tester Access" onClick={() => void accept()} busy={busy} />
+        <TinyTitansAction className="creator-tester-invite__dismiss" variant="ghost" label="Later" onClick={() => setInvitation(null)} disabled={busy} />
       </div>
     </div>
   </section>;
