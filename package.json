@@ -141,5 +141,8 @@
     "playwright": "1.63.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.65.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.13.6"
   }
 }
