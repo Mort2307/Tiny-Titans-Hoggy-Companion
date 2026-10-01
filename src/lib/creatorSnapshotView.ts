@@ -8,7 +8,7 @@ export function buildCreatorSnapshotView(snapshot:Snapshot):CreatorSnapshotView{
  const usersByExperience=topEntries(countBy(snapshot.users,"experienceLevel"));
  const usersByLearning=topEntries(countBy(snapshot.users,"learningLevel"));
  const activeGrowth={day:snapshot.stats.activeTodayUsers??0,week:snapshot.stats.activeWeekUsers??0,month:snapshot.stats.activeMonthUsers??0};
- const tiles=[
+ const tiles:CreatorSnapshotView["tiles"]=[
   {key:"users" as const,icon:"family",value:snapshot.stats.registeredUsers,label:"Users & Consent",detail:snapshot.consent.accepted+" contributors · "+snapshot.consent.declined+" declined · "+snapshot.consent.unset+" not established"},
   {key:"snakes" as const,icon:"animals",value:snapshot.stats.snakeProfiles,label:"Snake Population",detail:(snapshot.stats.usersWithData??0)+" contributing keepers · "+(snapshot.stats.engagedUsers??0)+" engaged keepers"},
   {key:"husbandry" as const,icon:"analytics",value:snapshot.stats.mealsFed+snapshot.stats.weightLogs+snapshot.stats.shedsLogged,label:"Husbandry Activity",detail:snapshot.stats.mealsFed+" feeds · "+snapshot.stats.weightLogs+" weights · "+snapshot.stats.shedsLogged+" sheds"},
