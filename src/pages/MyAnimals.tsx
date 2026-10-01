@@ -111,10 +111,13 @@ export default function MyAnimals() {
   return (
     <main className="page-container universal-animals-page">
       <header className="universal-animals-hero">
-        <div>
+        <div className="universal-animals-hero-copy">
           <p className="eyebrow">YOUR COLLECTION</p>
           <h1>My Animals</h1>
           <p>{KEEPER_COMPANION_TERMINOLOGY.collectionDescription} Existing snake records are preserved here alongside universal animal records.</p>
+          <div className="universal-animals-hero-actions">
+            <a className="universal-primary-action universal-add-shortcut" href="#add-animal"><TinyTitansIcon name="add" size={18} /> Add animal</a>
+          </div>
         </div>
         <div className="universal-animals-metrics">
           <strong>{animals.filter((animal) => !["deceased", "archived"].includes(animal.status)).length}</strong>
@@ -139,7 +142,7 @@ export default function MyAnimals() {
         {message && <TinyTitansFeedback kind={messageKind}>{message}</TinyTitansFeedback>}
       </section>
 
-      <section className="universal-animals-panel">
+      <section className="universal-animals-panel universal-animals-collection-panel">
         <p className="eyebrow">INDIVIDUALS</p>
         <h2>Your animal collection</h2>
         {loading ? <p role="status">Loading your animal collection…</p> : visibleAnimals.length === 0 ? <TinyTitansEmptyState icon="animals" title={speciesFilter ? "No animals match this species filter" : "No animal records yet"} description={speciesFilter ? "Your collection may contain other animals. Clear the species filter to see the full collection." : "Add your first animal to start building care, health and keeper records."} action={speciesFilter ? { label: "Show all animals", icon: "animals", to: "/animals" } : { label: "Add your first animal", icon: "add", href: "#add-animal" }} /> : <div className="universal-animal-list">{visibleAnimals.map((animal) => {
