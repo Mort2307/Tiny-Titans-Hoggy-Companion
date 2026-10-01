@@ -30,6 +30,7 @@ export default function ConfirmActionDialog({ open, title, description, confirmL
   const cancelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onCancelRef = useRef(onCancel);
+  const busyRef = useRef(busy);
 
   useEffect(() => {
     onCancelRef.current = onCancel;
