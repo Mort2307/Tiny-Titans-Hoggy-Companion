@@ -139,7 +139,7 @@ export default function MyAnimals() {
           <label>Notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
         </div>
         <button className="universal-primary-action" type="button" disabled={!name.trim() || busy} onClick={() => void addAnimal()}><TinyTitansIcon name={busy ? "save" : "add"} size={18} />{busy ? "Saving…" : "Add animal"}</button>
-        {message && <TinyTitansFeedback kind={messageKind}>{message}</TinyTitansFeedback>}
+        {message && <TinyTitansFeedback kind={messageKind} role={messageKind === "error" ? "alert" : "status"}>{message}</TinyTitansFeedback>}
       </section>
 
       <section className="universal-animals-panel universal-animals-collection-panel">
