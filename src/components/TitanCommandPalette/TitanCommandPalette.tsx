@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { tinyTitansPageRegistry } from "../../config/tinyTitansPageRegistry";
 import { scoreSearchCandidate } from "../../utils/searchRanking";
@@ -37,8 +37,40 @@ function TitanCommandPalette() {
 
   useEffect(() => {
     if (!open) return;
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : triggerRef.current;
     setQuery("");
-    window.setTimeout(() => document.getElementById("tt-command-search")?.focus(), 0);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusFrame = window.requestAnimationFrame(() => document.getElementById("tt-command-search")?.focus());
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+      ) ?? []);
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", trapFocus);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", trapFocus);
+      document.body.style.overflow = previousOverflow;
+      const previousFocus = previousFocusRef.current;
+      if (previousFocus?.isConnected) window.requestAnimationFrame(() => previousFocus.focus());
+    };
   }, [open]);
 
   const currentGroup = tinyTitansPageRegistry.find((page) => location.pathname === page.path)?.group;
@@ -67,12 +99,12 @@ function TitanCommandPalette() {
 
   return (
     <>
-      <button type="button" className="tt-command-trigger" onClick={() => setOpen(true)} aria-label="Open Tiny Titans command palette">
+      <button ref={triggerRef} type="button" className="tt-command-trigger" onClick={() => setOpen(true)} aria-label="Open Tiny Titans command palette">
         <span>Jump to…</span>
       </button>
       {open && (
-        <div className="tt-command-backdrop" role="presentation" onMouseDown={() => setOpen(false)}>
-          <section className="tt-command-dialog" role="dialog" aria-modal="true" aria-labelledby="tt-command-title" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="tt-command-backdrop" role="presentation" onPointerDown={() => setOpen(false)}>
+          <section ref={dialogRef} className="tt-command-dialog" role="dialog" aria-modal="true" aria-labelledby="tt-command-title" onPointerDown={(event) => event.stopPropagation()}>
             <div className="tt-command-heading">
               <div><span className="tt-command-eyebrow">TINY TITANS</span><h2 id="tt-command-title">Jump anywhere</h2></div>
               <button type="button" className="tt-command-close" onClick={() => setOpen(false)} aria-label="Close command palette">×</button>
