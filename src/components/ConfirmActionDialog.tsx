@@ -36,6 +36,10 @@ export default function ConfirmActionDialog({ open, title, description, confirmL
   }, [onCancel]);
 
   useEffect(() => {
+    busyRef.current = busy;
+  }, [busy]);
+
+  useEffect(() => {
     if (!open) return;
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -47,7 +51,7 @@ export default function ConfirmActionDialog({ open, title, description, confirmL
     });
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busy) {
+      if (event.key === "Escape" && !busyRef.current) {
         event.preventDefault();
         onCancelRef.current();
         return;
@@ -82,7 +86,7 @@ export default function ConfirmActionDialog({ open, title, description, confirmL
         window.requestAnimationFrame(() => previousFocus.focus());
       }
     };
-  }, [busy, open]);
+  }, [open]);
 
   if (!open) return null;
 
