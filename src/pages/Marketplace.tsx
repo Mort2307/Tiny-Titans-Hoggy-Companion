@@ -43,12 +43,12 @@ export default function Marketplace() {
   }, []);
 
   return (
-    <main className="page-container" style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 20px 56px" }}>
+    <main className="page-container tt-marketplace-page" style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 20px 56px" }}>
       <header className="welcome-card" style={{ marginBottom: 24 }}>
         <p style={{ margin: 0, fontWeight: 800, letterSpacing: ".08em", opacity: .7 }}>TINY TITANS · MARKETPLACE</p>
         <h1 style={{ marginBottom: 8 }}><TinyTitansIcon name="marketplace" size={28} /> Tiny Titans Marketplace</h1>
         <p style={{ marginBottom: 18, maxWidth: 760 }}>Browse active listings from hobbyist sellers, specialist keepers and businesses using Tiny Titans. Species-linked listings connect directly to the same care and health intelligence used across the app.</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+        <div className="tt-marketplace-actions" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
           <Link className="tt-home-primary" to="/community">Explore Community <TinyTitansIcon name="forward" size={14} /></Link>
           <Link className="personalisation-back" to="/paid/marketplace">Seller Marketplace Manager <TinyTitansIcon name="forward" size={14} /></Link>
         </div>
@@ -60,7 +60,7 @@ export default function Marketplace() {
       {!loading && !error && listings.length === 0 && <section className="personalisation-card"><TinyTitansEmptyState icon="marketplace" title="No active listings yet" description="Seller inventory will appear here as marketplace listings are published." /></section>}
 
       {!loading && !error && filteredListings.length > 0 && (
-        <section aria-label="Active Marketplace listings" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+        <section className="tt-marketplace-grid" aria-label="Active Marketplace listings" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
           {filteredListings.map((listing) => (
             <article key={listing.id} className="personalisation-card" style={{ height: "100%", boxSizing: "border-box" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
