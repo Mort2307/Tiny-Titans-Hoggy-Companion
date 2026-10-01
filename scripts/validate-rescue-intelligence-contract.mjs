@@ -88,7 +88,7 @@ const assertions = [
   ],
   [
     landing.includes("REGISTRATION &amp; COMPLIANCE") &&
-      landing.includes("Public TinyTitans profile does not by itself certify"),
+      landing.includes("A public TinyTitans profile does not by itself certify"),
     "Public rescue/business identity must expose factual credentials without implying automatic verification.",
   ],
   [
