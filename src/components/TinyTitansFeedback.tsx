@@ -10,6 +10,7 @@ type Props = {
   children: ReactNode;
   className?: string;
   compact?: boolean;
+  role?: "alert" | "status";
 };
 
 const ICONS: Record<TinyTitansFeedbackKind, TinyTitansIconName> = {
@@ -26,13 +27,14 @@ export default function TinyTitansFeedback({
   children,
   className = "",
   compact = false,
+  role,
 }: Props) {
-  const role = kind === "error" || kind === "warning" || kind === "offline" ? "alert" : "status";
+  const resolvedRole = role ?? (kind === "error" || kind === "warning" || kind === "offline" ? "alert" : "status");
   return (
     <div
       className={`tt-feedback tt-feedback--${kind}${compact ? " tt-feedback--compact" : ""} ${className}`.trim()}
-      role={role}
-      aria-live={role === "alert" ? "assertive" : "polite"}
+      role={resolvedRole}
+      aria-live={resolvedRole === "alert" ? "assertive" : "polite"}
       aria-busy={kind === "loading" || undefined}
     >
       <span className="tt-feedback__icon" aria-hidden="true">
