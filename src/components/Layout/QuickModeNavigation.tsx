@@ -3,7 +3,7 @@ import AnimatedAnimalIcon from "../AnimatedAnimalIcon";
 import type { WorkspacePresentation } from "../../services/workspacePresentationService";
 import type { QuickNavItem } from "../../data/quickNavigation";
 import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 type Props = {
   workspace: WorkspacePresentation;
@@ -66,7 +66,7 @@ function QuickModeNavigation({
           <a className={`tt-easy-nav-link${isActive("/reminders") ? " active" : ""}`} href="/reminders" onClick={(event) => { event.preventDefault(); onOpenItem("/reminders"); }}>
             <TinyTitansIcon name="reminders" size={24} /><small>Due</small>
           </a>
-          <button type="button" data-route-guide-target="quick-more" className={`tt-easy-nav-link tt-easy-nav-more${moreOpen ? " active" : ""}`} onClick={onToggleMore} aria-expanded={moreOpen} aria-controls="tt-easy-more-menu">
+          <button ref={everythingButtonRef} type="button" data-route-guide-target="quick-more" className={`tt-easy-nav-link tt-easy-nav-more${moreOpen ? " active" : ""}`} onClick={onToggleMore} aria-expanded={moreOpen} aria-controls="tt-easy-more-menu">
             <TinyTitansIcon name="menu" size={24} /><small>Everything</small>
           </button>
         </div>
