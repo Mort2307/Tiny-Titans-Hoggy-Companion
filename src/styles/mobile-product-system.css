@@ -627,3 +627,475 @@
     scroll-behavior: auto;
   }
 }
+
+
+/* =========================================================
+   CORE KEEPER JOURNEYS — MOBILE REFINEMENT
+   ========================================================= */
+
+@media (max-width: 800px) {
+  /* Avoid double-gutters from route-local desktop shells. */
+  .tt-tracker-page,
+  .tt-reminders-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 0 18px;
+  }
+
+  .tt-tracker-header,
+  .tt-reminder-hero {
+    margin-top: 0;
+  }
+
+  .tt-tracker-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tt-tracker-snake {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tt-tracker-snake select {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .tt-tracker-nav {
+    top: 0;
+    margin-inline: -2px;
+    scroll-snap-type: x proximity;
+  }
+
+  .tt-tracker-nav > * {
+    scroll-snap-align: start;
+  }
+
+  .tt-tracker-page :where(
+    #feeding-overview,
+    #feeding-log,
+    #feeding-history,
+    #weight-overview,
+    #weight-log,
+    #weight-history,
+    #shed-overview,
+    #shed-log,
+    #shed-history,
+    #health-overview,
+    #health-log,
+    #health-history,
+    #behaviour-overview,
+    #behaviour-log,
+    #behaviour-history
+  ) {
+    scroll-margin-top: 68px;
+  }
+
+  .tt-tracker-grid,
+  .tt-weight-history-layout,
+  .tt-weight-intelligence-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tt-tracker-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-tracker-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tt-tracker-form label:has(textarea),
+  .tt-tracker-form fieldset,
+  .tt-tracker-form .tt-tracker-actions {
+    grid-column: auto;
+  }
+
+  .tt-tracker-form :where(input, select) {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .tt-tracker-form textarea {
+    min-height: 120px;
+    font-size: 16px;
+  }
+
+  .tt-tracker-actions button,
+  .tt-tracker-button {
+    min-height: 48px;
+  }
+
+  .tt-history-toolbar,
+  .tt-history-item-header,
+  .tt-weight-intelligence-header,
+  .tt-weight-intelligence-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tt-weight-intelligence-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-weight-intelligence-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Animal profile: compact identity + swipeable action rail. */
+  .snake-profile-page {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .snake-profile-heading {
+    margin-bottom: 0;
+  }
+
+  .snake-profile-hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
+
+  .snake-profile-photo {
+    width: min(58vw, 210px);
+    max-width: 210px;
+    justify-self: center;
+  }
+
+  .snake-profile-identity {
+    text-align: left;
+  }
+
+  .snake-profile-badges {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .snake-profile-badge {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+    border-radius: 11px;
+  }
+
+  .snake-profile-quickbar {
+    margin-inline: 0;
+    padding: 8px;
+    gap: 7px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .snake-profile-quickbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .snake-profile-quickbar button {
+    flex: 0 0 min(31vw, 116px);
+    min-width: 98px;
+    min-height: 56px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 7px;
+    scroll-snap-align: start;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .snake-profile-quick-label {
+    line-height: 1.05;
+  }
+
+  .snake-profile-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .snake-profile-card {
+    min-height: 0;
+  }
+
+  /* My Animals: collection is prioritised; add form follows on phones. */
+  .universal-animals-page {
+    gap: 12px;
+  }
+
+  .universal-animals-hero {
+    padding: 16px;
+  }
+
+  .universal-animals-hero-copy {
+    min-width: 0;
+  }
+
+  .universal-animals-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .universal-add-shortcut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    min-height: 48px;
+  }
+
+  .universal-animals-collection-panel {
+    order: 2;
+  }
+
+  .universal-animals-add-panel {
+    order: 3;
+  }
+
+  .universal-animal-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .universal-animal-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .universal-animal-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .universal-animal-actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Reminders: useful density without tiny six-column cards. */
+  .tt-reminder-hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 18px;
+  }
+
+  .tt-reminder-hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-reminder-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-reminder-tiles a {
+    min-height: 112px;
+  }
+
+  .tt-reminder-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Species: journey becomes a swipeable rail, results remain readable. */
+  .species-explorer-journey {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .species-explorer-journey::-webkit-scrollbar {
+    display: none;
+  }
+
+  .species-explorer-journey__label,
+  .species-explorer-journey a {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .species-explorer-filter-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .species-explorer-toggle {
+    grid-column: auto;
+  }
+
+  .species-explorer-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .species-explorer-summary p {
+    grid-column: 1 / -1;
+  }
+
+  .species-explorer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Breeding: keep summary information compact, forms/details single-column. */
+  .breeding-hero,
+  .breeding-layout,
+  .breeding-grid,
+  .breeding-grid-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .breeding-intelligence {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .breeding-intelligence > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .breeding-timeline-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .breeding-project-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .breeding-actions button,
+  .breeding-danger-button {
+    min-height: 48px;
+  }
+
+  /* Rescue: operational density stays readable and touch-safe. */
+  .rescue-enhanced-page {
+    padding-inline: 0;
+  }
+
+  .rescue-enhanced-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .rescue-enhanced-actions,
+  .animal-hero-actions {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .rescue-enhanced-actions > *,
+  .animal-hero-actions > * {
+    min-height: 48px;
+  }
+
+  .rescue-stat-grid,
+  .rescue-animal-summary-grid,
+  .rescue-ops-grid,
+  .rescue-insight-grid,
+  .rescue-principles-grid,
+  .rescue-filter-row,
+  .rescue-form-grid,
+  .rescue-adoption-preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rescue-tabbar {
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rescue-tabbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rescue-tabbar button {
+    min-height: 46px;
+    scroll-snap-align: start;
+  }
+
+  .rescue-register-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .rescue-register-meta {
+    grid-column: 2;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    text-align: left;
+  }
+
+  .rescue-workspace-form :where(input, select) {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .rescue-workspace-form textarea {
+    min-height: 112px;
+    font-size: 16px;
+  }
+
+  .rescue-reminder-list article,
+  .rescue-form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .rescue-form-actions > :where(button, a) {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+
+  .rescue-timeline-enhanced article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Marketplace inline desktop sizing gets a phone-safe wrapper. */
+  .tt-marketplace-page {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 0 24px !important;
+  }
+
+  .tt-marketplace-actions {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tt-marketplace-actions > * {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+
+  .tt-marketplace-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .tt-tracker-stat-grid,
+  .snake-profile-badges,
+  .tt-reminder-hero-stats,
+  .tt-reminder-tiles,
+  .breeding-intelligence {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .breeding-intelligence > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .snake-profile-quickbar button {
+    flex-basis: 108px;
+  }
+}
