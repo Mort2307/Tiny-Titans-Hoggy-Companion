@@ -1148,3 +1148,29 @@
     max-height: min(58dvh, 560px);
   }
 }
+
+
+@media (max-width: 800px) {
+  .tt-settings-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 0 24px;
+  }
+
+  .tt-settings-jump {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tt-settings-jump::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-settings-jump a {
+    flex: 0 0 auto;
+    min-height: 46px;
+  }
+}
