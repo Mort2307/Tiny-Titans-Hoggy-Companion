@@ -12,6 +12,7 @@ const geneticsTypes = read("src/types/genetics.ts");
 const resultCard = read("src/components/ResultCard.tsx");
 const presentation = read("src/utils/geneticsPresentation.ts");
 const bridge = read("src/utils/speciesGeneticsCalculator.ts");
+const masterRecord = read("src/pages/SnakeMasterRecord.tsx");
 
 const checks = [
   ["Live calculator uses authoritative forecast", calculator.includes("calculateSpeciesGeneticsForecast") && !calculator.includes("calculateSpeciesGenetics({")],
@@ -32,7 +33,7 @@ const checks = [
   ["Species legacy bridge delegates to forecast", bridge.includes("calculateSpeciesGeneticsForecast")],
   ["Core model conserves locus probabilities", model.includes("existing.probability += 0.25")],
   ["Cross-species safety remains enforced", model.includes("Cross-species genetics are not supported")],
-  ["Master Record calculator deep-link preserves context", calculator.includes('searchParams.get("snakeId")') && calculator.includes('`/snakes/${requestedSnake.id}/master-record`') && calculator.includes("requestedSnake ? `← Back to ${requestedSnake.name} Master Record` : \"← Back to Breeding Planner\"" )],
+  ["Master Record calculator deep-link preserves context", masterRecord.includes('to={`/calculator?snakeId=${encodeURIComponent(snake.id)}`}') && calculator.includes('searchParams.get("snakeId")') && calculator.includes('const calculatorReturnTo = requestedSnake ? `/snakes/${requestedSnake.id}/master-record` : "/breeding"') && calculator.includes('const calculatorReturnLabel = requestedSnake ? `Back to ${requestedSnake.name} Master Record` : "Back to Breeding Planner"')],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
