@@ -124,7 +124,7 @@ export default function MyAnimals() {
         </div>
       </header>
 
-      <section id="add-animal" className="universal-animals-panel">
+      <section id="add-animal" className="universal-animals-panel universal-animals-add-panel">
         <p className="eyebrow">ADD INDIVIDUAL</p>
         <h2>Add an individual animal</h2>
         <div className="universal-animal-form">
