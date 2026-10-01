@@ -1,9 +1,9 @@
+import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import TinyTitansIcon from "../TinyTitansIcon";
 import AnimatedAnimalIcon from "../AnimatedAnimalIcon";
 import type { WorkspacePresentation } from "../../services/workspacePresentationService";
 import type { QuickNavItem } from "../../data/quickNavigation";
-import { useLocation } from "react-router-dom";
-import { useEffect, useRef } from "react";
 
 type Props = {
   workspace: WorkspacePresentation;
@@ -21,6 +21,15 @@ type Props = {
   onTogglePin: (path: string) => void;
 };
 
+const FOCUSABLE_SELECTOR = [
+  "button:not([disabled])",
+  "a[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
 function QuickModeNavigation({
   workspace,
   quickSearch,
@@ -37,21 +46,56 @@ function QuickModeNavigation({
   onTogglePin,
 }: Props) {
   const location = useLocation();
+  const everythingButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
   const isActive = (path: string) => path === "/" ? location.pathname === "/" : location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
     if (!moreOpen) return;
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : everythingButtonRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const dialog = document.getElementById("tt-easy-more-menu");
+      const focusable = Array.from(dialog?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? []);
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
+
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      const previousFocus = previousFocusRef.current;
+      if (previousFocus?.isConnected) {
+        window.requestAnimationFrame(() => previousFocus.focus());
+      }
     };
-  }, [moreOpen, onClose]);
+  }, [moreOpen]);
 
   return (
     <>
@@ -73,14 +117,13 @@ function QuickModeNavigation({
       </nav>
 
       {moreOpen && (
-        <div className="tt-easy-more-backdrop" role="presentation" onClick={onClose}>
+        <div className="tt-easy-more-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
           <section
             id="tt-easy-more-menu"
             className="tt-easy-more"
             role="dialog"
             aria-modal="true"
             aria-label="Quick View full app navigation"
-            onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => {
               if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
               const target = event.target as HTMLElement;
@@ -149,7 +192,7 @@ function QuickModeNavigation({
                 <h3><TinyTitansIcon name="timeline" size={15} /> Recent</h3>
                 <div className="tt-easy-more-grid">
                   {recentItems.map((item) => (
-                    <button type="button" className="tt-easy-feature-link" key={`recent:${item.id}`} onClick={() => onOpenItem(item.path)}>
+                    <button type="button" className="tt-easy-feature-link" data-quick-nav-target="true" key={`recent:${item.id}`} onClick={() => onOpenItem(item.path)}>
                       <span className="app-navigation-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={24} /></span>
                       <span><strong>{item.label}</strong><small>{item.description}</small></span>
                     </button>
