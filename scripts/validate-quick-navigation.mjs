@@ -30,7 +30,8 @@ for (const route of required) {
   if (!source.includes(`path: "${route}"`)) errors.push(`Missing Quick View destination: ${route}`);
 }
 
-const ids = [...source.matchAll(/id: "([^"]+)"/g)].map((match) => match[1]);\nconst paths = [...source.matchAll(/path: "([^"]+)"/g)].map((match) => match[1]);
+const ids = [...source.matchAll(/id: "([^"]+)"/g)].map((match) => match[1]);
+const paths = [...source.matchAll(/path: "([^"]+)"/g)].map((match) => match[1]);
 if (new Set(ids).size !== ids.length) errors.push("Quick View feature registry contains duplicate IDs.");
 if (new Set(paths).size !== paths.length) errors.push("Quick View feature registry contains duplicate destination paths.");
 if (source.includes('path: "/reptile-room"')) errors.push("Quick View must not expose the retired /reptile-room route.");
