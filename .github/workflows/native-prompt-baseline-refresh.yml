@@ -1,0 +1,49 @@
+name: Native Prompt Baseline Refresh
+
+on:
+  push:
+    branches: [dev/mobile-first-product-pass]
+    paths:
+      - 'scripts/validate-ui-hardening.mjs'
+      - '.github/workflows/native-prompt-baseline-refresh.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: native-prompt-baseline-refresh
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v5
+        with:
+          ref: dev/mobile-first-product-pass
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Generate native prompt baseline
+        run: node scripts/validate-ui-hardening.mjs --write-prompt-baseline
+
+      - name: Commit baseline
+        shell: bash
+        run: |
+          git add scripts/ui-native-prompt-baseline.json
+          if git diff --cached --quiet; then
+            echo "Native prompt baseline already current"
+          else
+            git config user.name "Tiny Titans QA Bot"
+            git config user.email "actions@users.noreply.github.com"
+            git commit -m "test: capture legacy native prompt baseline"
+            git push origin HEAD:dev/mobile-first-product-pass
+          fi
+
+      - name: Verify baseline contract
+        run: node scripts/validate-ui-hardening.mjs
