@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "purpose": "Known legacy browser-native prompt debt. New prompt fingerprints fail UI hardening.",
+  "findings": 19,
+  "byApi": {
+    "alert": 3,
+    "confirm": 10,
+    "prompt": 6
+  },
+  "fingerprints": [
+    "src/components/SnakeTile.tsx|alert|window.alert(error instanceof Error ? error.message : \"Unable to delete this snake. Please try again.\");",
+    "src/components/reptile-room-3d/RoomAssetInspector.tsx|alert|const handlePhotoChange=async(file?:File)=>{if(!file||!user||!roomId||uploadingPhoto||removingPhoto)return;setUploadingPhoto(true);try{patchConfig({photoUrl:await uploadReptileRoomAssetPhoto(user.uid,roomId,object.id,file)})}catch(error){window.alert(error instanceof Error?error.message:\"Unable to u",
+    "src/components/reptile-room-3d/RoomAssetInspector.tsx|alert|const handlePhotoRemove=async()=>{if(!user||!roomId||!photoUrl||uploadingPhoto||removingPhoto)return;setRemovingPhoto(true);try{await deleteReptileRoomAssetPhoto(user.uid,roomId,object.id);patchConfig({photoUrl:undefined})}catch(error){window.alert(error instanceof Error?error.message:\"Unable to rem",
+    "src/hooks/useBreedingProjectManagement.ts|confirm|const confirmed=window.confirm(`Delete breeding project “${project.name}”? This also removes its pairings, clutches and hatchling records. Snake profiles are not deleted.`);",
+    "src/hooks/useCreatorMorphLibraryEditor.ts|confirm|const confirmed = window.confirm(",
+    "src/hooks/useCreatorPaidTierOperations.ts|confirm|if(!window.confirm(`Revoke ${getPaidTierDefinition(account.effectiveTier).name} trial access for ${account.displayName}?`))return;",
+    "src/hooks/useCreatorReviewStudio.ts|prompt|async function reject(){if(!selected||!user)return;const reason=window.prompt(\"Rejection reason for the creator:\",\"\")??\"\";if(!reason.trim())return;setWorking(true);setError(\"\");try{await rejectMorphImageSubmission(selected.id,selected.attachment.path,user.uid,reason);setNotice(\"Rejected \"+(draft?.mo",
+    "src/hooks/useCreatorReviewStudio.ts|prompt|async function requestInfo(){if(!selected||!draft)return;const note=window.prompt(\"What information should the creator provide before approval?\",draft.creatorReviewerNotes)??\"\";if(!note.trim())return;setWorking(true);setError(\"\");try{await saveMorphSubmissionReview(selected.id,{...draft,creatorRevie",
+    "src/hooks/useFamilyManager.ts|confirm|if (!member || !window.confirm(\"Remove \" + member.displayName + \" from this family? Their personal account will remain intact.\")) return;",
+    "src/hooks/useReptileRoom3D.ts|confirm|const deleteSelected = () => { if (!room || !selected) return; const label = selected.type === \"slot\" ? selectedSlot?.label : selectedObject?.label; if (!label || !window.confirm(`Delete ${label}? This cannot be undone.`)) return; if (selected.type === \"slot\") { const group = selectedSlot?.stackGrou",
+    "src/hooks/useShedTracker.ts|confirm|async function handleDelete(record:ShedRecord){if(!user||!window.confirm(\"Delete the entire shedding cycle for \"+(selectedSnake?.name??\"this snake\")+\"?\"))return;setSaving(true);setError(\"\");try{await deleteSnakeShed(user.uid,record.snakeId,record.id);setSheds((current)=>current.filter((item)=>item.i",
+    "src/hooks/useSnakeMasterRecord.ts|confirm|if (!window.confirm(`Delete this ${event.type.toLowerCase()} record?\\n\\n${label}\\n\\nThis permanently removes the individual record and updates this reptile's Master Record. This cannot be undone.`)) return;",
+    "src/pages/CreatorFoundingFollowerClaims.tsx|prompt|notes = window.prompt(\"Optional note for the user (for example: please send a screenshot with the Follow/Following state visible).\", claim.reviewerNotes || \"\") || \"\";",
+    "src/pages/CreatorObservationReview.tsx|prompt|async function setStatus(status: KeeperObservation[\"status\"]) { if (!selected || !user) return; const notes = window.prompt(status === \"approved\" ? \"Optional reviewer notes:\" : \"Reason / reviewer notes:\", selected.reviewerNotes || \"\") ?? \"\"; if (status !== \"approved\" && !notes.trim()) return; setWor",
+    "src/pages/CreatorReviewStudio.tsx|confirm|{loading ? <div className=\"creator-loading\">Loading submissions…</div> : <div className=\"creator-list\">{visible.map((item) => <button key={item.id} type=\"button\" className=\"creator-user-row\" onClick={() => { if (dirty && !window.confirm(\"Discard unsaved edits and open another submission?\")) return; ",
+    "src/pages/CreatorSpeciesSubmissions.tsx|prompt|async function decide(status: SpeciesSubmissionStatus) { if (!selected || !user) return; const notes = window.prompt(status === \"approved\" ? \"Approval notes / implementation notes:\" : \"Reviewer notes for the submitter:\", selected.reviewerNotes || \"\") ?? \"\"; if (status !== \"approved\" && !notes.trim()",
+    "src/pages/CreatorVivariumShowcase.tsx|prompt|export default function CreatorVivariumShowcase() { const { profile, user } = useAuth(); const [items, setItems] = useState<VivariumShowcaseSubmission[]>([]); const [selected, setSelected] = useState<VivariumShowcaseSubmission | null>(null); const [filter, setFilter] = useState<\"pending\" | \"all\">(\"p",
+    "src/pages/FeatureVoting.tsx|confirm|async function remove(featureId: string) { if (!window.confirm(\"Delete this feature request? This cannot be undone.\")) return; setBusyId(featureId); setError(\"\"); try { await deleteFeatureRequest(featureId); setFeatures((current) => current.filter((item) => item.id !== featureId)); } catch (deleteEr",
+    "src/services/morphSubmissionServiceV2.ts|confirm|const allowMorphLibraryLink = input.allowMorphLibraryLink ?? (typeof window !== 'undefined' && window.confirm(`May Tiny Titans link this approved ${kind} to the ${canonicalMorph.name} entry in the ${species.commonNames[0] ?? species.acceptedScientificName} Morph Library and display it in the Morph G"
+  ]
+}
