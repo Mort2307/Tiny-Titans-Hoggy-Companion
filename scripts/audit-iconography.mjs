@@ -3,7 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve("src");
+const baselinePath = path.resolve("scripts/iconography-baseline.json");
 const strict = process.argv.includes("--strict");
+const writeBaseline = process.argv.includes("--write-baseline");
 const excluded = new Set([
   path.resolve("src/components/TinyTitansIcon.tsx"),
   path.resolve("src/types/tinyTitansIcon.ts"),
@@ -19,6 +21,7 @@ const pictographicStatus = /\bset(?:Message|Error|Success|Status)\s*\([^\n]*\p{E
 const legacyIconProp = /<TinyTitansIcon\b[^>]*\bname\s*=\s*["'][^"']*\p{Extended_Pictographic}[^"']*["']/u;
 const iconTypeSource = fs.readFileSync(path.resolve("src/types/tinyTitansIcon.ts"), "utf8");
 const canonicalIconNames = new Set([...iconTypeSource.matchAll(/\|\s*"([^"]+)"/g)].map((match) => match[1]));
+const hardKinds = new Set(["invalid-icon-name", "legacy-icon-component-alias"]);
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -26,6 +29,18 @@ function walk(dir) {
     if (entry.isDirectory()) return walk(full);
     return /\.(?:tsx|ts)$/.test(entry.name) ? [full] : [];
   });
+}
+
+function fingerprint(finding) {
+  return `${finding.file}|${finding.kind}|${finding.text}`;
+}
+
+function readBaseline() {
+  if (!fs.existsSync(baselinePath)) return new Set();
+  const parsed = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
+  const fingerprints = Array.isArray(parsed) ? parsed : parsed.fingerprints;
+  if (!Array.isArray(fingerprints)) throw new Error("Iconography baseline is malformed.");
+  return new Set(fingerprints);
 }
 
 const files = walk(root).filter((file) => !excluded.has(file));
@@ -57,6 +72,7 @@ for (const file of files) {
               ? "raw-pictographic-ui"
               : "raw-ui-glyph",
       text: line.trim().slice(0, 220),
+      invalidIconName: invalidLiteralIcon ?? null,
     });
   });
 }
@@ -66,14 +82,64 @@ const byKind = findings.reduce((acc, finding) => {
   return acc;
 }, {});
 
+const hardFindings = findings.filter((finding) => hardKinds.has(finding.kind));
+
+if (writeBaseline) {
+  const fingerprints = findings
+    .filter((finding) => !hardKinds.has(finding.kind))
+    .map(fingerprint)
+    .sort();
+  const baselineByKind = findings
+    .filter((finding) => !hardKinds.has(finding.kind))
+    .reduce((acc, finding) => {
+      acc[finding.kind] = (acc[finding.kind] ?? 0) + 1;
+      return acc;
+    }, {});
+  fs.writeFileSync(
+    baselinePath,
+    JSON.stringify({
+      version: 1,
+      purpose: "Known legacy iconography debt. Strict validation fails on any new fingerprint.",
+      findings: fingerprints.length,
+      byKind: baselineByKind,
+      fingerprints,
+    }, null, 2) + "\n",
+  );
+}
+
+const baseline = readBaseline();
+const newFindings = findings.filter((finding) => !baseline.has(fingerprint(finding)));
+const resolvedBaselineCount = [...baseline].filter(
+  (known) => !findings.some((finding) => fingerprint(finding) === known),
+).length;
+
+const orderedDetails = [
+  ...hardFindings,
+  ...newFindings.filter((finding) => !hardKinds.has(finding.kind)),
+  ...findings.filter((finding) => baseline.has(fingerprint(finding))),
+];
+
+const hasStrictFailure = hardFindings.length > 0 || newFindings.length > 0;
+const status = hasStrictFailure
+  ? "FAIL"
+  : findings.length > 0
+    ? "PASS_WITH_BASELINE"
+    : "PASS";
+
 console.log(JSON.stringify({
   test: "iconography-boundary",
   strict,
+  writeBaseline,
   scannedFiles: files.length,
   findings: findings.length,
   byKind,
-  status: findings.length === 0 ? "PASS" : "WARN",
-  details: findings.slice(0, 120),
+  baselineFindings: baseline.size,
+  newFindings: newFindings.length,
+  hardFindings: hardFindings.length,
+  resolvedBaselineCount,
+  status,
+  details: orderedDetails.slice(0, 120),
 }, null, 2));
 
-if (strict && findings.length > 0) process.exit(1);
+if (hardFindings.length > 0) process.exit(1);
+if (strict && newFindings.length > 0) process.exit(1);
