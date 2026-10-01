@@ -1099,3 +1099,52 @@
     flex-basis: 108px;
   }
 }
+
+
+/* Mobile overlay and header simplification. */
+@media (max-width: 640px) {
+  /* Everything already provides full-app search on phones. */
+  .app-header .tt-command-trigger {
+    display: none;
+  }
+
+  .tiny-titans-confirm-backdrop,
+  .tt-command-backdrop {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .tiny-titans-confirm-panel,
+  .tt-command-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(92dvh - env(safe-area-inset-top));
+    margin: 0;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .tiny-titans-confirm-panel {
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .tiny-titans-confirm-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .tiny-titans-confirm-actions > * {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .tt-command-dialog > input {
+    font-size: 16px;
+  }
+
+  .tt-command-results {
+    max-height: min(58dvh, 560px);
+  }
+}
