@@ -4,7 +4,7 @@ import path from "node:path";
 const root = path.resolve(".");
 const files = {
   package: "package.json",
-  router: "src/routes/AppRouter.tsx",
+  router: "src/routes/AuthenticatedRoutes.tsx",
   section: "src/pages/CreatorOperationsSection.tsx",
   viewer: "src/pages/CreatorQaEvidenceViewer.tsx",
   evidenceService: "src/services/creatorQaEvidenceService.ts",
@@ -31,7 +31,7 @@ const contract = JSON.parse(source.visualContract);
 
 requireText("package", '"test:visual-review"', "package.json must define the visual review command.");
 if (!packageJson.scripts?.["test:visual-review"]?.includes("prepare-visual-route-set.mjs")) findings.push({ severity: "critical", message: "package.json test:visual-review must run universal route discovery before capture." });
-requireText("router", 'path="/creator/qa"', "AppRouter must keep the Creator QA route registered.");
+requireText("router", 'path="/creator/qa"', "AuthenticatedRoutes must keep the Creator QA route registered.");
 requireText("section", "CreatorQaEvidenceViewer", "CreatorOperationsSection must route QA mode to the rendered evidence viewer.");
 requireText("evidenceService", "export async function getQaEvidenceBlobUrl", "Creator QA service must load screenshots through authenticated blob URLs.");
 requireText("viewer", "Open GitHub evidence", "Creator QA viewer must expose the current GitHub evidence handoff.");
