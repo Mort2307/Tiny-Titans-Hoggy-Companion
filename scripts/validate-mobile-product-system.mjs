@@ -81,6 +81,10 @@ const experienceContracts = [
   [/\.obs-tabs\s*\{[\s\S]*?position:\s*sticky;/, "Observatory sticky mobile tabs"],
   [/\.creator-queue-modal\s*,[\s\S]*?border-radius:\s*22px 22px 0 0;/, "Creator review bottom-sheet modal"],
   [/\.creator-snapshot-grid\s*,[\s\S]*?scroll-snap-type:/, "Creator intelligence metric rail"],
+  [/@supports selector\(body:has\(input:focus\)\)/, "keyboard-aware dock support"],
+  [/content-visibility:\s*auto;/, "off-screen mobile list paint deferral"],
+  [/@media \(prefers-contrast:\s*more\)/, "high-contrast mobile treatment"],
+  [/@media \(forced-colors:\s*active\)/, "forced-colours mobile treatment"],
 ];
 
 for (const [pattern, label] of experienceContracts) {
