@@ -11,6 +11,7 @@ const weightRecords = read("src", "pages", "WeightRecords.tsx");
 const weightChart = read("src", "components", "WeightChart.tsx");
 const weightMiniChart = read("src", "components", "WeightMiniChart.tsx");
 const weightHook = read("src", "hooks", "useWeightRecords.ts");
+const weightService = read("src", "services", "weightService.ts");
 const weightCss = read("src", "styles", "weight-tracker.css");
 const feeding = read("src", "pages", "FeedingTracker.tsx");
 const shed = read("src", "pages", "ShedTrackerIntelligent.tsx");
@@ -64,6 +65,7 @@ requireSource(weightChart, 'from "recharts"', "WeightChart must use the chart re
 requireSource(weightChart, "<ResponsiveContainer", "WeightChart must remain responsive.");
 requireSource(weightChart, 'className="weight-chart-container weight-chart-container--detail"', "WeightChart must retain its measurable detail-chart container.");
 requireSource(weightChart, 'role="img"', "WeightChart must expose chart semantics.");
+requireSource(weightChart, 'record.unit === "kg" ? record.weight * 1000 : record.weight', "WeightChart must normalise legacy kg points before plotting.");
 
 requireSource(weightMiniChart, 'from "recharts"', "WeightMiniChart must use the chart renderer.");
 requireSource(weightMiniChart, "<ResponsiveContainer", "WeightMiniChart must remain responsive.");
@@ -72,6 +74,12 @@ requireSource(weightMiniChart, "getSnakeWeights", "WeightMiniChart must retain c
 requireSource(weightHook, "migrateEmbeddedWeights", "Weight tracker must retain migration of legacy embedded history.");
 requireSource(weightHook, "const chartHistory = useMemo", "Weight tracker must retain plotted-history construction.");
 requireSource(weightHook, "records.push(...history)", "Weight chart history must include canonical recorded weights.");
+requireSource(weightHook, "const seen = new Set<string>()", "Weight chart history must deduplicate synthetic and canonical starting points.");
+requireSource(weightHook, 'record.unit === "kg" ? record.weight * 1000 : record.weight', "Weight chart dedupe must compare normalised gram values.");
+
+requireSource(weightService, 'function weightInGrams', "Weight service must keep a canonical gram conversion boundary.");
+requireSource(weightService, 'unit: "g"', "Weight service must return and persist canonical gram records.");
+requireSource(weightService, 'recordIdentity', "Legacy weight migration must compare unit-normalised record identities.");
 requireSource(homeCurrentAnimal, "/snakes/${selectedSnake?.id}/weights", "Home current-animal actions must keep Weight directly reachable.");
 requireSource(profileQuickActions, 'navigate("/weights/" + snakeId)', "Animal profile quick actions must keep Weight directly reachable.");
 
