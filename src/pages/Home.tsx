@@ -1,16 +1,16 @@
 import TinyTitansIcon from "../components/TinyTitansIcon";
-import { lazy, Suspense } from "react";
+import React, { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
 import HomeCurrentAnimalSection from "../components/Home/HomeCurrentAnimalSection";
 import HomeAttentionSection from "../components/Home/HomeAttentionSection";
-import ContributionPulse from "../components/ContributionPulse";
-import RecommendedFeed from "../components/RecommendedFeed";
 import { useHomeDashboard } from "../hooks/useHomeDashboard";
 
 import "./Home.css";
 
+const RecommendedFeed = lazy(() => import("../components/RecommendedFeed"));
+const ContributionPulse = lazy(() => import("../components/ContributionPulse"));
 const TinyTitansPinnacleGlobe = lazy(() => import("../components/TinyTitansPinnacleGlobe"));
 
 const HomeGlobeFallback = () => <section className="tt-home-panel">Loading the TinyTitans world…</section>;
@@ -21,6 +21,8 @@ function Home() {
     selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, quietIntelligenceSnippet,
     loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake,
   } = useHomeDashboard();
+  const [recommendedOpen, setRecommendedOpen] = React.useState(false);
+  const [communityPulseOpen, setCommunityPulseOpen] = React.useState(false);
 
   return (
     <main className="dashboard tt-home">
@@ -158,14 +160,14 @@ function Home() {
         <TitanGoalTracker compact />
       </section>
 
-      <details className="tt-home-disclosure tt-home-secondary-disclosure">
+      <details className="tt-home-disclosure tt-home-secondary-disclosure" onToggle={(event) => setRecommendedOpen(event.currentTarget.open)}>
         <summary><TinyTitansIcon name="genetics" size={17} /> Recommended genetics</summary>
-        <RecommendedFeed />
+        {recommendedOpen && <Suspense fallback={<section className="tt-home-panel tt-home-loading">Loading genetics recommendations…</section>}><RecommendedFeed /></Suspense>}
       </details>
 
-      <details className="tt-home-disclosure tt-home-secondary-disclosure">
+      <details className="tt-home-disclosure tt-home-secondary-disclosure" onToggle={(event) => setCommunityPulseOpen(event.currentTarget.open)}>
         <summary><TinyTitansIcon name="community" size={17} /> Titan community pulse</summary>
-        <ContributionPulse />
+        {communityPulseOpen && <Suspense fallback={<section className="tt-home-panel tt-home-loading">Loading community pulse…</section>}><ContributionPulse /></Suspense>}
       </details>
 
       {user && (
