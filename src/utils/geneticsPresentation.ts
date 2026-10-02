@@ -81,7 +81,10 @@ export function getCanonicalOffspringPresentation(
     .filter((morph) => definitionSignatureKey(morph) === signatureKey)
     .sort(sortCombinations);
   const recognisedCombination = recognised[0];
-  const displaySignature = signature.map((entry) => ({
+  // Keep the genetic signature locus-based. A super phenotype is two copies of
+  // the underlying incomplete-dominant gene (for example Conda ×2), not
+  // "Super Conda ×2". Phenotype naming is derived separately for the result title.
+  const phenotypeSignature = signature.map((entry) => ({
     ...entry,
     name: canonicalNameForLocus(entry.geneId, entry.copies, morphs),
   }));
@@ -91,15 +94,15 @@ export function getCanonicalOffspringPresentation(
       name: recognisedCombination.name,
       recognisedCombination,
       alternateRecognisedCombinations: recognised.slice(1),
-      signature: displaySignature,
+      signature,
       signatureKey,
     };
   }
 
   return {
-    name: displaySignature.length ? displaySignature.map((entry) => entry.name).join(" + ") : "Wild Type",
+    name: phenotypeSignature.length ? phenotypeSignature.map((entry) => entry.name).join(" + ") : "Wild Type",
     alternateRecognisedCombinations: [],
-    signature: displaySignature,
+    signature,
     signatureKey,
   };
 }
