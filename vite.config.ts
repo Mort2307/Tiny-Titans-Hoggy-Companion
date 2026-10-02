@@ -4,6 +4,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 const tinyTitansIcon192 = "/icons/tiny-titans-192.svg";
 const tinyTitansIcon512 = "/icons/tiny-titans-512.svg";
+const tinyTitansRasterIcon = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg";
 
 export default defineConfig({
   plugins: [
@@ -47,6 +48,12 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/svg+xml",
             purpose: "maskable",
+          },
+          {
+            src: tinyTitansRasterIcon,
+            sizes: "any",
+            type: "image/jpeg",
+            purpose: "any maskable",
           },
         ],
         shortcuts: [
