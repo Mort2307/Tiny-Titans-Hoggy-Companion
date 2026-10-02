@@ -923,3 +923,45 @@
 .tt-attention-card--overdue .tt-attention-card-top span,.tt-attention-card--overdue .tt-attention-card-top strong{color:#ffd0d0}
 .tt-attention-card--due-soon{border-color:rgba(240,202,136,.32)}
 .tt-attention-card small{display:flex;align-items:center;gap:.3rem}
+
+
+.tt-home-current-heading-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.tt-home-current-heading-species {
+  color: var(--tt-muted);
+  font-size: .72rem;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 680px) {
+  .tt-home-current .tt-home-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tt-home-current .tt-home-heading-actions {
+    width: auto;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 390px) {
+  .tt-home-current-heading-species {
+    max-width: 120px;
+  }
+
+  .tt-home-current .tt-home-heading-actions {
+    gap: 4px;
+  }
+}
