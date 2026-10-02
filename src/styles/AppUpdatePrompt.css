@@ -104,3 +104,196 @@
     transition: none;
   }
 }
+
+
+.tt-update-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(7, 2, 12, .74);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.tt-update-panel {
+  width: min(470px, 100%);
+  max-height: min(88dvh, 720px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 24px;
+  border: 1px solid rgba(245, 182, 66, .28);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(111, 36, 184, .20), transparent 48%),
+    #17101f;
+  color: #f7f3fb;
+  text-align: center;
+  box-shadow: 0 28px 80px rgba(0,0,0,.52);
+}
+
+.tt-update-logo {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  border: 1px solid rgba(0,174,255,.24);
+  border-radius: 21px;
+  background: linear-gradient(145deg, rgba(111,36,184,.27), rgba(0,174,255,.10));
+  color: #f5b642;
+}
+
+.tt-update-kicker {
+  margin: 0 0 6px;
+  color: #f5b642;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.tt-update-panel h2 {
+  margin: 0;
+  font-size: clamp(1.45rem, 4vw, 1.9rem);
+  letter-spacing: -.025em;
+}
+
+.tt-update-panel > p:not(.tt-update-kicker) {
+  margin: 10px auto 0;
+  max-width: 52ch;
+  color: rgba(247,243,251,.69);
+  font-size: .86rem;
+  line-height: 1.58;
+}
+
+.tt-update-actions {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.tt-update-actions button {
+  min-height: 48px;
+  padding: 10px 15px;
+  border-radius: 13px;
+  color: inherit;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.tt-update-primary {
+  border: 1px solid rgba(0,174,255,.38);
+  background: linear-gradient(135deg, rgba(111,36,184,.78), rgba(0,174,255,.26));
+  color: #fff;
+}
+
+.tt-update-secondary {
+  border: 1px solid rgba(255,255,255,.11);
+  background: rgba(255,255,255,.04);
+}
+
+.tt-update-actions button:focus-visible {
+  outline: 3px solid rgba(0,174,255,.45);
+  outline-offset: 3px;
+}
+
+.tt-update-actions button:disabled {
+  opacity: .58;
+  cursor: wait;
+}
+
+.tt-update-required {
+  display: block;
+  margin-top: 13px;
+  color: #f5b642;
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
+.tt-offline-ready {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: min(330px, calc(100vw - 32px));
+  padding: 10px 13px;
+  border: 1px solid rgba(53,208,186,.28);
+  border-radius: 14px;
+  background: rgba(18, 32, 31, .96);
+  color: #dcfff7;
+  box-shadow: 0 13px 34px rgba(0,0,0,.32);
+}
+
+.tt-offline-ready > span {
+  display: grid;
+  gap: 2px;
+}
+
+.tt-offline-ready strong {
+  font-size: .77rem;
+}
+
+.tt-offline-ready small {
+  color: rgba(220,255,247,.64);
+  font-size: .64rem;
+  line-height: 1.25;
+}
+
+@media (max-width: 800px) {
+  .tt-update-manual,
+  .tt-offline-ready {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(82px + env(safe-area-inset-bottom));
+  }
+
+  .tt-update-backdrop {
+    place-items: end center;
+    padding: 0;
+  }
+
+  .tt-update-panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(92dvh - env(safe-area-inset-top));
+    margin: 0;
+    padding: 20px var(--tt-mobile-gutter, 16px) max(20px, env(safe-area-inset-bottom));
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+    text-align: left;
+    animation: tt-mobile-sheet-in 180ms cubic-bezier(.2,.75,.25,1);
+  }
+
+  .tt-update-logo {
+    width: 54px;
+    height: 54px;
+    margin: 2px 0 12px;
+    border-radius: 16px;
+  }
+
+  .tt-update-actions {
+    grid-template-columns: minmax(0,1fr);
+  }
+
+  .tt-update-actions button {
+    width: 100%;
+  }
+
+  .tt-offline-ready {
+    left: 12px;
+    right: 12px;
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-update-panel {
+    animation: none !important;
+  }
+}
