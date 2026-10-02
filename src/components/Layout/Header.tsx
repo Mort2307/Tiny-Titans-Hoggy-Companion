@@ -54,9 +54,21 @@ function mobileContextLabel(pathname: string) {
   if (pathname.startsWith("/breeding")) return "Breeding";
   if (pathname.startsWith("/rescue")) return "Rescue";
   if (pathname.startsWith("/marketplace")) return "Marketplace";
+  if (pathname.startsWith("/paid") || pathname.startsWith("/plans")) return "Plans & Features";
+  if (pathname.startsWith("/titan-intelligence")) return "Titan Intelligence";
+  if (pathname.startsWith("/husbandry")) return "Husbandry";
+  if (pathname.startsWith("/enclosure-intelligence")) return "Enclosure";
+  if (pathname.startsWith("/behaviour-observatory")) return "Observatory";
+  if (pathname.startsWith("/keeper-handbook")) return "Keeper Handbook";
+  if (pathname.startsWith("/learn") || pathname.startsWith("/challenge")) return "Learning";
+  if (pathname.startsWith("/knowledge-base")) return "Knowledge Base";
+  if (pathname.startsWith("/sandbox")) return "Sandbox";
+  if (pathname.startsWith("/community/mentorship")) return "Mentorship";
   if (pathname.startsWith("/community")) return "Community";
   if (pathname.startsWith("/creator")) return "Creator";
   if (pathname.startsWith("/account")) return "My Account";
+  if (pathname.startsWith("/feedback")) return "Feedback";
+  if (pathname.startsWith("/report-bug")) return "Report a Bug";
   return "Keeper Companion";
 }
 
