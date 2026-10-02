@@ -92,14 +92,23 @@ for (const id of ['id="shed-overview"', 'id="shed-log"', 'id="shed-history"']) {
 requireSource(shed, "records.length", "Shed tracker must retain recorded-cycle history.");
 
 requireSource(health, "useHealthTracker", "Health tracker must retain its canonical tracker hook.");
+requireSource(health, 'className="tt-tracker-page"', "Health tracker must remain on the unified tracker workspace.");
+requireSource(health, 'id="health-overview"', "Health tracker must retain its overview target.");
 requireSource(health, 'id="health-record"', "Health tracker must retain its record form target.");
-requireSource(health, "<h2>History</h2>", "Health tracker must retain its auditable history.");
+requireSource(health, 'id="health-history"', "Health tracker must retain its auditable history target.");
 requireSource(health, "medicationRecords", "Health tracker must retain medication schedule tracking.");
+requireSource(health, "/snakes/${snakeId}/weights", "Health tracker must retain direct Weight navigation.");
+requireSource(health, "/snakes/${snakeId}/behaviour", "Health tracker must retain direct Behaviour navigation.");
 
 requireSource(behaviour, "getSnakeBehaviourRecords", "Behaviour tracker must load canonical behaviour records.");
+requireSource(behaviour, 'className="tt-tracker-page"', "Behaviour tracker must remain on the unified tracker workspace.");
+requireSource(behaviour, 'id="behaviour-overview"', "Behaviour tracker must retain its overview target.");
 requireSource(behaviour, 'id="behaviour-record"', "Behaviour tracker must retain its journal target.");
+requireSource(behaviour, 'id="behaviour-history"', "Behaviour tracker must retain observation history target.");
 requireSource(behaviour, "records.map", "Behaviour tracker must retain observation history.");
 requireSource(behaviour, "Life Timeline", "Behaviour records must retain timeline deep-link editing support.");
+requireSource(behaviour, "/snakes/${snakeId}/weights", "Behaviour tracker must retain direct Weight navigation.");
+requireSource(behaviour, "/snakes/${snakeId}/health", "Behaviour tracker must retain direct Health navigation.");
 
 if (!packageJson.dependencies?.recharts) {
   errors.push("The chart renderer dependency recharts is missing.");
