@@ -37,6 +37,7 @@ export default function AppUpdatePrompt() {
   const panelRef = useRef<HTMLElement | null>(null);
   const primaryRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const updatingRef = useRef(updating);
   const mandatory = import.meta.env.VITE_TINY_TITANS_FORCE_UPDATE === "true";
 
   useEffect(() => {
@@ -63,6 +64,10 @@ export default function AppUpdatePrompt() {
   }, []);
 
   useEffect(() => {
+    updatingRef.current = updating;
+  }, [updating]);
+
+  useEffect(() => {
     if (!open) return;
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -71,7 +76,7 @@ export default function AppUpdatePrompt() {
     const frame = window.requestAnimationFrame(() => primaryRef.current?.focus());
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !mandatory && !updating) {
+      if (event.key === "Escape" && !mandatory && !updatingRef.current) {
         event.preventDefault();
         setOpen(false);
         return;
@@ -100,7 +105,7 @@ export default function AppUpdatePrompt() {
       const previous = previousFocusRef.current;
       if (previous?.isConnected) window.requestAnimationFrame(() => previous.focus());
     };
-  }, [mandatory, open, updating]);
+  }, [mandatory, open]);
 
   useEffect(() => {
     let cancelled = false;
