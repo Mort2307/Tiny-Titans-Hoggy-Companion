@@ -1,12 +1,13 @@
 {
   "id": "/",
-  "name": "Tiny Titans Reptile Companion",
+  "name": "Tiny Titans Keeper Companion",
   "short_name": "Tiny Titans",
-  "description": "Tiny Titans Reptile Companion — species profiles, husbandry, tracking, genetics and keeper tools for reptiles.",
+  "description": "Tiny Titans Keeper Companion — animal records, species-aware care, genetics and keeper tools.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": [
+    "window-controls-overlay",
     "standalone"
   ],
   "orientation": "any",
@@ -19,16 +20,63 @@
   ],
   "icons": [
     {
-      "src": "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=2",
+      "src": "/icons/tiny-titans-192.svg",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=2",
+      "src": "/icons/tiny-titans-512.svg",
       "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/tiny-titans-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Animals",
+      "short_name": "Animals",
+      "description": "Open your Tiny Titans animal collection.",
+      "url": "/animals",
+      "icons": [
+        {
+          "src": "/icons/tiny-titans-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Due",
+      "short_name": "Due",
+      "description": "Open Tiny Titans reminders and due care.",
+      "url": "/reminders",
+      "icons": [
+        {
+          "src": "/icons/tiny-titans-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Genetics",
+      "short_name": "Genetics",
+      "description": "Open the Tiny Titans genetics calculator.",
+      "url": "/calculator",
+      "icons": [
+        {
+          "src": "/icons/tiny-titans-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ]
 }
