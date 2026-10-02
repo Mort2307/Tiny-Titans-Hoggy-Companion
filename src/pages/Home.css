@@ -885,7 +885,10 @@
 
 @media (max-width: 390px) {
   .tt-home-current-actions,
-  .tt-quick-actions,
+  .tt-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .tt-home-explore-grid,
   .tt-home-lower-grid,
   .tt-tool-grid {
