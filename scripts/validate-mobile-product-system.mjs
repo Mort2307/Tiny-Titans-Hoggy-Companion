@@ -195,6 +195,12 @@ if (!homeCurrentAnimal.includes("HomeAnimalAvatar") || !homeCurrentAnimal.includ
 if (!homeCurrentAnimal.includes('selectedSnake?.recordSource === "legacy-snake" ? "reptile" : "animals"')) {
   errors.push("Home CURRENT ANIMAL label must use the snake icon for legacy snake profiles.");
 }
+if (!homeCurrentAnimal.includes("tt-home-current-heading-copy") || homeCurrentAnimal.includes("<h2>{selectedSnake?.name}</h2>")) {
+  errors.push("Home current-animal selector must keep the animal name inside the identity card rather than duplicate it above.");
+}
+if (!/\.tt-home-current \.tt-home-heading\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\) auto;/.test(homeCss)) {
+  errors.push("Home mobile current-animal selector must retain the compact label-and-controls row.");
+}
 if (!/\.tt-home-current-avatar > img\s*\{[\s\S]*?object-fit:\s*cover;/.test(homeCss)) {
   errors.push("Home current-animal profile images must retain cropped avatar styling.");
 }
