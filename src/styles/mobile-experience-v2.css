@@ -1700,3 +1700,105 @@
     grid-template-columns: minmax(0,1fr);
   }
 }
+
+
+@media (max-width: 800px) {
+  /* Long mobile feeds should not pay to paint every off-screen card immediately. */
+  :where(
+    .community-post,
+    .species-explorer-card,
+    .universal-animal-row,
+    .creator-queue-card,
+    .rescue-register-row,
+    .creator-run-list article,
+    .tt-creator-founder-claim
+  ) {
+    content-visibility: auto;
+    contain-intrinsic-size: 140px;
+  }
+
+  /* One consistent focus language across all phone interaction surfaces. */
+  :where(
+    .tt-easy-nav-link,
+    .tt-easy-feature-link,
+    .tt-easy-pin-button,
+    .tt-quick-actions a,
+    .tt-home-current-actions a,
+    .tt-home-stats a,
+    .tt-home-explore-grid > a,
+    .universal-animal-actions > *,
+    .tt-reminder-tiles a,
+    .snake-profile-quickbar button,
+    .tt-tracker-nav a,
+    .tt-tracker-nav button,
+    .community-action-card,
+    .obs-tabs button,
+    .paid-plan-card,
+    .workspace-dashboard__stats a
+  ):focus-visible {
+    outline: 2px solid var(--tt-intelligence-strong);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 5px rgba(0,183,240,.10);
+  }
+
+  /* Calm, consistent loading and empty-state presentation. */
+  :where(
+    .tt-home-loading,
+    .calculator-loading,
+    .creator-loading,
+    .contribution-dashboard-loading,
+    .rescue-empty,
+    .community-empty,
+    .obs-empty
+  ) {
+    border-radius: 18px;
+  }
+
+  :where(
+    .tt-home-loading,
+    .calculator-loading,
+    .creator-loading,
+    .contribution-dashboard-loading
+  ) {
+    min-height: 92px;
+    display: grid;
+    place-items: center;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --tt-mobile-hairline: rgba(255,255,255,.22);
+  }
+
+  .app-header,
+  .app-navigation.tt-easy-nav-strip,
+  .tt-easy-more,
+  .snake-profile-quickbar,
+  .tt-tracker-nav,
+  .rescue-tabbar,
+  .obs-tabs {
+    border-color: rgba(255,255,255,.28) !important;
+  }
+
+  :where(a, button, input, select, textarea):focus-visible {
+    outline-width: 3px !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .app-header,
+  .app-navigation.tt-easy-nav-strip,
+  .tt-easy-more,
+  .tiny-titans-confirm-panel,
+  .tt-command-dialog {
+    forced-color-adjust: auto;
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .tt-easy-nav-link.active::after {
+    background: Highlight;
+  }
+}
