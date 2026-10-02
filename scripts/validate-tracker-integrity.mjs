@@ -16,6 +16,8 @@ const feeding = read("src", "pages", "FeedingTracker.tsx");
 const shed = read("src", "pages", "ShedTrackerIntelligent.tsx");
 const health = read("src", "pages", "HealthTracker.tsx");
 const behaviour = read("src", "pages", "BehaviourTracker.tsx");
+const homeCurrentAnimal = read("src", "components", "Home", "HomeCurrentAnimalSection.tsx");
+const profileQuickActions = read("src", "components", "SnakeProfile", "SnakeProfileQuickActions.tsx");
 const quickNavigation = read("src", "data", "quickNavigation.ts");
 const pageRegistry = read("src", "config", "tinyTitansPageRegistry.ts");
 const packageJson = JSON.parse(read("package.json"));
@@ -70,6 +72,8 @@ requireSource(weightMiniChart, "getSnakeWeights", "WeightMiniChart must retain c
 requireSource(weightHook, "migrateEmbeddedWeights", "Weight tracker must retain migration of legacy embedded history.");
 requireSource(weightHook, "const chartHistory = useMemo", "Weight tracker must retain plotted-history construction.");
 requireSource(weightHook, "records.push(...history)", "Weight chart history must include canonical recorded weights.");
+requireSource(homeCurrentAnimal, "/snakes/${selectedSnake?.id}/weights", "Home current-animal actions must keep Weight directly reachable.");
+requireSource(profileQuickActions, 'navigate("/weights/" + snakeId)', "Animal profile quick actions must keep Weight directly reachable.");
 
 requireSource(weightCss, /\.weight-chart-container--detail\s*\{[\s\S]*?height:\s*300px;/, "Weight detail chart must retain a guaranteed desktop height.");
 requireSource(weightCss, /@media \(max-width:\s*650px\)[\s\S]*?\.weight-chart-container--detail\s*\{[\s\S]*?height:\s*260px;/, "Weight detail chart must retain a guaranteed mobile height.");
