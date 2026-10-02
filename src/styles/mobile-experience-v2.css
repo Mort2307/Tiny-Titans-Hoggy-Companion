@@ -763,3 +763,306 @@
     transition: none !important;
   }
 }
+
+
+@media (max-width: 800px) {
+  /* SECONDARY WORKSPACES — same product language as Home. */
+
+  /* Species */
+  .species-explorer-page {
+    gap: 12px;
+    padding-bottom: 24px;
+  }
+
+  .species-explorer-hero,
+  .species-explorer-toolbar,
+  .species-explorer-summary,
+  .species-explorer-card,
+  .species-browse-groups {
+    border-radius: 18px;
+    box-shadow: none;
+  }
+
+  .species-explorer-hero {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .species-explorer-hero h1 {
+    font-size: 1.65rem;
+  }
+
+  .species-explorer-toolbar {
+    padding: 13px;
+  }
+
+  .species-explorer-summary {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .species-browse-groups__grid {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .species-browse-groups__grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .species-browse-group-card {
+    flex: 0 0 min(72vw, 250px);
+    min-height: 92px;
+    scroll-snap-align: start;
+    border-radius: 15px;
+  }
+
+  /* Breeding */
+  .breeding-page {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .breeding-hero {
+    gap: 12px;
+    margin: 6px 0 14px;
+    padding: 2px 0;
+  }
+
+  .breeding-hero h1 {
+    font-size: 1.7rem;
+  }
+
+  .breeding-intelligence {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .breeding-intelligence::-webkit-scrollbar {
+    display: none;
+  }
+
+  .breeding-intelligence > * {
+    flex: 0 0 min(44vw, 180px);
+    min-height: 90px;
+    scroll-snap-align: start;
+  }
+
+  .breeding-card,
+  .breeding-project-management-panel {
+    border-radius: 18px;
+    box-shadow: none;
+  }
+
+  .breeding-card {
+    padding: 15px;
+  }
+
+  /* Rescue command centre */
+  .rescue-enhanced-page {
+    padding-top: 6px;
+    padding-bottom: 28px;
+  }
+
+  .rescue-enhanced-hero {
+    padding: 10px 0 16px;
+  }
+
+  .rescue-enhanced-hero h1 {
+    font-size: 1.65rem;
+  }
+
+  .rescue-stat-grid,
+  .rescue-animal-summary-grid {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rescue-stat-grid::-webkit-scrollbar,
+  .rescue-animal-summary-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rescue-stat-grid article,
+  .rescue-stat-grid .rescue-stat-tile,
+  .rescue-animal-summary-grid article {
+    flex: 0 0 min(44vw, 180px);
+    min-height: 104px;
+    padding: 13px;
+    scroll-snap-align: start;
+    border-radius: 17px;
+  }
+
+  .rescue-ops-card,
+  .rescue-workspace-form,
+  .rescue-record-list article,
+  .rescue-adoption-preview > div {
+    border-radius: 17px;
+    box-shadow: none;
+  }
+
+  .rescue-ops-card {
+    padding: 16px;
+  }
+
+  .rescue-register-row {
+    padding: 13px 10px;
+    border-color: rgba(255,255,255,.045);
+    background: rgba(255,255,255,.018);
+  }
+
+  .rescue-tabbar {
+    position: sticky;
+    top: calc(var(--tt-mobile-appbar-height) + env(safe-area-inset-top) + 4px);
+    z-index: 1050;
+    background: rgba(22,9,36,.94);
+    box-shadow: 0 8px 22px rgba(0,0,0,.16);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Settings */
+  .tt-settings-hero {
+    padding: 17px;
+    border-radius: 21px;
+    box-shadow: none;
+  }
+
+  .tt-settings-hero h1 {
+    font-size: 1.65rem;
+  }
+
+  .tt-settings-feature,
+  .tt-settings-card {
+    box-shadow: none;
+  }
+
+  .tt-settings-feature {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .tt-settings-card {
+    padding: 15px;
+    border-radius: 17px;
+  }
+
+  .tt-settings-unit-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  /* Marketplace */
+  .tt-marketplace-page > .welcome-card {
+    margin-bottom: 14px !important;
+    padding: 17px !important;
+    border-radius: 21px;
+    box-shadow: none;
+  }
+
+  .tt-marketplace-page > .welcome-card h1 {
+    font-size: 1.65rem;
+  }
+
+  .tt-marketplace-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  .tt-marketplace-actions > * {
+    min-width: 0;
+    min-height: 48px;
+    text-align: center;
+  }
+
+  .tt-marketplace-grid .personalisation-card {
+    padding: 15px;
+    border-radius: 18px;
+    box-shadow: none;
+  }
+
+  /* Creator/admin */
+  .creator-ops-page,
+  .creator-section-page {
+    background:
+      radial-gradient(circle at 100% 0, rgba(98,214,199,.055), transparent 34rem),
+      #090d12;
+  }
+
+  .creator-ops-header,
+  .creator-section-header {
+    gap: 12px;
+    margin-bottom: 15px;
+  }
+
+  .creator-ops-header h1,
+  .creator-section-header h1 {
+    font-size: 1.7rem;
+  }
+
+  .creator-ops-grid,
+  .creator-section-card-grid {
+    gap: 9px;
+  }
+
+  .creator-ops-card,
+  .creator-section-card,
+  .creator-section-panel,
+  .creator-config-banner {
+    min-height: 0;
+    padding: 15px;
+    border-radius: 17px;
+    box-shadow: none;
+  }
+
+  .creator-metrics-grid {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .creator-metrics-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .creator-metric {
+    flex: 0 0 min(44vw, 180px);
+    min-height: 92px;
+    padding: 14px;
+    scroll-snap-align: start;
+  }
+
+  .creator-run-list article {
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 460px) {
+  .tt-settings-unit-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  .tt-marketplace-actions {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
