@@ -41,6 +41,9 @@ if (styleImports.indexOf("mobile-product-system.css") > styleImports.indexOf("mo
 if (!/viewport-fit=cover/.test(index)) {
   errors.push("index.html must retain viewport-fit=cover for mobile safe-area support.");
 }
+if (/user-scalable\s*=\s*no|maximum-scale\s*=\s*1(?:\.0+)?(?:[,"]|$)/i.test(index)) {
+  errors.push("index.html must not disable user zoom.");
+}
 
 const cssContracts = [
   [/@media \(max-width: 800px\)/, "mobile breakpoint"],
@@ -97,6 +100,9 @@ const experienceContracts = [
   [/\.tt-timeline-summary\s*\{[\s\S]*?display:\s*flex;[\s\S]*?scroll-snap-type:/, "timeline metric rail"],
   [/\.readiness-item-action\s*\{[\s\S]*?margin-left:\s*0;/, "mobile breeding-readiness action alignment"],
   [/\.readiness-item-action button,[\s\S]*?min-height:\s*44px;/, "thumb-safe breeding-readiness actions"],
+  [/html\s*\{[\s\S]*?text-size-adjust:\s*100%;/, "browser text-scaling compatibility"],
+  [/\.app-header-actions\s*\{[\s\S]*?overflow-x:\s*auto;/, "overflow-safe mobile header utilities"],
+  [/@media \(max-width:\s*380px\)[\s\S]*?\.header-qa-button strong\s*\{[\s\S]*?display:\s*none;/, "narrow-phone QA utility compaction"],
 ];
 
 for (const [pattern, label] of experienceContracts) {
