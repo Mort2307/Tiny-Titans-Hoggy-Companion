@@ -1066,3 +1066,83 @@
     grid-template-columns: minmax(0,1fr);
   }
 }
+
+
+@media (max-width: 800px) {
+  /* Keyboard-aware phone ergonomics. */
+  :where(input, textarea, select) {
+    scroll-margin-top: calc(var(--tt-mobile-appbar-height) + env(safe-area-inset-top) + 18px);
+    scroll-margin-bottom: 38vh;
+  }
+
+  .app-navigation.tt-easy-nav-strip {
+    transition:
+      transform 180ms ease,
+      opacity 160ms ease,
+      border-color 160ms ease;
+  }
+
+  @supports selector(body:has(input:focus)) {
+    body:has(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+      textarea:focus,
+      select:focus
+    ) .app-navigation.tt-easy-nav-strip {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(calc(100% + 28px));
+    }
+  }
+
+  :where(
+    .tt-easy-nav-link,
+    .tt-easy-feature-link,
+    .tt-easy-pin-button,
+    .tt-quick-actions a,
+    .tt-home-current-actions a,
+    .tt-home-stats a,
+    .tt-home-explore-grid > a,
+    .universal-animal-actions > *,
+    .tt-reminder-tiles a,
+    .snake-profile-quickbar button,
+    .tt-tracker-nav a,
+    .tt-tracker-nav button
+  ) {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tt-easy-more,
+  .tiny-titans-confirm-panel,
+  .tt-command-dialog,
+  .tt-creator-tier-modal,
+  .tt-creator-tier-dialog,
+  .morph-detail {
+    animation: tt-mobile-sheet-in 180ms cubic-bezier(.2,.75,.25,1);
+  }
+}
+
+@keyframes tt-mobile-sheet-in {
+  from {
+    opacity: .72;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-easy-more,
+  .tiny-titans-confirm-panel,
+  .tt-command-dialog,
+  .tt-creator-tier-modal,
+  .tt-creator-tier-dialog,
+  .morph-detail,
+  .app-navigation.tt-easy-nav-strip {
+    animation: none !important;
+    transition: none !important;
+  }
+}
