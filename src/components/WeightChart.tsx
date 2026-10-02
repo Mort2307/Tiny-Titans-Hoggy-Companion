@@ -20,10 +20,13 @@ function WeightChart({ history }: WeightChartProps) {
   if (!history || history.length === 0) return <p>No weight records yet.</p>;
 
   const sortedHistory = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const chartData: ChartPoint[] = sortedHistory.map((record) => ({
-    ...record,
-    displayWeight: isImperial ? record.weight / 28.349523125 : record.weight,
-  }));
+  const chartData: ChartPoint[] = sortedHistory.map((record) => {
+    const grams = record.unit === "kg" ? record.weight * 1000 : record.weight;
+    return {
+      ...record,
+      displayWeight: isImperial ? grams / 28.349523125 : grams,
+    };
+  });
 
   return (
     <div className="weight-chart-container weight-chart-container--detail" role="img" aria-label={`Weight trend chart with ${chartData.length} recorded points`}>
