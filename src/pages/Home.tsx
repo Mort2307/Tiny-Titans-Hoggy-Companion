@@ -1,5 +1,5 @@
 import TinyTitansIcon from "../components/TinyTitansIcon";
-import React, { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
@@ -21,8 +21,8 @@ function Home() {
     selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, quietIntelligenceSnippet,
     loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake,
   } = useHomeDashboard();
-  const [recommendedOpen, setRecommendedOpen] = React.useState(false);
-  const [communityPulseOpen, setCommunityPulseOpen] = React.useState(false);
+  const [recommendedOpen, setRecommendedOpen] = useState(false);
+  const [communityPulseOpen, setCommunityPulseOpen] = useState(false);
 
   return (
     <main className="dashboard tt-home">
