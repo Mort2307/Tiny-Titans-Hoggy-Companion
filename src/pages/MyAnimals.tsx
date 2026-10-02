@@ -15,6 +15,24 @@ import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
 import TinyTitansFeedback from "../components/TinyTitansFeedback";
 
+function AnimalCollectionAvatar({ animal }: { animal: UnifiedAnimalDirectoryRecord }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const photoUrl = animal.photoUrl?.trim();
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [photoUrl]);
+
+  return (
+    <div className={`universal-animal-avatar${photoUrl && !imageFailed ? " has-photo" : ""}`} aria-hidden="true">
+      <TinyTitansIcon name={animal.source === "legacy-snake" ? "reptile" : "animals"} size={28} />
+      {photoUrl && !imageFailed && (
+        <img src={photoUrl} alt="" loading="lazy" decoding="async" onError={() => setImageFailed(true)} />
+      )}
+    </div>
+  );
+}
+
 export default function MyAnimals() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -150,10 +168,13 @@ export default function MyAnimals() {
           const isDeleting = deletingAnimalId === animal.id;
           return (
             <article key={rowKey} className="universal-animal-row">
-              <div>
-                <strong>{animal.name}</strong>
-                <span>{animal.speciesCommonName || "Awaiting species identification"}</span>
-                <small>{animal.animalGroup || "Animal"} · {animal.status}</small>
+              <div className="universal-animal-identity">
+                <AnimalCollectionAvatar animal={animal} />
+                <div className="universal-animal-copy">
+                  <strong>{animal.name}</strong>
+                  <span>{animal.speciesCommonName || "Awaiting species identification"}</span>
+                  <small>{animal.animalGroup || "Animal"} · {animal.status}</small>
+                </div>
               </div>
               <div className="universal-animal-actions">
                 <Link to={animal.source === "legacy-snake" ? "/snakes/" + animal.id : "/animals/" + animal.id}>Open individual <TinyTitansIcon name="forward" size={15} /></Link>
