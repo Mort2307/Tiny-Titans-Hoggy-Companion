@@ -59,7 +59,7 @@ function WeightIndex() {
       const currentWeight = latestRecord?.weight ?? snake.weight ?? 0;
       return <article key={snake.id} className="weight-records-card">
         <div className="weight-records-header">{snake.photo ? <img src={snake.photo} alt={snake.name} className="weight-records-photo" /> : <div className="weight-records-placeholder">🐍</div>}<div><h2>{snake.name}</h2><p>⚖️ <strong>{formatWeight(currentWeight)}</strong></p></div></div>
-        <div className="weight-records-chart">{history.length >= 2 ? <WeightMiniChart history={history} /> : <p>Record another weight to build the growth chart.</p>}</div>
+        <div className="weight-records-chart" data-chart="weight-mini">{history.length >= 2 ? <WeightMiniChart history={history} /> : <p>Record another weight to build the growth chart.</p>}</div>
         <div className="weight-records-summary"><p>📊 Records<strong>{history.length}</strong></p><p>📅 Last weighed<strong>{latestRecord?.date ?? snake.lastWeighedDate ?? "-"}</strong></p></div>
         <div className="weight-record-actions"><button type="button" onClick={() => navigate(`/weights/${snake.id}`)}>📈 Open Weight Records</button><button type="button" onClick={() => navigate(`/snakes/${snake.id}/master-record`)}>🐍 Master Record</button></div>
       </article>;
