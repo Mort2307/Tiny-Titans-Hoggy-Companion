@@ -16,6 +16,8 @@ const feeding = read("src", "pages", "FeedingTracker.tsx");
 const shed = read("src", "pages", "ShedTrackerIntelligent.tsx");
 const health = read("src", "pages", "HealthTracker.tsx");
 const behaviour = read("src", "pages", "BehaviourTracker.tsx");
+const quickNavigation = read("src", "data", "quickNavigation.ts");
+const pageRegistry = read("src", "config", "tinyTitansPageRegistry.ts");
 const packageJson = JSON.parse(read("package.json"));
 
 function requireSource(source, pattern, message) {
@@ -37,6 +39,11 @@ const routeContracts = [
   ['path="/snakes/:id/behaviour"', "Snake behaviour route is missing."],
 ];
 for (const [route, message] of routeContracts) requireSource(routes, route, message);
+
+for (const trackerPath of ["/weights", "/feeding", "/shedding", "/health", "/behaviour"]) {
+  requireSource(quickNavigation, `path: "${trackerPath}"`, `Quick View must keep ${trackerPath} discoverable.`);
+  requireSource(pageRegistry, `path: "${trackerPath}"`, `Page registry must keep ${trackerPath} discoverable.`);
+}
 
 requireSource(weightIndex, 'import WeightMiniChart from "../components/WeightMiniChart"', "Weight overview must import WeightMiniChart.");
 requireSource(weightIndex, 'data-chart="weight-mini"', "Weight overview cards must expose the mini-chart surface.");
