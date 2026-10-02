@@ -48,6 +48,10 @@ for (const trackerPath of ["/weights", "/feeding", "/shedding", "/health", "/beh
   requireSource(pageRegistry, `path: "${trackerPath}"`, `Page registry must keep ${trackerPath} discoverable.`);
 }
 
+for (const keyword of ["growth", "graph", "chart", "trend", "tracker"]) {
+  requireSource(quickNavigation, `"${keyword}"`, `Quick View must retain Weight/tracker discovery keyword "${keyword}".`);
+}
+
 requireSource(weightIndex, 'import WeightMiniChart from "../components/WeightMiniChart"', "Weight overview must import WeightMiniChart.");
 requireSource(weightIndex, 'data-chart="weight-mini"', "Weight overview cards must expose the mini-chart surface.");
 requireSource(weightIndex, /history\.length\s*>=\s*2\s*\?\s*<WeightMiniChart/, "Weight overview must render a mini trend when two or more records exist.");
