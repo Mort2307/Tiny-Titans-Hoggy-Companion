@@ -1982,3 +1982,201 @@
     display: none;
   }
 }
+
+
+/* VISUALISATION INTEGRITY — dense analytical surfaces stay usable on phones. */
+@media (max-width: 800px) {
+  /* Genetics Calculator: results are analysis cards, not compressed desktop tiles. */
+  .calculator-page {
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .calculator-results,
+  .genetics-parent-selector,
+  .genetics-result-card {
+    min-width: 0;
+  }
+
+  .calculator-result-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .genetics-result-header {
+    min-width: 0;
+  }
+
+  .genetics-result-header h3,
+  .genetics-result-header > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .genetics-result-tags,
+  .genetics-selected-tags {
+    min-width: 0;
+  }
+
+  .genetics-selection-chip,
+  .genetics-tag {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Animal Timeline: filters remain reachable while scanning long histories. */
+  .tt-timeline-filters {
+    position: sticky;
+    top: calc(var(--tt-mobile-appbar-height) + env(safe-area-inset-top) + 4px);
+    z-index: 1040;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 6px;
+    border: 1px solid var(--tt-mobile-hairline);
+    border-radius: 15px;
+    background: rgba(22,9,36,.94);
+    box-shadow: 0 8px 22px rgba(0,0,0,.14);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tt-timeline-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-timeline-filters button {
+    flex: 0 0 auto;
+    min-height: 40px;
+    scroll-snap-align: start;
+  }
+
+  .tt-timeline-summary {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tt-timeline-summary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-timeline-summary > div,
+  .tt-timeline-summary > div:last-child {
+    grid-column: auto;
+    flex: 0 0 min(42vw, 170px);
+    min-height: 86px;
+    scroll-snap-align: start;
+  }
+
+  .tt-timeline-event-body,
+  .tt-timeline-related,
+  .tt-timeline-related-item {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* Breeding Readiness: remove desktop indentation and keep status controls tappable. */
+  .readiness-page {
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .readiness-item,
+  .readiness-item-main,
+  .readiness-item-main > div {
+    min-width: 0;
+  }
+
+  .readiness-item-action {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .readiness-item-action button,
+  .readiness-section-title button,
+  .readiness-two-col button {
+    min-height: 44px;
+  }
+
+  .readiness-question {
+    margin-left: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 560px) {
+  .calculator-results {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .genetics-parent-heading,
+  .genetics-result-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .genetics-result-header > strong {
+    white-space: normal;
+  }
+
+  .genetics-dropdown-options {
+    max-height: min(46dvh, 300px);
+  }
+
+  .tt-timeline-summary > div,
+  .tt-timeline-summary > div:last-child {
+    flex-basis: min(45vw, 160px);
+    padding: 12px;
+  }
+
+  .tt-timeline-event {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .tt-timeline-list::before {
+    left: 17px;
+  }
+
+  .tt-timeline-marker {
+    width: 36px;
+    height: 36px;
+  }
+
+  .readiness-hero > div:first-child,
+  .readiness-result,
+  .readiness-card,
+  .readiness-principle {
+    padding: 16px;
+    border-radius: 18px;
+    box-shadow: none;
+  }
+
+  .readiness-item {
+    padding: 14px;
+  }
+
+  .readiness-item-main {
+    gap: 10px;
+  }
+
+  .readiness-item-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .readiness-item-action button,
+  .readiness-section-title button,
+  .readiness-two-col button {
+    width: 100%;
+  }
+}
