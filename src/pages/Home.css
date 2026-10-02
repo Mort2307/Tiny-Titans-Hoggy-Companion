@@ -250,15 +250,37 @@
 }
 
 .tt-home-current-avatar {
+  position: relative;
   display: grid;
   width: 48px;
   height: 48px;
   flex: 0 0 48px;
   place-items: center;
+  overflow: hidden;
   border: 1px solid rgba(245, 182, 66, .2);
   border-radius: 14px;
   background: rgba(245, 182, 66, .06);
   font-size: 1.3rem;
+}
+
+.tt-home-current-avatar > svg {
+  position: relative;
+  z-index: 0;
+}
+
+.tt-home-current-avatar > img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.tt-home-current-avatar.has-photo {
+  background: rgba(0, 0, 0, .18);
 }
 
 .tt-home-current-identity span,
