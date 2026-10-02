@@ -9,7 +9,7 @@ import { subscribeToTitanIntelligenceUpdates } from "../services/titanReactiveIn
 import { listReminders } from "../services/reminderService";
 import type { Reminder } from "../types/Reminder";
 
-export type HomeAnimal = { id: string; name: string; species?: string; animalGroup?: string; recordSource: "universal" | "legacy-snake"; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number; };
+export type HomeAnimal = { id: string; name: string; species?: string; animalGroup?: string; photoUrl?: string; recordSource: "universal" | "legacy-snake"; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number; };
 export type HomeSnake = HomeAnimal;
 export type HomeUrgentReminder = {
   reminder: Reminder;
@@ -67,6 +67,7 @@ export function useHomeDashboard() {
           name: animal.name,
           species: animal.speciesCommonName || animal.scientificName,
           animalGroup: animal.animalGroup,
+          photoUrl: animal.photoUrl,
           recordSource: animal.source,
           weightRecords: animal.weightRecords,
           feedingRecords: animal.feedingRecords,
