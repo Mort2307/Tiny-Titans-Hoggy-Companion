@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/TinyTitans-Logo.jpg";
 import { useAuth } from "../../context/useAuth";
 import { useWorkspaceBranding } from "../../context/WorkspaceBrandingContext";
@@ -72,9 +72,25 @@ function mobileContextLabel(pathname: string) {
   return "Keeper Companion";
 }
 
+function mobileBackFallback(pathname: string) {
+  if (pathname.startsWith("/snakes/") || pathname === "/snakes") return "/animals";
+  if (pathname.startsWith("/animals/")) return "/animals";
+  if (pathname.startsWith("/reminders/")) return "/reminders";
+  if (pathname.startsWith("/species/")) return "/species";
+  if (pathname.startsWith("/morph-library/")) return "/morph-library";
+  if (pathname.startsWith("/paid/")) return "/plans";
+  if (pathname.startsWith("/account/")) return "/account";
+  if (pathname.startsWith("/rescue/")) return "/rescue";
+  if (pathname.startsWith("/creator/")) return "/creator";
+  if (pathname.startsWith("/community/")) return "/community";
+  if (pathname.startsWith("/breeding/")) return "/breeding";
+  return "/";
+}
+
 function Header() {
   const { user, profile } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const branding = useWorkspaceBranding();
   const [paidAccess, setPaidAccess] = useState<PaidAccess | null>(null);
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(getWorkspacePresentation);
@@ -85,6 +101,16 @@ function Header() {
   const [qaMessage, setQaMessage] = useState("");
 
   const creatorMode = profile?.role === "admin";
+  const showMobileBack = !["/", "/animals", "/reminders"].includes(location.pathname);
+
+  function handleMobileBack() {
+    const historyState = window.history.state as { idx?: number } | null;
+    if ((historyState?.idx ?? 0) > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate(mobileBackFallback(location.pathname));
+  }
 
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
 
@@ -179,8 +205,13 @@ function Header() {
       : workspaceName;
 
   return (
-    <header className={`app-header app-header--${productId}`}>
+    <header className={`app-header app-header--${productId}${showMobileBack ? " app-header--has-mobile-back" : ""}`}>
       <div className="app-header-identity">
+        {showMobileBack && (
+          <button type="button" className="app-mobile-back" onClick={handleMobileBack} aria-label="Go back">
+            <TinyTitansIcon name="back" size={20} aria-hidden="true" />
+          </button>
+        )}
         <Link
           to={productId === "rescue" ? "/rescue" : "/"}
           className="logo-link"
