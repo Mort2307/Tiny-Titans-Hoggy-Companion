@@ -13,6 +13,9 @@ const quickView = read("src", "components", "Layout", "QuickModeNavigation.tsx")
 const confirmDialog = read("src", "components", "ConfirmActionDialog.tsx");
 const commandPalette = read("src", "components", "TitanCommandPalette", "TitanCommandPalette.tsx");
 const myAnimals = read("src", "pages", "MyAnimals.tsx");
+const homeDashboard = read("src", "hooks", "useHomeDashboard.ts");
+const homeCurrentAnimal = read("src", "components", "Home", "HomeCurrentAnimalSection.tsx");
+const homeCss = read("src", "pages", "Home.css");
 const marketplace = read("src", "pages", "Marketplace.tsx");
 const settings = read("src", "pages", "Settings.tsx");
 const pageRegistry = read("src", "config", "tinyTitansPageRegistry.ts");
@@ -179,6 +182,18 @@ if (!quickView.includes("FOCUSABLE_SELECTOR")) errors.push("Quick View must use 
 if (!confirmDialog.includes("FOCUSABLE_SELECTOR")) errors.push("Confirmation dialog must use a canonical focusable-element selector.");
 if (!myAnimals.includes("universal-animals-collection-panel") || !myAnimals.includes("universal-add-shortcut")) {
   errors.push("My Animals must retain the collection-first mobile hooks and add-animal shortcut.");
+}
+if (!homeDashboard.includes("photoUrl: animal.photoUrl")) {
+  errors.push("Home dashboard must carry the existing animal profile image into the current-animal model.");
+}
+if (!homeCurrentAnimal.includes("HomeAnimalAvatar") || !homeCurrentAnimal.includes('fallbackIcon = animal?.recordSource === "legacy-snake" ? "reptile" : "animals"')) {
+  errors.push("Home current-animal card must prefer the stored profile image and use a snake fallback for snake records.");
+}
+if (!homeCurrentAnimal.includes('selectedSnake?.recordSource === "legacy-snake" ? "reptile" : "animals"')) {
+  errors.push("Home CURRENT ANIMAL label must use the snake icon for legacy snake profiles.");
+}
+if (!/\.tt-home-current-avatar > img\s*\{[\s\S]*?object-fit:\s*cover;/.test(homeCss)) {
+  errors.push("Home current-animal profile images must retain cropped avatar styling.");
 }
 if (!marketplace.includes("tt-marketplace-page") || !marketplace.includes("tt-marketplace-grid")) {
   errors.push("Marketplace must retain mobile-safe layout hooks.");
