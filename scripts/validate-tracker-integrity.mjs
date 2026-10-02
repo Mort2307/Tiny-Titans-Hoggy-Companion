@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -65,14 +65,36 @@ if (weightRecords.indexOf('id="weight-chart"') > weightRecords.indexOf('id="weig
   errors.push("Weight growth chart must remain above the logging form in the tracker hierarchy.");
 }
 
-requireSource(weightChart, 'from "recharts"', "WeightChart must use the chart renderer.");
-requireSource(weightChart, "<ResponsiveContainer", "WeightChart must remain responsive.");
-requireSource(weightChart, 'className="weight-chart-container weight-chart-container--detail"', "WeightChart must retain its measurable detail-chart container.");
+const weightChartUsesRecharts =
+  weightChart.includes('from "recharts"') &&
+  weightChart.includes("<ResponsiveContainer");
+
+const weightChartUsesNativeSvg =
+  weightChart.includes('data-weight-chart="native-svg"') &&
+  weightChart.includes("<svg") &&
+  /width:\s*"100%"/.test(weightChart);
+
+if (!weightChartUsesRecharts && !weightChartUsesNativeSvg) {
+  errors.push("WeightChart must use a supported responsive chart renderer.");
+}
+
+requireSource(weightChart, "weight-chart-container", "WeightChart must retain a measurable chart container.");
+requireSource(weightChart, "weight-chart-container--detail", "WeightChart must retain its measurable detail-chart container.");
 requireSource(weightChart, 'role="img"', "WeightChart must expose chart semantics.");
 requireSource(weightChart, 'record.unit === "kg" ? record.weight * 1000 : record.weight', "WeightChart must normalise legacy kg points before plotting.");
 
-requireSource(weightMiniChart, 'from "recharts"', "WeightMiniChart must use the chart renderer.");
-requireSource(weightMiniChart, "<ResponsiveContainer", "WeightMiniChart must remain responsive.");
+const weightMiniUsesRecharts =
+  weightMiniChart.includes('from "recharts"') &&
+  weightMiniChart.includes("<ResponsiveContainer");
+
+const weightMiniUsesNativeSvg =
+  weightMiniChart.includes('import WeightChart from "./WeightChart"') &&
+  /<WeightChart\s+history=\{chartHistory\}\s+compact\s*\/>/.test(weightMiniChart);
+
+if (!weightMiniUsesRecharts && !weightMiniUsesNativeSvg) {
+  errors.push("WeightMiniChart must use a supported responsive chart renderer.");
+}
+
 requireSource(weightMiniChart, "getSnakeWeights", "WeightMiniChart must retain canonical Firestore reconciliation.");
 
 requireSource(weightHook, "migrateEmbeddedWeights", "Weight tracker must retain migration of legacy embedded history.");

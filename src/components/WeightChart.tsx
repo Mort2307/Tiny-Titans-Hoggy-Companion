@@ -130,7 +130,7 @@ export default function WeightChart({ history, compact = false }: WeightChartPro
 
   return (
     <div
-      className={compact ? "tt-native-weight-chart compact" : "tt-native-weight-chart"}
+      className={compact ? "weight-chart-container tt-native-weight-chart compact" : "weight-chart-container weight-chart-container--detail tt-native-weight-chart"}
       data-weight-chart="native-svg"
     >
       <svg
