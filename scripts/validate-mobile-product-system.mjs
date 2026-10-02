@@ -75,6 +75,12 @@ const experienceContracts = [
   [/\.universal-animals-collection-panel\s*\{[\s\S]*?background:\s*transparent;/, "collection-first My Animals visual hierarchy"],
   [/\.tt-reminder-tiles\s*\{[\s\S]*?scroll-snap-type:/, "Reminder task snap rail"],
   [/\.tt-tracker-nav\s*\{[\s\S]*?position:\s*sticky;/, "sticky tracker navigation"],
+  [/\.paid-plan-grid\s*\{[\s\S]*?scroll-snap-type:/, "mobile plan-card snap rail"],
+  [/\.workspace-dashboard__stats\s*\{[\s\S]*?overflow-x:\s*auto;/, "workspace KPI rail"],
+  [/\.community-action-grid\s*\{[\s\S]*?scroll-snap-type:/, "Community action rail"],
+  [/\.obs-tabs\s*\{[\s\S]*?position:\s*sticky;/, "Observatory sticky mobile tabs"],
+  [/\.creator-queue-modal\s*,[\s\S]*?border-radius:\s*22px 22px 0 0;/, "Creator review bottom-sheet modal"],
+  [/\.creator-snapshot-grid\s*,[\s\S]*?scroll-snap-type:/, "Creator intelligence metric rail"],
 ];
 
 for (const [pattern, label] of experienceContracts) {
