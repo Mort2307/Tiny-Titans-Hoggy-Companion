@@ -16,6 +16,12 @@ const myAnimals = read("src", "pages", "MyAnimals.tsx");
 const marketplace = read("src", "pages", "Marketplace.tsx");
 const settings = read("src", "pages", "Settings.tsx");
 const pageRegistry = read("src", "config", "tinyTitansPageRegistry.ts");
+const authenticatedRoutes = read("src", "routes", "AuthenticatedRoutes.tsx");
+const updatePrompt = read("src", "components", "AppUpdatePrompt.tsx");
+const updatePromptCss = read("src", "styles", "AppUpdatePrompt.css");
+const pwaService = read("src", "services", "pwaUpdateService.ts");
+const viteConfig = read("vite.config.ts");
+const staticManifest = read("public", "manifest.webmanifest");
 const errors = [];
 
 const styleImports = [...main.matchAll(/^import "\.\/styles\/([^"]+\.css)";$/gm)].map((match) => match[1]);
@@ -93,6 +99,50 @@ for (const [pattern, label] of experienceContracts) {
 
 if (!header.includes("mobileContextLabel") || !header.includes("app-mobile-context")) {
   errors.push("Header must expose route-aware mobile context.");
+}
+
+if (!authenticatedRoutes.includes('const Home = lazy(() => import("../pages/Home"))')) {
+  errors.push("Home must remain route-lazy so the authenticated shell is not forced to bundle the full dashboard.");
+}
+if (!authenticatedRoutes.includes("tt-route-loading__hero") || !authenticatedRoutes.includes('aria-busy="true"')) {
+  errors.push("Authenticated routes must retain the native route-loading skeleton.");
+}
+if (!experience.includes(".tt-route-loading__grid") || !experience.includes("@keyframes tt-route-skeleton-shimmer")) {
+  errors.push("Mobile Experience V2 must retain the route-transition skeleton styling.");
+}
+
+const manifest = JSON.parse(staticManifest);
+const manifestIcons = Array.isArray(manifest.icons) ? manifest.icons : [];
+const manifestShortcuts = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
+if (!manifestIcons.some((icon) => icon.src === "/icons/tiny-titans-192.svg")) {
+  errors.push("Static PWA manifest must retain the canonical Tiny Titans 192 SVG icon.");
+}
+if (!manifestIcons.some((icon) => icon.type === "image/jpeg")) {
+  errors.push("Static PWA manifest must retain a raster install-icon fallback.");
+}
+for (const shortcutUrl of ["/animals", "/reminders", "/calculator"]) {
+  if (!manifestShortcuts.some((shortcut) => shortcut.url === shortcutUrl)) {
+    errors.push(`Static PWA manifest must retain launcher shortcut ${shortcutUrl}.`);
+  }
+}
+if (!viteConfig.includes('tinyTitansIcon192') || !viteConfig.includes('shortcuts: [') || !viteConfig.includes('tinyTitansRasterIcon')) {
+  errors.push("Generated Vite PWA manifest must retain canonical icons, shortcuts and raster fallback.");
+}
+if (!index.includes('rel="icon" type="image/svg+xml" href="/favicon.svg?v=4"')) {
+  errors.push("index.html must use the canonical SVG favicon.");
+}
+
+if (!updatePrompt.includes("previousFocusRef") || !updatePrompt.includes('event.key !== "Tab"') || !updatePrompt.includes('document.body.style.overflow = "hidden"')) {
+  errors.push("App update dialog must trap focus, restore focus and lock background scrolling.");
+}
+if (!pwaService.includes("notifyTinyTitansOfflineReady") || !pwaService.includes("onOfflineReady()")) {
+  errors.push("PWA update service must surface offline-ready state.");
+}
+if (!/\.tt-update-manual,[\s\S]*?bottom:\s*calc\(82px \+ env\(safe-area-inset-bottom\)\)/.test(updatePromptCss)) {
+  errors.push("Mobile update control must remain above the Quick View dock.");
+}
+if (!/\.tt-update-panel\s*\{[\s\S]*?border-radius:\s*24px 24px 0 0;/.test(updatePromptCss)) {
+  errors.push("Mobile update dialog must retain bottom-sheet presentation.");
 }
 
 const focusManagedSources = [
