@@ -1969,3 +1969,16 @@
     gap: 9px;
   }
 }
+
+
+@media (max-width: 800px) {
+  /* Native app-bar back replaces generic page-level back chrome on phones. */
+  .back-home-button-wrap,
+  .page-back-button {
+    display: none !important;
+  }
+
+  .calculator-navigation .calculator-back-button:first-child {
+    display: none;
+  }
+}
