@@ -91,6 +91,12 @@ const experienceContracts = [
   [/content-visibility:\s*auto;/, "off-screen mobile list paint deferral"],
   [/@media \(prefers-contrast:\s*more\)/, "high-contrast mobile treatment"],
   [/@media \(forced-colors:\s*active\)/, "forced-colours mobile treatment"],
+  [/\/\* VISUALISATION INTEGRITY — dense analytical surfaces stay usable on phones\. \*\//, "visualisation integrity section"],
+  [/\.calculator-result-grid\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/, "single-column mobile genetics results"],
+  [/\.tt-timeline-filters\s*\{[\s\S]*?position:\s*sticky;[\s\S]*?overflow-x:\s*auto;/, "sticky scrollable timeline filters"],
+  [/\.tt-timeline-summary\s*\{[\s\S]*?display:\s*flex;[\s\S]*?scroll-snap-type:/, "timeline metric rail"],
+  [/\.readiness-item-action\s*\{[\s\S]*?margin-left:\s*0;/, "mobile breeding-readiness action alignment"],
+  [/\.readiness-item-action button,[\s\S]*?min-height:\s*44px;/, "thumb-safe breeding-readiness actions"],
 ];
 
 for (const [pattern, label] of experienceContracts) {
