@@ -6,7 +6,9 @@ const read = (...parts) => fs.readFileSync(path.join(root, ...parts), "utf8");
 
 const main = read("src", "main.tsx");
 const css = read("src", "styles", "mobile-product-system.css");
+const experience = read("src", "styles", "mobile-experience-v2.css");
 const index = read("index.html");
+const header = read("src", "components", "Layout", "Header.tsx");
 const quickView = read("src", "components", "Layout", "QuickModeNavigation.tsx");
 const confirmDialog = read("src", "components", "ConfirmActionDialog.tsx");
 const commandPalette = read("src", "components", "TitanCommandPalette", "TitanCommandPalette.tsx");
@@ -20,8 +22,14 @@ const styleImports = [...main.matchAll(/^import "\.\/styles\/([^"]+\.css)";$/gm)
 if (!styleImports.includes("mobile-product-system.css")) {
   errors.push("src/main.tsx must import mobile-product-system.css.");
 }
-if (styleImports.at(-1) !== "mobile-product-system.css") {
-  errors.push("mobile-product-system.css must be the final shared style import so it can resolve legacy mobile conflicts.");
+if (!styleImports.includes("mobile-experience-v2.css")) {
+  errors.push("src/main.tsx must import mobile-experience-v2.css.");
+}
+if (styleImports.at(-1) !== "mobile-experience-v2.css") {
+  errors.push("mobile-experience-v2.css must be the final shared style import so native mobile hierarchy wins over legacy CSS.");
+}
+if (styleImports.indexOf("mobile-product-system.css") > styleImports.indexOf("mobile-experience-v2.css")) {
+  errors.push("mobile-product-system.css must load before mobile-experience-v2.css.");
 }
 
 if (!/viewport-fit=cover/.test(index)) {
@@ -51,6 +59,30 @@ const cssContracts = [
 
 for (const [pattern, label] of cssContracts) {
   if (!pattern.test(css)) errors.push(`Missing mobile product contract: ${label}.`);
+}
+
+const experienceContracts = [
+  [/--tt-mobile-appbar-height:\s*58px/, "compact mobile app bar token"],
+  [/\.app-header\s*\{[\s\S]*?position:\s*sticky;/, "sticky compact app bar"],
+  [/\.app-mobile-context\s*\{[\s\S]*?display:\s*block;/, "route-aware mobile header context"],
+  [/\.app-navigation\.tt-easy-nav-strip\s*\{[\s\S]*?border-radius:\s*var\(--tt-mobile-dock-radius\)/, "floating rounded mobile dock"],
+  [/\.tt-home-brandbar\s*\{[\s\S]*?display:\s*none;/, "duplicate Home branding removal"],
+  [/\.tt-home-stats\s*\{[\s\S]*?scroll-snap-type:/, "Home record-count snap rail"],
+  [/\.tt-home-explore-grid\s*\{[\s\S]*?scroll-snap-type:/, "Home explore snap rail"],
+  [/\.tt-quick-actions\s*\{[\s\S]*?repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "two-up mobile care actions"],
+  [/\.snake-profile-hero\s*\{[\s\S]*?grid-template-columns:\s*96px/, "compact animal identity hero"],
+  [/\.snake-profile-quickbar\s*\{[\s\S]*?position:\s*sticky;/, "sticky animal action rail"],
+  [/\.universal-animals-collection-panel\s*\{[\s\S]*?background:\s*transparent;/, "collection-first My Animals visual hierarchy"],
+  [/\.tt-reminder-tiles\s*\{[\s\S]*?scroll-snap-type:/, "Reminder task snap rail"],
+  [/\.tt-tracker-nav\s*\{[\s\S]*?position:\s*sticky;/, "sticky tracker navigation"],
+];
+
+for (const [pattern, label] of experienceContracts) {
+  if (!pattern.test(experience)) errors.push(`Missing Mobile Experience V2 contract: ${label}.`);
+}
+
+if (!header.includes("mobileContextLabel") || !header.includes("app-mobile-context")) {
+  errors.push("Header must expose route-aware mobile context.");
 }
 
 const focusManagedSources = [
