@@ -10,6 +10,7 @@ const model = read("src/genetics/geneticsModel.ts");
 const snakeTypes = read("src/types/Snake.ts");
 const geneticsTypes = read("src/types/genetics.ts");
 const resultCard = read("src/components/ResultCard.tsx");
+const presentation = read("src/utils/geneticsPresentation.ts");
 const bridge = read("src/utils/speciesGeneticsCalculator.ts");
 
 const checks = [
@@ -26,6 +27,8 @@ const checks = [
   ["Bounded results have an explicit range", geneticsTypes.includes("probabilityRange?: { min: number; max: number }") && forecast.includes("probabilityRange")],
   ["Result card never calls toFixed on undefined", resultCard.includes("result.percentage === undefined") && !resultCard.includes("result.percentage.toFixed")],
   ["Result card explains conditional outcomes", resultCard.includes("Conditional result") && resultCard.includes("genotypeScenarioLabels")],
+  ["Component genetics remain locus-based for super phenotypes", presentation.includes("signature,") && presentation.includes("phenotypeSignature") && !presentation.includes("signature: displaySignature")],
+  ["Component construction exposes homozygous/super copy count", resultCard.includes('entry.copies > 1 ? \`\${entry.name} ×\${entry.copies}\` : entry.name')],
   ["Species legacy bridge delegates to forecast", bridge.includes("calculateSpeciesGeneticsForecast")],
   ["Core model conserves locus probabilities", model.includes("existing.probability += 0.25")],
   ["Cross-species safety remains enforced", model.includes("Cross-species genetics are not supported")],
