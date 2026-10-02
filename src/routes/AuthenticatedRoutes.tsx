@@ -5,8 +5,8 @@ import CreatorRouteGuard from "../components/CreatorRouteGuard";
 import RequireCapability from "../components/RequireCapability";
 import PaidTierGate from "../components/PaidTierGate";
 import RescueOperationalGate from "../components/RescueOperationalGate";
-import Home from "../pages/Home";
 
+const Home = lazy(() => import("../pages/Home"));
 const RescuePublicProfile = lazy(() => import("../pages/RescuePublicProfile"));
 const RescueAnimalRoute = lazy(() => import("../pages/RescueAnimalRoute"));
 const FamilyHistory = lazy(() => import("../pages/FamilyHistory"));
@@ -140,12 +140,22 @@ const RescueCompliance = lazy(() => import("../pages/RescueOperationsPages").the
 const RescuePublicPreview = lazy(() => import("../pages/RescueOperationsPages").then((module) => ({ default: module.RescuePublicPreview })));
 
 export const RouteLoadingFallback = () => (
-  <div className="page-container" aria-live="polite">
-    <div className="welcome-card">
-      <h1>Loading Tiny Titans...</h1>
-      <p>Opening this area…</p>
+  <main className="page-container tt-route-loading" aria-live="polite" aria-busy="true">
+    <div className="tt-route-loading__top">
+      <span className="tt-route-loading__icon" aria-hidden="true" />
+      <span className="tt-route-loading__line tt-route-loading__line--title" />
     </div>
-  </div>
+    <section className="tt-route-loading__hero" aria-hidden="true">
+      <span className="tt-route-loading__line tt-route-loading__line--short" />
+      <span className="tt-route-loading__line tt-route-loading__line--heading" />
+      <span className="tt-route-loading__line" />
+      <span className="tt-route-loading__line tt-route-loading__line--medium" />
+    </section>
+    <section className="tt-route-loading__grid" aria-hidden="true">
+      <span /><span /><span /><span />
+    </section>
+    <span className="sr-only">Opening this Tiny Titans area…</span>
+  </main>
 );
 
 export default function AuthenticatedRoutes() {
