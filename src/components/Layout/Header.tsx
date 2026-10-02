@@ -39,6 +39,27 @@ function workspaceIcon(productId: WorkspacePresentation["productId"]) {
   return "animals" as const;
 }
 
+function mobileContextLabel(pathname: string) {
+  if (pathname === "/") return "At a Glance";
+  if (pathname.startsWith("/animals") || pathname.startsWith("/snakes")) return "My Animals";
+  if (pathname.startsWith("/feeding")) return "Feeding";
+  if (pathname.startsWith("/weights")) return "Weight";
+  if (pathname.startsWith("/shedding")) return "Shedding";
+  if (pathname.startsWith("/health")) return "Health";
+  if (pathname.startsWith("/behaviour")) return "Behaviour";
+  if (pathname.startsWith("/reminders")) return "Reminders";
+  if (pathname.startsWith("/species")) return "Species";
+  if (pathname.startsWith("/morph-library")) return "Morph Library";
+  if (pathname.startsWith("/calculator")) return "Genetics";
+  if (pathname.startsWith("/breeding")) return "Breeding";
+  if (pathname.startsWith("/rescue")) return "Rescue";
+  if (pathname.startsWith("/marketplace")) return "Marketplace";
+  if (pathname.startsWith("/community")) return "Community";
+  if (pathname.startsWith("/creator")) return "Creator";
+  if (pathname.startsWith("/account")) return "My Account";
+  return "Keeper Companion";
+}
+
 function Header() {
   const { user, profile } = useAuth();
   const location = useLocation();
@@ -173,6 +194,7 @@ function Header() {
             <span className="app-brand-primary">Tiny Titans</span>
             <span className="app-brand-secondary">Keeper Companion</span>
           </span>
+          <span className="app-mobile-context">{mobileContextLabel(location.pathname)}</span>
           {!isPersonal && (
             <span className="app-brand-workspace">{workspaceLabel}</span>
           )}
