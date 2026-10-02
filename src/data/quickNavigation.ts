@@ -24,12 +24,12 @@ export const QUICK_NAV_ITEMS: QuickNavItem[] = [
 
   { id: "reminders", label: "Reminder Hub", icon: "reminders", path: "/reminders", group: "Care", description: "See what is due next.", keywords: ["due", "notifications", "feeding reminder", "weight reminder"] },
   { id: "husbandry", label: "Husbandry & Care", icon: "husbandry", path: "/husbandry", group: "Care", description: "Species-aware care guidance." },
-  { id: "weights", label: "Weight Records", icon: "weight", path: "/weights", group: "Care", description: "Record and review growth.", keywords: ["weight", "weigh"] },
-  { id: "feeding", label: "Feeding Tracker", icon: "feeding", path: "/feeding", group: "Care", description: "Log meals and feeding history.", keywords: ["feed", "feeding", "meal", "food", "prey", "dinner"] },
+  { id: "weights", label: "Weight Records", icon: "weight", path: "/weights", group: "Care", description: "Record and review growth.", keywords: ["weight", "weigh", "growth", "graph", "chart", "trend", "tracker"] },
+  { id: "feeding", label: "Feeding Tracker", icon: "feeding", path: "/feeding", group: "Care", description: "Log meals and feeding history.", keywords: ["feed", "feeding", "meal", "food", "prey", "dinner", "tracker", "history"] },
   { id: "feeding-preparation", label: "Feeding Preparation", icon: "feeding", path: "/feeding/preparation", group: "Care", description: "Prepare feeding workflows and records." },
-  { id: "shedding", label: "Shed Intelligence", icon: "shed", path: "/shedding", group: "Care", description: "Track shed cycles and outcomes.", keywords: ["shed", "shedding"] },
-  { id: "health", label: "Health & Vet", icon: "health", path: "/health", group: "Care", description: "Health and veterinary records.", keywords: ["vet", "veterinary", "medicine", "medication", "ill", "sick", "treatment"] },
-  { id: "behaviour", label: "Behaviour Journal", icon: "behaviour", path: "/behaviour", group: "Care", description: "Record behaviour and observations.", keywords: ["behavior", "behaviour", "observation"] },
+  { id: "shedding", label: "Shed Intelligence", icon: "shed", path: "/shedding", group: "Care", description: "Track shed cycles and outcomes.", keywords: ["shed", "shedding", "tracker", "cycle", "history"] },
+  { id: "health", label: "Health & Vet", icon: "health", path: "/health", group: "Care", description: "Health and veterinary records.", keywords: ["vet", "veterinary", "medicine", "medication", "ill", "sick", "treatment", "health", "tracker", "history"] },
+  { id: "behaviour", label: "Behaviour Journal", icon: "behaviour", path: "/behaviour", group: "Care", description: "Record behaviour and observations.", keywords: ["behavior", "behaviour", "observation", "journal", "tracker", "history"] },
   { id: "behaviour-observatory", label: "Behaviour Observatory", icon: "observatory", path: "/behaviour-observatory", group: "Care", description: "Explore structured behaviour observations." },
   { id: "enclosure", label: "Enclosure Intelligence", icon: "enclosure", path: "/enclosure-intelligence", group: "Care", description: "Review enclosure conditions and care.", keywords: ["viv", "vivarium", "tank", "habitat", "enclosure", "temperature", "temps", "humidity"] },
 

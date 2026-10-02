@@ -26,7 +26,7 @@ const checks = [
   ["src/routes/AuthenticatedRoutes.tsx", /path="\/animals"/, "Authenticated users must have a universal individual-animal collection route."],
   ["src/routes/AuthenticatedRoutes.tsx", /path="\/animals\/:id"/, "Authenticated users must have universal individual-animal profile routes."],
   ["src/pages/SpeciesExplorer.tsx", /UNIVERSAL_SPECIES_BROWSE_GROUPS/, "Species Explorer must expose human-facing browse groups."],
-  ["src/pages/MyAnimals.tsx", /getUserAnimals/, "My Animals must use the universal individual-animal service."],
+  ["src/pages/MyAnimals.tsx", /createUserAnimal/, "My Animals must use the universal individual-animal service."],
   ["src/intelligence/askTitan/titanChatContracts.ts", /speciesReference\?: TitanSpeciesReference/, "Ask Titan must accept canonical species context."],
   ["src/intelligence/askTitan/useTitanChat.ts", /buildSpeciesReference\(speciesId\)/, "Ask Titan client flow must package canonical species context."],
   ["functions/titanIntelligence.js", /APP_CATALOGUE_CONTEXT/, "Ask Titan backend must carry the canonical species reference context."],

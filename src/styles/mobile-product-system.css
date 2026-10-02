@@ -1,0 +1,1312 @@
+/* Tiny Titans Keeper Companion — mobile-first product system.
+   Loaded last so mobile behaviour has one canonical source of truth. */
+
+:root {
+  --tt-mobile-gutter: clamp(12px, 4vw, 20px);
+  --tt-mobile-nav-height: 68px;
+  --tt-mobile-control-height: 48px;
+  --tt-mobile-card-radius: 16px;
+}
+
+@media (max-width: 800px) {
+  html {
+    min-width: 0;
+    scroll-padding-bottom: calc(var(--tt-mobile-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  body,
+  #root,
+  .app-shell,
+  .app-main,
+  .app-content,
+  .tt-page-frame {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  body {
+    min-width: 0;
+  }
+
+  .app-shell {
+    min-height: 100dvh;
+    overflow-x: clip;
+  }
+
+  /* Header: identity first, utilities second. Never let controls collide. */
+  .app-header {
+    width: 100%;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      max(var(--tt-mobile-gutter), env(safe-area-inset-right))
+      8px
+      max(var(--tt-mobile-gutter), env(safe-area-inset-left));
+    gap: 7px;
+    overflow: visible;
+  }
+
+  .app-header-identity {
+    position: static;
+    inset: auto;
+    transform: none;
+    order: 1;
+    flex: 1 0 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .app-header-identity .logo-link {
+    flex: 0 0 auto;
+  }
+
+  .app-header-identity .tiny-titans-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .app-header-identity .app-brand-lockup {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 54px);
+    padding: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .app-header-identity .app-brand-name {
+    min-width: 0;
+    align-items: baseline;
+    justify-content: flex-start;
+    flex-direction: row;
+    gap: 0.38em;
+    font-size: clamp(0.82rem, 3.3vw, 1rem);
+    white-space: nowrap;
+  }
+
+  .app-brand-workspace {
+    max-width: min(72vw, 360px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .workspace-purpose-pill {
+    order: 2;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .app-header-actions {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 2px 0 3px;
+    display: flex;
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: visible;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-header-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-header-actions > * {
+    flex: 0 0 auto;
+  }
+
+  .app-header-actions :where(button, a) {
+    min-height: 40px;
+  }
+
+  /* Main content: phone-native spacing with no accidental horizontal page scroll. */
+  .app-main {
+    width: 100%;
+    margin-left: 0;
+    padding-bottom: calc(var(--tt-mobile-nav-height) + env(safe-area-inset-bottom));
+    overflow-x: clip;
+  }
+
+  .app-content {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding:
+      12px
+      max(var(--tt-mobile-gutter), env(safe-area-inset-right))
+      24px
+      max(var(--tt-mobile-gutter), env(safe-area-inset-left));
+    overflow-x: clip;
+  }
+
+  .app-content > .tt-page-frame,
+  .app-content > .tt-page-frame > * {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content :where(
+    .page-container,
+    .page-shell,
+    .page-content,
+    .content-shell,
+    .workspace-product-shell,
+    .workspace-product-content,
+    .tracker-page,
+    .weight-page,
+    .feeding-page,
+    .health-page,
+    .behaviour-page,
+    .husbandry-page
+  ) {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content :where(h1, h2, h3, h4, p, span, strong, small, label, a) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  .app-content h1 {
+    font-size: clamp(1.5rem, 7vw, 2rem);
+    line-height: 1.08;
+  }
+
+  .app-content h2 {
+    font-size: clamp(1.2rem, 5.4vw, 1.55rem);
+    line-height: 1.15;
+  }
+
+  .app-content h3 {
+    font-size: clamp(1rem, 4.8vw, 1.25rem);
+    line-height: 1.2;
+  }
+
+  /* Cards and panels: consistent density on narrow screens. */
+  .app-content :where(
+    .card,
+    .panel,
+    .section-card,
+    .feature-card,
+    .dashboard-card,
+    .tracker-card,
+    .snake-card,
+    .snake-tile,
+    .snake-profile-card,
+    .weight-reminder-card,
+    .weight-records-card,
+    .nav-card,
+    .welcome-card,
+    .rescue-card,
+    .community-post,
+    .paid-plan-card
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    border-radius: var(--tt-mobile-card-radius);
+  }
+
+  /* Dense desktop layouts collapse predictably instead of crushing content. */
+  .app-content :where(
+    .dashboard-grid,
+    .nav-grid,
+    .tracker-grid,
+    .snake-profile-grid,
+    .weight-reminder-grid,
+    .weight-records-grid,
+    .stats-grid,
+    .summary-grid,
+    .feature-grid,
+    .paid-plan-grid,
+    .family-manager-layout,
+    .family-review-layout,
+    .community-action-grid,
+    .community-section-grid,
+    .community-manager-grid,
+    .rescue-grid,
+    .rescue-passport-grid,
+    .rescue-command-grid,
+    .rescue-detail-grid,
+    .rescue-onboarding-grid,
+    .rescue-floor-grid
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-content :where(
+    .dashboard-grid,
+    .nav-grid,
+    .tracker-grid,
+    .snake-profile-grid,
+    .weight-reminder-grid,
+    .weight-records-grid,
+    .stats-grid,
+    .summary-grid,
+    .feature-grid,
+    .paid-plan-grid,
+    .family-manager-layout,
+    .family-review-layout,
+    .community-action-grid,
+    .community-section-grid,
+    .community-manager-grid,
+    .rescue-grid,
+    .rescue-passport-grid,
+    .rescue-command-grid,
+    .rescue-detail-grid,
+    .rescue-onboarding-grid,
+    .rescue-floor-grid
+  ) > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Forms: one-handed, no iOS focus zoom, no clipped controls. */
+  .app-content :where(
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea
+  ) {
+    width: 100%;
+    max-width: 100%;
+    min-height: var(--tt-mobile-control-height);
+    font-size: 16px;
+  }
+
+  .app-content textarea {
+    min-height: 112px;
+    resize: vertical;
+  }
+
+  .app-content :where(
+    .form-row,
+    .form-grid,
+    .field-row,
+    .filter-row,
+    .toolbar,
+    .page-actions,
+    .section-actions,
+    .form-actions,
+    .rescue-form-actions,
+    .community-manager-actions
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .app-content :where(button, [role="button"]) {
+    touch-action: manipulation;
+  }
+
+  /* Data-heavy screens remain usable by scrolling the data, not the whole page. */
+  .app-content :where(
+    .table-scroll,
+    .table-wrapper,
+    .responsive-table,
+    .paid-tier-comparison
+  ) {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-content table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-content :where(.recharts-wrapper, .recharts-surface, canvas, svg, img, video) {
+    max-width: 100%;
+  }
+
+  /* Generic dialogs stay inside the visual viewport. */
+  [role="dialog"] {
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    overscroll-behavior: contain;
+  }
+
+  /* Quick View is a real mobile dock. */
+  .app-navigation.tt-easy-nav-strip {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 9000;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    min-height: calc(var(--tt-mobile-nav-height) + env(safe-area-inset-bottom));
+    padding:
+      6px
+      max(8px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+    border: 0;
+    border-top: 1px solid rgba(198, 171, 220, 0.16);
+    background: rgba(12, 9, 17, 0.94);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    overflow: visible;
+    touch-action: manipulation;
+  }
+
+  .tt-easy-nav-inner {
+    width: min(560px, 100%);
+    margin: 0 auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .tt-easy-nav-link {
+    min-width: 0;
+    min-height: 54px;
+    padding: 5px 3px;
+    border-radius: 13px;
+    gap: 2px;
+  }
+
+  .tt-easy-nav-link small {
+    width: 100%;
+    overflow: hidden;
+    font-size: clamp(0.56rem, 2.55vw, 0.68rem);
+    line-height: 1.05;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tt-easy-nav-link.active {
+    background: linear-gradient(180deg, rgba(166, 107, 210, 0.18), rgba(166, 107, 210, 0.09));
+    border-color: rgba(240, 202, 136, 0.2);
+  }
+
+  /* Everything opens as a bottom sheet with search kept reachable. */
+  .tt-easy-more-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    background: rgba(4, 3, 7, 0.72);
+  }
+
+  .tt-easy-more {
+    width: min(760px, 100%);
+    max-width: 100%;
+    height: auto;
+    max-height: calc(92dvh - env(safe-area-inset-top));
+    margin: 0;
+    padding:
+      12px
+      var(--tt-mobile-gutter)
+      max(16px, env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+    border-bottom: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-shadow: 0 -24px 70px rgba(0, 0, 0, 0.5);
+  }
+
+  .tt-easy-more::before {
+    content: "";
+    display: block;
+    width: 42px;
+    height: 4px;
+    margin: 0 auto 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .tt-easy-more-head {
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .tt-easy-more-head > button {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .tt-easy-search {
+    position: sticky;
+    top: -1px;
+    z-index: 3;
+    min-height: 50px;
+    margin-bottom: 12px;
+    background: rgba(22, 17, 29, 0.97);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .tt-easy-search input {
+    min-height: 32px;
+    font-size: 16px;
+  }
+
+  .tt-easy-feature-row {
+    min-width: 0;
+  }
+
+  .tt-easy-feature-link {
+    min-width: 0;
+    min-height: 58px;
+  }
+
+  .tt-easy-pin-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .tt-easy-more-foot {
+    padding-bottom: 2px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tt-live-world-clock {
+    display: none;
+  }
+
+  .tt-easy-more-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-content :where(
+    .page-actions,
+    .section-actions,
+    .form-actions,
+    .rescue-form-actions,
+    .community-manager-actions,
+    .snake-profile-actions
+  ) {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  :root {
+    --tt-mobile-gutter: 12px;
+  }
+
+  .app-header-identity {
+    justify-content: flex-start;
+  }
+
+  .app-header-identity .app-brand-lockup {
+    max-width: calc(100% - 48px);
+  }
+
+  .workspace-purpose-pill {
+    width: 100%;
+  }
+
+  .workspace-purpose-pill small,
+  .workspace-switcher__button small,
+  .paid-tier-header-badge strong {
+    display: none;
+  }
+
+  .app-content :where(
+    .page-actions,
+    .section-actions,
+    .form-actions,
+    .rescue-form-actions,
+    .community-manager-actions,
+    .snake-profile-actions
+  ) > :where(button, a) {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .app-content :where(
+    .family-manager-quick-grid,
+    .family-manager-policy-grid,
+    .family-review-summary,
+    .community-pulse,
+    .paid-free-experience__groups,
+    .husbandry-stats--five,
+    .tt-timeline-summary
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .tt-easy-more {
+    max-height: calc(94dvh - env(safe-area-inset-top));
+    border-radius: 20px 20px 0 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-brand-secondary {
+    font-size: 0.72em;
+  }
+
+  .app-header-actions {
+    gap: 4px;
+  }
+
+  .tt-easy-nav-link {
+    padding-inline: 1px;
+  }
+
+  .tt-easy-nav-link small {
+    font-size: 0.56rem;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) and (max-width: 900px) {
+  .app-header-identity .tiny-titans-logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .app-header {
+    padding-top: max(6px, env(safe-area-inset-top));
+    padding-bottom: 5px;
+  }
+
+  .tt-easy-more {
+    max-height: calc(100dvh - env(safe-area-inset-top));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .app-content :where(button, [role="button"]),
+  .tt-easy-nav-link,
+  .tt-easy-feature-link,
+  .tt-easy-pin-button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .app-content :where(
+    .dashboard-card,
+    .tracker-card,
+    .snake-card,
+    .snake-tile,
+    .nav-card,
+    .feature-card
+  ):hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-easy-more,
+  .tt-easy-nav-link,
+  .app-header-actions {
+    scroll-behavior: auto;
+  }
+}
+
+
+/* =========================================================
+   CORE KEEPER JOURNEYS — MOBILE REFINEMENT
+   ========================================================= */
+
+@media (max-width: 800px) {
+  /* Avoid double-gutters from route-local desktop shells. */
+  .tt-tracker-page,
+  .tt-reminders-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 0 18px;
+  }
+
+  .tt-tracker-header,
+  .tt-reminder-hero {
+    margin-top: 0;
+  }
+
+  .tt-tracker-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tt-tracker-snake {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tt-tracker-snake select {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .tt-tracker-nav {
+    top: 0;
+    margin-inline: -2px;
+    scroll-snap-type: x proximity;
+  }
+
+  .tt-tracker-nav > * {
+    scroll-snap-align: start;
+  }
+
+  .tt-tracker-page :where(
+    #feeding-overview,
+    #feeding-log,
+    #feeding-history,
+    #weight-overview,
+    #weight-log,
+    #weight-history,
+    #shed-overview,
+    #shed-log,
+    #shed-history,
+    #health-overview,
+    #health-log,
+    #health-history,
+    #behaviour-overview,
+    #behaviour-log,
+    #behaviour-history
+  ) {
+    scroll-margin-top: 68px;
+  }
+
+  .tt-tracker-grid,
+  .tt-weight-history-layout,
+  .tt-weight-intelligence-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tt-tracker-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-tracker-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tt-tracker-form label:has(textarea),
+  .tt-tracker-form fieldset,
+  .tt-tracker-form .tt-tracker-actions {
+    grid-column: auto;
+  }
+
+  .tt-tracker-form :where(input, select) {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .tt-tracker-form textarea {
+    min-height: 120px;
+    font-size: 16px;
+  }
+
+  .tt-tracker-actions button,
+  .tt-tracker-button {
+    min-height: 48px;
+  }
+
+  .tt-history-toolbar,
+  .tt-history-item-header,
+  .tt-weight-intelligence-header,
+  .tt-weight-intelligence-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tt-weight-intelligence-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-weight-intelligence-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Animal profile: compact identity + swipeable action rail. */
+  .snake-profile-page {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .snake-profile-heading {
+    margin-bottom: 0;
+  }
+
+  .snake-profile-hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
+
+  .snake-profile-photo {
+    width: min(58vw, 210px);
+    max-width: 210px;
+    justify-self: center;
+  }
+
+  .snake-profile-identity {
+    text-align: left;
+  }
+
+  .snake-profile-badges {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .snake-profile-badge {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+    border-radius: 11px;
+  }
+
+  .snake-profile-quickbar {
+    margin-inline: 0;
+    padding: 8px;
+    gap: 7px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .snake-profile-quickbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .snake-profile-quickbar button {
+    flex: 0 0 min(31vw, 116px);
+    min-width: 98px;
+    min-height: 56px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 7px;
+    scroll-snap-align: start;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .snake-profile-quick-label {
+    line-height: 1.05;
+  }
+
+  .snake-profile-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .snake-profile-card {
+    min-height: 0;
+  }
+
+  /* My Animals: collection is prioritised; add form follows on phones. */
+  .universal-animals-page {
+    gap: 12px;
+  }
+
+  .universal-animals-hero {
+    padding: 16px;
+  }
+
+  .universal-animals-hero-copy {
+    min-width: 0;
+  }
+
+  .universal-animals-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .universal-add-shortcut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    min-height: 48px;
+  }
+
+  .universal-animals-collection-panel {
+    order: 2;
+  }
+
+  .universal-animals-add-panel {
+    order: 3;
+  }
+
+  .universal-animal-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .universal-animal-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .universal-animal-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .universal-animal-actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Reminders: useful density without tiny six-column cards. */
+  .tt-reminder-hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 18px;
+  }
+
+  .tt-reminder-hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-reminder-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-reminder-tiles a {
+    min-height: 112px;
+  }
+
+  .tt-reminder-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Species: journey becomes a swipeable rail, results remain readable. */
+  .species-explorer-journey {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .species-explorer-journey::-webkit-scrollbar {
+    display: none;
+  }
+
+  .species-explorer-journey__label,
+  .species-explorer-journey a {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .species-explorer-filter-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .species-explorer-toggle {
+    grid-column: auto;
+  }
+
+  .species-explorer-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .species-explorer-summary p {
+    grid-column: 1 / -1;
+  }
+
+  .species-explorer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Breeding: keep summary information compact, forms/details single-column. */
+  .breeding-hero,
+  .breeding-layout,
+  .breeding-grid,
+  .breeding-grid-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .breeding-intelligence {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .breeding-intelligence > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .breeding-timeline-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .breeding-project-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .breeding-actions button,
+  .breeding-danger-button {
+    min-height: 48px;
+  }
+
+  /* Rescue: operational density stays readable and touch-safe. */
+  .rescue-enhanced-page {
+    padding-inline: 0;
+  }
+
+  .rescue-enhanced-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .rescue-enhanced-actions,
+  .animal-hero-actions {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .rescue-enhanced-actions > *,
+  .animal-hero-actions > * {
+    min-height: 48px;
+  }
+
+  .rescue-stat-grid,
+  .rescue-animal-summary-grid,
+  .rescue-ops-grid,
+  .rescue-insight-grid,
+  .rescue-principles-grid,
+  .rescue-filter-row,
+  .rescue-form-grid,
+  .rescue-adoption-preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rescue-tabbar {
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rescue-tabbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rescue-tabbar button {
+    min-height: 46px;
+    scroll-snap-align: start;
+  }
+
+  .rescue-register-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .rescue-register-meta {
+    grid-column: 2;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    text-align: left;
+  }
+
+  .rescue-workspace-form :where(input, select) {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .rescue-workspace-form textarea {
+    min-height: 112px;
+    font-size: 16px;
+  }
+
+  .rescue-reminder-list article,
+  .rescue-form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .rescue-form-actions > :where(button, a) {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+
+  .rescue-timeline-enhanced article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Marketplace inline desktop sizing gets a phone-safe wrapper. */
+  .tt-marketplace-page {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 0 24px !important;
+  }
+
+  .tt-marketplace-actions {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tt-marketplace-actions > * {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+
+  .tt-marketplace-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .tt-tracker-stat-grid,
+  .snake-profile-badges,
+  .tt-reminder-hero-stats,
+  .tt-reminder-tiles,
+  .breeding-intelligence {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .breeding-intelligence > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .snake-profile-quickbar button {
+    flex-basis: 108px;
+  }
+}
+
+
+/* Mobile overlay and header simplification. */
+@media (max-width: 640px) {
+  /* Everything already provides full-app search on phones. */
+  .app-header .tt-command-trigger {
+    display: none;
+  }
+
+  .tiny-titans-confirm-backdrop,
+  .tt-command-backdrop {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .tiny-titans-confirm-panel,
+  .tt-command-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(92dvh - env(safe-area-inset-top));
+    margin: 0;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .tiny-titans-confirm-panel {
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .tiny-titans-confirm-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .tiny-titans-confirm-actions > * {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .tt-command-dialog > input {
+    font-size: 16px;
+  }
+
+  .tt-command-results {
+    max-height: min(58dvh, 560px);
+  }
+}
+
+
+@media (max-width: 800px) {
+  .tt-settings-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 0 24px;
+  }
+
+  .tt-settings-jump {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tt-settings-jump::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-settings-jump a {
+    flex: 0 0 auto;
+    min-height: 46px;
+  }
+}
+
+
+/* Dense tools, morph sheets and floating admin/support controls. */
+@media (max-width: 800px) {
+  .creator-ops-page,
+  .creator-section-page {
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    padding: 0 0 24px;
+  }
+
+  .creator-ops-header,
+  .creator-section-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .creator-ops-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .creator-ops-header-actions > * {
+    min-height: 46px;
+  }
+
+  .tt-creator-tier-launcher {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(var(--tt-mobile-nav-height) + env(safe-area-inset-bottom) + 12px);
+  }
+
+  .tt-support-notification {
+    right: max(10px, env(safe-area-inset-right));
+    bottom: calc(var(--tt-mobile-nav-height) + env(safe-area-inset-bottom) + 10px);
+    width: calc(100vw - max(20px, env(safe-area-inset-left) + env(safe-area-inset-right)));
+  }
+
+  .tt-creator-tier-backdrop,
+  .morph-detail-backdrop {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .tt-creator-tier-modal,
+  .tt-creator-tier-dialog,
+  .morph-detail {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(92dvh - env(safe-area-inset-top));
+    border-radius: 22px 22px 0 0;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .tt-creator-tier-tabs,
+  .morph-library__filters {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tt-creator-tier-tabs::-webkit-scrollbar,
+  .morph-library__filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-creator-tier-tabs button,
+  .morph-library__filters button {
+    flex: 0 0 auto;
+  }
+
+  .tt-creator-tier-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tt-creator-tier-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .morph-library__grid,
+  .species-morph-library-standard .morph-library-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .morph-selector__menu {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 22000;
+    width: 100%;
+    max-height: calc(82dvh - env(safe-area-inset-top));
+    padding:
+      12px
+      var(--tt-mobile-gutter)
+      max(16px, env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    overflow: hidden;
+  }
+
+  .morph-selector__menu > input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .morph-selector__options {
+    max-height: 60dvh;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .morph-selector__options button {
+    min-height: 48px;
+  }
+
+  .calculator-result-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 430px) {
+  .tt-creator-tier-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tt-creator-tier-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .tt-creator-tier-actions > * {
+    width: 100%;
+    min-height: 48px;
+  }
+}

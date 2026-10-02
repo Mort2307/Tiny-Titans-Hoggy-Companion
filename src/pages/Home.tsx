@@ -1,16 +1,16 @@
 import TinyTitansIcon from "../components/TinyTitansIcon";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
 import HomeCurrentAnimalSection from "../components/Home/HomeCurrentAnimalSection";
 import HomeAttentionSection from "../components/Home/HomeAttentionSection";
-import ContributionPulse from "../components/ContributionPulse";
-import RecommendedFeed from "../components/RecommendedFeed";
 import { useHomeDashboard } from "../hooks/useHomeDashboard";
 
 import "./Home.css";
 
+const RecommendedFeed = lazy(() => import("../components/RecommendedFeed"));
+const ContributionPulse = lazy(() => import("../components/ContributionPulse"));
 const TinyTitansPinnacleGlobe = lazy(() => import("../components/TinyTitansPinnacleGlobe"));
 
 const HomeGlobeFallback = () => <section className="tt-home-panel">Loading the TinyTitans world…</section>;
@@ -21,6 +21,8 @@ function Home() {
     selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, quietIntelligenceSnippet,
     loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake,
   } = useHomeDashboard();
+  const [recommendedOpen, setRecommendedOpen] = useState(false);
+  const [communityPulseOpen, setCommunityPulseOpen] = useState(false);
 
   return (
     <main className="dashboard tt-home">
@@ -51,16 +53,27 @@ function Home() {
         </div>
       </section>
 
+      {!loadingIntelligence && (snakes.length > 0 || urgentReminder) && (
+        <HomeAttentionSection
+          intelligenceAccess={intelligenceAccess}
+          accessChecked={accessChecked}
+          coverage={coverage}
+          quietIntelligenceSnippet={quietIntelligenceSnippet}
+          attentionDecision={attentionDecision}
+          urgentReminder={urgentReminder}
+        />
+      )}
+
       {loadingIntelligence ? (
         <section className="tt-home-panel tt-home-loading"><TinyTitansIcon name="titan" size={22} /> Checking your TinyTitans workspace…</section>
       ) : snakes.length === 0 ? (
         <section className="tt-home-panel tt-home-empty">
           <div>
             <p className="tt-home-kicker"><TinyTitansIcon name="animals" size={17} /> YOUR FIRST ANIMAL</p>
-            <h2>No animals added yet</h2>
-            <p>Add your first animal and Home will become personalised around its records, care and trends.</p>
+            <h2>Start with your first animal</h2>
+            <p>Add one animal and Tiny Titans will shape Home around its care, records and routines.</p>
           </div>
-          <Link className="tt-home-primary" to="/animals"><TinyTitansIcon name="add" size={20} /> Add your first animal</Link>
+          <Link className="tt-home-primary" to="/animals#add-animal"><TinyTitansIcon name="add" size={20} /> Add your first animal</Link>
         </section>
       ) : (
         <HomeCurrentAnimalSection
@@ -76,50 +89,46 @@ function Home() {
         />
       )}
 
-      <HomeAttentionSection
-        intelligenceAccess={intelligenceAccess}
-        accessChecked={accessChecked}
-        coverage={coverage}
-        quietIntelligenceSnippet={quietIntelligenceSnippet}
-        attentionDecision={attentionDecision}
-        urgentReminder={urgentReminder}
-      />
+      {snakes.length > 0 && (
+        <>
+          <section className="tt-home-section">
+            <div className="tt-home-heading">
+              <div>
+                <p className="tt-home-kicker"><TinyTitansIcon name="titan" size={17} /> QUICK ACTIONS</p>
+                <h2>Log something</h2>
+              </div>
+            </div>
+            <div className="tt-quick-actions">
+              <Link className="is-primary" to="/weights"><span><TinyTitansIcon name="weight" size={30} /></span><strong>Weight</strong><small>Record measurement</small></Link>
+              <Link to="/feeding"><span><TinyTitansIcon name="feeding" size={30} /></span><strong>Feeding</strong><small>Log a feed</small></Link>
+              <Link to="/shedding"><span><TinyTitansIcon name="shed" size={30} /></span><strong>Shed</strong><small>Record a stage</small></Link>
+              <Link to="/husbandry"><span><TinyTitansIcon name="husbandry" size={30} /></span><strong>Environment</strong><small>Log conditions</small></Link>
+              <Link to="/animals"><span><TinyTitansIcon name="add" size={30} /></span><strong>Add animal</strong><small>Grow your collection</small></Link>
+            </div>
+          </section>
 
-      <section className="tt-home-section">
-        <div className="tt-home-heading">
-          <div>
-            <p className="tt-home-kicker"><TinyTitansIcon name="titan" size={17} /> QUICK ACTIONS</p>
-            <h2>Log something</h2>
-          </div>
-        </div>
-        <div className="tt-quick-actions">
-          <Link className="is-primary" to="/weights"><span><TinyTitansIcon name="weight" size={30} /></span><strong>Weight</strong><small>Record measurement</small></Link>
-          <Link to="/feeding"><span><TinyTitansIcon name="feeding" size={30} /></span><strong>Feeding</strong><small>Log a feed</small></Link>
-          <Link to="/shedding"><span><TinyTitansIcon name="shed" size={30} /></span><strong>Shed</strong><small>Record a stage</small></Link>
-          <Link to="/husbandry"><span><TinyTitansIcon name="husbandry" size={30} /></span><strong>Environment</strong><small>Log conditions</small></Link>
-          <Link to="/animals"><span><TinyTitansIcon name="add" size={30} /></span><strong>Add animal</strong><small>Grow your collection</small></Link>
-        </div>
-      </section>
+          <section className="tt-home-section">
+            <div className="tt-home-heading">
+              <div>
+                <p className="tt-home-kicker"><TinyTitansIcon name="weight" size={17} /> AT A GLANCE</p>
+                <h2>Your records</h2>
+              </div>
+              <Link to="/animals">Open collection <TinyTitansIcon name="forward" size={14} /></Link>
+            </div>
+            <div className="tt-home-stats">
+              <Link to="/animals"><strong>{snakes.length}</strong><span><TinyTitansIcon name="reptile" size={16} /> Animals</span></Link>
+              <Link to="/weights"><strong>{snapshot.weights}</strong><span><TinyTitansIcon name="weight" size={16} /> Weight</span></Link>
+              <Link to="/feeding"><strong>{snapshot.feedings}</strong><span><TinyTitansIcon name="feeding" size={16} /> Feeding</span></Link>
+              <Link to="/shedding"><strong>{snapshot.sheds}</strong><span><TinyTitansIcon name="shed" size={16} /> Shed</span></Link>
+              <Link to="/health"><strong>{snapshot.health}</strong><span><TinyTitansIcon name="vet" size={16} /> Health</span></Link>
+            </div>
+            {!intelligenceAccess && snakes.length > 0 && (
+              <p className="tt-home-snapshot-note">Counts come directly from your recorded history and do not depend on Intelligence consent.</p>
+            )}
+          </section>
 
-      <section className="tt-home-section">
-        <div className="tt-home-heading">
-          <div>
-            <p className="tt-home-kicker"><TinyTitansIcon name="weight" size={17} /> AT A GLANCE</p>
-            <h2>Your records</h2>
-          </div>
-          <Link to="/animals">Open collection <TinyTitansIcon name="forward" size={14} /></Link>
-        </div>
-        <div className="tt-home-stats">
-          <Link to="/animals"><strong>{snakes.length}</strong><span><TinyTitansIcon name="reptile" size={16} /> Animals</span></Link>
-          <Link to="/weights"><strong>{snapshot.weights}</strong><span><TinyTitansIcon name="weight" size={16} /> Weight</span></Link>
-          <Link to="/feeding"><strong>{snapshot.feedings}</strong><span><TinyTitansIcon name="feeding" size={16} /> Feeding</span></Link>
-          <Link to="/shedding"><strong>{snapshot.sheds}</strong><span><TinyTitansIcon name="shed" size={16} /> Shed</span></Link>
-          <Link to="/health"><strong>{snapshot.health}</strong><span><TinyTitansIcon name="vet" size={16} /> Health</span></Link>
-        </div>
-        {!intelligenceAccess && snakes.length > 0 && (
-          <p className="tt-home-snapshot-note">Counts come directly from your recorded history and do not depend on Intelligence consent.</p>
-        )}
-      </section>
+        </>
+      )}
 
       <section className="tt-home-section">
         <div className="tt-home-heading">
@@ -158,14 +167,14 @@ function Home() {
         <TitanGoalTracker compact />
       </section>
 
-      <details className="tt-home-disclosure tt-home-secondary-disclosure">
+      <details className="tt-home-disclosure tt-home-secondary-disclosure" onToggle={(event) => setRecommendedOpen(event.currentTarget.open)}>
         <summary><TinyTitansIcon name="genetics" size={17} /> Recommended genetics</summary>
-        <RecommendedFeed />
+        {recommendedOpen && <Suspense fallback={<section className="tt-home-panel tt-home-loading">Loading genetics recommendations…</section>}><RecommendedFeed /></Suspense>}
       </details>
 
-      <details className="tt-home-disclosure tt-home-secondary-disclosure">
+      <details className="tt-home-disclosure tt-home-secondary-disclosure" onToggle={(event) => setCommunityPulseOpen(event.currentTarget.open)}>
         <summary><TinyTitansIcon name="community" size={17} /> Titan community pulse</summary>
-        <ContributionPulse />
+        {communityPulseOpen && <Suspense fallback={<section className="tt-home-panel tt-home-loading">Loading community pulse…</section>}><ContributionPulse /></Suspense>}
       </details>
 
       {user && (

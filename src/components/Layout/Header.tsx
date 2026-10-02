@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/TinyTitans-Logo.jpg";
 import { useAuth } from "../../context/useAuth";
 import { useWorkspaceBranding } from "../../context/WorkspaceBrandingContext";
@@ -39,9 +39,58 @@ function workspaceIcon(productId: WorkspacePresentation["productId"]) {
   return "animals" as const;
 }
 
+function mobileContextLabel(pathname: string) {
+  if (pathname === "/") return "At a Glance";
+  if (pathname.startsWith("/animals") || pathname.startsWith("/snakes")) return "My Animals";
+  if (pathname.startsWith("/feeding")) return "Feeding";
+  if (pathname.startsWith("/weights")) return "Weight";
+  if (pathname.startsWith("/shedding")) return "Shedding";
+  if (pathname.startsWith("/health")) return "Health";
+  if (pathname.startsWith("/behaviour")) return "Behaviour";
+  if (pathname.startsWith("/reminders")) return "Reminders";
+  if (pathname.startsWith("/species")) return "Species";
+  if (pathname.startsWith("/morph-library")) return "Morph Library";
+  if (pathname.startsWith("/calculator")) return "Genetics";
+  if (pathname.startsWith("/breeding")) return "Breeding";
+  if (pathname.startsWith("/rescue")) return "Rescue";
+  if (pathname.startsWith("/marketplace")) return "Marketplace";
+  if (pathname.startsWith("/paid") || pathname.startsWith("/plans")) return "Plans & Features";
+  if (pathname.startsWith("/titan-intelligence")) return "Titan Intelligence";
+  if (pathname.startsWith("/husbandry")) return "Husbandry";
+  if (pathname.startsWith("/enclosure-intelligence")) return "Enclosure";
+  if (pathname.startsWith("/behaviour-observatory")) return "Observatory";
+  if (pathname.startsWith("/keeper-handbook")) return "Keeper Handbook";
+  if (pathname.startsWith("/learn") || pathname.startsWith("/challenge")) return "Learning";
+  if (pathname.startsWith("/knowledge-base")) return "Knowledge Base";
+  if (pathname.startsWith("/sandbox")) return "Sandbox";
+  if (pathname.startsWith("/community/mentorship")) return "Mentorship";
+  if (pathname.startsWith("/community")) return "Community";
+  if (pathname.startsWith("/creator")) return "Creator";
+  if (pathname.startsWith("/account")) return "My Account";
+  if (pathname.startsWith("/feedback")) return "Feedback";
+  if (pathname.startsWith("/report-bug")) return "Report a Bug";
+  return "Keeper Companion";
+}
+
+function mobileBackFallback(pathname: string) {
+  if (pathname.startsWith("/snakes/") || pathname === "/snakes") return "/animals";
+  if (pathname.startsWith("/animals/")) return "/animals";
+  if (pathname.startsWith("/reminders/")) return "/reminders";
+  if (pathname.startsWith("/species/")) return "/species";
+  if (pathname.startsWith("/morph-library/")) return "/morph-library";
+  if (pathname.startsWith("/paid/")) return "/plans";
+  if (pathname.startsWith("/account/")) return "/account";
+  if (pathname.startsWith("/rescue/")) return "/rescue";
+  if (pathname.startsWith("/creator/")) return "/creator";
+  if (pathname.startsWith("/community/")) return "/community";
+  if (pathname.startsWith("/breeding/")) return "/breeding";
+  return "/";
+}
+
 function Header() {
   const { user, profile } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const branding = useWorkspaceBranding();
   const [paidAccess, setPaidAccess] = useState<PaidAccess | null>(null);
   const [workspace, setWorkspace] = useState<WorkspacePresentation>(getWorkspacePresentation);
@@ -52,6 +101,16 @@ function Header() {
   const [qaMessage, setQaMessage] = useState("");
 
   const creatorMode = profile?.role === "admin";
+  const showMobileBack = !["/", "/animals", "/reminders"].includes(location.pathname);
+
+  function handleMobileBack() {
+    const historyState = window.history.state as { idx?: number } | null;
+    if ((historyState?.idx ?? 0) > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate(mobileBackFallback(location.pathname));
+  }
 
   useEffect(() => subscribeToWorkspacePresentation(setWorkspace), []);
 
@@ -146,8 +205,13 @@ function Header() {
       : workspaceName;
 
   return (
-    <header className={`app-header app-header--${productId}`}>
+    <header className={`app-header app-header--${productId}${showMobileBack ? " app-header--has-mobile-back" : ""}`}>
       <div className="app-header-identity">
+        {showMobileBack && (
+          <button type="button" className="app-mobile-back" onClick={handleMobileBack} aria-label="Go back">
+            <TinyTitansIcon name="back" size={20} aria-hidden="true" />
+          </button>
+        )}
         <Link
           to={productId === "rescue" ? "/rescue" : "/"}
           className="logo-link"
@@ -173,6 +237,7 @@ function Header() {
             <span className="app-brand-primary">Tiny Titans</span>
             <span className="app-brand-secondary">Keeper Companion</span>
           </span>
+          <span className="app-mobile-context">{mobileContextLabel(location.pathname)}</span>
           {!isPersonal && (
             <span className="app-brand-workspace">{workspaceLabel}</span>
           )}

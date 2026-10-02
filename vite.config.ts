@@ -2,7 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const tinyTitansLogo = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg";
+const tinyTitansIcon192 = "/icons/tiny-titans-192.svg";
+const tinyTitansIcon512 = "/icons/tiny-titans-512.svg";
+const tinyTitansRasterIcon = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg";
 
 export default defineConfig({
   plugins: [
@@ -10,7 +12,9 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       includeAssets: [
-        tinyTitansLogo.replace(/^\//, ""),
+        "favicon.svg",
+        tinyTitansIcon192.replace(/^\//, ""),
+        tinyTitansIcon512.replace(/^\//, ""),
       ],
       manifest: {
         id: "/",
@@ -28,10 +32,51 @@ export default defineConfig({
         categories: ["education", "lifestyle"],
         icons: [
           {
-            src: `${tinyTitansLogo}?v=3`,
+            src: tinyTitansIcon192,
+            sizes: "192x192",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
+          {
+            src: tinyTitansIcon512,
+            sizes: "512x512",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
+          {
+            src: tinyTitansIcon512,
+            sizes: "512x512",
+            type: "image/svg+xml",
+            purpose: "maskable",
+          },
+          {
+            src: tinyTitansRasterIcon,
             sizes: "any",
             type: "image/jpeg",
             purpose: "any maskable",
+          },
+        ],
+        shortcuts: [
+          {
+            name: "My Animals",
+            short_name: "Animals",
+            description: "Open your Tiny Titans animal collection.",
+            url: "/animals",
+            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/svg+xml" }],
+          },
+          {
+            name: "Due",
+            short_name: "Due",
+            description: "Open Tiny Titans reminders and due care.",
+            url: "/reminders",
+            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/svg+xml" }],
+          },
+          {
+            name: "Genetics",
+            short_name: "Genetics",
+            description: "Open the Tiny Titans genetics calculator.",
+            url: "/calculator",
+            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/svg+xml" }],
           },
         ],
       },

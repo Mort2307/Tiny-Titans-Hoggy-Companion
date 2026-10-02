@@ -1,13 +1,27 @@
+import { useEffect, useState } from "react";
 import type { Snake } from "../../types/Snake";
 import { useUnits } from "../../context/UnitContextValue";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 type Props = { snake: Snake; morphText: string; hetText: string; ageText: string; keeperTimeText: string; };
+
 export default function SnakeProfileHero({ snake, morphText, hetText, ageText, keeperTimeText }: Props) {
   const { formatWeight } = useUnits();
+  const [imageFailed, setImageFailed] = useState(false);
+  const photoUrl = (snake.photo || snake.imageUrl || snake.photoUrl || "").trim();
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [photoUrl]);
+
   return <>
-    <h1 className="snake-profile-heading">🐍 {snake.name}</h1>
+    <h1 className="snake-profile-heading"><TinyTitansIcon name="reptile" size={28} /> {snake.name}</h1>
     <section className="snake-profile-hero" aria-label={snake.name + " profile summary"}>
-      <div className="snake-profile-photo">{snake.photo ? <img src={snake.photo} alt={snake.name} /> : <div className="snake-profile-placeholder" aria-label="No snake photo">🐍</div>}</div>
+      <div className="snake-profile-photo">
+        {photoUrl && !imageFailed
+          ? <img src={photoUrl} alt={snake.name + " profile"} decoding="async" onError={() => setImageFailed(true)} />
+          : <div className="snake-profile-placeholder" aria-label="No snake photo"><TinyTitansIcon name="reptile" size={78} /></div>}
+      </div>
       <div className="snake-profile-identity">
         <p className="snake-profile-identity-kicker">Tiny Titans Snake Profile</p>
         <h2>{snake.name}</h2>

@@ -102,3 +102,44 @@
 
 @media (max-width:900px) { .tt-tracker-title-row{align-items:stretch;flex-direction:column}.tt-tracker-snake{min-width:0}.tt-tracker-grid{grid-template-columns:1fr}.tt-tracker-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tt-tracker-nav{top:6px}.tt-tracker-form{grid-template-columns:1fr}.tt-tracker-form label:has(textarea),.tt-tracker-form fieldset,.tt-tracker-form .tt-tracker-actions{grid-column:1/-1}.tt-weight-history-layout{grid-template-columns:1fr}.tt-weight-intelligence-grid{grid-template-columns:1fr}.tt-weight-intelligence-side{grid-template-columns:repeat(3,minmax(0,1fr))}.tt-weight-intelligence-side p{grid-column:1/-1} }
 @media (max-width:560px) { .tt-tracker-page{padding:14px 11px 42px}.tt-tracker-header{padding:17px;border-radius:18px}.tt-tracker-title-row h1{font-size:1.55rem}.tt-tracker-subtitle{font-size:.84rem}.tt-tracker-stat-grid{gap:7px}.tt-tracker-stat{padding:12px 11px}.tt-tracker-stat strong{font-size:1rem}.tt-tracker-panel{padding:14px;border-radius:16px}.tt-tracker-nav{padding:5px}.tt-tracker-nav a,.tt-tracker-nav button{padding:8px 10px;font-size:.72rem}.tt-history-item-header{flex-direction:column}.tt-tracker-actions button,.tt-tracker-button{min-height:42px}.tt-tracker-actions button{flex:1 1 auto}.tt-tracker-form input,.tt-tracker-form select{min-height:45px}.tt-weight-intelligence{padding:13px}.tt-weight-intelligence-header{flex-direction:column}.tt-weight-intelligence-badge{align-self:flex-start}.tt-weight-intelligence-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.tt-weight-intelligence-side{grid-template-columns:1fr}.tt-weight-intelligence-footer{align-items:flex-start;flex-direction:column} }
+
+
+/* Nested tracker workflows (for example medication schedules). */
+.tt-tracker-form--nested {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+}
+
+.tt-tracker-form fieldset .tt-tracker-form--nested label {
+  display: grid;
+  grid-template-columns: none;
+  align-items: initial;
+  gap: 6px;
+  margin-top: 0;
+  color: #dedcd4;
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.tt-tracker-check {
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px !important;
+  color: var(--tt-track-text) !important;
+  font-weight: 700 !important;
+}
+
+.tt-tracker-check input {
+  width: 18px !important;
+  height: 18px;
+  min-height: 18px !important;
+  flex: 0 0 18px;
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .tt-tracker-form--nested {
+    grid-template-columns: 1fr;
+  }
+}

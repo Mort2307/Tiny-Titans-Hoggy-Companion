@@ -1,14 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TinyTitansIcon from "./TinyTitansIcon";
 import "../styles/AppUpdatePrompt.css";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
+const OFFLINE_EVENT = "tiny-titans-offline-ready";
 const UPDATE_TIMEOUT_MS = 15000;
 const UPDATE_CHECK_INTERVAL_MS = 60000;
 
 export function notifyTinyTitansUpdateAvailable() {
   window.__tinyTitansUpdatePending = true;
   window.dispatchEvent(new Event(UPDATE_EVENT));
+}
+
+export function notifyTinyTitansOfflineReady() {
+  window.__tinyTitansOfflineReady = true;
+  window.dispatchEvent(new Event(OFFLINE_EVENT));
 }
 
 let applyPendingTinyTitansUpdate: (() => Promise<void>) | null = null;
@@ -20,6 +26,7 @@ export function setTinyTitansUpdateHandler(handler: () => Promise<void>) {
 declare global {
   interface Window {
     __tinyTitansUpdatePending?: boolean;
+    __tinyTitansOfflineReady?: boolean;
   }
 }
 
@@ -28,6 +35,11 @@ export default function AppUpdatePrompt() {
   const [pending, setPending] = useState(() => Boolean(window.__tinyTitansUpdatePending));
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState(false);
+  const [offlineReady, setOfflineReady] = useState(false);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const primaryRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const updatingRef = useRef(updating);
   const mandatory = import.meta.env.VITE_TINY_TITANS_FORCE_UPDATE === "true";
 
   useEffect(() => {
@@ -36,11 +48,70 @@ export default function AppUpdatePrompt() {
       setUpdateError(false);
       setOpen(true);
     };
+    let offlineTimer: number | undefined;
+    const showOffline = () => {
+      setOfflineReady(true);
+      if (offlineTimer !== undefined) window.clearTimeout(offlineTimer);
+      offlineTimer = window.setTimeout(() => setOfflineReady(false), 4500);
+    };
 
     window.addEventListener(UPDATE_EVENT, show);
+    window.addEventListener(OFFLINE_EVENT, showOffline);
     if (window.__tinyTitansUpdatePending) show();
-    return () => window.removeEventListener(UPDATE_EVENT, show);
+    if (window.__tinyTitansOfflineReady) {
+      window.__tinyTitansOfflineReady = false;
+      showOffline();
+    }
+    return () => {
+      window.removeEventListener(UPDATE_EVENT, show);
+      window.removeEventListener(OFFLINE_EVENT, showOffline);
+      if (offlineTimer !== undefined) window.clearTimeout(offlineTimer);
+    };
   }, []);
+
+  useEffect(() => {
+    updatingRef.current = updating;
+  }, [updating]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const frame = window.requestAnimationFrame(() => primaryRef.current?.focus());
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !mandatory && !updatingRef.current) {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex='-1'])",
+      ) ?? []);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      const previous = previousFocusRef.current;
+      if (previous?.isConnected) window.requestAnimationFrame(() => previous.focus());
+    };
+  }, [mandatory, open]);
 
   useEffect(() => {
     let cancelled = false;
@@ -174,10 +245,17 @@ export default function AppUpdatePrompt() {
   };
 
   if (!open) {
-    if (!pending) return null;
+    if (!pending && !offlineReady) return null;
 
     return (
-      <button
+      <>
+        {offlineReady && !pending && (
+          <div className="tt-offline-ready" role="status">
+            <TinyTitansIcon name="check" size={16} />
+            <span><strong>Ready offline</strong><small>Core Tiny Titans files are cached on this device.</small></span>
+          </div>
+        )}
+        {pending && <button
         type="button"
         className="tt-update-manual"
         onClick={() => void updateNow()}
@@ -186,13 +264,15 @@ export default function AppUpdatePrompt() {
         title="A newer Tiny Titans version is ready"
       >
         {updating ? "Updating…" : "Update available"}
-      </button>
+      </button>}
+      </>
     );
   }
 
   return (
     <div className="tt-update-backdrop" role="presentation">
       <section
+        ref={panelRef}
         className="tt-update-panel"
         role="alertdialog"
         aria-modal="true"
@@ -206,7 +286,7 @@ export default function AppUpdatePrompt() {
           Tiny Titans has been updated with improvements and fixes. Update now to load the latest app version while keeping your Firebase records, account and family data safe.
         </p>
         <div className="tt-update-actions">
-          <button type="button" className="tt-update-primary" onClick={() => void updateNow()} disabled={updating}>
+          <button ref={primaryRef} type="button" className="tt-update-primary" onClick={() => void updateNow()} disabled={updating}>
             {updating ? "Updating Tiny Titans…" : "Update Now"}
           </button>
           {!mandatory && (

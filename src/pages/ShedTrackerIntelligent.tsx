@@ -2,7 +2,6 @@ import BackHomeButton from "../components/BackHomeButton";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import TinyTitansEmptyState from "../components/TinyTitansEmptyState";
-import TinyTitansFeedback from "../components/TinyTitansFeedback";
 import { useShedTrackerIntelligent } from "../hooks/useShedTrackerIntelligent";
 import type { ShedAssistance, ShedQuality, ShedStage, ShedStatus } from "../types/Shed";
 import { displayShedDate, shedStageTitle } from "../lib/shedTrackerIntelligent";
