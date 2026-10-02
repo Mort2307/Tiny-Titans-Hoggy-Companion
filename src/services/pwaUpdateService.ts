@@ -1,5 +1,6 @@
 import { registerSW } from "virtual:pwa-register";
 import {
+  notifyTinyTitansOfflineReady,
   notifyTinyTitansUpdateAvailable,
   setTinyTitansUpdateHandler,
 } from "../components/AppUpdatePrompt";
@@ -30,7 +31,9 @@ export function initializePwaUpdateService() {
           window.addEventListener("online", checkForUpdate);
           document.addEventListener("visibilitychange", checkForUpdate);
         },
-        onOfflineReady() {},
+        onOfflineReady() {
+          notifyTinyTitansOfflineReady();
+        },
       });
 
   setTinyTitansUpdateHandler(async () => {
