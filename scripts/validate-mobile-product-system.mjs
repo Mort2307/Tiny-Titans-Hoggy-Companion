@@ -198,6 +198,9 @@ if (!homeCurrentAnimal.includes('selectedSnake?.recordSource === "legacy-snake" 
 if (!/\.tt-home-current-avatar > img\s*\{[\s\S]*?object-fit:\s*cover;/.test(homeCss)) {
   errors.push("Home current-animal profile images must retain cropped avatar styling.");
 }
+if (!/@media \(max-width:\s*390px\)[\s\S]*?\.tt-home-current-actions,[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/.test(homeCss)) {
+  errors.push("Home narrow-phone current-animal actions must remain two-up in route-local CSS.");
+}
 if (!myAnimals.includes("AnimalCollectionAvatar") || !myAnimals.includes("animal.photoUrl")) {
   errors.push("My Animals must retain photo-first identity for named animal records.");
 }
