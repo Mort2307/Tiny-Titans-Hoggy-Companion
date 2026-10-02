@@ -13,6 +13,9 @@ const quickView = read("src", "components", "Layout", "QuickModeNavigation.tsx")
 const confirmDialog = read("src", "components", "ConfirmActionDialog.tsx");
 const commandPalette = read("src", "components", "TitanCommandPalette", "TitanCommandPalette.tsx");
 const myAnimals = read("src", "pages", "MyAnimals.tsx");
+const universalAnimalsCss = read("src", "styles", "universal-animals.css");
+const snakeProfileHero = read("src", "components", "SnakeProfile", "SnakeProfileHero.tsx");
+const snakeProfileCss = read("src", "styles", "snake-profile.css");
 const homeDashboard = read("src", "hooks", "useHomeDashboard.ts");
 const homeCurrentAnimal = read("src", "components", "Home", "HomeCurrentAnimalSection.tsx");
 const homeCss = read("src", "pages", "Home.css");
@@ -194,6 +197,21 @@ if (!homeCurrentAnimal.includes('selectedSnake?.recordSource === "legacy-snake" 
 }
 if (!/\.tt-home-current-avatar > img\s*\{[\s\S]*?object-fit:\s*cover;/.test(homeCss)) {
   errors.push("Home current-animal profile images must retain cropped avatar styling.");
+}
+if (!myAnimals.includes("AnimalCollectionAvatar") || !myAnimals.includes("animal.photoUrl")) {
+  errors.push("My Animals must retain photo-first identity for named animal records.");
+}
+if (!/\.universal-animal-avatar > img\s*\{[\s\S]*?object-fit:\s*cover;/.test(universalAnimalsCss)) {
+  errors.push("My Animals profile thumbnails must retain cropped avatar styling.");
+}
+if (!snakeProfileHero.includes('snake.photo || snake.imageUrl || snake.photoUrl')) {
+  errors.push("Snake Profile must resolve every supported saved profile-image field.");
+}
+if (!snakeProfileHero.includes('TinyTitansIcon name="reptile"') || snakeProfileHero.includes("🐍")) {
+  errors.push("Snake Profile must use the canonical Tiny Titans snake icon rather than raw emoji.");
+}
+if (!/\.snake-profile-heading\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;/.test(snakeProfileCss)) {
+  errors.push("Snake Profile heading must keep icon and animal identity aligned.");
 }
 if (!marketplace.includes("tt-marketplace-page") || !marketplace.includes("tt-marketplace-grid")) {
   errors.push("Marketplace must retain mobile-safe layout hooks.");
