@@ -167,7 +167,14 @@ export function useWeightRecords() {
     }
 
     records.push(...history);
-    return sortWeightHistory(records);
+    const seen = new Set<string>();
+    return sortWeightHistory(records).filter((record) => {
+      const grams = record.unit === "kg" ? record.weight * 1000 : record.weight;
+      const key = `${record.date}|${grams.toFixed(6)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [history, snake, today]);
 
   async function saveWeight() {
