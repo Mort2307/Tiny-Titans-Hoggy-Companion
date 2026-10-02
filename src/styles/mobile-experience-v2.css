@@ -11,6 +11,11 @@
   --tt-mobile-hairline: rgba(255,255,255,.075);
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 .app-mobile-context {
   display: none;
 }
@@ -100,12 +105,21 @@
 
   .app-header-actions {
     order: 2;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     width: auto;
     max-width: 54%;
+    min-width: 0;
     margin-left: auto;
     gap: 5px;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-header-actions::-webkit-scrollbar {
+    display: none;
   }
 
   .workspace-switcher__button,
@@ -2178,5 +2192,50 @@
   .readiness-section-title button,
   .readiness-two-col button {
     width: 100%;
+  }
+}
+
+
+@media (max-width: 380px) {
+  .app-header {
+    gap: 6px;
+    padding-inline:
+      max(8px, env(safe-area-inset-left))
+      max(8px, env(safe-area-inset-right));
+  }
+
+  .app-header-identity {
+    gap: 7px;
+  }
+
+  .app-header-identity .tiny-titans-logo {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 10px;
+  }
+
+  .app-header-identity .app-brand-name {
+    font-size: .82rem;
+  }
+
+  .app-mobile-context {
+    max-width: 44vw;
+    font-size: .61rem;
+  }
+
+  .app-header-actions {
+    max-width: 44%;
+  }
+
+  .header-qa-button strong {
+    display: none;
+  }
+
+  .header-qa-button {
+    width: 38px;
+    min-width: 38px;
+    padding-inline: 0;
+    justify-content: center;
   }
 }
