@@ -13,6 +13,7 @@ export function notifyTinyTitansUpdateAvailable() {
 }
 
 export function notifyTinyTitansOfflineReady() {
+  window.__tinyTitansOfflineReady = true;
   window.dispatchEvent(new Event(OFFLINE_EVENT));
 }
 
@@ -25,6 +26,7 @@ export function setTinyTitansUpdateHandler(handler: () => Promise<void>) {
 declare global {
   interface Window {
     __tinyTitansUpdatePending?: boolean;
+    __tinyTitansOfflineReady?: boolean;
   }
 }
 
@@ -56,6 +58,10 @@ export default function AppUpdatePrompt() {
     window.addEventListener(UPDATE_EVENT, show);
     window.addEventListener(OFFLINE_EVENT, showOffline);
     if (window.__tinyTitansUpdatePending) show();
+    if (window.__tinyTitansOfflineReady) {
+      window.__tinyTitansOfflineReady = false;
+      showOffline();
+    }
     return () => {
       window.removeEventListener(UPDATE_EVENT, show);
       window.removeEventListener(OFFLINE_EVENT, showOffline);
