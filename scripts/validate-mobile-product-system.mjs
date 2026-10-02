@@ -100,6 +100,12 @@ for (const [pattern, label] of experienceContracts) {
 if (!header.includes("mobileContextLabel") || !header.includes("app-mobile-context")) {
   errors.push("Header must expose route-aware mobile context.");
 }
+if (!header.includes("mobileBackFallback") || !header.includes("app-mobile-back") || !header.includes("navigate(-1)")) {
+  errors.push("Header must retain native mobile back navigation with safe parent fallback.");
+}
+if (!/\.app-header--has-mobile-back \.logo-link\s*\{[\s\S]*?display:\s*none;/.test(experience)) {
+  errors.push("Mobile deep routes must replace the brand logo with the native back control.");
+}
 
 if (!authenticatedRoutes.includes('const Home = lazy(() => import("../pages/Home"))')) {
   errors.push("Home must remain route-lazy so the authenticated shell is not forced to bundle the full dashboard.");
