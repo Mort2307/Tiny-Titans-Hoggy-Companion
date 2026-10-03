@@ -443,7 +443,7 @@ exports.tinyTitansOAuth = onRequest({ region: REGION, cors: false, timeoutSecond
 });
 
 function authScheme(scopes) {
-  return [{ type: "oauth2", scopes }];
+  return [{ type: "oauth2", scopes: Array.from(new Set([...scopes, "offline_access"])) }];
 }
 
 function toolMeta(scopes, extra = {}) {
