@@ -41,7 +41,11 @@ if (!routes.includes('path="/creator/husbandry-safety"')) errors.push("Creator H
 if (!routes.includes("<CreatorRouteGuard><CreatorHusbandrySafety/></CreatorRouteGuard>")) errors.push("Creator Husbandry Safety route is not creator-guarded.");
 if (!rules.includes("match /husbandrySafetyLibrary/{itemId}")) errors.push("Firestore Husbandry Safety collection rule is missing.");
 if (!rules.includes("allow create, update, delete: if hasCapability('creator');")) errors.push("Husbandry Safety writes are not restricted to creator capability.");
+if (!rules.includes("match /husbandrySafetyAudit/{auditId}")) errors.push("Husbandry Safety audit rule is missing.");
+if (!rules.includes("allow read, create: if hasCapability('creator'); allow update, delete: if false;")) errors.push("Husbandry Safety audit trail is not immutable.");
 if (!creator.includes("saveHusbandrySafetyItem") || !creator.includes("archiveHusbandrySafetyItem")) errors.push("Creator editor is missing write/archive integration.");
+const service = read("src/services/husbandrySafetyService.ts");
+if (!service.includes('const AUDIT_COLLECTION = "husbandrySafetyAudit"') || !service.includes('action: "save"') || !service.includes('action: "archive"')) errors.push("Husbandry Safety service is missing audit logging.");
 if (!library.includes("resolveHusbandrySafetyAssessment")) errors.push("Keeper library is not resolving species-aware assessments.");
 if (!library.includes("evidenceLevel")) errors.push("Keeper library is not displaying evidence confidence.");
 if (!library.includes("identificationWarning")) errors.push("Keeper library is not displaying identification warnings.");
