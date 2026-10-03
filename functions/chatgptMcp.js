@@ -8,9 +8,9 @@ const db = getFirestore();
 const REGION = "europe-west2";
 const PROJECT_ID = "tinytitans-hoggy-companion";
 const APP_ORIGIN = "https://tinytitanskeeper.web.app";
-const MCP_ROOT = `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/tinyTitansMcp`;
-const MCP_RESOURCE = `${MCP_ROOT}/mcp`;
-const OAUTH_ISSUER = `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/tinyTitansOAuth`;
+const MCP_ROOT = APP_ORIGIN;
+const MCP_RESOURCE = `${APP_ORIGIN}/api/chatgpt/mcp`;
+const OAUTH_ISSUER = APP_ORIGIN;
 const AUTHORIZE_URL = `${APP_ORIGIN}/account/integrations/chatgpt/authorize`;
 const CHATGPT_CLIENT_ID = "https://chatgpt.com/oauth/client.json";
 const CHATGPT_REDIRECT_URI = "https://chatgpt.com/connector_platform_oauth_redirect";
@@ -99,7 +99,7 @@ function requiredScopesPresent(granted, required) {
 
 function oauthChallenge(requiredScopes = []) {
   const scopePart = requiredScopes.length ? `, scope="${requiredScopes.join(" ")}"` : "";
-  return `Bearer resource_metadata="${MCP_ROOT}/.well-known/oauth-protected-resource"${scopePart}, error="insufficient_scope", error_description="Connect your Tiny Titans account to continue"`;
+  return `Bearer resource_metadata="${APP_ORIGIN}/.well-known/oauth-protected-resource"${scopePart}, error="insufficient_scope", error_description="Connect your Tiny Titans account to continue"`;
 }
 
 function mcpAuthError(requiredScopes) {
@@ -408,7 +408,7 @@ exports.tinyTitansOAuth = onRequest({ region: REGION, cors: false, timeoutSecond
       issuer: OAUTH_ISSUER,
       authorization_response_iss_parameter_supported: true,
       authorization_endpoint: AUTHORIZE_URL,
-      token_endpoint: `${OAUTH_ISSUER}/oauth/token`,
+      token_endpoint: `${APP_ORIGIN}/api/chatgpt/oauth/token`,
       client_id_metadata_document_supported: true,
       token_endpoint_auth_methods_supported: ["none"],
       code_challenge_methods_supported: ["S256"],
@@ -418,7 +418,7 @@ exports.tinyTitansOAuth = onRequest({ region: REGION, cors: false, timeoutSecond
     });
   }
 
-  if (request.method === "POST" && path === "/oauth/token") {
+  if (request.method === "POST" && (path === "/oauth/token" || path === "/api/chatgpt/oauth/token")) {
     const body = formBody(request);
     try {
       if (String(body.client_id || "") !== CHATGPT_CLIENT_ID) {
@@ -665,7 +665,7 @@ exports.tinyTitansMcp = onRequest({ region: REGION, cors: false, timeoutSeconds:
   if (request.method === "OPTIONS") return response.status(204).send("");
 
   const path = String(request.path || "/").replace(/\/+$/, "") || "/";
-  if (request.method === "GET" && (path === "/.well-known/oauth-protected-resource" || path === "/mcp/.well-known/oauth-protected-resource")) {
+  if (request.method === "GET" && (path === "/.well-known/oauth-protected-resource" || path === "/mcp/.well-known/oauth-protected-resource" || path === "/api/chatgpt/mcp/.well-known/oauth-protected-resource")) {
     return sendJson(response, 200, protectedResourceMetadata());
   }
   if (request.method === "GET" && path === "/") {
@@ -676,7 +676,7 @@ exports.tinyTitansMcp = onRequest({ region: REGION, cors: false, timeoutSeconds:
       oauth: OAUTH_ISSUER,
     });
   }
-  if (path !== "/mcp") return sendJson(response, 404, { error: "not_found" });
+  if (path !== "/mcp" && path !== "/api/chatgpt/mcp") return sendJson(response, 404, { error: "not_found" });
 
   const auth = await resolveAccessToken(request);
   const server = await createMcpServer(auth);
