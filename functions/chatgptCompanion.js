@@ -175,18 +175,24 @@ function safeTimingEqual(left, right) {
 
 function connectionState(data, access) {
   const expiresAt = expiryMillis(data?.expiresAt);
-  const revoked = data?.revoked === true;
-  const expired = expiresAt !== null && expiresAt <= Date.now();
+  const legacyConnected = Boolean(data?.secretHash && data?.revoked !== true && (expiresAt === null || expiresAt > Date.now()));
+  const oauthConnected = data?.oauthConnected === true && data?.oauthRevoked !== true;
+  const eligible = COMPANION_TIERS.has(access.tier);
+  const connected = Boolean(data && eligible && (oauthConnected || legacyConnected));
+  const expired = !oauthConnected && expiresAt !== null && expiresAt <= Date.now();
+  const revoked = Boolean(data && !connected && (data.revoked === true || data.oauthRevoked === true));
   return {
-    available: COMPANION_TIERS.has(access.tier),
-    connected: Boolean(data && !revoked && !expired && COMPANION_TIERS.has(access.tier)),
+    available: eligible,
+    connected,
     revoked,
     expired,
+    connectionMode: oauthConnected ? "oauth" : legacyConnected ? "legacy_token" : null,
     effectiveTier: access.tier,
     source: access.source,
     permissions: Array.isArray(data?.permissions) ? data.permissions : DEFAULT_PERMISSIONS,
-    connectedAt: data?.createdAt || null,
-    expiresAt: data?.expiresAt || null,
+    grantedScopes: Array.isArray(data?.oauthScopes) ? data.oauthScopes : [],
+    connectedAt: data?.oauthConnectedAt || data?.createdAt || null,
+    expiresAt: oauthConnected ? null : data?.expiresAt || null,
     lastUsedAt: data?.lastUsedAt || null,
     lastTool: data?.lastTool || null,
   };
@@ -240,13 +246,35 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
   };
 });
 
+async function revokeOAuthTokens(uid) {
+  for (const collectionName of ["chatgptOAuthAccessTokens", "chatgptOAuthRefreshTokens"]) {
+    const snapshot = await db.collection(collectionName).where("uid", "==", uid).where("revoked", "==", false).limit(250).get();
+    if (snapshot.empty) continue;
+    const batch = db.batch();
+    for (const token of snapshot.docs) {
+      batch.set(token.ref, {
+        revoked: true,
+        revokedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+    await batch.commit();
+  }
+}
+
 exports.revokeChatGPTCompanionConnection = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  await connectionRef(request.auth.uid).set({
-    revoked: true,
-    revokedAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
+  const uid = request.auth.uid;
+  await Promise.all([
+    connectionRef(uid).set({
+      revoked: true,
+      revokedAt: FieldValue.serverTimestamp(),
+      oauthConnected: false,
+      oauthRevoked: true,
+      oauthRevokedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true }),
+    revokeOAuthTokens(uid),
+  ]);
   return { success: true };
 });
 
@@ -337,7 +365,7 @@ function validateIsoDate(value, field = "date", options = {}) {
   if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) fail(400, `${field} is not a valid date.`, "DATE_INVALID");
   const tomorrow = new Date();
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  if (date > tomorrow.toISOString().slice(0, 10)) fail(400, `${field} cannot be in the future.`, "DATE_FUTURE");
+  if (options.allowFuture !== true && date > tomorrow.toISOString().slice(0, 10)) fail(400, `${field} cannot be in the future.`, "DATE_FUTURE");
   return date;
 }
 
@@ -942,6 +970,19 @@ exports.chatGPTCompanionApi = onRequest({ region: "europe-west2", cors: false, t
     });
   }
 });
+
+exports._chatgptCompanionInternal = {
+  TOOL_CATALOG,
+  COMPANION_TIERS,
+  DEFAULT_PERMISSIONS,
+  WRITE_TOOLS,
+  dispatchTool,
+  resolveEffectiveTier,
+  requireCompanionAccess,
+  resolveAccountContext,
+  connectionRef,
+  touchConnection,
+};
 
 exports._chatgptCompanionTest = {
   TOOL_CATALOG,
