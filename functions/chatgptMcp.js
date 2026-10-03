@@ -6,9 +6,7 @@ const { _chatgptCompanionInternal: companion } = require("./chatgptCompanion");
 const db = getFirestore();
 
 const REGION = "europe-west2";
-const PROJECT_ID = "tinytitans-hoggy-companion";
 const APP_ORIGIN = "https://tinytitanskeeper.web.app";
-const MCP_ROOT = APP_ORIGIN;
 const MCP_RESOURCE = `${APP_ORIGIN}/api/chatgpt/mcp`;
 const OAUTH_ISSUER = APP_ORIGIN;
 const AUTHORIZE_URL = `${APP_ORIGIN}/account/integrations/chatgpt/authorize`;
