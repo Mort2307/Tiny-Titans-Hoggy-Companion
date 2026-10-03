@@ -236,7 +236,7 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
     tokenShownOnce: true,
     expiresAt: expiresAt.toDate().toISOString(),
     permissions,
-    apiBase: "https://europe-west2-tinytitanskeeper.cloudfunctions.net/chatGPTCompanionApi/v1",
+    apiBase: "https://europe-west2-tinytitans-hoggy-companion.cloudfunctions.net/chatGPTCompanionApi/v1",
   };
 });
 
@@ -330,7 +330,7 @@ function cleanLimit(value, fallback = 20, max = 100) {
   return Math.min(number, max);
 }
 
-function validateIsoDate(value, field = "date") {
+function validateIsoDate(value, field = "date", options = {}) {
   const date = normaliseString(value);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) fail(400, `${field} must use YYYY-MM-DD.`, "DATE_INVALID");
   const parsed = new Date(`${date}T00:00:00Z`);
@@ -775,7 +775,7 @@ async function logHealthObservation(auth, args) {
     ...(normaliseString(args.medication) ? { medication: normaliseString(args.medication) } : {}),
     ...(normaliseString(args.dosage) ? { dosage: normaliseString(args.dosage) } : {}),
     ...(normaliseString(args.vetName) ? { vetName: normaliseString(args.vetName) } : {}),
-    ...(normaliseString(args.followUpDate) ? { followUpDate: validateIsoDate(args.followUpDate, "followUpDate") } : {}),
+    ...(normaliseString(args.followUpDate) ? { followUpDate: validateIsoDate(args.followUpDate, "followUpDate", { allowFuture: true }) } : {}),
     ...(normaliseString(args.notes) && args.notes !== description ? { notes: normaliseString(args.notes) } : {}),
     lastModifiedBy: auth.uid,
     integrationMetadata: metadata(auth, "log_health_observation"),
