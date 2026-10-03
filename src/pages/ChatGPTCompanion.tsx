@@ -95,6 +95,7 @@ export default function ChatGPTCompanion() {
 
   const statusLabel = useMemo(() => {
     if (!status) return "Checking";
+    if (status.connected && status.upgradeRequired) return "Relink required";
     if (status.connected) return "Connected to ChatGPT";
     if (status.prepared) return "Link code ready";
     if (status.expired) return "Connection expired";
@@ -169,6 +170,7 @@ export default function ChatGPTCompanion() {
       </header>
 
       {message && <div className="tt-gpt-message success" role="status">{message}</div>}
+      {status?.upgradeRequired && <div className="tt-gpt-message error" role="alert">This ChatGPT connection predates the newest Tiny Titans permissions. Relink once to enable reminders and the expanded keeper query tools.</div>}
       {error && <div className="tt-gpt-message error" role="alert">{error}</div>}
 
       <section className="tt-gpt-grid">

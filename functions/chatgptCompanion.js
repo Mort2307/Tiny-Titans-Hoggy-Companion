@@ -226,6 +226,8 @@ function connectionState(data, access) {
     legacyExpiresAt > now,
   );
   const connected = Boolean(data && !revoked && eligible && (oauthConnected || legacyConnected));
+  const permissions = Array.isArray(data?.permissions) ? data.permissions : DEFAULT_PERMISSIONS;
+  const upgradeRequired = connected && DEFAULT_PERMISSIONS.some((permission) => !permissions.includes(permission));
   const prepared = Boolean(
     data &&
     !revoked &&
@@ -256,7 +258,8 @@ function connectionState(data, access) {
     linkExpired,
     effectiveTier: access.tier,
     source: access.source,
-    permissions: Array.isArray(data?.permissions) ? data.permissions : DEFAULT_PERMISSIONS,
+    permissions,
+    upgradeRequired,
     connectedAt: data?.oauthConnectedAt || (legacyConnected ? data?.createdAt : null),
     expiresAt: data?.oauthRefreshExpiresAt || (legacyConnected ? data?.expiresAt : null),
     linkExpiresAt: data?.linkExpiresAt || null,

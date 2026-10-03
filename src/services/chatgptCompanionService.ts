@@ -13,6 +13,7 @@ export type ChatGPTCompanionStatus = {
   available: boolean;
   connected: boolean;
   prepared: boolean;
+  upgradeRequired: boolean;
   revoked: boolean;
   expired: boolean;
   linkExpired: boolean;
@@ -79,6 +80,7 @@ export async function getChatGPTCompanionStatus(): Promise<ChatGPTCompanionStatu
     available: data.available === true,
     connected: data.connected === true,
     prepared: data.prepared === true,
+    upgradeRequired: data.upgradeRequired === true,
     revoked: data.revoked === true,
     expired: data.expired === true,
     linkExpired: data.linkExpired === true,
