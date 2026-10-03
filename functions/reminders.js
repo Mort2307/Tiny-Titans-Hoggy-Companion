@@ -5,7 +5,7 @@ const { NOTIFICATION_ICON, NOTIFICATION_BADGE } = require("./notificationBrandin
 
 const db = getFirestore();
 const messaging = getMessaging();
-const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
+const PUBLIC_ORIGIN = "https://tinytitanskeeper.web.app";
 const REMINDER_LIMIT = 500;
 const FEEDING_RECONCILE_LIMIT = 500;
 const LOCK_MINUTES = 10;
@@ -86,6 +86,7 @@ async function reconcileActiveFeedingReminders(now) {
   for (const document of snapshot.docs) {
     const data = document.data() || {};
     if (data.status !== "active") continue;
+    if (data.scheduleType === "once" || data.oneTime === true) continue;
     const schedule = reconcileFeedingSchedule(data, now);
     if (!schedule) continue;
     const storedOccurrence = String(data.nextOccurrenceDate || data.startDate || "");
@@ -108,7 +109,17 @@ exports.runRecurringReminderEngine = onSchedule({ schedule: "*/15 * * * *", time
     const data = document.data() || {}; if (data.status !== "active") continue;
     const segments = document.ref.path.split("/"); const usersIndex = segments.indexOf("users"); const uid = usersIndex >= 0 ? segments[usersIndex + 1] : ""; if (!uid) continue;
     const claimed = await claimReminder(document.ref, nowIso); if (!claimed) continue; processed += 1;
-    try { const result = await sendReminderPush(uid, document.id, claimed); sent += result.sent || 0; const next = advanceSchedule(claimed); await document.ref.update({ nextNotificationAt: next.at, nextOccurrenceDate: next.occurrenceDate, nextPhase: next.phase, lastNotifiedAt: nowIso, lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp(), lastDeliveryStatus: result.skipped || (result.sent > 0 ? "sent" : "no-delivery") }); }
+    try {
+      const result = await sendReminderPush(uid, document.id, claimed);
+      sent += result.sent || 0;
+      const deliveryStatus = result.skipped || (result.sent > 0 ? "sent" : "no-delivery");
+      if (claimed.scheduleType === "once" || claimed.oneTime === true) {
+        await document.ref.update({ status: "completed", lastNotifiedAt: nowIso, lastCompletedAt: nowIso, lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp(), lastDeliveryStatus: deliveryStatus });
+      } else {
+        const next = advanceSchedule(claimed);
+        await document.ref.update({ nextNotificationAt: next.at, nextOccurrenceDate: next.occurrenceDate, nextPhase: next.phase, lastNotifiedAt: nowIso, lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp(), lastDeliveryStatus: deliveryStatus });
+      }
+    }
     catch (error) { failed += 1; console.error("Tiny Titans: recurring reminder failed", { path: document.ref.path, error }); await document.ref.update({ lockedUntil: FieldValue.delete(), lastDeliveryStatus: "failed", lastDeliveryError: error?.message || "Reminder delivery failed.", updatedAt: FieldValue.serverTimestamp() }); }
   }
   console.log("Tiny Titans reminder engine run", { matched: snapshot.size, processed, sent, failed, feedingReconciliation: reconciliation });

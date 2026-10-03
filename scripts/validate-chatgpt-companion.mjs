@@ -30,6 +30,7 @@ const writeTools = [
   "log_shed",
   "log_behaviour",
   "log_health_observation",
+  "create_reminders",
   "undo_last_action",
 ];
 
@@ -41,7 +42,9 @@ const readTools = [
   "get_weight_history",
   "get_shed_history",
   "get_recent_activity",
-];
+  "get_keeper_snapshot",
+  "list_reminders",
+]);
 
 const eligible = ["titan_pro", "business_starter", "business_plus", "business_advanced", "rescue"];
 
@@ -84,6 +87,12 @@ const checks = [
   ["keeper hosting routes MCP and OAuth before SPA fallback", firebaseConfig.includes('"source": "/mcp"') && firebaseConfig.includes('"functionId": "tinyTitansMcp"') && firebaseConfig.indexOf('"source": "/mcp"') < firebaseConfig.lastIndexOf('"destination": "/index.html"')],
   ["frontend explains exact MCP server setup", page.includes("Settings → Security and login") && page.includes("https://tinytitanskeeper.web.app/mcp")],
   ["frontend calls secret a one-time link code", page.includes("One-time link code") && !page.includes("Treat this like a password")],
+  ["multi-animal snapshot is exposed", backend.includes('name: "get_keeper_snapshot"') && backend.includes("selectRequestedAnimals")],
+  ["reminder scopes are explicit", backend.includes('"reminders.read"') && backend.includes('"reminders.write"') && backend.includes('"read_reminders"') && backend.includes('"write_reminders"')],
+  ["reminder write tool supports batch animal names", backend.includes('name: "create_reminders"') && backend.includes("animalNames") && backend.includes("recordPaths")],
+  ["one-time reminders are completed rather than recurring forever", backend.includes('scheduleType: recurring ? "recurring" : "once"') && read("functions/reminders.js").includes('status: "completed"')],
+  ["ChatGPT feeding writes reanchor recurring feeding reminders", backend.includes("reanchorRecurringFeedingReminders(auth, snake, date)")],
+  ["link captures browser timezone for natural reminder requests", backend.includes("request.data?.timezone") && service.includes("resolvedOptions().timeZone")],
 ];
 
 const failures = checks.filter(([, ok]) => !ok).map(([label]) => label);

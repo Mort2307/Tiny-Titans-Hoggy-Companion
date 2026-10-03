@@ -38,6 +38,8 @@ const EXAMPLES = [
   "Marmalade had a complete perfect shed today with no retained eye caps.",
   "Which of my animals have refused food recently?",
   "Undo the last record I added through Tiny Titans.",
+  "Set a feed reminder for Mort and Haze for Monday, then tell me when Lilith, Marmalade and Nox last ate.",
+  "Which of my animals are due a feed this week?",
 ];
 
 const PERMISSION_LABELS: Record<string, string> = {
@@ -45,6 +47,8 @@ const PERMISSION_LABELS: Record<string, string> = {
   read_records: "Read keeper tracker history",
   write_records: "Create feeding, weight, shed, behaviour and health records",
   undo_own_actions: "Undo records created through this connection",
+  read_reminders: "Read keeper reminders",
+  write_reminders: "Create one-time or recurring keeper reminders",
 };
 
 const DEFAULT_MCP_SERVER = "https://tinytitanskeeper.web.app/mcp";
@@ -207,6 +211,7 @@ export default function ChatGPTCompanion() {
               {status.prepared && <span><strong>Link code expires</strong>{toDateLabel(status.linkExpiresAt)}</span>}
               <span><strong>Last used</strong>{toDateLabel(status.lastUsedAt)}</span>
               <span><strong>Last tool</strong>{status.lastTool || "No tool call yet"}</span>
+              <span><strong>Reminder timezone</strong>{status.timezone || "UTC"}</span>
             </div>
           )}
         </div>
@@ -288,6 +293,9 @@ export default function ChatGPTCompanion() {
             "Weight history",
             "Shed history",
             "Recent activity",
+            "Multi-animal keeper snapshot",
+            "Read keeper reminders",
+            "Create one-time & recurring reminders",
             "Log feeding",
             "Log weight",
             "Log shed",

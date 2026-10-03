@@ -5,7 +5,9 @@ export type ChatGPTCompanionPermission =
   | "read_animals"
   | "read_records"
   | "write_records"
-  | "undo_own_actions";
+  | "undo_own_actions"
+  | "read_reminders"
+  | "write_reminders";
 
 export type ChatGPTCompanionStatus = {
   available: boolean;
@@ -24,6 +26,7 @@ export type ChatGPTCompanionStatus = {
   lastTool?: string | null;
   mcpServer: string;
   connectionVersion: number;
+  timezone: string;
 };
 
 export type ChatGPTCompanionConnection = {
@@ -35,6 +38,7 @@ export type ChatGPTCompanionConnection = {
   permissions: ChatGPTCompanionPermission[];
   mcpServer: string;
   apiBase: string;
+  timezone?: string;
 };
 
 export type ChatGPTCompanionActivity = {
@@ -55,7 +59,7 @@ const statusCall = httpsCallable<undefined, { success: boolean } & ChatGPTCompan
   functions,
   "getChatGPTCompanionStatus",
 );
-const connectCall = httpsCallable<undefined, { success: boolean } & ChatGPTCompanionConnection>(
+const connectCall = httpsCallable<{ timezone: string }, { success: boolean } & ChatGPTCompanionConnection>(
   functions,
   "createChatGPTCompanionConnection",
 );
@@ -88,11 +92,13 @@ export async function getChatGPTCompanionStatus(): Promise<ChatGPTCompanionStatu
     lastTool: data.lastTool ?? null,
     mcpServer: String(data.mcpServer || "https://tinytitanskeeper.web.app/mcp"),
     connectionVersion: Number(data.connectionVersion || 0),
+    timezone: String(data.timezone || "UTC"),
   };
 }
 
 export async function createChatGPTCompanionConnection(): Promise<ChatGPTCompanionConnection> {
-  const response = await connectCall(undefined);
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const response = await connectCall({ timezone });
   return {
     linkCode: String(response.data.linkCode || response.data.token || ""),
     token: response.data.token,
@@ -102,6 +108,7 @@ export async function createChatGPTCompanionConnection(): Promise<ChatGPTCompani
     permissions: response.data.permissions,
     mcpServer: String(response.data.mcpServer || "https://tinytitanskeeper.web.app/mcp"),
     apiBase: response.data.apiBase,
+    timezone: response.data.timezone,
   };
 }
 

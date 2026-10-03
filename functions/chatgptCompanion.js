@@ -25,18 +25,24 @@ const OAUTH_SCOPES = Object.freeze([
   "records.read",
   "records.write",
   "records.undo",
+  "reminders.read",
+  "reminders.write",
 ]);
 const SCOPE_PERMISSION_MAP = Object.freeze({
   "animals.read": "read_animals",
   "records.read": "read_records",
   "records.write": "write_records",
   "records.undo": "undo_own_actions",
+  "reminders.read": "read_reminders",
+  "reminders.write": "write_reminders",
 });
 const DEFAULT_PERMISSIONS = Object.freeze([
   "read_animals",
   "read_records",
   "write_records",
   "undo_own_actions",
+  "read_reminders",
+  "write_reminders",
 ]);
 const WRITE_TOOLS = new Set([
   "log_feeding",
@@ -44,6 +50,7 @@ const WRITE_TOOLS = new Set([
   "log_shed",
   "log_behaviour",
   "log_health_observation",
+  "create_reminders",
   "undo_last_action",
 ]);
 
@@ -72,11 +79,14 @@ const TOOL_CATALOG = [
   { name: "get_weight_history", mode: "read", description: "Read weight history for a snake." },
   { name: "get_shed_history", mode: "read", description: "Read shed history for a snake." },
   { name: "get_recent_activity", mode: "read", description: "Read recent feeding, weight, shed, behaviour and health activity." },
+  { name: "get_keeper_snapshot", mode: "read", description: "Read a multi-animal Tiny Titans keeper snapshot in one request." },
+  { name: "list_reminders", mode: "read", description: "Read Tiny Titans keeper reminders." },
   { name: "log_feeding", mode: "write", description: "Create a structured feeding record." },
   { name: "log_weight", mode: "write", description: "Create a weight record and synchronise the current animal weight." },
   { name: "log_shed", mode: "write", description: "Create a structured shed record." },
   { name: "log_behaviour", mode: "write", description: "Create a keeper behaviour observation." },
   { name: "log_health_observation", mode: "write", description: "Create a health observation or veterinary record." },
+  { name: "create_reminders", mode: "write", description: "Create one-time or recurring Tiny Titans reminders for one or more animals." },
   { name: "undo_last_action", mode: "write", description: "Undo the most recent reversible record created through ChatGPT Companion." },
 ];
 
@@ -254,6 +264,7 @@ function connectionState(data, access) {
     lastTool: data?.lastTool || null,
     mcpServer: MCP_RESOURCE,
     connectionVersion: Number(data?.connectionVersion || 0),
+    timezone: normaliseString(data?.timezone) || "UTC",
   };
 }
 
@@ -280,6 +291,8 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
   const linkPrefix = linkCode.slice(0, 20);
   const linkExpiresAt = Timestamp.fromMillis(Date.now() + LINK_CODE_TTL_MINUTES * 60_000);
   const permissions = [...DEFAULT_PERMISSIONS];
+  const requestedTimezone = normaliseString(request.data?.timezone);
+  const timezone = isValidTimezone(requestedTimezone) ? requestedTimezone : "UTC";
   const ref = connectionRef(uid);
 
   await db.runTransaction(async (transaction) => {
@@ -290,6 +303,7 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
     transaction.set(ref, {
       uid,
       permissions,
+      timezone,
       revoked: false,
       revokedAt: FieldValue.delete(),
       linkPrefix,
@@ -319,6 +333,7 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
     linkExpiresAt: linkExpiresAt.toDate().toISOString(),
     expiresAt: linkExpiresAt.toDate().toISOString(),
     permissions,
+    timezone,
     mcpServer: MCP_RESOURCE,
     apiBase: "https://europe-west2-tinytitans-hoggy-companion.cloudfunctions.net/chatGPTCompanionApi/v1",
   };
@@ -407,6 +422,7 @@ async function authenticateOAuthAccessToken(token) {
     ref: connectionSnapshot.ref,
     oauth: true,
     resource: tokenData.resource,
+    timezone: normaliseString(connection.timezone) || "UTC",
   };
 }
 
@@ -435,6 +451,7 @@ async function authenticateBearer(request) {
       context: await resolveAccountContext(uid),
       ref: snapshot.ref,
       oauth: false,
+      timezone: normaliseString(data.timezone) || "UTC",
     };
   }
   return null;
@@ -445,8 +462,11 @@ function hasPermission(auth, permission) {
 }
 
 function toolPermission(auth, tool) {
+  if (tool === "create_reminders") return hasPermission(auth, "write_reminders");
+  if (tool === "list_reminders") return hasPermission(auth, "read_reminders");
   if (WRITE_TOOLS.has(tool)) return hasPermission(auth, tool === "undo_last_action" ? "undo_own_actions" : "write_records");
-  return hasPermission(auth, "read_records") || (tool === "list_animals" || tool === "resolve_animal") && hasPermission(auth, "read_animals");
+  if (tool === "list_animals" || tool === "resolve_animal") return hasPermission(auth, "read_animals");
+  return hasPermission(auth, "read_records");
 }
 
 function sendJson(response, status, payload) {
@@ -483,6 +503,49 @@ function addDays(date, days) {
   const parsed = new Date(`${date}T00:00:00Z`);
   parsed.setUTCDate(parsed.getUTCDate() + days);
   return parsed.toISOString().slice(0, 10);
+}
+
+function isValidTimezone(timezone) {
+  if (!normaliseString(timezone)) return false;
+  try {
+    new Intl.DateTimeFormat("en-GB", { timeZone: timezone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function localParts(date, timezone) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  }).formatToParts(date);
+  return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+}
+
+function localDateKey(date, timezone) {
+  const parts = localParts(date, timezone);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function zonedTimeToUtc(dateKey, time, timezone) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const desired = Date.UTC(year, month - 1, day, hour, minute, 0);
+  let guess = desired;
+  for (let index = 0; index < 3; index += 1) {
+    const parts = localParts(new Date(guess), timezone);
+    const asUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+    guess -= asUtc - desired;
+  }
+  return new Date(guess);
+}
+
+function validateClockTime(value) {
+  const time = normaliseString(value || "09:00");
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) fail(400, "time must use 24-hour HH:MM.", "TIME_INVALID");
+  return time;
 }
 
 function metadata(auth, tool) {
@@ -624,6 +687,7 @@ async function getAnimalSummary(auth, args) {
     currentWeightGrams: typeof animal.data.weight === "number" ? animal.data.weight : weights[0]?.weight ?? null,
     lastWeighedDate: animal.data.lastWeighedDate || weights[0]?.date || null,
     lastMealDate: animal.data.lastMealDate || feedings.find((item) => item.response === "Accepted" || item.response === "Partial")?.date || null,
+    feedingSchedule: animal.data.feedingSchedule || null,
     latestFeeding: feedings[0] || null,
     latestShed: sheds[0] || null,
     latestBehaviour: behaviours[0] || null,
@@ -665,6 +729,208 @@ async function getRecentActivity(auth, args) {
       ...combine(health, "health"),
     ].sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, limit),
   };
+}
+
+function scoreAnimalName(animal, query) {
+  const target = normaliseName(query);
+  const name = normaliseName(animal.name);
+  const nickname = normaliseName(animal.nickname);
+  if (name === target || nickname === target) return 100;
+  if (name.startsWith(target) || nickname.startsWith(target)) return 75;
+  if (name.includes(target) || nickname.includes(target)) return 50;
+  return 0;
+}
+
+async function selectRequestedAnimals(auth, args, options = {}) {
+  const animals = await listAnimals(auth);
+  const max = Math.max(1, Math.min(100, Number(options.max || 25)));
+  const names = Array.isArray(args.animalNames) ? args.animalNames.map(normaliseString).filter(Boolean) : [];
+  const ids = Array.isArray(args.animalIds) ? args.animalIds.map(normaliseString).filter(Boolean) : [];
+  const selected = [];
+  const seen = new Set();
+
+  for (const id of ids) {
+    const match = animals.find((animal) => animal.id === id);
+    if (!match) fail(404, `Animal ID ${id} was not found in this Tiny Titans account.`, "ANIMAL_NOT_FOUND");
+    if (!seen.has(match.id)) { selected.push(match); seen.add(match.id); }
+  }
+
+  for (const name of names) {
+    const matches = animals
+      .map((animal) => ({ animal, score: scoreAnimalName(animal, name) }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || String(a.animal.name).localeCompare(String(b.animal.name)));
+    if (!matches.length) fail(404, `No Tiny Titans animal matched "${name}".`, "ANIMAL_NOT_FOUND");
+    if (matches.length > 1 && matches[0].score === matches[1].score) {
+      fail(409, `More than one Tiny Titans animal matched "${name}". Use the exact animal name.`, "ANIMAL_AMBIGUOUS");
+    }
+    const match = matches[0].animal;
+    if (!seen.has(match.id)) { selected.push(match); seen.add(match.id); }
+  }
+
+  if (!names.length && !ids.length) {
+    const limit = cleanLimit(args.limit, 25, max);
+    return animals.filter((animal) => animal.trackingSupported).slice(0, limit);
+  }
+  if (selected.length > max) fail(400, `A maximum of ${max} animals can be queried at once.`, "ANIMAL_LIMIT");
+  return selected;
+}
+
+async function getKeeperSnapshot(auth, args) {
+  const selected = await selectRequestedAnimals(auth, args, { max: 25 });
+  const summaries = await Promise.all(selected.map((animal) => getAnimalSummary(auth, { animalId: animal.id })));
+  return {
+    count: summaries.length,
+    animals: summaries,
+    generatedAt: nowIso(),
+    note: "Use lastMealDate for the last successful/partial feeding date; latestFeeding is the latest feeding attempt.",
+  };
+}
+
+async function listRemindersForAuth(auth, args = {}) {
+  const owner = auth.context.dataOwnerUid;
+  const snapshot = await db.collection("users").doc(owner).collection("reminders").limit(500).get();
+  let reminders = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const kind = normaliseString(args.kind);
+  const status = normaliseString(args.status);
+  if (kind) reminders = reminders.filter((item) => item.kind === kind);
+  if (status) reminders = reminders.filter((item) => item.status === status);
+  if (args.includeCompleted !== true) reminders = reminders.filter((item) => item.status !== "completed");
+
+  const names = Array.isArray(args.animalNames) ? args.animalNames.map(normaliseName).filter(Boolean) : [];
+  if (names.length) {
+    const selected = await selectRequestedAnimals(auth, { animalNames: args.animalNames }, { max: 50 });
+    const ids = new Set(selected.map((animal) => animal.id));
+    reminders = reminders.filter((item) => !item.snakeId || ids.has(item.snakeId));
+  }
+
+  reminders.sort((a, b) => String(a.nextNotificationAt || "").localeCompare(String(b.nextNotificationAt || "")));
+  return { reminders: reminders.slice(0, cleanLimit(args.limit, 100, 500)), count: reminders.length };
+}
+
+function reminderDocumentId(auth, animalId, kind, dueDate, time, key) {
+  const stable = normaliseString(key);
+  if (!stable) return null;
+  return `gpt-reminder-${crypto.createHash("sha256").update(`${auth.uid}|${animalId || "all"}|${kind}|${dueDate}|${time}|${stable}`).digest("hex").slice(0, 24)}`;
+}
+
+async function reanchorRecurringFeedingReminders(auth, snake, feedingDate) {
+  const owner = auth.context.dataOwnerUid;
+  const remindersRef = db.collection("users").doc(owner).collection("reminders");
+  const snapshot = await remindersRef.limit(500).get();
+  const matching = snapshot.docs.filter((item) => {
+    const data = item.data() || {};
+    return data.kind === "feeding" && data.status === "active" && data.snakeId === snake.id && data.scheduleType !== "once" && data.oneTime !== true;
+  });
+  await Promise.all(matching.map(async (item) => {
+    const data = item.data() || {};
+    const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(data.frequencyDays) || 1)));
+    const nextDate = addDays(feedingDate, frequencyDays);
+    const timezone = isValidTimezone(data.timezone) ? data.timezone : (isValidTimezone(auth.timezone) ? auth.timezone : "UTC");
+    const time = validateClockTime(data.time || "09:00");
+    await item.ref.update({
+      nextNotificationAt: zonedTimeToUtc(nextDate, time, timezone).toISOString(),
+      nextOccurrenceDate: nextDate, nextPhase: "due", leadUpEnabled: false, leadUpDays: 0,
+      lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp(),
+    });
+  }));
+}
+
+async function createReminders(auth, args) {
+  requireFamilyWriteOwner(auth.context);
+  const kind = normaliseString(args.kind || "custom");
+  const allowedKinds = new Set(["weight", "feeding", "shedding", "health", "husbandry", "water-change", "custom"]);
+  if (!allowedKinds.has(kind)) fail(400, "kind is not a supported Tiny Titans reminder type.", "REMINDER_KIND_INVALID");
+  const timezone = normaliseString(args.timezone || auth.timezone);
+  if (!isValidTimezone(timezone)) fail(400, "A valid IANA timezone is required for reminders.", "TIMEZONE_INVALID");
+  const dueDate = validateIsoDate(args.dueDate || args.date, "dueDate", { allowFuture: true });
+  if (dueDate < localDateKey(new Date(), timezone)) fail(400, "A reminder due date cannot be in the past.", "REMINDER_DATE_PAST");
+  const time = validateClockTime(args.time || "09:00");
+  const repeatRaw = args.repeatEveryDays;
+  const recurring = repeatRaw !== undefined && repeatRaw !== null;
+  const frequencyDays = recurring ? Number(repeatRaw) : 1;
+  if (recurring && (!Number.isInteger(frequencyDays) || frequencyDays < 1 || frequencyDays > 3650)) {
+    fail(400, "repeatEveryDays must be a whole number between 1 and 3650.", "REMINDER_FREQUENCY_INVALID");
+  }
+
+  const requestedNames = Array.isArray(args.animalNames) ? args.animalNames.map(normaliseString).filter(Boolean) : [];
+  const requestedIds = Array.isArray(args.animalIds) ? args.animalIds.map(normaliseString).filter(Boolean) : [];
+  if (kind === "feeding" && requestedNames.length === 0 && requestedIds.length === 0) {
+    fail(400, "Feeding reminders must identify at least one animal.", "REMINDER_ANIMAL_REQUIRED");
+  }
+
+  const targets = requestedNames.length || requestedIds.length
+    ? await selectRequestedAnimals(auth, { animalNames: requestedNames, animalIds: requestedIds }, { max: 25 })
+    : [null];
+  if (targets.some((animal) => animal && !animal.trackingSupported)) {
+    fail(409, "Reminder targeting currently requires a tracked snake record.", "TRACKER_NOT_AVAILABLE");
+  }
+
+  const owner = auth.context.dataOwnerUid;
+  const remindersRef = db.collection("users").doc(owner).collection("reminders");
+  const existingSnapshot = await remindersRef.limit(500).get();
+  const title = normaliseString(args.title) || ({
+    feeding: "Feeding reminder", weight: "Weight check", shedding: "Shed check", health: "Health check",
+    husbandry: "Husbandry check", "water-change": "Water change", custom: "Tiny Titans reminder",
+  }[kind]);
+  const description = normaliseString(args.description);
+  const created = [];
+  const duplicates = [];
+  const createdRefs = [];
+
+  for (const animal of targets) {
+    const animalId = animal?.id || null;
+    const animalName = animal?.name || null;
+    const duplicate = existingSnapshot.docs.find((item) => {
+      const data = item.data() || {};
+      return data.status === "active" && data.kind === kind && (data.snakeId || null) === animalId &&
+        String(data.nextOccurrenceDate || data.startDate || "") === dueDate && String(data.time || "09:00") === time &&
+        (recurring ? Number(data.frequencyDays) === frequencyDays && data.scheduleType !== "once" : data.scheduleType === "once" || data.oneTime === true);
+    });
+    if (duplicate) {
+      duplicates.push({ id: duplicate.id, animalId, animalName, dueDate, time });
+      continue;
+    }
+
+    let occurrenceDate = dueDate;
+    if (kind === "feeding" && recurring && animal) {
+      const snake = await getAnimal(auth, animal.id);
+      const anchor = normaliseString(snake.data.lastMealDate);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(anchor)) occurrenceDate = addDays(anchor, frequencyDays);
+    }
+
+    const stableId = reminderDocumentId(auth, animalId, kind, dueDate, time, args.idempotencyKey);
+    const ref = stableId ? remindersRef.doc(stableId) : remindersRef.doc();
+    const existing = await ref.get();
+    if (existing.exists) {
+      const data = existing.data() || {};
+      duplicates.push({ id: ref.id, animalId, animalName, dueDate: data.nextOccurrenceDate || dueDate, time: data.time || time });
+      continue;
+    }
+
+    const record = {
+      kind, title, description, snakeId: animalId, snakeName: animalName,
+      frequencyDays, time, startDate: dueDate, timezone, leadUpEnabled: false, leadUpDays: 0, status: "active",
+      scheduleType: recurring ? "recurring" : "once", oneTime: !recurring,
+      nextNotificationAt: zonedTimeToUtc(occurrenceDate, time, timezone).toISOString(),
+      nextOccurrenceDate: occurrenceDate, nextPhase: "due", lastNotifiedAt: null, lastCompletedAt: null, lockedUntil: null,
+      createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+      integrationMetadata: metadata(auth, "create_reminders"),
+    };
+    await ref.set(record);
+    createdRefs.push(ref.path);
+    created.push({ id: ref.id, animalId, animalName, kind, dueDate: occurrenceDate, time, timezone, recurring, repeatEveryDays: recurring ? frequencyDays : null });
+  }
+
+  let actionId = null;
+  if (createdRefs.length) {
+    actionId = await auditAction(auth, {
+      tool: "create_reminders", recordPaths: createdRefs, recordCollection: "reminders",
+      summary: `Created ${createdRefs.length} ${kind} reminder${createdRefs.length === 1 ? "" : "s"} for ${dueDate}`,
+      reversible: true,
+    });
+  }
+  return { created, duplicates, actionId, deepLink: "/reminders", oneTime: !recurring };
 }
 
 async function auditAction(auth, details) {
@@ -740,6 +1006,9 @@ async function logFeeding(auth, args) {
     }
   }
   await snake.ref.update(rootUpdate);
+  if (response === "Accepted" || response === "Partial") {
+    await reanchorRecurringFeedingReminders(auth, snake, date);
+  }
 
   const actionId = await auditAction(auth, {
     tool: "log_feeding",
@@ -954,14 +1223,17 @@ async function undoLastAction(auth) {
   const snapshot = await actionsCollection(auth.uid).orderBy("createdAt", "desc").limit(20).get();
   const candidate = snapshot.docs.find((item) => {
     const data = item.data() || {};
-    return data.reversible === true && !data.undoneAt && typeof data.recordPath === "string";
+    return data.reversible === true && !data.undoneAt && (typeof data.recordPath === "string" || Array.isArray(data.recordPaths));
   });
   if (!candidate) fail(404, "There is no reversible ChatGPT Companion action to undo.", "UNDO_NOTHING");
 
   const action = candidate.data() || {};
-  const recordRef = db.doc(action.recordPath);
-  const record = await recordRef.get();
-  if (record.exists) await recordRef.delete();
+  const recordPaths = Array.isArray(action.recordPaths) ? action.recordPaths.filter((path) => typeof path === "string") : (typeof action.recordPath === "string" ? [action.recordPath] : []);
+  for (const recordPath of recordPaths) {
+    const recordRef = db.doc(recordPath);
+    const record = await recordRef.get();
+    if (record.exists) await recordRef.delete();
+  }
 
   if (action.animalId && action.recordCollection) {
     const snakeRef = db.collection("users").doc(auth.context.dataOwnerUid).collection("snakes").doc(action.animalId);
@@ -1007,11 +1279,14 @@ async function dispatchTool(auth, tool, args) {
     case "get_weight_history": return getHistory(auth, args, "weights");
     case "get_shed_history": return getHistory(auth, args, "sheds");
     case "get_recent_activity": return getRecentActivity(auth, args);
+    case "get_keeper_snapshot": return getKeeperSnapshot(auth, args);
+    case "list_reminders": return listRemindersForAuth(auth, args);
     case "log_feeding": return logFeeding(auth, args);
     case "log_weight": return logWeight(auth, args);
     case "log_shed": return logShed(auth, args);
     case "log_behaviour": return logBehaviour(auth, args);
     case "log_health_observation": return logHealthObservation(auth, args);
+    case "create_reminders": return createReminders(auth, args);
     case "undo_last_action": return undoLastAction(auth);
     default: fail(404, "Unknown Tiny Titans Companion tool.", "TOOL_UNKNOWN");
   }
@@ -1095,7 +1370,7 @@ const MCP_SERVER_INFO = Object.freeze({
   websiteUrl: PUBLIC_ORIGIN,
 });
 
-const MCP_INSTRUCTIONS = "Resolve an animal before writing when its Tiny Titans ID is not already known. Never invent animal IDs. Read keeper records when useful. Only create, change, or undo records when the user asks for that action. Tiny Titans tools are scoped to the authenticated keeper account and never provide generic database access.";
+const MCP_INSTRUCTIONS = "Complete every part of a compound keeper request, not just the first clause. Prefer get_keeper_snapshot for multi-animal or account-wide keeper questions instead of repeatedly resolving animals one by one. Use create_reminders for reminder requests and convert relative dates such as Monday into an absolute YYYY-MM-DD using the user current date. Never invent animal IDs. Read keeper records when useful. Only create, change, or undo records when the user asks for that action. Tiny Titans tools are scoped to the authenticated keeper account and never provide generic database access.";
 
 function oauthCollection(name) {
   return db.collection(name);
@@ -1217,6 +1492,8 @@ function renderAuthorizePage(response, input, errorMessage = "") {
       "records.read": "Read keeper tracker history",
       "records.write": "Create feeding, weight, shed, behaviour and health records",
       "records.undo": "Undo records created through the Tiny Titans connection",
+      "reminders.read": "Read keeper reminders",
+      "reminders.write": "Create keeper reminders",
     }[scope] || scope;
     return `<li>${htmlEscape(label)}</li>`;
   }).join("");
@@ -1582,6 +1859,32 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
     scopes: ["animals.read", "records.read"],
     readOnly: true,
   }),
+  mcpToolDescriptor({
+    name: "get_keeper_snapshot",
+    title: "Get keeper snapshot",
+    description: "Read several Tiny Titans animals in one call, including last successful feeding date, latest feeding attempt, current weight, feeding schedule, latest shed, behaviour and health. Prefer this for multi-animal questions such as who ate last, who has refused food, or comparing several animals.",
+    inputSchema: objectSchema({
+      animalNames: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 25, uniqueItems: true, description: "Exact or unambiguous animal names. Omit to return up to limit tracked animals." },
+      animalIds: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 25, uniqueItems: true },
+      limit: { type: "integer", minimum: 1, maximum: 25, default: 25 },
+    }),
+    scopes: ["animals.read", "records.read"],
+    readOnly: true,
+  }),
+  mcpToolDescriptor({
+    name: "list_reminders",
+    title: "List keeper reminders",
+    description: "Read Tiny Titans reminders, optionally filtered by animal, reminder kind or status.",
+    inputSchema: objectSchema({
+      animalNames: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 50, uniqueItems: true },
+      kind: { type: "string", enum: ["weight", "feeding", "shedding", "health", "husbandry", "water-change", "custom"] },
+      status: { type: "string", enum: ["active", "paused", "completed"] },
+      includeCompleted: { type: "boolean", default: false },
+      limit: { type: "integer", minimum: 1, maximum: 500, default: 100 },
+    }),
+    scopes: ["reminders.read"],
+    readOnly: true,
+  }),
   ...[
     ["get_feeding_history", "Get feeding history", "Read feeding history for one Tiny Titans snake."],
     ["get_weight_history", "Get weight history", "Read weight history for one Tiny Titans snake."],
@@ -1695,6 +1998,26 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
     scopes: ["animals.read", "records.write"],
     invoking: "Logging health record…",
     invoked: "Health record logged",
+  }),
+  mcpToolDescriptor({
+    name: "create_reminders",
+    title: "Create keeper reminders",
+    description: "Create one-time or recurring Tiny Titans reminders for one or more animals. For a request like set a feed reminder for Mort and Haze for Monday, pass kind feeding, both names and Monday converted to YYYY-MM-DD. Omit repeatEveryDays for a one-time reminder; provide it only when the user explicitly wants a recurring cadence.",
+    inputSchema: objectSchema({
+      kind: { type: "string", enum: ["weight", "feeding", "shedding", "health", "husbandry", "water-change", "custom"] },
+      animalNames: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 25, uniqueItems: true },
+      animalIds: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 25, uniqueItems: true },
+      dueDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", description: "Absolute due date in YYYY-MM-DD. Convert relative wording before calling." },
+      time: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$", default: "09:00" },
+      timezone: { type: "string", description: "IANA timezone. Omit to use the timezone captured when Tiny Titans was linked." },
+      repeatEveryDays: { type: "integer", minimum: 1, maximum: 3650, description: "Only set when the user wants a recurring reminder. Omit for one-time reminders." },
+      title: { type: "string" },
+      description: { type: "string" },
+      idempotencyKey: { type: "string" },
+    }, ["kind", "dueDate"]),
+    scopes: ["animals.read", "reminders.write"],
+    invoking: "Creating Tiny Titans reminder…",
+    invoked: "Reminder created",
   }),
   mcpToolDescriptor({
     name: "undo_last_action",

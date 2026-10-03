@@ -114,3 +114,21 @@ The full production build also runs this validation.
 ## Public release
 
 Developer-mode connection is sufficient for private testing. Public directory release is a separate packaging/review step and requires the deployed HTTPS MCP endpoint, publisher verification, domain verification, and an approved plugin submission.
+
+## Natural keeper requests
+
+The Companion now exposes batch keeper reads and reminders so a single user sentence can contain several actions.
+
+Examples:
+
+```text
+Set a feed reminder for Mort and Haze for Monday and tell me when Lilith, Marmalade and Nox last fed.
+Which of my animals are due a feed this week?
+Compare Mort and Haze: last feeding, current weight, latest shed and health notes.
+Remind me once on Friday to weigh Marmalade.
+Remind me every 14 days to feed Mort.
+```
+
+`get_keeper_snapshot` resolves multiple animal names in one call. `create_reminders` accepts multiple animal names and creates one-time reminders by default; recurring cadence is only created when `repeatEveryDays` is explicitly supplied. The connection captures the browser IANA timezone at link time so relative keeper requests can be converted to the correct local schedule.
+
+Feeding logged through ChatGPT now re-anchors recurring Tiny Titans feeding reminders using the same latest-real-feeding rule as feeding logged in the app.
