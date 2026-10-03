@@ -29,8 +29,9 @@ for (const status of ['"safe"', '"caution"', '"avoid"', '"unknown"']) {
   if (!library.includes(status)) errors.push(`Keeper library is missing status ${status}.`);
 }
 
-const sourceIds = [...seed.matchAll(/sourceIds:\s*\[([^\]]*)\]/g)]
+const sourceIds = [...seed.matchAll(/hognoseAssessment\(\s*"[^"]+"\s*,\s*"[^"]*"\s*,\s*"[^"]+"\s*,\s*\[([^\]]*)\]/g)]
   .flatMap((match) => [...match[1].matchAll(/"([^"]+)"/g)].map((item) => item[1]));
+if (sourceIds.length === 0) errors.push("No evidence source IDs were detected in the Husbandry Safety seed.");
 for (const sourceId of new Set(sourceIds)) {
   if (!sources.includes(`${sourceId}:`)) errors.push(`Seed references missing source ID: ${sourceId}.`);
 }
