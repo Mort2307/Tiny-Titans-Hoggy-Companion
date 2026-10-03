@@ -19,6 +19,8 @@ export type ChatGPTCompanionStatus = {
   expiresAt?: unknown;
   lastUsedAt?: unknown;
   lastTool?: string | null;
+  connectionMode?: "oauth" | "legacy_token" | null;
+  grantedScopes?: string[];
 };
 
 export type ChatGPTCompanionConnection = {
@@ -41,6 +43,30 @@ export type ChatGPTCompanionActivity = {
   undoneAt?: unknown;
 };
 
+export type ChatGPTCompanionLinkInfo = {
+  mcpUrl: string;
+  authorizationUrl: string;
+  chatgptUrl: string;
+  authMode: "oauth_2_1_pkce";
+  scopes: Array<{ scope: string; label: string }>;
+};
+
+export type ChatGPTCompanionAuthorizationRequest = {
+  responseType: string;
+  clientId: string;
+  redirectUri: string;
+  codeChallenge: string;
+  codeChallengeMethod: string;
+  resource: string;
+  state: string;
+  scope: string;
+};
+
+export type ChatGPTCompanionAuthorizationApproval = {
+  redirectUrl: string;
+  scopes: string[];
+};
+
 const functions = getFunctions(app, "europe-west2");
 
 const statusCall = httpsCallable<undefined, { success: boolean } & ChatGPTCompanionStatus>(
@@ -60,6 +86,15 @@ const activityCall = httpsCallable<undefined, { success: boolean; actions: ChatG
   "getChatGPTCompanionActivity",
 );
 
+const linkInfoCall = httpsCallable<undefined, { success: boolean } & ChatGPTCompanionLinkInfo>(
+  functions,
+  "getChatGPTCompanionLinkInfo",
+);
+const approveAuthorizationCall = httpsCallable<ChatGPTCompanionAuthorizationRequest, { success: boolean } & ChatGPTCompanionAuthorizationApproval>(
+  functions,
+  "approveChatGPTCompanionAuthorization",
+);
+
 export async function getChatGPTCompanionStatus(): Promise<ChatGPTCompanionStatus> {
   const response = await statusCall(undefined);
   const data = response.data;
@@ -75,6 +110,8 @@ export async function getChatGPTCompanionStatus(): Promise<ChatGPTCompanionStatu
     expiresAt: data.expiresAt,
     lastUsedAt: data.lastUsedAt,
     lastTool: data.lastTool ?? null,
+    connectionMode: data.connectionMode === "oauth" || data.connectionMode === "legacy_token" ? data.connectionMode : null,
+    grantedScopes: Array.isArray(data.grantedScopes) ? data.grantedScopes.map(String) : [],
   };
 }
 
@@ -96,4 +133,28 @@ export async function revokeChatGPTCompanionConnection(): Promise<void> {
 export async function getChatGPTCompanionActivity(): Promise<ChatGPTCompanionActivity[]> {
   const response = await activityCall(undefined);
   return Array.isArray(response.data.actions) ? response.data.actions : [];
+}
+
+
+export async function getChatGPTCompanionLinkInfo(): Promise<ChatGPTCompanionLinkInfo> {
+  const response = await linkInfoCall(undefined);
+  return {
+    mcpUrl: String(response.data.mcpUrl || ""),
+    authorizationUrl: String(response.data.authorizationUrl || ""),
+    chatgptUrl: String(response.data.chatgptUrl || "https://chatgpt.com/"),
+    authMode: "oauth_2_1_pkce",
+    scopes: Array.isArray(response.data.scopes)
+      ? response.data.scopes.map((item) => ({ scope: String(item.scope || ""), label: String(item.label || item.scope || "") }))
+      : [],
+  };
+}
+
+export async function approveChatGPTCompanionAuthorization(
+  request: ChatGPTCompanionAuthorizationRequest,
+): Promise<ChatGPTCompanionAuthorizationApproval> {
+  const response = await approveAuthorizationCall(request);
+  return {
+    redirectUrl: String(response.data.redirectUrl || ""),
+    scopes: Array.isArray(response.data.scopes) ? response.data.scopes.map(String) : [],
+  };
 }
