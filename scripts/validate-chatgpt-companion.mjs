@@ -44,7 +44,7 @@ const readTools = [
   "get_recent_activity",
   "get_keeper_snapshot",
   "list_reminders",
-]);
+];
 
 const eligible = ["titan_pro", "business_starter", "business_plus", "business_advanced", "rescue"];
 
