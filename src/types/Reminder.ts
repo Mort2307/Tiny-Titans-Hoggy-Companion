@@ -1,7 +1,7 @@
 import type { TinyTitansIconName } from "./tinyTitansIcon";
 
 export type ReminderKind = "weight" | "feeding" | "shedding" | "health" | "husbandry" | "water-change" | "custom";
-export type ReminderStatus = "active" | "paused";
+export type ReminderStatus = "active" | "paused" | "completed";
 export type ReminderPhase = "lead-up" | "due";
 
 export type Reminder = {
@@ -18,6 +18,8 @@ export type Reminder = {
   leadUpEnabled: boolean;
   leadUpDays: number;
   status: ReminderStatus;
+  scheduleType?: "recurring" | "once";
+  oneTime?: boolean;
   nextNotificationAt: string;
   nextOccurrenceDate: string;
   nextPhase: ReminderPhase;

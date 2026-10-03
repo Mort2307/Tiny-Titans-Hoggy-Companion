@@ -93,6 +93,7 @@ const checks = [
   ["one-time reminders are completed rather than recurring forever", backend.includes('scheduleType: recurring ? "recurring" : "once"') && read("functions/reminders.js").includes('status: "completed"')],
   ["ChatGPT feeding writes reanchor recurring feeding reminders", backend.includes("reanchorRecurringFeedingReminders(auth, snake, date)")],
   ["link captures browser timezone for natural reminder requests", backend.includes("request.data?.timezone") && service.includes("resolvedOptions().timeZone")],
+  ["native reminder service preserves one-time reminder semantics", read("src/services/reminderService.ts").includes('reminder.scheduleType !== "once"') && read("src/services/reminderService.ts").includes('scheduleType: "once"')],
 ];
 
 const failures = checks.filter(([, ok]) => !ok).map(([label]) => label);

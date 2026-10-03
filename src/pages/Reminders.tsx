@@ -57,7 +57,7 @@ export default function Reminders() {
 
   const activeReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "active"), [reminders]);
   const pausedReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "paused"), [reminders]);
-  const countFor = (kind: string) => reminders.filter((reminder) => reminder.kind === kind).length;
+  const countFor = (kind: string) => reminders.filter((reminder) => reminder.kind === kind && reminder.status !== "completed").length;
   const nextReminder = activeReminders[0];
   const nextDefinition = nextReminder ? REMINDER_DEFINITIONS.find((item) => item.kind === nextReminder.kind) : null;
   const appToday = world.localDateKey;

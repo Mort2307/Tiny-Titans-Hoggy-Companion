@@ -43,6 +43,7 @@ function nextSchedule(input: ReminderInput, occurrenceDate: string, phase: "lead
 
 function normaliseRecurringReminder(reminder: Reminder, now: Date): Reminder {
   if (reminder.status !== "active") return reminder;
+  if (reminder.scheduleType === "once" || reminder.oneTime === true) return reminder;
 
   const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1)));
   const timezone = reminder.timezone || "Europe/London";
@@ -126,10 +127,15 @@ export function defaultReminderInput(kind: ReminderKind, snakeId: string | null 
 
 function withSchedule(input: ReminderInput): Omit<Reminder, "id" | "createdAt" | "updatedAt"> {
   const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(input.frequencyDays) || 1)));
-  const feedingSchedule = input.kind === "feeding" ? feedingReminderSchedule({ ...input, frequencyDays }) : null;
-  const leadUpEnabled = input.kind === "feeding" ? false : Boolean(input.leadUpEnabled) && frequencyDays > 1;
-  const leadUpDays = input.kind === "feeding" ? 0 : Math.min(Math.max(1, Math.round(Number(input.leadUpDays) || 1)), Math.min(30, frequencyDays - 1));
-  const safeInput = { ...input, frequencyDays, leadUpEnabled, leadUpDays };
+  const oneTime = input.scheduleType === "once" || input.oneTime === true;
+  const feedingSchedule = input.kind === "feeding" && !oneTime ? feedingReminderSchedule({ ...input, frequencyDays }) : null;
+  const leadUpEnabled = oneTime || input.kind === "feeding" ? false : Boolean(input.leadUpEnabled) && frequencyDays > 1;
+  const leadUpDays = oneTime || input.kind === "feeding" ? 0 : Math.min(Math.max(1, Math.round(Number(input.leadUpDays) || 1)), Math.min(30, frequencyDays - 1));
+  const safeInput = { ...input, frequencyDays, leadUpEnabled, leadUpDays, scheduleType: oneTime ? "once" as const : "recurring" as const, oneTime };
+  if (oneTime) {
+    const schedule = nextSchedule(safeInput, input.startDate, "due");
+    return { ...safeInput, nextNotificationAt: schedule.at, nextOccurrenceDate: input.startDate, nextPhase: "due", lastNotifiedAt: null, lastCompletedAt: null };
+  }
   if (input.kind === "feeding" && feedingSchedule) {
     return { ...safeInput, nextNotificationAt: feedingSchedule.at, nextOccurrenceDate: feedingSchedule.occurrenceDate, nextPhase: "due", lastNotifiedAt: null, lastCompletedAt: null };
   }
@@ -180,7 +186,7 @@ export async function reanchorFeedingRemindersAfterFeed(uid: string, snakeId: st
   ]);
   const latest = feedingsSnapshot.docs.map((item) => item.data().date).find((value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value));
   if (!latest) return;
-  const matching = reminders.filter((reminder) => reminder.kind === "feeding" && reminder.status === "active" && reminder.snakeId === snakeId);
+  const matching = reminders.filter((reminder) => reminder.kind === "feeding" && reminder.status === "active" && reminder.snakeId === snakeId && reminder.scheduleType !== "once" && reminder.oneTime !== true);
   await Promise.all(matching.map((reminder) => {
     const frequencyDays = Math.max(1, Math.min(3650, Math.round(Number(reminder.frequencyDays) || 1)));
     const nextDate = addCalendarDays(latest, frequencyDays);
@@ -210,6 +216,13 @@ export async function updateReminder(uid: string, reminderId: string, input: Rem
 export async function setReminderPaused(uid: string, reminder: Reminder, paused: boolean): Promise<void> {
   const ref = doc(db, "users", uid, "reminders", reminder.id);
   if (paused) { await updateDoc(ref, { status: "paused", lockedUntil: null, updatedAt: serverTimestamp() }); return; }
+  if (reminder.scheduleType === "once" || reminder.oneTime === true) {
+    const timezone = reminder.timezone || "Europe/London";
+    const dueDate = reminder.nextOccurrenceDate || reminder.startDate;
+    const at = zonedTimeToUtc(dueDate, reminder.time || "09:00", timezone).toISOString();
+    await updateDoc(ref, { status: "active", scheduleType: "once", oneTime: true, nextNotificationAt: at, nextOccurrenceDate: dueDate, nextPhase: "due", lockedUntil: null, updatedAt: serverTimestamp() });
+    return;
+  }
   if (reminder.kind === "feeding") {
     const schedule = feedingReminderSchedule({ ...reminder, kind: "feeding" });
     if (!schedule) throw new Error("This feeding reminder has no due date.");
