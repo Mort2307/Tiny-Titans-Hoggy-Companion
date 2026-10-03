@@ -36,7 +36,7 @@ const EXAMPLES = [
   "Haze ate a 7g fuzzy today, tong fed, accepted immediately.",
   "Mort weighs 96.4g today.",
   "Marmalade had a complete perfect shed today with no retained eye caps.",
-  "Which of my snakes have refused food recently?",
+  "Which of my animals have refused food recently?",
   "Undo the last record I added through Tiny Titans.",
 ];
 
@@ -141,14 +141,14 @@ export default function ChatGPTCompanion() {
   }
 
   if (loading) {
-    return <main className="tt-gpt-page"><section className="tt-gpt-card"><h1>ChatGPT Companion</h1><p>Checking secure integration status…</p></section></main>;
+    return <main className="tt-gpt-page"><section className="tt-gpt-card"><h1>ChatGPT Companion</h1><p>Checking secure integration statusâ€¦</p></section></main>;
   }
 
   return (
     <main className="tt-gpt-page">
       <header className="tt-gpt-hero">
         <div>
-          <p className="tt-gpt-kicker">TITAN PRO · INTEGRATIONS</p>
+          <p className="tt-gpt-kicker">TITAN PRO Â· INTEGRATIONS</p>
           <h1><TinyTitansIcon name="titan" size={32} /> Tiny Titans Companion</h1>
           <p>Your records. Just ask. ChatGPT can work with the same Tiny Titans tracker data you already use instead of creating a separate AI-only record system.</p>
         </div>
@@ -166,7 +166,7 @@ export default function ChatGPTCompanion() {
           <p className="tt-gpt-kicker">CONVERSATIONAL KEEPING</p>
           <h2>What you will be able to do</h2>
           <div className="tt-gpt-examples">
-            {EXAMPLES.map((example) => <div key={example}><span aria-hidden="true">›</span><code>{example}</code></div>)}
+            {EXAMPLES.map((example) => <div key={example}><span aria-hidden="true">â€º</span><code>{example}</code></div>)}
           </div>
           <p className="tt-gpt-muted">Read actions can stay frictionless. Record-changing actions are exposed as explicit Tiny Titans tools so ChatGPT never receives generic Firestore access.</p>
         </article>
@@ -204,7 +204,7 @@ export default function ChatGPTCompanion() {
 
         <div className="tt-gpt-actions">
           <button className="tt-gpt-primary" type="button" disabled={busy} onClick={() => void prepareConnection()}>
-            {busy ? "Working…" : status?.connected ? "Rotate connection token" : "Prepare connection"}
+            {busy ? "Workingâ€¦" : status?.connected ? "Rotate connection token" : "Prepare connection"}
           </button>
           {status?.connected && <button className="tt-gpt-danger" type="button" disabled={busy} onClick={() => setConfirmRevoke(true)}>Disconnect</button>}
         </div>
@@ -234,7 +234,7 @@ export default function ChatGPTCompanion() {
           <div className="tt-gpt-activity">
             {activity.map((item) => (
               <article key={item.id}>
-                <div><strong>{item.summary || item.tool || "Companion action"}</strong><span>{item.animalName || "Tiny Titans"} · {toDateLabel(item.createdAt)}</span></div>
+                <div><strong>{item.summary || item.tool || "Companion action"}</strong><span>{item.animalName || "Tiny Titans"} Â· {toDateLabel(item.createdAt)}</span></div>
                 <span className={item.undoneAt ? "undone" : item.reversible ? "reversible" : ""}>{item.undoneAt ? "UNDONE" : item.reversible ? "UNDO AVAILABLE" : "RECORDED"}</span>
               </article>
             ))}
