@@ -70,8 +70,12 @@ function slug(value: string): string {
   return value.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function toDraft(item: HusbandrySafetyItem): Draft {
-  const assessment = item.assessments[0];
+function toDraft(item: HusbandrySafetyItem, requestedSpeciesId?: string): Draft {
+  const firstSpeciesAssessment = item.assessments.find((assessment) => assessment.scope === "species");
+  const speciesId = requestedSpeciesId ?? firstSpeciesAssessment?.scopeId ?? "heterodon-nasicus";
+  const assessment = item.assessments.find(
+    (candidate) => candidate.scope === "species" && candidate.scopeId === speciesId,
+  );
   return {
     id: item.id,
     commonName: item.commonName,
@@ -79,7 +83,7 @@ function toDraft(item: HusbandrySafetyItem): Draft {
     aliases: item.aliases.join(", "),
     category: item.category,
     regions: item.regions.join(", "),
-    speciesId: assessment?.scope === "species" ? assessment.scopeId ?? "heterodon-nasicus" : "heterodon-nasicus",
+    speciesId,
     status: assessment?.status ?? "unknown",
     reason: assessment?.reason ?? "",
     risks: assessment?.risks.join("\n") ?? "",
@@ -179,7 +183,7 @@ export default function CreatorHusbandrySafety() {
     try {
       await saveHusbandrySafetyItem(item, user.uid);
       await load();
-      setDraft(toDraft(item));
+      setDraft(toDraft(item, draft.speciesId));
       setMessage("Saved. The keeper-facing library will use this reviewed override.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to save this safety item.");
@@ -232,7 +236,7 @@ export default function CreatorHusbandrySafety() {
             <label className="wide"><span>Aliases · comma separated</span><input value={draft.aliases} onChange={(event) => update("aliases", event.target.value)} /></label>
             <label><span>Category</span><select value={draft.category} onChange={(event) => update("category", event.target.value as HusbandrySafetyCategory)}>{CATEGORIES.map((value) => <option key={value} value={value}>{value.replace(/-/g, " ")}</option>)}</select></label>
             <label><span>Regions · comma separated</span><input value={draft.regions} onChange={(event) => update("regions", event.target.value)} placeholder="uk, us, europe" /></label>
-            <label className="wide"><span>Species assessment</span><select value={draft.speciesId} onChange={(event) => update("speciesId", event.target.value)}>{UNIVERSAL_SPECIES.map((species) => <option key={species.id} value={species.id}>{species.commonNames[0] ?? species.acceptedScientificName} · {species.acceptedScientificName}</option>)}</select></label>
+            <label className="wide"><span>Species assessment</span><select value={draft.speciesId} onChange={(event) => { const nextSpeciesId = event.target.value; const currentItem = items.find((item) => item.id === draft.id); if (currentItem) setDraft(toDraft(currentItem, nextSpeciesId)); else update("speciesId", nextSpeciesId); }}>{UNIVERSAL_SPECIES.map((species) => <option key={species.id} value={species.id}>{species.commonNames[0] ?? species.acceptedScientificName} · {species.acceptedScientificName}</option>)}</select></label>
             <label><span>Safety status</span><select value={draft.status} onChange={(event) => update("status", event.target.value as HusbandrySafetyStatus)}><option value="safe">Safe to use</option><option value="caution">Use with caution</option><option value="avoid">Avoid</option><option value="unknown">Unknown</option></select></label>
             <label><span>Evidence level</span><select value={draft.evidenceLevel} onChange={(event) => update("evidenceLevel", event.target.value as HusbandrySafetyEvidenceLevel)}><option value="high">High</option><option value="moderate">Moderate</option><option value="limited">Limited</option><option value="anecdotal">Anecdotal</option><option value="unknown">Unknown</option></select></label>
             <label className="wide"><span>Assessment reason</span><textarea value={draft.reason} onChange={(event) => update("reason", event.target.value)} rows={3} /></label>
