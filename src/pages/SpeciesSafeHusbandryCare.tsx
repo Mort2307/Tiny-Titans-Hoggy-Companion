@@ -106,6 +106,11 @@ export default function SpeciesSafeHusbandryCare() {
       </section>
 
       <section className="husbandry-panel">
+        <div className="husbandry-section-heading"><div><p className="husbandry-eyebrow"><TinyTitansIcon name="check" size={15} /> HUSBANDRY MATERIAL SAFETY</p><h2>Can I use this?</h2></div><a className="husbandry-button husbandry-button--primary" href={`/husbandry/safety?species=${selectedSpecies.id}`}>Open Safety Library</a></div>
+        <p>Check leaves, substrates, plants, décor and other enclosure materials against the selected species. Unknown evidence stays unknown rather than being presented as safe.</p>
+      </section>
+
+      <section className="husbandry-panel">
         <p className="husbandry-eyebrow"><TinyTitansIcon name="knowledge" size={15} /> EVIDENCE LEDGER</p>
         <h2>What Tiny Titans knows — and how confidently it knows it</h2>
         <div className="husbandry-stats husbandry-stats--five">
