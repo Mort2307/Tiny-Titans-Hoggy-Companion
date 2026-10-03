@@ -114,7 +114,7 @@ exports.runRecurringReminderEngine = onSchedule({ schedule: "*/15 * * * *", time
       sent += result.sent || 0;
       const deliveryStatus = result.skipped || (result.sent > 0 ? "sent" : "no-delivery");
       if (claimed.scheduleType === "once" || claimed.oneTime === true) {
-        await document.ref.update({ status: "completed", lastNotifiedAt: nowIso, lastCompletedAt: nowIso, lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp(), lastDeliveryStatus: deliveryStatus });
+        await document.ref.update({ status: "completed", nextNotificationAt: "9999-12-31T23:59:59.999Z", lastNotifiedAt: nowIso, lastCompletedAt: nowIso, lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp(), lastDeliveryStatus: deliveryStatus });
       } else {
         const next = advanceSchedule(claimed);
         await document.ref.update({ nextNotificationAt: next.at, nextOccurrenceDate: next.occurrenceDate, nextPhase: next.phase, lastNotifiedAt: nowIso, lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp(), lastDeliveryStatus: deliveryStatus });
