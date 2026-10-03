@@ -1102,7 +1102,7 @@ function oauthCollection(name) {
 }
 
 function randomCredential(prefix) {
-  return \`\${prefix}\${crypto.randomBytes(32).toString("base64url")}\`;
+  return `${prefix}${crypto.randomBytes(32).toString("base64url")}`;
 }
 
 function timestampFromNowMillis(ms) {
@@ -1161,7 +1161,7 @@ function validChatGptClient(clientId, redirectUri) {
   const match = clientId.match(/^https:\/\/chatgpt\.com\/oauth\/([^/]+)\/client\.json$/);
   return Boolean(
     match &&
-    redirectUri === \`https://chatgpt.com/connector/oauth/\${match[1]}\`
+    redirectUri === `https://chatgpt.com/connector/oauth/${match[1]}`
   );
 }
 
@@ -1172,7 +1172,7 @@ function validateOAuthAuthorizeInput(input) {
   if (input.codeChallengeMethod !== "S256" || !input.codeChallenge) return "PKCE with S256 is required.";
   if (!/^[A-Za-z0-9_-]{43,128}$/.test(input.codeChallenge)) return "The PKCE code challenge is invalid.";
   const unsupported = invalidScopes(input.scopes);
-  if (unsupported.length) return \`Unsupported OAuth scope: \${unsupported.join(", ")}\`;
+  if (unsupported.length) return `Unsupported OAuth scope: ${unsupported.join(", ")}`;
   return "";
 }
 
@@ -1209,7 +1209,7 @@ function renderAuthorizePage(response, input, errorMessage = "") {
     ["code_challenge", input.codeChallenge],
     ["code_challenge_method", input.codeChallengeMethod],
     ["resource", input.resource],
-  ].map(([name, value]) => \`<input type="hidden" name="\${htmlEscape(name)}" value="\${htmlEscape(value)}">\`).join("");
+  ].map(([name, value]) => `<input type="hidden" name="${htmlEscape(name)}" value="${htmlEscape(value)}">`).join("");
 
   const scopeLabels = input.scopes.map((scope) => {
     const label = {
@@ -1218,18 +1218,18 @@ function renderAuthorizePage(response, input, errorMessage = "") {
       "records.write": "Create feeding, weight, shed, behaviour and health records",
       "records.undo": "Undo records created through the Tiny Titans connection",
     }[scope] || scope;
-    return \`<li>\${htmlEscape(label)}</li>\`;
+    return `<li>${htmlEscape(label)}</li>`;
   }).join("");
 
   const error = errorMessage
-    ? \`<div class="error" role="alert">\${htmlEscape(errorMessage)}</div>\`
+    ? `<div class="error" role="alert">${htmlEscape(errorMessage)}</div>`
     : "";
 
   return response
     .status(errorMessage ? 400 : 200)
     .set("Cache-Control", "no-store")
     .set("Content-Type", "text/html; charset=utf-8")
-    .send(\`<!doctype html>
+    .send(`<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1244,11 +1244,11 @@ function renderAuthorizePage(response, input, errorMessage = "") {
 <div class="kicker">Tiny Titans · Secure account link</div>
 <div class="brand">Connect Tiny Titans to ChatGPT</div>
 <p class="muted">Paste the one-time link code generated inside Tiny Titans. The code expires after 15 minutes and can only be used once.</p>
-\${error}
+${error}
 <h2>ChatGPT is requesting</h2>
-<ul class="permissions">\${scopeLabels}</ul>
+<ul class="permissions">${scopeLabels}</ul>
 <form method="post" action="/oauth/authorize" autocomplete="off">
-\${hidden}
+${hidden}
 <div class="field">
 <label for="link_code">One-time Tiny Titans link code</label>
 <input id="link_code" name="link_code" type="password" inputmode="text" autocapitalize="none" spellcheck="false" required placeholder="ttlink_…">
@@ -1258,7 +1258,7 @@ function renderAuthorizePage(response, input, errorMessage = "") {
 <p class="fine">The link code is exchanged for revocable, scoped OAuth credentials. ChatGPT never receives generic Firestore access or your Tiny Titans password.</p>
 </main>
 </body>
-</html>\`);
+</html>`);
 }
 
 async function findLinkConnection(linkCode) {
@@ -1496,7 +1496,7 @@ const PROFILE_OUTPUT_SCHEMA = Object.freeze({
     id: {
       type: "string",
       minLength: 1,
-      pattern: "\\\\S",
+      pattern: "\\S",
       description: "Opaque Tiny Titans profile identifier, stable across token refresh and reconnection.",
     },
     name: { type: "string", description: "Display name for the authenticated Tiny Titans profile." },
@@ -1604,7 +1604,7 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
     description: "Create a structured feeding record in Tiny Titans for the animal the user identified. This changes keeper data.",
     inputSchema: objectSchema({
       animalId: { type: "string", minLength: 1 },
-      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$", description: "Feeding date in YYYY-MM-DD." },
+      date: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", description: "Feeding date in YYYY-MM-DD." },
       foodType: { type: "string", enum: [...FOOD_TYPES] },
       customFood: { type: "string" },
       size: { type: "string" },
@@ -1626,7 +1626,7 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
     description: "Create a weight record in Tiny Titans and synchronise the animal's current weight. This changes keeper data.",
     inputSchema: objectSchema({
       animalId: { type: "string", minLength: 1 },
-      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      date: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
       weightGrams: { type: "number", exclusiveMinimum: 0, maximum: 100000 },
       unit: { type: "string", enum: ["g", "kg"], default: "g" },
       idempotencyKey: { type: "string" },
@@ -1641,7 +1641,7 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
     description: "Create a structured shed record in Tiny Titans, including retained shed details. This changes keeper data.",
     inputSchema: objectSchema({
       animalId: { type: "string", minLength: 1 },
-      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      date: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
       status: { type: "string", enum: [...SHED_STATUS], default: "Complete" },
       quality: { type: "string", enum: [...SHED_QUALITY], default: "Unknown" },
       assistance: { type: "string", enum: [...SHED_ASSISTANCE], default: "None" },
@@ -1661,7 +1661,7 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
     description: "Create a keeper behaviour observation in Tiny Titans. This changes keeper data.",
     inputSchema: objectSchema({
       animalId: { type: "string", minLength: 1 },
-      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      date: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
       observation: { type: "string", enum: [...BEHAVIOUR_OBSERVATIONS] },
       context: { type: "string", enum: [...BEHAVIOUR_CONTEXTS] },
       description: { type: "string", minLength: 1 },
@@ -1680,7 +1680,7 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
     description: "Create a health or veterinary observation in Tiny Titans. This changes keeper data; it does not diagnose or prescribe treatment.",
     inputSchema: objectSchema({
       animalId: { type: "string", minLength: 1 },
-      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      date: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
       eventType: { type: "string", enum: [...HEALTH_EVENT_TYPES] },
       status: { type: "string", enum: [...HEALTH_STATUSES] },
       title: { type: "string" },
@@ -1688,7 +1688,7 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
       medication: { type: "string" },
       dosage: { type: "string" },
       vetName: { type: "string" },
-      followUpDate: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      followUpDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
       notes: { type: "string" },
       idempotencyKey: { type: "string" },
     }, ["animalId", "date", "description"]),
@@ -1725,7 +1725,7 @@ function hasRequiredScopes(auth, required) {
 async function getMcpProfile(auth) {
   const snapshot = await db.collection("users").doc(auth.uid).get();
   const user = snapshot.exists ? snapshot.data() || {} : {};
-  const profile = { id: \`ttprf_\${tokenHash(auth.uid).slice(0, 24)}\` };
+  const profile = { id: `ttprf_${tokenHash(auth.uid).slice(0, 24)}` };
   const name = normaliseString(user.displayName || user.name);
   const email = normaliseString(user.email);
   const nickname = normaliseString(user.nickname);
@@ -1736,7 +1736,7 @@ async function getMcpProfile(auth) {
 }
 
 function authChallenge(error = "invalid_token", description = "Connect Tiny Titans to continue.") {
-  return \`Bearer resource_metadata="\${PROTECTED_RESOURCE_METADATA}", error="\${error}", error_description="\${description.replace(/"/g, "'")}"\`;
+  return `Bearer resource_metadata="${PROTECTED_RESOURCE_METADATA}", error="${error}", error_description="${description.replace(/"/g, "'")}"`;
 }
 
 function mcpAuthError(description, error = "invalid_token") {
@@ -1750,7 +1750,7 @@ function mcpAuthError(description, error = "invalid_token") {
 function mcpResultPayload(value) {
   const structuredContent = value && typeof value === "object" ? { ...value } : { value };
   if (structuredContent.deepLink && typeof structuredContent.deepLink === "string" && structuredContent.deepLink.startsWith("/")) {
-    structuredContent.deepLink = \`\${PUBLIC_ORIGIN}\${structuredContent.deepLink}\`;
+    structuredContent.deepLink = `${PUBLIC_ORIGIN}${structuredContent.deepLink}`;
   }
   return {
     content: [{ type: "text", text: JSON.stringify(structuredContent) }],
@@ -1922,16 +1922,16 @@ function protectedResourceMetadata() {
     resource: MCP_RESOURCE,
     authorization_servers: [OAUTH_ISSUER],
     scopes_supported: [...OAUTH_SCOPES],
-    resource_documentation: \`\${PUBLIC_ORIGIN}/account/integrations/chatgpt\`,
+    resource_documentation: `${PUBLIC_ORIGIN}/account/integrations/chatgpt`,
   };
 }
 
 function authorizationServerMetadata() {
   return {
     issuer: OAUTH_ISSUER,
-    authorization_endpoint: \`\${PUBLIC_ORIGIN}/oauth/authorize\`,
-    token_endpoint: \`\${PUBLIC_ORIGIN}/oauth/token\`,
-    revocation_endpoint: \`\${PUBLIC_ORIGIN}/oauth/revoke\`,
+    authorization_endpoint: `${PUBLIC_ORIGIN}/oauth/authorize`,
+    token_endpoint: `${PUBLIC_ORIGIN}/oauth/token`,
+    revocation_endpoint: `${PUBLIC_ORIGIN}/oauth/revoke`,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     code_challenge_methods_supported: ["S256"],
@@ -1951,7 +1951,7 @@ async function handleOauthAuthorize(request, response) {
       return response
         .status(400)
         .set("Cache-Control", "no-store")
-        .send(\`Tiny Titans OAuth request rejected: \${htmlEscape(validationError)}\`);
+        .send(`Tiny Titans OAuth request rejected: ${htmlEscape(validationError)}`);
     }
     return renderAuthorizePage(response, input);
   }
@@ -1965,7 +1965,7 @@ async function handleOauthAuthorize(request, response) {
         state: input.state,
       });
     }
-    return response.status(400).send(\`Tiny Titans OAuth request rejected: \${htmlEscape(validationError)}\`);
+    return response.status(400).send(`Tiny Titans OAuth request rejected: ${htmlEscape(validationError)}`);
   }
 
   const linkCode = oauthField(request, "link_code");
