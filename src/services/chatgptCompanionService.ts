@@ -10,22 +10,30 @@ export type ChatGPTCompanionPermission =
 export type ChatGPTCompanionStatus = {
   available: boolean;
   connected: boolean;
+  prepared: boolean;
   revoked: boolean;
   expired: boolean;
+  linkExpired: boolean;
   effectiveTier: string;
   source: string;
   permissions: ChatGPTCompanionPermission[];
   connectedAt?: unknown;
   expiresAt?: unknown;
+  linkExpiresAt?: unknown;
   lastUsedAt?: unknown;
   lastTool?: string | null;
+  mcpServer: string;
+  connectionVersion: number;
 };
 
 export type ChatGPTCompanionConnection = {
-  token: string;
+  linkCode: string;
+  token?: string;
   tokenShownOnce: boolean;
-  expiresAt: string;
+  linkExpiresAt: string;
+  expiresAt?: string;
   permissions: ChatGPTCompanionPermission[];
+  mcpServer: string;
   apiBase: string;
 };
 
@@ -66,25 +74,33 @@ export async function getChatGPTCompanionStatus(): Promise<ChatGPTCompanionStatu
   return {
     available: data.available === true,
     connected: data.connected === true,
+    prepared: data.prepared === true,
     revoked: data.revoked === true,
     expired: data.expired === true,
+    linkExpired: data.linkExpired === true,
     effectiveTier: String(data.effectiveTier || "free"),
     source: String(data.source || "free"),
     permissions: Array.isArray(data.permissions) ? data.permissions as ChatGPTCompanionPermission[] : [],
     connectedAt: data.connectedAt,
     expiresAt: data.expiresAt,
+    linkExpiresAt: data.linkExpiresAt,
     lastUsedAt: data.lastUsedAt,
     lastTool: data.lastTool ?? null,
+    mcpServer: String(data.mcpServer || "https://tinytitanskeeper.web.app/mcp"),
+    connectionVersion: Number(data.connectionVersion || 0),
   };
 }
 
 export async function createChatGPTCompanionConnection(): Promise<ChatGPTCompanionConnection> {
   const response = await connectCall(undefined);
   return {
+    linkCode: String(response.data.linkCode || response.data.token || ""),
     token: response.data.token,
     tokenShownOnce: response.data.tokenShownOnce === true,
+    linkExpiresAt: String(response.data.linkExpiresAt || response.data.expiresAt || ""),
     expiresAt: response.data.expiresAt,
     permissions: response.data.permissions,
+    mcpServer: String(response.data.mcpServer || "https://tinytitanskeeper.web.app/mcp"),
     apiBase: response.data.apiBase,
   };
 }

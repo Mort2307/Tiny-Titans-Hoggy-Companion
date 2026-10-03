@@ -6,8 +6,32 @@ const db = getFirestore();
 
 const OWNER_EMAIL = "tinytitans.exotics@gmail.com";
 const COMPANION_TIERS = new Set(["titan_pro", "business_starter", "business_plus", "business_advanced", "rescue"]);
-const CONNECTION_TTL_DAYS = 90;
-const TOKEN_PREFIX = "ttgpt_";
+const CONNECTION_TTL_DAYS = 90; // legacy v1 bearer connections only
+const TOKEN_PREFIX = "ttgpt_"; // legacy v1 bearer prefix
+const LINK_CODE_PREFIX = "ttlink_";
+const OAUTH_CODE_PREFIX = "ttcode_";
+const OAUTH_ACCESS_PREFIX = "ttat_";
+const OAUTH_REFRESH_PREFIX = "ttrt_";
+const LINK_CODE_TTL_MINUTES = 15;
+const OAUTH_CODE_TTL_MINUTES = 5;
+const OAUTH_ACCESS_TTL_MINUTES = 60;
+const OAUTH_REFRESH_TTL_DAYS = 90;
+const PUBLIC_ORIGIN = "https://tinytitanskeeper.web.app";
+const MCP_RESOURCE = `${PUBLIC_ORIGIN}/mcp`;
+const OAUTH_ISSUER = PUBLIC_ORIGIN;
+const PROTECTED_RESOURCE_METADATA = `${PUBLIC_ORIGIN}/.well-known/oauth-protected-resource`;
+const OAUTH_SCOPES = Object.freeze([
+  "animals.read",
+  "records.read",
+  "records.write",
+  "records.undo",
+]);
+const SCOPE_PERMISSION_MAP = Object.freeze({
+  "animals.read": "read_animals",
+  "records.read": "read_records",
+  "records.write": "write_records",
+  "records.undo": "undo_own_actions",
+});
 const DEFAULT_PERMISSIONS = Object.freeze([
   "read_animals",
   "read_records",
@@ -174,21 +198,62 @@ function safeTimingEqual(left, right) {
 }
 
 function connectionState(data, access) {
-  const expiresAt = expiryMillis(data?.expiresAt);
+  const now = Date.now();
   const revoked = data?.revoked === true;
-  const expired = expiresAt !== null && expiresAt <= Date.now();
+  const eligible = COMPANION_TIERS.has(access.tier);
+  const oauthRefreshExpiresAt = expiryMillis(data?.oauthRefreshExpiresAt);
+  const legacyExpiresAt = expiryMillis(data?.expiresAt);
+  const linkExpiresAt = expiryMillis(data?.linkExpiresAt);
+  const oauthConnected = Boolean(
+    data?.oauthConnectedAt &&
+    oauthRefreshExpiresAt !== null &&
+    oauthRefreshExpiresAt > now,
+  );
+  const legacyConnected = Boolean(
+    data?.connectionVersion === 1 &&
+    data?.secretHash &&
+    legacyExpiresAt !== null &&
+    legacyExpiresAt > now,
+  );
+  const connected = Boolean(data && !revoked && eligible && (oauthConnected || legacyConnected));
+  const prepared = Boolean(
+    data &&
+    !revoked &&
+    eligible &&
+    data?.linkSecretHash &&
+    !data?.linkUsedAt &&
+    linkExpiresAt !== null &&
+    linkExpiresAt > now,
+  );
+  const expired = Boolean(
+    !connected &&
+    ((oauthRefreshExpiresAt !== null && oauthRefreshExpiresAt <= now) ||
+      (legacyExpiresAt !== null && legacyExpiresAt <= now)),
+  );
+  const linkExpired = Boolean(
+    data?.linkSecretHash &&
+    !data?.linkUsedAt &&
+    linkExpiresAt !== null &&
+    linkExpiresAt <= now,
+  );
+
   return {
-    available: COMPANION_TIERS.has(access.tier),
-    connected: Boolean(data && !revoked && !expired && COMPANION_TIERS.has(access.tier)),
+    available: eligible,
+    connected,
+    prepared,
     revoked,
     expired,
+    linkExpired,
     effectiveTier: access.tier,
     source: access.source,
     permissions: Array.isArray(data?.permissions) ? data.permissions : DEFAULT_PERMISSIONS,
-    connectedAt: data?.createdAt || null,
-    expiresAt: data?.expiresAt || null,
+    connectedAt: data?.oauthConnectedAt || (legacyConnected ? data?.createdAt : null),
+    expiresAt: data?.oauthRefreshExpiresAt || (legacyConnected ? data?.expiresAt : null),
+    linkExpiresAt: data?.linkExpiresAt || null,
     lastUsedAt: data?.lastUsedAt || null,
     lastTool: data?.lastTool || null,
+    mcpServer: MCP_RESOURCE,
+    connectionVersion: Number(data?.connectionVersion || 0),
   };
 }
 
@@ -211,42 +276,68 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
     throw new HttpsError("failed-precondition", "Connect ChatGPT Companion from the Tiny Titans Family Owner account for write-safe shared records.");
   }
 
-  const token = `${TOKEN_PREFIX}${crypto.randomBytes(32).toString("base64url")}`;
-  const prefix = token.slice(0, 18);
-  const expiresAt = Timestamp.fromMillis(Date.now() + CONNECTION_TTL_DAYS * 86400000);
+  const linkCode = `${LINK_CODE_PREFIX}${crypto.randomBytes(32).toString("base64url")}`;
+  const linkPrefix = linkCode.slice(0, 20);
+  const linkExpiresAt = Timestamp.fromMillis(Date.now() + LINK_CODE_TTL_MINUTES * 60_000);
   const permissions = [...DEFAULT_PERMISSIONS];
+  const ref = connectionRef(uid);
 
-  await connectionRef(uid).set({
-    uid,
-    prefix,
-    secretHash: tokenHash(token),
-    permissions,
-    revoked: false,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-    expiresAt,
-    effectiveTierAtCreation: access.tier,
-    sourceAtCreation: access.source,
-    connectionVersion: 1,
-  }, { merge: true });
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const current = snapshot.exists ? snapshot.data() || {} : {};
+    const oauthGeneration = Number(current.oauthGeneration || 0) + 1;
+
+    transaction.set(ref, {
+      uid,
+      permissions,
+      revoked: false,
+      revokedAt: FieldValue.delete(),
+      linkPrefix,
+      linkSecretHash: tokenHash(linkCode),
+      linkCreatedAt: FieldValue.serverTimestamp(),
+      linkExpiresAt,
+      linkUsedAt: FieldValue.delete(),
+      oauthGeneration,
+      oauthConnectedAt: FieldValue.delete(),
+      oauthRefreshExpiresAt: FieldValue.delete(),
+      prefix: FieldValue.delete(),
+      secretHash: FieldValue.delete(),
+      expiresAt: FieldValue.delete(),
+      createdAt: current.createdAt || FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      effectiveTierAtCreation: access.tier,
+      sourceAtCreation: access.source,
+      connectionVersion: 2,
+    }, { merge: true });
+  });
 
   return {
     success: true,
-    token,
+    linkCode,
+    token: linkCode,
     tokenShownOnce: true,
-    expiresAt: expiresAt.toDate().toISOString(),
+    linkExpiresAt: linkExpiresAt.toDate().toISOString(),
+    expiresAt: linkExpiresAt.toDate().toISOString(),
     permissions,
+    mcpServer: MCP_RESOURCE,
     apiBase: "https://europe-west2-tinytitans-hoggy-companion.cloudfunctions.net/chatGPTCompanionApi/v1",
   };
 });
 
 exports.revokeChatGPTCompanionConnection = onCall({ region: "europe-west2" }, async (request) => {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
-  await connectionRef(request.auth.uid).set({
-    revoked: true,
-    revokedAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
+  const ref = connectionRef(request.auth.uid);
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const data = snapshot.exists ? snapshot.data() || {} : {};
+    transaction.set(ref, {
+      revoked: true,
+      revokedAt: FieldValue.serverTimestamp(),
+      oauthGeneration: Number(data.oauthGeneration || 0) + 1,
+      linkUsedAt: data.linkUsedAt || FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
   return { success: true };
 });
 
@@ -278,9 +369,52 @@ function bearerToken(request) {
   return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
 }
 
+function permissionsFromScopes(scopes) {
+  const permissions = new Set();
+  for (const scope of Array.isArray(scopes) ? scopes : []) {
+    const permission = SCOPE_PERMISSION_MAP[scope];
+    if (permission) permissions.add(permission);
+  }
+  return [...permissions];
+}
+
+async function authenticateOAuthAccessToken(token) {
+  if (!token.startsWith(OAUTH_ACCESS_PREFIX) || token.length < 30) return null;
+  const tokenSnapshot = await db.collection("chatgptOauthAccessTokens").doc(tokenHash(token)).get();
+  if (!tokenSnapshot.exists) return null;
+  const tokenData = tokenSnapshot.data() || {};
+  if (tokenData.revoked === true || !activeFuture(tokenData.expiresAt)) return null;
+  if (tokenData.resource !== MCP_RESOURCE) return null;
+
+  const uid = normaliseString(tokenData.uid);
+  if (!uid) return null;
+  const connectionSnapshot = await connectionRef(uid).get();
+  if (!connectionSnapshot.exists) return null;
+  const connection = connectionSnapshot.data() || {};
+  if (connection.revoked === true) return null;
+  if (Number(connection.oauthGeneration || 0) !== Number(tokenData.generation || -1)) return null;
+
+  const access = await resolveEffectiveTier(uid);
+  if (!COMPANION_TIERS.has(access.tier)) return null;
+
+  const scopes = Array.isArray(tokenData.scopes) ? tokenData.scopes : [];
+  return {
+    uid,
+    permissions: permissionsFromScopes(scopes),
+    scopes,
+    access,
+    context: await resolveAccountContext(uid),
+    ref: connectionSnapshot.ref,
+    oauth: true,
+    resource: tokenData.resource,
+  };
+}
+
 async function authenticateBearer(request) {
   const token = bearerToken(request);
+  if (token.startsWith(OAUTH_ACCESS_PREFIX)) return authenticateOAuthAccessToken(token);
   if (!token.startsWith(TOKEN_PREFIX) || token.length < 30) return null;
+
   const prefix = token.slice(0, 18);
   const matches = await db.collection("chatgptConnections").where("prefix", "==", prefix).limit(3).get();
 
@@ -296,9 +430,11 @@ async function authenticateBearer(request) {
     return {
       uid,
       permissions: Array.isArray(data.permissions) ? data.permissions : DEFAULT_PERMISSIONS,
+      scopes: OAUTH_SCOPES,
       access,
       context: await resolveAccountContext(uid),
       ref: snapshot.ref,
+      oauth: false,
     };
   }
   return null;
@@ -337,7 +473,9 @@ function validateIsoDate(value, field = "date", options = {}) {
   if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) fail(400, `${field} is not a valid date.`, "DATE_INVALID");
   const tomorrow = new Date();
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  if (date > tomorrow.toISOString().slice(0, 10)) fail(400, `${field} cannot be in the future.`, "DATE_FUTURE");
+  if (options.allowFuture !== true && date > tomorrow.toISOString().slice(0, 10)) {
+    fail(400, `${field} cannot be in the future.`, "DATE_FUTURE");
+  }
   return date;
 }
 
@@ -943,8 +1081,993 @@ exports.chatGPTCompanionApi = onRequest({ region: "europe-west2", cors: false, t
   }
 });
 
+
+
+// ---------------------------------------------------------------------------
+// Tiny Titans MCP + OAuth 2.1 bridge
+// ---------------------------------------------------------------------------
+
+const MCP_SERVER_INFO = Object.freeze({
+  name: "tiny-titans-keeper-companion",
+  title: "Tiny Titans Keeper Companion",
+  version: "2.0.0",
+  description: "Secure conversational keeper records for Tiny Titans.",
+  websiteUrl: PUBLIC_ORIGIN,
+});
+
+const MCP_INSTRUCTIONS = "Resolve an animal before writing when its Tiny Titans ID is not already known. Never invent animal IDs. Read keeper records when useful. Only create, change, or undo records when the user asks for that action. Tiny Titans tools are scoped to the authenticated keeper account and never provide generic database access.";
+
+function oauthCollection(name) {
+  return db.collection(name);
+}
+
+function randomCredential(prefix) {
+  return \`\${prefix}\${crypto.randomBytes(32).toString("base64url")}\`;
+}
+
+function timestampFromNowMillis(ms) {
+  return Timestamp.fromMillis(Date.now() + ms);
+}
+
+function parseScopeString(value) {
+  return normaliseString(value).split(/\s+/).filter(Boolean);
+}
+
+function requestedScopesOrDefault(value) {
+  const requested = parseScopeString(value);
+  return requested.length ? requested : [...OAUTH_SCOPES];
+}
+
+function invalidScopes(scopes) {
+  return scopes.filter((scope) => !OAUTH_SCOPES.includes(scope));
+}
+
+function oauthField(request, key) {
+  const body = request.body && typeof request.body === "object" ? request.body : {};
+  const value = body[key] ?? request.query?.[key];
+  return Array.isArray(value) ? normaliseString(value[0]) : normaliseString(value);
+}
+
+function htmlEscape(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[character]));
+}
+
+function base64UrlSha256(value) {
+  return crypto.createHash("sha256").update(value).digest("base64url");
+}
+
+function oauthJson(response, status, payload) {
+  return response
+    .status(status)
+    .set("Cache-Control", "no-store")
+    .set("Pragma", "no-cache")
+    .json(payload);
+}
+
+function validChatGptClient(clientId, redirectUri) {
+  if (
+    clientId === "https://chatgpt.com/oauth/client.json" &&
+    redirectUri === "https://chatgpt.com/connector_platform_oauth_redirect"
+  ) {
+    return true;
+  }
+
+  const match = clientId.match(/^https:\/\/chatgpt\.com\/oauth\/([^/]+)\/client\.json$/);
+  return Boolean(
+    match &&
+    redirectUri === \`https://chatgpt.com/connector/oauth/\${match[1]}\`
+  );
+}
+
+function validateOAuthAuthorizeInput(input) {
+  if (input.responseType !== "code") return "response_type must be code.";
+  if (!validChatGptClient(input.clientId, input.redirectUri)) return "This OAuth client or redirect URI is not allowed.";
+  if (input.resource !== MCP_RESOURCE) return "The OAuth resource does not match the Tiny Titans MCP server.";
+  if (input.codeChallengeMethod !== "S256" || !input.codeChallenge) return "PKCE with S256 is required.";
+  if (!/^[A-Za-z0-9_-]{43,128}$/.test(input.codeChallenge)) return "The PKCE code challenge is invalid.";
+  const unsupported = invalidScopes(input.scopes);
+  if (unsupported.length) return \`Unsupported OAuth scope: \${unsupported.join(", ")}\`;
+  return "";
+}
+
+function oauthAuthorizeInput(request) {
+  return {
+    responseType: oauthField(request, "response_type"),
+    clientId: oauthField(request, "client_id"),
+    redirectUri: oauthField(request, "redirect_uri"),
+    scope: oauthField(request, "scope"),
+    scopes: requestedScopesOrDefault(oauthField(request, "scope")),
+    state: oauthField(request, "state"),
+    codeChallenge: oauthField(request, "code_challenge"),
+    codeChallengeMethod: oauthField(request, "code_challenge_method"),
+    resource: oauthField(request, "resource"),
+  };
+}
+
+function redirectOAuth(response, input, params) {
+  const target = new URL(input.redirectUri);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") target.searchParams.set(key, String(value));
+  }
+  target.searchParams.set("iss", OAUTH_ISSUER);
+  return response.redirect(302, target.toString());
+}
+
+function renderAuthorizePage(response, input, errorMessage = "") {
+  const hidden = [
+    ["response_type", input.responseType],
+    ["client_id", input.clientId],
+    ["redirect_uri", input.redirectUri],
+    ["scope", input.scopes.join(" ")],
+    ["state", input.state],
+    ["code_challenge", input.codeChallenge],
+    ["code_challenge_method", input.codeChallengeMethod],
+    ["resource", input.resource],
+  ].map(([name, value]) => \`<input type="hidden" name="\${htmlEscape(name)}" value="\${htmlEscape(value)}">\`).join("");
+
+  const scopeLabels = input.scopes.map((scope) => {
+    const label = {
+      "animals.read": "Read animal identity and profile basics",
+      "records.read": "Read keeper tracker history",
+      "records.write": "Create feeding, weight, shed, behaviour and health records",
+      "records.undo": "Undo records created through the Tiny Titans connection",
+    }[scope] || scope;
+    return \`<li>\${htmlEscape(label)}</li>\`;
+  }).join("");
+
+  const error = errorMessage
+    ? \`<div class="error" role="alert">\${htmlEscape(errorMessage)}</div>\`
+    : "";
+
+  return response
+    .status(errorMessage ? 400 : 200)
+    .set("Cache-Control", "no-store")
+    .set("Content-Type", "text/html; charset=utf-8")
+    .send(\`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Connect Tiny Titans to ChatGPT</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0f0f16;color:#f4f2ea;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center;padding:22px}.card{width:min(620px,100%);background:linear-gradient(145deg,#181724,#11111a);border:1px solid #343242;border-radius:24px;padding:28px;box-shadow:0 24px 70px #0008}.kicker{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#8fded4;font-weight:850}.brand{font-size:1.9rem;font-weight:900;margin:6px 0 8px}.muted{color:#b9b6c4;line-height:1.55}.permissions{background:#ffffff0a;border-radius:15px;padding:14px 18px;line-height:1.7}.field{display:grid;gap:7px;margin-top:20px}.field label{font-weight:850}.field input{width:100%;min-height:50px;border:1px solid #535064;border-radius:13px;background:#09090e;color:#fff;padding:12px 14px;font:inherit}.button{width:100%;min-height:50px;border:1px solid #65d5c8;border-radius:13px;background:linear-gradient(135deg,#2d726b,#4a356e);color:#fff;font-weight:900;font:inherit;margin-top:14px;cursor:pointer}.error{border:1px solid #ff7373;background:#ff737316;border-radius:12px;padding:11px 13px;margin-top:14px}.fine{font-size:.82rem;color:#9693a1;line-height:1.5;margin-top:16px}
+</style>
+</head>
+<body>
+<main class="card">
+<div class="kicker">Tiny Titans · Secure account link</div>
+<div class="brand">Connect Tiny Titans to ChatGPT</div>
+<p class="muted">Paste the one-time link code generated inside Tiny Titans. The code expires after 15 minutes and can only be used once.</p>
+\${error}
+<h2>ChatGPT is requesting</h2>
+<ul class="permissions">\${scopeLabels}</ul>
+<form method="post" action="/oauth/authorize" autocomplete="off">
+\${hidden}
+<div class="field">
+<label for="link_code">One-time Tiny Titans link code</label>
+<input id="link_code" name="link_code" type="password" inputmode="text" autocapitalize="none" spellcheck="false" required placeholder="ttlink_…">
+</div>
+<button class="button" type="submit">Connect Tiny Titans</button>
+</form>
+<p class="fine">The link code is exchanged for revocable, scoped OAuth credentials. ChatGPT never receives generic Firestore access or your Tiny Titans password.</p>
+</main>
+</body>
+</html>\`);
+}
+
+async function findLinkConnection(linkCode) {
+  if (!linkCode.startsWith(LINK_CODE_PREFIX) || linkCode.length < 30) return null;
+  const linkPrefix = linkCode.slice(0, 20);
+  const snapshots = await db.collection("chatgptConnections").where("linkPrefix", "==", linkPrefix).limit(3).get();
+  for (const snapshot of snapshots.docs) {
+    const data = snapshot.data() || {};
+    if (!safeTimingEqual(data.linkSecretHash, tokenHash(linkCode))) continue;
+    return { snapshot, data };
+  }
+  return null;
+}
+
+async function createOAuthAuthorizationCode(input, linkCode) {
+  const match = await findLinkConnection(linkCode);
+  if (!match) return { error: "That link code is invalid." };
+
+  const authorizationCode = randomCredential(OAUTH_CODE_PREFIX);
+  const authorizationCodeRef = oauthCollection("chatgptOauthCodes").doc(tokenHash(authorizationCode));
+  const connection = match.snapshot.ref;
+  const expiresAt = timestampFromNowMillis(OAUTH_CODE_TTL_MINUTES * 60_000);
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const freshSnapshot = await transaction.get(connection);
+      if (!freshSnapshot.exists) throw new Error("LINK_INVALID");
+      const fresh = freshSnapshot.data() || {};
+      if (fresh.revoked === true) throw new Error("LINK_REVOKED");
+      if (fresh.linkUsedAt) throw new Error("LINK_USED");
+      if (!activeFuture(fresh.linkExpiresAt)) throw new Error("LINK_EXPIRED");
+      if (!safeTimingEqual(fresh.linkSecretHash, tokenHash(linkCode))) throw new Error("LINK_INVALID");
+
+      transaction.set(authorizationCodeRef, {
+        uid: freshSnapshot.id,
+        clientId: input.clientId,
+        redirectUri: input.redirectUri,
+        scopes: input.scopes,
+        resource: input.resource,
+        codeChallenge: input.codeChallenge,
+        codeChallengeMethod: "S256",
+        generation: Number(fresh.oauthGeneration || 0),
+        createdAt: FieldValue.serverTimestamp(),
+        expiresAt,
+        usedAt: null,
+      });
+      transaction.set(connection, {
+        linkUsedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    });
+  } catch (error) {
+    const code = String(error?.message || "");
+    const message = {
+      LINK_REVOKED: "That Tiny Titans connection has been revoked.",
+      LINK_USED: "That link code has already been used. Generate a new one in Tiny Titans.",
+      LINK_EXPIRED: "That link code has expired. Generate a new one in Tiny Titans.",
+      LINK_INVALID: "That link code is invalid.",
+    }[code] || "Tiny Titans could not validate that link code.";
+    return { error: message };
+  }
+
+  return { authorizationCode };
+}
+
+async function exchangeAuthorizationCode({ code, clientId, redirectUri, codeVerifier, resource }) {
+  if (!code.startsWith(OAUTH_CODE_PREFIX) || code.length < 30) return { error: "invalid_grant", description: "Authorization code is invalid." };
+  if (!/^[A-Za-z0-9._~-]{43,128}$/.test(codeVerifier)) return { error: "invalid_grant", description: "PKCE code_verifier is invalid." };
+
+  const codeRef = oauthCollection("chatgptOauthCodes").doc(tokenHash(code));
+  const accessToken = randomCredential(OAUTH_ACCESS_PREFIX);
+  const refreshToken = randomCredential(OAUTH_REFRESH_PREFIX);
+  const accessRef = oauthCollection("chatgptOauthAccessTokens").doc(tokenHash(accessToken));
+  const refreshRef = oauthCollection("chatgptOauthRefreshTokens").doc(tokenHash(refreshToken));
+  const accessExpiresAt = timestampFromNowMillis(OAUTH_ACCESS_TTL_MINUTES * 60_000);
+  const refreshExpiresAt = timestampFromNowMillis(OAUTH_REFRESH_TTL_DAYS * 86_400_000);
+
+  try {
+    let output;
+    await db.runTransaction(async (transaction) => {
+      const codeSnapshot = await transaction.get(codeRef);
+      if (!codeSnapshot.exists) throw new Error("CODE_INVALID");
+      const authCode = codeSnapshot.data() || {};
+      if (authCode.usedAt) throw new Error("CODE_USED");
+      if (!activeFuture(authCode.expiresAt)) throw new Error("CODE_EXPIRED");
+      if (authCode.clientId !== clientId || authCode.redirectUri !== redirectUri) throw new Error("CLIENT_MISMATCH");
+      if (authCode.resource !== resource || resource !== MCP_RESOURCE) throw new Error("RESOURCE_MISMATCH");
+      if (!safeTimingEqual(base64UrlSha256(codeVerifier), authCode.codeChallenge)) throw new Error("PKCE_MISMATCH");
+
+      const connection = connectionRef(authCode.uid);
+      const connectionSnapshot = await transaction.get(connection);
+      if (!connectionSnapshot.exists) throw new Error("CONNECTION_INVALID");
+      const connectionData = connectionSnapshot.data() || {};
+      if (connectionData.revoked === true) throw new Error("CONNECTION_REVOKED");
+      if (Number(connectionData.oauthGeneration || 0) !== Number(authCode.generation || -1)) throw new Error("GENERATION_MISMATCH");
+
+      const common = {
+        uid: authCode.uid,
+        clientId,
+        scopes: authCode.scopes,
+        resource,
+        generation: authCode.generation,
+        createdAt: FieldValue.serverTimestamp(),
+        revoked: false,
+      };
+
+      transaction.set(accessRef, { ...common, expiresAt: accessExpiresAt });
+      transaction.set(refreshRef, { ...common, expiresAt: refreshExpiresAt });
+      transaction.set(codeRef, { usedAt: FieldValue.serverTimestamp() }, { merge: true });
+      transaction.set(connection, {
+        oauthConnectedAt: FieldValue.serverTimestamp(),
+        oauthRefreshExpiresAt: refreshExpiresAt,
+        updatedAt: FieldValue.serverTimestamp(),
+        revoked: false,
+        connectionVersion: 2,
+      }, { merge: true });
+
+      output = {
+        access_token: accessToken,
+        token_type: "Bearer",
+        expires_in: OAUTH_ACCESS_TTL_MINUTES * 60,
+        refresh_token: refreshToken,
+        scope: authCode.scopes.join(" "),
+        resource,
+      };
+    });
+    return output;
+  } catch (error) {
+    const codeName = String(error?.message || "");
+    const description = {
+      CODE_INVALID: "Authorization code is invalid.",
+      CODE_USED: "Authorization code has already been used.",
+      CODE_EXPIRED: "Authorization code has expired.",
+      CLIENT_MISMATCH: "OAuth client or redirect URI does not match the authorization request.",
+      RESOURCE_MISMATCH: "OAuth resource does not match the authorization request.",
+      PKCE_MISMATCH: "PKCE verification failed.",
+      CONNECTION_INVALID: "Tiny Titans connection no longer exists.",
+      CONNECTION_REVOKED: "Tiny Titans connection has been revoked.",
+      GENERATION_MISMATCH: "Tiny Titans connection has been rotated. Start the link again.",
+    }[codeName] || "Authorization code could not be exchanged.";
+    return { error: "invalid_grant", description };
+  }
+}
+
+async function exchangeRefreshToken({ refreshToken, clientId, resource }) {
+  if (!refreshToken.startsWith(OAUTH_REFRESH_PREFIX) || refreshToken.length < 30) {
+    return { error: "invalid_grant", description: "Refresh token is invalid." };
+  }
+
+  const oldRefreshRef = oauthCollection("chatgptOauthRefreshTokens").doc(tokenHash(refreshToken));
+  const nextAccessToken = randomCredential(OAUTH_ACCESS_PREFIX);
+  const nextRefreshToken = randomCredential(OAUTH_REFRESH_PREFIX);
+  const accessRef = oauthCollection("chatgptOauthAccessTokens").doc(tokenHash(nextAccessToken));
+  const refreshRef = oauthCollection("chatgptOauthRefreshTokens").doc(tokenHash(nextRefreshToken));
+  const accessExpiresAt = timestampFromNowMillis(OAUTH_ACCESS_TTL_MINUTES * 60_000);
+  const refreshExpiresAt = timestampFromNowMillis(OAUTH_REFRESH_TTL_DAYS * 86_400_000);
+
+  try {
+    let output;
+    await db.runTransaction(async (transaction) => {
+      const refreshSnapshot = await transaction.get(oldRefreshRef);
+      if (!refreshSnapshot.exists) throw new Error("REFRESH_INVALID");
+      const stored = refreshSnapshot.data() || {};
+      if (stored.revoked === true || stored.rotatedAt) throw new Error("REFRESH_REVOKED");
+      if (!activeFuture(stored.expiresAt)) throw new Error("REFRESH_EXPIRED");
+      if (stored.clientId !== clientId) throw new Error("CLIENT_MISMATCH");
+      if (stored.resource !== resource || resource !== MCP_RESOURCE) throw new Error("RESOURCE_MISMATCH");
+
+      const connection = connectionRef(stored.uid);
+      const connectionSnapshot = await transaction.get(connection);
+      if (!connectionSnapshot.exists) throw new Error("CONNECTION_INVALID");
+      const connectionData = connectionSnapshot.data() || {};
+      if (connectionData.revoked === true) throw new Error("CONNECTION_REVOKED");
+      if (Number(connectionData.oauthGeneration || 0) !== Number(stored.generation || -1)) throw new Error("GENERATION_MISMATCH");
+
+      const common = {
+        uid: stored.uid,
+        clientId: stored.clientId,
+        scopes: stored.scopes,
+        resource: stored.resource,
+        generation: stored.generation,
+        createdAt: FieldValue.serverTimestamp(),
+        revoked: false,
+      };
+
+      transaction.set(oldRefreshRef, {
+        revoked: true,
+        rotatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      transaction.set(accessRef, { ...common, expiresAt: accessExpiresAt });
+      transaction.set(refreshRef, { ...common, expiresAt: refreshExpiresAt });
+      transaction.set(connection, {
+        oauthRefreshExpiresAt: refreshExpiresAt,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      output = {
+        access_token: nextAccessToken,
+        token_type: "Bearer",
+        expires_in: OAUTH_ACCESS_TTL_MINUTES * 60,
+        refresh_token: nextRefreshToken,
+        scope: stored.scopes.join(" "),
+        resource: stored.resource,
+      };
+    });
+    return output;
+  } catch (error) {
+    const name = String(error?.message || "");
+    const description = {
+      REFRESH_INVALID: "Refresh token is invalid.",
+      REFRESH_REVOKED: "Refresh token has already been rotated or revoked.",
+      REFRESH_EXPIRED: "Refresh token has expired.",
+      CLIENT_MISMATCH: "OAuth client does not match this refresh token.",
+      RESOURCE_MISMATCH: "OAuth resource does not match this refresh token.",
+      CONNECTION_INVALID: "Tiny Titans connection no longer exists.",
+      CONNECTION_REVOKED: "Tiny Titans connection has been revoked.",
+      GENERATION_MISMATCH: "Tiny Titans connection has been rotated. Link the account again.",
+    }[name] || "Refresh token could not be exchanged.";
+    return { error: "invalid_grant", description };
+  }
+}
+
+function oauthSecurity(scopes) {
+  const scheme = { type: "oauth2", scopes };
+  return {
+    securitySchemes: [scheme],
+    _meta: { securitySchemes: [scheme] },
+  };
+}
+
+const PROFILE_OUTPUT_SCHEMA = Object.freeze({
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  type: "object",
+  properties: {
+    id: {
+      type: "string",
+      minLength: 1,
+      pattern: "\\\\S",
+      description: "Opaque Tiny Titans profile identifier, stable across token refresh and reconnection.",
+    },
+    name: { type: "string", description: "Display name for the authenticated Tiny Titans profile." },
+    email: { type: "string", description: "Email address for display; not used as the profile identity." },
+    nickname: { type: "string", description: "Useful label that helps distinguish connected Tiny Titans profiles." },
+  },
+  required: ["id"],
+  additionalProperties: false,
+});
+
+function objectSchema(properties = {}, required = []) {
+  return { type: "object", properties, required, additionalProperties: false };
+}
+
+function mcpToolDescriptor({
+  name,
+  title,
+  description,
+  inputSchema,
+  scopes,
+  readOnly = false,
+  destructive = false,
+  outputSchema = { type: "object", additionalProperties: true },
+  profile = false,
+  invoking,
+  invoked,
+}) {
+  const auth = oauthSecurity(scopes);
+  return {
+    name,
+    title,
+    description,
+    inputSchema,
+    outputSchema,
+    annotations: {
+      readOnlyHint: readOnly,
+      destructiveHint: destructive,
+      openWorldHint: false,
+      ...(readOnly ? {} : { idempotentHint: false }),
+    },
+    securitySchemes: auth.securitySchemes,
+    _meta: {
+      ...auth._meta,
+      ...(profile ? { "openai/profile": true } : {}),
+      ...(invoking ? { "openai/toolInvocation/invoking": invoking } : {}),
+      ...(invoked ? { "openai/toolInvocation/invoked": invoked } : {}),
+    },
+  };
+}
+
+const MCP_TOOL_DESCRIPTORS = Object.freeze([
+  mcpToolDescriptor({
+    name: "get_profile",
+    title: "Get Tiny Titans profile",
+    description: "Return the Tiny Titans profile represented by the authenticated connection. Use this only to identify which keeper account is connected.",
+    inputSchema: objectSchema(),
+    outputSchema: PROFILE_OUTPUT_SCHEMA,
+    scopes: ["animals.read"],
+    readOnly: true,
+    profile: true,
+  }),
+  mcpToolDescriptor({
+    name: "list_animals",
+    title: "List animals",
+    description: "List animals visible to the connected Tiny Titans keeper account. Use this before guessing an animal ID.",
+    inputSchema: objectSchema(),
+    scopes: ["animals.read"],
+    readOnly: true,
+  }),
+  mcpToolDescriptor({
+    name: "resolve_animal",
+    title: "Resolve animal",
+    description: "Resolve an animal name or nickname to Tiny Titans record IDs. Use this before tracker reads or writes when the user names an animal instead of supplying an ID.",
+    inputSchema: objectSchema({ query: { type: "string", minLength: 1, description: "Animal name, nickname, or partial name." } }, ["query"]),
+    scopes: ["animals.read"],
+    readOnly: true,
+  }),
+  mcpToolDescriptor({
+    name: "get_animal_summary",
+    title: "Get animal summary",
+    description: "Read a Tiny Titans animal profile and its latest keeper-record summary.",
+    inputSchema: objectSchema({ animalId: { type: "string", minLength: 1 } }, ["animalId"]),
+    scopes: ["animals.read", "records.read"],
+    readOnly: true,
+  }),
+  ...[
+    ["get_feeding_history", "Get feeding history", "Read feeding history for one Tiny Titans snake."],
+    ["get_weight_history", "Get weight history", "Read weight history for one Tiny Titans snake."],
+    ["get_shed_history", "Get shed history", "Read shed history for one Tiny Titans snake."],
+    ["get_recent_activity", "Get recent activity", "Read recent feeding, weight, shed, behaviour, and health activity for one Tiny Titans snake."],
+  ].map(([name, title, description]) => mcpToolDescriptor({
+    name,
+    title,
+    description,
+    inputSchema: objectSchema({
+      animalId: { type: "string", minLength: 1 },
+      limit: { type: "integer", minimum: 1, maximum: name === "get_recent_activity" ? 50 : 100, default: 20 },
+    }, ["animalId"]),
+    scopes: ["animals.read", "records.read"],
+    readOnly: true,
+  })),
+  mcpToolDescriptor({
+    name: "log_feeding",
+    title: "Log feeding",
+    description: "Create a structured feeding record in Tiny Titans for the animal the user identified. This changes keeper data.",
+    inputSchema: objectSchema({
+      animalId: { type: "string", minLength: 1 },
+      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$", description: "Feeding date in YYYY-MM-DD." },
+      foodType: { type: "string", enum: [...FOOD_TYPES] },
+      customFood: { type: "string" },
+      size: { type: "string" },
+      weightGrams: { type: "number", minimum: 0, maximum: 100000 },
+      quantity: { type: "integer", minimum: 1, maximum: 100 },
+      preyCategory: { type: "string", enum: [...PREY_CATEGORIES] },
+      feedingMethod: { type: "string", enum: [...FEEDING_METHODS] },
+      response: { type: "string", enum: [...FEEDING_RESPONSES], default: "Accepted" },
+      notes: { type: "string" },
+      idempotencyKey: { type: "string" },
+    }, ["animalId", "date"]),
+    scopes: ["animals.read", "records.write"],
+    invoking: "Logging feeding…",
+    invoked: "Feeding logged",
+  }),
+  mcpToolDescriptor({
+    name: "log_weight",
+    title: "Log weight",
+    description: "Create a weight record in Tiny Titans and synchronise the animal's current weight. This changes keeper data.",
+    inputSchema: objectSchema({
+      animalId: { type: "string", minLength: 1 },
+      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      weightGrams: { type: "number", exclusiveMinimum: 0, maximum: 100000 },
+      unit: { type: "string", enum: ["g", "kg"], default: "g" },
+      idempotencyKey: { type: "string" },
+    }, ["animalId", "date", "weightGrams"]),
+    scopes: ["animals.read", "records.write"],
+    invoking: "Logging weight…",
+    invoked: "Weight logged",
+  }),
+  mcpToolDescriptor({
+    name: "log_shed",
+    title: "Log shed",
+    description: "Create a structured shed record in Tiny Titans, including retained shed details. This changes keeper data.",
+    inputSchema: objectSchema({
+      animalId: { type: "string", minLength: 1 },
+      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      status: { type: "string", enum: [...SHED_STATUS], default: "Complete" },
+      quality: { type: "string", enum: [...SHED_QUALITY], default: "Unknown" },
+      assistance: { type: "string", enum: [...SHED_ASSISTANCE], default: "None" },
+      retainedAreas: { type: "array", items: { type: "string", enum: ["Eye Cap", "Head", "Tail Tip", "Body", "Other"] }, uniqueItems: true },
+      retainedEyeCaps: { type: "boolean" },
+      retainedTailTip: { type: "boolean" },
+      notes: { type: "string" },
+      idempotencyKey: { type: "string" },
+    }, ["animalId", "date"]),
+    scopes: ["animals.read", "records.write"],
+    invoking: "Logging shed…",
+    invoked: "Shed logged",
+  }),
+  mcpToolDescriptor({
+    name: "log_behaviour",
+    title: "Log behaviour",
+    description: "Create a keeper behaviour observation in Tiny Titans. This changes keeper data.",
+    inputSchema: objectSchema({
+      animalId: { type: "string", minLength: 1 },
+      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      observation: { type: "string", enum: [...BEHAVIOUR_OBSERVATIONS] },
+      context: { type: "string", enum: [...BEHAVIOUR_CONTEXTS] },
+      description: { type: "string", minLength: 1 },
+      duration: { type: "string" },
+      relatedChange: { type: "string" },
+      notes: { type: "string" },
+      idempotencyKey: { type: "string" },
+    }, ["animalId", "date", "description"]),
+    scopes: ["animals.read", "records.write"],
+    invoking: "Logging behaviour…",
+    invoked: "Behaviour logged",
+  }),
+  mcpToolDescriptor({
+    name: "log_health_observation",
+    title: "Log health observation",
+    description: "Create a health or veterinary observation in Tiny Titans. This changes keeper data; it does not diagnose or prescribe treatment.",
+    inputSchema: objectSchema({
+      animalId: { type: "string", minLength: 1 },
+      date: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      eventType: { type: "string", enum: [...HEALTH_EVENT_TYPES] },
+      status: { type: "string", enum: [...HEALTH_STATUSES] },
+      title: { type: "string" },
+      description: { type: "string", minLength: 1 },
+      medication: { type: "string" },
+      dosage: { type: "string" },
+      vetName: { type: "string" },
+      followUpDate: { type: "string", pattern: "^\\\\d{4}-\\\\d{2}-\\\\d{2}$" },
+      notes: { type: "string" },
+      idempotencyKey: { type: "string" },
+    }, ["animalId", "date", "description"]),
+    scopes: ["animals.read", "records.write"],
+    invoking: "Logging health record…",
+    invoked: "Health record logged",
+  }),
+  mcpToolDescriptor({
+    name: "undo_last_action",
+    title: "Undo last Tiny Titans action",
+    description: "Undo the most recent reversible record created through this Tiny Titans ChatGPT connection. It cannot delete arbitrary keeper records.",
+    inputSchema: objectSchema(),
+    scopes: ["records.undo"],
+    destructive: true,
+    invoking: "Undoing last action…",
+    invoked: "Action undone",
+  }),
+]);
+
+function descriptorForTool(name) {
+  return MCP_TOOL_DESCRIPTORS.find((tool) => tool.name === name) || null;
+}
+
+function requiredScopesForTool(name) {
+  const descriptor = descriptorForTool(name);
+  return descriptor?.securitySchemes?.[0]?.scopes || [];
+}
+
+function hasRequiredScopes(auth, required) {
+  const available = new Set(Array.isArray(auth?.scopes) ? auth.scopes : []);
+  return required.every((scope) => available.has(scope));
+}
+
+async function getMcpProfile(auth) {
+  const snapshot = await db.collection("users").doc(auth.uid).get();
+  const user = snapshot.exists ? snapshot.data() || {} : {};
+  const profile = { id: \`ttprf_\${tokenHash(auth.uid).slice(0, 24)}\` };
+  const name = normaliseString(user.displayName || user.name);
+  const email = normaliseString(user.email);
+  const nickname = normaliseString(user.nickname);
+  if (name) profile.name = name;
+  if (email) profile.email = email;
+  if (nickname) profile.nickname = nickname;
+  return profile;
+}
+
+function authChallenge(error = "invalid_token", description = "Connect Tiny Titans to continue.") {
+  return \`Bearer resource_metadata="\${PROTECTED_RESOURCE_METADATA}", error="\${error}", error_description="\${description.replace(/"/g, "'")}"\`;
+}
+
+function mcpAuthError(description, error = "invalid_token") {
+  return {
+    content: [{ type: "text", text: description }],
+    _meta: { "mcp/www_authenticate": [authChallenge(error, description)] },
+    isError: true,
+  };
+}
+
+function mcpResultPayload(value) {
+  const structuredContent = value && typeof value === "object" ? { ...value } : { value };
+  if (structuredContent.deepLink && typeof structuredContent.deepLink === "string" && structuredContent.deepLink.startsWith("/")) {
+    structuredContent.deepLink = \`\${PUBLIC_ORIGIN}\${structuredContent.deepLink}\`;
+  }
+  return {
+    content: [{ type: "text", text: JSON.stringify(structuredContent) }],
+    structuredContent,
+    isError: false,
+  };
+}
+
+function mcpErrorPayload(error) {
+  const message = error instanceof Error ? error.message : "Tiny Titans could not complete that tool call.";
+  return {
+    content: [{ type: "text", text: message }],
+    structuredContent: {
+      ok: false,
+      code: error?.code || "TOOL_ERROR",
+      error: message,
+    },
+    isError: true,
+  };
+}
+
+function modernMcpRequest(request, message) {
+  if (message?.method === "server/discover") return true;
+  if (String(request.get("mcp-protocol-version") || "") === "2026-07-28") return true;
+  return message?.params?._meta?.["io.modelcontextprotocol/protocolVersion"] === "2026-07-28";
+}
+
+function withModernResultMeta(result, modern) {
+  if (!modern) return result;
+  return {
+    resultType: result.resultType || "complete",
+    ...result,
+    _meta: {
+      ...(result._meta || {}),
+      "io.modelcontextprotocol/serverInfo": MCP_SERVER_INFO,
+    },
+  };
+}
+
+function jsonRpcResult(id, result, modern = false) {
+  return { jsonrpc: "2.0", id, result: withModernResultMeta(result, modern) };
+}
+
+function jsonRpcError(id, code, message, data) {
+  return {
+    jsonrpc: "2.0",
+    id: id ?? null,
+    error: {
+      code,
+      message,
+      ...(data === undefined ? {} : { data }),
+    },
+  };
+}
+
+async function handleMcpMessage(request, message) {
+  if (!message || message.jsonrpc !== "2.0" || typeof message.method !== "string") {
+    return jsonRpcError(message?.id ?? null, -32600, "Invalid Request");
+  }
+
+  const id = message.id;
+  const modern = modernMcpRequest(request, message);
+
+  if (message.method === "server/discover") {
+    return jsonRpcResult(id, {
+      supportedVersions: ["2026-07-28"],
+      capabilities: { tools: { listChanged: false } },
+      instructions: MCP_INSTRUCTIONS,
+      ttlMs: 300000,
+      cacheScope: "public",
+    }, true);
+  }
+
+  if (message.method === "initialize") {
+    const requested = normaliseString(message.params?.protocolVersion);
+    const protocolVersion = ["2025-11-25", "2025-06-18"].includes(requested) ? requested : "2025-11-25";
+    return jsonRpcResult(id, {
+      protocolVersion,
+      capabilities: { tools: { listChanged: false } },
+      serverInfo: MCP_SERVER_INFO,
+      instructions: MCP_INSTRUCTIONS,
+    }, false);
+  }
+
+  if (message.method === "notifications/initialized") return null;
+  if (message.method === "ping") return jsonRpcResult(id, {}, modern);
+
+  if (message.method === "tools/list") {
+    return jsonRpcResult(id, { tools: MCP_TOOL_DESCRIPTORS }, modern);
+  }
+
+  if (message.method !== "tools/call") {
+    return jsonRpcError(id, -32601, "Method not found");
+  }
+
+  const toolName = normaliseString(message.params?.name);
+  const descriptor = descriptorForTool(toolName);
+  if (!descriptor) return jsonRpcError(id, -32602, "Unknown Tiny Titans tool.");
+
+  const auth = await authenticateBearer(request);
+  if (!auth) {
+    return jsonRpcResult(id, mcpAuthError("Connect Tiny Titans to use this tool."), modern);
+  }
+
+  const requiredScopes = requiredScopesForTool(toolName);
+  if (!hasRequiredScopes(auth, requiredScopes)) {
+    return jsonRpcResult(id, mcpAuthError("The Tiny Titans connection needs additional permission for this tool.", "insufficient_scope"), modern);
+  }
+
+  try {
+    let data;
+    if (toolName === "get_profile") {
+      data = await getMcpProfile(auth);
+    } else {
+      const args = message.params?.arguments && typeof message.params.arguments === "object"
+        ? { ...message.params.arguments }
+        : {};
+      data = await dispatchTool(auth, toolName, args);
+    }
+    await touchConnection(auth, toolName);
+    return jsonRpcResult(id, mcpResultPayload(data), modern);
+  } catch (error) {
+    console.error("Tiny Titans MCP tool failure", {
+      tool: toolName,
+      code: error?.code,
+      message: error?.message,
+    });
+    return jsonRpcResult(id, mcpErrorPayload(error), modern);
+  }
+}
+
+async function handleMcpHttp(request, response) {
+  response.set("Access-Control-Allow-Origin", "*");
+  response.set("Access-Control-Allow-Headers", "authorization, content-type, mcp-protocol-version, mcp-method, mcp-name");
+  response.set("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  response.set("Access-Control-Expose-Headers", "WWW-Authenticate");
+  response.set("Cache-Control", "no-store");
+
+  if (request.method === "OPTIONS") return response.status(204).send("");
+  if (request.method === "GET") {
+    return response
+      .status(405)
+      .set("Allow", "POST")
+      .json({ error: "Tiny Titans MCP uses stateless Streamable HTTP POST requests." });
+  }
+  if (request.method !== "POST") return response.status(405).send("Method Not Allowed");
+
+  const body = request.body;
+  const messages = Array.isArray(body) ? body : [body];
+  if (!messages.length || messages.some((message) => !message || typeof message !== "object")) {
+    return response.status(400).json(jsonRpcError(null, -32700, "Parse error"));
+  }
+
+  const results = [];
+  for (const message of messages) {
+    const result = await handleMcpMessage(request, message);
+    if (result) results.push(result);
+  }
+
+  if (!results.length) return response.status(202).send("");
+  return response
+    .status(200)
+    .set("Content-Type", "application/json; charset=utf-8")
+    .json(Array.isArray(body) ? results : results[0]);
+}
+
+function protectedResourceMetadata() {
+  return {
+    resource: MCP_RESOURCE,
+    authorization_servers: [OAUTH_ISSUER],
+    scopes_supported: [...OAUTH_SCOPES],
+    resource_documentation: \`\${PUBLIC_ORIGIN}/account/integrations/chatgpt\`,
+  };
+}
+
+function authorizationServerMetadata() {
+  return {
+    issuer: OAUTH_ISSUER,
+    authorization_endpoint: \`\${PUBLIC_ORIGIN}/oauth/authorize\`,
+    token_endpoint: \`\${PUBLIC_ORIGIN}/oauth/token\`,
+    revocation_endpoint: \`\${PUBLIC_ORIGIN}/oauth/revoke\`,
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
+    code_challenge_methods_supported: ["S256"],
+    scopes_supported: [...OAUTH_SCOPES],
+    token_endpoint_auth_methods_supported: ["none"],
+    client_id_metadata_document_supported: true,
+    authorization_response_iss_parameter_supported: true,
+  };
+}
+
+async function handleOauthAuthorize(request, response) {
+  const input = oauthAuthorizeInput(request);
+  const validationError = validateOAuthAuthorizeInput(input);
+
+  if (request.method === "GET") {
+    if (validationError) {
+      return response
+        .status(400)
+        .set("Cache-Control", "no-store")
+        .send(\`Tiny Titans OAuth request rejected: \${htmlEscape(validationError)}\`);
+    }
+    return renderAuthorizePage(response, input);
+  }
+
+  if (request.method !== "POST") return response.status(405).send("Method Not Allowed");
+  if (validationError) {
+    if (validChatGptClient(input.clientId, input.redirectUri)) {
+      return redirectOAuth(response, input, {
+        error: "invalid_request",
+        error_description: validationError,
+        state: input.state,
+      });
+    }
+    return response.status(400).send(\`Tiny Titans OAuth request rejected: \${htmlEscape(validationError)}\`);
+  }
+
+  const linkCode = oauthField(request, "link_code");
+  const linked = await createOAuthAuthorizationCode(input, linkCode);
+  if (linked.error) return renderAuthorizePage(response, input, linked.error);
+
+  return redirectOAuth(response, input, {
+    code: linked.authorizationCode,
+    state: input.state,
+  });
+}
+
+async function handleOauthToken(request, response) {
+  if (request.method !== "POST") return oauthJson(response, 405, { error: "invalid_request", error_description: "POST required." });
+
+  const grantType = oauthField(request, "grant_type");
+  const clientId = oauthField(request, "client_id");
+  const resource = oauthField(request, "resource");
+  if (!clientId || !resource) {
+    return oauthJson(response, 400, { error: "invalid_request", error_description: "client_id and resource are required." });
+  }
+
+  if (grantType === "authorization_code") {
+    const redirectUri = oauthField(request, "redirect_uri");
+    if (!validChatGptClient(clientId, redirectUri)) {
+      return oauthJson(response, 400, { error: "invalid_client", error_description: "OAuth client or redirect URI is not allowed." });
+    }
+    const result = await exchangeAuthorizationCode({
+      code: oauthField(request, "code"),
+      clientId,
+      redirectUri,
+      codeVerifier: oauthField(request, "code_verifier"),
+      resource,
+    });
+    if (result.error) return oauthJson(response, 400, { error: result.error, error_description: result.description });
+    return oauthJson(response, 200, result);
+  }
+
+  if (grantType === "refresh_token") {
+    const result = await exchangeRefreshToken({
+      refreshToken: oauthField(request, "refresh_token"),
+      clientId,
+      resource,
+    });
+    if (result.error) return oauthJson(response, 400, { error: result.error, error_description: result.description });
+    return oauthJson(response, 200, result);
+  }
+
+  return oauthJson(response, 400, { error: "unsupported_grant_type", error_description: "Tiny Titans supports authorization_code and refresh_token grants." });
+}
+
+async function handleOauthRevoke(request, response) {
+  if (request.method !== "POST") return response.status(405).send("Method Not Allowed");
+  const token = oauthField(request, "token");
+  if (token) {
+    const hash = tokenHash(token);
+    const refs = [];
+    if (token.startsWith(OAUTH_ACCESS_PREFIX)) refs.push(oauthCollection("chatgptOauthAccessTokens").doc(hash));
+    if (token.startsWith(OAUTH_REFRESH_PREFIX)) refs.push(oauthCollection("chatgptOauthRefreshTokens").doc(hash));
+    for (const ref of refs) {
+      const snapshot = await ref.get();
+      if (snapshot.exists) {
+        await ref.set({ revoked: true, revokedAt: FieldValue.serverTimestamp() }, { merge: true });
+      }
+    }
+  }
+  return response.status(200).set("Cache-Control", "no-store").send("");
+}
+
+exports.tinyTitansMcp = onRequest({ region: "europe-west2", cors: false, timeoutSeconds: 60 }, async (request, response) => {
+  const path = String(request.path || "/").replace(/\/+$/, "") || "/";
+  try {
+    if (path === "/.well-known/oauth-protected-resource" && request.method === "GET") {
+      return oauthJson(response, 200, protectedResourceMetadata());
+    }
+    if (path === "/.well-known/oauth-authorization-server" && request.method === "GET") {
+      return oauthJson(response, 200, authorizationServerMetadata());
+    }
+    if (path === "/oauth/authorize") return handleOauthAuthorize(request, response);
+    if (path === "/oauth/token") return handleOauthToken(request, response);
+    if (path === "/oauth/revoke") return handleOauthRevoke(request, response);
+    if (path === "/mcp" || path === "/") return handleMcpHttp(request, response);
+    return response.status(404).set("Cache-Control", "no-store").json({ error: "Tiny Titans MCP endpoint not found." });
+  } catch (error) {
+    console.error("Tiny Titans MCP/OAuth failure", {
+      path,
+      method: request.method,
+      code: error?.code,
+      message: error?.message,
+    });
+    return response.status(500).set("Cache-Control", "no-store").json({
+      error: "server_error",
+      error_description: "Tiny Titans could not complete the MCP/OAuth request.",
+    });
+  }
+});
+
 exports._chatgptCompanionTest = {
   TOOL_CATALOG,
   COMPANION_TIERS,
   DEFAULT_PERMISSIONS,
+  MCP_TOOL_DESCRIPTORS,
+  OAUTH_SCOPES,
+  MCP_RESOURCE,
 };

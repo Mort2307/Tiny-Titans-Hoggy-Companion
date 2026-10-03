@@ -12,6 +12,7 @@ const route = read("src/routes/AuthenticatedRoutes.tsx");
 const settings = read("src/pages/Settings.tsx");
 const page = read("src/pages/ChatGPTCompanion.tsx");
 const service = read("src/services/chatgptCompanionService.ts");
+const firebaseConfig = read("firebase.json");
 
 function tierSlice(tierId) {
   const start = config.indexOf(`${tierId}:`);
@@ -69,6 +70,20 @@ const checks = [
   ["one-time token warning exists", page.includes("shown once") || page.includes("Shown once")],
   ["disconnect UI exists", page.includes("Disconnect") && page.includes("revokeChatGPTCompanionConnection")],
   ["activity audit UI exists", page.includes("Recent ChatGPT Companion actions") && service.includes("getChatGPTCompanionActivity")],
+  ["MCP endpoint is exported", backend.includes("exports.tinyTitansMcp") && backend.includes('path === "/mcp"')],
+  ["MCP supports modern discovery and legacy initialize", backend.includes('"server/discover"') && backend.includes('"initialize"') && backend.includes('"2026-07-28"')],
+  ["MCP advertises scoped OAuth per tool", backend.includes("securitySchemes") && backend.includes('"animals.read"') && backend.includes('"records.write"')],
+  ["authenticated profile tool is declared", backend.includes('"openai/profile": true') && backend.includes('name: "get_profile"')],
+  ["OAuth protected-resource metadata exists", backend.includes("oauth-protected-resource") && backend.includes("authorization_servers")],
+  ["OAuth server metadata advertises PKCE S256", backend.includes("code_challenge_methods_supported") && backend.includes('"S256"')],
+  ["OAuth issuer identification is enabled", backend.includes("authorization_response_iss_parameter_supported: true") && backend.includes('target.searchParams.set("iss"')],
+  ["OAuth access and refresh tokens are hashed in Firestore", backend.includes('"chatgptOauthAccessTokens"') && backend.includes('"chatgptOauthRefreshTokens"') && backend.includes("tokenHash(accessToken)")],
+  ["one-time link codes are short-lived and single-use", backend.includes("LINK_CODE_TTL_MINUTES = 15") && backend.includes("linkUsedAt") && backend.includes("linkSecretHash")],
+  ["link code is not accepted as bearer auth", backend.includes("OAUTH_ACCESS_PREFIX") && !backend.includes("token.startsWith(LINK_CODE_PREFIX) return authenticate")],
+  ["OAuth generations invalidate rotated connections", backend.includes("oauthGeneration") && backend.includes("GENERATION_MISMATCH")],
+  ["keeper hosting routes MCP and OAuth before SPA fallback", firebaseConfig.includes('"source": "/mcp"') && firebaseConfig.includes('"functionId": "tinyTitansMcp"') && firebaseConfig.indexOf('"source": "/mcp"') < firebaseConfig.lastIndexOf('"destination": "/index.html"')],
+  ["frontend explains exact MCP server setup", page.includes("Settings → Security and login") && page.includes("https://tinytitanskeeper.web.app/mcp")],
+  ["frontend calls secret a one-time link code", page.includes("One-time link code") && !page.includes("Treat this like a password")],
 ];
 
 const failures = checks.filter(([, ok]) => !ok).map(([label]) => label);

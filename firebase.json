@@ -7,32 +7,147 @@
     {
       "target": "legacy",
       "public": "dist",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "headers": [
-        { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
-        { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
-        { "source": "/firebase-messaging-sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
-        { "source": "/workbox-*.js", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] }
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
       ],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+      "headers": [
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/firebase-messaging-sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/workbox-*.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     },
     {
       "target": "keeper",
       "public": "dist",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "headers": [
-        { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
-        { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
-        { "source": "/firebase-messaging-sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
-        { "source": "/workbox-*.js", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] }
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
       ],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+      "headers": [
+        {
+          "source": "/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/firebase-messaging-sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/workbox-*.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/mcp",
+          "function": {
+            "functionId": "tinyTitansMcp",
+            "region": "europe-west2"
+          }
+        },
+        {
+          "source": "/.well-known/oauth-protected-resource",
+          "function": {
+            "functionId": "tinyTitansMcp",
+            "region": "europe-west2"
+          }
+        },
+        {
+          "source": "/.well-known/oauth-authorization-server",
+          "function": {
+            "functionId": "tinyTitansMcp",
+            "region": "europe-west2"
+          }
+        },
+        {
+          "source": "/oauth/**",
+          "function": {
+            "functionId": "tinyTitansMcp",
+            "region": "europe-west2"
+          }
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     }
   ],
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json",
-    "predeploy": ["node scripts/mergeMentorshipRules.mjs", "node scripts/mergeRescueRules.mjs"]
+    "predeploy": [
+      "node scripts/mergeMentorshipRules.mjs",
+      "node scripts/mergeRescueRules.mjs"
+    ]
   },
-  "storage": { "rules": "storage.rules" }
+  "storage": {
+    "rules": "storage.rules"
+  }
 }
