@@ -56,11 +56,12 @@ export async function archiveHusbandrySafetyItem(
   const itemRef = doc(db, COLLECTION, itemId);
   const auditRef = doc(collection(db, AUDIT_COLLECTION));
 
-  batch.update(itemRef, {
+  batch.set(itemRef, {
+    id: itemId,
     archived: true,
     updatedByUid,
     updatedAt: serverTimestamp(),
-  });
+  }, { merge: true });
   batch.set(auditRef, {
     itemId,
     action: "archive",
