@@ -212,6 +212,9 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   const uid = request.auth.uid;
   const access = await requireCompanionAccess(uid);
+  if (!["owner", "tester"].includes(access.source)) {
+    throw new HttpsError("failed-precondition", "The legacy one-time-token flow is disabled for normal users. Connect ChatGPT through the OAuth flow instead.");
+  }
   const context = await resolveAccountContext(uid);
   if (context.sharedFamily) {
     throw new HttpsError("failed-precondition", "Connect ChatGPT Companion from the Tiny Titans Family Owner account for write-safe shared records.");
