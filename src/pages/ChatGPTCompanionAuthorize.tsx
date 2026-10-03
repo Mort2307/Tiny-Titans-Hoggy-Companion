@@ -47,7 +47,7 @@ export default function ChatGPTCompanionAuthorize() {
     request.clientId === "https://chatgpt.com/oauth/client.json" &&
     request.redirectUri === "https://chatgpt.com/connector_platform_oauth_redirect" &&
     request.codeChallengeMethod === "S256" &&
-    request.resource.includes("tinyTitansMcp/mcp");
+    request.resource === "https://tinytitanskeeper.web.app/api/chatgpt/mcp";
 
   async function approve() {
     setBusy(true);
