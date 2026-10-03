@@ -283,6 +283,8 @@ async function issueTokens({ uid, scopes, clientId, resource, refreshTokenId = n
     oauthRevoked: false,
     oauthConnectedAt: FieldValue.serverTimestamp(),
     oauthLastTokenAt: FieldValue.serverTimestamp(),
+    revoked: true,
+    revokedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
     connectionVersion: 2,
   }, { merge: true });
