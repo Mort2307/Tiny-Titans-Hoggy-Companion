@@ -92,8 +92,24 @@ function toDraft(item: HusbandrySafetyItem): Draft {
   };
 }
 
-function fromDraft(draft: Draft): HusbandrySafetyItem {
+function fromDraft(draft: Draft, existing?: HusbandrySafetyItem): HusbandrySafetyItem {
   const id = draft.id.trim() || slug(draft.commonName);
+  const nextAssessment = {
+    scope: "species" as const,
+    scopeId: draft.speciesId,
+    status: draft.status,
+    reason: draft.reason.trim(),
+    risks: lines(draft.risks),
+    preparation: lines(draft.preparation),
+    alternatives: lines(draft.alternatives),
+    evidenceLevel: draft.evidenceLevel,
+    evidenceNote: draft.evidenceNote.trim() || "Creator-reviewed husbandry safety assessment.",
+    sourceIds: csv(draft.sourceIds),
+    reviewedOn: new Date().toISOString().slice(0, 10),
+  };
+  const retainedAssessments = (existing?.assessments ?? []).filter(
+    (assessment) => !(assessment.scope === "species" && assessment.scopeId === draft.speciesId),
+  );
   return {
     id,
     commonName: draft.commonName.trim(),
@@ -103,19 +119,7 @@ function fromDraft(draft: Draft): HusbandrySafetyItem {
     regions: csv(draft.regions) as HusbandrySafetyRegion[],
     summary: draft.reason.trim(),
     identificationWarning: draft.identificationWarning.trim() || undefined,
-    assessments: [{
-      scope: "species",
-      scopeId: draft.speciesId,
-      status: draft.status,
-      reason: draft.reason.trim(),
-      risks: lines(draft.risks),
-      preparation: lines(draft.preparation),
-      alternatives: lines(draft.alternatives),
-      evidenceLevel: draft.evidenceLevel,
-      evidenceNote: draft.evidenceNote.trim() || "Creator-reviewed husbandry safety assessment.",
-      sourceIds: csv(draft.sourceIds),
-      reviewedOn: new Date().toISOString().slice(0, 10),
-    }],
+    assessments: [...retainedAssessments, nextAssessment],
   };
 }
 
@@ -145,11 +149,31 @@ export default function CreatorHusbandrySafety() {
       setMessage("Common name and assessment reason are required.");
       return;
     }
-    const item = fromDraft(draft);
-    if (!item.id) {
+    const itemId = draft.id.trim() || slug(draft.commonName);
+    if (!itemId) {
       setMessage("Add a usable common name so Tiny Titans can create an item ID.");
       return;
     }
+    if (!draft.id && items.some((item) => item.id === itemId)) {
+      setMessage("A material with that ID already exists. Select the existing record instead of creating a duplicate.");
+      return;
+    }
+    const validRegions = new Set<HusbandrySafetyRegion>(["uk", "us", "europe", "north-america", "global"]);
+    const requestedRegions = csv(draft.regions);
+    const invalidRegions = requestedRegions.filter((value) => !validRegions.has(value as HusbandrySafetyRegion));
+    if (requestedRegions.length === 0 || invalidRegions.length > 0) {
+      setMessage(invalidRegions.length > 0 ? `Unknown region: ${invalidRegions.join(", ")}.` : "Add at least one valid region.");
+      return;
+    }
+    const knownSourceIds = new Set(HUSBANDRY_SAFETY_SOURCE_LIST.map((source) => source.id));
+    const requestedSourceIds = csv(draft.sourceIds);
+    const unknownSourceIds = requestedSourceIds.filter((sourceId) => !knownSourceIds.has(sourceId));
+    if (unknownSourceIds.length > 0) {
+      setMessage(`Unknown source ID: ${unknownSourceIds.join(", ")}. Add the source to the source ledger before citing it.`);
+      return;
+    }
+    const existing = items.find((item) => item.id === itemId);
+    const item = fromDraft(draft, existing);
     setBusy(true);
     setMessage("");
     try {
