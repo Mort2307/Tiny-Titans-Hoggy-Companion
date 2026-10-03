@@ -5,12 +5,14 @@ const root = process.cwd();
 const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 
 const backend = read("functions/chatgptCompanion.js");
+const mcp = read("functions/chatgptMcp.js");
 const index = read("functions/index.js");
 const config = read("src/config/paidTiers.ts");
 const catalog = read("src/config/paidEntitlementCatalog.ts");
 const route = read("src/routes/AuthenticatedRoutes.tsx");
 const settings = read("src/pages/Settings.tsx");
 const page = read("src/pages/ChatGPTCompanion.tsx");
+const authorizePage = read("src/pages/ChatGPTCompanionAuthorize.tsx");
 const service = read("src/services/chatgptCompanionService.ts");
 
 function tierSlice(tierId) {
@@ -46,13 +48,21 @@ const eligible = ["titan_pro", "business_starter", "business_plus", "business_ad
 
 const checks = [
   ["backend module exists and is exported", index.includes('require("./chatgptCompanion")') && backend.includes("exports.chatGPTCompanionApi")],
+  ["MCP module exists and is exported", index.includes('require("./chatgptMcp")') && mcp.includes("exports.tinyTitansMcp")],
+  ["OAuth authorization server is exported", mcp.includes("exports.tinyTitansOAuth") && mcp.includes("oauth-authorization-server")],
+  ["protected resource metadata is published", mcp.includes("oauth-protected-resource") && mcp.includes("authorization_servers")],
+  ["OAuth uses authorization code plus PKCE S256", mcp.includes('"authorization_code"') && mcp.includes('"S256"') && mcp.includes("code_verifier")],
+  ["OAuth supports refresh tokens", mcp.includes('"refresh_token"') && mcp.includes("chatgptOAuthRefreshTokens")],
+  ["OAuth binds tokens to MCP resource", mcp.includes("MCP_RESOURCE") && mcp.includes("data.resource !== MCP_RESOURCE")],
+  ["ChatGPT stable client and callback are allowlisted", mcp.includes("https://chatgpt.com/oauth/client.json") && mcp.includes("https://chatgpt.com/connector_platform_oauth_redirect")],
+  ["MCP tools declare scoped OAuth security", mcp.includes("securitySchemes") && mcp.includes('"records.write"') && mcp.includes('"animals.read"')],
+  ["profile tool is declared for account identity", mcp.includes('"get_profile"') && mcp.includes('"openai/profile"')],
   ["connection credentials are hashed", backend.includes('createHash("sha256")') && backend.includes("secretHash") && !backend.includes("rawToken:")],
-  ["connection can be revoked", backend.includes("revokeChatGPTCompanionConnection") && backend.includes("revokedAt")],
-  ["connection expiry is enforced", backend.includes("CONNECTION_TTL_DAYS") && backend.includes("activeFuture(data.expiresAt)")],
-  ["read tool family exists", readTools.every((tool) => backend.includes(`"${tool}"`))],
-  ["write tool family exists", writeTools.every((tool) => backend.includes(`"${tool}"`))],
-  ["generic arbitrary database write tool is absent", !backend.includes('"write_firestore') && !backend.includes('"set_document') && !backend.includes('"delete_record"')],
-  ["write operations require scoped permission", backend.includes('"write_records"') && backend.includes("toolPermission(auth, tool)")],
+  ["connection can be revoked", backend.includes("revokeChatGPTCompanionConnection") && backend.includes("revokeOAuthTokens")],
+  ["read tool family exists", readTools.every((tool) => backend.includes(`"${tool}"`) && mcp.includes(`"${tool}"`))],
+  ["write tool family exists", writeTools.every((tool) => backend.includes(`"${tool}"`) && mcp.includes(`"${tool}"`))],
+  ["generic arbitrary database write tool is absent", !backend.includes('"write_firestore') && !backend.includes('"set_document') && !backend.includes('"delete_record"') && !mcp.includes('"write_firestore')],
+  ["write operations require scoped permission", backend.includes('"write_records"') && backend.includes("toolPermission(auth, tool)") && mcp.includes('"records.write"')],
   ["shared-family writes fail closed", backend.includes("requireFamilyWriteOwner") && backend.includes("Shared family members remain read-only")],
   ["idempotent record IDs are supported", backend.includes("idempotencyKey") && backend.includes("idForAction")],
   ["weight duplicate-date guard exists", backend.includes("WEIGHT_DUPLICATE_DATE")],
@@ -64,10 +74,13 @@ const checks = [
   ["Titan Seller does not contain ChatGPT Companion", !tierSlice("titan_seller").includes('"chatgpt_companion"')],
   ["entitlement has a named destination", catalog.includes('chatgpt_companion: "ChatGPT Companion"') && catalog.includes('/account/integrations/chatgpt')],
   ["paid route is gated by entitlement", route.includes('entitlement="chatgpt_companion"') && route.includes("<ChatGPTCompanion/>")],
+  ["OAuth approval route is gated by entitlement", route.includes("/account/integrations/chatgpt/authorize") && route.includes("<ChatGPTCompanionAuthorize/>")],
   ["Settings exposes the integration", settings.includes("Tiny Titans Companion") && settings.includes("/account/integrations/chatgpt")],
-  ["frontend never stores token in localStorage", !page.includes("localStorage") && !service.includes("localStorage")],
-  ["one-time token warning exists", page.includes("shown once") || page.includes("Shown once")],
-  ["disconnect UI exists", page.includes("Disconnect") && page.includes("revokeChatGPTCompanionConnection")],
+  ["normal UI no longer exposes a one-time secret token", !page.includes("One-time connection token") && !page.includes("Rotate connection token")],
+  ["frontend explains MCP endpoint and OAuth flow", page.includes("Copy MCP address") && page.includes("OAuth 2.1") && page.includes("PKCE")],
+  ["authorization screen explains requested permissions", authorizePage.includes("WHAT CHATGPT IS REQUESTING") && authorizePage.includes("Approve and return to ChatGPT")],
+  ["frontend never stores auth tokens in localStorage", !page.includes("localStorage") && !authorizePage.includes("localStorage") && !service.includes("localStorage")],
+  ["disconnect UI exists", page.includes("Disconnect ChatGPT") && page.includes("revokeChatGPTCompanionConnection")],
   ["activity audit UI exists", page.includes("Recent ChatGPT Companion actions") && service.includes("getChatGPTCompanionActivity")],
 ];
 
