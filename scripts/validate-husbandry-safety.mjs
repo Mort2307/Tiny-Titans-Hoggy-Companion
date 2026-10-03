@@ -25,8 +25,8 @@ for (const token of [
   if (!seed.includes(token)) errors.push(`Seed dataset is missing required token ${token}.`);
 }
 
-for (const status of ['"safe"', '"caution"', '"avoid"', '"unknown"']) {
-  if (!library.includes(status)) errors.push(`Keeper library is missing status ${status}.`);
+for (const status of ["safe:", "caution:", "avoid:", "unknown:"]) {
+  if (!library.includes(status)) errors.push(`Keeper library is missing status definition ${status}.`);
 }
 
 const sourceIds = [...seed.matchAll(/hognoseAssessment\(\s*"[^"]+"\s*,\s*"[^"]*"\s*,\s*"[^"]+"\s*,\s*\[([^\]]*)\]/g)]
