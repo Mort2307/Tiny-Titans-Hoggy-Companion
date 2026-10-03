@@ -257,6 +257,7 @@ export default function ChatGPTCompanion() {
         description="This immediately revokes the connection credential. It does not delete any Tiny Titans animal or tracker records."
         confirmLabel="Disconnect"
         busy={busy}
+        destructive={false}
         onCancel={() => setConfirmRevoke(false)}
         onConfirm={() => void revokeConnection()}
       />
