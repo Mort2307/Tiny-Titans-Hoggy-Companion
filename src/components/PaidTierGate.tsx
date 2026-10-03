@@ -20,6 +20,7 @@ const RESCUE_ENTITLEMENTS = new Set<PaidEntitlement>([
   "titan_intelligence",
   "morph_intelligence",
   "data_export",
+  "chatgpt_companion",
   "marketplace_seller",
   "seller_profile",
   "business_reporting",
