@@ -248,10 +248,12 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
 
 async function revokeOAuthTokens(uid) {
   for (const collectionName of ["chatgptOAuthAccessTokens", "chatgptOAuthRefreshTokens"]) {
-    const snapshot = await db.collection(collectionName).where("uid", "==", uid).where("revoked", "==", false).limit(250).get();
+    const snapshot = await db.collection(collectionName).where("uid", "==", uid).limit(250).get();
     if (snapshot.empty) continue;
     const batch = db.batch();
     for (const token of snapshot.docs) {
+      const data = token.data() || {};
+      if (data.revoked === true) continue;
       batch.set(token.ref, {
         revoked: true,
         revokedAt: FieldValue.serverTimestamp(),
