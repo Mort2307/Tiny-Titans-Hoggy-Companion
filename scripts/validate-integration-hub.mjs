@@ -24,6 +24,8 @@ const checks = [
   ["history is retained for future graphs", backend.includes('collection("integrationTelemetry")')],
   ["telemetry history has its Firestore composite index", firestoreIndexes.includes('"collectionGroup": "integrationTelemetry"') && firestoreIndexes.includes('"fieldPath": "deviceKey"')],
   ["client can export ICS without a paid calendar API", service.includes("BEGIN:VCALENDAR") && service.includes("downloadReminderCalendar")],
+  ["Titan automations have backend and user-facing controls", backend.includes("evaluateIntegrationAutomations") && backend.includes("saveIntegrationAutomationRule") && service.includes("getIntegrationAutomationRules") && page.includes("TITAN AUTOMATIONS")],
+  ["Titan automations are notification-only", page.includes("does not remotely switch heaters") && backend.includes("sendIntegrationAlert")],
   ["Integration Hub page exposes zero-cost policy", page.includes("£0") && page.includes("Zero-cost mode")],
   ["Integration Hub route exists", routes.includes('/account/integrations') && routes.includes("<IntegrationHub/>")],
   ["Settings links to Integration Hub", settings.includes('navigate("/account/integrations")')],

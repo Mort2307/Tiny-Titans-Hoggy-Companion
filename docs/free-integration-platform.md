@@ -58,5 +58,11 @@ After pulling the commit:
 ```powershell
 npm run validate:integration-hub
 npm run build
-firebase deploy --only "functions:getIntegrationHubStatus,functions:createIntegrationGatewayKey,functions:revokeIntegrationGatewayKey,functions:getIntegrationTelemetry,functions:deviceGatewayIngest,hosting:keeper"
+firebase deploy --only "functions:getIntegrationHubStatus,functions:createIntegrationGatewayKey,functions:revokeIntegrationGatewayKey,functions:getIntegrationTelemetry,functions:getIntegrationAutomationRules,functions:saveIntegrationAutomationRule,functions:deleteIntegrationAutomationRule,functions:deviceGatewayIngest,hosting:keeper"
 ```
+
+## Titan Automations
+
+The Integration Hub includes free notification-only environment rules. A keeper can target one connected device or all devices, choose a numeric metric, set a greater-than/less-than threshold and a notification cooldown. Rules create an in-app event and use the existing Firebase push channel when enabled.
+
+Tiny Titans does not actuate heaters, thermostats, lights, fans or other enclosure equipment. Control stays with the dedicated thermostat/controller or the keeper's Home Assistant installation.

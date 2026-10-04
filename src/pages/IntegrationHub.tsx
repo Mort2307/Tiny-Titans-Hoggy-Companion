@@ -42,6 +42,9 @@ function metricValue(key: string, value: number | boolean): string {
   const suffix = ({ temperatureC: "°C", humidityPct: "%", batteryPct: "%", powerW: "W", lightLux: " lux", co2Ppm: " ppm", pressureHpa: " hPa", waterLevelPct: "%" } as Record<string, string>)[key] || "";
   return `${Number.isInteger(value) ? value : value.toFixed(1)}${suffix}`;
 }
+function automationOperator(operator: IntegrationAutomationRule["operator"]): string {
+  return ({ gt: "above", gte: "at or above", lt: "below", lte: "at or below" } as const)[operator];
+}
 function DeviceCard({ device }: { device: IntegrationDevice }) {
   return <article className="tt-integration-device">
     <div className="tt-integration-device__head">
@@ -64,6 +67,7 @@ export default function IntegrationHub() {
   const [status, setStatus] = useState<IntegrationHubStatus | null>(null);
   const [gatewayKey, setGatewayKey] = useState("");
   const [rules, setRules] = useState<IntegrationAutomationRule[]>([]);
+  const [rules, setRules] = useState<IntegrationAutomationRule[]>([]);
   const [ruleName, setRuleName] = useState("Enclosure alert");
   const [ruleDeviceId, setRuleDeviceId] = useState("*");
   const [ruleMetric, setRuleMetric] = useState("temperatureC");
@@ -73,6 +77,12 @@ export default function IntegrationHub() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [ruleName, setRuleName] = useState("Enclosure temperature alert");
+  const [ruleDeviceId, setRuleDeviceId] = useState("*");
+  const [ruleMetric, setRuleMetric] = useState("temperatureC");
+  const [ruleOperator, setRuleOperator] = useState<IntegrationAutomationRule["operator"]>("gt");
+  const [ruleThreshold, setRuleThreshold] = useState("34");
+  const [ruleCooldown, setRuleCooldown] = useState("30");
 
   const refresh = useCallback(async () => {
     if (!user) return;
@@ -170,6 +180,54 @@ export default function IntegrationHub() {
   async function copy(value: string, label: string) {
     try { await navigator.clipboard.writeText(value); setMessage(`${label} copied.`); }
     catch { setError("Clipboard access was blocked by this browser."); }
+  }
+  async function saveRule() {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const threshold = Number(ruleThreshold);
+      const cooldownMinutes = Number(ruleCooldown);
+      if (!Number.isFinite(threshold)) throw new Error("Enter a valid alert threshold.");
+      if (!Number.isFinite(cooldownMinutes)) throw new Error("Enter a valid cooldown.");
+      await saveIntegrationAutomationRule({
+        name: ruleName.trim() || "Environment alert",
+        deviceId: ruleDeviceId,
+        metric: ruleMetric,
+        operator: ruleOperator,
+        threshold,
+        cooldownMinutes,
+        enabled: true,
+      });
+      setMessage("Titan automation rule created.");
+      await refresh();
+    } catch (err) { setError(err instanceof Error ? err.message : "Automation rule could not be saved."); }
+    finally { setBusy(false); }
+  }
+  async function removeRule(ruleId: string) {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await deleteIntegrationAutomationRule(ruleId);
+      setMessage("Titan automation rule removed.");
+      await refresh();
+    } catch (err) { setError(err instanceof Error ? err.message : "Automation rule could not be removed."); }
+    finally { setBusy(false); }
+  }
+  async function toggleRule(rule: IntegrationAutomationRule) {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await saveIntegrationAutomationRule({
+        id: rule.id,
+        name: rule.name,
+        deviceId: rule.deviceId,
+        metric: rule.metric,
+        operator: rule.operator,
+        threshold: rule.threshold,
+        cooldownMinutes: rule.cooldownMinutes,
+        enabled: !rule.enabled,
+      });
+      setMessage(`Automation ${rule.enabled ? "paused" : "enabled"}.`);
+      await refresh();
+    } catch (err) { setError(err instanceof Error ? err.message : "Automation rule could not be updated."); }
+    finally { setBusy(false); }
   }
   async function exportCalendar() {
     if (!user) return;
@@ -276,6 +334,41 @@ export default function IntegrationHub() {
       </div>
       <div className="tt-integration-device-grid">
         {status?.devices.length ? status.devices.map((device) => <DeviceCard key={device.id} device={device} />) : <article className="tt-integration-empty"><TinyTitansIcon name="enclosure" size={27} /><strong>No devices have reported yet</strong><p>Generate a gateway key, send the example payload from a bridge or sensor, then refresh this page.</p></article>}
+      </div>
+    </section>
+
+
+    <section className="tt-integration-section">
+      <div className="tt-integration-section__head">
+        <div>
+          <span className="tt-integration-kicker">TITAN AUTOMATIONS · NOTIFICATION ONLY</span>
+          <h2>Environment alert rules</h2>
+          <p>Create free threshold rules from live enclosure telemetry. Tiny Titans can notify and log; it does not remotely switch heaters, thermostats, lights, fans or other enclosure equipment.</p>
+        </div>
+        <span className="is-connected">{rules.filter((rule) => rule.enabled).length} ACTIVE</span>
+      </div>
+      <div className="tt-integration-automation-builder">
+        <label>Rule name<input value={ruleName} onChange={(event) => setRuleName(event.target.value)} maxLength={80} /></label>
+        <label>Device<select value={ruleDeviceId} onChange={(event) => setRuleDeviceId(event.target.value)}><option value="*">All connected devices</option>{(status?.devices || []).map((device) => <option key={device.deviceId} value={device.deviceId}>{device.name}</option>)}</select></label>
+        <label>Metric<select value={ruleMetric} onChange={(event) => setRuleMetric(event.target.value)}><option value="temperatureC">Temperature °C</option><option value="humidityPct">Humidity %</option><option value="batteryPct">Battery %</option><option value="powerW">Power W</option><option value="lightLux">Light lux</option><option value="co2Ppm">CO₂ ppm</option><option value="pressureHpa">Pressure hPa</option><option value="waterLevelPct">Water level %</option></select></label>
+        <label>Condition<select value={ruleOperator} onChange={(event) => setRuleOperator(event.target.value as IntegrationAutomationRule["operator"])}><option value="gt">Above</option><option value="gte">At or above</option><option value="lt">Below</option><option value="lte">At or below</option></select></label>
+        <label>Threshold<input type="number" value={ruleThreshold} onChange={(event) => setRuleThreshold(event.target.value)} /></label>
+        <label>Cooldown<select value={ruleCooldown} onChange={(event) => setRuleCooldown(event.target.value)}><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="180">3 hours</option><option value="360">6 hours</option><option value="720">12 hours</option><option value="1440">24 hours</option></select></label>
+        <button type="button" className="is-primary" disabled={busy} onClick={() => void saveRule()}>Create alert</button>
+      </div>
+      <div className="tt-integration-rule-list">
+        {rules.length ? rules.map((rule) => <article key={rule.id} className={rule.enabled ? "" : "is-paused"}>
+          <div>
+            <span>{rule.enabled ? "ACTIVE" : "PAUSED"}</span>
+            <strong>{rule.name}</strong>
+            <small>{rule.deviceId === "*" ? "All devices" : (status?.devices.find((device) => device.deviceId === rule.deviceId)?.name || rule.deviceId)} · {metricLabel(rule.metric)} {automationOperator(rule.operator)} {rule.threshold} · {rule.cooldownMinutes} min cooldown</small>
+            <em>{rule.triggerCount} trigger{rule.triggerCount === 1 ? "" : "s"}{rule.lastTriggeredAtMs ? ` · last ${when(rule.lastTriggeredAtMs)}` : ""}</em>
+          </div>
+          <div>
+            <button type="button" disabled={busy} onClick={() => void toggleRule(rule)}>{rule.enabled ? "Pause" : "Enable"}</button>
+            <button type="button" disabled={busy} onClick={() => void removeRule(rule.id)}>Delete</button>
+          </div>
+        </article>) : <article className="tt-integration-empty"><TinyTitansIcon name="warning" size={24} /><strong>No environment rules yet</strong><p>Create a rule above once you know what conditions you want Tiny Titans to flag.</p></article>}
       </div>
     </section>
 
