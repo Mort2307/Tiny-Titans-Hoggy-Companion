@@ -4,6 +4,7 @@ import TinyTitansIcon from "../components/TinyTitansIcon";
 import TinyTitansFeedback from "../components/TinyTitansFeedback";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import IntegrationTelemetryHistory from "../components/IntegrationTelemetryHistory";
+import IntegrationSetupRecipes from "../components/IntegrationSetupRecipes";
 import { useAuth } from "../context/useAuth";
 import {
   createIntegrationGatewayKey,
@@ -235,6 +236,7 @@ export default function IntegrationHub() {
           <p>Supported now: temperature, humidity, battery, power, light, CO₂, pressure, water level and common on/off states. Invalid or stale payloads are rejected before storage.</p>
         </article>
       </div>
+      <IntegrationSetupRecipes endpoint={endpoint} gatewayKey={gatewayKey} />
     </section>
 
     <section className="tt-integration-section">

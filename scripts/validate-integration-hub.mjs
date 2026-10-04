@@ -23,6 +23,7 @@ const checks = [
   ["gateway endpoint is public function with bearer auth", backend.includes("deviceGatewayIngest") && backend.includes("keyFromRequest")],
   ["history is retained for future graphs", backend.includes('collection("integrationTelemetry")')],
   ["telemetry history is user-facing", service.includes("getIntegrationTelemetry") && page.includes("IntegrationTelemetryHistory") && page.includes("View history")],
+  ["setup recipes cover local/open bridges", page.includes("IntegrationSetupRecipes") && read("src/components/IntegrationSetupRecipes.tsx").includes("Home Assistant") && read("src/components/IntegrationSetupRecipes.tsx").includes("ESPHome") && read("src/components/IntegrationSetupRecipes.tsx").includes("MQTT / Node-RED")],
   ["telemetry history has its Firestore composite index", firestoreIndexes.includes('"collectionGroup": "integrationTelemetry"') && firestoreIndexes.includes('"fieldPath": "deviceKey"')],
   ["client can export ICS without a paid calendar API", service.includes("BEGIN:VCALENDAR") && service.includes("downloadReminderCalendar")],
   ["Integration Hub page exposes zero-cost policy", page.includes("£0") && page.includes("Zero-cost mode")],
