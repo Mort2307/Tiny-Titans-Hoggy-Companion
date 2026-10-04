@@ -120,7 +120,8 @@
     "validate:integration-hub": "node scripts/validate-integration-hub.mjs",
     "validate:service-directory": "node scripts/validate-service-directory.mjs",
     "validate:inaturalist-ecology": "node scripts/validate-inaturalist-ecology.mjs",
-    "validate:zero-cost-integrations": "node scripts/validate-zero-cost-integrations.mjs"
+    "validate:zero-cost-integrations": "node scripts/validate-zero-cost-integrations.mjs",
+    "validate:free-stack": "npm run validate:zero-cost-integrations && npm run validate:integration-hub && npm run validate:service-directory && npm run validate:inaturalist-ecology && tsc -b --pretty false"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

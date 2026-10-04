@@ -1,14 +1,10 @@
 name: Tiny Titans Route Crawl BOT
 
+# Playwright route/action crawling is a deliberate specialist check. Static
+# route contracts and the production build remain in routine CI.
+
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
-
-permissions:
-  contents: read
 
 jobs:
   route-crawl:

@@ -1,12 +1,10 @@
 name: Tiny Titans Home Visual BOT
 
+# Browser capture is deliberately manual to avoid burning hosted-runner minutes
+# on every commit. Run when Home/mobile visual evidence is actually needed.
+
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
-
-permissions:
-  contents: read
 
 jobs:
   home-visual:

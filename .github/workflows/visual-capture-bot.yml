@@ -1,22 +1,10 @@
 name: Tiny Titans Visual Review BOT
 
+# Full browser evidence is intentionally manual. This workflow installs
+# Chromium, builds the app and captures multiple viewports, so it must not run
+# merely because a normal source file changed.
+
 on:
-  push:
-    branches: [master]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'functions/creatorOperationsData.js'
-      - 'storage.rules'
-      - 'scripts/run-visual-review-bot.mjs'
-      - 'scripts/prepare-visual-route-set.mjs'
-      - 'scripts/validate-visual-qa-contract.mjs'
-      - 'scripts/publish-visual-qa-evidence.mjs'
-      - 'scripts/publish-visual-qa-to-github.mjs'
-      - 'docs/visual-design-contract.json'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/visual-capture-bot.yml'
   workflow_dispatch:
     inputs:
       routes:

@@ -1,13 +1,10 @@
 name: Validate Tiny Titans
 
-on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+# Manual deep production-gate rerun. Routine push validation lives in
+# tiny-titans-build.yml to avoid paying for duplicate dependency installs/builds.
 
-permissions:
-  contents: read
+on:
+  workflow_dispatch:
 
 jobs:
   validate:

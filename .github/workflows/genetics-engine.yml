@@ -1,13 +1,10 @@
 name: Genetics Engine Gate
 
-on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+# Expensive specialist gate: run deliberately. The canonical push CI already
+# executes genetics contracts through npm run build.
 
-permissions:
-  contents: read
+on:
+  workflow_dispatch:
 
 jobs:
   genetics-engine:
