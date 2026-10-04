@@ -25,6 +25,30 @@ export type IntegrationProvider = {
   status: "available" | "ready" | "connected";
 };
 
+export type IntegrationAutomationRule = {
+  id: string;
+  name: string;
+  deviceId: string;
+  metric: string;
+  operator: "gt" | "gte" | "lt" | "lte";
+  threshold: number;
+  cooldownMinutes: number;
+  enabled: boolean;
+  triggerCount: number;
+  lastTriggeredAtMs: number | null;
+};
+
+export type IntegrationAutomationInput = {
+  id?: string;
+  name: string;
+  deviceId: string;
+  metric: string;
+  operator: "gt" | "gte" | "lt" | "lte";
+  threshold: number;
+  cooldownMinutes: number;
+  enabled?: boolean;
+};
+
 export type IntegrationHubStatus = {
   policy: {
     mode: "zero-cost";
@@ -51,6 +75,9 @@ export type IntegrationHubStatus = {
 const getStatusCall = httpsCallable<void, IntegrationHubStatus>(functions, "getIntegrationHubStatus");
 const createKeyCall = httpsCallable<{ label?: string }, { key: string; endpoint: string; keySuffix: string; message: string }>(functions, "createIntegrationGatewayKey");
 const revokeKeyCall = httpsCallable<void, { success: boolean }>(functions, "revokeIntegrationGatewayKey");
+const getRulesCall = httpsCallable<void, { rules: IntegrationAutomationRule[] }>(functions, "getIntegrationAutomationRules");
+const saveRuleCall = httpsCallable<{ rule: IntegrationAutomationInput }, { success: boolean; id: string }>(functions, "saveIntegrationAutomationRule");
+const deleteRuleCall = httpsCallable<{ ruleId: string }, { success: boolean }>(functions, "deleteIntegrationAutomationRule");
 
 export async function getIntegrationHubStatus(): Promise<IntegrationHubStatus> {
   return (await getStatusCall()).data;
@@ -60,6 +87,15 @@ export async function createIntegrationGatewayKey(label = "My keeper gateway") {
 }
 export async function revokeIntegrationGatewayKey() {
   return (await revokeKeyCall()).data;
+}
+export async function getIntegrationAutomationRules(): Promise<IntegrationAutomationRule[]> {
+  return (await getRulesCall()).data.rules || [];
+}
+export async function saveIntegrationAutomationRule(rule: IntegrationAutomationInput) {
+  return (await saveRuleCall({ rule })).data;
+}
+export async function deleteIntegrationAutomationRule(ruleId: string) {
+  return (await deleteRuleCall({ ruleId })).data;
 }
 
 function icsEscape(value: unknown): string {
