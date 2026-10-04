@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "mode": "zero-cost-optional-integrations",
+  "optionalThirdPartyBudgetGbpMonthly": 0,
+  "rule": "No optional third-party API fees, no paid SaaS dependencies, no recurring integration subscriptions, and no feature that can generate an external bill merely because people use it.",
+  "allowedCostBoundaries": {
+    "coreInfrastructure": [
+      "Firebase/GCP infrastructure already required to operate Tiny Titans, subject to normal project quotas and billing controls"
+    ],
+    "userResponsibility": [
+      "User-owned hardware",
+      "User internet connection",
+      "User electricity"
+    ],
+    "transactionCosts": [
+      "Stripe/payment processing fees only when Tiny Titans actually receives money"
+    ]
+  },
+  "allowedOptionalProviders": [
+    {
+      "id": "device_gateway",
+      "name": "Tiny Titans Device Gateway",
+      "basis": "first-party"
+    },
+    {
+      "id": "home_assistant",
+      "name": "Home Assistant",
+      "basis": "self-hosted/open ecosystem"
+    },
+    {
+      "id": "mqtt",
+      "name": "MQTT",
+      "basis": "open protocol"
+    },
+    {
+      "id": "esphome",
+      "name": "ESPHome",
+      "basis": "self-hosted/open-source"
+    },
+    {
+      "id": "node_red",
+      "name": "Node-RED",
+      "basis": "self-hosted/open-source"
+    },
+    {
+      "id": "calendar_ics",
+      "name": "ICS calendar export",
+      "basis": "open standard"
+    },
+    {
+      "id": "services_directory",
+      "name": "Tiny Titans Services Directory",
+      "basis": "first-party/community data"
+    },
+    {
+      "id": "inaturalist",
+      "name": "iNaturalist Wild Ecology",
+      "basis": "free public API with Tiny Titans cache and pacing"
+    },
+    {
+      "id": "open_meteo",
+      "name": "Open-Meteo geocoding/context",
+      "basis": "free public API used with bounded/cached access where applicable"
+    },
+    {
+      "id": "push",
+      "name": "Tiny Titans Firebase push",
+      "basis": "existing Firebase/GCP infrastructure"
+    }
+  ],
+  "explicitlyDisallowedByDefault": [
+    "Google Places/Maps paid usage APIs",
+    "Mapbox metered APIs",
+    "Twilio usage-priced messaging",
+    "SendGrid/Mailgun-style optional paid messaging SaaS",
+    "Paid weather APIs",
+    "Zapier/Make-style paid automation dependencies",
+    "Any SaaS connector whose normal user activity can create a third-party usage bill"
+  ],
+  "paidApiDecisionRule": "First ask whether Tiny Titans can build the useful outcome itself for effectively £0. If yes, build it. If not, keep it disabled until Tiny Titans revenue justifies the cost and the policy is deliberately changed."
+}

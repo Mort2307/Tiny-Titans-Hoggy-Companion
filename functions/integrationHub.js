@@ -283,7 +283,7 @@ exports.getIntegrationHubStatus = onCall({ region: "europe-west2" }, async (requ
       thirdPartyBudgetGbpMonthly: 0,
       paidProvidersEnabled: false,
       meteredProvidersEnabled: false,
-      statement: "No optional paid APIs or metered third-party integrations are enabled.",
+      statement: "No optional third-party API fees, paid SaaS dependencies, recurring integration subscriptions or usage-driven external bills are enabled.",
     },
     gateway: {
       enabled: status.gatewayEnabled === true,
@@ -306,6 +306,7 @@ exports.getIntegrationHubStatus = onCall({ region: "europe-west2" }, async (requ
       { id: "calendar_ics", name: "ICS Calendar Export", cost: "free", status: "available" },
       { id: "services_directory", name: "Tiny Titans Services Directory", cost: "free", status: "available" },
       { id: "inaturalist", name: "iNaturalist Wild Ecology", cost: "free", status: "connected" },
+      { id: "open_meteo", name: "Open-Meteo Geocoding", cost: "free", status: "connected" },
       { id: "push", name: "Tiny Titans Push Notifications", cost: "free", status: tokenSnapshot.size > 0 ? "connected" : "available" },
     ],
   };
