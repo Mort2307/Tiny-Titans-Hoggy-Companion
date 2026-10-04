@@ -1546,7 +1546,7 @@ function renderAuthorizePage(response, input, errorMessage = "") {
   const firebaseConfig = JSON.stringify(FIREBASE_WEB_CONFIG).replace(/</g, "\\u003c");
 
   return response
-    .status(errorMessage ? 400 : 200)
+    .status(200)
     .set("Cache-Control", "no-store")
     .set("Content-Type", "text/html; charset=utf-8")
     .send(`<!doctype html>
