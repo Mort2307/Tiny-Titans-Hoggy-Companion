@@ -10,10 +10,6 @@ const RECIPE_LABELS: Record<RecipeId, string> = {
   powershell: "Quick test",
 };
 
-function indent(value: string, spaces: number): string {
-  const prefix = " ".repeat(spaces);
-  return value.split("\n").map((line) => prefix + line).join("\n");
-}
 
 export default function IntegrationSetupRecipes({ endpoint, gatewayKey }: { endpoint: string; gatewayKey: string }) {
   const [recipe, setRecipe] = useState<RecipeId>("home_assistant");
