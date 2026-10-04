@@ -8,6 +8,7 @@ const routes = read("src/routes/AuthenticatedRoutes.tsx");
 const settings = read("src/pages/Settings.tsx");
 const firebase = read("firebase.json");
 const index = read("functions/index.js");
+const firestoreIndexes = read("firestore.indexes.json");
 
 const checks = [
   ["gateway key uses cryptographic random bytes", backend.includes("crypto.randomBytes(32)")],
@@ -17,6 +18,7 @@ const checks = [
   ["gateway validates telemetry", backend.includes("validateMetrics") && backend.includes("ALLOWED_SOURCES")],
   ["gateway endpoint is public function with bearer auth", backend.includes("deviceGatewayIngest") && backend.includes("keyFromRequest")],
   ["history is retained for future graphs", backend.includes('collection("integrationTelemetry")')],
+  ["telemetry history has its Firestore composite index", firestoreIndexes.includes('"collectionGroup": "integrationTelemetry"') && firestoreIndexes.includes('"fieldPath": "deviceKey"')],
   ["client can export ICS without a paid calendar API", service.includes("BEGIN:VCALENDAR") && service.includes("downloadReminderCalendar")],
   ["Integration Hub page exposes zero-cost policy", page.includes("£0") && page.includes("Zero-cost mode")],
   ["Integration Hub route exists", routes.includes('/account/integrations') && routes.includes("<IntegrationHub/>")],

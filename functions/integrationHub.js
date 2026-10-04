@@ -247,6 +247,7 @@ exports.deviceGatewayIngest = onRequest({ region: "europe-west2", invoker: "publ
     const deviceRef = db.collection("integrationDevices").doc(deviceKey);
     const telemetryRef = db.collection("integrationTelemetry").doc();
     const statusRef = db.collection("integrationUserStatus").doc(uid);
+    const deviceSnapshot = await deviceRef.get();
     const batch = db.batch();
     batch.set(deviceRef, {
       uid,
@@ -259,7 +260,7 @@ exports.deviceGatewayIngest = onRequest({ region: "europe-west2", invoker: "publ
       lastSeenAt: FieldValue.serverTimestamp(),
       sourceTimestamp: sourceTimestamp.toISOString(),
       updatedAt: FieldValue.serverTimestamp(),
-      firstSeenAt: FieldValue.serverTimestamp(),
+      ...(deviceSnapshot.exists ? {} : { firstSeenAt: FieldValue.serverTimestamp() }),
       readingCount: FieldValue.increment(1),
     }, { merge: true });
     batch.set(telemetryRef, {
