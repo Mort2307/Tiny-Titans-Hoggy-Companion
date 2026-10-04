@@ -2,12 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import {
-  createChatGPTCompanionConnection,
   getChatGPTCompanionActivity,
   getChatGPTCompanionStatus,
   revokeChatGPTCompanionConnection,
   type ChatGPTCompanionActivity,
-  type ChatGPTCompanionConnection,
   type ChatGPTCompanionStatus,
 } from "../services/chatgptCompanionService";
 import "../styles/chatgptCompanion.css";
@@ -56,13 +54,11 @@ const DEFAULT_MCP_SERVER = "https://tinytitanskeeper.web.app/mcp";
 export default function ChatGPTCompanion() {
   const [status, setStatus] = useState<ChatGPTCompanionStatus | null>(null);
   const [activity, setActivity] = useState<ChatGPTCompanionActivity[]>([]);
-  const [connection, setConnection] = useState<ChatGPTCompanionConnection | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [confirmRevoke, setConfirmRevoke] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   async function refresh() {
     const [nextStatus, nextActivity] = await Promise.all([
@@ -95,42 +91,12 @@ export default function ChatGPTCompanion() {
 
   const statusLabel = useMemo(() => {
     if (!status) return "Checking";
-    if (status.connected && status.upgradeRequired) return "Relink required";
+    if (status.connected && status.upgradeRequired) return "Reconnect required";
     if (status.connected) return "Connected to ChatGPT";
-    if (status.prepared) return "Link code ready";
     if (status.expired) return "Connection expired";
-    if (status.linkExpired) return "Link code expired";
     if (status.revoked) return "Disconnected";
-    return "Not connected";
+    return "Ready to connect";
   }, [status]);
-
-  async function prepareConnection() {
-    setBusy(true);
-    setMessage("");
-    setError("");
-    setCopied(false);
-    try {
-      const next = await createChatGPTCompanionConnection();
-      setConnection(next);
-      await refresh();
-      setMessage("One-time link code created. It expires in 15 minutes and is shown only on this screen.");
-    } catch (reason) {
-      setError(errorMessage(reason));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function copyLinkCode() {
-    if (!connection?.linkCode) return;
-    try {
-      await navigator.clipboard.writeText(connection.linkCode);
-      setCopied(true);
-      setMessage("One-time link code copied.");
-    } catch {
-      setError("Your browser blocked clipboard access. Select and copy the link code manually.");
-    }
-  }
 
   async function revokeConnection() {
     setBusy(true);
@@ -138,7 +104,6 @@ export default function ChatGPTCompanion() {
     setError("");
     try {
       await revokeChatGPTCompanionConnection();
-      setConnection(null);
       await refresh();
       setMessage("ChatGPT access revoked immediately. Existing Tiny Titans keeper records were not changed.");
     } catch (reason) {
@@ -153,7 +118,7 @@ export default function ChatGPTCompanion() {
     return <main className="tt-gpt-page"><section className="tt-gpt-card"><h1>ChatGPT Companion</h1><p>Checking secure integration status…</p></section></main>;
   }
 
-  const mcpServer = connection?.mcpServer || status?.mcpServer || DEFAULT_MCP_SERVER;
+  const mcpServer = status?.mcpServer || DEFAULT_MCP_SERVER;
 
   return (
     <main className="tt-gpt-page">
@@ -163,14 +128,14 @@ export default function ChatGPTCompanion() {
           <h1><TinyTitansIcon name="titan" size={32} /> Tiny Titans Companion</h1>
           <p>Your records. Just ask. ChatGPT can securely read and update the same Tiny Titans tracker data you already use — no separate AI-only records and no generic database access.</p>
         </div>
-        <div className={`tt-gpt-status ${status?.connected ? "is-live" : status?.prepared ? "is-prepared" : ""}`}>
+        <div className={`tt-gpt-status ${status?.connected ? "is-live" : ""}`}>
           <span>{statusLabel}</span>
           <strong>{status?.effectiveTier?.replaceAll("_", " ") || "free"}</strong>
         </div>
       </header>
 
       {message && <div className="tt-gpt-message success" role="status">{message}</div>}
-      {status?.upgradeRequired && <div className="tt-gpt-message error" role="alert">This ChatGPT connection predates the newest Tiny Titans permissions. Relink once to enable reminders and the expanded keeper query tools.</div>}
+      {status?.upgradeRequired && <div className="tt-gpt-message error" role="alert">This connection predates the newest Tiny Titans permissions. Reconnect Tiny Titans from ChatGPT once to update it.</div>}
       {error && <div className="tt-gpt-message error" role="alert">{error}</div>}
 
       <section className="tt-gpt-grid">
@@ -201,16 +166,15 @@ export default function ChatGPTCompanion() {
       <section className="tt-gpt-card tt-gpt-connect">
         <div>
           <p className="tt-gpt-kicker">SECURE CONNECTION</p>
-          <h2>{status?.connected ? "Tiny Titans is connected to ChatGPT" : "Link your Tiny Titans account to ChatGPT"}</h2>
+          <h2>{status?.connected ? "Tiny Titans is connected to ChatGPT" : "Connect with your normal Tiny Titans account"}</h2>
           <p className="tt-gpt-muted">
-            The one-time code is only used to prove which Tiny Titans account you are linking. It expires after 15 minutes, works once, and is exchanged for revocable OAuth access.
+            No pairing code is required. ChatGPT opens Tiny Titans securely, you sign in with the same Firebase account you already use, review the requested permissions, and press Allow.
           </p>
 
-          {(status?.connected || status?.prepared) && (
+          {status?.connected && (
             <div className="tt-gpt-facts">
-              {status.connected && <span><strong>Connected</strong>{toDateLabel(status.connectedAt)}</span>}
-              {status.connected && <span><strong>Access valid until</strong>{toDateLabel(status.expiresAt)}</span>}
-              {status.prepared && <span><strong>Link code expires</strong>{toDateLabel(status.linkExpiresAt)}</span>}
+              <span><strong>Connected</strong>{toDateLabel(status.connectedAt)}</span>
+              <span><strong>Access valid until</strong>{toDateLabel(status.expiresAt)}</span>
               <span><strong>Last used</strong>{toDateLabel(status.lastUsedAt)}</span>
               <span><strong>Last tool</strong>{status.lastTool || "No tool call yet"}</span>
               <span><strong>Reminder timezone</strong>{status.timezone || "UTC"}</span>
@@ -219,46 +183,31 @@ export default function ChatGPTCompanion() {
         </div>
 
         <div className="tt-gpt-actions">
-          <button className="tt-gpt-primary" type="button" disabled={busy} onClick={() => void prepareConnection()}>
-            {busy ? "Working…" : status?.connected ? "Relink / rotate access" : status?.prepared ? "Generate a new code" : "Generate link code"}
-          </button>
-          {(status?.connected || status?.prepared) && (
+          <a className="tt-gpt-primary" href="https://chatgpt.com/" target="_blank" rel="noreferrer">Open ChatGPT</a>
+          {status?.connected && (
             <button className="tt-gpt-danger" type="button" disabled={busy} onClick={() => setConfirmRevoke(true)}>Disconnect</button>
           )}
         </div>
 
-        {connection && (
-          <div className="tt-gpt-secret" role="region" aria-label="One-time Tiny Titans ChatGPT link code">
-            <div>
-              <strong>One-time link code</strong>
-              <span>Shown once. Expires in 15 minutes. Paste this only into the Tiny Titans connection page opened by ChatGPT.</span>
-            </div>
-            <code>{connection.linkCode}</code>
-            <div className="tt-gpt-actions">
-              <button type="button" onClick={() => void copyLinkCode()}>{copied ? "Copied" : "Copy link code"}</button>
-            </div>
-          </div>
-        )}
-
         <div className="tt-gpt-link-guide">
           <div className="tt-gpt-section-head">
             <div>
-              <p className="tt-gpt-kicker">PRIVATE TESTING · ONE-TIME SETUP</p>
-              <h3>How to add Tiny Titans to ChatGPT</h3>
+              <p className="tt-gpt-kicker">PRIVATE TESTING · SIMPLE ACCOUNT LINK</p>
+              <h3>How to connect Tiny Titans</h3>
             </div>
           </div>
           <ol>
-            <li><strong>Generate a link code above.</strong> Keep this Tiny Titans page open.</li>
-            <li><strong>On ChatGPT web, enable Developer mode</strong> in Settings → Security and login.</li>
-            <li><strong>Open ChatGPT Plugins and add an MCP server.</strong> Use the server address below and name it <em>Tiny Titans</em>.</li>
-            <li><strong>When ChatGPT opens the Tiny Titans sign-in page, paste the one-time link code.</strong> Tiny Titans exchanges it for scoped OAuth access.</li>
-            <li><strong>Start a new chat and select Tiny Titans.</strong> You can then ask naturally to read or log feeding, weight, sheds, behaviour, and health observations.</li>
+            <li><strong>Open ChatGPT Plugins and choose Tiny Titans Keeper Companion.</strong> During private testing, Developer mode may still be required to add the MCP server.</li>
+            <li><strong>Press Connect.</strong> ChatGPT opens the Tiny Titans authorization page automatically.</li>
+            <li><strong>Sign in to Tiny Titans.</strong> If you are already signed in on this browser, Tiny Titans recognises that session; otherwise use Google or your Tiny Titans email and password.</li>
+            <li><strong>Review the requested access and press Allow.</strong> Tiny Titans verifies your Firebase account server-side and returns you to ChatGPT.</li>
+            <li><strong>Start asking about your animals.</strong> There are no one-time pairing codes or API secrets to copy between apps.</li>
           </ol>
           <div className="tt-gpt-server-row">
             <span>MCP server</span>
             <code>{mcpServer}</code>
           </div>
-          <p className="tt-gpt-muted">After Tiny Titans is published in the plugin directory, normal users will install it directly — they will not need to manually enter the MCP server URL.</p>
+          <p className="tt-gpt-muted">The server address is only needed while the plugin is being tested privately. Once published, normal users install Tiny Titans directly and use the same Connect → Sign in → Allow flow.</p>
         </div>
       </section>
 
@@ -283,10 +232,10 @@ export default function ChatGPTCompanion() {
 
       <section className="tt-gpt-card">
         <p className="tt-gpt-kicker">LIVE CONNECTION STACK</p>
-        <h2>What Tiny Titans now exposes to ChatGPT</h2>
+        <h2>What Tiny Titans exposes to ChatGPT</h2>
         <div className="tt-gpt-tool-grid">
           {[
-            "OAuth 2.1 + PKCE account linking",
+            "OAuth 2.1 + PKCE with Tiny Titans Firebase sign-in",
             "MCP Streamable HTTP endpoint",
             "Authenticated profile identity",
             "Animal resolution",
@@ -312,7 +261,7 @@ export default function ChatGPTCompanion() {
       <ConfirmActionDialog
         open={confirmRevoke}
         title="Disconnect ChatGPT Companion?"
-        description="This immediately invalidates the active Tiny Titans ChatGPT connection and any unused link code. It does not delete animal or tracker records."
+        description="This immediately invalidates the active Tiny Titans ChatGPT connection. It does not delete animal or tracker records."
         confirmLabel="Disconnect"
         busy={busy}
         destructive={false}
