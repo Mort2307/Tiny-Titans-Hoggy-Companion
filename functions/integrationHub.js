@@ -8,6 +8,7 @@ const GATEWAY_ENDPOINT = `${PUBLIC_ORIGIN}/api/device-gateway`;
 const KEY_PREFIX = "ttdg_";
 const MAX_BODY_BYTES = 32 * 1024;
 const MAX_DEVICES_RETURNED = 100;
+const RATE_LIMIT_PER_MINUTE = 120;
 const ALLOWED_SOURCES = new Set(["home_assistant", "mqtt", "esphome", "node_red", "custom"]);
 const NUMBER_FIELDS = Object.freeze({
   temperatureC: [-50, 100],
@@ -73,6 +74,24 @@ function keyFromRequest(req) {
 }
 function deviceDocumentId(uid, deviceId) {
   return hashSecret(`${uid}|${deviceId}`).slice(0, 48);
+}
+async function claimGatewayKey(digest) {
+  const keyRef = db.collection("integrationGatewayKeys").doc(digest);
+  const minuteBucket = Math.floor(Date.now() / 60000);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(keyRef);
+    const data = snapshot.data() || {};
+    if (!snapshot.exists || data.active !== true || !data.uid) return { status: "invalid", uid: "" };
+    const nextCount = Number(data.rateMinuteBucket) === minuteBucket ? Number(data.rateMinuteCount || 0) + 1 : 1;
+    if (nextCount > RATE_LIMIT_PER_MINUTE) return { status: "rate_limited", uid: String(data.uid) };
+    transaction.set(keyRef, {
+      lastUsedAt: FieldValue.serverTimestamp(),
+      requestCount: FieldValue.increment(1),
+      rateMinuteBucket: minuteBucket,
+      rateMinuteCount: nextCount,
+    }, { merge: true });
+    return { status: "ok", uid: String(data.uid) };
+  });
 }
 function json(res, status, body) {
   res.set("Cache-Control", "no-store");
@@ -152,6 +171,8 @@ exports.createIntegrationGatewayKey = onCall({ region: "europe-west2" }, async (
     createdAt: FieldValue.serverTimestamp(),
     lastUsedAt: null,
     requestCount: 0,
+    rateMinuteBucket: 0,
+    rateMinuteCount: 0,
   });
   batch.set(statusRef, {
     uid,
@@ -223,14 +244,13 @@ exports.deviceGatewayIngest = onRequest({ region: "europe-west2", invoker: "publ
   if (!suppliedKey || !suppliedKey.startsWith(KEY_PREFIX) || suppliedKey.length < 30) return json(res, 401, { error: "A valid Tiny Titans gateway key is required." });
 
   const digest = hashSecret(suppliedKey);
-  const keyRef = db.collection("integrationGatewayKeys").doc(digest);
-  const keySnapshot = await keyRef.get();
-  const keyRecord = keySnapshot.data() || {};
-  if (!keySnapshot.exists || keyRecord.active !== true || !keyRecord.uid) return json(res, 401, { error: "Gateway key is invalid or revoked." });
+  const claim = await claimGatewayKey(digest);
+  if (claim.status === "invalid") return json(res, 401, { error: "Gateway key is invalid or revoked." });
+  if (claim.status === "rate_limited") return json(res, 429, { error: "Gateway rate limit exceeded. Try again next minute." });
 
   try {
     const body = req.body && typeof req.body === "object" ? req.body : {};
-    const uid = String(keyRecord.uid);
+    const uid = claim.uid;
     const deviceId = stringValue(body.deviceId, "deviceId", 80, true);
     if (!/^[A-Za-z0-9._:-]+$/.test(deviceId)) throw new Error("deviceId may only contain letters, numbers, dot, underscore, colon and hyphen.");
     const source = safeSource(body.source);
@@ -274,7 +294,6 @@ exports.deviceGatewayIngest = onRequest({ region: "europe-west2", invoker: "publ
       sourceTimestamp: sourceTimestamp.toISOString(),
       recordedAt: FieldValue.serverTimestamp(),
     });
-    batch.set(keyRef, { lastUsedAt: FieldValue.serverTimestamp(), requestCount: FieldValue.increment(1) }, { merge: true });
     batch.set(statusRef, { gatewayLastUsedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await batch.commit();
 
