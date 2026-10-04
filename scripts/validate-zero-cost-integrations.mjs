@@ -14,7 +14,7 @@ assert(policy.optionalThirdPartyBudgetGbpMonthly === 0, "Optional third-party in
 assert(Array.isArray(policy.allowedOptionalProviders) && policy.allowedOptionalProviders.length > 0, "Allowed provider registry is required.");
 
 const allowedIds = new Set(policy.allowedOptionalProviders.map((provider) => provider.id));
-const providerBlockMatch = integrationBackend.match(/providers:\s*\[([\s\S]*?)\]\s*,?\n\s*\};/);
+const providerBlockMatch = integrationBackend.match(/providers:\s*\[([\s\S]*?)\]\s*,?\s*\};/);
 assert(Boolean(providerBlockMatch), "Integration Hub provider registry could not be located.");
 if (providerBlockMatch) {
   const ids = [...providerBlockMatch[1].matchAll(/id:\s*"([^"]+)"/g)].map((match) => match[1]);
