@@ -18,6 +18,13 @@ export type IntegrationDevice = {
   readingCount: number;
 };
 
+export type IntegrationTelemetryReading = {
+  id: string;
+  recordedAt: number | null;
+  sourceTimestamp: string;
+  metrics: Record<string, number | boolean>;
+};
+
 export type IntegrationProvider = {
   id: string;
   name: string;
@@ -78,6 +85,7 @@ const revokeKeyCall = httpsCallable<void, { success: boolean }>(functions, "revo
 const getRulesCall = httpsCallable<void, { rules: IntegrationAutomationRule[] }>(functions, "getIntegrationAutomationRules");
 const saveRuleCall = httpsCallable<{ rule: IntegrationAutomationInput }, { success: boolean; id: string }>(functions, "saveIntegrationAutomationRule");
 const deleteRuleCall = httpsCallable<{ ruleId: string }, { success: boolean }>(functions, "deleteIntegrationAutomationRule");
+const telemetryCall = httpsCallable<{ deviceId: string; limit?: number }, { deviceId: string; readings: IntegrationTelemetryReading[] }>(functions, "getIntegrationTelemetry");
 
 export async function getIntegrationHubStatus(): Promise<IntegrationHubStatus> {
   return (await getStatusCall()).data;
@@ -96,6 +104,10 @@ export async function saveIntegrationAutomationRule(rule: IntegrationAutomationI
 }
 export async function deleteIntegrationAutomationRule(ruleId: string) {
   return (await deleteRuleCall({ ruleId })).data;
+}
+export async function getIntegrationTelemetry(deviceId: string, limit = 100): Promise<IntegrationTelemetryReading[]> {
+  const safeLimit = Math.max(1, Math.min(250, Math.round(limit)));
+  return (await telemetryCall({ deviceId, limit: safeLimit })).data.readings || [];
 }
 
 function icsEscape(value: unknown): string {
