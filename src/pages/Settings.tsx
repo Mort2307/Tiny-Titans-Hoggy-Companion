@@ -232,6 +232,15 @@ export default function Settings() {
 
         <div className="tt-settings-grid">
           <HubCard
+            icon="link"
+            eyebrow="Free integrations"
+            title="Integration Hub"
+            description="Connect Home Assistant, MQTT, ESPHome, Node-RED, keeper devices and calendar exports through Tiny Titans' zero-cost integration platform."
+            action="Open Integration Hub"
+            onClick={() => navigate("/account/integrations")}
+          />
+
+          <HubCard
             icon="titan"
             eyebrow="Titan Pro"
             title="Tiny Titans Companion"
