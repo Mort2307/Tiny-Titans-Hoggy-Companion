@@ -26,6 +26,7 @@ Object.assign(exports,require("./paidTierAccess"));
 Object.assign(exports,require("./chatgptCompanion"));
 Object.assign(exports,require("./integrationHub"));
 Object.assign(exports,require("./serviceDirectory"));
+Object.assign(exports,require("./iNaturalistEcology"));
 Object.assign(exports,require("./paidMarketplace"));
 Object.assign(exports,require("./paidPromotions"));
 Object.assign(exports,require("./foundingFollowerReward"));
