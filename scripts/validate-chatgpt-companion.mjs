@@ -91,7 +91,10 @@ const checks = [
   ["reminder scopes are explicit", backend.includes('"reminders.read"') && backend.includes('"reminders.write"') && backend.includes('"read_reminders"') && backend.includes('"write_reminders"')],
   ["reminder write tool supports batch animal names", backend.includes('name: "create_reminders"') && backend.includes("animalNames") && backend.includes("recordPaths")],
   ["one-time reminders are completed rather than recurring forever", backend.includes('scheduleType: recurring ? "recurring" : "once"') && read("functions/reminders.js").includes('status: "completed"')],
-  ["ChatGPT feeding writes reanchor recurring feeding reminders", backend.includes("reanchorRecurringFeedingReminders(auth, snake, date)")],
+  ["ChatGPT feeding writes preserve the latest real feeding anchor", backend.includes('const latestMeal = [record.date, normaliseString(animal.lastMealDate)]') && backend.includes('rootUpdate.lastMealDate = latestMeal')],
+  ["path-specific OAuth resource metadata is routed", firebaseConfig.includes('"source": "/.well-known/oauth-protected-resource/mcp"')],
+  ["OAuth challenges carry required scopes", backend.includes('response.set("WWW-Authenticate"') && backend.includes('scopes.join(" ")')],
+  ["frontend checks discovery before generating codes", page.includes("checkChatGPTCompanionServer") && service.includes("/.well-known/oauth-protected-resource/mcp")],
   ["link captures browser timezone for natural reminder requests", backend.includes("request.data?.timezone") && service.includes("resolvedOptions().timeZone")],
   ["native reminder service preserves one-time reminder semantics", read("src/services/reminderService.ts").includes('reminder.scheduleType !== "once"') && read("src/services/reminderService.ts").includes('scheduleType: "once"')],
 ];

@@ -3,12 +3,14 @@ import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import {
   createChatGPTCompanionConnection,
+  checkChatGPTCompanionServer,
   getChatGPTCompanionActivity,
   getChatGPTCompanionStatus,
   revokeChatGPTCompanionConnection,
   type ChatGPTCompanionActivity,
   type ChatGPTCompanionConnection,
   type ChatGPTCompanionStatus,
+  type ChatGPTCompanionServerCheck,
 } from "../services/chatgptCompanionService";
 import "../styles/chatgptCompanion.css";
 
@@ -63,6 +65,9 @@ export default function ChatGPTCompanion() {
   const [error, setError] = useState("");
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [serverCheck, setServerCheck] = useState<ChatGPTCompanionServerCheck | null>(null);
+  const [checkingServer, setCheckingServer] = useState(false);
+  const [clock, setClock] = useState(Date.now());
 
   async function refresh() {
     const [nextStatus, nextActivity] = await Promise.all([
@@ -71,6 +76,7 @@ export default function ChatGPTCompanion() {
     ]);
     setStatus(nextStatus);
     setActivity(nextActivity);
+    if (nextStatus.connected || nextStatus.linkExpired || nextStatus.revoked) setConnection(null);
   }
 
   useEffect(() => {
@@ -93,16 +99,48 @@ export default function ChatGPTCompanion() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    setCheckingServer(true);
+    void checkChatGPTCompanionServer().then((result) => {
+      if (active) { setServerCheck(result); setCheckingServer(false); }
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!connection) return;
+    const timer = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [connection]);
+
+  // OAuth returns to another tab. Refresh on return without paid polling reads.
+  useEffect(() => {
+    let active = true;
+    const onFocus = () => {
+      void getChatGPTCompanionStatus().then((next) => {
+        if (!active) return;
+        setStatus(next);
+        if (next.connected || next.linkExpired || next.revoked) setConnection(null);
+      }).catch((reason) => { if (active) setError(errorMessage(reason)); });
+    };
+    window.addEventListener("focus", onFocus);
+    return () => { active = false; window.removeEventListener("focus", onFocus); };
+  }, []);
+
+  const secondsRemaining = connection ? Math.max(0, Math.ceil((new Date(connection.linkExpiresAt).getTime() - clock) / 1000)) : 0;
+
   const statusLabel = useMemo(() => {
     if (!status) return "Checking";
     if (status.connected && status.upgradeRequired) return "Relink required";
-    if (status.connected) return "Connected to ChatGPT";
+    if (status.connected) return "Account authorized";
+    if (connection && secondsRemaining === 0) return "Link code expired";
     if (status.prepared) return "Link code ready";
     if (status.expired) return "Connection expired";
     if (status.linkExpired) return "Link code expired";
     if (status.revoked) return "Disconnected";
     return "Not connected";
-  }, [status]);
+  }, [status, connection, secondsRemaining]);
 
   async function prepareConnection() {
     setBusy(true);
@@ -110,10 +148,13 @@ export default function ChatGPTCompanion() {
     setError("");
     setCopied(false);
     try {
+      const check = await checkChatGPTCompanionServer();
+      setServerCheck(check);
+      if (!check.ready) throw new Error(check.message);
       const next = await createChatGPTCompanionConnection();
       setConnection(next);
       await refresh();
-      setMessage("One-time link code created. It expires in 15 minutes and is shown only on this screen.");
+      setMessage("Code ready. Complete authorization in the Tiny Titans page opened by ChatGPT. Generating a code alone does not link your account.");
     } catch (reason) {
       setError(errorMessage(reason));
     } finally {
@@ -122,7 +163,7 @@ export default function ChatGPTCompanion() {
   }
 
   async function copyLinkCode() {
-    if (!connection?.linkCode) return;
+    if (!connection?.linkCode || secondsRemaining <= 0) return;
     try {
       await navigator.clipboard.writeText(connection.linkCode);
       setCopied(true);
@@ -130,6 +171,19 @@ export default function ChatGPTCompanion() {
     } catch {
       setError("Your browser blocked clipboard access. Select and copy the link code manually.");
     }
+  }
+
+  async function checkServer() {
+    setCheckingServer(true);
+    setServerCheck(await checkChatGPTCompanionServer());
+    setCheckingServer(false);
+  }
+
+  async function copyServerAddress() {
+    try {
+      await navigator.clipboard.writeText(DEFAULT_MCP_SERVER);
+      setMessage("Server address copied. Choose OAuth when adding Tiny Titans in ChatGPT.");
+    } catch { setError("Select and copy the server address manually; clipboard access was blocked."); }
   }
 
   async function revokeConnection() {
@@ -173,6 +227,13 @@ export default function ChatGPTCompanion() {
       {status?.upgradeRequired && <div className="tt-gpt-message error" role="alert">This ChatGPT connection predates the newest Tiny Titans permissions. Relink once to enable reminders and the expanded keeper query tools.</div>}
       {error && <div className="tt-gpt-message error" role="alert">{error}</div>}
 
+      <section className="tt-gpt-card" aria-label="Connection check">
+        <h2>Check the connection</h2>
+        <p role="status">{checkingServer ? "Checking the Tiny Titans connection server…" : serverCheck?.message}</p>
+        <button type="button" disabled={checkingServer} onClick={() => void checkServer()}>Check server again</button>
+        <p className="tt-gpt-muted">After authorizing, select Tiny Titans in a new chat and ask “List my animals” to verify your account.</p>
+      </section>
+
       <section className="tt-gpt-grid">
         <article className="tt-gpt-card">
           <p className="tt-gpt-kicker">CONVERSATIONAL KEEPING</p>
@@ -201,9 +262,9 @@ export default function ChatGPTCompanion() {
       <section className="tt-gpt-card tt-gpt-connect">
         <div>
           <p className="tt-gpt-kicker">SECURE CONNECTION</p>
-          <h2>{status?.connected ? "Tiny Titans is connected to ChatGPT" : "Link your Tiny Titans account to ChatGPT"}</h2>
+          <h2>{status?.connected ? "Your Tiny Titans account is authorized" : "Link your Tiny Titans account to ChatGPT"}</h2>
           <p className="tt-gpt-muted">
-            The one-time code is only used to prove which Tiny Titans account you are linking. It expires after 15 minutes, works once, and is exchanged for revocable OAuth access.
+            Paste the one-time code into the Tiny Titans authorization page opened by ChatGPT. It expires after 15 minutes and works once. Pasting it into a conversation or an API-key box will not connect your account.
           </p>
 
           {(status?.connected || status?.prepared) && (
@@ -219,9 +280,10 @@ export default function ChatGPTCompanion() {
         </div>
 
         <div className="tt-gpt-actions">
-          <button className="tt-gpt-primary" type="button" disabled={busy} onClick={() => void prepareConnection()}>
+          <button className="tt-gpt-primary" type="button" disabled={busy || checkingServer || serverCheck?.ready !== true} onClick={() => void prepareConnection()}>
             {busy ? "Working…" : status?.connected ? "Relink / rotate access" : status?.prepared ? "Generate a new code" : "Generate link code"}
           </button>
+          {status?.connected && <p className="tt-gpt-muted">Relinking immediately replaces your existing ChatGPT access. Finish the new authorization to reconnect.</p>}
           {(status?.connected || status?.prepared) && (
             <button className="tt-gpt-danger" type="button" disabled={busy} onClick={() => setConfirmRevoke(true)}>Disconnect</button>
           )}
@@ -231,11 +293,11 @@ export default function ChatGPTCompanion() {
           <div className="tt-gpt-secret" role="region" aria-label="One-time Tiny Titans ChatGPT link code">
             <div>
               <strong>One-time link code</strong>
-              <span>Shown once. Expires in 15 minutes. Paste this only into the Tiny Titans connection page opened by ChatGPT.</span>
+              <span>Shown once. {secondsRemaining > 0 ? `Expires in ${Math.floor(secondsRemaining / 60)}m ${secondsRemaining % 60}s.` : "Expired — generate a new code."} Paste this only into the Tiny Titans connection page opened by ChatGPT.</span>
             </div>
-            <code>{connection.linkCode}</code>
+            {secondsRemaining > 0 && <code>{connection.linkCode}</code>}
             <div className="tt-gpt-actions">
-              <button type="button" onClick={() => void copyLinkCode()}>{copied ? "Copied" : "Copy link code"}</button>
+              <button type="button" disabled={secondsRemaining <= 0} onClick={() => void copyLinkCode()}>{copied ? "Copied" : "Copy link code"}</button>
             </div>
           </div>
         )}
@@ -248,24 +310,26 @@ export default function ChatGPTCompanion() {
             </div>
           </div>
           <ol>
-            <li><strong>Generate a link code above.</strong> Keep this Tiny Titans page open.</li>
-            <li><strong>On ChatGPT web, enable Developer mode</strong> in Settings → Security and login.</li>
-            <li><strong>Open ChatGPT Plugins and add an MCP server.</strong> Use the server address below and name it <em>Tiny Titans</em>.</li>
-            <li><strong>When ChatGPT opens the Tiny Titans sign-in page, paste the one-time link code.</strong> Tiny Titans exchanges it for scoped OAuth access.</li>
-            <li><strong>Start a new chat and select Tiny Titans.</strong> You can then ask naturally to read or log feeding, weight, sheds, behaviour, and health observations.</li>
+            <li><strong>Add Tiny Titans to ChatGPT first.</strong> For private testing on ChatGPT web, enable Developer mode in Settings → Security and login, then open Plugins and add the MCP server below. Availability depends on your ChatGPT account and workspace settings.</li>
+            <li><strong>Choose OAuth authentication.</strong> Do not select API key or paste a link code into a server-address field.</li>
+            <li><strong>When the Tiny Titans authorization page opens, generate a fresh code above.</strong> Keep both pages open and paste the code into that authorization page.</li>
+            <li><strong>Review the requested permissions and connect.</strong> If a code has expired, been used, or been replaced, generate a new one.</li>
+            <li><strong>Start a new chat, select Tiny Titans, and ask “List my animals”.</strong> Check that your animals are returned. Then try your keeper commands, including reminders and requests involving several animals.</li>
           </ol>
           <div className="tt-gpt-server-row">
             <span>MCP server</span>
             <code>{mcpServer}</code>
+            <button type="button" onClick={() => void copyServerAddress()}>Copy server address</button>
           </div>
           <p className="tt-gpt-muted">After Tiny Titans is published in the plugin directory, normal users will install it directly — they will not need to manually enter the MCP server URL.</p>
+          <p className="tt-gpt-muted">This links the Tiny Titans plugin; it does not add tools to every custom GPT. If ChatGPT cannot access your records, check Tiny Titans is connected and selected, refresh its tools, then start a new chat.</p>
         </div>
       </section>
 
       <section className="tt-gpt-card">
         <div className="tt-gpt-section-head">
           <div><p className="tt-gpt-kicker">AUDIT TRAIL</p><h2>Recent ChatGPT Companion actions</h2></div>
-          <button type="button" disabled={busy} onClick={() => void refresh()}>Refresh</button>
+          <button type="button" disabled={busy} onClick={() => void refresh().catch((reason) => setError(errorMessage(reason)))}>Refresh</button>
         </div>
         {activity.length === 0 ? (
           <p className="tt-gpt-muted">No ChatGPT Companion record changes have been made yet.</p>
@@ -282,13 +346,11 @@ export default function ChatGPTCompanion() {
       </section>
 
       <section className="tt-gpt-card">
-        <p className="tt-gpt-kicker">LIVE CONNECTION STACK</p>
-        <h2>What Tiny Titans now exposes to ChatGPT</h2>
+        <p className="tt-gpt-kicker">KEEPER COMMANDS</p>
+        <h2>What your connection supports</h2>
         <div className="tt-gpt-tool-grid">
           {[
-            "OAuth 2.1 + PKCE account linking",
-            "MCP Streamable HTTP endpoint",
-            "Authenticated profile identity",
+            "Identify the connected keeper account",
             "Animal resolution",
             "Animal summaries",
             "Feeding history",
@@ -306,7 +368,7 @@ export default function ChatGPTCompanion() {
             "Undo last Companion action",
           ].map((item) => <span key={item}><TinyTitansIcon name="check" size={15} /> {item}</span>)}
         </div>
-        <p className="tt-gpt-muted">The MCP tools sit on top of Tiny Titans' existing keeper-data API, so ChatGPT writes the same structured records the app already understands instead of inventing a parallel data store.</p>
+        <p className="tt-gpt-muted">Tracker commands currently support snake records. Other animal profiles can be listed and viewed. Editing existing records and other app features still need the Tiny Titans app. ChatGPT should confirm completed actions using the saved results and explain any part it could not complete.</p>
       </section>
 
       <ConfirmActionDialog

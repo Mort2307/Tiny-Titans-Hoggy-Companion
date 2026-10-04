@@ -119,6 +119,13 @@
           }
         },
         {
+          "source": "/.well-known/oauth-protected-resource/mcp",
+          "function": {
+            "functionId": "tinyTitansMcp",
+            "region": "europe-west2"
+          }
+        },
+        {
           "source": "/.well-known/oauth-authorization-server",
           "function": {
             "functionId": "tinyTitansMcp",
