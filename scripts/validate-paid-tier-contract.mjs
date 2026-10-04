@@ -86,6 +86,8 @@ const checks = [
   ["creator purchase fallback is removed", !plans.includes("Open Creator paid-tier control")],
   ["customer locked-feature links preserve target tier", plans.includes("requestedTier") && gate.includes("/plans?tier=${tier.id}")],
   ["checkout returns to billing", subscriptions.includes("/account/billing?subscription=success")],
+  ["canonical keeper hosting origin is accepted by Stripe checkout", subscriptions.includes("https://tinytitanskeeper.web.app") && subscriptions.includes("https://tinytitanskeeper.firebaseapp.com")],
+  ["checkout origin fallback uses canonical keeper host", subscriptions.includes('return ORIGINS.has(value) ? value : "https://tinytitanskeeper.web.app"')],
   ["billing detects subscription activation", billing.includes("subscriptionActive") && billing.includes("refreshProfile()")],
   ["billing activation is not blocked by tester source", billing.includes("access.actualTier !== \"free\"") && billing.includes("access.subscriptionStatus === \"active\"")],
   ["export entitlement exists", config.includes('"data_export"')],
