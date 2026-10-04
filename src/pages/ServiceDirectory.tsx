@@ -63,7 +63,7 @@ export default function ServiceDirectory() {
   return <main className="tt-services-page">
     <PageBackButton fallbackPath="/account/settings" label="Back" />
     <header className="tt-services-hero">
-      <div><span className="tt-services-kicker">TINY TITANS · COMMUNITY VERIFIED</span><h1><TinyTitansIcon name="vet" size={29} /> Exotic Services Directory</h1><p>A specialist directory built for animal keepers rather than a paid generic places API. Entries are community submitted and Creator reviewed before publication.</p></div>
+      <div><span className="tt-services-kicker">TINY TITANS · COMMUNITY REVIEWED</span><h1><TinyTitansIcon name="vet" size={29} /> Exotic Services Directory</h1><p>A specialist directory built for animal keepers rather than a paid generic places API. Entries are community submitted and Creator reviewed before publication.</p><small className="tt-services-trust">Creator review checks the directory listing before publication. It does not guarantee professional registration, clinical suitability, opening hours or service quality—confirm those directly with the provider.</small></div>
       <button type="button" className="is-primary" onClick={() => setShowSubmit((value) => !value)}>{showSubmit ? "Close submission" : "Suggest a service"}</button>
     </header>
 
@@ -71,7 +71,7 @@ export default function ServiceDirectory() {
     {error && <TinyTitansFeedback className="tt-services-error">{error}</TinyTitansFeedback>}
 
     {showSubmit && <section className="tt-services-submit">
-      <div><span className="tt-services-kicker">ADD TO THE DIRECTORY</span><h2>Suggest a specialist service</h2><p>Tiny Titans does not publish submissions automatically. The Creator review queue checks the details before an entry becomes verified.</p></div>
+      <div><span className="tt-services-kicker">ADD TO THE DIRECTORY</span><h2>Suggest a specialist service</h2><p>Tiny Titans does not publish submissions automatically. The Creator review queue checks the details before an entry is published.</p></div>
       <div className="tt-services-form">
         <label>Name<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} maxLength={120} /></label>
         <label>Category<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as ServiceCategory })}>{categories.map((item) => <option key={item} value={item}>{SERVICE_CATEGORY_LABELS[item]}</option>)}</select></label>
@@ -80,8 +80,8 @@ export default function ServiceDirectory() {
         <label>County / region<input value={form.region} onChange={(event) => setForm({ ...form, region: event.target.value })} /></label>
         <label>Postcode<input value={form.postcode} onChange={(event) => setForm({ ...form, postcode: event.target.value })} /></label>
         <label>Country code<input value={form.countryCode} onChange={(event) => setForm({ ...form, countryCode: event.target.value.toUpperCase() })} maxLength={2} /></label>
-        <label>Phone<input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></label>
-        <label>Email<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
+        <label>Phone<input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /><small>Public business contact only.</small></label>
+        <label>Email<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /><small>Public business contact only.</small></label>
         <label>Website<input type="url" value={form.website} onChange={(event) => setForm({ ...form, website: event.target.value })} placeholder="https://" /></label>
       </div>
       <fieldset><legend>Animals supported</legend><div className="tt-services-checks">{animalGroups.map((group) => <label key={group}><input type="checkbox" checked={form.animalGroups.includes(group)} onChange={() => toggleGroup(group)} /> {SERVICE_ANIMAL_GROUP_LABELS[group]}</label>)}</div></fieldset>
@@ -93,7 +93,7 @@ export default function ServiceDirectory() {
     <section className="tt-services-toolbar">
       <label><TinyTitansIcon name="search" size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, town, postcode or animal…" /></label>
       <select value={category} onChange={(event) => setCategory(event.target.value as "all" | ServiceCategory)}><option value="all">All services</option>{categories.map((item) => <option key={item} value={item}>{SERVICE_CATEGORY_LABELS[item]}</option>)}</select>
-      <span>{filtered.length} verified</span>
+      <span>{filtered.length} reviewed</span>
     </section>
 
     <section className="tt-services-grid">
@@ -106,7 +106,7 @@ export default function ServiceDirectory() {
         <div className="tt-service-actions">{item.phone && <a href={"tel:" + item.phone}>Call</a>}{item.email && <a href={"mailto:" + item.email}>Email</a>}{item.website && <a href={item.website} target="_blank" rel="noreferrer">Website</a>}</div>
         <footer><TinyTitansIcon name="check" size={14} /> Creator reviewed · community confirmations {item.communitySubmissionCount}</footer>
       </article>)}
-      {!busy && filtered.length === 0 && <article className="tt-services-empty"><TinyTitansIcon name="vet" size={30} /><strong>No matching verified services yet</strong><p>This directory grows through keeper submissions rather than a paid places provider.</p></article>}
+      {!busy && filtered.length === 0 && <article className="tt-services-empty"><TinyTitansIcon name="vet" size={30} /><strong>No matching reviewed services yet</strong><p>This directory grows through keeper submissions rather than a paid places provider.</p></article>}
     </section>
   </main>;
 }

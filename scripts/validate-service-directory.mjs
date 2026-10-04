@@ -7,11 +7,13 @@ const routes = fs.readFileSync("src/routes/AuthenticatedRoutes.tsx", "utf8");
 const index = fs.readFileSync("functions/index.js", "utf8");
 const checks = [
   ["directory backend is exported", index.includes('require("./serviceDirectory")')],
-  ["public records are Creator reviewed", backend.includes('status: "verified"') && backend.includes('verificationMethod: "creator_review"')],
+  ["public records are Creator reviewed", backend.includes('status: "verified"') && backend.includes('verificationMethod: "creator_review"') && backend.includes('verificationStatus: "creator_reviewed"')],
   ["submissions never auto-publish", backend.includes('status: "pending"') && backend.includes("reviewServiceDirectorySubmission")],
   ["moderation requires privileged claim", backend.includes('token?.creator !== true') && backend.includes('token?.admin !== true')],
   ["directory does not depend on paid places APIs", !backend.includes("googleapis") && !backend.includes("places.googleapis.com") && !service.includes("Google Places")],
   ["duplicate submissions are checked", backend.includes("duplicateKey") && backend.includes('"already-exists"')],
+  ["review decisions are audited", backend.includes('collection("serviceDirectoryAudit")')],
+  ["review language does not imply credential certification", page.includes("does not guarantee professional registration") && creator.includes("does not automatically certify professional credentials")],
   ["submission spam is bounded", backend.includes("MAX_PENDING_PER_USER")],
   ["service categories are specialist", backend.includes('"exotics_vet"') && backend.includes('"rescue"') && backend.includes('"reptile_shop"')],
   ["keeper directory route exists", routes.includes('path="/services"') && page.includes("Exotic Services Directory")],

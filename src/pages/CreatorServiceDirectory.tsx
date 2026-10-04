@@ -33,7 +33,7 @@ export default function CreatorServiceDirectory() {
     setBusyId(item.id); setError(""); setMessage("");
     try {
       await reviewServiceDirectorySubmission(item.id, decision, notes[item.id] || "");
-      setMessage(decision === "approve" ? item.name + " is now verified and published." : item.name + " was rejected.");
+      setMessage(decision === "approve" ? item.name + " has been reviewed and published." : item.name + " was rejected.");
       await load();
     } catch (err) { setError(err instanceof Error ? err.message : "Review decision failed."); }
     finally { setBusyId(""); }
@@ -41,7 +41,7 @@ export default function CreatorServiceDirectory() {
 
   return <main className="tt-services-page">
     <PageBackButton fallbackPath="/creator" label="Back to Creator Centre" />
-    <header className="tt-services-hero"><div><span className="tt-services-kicker">CREATOR · DIRECTORY REVIEW</span><h1><TinyTitansIcon name="vet" size={29} /> Service submissions</h1><p>Nothing reaches the public specialist directory until it has been reviewed here.</p></div><button type="button" onClick={() => void load()}>Refresh</button></header>
+    <header className="tt-services-hero"><div><span className="tt-services-kicker">CREATOR · DIRECTORY REVIEW</span><h1><TinyTitansIcon name="vet" size={29} /> Service submissions</h1><p>Nothing reaches the public specialist directory until it has been reviewed here. Approval confirms the listing is suitable to publish; it does not automatically certify professional credentials or service quality.</p></div><button type="button" onClick={() => void load()}>Refresh</button></header>
     {message && <TinyTitansFeedback>{message}</TinyTitansFeedback>}
     {error && <TinyTitansFeedback className="tt-services-error">{error}</TinyTitansFeedback>}
     <section className="tt-service-review-list">
