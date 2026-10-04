@@ -304,6 +304,7 @@ exports.getIntegrationHubStatus = onCall({ region: "europe-west2" }, async (requ
       { id: "esphome", name: "ESPHome", cost: "free", status: status.gatewayEnabled === true ? "ready" : "available" },
       { id: "node_red", name: "Node-RED", cost: "free", status: status.gatewayEnabled === true ? "ready" : "available" },
       { id: "calendar_ics", name: "ICS Calendar Export", cost: "free", status: "available" },
+      { id: "services_directory", name: "Tiny Titans Services Directory", cost: "free", status: "available" },
       { id: "push", name: "Tiny Titans Push Notifications", cost: "free", status: tokenSnapshot.size > 0 ? "connected" : "available" },
     ],
   };
