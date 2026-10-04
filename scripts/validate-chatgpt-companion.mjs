@@ -82,6 +82,8 @@ const checks = [
   ["OAuth issuer identification is enabled", backend.includes("authorization_response_iss_parameter_supported: true") && backend.includes('target.searchParams.set("iss"')],
   ["OAuth access and refresh tokens are hashed in Firestore", backend.includes('"chatgptOauthAccessTokens"') && backend.includes('"chatgptOauthRefreshTokens"') && backend.includes("tokenHash(accessToken)")],
   ["one-time link codes are short-lived and single-use", backend.includes("LINK_CODE_TTL_MINUTES = 15") && backend.includes("linkUsedAt") && backend.includes("linkSecretHash")],
+  ["v3 link redemption routes directly to the owning connection", backend.includes("createRoutedLinkCode(uid)") && backend.includes("parseRoutedLinkCode(code)") && backend.includes("connectionRef(routed.uid).get()") && backend.includes("linkCodeVersion: 3")],
+  ["v2 link codes retain backwards-compatible prefix lookup", backend.includes('where("linkPrefix", "==", linkPrefix)') && backend.includes("Backwards compatibility for v2 codes")],
   ["link code is not accepted as bearer auth", backend.includes("OAUTH_ACCESS_PREFIX") && !backend.includes("token.startsWith(LINK_CODE_PREFIX) return authenticate")],
   ["OAuth generations invalidate rotated connections", backend.includes("oauthGeneration") && backend.includes("GENERATION_MISMATCH")],
   ["keeper hosting routes MCP and OAuth before SPA fallback", firebaseConfig.includes('"source": "/mcp"') && firebaseConfig.includes('"functionId": "tinyTitansMcp"') && firebaseConfig.indexOf('"source": "/mcp"') < firebaseConfig.lastIndexOf('"destination": "/index.html"')],

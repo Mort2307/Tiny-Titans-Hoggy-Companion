@@ -207,6 +207,36 @@ function safeTimingEqual(left, right) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+function encodeLinkSubject(uid) {
+  return Buffer.from(String(uid || ""), "utf8").toString("base64url");
+}
+
+function createRoutedLinkCode(uid) {
+  const subject = encodeLinkSubject(uid);
+  const secret = crypto.randomBytes(32).toString("base64url");
+  return `${LINK_CODE_PREFIX}${subject}.${secret}`;
+}
+
+function parseRoutedLinkCode(linkCode) {
+  const code = normaliseString(linkCode);
+  if (!code.startsWith(LINK_CODE_PREFIX)) return null;
+  const body = code.slice(LINK_CODE_PREFIX.length);
+  const separator = body.indexOf(".");
+  if (separator <= 0 || separator === body.length - 1) return null;
+
+  const encodedUid = body.slice(0, separator);
+  const secret = body.slice(separator + 1);
+  if (!/^[A-Za-z0-9_-]{16,}$/.test(secret)) return null;
+
+  try {
+    const uid = Buffer.from(encodedUid, "base64url").toString("utf8");
+    if (!uid || uid.length > 128 || encodeLinkSubject(uid) !== encodedUid) return null;
+    return { uid };
+  } catch {
+    return null;
+  }
+}
+
 function connectionState(data, access) {
   const now = Date.now();
   const revoked = data?.revoked === true;
@@ -290,8 +320,7 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
     throw new HttpsError("failed-precondition", "Connect ChatGPT Companion from the Tiny Titans Family Owner account for write-safe shared records.");
   }
 
-  const linkCode = `${LINK_CODE_PREFIX}${crypto.randomBytes(32).toString("base64url")}`;
-  const linkPrefix = linkCode.slice(0, 20);
+  const linkCode = createRoutedLinkCode(uid);
   const linkExpiresAt = Timestamp.fromMillis(Date.now() + LINK_CODE_TTL_MINUTES * 60_000);
   const permissions = [...DEFAULT_PERMISSIONS];
   const requestedTimezone = normaliseString(request.data?.timezone);
@@ -309,7 +338,8 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
       timezone,
       revoked: false,
       revokedAt: FieldValue.delete(),
-      linkPrefix,
+      linkPrefix: FieldValue.delete(),
+      linkCodeVersion: 3,
       linkSecretHash: tokenHash(linkCode),
       linkCreatedAt: FieldValue.serverTimestamp(),
       linkExpiresAt,
@@ -1542,12 +1572,27 @@ ${hidden}
 }
 
 async function findLinkConnection(linkCode) {
-  if (!linkCode.startsWith(LINK_CODE_PREFIX) || linkCode.length < 30) return null;
-  const linkPrefix = linkCode.slice(0, 20);
+  const code = normaliseString(linkCode);
+  if (!code.startsWith(LINK_CODE_PREFIX) || code.length < 30) return null;
+
+  // v3 link codes route directly to the authenticated user's connection doc.
+  // The route segment is not sufficient to authenticate anything: the entire
+  // one-time code is still verified against the SHA-256 hash stored server-side.
+  const routed = parseRoutedLinkCode(code);
+  if (routed) {
+    const snapshot = await connectionRef(routed.uid).get();
+    if (!snapshot.exists) return null;
+    const data = snapshot.data() || {};
+    if (!safeTimingEqual(data.linkSecretHash, tokenHash(code))) return null;
+    return { snapshot, data };
+  }
+
+  // Backwards compatibility for v2 codes already issued before routed links.
+  const linkPrefix = code.slice(0, 20);
   const snapshots = await db.collection("chatgptConnections").where("linkPrefix", "==", linkPrefix).limit(3).get();
   for (const snapshot of snapshots.docs) {
     const data = snapshot.data() || {};
-    if (!safeTimingEqual(data.linkSecretHash, tokenHash(linkCode))) continue;
+    if (!safeTimingEqual(data.linkSecretHash, tokenHash(code))) continue;
     return { snapshot, data };
   }
   return null;
