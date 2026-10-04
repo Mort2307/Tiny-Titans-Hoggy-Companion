@@ -22,6 +22,7 @@ const checks = [
   ["Titan Automations alert without equipment actuation", page.includes("never switch heaters") && !backend.includes("turnOnHeater") && !backend.includes("switchDevice")],
   ["gateway endpoint is public function with bearer auth", backend.includes("deviceGatewayIngest") && backend.includes("keyFromRequest")],
   ["history is retained for future graphs", backend.includes('collection("integrationTelemetry")')],
+  ["telemetry history is user-facing", service.includes("getIntegrationTelemetry") && page.includes("IntegrationTelemetryHistory") && page.includes("View history")],
   ["telemetry history has its Firestore composite index", firestoreIndexes.includes('"collectionGroup": "integrationTelemetry"') && firestoreIndexes.includes('"fieldPath": "deviceKey"')],
   ["client can export ICS without a paid calendar API", service.includes("BEGIN:VCALENDAR") && service.includes("downloadReminderCalendar")],
   ["Integration Hub page exposes zero-cost policy", page.includes("£0") && page.includes("Zero-cost mode")],

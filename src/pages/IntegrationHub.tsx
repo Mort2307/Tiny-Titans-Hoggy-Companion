@@ -3,6 +3,7 @@ import PageBackButton from "../components/PageBackButton";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import TinyTitansFeedback from "../components/TinyTitansFeedback";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
+import IntegrationTelemetryHistory from "../components/IntegrationTelemetryHistory";
 import { useAuth } from "../context/useAuth";
 import {
   createIntegrationGatewayKey,
@@ -43,7 +44,7 @@ function metricValue(key: string, value: number | boolean): string {
   const suffix = ({ temperatureC: "°C", humidityPct: "%", batteryPct: "%", powerW: "W", lightLux: " lux", co2Ppm: " ppm", pressureHpa: " hPa", waterLevelPct: "%" } as Record<string, string>)[key] || "";
   return `${Number.isInteger(value) ? value : value.toFixed(1)}${suffix}`;
 }
-function DeviceCard({ device }: { device: IntegrationDevice }) {
+function DeviceCard({ device, onHistory }: { device: IntegrationDevice; onHistory: () => void }) {
   return <article className="tt-integration-device">
     <div className="tt-integration-device__head">
       <div><span>{device.source.replaceAll("_", " ")}</span><strong>{device.name}</strong><small>{device.deviceId}</small></div>
@@ -57,6 +58,7 @@ function DeviceCard({ device }: { device: IntegrationDevice }) {
       {device.animalId && <span>Animal linked</span>}
       {device.enclosureId && <span>Enclosure linked</span>}
     </footer>
+    <button type="button" className="tt-integration-device__history" onClick={onHistory}><TinyTitansIcon name="analytics" size={15} /> View history</button>
   </article>;
 }
 
@@ -72,6 +74,7 @@ export default function IntegrationHub() {
   const [ruleThreshold, setRuleThreshold] = useState("34");
   const [ruleCooldown, setRuleCooldown] = useState("30");
   const [deleteRuleTarget, setDeleteRuleTarget] = useState<IntegrationAutomationRule | null>(null);
+  const [historyDeviceId, setHistoryDeviceId] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -89,6 +92,7 @@ export default function IntegrationHub() {
   useEffect(() => { void refresh(); }, [refresh]);
 
   const endpoint = status?.gateway.endpoint || "https://tinytitanskeeper.web.app/api/device-gateway";
+  const historyDevice = status?.devices.find((device) => device.deviceId === historyDeviceId) || null;
   const samplePayload = useMemo(() => JSON.stringify({
     deviceId: "vivarium-3-hot-side",
     name: "Vivarium 3 hot side",
@@ -277,8 +281,9 @@ export default function IntegrationHub() {
         <button type="button" onClick={() => void refresh()}>Refresh</button>
       </div>
       <div className="tt-integration-device-grid">
-        {status?.devices.length ? status.devices.map((device) => <DeviceCard key={device.id} device={device} />) : <article className="tt-integration-empty"><TinyTitansIcon name="enclosure" size={27} /><strong>No devices have reported yet</strong><p>Generate a gateway key, send the example payload from a bridge or sensor, then refresh this page.</p></article>}
+        {status?.devices.length ? status.devices.map((device) => <DeviceCard key={device.id} device={device} onHistory={() => setHistoryDeviceId(device.deviceId)} />) : <article className="tt-integration-empty"><TinyTitansIcon name="enclosure" size={27} /><strong>No devices have reported yet</strong><p>Generate a gateway key, send the example payload from a bridge or sensor, then refresh this page.</p></article>}
       </div>
+      {historyDevice && <IntegrationTelemetryHistory device={historyDevice} onClose={() => setHistoryDeviceId("")} />}
     </section>
 
 
