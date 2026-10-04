@@ -1,8 +1,10 @@
 const crypto = require("crypto");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 
 const db = getFirestore();
+const messaging = getMessaging();
 const PUBLIC_ORIGIN = "https://tinytitanskeeper.web.app";
 const GATEWAY_ENDPOINT = `${PUBLIC_ORIGIN}/api/device-gateway`;
 const KEY_PREFIX = "ttdg_";
@@ -97,6 +99,159 @@ function json(res, status, body) {
   res.set("Cache-Control", "no-store");
   return res.status(status).json(body);
 }
+
+
+const RULE_OPERATORS = new Set(["gt", "gte", "lt", "lte"]);
+function automationMatches(operator, value, threshold) {
+  if (operator === "gt") return value > threshold;
+  if (operator === "gte") return value >= threshold;
+  if (operator === "lt") return value < threshold;
+  if (operator === "lte") return value <= threshold;
+  return false;
+}
+function automationOperatorLabel(operator) {
+  return ({ gt: "above", gte: "at or above", lt: "below", lte: "at or below" })[operator] || operator;
+}
+async function claimAutomationTrigger(ruleRef, cooldownMinutes, nowMs) {
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ruleRef);
+    if (!snapshot.exists) return null;
+    const data = snapshot.data() || {};
+    if (data.enabled !== true) return null;
+    const lastTriggeredAtMs = Number(data.lastTriggeredAtMs || 0);
+    if (lastTriggeredAtMs && nowMs - lastTriggeredAtMs < cooldownMinutes * 60000) return null;
+    transaction.set(ruleRef, {
+      lastTriggeredAt: FieldValue.serverTimestamp(),
+      lastTriggeredAtMs: nowMs,
+      triggerCount: FieldValue.increment(1),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return { id: snapshot.id, ...data };
+  });
+}
+async function sendIntegrationAlert(uid, rule, device, metricValue, nowMs) {
+  const title = "Tiny Titans enclosure alert";
+  const body = String(rule.name || "Environment rule") + ": " + String(device.name || device.deviceId) + " " + String(rule.metric) + " is " + metricValue + ", " + automationOperatorLabel(rule.operator) + " " + rule.threshold + ".";
+  const eventKey = ("integration-" + rule.id + "-" + device.deviceId + "-" + nowMs).replace(/[^A-Za-z0-9_-]/g, "-");
+  const userRef = db.collection("users").doc(uid);
+  await userRef.collection("notificationEvents").doc(eventKey).set({
+    type: "integration-alert",
+    title,
+    body,
+    url: "/account/integrations",
+    read: false,
+    ruleId: rule.id,
+    deviceId: device.deviceId,
+    metric: rule.metric,
+    value: metricValue,
+    threshold: rule.threshold,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  const userSnapshot = await userRef.get();
+  if (userSnapshot.data()?.notificationSettings?.enabled !== true) return { sent: 0 };
+  const tokenSnapshot = await userRef.collection("notificationTokens").where("enabled", "==", true).get();
+  const tokens = tokenSnapshot.docs.map((item) => String(item.data()?.token || "")).filter(Boolean);
+  if (!tokens.length) return { sent: 0 };
+  let sent = 0;
+  for (let index = 0; index < tokens.length; index += 500) {
+    const batch = tokens.slice(index, index + 500);
+    const result = await messaging.sendEachForMulticast({
+      tokens: batch,
+      notification: { title, body },
+      data: { title, body, url: "/account/integrations", notificationType: "integration-alert", eventKey },
+      webpush: { fcmOptions: { link: PUBLIC_ORIGIN + "/account/integrations" } },
+    });
+    sent += result.successCount;
+  }
+  return { sent };
+}
+async function evaluateIntegrationAutomations(uid, device, metrics) {
+  const rulesSnapshot = await db.collection("integrationAutomationRules").doc(uid).collection("rules").where("enabled", "==", true).limit(50).get();
+  if (rulesSnapshot.empty) return;
+  const nowMs = Date.now();
+  for (const ruleDoc of rulesSnapshot.docs) {
+    const rule = { id: ruleDoc.id, ...ruleDoc.data() };
+    if (rule.deviceId && rule.deviceId !== "*" && rule.deviceId !== device.deviceId) continue;
+    if (!Object.prototype.hasOwnProperty.call(metrics, rule.metric)) continue;
+    const value = metrics[rule.metric];
+    if (typeof value !== "number" || !Number.isFinite(value)) continue;
+    if (!automationMatches(String(rule.operator), value, Number(rule.threshold))) continue;
+    const cooldownMinutes = Math.max(5, Math.min(1440, Number(rule.cooldownMinutes || 30)));
+    const claimed = await claimAutomationTrigger(ruleDoc.ref, cooldownMinutes, nowMs);
+    if (!claimed) continue;
+    try {
+      await sendIntegrationAlert(uid, claimed, device, value, nowMs);
+    } catch (error) {
+      console.error("Tiny Titans integration alert delivery failed", { uid, ruleId: ruleDoc.id, error });
+    }
+  }
+}
+
+exports.getIntegrationAutomationRules = onCall({ region: "europe-west2" }, async (request) => {
+  const uid = requireAuth(request);
+  const snapshot = await db.collection("integrationAutomationRules").doc(uid).collection("rules").orderBy("createdAtMs", "asc").limit(100).get();
+  return {
+    rules: snapshot.docs.map((item) => {
+      const data = item.data() || {};
+      return {
+        id: item.id,
+        name: String(data.name || ""),
+        deviceId: String(data.deviceId || "*"),
+        metric: String(data.metric || ""),
+        operator: String(data.operator || ""),
+        threshold: Number(data.threshold),
+        cooldownMinutes: Number(data.cooldownMinutes || 30),
+        enabled: data.enabled === true,
+        triggerCount: Number(data.triggerCount || 0),
+        lastTriggeredAtMs: Number(data.lastTriggeredAtMs || 0) || null,
+      };
+    }),
+  };
+});
+
+exports.saveIntegrationAutomationRule = onCall({ region: "europe-west2" }, async (request) => {
+  const uid = requireAuth(request);
+  const raw = request.data?.rule || {};
+  const name = stringValue(raw.name, "name", 80, true);
+  const deviceId = stringValue(raw.deviceId || "*", "deviceId", 80, true);
+  const metric = String(raw.metric || "").trim();
+  const operator = String(raw.operator || "").trim();
+  const threshold = Number(raw.threshold);
+  const cooldownMinutes = Math.round(Number(raw.cooldownMinutes || 30));
+  if (!Object.prototype.hasOwnProperty.call(NUMBER_FIELDS, metric)) throw new HttpsError("invalid-argument", "Choose a supported numeric metric.");
+  if (!RULE_OPERATORS.has(operator)) throw new HttpsError("invalid-argument", "Choose a supported comparison.");
+  const range = NUMBER_FIELDS[metric];
+  if (!Number.isFinite(threshold) || threshold < range[0] || threshold > range[1]) throw new HttpsError("invalid-argument", "Threshold is outside the accepted metric range.");
+  if (!Number.isFinite(cooldownMinutes) || cooldownMinutes < 5 || cooldownMinutes > 1440) throw new HttpsError("invalid-argument", "Cooldown must be between 5 minutes and 24 hours.");
+  const requestedId = String(raw.id || "").trim();
+  if (requestedId && !/^[A-Za-z0-9_-]{1,80}$/.test(requestedId)) throw new HttpsError("invalid-argument", "Invalid automation rule ID.");
+  const rules = db.collection("integrationAutomationRules").doc(uid).collection("rules");
+  const ref = requestedId ? rules.doc(requestedId) : rules.doc();
+  const existing = await ref.get();
+  const nowMs = Date.now();
+  await ref.set({
+    uid,
+    name,
+    deviceId,
+    metric,
+    operator,
+    threshold,
+    cooldownMinutes,
+    enabled: raw.enabled !== false,
+    createdAt: existing.exists ? existing.data()?.createdAt || FieldValue.serverTimestamp() : FieldValue.serverTimestamp(),
+    createdAtMs: existing.exists ? Number(existing.data()?.createdAtMs || nowMs) : nowMs,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  return { success: true, id: ref.id };
+});
+
+exports.deleteIntegrationAutomationRule = onCall({ region: "europe-west2" }, async (request) => {
+  const uid = requireAuth(request);
+  const ruleId = stringValue(request.data?.ruleId, "ruleId", 80, true);
+  if (!/^[A-Za-z0-9_-]+$/.test(ruleId)) throw new HttpsError("invalid-argument", "Invalid automation rule ID.");
+  await db.collection("integrationAutomationRules").doc(uid).collection("rules").doc(ruleId).delete();
+  return { success: true };
+});
 
 exports.getIntegrationHubStatus = onCall({ region: "europe-west2" }, async (request) => {
   const uid = requireAuth(request);
@@ -296,6 +451,8 @@ exports.deviceGatewayIngest = onRequest({ region: "europe-west2", invoker: "publ
     });
     batch.set(statusRef, { gatewayLastUsedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await batch.commit();
+
+    await evaluateIntegrationAutomations(uid, { deviceId, name, source, enclosureId, animalId }, metrics);
 
     return json(res, 202, {
       accepted: true,
