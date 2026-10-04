@@ -9,7 +9,7 @@ const checks = [
   ["directory backend is exported", index.includes('require("./serviceDirectory")')],
   ["public records are Creator reviewed", backend.includes('status: "verified"') && backend.includes('verificationMethod: "creator_review"') && backend.includes('verificationStatus: "creator_reviewed"')],
   ["submissions never auto-publish", backend.includes('status: "pending"') && backend.includes("reviewServiceDirectorySubmission")],
-  ["moderation requires privileged claim", backend.includes('token?.creator !== true') && backend.includes('token?.admin !== true')],
+  ["moderation requires privileged access", backend.includes("requireModerator") && backend.includes("token?.creator === true") && backend.includes("token?.admin === true") && backend.includes('"permission-denied"')],
   ["directory does not depend on paid places APIs", !backend.includes("googleapis") && !backend.includes("places.googleapis.com") && !service.includes("Google Places")],
   ["duplicate submissions are checked", backend.includes("duplicateKey") && backend.includes('"already-exists"')],
   ["review decisions are audited", backend.includes('collection("serviceDirectoryAudit")')],
