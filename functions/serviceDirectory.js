@@ -5,18 +5,20 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const db = getFirestore();
 const CATEGORIES = new Set(["exotics_vet", "veterinary_practice", "rescue", "reptile_shop", "breeder", "supplier"]);
 const ANIMAL_GROUPS = new Set(["reptiles", "snakes", "lizards", "turtles_tortoises", "amphibians", "arachnids", "invertebrates", "fish", "birds", "mammals", "exotics"]);
-const MAX_PENDING_PER_USER = 10;
+const MAX_PENDING_PER_USER = 5;
 
 function requireAuth(request) {
   const uid = String(request.auth?.uid || "");
   if (!uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   return uid;
 }
-function requireModerator(request) {
-  requireAuth(request);
-  if (request.auth?.token?.creator !== true && request.auth?.token?.admin !== true) {
-    throw new HttpsError("permission-denied", "Creator access is required.");
-  }
+async function requireModerator(request) {
+  const uid = requireAuth(request);
+  if (request.auth?.token?.creator === true || request.auth?.token?.admin === true || request.auth?.token?.superAdmin === true) return uid;
+  const snapshot = await db.collection("users").doc(uid).get();
+  const profile = snapshot.data() || {};
+  if (profile.role === "admin" || profile.profileType === "creator") return uid;
+  throw new HttpsError("permission-denied", "Creator access is required.");
 }
 function textValue(value, field, maxLength, required = false) {
   const result = typeof value === "string" ? value.trim() : "";
@@ -82,7 +84,7 @@ function publicRecord(snapshot) {
     website: String(data.website || ""),
     notes: String(data.notes || ""),
     emergencyCare: data.emergencyCare === true,
-    verificationStatus: "verified",
+    verificationStatus: "creator_reviewed",
     verifiedAtMs: Number(data.verifiedAtMs || 0) || null,
     communitySubmissionCount: Number(data.communitySubmissionCount || 1),
   };
@@ -92,13 +94,10 @@ exports.listVerifiedServices = onCall({ region: "europe-west2" }, async (request
   requireAuth(request);
   const category = String(request.data?.category || "").trim();
   const countryCode = String(request.data?.countryCode || "").trim().toUpperCase();
-  let query = db.collection("serviceDirectory").where("status", "==", "verified").limit(500);
-  if (category) {
-    if (!CATEGORIES.has(category)) throw new HttpsError("invalid-argument", "Unsupported category.");
-    query = query.where("category", "==", category);
-  }
-  const snapshot = await query.get();
+  if (category && !CATEGORIES.has(category)) throw new HttpsError("invalid-argument", "Unsupported category.");
+  const snapshot = await db.collection("serviceDirectory").where("status", "==", "verified").limit(500).get();
   let services = snapshot.docs.map(publicRecord);
+  if (category) services = services.filter((item) => item.category === category);
   if (countryCode) services = services.filter((item) => item.countryCode === countryCode);
   services.sort((a, b) => a.name.localeCompare(b.name));
   return { services };
@@ -107,15 +106,12 @@ exports.listVerifiedServices = onCall({ region: "europe-west2" }, async (request
 exports.submitServiceDirectoryEntry = onCall({ region: "europe-west2" }, async (request) => {
   const uid = requireAuth(request);
   const entry = normaliseEntry(request.data?.entry || {});
-  const pending = await db.collection("serviceDirectorySubmissions")
-    .where("submitterUid", "==", uid)
-    .where("status", "==", "pending")
-    .limit(MAX_PENDING_PER_USER + 1)
-    .get();
-  if (pending.size >= MAX_PENDING_PER_USER) throw new HttpsError("resource-exhausted", "You already have the maximum number of directory submissions awaiting review.");
+  const pending = await db.collection("serviceDirectorySubmissions").where("submitterUid", "==", uid).limit(20).get();
+  const pendingCount = pending.docs.filter((item) => item.data()?.status === "pending").length;
+  if (pendingCount >= MAX_PENDING_PER_USER) throw new HttpsError("resource-exhausted", "You already have five directory suggestions awaiting review.");
 
-  const existing = await db.collection("serviceDirectory").where("duplicateKey", "==", entry.duplicateKey).where("status", "==", "verified").limit(1).get();
-  if (!existing.empty) throw new HttpsError("already-exists", "This service already appears to be in the verified directory.");
+  const existing = await db.collection("serviceDirectory").where("duplicateKey", "==", entry.duplicateKey).limit(5).get();
+  if (existing.docs.some((item) => item.data()?.status === "verified")) throw new HttpsError("already-exists", "This service already appears to be in the reviewed directory.");
 
   const nowMs = Date.now();
   const ref = db.collection("serviceDirectorySubmissions").doc();
@@ -131,7 +127,7 @@ exports.submitServiceDirectoryEntry = onCall({ region: "europe-west2" }, async (
 });
 
 exports.listServiceDirectorySubmissions = onCall({ region: "europe-west2" }, async (request) => {
-  requireModerator(request);
+  await requireModerator(request);
   const status = String(request.data?.status || "pending");
   if (!["pending", "approved", "rejected"].includes(status)) throw new HttpsError("invalid-argument", "Unsupported review status.");
   const snapshot = await db.collection("serviceDirectorySubmissions").where("status", "==", status).limit(200).get();
@@ -160,8 +156,7 @@ exports.listServiceDirectorySubmissions = onCall({ region: "europe-west2" }, asy
 });
 
 exports.reviewServiceDirectorySubmission = onCall({ region: "europe-west2" }, async (request) => {
-  requireModerator(request);
-  const moderatorUid = String(request.auth.uid);
+  const moderatorUid = await requireModerator(request);
   const submissionId = textValue(request.data?.submissionId, "submissionId", 100, true);
   const decision = String(request.data?.decision || "").trim();
   if (!["approve", "reject"].includes(decision)) throw new HttpsError("invalid-argument", "Decision must be approve or reject.");
@@ -185,11 +180,12 @@ exports.reviewServiceDirectorySubmission = onCall({ region: "europe-west2" }, as
     return { success: true, decision: "rejected" };
   }
 
-  const duplicate = await db.collection("serviceDirectory").where("duplicateKey", "==", String(data.duplicateKey || "")).where("status", "==", "verified").limit(1).get();
+  const duplicate = await db.collection("serviceDirectory").where("duplicateKey", "==", String(data.duplicateKey || "")).limit(5).get();
+  const existingVerified = duplicate.docs.find((item) => item.data()?.status === "verified");
   const batch = db.batch();
   let serviceId = "";
-  if (!duplicate.empty) {
-    const existingRef = duplicate.docs[0].ref;
+  if (existingVerified) {
+    const existingRef = existingVerified.ref;
     serviceId = existingRef.id;
     batch.set(existingRef, {
       communitySubmissionCount: FieldValue.increment(1),

@@ -21,7 +21,7 @@ export type ServiceDirectoryEntry = {
   website: string;
   notes: string;
   emergencyCare: boolean;
-  verificationStatus: "verified";
+  verificationStatus: "creator_reviewed";
   verifiedAtMs: number | null;
   communitySubmissionCount: number;
 };
