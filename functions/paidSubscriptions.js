@@ -25,11 +25,11 @@ const PRICE_IDS = Object.freeze({
   business_advanced: "price_1UGOyTI4DKNMJVXD5QXuppJe",
   rescue: "price_1UG0zPI4DKNMJVXDEjjgN1T9",
 });
-const ORIGINS = new Set(["https://tinytitans-hoggy-companion.web.app", "https://tinytitans-hoggy-companion.firebaseapp.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
+const ORIGINS = new Set(["https://tinytitanskeeper.web.app", "https://tinytitanskeeper.firebaseapp.com", "https://tinytitans-hoggy-companion.web.app", "https://tinytitans-hoggy-companion.firebaseapp.com", "http://localhost:5173", "http://127.0.0.1:5173"]);
 const ACTIVE_ACCESS_STATUSES = new Set(["active", "trialing"]);
 const SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due", "unpaid", "incomplete", "incomplete_expired", "canceled"]);
 
-function origin(request) { const value = request.rawRequest?.headers?.origin || ""; return ORIGINS.has(value) ? value : "https://tinytitans-hoggy-companion.web.app"; }
+function origin(request) { const value = request.rawRequest?.headers?.origin || ""; return ORIGINS.has(value) ? value : "https://tinytitanskeeper.web.app"; }
 function tierFromPrice(price) {
   const priceId = String(price?.id || "");
   const byId = Object.entries(PRICE_IDS).find(([, value]) => value === priceId);
