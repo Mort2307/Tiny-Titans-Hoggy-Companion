@@ -2210,7 +2210,14 @@ async function handleMcpMessage(request, message) {
   if (message.method === "ping") return jsonRpcResult(id, {}, modern);
 
   if (message.method === "tools/list") {
-    return jsonRpcResult(id, { tools: MCP_TOOL_DESCRIPTORS }, modern);
+    const result = modern
+      ? {
+          tools: MCP_TOOL_DESCRIPTORS,
+          ttlMs: 300000,
+          cacheScope: "public",
+        }
+      : { tools: MCP_TOOL_DESCRIPTORS };
+    return jsonRpcResult(id, result, modern);
   }
 
   if (message.method !== "tools/call") {
