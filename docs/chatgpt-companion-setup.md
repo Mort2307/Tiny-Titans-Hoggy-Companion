@@ -89,7 +89,7 @@ From the project root:
 
 ```powershell
 npm run build
-firebase deploy --only "functions:tinyTitansMcp,functions:getChatGPTCompanionStatus,functions:revokeChatGPTCompanionConnection,functions:getChatGPTCompanionActivity,functions:chatGPTCompanionApi,hosting:keeper"
+firebase deploy --only "functions:tinyTitansMcp,functions:getChatGPTCompanionStatus,functions:revokeChatGPTCompanionConnection,functions:getChatGPTCompanionActivity,functions:chatGPTCompanionApi,hosting:legacy,hosting:keeper"
 ```
 
 The Hosting deploy is required because the user-facing Tiny Titans Companion page changed and because `/mcp`, OAuth discovery, and OAuth endpoints are routed through the canonical `tinytitanskeeper.web.app` origin.
@@ -153,3 +153,15 @@ Remind me every 14 days to feed Mort.
 `get_keeper_snapshot` resolves multiple animal names in one call. `create_reminders` accepts multiple animal names and creates one-time reminders by default; recurring cadence is only created when `repeatEveryDays` is explicitly supplied. The OAuth consent page captures the browser IANA timezone so relative keeper requests can be converted to the correct local schedule.
 
 Feeding logged through ChatGPT re-anchors recurring Tiny Titans feeding reminders using the same latest-real-feeding rule as feeding logged in the app.
+
+
+## Hosting consistency
+
+Tiny Titans currently has two Firebase Hosting sites attached to the same project:
+
+- legacy: `tinytitans-hoggy-companion`
+- keeper: `tinytitanskeeper`
+
+Installed PWAs keep the origin they were originally installed from. Deploying only one hosting target can therefore leave an installed app on the other origin running an older bundle.
+
+Use `npm run deploy:keeper` for frontend releases. It deliberately builds once and deploys the same `dist` output to both hosting targets.

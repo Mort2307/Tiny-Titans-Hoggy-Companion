@@ -122,8 +122,9 @@
     "validate:inaturalist-ecology": "node scripts/validate-inaturalist-ecology.mjs",
     "validate:zero-cost-integrations": "node scripts/validate-zero-cost-integrations.mjs",
     "validate:free-stack": "npm run validate:zero-cost-integrations && npm run validate:integration-hub && npm run validate:service-directory && npm run validate:inaturalist-ecology && tsc -b --pretty false",
-    "deploy:keeper": "npm run build && firebase deploy --only hosting:keeper",
-    "deploy:keeper:full": "npm run build && firebase deploy --only hosting:keeper,firestore:indexes && node scripts/deploy-functions-batched.mjs"
+    "deploy:keeper": "npm run build && firebase deploy --only hosting:legacy,hosting:keeper",
+    "deploy:keeper:full": "npm run build && firebase deploy --only hosting:legacy,hosting:keeper,firestore:indexes && node scripts/deploy-functions-batched.mjs",
+    "deploy:live": "npm run build && firebase deploy --only hosting:legacy,hosting:keeper && node scripts/deploy-functions-batched.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
