@@ -28,6 +28,18 @@ function requireAuth(request) {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "You must be signed in.");
   return request.auth.uid;
 }
+async function resolveIntegrationDataOwner(uid) {
+  const userSnapshot = await db.collection("users").doc(uid).get();
+  const user = userSnapshot.data() || {};
+  const familyId = String(user.familyId || "").trim();
+  if (!familyId) return uid;
+  const familySnapshot = await db.collection("families").doc(familyId).get();
+  if (!familySnapshot.exists) return uid;
+  const family = familySnapshot.data() || {};
+  const members = Array.isArray(family.memberUids) ? family.memberUids : [];
+  if (!members.includes(uid)) return uid;
+  return String(family.ownerUid || uid).trim() || uid;
+}
 function hashSecret(value) {
   return crypto.createHash("sha256").update(String(value)).digest("hex");
 }
@@ -271,6 +283,8 @@ exports.getIntegrationHubStatus = onCall({ region: "europe-west2" }, async (requ
       source: String(data.source || "custom"),
       enclosureId: String(data.enclosureId || ""),
       animalId: String(data.animalId || ""),
+      animalSource: String(data.animalSource || ""),
+      animalName: String(data.animalName || ""),
       metrics: data.metrics || {},
       lastSeenAt: timestampMillis(data.lastSeenAt),
       firstSeenAt: timestampMillis(data.firstSeenAt),
@@ -369,6 +383,49 @@ exports.revokeIntegrationGatewayKey = onCall({ region: "europe-west2" }, async (
   return { success: true };
 });
 
+exports.updateIntegrationDeviceLink = onCall({ region: "europe-west2" }, async (request) => {
+  const uid = requireAuth(request);
+  const deviceId = stringValue(request.data?.deviceId, "deviceId", 80, true);
+  const animalId = stringValue(request.data?.animalId, "animalId", 100);
+  const animalSource = stringValue(request.data?.animalSource, "animalSource", 30);
+  if (animalId && !["universal", "legacy-snake"].includes(animalSource)) {
+    throw new HttpsError("invalid-argument", "Choose a valid Tiny Titans animal record.");
+  }
+  if (!animalId && animalSource) throw new HttpsError("invalid-argument", "Animal source cannot be set without an animal.");
+  const deviceKey = deviceDocumentId(uid, deviceId);
+  const deviceRef = db.collection("integrationDevices").doc(deviceKey);
+  const deviceSnapshot = await deviceRef.get();
+  if (!deviceSnapshot.exists || String(deviceSnapshot.data()?.uid || "") !== uid) {
+    throw new HttpsError("not-found", "Connected device not found.");
+  }
+
+  let animalName = "";
+  if (animalId) {
+    const ownerUid = await resolveIntegrationDataOwner(uid);
+    const collectionName = animalSource === "legacy-snake" ? "snakes" : "animals";
+    const animalSnapshot = await db.collection("users").doc(ownerUid).collection(collectionName).doc(animalId).get();
+    if (!animalSnapshot.exists) throw new HttpsError("not-found", "That animal is no longer available in your Tiny Titans collection.");
+    animalName = String(animalSnapshot.data()?.name || "Linked animal").trim() || "Linked animal";
+  }
+
+  await deviceRef.set({
+    animalId: animalId || null,
+    animalSource: animalId ? animalSource : null,
+    animalName: animalId ? animalName : null,
+    animalLinkedByUid: uid,
+    animalLinkedAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  return {
+    success: true,
+    deviceId,
+    animalId,
+    animalSource: animalId ? animalSource : "",
+    animalName: animalId ? animalName : "",
+  };
+});
+
 exports.getIntegrationTelemetry = onCall({ region: "europe-west2" }, async (request) => {
   const uid = requireAuth(request);
   const deviceId = stringValue(request.data?.deviceId, "deviceId", 80, true);
@@ -426,14 +483,21 @@ exports.deviceGatewayIngest = onRequest({ region: "europe-west2", invoker: "publ
     const telemetryRef = db.collection("integrationTelemetry").doc();
     const statusRef = db.collection("integrationUserStatus").doc(uid);
     const deviceSnapshot = await deviceRef.get();
+    const deviceData = deviceSnapshot.data() || {};
+    const effectiveEnclosureId = enclosureId || String(deviceData.enclosureId || "");
+    const effectiveAnimalId = animalId || String(deviceData.animalId || "");
+    const effectiveAnimalSource = String(deviceData.animalSource || "");
+    const effectiveAnimalName = String(deviceData.animalName || "");
     const batch = db.batch();
     batch.set(deviceRef, {
       uid,
       deviceId,
       name,
       source,
-      enclosureId: enclosureId || null,
-      animalId: animalId || null,
+      enclosureId: effectiveEnclosureId || null,
+      animalId: effectiveAnimalId || null,
+      animalSource: effectiveAnimalSource || null,
+      animalName: effectiveAnimalName || null,
       metrics,
       lastSeenAt: FieldValue.serverTimestamp(),
       sourceTimestamp: sourceTimestamp.toISOString(),
@@ -446,8 +510,10 @@ exports.deviceGatewayIngest = onRequest({ region: "europe-west2", invoker: "publ
       deviceKey,
       deviceId,
       source,
-      enclosureId: enclosureId || null,
-      animalId: animalId || null,
+      enclosureId: effectiveEnclosureId || null,
+      animalId: effectiveAnimalId || null,
+      animalSource: effectiveAnimalSource || null,
+      animalName: effectiveAnimalName || null,
       metrics,
       sourceTimestamp: sourceTimestamp.toISOString(),
       recordedAt: FieldValue.serverTimestamp(),
@@ -455,7 +521,7 @@ exports.deviceGatewayIngest = onRequest({ region: "europe-west2", invoker: "publ
     batch.set(statusRef, { gatewayLastUsedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await batch.commit();
 
-    await evaluateIntegrationAutomations(uid, { deviceId, name, source, enclosureId, animalId }, metrics);
+    await evaluateIntegrationAutomations(uid, { deviceId, name, source, enclosureId: effectiveEnclosureId, animalId: effectiveAnimalId }, metrics);
 
     return json(res, 202, {
       accepted: true,

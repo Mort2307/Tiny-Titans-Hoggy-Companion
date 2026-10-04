@@ -12,6 +12,8 @@ export type IntegrationDevice = {
   source: string;
   enclosureId: string;
   animalId: string;
+  animalSource: string;
+  animalName: string;
   metrics: Record<string, number | boolean>;
   lastSeenAt: number | null;
   firstSeenAt: number | null;
@@ -86,6 +88,7 @@ const getRulesCall = httpsCallable<void, { rules: IntegrationAutomationRule[] }>
 const saveRuleCall = httpsCallable<{ rule: IntegrationAutomationInput }, { success: boolean; id: string }>(functions, "saveIntegrationAutomationRule");
 const deleteRuleCall = httpsCallable<{ ruleId: string }, { success: boolean }>(functions, "deleteIntegrationAutomationRule");
 const telemetryCall = httpsCallable<{ deviceId: string; limit?: number }, { deviceId: string; readings: IntegrationTelemetryReading[] }>(functions, "getIntegrationTelemetry");
+const updateDeviceLinkCall = httpsCallable<{ deviceId: string; animalId: string; animalSource: string }, { success: boolean; deviceId: string; animalId: string; animalSource: string; animalName: string }>(functions, "updateIntegrationDeviceLink");
 
 export async function getIntegrationHubStatus(): Promise<IntegrationHubStatus> {
   return (await getStatusCall()).data;
@@ -108,6 +111,9 @@ export async function deleteIntegrationAutomationRule(ruleId: string) {
 export async function getIntegrationTelemetry(deviceId: string, limit = 100): Promise<IntegrationTelemetryReading[]> {
   const safeLimit = Math.max(1, Math.min(250, Math.round(limit)));
   return (await telemetryCall({ deviceId, limit: safeLimit })).data.readings || [];
+}
+export async function updateIntegrationDeviceLink(deviceId: string, animalId = "", animalSource = "") {
+  return (await updateDeviceLinkCall({ deviceId, animalId, animalSource })).data;
 }
 
 function icsEscape(value: unknown): string {

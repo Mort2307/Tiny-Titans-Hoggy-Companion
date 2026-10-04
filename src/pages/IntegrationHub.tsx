@@ -6,6 +6,7 @@ import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import IntegrationTelemetryHistory from "../components/IntegrationTelemetryHistory";
 import IntegrationSetupRecipes from "../components/IntegrationSetupRecipes";
 import { useAuth } from "../context/useAuth";
+import { getUnifiedAnimalDirectory, type UnifiedAnimalDirectoryRecord } from "../services/animalDirectoryService";
 import {
   createIntegrationGatewayKey,
   deleteIntegrationAutomationRule,
@@ -14,6 +15,7 @@ import {
   getIntegrationHubStatus,
   revokeIntegrationGatewayKey,
   saveIntegrationAutomationRule,
+  updateIntegrationDeviceLink,
   type IntegrationAutomationRule,
   type IntegrationDevice,
   type IntegrationHubStatus,
@@ -45,7 +47,7 @@ function metricValue(key: string, value: number | boolean): string {
   const suffix = ({ temperatureC: "°C", humidityPct: "%", batteryPct: "%", powerW: "W", lightLux: " lux", co2Ppm: " ppm", pressureHpa: " hPa", waterLevelPct: "%" } as Record<string, string>)[key] || "";
   return `${Number.isInteger(value) ? value : value.toFixed(1)}${suffix}`;
 }
-function DeviceCard({ device, onHistory }: { device: IntegrationDevice; onHistory: () => void }) {
+function DeviceCard({ device, animals, onHistory, onAnimalLink, linkBusy }: { device: IntegrationDevice; animals: UnifiedAnimalDirectoryRecord[]; onHistory: () => void; onAnimalLink: (value: string) => void; linkBusy: boolean }) {
   return <article className="tt-integration-device">
     <div className="tt-integration-device__head">
       <div><span>{device.source.replaceAll("_", " ")}</span><strong>{device.name}</strong><small>{device.deviceId}</small></div>
@@ -56,9 +58,20 @@ function DeviceCard({ device, onHistory }: { device: IntegrationDevice; onHistor
     </div>
     <footer>
       <span>{device.readingCount} reading{device.readingCount === 1 ? "" : "s"}</span>
-      {device.animalId && <span>Animal linked</span>}
+      {device.animalId && <span>{device.animalName ? `Linked to ${device.animalName}` : "Animal linked"}</span>}
       {device.enclosureId && <span>Enclosure linked</span>}
     </footer>
+    <label className="tt-integration-device__animal">
+      <span>Animal using this enclosure</span>
+      <select
+        value={device.animalId && device.animalSource ? `${device.animalSource}:${device.animalId}` : ""}
+        disabled={linkBusy}
+        onChange={(event) => onAnimalLink(event.target.value)}
+      >
+        <option value="">Not linked</option>
+        {animals.map((animal) => <option key={`${animal.source}:${animal.id}`} value={`${animal.source}:${animal.id}`}>{animal.name}{animal.speciesCommonName ? ` · ${animal.speciesCommonName}` : ""}</option>)}
+      </select>
+    </label>
     <button type="button" className="tt-integration-device__history" onClick={onHistory}><TinyTitansIcon name="analytics" size={15} /> View history</button>
   </article>;
 }
@@ -66,6 +79,7 @@ function DeviceCard({ device, onHistory }: { device: IntegrationDevice; onHistor
 export default function IntegrationHub() {
   const { user } = useAuth();
   const [status, setStatus] = useState<IntegrationHubStatus | null>(null);
+  const [animals, setAnimals] = useState<UnifiedAnimalDirectoryRecord[]>([]);
   const [gatewayKey, setGatewayKey] = useState("");
   const [rules, setRules] = useState<IntegrationAutomationRule[]>([]);
   const [ruleName, setRuleName] = useState("Enclosure alert");
@@ -76,6 +90,7 @@ export default function IntegrationHub() {
   const [ruleCooldown, setRuleCooldown] = useState("30");
   const [deleteRuleTarget, setDeleteRuleTarget] = useState<IntegrationAutomationRule | null>(null);
   const [historyDeviceId, setHistoryDeviceId] = useState("");
+  const [linkBusyDeviceId, setLinkBusyDeviceId] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -83,9 +98,14 @@ export default function IntegrationHub() {
   const refresh = useCallback(async () => {
     if (!user) return;
     try {
-      const [nextStatus, nextRules] = await Promise.all([getIntegrationHubStatus(), getIntegrationAutomationRules()]);
+      const [nextStatus, nextRules, nextAnimals] = await Promise.all([
+        getIntegrationHubStatus(),
+        getIntegrationAutomationRules(),
+        getUnifiedAnimalDirectory(user.uid),
+      ]);
       setStatus(nextStatus);
       setRules(nextRules);
+      setAnimals(nextAnimals.filter((animal) => !["sold", "deceased", "archived"].includes(animal.status)));
       setError("");
     } catch (err) { setError(err instanceof Error ? err.message : "Integration status could not be loaded."); }
   }, [user]);
@@ -172,6 +192,25 @@ export default function IntegrationHub() {
       await refresh();
     } catch (err) { setError(err instanceof Error ? err.message : "Automation rule could not be deleted."); }
     finally { setBusy(false); }
+  }
+
+  async function linkDeviceAnimal(device: IntegrationDevice, value: string) {
+    setLinkBusyDeviceId(device.deviceId); setError(""); setMessage("");
+    try {
+      if (!value) {
+        await updateIntegrationDeviceLink(device.deviceId);
+        setMessage(`${device.name} is no longer linked to an animal.`);
+      } else {
+        const separator = value.indexOf(":");
+        const source = value.slice(0, separator);
+        const animalId = value.slice(separator + 1);
+        if (!animalId || !["universal", "legacy-snake"].includes(source)) throw new Error("Choose a valid Tiny Titans animal.");
+        const result = await updateIntegrationDeviceLink(device.deviceId, animalId, source);
+        setMessage(`${device.name} is now linked to ${result.animalName}.`);
+      }
+      await refresh();
+    } catch (err) { setError(err instanceof Error ? err.message : "The device link could not be updated."); }
+    finally { setLinkBusyDeviceId(""); }
   }
 
   async function copy(value: string, label: string) {
@@ -283,7 +322,7 @@ export default function IntegrationHub() {
         <button type="button" onClick={() => void refresh()}>Refresh</button>
       </div>
       <div className="tt-integration-device-grid">
-        {status?.devices.length ? status.devices.map((device) => <DeviceCard key={device.id} device={device} onHistory={() => setHistoryDeviceId(device.deviceId)} />) : <article className="tt-integration-empty"><TinyTitansIcon name="enclosure" size={27} /><strong>No devices have reported yet</strong><p>Generate a gateway key, send the example payload from a bridge or sensor, then refresh this page.</p></article>}
+        {status?.devices.length ? status.devices.map((device) => <DeviceCard key={device.id} device={device} animals={animals} onHistory={() => setHistoryDeviceId(device.deviceId)} onAnimalLink={(value) => void linkDeviceAnimal(device, value)} linkBusy={linkBusyDeviceId === device.deviceId} />) : <article className="tt-integration-empty"><TinyTitansIcon name="enclosure" size={27} /><strong>No devices have reported yet</strong><p>Generate a gateway key, send the example payload from a bridge or sensor, then refresh this page.</p></article>}
       </div>
       {historyDevice && <IntegrationTelemetryHistory device={historyDevice} onClose={() => setHistoryDeviceId("")} />}
     </section>
