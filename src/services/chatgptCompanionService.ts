@@ -30,18 +30,6 @@ export type ChatGPTCompanionStatus = {
   timezone: string;
 };
 
-export type ChatGPTCompanionConnection = {
-  linkCode: string;
-  token?: string;
-  tokenShownOnce: boolean;
-  linkExpiresAt: string;
-  expiresAt?: string;
-  permissions: ChatGPTCompanionPermission[];
-  mcpServer: string;
-  apiBase: string;
-  timezone?: string;
-};
-
 export type ChatGPTCompanionActivity = {
   id: string;
   tool: string | null;
@@ -59,10 +47,6 @@ const functions = getFunctions(app, "europe-west2");
 const statusCall = httpsCallable<undefined, { success: boolean } & ChatGPTCompanionStatus>(
   functions,
   "getChatGPTCompanionStatus",
-);
-const connectCall = httpsCallable<{ timezone: string }, { success: boolean } & ChatGPTCompanionConnection>(
-  functions,
-  "createChatGPTCompanionConnection",
 );
 const revokeCall = httpsCallable<undefined, { success: boolean }>(
   functions,
@@ -95,22 +79,6 @@ export async function getChatGPTCompanionStatus(): Promise<ChatGPTCompanionStatu
     mcpServer: String(data.mcpServer || "https://tinytitanskeeper.web.app/mcp"),
     connectionVersion: Number(data.connectionVersion || 0),
     timezone: String(data.timezone || "UTC"),
-  };
-}
-
-export async function createChatGPTCompanionConnection(): Promise<ChatGPTCompanionConnection> {
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  const response = await connectCall({ timezone });
-  return {
-    linkCode: String(response.data.linkCode || response.data.token || ""),
-    token: response.data.token,
-    tokenShownOnce: response.data.tokenShownOnce === true,
-    linkExpiresAt: String(response.data.linkExpiresAt || response.data.expiresAt || ""),
-    expiresAt: response.data.expiresAt,
-    permissions: response.data.permissions,
-    mcpServer: String(response.data.mcpServer || "https://tinytitanskeeper.web.app/mcp"),
-    apiBase: response.data.apiBase,
-    timezone: response.data.timezone,
   };
 }
 
