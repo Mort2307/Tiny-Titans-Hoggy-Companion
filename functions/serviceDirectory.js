@@ -169,7 +169,8 @@ exports.reviewServiceDirectorySubmission = onCall({ region: "europe-west2" }, as
 
   const nowMs = Date.now();
   if (decision === "reject") {
-    await ref.set({
+    const batch = db.batch();
+    batch.set(ref, {
       status: "rejected",
       reviewNote,
       reviewedByUid: moderatorUid,
@@ -177,6 +178,27 @@ exports.reviewServiceDirectorySubmission = onCall({ region: "europe-west2" }, as
       reviewedAtMs: nowMs,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
+    batch.set(db.collection("serviceDirectoryAudit").doc(), {
+      action: "reject",
+      submissionId,
+      serviceId: null,
+      moderatorUid,
+      submitterUid: String(data.submitterUid || ""),
+      reviewNote,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    const submitterUid = String(data.submitterUid || "");
+    if (submitterUid) {
+      batch.set(db.collection("users").doc(submitterUid).collection("notificationEvents").doc(`service-directory-review-${submissionId}`), {
+        type: "service-directory-review",
+        title: "Service suggestion reviewed",
+        body: `${String(data.name || "Your service suggestion")} was reviewed but was not published.`,
+        url: "/services",
+        read: false,
+        createdAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+    await batch.commit();
     return { success: true, decision: "rejected" };
   }
 
@@ -218,6 +240,26 @@ exports.reviewServiceDirectorySubmission = onCall({ region: "europe-west2" }, as
     reviewedAtMs: nowMs,
     updatedAt: FieldValue.serverTimestamp(),
   }, { merge: true });
+  batch.set(db.collection("serviceDirectoryAudit").doc(), {
+    action: "approve",
+    submissionId,
+    serviceId,
+    moderatorUid,
+    submitterUid: String(data.submitterUid || ""),
+    reviewNote,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  const submitterUid = String(data.submitterUid || "");
+  if (submitterUid) {
+    batch.set(db.collection("users").doc(submitterUid).collection("notificationEvents").doc(`service-directory-review-${submissionId}`), {
+      type: "service-directory-review",
+      title: "Service suggestion published",
+      body: `${String(data.name || "Your service suggestion")} has been reviewed and published in Tiny Titans Services.`,
+      url: "/services",
+      read: false,
+      createdAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }
   await batch.commit();
   return { success: true, decision: "approved", serviceId };
 });
