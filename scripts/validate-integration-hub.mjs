@@ -16,6 +16,7 @@ const checks = [
   ["raw gateway secret is not persisted in status", !backend.includes("gatewayKey: secret")],
   ["paid providers are disabled by policy", backend.includes('paidProvidersEnabled: false') && backend.includes('meteredProvidersEnabled: false')],
   ["gateway validates telemetry", backend.includes("validateMetrics") && backend.includes("ALLOWED_SOURCES")],
+  ["gateway rate limits each credential", backend.includes("RATE_LIMIT_PER_MINUTE") && backend.includes("claimGatewayKey") && backend.includes("rate_limited")],
   ["gateway endpoint is public function with bearer auth", backend.includes("deviceGatewayIngest") && backend.includes("keyFromRequest")],
   ["history is retained for future graphs", backend.includes('collection("integrationTelemetry")')],
   ["telemetry history has its Firestore composite index", firestoreIndexes.includes('"collectionGroup": "integrationTelemetry"') && firestoreIndexes.includes('"fieldPath": "deviceKey"')],
