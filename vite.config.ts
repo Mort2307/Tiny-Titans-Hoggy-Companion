@@ -86,10 +86,10 @@ export default defineConfig({
         // Never let the PWA app shell intercept server-owned integration routes.
         // These must reach Firebase Hosting/Functions directly for ChatGPT OAuth/MCP.
         navigateFallbackDenylist: [
-          /^\\/mcp(?:\\/|$)/,
-          /^\\/oauth(?:\\/|$)/,
-          /^\\/\\.well-known\\/oauth-(?:protected-resource|authorization-server)(?:\\/|$)/,
-          /^\\/api(?:\\/|$)/,
+          /^\/mcp(?:\/|$)/,
+          /^\/oauth(?:\/|$)/,
+          /^\/\.well-known\/oauth-(?:protected-resource|authorization-server)(?:\/|$)/,
+          /^\/api(?:\/|$)/,
         ],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
