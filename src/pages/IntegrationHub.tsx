@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import PageBackButton from "../components/PageBackButton";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import TinyTitansFeedback from "../components/TinyTitansFeedback";
+import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import { useAuth } from "../context/useAuth";
 import {
   createIntegrationGatewayKey,
@@ -70,6 +71,7 @@ export default function IntegrationHub() {
   const [ruleOperator, setRuleOperator] = useState<"gt" | "gte" | "lt" | "lte">("gt");
   const [ruleThreshold, setRuleThreshold] = useState("34");
   const [ruleCooldown, setRuleCooldown] = useState("30");
+  const [deleteRuleTarget, setDeleteRuleTarget] = useState<IntegrationAutomationRule | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -157,10 +159,10 @@ export default function IntegrationHub() {
     finally { setBusy(false); }
   }
   async function removeRule(ruleId: string) {
-    if (!window.confirm("Delete this Titan Automation?")) return;
     setBusy(true); setError(""); setMessage("");
     try {
       await deleteIntegrationAutomationRule(ruleId);
+      setDeleteRuleTarget(null);
       setMessage("Automation deleted.");
       await refresh();
     } catch (err) { setError(err instanceof Error ? err.message : "Automation rule could not be deleted."); }
@@ -263,7 +265,7 @@ export default function IntegrationHub() {
         <div className="tt-automation-list">
           {rules.length ? rules.map((rule) => <article key={rule.id} className={rule.enabled ? "tt-automation-rule is-enabled" : "tt-automation-rule is-paused"}>
             <div><strong>{rule.name}</strong><span>{rule.deviceId === "*" ? "Any device" : rule.deviceId} · {metricLabel(rule.metric)} {({ gt: ">", gte: "≥", lt: "<", lte: "≤" } as Record<string,string>)[rule.operator]} {rule.threshold}</span><small>{rule.cooldownMinutes} min cooldown · triggered {rule.triggerCount} time{rule.triggerCount === 1 ? "" : "s"} · last {when(rule.lastTriggeredAtMs)}</small></div>
-            <div><button type="button" disabled={busy} onClick={() => void toggleRule(rule)}>{rule.enabled ? "Pause" : "Enable"}</button><button type="button" disabled={busy} onClick={() => void removeRule(rule.id)}>Delete</button></div>
+            <div><button type="button" disabled={busy} onClick={() => void toggleRule(rule)}>{rule.enabled ? "Pause" : "Enable"}</button><button type="button" disabled={busy} onClick={() => setDeleteRuleTarget(rule)}>Delete</button></div>
           </article>) : <article className="tt-integration-empty"><TinyTitansIcon name="reminders" size={25} /><strong>No Titan Automations yet</strong><p>Create your first sensor threshold alert. Nothing is sent to a paid automation platform.</p></article>}
         </div>
       </div>
@@ -279,6 +281,17 @@ export default function IntegrationHub() {
       </div>
     </section>
 
+
+    <ConfirmActionDialog
+      open={Boolean(deleteRuleTarget)}
+      title="Delete Titan Automation?"
+      description={deleteRuleTarget ? <>Delete <strong>{deleteRuleTarget.name}</strong>? Tiny Titans will stop evaluating this rule immediately.</> : ""}
+      confirmLabel="Delete automation"
+      busy={busy}
+      destructive
+      onConfirm={() => { if (deleteRuleTarget) void removeRule(deleteRuleTarget.id); }}
+      onCancel={() => { if (!busy) setDeleteRuleTarget(null); }}
+    />
 
     <section className="tt-integration-section">
       <div className="tt-integration-section__head">
