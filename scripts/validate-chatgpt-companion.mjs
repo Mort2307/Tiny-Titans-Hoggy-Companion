@@ -75,6 +75,7 @@ const checks = [
   ["activity audit UI exists", page.includes("Recent ChatGPT Companion actions") && service.includes("getChatGPTCompanionActivity")],
   ["MCP endpoint is exported", backend.includes("exports.tinyTitansMcp") && backend.includes('path === "/mcp"')],
   ["MCP supports modern discovery and legacy initialize", backend.includes('"server/discover"') && backend.includes('"initialize"') && backend.includes('"2026-07-28"')],
+  ["modern tools/list emits required cache hints", backend.includes('message.method === "tools/list"') && backend.includes("ttlMs: 300000") && backend.includes('cacheScope: "public"')],
   ["MCP advertises scoped OAuth per tool", backend.includes("securitySchemes") && backend.includes('"animals.read"') && backend.includes('"records.write"')],
   ["authenticated profile tool is declared", backend.includes('"openai/profile": true') && backend.includes('name: "get_profile"')],
   ["OAuth protected-resource metadata exists", backend.includes("oauth-protected-resource") && backend.includes("authorization_servers")],
