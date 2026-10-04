@@ -90,7 +90,7 @@ const checks = [
   ["OAuth generations invalidate rotated connections", backend.includes("oauthGeneration") && backend.includes("GENERATION_MISMATCH")],
   ["keeper hosting routes MCP and OAuth before SPA fallback", firebaseConfig.includes('"source": "/mcp"') && firebaseConfig.includes('"functionId": "tinyTitansMcp"') && firebaseConfig.indexOf('"source": "/mcp"') < firebaseConfig.lastIndexOf('"destination": "/index.html"')],
   ["frontend explains Connect → sign in → Allow flow", page.includes("Press Connect") && page.includes("Sign in to Tiny Titans") && page.includes("press Allow") && page.includes("https://tinytitanskeeper.web.app/mcp")],
-  ["frontend has no manual secret handoff", !page.includes("ttlink_") && !page.includes("pairing code") && !page.includes("API secret")],
+  ["frontend has no manual secret handoff", !page.includes("ttlink_") && !page.includes("Generate link code") && !page.includes("Copy link code") && !service.includes("createChatGPTCompanionConnection")],
   ["multi-animal snapshot is exposed", backend.includes('name: "get_keeper_snapshot"') && backend.includes("selectRequestedAnimals")],
   ["reminder scopes are explicit", backend.includes('"reminders.read"') && backend.includes('"reminders.write"') && backend.includes('"read_reminders"') && backend.includes('"write_reminders"')],
   ["reminder write tool supports batch animal names", backend.includes('name: "create_reminders"') && backend.includes("animalNames") && backend.includes("recordPaths")],
