@@ -101,7 +101,10 @@ export default function IntegrationHub() {
       const [nextStatus, nextRules, nextAnimals] = await Promise.all([
         getIntegrationHubStatus(),
         getIntegrationAutomationRules(),
-        getUnifiedAnimalDirectory(user.uid),
+        getUnifiedAnimalDirectory(user.uid).catch((animalError) => {
+          console.warn("Tiny Titans: Integration Hub could not load the animal picker", animalError);
+          return [];
+        }),
       ]);
       setStatus(nextStatus);
       setRules(nextRules);
