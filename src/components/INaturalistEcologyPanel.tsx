@@ -21,7 +21,7 @@ export default function INaturalistEcologyPanel({ scientificName }: { scientific
   return <section className="universal-species-panel universal-ecology-panel">
     <div className="universal-species-panel-heading">
       <div><p className="eyebrow">WILD ECOLOGY · INATURALIST</p><h2>Wild observation context</h2></div>
-      {context?.sourceUrl && <a className="universal-species-marketplace-link" href={context.sourceUrl} target="_blank" rel="noreferrer">Open source →</a>}
+      {context?.sourceUrl && <a className="universal-species-marketplace-link" href={context.sourceUrl} target="_blank" rel="noreferrer">Open source <TinyTitansIcon name="forward" size={14} /></a>}
     </div>
     <div className="universal-health-boundary"><strong>Ecology boundary</strong><p>Public wild observations are ecological context only. Tiny Titans never converts local weather, sighting locations or wild behaviour into captive husbandry targets.</p></div>
     {loading ? <p>Loading cached wild observation context…</p> : unavailable || !context ? <p>Wild observation context is temporarily unavailable. The species profile and evidence-backed care data are unaffected.</p> : <>
