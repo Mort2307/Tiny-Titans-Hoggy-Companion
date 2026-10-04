@@ -1,5 +1,6 @@
 const crypto = require("node:crypto");
 const { getFirestore, FieldValue, Timestamp } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 
 const db = getFirestore();
@@ -20,6 +21,14 @@ const PUBLIC_ORIGIN = "https://tinytitanskeeper.web.app";
 const MCP_RESOURCE = `${PUBLIC_ORIGIN}/mcp`;
 const OAUTH_ISSUER = PUBLIC_ORIGIN;
 const PROTECTED_RESOURCE_METADATA = `${PUBLIC_ORIGIN}/.well-known/oauth-protected-resource`;
+const FIREBASE_WEB_CONFIG = Object.freeze({
+  apiKey: "AIzaSyCaUnpNpfoGcmgs3cfe8PXYTeU7_lz50d0",
+  authDomain: "tinytitans-hoggy-companion.firebaseapp.com",
+  projectId: "tinytitans-hoggy-companion",
+  storageBucket: "tinytitans-hoggy-companion.firebasestorage.app",
+  messagingSenderId: "309730999071",
+  appId: "1:309730999071:web:c2b9364b584f7879900e2a",
+});
 const OAUTH_SCOPES = Object.freeze([
   "animals.read",
   "records.read",
@@ -1534,9 +1543,10 @@ function renderAuthorizePage(response, input, errorMessage = "") {
   const error = errorMessage
     ? `<div class="error" role="alert">${htmlEscape(errorMessage)}</div>`
     : "";
+  const firebaseConfig = JSON.stringify(FIREBASE_WEB_CONFIG).replace(/</g, "\\u003c");
 
   return response
-    .status(errorMessage ? 400 : 200)
+    .status(200)
     .set("Cache-Control", "no-store")
     .set("Content-Type", "text/html; charset=utf-8")
     .send(`<!doctype html>
@@ -1546,27 +1556,134 @@ function renderAuthorizePage(response, input, errorMessage = "") {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Connect Tiny Titans to ChatGPT</title>
 <style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0f0f16;color:#f4f2ea;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center;padding:22px}.card{width:min(620px,100%);background:linear-gradient(145deg,#181724,#11111a);border:1px solid #343242;border-radius:24px;padding:28px;box-shadow:0 24px 70px #0008}.kicker{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#8fded4;font-weight:850}.brand{font-size:1.9rem;font-weight:900;margin:6px 0 8px}.muted{color:#b9b6c4;line-height:1.55}.permissions{background:#ffffff0a;border-radius:15px;padding:14px 18px;line-height:1.7}.field{display:grid;gap:7px;margin-top:20px}.field label{font-weight:850}.field input{width:100%;min-height:50px;border:1px solid #535064;border-radius:13px;background:#09090e;color:#fff;padding:12px 14px;font:inherit}.button{width:100%;min-height:50px;border:1px solid #65d5c8;border-radius:13px;background:linear-gradient(135deg,#2d726b,#4a356e);color:#fff;font-weight:900;font:inherit;margin-top:14px;cursor:pointer}.error{border:1px solid #ff7373;background:#ff737316;border-radius:12px;padding:11px 13px;margin-top:14px}.fine{font-size:.82rem;color:#9693a1;line-height:1.5;margin-top:16px}
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0f0f16;color:#f4f2ea;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center;padding:22px}.card{width:min(680px,100%);background:linear-gradient(145deg,#181724,#11111a);border:1px solid #343242;border-radius:24px;padding:28px;box-shadow:0 24px 70px #0008}.kicker{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#8fded4;font-weight:850}.brand{font-size:1.9rem;font-weight:900;margin:6px 0 8px}.muted{color:#b9b6c4;line-height:1.55}.permissions{background:#ffffff0a;border-radius:15px;padding:14px 18px;line-height:1.7}.field{display:grid;gap:7px;margin-top:12px}.field label{font-weight:850}.field input{width:100%;min-height:48px;border:1px solid #535064;border-radius:13px;background:#09090e;color:#fff;padding:11px 13px;font:inherit}.button{width:100%;min-height:48px;border:1px solid #65d5c8;border-radius:13px;background:linear-gradient(135deg,#2d726b,#4a356e);color:#fff;font-weight:900;font:inherit;margin-top:12px;cursor:pointer}.button.secondary{background:#171621;border-color:#4a4858}.button:disabled{opacity:.45;cursor:not-allowed}.error{border:1px solid #ff7373;background:#ff737316;border-radius:12px;padding:11px 13px;margin-top:14px}.fine{font-size:.82rem;color:#9693a1;line-height:1.5;margin-top:16px}.account{border:1px solid #3b675f;background:#65d5c812;border-radius:14px;padding:14px;margin:16px 0}.account strong,.account span{display:block}.account span{color:#b9b6c4;margin-top:4px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.status{min-height:24px;color:#b9b6c4;margin-top:10px}@media(max-width:560px){.row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <main class="card">
-<div class="kicker">Tiny Titans · Secure account link</div>
+<div class="kicker">Tiny Titans · Secure account authorization</div>
 <div class="brand">Connect Tiny Titans to ChatGPT</div>
-<p class="muted">Paste the one-time link code generated inside Tiny Titans. The code expires after 15 minutes and can only be used once.</p>
+<p class="muted">Sign in with the same Tiny Titans account you already use, then approve the requested access. There is no pairing code to copy or paste.</p>
 ${error}
 <h2>ChatGPT is requesting</h2>
 <ul class="permissions">${scopeLabels}</ul>
-<form method="post" action="/oauth/authorize" autocomplete="off">
+
+<form id="authorize-form" method="post" action="/oauth/authorize" autocomplete="off">
 ${hidden}
-<div class="field">
-<label for="link_code">One-time Tiny Titans link code</label>
-<input id="link_code" name="link_code" type="password" inputmode="text" autocapitalize="none" spellcheck="false" required placeholder="ttlink_…">
+<input id="firebase_id_token" type="hidden" name="firebase_id_token" value="">
+<input id="timezone" type="hidden" name="timezone" value="">
+
+<div id="account" class="account" hidden>
+  <strong id="account-name">Tiny Titans account</strong>
+  <span id="account-email"></span>
 </div>
-<button class="button" type="submit">Connect Tiny Titans</button>
+
+<div id="login">
+  <button id="google-signin" class="button" type="button">Continue with Google</button>
+  <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="username"></div>
+  <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password"></div>
+  <button id="email-signin" class="button secondary" type="button">Sign in with email</button>
+</div>
+
+<div id="signed-in-actions" hidden>
+  <button id="allow" class="button" type="submit">Allow and connect</button>
+  <button id="switch-account" class="button secondary" type="button">Use a different Tiny Titans account</button>
+</div>
+<button class="button secondary" type="submit" name="decision" value="deny" formnovalidate>Cancel</button>
+<div id="auth-status" class="status" role="status"></div>
 </form>
-<p class="fine">The link code is exchanged for revocable, scoped OAuth credentials. ChatGPT never receives generic Firestore access or your Tiny Titans password.</p>
+
+<p class="fine">Tiny Titans verifies your Firebase account server-side and then issues revocable, scoped OAuth credentials to ChatGPT. Your Firebase password and generic Firestore access are never shared with ChatGPT.</p>
 </main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+
+const app = initializeApp(${firebaseConfig});
+const auth = getAuth(app);
+const form = document.getElementById("authorize-form");
+const login = document.getElementById("login");
+const account = document.getElementById("account");
+const signedInActions = document.getElementById("signed-in-actions");
+const accountName = document.getElementById("account-name");
+const accountEmail = document.getElementById("account-email");
+const status = document.getElementById("auth-status");
+const tokenField = document.getElementById("firebase_id_token");
+const timezoneField = document.getElementById("timezone");
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+
+function setStatus(message) { status.textContent = message || ""; }
+function showUser(user) {
+  const signedIn = Boolean(user);
+  login.hidden = signedIn;
+  account.hidden = !signedIn;
+  signedInActions.hidden = !signedIn;
+  if (user) {
+    accountName.textContent = user.displayName || "Tiny Titans account";
+    accountEmail.textContent = user.email || "Signed in";
+    setStatus("Signed in. Review the permissions above, then allow the connection.");
+  } else {
+    accountName.textContent = "Tiny Titans account";
+    accountEmail.textContent = "";
+    setStatus("Sign in to Tiny Titans to continue.");
+  }
+}
+
+onAuthStateChanged(auth, showUser);
+
+document.getElementById("google-signin").addEventListener("click", async () => {
+  try {
+    setStatus("Opening Google sign-in…");
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    setStatus(error && error.message ? error.message : "Google sign-in could not be completed.");
+  }
+});
+
+document.getElementById("email-signin").addEventListener("click", async () => {
+  try {
+    if (!email.value || !password.value) {
+      setStatus("Enter your Tiny Titans email and password.");
+      return;
+    }
+    setStatus("Signing in…");
+    await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
+  } catch (error) {
+    setStatus(error && error.message ? error.message : "Email sign-in could not be completed.");
+  }
+});
+
+document.getElementById("switch-account").addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    setStatus("Choose the Tiny Titans account you want to connect.");
+  } catch {
+    setStatus("Tiny Titans could not switch accounts.");
+  }
+});
+
+form.addEventListener("submit", async (event) => {
+  if (event.submitter && event.submitter.value === "deny") return;
+  event.preventDefault();
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      setStatus("Sign in to Tiny Titans before allowing the connection.");
+      return;
+    }
+    setStatus("Authorizing Tiny Titans…");
+    tokenField.value = await user.getIdToken(true);
+    timezoneField.value = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    HTMLFormElement.prototype.submit.call(form);
+  } catch (error) {
+    setStatus(error && error.message ? error.message : "Tiny Titans could not authorize this connection.");
+  }
+});
+</script>
 </body>
 </html>`);
 }
@@ -1649,6 +1766,74 @@ async function createOAuthAuthorizationCode(input, linkCode) {
   return { authorizationCode };
 }
 
+async function createOAuthAuthorizationCodeForUid(input, uid, timezone) {
+  const access = await resolveEffectiveTier(uid);
+  if (!COMPANION_TIERS.has(access.tier)) {
+    return { error: "ChatGPT Companion requires Titan Pro or an eligible Business/Rescue tier." };
+  }
+
+  const context = await resolveAccountContext(uid);
+  if (context.sharedFamily) {
+    return { error: "Connect ChatGPT from the Tiny Titans Family Owner account so write access remains safe." };
+  }
+
+  const authorizationCode = randomCredential(OAUTH_CODE_PREFIX);
+  const authorizationCodeRef = oauthCollection("chatgptOauthCodes").doc(tokenHash(authorizationCode));
+  const connection = connectionRef(uid);
+  const expiresAt = timestampFromNowMillis(OAUTH_CODE_TTL_MINUTES * 60_000);
+  const requestedTimezone = normaliseString(timezone);
+  const safeTimezone = isValidTimezone(requestedTimezone) ? requestedTimezone : "UTC";
+  const permissions = permissionsFromScopes(input.scopes);
+
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(connection);
+    const current = snapshot.exists ? snapshot.data() || {} : {};
+    const generation = Number(current.oauthGeneration || 0) + 1;
+
+    transaction.set(authorizationCodeRef, {
+      uid,
+      clientId: input.clientId,
+      redirectUri: input.redirectUri,
+      scopes: input.scopes,
+      resource: input.resource,
+      codeChallenge: input.codeChallenge,
+      codeChallengeMethod: "S256",
+      generation,
+      createdAt: FieldValue.serverTimestamp(),
+      expiresAt,
+      usedAt: null,
+    });
+
+    transaction.set(connection, {
+      uid,
+      permissions,
+      timezone: safeTimezone,
+      revoked: false,
+      revokedAt: FieldValue.delete(),
+      oauthGeneration: generation,
+      oauthConnectedAt: FieldValue.delete(),
+      oauthRefreshExpiresAt: FieldValue.delete(),
+      linkPrefix: FieldValue.delete(),
+      linkCodeVersion: FieldValue.delete(),
+      linkSecretHash: FieldValue.delete(),
+      linkCreatedAt: FieldValue.delete(),
+      linkExpiresAt: FieldValue.delete(),
+      linkUsedAt: FieldValue.delete(),
+      prefix: FieldValue.delete(),
+      secretHash: FieldValue.delete(),
+      expiresAt: FieldValue.delete(),
+      createdAt: current.createdAt || FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      effectiveTierAtCreation: access.tier,
+      sourceAtCreation: access.source,
+      connectionVersion: 3,
+      authorizationMode: "firebase_oauth",
+    }, { merge: true });
+  });
+
+  return { authorizationCode };
+}
+
 async function exchangeAuthorizationCode({ code, clientId, redirectUri, codeVerifier, resource }) {
   if (!code.startsWith(OAUTH_CODE_PREFIX) || code.length < 30) return { error: "invalid_grant", description: "Authorization code is invalid." };
   if (!/^[A-Za-z0-9._~-]{43,128}$/.test(codeVerifier)) return { error: "invalid_grant", description: "PKCE code_verifier is invalid." };
@@ -1722,7 +1907,7 @@ async function exchangeAuthorizationCode({ code, clientId, redirectUri, codeVeri
       PKCE_MISMATCH: "PKCE verification failed.",
       CONNECTION_INVALID: "Tiny Titans connection no longer exists.",
       CONNECTION_REVOKED: "Tiny Titans connection has been revoked.",
-      GENERATION_MISMATCH: "Tiny Titans connection has been rotated. Start the link again.",
+      GENERATION_MISMATCH: "Tiny Titans connection has been rotated. Connect the account again.",
     }[codeName] || "Authorization code could not be exchanged.";
     return { error: "invalid_grant", description };
   }
@@ -1800,7 +1985,7 @@ async function exchangeRefreshToken({ refreshToken, clientId, resource }) {
       RESOURCE_MISMATCH: "OAuth resource does not match this refresh token.",
       CONNECTION_INVALID: "Tiny Titans connection no longer exists.",
       CONNECTION_REVOKED: "Tiny Titans connection has been revoked.",
-      GENERATION_MISMATCH: "Tiny Titans connection has been rotated. Link the account again.",
+      GENERATION_MISMATCH: "Tiny Titans connection has been rotated. Connect the account again.",
     }[name] || "Refresh token could not be exchanged.";
     return { error: "invalid_grant", description };
   }
@@ -2346,8 +2531,30 @@ async function handleOauthAuthorize(request, response) {
     return response.status(400).send(`Tiny Titans OAuth request rejected: ${htmlEscape(validationError)}`);
   }
 
-  const linkCode = oauthField(request, "link_code");
-  const linked = await createOAuthAuthorizationCode(input, linkCode);
+  const decision = oauthField(request, "decision");
+  if (decision === "deny") {
+    return redirectOAuth(response, input, {
+      error: "access_denied",
+      error_description: "The Tiny Titans connection was cancelled.",
+      state: input.state,
+    });
+  }
+
+  const firebaseIdToken = oauthField(request, "firebase_id_token");
+  if (!firebaseIdToken) return renderAuthorizePage(response, input, "Sign in to Tiny Titans before allowing the connection.");
+
+  let decodedToken;
+  try {
+    decodedToken = await getAuth().verifyIdToken(firebaseIdToken, true);
+  } catch {
+    return renderAuthorizePage(response, input, "Your Tiny Titans sign-in expired or could not be verified. Sign in again.");
+  }
+
+  const linked = await createOAuthAuthorizationCodeForUid(
+    input,
+    decodedToken.uid,
+    oauthField(request, "timezone"),
+  );
   if (linked.error) return renderAuthorizePage(response, input, linked.error);
 
   return redirectOAuth(response, input, {
