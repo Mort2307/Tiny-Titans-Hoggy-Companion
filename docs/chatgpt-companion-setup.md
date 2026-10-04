@@ -17,8 +17,9 @@ The integration has three layers:
 The one-time code created in Tiny Titans is a **link code**, not an API key. It:
 
 - starts with `ttlink_`;
-- contains high-entropy random data;
-- is stored only as a SHA-256 hash;
+- contains an opaque account-routing segment plus high-entropy random secret data;
+- is never stored in plaintext; the complete code is verified against a SHA-256 hash;
+- routes directly to the owning connection document, avoiding a collection-wide prefix lookup;
 - expires after 15 minutes;
 - can be consumed once;
 - is invalidated when the connection is rotated or revoked.
