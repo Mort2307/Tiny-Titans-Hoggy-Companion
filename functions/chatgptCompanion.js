@@ -226,8 +226,10 @@ function connectionState(data, access) {
     legacyExpiresAt > now,
   );
   const connected = Boolean(data && !revoked && eligible && (oauthConnected || legacyConnected));
-  const permissions = Array.isArray(data?.permissions) ? data.permissions : DEFAULT_PERMISSIONS;
-  const upgradeRequired = connected && DEFAULT_PERMISSIONS.some((permission) => !permissions.includes(permission));
+  const permissions = oauthConnected && Array.isArray(data?.oauthScopes)
+    ? permissionsFromScopes(data.oauthScopes)
+    : Array.isArray(data?.permissions) ? data.permissions : DEFAULT_PERMISSIONS;
+  const upgradeRequired = connected && ((oauthConnected && !Array.isArray(data?.oauthScopes)) || DEFAULT_PERMISSIONS.some((permission) => !permissions.includes(permission)));
   const prepared = Boolean(
     data &&
     !revoked &&
@@ -317,6 +319,7 @@ exports.createChatGPTCompanionConnection = onCall({ region: "europe-west2" }, as
       oauthGeneration,
       oauthConnectedAt: FieldValue.delete(),
       oauthRefreshExpiresAt: FieldValue.delete(),
+      oauthScopes: FieldValue.delete(),
       prefix: FieldValue.delete(),
       secretHash: FieldValue.delete(),
       expiresAt: FieldValue.delete(),
@@ -384,7 +387,7 @@ exports.getChatGPTCompanionActivity = onCall({ region: "europe-west2" }, async (
 
 function bearerToken(request) {
   const header = String(request.get("authorization") || "");
-  return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  return /^Bearer\s+/i.test(header) ? header.replace(/^Bearer\s+/i, "").trim() : "";
 }
 
 function permissionsFromScopes(scopes) {
@@ -630,6 +633,7 @@ async function resolveAnimal(auth, args) {
 async function getAnimal(auth, animalId) {
   const id = normaliseString(animalId);
   if (!id) fail(400, "animalId is required.", "ANIMAL_ID_MISSING");
+  if (id.includes("/") || id === "." || id === "..") fail(400, "animalId must be a single animal ID.", "ANIMAL_ID_INVALID");
   const owner = auth.context.dataOwnerUid;
   const snakeRef = db.collection("users").doc(owner).collection("snakes").doc(id);
   const snake = await snakeRef.get();
@@ -671,7 +675,7 @@ async function getAnimalSummary(auth, args) {
 
   const owner = auth.context.dataOwnerUid;
   const [feedings, weights, sheds, behaviours, health] = await Promise.all([
-    recentRecords(owner, animal.id, "feedings", 1),
+    recentRecords(owner, animal.id, "feedings", 100),
     recentRecords(owner, animal.id, "weights", 2),
     recentRecords(owner, animal.id, "sheds", 1),
     recentRecords(owner, animal.id, "behaviours", 1),
@@ -687,11 +691,13 @@ async function getAnimalSummary(auth, args) {
     sex: animal.data.sex || "Unknown",
     morphs: Array.isArray(animal.data.morphs) ? animal.data.morphs : [],
     status: animal.data.status || "Active",
-    currentWeightGrams: typeof animal.data.weight === "number" ? animal.data.weight : weights[0]?.weight ?? null,
-    lastWeighedDate: animal.data.lastWeighedDate || weights[0]?.date || null,
+    currentWeightGrams: weights[0]?.weight ?? (typeof animal.data.weight === "number" ? animal.data.weight : null),
+    lastWeighedDate: weights[0]?.date || animal.data.lastWeighedDate || null,
+    latestWeight: weights[0] || null,
     lastMealDate: animal.data.lastMealDate || feedings.find((item) => item.response === "Accepted" || item.response === "Partial")?.date || null,
     feedingSchedule: animal.data.feedingSchedule || null,
     latestFeeding: feedings[0] || null,
+    recentFeedingAttempts: feedings.slice(0, 20),
     latestShed: sheds[0] || null,
     latestBehaviour: behaviours[0] || null,
     latestHealth: health[0] || null,
@@ -786,6 +792,8 @@ async function getKeeperSnapshot(auth, args) {
     count: summaries.length,
     animals: summaries,
     generatedAt: nowIso(),
+    timezone: auth.timezone,
+    localDate: localDateKey(new Date(), auth.timezone || "UTC"),
     note: "Use lastMealDate for the last successful/partial feeding date; latestFeeding is the latest feeding attempt.",
   };
 }
@@ -798,7 +806,7 @@ async function listRemindersForAuth(auth, args = {}) {
   const status = normaliseString(args.status);
   if (kind) reminders = reminders.filter((item) => item.kind === kind);
   if (status) reminders = reminders.filter((item) => item.status === status);
-  if (args.includeCompleted !== true) reminders = reminders.filter((item) => item.status !== "completed");
+  if (args.includeCompleted !== true && status !== "completed") reminders = reminders.filter((item) => item.status !== "completed");
 
   const names = Array.isArray(args.animalNames) ? args.animalNames.map(normaliseName).filter(Boolean) : [];
   if (names.length) {
@@ -957,9 +965,57 @@ async function touchConnection(auth, tool) {
   }, { merge: true });
 }
 
-async function existingRecord(ref) {
-  const snapshot = await ref.get();
-  return snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
+function recordFingerprint(record) {
+  const canonical = Object.fromEntries(Object.entries(record || {}).filter(([key]) => key !== "integrationMetadata" && key !== "lastModifiedBy").sort(([a], [b]) => a.localeCompare(b)));
+  return tokenHash(JSON.stringify(canonical));
+}
+
+// Record, derived profile fields, reminder anchors and audit entry commit together.
+// A retry cannot report success for an unaudited or partially saved keeper record.
+async function saveTrackerRecord(auth, snake, collection, record, summary, deepLink) {
+  const ref = snake.ref.collection(collection).doc(record.id);
+  const actionRef = actionsCollection(auth.uid).doc(`record-${tokenHash(ref.path).slice(0, 32)}`);
+  return db.runTransaction(async (transaction) => {
+    const existing = await transaction.get(ref);
+    if (existing.exists) {
+      if (recordFingerprint(existing.data()) !== recordFingerprint(record)) fail(409, "This request key was already used with different record details. Check the saved record before retrying.", "IDEMPOTENCY_CONFLICT");
+      return { duplicate: true, record: { ...existing.data(), id: existing.id }, actionId: actionRef.id, deepLink };
+    }
+    const fresh = await transaction.get(snake.ref);
+    if (!fresh.exists) fail(404, "That animal no longer exists in this account.", "ANIMAL_NOT_FOUND");
+    const animal = fresh.data() || {};
+    const rootUpdate = { updatedAt: FieldValue.serverTimestamp() };
+    const reminderWrites = [];
+    if (collection === "weights") {
+      const sameDay = await transaction.get(snake.ref.collection("weights").where("date", "==", record.date).limit(1));
+      if (!sameDay.empty) fail(409, "A weight record already exists for this date. Open the Weight tracker in Tiny Titans to edit it.", "WEIGHT_DUPLICATE_DATE");
+      if (!animal.lastWeighedDate || record.date >= String(animal.lastWeighedDate)) Object.assign(rootUpdate, { weight: record.weight, lastWeighedDate: record.date });
+    }
+    if (collection === "feedings" && ["Accepted", "Partial"].includes(record.response)) {
+      const latestMeal = [record.date, normaliseString(animal.lastMealDate)].sort().at(-1);
+      rootUpdate.lastMealDate = latestMeal;
+      if (animal.feedingSchedule?.enabled === true && Number.isInteger(Number(animal.feedingSchedule.intervalDays)) && Number(animal.feedingSchedule.intervalDays) > 0) {
+        rootUpdate["feedingSchedule.nextFeedingDate"] = addDays(latestMeal, Number(animal.feedingSchedule.intervalDays));
+      }
+      const reminders = await transaction.get(db.collection("users").doc(auth.context.dataOwnerUid).collection("reminders").limit(500));
+      for (const item of reminders.docs) {
+        const data = item.data() || {};
+        if (data.kind !== "feeding" || data.status !== "active" || data.snakeId !== snake.id || data.scheduleType === "once" || data.oneTime === true) continue;
+        const nextDate = addDays(latestMeal, Math.max(1, Math.min(3650, Math.round(Number(data.frequencyDays) || 1))));
+        const timezone = isValidTimezone(data.timezone) ? data.timezone : auth.timezone || "UTC";
+        reminderWrites.push([item.ref, { nextNotificationAt: zonedTimeToUtc(nextDate, validateClockTime(data.time || "09:00"), timezone).toISOString(), nextOccurrenceDate: nextDate, nextPhase: "due", leadUpEnabled: false, leadUpDays: 0, lockedUntil: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() }]);
+      }
+    }
+    transaction.set(ref, record);
+    transaction.update(snake.ref, rootUpdate);
+    for (const [reminderRef, update] of reminderWrites) transaction.update(reminderRef, update);
+    transaction.set(actionRef, {
+      tool: record.integrationMetadata.tool, animalId: snake.id, animalName: animal.name || null,
+      recordId: record.id, recordPath: ref.path, recordCollection: collection, recordFingerprint: recordFingerprint(record), summary, reversible: true,
+      requesterUid: auth.uid, dataOwnerUid: auth.context.dataOwnerUid, source: "chatgpt_companion", createdAt: FieldValue.serverTimestamp(), createdAtIso: nowIso(),
+    });
+    return { record, actionId: actionRef.id, deepLink };
+  });
 }
 
 async function logFeeding(auth, args) {
@@ -978,10 +1034,6 @@ async function logFeeding(auth, args) {
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) fail(400, "quantity must be a whole number between 1 and 100.", "QUANTITY_INVALID");
 
   const id = idForAction(auth, "log_feeding", args.idempotencyKey);
-  const ref = snake.ref.collection("feedings").doc(id);
-  const duplicate = await existingRecord(ref);
-  if (duplicate) return { duplicate: true, record: duplicate, deepLink: `/snakes/${snake.id}/feeding?record=${encodeURIComponent(id)}` };
-
   const record = {
     id,
     snakeId: snake.id,
@@ -998,32 +1050,7 @@ async function logFeeding(auth, args) {
     lastModifiedBy: auth.uid,
     integrationMetadata: metadata(auth, "log_feeding"),
   };
-  await ref.set(record);
-
-  const rootUpdate = { updatedAt: FieldValue.serverTimestamp() };
-  if ((response === "Accepted" || response === "Partial") && (!snake.data.lastMealDate || date >= String(snake.data.lastMealDate))) {
-    rootUpdate.lastMealDate = date;
-    const schedule = snake.data.feedingSchedule;
-    if (schedule?.enabled === true && Number.isInteger(Number(schedule.intervalDays)) && Number(schedule.intervalDays) > 0) {
-      rootUpdate["feedingSchedule.nextFeedingDate"] = addDays(date, Number(schedule.intervalDays));
-    }
-  }
-  await snake.ref.update(rootUpdate);
-  if (response === "Accepted" || response === "Partial") {
-    await reanchorRecurringFeedingReminders(auth, snake, date);
-  }
-
-  const actionId = await auditAction(auth, {
-    tool: "log_feeding",
-    animalId: snake.id,
-    animalName: snake.data.name || null,
-    recordId: id,
-    recordPath: ref.path,
-    recordCollection: "feedings",
-    summary: `${snake.data.name || "Animal"} · ${response} · ${foodType}${weight !== undefined ? ` · ${weight}g` : ""}`,
-    reversible: true,
-  });
-  return { record, actionId, deepLink: `/snakes/${snake.id}/feeding?record=${encodeURIComponent(id)}` };
+  return saveTrackerRecord(auth, snake, "feedings", record, `${snake.data.name || "Animal"} · ${response} · ${foodType}${weight !== undefined ? ` · ${weight}g` : ""}`, `/snakes/${snake.id}/feeding?record=${encodeURIComponent(id)}`);
 }
 
 async function logWeight(auth, args) {
@@ -1035,13 +1062,7 @@ async function logWeight(auth, args) {
   if (unit === "kg") value *= 1000;
   if (!Number.isFinite(value) || value <= 0 || value > 100000) fail(400, "Weight must be a sensible positive value in grams or kilograms.", "WEIGHT_INVALID");
 
-  const sameDay = await snake.ref.collection("weights").where("date", "==", date).limit(1).get();
   const id = idForAction(auth, "log_weight", args.idempotencyKey);
-  const ref = snake.ref.collection("weights").doc(id);
-  const duplicate = await existingRecord(ref);
-  if (duplicate) return { duplicate: true, record: duplicate, deepLink: `/snakes/${snake.id}/weights?record=${encodeURIComponent(id)}` };
-  if (!sameDay.empty) fail(409, "A weight record already exists for this date. Ask to edit the existing record instead of creating a duplicate.", "WEIGHT_DUPLICATE_DATE");
-
   const record = {
     id,
     snakeId: snake.id,
@@ -1051,22 +1072,7 @@ async function logWeight(auth, args) {
     lastModifiedBy: auth.uid,
     integrationMetadata: metadata(auth, "log_weight"),
   };
-  await ref.set(record);
-  if (!snake.data.lastWeighedDate || date >= String(snake.data.lastWeighedDate)) {
-    await snake.ref.update({ weight: value, lastWeighedDate: date, updatedAt: FieldValue.serverTimestamp() });
-  }
-
-  const actionId = await auditAction(auth, {
-    tool: "log_weight",
-    animalId: snake.id,
-    animalName: snake.data.name || null,
-    recordId: id,
-    recordPath: ref.path,
-    recordCollection: "weights",
-    summary: `${snake.data.name || "Animal"} · ${Number(value.toFixed(2))}g`,
-    reversible: true,
-  });
-  return { record, actionId, deepLink: `/snakes/${snake.id}/weights?record=${encodeURIComponent(id)}` };
+  return saveTrackerRecord(auth, snake, "weights", record, `${snake.data.name || "Animal"} · ${Number(value.toFixed(2))}g`, `/snakes/${snake.id}/weights?record=${encodeURIComponent(id)}`);
 }
 
 async function logShed(auth, args) {
@@ -1082,10 +1088,6 @@ async function logShed(auth, args) {
   const canonicalAreas = Array.from(new Set([...retainedAreas, ...(retainedEyeCaps ? ["Eye Cap"] : []), ...(retainedTailTip ? ["Tail Tip"] : [])]));
 
   const id = idForAction(auth, "log_shed", args.idempotencyKey);
-  const ref = snake.ref.collection("sheds").doc(id);
-  const duplicate = await existingRecord(ref);
-  if (duplicate) return { duplicate: true, record: duplicate, deepLink: `/snakes/${snake.id}/shedding?record=${encodeURIComponent(id)}` };
-
   const record = {
     id,
     snakeId: snake.id,
@@ -1104,18 +1106,7 @@ async function logShed(auth, args) {
     lastModifiedBy: auth.uid,
     integrationMetadata: metadata(auth, "log_shed"),
   };
-  await ref.set(record);
-  const actionId = await auditAction(auth, {
-    tool: "log_shed",
-    animalId: snake.id,
-    animalName: snake.data.name || null,
-    recordId: id,
-    recordPath: ref.path,
-    recordCollection: "sheds",
-    summary: `${snake.data.name || "Animal"} · ${status} shed · ${quality}`,
-    reversible: true,
-  });
-  return { record, actionId, deepLink: `/snakes/${snake.id}/shedding?record=${encodeURIComponent(id)}` };
+  return saveTrackerRecord(auth, snake, "sheds", record, `${snake.data.name || "Animal"} · ${status} shed · ${quality}`, `/snakes/${snake.id}/shedding?record=${encodeURIComponent(id)}`);
 }
 
 async function logBehaviour(auth, args) {
@@ -1128,10 +1119,6 @@ async function logBehaviour(auth, args) {
   if (!description) fail(400, "A behaviour description is required.", "BEHAVIOUR_DESCRIPTION_MISSING");
 
   const id = idForAction(auth, "log_behaviour", args.idempotencyKey);
-  const ref = snake.ref.collection("behaviours").doc(id);
-  const duplicate = await existingRecord(ref);
-  if (duplicate) return { duplicate: true, record: duplicate, deepLink: `/snakes/${snake.id}/behaviour?record=${encodeURIComponent(id)}` };
-
   const record = {
     id,
     snakeId: snake.id,
@@ -1145,18 +1132,7 @@ async function logBehaviour(auth, args) {
     lastModifiedBy: auth.uid,
     integrationMetadata: metadata(auth, "log_behaviour"),
   };
-  await ref.set(record);
-  const actionId = await auditAction(auth, {
-    tool: "log_behaviour",
-    animalId: snake.id,
-    animalName: snake.data.name || null,
-    recordId: id,
-    recordPath: ref.path,
-    recordCollection: "behaviours",
-    summary: `${snake.data.name || "Animal"} · ${observation}`,
-    reversible: true,
-  });
-  return { record, actionId, deepLink: `/snakes/${snake.id}/behaviour?record=${encodeURIComponent(id)}` };
+  return saveTrackerRecord(auth, snake, "behaviours", record, `${snake.data.name || "Animal"} · ${observation}`, `/snakes/${snake.id}/behaviour?record=${encodeURIComponent(id)}`);
 }
 
 async function logHealthObservation(auth, args) {
@@ -1170,10 +1146,6 @@ async function logHealthObservation(auth, args) {
   if (!description) fail(400, "A health observation description is required.", "HEALTH_DESCRIPTION_MISSING");
 
   const id = idForAction(auth, "log_health_observation", args.idempotencyKey);
-  const ref = snake.ref.collection("health").doc(id);
-  const duplicate = await existingRecord(ref);
-  if (duplicate) return { duplicate: true, record: duplicate, deepLink: `/snakes/${snake.id}/health?record=${encodeURIComponent(id)}` };
-
   const record = {
     id,
     snakeId: snake.id,
@@ -1190,18 +1162,7 @@ async function logHealthObservation(auth, args) {
     lastModifiedBy: auth.uid,
     integrationMetadata: metadata(auth, "log_health_observation"),
   };
-  await ref.set(record);
-  const actionId = await auditAction(auth, {
-    tool: "log_health_observation",
-    animalId: snake.id,
-    animalName: snake.data.name || null,
-    recordId: id,
-    recordPath: ref.path,
-    recordCollection: "health",
-    summary: `${snake.data.name || "Animal"} · ${eventType} · ${status}`,
-    reversible: true,
-  });
-  return { record, actionId, deepLink: `/snakes/${snake.id}/health?record=${encodeURIComponent(id)}` };
+  return saveTrackerRecord(auth, snake, "health", record, `${snake.data.name || "Animal"} · ${eventType} · ${status}`, `/snakes/${snake.id}/health?record=${encodeURIComponent(id)}`);
 }
 
 async function recomputeWeightSummary(snakeRef) {
@@ -1215,10 +1176,16 @@ async function recomputeWeightSummary(snakeRef) {
   await snakeRef.update({ weight: Number(data.weight), lastWeighedDate: data.date || "", updatedAt: FieldValue.serverTimestamp() });
 }
 
-async function recomputeFeedingSummary(snakeRef) {
+async function recomputeFeedingSummary(snakeRef, auth) {
   const recent = await snakeRef.collection("feedings").orderBy("date", "desc").limit(100).get();
   const accepted = recent.docs.map((item) => item.data() || {}).find((data) => data.response === "Accepted" || data.response === "Partial");
-  await snakeRef.update({ lastMealDate: accepted?.date || "", updatedAt: FieldValue.serverTimestamp() });
+  const snake = (await snakeRef.get()).data() || {};
+  const update = { lastMealDate: accepted?.date || "", updatedAt: FieldValue.serverTimestamp() };
+  if (snake.feedingSchedule?.enabled === true && Number(snake.feedingSchedule.intervalDays) > 0) {
+    update["feedingSchedule.nextFeedingDate"] = accepted?.date ? addDays(accepted.date, Number(snake.feedingSchedule.intervalDays)) : "";
+  }
+  await snakeRef.update(update);
+  if (accepted?.date) await reanchorRecurringFeedingReminders(auth, { id: snakeRef.id }, accepted.date);
 }
 
 async function undoLastAction(auth) {
@@ -1231,17 +1198,36 @@ async function undoLastAction(auth) {
   if (!candidate) fail(404, "There is no reversible ChatGPT Companion action to undo.", "UNDO_NOTHING");
 
   const action = candidate.data() || {};
+  if (action.dataOwnerUid !== auth.context.dataOwnerUid || action.requesterUid !== auth.uid) {
+    fail(409, "This action belongs to a previous account context and cannot be undone here.", "UNDO_ACCOUNT_CHANGED");
+  }
   const recordPaths = Array.isArray(action.recordPaths) ? action.recordPaths.filter((path) => typeof path === "string") : (typeof action.recordPath === "string" ? [action.recordPath] : []);
+  const allowedCollections = new Set(["feedings", "weights", "sheds", "behaviours", "health"]);
+  const records = [];
   for (const recordPath of recordPaths) {
+    const parts = recordPath.split("/");
+    const allowed = parts[0] === "users" && parts[1] === auth.context.dataOwnerUid &&
+      ((parts.length === 4 && parts[2] === "reminders" && action.recordCollection === "reminders") ||
+       (parts.length === 6 && parts[2] === "snakes" && parts[3] === action.animalId && allowedCollections.has(parts[4]) && parts[4] === action.recordCollection));
+    if (!allowed) fail(403, "Undo is restricted to this account's Companion records.", "UNDO_RECORD_INVALID");
     const recordRef = db.doc(recordPath);
     const record = await recordRef.get();
-    if (record.exists) await recordRef.delete();
+    if (record.exists && (record.data()?.integrationMetadata?.source !== "chatgpt_companion" || record.data()?.integrationMetadata?.requesterUid !== auth.uid)) {
+      fail(409, "This record is no longer owned by this Companion action.", "UNDO_RECORD_CHANGED");
+    }
+    if (record.exists && action.recordFingerprint && action.recordFingerprint !== recordFingerprint(record.data())) {
+      fail(409, "This record was edited after ChatGPT created it. Review it in Tiny Titans before deleting it.", "UNDO_RECORD_CHANGED");
+    }
+    if (record.exists) records.push(recordRef);
   }
+  const batch = db.batch();
+  for (const ref of records) batch.delete(ref);
+  await batch.commit();
 
   if (action.animalId && action.recordCollection) {
     const snakeRef = db.collection("users").doc(auth.context.dataOwnerUid).collection("snakes").doc(action.animalId);
     if (action.recordCollection === "weights") await recomputeWeightSummary(snakeRef);
-    if (action.recordCollection === "feedings") await recomputeFeedingSummary(snakeRef);
+    if (action.recordCollection === "feedings") await recomputeFeedingSummary(snakeRef, auth);
   }
 
   await candidate.ref.set({
@@ -1271,6 +1257,7 @@ async function undoLastAction(auth) {
 }
 
 async function dispatchTool(auth, tool, args) {
+  if (!hasRequiredScopes(auth, requiredScopesForTool(tool))) fail(403, "This connection needs additional permission for that action. Reconnect Tiny Titans.", "PERMISSION_DENIED");
   if (!toolPermission(auth, tool)) fail(403, "This Tiny Titans connection does not have permission for that action.", "PERMISSION_DENIED");
   if (WRITE_TOOLS.has(tool)) requireFamilyWriteOwner(auth.context);
 
@@ -1368,12 +1355,12 @@ exports.chatGPTCompanionApi = onRequest({ region: "europe-west2", cors: false, t
 const MCP_SERVER_INFO = Object.freeze({
   name: "tiny-titans-keeper-companion",
   title: "Tiny Titans Keeper Companion",
-  version: "2.0.0",
+  version: "2.1.0",
   description: "Secure conversational keeper records for Tiny Titans.",
   websiteUrl: PUBLIC_ORIGIN,
 });
 
-const MCP_INSTRUCTIONS = "Complete every part of a compound keeper request, not just the first clause. Prefer get_keeper_snapshot for multi-animal or account-wide keeper questions instead of repeatedly resolving animals one by one. Use create_reminders for reminder requests and convert relative dates such as Monday into an absolute YYYY-MM-DD using the user current date. Never invent animal IDs. Read keeper records when useful. Only create, change, or undo records when the user asks for that action. Tiny Titans tools are scoped to the authenticated keeper account and never provide generic database access.";
+const MCP_INSTRUCTIONS = "Complete every part of a compound keeper request, not just the first clause. Prefer get_keeper_snapshot for multi-animal keeper questions; it supplies timezone, localDate, latestWeight and recentFeedingAttempts. Use get_feeding_history when a question needs older attempts. Use create_reminders for reminder requests and convert relative dates such as Monday using the keeper timezone and localDate. Never invent IDs, weights, dates or successful writes. Resolve ambiguous animal names before acting. Use a stable idempotencyKey for each requested write and reuse it on retries. Confirm each completed part with actual returned records; report any incomplete part. Only create or undo records when the user asks. Arbitrary editing, deletion and universal-animal tracker writes are not implemented; direct users to Tiny Titans for those. A ttlink_ code belongs only in the Tiny Titans OAuth connection page; never treat it as a bearer token or ask for it in chat. If authentication fails, reconnect the Tiny Titans plugin and complete OAuth. Tools are scoped to the authenticated keeper account.";
 
 function oauthCollection(name) {
   return db.collection(name);
@@ -1401,7 +1388,9 @@ function invalidScopes(scopes) {
 }
 
 function oauthField(request, key) {
-  const body = request.body && typeof request.body === "object" ? request.body : {};
+  const body = typeof request.body === "string" || Buffer.isBuffer(request.body)
+    ? Object.fromEntries(new URLSearchParams(String(request.body)))
+    : request.body && typeof request.body === "object" ? request.body : {};
   const value = body[key] ?? request.query?.[key];
   return Array.isArray(value) ? normaliseString(value[0]) : normaliseString(value);
 }
@@ -1423,12 +1412,23 @@ function base64UrlSha256(value) {
 function oauthJson(response, status, payload) {
   return response
     .status(status)
+    .set("Access-Control-Allow-Origin", "*")
     .set("Cache-Control", "no-store")
     .set("Pragma", "no-cache")
     .json(payload);
 }
 
-function validChatGptClient(clientId, redirectUri) {
+function allowedChatGptRedirect(redirectUri) {
+  return redirectUri === "https://chatgpt.com/connector_platform_oauth_redirect" ||
+    /^https:\/\/chatgpt\.com\/connector\/oauth\/[A-Za-z0-9_-]+$/.test(redirectUri);
+}
+
+async function validChatGptClient(clientId, redirectUri) {
+  if (!allowedChatGptRedirect(redirectUri)) return false;
+  if (/^ttclient_[a-f0-9]{64}$/.test(clientId)) {
+    const snapshot = await oauthCollection("chatgptOauthClients").doc(clientId).get();
+    return snapshot.exists && snapshot.data()?.redirectUris?.includes(redirectUri) === true;
+  }
   if (
     clientId === "https://chatgpt.com/oauth/client.json" &&
     redirectUri === "https://chatgpt.com/connector_platform_oauth_redirect"
@@ -1436,19 +1436,19 @@ function validChatGptClient(clientId, redirectUri) {
     return true;
   }
 
-  const match = clientId.match(/^https:\/\/chatgpt\.com\/oauth\/([^/]+)\/client\.json$/);
+  const match = clientId.match(/^https:\/\/chatgpt\.com\/oauth\/([A-Za-z0-9_-]+)\/client\.json$/);
   return Boolean(
     match &&
     redirectUri === `https://chatgpt.com/connector/oauth/${match[1]}`
   );
 }
 
-function validateOAuthAuthorizeInput(input) {
+async function validateOAuthAuthorizeInput(input) {
   if (input.responseType !== "code") return "response_type must be code.";
-  if (!validChatGptClient(input.clientId, input.redirectUri)) return "This OAuth client or redirect URI is not allowed.";
+  if (!await validChatGptClient(input.clientId, input.redirectUri)) return "This OAuth client or redirect URI is not allowed. Reconnect using the Tiny Titans MCP server and OAuth.";
   if (input.resource !== MCP_RESOURCE) return "The OAuth resource does not match the Tiny Titans MCP server.";
   if (input.codeChallengeMethod !== "S256" || !input.codeChallenge) return "PKCE with S256 is required.";
-  if (!/^[A-Za-z0-9_-]{43,128}$/.test(input.codeChallenge)) return "The PKCE code challenge is invalid.";
+  if (!/^[A-Za-z0-9_-]{43}$/.test(input.codeChallenge)) return "The PKCE code challenge is invalid.";
   const unsupported = invalidScopes(input.scopes);
   if (unsupported.length) return `Unsupported OAuth scope: ${unsupported.join(", ")}`;
   return "";
@@ -1508,6 +1508,9 @@ function renderAuthorizePage(response, input, errorMessage = "") {
   return response
     .status(errorMessage ? 400 : 200)
     .set("Cache-Control", "no-store")
+    .set("Referrer-Policy", "no-referrer")
+    .set("X-Frame-Options", "DENY")
+    .set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
     .set("Content-Type", "text/html; charset=utf-8")
     .send(`<!doctype html>
 <html lang="en">
@@ -1524,6 +1527,7 @@ function renderAuthorizePage(response, input, errorMessage = "") {
 <div class="kicker">Tiny Titans · Secure account link</div>
 <div class="brand">Connect Tiny Titans to ChatGPT</div>
 <p class="muted">Paste the one-time link code generated inside Tiny Titans. The code expires after 15 minutes and can only be used once.</p>
+<p class="muted"><a href="${PUBLIC_ORIGIN}/account/integrations/chatgpt" target="_blank" rel="noopener noreferrer" style="color:#8fded4">Open Tiny Titans to generate a fresh code</a>, then return to this page. Paste the code here, not into a chat message or API-key field.</p>
 ${error}
 <h2>ChatGPT is requesting</h2>
 <ul class="permissions">${scopeLabels}</ul>
@@ -1534,6 +1538,7 @@ ${hidden}
 <input id="link_code" name="link_code" type="password" inputmode="text" autocapitalize="none" spellcheck="false" required placeholder="ttlink_…">
 </div>
 <button class="button" type="submit">Connect Tiny Titans</button>
+<button class="button" type="submit" name="decision" value="deny" formnovalidate>Cancel connection</button>
 </form>
 <p class="fine">The link code is exchanged for revocable, scoped OAuth credentials. ChatGPT never receives generic Firestore access or your Tiny Titans password.</p>
 </main>
@@ -1541,8 +1546,13 @@ ${hidden}
 </html>`);
 }
 
+function normaliseLinkCode(value) {
+  const code = normaliseString(value).replace(/[\s\u200B-\u200D\uFEFF]/g, "");
+  return /^ttlink_[A-Za-z0-9_-]{43}$/.test(code) ? code : "";
+}
+
 async function findLinkConnection(linkCode) {
-  if (!linkCode.startsWith(LINK_CODE_PREFIX) || linkCode.length < 30) return null;
+  if (!normaliseLinkCode(linkCode)) return null;
   const linkPrefix = linkCode.slice(0, 20);
   const snapshots = await db.collection("chatgptConnections").where("linkPrefix", "==", linkPrefix).limit(3).get();
   for (const snapshot of snapshots.docs) {
@@ -1554,8 +1564,12 @@ async function findLinkConnection(linkCode) {
 }
 
 async function createOAuthAuthorizationCode(input, linkCode) {
+  linkCode = normaliseLinkCode(linkCode);
+  if (!linkCode) return { error: "Paste the complete one-time link code from Tiny Titans, starting with ttlink_. Do not use an API key or an older ttgpt_ token." };
   const match = await findLinkConnection(linkCode);
   if (!match) return { error: "That link code is invalid." };
+  const access = await resolveEffectiveTier(match.snapshot.id);
+  if (!COMPANION_TIERS.has(access.tier)) return { error: "This account no longer has access to ChatGPT Companion. Check your Tiny Titans plan before linking." };
 
   const authorizationCode = randomCredential(OAUTH_CODE_PREFIX);
   const authorizationCodeRef = oauthCollection("chatgptOauthCodes").doc(tokenHash(authorizationCode));
@@ -1651,6 +1665,7 @@ async function exchangeAuthorizationCode({ code, clientId, redirectUri, codeVeri
       transaction.set(connection, {
         oauthConnectedAt: FieldValue.serverTimestamp(),
         oauthRefreshExpiresAt: refreshExpiresAt,
+        oauthScopes: authCode.scopes,
         updatedAt: FieldValue.serverTimestamp(),
         revoked: false,
         connectionVersion: 2,
@@ -2061,14 +2076,14 @@ async function getMcpProfile(auth) {
   return profile;
 }
 
-function authChallenge(error = "invalid_token", description = "Connect Tiny Titans to continue.") {
-  return `Bearer resource_metadata="${PROTECTED_RESOURCE_METADATA}", error="${error}", error_description="${description.replace(/"/g, "'")}"`;
+function authChallenge(error = "invalid_token", description = "Connect Tiny Titans to continue.", scopes = OAUTH_SCOPES) {
+  return `Bearer resource_metadata="${PROTECTED_RESOURCE_METADATA}", scope="${scopes.join(" ")}", error="${error}", error_description="${description.replace(/["\r\n]/g, "'")}"`;
 }
 
-function mcpAuthError(description, error = "invalid_token") {
+function mcpAuthError(description, error = "invalid_token", scopes = OAUTH_SCOPES) {
   return {
     content: [{ type: "text", text: description }],
-    _meta: { "mcp/www_authenticate": [authChallenge(error, description)] },
+    _meta: { "mcp/www_authenticate": [authChallenge(error, description, scopes)] },
     isError: true,
   };
 }
@@ -2178,12 +2193,15 @@ async function handleMcpMessage(request, message) {
 
   const auth = await authenticateBearer(request);
   if (!auth) {
-    return jsonRpcResult(id, mcpAuthError("Connect Tiny Titans to use this tool."), modern);
+    const description = bearerToken(request).startsWith(LINK_CODE_PREFIX)
+      ? "A ttlink_ code is not an API key. Choose OAuth and paste a fresh code into the Tiny Titans authorization page opened by ChatGPT."
+      : "Connect Tiny Titans to use this tool.";
+    return jsonRpcResult(id, mcpAuthError(description, "invalid_token", requiredScopesForTool(toolName)), modern);
   }
 
   const requiredScopes = requiredScopesForTool(toolName);
   if (!hasRequiredScopes(auth, requiredScopes)) {
-    return jsonRpcResult(id, mcpAuthError("The Tiny Titans connection needs additional permission for this tool.", "insufficient_scope"), modern);
+    return jsonRpcResult(id, mcpAuthError("The Tiny Titans connection needs additional permission for this tool.", "insufficient_scope", requiredScopes), modern);
   }
 
   try {
@@ -2237,8 +2255,11 @@ async function handleMcpHttp(request, response) {
   }
 
   if (!results.length) return response.status(202).send("");
+  const challenges = results.flatMap((item) => item.result?._meta?.["mcp/www_authenticate"] || []);
+  if (challenges.length) response.set("WWW-Authenticate", challenges.join(", "));
+  const status = challenges.some((challenge) => challenge.includes('error="invalid_token"')) ? 401 : 200;
   return response
-    .status(200)
+    .status(status)
     .set("Content-Type", "application/json; charset=utf-8")
     .json(Array.isArray(body) ? results : results[0]);
 }
@@ -2257,6 +2278,7 @@ function authorizationServerMetadata() {
     issuer: OAUTH_ISSUER,
     authorization_endpoint: `${PUBLIC_ORIGIN}/oauth/authorize`,
     token_endpoint: `${PUBLIC_ORIGIN}/oauth/token`,
+    registration_endpoint: `${PUBLIC_ORIGIN}/oauth/register`,
     revocation_endpoint: `${PUBLIC_ORIGIN}/oauth/revoke`,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
@@ -2270,7 +2292,7 @@ function authorizationServerMetadata() {
 
 async function handleOauthAuthorize(request, response) {
   const input = oauthAuthorizeInput(request);
-  const validationError = validateOAuthAuthorizeInput(input);
+  const validationError = await validateOAuthAuthorizeInput(input);
 
   if (request.method === "GET") {
     if (validationError) {
@@ -2284,7 +2306,7 @@ async function handleOauthAuthorize(request, response) {
 
   if (request.method !== "POST") return response.status(405).send("Method Not Allowed");
   if (validationError) {
-    if (validChatGptClient(input.clientId, input.redirectUri)) {
+    if (await validChatGptClient(input.clientId, input.redirectUri)) {
       return redirectOAuth(response, input, {
         error: "invalid_request",
         error_description: validationError,
@@ -2294,6 +2316,7 @@ async function handleOauthAuthorize(request, response) {
     return response.status(400).send(`Tiny Titans OAuth request rejected: ${htmlEscape(validationError)}`);
   }
 
+  if (oauthField(request, "decision") === "deny") return redirectOAuth(response, input, { error: "access_denied", state: input.state });
   const linkCode = oauthField(request, "link_code");
   const linked = await createOAuthAuthorizationCode(input, linkCode);
   if (linked.error) return renderAuthorizePage(response, input, linked.error);
@@ -2316,7 +2339,7 @@ async function handleOauthToken(request, response) {
 
   if (grantType === "authorization_code") {
     const redirectUri = oauthField(request, "redirect_uri");
-    if (!validChatGptClient(clientId, redirectUri)) {
+    if (!await validChatGptClient(clientId, redirectUri)) {
       return oauthJson(response, 400, { error: "invalid_client", error_description: "OAuth client or redirect URI is not allowed." });
     }
     const result = await exchangeAuthorizationCode({
@@ -2361,19 +2384,39 @@ async function handleOauthRevoke(request, response) {
   return response.status(200).set("Cache-Control", "no-store").send("");
 }
 
+async function handleOauthRegister(request, response) {
+  if (request.method !== "POST") return oauthJson(response, 405, { error: "invalid_request", error_description: "POST required." });
+  const input = request.body || {};
+  const redirects = Array.isArray(input.redirect_uris) ? [...new Set(input.redirect_uris)] : [];
+  if (!redirects.length || redirects.length > 5 || !redirects.every(allowedChatGptRedirect)) {
+    return oauthJson(response, 400, { error: "invalid_redirect_uri", error_description: "Only supported ChatGPT OAuth callbacks are allowed." });
+  }
+  if (input.token_endpoint_auth_method && input.token_endpoint_auth_method !== "none") {
+    return oauthJson(response, 400, { error: "invalid_client_metadata", error_description: "Use the public client method none with PKCE S256." });
+  }
+  // Stable registration avoids creating unlimited duplicate client documents on retries.
+  const clientId = `ttclient_${tokenHash(JSON.stringify([...redirects].sort()))}`;
+  await oauthCollection("chatgptOauthClients").doc(clientId).set({ redirectUris: redirects, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return oauthJson(response, 201, {
+    client_id: clientId, client_name: "ChatGPT", redirect_uris: redirects,
+    token_endpoint_auth_method: "none", grant_types: ["authorization_code", "refresh_token"], response_types: ["code"],
+  });
+}
+
 exports.tinyTitansMcp = onRequest({ region: "europe-west2", cors: false, timeoutSeconds: 60 }, async (request, response) => {
   const path = String(request.path || "/").replace(/\/+$/, "") || "/";
   try {
-    if (path === "/.well-known/oauth-protected-resource" && request.method === "GET") {
+    if (["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"].includes(path) && request.method === "GET") {
       return oauthJson(response, 200, protectedResourceMetadata());
     }
     if (path === "/.well-known/oauth-authorization-server" && request.method === "GET") {
       return oauthJson(response, 200, authorizationServerMetadata());
     }
-    if (path === "/oauth/authorize") return handleOauthAuthorize(request, response);
-    if (path === "/oauth/token") return handleOauthToken(request, response);
-    if (path === "/oauth/revoke") return handleOauthRevoke(request, response);
-    if (path === "/mcp" || path === "/") return handleMcpHttp(request, response);
+    if (path === "/oauth/register") return await handleOauthRegister(request, response);
+    if (path === "/oauth/authorize") return await handleOauthAuthorize(request, response);
+    if (path === "/oauth/token") return await handleOauthToken(request, response);
+    if (path === "/oauth/revoke") return await handleOauthRevoke(request, response);
+    if (path === "/mcp" || path === "/") return await handleMcpHttp(request, response);
     return response.status(404).set("Cache-Control", "no-store").json({ error: "Tiny Titans MCP endpoint not found." });
   } catch (error) {
     console.error("Tiny Titans MCP/OAuth failure", {

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tiny-titans-keeper-companion",
+  "version": "2.1.0",
+  "description": "Read and update your own Tiny Titans keeper records through scoped account authorization.",
+  "author": { "name": "Tiny Titans" },
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Tiny Titans Keeper Companion",
+        "shortDescription": "Your animals. Just ask.",
+        "longDescription": "Connect your own Tiny Titans account to read animal profiles and keeper histories, log feeding, weight, shed, behaviour and health records, create reminders, and undo eligible Companion actions. Tracker writes currently support snake records. An eligible Tiny Titans plan and individual account authorization are required.",
+        "developerName": "Tiny Titans",
+        "category": "Productivity",
+        "capabilities": ["Interactive"],
+        "defaultPrompt": ["List my Tiny Titans animals.", "When did my animals last eat?", "Show my upcoming keeper reminders."]
+      }
+    }
+  }
+}

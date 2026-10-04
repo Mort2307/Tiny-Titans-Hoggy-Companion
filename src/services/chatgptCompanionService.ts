@@ -56,6 +56,43 @@ export type ChatGPTCompanionActivity = {
 
 const functions = getFunctions(app, "europe-west2");
 
+export type ChatGPTCompanionServerCheck = { ready: boolean; message: string; toolCount: number };
+
+/** Public discovery only: never sends the keeper link code or Firebase token. */
+export async function checkChatGPTCompanionServer(): Promise<ChatGPTCompanionServerCheck> {
+  const base = "https://tinytitanskeeper.web.app";
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12_000);
+  try {
+    async function readJson(path: string, body?: object) {
+      const response = await fetch(`${base}${path}`, {
+        method: body ? "POST" : "GET", cache: "no-store", signal: controller.signal,
+        headers: { Accept: "application/json, text/event-stream", ...(body ? { "Content-Type": "application/json" } : {}) },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) {
+        throw new Error("The Tiny Titans connection server is unavailable or its routes are not deployed. Please try again or contact Tiny Titans support.");
+      }
+      return response.json();
+    }
+    const [resource, authorization, discovery] = await Promise.all([
+      readJson("/.well-known/oauth-protected-resource/mcp"),
+      readJson("/.well-known/oauth-authorization-server"),
+      readJson("/mcp", { jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    ]);
+    const names = new Set<string>((discovery.result?.tools || []).map((tool: { name: string }) => tool.name));
+    const required = ["get_profile", "list_animals", "resolve_animal", "get_animal_summary", "get_keeper_snapshot", "get_feeding_history", "get_weight_history", "get_shed_history", "get_recent_activity", "list_reminders", "log_feeding", "log_weight", "log_shed", "log_behaviour", "log_health_observation", "create_reminders", "undo_last_action"];
+    if (resource.resource !== `${base}/mcp` || authorization.issuer !== base || !authorization.code_challenge_methods_supported?.includes("S256") || !required.every((name) => names.has(name))) {
+      throw new Error("The connection server has an incomplete update. Tiny Titans support needs to deploy the current connection functions and website together.");
+    }
+    return { ready: true, toolCount: names.size, message: `Connection server ready. ${names.size} keeper commands available. Your account still needs to be authorized in ChatGPT.` };
+  } catch (error) {
+    return { ready: false, toolCount: 0, message: error instanceof Error && error.name !== "AbortError" ? error.message : "The connection check timed out. Check your connection and try again." };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 const statusCall = httpsCallable<undefined, { success: boolean } & ChatGPTCompanionStatus>(
   functions,
   "getChatGPTCompanionStatus",
