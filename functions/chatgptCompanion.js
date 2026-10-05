@@ -2238,7 +2238,7 @@ async function exchangeAuthorizationCode({ code, clientId, redirectUri, codeVeri
         oauthRefreshExpiresAt: refreshExpiresAt,
         updatedAt: FieldValue.serverTimestamp(),
         revoked: false,
-        connectionVersion: 2,
+        connectionVersion: 3,
       }, { merge: true });
 
       output = {
@@ -2920,7 +2920,9 @@ function protectedResourceMetadata() {
     resource: MCP_RESOURCE,
     authorization_servers: [OAUTH_ISSUER],
     scopes_supported: [...OAUTH_SCOPES],
-    resource_documentation: `${PUBLIC_ORIGIN}/account/integrations/chatgpt`,
+    resource_documentation: `${PUBLIC_ORIGIN}/chatgpt`,
+    resource_policy_uri: `${PUBLIC_ORIGIN}/privacy`,
+    resource_tos_uri: `${PUBLIC_ORIGIN}/terms`,
   };
 }
 
