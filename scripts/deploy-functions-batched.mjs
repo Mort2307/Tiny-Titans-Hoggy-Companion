@@ -159,23 +159,46 @@ function retryableDeployFailure(error) {
     message.includes("backend unavailable") ||
     message.includes("service unavailable") ||
     message.includes("temporarily unavailable") ||
-    message.includes("internal server error")
+    message.includes("internal server error") ||
+    message.includes("build failed with status: internal_error") ||
+    message.includes("status: internal_error") ||
+    message.includes("unexpected error occurred")
   );
+}
+
+function failedFunctionsFromDeploy(error, attemptedBatch) {
+  const output = String(error?.cause || error?.message || error || "");
+  const marker = /Functions deploy had errors with the following functions:\s*([\s\S]*?)(?:\r?\n\r?\n|Error: There was an error deploying functions|$)/i.exec(output);
+  if (!marker) return attemptedBatch;
+
+  const attempted = new Set(attemptedBatch);
+  const failed = [...marker[1].matchAll(/^\s*([A-Za-z_$][\w$]*)\s*(?:\([^\r\n]*\))?\s*$/gm)]
+    .map((match) => match[1])
+    .filter((name) => attempted.has(name));
+
+  return failed.length > 0 ? [...new Set(failed)] : attemptedBatch;
 }
 
 for (let index = startBatch - 1; index < batches.length; index += 1) {
   const batch = batches[index];
+  let pendingBatch = batch;
   let completed = false;
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     try {
-      await deployBatch(batch, index + 1, attempt);
+      await deployBatch(pendingBatch, index + 1, attempt);
       completed = true;
       break;
     } catch (error) {
       const retryable = retryableDeployFailure(error);
       if (!retryable || attempt >= maxRetries) {
         throw error;
+      }
+
+      const failedOnly = failedFunctionsFromDeploy(error, pendingBatch);
+      if (failedOnly.length < pendingBatch.length) {
+        console.warn(`Functions batch ${index + 1}: ${pendingBatch.length - failedOnly.length} function(s) succeeded; retrying only failed function(s): ${failedOnly.join(", ")}`);
+        pendingBatch = failedOnly;
       }
 
       const delay = Math.min(retryDelayMs * (attempt + 1), 180000);
