@@ -12,6 +12,7 @@ const route = read("src/routes/AuthenticatedRoutes.tsx");
 const settings = read("src/pages/Settings.tsx");
 const page = read("src/pages/ChatGPTCompanion.tsx");
 const service = read("src/services/chatgptCompanionService.ts");
+const envExample = read(".env.example");
 const firebaseConfig = read("firebase.json");
 const viteConfig = read("vite.config.ts");
 
@@ -91,8 +92,8 @@ const checks = [
   ["OAuth generations invalidate rotated connections", backend.includes("oauthGeneration") && backend.includes("GENERATION_MISMATCH")],
   ["keeper hosting routes MCP and OAuth before SPA fallback", firebaseConfig.includes('"source": "/mcp"') && firebaseConfig.includes('"functionId": "tinyTitansMcp"') && firebaseConfig.indexOf('"source": "/mcp"') < firebaseConfig.lastIndexOf('"destination": "/index.html"')],
   ["PWA navigation fallback excludes MCP and OAuth routes", viteConfig.includes("navigateFallbackDenylist") && viteConfig.includes("/mcp") && viteConfig.includes("/oauth") && viteConfig.includes("oauth-(?:protected-resource|authorization-server)")],
-  ["frontend explains Connect → sign in → Allow flow", page.includes("Press Connect") && page.includes("Sign in to Tiny Titans") && page.includes("press Allow") && page.includes("https://tinytitanskeeper.web.app/mcp")],
-  ["frontend has no manual secret handoff", !page.includes("ttlink_") && !page.includes("Generate link code") && !page.includes("Copy link code") && !service.includes("createChatGPTCompanionConnection")],
+  ["frontend exposes one-tap ChatGPT linking", page.includes("Link with ChatGPT") && page.includes("Install Tiny Titans if prompted") && page.includes("Sign in and press Allow") && envExample.includes("VITE_CHATGPT_PLUGIN_URL")],
+  ["frontend has no manual secret handoff", !page.includes("ttlink_") && !page.includes("Generate link code") && !page.includes("Copy link code") && !page.includes("MCP server") && !page.includes("Developer mode") && !service.includes("createChatGPTCompanionConnection")],
   ["multi-animal snapshot is exposed", backend.includes('name: "get_keeper_snapshot"') && backend.includes("selectRequestedAnimals")],
   ["reminder scopes are explicit", backend.includes('"reminders.read"') && backend.includes('"reminders.write"') && backend.includes('"read_reminders"') && backend.includes('"write_reminders"')],
   ["reminder write tool supports batch animal names", backend.includes('name: "create_reminders"') && backend.includes("animalNames") && backend.includes("recordPaths")],
