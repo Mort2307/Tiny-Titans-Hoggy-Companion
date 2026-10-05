@@ -31,6 +31,7 @@ const FIREBASE_WEB_CONFIG = Object.freeze({
 });
 const OAUTH_SCOPES = Object.freeze([
   "animals.read",
+  "animals.write",
   "records.read",
   "records.write",
   "records.undo",
@@ -39,6 +40,7 @@ const OAUTH_SCOPES = Object.freeze([
 ]);
 const SCOPE_PERMISSION_MAP = Object.freeze({
   "animals.read": "read_animals",
+  "animals.write": "write_animals",
   "records.read": "read_records",
   "records.write": "write_records",
   "records.undo": "undo_own_actions",
@@ -47,6 +49,7 @@ const SCOPE_PERMISSION_MAP = Object.freeze({
 });
 const DEFAULT_PERMISSIONS = Object.freeze([
   "read_animals",
+  "write_animals",
   "read_records",
   "write_records",
   "undo_own_actions",
@@ -54,6 +57,8 @@ const DEFAULT_PERMISSIONS = Object.freeze([
   "write_reminders",
 ]);
 const WRITE_TOOLS = new Set([
+  "create_snake",
+  "update_animal_profile",
   "log_feeding",
   "log_weight",
   "log_shed",
@@ -90,6 +95,8 @@ const TOOL_CATALOG = [
   { name: "get_recent_activity", mode: "read", description: "Read recent feeding, weight, shed, behaviour and health activity." },
   { name: "get_keeper_snapshot", mode: "read", description: "Read a multi-animal Tiny Titans keeper snapshot in one request." },
   { name: "list_reminders", mode: "read", description: "Read Tiny Titans keeper reminders." },
+  { name: "create_snake", mode: "write", description: "Create a snake profile and optionally seed initial weight, previous feeding, and a feeding reminder in one request." },
+  { name: "update_animal_profile", mode: "write", description: "Update supported Tiny Titans snake profile fields." },
   { name: "log_feeding", mode: "write", description: "Create a structured feeding record." },
   { name: "log_weight", mode: "write", description: "Create a weight record and synchronise the current animal weight." },
   { name: "log_shed", mode: "write", description: "Create a structured shed record." },
@@ -504,6 +511,7 @@ function hasPermission(auth, permission) {
 }
 
 function toolPermission(auth, tool) {
+  if (tool === "create_snake" || tool === "update_animal_profile") return hasPermission(auth, "write_animals");
   if (tool === "create_reminders") return hasPermission(auth, "write_reminders");
   if (tool === "list_reminders") return hasPermission(auth, "read_reminders");
   if (WRITE_TOOLS.has(tool)) return hasPermission(auth, tool === "undo_last_action" ? "undo_own_actions" : "write_records");
@@ -1001,6 +1009,323 @@ async function existingRecord(ref) {
   return snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
 }
 
+
+function normaliseSnakeSex(value) {
+  const sex = normaliseString(value).toLowerCase();
+  if (sex === "male" || sex === "m") return "Male";
+  if (sex === "female" || sex === "f") return "Female";
+  return "Unknown";
+}
+
+function cleanStringArray(value, max = 50) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map(normaliseString).filter(Boolean))).slice(0, max);
+}
+
+function cleanHets(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 50).map((entry) => {
+    if (!entry || typeof entry !== "object") return null;
+    const gene = normaliseString(entry.gene || entry.geneId);
+    const percentage = Number(String(entry.percentage ?? "").replace("%", ""));
+    if (!gene || ![50, 66, 100].includes(percentage)) return null;
+    return { gene, geneId: normaliseString(entry.geneId) || gene, percentage };
+  }).filter(Boolean);
+}
+
+function resolveLengthCm(args) {
+  if (args.lengthCm !== undefined && args.lengthCm !== null) {
+    const cm = Number(args.lengthCm);
+    if (!Number.isFinite(cm) || cm <= 0 || cm > 1000) fail(400, "lengthCm must be a sensible positive measurement.", "LENGTH_INVALID");
+    return Number(cm.toFixed(2));
+  }
+  if (args.lengthInches !== undefined && args.lengthInches !== null) {
+    const inches = Number(args.lengthInches);
+    if (!Number.isFinite(inches) || inches <= 0 || inches > 400) fail(400, "lengthInches must be a sensible positive measurement.", "LENGTH_INVALID");
+    return Number((inches * 2.54).toFixed(2));
+  }
+  return null;
+}
+
+function currentLocalDate(timezone) {
+  return localDateKey(new Date(), isValidTimezone(timezone) ? timezone : "UTC");
+}
+
+async function createSnake(auth, args) {
+  requireFamilyWriteOwner(auth.context);
+  const owner = auth.context.dataOwnerUid;
+  const name = normaliseString(args.name);
+  if (!name) fail(400, "A snake name is required.", "ANIMAL_NAME_MISSING");
+
+  const species = normaliseString(args.species) || "Western Hognose";
+  const universalSpeciesId = normaliseString(args.universalSpeciesId) ||
+    (/western hognose|heterodon nasicus/i.test(species) ? "heterodon-nasicus" : "");
+  const hatchDate = normaliseString(args.hatchDate) ? validateIsoDate(args.hatchDate, "hatchDate") : "";
+  const arrivalDate = normaliseString(args.arrivalDate) ? validateIsoDate(args.arrivalDate, "arrivalDate") : "";
+  const acquisitionDate = normaliseString(args.acquisitionDate) ? validateIsoDate(args.acquisitionDate, "acquisitionDate") : arrivalDate;
+  const lastFedDate = normaliseString(args.lastFedDate) ? validateIsoDate(args.lastFedDate, "lastFedDate") : "";
+  const lengthCm = resolveLengthCm(args);
+
+  let initialWeight = null;
+  if (args.startingWeightGrams !== undefined && args.startingWeightGrams !== null) {
+    initialWeight = Number(args.startingWeightGrams);
+    if (!Number.isFinite(initialWeight) || initialWeight <= 0 || initialWeight > 100000) {
+      fail(400, "startingWeightGrams must be a sensible positive value.", "WEIGHT_INVALID");
+    }
+  }
+  const weightDate = initialWeight === null
+    ? ""
+    : (normaliseString(args.startingWeightDate)
+      ? validateIsoDate(args.startingWeightDate, "startingWeightDate")
+      : (arrivalDate || currentLocalDate(auth.timezone)));
+
+  const idempotencyKey = normaliseString(args.idempotencyKey);
+  const snakeId = idempotencyKey
+    ? `gpt-snake-${crypto.createHash("sha256").update(`${auth.uid}|${idempotencyKey}`).digest("hex").slice(0, 24)}`
+    : db.collection("users").doc(owner).collection("snakes").doc().id;
+  const snakeRef = db.collection("users").doc(owner).collection("snakes").doc(snakeId);
+  const existing = await snakeRef.get();
+  if (existing.exists) {
+    return { duplicate: true, animalId: snakeId, animal: { id: snakeId, ...existing.data() }, deepLink: `/snakes/${snakeId}` };
+  }
+
+  const createdAtIso = nowIso();
+  const weightRecord = initialWeight === null ? null : {
+    id: "gpt-initial-weight",
+    snakeId,
+    weight: initialWeight,
+    unit: "g",
+    date: weightDate,
+    lastModifiedBy: auth.uid,
+    integrationMetadata: metadata(auth, "create_snake"),
+  };
+
+  const createFeedingRecord = Boolean(lastFedDate && args.recordLastFeeding !== false);
+  const feeding = args.lastFeeding && typeof args.lastFeeding === "object" ? args.lastFeeding : {};
+  const rawFoodType = normaliseString(feeding.foodType);
+  const foodType = FOOD_TYPES.has(rawFoodType) ? rawFoodType : "Other";
+  const customFood = foodType === "Other"
+    ? (normaliseString(feeding.customFood || feeding.foodDescription) || "Previous feeding — prey details not supplied")
+    : "";
+  const response = FEEDING_RESPONSES.has(feeding.response) ? feeding.response : "Accepted";
+  const feedingMethod = FEEDING_METHODS.has(feeding.feedingMethod) ? feeding.feedingMethod : undefined;
+  const preyCategory = PREY_CATEGORIES.has(feeding.preyCategory) ? feeding.preyCategory : undefined;
+  const feedingWeight = feeding.weightGrams === undefined && feeding.weight === undefined
+    ? undefined
+    : Number(feeding.weightGrams ?? feeding.weight);
+  if (feedingWeight !== undefined && (!Number.isFinite(feedingWeight) || feedingWeight < 0 || feedingWeight > 100000)) {
+    fail(400, "Previous feeding prey weight must be a sensible value in grams.", "PREY_WEIGHT_INVALID");
+  }
+
+  const feedingRecord = createFeedingRecord ? {
+    id: "gpt-initial-feeding",
+    snakeId,
+    date: lastFedDate,
+    foodType,
+    ...(customFood ? { customFood } : {}),
+    ...(normaliseString(feeding.size) ? { size: normaliseString(feeding.size) } : {}),
+    ...(feedingWeight !== undefined ? { weight: feedingWeight } : {}),
+    ...(preyCategory ? { preyCategory } : {}),
+    ...(feedingMethod ? { feedingMethod } : {}),
+    response,
+    notes: normaliseString(feeding.notes) || "Imported when this animal was added through Tiny Titans ChatGPT Companion.",
+    lastModifiedBy: auth.uid,
+    integrationMetadata: metadata(auth, "create_snake"),
+  } : null;
+
+  const morphs = cleanStringArray(args.morphs);
+  const hets = cleanHets(args.hets);
+  const root = {
+    id: snakeId,
+    ownerId: owner,
+    lastModifiedBy: auth.uid,
+    name,
+    species,
+    ...(universalSpeciesId ? { universalSpeciesId } : {}),
+    photo: "",
+    sex: normaliseSnakeSex(args.sex),
+    nickname: normaliseString(args.nickname),
+    breeder: normaliseString(args.breeder),
+    origin: normaliseString(args.origin),
+    acquisitionDate,
+    morphs,
+    customMorph: normaliseString(args.customMorph),
+    hets,
+    customHets: normaliseString(args.customHets),
+    startingWeight: initialWeight,
+    startingWeightDate: weightDate,
+    weight: initialWeight,
+    lastWeighedDate: weightDate,
+    weightHistory: weightRecord ? [weightRecord] : [],
+    weightTracking: { enabled: true, frequency: "Monthly" },
+    ...(lengthCm !== null ? { lengthCm } : {}),
+    feedingHistory: feedingRecord ? [feedingRecord] : [],
+    shedHistory: [],
+    healthHistory: [],
+    breedingHistory: [],
+    timeline: [],
+    hatchDate,
+    arrivalDate,
+    lastMealDate: lastFedDate,
+    feedingNotes: "",
+    healthNotes: "",
+    medicationNotes: "",
+    breedingEligible: false,
+    breedingNotes: "",
+    notes: normaliseString(args.notes),
+    status: "Active",
+    integrationMetadata: metadata(auth, "create_snake"),
+    createdAt: FieldValue.serverTimestamp(),
+    createdAtIso,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+
+  const batch = db.batch();
+  batch.set(snakeRef, root);
+  const recordPaths = [snakeRef.path];
+
+  if (weightRecord) {
+    const ref = snakeRef.collection("weights").doc(weightRecord.id);
+    batch.set(ref, weightRecord);
+    recordPaths.push(ref.path);
+  }
+  if (feedingRecord) {
+    const ref = snakeRef.collection("feedings").doc(feedingRecord.id);
+    batch.set(ref, feedingRecord);
+    recordPaths.push(ref.path);
+  }
+
+  let reminder = null;
+  const reminderDueDateRaw = normaliseString(args.feedingReminderDueDate);
+  if (reminderDueDateRaw) {
+    const timezone = normaliseString(args.timezone || auth.timezone);
+    if (!isValidTimezone(timezone)) fail(400, "A valid IANA timezone is required for the feeding reminder.", "TIMEZONE_INVALID");
+    const dueDate = validateIsoDate(reminderDueDateRaw, "feedingReminderDueDate", { allowFuture: true });
+    if (dueDate < currentLocalDate(timezone)) fail(400, "feedingReminderDueDate cannot be in the past.", "REMINDER_DATE_PAST");
+    const time = validateClockTime(args.feedingReminderTime || "09:00");
+    const reminderId = `gpt-reminder-${crypto.createHash("sha256").update(`${auth.uid}|${snakeId}|feeding|${dueDate}|${time}|${idempotencyKey || createdAtIso}`).digest("hex").slice(0, 24)}`;
+    const reminderRef = db.collection("users").doc(owner).collection("reminders").doc(reminderId);
+    reminder = {
+      id: reminderId,
+      kind: "feeding",
+      title: normaliseString(args.feedingReminderTitle) || `Feed ${name}`,
+      description: normaliseString(args.feedingReminderDescription),
+      snakeId,
+      snakeName: name,
+      frequencyDays: 1,
+      time,
+      startDate: dueDate,
+      timezone,
+      leadUpEnabled: false,
+      leadUpDays: 0,
+      status: "active",
+      scheduleType: "once",
+      oneTime: true,
+      nextNotificationAt: zonedTimeToUtc(dueDate, time, timezone).toISOString(),
+      nextOccurrenceDate: dueDate,
+      nextPhase: "due",
+      source: "chatgpt_companion",
+      createdBy: auth.uid,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    batch.set(reminderRef, reminder);
+    recordPaths.push(reminderRef.path);
+  }
+
+  await batch.commit();
+  const actionId = await auditAction(auth, {
+    tool: "create_snake",
+    animalId: snakeId,
+    animalName: name,
+    recordId: snakeId,
+    recordPath: snakeRef.path,
+    recordPaths,
+    summary: `Created ${name} · ${species}${morphs.length ? ` · ${morphs.join(", ")}` : ""}`,
+    reversible: true,
+  });
+
+  return {
+    animalId: snakeId,
+    animal: {
+      id: snakeId,
+      name,
+      species,
+      sex: root.sex,
+      morphs,
+      hatchDate,
+      arrivalDate,
+      currentWeightGrams: initialWeight,
+      lengthCm,
+      lastMealDate: lastFedDate || null,
+    },
+    initialWeight: weightRecord,
+    previousFeeding: feedingRecord,
+    reminder,
+    actionId,
+    deepLink: `/snakes/${snakeId}`,
+  };
+}
+
+async function updateAnimalProfile(auth, args) {
+  requireFamilyWriteOwner(auth.context);
+  const snake = await requireSnake(auth, args.animalId);
+  const patch = {};
+
+  if (args.name !== undefined) {
+    const name = normaliseString(args.name);
+    if (!name) fail(400, "name cannot be blank.", "ANIMAL_NAME_MISSING");
+    patch.name = name;
+  }
+  if (args.nickname !== undefined) patch.nickname = normaliseString(args.nickname);
+  if (args.species !== undefined) {
+    const species = normaliseString(args.species);
+    if (!species) fail(400, "species cannot be blank.", "SPECIES_MISSING");
+    patch.species = species;
+  }
+  if (args.universalSpeciesId !== undefined) patch.universalSpeciesId = normaliseString(args.universalSpeciesId);
+  if (args.sex !== undefined) patch.sex = normaliseSnakeSex(args.sex);
+  if (args.morphs !== undefined) patch.morphs = cleanStringArray(args.morphs);
+  if (args.customMorph !== undefined) patch.customMorph = normaliseString(args.customMorph);
+  if (args.hets !== undefined) patch.hets = cleanHets(args.hets);
+  if (args.customHets !== undefined) patch.customHets = normaliseString(args.customHets);
+  if (args.breeder !== undefined) patch.breeder = normaliseString(args.breeder);
+  if (args.origin !== undefined) patch.origin = normaliseString(args.origin);
+  if (args.notes !== undefined) patch.notes = normaliseString(args.notes);
+  if (args.hatchDate !== undefined) patch.hatchDate = normaliseString(args.hatchDate) ? validateIsoDate(args.hatchDate, "hatchDate") : "";
+  if (args.arrivalDate !== undefined) patch.arrivalDate = normaliseString(args.arrivalDate) ? validateIsoDate(args.arrivalDate, "arrivalDate") : "";
+  if (args.acquisitionDate !== undefined) patch.acquisitionDate = normaliseString(args.acquisitionDate) ? validateIsoDate(args.acquisitionDate, "acquisitionDate") : "";
+  if (args.lengthCm !== undefined || args.lengthInches !== undefined) patch.lengthCm = resolveLengthCm(args);
+  if (args.status !== undefined) {
+    const status = normaliseString(args.status);
+    if (!["Active", "Sold", "Deceased", "Archived"].includes(status)) fail(400, "status must be Active, Sold, Deceased, or Archived.", "STATUS_INVALID");
+    patch.status = status;
+  }
+
+  if (!Object.keys(patch).length) fail(400, "No supported profile fields were supplied to update.", "PROFILE_PATCH_EMPTY");
+  patch.lastModifiedBy = auth.uid;
+  patch.updatedAt = FieldValue.serverTimestamp();
+  patch.integrationMetadata = metadata(auth, "update_animal_profile");
+  await snake.ref.set(patch, { merge: true });
+
+  const actionId = await auditAction(auth, {
+    tool: "update_animal_profile",
+    animalId: snake.id,
+    animalName: patch.name || snake.data.name || null,
+    recordId: snake.id,
+    recordPath: snake.ref.path,
+    summary: `Updated ${patch.name || snake.data.name || "animal"} profile`,
+    reversible: false,
+  });
+
+  return {
+    animalId: snake.id,
+    updatedFields: Object.keys(patch).filter((key) => !["lastModifiedBy", "updatedAt", "integrationMetadata"].includes(key)),
+    actionId,
+    deepLink: `/snakes/${snake.id}`,
+  };
+}
+
 async function logFeeding(auth, args) {
   requireFamilyWriteOwner(auth.context);
   const snake = await requireSnake(auth, args.animalId);
@@ -1323,6 +1648,8 @@ async function dispatchTool(auth, tool, args) {
     case "get_recent_activity": return getRecentActivity(auth, args);
     case "get_keeper_snapshot": return getKeeperSnapshot(auth, args);
     case "list_reminders": return listRemindersForAuth(auth, args);
+    case "create_snake": return createSnake(auth, args);
+    case "update_animal_profile": return updateAnimalProfile(auth, args);
     case "log_feeding": return logFeeding(auth, args);
     case "log_weight": return logWeight(auth, args);
     case "log_shed": return logShed(auth, args);
@@ -1407,12 +1734,12 @@ exports.chatGPTCompanionApi = onRequest({ region: "europe-west2", cors: false, t
 const MCP_SERVER_INFO = Object.freeze({
   name: "tiny-titans-keeper-companion",
   title: "Tiny Titans Keeper Companion",
-  version: "2.0.0",
+  version: "2.1.0",
   description: "Secure conversational keeper records for Tiny Titans.",
   websiteUrl: PUBLIC_ORIGIN,
 });
 
-const MCP_INSTRUCTIONS = "Complete every part of a compound keeper request, not just the first clause. Prefer get_keeper_snapshot for multi-animal or account-wide keeper questions instead of repeatedly resolving animals one by one. Use create_reminders for reminder requests and convert relative dates such as Monday into an absolute YYYY-MM-DD using the user current date. Never invent animal IDs. Read keeper records when useful. Only create, change, or undo records when the user asks for that action. Tiny Titans tools are scoped to the authenticated keeper account and never provide generic database access.";
+const MCP_INSTRUCTIONS = "Complete every part of a compound keeper request, not just the first clause. For onboarding a new snake, prefer create_snake so profile details, initial weight, previous feeding and an optional first reminder can be created together. Convert user dates and relative times into absolute YYYY-MM-DD values before calling tools. Do not invent prey details, genetics, dates or measurements the user did not provide. Prefer get_keeper_snapshot for multi-animal or account-wide keeper questions. Use update_animal_profile for profile edits, create_reminders for later reminders, and the log_* tools for tracker records. Never invent animal IDs. Only create, change, or undo records when the user asks for that action. Tiny Titans tools are scoped to the authenticated keeper account and never provide generic database access.";
 
 function oauthCollection(name) {
   return db.collection(name);
@@ -1531,6 +1858,7 @@ function renderAuthorizePage(response, input, errorMessage = "") {
   const scopeLabels = input.scopes.map((scope) => {
     const label = {
       "animals.read": "Read animal identity and profile basics",
+      "animals.write": "Create and update animal profiles",
       "records.read": "Read keeper tracker history",
       "records.write": "Create feeding, weight, shed, behaviour and health records",
       "records.undo": "Undo records created through the Tiny Titans connection",
@@ -2134,6 +2462,86 @@ const MCP_TOOL_DESCRIPTORS = Object.freeze([
     scopes: ["animals.read", "records.read"],
     readOnly: true,
   })),
+  mcpToolDescriptor({
+    name: "create_snake",
+    title: "Create snake",
+    description: "Create a Tiny Titans snake profile and optionally seed its starting/current weight, previous feeding and first one-time feeding reminder in one atomic request. Use this for compound requests such as adding a new Western Hognose with morph, dates, measurements, last feeding and reminder.",
+    inputSchema: objectSchema({
+      name: { type: "string", minLength: 1 },
+      species: { type: "string", default: "Western Hognose" },
+      universalSpeciesId: { type: "string" },
+      sex: { type: "string", enum: ["Male", "Female", "Unknown"] },
+      nickname: { type: "string" },
+      breeder: { type: "string" },
+      origin: { type: "string" },
+      hatchDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", description: "Birthday/hatch date in YYYY-MM-DD." },
+      arrivalDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+      acquisitionDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+      morphs: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 50, uniqueItems: true },
+      customMorph: { type: "string" },
+      hets: { type: "array", maxItems: 50, items: { type: "object", properties: { gene: { type: "string" }, geneId: { type: "string" }, percentage: { type: ["integer", "string"] } }, additionalProperties: false } },
+      customHets: { type: "string" },
+      startingWeightGrams: { type: "number", exclusiveMinimum: 0, maximum: 100000 },
+      startingWeightDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+      lengthCm: { type: "number", exclusiveMinimum: 0, maximum: 1000 },
+      lengthInches: { type: "number", exclusiveMinimum: 0, maximum: 400 },
+      lastFedDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", description: "Most recent successful feeding date." },
+      recordLastFeeding: { type: "boolean", default: true },
+      lastFeeding: {
+        type: "object",
+        properties: {
+          foodType: { type: "string", enum: [...FOOD_TYPES] },
+          customFood: { type: "string" },
+          size: { type: "string" },
+          weightGrams: { type: "number", minimum: 0, maximum: 100000 },
+          preyCategory: { type: "string", enum: [...PREY_CATEGORIES] },
+          feedingMethod: { type: "string", enum: [...FEEDING_METHODS] },
+          response: { type: "string", enum: [...FEEDING_RESPONSES], default: "Accepted" },
+          notes: { type: "string" },
+        },
+        additionalProperties: false,
+      },
+      feedingReminderDueDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", description: "Optional first one-time feeding reminder due date in YYYY-MM-DD." },
+      feedingReminderTime: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$", default: "09:00" },
+      feedingReminderTitle: { type: "string" },
+      feedingReminderDescription: { type: "string" },
+      timezone: { type: "string" },
+      notes: { type: "string" },
+      idempotencyKey: { type: "string" },
+    }, ["name"]),
+    scopes: ["animals.read", "animals.write", "records.write", "reminders.write"],
+    invoking: "Creating Tiny Titans animal…",
+    invoked: "Animal created",
+  }),
+  mcpToolDescriptor({
+    name: "update_animal_profile",
+    title: "Update animal profile",
+    description: "Update supported Tiny Titans snake profile fields such as name, species, sex, morphs, genetics notes, dates, length, breeder/origin, status and notes.",
+    inputSchema: objectSchema({
+      animalId: { type: "string", minLength: 1 },
+      name: { type: "string", minLength: 1 },
+      nickname: { type: "string" },
+      species: { type: "string" },
+      universalSpeciesId: { type: "string" },
+      sex: { type: "string", enum: ["Male", "Female", "Unknown"] },
+      morphs: { type: "array", items: { type: "string", minLength: 1 }, maxItems: 50, uniqueItems: true },
+      customMorph: { type: "string" },
+      hets: { type: "array", maxItems: 50, items: { type: "object", properties: { gene: { type: "string" }, geneId: { type: "string" }, percentage: { type: ["integer", "string"] } }, additionalProperties: false } },
+      customHets: { type: "string" },
+      breeder: { type: "string" },
+      origin: { type: "string" },
+      hatchDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+      arrivalDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+      acquisitionDate: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+      lengthCm: { type: "number", exclusiveMinimum: 0, maximum: 1000 },
+      lengthInches: { type: "number", exclusiveMinimum: 0, maximum: 400 },
+      status: { type: "string", enum: ["Active", "Sold", "Deceased", "Archived"] },
+      notes: { type: "string" },
+    }, ["animalId"]),
+    scopes: ["animals.read", "animals.write"],
+    invoking: "Updating Tiny Titans profile…",
+    invoked: "Profile updated",
+  }),
   mcpToolDescriptor({
     name: "log_feeding",
     title: "Log feeding",
