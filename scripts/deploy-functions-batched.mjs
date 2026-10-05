@@ -78,7 +78,13 @@ function collectExports(filePath, seen = new Set()) {
   return result;
 }
 
-const functions = [...collectExports(entryFile)].sort((a, b) => a.localeCompare(b));
+const discoveredExports = [...collectExports(entryFile)].sort((a, b) => a.localeCompare(b));
+const ignoredPrivateExports = discoveredExports.filter((name) => name.startsWith("_"));
+const functions = discoveredExports.filter((name) => !name.startsWith("_"));
+
+if (ignoredPrivateExports.length > 0) {
+  console.log(`Tiny Titans Functions Deploy: ignoring ${ignoredPrivateExports.length} private/test export(s): ${ignoredPrivateExports.join(", ")}`);
+}
 
 if (functions.length === 0) {
   throw new Error("No Firebase Functions exports were discovered from functions/index.js.");
