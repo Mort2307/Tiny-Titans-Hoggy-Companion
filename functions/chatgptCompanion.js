@@ -1882,7 +1882,7 @@ function renderAuthorizePage(response, input, errorMessage = "") {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Connect Tiny Titans to ChatGPT</title>
+<title>Approve Tiny Titans for ChatGPT</title>
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0f0f16;color:#f4f2ea;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center;padding:22px}.card{width:min(680px,100%);background:linear-gradient(145deg,#181724,#11111a);border:1px solid #343242;border-radius:24px;padding:28px;box-shadow:0 24px 70px #0008}.kicker{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#8fded4;font-weight:850}.brand{font-size:1.9rem;font-weight:900;margin:6px 0 8px}.muted{color:#b9b6c4;line-height:1.55}.permissions{background:#ffffff0a;border-radius:15px;padding:14px 18px;line-height:1.7}.field{display:grid;gap:7px;margin-top:12px}.field label{font-weight:850}.field input{width:100%;min-height:48px;border:1px solid #535064;border-radius:13px;background:#09090e;color:#fff;padding:11px 13px;font:inherit}.button{width:100%;min-height:48px;border:1px solid #65d5c8;border-radius:13px;background:linear-gradient(135deg,#2d726b,#4a356e);color:#fff;font-weight:900;font:inherit;margin-top:12px;cursor:pointer}.button.secondary{background:#171621;border-color:#4a4858}.button:disabled{opacity:.45;cursor:not-allowed}.error{border:1px solid #ff7373;background:#ff737316;border-radius:12px;padding:11px 13px;margin-top:14px}.fine{font-size:.82rem;color:#9693a1;line-height:1.5;margin-top:16px}.account{border:1px solid #3b675f;background:#65d5c812;border-radius:14px;padding:14px;margin:16px 0}.account strong,.account span{display:block}.account span{color:#b9b6c4;margin-top:4px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.status{min-height:24px;color:#b9b6c4;margin-top:10px}@media(max-width:560px){.row{grid-template-columns:1fr}}
 </style>
@@ -1890,8 +1890,8 @@ function renderAuthorizePage(response, input, errorMessage = "") {
 <body>
 <main class="card">
 <div class="kicker">Tiny Titans · Secure account authorization</div>
-<div class="brand">Connect Tiny Titans to ChatGPT</div>
-<p class="muted">Sign in with the same Tiny Titans account you already use, then approve the requested access. There is no pairing code to copy or paste.</p>
+<div class="brand">Approve Tiny Titans for ChatGPT</div>
+<p class="muted">If you are already signed in to Tiny Titans, just review the access below and tap Approve connection. If not, sign in once first. There are no pairing codes, server URLs or API keys.</p>
 ${error}
 <h2>ChatGPT is requesting</h2>
 <ul class="permissions">${scopeLabels}</ul>
@@ -1914,7 +1914,7 @@ ${hidden}
 </div>
 
 <div id="signed-in-actions" hidden>
-  <button id="allow" class="button" type="submit">Allow and connect</button>
+  <button id="allow" class="button" type="submit">Approve connection</button>
   <button id="switch-account" class="button secondary" type="button">Use a different Tiny Titans account</button>
 </div>
 <button class="button secondary" type="submit" name="decision" value="deny" formnovalidate>Cancel</button>
@@ -1926,7 +1926,7 @@ ${hidden}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, getRedirectResult, onAuthStateChanged, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 
 const app = initializeApp(${firebaseConfig});
 const auth = getAuth(app);
@@ -1951,7 +1951,7 @@ function showUser(user) {
   if (user) {
     accountName.textContent = user.displayName || "Tiny Titans account";
     accountEmail.textContent = user.email || "Signed in";
-    setStatus("Signed in. Review the permissions above, then allow the connection.");
+    setStatus("Signed in. Review the permissions above, then tap Approve connection.");
   } else {
     accountName.textContent = "Tiny Titans account";
     accountEmail.textContent = "";
@@ -1959,14 +1959,40 @@ function showUser(user) {
   }
 }
 
-onAuthStateChanged(auth, showUser);
+onAuthStateChanged(auth, (user) => {
+  showUser(user);
+  if (user) {
+    requestAnimationFrame(() => {
+      document.getElementById("allow")?.focus({ preventScroll: false });
+    });
+  }
+});
+
+void getRedirectResult(auth).catch((error) => {
+  setStatus(error && error.message ? error.message : "Google sign-in could not be completed.");
+});
 
 document.getElementById("google-signin").addEventListener("click", async () => {
   try {
     setStatus("Opening Google sign-in…");
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
-    await signInWithPopup(auth, provider);
+    const mobileLike = window.matchMedia("(max-width: 760px)").matches ||
+      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    if (mobileLike) {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      const code = String(error && error.code ? error.code : "");
+      if (code.includes("popup-blocked") || code.includes("popup-closed") || code.includes("operation-not-supported")) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+      throw error;
+    }
   } catch (error) {
     setStatus(error && error.message ? error.message : "Google sign-in could not be completed.");
   }
