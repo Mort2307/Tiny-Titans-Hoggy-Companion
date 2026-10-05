@@ -5,6 +5,9 @@ const AccountSetup = lazy(() => import("../pages/AccountSetup"));
 const PartnerLanding = lazy(() => import("../pages/PartnerLanding"));
 const DeleteAccountRequest = lazy(() => import("../pages/DeleteAccountRequest"));
 const PrivacyPolicy = lazy(() => import("../pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("../pages/TermsOfService"));
+const Support = lazy(() => import("../pages/Support"));
+const ChatGPTIntegrationPublic = lazy(() => import("../pages/ChatGPTIntegrationPublic"));
 const RescuePublicProfile = lazy(() => import("../pages/RescuePublicProfile"));
 const RescueAnimalRoute = lazy(() => import("../pages/RescueAnimalRoute"));
 const SpeciesExplorer = lazy(() => import("../pages/SpeciesExplorer"));
@@ -97,6 +100,39 @@ function AppRouterGate() {
         <Routes>
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="*" element={<Navigate to="/privacy" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  if (location.pathname === "/terms") {
+    return (
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="*" element={<Navigate to="/terms" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  if (location.pathname === "/support") {
+    return (
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
+          <Route path="/support" element={<Support />} />
+          <Route path="*" element={<Navigate to="/support" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  if (location.pathname === "/chatgpt") {
+    return (
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
+          <Route path="/chatgpt" element={<ChatGPTIntegrationPublic />} />
+          <Route path="*" element={<Navigate to="/chatgpt" replace />} />
         </Routes>
       </Suspense>
     );
