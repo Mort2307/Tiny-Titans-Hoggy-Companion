@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ConfirmActionDialog from "../components/ConfirmActionDialog";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import {
@@ -60,14 +60,14 @@ export default function ChatGPTCompanion() {
   const [error, setError] = useState("");
   const [confirmRevoke, setConfirmRevoke] = useState(false);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     const [nextStatus, nextActivity] = await Promise.all([
       getChatGPTCompanionStatus(),
       getChatGPTCompanionActivity(),
     ]);
     setStatus(nextStatus);
     setActivity(nextActivity);
-  }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -100,7 +100,7 @@ export default function ChatGPTCompanion() {
       window.removeEventListener("focus", refreshAfterReturn);
       document.removeEventListener("visibilitychange", refreshAfterReturn);
     };
-  }, []);
+  }, [refresh]);
 
   const statusLabel = useMemo(() => {
     if (!status) return "Checking";
