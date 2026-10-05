@@ -42,6 +42,7 @@ const EXAMPLES = [
 
 const PERMISSION_LABELS: Record<string, string> = {
   read_animals: "Read animal identity and profile basics",
+  write_animals: "Create and update animal profiles",
   read_records: "Read keeper tracker history",
   write_records: "Create feeding, weight, shed, behaviour and health records",
   undo_own_actions: "Undo records created through this connection",
@@ -246,6 +247,8 @@ export default function ChatGPTCompanion() {
             "MCP Streamable HTTP endpoint",
             "Authenticated profile identity",
             "Animal resolution",
+            "Create snake profiles",
+            "Update animal profiles",
             "Animal summaries",
             "Feeding history",
             "Weight history",
