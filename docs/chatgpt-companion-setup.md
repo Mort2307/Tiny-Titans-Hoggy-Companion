@@ -96,7 +96,7 @@ The Hosting deploy is required because the user-facing Tiny Titans Companion pag
 
 ## Test in ChatGPT
 
-1. Open **ChatGPT Plugins** and choose **Tiny Titans Keeper Companion**.
+1. Open **ChatGPT Plugins** and choose **Tiny Titans**.
 2. During private testing, enable Developer mode and add `https://tinytitanskeeper.web.app/mcp` if the private plugin is not already installed.
 3. Press **Connect**.
 4. ChatGPT opens the Tiny Titans authorization page.
@@ -128,13 +128,19 @@ The full production build also runs this validation.
 
 Developer-mode connection is sufficient for private testing. Public directory release is a separate packaging/review step and requires the deployed HTTPS MCP endpoint, publisher verification, domain verification, and an approved plugin submission.
 
-Normal published users should experience only:
+Normal users should experience only:
 
 ```text
-Install → Connect → Sign in → Allow → Use
+Tiny Titans app → Link with ChatGPT → Tiny Titans plugin → Connect → Sign in → Allow → Use
 ```
 
-They should never need to copy an MCP URL, OAuth token, API key, or pairing code.
+or:
+
+```text
+ChatGPT → Install Tiny Titans → Connect → Sign in → Allow → Use
+```
+
+The app's Link with ChatGPT button points directly at the Tiny Titans plugin page. Users must never be asked to copy an MCP URL, OAuth token, API key, pairing code, Firebase UID, or Firestore identifier.
 
 ## Natural keeper requests
 
