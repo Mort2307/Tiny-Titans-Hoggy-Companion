@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-const lastUpdated = "19 September 2026";
+const lastUpdated = "5 October 2026";
 
 export default function PrivacyPolicy() {
   return (
@@ -24,6 +24,13 @@ export default function PrivacyPolicy() {
         <section className="personalisation-card">
           <h2>Service providers</h2>
           <p>Tiny Titans uses Firebase services for authentication, database, storage and server-side application functions. Paid subscriptions use Stripe on the web service. Payment credentials are handled by the relevant payment provider rather than stored as ordinary Tiny Titans account fields.</p>
+        </section>
+
+        <section className="personalisation-card">
+          <h2>ChatGPT integration</h2>
+          <p>The Tiny Titans ChatGPT integration is optional. If you connect it, ChatGPT may request scoped access to animal profiles, keeper records and reminders, and may use supported Tiny Titans actions to create or update records when you ask it to do so.</p>
+          <p>Tiny Titans does not give ChatGPT unrestricted Firestore access. The integration uses revocable OAuth credentials and server-side permission checks. Connection and action metadata may be retained for security, troubleshooting, audit and undo features.</p>
+          <p>Disconnecting ChatGPT revokes the integration connection but does not automatically delete keeper records you already created in Tiny Titans. You can manage or delete your Tiny Titans data using the app's normal controls.</p>
         </section>
 
         <section className="personalisation-card">
