@@ -89,6 +89,7 @@ export default defineConfig({
           /^\/mcp(?:\/|$)/,
           /^\/oauth(?:\/|$)/,
           /^\/\.well-known\/oauth-(?:protected-resource|authorization-server)(?:\/|$)/,
+          /^\/\.well-known\/openai-apps-challenge(?:\/|$)/,
           /^\/api(?:\/|$)/,
         ],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
