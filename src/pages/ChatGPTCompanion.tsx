@@ -49,7 +49,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   write_reminders: "Create one-time or recurring keeper reminders",
 };
 
-const DEFAULT_MCP_SERVER = "https://tinytitanskeeper.web.app/mcp";
+const CHATGPT_PLUGIN_URL = (import.meta.env.VITE_CHATGPT_PLUGIN_URL as string | undefined)?.trim() || "https://chatgpt.com/plugins";
 
 export default function ChatGPTCompanion() {
   const [status, setStatus] = useState<ChatGPTCompanionStatus | null>(null);
@@ -84,8 +84,21 @@ export default function ChatGPTCompanion() {
       .finally(() => {
         if (active) setLoading(false);
       });
+
+    const refreshAfterReturn = () => {
+      if (!active || document.visibilityState !== "visible") return;
+      void refresh().catch((reason) => {
+        if (active) setError(errorMessage(reason));
+      });
+    };
+
+    window.addEventListener("focus", refreshAfterReturn);
+    document.addEventListener("visibilitychange", refreshAfterReturn);
+
     return () => {
       active = false;
+      window.removeEventListener("focus", refreshAfterReturn);
+      document.removeEventListener("visibilitychange", refreshAfterReturn);
     };
   }, []);
 
@@ -117,8 +130,6 @@ export default function ChatGPTCompanion() {
   if (loading) {
     return <main className="tt-gpt-page"><section className="tt-gpt-card"><h1>ChatGPT Companion</h1><p>Checking secure integration status…</p></section></main>;
   }
-
-  const mcpServer = status?.mcpServer || DEFAULT_MCP_SERVER;
 
   return (
     <main className="tt-gpt-page">
@@ -168,7 +179,7 @@ export default function ChatGPTCompanion() {
           <p className="tt-gpt-kicker">SECURE CONNECTION</p>
           <h2>{status?.connected ? "Tiny Titans is connected to ChatGPT" : "Connect with your normal Tiny Titans account"}</h2>
           <p className="tt-gpt-muted">
-            No pairing code is required. ChatGPT opens Tiny Titans securely, you sign in with the same Firebase account you already use, review the requested permissions, and press Allow.
+            One secure account link. No pairing codes, API keys, server addresses or copy-and-paste setup. ChatGPT sends you to Tiny Titans, you approve access with your normal account, and the connection is returned automatically.
           </p>
 
           {status?.connected && (
@@ -183,7 +194,9 @@ export default function ChatGPTCompanion() {
         </div>
 
         <div className="tt-gpt-actions">
-          <a className="tt-gpt-primary" href="https://chatgpt.com/" target="_blank" rel="noreferrer">Open ChatGPT</a>
+          <a className="tt-gpt-primary" href={CHATGPT_PLUGIN_URL} target="_blank" rel="noreferrer">
+            {status?.connected ? "Open ChatGPT" : "Link with ChatGPT"}
+          </a>
           {status?.connected && (
             <button className="tt-gpt-danger" type="button" disabled={busy} onClick={() => setConfirmRevoke(true)}>Disconnect</button>
           )}
@@ -192,22 +205,16 @@ export default function ChatGPTCompanion() {
         <div className="tt-gpt-link-guide">
           <div className="tt-gpt-section-head">
             <div>
-              <p className="tt-gpt-kicker">PRIVATE TESTING · SIMPLE ACCOUNT LINK</p>
-              <h3>How to connect Tiny Titans</h3>
+              <p className="tt-gpt-kicker">ONE-TAP ACCOUNT LINK</p>
+              <h3>Link Tiny Titans and ChatGPT</h3>
             </div>
           </div>
           <ol>
-            <li><strong>Open ChatGPT Plugins and choose Tiny Titans Keeper Companion.</strong> During private testing, Developer mode may still be required to add the MCP server.</li>
-            <li><strong>Press Connect.</strong> ChatGPT opens the Tiny Titans authorization page automatically.</li>
-            <li><strong>Sign in to Tiny Titans.</strong> If you are already signed in on this browser, Tiny Titans recognises that session; otherwise use Google or your Tiny Titans email and password.</li>
-            <li><strong>Review the requested access and press Allow.</strong> Tiny Titans verifies your Firebase account server-side and returns you to ChatGPT.</li>
-            <li><strong>Start asking about your animals.</strong> There are no one-time pairing codes or API secrets to copy between apps.</li>
+            <li><strong>Tap Link with ChatGPT.</strong> Tiny Titans opens ChatGPT's plugin area.</li>
+            <li><strong>Install Tiny Titans if prompted, then press Connect.</strong> ChatGPT starts the secure Tiny Titans sign-in automatically.</li>
+            <li><strong>Sign in and press Allow.</strong> You return to ChatGPT connected to your own keeper records.</li>
           </ol>
-          <div className="tt-gpt-server-row">
-            <span>MCP server</span>
-            <code>{mcpServer}</code>
-          </div>
-          <p className="tt-gpt-muted">The server address is only needed while the plugin is being tested privately. Once published, normal users install Tiny Titans directly and use the same Connect → Sign in → Allow flow.</p>
+          <p className="tt-gpt-muted"><strong>That is the whole setup.</strong> Tiny Titans will never ask normal users to copy a token, pairing code, MCP address, API key or Firestore identifier into ChatGPT.</p>
         </div>
       </section>
 
