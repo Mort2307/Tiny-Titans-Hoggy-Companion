@@ -10,7 +10,8 @@ const entryFile = join(functionsRoot, "index.js");
 
 const batchSize = Math.max(1, Number.parseInt(process.env.TINY_TITANS_FUNCTION_DEPLOY_BATCH_SIZE || "10", 10) || 10);
 const retryDelayMs = Math.max(15000, Number.parseInt(process.env.TINY_TITANS_FUNCTION_DEPLOY_RETRY_DELAY_MS || "65000", 10) || 65000);
-const maxRetries = Math.max(0, Number.parseInt(process.env.TINY_TITANS_FUNCTION_DEPLOY_MAX_RETRIES || "2", 10) || 2);
+const maxRetries = Math.max(0, Number.parseInt(process.env.TINY_TITANS_FUNCTION_DEPLOY_MAX_RETRIES || "4", 10) || 4);
+const requestedStartBatch = Math.max(1, Number.parseInt(process.env.TINY_TITANS_FUNCTION_DEPLOY_START_BATCH || "1", 10) || 1);
 
 if (!existsSync(entryFile)) {
   throw new Error(`Could not find Firebase Functions entry point: ${entryFile}`);
@@ -97,6 +98,10 @@ for (let index = 0; index < functions.length; index += batchSize) {
 
 console.log(`Tiny Titans Functions Deploy: discovered ${functions.length} exported functions.`);
 console.log(`Tiny Titans Functions Deploy: using batches of ${batchSize}; ${batches.length} batch(es).`);
+const startBatch = Math.min(requestedStartBatch, batches.length);
+if (startBatch > 1) {
+  console.log(`Tiny Titans Functions Deploy: resuming at batch ${startBatch}; earlier batches will be skipped.`);
+}
 
 function sleep(ms) {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
@@ -141,12 +146,24 @@ function deployBatch(batch, batchNumber, attempt) {
   });
 }
 
-function isQuotaFailure(error) {
+function retryableDeployFailure(error) {
   const message = String(error?.cause || error?.message || error || "").toLowerCase();
-  return message.includes("429") || message.includes("quota exceeded") || message.includes("per project mutation requests");
+  return (
+    message.includes("429") ||
+    message.includes("quota exceeded") ||
+    message.includes("per project mutation requests") ||
+    message.includes("http error: 500") ||
+    message.includes("http error: 502") ||
+    message.includes("http error: 503") ||
+    message.includes("http error: 504") ||
+    message.includes("backend unavailable") ||
+    message.includes("service unavailable") ||
+    message.includes("temporarily unavailable") ||
+    message.includes("internal server error")
+  );
 }
 
-for (let index = 0; index < batches.length; index += 1) {
+for (let index = startBatch - 1; index < batches.length; index += 1) {
   const batch = batches[index];
   let completed = false;
 
@@ -156,14 +173,15 @@ for (let index = 0; index < batches.length; index += 1) {
       completed = true;
       break;
     } catch (error) {
-      const quotaFailure = isQuotaFailure(error);
-      if (!quotaFailure || attempt >= maxRetries) {
+      const retryable = retryableDeployFailure(error);
+      if (!retryable || attempt >= maxRetries) {
         throw error;
       }
 
-      const seconds = Math.round(retryDelayMs / 1000);
-      console.warn(`Functions batch ${index + 1} hit the Cloud Functions mutation quota. Retrying after ${seconds}s...`);
-      await sleep(retryDelayMs);
+      const delay = Math.min(retryDelayMs * (attempt + 1), 180000);
+      const seconds = Math.round(delay / 1000);
+      console.warn(`Functions batch ${index + 1} hit a transient Firebase/Google Cloud error. Retrying after ${seconds}s...`);
+      await sleep(delay);
     }
   }
 
