@@ -27,6 +27,8 @@ function tierSlice(tierId) {
 }
 
 const writeTools = [
+  "create_snake",
+  "update_animal_profile",
   "log_feeding",
   "log_weight",
   "log_shed",
@@ -58,7 +60,12 @@ const checks = [
   ["read tool family exists", readTools.every((tool) => backend.includes(`"${tool}"`))],
   ["write tool family exists", writeTools.every((tool) => backend.includes(`"${tool}"`))],
   ["generic arbitrary database write tool is absent", !backend.includes('"write_firestore') && !backend.includes('"set_document') && !backend.includes('"delete_record"')],
-  ["write operations require scoped permission", backend.includes('"write_records"') && backend.includes("toolPermission(auth, tool)")],
+  ["write operations require scoped permission", backend.includes('"write_records"') && backend.includes('"animals.write"') && backend.includes('"write_animals"') && backend.includes("toolPermission(auth, tool)")],
+  ["animal onboarding tool exists", backend.includes('name: "create_snake"') && backend.includes("async function createSnake") && backend.includes("feedingReminderDueDate")],
+  ["animal profile update tool exists", backend.includes('name: "update_animal_profile"') && backend.includes("async function updateAnimalProfile")],
+  ["animal onboarding is batched", backend.includes("const batch = db.batch()") && backend.includes("batch.set(snakeRef, root)") && backend.includes("await batch.commit()")],
+  ["animal onboarding supports unit conversion", backend.includes("lengthInches") && backend.includes("inches * 2.54")],
+  ["animal onboarding can seed previous feeding and reminder", backend.includes("gpt-initial-feeding") && backend.includes("feedingReminderDueDate") && backend.includes('scheduleType: "once"')],
   ["shared-family writes fail closed", backend.includes("requireFamilyWriteOwner") && backend.includes("Shared family members remain read-only")],
   ["idempotent record IDs are supported", backend.includes("idempotencyKey") && backend.includes("idForAction")],
   ["weight duplicate-date guard exists", backend.includes("WEIGHT_DUPLICATE_DATE")],
@@ -78,7 +85,7 @@ const checks = [
   ["MCP endpoint is exported", backend.includes("exports.tinyTitansMcp") && backend.includes('path === "/mcp"')],
   ["MCP supports modern discovery and legacy initialize", backend.includes('"server/discover"') && backend.includes('"initialize"') && backend.includes('"2026-07-28"')],
   ["modern tools/list emits required cache hints", backend.includes('message.method === "tools/list"') && backend.includes("ttlMs: 300000") && backend.includes('cacheScope: "public"')],
-  ["MCP advertises scoped OAuth per tool", backend.includes("securitySchemes") && backend.includes('"animals.read"') && backend.includes('"records.write"')],
+  ["MCP advertises scoped OAuth per tool", backend.includes("securitySchemes") && backend.includes('"animals.read"') && backend.includes('"animals.write"') && backend.includes('"records.write"')],
   ["authenticated profile tool is declared", backend.includes('"openai/profile": true') && backend.includes('name: "get_profile"')],
   ["OAuth protected-resource metadata exists", backend.includes("oauth-protected-resource") && backend.includes("authorization_servers")],
   ["OAuth server metadata advertises PKCE S256", backend.includes("code_challenge_methods_supported") && backend.includes('"S256"')],
