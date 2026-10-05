@@ -3,6 +3,7 @@ import { app } from "../firebase/config";
 
 export type ChatGPTCompanionPermission =
   | "read_animals"
+  | "write_animals"
   | "read_records"
   | "write_records"
   | "undo_own_actions"
