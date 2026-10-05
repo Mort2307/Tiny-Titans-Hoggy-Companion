@@ -12,7 +12,7 @@ export default function ChatGPTIntegrationPublic() {
 
         <section className="personalisation-card">
           <h2>Simple account linking</h2>
-          <p><strong>Install Tiny Titans → Connect → Sign in to Tiny Titans → Approve connection → return to ChatGPT.</strong></p>
+          <p><strong>Install Tiny Titans, choose Connect, sign in to Tiny Titans, approve the connection, then return to ChatGPT.</strong></p>
           <p>No pairing codes, API keys, Firebase IDs or MCP server addresses are required from normal users.</p>
           <p><a href={PLUGIN_URL} target="_blank" rel="noreferrer">Open Tiny Titans in ChatGPT</a></p>
         </section>
