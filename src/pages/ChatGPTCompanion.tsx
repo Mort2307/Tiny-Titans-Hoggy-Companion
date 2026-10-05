@@ -213,7 +213,7 @@ export default function ChatGPTCompanion() {
           <ol>
             <li><strong>Tap Link with ChatGPT.</strong> Tiny Titans opens ChatGPT's plugin area.</li>
             <li><strong>Install Tiny Titans if prompted, then press Connect.</strong> ChatGPT starts the secure Tiny Titans sign-in automatically.</li>
-            <li><strong>Sign in and press Allow.</strong> You return to ChatGPT connected to your own keeper records.</li>
+            <li><strong>Sign in and approve.</strong> You return to ChatGPT connected to your own keeper records.</li>
           </ol>
           <p className="tt-gpt-muted"><strong>That is the whole setup.</strong> Tiny Titans will never ask normal users to copy a token, pairing code, MCP address, API key or Firestore identifier into ChatGPT.</p>
         </div>
