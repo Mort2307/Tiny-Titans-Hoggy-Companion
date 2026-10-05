@@ -112,6 +112,13 @@
           }
         },
         {
+          "source": "/.well-known/openai-apps-challenge",
+          "function": {
+            "functionId": "tinyTitansMcp",
+            "region": "europe-west2"
+          }
+        },
+        {
           "source": "/.well-known/oauth-protected-resource",
           "function": {
             "functionId": "tinyTitansMcp",
