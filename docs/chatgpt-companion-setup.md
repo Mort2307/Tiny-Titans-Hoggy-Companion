@@ -73,6 +73,8 @@ Read:
 
 Write:
 
+- `create_snake` — creates a snake profile and can seed initial weight, previous feeding and the first feeding reminder in the same request
+- `update_animal_profile` — updates supported profile fields such as identity, morphs/genetics notes, dates, length and status
 - `log_feeding`
 - `log_weight`
 - `log_shed`
@@ -171,3 +173,20 @@ Tiny Titans currently has two Firebase Hosting sites attached to the same projec
 Installed PWAs keep the origin they were originally installed from. Deploying only one hosting target can therefore leave an installed app on the other origin running an older bundle.
 
 Use `npm run deploy:keeper` for frontend releases. It deliberately builds once and deploys the same `dist` output to both hosting targets.
+
+
+## Compound animal onboarding
+
+The Companion should complete a whole new-animal request in one pass instead of making the keeper repeat each field.
+
+Example:
+
+```text
+Add Nova, a Moonstone Western Hognose. Starting weight 35g, length 12 inches,
+last fed four days ago, remind me to feed her in two days, hatch date 2026-01-05
+and arrival date 2026-10-05.
+```
+
+ChatGPT should convert relative dates to absolute dates, convert imperial length to centimetres for storage, create the snake profile, seed the initial weight record, record the known previous feeding without inventing prey details, and create the requested one-time feeding reminder.
+
+This remains scoped application access rather than generic Firestore access.
