@@ -50,7 +50,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   write_reminders: "Create one-time or recurring keeper reminders",
 };
 
-const CHATGPT_PLUGIN_URL = (import.meta.env.VITE_CHATGPT_PLUGIN_URL as string | undefined)?.trim() || "https://chatgpt.com/plugins/plugins_6ac2654b51e48191af9a0c921d2b8d6e";
+const CHATGPT_PLUGIN_URL = (import.meta.env.VITE_CHATGPT_PLUGIN_URL as string | undefined)?.trim() || "https://chatgpt.com/plugins/plugins_6ac379fc8e1c8191b952bfbe6c5c0f15";
 
 export default function ChatGPTCompanion() {
   const [status, setStatus] = useState<ChatGPTCompanionStatus | null>(null);
