@@ -21,6 +21,7 @@ const PUBLIC_ORIGIN = "https://tinytitanskeeper.web.app";
 const MCP_RESOURCE = `${PUBLIC_ORIGIN}/mcp`;
 const OAUTH_ISSUER = PUBLIC_ORIGIN;
 const PROTECTED_RESOURCE_METADATA = `${PUBLIC_ORIGIN}/.well-known/oauth-protected-resource`;
+const OPENAI_APPS_CHALLENGE = normaliseString(process.env.OPENAI_APPS_CHALLENGE);
 const FIREBASE_WEB_CONFIG = Object.freeze({
   apiKey: "AIzaSyCaUnpNpfoGcmgs3cfe8PXYTeU7_lz50d0",
   authDomain: "tinytitans-hoggy-companion.firebaseapp.com",
@@ -3057,6 +3058,12 @@ async function handleOauthRevoke(request, response) {
 exports.tinyTitansMcp = onRequest({ region: "europe-west2", cors: false, timeoutSeconds: 60 }, async (request, response) => {
   const path = String(request.path || "/").replace(/\/+$/, "") || "/";
   try {
+    if (path === "/.well-known/openai-apps-challenge" && request.method === "GET") {
+      if (!OPENAI_APPS_CHALLENGE) {
+        return response.status(404).set("Cache-Control", "no-store").type("text/plain").send("");
+      }
+      return response.status(200).set("Cache-Control", "no-store").type("text/plain").send(OPENAI_APPS_CHALLENGE);
+    }
     if (path === "/.well-known/oauth-protected-resource" && request.method === "GET") {
       return oauthJson(response, 200, protectedResourceMetadata());
     }
