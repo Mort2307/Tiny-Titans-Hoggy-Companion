@@ -93,6 +93,7 @@ const checks = [
   ["OAuth authorization verifies Firebase identity server-side", backend.includes('require("firebase-admin/auth")') && backend.includes("verifyIdToken(firebaseIdToken, true)")],
   ["OAuth authorization binds directly to verified Firebase UID", backend.includes("createOAuthAuthorizationCodeForUid") && backend.includes("decodedToken.uid") && backend.includes('authorizationMode: "firebase_oauth"')],
   ["authorization page supports existing Tiny Titans account login", backend.includes("onAuthStateChanged") && backend.includes("signInWithPopup") && backend.includes("signInWithEmailAndPassword")],
+  ["authorization page is mobile-safe", backend.includes("signInWithRedirect") && backend.includes("getRedirectResult") && backend.includes("Approve connection")],
   ["authorization page does not request a pairing code", !backend.includes('name="link_code"') && !backend.includes('oauthField(request, "link_code");')],
   ["legacy link codes are not bearer auth", backend.includes("OAUTH_ACCESS_PREFIX") && !backend.includes("token.startsWith(LINK_CODE_PREFIX) return authenticate")],
   ["OAuth generations invalidate rotated connections", backend.includes("oauthGeneration") && backend.includes("GENERATION_MISMATCH")],
