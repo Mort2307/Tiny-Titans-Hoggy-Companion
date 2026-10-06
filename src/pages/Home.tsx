@@ -72,7 +72,7 @@ function Home() {
           to="/founding-followers"
           aria-label={foundingFollowerClaim?.status === "rejected" ? "Fix your Followers 1 Month Free claim" : "Claim Followers 1 Month Free"}
         >
-          <span className="tt-home-follower-reward__icon" aria-hidden="true">🎁</span>
+          <span className="tt-home-follower-reward__icon" aria-hidden="true"><TinyTitansIcon name="plans" size={24} /></span>
           <span className="tt-home-follower-reward__copy">
             <span className="tt-home-follower-reward__eyebrow">FOLLOWERS 1 MONTH FREE</span>
             <strong>{foundingFollowerClaim?.status === "rejected" ? "Your follow proof needs another look" : "Claim 30 days of Titan Pro free"}</strong>
