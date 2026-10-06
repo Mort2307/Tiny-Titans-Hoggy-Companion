@@ -26,16 +26,22 @@ function Home() {
   const [recommendedOpen, setRecommendedOpen] = useState(false);
   const [communityPulseOpen, setCommunityPulseOpen] = useState(false);
   const [foundingFollowerClaim, setFoundingFollowerClaim] = useState<FoundingFollowerClaim | null>(null);
+  const [foundingFollowerClaimChecked, setFoundingFollowerClaimChecked] = useState(false);
 
   useEffect(() => {
+    setFoundingFollowerClaimChecked(false);
     if (!user?.uid || !FOUNDING_FOLLOWER_CAMPAIGN.enabled) {
       setFoundingFollowerClaim(null);
+      setFoundingFollowerClaimChecked(true);
       return;
     }
-    return subscribeToMyFoundingFollowerClaim(user.uid, setFoundingFollowerClaim);
+    return subscribeToMyFoundingFollowerClaim(user.uid, (claim) => {
+      setFoundingFollowerClaim(claim);
+      setFoundingFollowerClaimChecked(true);
+    });
   }, [user?.uid]);
 
-  const showFollowerRewardCta = FOUNDING_FOLLOWER_CAMPAIGN.enabled && (!foundingFollowerClaim || foundingFollowerClaim.status === "rejected");
+  const showFollowerRewardCta = foundingFollowerClaimChecked && FOUNDING_FOLLOWER_CAMPAIGN.enabled && (!foundingFollowerClaim || foundingFollowerClaim.status === "rejected");
 
   return (
     <main className="dashboard tt-home">
