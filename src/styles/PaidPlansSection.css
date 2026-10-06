@@ -1,0 +1,90 @@
+/* Paid plan selector used inside account/admin surfaces.
+   Keep desktop density, but never allow a fixed checkout column to crush
+   the selected-plan copy into a single-character text rail on phones. */
+
+.paid-plans-section {
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 28px;
+}
+
+.paid-plans-section__tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+.paid-plans-section__tier-grid > *,
+.paid-plans-section__detail-grid > *,
+.paid-plans-section__entitlements > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.paid-plans-section__detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, .7fr);
+  gap: 14px;
+  margin-top: 14px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.paid-plans-section__detail-card,
+.paid-plans-section__checkout {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.paid-plans-section__entitlements {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.paid-plans-section__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  min-width: 0;
+}
+
+.paid-plans-section__links > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  .paid-plans-section__detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .paid-plans-section__checkout {
+    width: 100%;
+  }
+
+  .paid-plans-section__checkout .creator-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .paid-plans-section__tier-grid,
+  .paid-plans-section__entitlements {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .paid-plans-section__links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .paid-plans-section__links > *,
+  .paid-plans-section__checkout .creator-actions > * {
+    width: 100%;
+  }
+}

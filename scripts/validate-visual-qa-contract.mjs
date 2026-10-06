@@ -36,6 +36,7 @@ requireText("section", "CreatorQaEvidenceViewer", "CreatorOperationsSection must
 requireText("evidenceService", "export async function getQaEvidenceBlobUrl", "Creator QA service must load screenshots through authenticated blob URLs.");
 requireText("viewer", "Open GitHub evidence", "Creator QA viewer must expose the current GitHub evidence handoff.");
 requireText("capture", "recordVideo", "Visual capture must preserve real viewport journey recording.");
+requireText("capture", "narrow-text-rail", "Visual capture must fail when long text collapses into a narrow vertical rail on phone viewports.");
 requireText("routeDiscovery", "router-plus-authenticated-runtime-discovery", "Universal route discovery must remain router + authenticated runtime based.");
 requireText("firebasePublisher", "publishCreatorQaRun", "Firebase evidence publisher must call the secure Creator QA publication endpoint.");
 requireText("githubPublisher", "qa-evidence", "GitHub evidence publisher must publish to the temporary qa-evidence branch.");

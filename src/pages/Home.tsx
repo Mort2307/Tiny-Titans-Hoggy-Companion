@@ -1,11 +1,13 @@
 import TinyTitansIcon from "../components/TinyTitansIcon";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
 import HomeCurrentAnimalSection from "../components/Home/HomeCurrentAnimalSection";
 import HomeAttentionSection from "../components/Home/HomeAttentionSection";
 import { useHomeDashboard } from "../hooks/useHomeDashboard";
+import { FOUNDING_FOLLOWER_CAMPAIGN } from "../config/foundingFollowerReward";
+import { subscribeToMyFoundingFollowerClaim, type FoundingFollowerClaim } from "../services/foundingFollowerRewardService";
 
 import "./Home.css";
 
@@ -23,6 +25,23 @@ function Home() {
   } = useHomeDashboard();
   const [recommendedOpen, setRecommendedOpen] = useState(false);
   const [communityPulseOpen, setCommunityPulseOpen] = useState(false);
+  const [foundingFollowerClaim, setFoundingFollowerClaim] = useState<FoundingFollowerClaim | null>(null);
+  const [foundingFollowerClaimChecked, setFoundingFollowerClaimChecked] = useState(false);
+
+  useEffect(() => {
+    setFoundingFollowerClaimChecked(false);
+    if (!user?.uid || !FOUNDING_FOLLOWER_CAMPAIGN.enabled) {
+      setFoundingFollowerClaim(null);
+      setFoundingFollowerClaimChecked(true);
+      return;
+    }
+    return subscribeToMyFoundingFollowerClaim(user.uid, (claim) => {
+      setFoundingFollowerClaim(claim);
+      setFoundingFollowerClaimChecked(true);
+    });
+  }, [user?.uid]);
+
+  const showFollowerRewardCta = foundingFollowerClaimChecked && FOUNDING_FOLLOWER_CAMPAIGN.enabled && (!foundingFollowerClaim || foundingFollowerClaim.status === "rejected");
 
   return (
     <main className="dashboard tt-home">
@@ -52,6 +71,25 @@ function Home() {
           <small>{intelligenceAccess ? "Intelligence enabled" : "Keeper records only"}</small>
         </div>
       </section>
+
+      {showFollowerRewardCta && (
+        <Link
+          className={`tt-home-follower-reward${foundingFollowerClaim?.status === "rejected" ? " is-retry" : ""}`}
+          to="/founding-followers"
+          aria-label={foundingFollowerClaim?.status === "rejected" ? "Fix your Followers 1 Month Free claim" : "Claim Followers 1 Month Free"}
+        >
+          <span className="tt-home-follower-reward__icon" aria-hidden="true"><TinyTitansIcon name="plans" size={24} /></span>
+          <span className="tt-home-follower-reward__copy">
+            <span className="tt-home-follower-reward__eyebrow">FOLLOWERS 1 MONTH FREE</span>
+            <strong>{foundingFollowerClaim?.status === "rejected" ? "Your follow proof needs another look" : "Claim 30 days of Titan Pro free"}</strong>
+            <small>{foundingFollowerClaim?.status === "rejected" ? "Upload a clearer Facebook or Instagram follow screenshot." : "Follow Tiny Titans on Facebook or Instagram, then verify it with one screenshot."}</small>
+          </span>
+          <span className="tt-home-follower-reward__action">
+            {foundingFollowerClaim?.status === "rejected" ? "Fix claim" : "Claim free month"}
+            <TinyTitansIcon name="forward" size={15} />
+          </span>
+        </Link>
+      )}
 
       {!loadingIntelligence && (snakes.length > 0 || urgentReminder) && (
         <HomeAttentionSection
