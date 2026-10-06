@@ -965,3 +965,160 @@
     gap: 4px;
   }
 }
+
+
+/* Founding follower reward — prominent until the account has submitted/used it.
+   Pending, processing and approved claims are hidden by Home.tsx; rejected
+   claims return as a clear retry action. */
+.tt-home-follower-reward {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  margin: 0 0 var(--tt-home-gap);
+  padding: 16px 18px;
+  overflow: hidden;
+  border: 1px solid rgba(245, 182, 66, .48);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 90% 0, rgba(245, 182, 66, .18), transparent 34%),
+    radial-gradient(circle at 0 100%, rgba(111, 36, 184, .26), transparent 44%),
+    linear-gradient(135deg, rgba(57, 21, 76, .98), rgba(25, 7, 40, .98));
+  color: var(--tt-text-strong);
+  text-decoration: none;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, .2),
+    0 0 24px rgba(245, 182, 66, .08),
+    inset 0 1px 0 rgba(255, 255, 255, .05);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.tt-home-follower-reward::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 18%, rgba(255, 255, 255, .055) 48%, transparent 74%);
+  transform: translateX(-42%);
+  animation: ttFollowerRewardSheen 7s ease-in-out infinite;
+}
+
+.tt-home-follower-reward:hover {
+  transform: translateY(-2px);
+  border-color: rgba(245, 182, 66, .82);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, .24),
+    0 0 30px rgba(245, 182, 66, .13);
+}
+
+.tt-home-follower-reward.is-retry {
+  border-color: rgba(231, 123, 123, .5);
+  background:
+    radial-gradient(circle at 90% 0, rgba(231, 123, 123, .14), transparent 34%),
+    linear-gradient(135deg, rgba(69, 24, 53, .98), rgba(25, 7, 40, .98));
+}
+
+.tt-home-follower-reward__icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border: 1px solid rgba(245, 182, 66, .34);
+  border-radius: 14px;
+  background: rgba(245, 182, 66, .1);
+  font-size: 1.45rem;
+}
+
+.tt-home-follower-reward__copy {
+  position: relative;
+  z-index: 1;
+  display: block;
+  min-width: 0;
+}
+
+.tt-home-follower-reward__eyebrow,
+.tt-home-follower-reward__copy strong,
+.tt-home-follower-reward__copy small {
+  display: block;
+}
+
+.tt-home-follower-reward__eyebrow {
+  color: var(--tt-warning);
+  font-size: .61rem;
+  font-weight: 950;
+  letter-spacing: .13em;
+}
+
+.tt-home-follower-reward__copy strong {
+  margin-top: 3px;
+  color: var(--tt-text-strong);
+  font-size: .98rem;
+  line-height: 1.2;
+}
+
+.tt-home-follower-reward__copy small {
+  margin-top: 4px;
+  color: var(--tt-muted);
+  font-size: .72rem;
+  line-height: 1.4;
+}
+
+.tt-home-follower-reward__action {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border: 1px solid rgba(245, 182, 66, .42);
+  border-radius: 12px;
+  background: rgba(245, 182, 66, .1);
+  color: var(--tt-warning);
+  font-size: .74rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+@keyframes ttFollowerRewardSheen {
+  0%, 100% { transform: translateX(-42%); opacity: .2; }
+  50% { transform: translateX(42%); opacity: .75; }
+}
+
+@media (max-width: 680px) {
+  .tt-home-follower-reward {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 11px;
+    padding: 14px;
+  }
+
+  .tt-home-follower-reward__action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .tt-home-follower-reward__icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .tt-home-follower-reward__copy strong {
+    font-size: .9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-home-follower-reward,
+  .tt-home-follower-reward::after {
+    transition: none;
+    animation: none;
+  }
+}
