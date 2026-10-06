@@ -115,7 +115,7 @@
     "validate:paid-tier-contract": "node scripts/validate-paid-tier-contract.mjs",
     "validate:quick-navigation": "node scripts/validate-quick-navigation.mjs",
     "validate:chatgpt-companion": "node scripts/validate-chatgpt-companion.mjs",
-    "validate:mobile-ui": "node scripts/validate-mobile-product-system.mjs",
+    "validate:mobile-ui": "node scripts/validate-mobile-product-system.mjs && node scripts/validate-mobile-column-collapse.mjs",
     "validate:trackers": "node scripts/validate-tracker-integrity.mjs",
     "validate:integration-hub": "node scripts/validate-integration-hub.mjs",
     "validate:service-directory": "node scripts/validate-service-directory.mjs",
