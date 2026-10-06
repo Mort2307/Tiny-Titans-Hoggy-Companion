@@ -36,6 +36,7 @@ const assertions = [
   ["claim UI is enabled for testing/launch", files["src/config/foundingFollowerReward.ts"].includes("enabled: true")],
   ["Home exposes the follower free-month CTA", files["src/pages/Home.tsx"].includes("tt-home-follower-reward") && files["src/pages/Home.tsx"].includes('to="/founding-followers"')],
   ["Home hides the CTA after a live claim is submitted or approved", files["src/pages/Home.tsx"].includes('!foundingFollowerClaim || foundingFollowerClaim.status === "rejected"')],
+  ["Home waits for claim state before rendering the CTA", files["src/pages/Home.tsx"].includes("foundingFollowerClaimChecked") && files["src/pages/Home.tsx"].includes("setFoundingFollowerClaimChecked(true)")],
   ["Home restores the CTA for rejected claims", files["src/pages/Home.tsx"].includes('foundingFollowerClaim?.status === "rejected"') && files["src/pages/Home.tsx"].includes("Fix claim")],
   ["Home follower CTA remains phone-safe", files["src/pages/Home.css"].includes(".tt-home-follower-reward") && files["src/pages/Home.css"].includes("grid-template-columns: auto minmax(0, 1fr)") && files["src/pages/Home.css"].includes("grid-column: 1 / -1")],
 ];
