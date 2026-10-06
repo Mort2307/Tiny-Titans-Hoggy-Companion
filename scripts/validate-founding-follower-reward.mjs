@@ -13,6 +13,8 @@ const requiredFiles = [
   "src/styles/creatorFoundingFollowerClaims.css",
   "src/routes/AuthenticatedRoutes.tsx",
   "src/pages/CreatorOperationsHub.tsx",
+  "src/pages/Home.tsx",
+  "src/pages/Home.css",
 ];
 
 const reads = await Promise.all(requiredFiles.map(async (path) => [path, await fs.readFile(path, "utf8")]));
@@ -32,6 +34,10 @@ const assertions = [
   ["creator claim route is registered", files["src/routes/AuthenticatedRoutes.tsx"].includes('path="/creator/founding-followers"')],
   ["creator hub links to claim queue", files["src/pages/CreatorOperationsHub.tsx"].includes("/creator/founding-followers")],
   ["claim UI is enabled for testing/launch", files["src/config/foundingFollowerReward.ts"].includes("enabled: true")],
+  ["Home exposes the follower free-month CTA", files["src/pages/Home.tsx"].includes("tt-home-follower-reward") && files["src/pages/Home.tsx"].includes('to="/founding-followers"')],
+  ["Home hides the CTA after a live claim is submitted or approved", files["src/pages/Home.tsx"].includes('!foundingFollowerClaim || foundingFollowerClaim.status === "rejected"')],
+  ["Home restores the CTA for rejected claims", files["src/pages/Home.tsx"].includes('foundingFollowerClaim?.status === "rejected"') && files["src/pages/Home.tsx"].includes("Fix claim")],
+  ["Home follower CTA remains phone-safe", files["src/pages/Home.css"].includes(".tt-home-follower-reward") && files["src/pages/Home.css"].includes("grid-template-columns: auto minmax(0, 1fr)") && files["src/pages/Home.css"].includes("grid-column: 1 / -1")],
 ];
 
 const failures = assertions.filter(([, ok]) => !ok);
