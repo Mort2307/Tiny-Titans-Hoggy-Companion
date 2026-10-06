@@ -117,6 +117,17 @@ async function collectEvidence(page, route, viewport) {
         const rect = element.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44);
       });
+      const narrowTextRails = viewportWidth <= 640 ? visibleElements.filter((element) => {
+        if (element.closest("header, nav, footer, [role='navigation'], .app-navigation, .tt-easy-nav-strip")) return false;
+        const content = text(element);
+        if (content.length < 24) return false;
+        const rect = element.getBoundingClientRect();
+        if (rect.width >= Math.min(96, viewportWidth * .24) || rect.height < 120) return false;
+        const style = getComputedStyle(element);
+        if (style.writingMode && style.writingMode !== "horizontal-tb") return false;
+        if (style.whiteSpace === "nowrap") return false;
+        return rect.height / Math.max(rect.width, 1) >= 4;
+      }) : [];
       const styles = getComputedStyle(root);
       const brandSignals = [
         styles.getPropertyValue("--tt-brand").trim() || styles.getPropertyValue("--primary").trim(),
@@ -149,6 +160,17 @@ async function collectEvidence(page, route, viewport) {
           right: Math.round(element.getBoundingClientRect().right),
         })),
         hiddenOverflowContainerCount: hiddenOverflow.length,
+        narrowTextRailCount: narrowTextRails.length,
+        narrowTextRailExamples: narrowTextRails.slice(0, 8).map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName.toLowerCase(),
+            className: String(element.className || "").slice(0, 120),
+            text: text(element).slice(0, 140),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          };
+        }),
         smallTouchTargetCount: smallTargets.length,
         brandSignalCount: brandSignals.length,
       };
@@ -158,6 +180,7 @@ async function collectEvidence(page, route, viewport) {
     if (evidence.horizontalOverflow > 2) findings.push({ severity: "error", code: "horizontal-overflow", message: `Content exceeds the ${viewport.name} viewport by ${Math.round(evidence.horizontalOverflow)}px.` });
     if (evidence.viewportClippedCount > 0) findings.push({ severity: "error", code: "viewport-clipping", message: `${evidence.viewportClippedCount} visible element(s) extend outside the viewport.` });
     if (evidence.hiddenOverflowContainerCount > 0) findings.push({ severity: "warning", code: "hidden-overflow", message: `${evidence.hiddenOverflowContainerCount} visible container(s) hide wider content.` });
+    if (evidence.narrowTextRailCount > 0) findings.push({ severity: "error", code: "narrow-text-rail", message: `${evidence.narrowTextRailCount} long-text element(s) collapsed into a narrow vertical rail on ${viewport.name}.` });
     if (evidence.contentInteractiveCount > 18) findings.push({ severity: "warning", code: "interaction-density", message: `${evidence.contentInteractiveCount} content controls compete for attention.` });
     if (evidence.contentTextLength > 1400) findings.push({ severity: "warning", code: "text-density", message: `${evidence.contentTextLength} content characters may benefit from progressive disclosure.` });
     if (evidence.smallTouchTargetCount > 0) findings.push({ severity: "warning", code: "touch-targets", message: `${evidence.smallTouchTargetCount} actionable controls are below the 44px touch-target guideline.` });
