@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { searchGeneticsIntelligence, explainGeneticsSearch } from "../../intelligence/v50/geneticsSearchIntelligence";
 import { buildGeneticTimeMachine, buildGeneticWhatIf, buildGeneticBreadcrumbs, buildGeneticFamilyTree } from "../../intelligence/v50/geneticsJourneyEngine";
 import { calculateGeneticIdentityConfidence, detectGeneticsConflicts, detectImpossibleOffspring, type GeneticsClaim, type GeneticsIntegrityInput } from "../../intelligence/v50/geneticsIntegrityEngine";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 interface Props { featureId: number }
 
@@ -99,22 +100,22 @@ export default function TitanGeneticsWorkspace({ featureId }: Props) {
   }
 
   if (mode === "search") return <section className="titan-feature-panel">
-    <p className="titan-feature-kicker">🧬 GENETICS INTELLIGENCE</p>
+    <p className="titan-feature-kicker"><TinyTitansIcon name="genetics" size={14} /> GENETICS INTELLIGENCE</p>
     <h2>Search genetics like a geneticist</h2>
     <p>Canonical names, breeder aliases and recognised combinations all resolve through the same evidence-aware database. A visual match never silently becomes a genetic fact.</p>
     <div className="titan-feature-search">
       <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Try Arctic Conda, Grey Fog, Conda or Superconda" aria-label="Search genetics" />
       <button type="button" onClick={() => setSearch(search.trim())}>Search</button>
     </div>
-    {!search && <div className="titan-feature-note"><strong>Try these intelligence paths:</strong> “Arctic Conda” → recognised Grey Fog combination · “Grey Fog” → reverse resolution to Arctic × Conda · “Anaconda” → Conda alias.</div>}
+    {!search && <div className="titan-feature-note"><strong>Try these intelligence paths:</strong> “Arctic Conda” to recognised Grey Fog combination · “Grey Fog” to reverse resolution to Arctic × Conda · “Anaconda” to Conda alias.</div>}
     {search && searchResults.length > 0 && <div className="titan-feature-results">{searchResults.map((result) => <SearchCard key={`${result.canonicalName}-${result.matchKind}-${result.score}`} result={result} query={search} />)}</div>}
     {search && searchResults.length === 0 && <div className="titan-feature-empty"><strong>No reliable match.</strong><p>Nothing in the current canonical genetics registry matched that term. Do not invent a record from a similar-looking morph.</p></div>}
     {search && <p className="titan-feature-note">{explainGeneticsSearch(search)}</p>}
-    <Link to="/morph-library">Open full Morph Library →</Link>
+    <Link to="/morph-library">Open full Morph Library <TinyTitansIcon name="forward" size={13} /></Link>
   </section>;
 
   if (mode === "what-if" || mode === "integrity") return <section className="titan-feature-panel">
-    <p className="titan-feature-kicker">🧬 GENETICS WORKSPACE</p>
+    <p className="titan-feature-kicker"><TinyTitansIcon name="genetics" size={14} /> GENETICS WORKSPACE</p>
     <h2>{mode === "what-if" ? "Breeding What-If Sandbox" : "Genetic Integrity Check"}</h2>
     <p>Enter explicit genetic states. The workspace analyses them without rewriting the keeper's stored records.</p>
     <label>Parent A <input value={parentA} onChange={(event) => setParentA(event.target.value)} placeholder="arctic:1, conda:1" /></label>
@@ -123,11 +124,11 @@ export default function TitanGeneticsWorkspace({ featureId }: Props) {
     <button type="button" onClick={mode === "what-if" ? runWhatIf : runIntegrity}>{mode === "what-if" ? "Run What-If" : "Check integrity"}</button>
     {hasRun && <pre className="titan-feature-output">{resultText}</pre>}
     {!hasRun && <div className="titan-feature-empty"><strong>Ready.</strong><p>Nothing has been inferred yet. Add explicit claims and run the analysis.</p></div>}
-    <Link to="/calculator">Open Genetics Calculator →</Link>
+    <Link to="/calculator">Open Genetics Calculator <TinyTitansIcon name="forward" size={13} /></Link>
   </section>;
 
   if (mode === "time-machine") return <section className="titan-feature-panel">
-    <p className="titan-feature-kicker">⏳ GENETIC TIME MACHINE</p>
+    <p className="titan-feature-kicker"><TinyTitansIcon name="timeline" size={14} /> GENETIC TIME MACHINE</p>
     <h2>Compare recorded genetic states through time</h2>
     <p>One snapshot per line: <code>2026-01-01|arctic:1,conda:1</code>. Historical states are displayed, not silently rewritten.</p>
     <textarea value={resultText} onChange={(event) => setResultText(event.target.value)} placeholder="2026-01-01|arctic:1,conda:1\n2026-06-01|arctic:1,conda:2" rows={6} />
@@ -135,16 +136,16 @@ export default function TitanGeneticsWorkspace({ featureId }: Props) {
   </section>;
 
   if (mode === "family-tree") return <section className="titan-feature-panel">
-    <p className="titan-feature-kicker">🌳 LIVING GENETIC FAMILY TREE</p>
+    <p className="titan-feature-kicker"><TinyTitansIcon name="genetics" size={14} /> LIVING GENETIC FAMILY TREE</p>
     <h2>Explicit ancestry only</h2>
     <p>Family relationships are represented only when parent IDs are explicitly recorded. Missing ancestry is never guessed.</p>
     <div className="titan-feature-empty"><strong>Ancestry link layer ready.</strong><p>When parent IDs exist in the breeding records, this surface can render them as a live graph. Until then, an empty tree is safer than a fabricated pedigree.</p></div>
     <div className="titan-feature-note">{JSON.stringify(buildGeneticFamilyTree([]))}</div>
-    <Link to="/breeding">Open Breeding Planner →</Link>
+    <Link to="/breeding">Open Breeding Planner <TinyTitansIcon name="forward" size={13} /></Link>
   </section>;
 
   return <section className="titan-feature-panel">
-    <p className="titan-feature-kicker">🧬 GENETIC BREADCRUMBS</p>
+    <p className="titan-feature-kicker"><TinyTitansIcon name="genetics" size={14} /> GENETIC BREADCRUMBS</p>
     <h2>Trace the provenance of a claim</h2>
     <label>Gene claims <input value={parentA} onChange={(event) => setParentA(event.target.value)} placeholder="arctic:1, conda:1" /></label>
     <div className="titan-feature-note">{buildGeneticBreadcrumbs({ id: "workspace", name: "Entered claim set", genes: parentAGenes.map((gene) => ({ geneId: geneId(gene.name), copies: gene.copies ?? 1, status: gene.verification === "confirmed" ? "confirmed" : "reported" })) }).map((crumb) => <div key={crumb.geneId}>{crumb.geneId} · {crumb.copies} copy/copies · {crumb.status} · {crumb.source}</div>)}</div>
