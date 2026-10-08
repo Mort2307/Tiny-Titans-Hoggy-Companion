@@ -3,6 +3,7 @@ import { SPECIES_SOURCES } from '../data/species/speciesSources';
 import { localSourceHealth, sourceHealthLabel, type SourceHealthManifest, type SourceHealthRecord } from '../data/species/sourceHealth';
 import type { SnakeSpeciesRecord } from '../data/species/speciesTypes';
 import '../styles/species-source-health.css';
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type Props = { species: SnakeSpeciesRecord };
 
@@ -36,7 +37,7 @@ export default function SpeciesSourceHealthPanel({ species }: Props) {
 
   return (
     <section className="husbandry-panel husbandry-source-health">
-      <p className="husbandry-eyebrow">🛰️ SOURCE MONITOR</p>
+      <p className="husbandry-eyebrow"><TinyTitansIcon name="observatory" size={14} /> SOURCE MONITOR</p>
       <h2>Live source health for {species.commonNames[0] ?? species.acceptedScientificName}</h2>
       <p>These checks monitor source availability and detect source-content changes. They do <strong>not</strong> automatically change husbandry guidance; a detected change creates a review signal for Tiny Titans.</p>
       <div className="husbandry-source-health__summary">
@@ -50,11 +51,11 @@ export default function SpeciesSourceHealthPanel({ species }: Props) {
               <strong>{source?.title ?? `Unresolved source: ${id}`}</strong>
               <span>{source?.publisher ?? 'Tiny Titans research queue'}</span>
             </div>
-            <span className={badgeClass(health.status)}>{health.status === 'changed' ? '🟠' : health.status === 'current' ? '🟢' : health.status === 'review-due' ? '🟡' : '🔴'} {sourceHealthLabel(health.status)}</span>
+            <span className={badgeClass(health.status)}><TinyTitansIcon name={health.status === 'current' ? 'check' : health.status === 'review-due' ? 'reminders' : 'warning'} size={13} /> {sourceHealthLabel(health.status)}</span>
             {health.httpStatus && <small>HTTP {health.httpStatus}{health.finalUrl ? ` · ${health.finalUrl}` : ''}</small>}
             {health.checkedAt && <small>Checked {new Date(health.checkedAt).toLocaleString('en-GB')}</small>}
             {health.message && <small>{health.message}</small>}
-            {source?.url && source.url !== '#' && <a href={source.url} target="_blank" rel="noreferrer">Open source ↗</a>}
+            {source?.url && source.url !== '#' && <a href={source.url} target="_blank" rel="noreferrer">Open source <TinyTitansIcon name="forward" size={13} /></a>}
           </article>
         ))}
       </div>

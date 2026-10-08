@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import {
+import TinyTitansIcon from "../TinyTitansIcon";
   Bar,
   BarChart,
   CartesianGrid,
@@ -135,7 +136,7 @@ export default function RescueLogIntelligence({ records = [], animalName = "this
       <section className="rescue-card rescue-log-intelligence" aria-label="Log intelligence">
         <div className="rescue-log-intelligence-heading">
           <div>
-            <span className="rescue-eyebrow">🧠 LOG INTELLIGENCE · ALL TIERS</span>
+            <span className="rescue-eyebrow"><TinyTitansIcon name="titan" size={14} /> LOG INTELLIGENCE · ALL TIERS</span>
             <h2>No pattern yet</h2>
             <p>As care records accumulate, Tiny Titans will turn the same timeline into visual trends and observed patterns.</p>
           </div>
@@ -148,7 +149,7 @@ export default function RescueLogIntelligence({ records = [], animalName = "this
     <section className="rescue-card rescue-log-intelligence" aria-label={`Log intelligence for ${animalName}`}>
       <div className="rescue-log-intelligence-heading">
         <div>
-          <span className="rescue-eyebrow">🧠 LOG INTELLIGENCE · ALL TIERS</span>
+          <span className="rescue-eyebrow"><TinyTitansIcon name="titan" size={14} /> LOG INTELLIGENCE · ALL TIERS</span>
           <h2>Patterns in {animalName}'s care history</h2>
           <p>Descriptive trends are calculated from the existing care timeline. This does not diagnose illness or replace veterinary assessment.</p>
         </div>
