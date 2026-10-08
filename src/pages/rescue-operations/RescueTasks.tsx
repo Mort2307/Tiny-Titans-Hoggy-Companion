@@ -1,8 +1,8 @@
 import {
-import TinyTitansIcon from "../../components/TinyTitansIcon";
   useMemo,
   useState
 } from "react";
+import TinyTitansIcon from "../../components/TinyTitansIcon";
 import { Link } from "react-router-dom";
 import { setRescueReminderComplete } from "../../services/rescueService";
 import type { RescueAnimal } from "../../types/rescue";
