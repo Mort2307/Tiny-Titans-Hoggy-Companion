@@ -83,7 +83,7 @@ export default function SnakeTitanIntelligencePage() {
   return <main className="page-container master-record-page">
     <section className="master-shell">
       <header className="master-hero">
-        <div><p className="master-eyebrow">🧠 POWERHOUSE INTELLIGENCE</p><h1>{snake.name}</h1><p>Living, record-derived intelligence for this individual. The same canonical engine used by the Master Record.</p></div>
+        <div><p className="master-eyebrow"><TinyTitansIcon name="titan" size={15} /> POWERHOUSE INTELLIGENCE</p><h1>{snake.name}</h1><p>Living, record-derived intelligence for this individual. The same canonical engine used by the Master Record.</p></div>
         <Link className="master-back" to={`/snakes/${snake.id}/master-record`}>Master Record</Link>
       </header>
 
