@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "migrate:icons": "node scripts/migrate-custom-iconography.mjs",
     "typecheck": "tsc -b --pretty false",
     "validate:morphs": "node scripts/validate-morph-database.mjs",
     "validate:morph-taxonomy": "node scripts/validate-hognose-morph-taxonomy.mjs",
