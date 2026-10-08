@@ -13,6 +13,7 @@ import "../styles/PaidPlans.css";
 import { PAID_PROMOTIONS } from "../config/paidPromotions";
 import { claimPaidPromotion } from "../services/paidPromotionService";
 import { isGooglePlayBillingAvailable } from "../services/platformBillingService";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 const PLAN_DISPLAY_ORDER: PaidTierId[] = ["free", "titan_seller", "titan_pro", "business_starter", "business_plus", "business_advanced", "rescue"];
 const PRESTIGE_LABELS: Record<PaidTierId, string> = { free: "CORE", titan_seller: "SELLER", titan_pro: "PRO", business_starter: "BUSINESS", business_plus: "BUSINESS+", business_advanced: "ADVANCED", rescue: "RESCUE" };
@@ -34,9 +35,9 @@ export default function PaidPlans() {
   return <main className="paid-plans-page">
     <PageBackButton fallbackPath="/account" label="Back to My Account" />
     <header className={`paid-plans-hero tier-${effective.id}`}><div><span className="paid-kicker">TINY TITANS · WORKSPACES</span><h1>Choose the TinyTitans workspace built around what you do.</h1><p>Start with personal animal keeping, then move into Pro, Seller, Business or Rescue as your needs grow. Your core records and intelligence ecosystem stay with you.</p></div><div className="paid-plan-status"><PaidTierBadge tierId={effective.id} size="md" /><strong>{effective.name}</strong><span>{statusLabel}</span></div></header>
-    {access?.source === "trial" && access.trial && <section className="paid-message"><strong>🎁 You are currently trialling {effective.name}</strong><p>You have about <strong>{trialDays} day{trialDays === 1 ? "" : "s"}</strong> remaining. The trial ends {trialEndsLabel} and does not create a Stripe subscription.</p></section>}
+    {access?.source === "trial" && access.trial && <section className="paid-message"><strong><TinyTitansIcon name="plans" size={14} /> You are currently trialling {effective.name}</strong><p>You have about <strong>{trialDays} day{trialDays === 1 ? "" : "s"}</strong> remaining. The trial ends {trialEndsLabel} and does not create a Stripe subscription.</p></section>}
     {error && <section className="paid-message paid-error" role="alert">{error}</section>}
-    {Object.values(PAID_PROMOTIONS).filter((promotion) => promotion.enabled && promotion.tier === "titan_pro").map((promotion) => <section className="paid-message" key={promotion.id}><strong>🎁 {promotion.name}</strong><p>{promotion.description}</p><button type="button" className="paid-primary" disabled={busy} onClick={async () => { setBusy(true); setError(""); try { await claimPaidPromotion(promotion.id); window.location.reload(); } catch (err) { setError(err instanceof Error ? err.message : "This promotion could not be claimed."); setBusy(false); } }}>Start free trial</button></section>)}
+    {Object.values(PAID_PROMOTIONS).filter((promotion) => promotion.enabled && promotion.tier === "titan_pro").map((promotion) => <section className="paid-message" key={promotion.id}><strong><TinyTitansIcon name="plans" size={14} /> {promotion.name}</strong><p>{promotion.description}</p><button type="button" className="paid-primary" disabled={busy} onClick={async () => { setBusy(true); setError(""); try { await claimPaidPromotion(promotion.id); window.location.reload(); } catch (err) { setError(err instanceof Error ? err.message : "This promotion could not be claimed."); setBusy(false); } }}>Start free trial</button></section>)}
     <section className="paid-follower-offer" aria-labelledby="paid-follower-offer-title">
       <div className="paid-follower-offer__copy">
         <span className="paid-kicker">COMMUNITY THANK-YOU</span>
@@ -44,10 +45,10 @@ export default function PaidPlans() {
         <p>Follow Tiny Titans on Facebook or Instagram? Claim 30 days of Titan Pro by submitting a screenshot showing your follow.</p>
       </div>
       <Link className="paid-follower-offer__action" to="/founding-followers">
-        Claim your free month →
+        Claim your free month <TinyTitansIcon name="forward" size={13} />
       </Link>
     </section>
-    <section className="paid-plan-grid" aria-label="Tiny Titans subscription workspaces">{PLAN_DISPLAY_ORDER.map((tierId) => { const tier = getPaidTierDefinition(tierId); const product = workspaceProductForTier(tierId); const current = access?.effectiveTier === tierId; const selectedCard = selectedTier === tierId; return <button key={tierId} type="button" className={`paid-plan-card tier-${tierId} ${selectedCard ? "is-selected" : ""} ${current ? "is-current" : ""}`} onClick={() => setSelectedTier(tierId)} aria-pressed={selectedCard}><span className="paid-tier-identity"><PaidTierBadge tierId={tierId} size="lg" /><span className="paid-tier-identity__copy"><span className="paid-tier-prestige">{PRESTIGE_LABELS[tierId]}</span><span className="paid-kicker">{product.eyebrow}</span><h2>{product.name}</h2></span></span><strong className="paid-price">{formatLivePrice(tierId)}</strong><p>{product.tagline}</p><small className="paid-audience">{product.audience}</small><span className="paid-free-included">✓ Full Free Keeper experience included</span><div className="paid-highlights">{tier.highlights.map((item) => <span key={item}>✓ {item}</span>)}</div>{current && <span className="paid-current-badge">CURRENT ACCESS</span>}{selectedCard && <span className="paid-selection-halo" aria-hidden="true" />}</button>; })}</section>
+    <section className="paid-plan-grid" aria-label="Tiny Titans subscription workspaces">{PLAN_DISPLAY_ORDER.map((tierId) => { const tier = getPaidTierDefinition(tierId); const product = workspaceProductForTier(tierId); const current = access?.effectiveTier === tierId; const selectedCard = selectedTier === tierId; return <button key={tierId} type="button" className={`paid-plan-card tier-${tierId} ${selectedCard ? "is-selected" : ""} ${current ? "is-current" : ""}`} onClick={() => setSelectedTier(tierId)} aria-pressed={selectedCard}><span className="paid-tier-identity"><PaidTierBadge tierId={tierId} size="lg" /><span className="paid-tier-identity__copy"><span className="paid-tier-prestige">{PRESTIGE_LABELS[tierId]}</span><span className="paid-kicker">{product.eyebrow}</span><h2>{product.name}</h2></span></span><strong className="paid-price">{formatLivePrice(tierId)}</strong><p>{product.tagline}</p><small className="paid-audience">{product.audience}</small><span className="paid-free-included"><TinyTitansIcon name="check" size={13} /> Full Free Keeper experience included</span><div className="paid-highlights">{tier.highlights.map((item) => <span key={item}><TinyTitansIcon name="check" size={13} /> {item}</span>)}</div>{current && <span className="paid-current-badge">CURRENT ACCESS</span>}{selectedCard && <span className="paid-selection-halo" aria-hidden="true" />}</button>; })}</section>
     <section className={`paid-plan-detail tier-${selectedTier}`}>
       <div>
         <span className="paid-kicker"><PaidTierBadge tierId={selectedTier} size="sm" /> SELECTED WORKSPACE</span>
@@ -99,6 +100,6 @@ export default function PaidPlans() {
     </section>
     <FreeExperienceCoverage />
     <PaidTierComparisonMatrix />
-    <section className="paid-message"><strong>🧠 One intelligence ecosystem.</strong><p>Every workspace keeps its own context while approved observations, feedback and opt-in contribution signals can continue through TinyTitans intelligence and Creator Centre governance.</p></section>
+    <section className="paid-message"><strong><TinyTitansIcon name="titan" size={14} /> One intelligence ecosystem.</strong><p>Every workspace keeps its own context while approved observations, feedback and opt-in contribution signals can continue through TinyTitans intelligence and Creator Centre governance.</p></section>
   </main>;
 }
