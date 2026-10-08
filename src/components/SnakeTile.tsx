@@ -27,9 +27,9 @@ function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", 
   const [deleting, setDeleting] = useState(false);
 
   function getSexIcon() {
-    if (sex === "Male") return "♂️";
-    if (sex === "Female") return "♀️";
-    return "⚪";
+    if (sex === "Male") return "Male";
+    if (sex === "Female") return "Female";
+    return "Unknown";
   }
 
   function openTile() {
@@ -100,7 +100,7 @@ function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", 
           lineHeight: 1,
         }}
       >
-        🗑️
+        <TinyTitansIcon name="delete" size={16} />
       </button>
 
       <ConfirmActionDialog

@@ -123,7 +123,7 @@ export default function MultiSelectDropdown({ title, options, selected, setSelec
               autoComplete="off"
             />
             {search && (
-              <button type="button" className="multi-select-search-clear" onClick={() => setSearch("")} aria-label="Clear morph search">×</button>
+              <button type="button" className="multi-select-search-clear" onClick={() => setSearch("")} aria-label="Clear morph search"><TinyTitansIcon name="close" size={14} /></button>
             )}
           </div>
 
