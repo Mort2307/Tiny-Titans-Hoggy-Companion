@@ -16,6 +16,8 @@ export type TinyTitansIconName =
   | "morph"
   | "genetics"
   | "breeding"
+  | "male"
+  | "female"
   | "academy"
   | "handbook"
   | "observatory"

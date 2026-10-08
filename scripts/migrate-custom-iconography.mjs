@@ -20,6 +20,7 @@ const symbolToIcon = new Map([
   ["🔭","observatory"],["🔎","observatory"],
   ["⌘","enclosure"],["🏡","enclosure"],["🪨","enclosure"],["🪵","enclosure"],["🪑","enclosure"],["🚪","enclosure"],["🪟","enclosure"],["🏗️","enclosure"],["🏗","enclosure"],["📐","enclosure"],["📏","enclosure"],
   ["🧬","genetics"],["∑","genetics"],
+  ["♂","male"],["♀","female"],
   ["🥚","breeding"],["🐣","breeding"],["🪹","breeding"],
   ["📦","marketplace"],["🗃️","marketplace"],["🗃","marketplace"],["🗄️","marketplace"],["🗄","marketplace"],["🛒","marketplace"],
   ["▣","academy"],["🎓","academy"],["🏫","academy"],["📋","academy"],
@@ -42,7 +43,7 @@ const symbolToIcon = new Map([
   ["💧","water"],["📅","timeline"],["🎂","timeline"],["⏳","timeline"],["⏱️","timeline"],["⏱","timeline"],
   ["💾","save"],["⬆","upload"],["☁️","upload"],["☁","upload"],["📤","export"],["📈","analytics"],
   ["←","back"],["↩️","back"],["↩","back"],["→","forward"],["↗️","forward"],["↗","forward"],["🚀","forward"],
-  ["×","close"],["✕","close"],
+  ["✕","close"],
   ["🔗","link"],["🔒","lock"],["🔓","unlock"],
   ["🔲","grid"],["⬜","grid"],
   ["📷","camera"],["📸","camera"],["🎥","camera"],
@@ -56,6 +57,7 @@ const symbolToIcon = new Map([
 const symbols = [...symbolToIcon.keys()].sort((a,b)=>b.length-a.length);
 const escapeRe = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const symbolPattern = new RegExp(symbols.map(escapeRe).join("|"), "gu");
+const decorativeFlagPattern = /🇬🇧|🇺🇸|🇨🇦|🇦🇺|🇪🇺/gu;
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -77,6 +79,7 @@ function cleanPlainText(value) {
   return value
     .replace(symbolPattern, "")
     .replace(/\uFE0F/gu, "")
+    .replace(decorativeFlagPattern, "")
     .replace(/[ \t]{2,}/g, " ");
 }
 
@@ -195,6 +198,18 @@ function migrateFile(file) {
 
     if (isTsx && ts.isJsxText(node)) {
       const raw = source.slice(node.pos, node.end);
+      const parentTag = ts.isJsxElement(node.parent) ? node.parent.openingElement.tagName.getText(sf) : "";
+      if (raw.trim() === "×" && (parentTag === "button" || parentTag === "span")) {
+        needsIconImport = true;
+        add(node.pos, node.end, '<TinyTitansIcon name="close" size={18} className="tt-inline-icon" />');
+        return;
+      }
+      decorativeFlagPattern.lastIndex = 0;
+      if (decorativeFlagPattern.test(raw)) {
+        decorativeFlagPattern.lastIndex = 0;
+        add(node.pos, node.end, raw.replace(decorativeFlagPattern, ""));
+        return;
+      }
       const hits = symbolMatches(raw);
       if (hits.length) {
         symbolPattern.lastIndex = 0;
@@ -223,6 +238,14 @@ function migrateFile(file) {
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
       const value = node.text;
       const hits = symbolMatches(value);
+      decorativeFlagPattern.lastIndex = 0;
+      if (!hits.length && decorativeFlagPattern.test(value)) {
+        decorativeFlagPattern.lastIndex = 0;
+        const cleanedFlags = value.replace(decorativeFlagPattern, "").replace(/[ \t]{2,}/g, " ");
+        if (ts.isNoSubstitutionTemplateLiteral(node)) add(node.getStart(sf), node.end, "`" + cleanedFlags.replaceAll("`", "\\`") + "`");
+        else add(node.getStart(sf), node.end, JSON.stringify(cleanedFlags));
+        return;
+      }
       if (hits.length) {
         if (isIconProperty(node)) return;
 
@@ -253,7 +276,7 @@ function migrateFile(file) {
       const raw = source.slice(node.pos, node.end);
       if (symbolMatches(raw).length) {
         symbolPattern.lastIndex = 0;
-        add(node.pos, node.end, raw.replace(symbolPattern, "").replace(/\uFE0F/gu, ""));
+        add(node.pos, node.end, raw.replace(symbolPattern, "").replace(/\uFE0F/gu, "").replace(decorativeFlagPattern, ""));
         return;
       }
     }

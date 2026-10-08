@@ -222,3 +222,5 @@
 
 /* Inline Tiny Titans SVGs replace platform emoji/glyph rendering. */
 .tt-inline-icon{display:inline-block;vertical-align:-.18em;flex:0 0 auto}
+
+.tt-icon-name-male{--tt-icon-accent:#7eb7ff;--tt-icon-secondary:#8fd8ff}.tt-icon-name-female{--tt-icon-accent:#e79ad6;--tt-icon-secondary:#c7a3ff}

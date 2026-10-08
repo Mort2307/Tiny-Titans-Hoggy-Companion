@@ -41,6 +41,8 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "🏡": "enclosure",
   "🧬": "genetics",
   "∑": "genetics",
+  "♂": "male",
+  "♀": "female",
   "🥚": "breeding",
   "📦": "marketplace",
   "▣": "academy",
@@ -192,7 +194,7 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
 
 const ICON_NAMES = new Set<TinyTitansIconName>([
   "home", "reptile", "reptiles", "animals", "pin", "messages", "reminders", "husbandry", "weight", "feeding", "shed", "behaviour", "health",
-  "enclosure", "morph", "genetics", "breeding", "academy", "handbook", "observatory", "contribution", "knowledge",
+  "enclosure", "morph", "genetics", "breeding", "male", "female", "academy", "handbook", "observatory", "contribution", "knowledge",
   "challenge", "community", "marketplace", "mentorship", "wall", "account", "plans", "billing", "family", "titan", "analytics", "export",
   "educator", "creator", "testing", "search", "menu", "add", "edit", "delete", "water", "timeline", "vet", "save", "upload", "back", "forward", "close", "filter", "camera", "rotate", "move", "duplicate", "link", "lock", "unlock", "grid", "ceiling", "info", "warning", "check", "compass", "power", "air",
 ]);
@@ -261,6 +263,10 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
       return <svg {...commonProps}><path className="tt-icon-line tt-icon-helix" d="M15 8c12 4 6 10 18 14-12 4-6 10-18 18M33 8c-12 4-6 10-18 14 12 4 6 10 18 18" /><path className="tt-icon-line-soft" d="m18 11 12 6M18 18l12 6M18 25l12 6M18 32l12 5" /><circle className="tt-icon-spark" cx="39" cy="10" r="3" /></svg>;
     case "breeding":
       return <svg {...commonProps}><ellipse className="tt-icon-fill tt-icon-egg" cx="18" cy="25" rx="9" ry="13" /><ellipse className="tt-icon-fill tt-icon-egg tt-icon-egg-two" cx="31" cy="27" rx="8" ry="11" /><path className="tt-icon-line" d="M14 25c2-2 4-2 6 0m-3 4c2-2 4-2 6 0" /></svg>;
+    case "male":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="20" cy="28" r="10" /><path className="tt-icon-line" d="M27 21 39 9m0 0H29m10 0v10" /></svg>;
+    case "female":
+      return <svg {...commonProps}><circle className="tt-icon-fill tt-icon-ring" cx="24" cy="18" r="10" /><path className="tt-icon-line" d="M24 28v13m-6-6h12" /></svg>;
     case "academy":
       return <svg {...commonProps}><path className="tt-icon-fill tt-icon-book" d="M9 9c5-3 10-2 15 1v28c-5-3-10-4-15-1V9Zm30 0c-5-3-10-2-15 1v28c5-3 10-4 15-1V9Z" /><path className="tt-icon-line" d="M24 10v28" /><circle className="tt-icon-spark" cx="24" cy="6" r="2" /></svg>;
     case "handbook":
