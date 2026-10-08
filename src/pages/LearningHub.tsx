@@ -37,7 +37,7 @@ export default function LearningHub() {
       <section className="dashboard-grid" aria-label="Learning destinations">
         {learningAreas.map((area) => (
           <article className="dashboard-card" key={area.title}>
-            <div className="dashboard-card-icon" aria-hidden="true">{area.icon}</div>
+            <div className="dashboard-card-icon" aria-hidden="true"><TinyTitansIcon name={area.icon} size={28} /></div>
             <h2>{area.title}</h2>
             <p>{area.description}</p>
             <Link className="primary-button" to={area.to}>{area.action} <TinyTitansIcon name="forward" size={13} /></Link>

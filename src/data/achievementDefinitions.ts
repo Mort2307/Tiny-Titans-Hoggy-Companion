@@ -1,12 +1,12 @@
 export type AchievementTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "legendary";
 
 export const ACHIEVEMENT_TIERS: Array<{ tier: AchievementTier; icon: string; label: string; description: string }> = [
-  { tier: "bronze", icon: "🥉", label: "Bronze", description: "You've started." },
-  { tier: "silver", icon: "🥈", label: "Silver", description: "You're regularly using this." },
-  { tier: "gold", icon: "🥇", label: "Gold", description: "You're seriously engaged." },
-  { tier: "platinum", icon: "💎", label: "Platinum", description: "You're a power user." },
-  { tier: "diamond", icon: "💠", label: "Diamond", description: "That's dedication." },
-  { tier: "legendary", icon: "👑", label: "Legendary", description: "Holy shit, you've been using Tiny Titans for ages." },
+  { tier: "bronze", icon: "wall", label: "Bronze", description: "You've started." },
+  { tier: "silver", icon: "wall", label: "Silver", description: "You're regularly using this." },
+  { tier: "gold", icon: "wall", label: "Gold", description: "You're seriously engaged." },
+  { tier: "platinum", icon: "plans", label: "Platinum", description: "You're a power user." },
+  { tier: "diamond", icon: "plans", label: "Diamond", description: "That's dedication." },
+  { tier: "legendary", icon: "plans", label: "Legendary", description: "Holy shit, you've been using Tiny Titans for ages." },
 ];
 
 export type AchievementTrigger =
@@ -32,16 +32,16 @@ export type AchievementDefinition = {
 };
 
 export const achievementDefinitions: AchievementDefinition[] = [
-  { id: "challenge-questions", category: "challenge", title: "Challenge Titan", description: "Complete Titans Challenge questions.", icon: "🧠", trigger: "questions", thresholds: [1, 25, 75, 150, 300, 500] },
-  { id: "lessons-mastered", category: "challenge", title: "Knowledge Seeker", description: "Master complete learning topics.", icon: "📚", trigger: "lessons", thresholds: [1, 5, 15, 30, 60, 100] },
-  { id: "perfect-banks", category: "challenge", title: "Perfect Bank", description: "Master complete question banks with 100%.", icon: "💯", trigger: "perfectBanks", thresholds: [1, 5, 15, 30, 60, 100] },
-  { id: "knowledge-score", category: "challenge", title: "Knowledge Titan", description: "Reach a demonstrated knowledge score.", icon: "🏆", trigger: "knowledgeScore", thresholds: [15, 30, 50, 70, 85, 95] },
-  { id: "learning-streak", category: "special", title: "Learning Streak", description: "Learn on consecutive days.", icon: "🔥", trigger: "streak", thresholds: [3, 7, 14, 30, 60, 100] },
-  { id: "bug-hunter", category: "bug", title: "Bug Hunter", description: "Have confirmed bug reports accepted by the Tiny Titans team.", icon: "🐛", trigger: "confirmedBugReports", thresholds: [1, 5, 15, 30, 60, 100] },
-  { id: "snake-keeper", category: "tracking", title: "Snake Keeper", description: "Build and maintain your Tiny Titans snake collection.", icon: "🐍", trigger: "snakes", thresholds: [1, 3, 5, 10, 20, 30] },
-  { id: "weight-tracker", category: "tracking", title: "Weight Tracker", description: "Record weights over time to build meaningful growth histories.", icon: "⚖️", trigger: "weightLogs", thresholds: [5, 25, 50, 100, 250, 500] },
-  { id: "feeding-tracker", category: "tracking", title: "Feeding Tracker", description: "Keep consistent feeding records for your animals.", icon: "🍽️", trigger: "feedingLogs", thresholds: [10, 50, 100, 250, 500, 1000] },
-  { id: "shed-tracker", category: "tracking", title: "Shed Tracker", description: "Build a long-term record of shedding and observations.", icon: "💧", trigger: "shedLogs", thresholds: [1, 5, 15, 30, 60, 100] },
+  { id: "challenge-questions", category: "challenge", title: "Challenge Titan", description: "Complete Titans Challenge questions.", icon: "titan", trigger: "questions", thresholds: [1, 25, 75, 150, 300, 500] },
+  { id: "lessons-mastered", category: "challenge", title: "Knowledge Seeker", description: "Master complete learning topics.", icon: "knowledge", trigger: "lessons", thresholds: [1, 5, 15, 30, 60, 100] },
+  { id: "perfect-banks", category: "challenge", title: "Perfect Bank", description: "Master complete question banks with 100%.", icon: "wall", trigger: "perfectBanks", thresholds: [1, 5, 15, 30, 60, 100] },
+  { id: "knowledge-score", category: "challenge", title: "Knowledge Titan", description: "Reach a demonstrated knowledge score.", icon: "wall", trigger: "knowledgeScore", thresholds: [15, 30, 50, 70, 85, 95] },
+  { id: "learning-streak", category: "special", title: "Learning Streak", description: "Learn on consecutive days.", icon: "power", trigger: "streak", thresholds: [3, 7, 14, 30, 60, 100] },
+  { id: "bug-hunter", category: "bug", title: "Bug Hunter", description: "Have confirmed bug reports accepted by the Tiny Titans team.", icon: "testing", trigger: "confirmedBugReports", thresholds: [1, 5, 15, 30, 60, 100] },
+  { id: "snake-keeper", category: "tracking", title: "Snake Keeper", description: "Build and maintain your Tiny Titans snake collection.", icon: "reptile", trigger: "snakes", thresholds: [1, 3, 5, 10, 20, 30] },
+  { id: "weight-tracker", category: "tracking", title: "Weight Tracker", description: "Record weights over time to build meaningful growth histories.", icon: "weight", trigger: "weightLogs", thresholds: [5, 25, 50, 100, 250, 500] },
+  { id: "feeding-tracker", category: "tracking", title: "Feeding Tracker", description: "Keep consistent feeding records for your animals.", icon: "feeding", trigger: "feedingLogs", thresholds: [10, 50, 100, 250, 500, 1000] },
+  { id: "shed-tracker", category: "tracking", title: "Shed Tracker", description: "Build a long-term record of shedding and observations.", icon: "shed", trigger: "shedLogs", thresholds: [1, 5, 15, 30, 60, 100] },
 ];
 
 export const achievementTierId = (definitionId: string, tierIndex: number) => `${definitionId}-${ACHIEVEMENT_TIERS[tierIndex].tier}`;
