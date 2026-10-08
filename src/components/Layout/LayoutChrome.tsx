@@ -73,6 +73,7 @@ function LayoutChrome() {
   const isRescueSetupPage = pathname === "/rescue" && search.includes("manage=1");
   const isRescueDirectoryProfilePage = pathname === "/rescue" && search.includes("manage=directory");
   const isRescueQuickLogPage = pathname === "/rescue/log";
+  // 3D Room is deliberately reserved for future QA. Keep every legacy/deep link out of the live product until the feature flag is re-enabled.
   const isRetiredReptileRoom =
     pathname === "/reptile-room" || pathname.startsWith("/reptile-room/");
 

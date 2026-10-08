@@ -14,7 +14,8 @@ export type TinyTitansFeatureFlag =
   | "smartMarketplaceListing"
   | "adaptiveNotifications"
   | "offlineRecords"
-  | "intelligenceEventPipeline";
+  | "intelligenceEventPipeline"
+  | "reptileRoom3D";
 
 const environmentFlags: Record<TinyTitansFeatureFlag, boolean> = {
   intelligentHome: true,
@@ -25,6 +26,8 @@ const environmentFlags: Record<TinyTitansFeatureFlag, boolean> = {
   adaptiveNotifications: true,
   offlineRecords: true,
   intelligenceEventPipeline: true,
+  // Reserved: keep the 3D room code in-repo, but do not expose it in production until the UX, mobile behaviour and QA pass are ready.
+  reptileRoom3D: false,
 };
 
 export function isTinyTitansFeatureEnabled(flag: TinyTitansFeatureFlag): boolean {
