@@ -4,8 +4,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { db } from "../firebase/config";
 import "../styles/SupportNotificationCenter.css";
+import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 
 type SupportNotification = { id: string; title?: string; body?: string; url?: string; createdAt?: unknown; read?: boolean; status?: string; type?: string };
+function notificationIcon(type?: string): TinyTitansIconName { if (type === "feeding" || type === "feeding-preparation") return "feeding"; if (type === "weight") return "weight"; if (type === "shed") return "shed"; if (type === "medication" || type === "medication-followup" || type === "health-followup") return "vet"; return "messages"; }
 function eventTime(value: unknown) { if (!value) return 0; if (typeof value === "object" && value !== null && "toMillis" in value && typeof value.toMillis === "function") return Number(value.toMillis()) || 0; const parsed = new Date(String(value)).getTime(); return Number.isFinite(parsed) ? parsed : 0; }
 
 export default function SupportNotificationCenter() {
@@ -47,5 +49,5 @@ export default function SupportNotificationCenter() {
     else window.scrollTo({ top: 0, behavior: "smooth" });
     void markRead(currentUserId, item.id);
   }
-  return <aside className="tt-support-notification" role="status" aria-live="polite"><div className="tt-support-notification-icon">{item.type === "feeding" || item.type === "feeding-preparation" ? "🍽️" : item.type === "weight" ? "⚖️" : item.type === "shed" ? "🐍" : item.type === "medication" || item.type === "medication-followup" || item.type === "health-followup" ? "🩺" : "💬"}</div><div className="tt-support-notification-copy"><strong>{item.title || "Tiny Titans reminder"}</strong><p>{item.body || "You have a new Tiny Titans notification."}</p></div><button type="button" onClick={() => void open()}>View</button><button type="button" className="secondary" aria-label="Dismiss notification" onClick={() => void markRead(currentUserId, item.id)}>✕</button></aside>;
+  return <aside className="tt-support-notification" role="status" aria-live="polite"><div className="tt-support-notification-icon"><TinyTitansIcon name={notificationIcon(item.type)} size={20} /></div><div className="tt-support-notification-copy"><strong>{item.title || "Tiny Titans reminder"}</strong><p>{item.body || "You have a new Tiny Titans notification."}</p></div><button type="button" onClick={() => void open()}>View</button><button type="button" className="secondary" aria-label="Dismiss notification" onClick={() => void markRead(currentUserId, item.id)}><TinyTitansIcon name="close" size={14} /></button></aside>;
 }

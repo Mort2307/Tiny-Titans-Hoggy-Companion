@@ -4,6 +4,7 @@ import type { Snake } from "../../types/Snake";
 import { getCurrentTitanWeek, getRecordCountForWeek } from "../../utils/titanWeek";
 import { TITAN_WEEKLY_METRIC_OPTIONS, useEasyNav, type TitanWeeklyMetricId } from "../../context/EasyNavContext";
 import "./TitanThisWeek.css";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 type Props = { snakes: Snake[]; selectedSnake?: Snake };
 type MetricView = { id: TitanWeeklyMetricId; label: string; icon: string; value: string; detail: string };
@@ -64,11 +65,11 @@ export default function TitanThisWeek({ snakes, selectedSnake }: Props) {
 
   return <section className="tt-this-week" aria-label="Titan This Week">
     <header className="tt-this-week-head">
-      <div><span className="tt-this-week-eyebrow">📅 TITAN WEEK</span><h2>{title}</h2><p>{range.label} · starts {startLabel}</p></div>
+      <div><span className="tt-this-week-eyebrow"><TinyTitansIcon name="timeline" size={14} /> TITAN WEEK</span><h2>{title}</h2><p>{range.label} · starts {startLabel}</p></div>
       <span className="tt-this-week-scope">{scopeLabel}</span>
     </header>
     <div className="tt-this-week-grid">
-      {views.map((view) => <Link key={view.id} to={routeForMetric(view.id, selectedSnake?.id)} className="tt-this-week-metric"><span className="tt-this-week-icon">{view.icon}</span><span><strong>{view.label}</strong><b>{view.value}</b><small>{view.detail}</small></span></Link>)}
+      {views.map((view) => <Link key={view.id} to={routeForMetric(view.id, selectedSnake?.id)} className="tt-this-week-metric"><span className="tt-this-week-icon"><TinyTitansIcon name={view.icon} size={20} /></span><span><strong>{view.label}</strong><b>{view.value}</b><small>{view.detail}</small></span></Link>)}
     </div>
     <footer className="tt-this-week-foot"><span>{totalRecords} tracked records from your existing keeper history · nothing duplicated</span><Link to="/account/personalise?easy-nav=1#this-week">Configure week</Link></footer>
   </section>;

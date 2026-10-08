@@ -8,6 +8,7 @@ import { getCurrentWorldWeather, describeWeatherCode, type WorldWeather } from "
 import { createEarthCloudLayer, disposeEarthCloudLayer, updateEarthCloudLayer, type EarthCloudLayer } from "../services/earthCloudLayer";
 import { EARTH_BUMP_TEXTURE_URL, EARTH_DAY_TEXTURE_URL, EARTH_STAR_TEXTURE_URL, type EarthDayNightMaterial, loadEarthDayNightMaterial, updateEarthSun } from "../services/earthDayNight";
 import "../styles/tinyTitansPinnacleGlobe.css";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type GlobeRef = {
   controls: () => { autoRotate: boolean; autoRotateSpeed: number; enableZoom: boolean; enablePan: boolean; enableDamping: boolean; dampingFactor: number; rotateSpeed: number; zoomSpeed: number };
@@ -165,10 +166,10 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
 
   return <section className="tt-pinnacle-globe-section" aria-label="Globally Represented Titans">
     <div className="tt-pinnacle-globe-heading">
-      <div><p className="tt-home-kicker">🌎 THE TINY TITANS WORLD</p><h2>Globally Represented Titans</h2><p>See where Tiny Titans is represented using city-level community areas only. Exact addresses and household locations are never shown.</p></div>
+      <div><p className="tt-home-kicker"><TinyTitansIcon name="community" size={14} /> THE TINY TITANS WORLD</p><h2>Globally Represented Titans</h2><p>See where Tiny Titans is represented using city-level community areas only. Exact addresses and household locations are never shown.</p></div>
       <div className="tt-pinnacle-globe-tools">
         <LiveWorldClockBadge/>
-        <button type="button" className={`tt-pinnacle-weather-toggle${weatherEnabled ? " is-on" : ""}`} onClick={() => { setWeatherEnabled((current) => !current); if (weatherEnabled) setWeather({}); }} aria-pressed={weatherEnabled} title="Show or hide the animated atmospheric weather layer">🌦 <span>Weather</span> <strong>{weatherEnabled ? "ON" : "OFF"}</strong></button>
+        <button type="button" className={`tt-pinnacle-weather-toggle${weatherEnabled ? " is-on" : ""}`} onClick={() => { setWeatherEnabled((current) => !current); if (weatherEnabled) setWeather({}); }} aria-pressed={weatherEnabled} title="Show or hide the animated atmospheric weather layer"><TinyTitansIcon name="air" size={15} /> <span>Weather</span> <strong>{weatherEnabled ? "ON" : "OFF"}</strong></button>
       </div>
     </div>
     <div className={`tt-pinnacle-globe-shell${selected ? "" : " tt-pinnacle-globe-shell-centered"}`}>
@@ -184,15 +185,15 @@ export default function TinyTitansPinnacleGlobe({ uid }: { uid: string }) {
           enablePointerInteraction onGlobeReady={() => { if (ownLocation) globeRef.current?.pointOfView({ lat: ownLocation.latitude, lng: ownLocation.longitude, altitude: 2.05 }, 0); const renderer = globeRef.current?.renderer?.(); if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); }}
         />
         {loading && <div className="tt-pinnacle-status">Loading the global representation…</div>}
-        {weatherLoading && weatherEnabled && <div className="tt-pinnacle-weather-status">🌦 Updating live weather…</div>}
+        {weatherLoading && weatherEnabled && <div className="tt-pinnacle-weather-status"><TinyTitansIcon name="air" size={14} /> Updating live weather…</div>}
         {!loading && locationError && <div className="tt-pinnacle-status tt-pinnacle-status-warning">The global location feed could not be loaded.</div>}
         {!loading && !locationError && representedAreaCount === 0 && <div className="tt-pinnacle-location-empty"><strong>No community areas are indexed yet.</strong><span>{syncError ? "Your community location service could not synchronise just now. The public map will remain privacy-safe and will retry when the page is refreshed." : ownLocation ? "Your community area is ready, but no aggregate areas are currently available." : "Share your city-level community area in Data & Privacy to add your Titan to the world map."}</span></div>}
         {!loading && !locationError && representedAreaCount > 0 && <div className="tt-pinnacle-map-count">{representedAreaCount} community area{representedAreaCount === 1 ? "" : "s"} · {representedTitanCount} represented Titan{representedTitanCount === 1 ? "" : "s"}</div>}
         <div className="tt-pinnacle-controls-hint">Drag to explore · pinch or wheel to zoom</div>
-        {weatherEnabled && representedAreaCount > 0 && <div className="tt-pinnacle-weather-legend">🌦 Live weather · animated cloud layer · refreshed every 15 minutes</div>}
+        {weatherEnabled && representedAreaCount > 0 && <div className="tt-pinnacle-weather-legend"><TinyTitansIcon name="air" size={14} /> Live weather · animated cloud layer · refreshed every 15 minutes</div>}
       </div>
-      {selected && <aside className="tt-pinnacle-location-card" aria-live="polite"><button type="button" className="tt-pinnacle-close" onClick={() => setSelectedAreaId(null)} aria-label="Close location information">×</button><span className={selected.isSelf ? "tt-pinnacle-marker tt-pinnacle-marker-self" : "tt-pinnacle-marker"}>{selected.isSelf ? "✦" : "•"}</span><p className="tt-pinnacle-card-kicker">{selected.isSelf ? "CREATOR PIN" : "COMMUNITY AREA"}</p><h3>{selected.city}</h3><strong>{selected.memberCount} Titan{selected.memberCount === 1 ? "" : "s"}</strong><p>{selected.country}</p>{weatherEnabled && weatherFor(selected) && <div className="tt-pinnacle-weather-card"><strong>🌦 {Math.round(weatherFor(selected)!.temperatureC)}°C</strong><span>{describeWeatherCode(weatherFor(selected)!.weatherCode)}</span><small>Feels like {Math.round(weatherFor(selected)!.apparentTemperatureC)}°C · humidity {weatherFor(selected)!.relativeHumidity}% · wind {Math.round(weatherFor(selected)!.windSpeedKph)} km/h</small></div>}<small>Approximate community area only. No names, profiles, exact coordinates or home addresses are shown here.</small></aside>}
+      {selected && <aside className="tt-pinnacle-location-card" aria-live="polite"><button type="button" className="tt-pinnacle-close" onClick={() => setSelectedAreaId(null)} aria-label="Close location information"><TinyTitansIcon name="close" size={14} /></button><span className={selected.isSelf ? "tt-pinnacle-marker tt-pinnacle-marker-self" : "tt-pinnacle-marker"}><TinyTitansIcon name={selected.isSelf ? "pin" : "community"} size={16} /></span><p className="tt-pinnacle-card-kicker">{selected.isSelf ? "CREATOR PIN" : "COMMUNITY AREA"}</p><h3>{selected.city}</h3><strong>{selected.memberCount} Titan{selected.memberCount === 1 ? "" : "s"}</strong><p>{selected.country}</p>{weatherEnabled && weatherFor(selected) && <div className="tt-pinnacle-weather-card"><strong><TinyTitansIcon name="air" size={15} /> {Math.round(weatherFor(selected)!.temperatureC)}°C</strong><span>{describeWeatherCode(weatherFor(selected)!.weatherCode)}</span><small>Feels like {Math.round(weatherFor(selected)!.apparentTemperatureC)}°C · humidity {weatherFor(selected)!.relativeHumidity}% · wind {Math.round(weatherFor(selected)!.windSpeedKph)} km/h</small></div>}<small>Approximate community area only. No names, profiles, exact coordinates or home addresses are shown here.</small></aside>}
     </div>
-    {!selected && <p className="tt-pinnacle-footnote"><span className="tt-pinnacle-legend-self">✦</span> marks the Creator Pin / your community area. Other markers show aggregated community presence only.</p>}
+    {!selected && <p className="tt-pinnacle-footnote"><span className="tt-pinnacle-legend-self"><TinyTitansIcon name="pin" size={13} /></span> marks the Creator Pin / your community area. Other markers show aggregated community presence only.</p>}
   </section>;
 }
