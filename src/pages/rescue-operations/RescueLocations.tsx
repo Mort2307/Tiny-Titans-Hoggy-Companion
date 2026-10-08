@@ -1,7 +1,7 @@
 import {
-import TinyTitansIcon from "../../components/TinyTitansIcon";
   useState
 } from "react";
+import TinyTitansIcon from "../../components/TinyTitansIcon";
 import { Link } from "react-router-dom";
 import { updateRescueAnimal } from "../../services/rescueService";
 import type { RescueLocationRecord } from "../../types/rescue";
