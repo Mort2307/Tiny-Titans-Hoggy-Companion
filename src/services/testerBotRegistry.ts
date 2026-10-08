@@ -16,10 +16,11 @@ import { createBrowserJourneyCheck } from "./inAppBrowserJourneyService";
 import { approveMorphImageSubmission } from "./creatorService";
 import { resolveNotificationPermissionDecision } from "./notificationService";
 import type { MorphImageSubmission } from "../types/morphSubmission";
+import type { TinyTitansIconName } from "../types/tinyTitansIcon";
 
 export type TesterBotId = "creator" | "user" | "app" | "security" | "overlord" | "visual" | "update" | "action-chain";
 export type BotSuiteDefinition = { id: string; label: string; description: string; category: string; safety: "read-only" | "sandbox"; build: (uid: string) => Promise<TesterCheck[]> | TesterCheck[] };
-export type BotDefinition = { id: TesterBotId; label: string; icon: string; description: string; purpose: string; suites: BotSuiteDefinition[] };
+export type BotDefinition = { id: TesterBotId; label: string; icon: TinyTitansIconName; description: string; purpose: string; suites: BotSuiteDefinition[] };
 
 const creatorSuites: BotSuiteDefinition[] = [
   { id: "core-diagnostics", label: "Core Diagnostics", description: "Authentication, creator claim, profile and Firebase access.", category: "System", safety: "read-only", build: async (uid) => createCoreDiagnosticChecks({ uid, authenticated: true, creatorClaim: await hasCreatorTesterClaim(true), requireCreatorClaim: true }) },
@@ -169,14 +170,14 @@ const actionChainSuites: BotSuiteDefinition[] = [
 ];
 
 export const BOT_DEFINITIONS: BotDefinition[] = [
-  { id: "overlord", label: "Overlord BOT", icon: "🤖", description: "Full functional, integration and application intelligence QA.", purpose: "Runs the broadest safe functional coverage and synthesises evidence into an application verdict.", suites: overlordSuites },
-  { id: "visual", label: "Visual BOT", icon: "👁️", description: "Intelligent visual, responsive and regional UI QA.", purpose: "Understands the rendered page and responsive behaviour.", suites: visualSuites },
-  { id: "creator", label: "Creator BOT", icon: "🛠️", description: "Deep creator and system diagnostics.", purpose: "Creator tools, permissions, Firebase paths and regression coverage.", suites: creatorSuites },
-  { id: "user", label: "User BOT", icon: "👤", description: "Keeper-facing health and workflow coverage.", purpose: "Checks normal keeper data and tracker journeys without writing to real records.", suites: userSuites },
-  { id: "app", label: "App BOT", icon: "🧭", description: "Route and application-topology auditing.", purpose: "Checks route inventory and executes real safe browser journeys against the current authenticated session.", suites: appSuites },
-  { id: "security", label: "Security BOT", icon: "🛡️", description: "Defensive application security checks.", purpose: "Tests safe security boundaries without attacking production.", suites: securitySuites },
-  { id: "update", label: "Update BOT", icon: "⚡", description: "Fast post-update smoke tests plus one-click page targeting and real browser journeys.", purpose: "Use after any change: run the quick smoke, the full page sweep, one exact page target, or real browser interaction evidence.", suites: updateSuites },
-  { id: "action-chain", label: "Action Chain BOT", icon: "🔗", description: "End-to-end UI action-chain hardening against no-ops, loops, wrong destinations and runtime failures.", purpose: "Use this when a button or control looks present but you need to prove its action actually produces the expected observable result.", suites: actionChainSuites },
+  { id: "overlord", label: "Overlord BOT", icon: "titan", description: "Full functional, integration and application intelligence QA.", purpose: "Runs the broadest safe functional coverage and synthesises evidence into an application verdict.", suites: overlordSuites },
+  { id: "visual", label: "Visual BOT", icon: "observatory", description: "Intelligent visual, responsive and regional UI QA.", purpose: "Understands the rendered page and responsive behaviour.", suites: visualSuites },
+  { id: "creator", label: "Creator BOT", icon: "creator", description: "Deep creator and system diagnostics.", purpose: "Creator tools, permissions, Firebase paths and regression coverage.", suites: creatorSuites },
+  { id: "user", label: "User BOT", icon: "account", description: "Keeper-facing health and workflow coverage.", purpose: "Checks normal keeper data and tracker journeys without writing to real records.", suites: userSuites },
+  { id: "app", label: "App BOT", icon: "compass", description: "Route and application-topology auditing.", purpose: "Checks route inventory and executes real safe browser journeys against the current authenticated session.", suites: appSuites },
+  { id: "security", label: "Security BOT", icon: "lock", description: "Defensive application security checks.", purpose: "Tests safe security boundaries without attacking production.", suites: securitySuites },
+  { id: "update", label: "Update BOT", icon: "power", description: "Fast post-update smoke tests plus one-click page targeting and real browser journeys.", purpose: "Use after any change: run the quick smoke, the full page sweep, one exact page target, or real browser interaction evidence.", suites: updateSuites },
+  { id: "action-chain", label: "Action Chain BOT", icon: "link", description: "End-to-end UI action-chain hardening against no-ops, loops, wrong destinations and runtime failures.", purpose: "Use this when a button or control looks present but you need to prove its action actually produces the expected observable result.", suites: actionChainSuites },
 ];
 
 export function getBotDefinition(id: string | undefined): BotDefinition | undefined { return BOT_DEFINITIONS.find((bot) => bot.id === id); }
