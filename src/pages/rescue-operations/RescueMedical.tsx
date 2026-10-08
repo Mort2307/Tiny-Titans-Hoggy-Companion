@@ -1,4 +1,5 @@
 import {
+import TinyTitansIcon from "../../components/TinyTitansIcon";
   useMemo
 } from "react";
 import { Link } from "react-router-dom";
@@ -18,7 +19,7 @@ export function RescueMedical() {
       <div><small>Open clinical follow-ups</small><strong>{loading ? "…" : urgent.length}</strong></div>
     </div></section>
     <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">CLINICAL HISTORY</span><h2>Recent health records</h2></div></div>
-      <div className="rescue-record-list">{healthRecords.slice(0,40).map(({animal,record}) => <article key={`${animal.id}-${record.id}`}><header><strong>{animalLabel(animal)}</strong><span>{formatDate(record.occurredAt, true)}</span></header><p>{record.title}</p><p>{record.summary || "No summary recorded."}</p><small>{record.visibility === "medical" ? "Medical / vet" : "Staff record"}</small><div className="rescue-form-actions"><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Open animal history →</Link></div></article>)}{!healthRecords.length && <div className="rescue-empty"><strong>No medical records yet</strong><span>Health observations added from an animal workspace will appear here.</span></div>}</div>
+      <div className="rescue-record-list">{healthRecords.slice(0,40).map(({animal,record}) => <article key={`${animal.id}-${record.id}`}><header><strong>{animalLabel(animal)}</strong><span>{formatDate(record.occurredAt, true)}</span></header><p>{record.title}</p><p>{record.summary || "No summary recorded."}</p><small>{record.visibility === "medical" ? "Medical / vet" : "Staff record"}</small><div className="rescue-form-actions"><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Open animal history <TinyTitansIcon name="forward" size={12} /></Link></div></article>)}{!healthRecords.length && <div className="rescue-empty"><strong>No medical records yet</strong><span>Health observations added from an animal workspace will appear here.</span></div>}</div>
     </section>
   </main></GatePage>;
 }

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { GatePage, PageHeader, useRescueData, animalLabel, formatDate } from "../../components/rescue/RescueOperationsShared";
+import TinyTitansIcon from "../../components/TinyTitansIcon";
 
 export function RescueTransfers() {
   const { animals, error, loading } = useRescueData();
@@ -12,6 +13,6 @@ export function RescueTransfers() {
       <div><small>Outgoing</small><strong>{loading ? "…" : transfers.filter(({transfer}) => transfer.direction === "outgoing").length}</strong></div>
       <div><small>Total records</small><strong>{loading ? "…" : transfers.length}</strong></div>
     </div></section>
-    <section className="rescue-card"><div className="rescue-record-list">{transfers.slice(0,80).map(({animal,transfer}) => <article key={`${animal.id}-${transfer.id}`}><header><strong>{animalLabel(animal)}</strong><span>{transfer.direction === "incoming" ? "Incoming" : "Outgoing"} · {formatDate(transfer.occurredAt)}</span></header><p><strong>{transfer.organisationOrPerson}</strong> · {transfer.reason || "No reason recorded."}</p>{transfer.reference && <small>Reference: {transfer.reference}</small>}{transfer.notes && <p>{transfer.notes}</p>}<div className="rescue-form-actions"><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Open animal →</Link></div></article>)}{!transfers.length && <div className="rescue-empty"><strong>No transfer records yet</strong><span>Transfers recorded on an individual animal appear here.</span></div>}</div></section>
+    <section className="rescue-card"><div className="rescue-record-list">{transfers.slice(0,80).map(({animal,transfer}) => <article key={`${animal.id}-${transfer.id}`}><header><strong>{animalLabel(animal)}</strong><span>{transfer.direction === "incoming" ? "Incoming" : "Outgoing"} · {formatDate(transfer.occurredAt)}</span></header><p><strong>{transfer.organisationOrPerson}</strong> · {transfer.reason || "No reason recorded."}</p>{transfer.reference && <small>Reference: {transfer.reference}</small>}{transfer.notes && <p>{transfer.notes}</p>}<div className="rescue-form-actions"><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Open animal <TinyTitansIcon name="forward" size={12} /></Link></div></article>)}{!transfers.length && <div className="rescue-empty"><strong>No transfer records yet</strong><span>Transfers recorded on an individual animal appear here.</span></div>}</div></section>
   </main></GatePage>;
 }

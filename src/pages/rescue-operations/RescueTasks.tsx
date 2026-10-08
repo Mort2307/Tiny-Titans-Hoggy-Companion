@@ -1,4 +1,5 @@
 import {
+import TinyTitansIcon from "../../components/TinyTitansIcon";
   useMemo,
   useState
 } from "react";
@@ -26,7 +27,7 @@ export function RescueTasks() {
     <section className="rescue-card"><div className="rescue-form-actions">
       {(["open","overdue","completed"] as const).map((item) => <button type="button" className={filter === item ? "active" : ""} key={item} onClick={() => setFilter(item)}>{item === "open" ? "Open" : item === "overdue" ? "Overdue" : "Completed"}</button>)}
     </div>
-    <div className="rescue-record-list">{filtered.map(({animal,item}) => <article key={`${animal.id}-${item.id}`}><header><strong>{item.title}</strong><span>{formatDate(item.dueAt,true)}</span></header><p>{animalLabel(animal)} · {item.kind} · {item.priority}</p><p>{item.notes || "No notes."}</p><div className="rescue-form-actions"><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Open animal →</Link><button type="button" disabled={busy === `${animal.id}:${item.id}`} onClick={() => void toggle(animal,item.id,!item.completed)}>{item.completed ? "Reopen" : "Complete"}</button></div></article>)}{!filtered.length && <div className="rescue-empty"><strong>No {filter} tasks</strong><span>Tasks added to individual animal records will appear here.</span></div>}</div></section>
+    <div className="rescue-record-list">{filtered.map(({animal,item}) => <article key={`${animal.id}-${item.id}`}><header><strong>{item.title}</strong><span>{formatDate(item.dueAt,true)}</span></header><p>{animalLabel(animal)} · {item.kind} · {item.priority}</p><p>{item.notes || "No notes."}</p><div className="rescue-form-actions"><Link className="rescue-primary-link" to={`/rescue/animals/${animal.id}/manage`}>Open animal <TinyTitansIcon name="forward" size={12} /></Link><button type="button" disabled={busy === `${animal.id}:${item.id}`} onClick={() => void toggle(animal,item.id,!item.completed)}>{item.completed ? "Reopen" : "Complete"}</button></div></article>)}{!filtered.length && <div className="rescue-empty"><strong>No {filter} tasks</strong><span>Tasks added to individual animal records will appear here.</span></div>}</div></section>
     {loading && <div className="rescue-card"><p>Loading Rescue tasks…</p></div>}
   </main></GatePage>;
 }

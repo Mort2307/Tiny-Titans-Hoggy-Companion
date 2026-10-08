@@ -1,4 +1,5 @@
 import {
+import TinyTitansIcon from "../../components/TinyTitansIcon";
   useEffect,
   useState
 } from "react";
@@ -67,7 +68,7 @@ export function RescueIntake() {
   }
 
   return <GatePage><main className="rescue-page">
-    <PageHeader eyebrow="INTAKE & PROVENANCE" title="Rescue intake" description="Record where an animal came from, what was known on arrival and why it entered your care." actions={<Link className="rescue-primary-link" to="/rescue/animals?intake=1">Create new animal →</Link>} />
+    <PageHeader eyebrow="INTAKE & PROVENANCE" title="Rescue intake" description="Record where an animal came from, what was known on arrival and why it entered your care." actions={<Link className="rescue-primary-link" to="/rescue/animals?intake=1">Create new animal <TinyTitansIcon name="forward" size={12} /></Link>} />
     {error && <div className="rescue-message rescue-message-error">{error}</div>}
     {message && <div className="rescue-message" role="status">{message}</div>}
     <section className="rescue-card"><div className="rescue-detail-grid">
@@ -99,7 +100,7 @@ export function RescueIntake() {
         <label>Condition on arrival<textarea value={conditionOnArrival} onChange={(event) => setConditionOnArrival(event.target.value)} /></label>
         <label>Quarantine reason<textarea value={quarantineReason} onChange={(event) => setQuarantineReason(event.target.value)} /></label>
         <label className="rescue-form-grid-span">Evidence / handover summary<textarea value={evidenceSummary} onChange={(event) => setEvidenceSummary(event.target.value)} /></label>
-        <div className="rescue-span-2"><button type="button" onClick={() => void save()} disabled={busy}>{busy ? "Saving…" : "Save intake record"}</button><Link className="rescue-primary-link" to={`/rescue/animals/${selected.id}/manage`}>Open animal workspace →</Link></div>
+        <div className="rescue-span-2"><button type="button" onClick={() => void save()} disabled={busy}>{busy ? "Saving…" : "Save intake record"}</button><Link className="rescue-primary-link" to={`/rescue/animals/${selected.id}/manage`}>Open animal workspace <TinyTitansIcon name="forward" size={12} /></Link></div>
       </div> : <div className="rescue-empty"><strong>Choose an animal above</strong><span>The complete intake history will be kept separately from later care records.</span></div>}
     </section>
   </main></GatePage>;
