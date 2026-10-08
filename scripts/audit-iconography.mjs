@@ -9,6 +9,11 @@ const writeBaseline = process.argv.includes("--write-baseline");
 const excluded = new Set([
   path.resolve("src/components/TinyTitansIcon.tsx"),
   path.resolve("src/types/tinyTitansIcon.ts"),
+  // Reserved 3D Room source is intentionally retained in-repo but is not part of the live product.
+  // Keep it outside the production iconography boundary until the feature is re-enabled for QA.
+  path.resolve("src/pages/ReptileRoom3D.tsx"),
+  path.resolve("src/pages/ReptileRoomFirstPerson3D.tsx"),
+  path.resolve("src/pages/StableReptileRoomBuilder.tsx"),
 ]);
 const iconGlyph = /\p{Extended_Pictographic}/u;
 const legacyMetadata = /\bicon\s*:/u;
@@ -52,7 +57,11 @@ for (const file of files) {
     const isTsx = file.endsWith(".tsx");
     const metadata = hasIconGlyph && legacyMetadata.test(line);
     const rawPictographicUi = isTsx && hasIconGlyph && (pictographicUi.test(line) || pictographicStatus.test(line));
-    const rawControlGlyph = isTsx && (legacyUiGlyph.test(line) || rawCloseGlyph.test(line));
+    const intentionalGeneticsCross =
+      file.endsWith(path.join("components", "morph-reversal", "MorphReversalResults.tsx")) &&
+      /className=["']morph-reversal-route-x["'][^>]*>\s*×\s*</u.test(line);
+    const rawControlGlyph =
+      isTsx && (legacyUiGlyph.test(line) || (rawCloseGlyph.test(line) && !intentionalGeneticsCross));
     const legacyComponentAlias = isTsx && legacyIconProp.test(line);
     const literalIconNames = isTsx
       ? [...line.matchAll(/<TinyTitansIcon\b[^>]*\bname\s*=\s*"([^"]+)"/g)].map((match) => match[1])
