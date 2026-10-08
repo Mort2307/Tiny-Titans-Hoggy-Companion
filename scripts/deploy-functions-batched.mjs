@@ -162,7 +162,8 @@ function retryableDeployFailure(error) {
     message.includes("internal server error") ||
     message.includes("build failed with status: internal_error") ||
     message.includes("status: internal_error") ||
-    message.includes("unexpected error occurred")
+    message.includes("unexpected error occurred") ||
+    message.includes("failed to list functions")
   );
 }
 
