@@ -135,7 +135,7 @@ export default function NotificationTestPanel() {
       <button type="button" onClick={() => void runBatch()} disabled={busy || !selectedKinds.length || !selectedTargetUids.length}>{busy ? "Sending test notifications…" : <><TinyTitansIcon name="forward" size={15} /> Send {eventCount || 0} test event{eventCount === 1 ? "" : "s"}</>}</button>
     </div>
 
-    {message && <div className={`tt-notification-test-result ${message.startsWith("✅") ? "success" : "warning"}`} role={message.startsWith("✅") ? "status" : "alert"}>{message}</div>}
+    {message && <div className={`tt-notification-test-result ${lastResult?.status === "sent" ? "success" : "warning"}`} role={lastResult?.status === "sent" ? "status" : "alert"}>{message}</div>}
     {lastResult && <div className="tt-notification-test-meta"><span>Status <strong>{lastResult.status}</strong></span><span>Events <strong>{lastResult.attemptedEvents}/{lastResult.requestedEvents}</strong></span><span>Accepted <strong>{lastResult.sentCount}</strong></span><span>No device <strong>{lastResult.noDeliveryCount}</strong></span><span>Failed <strong>{lastResult.failedCount}</strong></span><span>Invalid <strong>{lastResult.invalidTokenCount}</strong></span></div>}
     {lastResult?.results?.length ? <details className="tt-test-details"><summary>Show individual notification results</summary><div>{lastResult.results.map((result) => <article key={result.eventKey}><strong>{result.kind}</strong><span>{result.targetName}</span><small>repeat {result.repetition} · {result.status} · accepted {result.sentCount}</small></article>)}</div></details> : null}
   </section>;
