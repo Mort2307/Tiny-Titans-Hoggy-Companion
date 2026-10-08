@@ -9,7 +9,6 @@ import OrganisationStaffManager from "../components/staff/OrganisationStaffManag
 import { type PaidEntitlement } from "../config/paidTiers";
 import { useAuth } from "../context/useAuth";
 import "../styles/PaidFeatureWorkspace.css";
-import TinyTitansIcon from "../components/TinyTitansIcon";
 
 type FeatureConfig = {
   entitlement: PaidEntitlement;

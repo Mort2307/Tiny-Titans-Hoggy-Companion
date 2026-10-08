@@ -141,7 +141,7 @@ export function RoomAssetLibrary3D({ room, onAddAsset }: Props) {
                   {open && <div style={{ padding: 7 }}>
                     {category.items.length ? category.items.map((preset) => (
                       <button key={`${preset.kind}-${preset.label}`} type="button" disabled={creatingVivarium} onClick={() => void add(preset)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 9px", marginBottom: 5, color: "inherit", textAlign: "left", cursor: creatingVivarium ? "wait" : "pointer", opacity: creatingVivarium ? .6 : 1 }}>
-                        <span><TinyTitansIcon name={preset.icon} size={18} /></span>
+                        <span><TinyTitansIcon name={preset.icon ?? "enclosure"} size={18} /></span>
                         <span><strong>{preset.label}</strong><small style={{ display: "block", opacity: .55 }}>{preset.width} × {preset.depth} × {preset.height} cm</small></span>
                       </button>
                     )) : <div style={{ padding: 8, fontSize: 11, opacity: .5 }}>Asset library slot ready for your future custom models.</div>}
