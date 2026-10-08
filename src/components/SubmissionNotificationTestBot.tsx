@@ -4,6 +4,7 @@ import PageBackButton from "./PageBackButton";
 import { useAuth } from "../context/useAuth";
 import { enableNotifications } from "../services/notificationService";
 import {
+import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
   finishSubmissionNotificationTest,
   getSubmissionNotificationTestRun,
   getSubmissionNotificationTestTargets,
@@ -17,26 +18,26 @@ import {
 import type { NotificationTestTarget } from "../services/notificationService";
 import "./SubmissionNotificationTestBot.css";
 
-const TESTS: Array<{ kind: SubmissionNotificationTestKind; icon: string; label: string; description: string }> = [
-  { kind: "bug", icon: "🐛", label: "Bug report", description: "Creator bug/error notification." },
-  { kind: "feedback", icon: "💬", label: "Feedback", description: "General feedback notification." },
-  { kind: "morph-image", icon: "🧬", label: "Morph image submission", description: "Morph image/evidence review notification." },
-  { kind: "morph-terminology", icon: "🌎", label: "Morph terminology", description: "User terminology contribution notification." },
-  { kind: "behaviour", icon: "🐍", label: "Behaviour observation", description: "Behaviour Observatory review notification." },
-  { kind: "mentor", icon: "🛡️", label: "Mentor application", description: "Mentor application notification." },
-  { kind: "founder", icon: "🏆", label: "Founder application", description: "Founder application notification." },
-  { kind: "community", icon: "🌍", label: "Community contribution", description: "Community contribution notification." },
-  { kind: "feature", icon: "💡", label: "Feature request", description: "Feature request notification." },
-  { kind: "species", icon: "🐍", label: "Species submission", description: "Creator species submission notification." },
-  { kind: "founding-follower", icon: "🎁", label: "Founding Follower claim", description: "Creator follower reward claim notification." },
+const TESTS: Array<{ kind: SubmissionNotificationTestKind; icon: TinyTitansIconName; label: string; description: string }> = [
+  { kind: "bug", icon: "testing", label: "Bug report", description: "Creator bug/error notification." },
+  { kind: "feedback", icon: "messages", label: "Feedback", description: "General feedback notification." },
+  { kind: "morph-image", icon: "morph", label: "Morph image submission", description: "Morph image/evidence review notification." },
+  { kind: "morph-terminology", icon: "community", label: "Morph terminology", description: "User terminology contribution notification." },
+  { kind: "behaviour", icon: "behaviour", label: "Behaviour observation", description: "Behaviour Observatory review notification." },
+  { kind: "mentor", icon: "account", label: "Mentor application", description: "Mentor application notification." },
+  { kind: "founder", icon: "wall", label: "Founder application", description: "Founder application notification." },
+  { kind: "community", icon: "community", label: "Community contribution", description: "Community contribution notification." },
+  { kind: "feature", icon: "info", label: "Feature request", description: "Feature request notification." },
+  { kind: "species", icon: "reptile", label: "Species submission", description: "Creator species submission notification." },
+  { kind: "founding-follower", icon: "contribution", label: "Founding Follower claim", description: "Creator follower reward claim notification." },
 ];
 
 function formatStatus(status: string) {
-  if (status === "accepted") return "✅ Accepted";
-  if (status === "opened") return "👁️ Opened / read";
-  if (status === "sent") return "📨 Sent";
-  if (status === "failed") return "❌ Failed";
-  return "⏳ Waiting";
+  if (status === "accepted") return "Accepted";
+  if (status === "opened") return "Opened / read";
+  if (status === "sent") return "Sent";
+  if (status === "failed") return "Failed";
+  return "Waiting";
 }
 
 function sleep(ms: number) { return new Promise<void>((resolve) => window.setTimeout(resolve, ms)); }
@@ -140,7 +141,7 @@ export default function SubmissionNotificationTestBot() {
     const response = await sendNextSubmissionNotificationTest(runState.id);
     setRun((current) => current ? { ...current, items: current.items.map((item) => item.id === response.item.id ? response.item : item) } : current);
     navigate(`/creator/tester?submissionNotifications=1&submissionNotificationRun=${encodeURIComponent(runState.id)}&submissionNotificationItem=${encodeURIComponent(response.item.id)}`, { replace: true });
-    setMessage(`Next notification sent: ${response.item.label} → ${runState.targetName}.`);
+    setMessage(`Next notification sent: ${response.item.label} to ${runState.targetName}.`);
     return true;
   }
 
@@ -151,11 +152,11 @@ export default function SubmissionNotificationTestBot() {
       const acceptedRun = await markSubmissionNotificationTestAccepted(run.id, currentItem.id);
       setRun(acceptedRun);
       const pending = acceptedRun.items.find((item) => item.status === "pending");
-      if (!pending) { setMessage("✅ Final notification accepted. Review the tally below, then finish the run."); return; }
+      if (!pending) { setMessage("Final notification accepted. Review the tally below, then finish the run."); return; }
       const delaySeconds = acceptedRun.delayMinutes * 60;
       if (delaySeconds > 0) {
         setCountdown(delaySeconds);
-        setMessage(`✅ Accepted. Next notification will be sent in ${acceptedRun.delayMinutes} minute${acceptedRun.delayMinutes === 1 ? "" : "s"}.`);
+        setMessage(`Accepted. Next notification will be sent in ${acceptedRun.delayMinutes} minute${acceptedRun.delayMinutes === 1 ? "" : "s"}.`);
         setBusy(false);
         await sleep(delaySeconds * 1000);
         setBusy(true);
@@ -169,7 +170,7 @@ export default function SubmissionNotificationTestBot() {
   async function markOpenedManually() {
     if (!run || !currentItem || currentItem.openedAt || busy) return;
     setBusy(true); setError("");
-    try { setRun(await markSubmissionNotificationTestOpened(run.id, currentItem.id)); setMessage("👁️ Marked opened/read. This is provided for remote target testing where the recipient confirms receipt to the owner."); }
+    try { setRun(await markSubmissionNotificationTestOpened(run.id, currentItem.id)); setMessage("Marked opened/read. This is provided for remote target testing where the recipient confirms receipt to the owner."); }
     catch (openError) { setError(openError instanceof Error ? openError.message : "Unable to record notification as opened."); }
     finally { setBusy(false); }
   }
@@ -180,7 +181,7 @@ export default function SubmissionNotificationTestBot() {
     try {
       const result = await finishSubmissionNotificationTest(run.id);
       setRun(result);
-      setMessage(result.summary?.broken ? "Sweep complete — one or more notification stages failed." : "Sweep complete — every selected notification passed sent → opened/read → accepted.");
+      setMessage(result.summary?.broken ? "Sweep complete — one or more notification stages failed." : "Sweep complete — every selected notification passed sent to opened/read to accepted.");
     } catch (finishError) {
       setError(finishError instanceof Error ? finishError.message : "Unable to finish the notification test run.");
     } finally { setBusy(false); }
@@ -188,26 +189,26 @@ export default function SubmissionNotificationTestBot() {
 
   return <main className="page-container submission-notification-test">
     <PageBackButton fallbackPath="/creator/tester" label="Back to Tester Centre" />
-    <header className="snt-hero"><div><span>PRIVATE QA · NOTIFICATION PIPELINE</span><h1>📨 Submission Notification BOT</h1><p>Run the entire submission-notification sweep or isolate exactly the notification type and recipient you are testing. No real submissions are created.</p></div></header>
+    <header className="snt-hero"><div><span>PRIVATE QA · NOTIFICATION PIPELINE</span><h1><TinyTitansIcon name="messages" size={28} /> Submission Notification BOT</h1><p>Run the entire submission-notification sweep or isolate exactly the notification type and recipient you are testing. No real submissions are created.</p></div></header>
     {!run && <section className="snt-panel">
       <div className="snt-panel-title"><div><span>1 · NOTIFICATION COVERAGE</span><h2>Choose what to test</h2></div><button type="button" className="snt-text-button" onClick={selectAllKinds} disabled={busy}>Select full sweep</button></div>
-      <div className="snt-route-grid">{TESTS.map((test) => <label key={test.kind} className={`snt-route ${selectedKinds.includes(test.kind) ? "is-selected" : ""}`}><input type="checkbox" checked={selectedKinds.includes(test.kind)} onChange={() => toggleKind(test.kind)} disabled={busy}/><span className="snt-route-icon">{test.icon}</span><span><strong>{test.label}</strong><small>{test.description}</small></span></label>)}</div>
+      <div className="snt-route-grid">{TESTS.map((test) => <label key={test.kind} className={`snt-route ${selectedKinds.includes(test.kind) ? "is-selected" : ""}`}><input type="checkbox" checked={selectedKinds.includes(test.kind)} onChange={() => toggleKind(test.kind)} disabled={busy}/><span className="snt-route-icon"><TinyTitansIcon name={test.icon} size={22} /></span><span><strong>{test.label}</strong><small>{test.description}</small></span></label>)}</div>
       <p>Select one notification for a surgical test, several related notifications, or every registered submission notification for a full regression sweep.</p>
     </section>}
     {!run && <section className="snt-panel">
-      <div className="snt-panel-title"><div><span>2 · TARGET RECIPIENT</span><h2>Choose who receives the test</h2></div><span className="snt-safety">🔒 Owner-controlled</span></div>
+      <div className="snt-panel-title"><div><span>2 · TARGET RECIPIENT</span><h2>Choose who receives the test</h2></div><span className="snt-safety"><TinyTitansIcon name="lock" size={14} /> Owner-controlled</span></div>
       <select className="snt-target-select" value={targetUid} onChange={(event) => setTargetUid(event.target.value)} disabled={busy || loadingTargets}>
-        {loadingTargets ? <option value="">Loading authorised test targets…</option> : targets.map((target) => <option key={target.uid} value={target.uid}>{target.uid === user?.uid ? "This account" : target.displayName} — {target.email} {target.deviceReady ? "· 📱 Ready" : "· ⚠️ No device"}</option>)}
+        {loadingTargets ? <option value="">Loading authorised test targets…</option> : targets.map((target) => <option key={target.uid} value={target.uid}>{target.uid === user?.uid ? "This account" : target.displayName} — {target.email} {target.deviceReady ? "· Ready" : "· No device"}</option>)}
       </select>
       <p>{selectedTarget?.deviceReady ? `Ready to receive tests on ${selectedTarget.displayName}.` : "This account has no registered push device. Enable Tiny Titans notifications on that account before testing delivery."}</p>
     </section>}
-    {!run && <section className="snt-panel"><div className="snt-panel-title"><div><span>3 · TEST TIMING</span><h2>Control the sequence</h2></div></div><div className="snt-controls"><label>Delay between notifications<select value={delayMinutes} onChange={(event) => setDelayMinutes(Number(event.target.value))} disabled={busy}>{Array.from({ length: 11 }, (_, value) => <option key={value} value={value}>{value === 0 ? "Immediately" : `${value} minute${value === 1 ? "" : "s"}`}</option>)}</select></label><button className="snt-primary" type="button" onClick={() => void start()} disabled={busy || !targetUid || !selectedKinds.length}>▶ Start Selected Test{selectedKinds.length === TESTS.length ? " Sweep" : ""}</button></div></section>}
+    {!run && <section className="snt-panel"><div className="snt-panel-title"><div><span>3 · TEST TIMING</span><h2>Control the sequence</h2></div></div><div className="snt-controls"><label>Delay between notifications<select value={delayMinutes} onChange={(event) => setDelayMinutes(Number(event.target.value))} disabled={busy}>{Array.from({ length: 11 }, (_, value) => <option key={value} value={value}>{value === 0 ? "Immediately" : `${value} minute${value === 1 ? "" : "s"}`}</option>)}</select></label><button className="snt-primary" type="button" onClick={() => void start()} disabled={busy || !targetUid || !selectedKinds.length}><TinyTitansIcon name="forward" size={15} /> Start Selected Test{selectedKinds.length === TESTS.length ? " Sweep" : ""}</button></div></section>}
     {run && <><section className="snt-stats"><div><strong>{run.itemCount}</strong><span>Selected</span></div><div><strong>{sentCount}</strong><span>Sent</span></div><div><strong>{openedCount}</strong><span>Opened / read</span></div><div><strong>{acceptedCount}</strong><span>Accepted</span></div></section>
-      <section className="snt-panel snt-live"><div className="snt-panel-title"><div><span>LIVE RUN · {run.targetName}</span><h2>{currentItem ? currentItem.label : "Notification run"}</h2></div><span className="snt-safety">{currentItem ? formatStatus(currentItem.status) : "Waiting"}</span></div><p>{currentItem?.description}</p>{currentItem?.acceptedAt ? <div className="snt-success-box">✅ This notification has been accepted successfully.</div> : currentItem?.openedAt ? <button type="button" className="snt-accept" onClick={() => void acceptCurrent()} disabled={busy}>✅ ACCEPT NOTIFICATION</button> : <div className="snt-action-stack"><div className="snt-waiting">📱 Waiting for <strong>{run.targetName}</strong> to receive/open the notification.</div><button type="button" className="snt-secondary" onClick={() => void markOpenedManually()} disabled={busy}>👁️ Mark opened / read</button></div>}{countdown > 0 && <div className="snt-countdown">Next notification in <strong>{Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}</strong></div>}</section>
+      <section className="snt-panel snt-live"><div className="snt-panel-title"><div><span>LIVE RUN · {run.targetName}</span><h2>{currentItem ? currentItem.label : "Notification run"}</h2></div><span className="snt-safety">{currentItem ? formatStatus(currentItem.status) : "Waiting"}</span></div><p>{currentItem?.description}</p>{currentItem?.acceptedAt ? <div className="snt-success-box"><TinyTitansIcon name="check" size={15} /> This notification has been accepted successfully.</div> : currentItem?.openedAt ? <button type="button" className="snt-accept" onClick={() => void acceptCurrent()} disabled={busy}><TinyTitansIcon name="check" size={15} /> ACCEPT NOTIFICATION</button> : <div className="snt-action-stack"><div className="snt-waiting"><TinyTitansIcon name="messages" size={15} /> Waiting for <strong>{run.targetName}</strong> to receive/open the notification.</div><button type="button" className="snt-secondary" onClick={() => void markOpenedManually()} disabled={busy}><TinyTitansIcon name="behaviour" size={15} /> Mark opened / read</button></div>}{countdown > 0 && <div className="snt-countdown">Next notification in <strong>{Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}</strong></div>}</section>
       <section className="snt-panel"><div className="snt-panel-title"><div><span>SELECTED COVERAGE</span><h2>{run.itemCount} notification test{run.itemCount === 1 ? "" : "s"}</h2></div><span className="snt-safety">{run.targetName}</span></div><div className="snt-list">{run.items.map((item) => <article key={item.id} className={`snt-item ${item.status}`}><div><strong>{item.label}</strong><span>{item.description}</span></div><div><b>{formatStatus(item.status)}</b>{item.failureMessage && <small>{item.failureMessage}</small>}</div></article>)}</div></section>
-      {run.status === "running" && lastItemAccepted && <button className="snt-last" type="button" onClick={() => void finish()} disabled={busy}>🏁 LAST ONE — FINISH & TALLY</button>}
-      {run.status === "complete" && run.summary && <section className={`snt-result ${run.summary.broken ? "has-failures" : "all-pass"}`}><span>FINAL RESULT</span><h2>{run.summary.broken ? "⚠️ Notification pipeline needs attention" : "✅ Notification pipeline passed"}</h2><div className="snt-result-grid"><div><strong>{run.summary.expected}</strong><span>Expected</span></div><div><strong>{run.summary.sent}</strong><span>FCM accepted</span></div><div><strong>{run.summary.opened}</strong><span>Opened/read</span></div><div><strong>{run.summary.accepted}</strong><span>Accepted</span></div><div><strong>{run.summary.passed}</strong><span>Passed</span></div><div><strong>{run.summary.broken}</strong><span>Broken</span></div></div><p>A pass requires delivery, opened/read evidence and explicit acceptance for every selected notification.</p></section>}
+      {run.status === "running" && lastItemAccepted && <button className="snt-last" type="button" onClick={() => void finish()} disabled={busy}><TinyTitansIcon name="check" size={15} /> LAST ONE — FINISH & TALLY</button>}
+      {run.status === "complete" && run.summary && <section className={`snt-result ${run.summary.broken ? "has-failures" : "all-pass"}`}><span>FINAL RESULT</span><h2><TinyTitansIcon name={run.summary.broken ? "warning" : "check"} size={20} /> {run.summary.broken ? "Notification pipeline needs attention" : "Notification pipeline passed"}</h2><div className="snt-result-grid"><div><strong>{run.summary.expected}</strong><span>Expected</span></div><div><strong>{run.summary.sent}</strong><span>FCM accepted</span></div><div><strong>{run.summary.opened}</strong><span>Opened/read</span></div><div><strong>{run.summary.accepted}</strong><span>Accepted</span></div><div><strong>{run.summary.passed}</strong><span>Passed</span></div><div><strong>{run.summary.broken}</strong><span>Broken</span></div></div><p>A pass requires delivery, opened/read evidence and explicit acceptance for every selected notification.</p></section>}
     </>}
-    {message && <div className="snt-message">{message}</div>}{error && <div className="snt-error">⚠️ {error}</div>}
+    {message && <div className="snt-message">{message}</div>}{error && <div className="snt-error"><TinyTitansIcon name="warning" size={14} /> {error}</div>}
   </main>;
 }
