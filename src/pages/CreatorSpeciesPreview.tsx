@@ -4,6 +4,7 @@ import { INITIAL_SNAKE_SPECIES } from "../data/species/speciesRegistry";
 import type { NumericRange, SnakeSpeciesRecord } from "../data/species/speciesTypes";
 import "../styles/CreatorTools.css";
 import "../styles/CreatorSpeciesPreview.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 function rangeText(range?: NumericRange): string {
   if (!range) return "Not yet published";
@@ -75,7 +76,7 @@ function SpeciesPreview({ species }: { species: SnakeSpeciesRecord }) {
 
       <div className="creator-species-card-grid">
         <article className="creator-species-card">
-          <span className="creator-admin-kicker">🌍 NATURAL HISTORY</span>
+          <span className="creator-admin-kicker"><TinyTitansIcon name="community" size={13} /> NATURAL HISTORY</span>
           <h3>Where & how it lives</h3>
           <dl>
             <div><dt>Distribution</dt><dd>{species.knowledge.distribution ?? "Not yet published"}</dd></div>
@@ -86,7 +87,7 @@ function SpeciesPreview({ species }: { species: SnakeSpeciesRecord }) {
         </article>
 
         <article className="creator-species-card">
-          <span className="creator-admin-kicker">🌡️ HUSBANDRY</span>
+          <span className="creator-admin-kicker"><TinyTitansIcon name="husbandry" size={13} /> HUSBANDRY</span>
           <h3>Species-specific environment</h3>
           <dl>
             <div><dt>Evidence</dt><dd>{evidenceLabel(husbandry?.evidenceLevel)}</dd></div>
@@ -101,7 +102,7 @@ function SpeciesPreview({ species }: { species: SnakeSpeciesRecord }) {
         </article>
 
         <article className="creator-species-card">
-          <span className="creator-admin-kicker">🍽️ FEEDING</span>
+          <span className="creator-admin-kicker"><TinyTitansIcon name="feeding" size={13} /> FEEDING</span>
           <h3>Species feeding context</h3>
           <dl>
             <div><dt>Evidence</dt><dd>{evidenceLabel(feeding?.evidenceLevel)}</dd></div>
@@ -112,7 +113,7 @@ function SpeciesPreview({ species }: { species: SnakeSpeciesRecord }) {
         </article>
 
         <article className="creator-species-card">
-          <span className="creator-admin-kicker">🥚 BREEDING</span>
+          <span className="creator-admin-kicker"><TinyTitansIcon name="breeding" size={13} /> BREEDING</span>
           <h3>Reproductive context</h3>
           <dl>
             <div><dt>Evidence</dt><dd>{evidenceLabel(breeding?.evidenceLevel)}</dd></div>
@@ -122,7 +123,7 @@ function SpeciesPreview({ species }: { species: SnakeSpeciesRecord }) {
         </article>
 
         <article className="creator-species-card creator-species-safety-card">
-          <span className="creator-admin-kicker">⚠️ SAFETY</span>
+          <span className="creator-admin-kicker"><TinyTitansIcon name="warning" size={13} /> SAFETY</span>
           <h3>Species safety layer</h3>
           <dl>
             <div><dt>Medically significant venom</dt><dd>{safety?.medicallySignificantVenom ? "Yes" : "No / not flagged"}</dd></div>
@@ -165,9 +166,9 @@ export default function CreatorSpeciesPreview() {
     <section className="creator-admin-section">
       <div className="creator-section-heading">
         <div>
-          <Link className="creator-back-link" to="/creator">← Creator Centre</Link>
+          <Link className="creator-back-link" to="/creator"><TinyTitansIcon name="back" size={14} /> Creator Centre</Link>
           <span className="creator-admin-kicker">SPECIES DATA QA</span>
-          <h1>🐍 Species Preview Lab</h1>
+          <h1><TinyTitansIcon name="reptile" size={28} /> Species Preview Lab</h1>
           <p>Preview the same profile shell against every species currently in the registry. This is a mock-data inspector: it does not create or alter a real keeper snake.</p>
         </div>
       </div>
@@ -184,8 +185,8 @@ export default function CreatorSpeciesPreview() {
           </select>
         </label>
         <div className="creator-species-toolbar-actions">
-          <button type="button" onClick={() => selectRelative(-1)} disabled={!selected}>← Previous</button>
-          <button type="button" onClick={() => selectRelative(1)} disabled={!selected}>Next →</button>
+          <button type="button" onClick={() => selectRelative(-1)} disabled={!selected}><TinyTitansIcon name="back" size={14} /> Previous</button>
+          <button type="button" onClick={() => selectRelative(1)} disabled={!selected}>Next <TinyTitansIcon name="forward" size={14} /></button>
         </div>
       </div>
 
