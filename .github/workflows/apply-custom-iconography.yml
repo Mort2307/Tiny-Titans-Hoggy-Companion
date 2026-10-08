@@ -1,0 +1,44 @@
+name: Apply custom iconography migration
+
+on:
+  push:
+    branches:
+      - chore/custom-iconography-pass-2026-10-08
+    paths:
+      - scripts/migrate-custom-iconography.mjs
+      - .github/workflows/apply-custom-iconography.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Run AST-aware icon migration
+        run: node scripts/migrate-custom-iconography.mjs
+      - name: Enforce zero raw iconography
+        run: npm run validate:icons
+      - name: Typecheck migrated application
+        run: npm run typecheck
+      - name: Commit migration output
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No migration changes produced."
+            exit 0
+          fi
+          git config user.name "Tiny Titans Migration"
+          git config user.email "actions@users.noreply.github.com"
+          git add src scripts/iconography-baseline.json
+          git commit -m "refactor: apply AST-aware Tiny Titans icon migration"
+          git push origin HEAD:chore/custom-iconography-pass-2026-10-08

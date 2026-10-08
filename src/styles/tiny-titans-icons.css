@@ -219,3 +219,6 @@
     animation: none;
   }
 }
+
+/* Inline Tiny Titans SVGs replace platform emoji/glyph rendering. */
+.tt-inline-icon{display:inline-block;vertical-align:-.18em;flex:0 0 auto}

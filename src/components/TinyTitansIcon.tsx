@@ -96,6 +96,98 @@ const LEGACY_ICON_ALIASES: Record<string, TinyTitansIconName> = {
   "🔓": "unlock",
   "📤": "export",
   "📈": "analytics",
+  "✅": "check",
+  "💡": "info",
+  "🐛": "testing",
+  "📷": "camera",
+  "📸": "camera",
+  "⏳": "timeline",
+  "🔄": "rotate",
+  "🎁": "contribution",
+  "🌎": "community",
+  "🧭": "compass",
+  "⚡": "power",
+  "🔥": "power",
+  "🔌": "power",
+  "👀": "behaviour",
+  "🤖": "testing",
+  "💚": "health",
+  "🚀": "forward",
+  "⏰": "reminders",
+  "📱": "messages",
+  "☁️": "upload",
+  "🥩": "feeding",
+  "📜": "handbook",
+  "👑": "plans",
+  "🏁": "check",
+  "📓": "knowledge",
+  "📡": "messages",
+  "🪪": "account",
+  "🫀": "health",
+  "👍": "check",
+  "👎": "warning",
+  "👨": "family",
+  "👩": "family",
+  "👧": "family",
+  "🧑": "account",
+  "💯": "wall",
+  "🥇": "wall",
+  "🥈": "wall",
+  "🥉": "wall",
+  "🏅": "wall",
+  "💠": "plans",
+  "💎": "plans",
+  "📟": "messages",
+  "🧽": "husbandry",
+  "🪨": "enclosure",
+  "🪵": "enclosure",
+  "🪴": "husbandry",
+  "🔦": "power",
+  "🗃": "marketplace",
+  "📲": "messages",
+  "⏱": "timeline",
+  "🚪": "enclosure",
+  "🔲": "grid",
+  "⬜": "grid",
+  "🪟": "enclosure",
+  "🛑": "warning",
+  "🎂": "timeline",
+  "📍": "pin",
+  "📰": "knowledge",
+  "🚦": "warning",
+  "🚑": "health",
+  "📣": "messages",
+  "🔍": "search",
+  "🦖": "reptiles",
+  "🦎": "reptiles",
+  "⭐": "wall",
+  "🆕": "contribution",
+  "🏫": "academy",
+  "🚫": "warning",
+  "🛟": "health",
+  "📐": "enclosure",
+  "📏": "enclosure",
+  "🔵": "info",
+  "🎥": "camera",
+  "🔧": "creator",
+  "🪑": "enclosure",
+  "🗄": "marketplace",
+  "🏗": "enclosure",
+  "🥶": "husbandry",
+  "💪": "health",
+  "🐣": "breeding",
+  "🪹": "breeding",
+  "☀": "husbandry",
+  "🎯": "challenge",
+  "🌦": "husbandry",
+  "🕶": "account",
+  "↩": "back",
+  "↗": "forward",
+  "↕": "move",
+  "↻": "rotate",
+  "☰": "menu",
+  "⚠": "warning",
+  "➕": "add",
 };
 
 const ICON_NAMES = new Set<TinyTitansIconName>([
@@ -105,8 +197,8 @@ const ICON_NAMES = new Set<TinyTitansIconName>([
   "educator", "creator", "testing", "search", "menu", "add", "edit", "delete", "water", "timeline", "vet", "save", "upload", "back", "forward", "close", "filter", "camera", "rotate", "move", "duplicate", "link", "lock", "unlock", "grid", "ceiling", "info", "warning", "check", "compass", "power", "air",
 ]);
 
-function resolveIconName(value: string): TinyTitansIconName {
-  return LEGACY_ICON_ALIASES[value] ?? (ICON_NAMES.has(value as TinyTitansIconName) ? value as TinyTitansIconName : "reptile");
+function resolveIconName(value: string): TinyTitansIconName | null {
+  return LEGACY_ICON_ALIASES[value] ?? (ICON_NAMES.has(value as TinyTitansIconName) ? value as TinyTitansIconName : null);
 }
 
 function SnakeFace({ className = "", ...props }: SVGProps<SVGSVGElement>) {
@@ -274,6 +366,10 @@ function SimpleIcon({ name, ...props }: { name: TinyTitansIconName } & SVGProps<
 
 export function TinyTitansIcon({ name, size = 24, title, className = "", ...props }: Props) {
   const resolvedName = resolveIconName(name);
+  if (!resolvedName) {
+    if (import.meta.env.DEV) console.warn(`[TinyTitansIcon] Unknown icon name: ${name}`);
+    return null;
+  }
   return (
     <SimpleIcon
       name={resolvedName}
