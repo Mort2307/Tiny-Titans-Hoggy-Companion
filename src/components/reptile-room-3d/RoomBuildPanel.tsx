@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ReptileRoomObject } from "../../services/reptileRoomService";
 import type { Room3DAssetPreset } from "../../types/reptileRoom3D";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 type RoomBuildPanelProps = {
   objects: ReptileRoomObject[];
@@ -55,7 +56,7 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate, onS
   return (
     <aside aria-label="3D room build controls" style={{ width: 270, maxWidth: "100%", padding: 14, borderRadius: 14, background: "rgba(22,25,29,.96)", border: "1px solid rgba(255,255,255,.12)", boxSizing: "border-box", pointerEvents: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: minimized ? 0 : 4 }}>
-        <div style={{ fontWeight: 800 }}>🏗️ Build Room</div>
+        <div style={{ fontWeight: 800 }}><TinyTitansIcon name="enclosure" size={17} /> Build Room</div>
         <button type="button" aria-label={minimized ? "Expand room builder" : "Minimize room builder"} title={minimized ? "Expand" : "Minimize"} onClick={() => setMinimized((value) => !value)} style={{ width: 30, height: 30, padding: 0, display: "grid", placeItems: "center", fontSize: 18, lineHeight: 1 }} {...buttonProps}>{minimized ? "+" : "−"}</button>
       </div>
 
@@ -66,7 +67,7 @@ export function RoomBuildPanel({ objects, selectedId, onDelete, onDuplicate, onS
           return (
             <div key={category.id} style={{ marginBottom: 6, border: "1px solid rgba(255,255,255,.08)", borderRadius: 9, overflow: "hidden" }}>
               <button type="button" aria-expanded={open} onClick={() => setOpenCategory(open ? null : category.id)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 10px", border: 0, borderRadius: 0, textAlign: "left" }} {...buttonProps}>
-                <span>{category.icon} {category.label}</span>
+                <span><TinyTitansIcon name={category.icon} size={16} /> {category.label}</span>
                 <span style={{ opacity: .6 }}>{counts[category.id] ? `${counts[category.id]} · ` : ""}{open ? "⌃" : "⌄"}</span>
               </button>
               {open && <div style={{ padding: "7px", background: "rgba(255,255,255,.025)" }}>

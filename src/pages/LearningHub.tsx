@@ -5,11 +5,11 @@ import { getLearningProgress, knowledgeLevel, knowledgeScore } from "../services
 import TinyTitansIcon from "../components/TinyTitansIcon";
 
 const learningAreas = [
-  { icon: "📚", title: "Knowledge Base", description: "Explore Western Hognose husbandry, genetics, feeding, shedding and care guidance.", to: "/knowledge-base", action: "Explore Knowledge Base" },
-  { icon: "🧠", title: "Titans Challenge", description: "Test what you know, build mastery, earn XP and progress through adaptive questions.", to: "/challenge", action: "Start Challenge" },
-  { icon: "🎯", title: "Adaptive Learning", description: "Continue the challenge system with questions selected around your current learning progress.", to: "/challenge", action: "Continue Learning" },
-  { icon: "🏆", title: "Achievements", description: "Review learning milestones, mastery, streaks and collection achievements.", to: "/learn/achievements", action: "View Achievements" },
-  { icon: "⚙️", title: "Personalisation", description: "Tune your learning experience and make Tiny Titans better suited to how you learn.", to: "/account/personalise", action: "Personalise Learning" },
+  { icon: "knowledge", title: "Knowledge Base", description: "Explore Western Hognose husbandry, genetics, feeding, shedding and care guidance.", to: "/knowledge-base", action: "Explore Knowledge Base" },
+  { icon: "challenge", title: "Titans Challenge", description: "Test what you know, build mastery, earn XP and progress through adaptive questions.", to: "/challenge", action: "Start Challenge" },
+  { icon: "challenge", title: "Adaptive Learning", description: "Continue the challenge system with questions selected around your current learning progress.", to: "/challenge", action: "Continue Learning" },
+  { icon: "wall", title: "Achievements", description: "Review learning milestones, mastery, streaks and collection achievements.", to: "/learn/achievements", action: "View Achievements" },
+  { icon: "account", title: "Personalisation", description: "Tune your learning experience and make Tiny Titans better suited to how you learn.", to: "/account/personalise", action: "Personalise Learning" },
 ];
 
 export default function LearningHub() {
