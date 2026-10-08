@@ -7,15 +7,16 @@ import { appendRescueCareRecord, getRescueAccess, listRescueAnimals } from "../s
 import { getMyRescueWorkspace } from "../services/rescueWorkspaceService";
 import type { RescueAnimal, RescueCareRecordType, RescueVisibility } from "../types/rescue";
 import "../styles/rescue-quick-log.css";
+import TinyTitansIcon, { type TinyTitansIconName } from "../components/TinyTitansIcon";
 
-const RECORD_TYPES: Array<{ type: RescueCareRecordType; label: string; icon: string; description: string }> = [
-  { type: "feeding", label: "Feeding", icon: "🍽️", description: "Food offered, response and context" },
-  { type: "weight", label: "Weight", icon: "⚖️", description: "Dated weight for the individual baseline" },
-  { type: "shed", label: "Shedding", icon: "🐍", description: "Shed event and observations" },
-  { type: "health", label: "Health / medical", icon: "🩺", description: "Clinical or health-related record" },
-  { type: "behaviour", label: "Behaviour", icon: "👀", description: "Observed behaviour without interpretation" },
-  { type: "husbandry", label: "Husbandry", icon: "🌿", description: "Environment, routine or care changes" },
-  { type: "note", label: "General note", icon: "📝", description: "Anything else worth attaching to the animal" },
+const RECORD_TYPES: Array<{ type: RescueCareRecordType; label: string; icon: TinyTitansIconName; description: string }> = [
+  { type: "feeding", label: "Feeding", icon: "feeding", description: "Food offered, response and context" },
+  { type: "weight", label: "Weight", icon: "weight", description: "Dated weight for the individual baseline" },
+  { type: "shed", label: "Shedding", icon: "shed", description: "Shed event and observations" },
+  { type: "health", label: "Health / medical", icon: "health", description: "Clinical or health-related record" },
+  { type: "behaviour", label: "Behaviour", icon: "behaviour", description: "Observed behaviour without interpretation" },
+  { type: "husbandry", label: "Husbandry", icon: "husbandry", description: "Environment, routine or care changes" },
+  { type: "note", label: "General note", icon: "edit", description: "Anything else worth attaching to the animal" },
 ];
 
 const VISIBILITY_LABELS: Record<RescueVisibility, string> = {
@@ -137,7 +138,7 @@ export default function RescueQuickLog() {
       <main className="rescue-page rescue-quick-log-page">
         <header className="rescue-quick-log-hero">
           <div>
-            <Link to="/rescue?manage=1" className="rescue-back-link">← Rescue Centre</Link>
+            <Link to="/rescue?manage=1" className="rescue-back-link"><TinyTitansIcon name="back" size={14} /> Rescue Centre</Link>
             <span className="rescue-eyebrow">QUICK LOGGING</span>
             <h1>Record what happened today.</h1>
             <p>Choose an animal, choose the type of record, and save it straight into that animal's Rescue timeline.</p>
@@ -159,7 +160,7 @@ export default function RescueQuickLog() {
               <section className="rescue-quick-log-type-grid" aria-label="Record type">
                 {RECORD_TYPES.map((item) => (
                   <button key={item.type} type="button" className={recordType === item.type ? "active" : ""} onClick={() => setRecordType(item.type)}>
-                    <span className="rescue-quick-log-type-icon" aria-hidden="true">{item.icon}</span>
+                    <span className="rescue-quick-log-type-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={18} /></span>
                     <span><strong>{item.label}</strong><small>{item.description}</small></span>
                   </button>
                 ))}

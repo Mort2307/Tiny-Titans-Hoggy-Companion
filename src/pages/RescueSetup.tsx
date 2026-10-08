@@ -81,7 +81,7 @@ function BrandingPicker({ label, value, kind, organisationId, disabled, hint, on
     {value && <img className="rescue-branding-preview" src={value} alt={`${label} preview`} />}
     <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={disabled || uploading} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void chooseImage(file); }} />
     <button type="button" className="rescue-branding-upload-button" onClick={() => inputRef.current?.click()} disabled={disabled || uploading}>
-      <span aria-hidden="true">{uploading ? "⏳" : "＋"}</span>
+      <span aria-hidden="true"><TinyTitansIcon name={uploading ? "timeline" : "add"} size={16} /></span>
       <span><strong>{uploading ? "Adding image…" : value ? `Replace ${label.toLowerCase()}` : `Choose ${label.toLowerCase()}`}</strong><small>Choose a JPG, PNG or WebP image from your device.</small></span>
     </button>
     <label className="rescue-branding-url-field">
@@ -180,7 +180,7 @@ export default function RescueSetup() {
 
       <section className="rescue-card rescue-security-panel"><span className="rescue-eyebrow">PUBLIC / PRIVATE BOUNDARY</span><h2>What stays inside the Rescue workspace?</h2><div className="rescue-security-grid"><div><strong>Public</strong><span>Rescue identity, public description, branding images, contact details, public location, opening/contact times, chosen registration details and public animal profiles.</span></div><div><strong>Private</strong><span>Staff records, medical information, internal notes, private documents, foster placement details, operational history and other restricted Rescue records.</span></div></div><label className="rescue-check"><input type="checkbox" checked={form.directoryVisible} onChange={(event)=>setField("directoryVisible",event.target.checked)} disabled={saving}/><span><strong>Publish my Rescue profile</strong><small>This must remain enabled to complete first-time setup. You can manage public profile visibility later.</small></span></label></section>
 
-      <section className="rescue-card rescue-setup-submit"><div><span className="rescue-eyebrow">READY TO ENTER</span><h2>Save your Rescue identity</h2><p>Your public profile is kept separate from the operational Rescue records. Saving this form unlocks the Rescue workspace.</p></div><button type="submit" disabled={saving}>{saving ? "Saving Rescue profile…" : "Save & enter Rescue workspace →"}</button></section>
+      <section className="rescue-card rescue-setup-submit"><div><span className="rescue-eyebrow">READY TO ENTER</span><h2>Save your Rescue identity</h2><p>Your public profile is kept separate from the operational Rescue records. Saving this form unlocks the Rescue workspace.</p></div><button type="submit" disabled={saving}>{saving ? "Saving Rescue profile…" : <>Save & enter Rescue workspace <TinyTitansIcon name="forward" size={13} /></>}</button></section>
     </form>
   </main></PaidTierGate>;
 }
