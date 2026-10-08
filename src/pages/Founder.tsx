@@ -4,6 +4,7 @@ import { useAuth } from "../context/useAuth";
 import { submitFounderApplication } from "../services/creatorService";
 import PageBackButton from "../components/PageBackButton";
 import "../styles/CreatorTools.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 export default function Founder() {
   const { user, profile } = useAuth();
@@ -38,14 +39,14 @@ export default function Founder() {
   }
 
   return <section className="creator-tools-page"><PageBackButton fallbackPath="/account" label="Back to My Account" /><div className="creator-tools-card">
-    <div className="creator-tools-header"><span>👑</span><div><h1>Become a Founder</h1><p>Help shape Tiny Titans from the ground up.</p></div></div>
+    <div className="creator-tools-header"><span><TinyTitansIcon name="wall" size={24} /></span><div><h1>Become a Founder</h1><p>Help shape Tiny Titans from the ground up.</p></div></div>
     <div className="creator-founder-grid"><div><h2>Founder access</h2><p>Founders are early supporters who help test features, challenge the genetics database, report bugs and influence what Tiny Titans becomes.</p><ul><li>Founder recognition inside Tiny Titans</li><li>Early access to selected new features</li><li>A direct voice in product development</li><li>Priority consideration for future Founder-only features</li></ul></div><div className="creator-founder-callout"><strong>Founder status is reviewed.</strong><span>Submitting an application does not automatically grant elevated permissions.</span></div></div>
-    {sent ? <div className="creator-success"><h2>Application received ✓</h2><p>Thanks, {profile?.displayName || "Founder"}. Your application is now in the Creator Centre.</p><button type="button" onClick={() => navigate("/account")}>Back to My Account</button></div> : <form className="creator-form" onSubmit={submit}>
+    {sent ? <div className="creator-success"><h2>Application received <TinyTitansIcon name="check" size={15} /></h2><p>Thanks, {profile?.displayName || "Founder"}. Your application is now in the Creator Centre.</p><button type="button" onClick={() => navigate("/account")}>Back to My Account</button></div> : <form className="creator-form" onSubmit={submit}>
       <label>Why do you want to become a Founder?<textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={5} maxLength={2000} required /></label>
       <label>Tell us about your reptile / Tiny Titans experience<textarea value={experience} onChange={(e) => setExperience(e.target.value)} rows={5} maxLength={2000} required /></label>
       <label>How could you help Tiny Titans grow? <span>(optional)</span><textarea value={contribution} onChange={(e) => setContribution(e.target.value)} rows={4} maxLength={2000} /></label>
       {error && <div className="creator-error">{error}</div>}
-      <div className="creator-actions"><button type="button" onClick={() => navigate(-1)}>Cancel</button><button className="creator-primary" type="submit" disabled={sending || !reason.trim() || !experience.trim()}>{sending ? "Submitting…" : "👑 Apply to Become a Founder"}</button></div>
+      <div className="creator-actions"><button type="button" onClick={() => navigate(-1)}>Cancel</button><button className="creator-primary" type="submit" disabled={sending || !reason.trim() || !experience.trim()}>{sending ? "Submitting…" : <><TinyTitansIcon name="wall" size={14} /> Apply to Become a Founder</>}</button></div>
     </form>}
   </div></section>;
 }
