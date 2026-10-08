@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type ProtectedRouteProps = {
   children: ReactNode;
@@ -25,7 +26,7 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
         }}
       >
         <div>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🐍</div>
+          <div style={{ marginBottom: "16px" }}><TinyTitansIcon name="reptile" size={48} /></div>
           <h2>Loading Tiny Titans...</h2>
           <p style={{ color: "#C8B8D8" }}>Checking your account.</p>
         </div>

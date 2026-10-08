@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { MorphDefinition } from "../data/morphs";
 import { normaliseSearch, rankMorphSearch } from "../utils/searchRelevance";
 import "./MorphSelectorTheme.css";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type MultiSelectDropdownProps = {
   title: string;
@@ -140,7 +141,7 @@ export default function MultiSelectDropdown({ title, options, selected, setSelec
                   className={`multi-select-option ${isSelected ? "selected" : ""}`}
                   onClick={() => toggleOption(morph)}
                 >
-                  <span className="multi-select-check" aria-hidden="true">{isSelected ? "✓" : ""}</span>
+                  <span className="multi-select-check" aria-hidden="true">{isSelected ? <TinyTitansIcon name="check" size={13} /> : null}</span>
                   <span className="multi-select-label">{morph.name}</span>
                 </button>
               );
