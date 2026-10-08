@@ -1,7 +1,8 @@
 import type { QuizQuestion } from "../../types/Learning";
 import "./ChallengeActivity.css";
+import TinyTitansIcon, { type TinyTitansIconName } from "../TinyTitansIcon";
 
-const icons: Record<string, string> = { knowledge: "🧠", "genetics-builder": "🧬", "feeding-scenario": "🍽️", "husbandry-detective": "🌡️", "normal-monitor-investigate": "🐍", "shed-scenario": "💧", sequence: "↕️", "keeper-scenario": "🎯", reasoning: "🔬" };
+const icons: Record<string, TinyTitansIconName> = { knowledge: "titan", "genetics-builder": "genetics", "feeding-scenario": "feeding", "husbandry-detective": "husbandry", "normal-monitor-investigate": "reptile", "shed-scenario": "water", sequence: "move", "keeper-scenario": "challenge", reasoning: "search" };
 const labels: Record<string, string> = { knowledge: "Knowledge Check", "genetics-builder": "Genetics Builder", "feeding-scenario": "Feeding Scenario", "husbandry-detective": "Husbandry Detective", "normal-monitor-investigate": "Normal / Monitor / Investigate", "shed-scenario": "Shed Challenge", sequence: "Put It In Order", "keeper-scenario": "Keeper Scenario", reasoning: "Reasoning Challenge" };
 
 type Props = { question: QuizQuestion; selected: number | null; onSelect: (index: number) => void };
@@ -12,7 +13,7 @@ export default function ChallengeActivity({ question, selected, onSelect }: Prop
   const scenario = data?.scenario;
   const instruction = data?.instruction;
   return <div className={`challenge-activity challenge-activity--${type}`}>
-    <div className="challenge-activity__type"><span>{icons[type] ?? "🧠"}</span><strong>{labels[type] ?? "Knowledge Check"}</strong></div>
+    <div className="challenge-activity__type"><span><TinyTitansIcon name={icons[type] ?? "titan"} size={20} /></span><strong>{labels[type] ?? "Knowledge Check"}</strong></div>
     {scenario && <div className="challenge-activity__scenario"><strong>Scenario</strong><p>{scenario}</p></div>}
     {instruction && <p className="challenge-activity__instruction">{instruction}</p>}
     {type === "genetics-builder" && <div className="genetics-builder-preview"><div className="genetics-builder-preview__parent"><span>Parent A</span><strong>{data?.labels?.[0] ?? "Known genotype"}</strong></div><div className="genetics-builder-preview__plus">×</div><div className="genetics-builder-preview__parent"><span>Parent B</span><strong>{data?.labels?.[1] ?? "Known genotype"}</strong></div></div>}
