@@ -3,6 +3,7 @@ import { PAID_TIER_CATALOG, PAID_TIER_ORDER, type PaidEntitlement } from "../con
 import { PAID_ENTITLEMENT_DESTINATIONS, PAID_ENTITLEMENT_LABELS, paidEntitlementLabel } from "../config/paidEntitlementCatalog";
 import { getFreeKeeperNavigationItems } from "../config/freeExperience";
 import PaidTierBadge from "./PaidTierBadge";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type FeatureEnhancement = {
   entitlement: PaidEntitlement;
@@ -43,17 +44,17 @@ export default function PaidTierComparisonMatrix() {
             {freeFeatures.map((feature) => {
               const enhancements = FREE_FEATURE_ENHANCEMENTS[feature.id] ?? [];
               return <tr key={feature.id}>
-                <th scope="row"><strong>{feature.label}</strong><small><Link to={feature.path}>{feature.path} →</Link></small></th>
+                <th scope="row"><strong>{feature.label}</strong><small><Link to={feature.path}>{feature.path} <TinyTitansIcon name="forward" size={12} /></Link></small></th>
                 {PAID_TIER_ORDER.map((tierId) => {
                   const activeEnhancements = enhancements.filter((enhancement) => included(tierId, enhancement.entitlement));
-                  return <td key={tierId}><span className={activeEnhancements.length ? "paid-tier-enhanced" : "paid-tier-check"} aria-label={activeEnhancements.length ? `${PAID_TIER_CATALOG[tierId].name} includes and enhances ${feature.label}` : `${PAID_TIER_CATALOG[tierId].name} includes ${feature.label}`}>{activeEnhancements.length ? "⚡ Enhanced" : "✓ Included"}</span></td>;
+                  return <td key={tierId}><span className={activeEnhancements.length ? "paid-tier-enhanced" : "paid-tier-check"} aria-label={activeEnhancements.length ? `${PAID_TIER_CATALOG[tierId].name} includes and enhances ${feature.label}` : `${PAID_TIER_CATALOG[tierId].name} includes ${feature.label}`}>{activeEnhancements.length ? <><TinyTitansIcon name="power" size={13} /> Enhanced</> : <><TinyTitansIcon name="check" size={13} /> Included</>}</span></td>;
                 })}
               </tr>;
             })}
             <tr className="paid-tier-comparison__separator"><th scope="row" colSpan={PAID_TIER_ORDER.length + 1}><span>PAID-ONLY / WORKSPACE CAPABILITIES</span></th></tr>
             {PAID_ONLY_ENTITLEMENTS.map((entitlement) => <tr key={entitlement}>
-              <th scope="row"><strong>{paidEntitlementLabel(entitlement)}</strong><small>{PAID_ENTITLEMENT_DESTINATIONS[entitlement].path ? <Link to={PAID_ENTITLEMENT_DESTINATIONS[entitlement].path}>{PAID_ENTITLEMENT_DESTINATIONS[entitlement].label} →</Link> : PAID_ENTITLEMENT_DESTINATIONS[entitlement].label}</small></th>
-              {PAID_TIER_ORDER.map((tierId) => { const has = included(tierId, entitlement); return <td key={tierId}><span className={has ? "paid-tier-check" : "paid-tier-dash"}>{has ? "✓ Included" : "—"}</span></td>; })}
+              <th scope="row"><strong>{paidEntitlementLabel(entitlement)}</strong><small>{PAID_ENTITLEMENT_DESTINATIONS[entitlement].path ? <Link to={PAID_ENTITLEMENT_DESTINATIONS[entitlement].path}>{PAID_ENTITLEMENT_DESTINATIONS[entitlement].label} <TinyTitansIcon name="forward" size={12} /></Link> : PAID_ENTITLEMENT_DESTINATIONS[entitlement].label}</small></th>
+              {PAID_TIER_ORDER.map((tierId) => { const has = included(tierId, entitlement); return <td key={tierId}><span className={has ? "paid-tier-check" : "paid-tier-dash"}>{has ? <><TinyTitansIcon name="check" size={13} /> Included</> : "—"}</span></td>; })}
             </tr>)}
           </tbody>
         </table>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { tinyTitansPageRegistry } from "../../config/tinyTitansPageRegistry";
 import { scoreSearchCandidate } from "../../utils/searchRanking";
 import "./TitanCommandPalette.css";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 function resolveDestination(path: string, currentPath: string): string {
   if (!path) return "/";
@@ -110,15 +111,15 @@ function TitanCommandPalette() {
           <section ref={dialogRef} className="tt-command-dialog" role="dialog" aria-modal="true" aria-labelledby="tt-command-title" onPointerDown={(event) => event.stopPropagation()}>
             <div className="tt-command-heading">
               <div><span className="tt-command-eyebrow">TINY TITANS</span><h2 id="tt-command-title">Jump anywhere</h2></div>
-              <button type="button" className="tt-command-close" onClick={() => setOpen(false)} aria-label="Close command palette">×</button>
+              <button type="button" className="tt-command-close" onClick={() => setOpen(false)} aria-label="Close command palette"><TinyTitansIcon name="close" size={14} /></button>
             </div>
             <input id="tt-command-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search pages, tools and destinations…" autoComplete="off" />
             <div className="tt-command-results" role="listbox" aria-label="Tiny Titans destinations">
               {results.length ? results.map((page) => (
                 <button key={page.id} type="button" className="tt-command-result" onClick={() => go(page.path)}>
-                  <span className="tt-command-icon" aria-hidden="true">{page.icon}</span>
+                  <span className="tt-command-icon" aria-hidden="true"><TinyTitansIcon name={page.icon} size={18} /></span>
                   <span className="tt-command-copy"><strong>{page.label}</strong><small>{page.description}</small></span>
-                  <span className="tt-command-arrow" aria-hidden="true">→</span>
+                  <span className="tt-command-arrow" aria-hidden="true"><TinyTitansIcon name="forward" size={14} /></span>
                 </button>
               )) : <div className="tt-command-empty">No matching destination. Try a broader search.</div>}
             </div>
