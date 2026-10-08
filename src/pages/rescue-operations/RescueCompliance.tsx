@@ -1,4 +1,5 @@
 import {
+import TinyTitansIcon from "../../components/TinyTitansIcon";
   useEffect,
   useState
 } from "react";
@@ -34,7 +35,7 @@ export function RescueCompliance() {
   if (!setup) return <GatePage><main className="rescue-page"><div className="rescue-message rescue-message-error">{message}</div></main></GatePage>;
   const org = setup.organisation;
   return <GatePage><main className="rescue-page">
-    <PageHeader eyebrow="COMPLIANCE & IDENTITY" title="Organisation compliance" description="See exactly what is stored for your Rescue registration, verification references and public transparency settings." actions={<Link className="rescue-primary-link" to="/rescue/organisation">Edit organisation →</Link>} />
+    <PageHeader eyebrow="COMPLIANCE & IDENTITY" title="Organisation compliance" description="See exactly what is stored for your Rescue registration, verification references and public transparency settings." actions={<Link className="rescue-primary-link" to="/rescue/organisation">Edit organisation <TinyTitansIcon name="forward" size={12} /></Link>} />
     <section className="rescue-card"><div className="rescue-detail-grid">
       <div><small>Setup</small><strong>{org.setupComplete ? "Complete" : "Incomplete"}</strong></div>
       <div><small>Directory</small><strong>{org.directoryVisible ? "Public" : "Hidden"}</strong></div>
@@ -47,7 +48,7 @@ export function RescueCompliance() {
       <div><small>Local authority licence</small><strong>{org.localAuthorityLicence || "Not supplied"}</strong></div>
       <div><small>Other permit / registration</small><strong>{org.otherRegistrationNumber || "Not supplied"}</strong></div>
       <div><small>Issuing authority</small><strong>{org.registrationAuthority || "Not supplied"}</strong></div>
-      <div><small>Evidence / verification link</small>{org.registrationEvidenceUrl ? <a href={org.registrationEvidenceUrl} target="_blank" rel="noreferrer">Open evidence ↗</a> : <strong>Not supplied</strong>}</div>
+      <div><small>Evidence / verification link</small>{org.registrationEvidenceUrl ? <a href={org.registrationEvidenceUrl} target="_blank" rel="noreferrer">Open evidence <TinyTitansIcon name="forward" size={12} /></a> : <strong>Not supplied</strong>}</div>
     </div>{org.registrationsPublic && <p className="rescue-form-hint">These registration fields are currently configured to be visible on the public profile. TinyTitans records entered information; it does not independently verify a registration number.</p>}{!org.registrationsPublic && <p className="rescue-form-hint">Registration details remain private from the public Rescue profile.</p>}</section>
     <section className="rescue-card"><span className="rescue-eyebrow">PUBLIC CONTACT & LOCATION</span><div className="rescue-detail-grid">
       <div><small>Location</small><strong>{org.locationLabel || "Not supplied"}</strong></div>
@@ -59,6 +60,6 @@ export function RescueCompliance() {
       <div><small>Opening / contact times</small><strong>{org.openingHours || "Not supplied"}</strong></div>
       <div><small>Website</small><strong>{org.website || "Not supplied"}</strong></div>
     </div></section>
-    <section className="rescue-card"><span className="rescue-eyebrow">PUBLIC PROFILE</span><h2>See exactly what visitors will see</h2><p>Use the preview before sharing your Rescue profile. Public-safe animal profiles and community actions stay separate from your private records.</p><div className="rescue-form-actions"><Link className="rescue-primary-link" to="/rescue/public-preview">Open preview →</Link>{org.directoryVisible && <Link className="rescue-primary-link" to={`/rescue/public/${setup.organisationId}`}>Open live public profile ↗</Link>}</div></section>
+    <section className="rescue-card"><span className="rescue-eyebrow">PUBLIC PROFILE</span><h2>See exactly what visitors will see</h2><p>Use the preview before sharing your Rescue profile. Public-safe animal profiles and community actions stay separate from your private records.</p><div className="rescue-form-actions"><Link className="rescue-primary-link" to="/rescue/public-preview">Open preview <TinyTitansIcon name="forward" size={12} /></Link>{org.directoryVisible && <Link className="rescue-primary-link" to={`/rescue/public/${setup.organisationId}`}>Open live public profile <TinyTitansIcon name="forward" size={12} /></Link>}</div></section>
   </main></GatePage>;
 }

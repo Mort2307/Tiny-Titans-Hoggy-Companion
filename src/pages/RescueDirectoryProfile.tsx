@@ -7,6 +7,7 @@ import { uploadRescueBrandingImage, type RescueBrandingImageKind } from "../serv
 import { updateRescueDirectoryProfile } from "../services/rescueDirectoryService";
 import "../styles/rescue.css";
 import "../styles/rescue-directory.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 type BrandingPickerProps = {
   label:string;
@@ -55,7 +56,7 @@ function BrandingPicker({ label, value, kind, organisationId, disabled, hint, on
       }}
     />
     <button type="button" className="rescue-branding-upload-button" onClick={() => inputRef.current?.click()} disabled={disabled || uploading}>
-      <span aria-hidden="true">{uploading ? "⏳" : "＋"}</span>
+      <span aria-hidden="true"><TinyTitansIcon name={uploading ? "timeline" : "add"} size={16} /></span>
       <span><strong>{uploading ? "Adding image…" : value ? `Replace ${label.toLowerCase()}` : `Choose ${label.toLowerCase()}`}</strong><small>Choose a JPG, PNG or WebP image from your device.</small></span>
     </button>
     <label className="rescue-branding-url-field">
@@ -170,7 +171,7 @@ export default function RescueDirectoryProfile() {
         registrationEvidenceUrl,
         registrationsPublic,
       });
-      setMessage("✅ Organisation, branding and compliance details updated.");
+      setMessage("Organisation, branding and compliance details updated.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not update the Rescue public profile.");
     } finally {
@@ -180,12 +181,12 @@ export default function RescueDirectoryProfile() {
 
   if (!user) return <main className="rescue-page"><section className="rescue-card"><h1>Organisation & Branding</h1><p>Sign in to manage your Rescue organisation profile.</p></section></main>;
   if (loading) return <main className="rescue-page"><section className="rescue-card"><p>Loading Organisation & Branding…</p></section></main>;
-  if (!organisationId) return <main className="rescue-page"><section className="rescue-card"><span className="rescue-eyebrow">RESCUE ACCESS</span><h1>Set up your Rescue workspace first</h1><p>This area is only for an approved Rescue organisation owner.</p><Link to="/rescue?manage=1">Open Rescue workspace →</Link></section></main>;
+  if (!organisationId) return <main className="rescue-page"><section className="rescue-card"><span className="rescue-eyebrow">RESCUE ACCESS</span><h1>Set up your Rescue workspace first</h1><p>This area is only for an approved Rescue organisation owner.</p><Link to="/rescue?manage=1">Open Rescue workspace <TinyTitansIcon name="forward" size={13} /></Link></section></main>;
 
   return <main className="rescue-page">
     <header className="rescue-subhead">
       <div><span className="rescue-eyebrow">ORGANISATION & BRANDING</span><h1>{name || "Rescue organisation"}</h1><p>Manage the public identity, searchable listing and registration details visitors can see.</p></div>
-      <div className="rescue-form-actions"><Link to="/rescue?manage=1">← Rescue workspace</Link><Link className="rescue-primary-link" to="/rescue/public-preview">Preview public profile →</Link>{directoryVisible && organisationId && <Link className="rescue-primary-link" to={`/rescue/public/${organisationId}`}>Open live profile ↗</Link>}</div>
+      <div className="rescue-form-actions"><Link to="/rescue?manage=1"><TinyTitansIcon name="back" size={14} /> Rescue workspace</Link><Link className="rescue-primary-link" to="/rescue/public-preview">Preview public profile <TinyTitansIcon name="forward" size={13} /></Link>{directoryVisible && organisationId && <Link className="rescue-primary-link" to={`/rescue/public/${organisationId}`}>Open live profile <TinyTitansIcon name="forward" size={12} /></Link>}</div>
     </header>
 
     {message && <div className="rescue-message" role="status">{message}</div>}

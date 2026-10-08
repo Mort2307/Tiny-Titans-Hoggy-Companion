@@ -1,4 +1,5 @@
 import {
+import TinyTitansIcon from "../../components/TinyTitansIcon";
   useEffect,
   useState
 } from "react";
@@ -62,7 +63,7 @@ export function RescueQuarantine() {
   }
 
   return <GatePage><main className="rescue-page">
-    <PageHeader eyebrow="QUARANTINE & ISOLATION" title="Quarantine" description="Track isolation, reasons, review dates and outcomes without losing the original intake context." actions={<Link className="rescue-primary-link" to="/rescue/intake">Open intake →</Link>} />
+    <PageHeader eyebrow="QUARANTINE & ISOLATION" title="Quarantine" description="Track isolation, reasons, review dates and outcomes without losing the original intake context." actions={<Link className="rescue-primary-link" to="/rescue/intake">Open intake <TinyTitansIcon name="forward" size={12} /></Link>} />
     {error && <div className="rescue-message rescue-message-error">{error}</div>}
     {message && <div className="rescue-message" role="status">{message}</div>}
     <section className="rescue-card"><div className="rescue-detail-grid">
@@ -71,7 +72,7 @@ export function RescueQuarantine() {
       <div><small>Animals without quarantine detail</small><strong>{loading ? "…" : quarantined.filter((animal) => !animal.quarantine).length}</strong></div>
     </div></section>
     <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">ACTIVE QUEUE</span><h2>Animals in quarantine</h2></div><span>{quarantined.length}</span></div>
-      <div className="rescue-animal-list">{quarantined.map((animal) => <button type="button" className="rescue-animal-row" key={animal.id} onClick={() => setSelectedId(animal.id)}><span>🛡️</span><span><strong>{animalLabel(animal)}</strong><small>{animal.quarantine?.area || "Isolation area not recorded"} · review {formatDate(animal.quarantine?.reviewAt)}</small></span><span>Review →</span></button>)}{!quarantined.length && <div className="rescue-empty"><strong>No animals currently in quarantine</strong><span>New intakes can be placed into quarantine from the animal record.</span></div>}</div>
+      <div className="rescue-animal-list">{quarantined.map((animal) => <button type="button" className="rescue-animal-row" key={animal.id} onClick={() => setSelectedId(animal.id)}><span><TinyTitansIcon name="lock" size={16} /></span><span><strong>{animalLabel(animal)}</strong><small>{animal.quarantine?.area || "Isolation area not recorded"} · review {formatDate(animal.quarantine?.reviewAt)}</small></span><span>Review <TinyTitansIcon name="forward" size={12} /></span></button>)}{!quarantined.length && <div className="rescue-empty"><strong>No animals currently in quarantine</strong><span>New intakes can be placed into quarantine from the animal record.</span></div>}</div>
     </section>
     {selectedId && <section className="rescue-card"><div className="rescue-panel-heading"><div><span className="rescue-eyebrow">REVIEW</span><h2>{animalLabel(animals.find((animal) => animal.id === selectedId)!)}</h2></div></div><div className="rescue-form-grid">
       <label>Isolation area<input value={area} onChange={(event) => setArea(event.target.value)} /></label>
