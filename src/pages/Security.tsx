@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { auth } from "../firebase/config";
 import { deleteMyAccount } from "../services/accountDeletionService";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 export default function Security() {
   const { user } = useAuth();
@@ -62,7 +63,7 @@ export default function Security() {
     <form className="personalisation-card" onSubmit={changePassword}><h2>Change password</h2>
       <label>New password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={6} /></label>
       <label>Confirm new password<input type="password" value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="new-password" minLength={6} /></label>
-      {error && <p role="alert">⚠️ {error}</p>}{message && <p className="personalisation-saved">✓ {message}</p>}
+      {error && <p role="alert"><TinyTitansIcon name="warning" size={14} /> {error}</p>}{message && <p className="personalisation-saved"><TinyTitansIcon name="check" size={14} /> {message}</p>}
       <button className="personalisation-save" type="submit" disabled={saving}>{saving ? "Saving…" : "Change password"}</button>
     </form>
     <section className="personalisation-card">
@@ -73,7 +74,7 @@ export default function Security() {
       <button className="personalisation-save" type="button" disabled={deleting || deleteText.trim().toUpperCase() !== "DELETE"} onClick={() => void deleteAccount()}>{deleting ? "Permanently deleting…" : "Delete my account"}</button>
       <p className="setup-help">For your security, Firebase requires a recent sign-in before permanent deletion. Do not use this action if you only want to remove a single reptile record.</p>
     </section>
-    <section className="personalisation-card"><h2>Forgotten password</h2><p>Send a secure password-reset email to the address on your account.</p><button className="personalisation-save" type="button" onClick={() => void sendReset()} disabled={saving}>📧 Send password reset email</button></section>
-    <button className="personalisation-back" type="button" onClick={() => navigate("/account")}>← Back to My Account</button>
+    <section className="personalisation-card"><h2>Forgotten password</h2><p>Send a secure password-reset email to the address on your account.</p><button className="personalisation-save" type="button" onClick={() => void sendReset()} disabled={saving}><TinyTitansIcon name="messages" size={14} /> Send password reset email</button></section>
+    <button className="personalisation-back" type="button" onClick={() => navigate("/account")}><TinyTitansIcon name="back" size={14} /> Back to My Account</button>
   </section></main>;
 }

@@ -7,6 +7,7 @@ import { calculateGenetics } from "../utils/geneticsCalculator";
 import { saveSandboxExperiment } from "../services/sandboxService";
 import { useAuth } from "../context/useAuth";
 import "../styles/calculator.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 const EMPTY: ParentSelection = { morphs: [], hets: [] };
 
@@ -37,13 +38,13 @@ export default function Sandbox() {
   function reset() { setMother(EMPTY); setFather(EMPTY); setSaved(false); setError(""); }
 
   return <main className="calculator-page">
-    <div className="calculator-navigation"><Link to="/breeding" className="calculator-back-button">← Back to Breeding Planner</Link></div>
+    <div className="calculator-navigation"><Link to="/breeding" className="calculator-back-button"><TinyTitansIcon name="back" size={14} /> Back to Breeding Planner</Link></div>
     <header className="calculator-header">
-      <div><span className="calculator-kicker">TINY TITANS · SANDBOX</span><h1>🧪 Family Sandbox</h1><p>Experiment freely. Nothing you do here changes your real snakes, feeding history, breeding projects or family records.</p></div>
+      <div><span className="calculator-kicker">TINY TITANS · SANDBOX</span><h1><TinyTitansIcon name="testing" size={28} /> Family Sandbox</h1><p>Experiment freely. Nothing you do here changes your real snakes, feeding history, breeding projects or family records.</p></div>
       <button type="button" onClick={reset} className="calculator-clear-button">Reset experiment</button>
     </header>
-    <div className="calculator-note" role="status">🧪 <strong>SANDBOX MODE:</strong> this is a safe playground. Calculations here are never added to your real breeding records and are not counted as production activity.</div>
-    <div className="calculator-info-strip"><span>🧬 Genetics experiments</span><span>🥚 Hypothetical pairings</span><span>🛡️ Real data protected</span><span>🎓 Learn by experimenting</span></div>
+    <div className="calculator-note" role="status"><TinyTitansIcon name="testing" size={14} /> <strong>SANDBOX MODE:</strong> this is a safe playground. Calculations here are never added to your real breeding records and are not counted as production activity.</div>
+    <div className="calculator-info-strip"><span><TinyTitansIcon name="genetics" size={14} /> Genetics experiments</span><span><TinyTitansIcon name="breeding" size={14} /> Hypothetical pairings</span><span><TinyTitansIcon name="lock" size={14} /> Real data protected</span><span><TinyTitansIcon name="academy" size={14} /> Learn by experimenting</span></div>
     <section className="calculator-card" style={{ marginBottom: 20 }}><label className="calculator-kicker" htmlFor="sandbox-title">EXPERIMENT NAME</label><input id="sandbox-title" value={title} onChange={(event) => setTitle(event.target.value)} className="account-input" placeholder="e.g. What if Lilith × Mort?" /></section>
     <div className="calculator-parents">
       <ParentSelector title="Female / Mother" sex="Female" parent={mother} snakes={[]} morphOptions={visualOptions} hetOptions={hetOptions} onChange={setMother} />
@@ -51,9 +52,9 @@ export default function Sandbox() {
     </div>
     <section className="calculator-results">
       <div className="calculator-results-header"><div><span className="calculator-kicker">SANDBOX PREDICTION</span><h2>Possible Offspring</h2><p>{hasSelection ? `${result.offspring.length} outcome${result.offspring.length === 1 ? "" : "s"} calculated.` : "Build a hypothetical pairing above."}</p></div></div>
-      {!hasSelection && <div className="calculator-empty"><div className="calculator-empty-icon">🧪</div><h3>Nothing is live yet</h3><p>Choose genetics for both parents and explore the result. This stays completely outside the family record.</p></div>}
+      {!hasSelection && <div className="calculator-empty"><div className="calculator-empty-icon"><TinyTitansIcon name="testing" size={24} /></div><h3>Nothing is live yet</h3><p>Choose genetics for both parents and explore the result. This stays completely outside the family record.</p></div>}
       {hasSelection && <div className="calculator-result-grid">{result.offspring.map((offspring) => <ResultCard key={offspring.id} result={offspring} morphs={allMorphs} />)}</div>}
-      {hasSelection && <div className="calculator-note"><button type="button" onClick={() => void save()} className="calculator-clear-button" disabled={saving}>{saving ? "Saving…" : "💾 Save Sandbox Experiment"}</button>{saved && <span> ✅ Saved safely to your Sandbox.</span>}{error && <span> ⚠️ {error}</span>}</div>}
+      {hasSelection && <div className="calculator-note"><button type="button" onClick={() => void save()} className="calculator-clear-button" disabled={saving}>{saving ? "Saving…" : <><TinyTitansIcon name="save" size={14} /> Save Sandbox Experiment</>}</button>{saved && <span> <TinyTitansIcon name="check" size={13} /> Saved safely to your Sandbox.</span>}{error && <span> <TinyTitansIcon name="warning" size={13} /> {error}</span>}</div>}
     </section>
     <div className="calculator-note"><strong>Want to make it real?</strong> Sandbox experiments never become real automatically. A future family approval action can submit an experiment for the Family Owner to review before anything is added to production records.</div>
   </main>;
