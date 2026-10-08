@@ -1,4 +1,5 @@
 import type { SaveStage } from "../types/save";
+import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 
 type SaveProgressProps = {
   stage: SaveStage;
@@ -10,7 +11,7 @@ type SaveProgressProps = {
 type StageConfig = {
   label: string;
   description: string;
-  icon: string;
+  icon: TinyTitansIconName;
   progress: number;
 };
 
@@ -26,7 +27,7 @@ const stageConfig: Record<
     label: "Preparing your snake",
     description:
       "Tiny Titans is checking your snake's information and preparing it for secure storage.",
-    icon: "🐍",
+    icon: "reptile",
     progress: 10,
   },
 
@@ -35,7 +36,7 @@ const stageConfig: Record<
     label: "Processing photo",
     description:
       "Your photo is being compressed and prepared so it can be stored efficiently.",
-    icon: "📸",
+    icon: "camera",
     progress: 25,
   },
 
@@ -44,7 +45,7 @@ const stageConfig: Record<
     label: "Uploading photo",
     description:
       "Tiny Titans is securely uploading your snake's photo to Firebase Storage.",
-    icon: "☁️",
+    icon: "upload",
     progress: 45,
   },
 
@@ -53,7 +54,7 @@ const stageConfig: Record<
     label: "Saving snake profile",
     description:
       "Your snake's details, genetics, weights, dates and notes are being saved to your account.",
-    icon: "💾",
+    icon: "save",
     progress: 65,
   },
 
@@ -62,7 +63,7 @@ const stageConfig: Record<
     label: "Syncing with Firebase",
     description:
       "Tiny Titans is confirming that your snake has been safely synchronised with your account.",
-    icon: "🔄",
+    icon: "rotate",
     progress: 85,
   },
 };
@@ -89,9 +90,7 @@ function SaveProgress({
         role="status"
         aria-live="polite"
       >
-        <div className="save-progress-icon">
-          ✅
-        </div>
+        <div className="save-progress-icon"><TinyTitansIcon name="check" size={28} /></div>
 
         <div className="save-progress-content">
           <strong>
@@ -123,9 +122,7 @@ function SaveProgress({
         className="save-progress save-progress-error"
         role="alert"
       >
-        <div className="save-progress-icon">
-          ⚠️
-        </div>
+        <div className="save-progress-icon"><TinyTitansIcon name="warning" size={28} /></div>
 
         <div className="save-progress-content">
           <strong>
@@ -168,7 +165,7 @@ function SaveProgress({
 
       <div className="save-progress-header">
         <div className="save-progress-icon">
-          {config.icon}
+          <TinyTitansIcon name={config.icon} size={28} />
         </div>
 
 
@@ -228,7 +225,7 @@ function SaveProgress({
 
       <div className="save-progress-footer">
         <span>
-          🔒 Your information is being securely saved.
+          <TinyTitansIcon name="lock" size={14} /> Your information is being securely saved.
         </span>
 
         <span>

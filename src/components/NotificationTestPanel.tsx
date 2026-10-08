@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { enableNotifications, getNotificationPermissionState, getNotificationTestTargets, sendNotificationTestBatch, type NotificationTestBatchResult, type NotificationTestKind, type NotificationTestTarget } from "../services/notificationService";
 import "./NotificationTestPanel.css";
+import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 
-const TESTS: Array<{ kind: NotificationTestKind; icon: string; label: string; description: string }> = [
-  { kind: "feed", icon: "🍽️", label: "Feed", description: "Feeding reminder route." },
-  { kind: "weight", icon: "⚖️", label: "Weight", description: "Scheduled weigh-in route." },
-  { kind: "shed", icon: "🐍", label: "Shed", description: "Shedding reminder route." },
-  { kind: "health", icon: "🩺", label: "Health", description: "Health / medication route." },
-  { kind: "general", icon: "🔔", label: "General", description: "General notification route." },
+const TESTS: Array<{ kind: NotificationTestKind; icon: TinyTitansIconName; label: string; description: string }> = [
+  { kind: "feed", icon: "feeding", label: "Feed", description: "Feeding reminder route." },
+  { kind: "weight", icon: "weight", label: "Weight", description: "Scheduled weigh-in route." },
+  { kind: "shed", icon: "shed", label: "Shed", description: "Shedding reminder route." },
+  { kind: "health", icon: "vet", label: "Health", description: "Health / medication route." },
+  { kind: "general", icon: "reminders", label: "General", description: "General notification route." },
 ];
 
 const MAX_COUNT_PER_ROUTE = 20;
@@ -88,11 +89,11 @@ export default function NotificationTestPanel() {
       const result = await sendNotificationTestBatch({ kinds: selectedKinds, count, targetUserIds: selectedTargetUids });
       setLastResult(result);
       if (result.status === "sent") {
-        setMessage(`✅ Test complete — Firebase accepted ${result.sentCount} device delivery${result.sentCount === 1 ? "" : "ies"} across ${result.routeCount} route${result.routeCount === 1 ? "" : "s"}, ${result.targetCount} target${result.targetCount === 1 ? "" : "s"}, repeated ${result.repetitionCount} time${result.repetitionCount === 1 ? "" : "s"}.`);
+        setMessage(`Test complete — Firebase accepted ${result.sentCount} device delivery${result.sentCount === 1 ? "" : "ies"} across ${result.routeCount} route${result.routeCount === 1 ? "" : "s"}, ${result.targetCount} target${result.targetCount === 1 ? "" : "s"}, repeated ${result.repetitionCount} time${result.repetitionCount === 1 ? "" : "s"}.`);
       } else if (result.status === "partial") {
-        setMessage(`⚠️ Partial result — ${result.sentCount} delivery${result.sentCount === 1 ? "" : "ies"} accepted; ${result.noDeliveryCount} had no registered device and ${result.failedCount} failed.`);
+        setMessage(`Partial result — ${result.sentCount} delivery${result.sentCount === 1 ? "" : "ies"} accepted; ${result.noDeliveryCount} had no registered device and ${result.failedCount} failed.`);
       } else {
-        setMessage(`⚠️ No notification was delivered. ${result.noDeliveryCount} test event${result.noDeliveryCount === 1 ? "" : "s"} had no registered device; ${result.failedCount} failed.`);
+        setMessage(`No notification was delivered. ${result.noDeliveryCount} test event${result.noDeliveryCount === 1 ? "" : "s"} had no registered device; ${result.failedCount} failed.`);
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to run the notification test.");
@@ -105,13 +106,13 @@ export default function NotificationTestPanel() {
 
   return <section className="tt-notification-test">
     <div className="tt-notification-test-header">
-      <div><p className="tt-notification-test-eyebrow">Delivery diagnostics</p><h3>🧪 Notification Test Centre</h3><p>Exercise the real FCM delivery pipeline without touching the live reminder scheduler.</p></div>
+      <div><p className="tt-notification-test-eyebrow">Delivery diagnostics</p><h3><TinyTitansIcon name="testing" size={19} /> Notification Test Centre</h3><p>Exercise the real FCM delivery pipeline without touching the live reminder scheduler.</p></div>
       <span className="tt-notification-test-badge">OWNER TEST MODE</span>
     </div>
 
     <div className="tt-test-card">
       <div className="tt-test-card-heading"><div><span>1 · NOTIFICATION ROUTES</span><h4>Choose exactly what you want to hit</h4></div><button type="button" onClick={selectAllKinds} disabled={busy}>Full system</button></div>
-      <div className="tt-route-grid">{TESTS.map((test) => <label key={test.kind} className={`tt-route-option ${selectedKinds.includes(test.kind) ? "is-selected" : ""}`}><input type="checkbox" checked={selectedKinds.includes(test.kind)} onChange={() => toggleKind(test.kind)} disabled={busy}/><span className="tt-route-icon">{test.icon}</span><span><strong>{test.label}</strong><small>{test.description}</small></span></label>)}</div>
+      <div className="tt-route-grid">{TESTS.map((test) => <label key={test.kind} className={`tt-route-option ${selectedKinds.includes(test.kind) ? "is-selected" : ""}`}><input type="checkbox" checked={selectedKinds.includes(test.kind)} onChange={() => toggleKind(test.kind)} disabled={busy}/><span className="tt-route-icon"><TinyTitansIcon name={test.icon} size={24} /></span><span><strong>{test.label}</strong><small>{test.description}</small></span></label>)}</div>
       <p className="tt-test-help">Full system selects every registered notification route. You can also select one route to isolate a bug.</p>
     </div>
 
@@ -124,14 +125,14 @@ export default function NotificationTestPanel() {
     <div className="tt-test-card">
       <div className="tt-test-card-heading"><div><span>3 · TARGET USERS</span><h4>Choose who receives the test</h4></div><span>{selectedTargetCount} selected</span></div>
       <input className="tt-target-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or email…" disabled={busy}/>
-      <div className="tt-target-list">{loadingTargets ? <div className="tt-target-empty">Loading authorised test targets…</div> : directory.length ? directory.map((target) => { const selected = selectedTargetUids.includes(target.uid); return <label key={target.uid} className={`tt-target-row ${selected ? "is-selected" : ""}`}><input type="checkbox" checked={selected} onChange={() => toggleTarget(target.uid)} disabled={busy}/><span className="tt-target-main"><strong>{target.uid === user?.uid ? "This account" : target.displayName}</strong><small>{target.email}</small></span><span className={`tt-device-state ${target.deviceReady ? "ready" : "not-ready"}`}>{target.deviceReady ? `📱 Ready · ${target.tokenCount}` : "⚠️ No device"}</span></label>; }) : <div className="tt-target-empty">No matching users.</div>}</div>
+      <div className="tt-target-list">{loadingTargets ? <div className="tt-target-empty">Loading authorised test targets…</div> : directory.length ? directory.map((target) => { const selected = selectedTargetUids.includes(target.uid); return <label key={target.uid} className={`tt-target-row ${selected ? "is-selected" : ""}`}><input type="checkbox" checked={selected} onChange={() => toggleTarget(target.uid)} disabled={busy}/><span className="tt-target-main"><strong>{target.uid === user?.uid ? "This account" : target.displayName}</strong><small>{target.email}</small></span><span className={`tt-device-state ${target.deviceReady ? "ready" : "not-ready"}`}>{target.deviceReady ? <><TinyTitansIcon name="messages" size={14} /> Ready · {target.tokenCount}</> : <><TinyTitansIcon name="warning" size={14} /> No device</>}</span></label>; }) : <div className="tt-target-empty">No matching users.</div>}</div>
       {selectedDirectoryUsers.length > 0 && <div className="tt-selected-summary"><strong>Selected:</strong> {selectedDirectoryUsers.map((target) => target.uid === user?.uid ? "this account" : target.displayName).join(", ")}</div>}
       <p className="tt-test-help">Targeting is server-side and test-only. A normal user does not gain access to this panel or its callable functions merely because they are selected here.</p>
     </div>
 
     <div className="tt-test-card tt-test-action">
       <div><span>4 · DELIVERY</span><h4>Send the test now</h4><p>{permission === "granted" ? "Your own device will be refreshed before a self-test; other selected users are checked for a registered FCM device." : "A self-test will request browser notification permission and register this device first."}</p></div>
-      <button type="button" onClick={() => void runBatch()} disabled={busy || !selectedKinds.length || !selectedTargetUids.length}>{busy ? "Sending test notifications…" : `🚀 Send ${eventCount || 0} test event${eventCount === 1 ? "" : "s"}`}</button>
+      <button type="button" onClick={() => void runBatch()} disabled={busy || !selectedKinds.length || !selectedTargetUids.length}>{busy ? "Sending test notifications…" : <><TinyTitansIcon name="forward" size={15} /> Send {eventCount || 0} test event{eventCount === 1 ? "" : "s"}</>}</button>
     </div>
 
     {message && <div className={`tt-notification-test-result ${message.startsWith("✅") ? "success" : "warning"}`} role={message.startsWith("✅") ? "status" : "alert"}>{message}</div>}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import type { SnakeIntelligence, SnakeInsight } from "../services/snakeIntelligenceService";
 import { hasFullIntelligenceAccess } from "../services/intelligenceAccessService";
 import { useAuth } from "../context/useAuth";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 function confidenceLabel(value: SnakeIntelligence["confidence"]): string {
   return value === "High" ? "High · Reliable pattern" : value === "Moderate" ? "Moderate · Pattern developing" : value === "Low" ? "Low · More data needed" : "More data needed";
@@ -50,9 +51,9 @@ export default function IntelligencePanel({ intelligence, compact = false }: Int
       <p><b>Why:</b> {baselineWhy}</p>
       <p><b>Next:</b> {priority.action}</p>
       <span className="tt-confidence">◉ {confidenceLabel(priority.confidence)}</span>
-      {priorityRoute && <button type="button" className="tt-profile-review-button" onClick={() => navigate(priorityRoute)}>Review {categoryLabel(priority.category)} →</button>}
+      {priorityRoute && <button type="button" className="tt-profile-review-button" onClick={() => navigate(priorityRoute)}>Review {categoryLabel(priority.category)} <TinyTitansIcon name="forward" size={13} /></button>}
     </article>}
     {!compact && <details className="tt-confidence-details"><summary>Why am I seeing this?</summary><p>{baselineWhy}</p></details>}
-    {!compact && <Link className="tt-intelligence-action" to={`/titan-intelligence?snakeId=${encodeURIComponent(intelligence.snakeId)}`}>🧠 Open full Titan Intelligence →</Link>}
+    {!compact && <Link className="tt-intelligence-action" to={`/titan-intelligence?snakeId=${encodeURIComponent(intelligence.snakeId)}`}><TinyTitansIcon name="titan" size={15} /> Open full Titan Intelligence <TinyTitansIcon name="forward" size={13} /></Link>}
   </section>;
 }

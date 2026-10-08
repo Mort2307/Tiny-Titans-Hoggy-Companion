@@ -6,6 +6,7 @@ import { useSpeciesContext } from "../context/SpeciesContext";
 import { useAuth } from "../context/useAuth";
 import { deleteUserSnake } from "../services/snakeService";
 import ConfirmActionDialog from "./ConfirmActionDialog";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 type SnakeTileProps = {
   id: string;
@@ -69,7 +70,7 @@ function SnakeTile({ id, name, photo, sex, snake, clickDestination = "profile", 
         aria-label={onSelect ? `${selected ? "Deselect" : "Select"} ${name}` : `Open ${name} ${destinationLabel}`}
         aria-pressed={onSelect ? selected : undefined}
       >
-        <span className="snake-tile-avatar">{photo ? <img src={photo} alt="" aria-hidden="true" /> : <span>🐍</span>}</span>
+        <span className="snake-tile-avatar">{photo ? <img src={photo} alt="" aria-hidden="true" /> : <TinyTitansIcon name="reptile" size={28} />}</span>
         <span className="snake-tile-name">{name}</span>
         {sex && <span className="snake-tile-sex">{getSexIcon()}</span>}
       </button>
