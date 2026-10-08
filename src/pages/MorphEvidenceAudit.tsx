@@ -4,6 +4,7 @@ import { morphSourceAudit, MORPH_SOURCE_AUDIT_LAST_REVIEWED, type MorphEvidenceS
 import { resolveMorphEvidenceSources } from '../data/morphEvidenceSources';
 import { masterMorphs } from '../data/masterMorphDatabase';
 import '../styles/morphEvidenceAudit.css';
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 const statusLabel: Record<MorphEvidenceStatus, string> = {
   confirmed: 'Confirmed', recognised: 'Recognised', debated: 'Debated', uncertain: 'Uncertain', combination: 'Combination', 'line-bred': 'Line-bred', polygenic: 'Polygenic',
@@ -24,7 +25,7 @@ export default function MorphEvidenceAudit() {
   return <main className="page-container morph-evidence-audit">
     <BackHomeButton />
     <header className="morph-evidence-audit__hero">
-      <span className="eyebrow">🧬 TINY TITANS · MORPH EVIDENCE</span>
+      <span className="eyebrow"><TinyTitansIcon name="morph" size={14} /> TINY TITANS · MORPH EVIDENCE</span>
       <h1>Western Hognose Morph Evidence Audit</h1>
       <p>Evidence is kept separate from the genetics engine. A named phenotype can be visible to keepers without being treated as a confirmed Mendelian locus.</p>
       <p className="morph-evidence-audit__reviewed">Last source review: {MORPH_SOURCE_AUDIT_LAST_REVIEWED}</p>
@@ -58,10 +59,10 @@ export default function MorphEvidenceAudit() {
           <div className="morph-evidence-card__sources">
             {entry.sources.map((source) => {
               const resolved = sources.find((item) => item.label === source);
-              return resolved ? <a key={source} href={resolved.url} target="_blank" rel="noreferrer">{source} ↗</a> : <span key={source}>{source}</span>;
+              return resolved ? <a key={source} href={resolved.url} target="_blank" rel="noreferrer">{source} <TinyTitansIcon name="forward" size={12} /></a> : <span key={source}>{source}</span>;
             })}
           </div>
-          <small>{knownInMaster.has(entry.name.toLowerCase()) ? '✓ Present in master database' : '⚠ Evidence entry awaiting canonical master mapping'}</small>
+          <small>{knownInMaster.has(entry.name.toLowerCase()) ? <><TinyTitansIcon name="check" size={12} /> Present in master database</> : <><TinyTitansIcon name="warning" size={12} /> Evidence entry awaiting canonical master mapping</>}</small>
         </article>;
       })}
     </section>

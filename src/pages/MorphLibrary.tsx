@@ -5,6 +5,7 @@ import NewMorphSubmissionDialog from "../components/morph-library/NewMorphSubmis
 import { useMorphLibrary } from "../hooks/useMorphLibrary";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 export { default as MorphImageSubmissionDialog } from "../components/morph-library/MorphImageSubmissionDialog";
 export { default as NewMorphSubmissionDialog } from "../components/morph-library/NewMorphSubmissionDialog";
@@ -19,13 +20,13 @@ export default function MorphLibrary() {
   return <main className="page-container morph-library-page">
     <BackHomeButton />
     <header className="morph-library__header">
-      <div className="morph-library__eyebrow">🐍 TINY TITANS · REPTILE GENETICS</div>
+      <div className="morph-library__eyebrow"><TinyTitansIcon name="morph" size={14} /> TINY TITANS · REPTILE GENETICS</div>
       <h1>Morph Library</h1>
       <p>Species-aware genetics, recognised combinations, regional terminology and reference-backed community examples in one place. Hognose genetics are shown only where the species catalogue is currently mapped.</p>
       <div className="morph-library__filters" role="group" aria-label="Morph regions">
-        {(["global","uk","usa","europe","australia"] as const).map((value)=><button key={value} type="button" className={region===value?"is-active":""} onClick={()=>setRegion(value)}>{value==="global"?"🌎 Global":value==="uk"?"🇬🇧 UK":value==="usa"?"🇺🇸 USA":value==="europe"?"🇪🇺 Europe":"🇦🇺 Australia"}</button>)}
+        {(["global","uk","usa","europe","australia"] as const).map((value)=><button key={value} type="button" className={region===value?"is-active":""} onClick={()=>setRegion(value)}><TinyTitansIcon name="community" size={13} /> {value==="global"?"Global":value==="uk"?"UK":value==="usa"?"USA":value==="europe"?"Europe":"Australia"}</button>)}
       </div>
-      <div className="weight-record-actions"><button type="button" onClick={()=>setShowNewMorphSubmission(true)}>🧬 Can't find a morph? Submit it</button><button type="button" onClick={()=>openImageSubmission()}>📷 Submit a morph image</button></div>
+      <div className="weight-record-actions"><button type="button" onClick={()=>setShowNewMorphSubmission(true)}><TinyTitansIcon name="morph" size={14} /> Can't find a morph? Submit it</button><button type="button" onClick={()=>openImageSubmission()}><TinyTitansIcon name="camera" size={14} /> Submit a morph image</button></div>
       <div className="morph-library__source-strip"><span><strong>Reference sources:</strong></span><a href="https://hognose-morphs.com/morphs/all" target="_blank" rel="noreferrer">Hognose Morphs</a><a href="https://www.morphmarket.com/morphpedia/hognose-snakes/" target="_blank" rel="noreferrer">MorphMarket Morphpedia</a><a href="https://www.reptifit.nl/en/collection" target="_blank" rel="noreferrer">Reptifit</a></div>
       <small>{entries.length} combined genetics records · {audit.mapped} terminology records mapped · {audit.needsReview} catalogue records awaiting regional comparison{approvedImagesLoading?" · Loading approved examples…":" · "+Object.keys(approvedImagesByMorph).length+" records with approved community imagery"}</small>
     </header>
@@ -41,9 +42,9 @@ export default function MorphLibrary() {
         return <article className="morph-card morph-card--library" key={morph.geneId}>
           <div className="morph-card__media">
             {approvedImage?<div className="morph-card__image-wrap"><img src={approvedImage.imageUrl} alt={displayName+" approved community example"} loading="lazy"/>{(approvedImage.creditName||approvedImage.creditSocial)&&<span className="morph-card__credit">Credit: {approvedImage.creditName||approvedImage.creditSocial}</span>}</div>
-            :<div className="morph-card__image-empty"><span className="morph-card__image-icon">📷</span><strong>No approved image yet</strong><span>Add the first reviewed example.</span><button type="button" className="morph-card__image-submit" onClick={()=>openImageSubmission(morph.geneId)}>Submit image</button></div>}
+            :<div className="morph-card__image-empty"><span className="morph-card__image-icon"><TinyTitansIcon name="camera" size={20} /></span><strong>No approved image yet</strong><span>Add the first reviewed example.</span><button type="button" className="morph-card__image-submit" onClick={()=>openImageSubmission(morph.geneId)}>Submit image</button></div>}
           </div>
-          <div className="morph-card__body"><div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div><div className="morph-card__classification"><span>{morph.kind==="Combination"?"Component genetics":morph.inheritance==="Incomplete Dominant"?"Incomplete dominant":morph.inheritance}</span>{morph.hetPossible&&<span>Het-capable</span>}</div><h2>{displayName}</h2>{typed.geneticFormula&&<p className="morph-card__contains">🧬 {typed.geneticFormula}</p>}{typed.recognisedNames?.length ? <p className="morph-card__contains">Recognised as: {typed.recognisedNames.join(", ")}</p> : null}{morph.kind==="Combination"&&typed.inheritanceSummary&&<p className="morph-card__contains">Component inheritance: {typed.inheritanceSummary}</p>}<p className="morph-card__description">{morph.description??"Reference entry."}</p><div className="morph-card__footer"><span className="morph-card__source">Source: {morph.sourceLabel??"Tiny Titans canonical database"}</span>{morph.sourceUrl&&<a href={morph.sourceUrl} target="_blank" rel="noreferrer" onClick={(event)=>event.stopPropagation()}>Reference ↗</a>}</div><button type="button" className="morph-card__open" onClick={()=>setSelected(morph)}>Open genetics record <span aria-hidden="true">→</span></button></div>
+          <div className="morph-card__body"><div className="morph-card__topline"><span>{morph.kind}</span><span>{morph.verification}</span></div><div className="morph-card__classification"><span>{morph.kind==="Combination"?"Component genetics":morph.inheritance==="Incomplete Dominant"?"Incomplete dominant":morph.inheritance}</span>{morph.hetPossible&&<span>Het-capable</span>}</div><h2>{displayName}</h2>{typed.geneticFormula&&<p className="morph-card__contains"><TinyTitansIcon name="genetics" size={13} /> {typed.geneticFormula}</p>}{typed.recognisedNames?.length ? <p className="morph-card__contains">Recognised as: {typed.recognisedNames.join(", ")}</p> : null}{morph.kind==="Combination"&&typed.inheritanceSummary&&<p className="morph-card__contains">Component inheritance: {typed.inheritanceSummary}</p>}<p className="morph-card__description">{morph.description??"Reference entry."}</p><div className="morph-card__footer"><span className="morph-card__source">Source: {morph.sourceLabel??"Tiny Titans canonical database"}</span>{morph.sourceUrl&&<a href={morph.sourceUrl} target="_blank" rel="noreferrer" onClick={(event)=>event.stopPropagation()}>Reference <TinyTitansIcon name="forward" size={12} /></a>}</div><button type="button" className="morph-card__open" onClick={()=>setSelected(morph)}>Open genetics record <span aria-hidden="true"><TinyTitansIcon name="forward" size={12} /></span></button></div>
         </article>;
       })}
     </div>
