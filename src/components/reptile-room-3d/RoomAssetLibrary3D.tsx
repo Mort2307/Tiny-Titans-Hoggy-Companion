@@ -9,28 +9,28 @@ import { getCameraForwardSpawn } from "./RoomCamera3D";
 import TinyTitansIcon from "../TinyTitansIcon";
 
 const CATEGORIES: Array<{ id: string; label: string; icon: string; items: Room3DAssetPreset[] }> = [
-  { id: "vivariums", label: "Vivariums & Enclosures", icon: "🏠", items: [
-    { kind: "vivarium", label: "Front-opening Glass", icon: "▣", width: 90, depth: 45, height: 45, config: { enclosureStyle: "front-opening" }, intelligenceRole: "enclosure" },
-    { kind: "vivarium", label: "Sliding Glass", icon: "▤", width: 90, depth: 45, height: 45, config: { enclosureStyle: "sliding-glass" }, intelligenceRole: "enclosure" },
-    { kind: "vivarium", label: "PVC Enclosure", icon: "▱", width: 90, depth: 45, height: 45, config: { enclosureStyle: "pvc" }, intelligenceRole: "enclosure" },
-    { kind: "vivarium", label: "All-Glass", icon: "◇", width: 90, depth: 45, height: 45, config: { enclosureStyle: "glass" }, intelligenceRole: "enclosure" },
-    { kind: "vivarium", label: "Arboreal Glass", icon: "↕", width: 60, depth: 60, height: 100, config: { enclosureStyle: "arboreal" }, intelligenceRole: "enclosure" },
-    { kind: "vivarium", label: "Quarantine Tub", icon: "▭", width: 70, depth: 40, height: 30, config: { enclosureStyle: "quarantine" }, intelligenceRole: "enclosure" },
-    { kind: "vivarium", label: "Rack Tub", icon: "▤", width: 55, depth: 35, height: 20, config: { enclosureStyle: "rack-tub" }, intelligenceRole: "enclosure" },
+  { id: "vivariums", label: "Vivariums & Enclosures", icon: "enclosure", items: [
+    { kind: "vivarium", label: "Front-opening Glass", icon: "enclosure", width: 90, depth: 45, height: 45, config: { enclosureStyle: "front-opening" }, intelligenceRole: "enclosure" },
+    { kind: "vivarium", label: "Sliding Glass", icon: "enclosure", width: 90, depth: 45, height: 45, config: { enclosureStyle: "sliding-glass" }, intelligenceRole: "enclosure" },
+    { kind: "vivarium", label: "PVC Enclosure", icon: "enclosure", width: 90, depth: 45, height: 45, config: { enclosureStyle: "pvc" }, intelligenceRole: "enclosure" },
+    { kind: "vivarium", label: "All-Glass", icon: "enclosure", width: 90, depth: 45, height: 45, config: { enclosureStyle: "glass" }, intelligenceRole: "enclosure" },
+    { kind: "vivarium", label: "Arboreal Glass", icon: "move", width: 60, depth: 60, height: 100, config: { enclosureStyle: "arboreal" }, intelligenceRole: "enclosure" },
+    { kind: "vivarium", label: "Quarantine Tub", icon: "enclosure", width: 70, depth: 40, height: 30, config: { enclosureStyle: "quarantine" }, intelligenceRole: "enclosure" },
+    { kind: "vivarium", label: "Rack Tub", icon: "enclosure", width: 55, depth: 35, height: 20, config: { enclosureStyle: "rack-tub" }, intelligenceRole: "enclosure" },
   ] },
-  { id: "furniture", label: "Furniture", icon: "🪑", items: [
-    { kind: "table", label: "Table", icon: "▱", width: 120, depth: 60, height: 75 },
+  { id: "furniture", label: "Furniture", icon: "enclosure", items: [
+    { kind: "table", label: "Table", icon: "enclosure", width: 120, depth: 60, height: 75 },
   ] },
-  { id: "storage", label: "Storage", icon: "📦", items: [
-    { kind: "shelving", label: "Shelving", icon: "▥", width: 90, depth: 40, height: 160 },
-    { kind: "storage-cabinet", label: "Storage Cabinet", icon: "🗄️", width: 90, depth: 50, height: 120 },
-    { kind: "rack", label: "Rack", icon: "▤", width: 100, depth: 55, height: 180 },
+  { id: "storage", label: "Storage", icon: "marketplace", items: [
+    { kind: "shelving", label: "Shelving", icon: "marketplace", width: 90, depth: 40, height: 160 },
+    { kind: "storage-cabinet", label: "Storage Cabinet", icon: "marketplace", width: 90, depth: 50, height: 120 },
+    { kind: "rack", label: "Rack", icon: "enclosure", width: 100, depth: 55, height: 180 },
   ] },
-  { id: "keeper", label: "Keeper Stations", icon: "🛠️", items: [
-    { kind: "equipment-station", label: "Equipment Station", icon: "⚡", width: 90, depth: 50, height: 80 },
+  { id: "keeper", label: "Keeper Stations", icon: "creator", items: [
+    { kind: "equipment-station", label: "Equipment Station", icon: "power", width: 90, depth: 50, height: 80 },
   ] },
-  { id: "enrichment", label: "Enrichment & Decor", icon: "🌿", items: [] },
-  { id: "heating", label: "Heating & Equipment", icon: "🌡️", items: [] },
+  { id: "enrichment", label: "Enrichment & Decor", icon: "husbandry", items: [] },
+  { id: "heating", label: "Heating & Equipment", icon: "husbandry", items: [] },
 ];
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -127,7 +127,7 @@ export function RoomAssetLibrary3D({ room, onAddAsset }: Props) {
         <div style={{ background: "rgba(18,21,24,.96)", border: "1px solid rgba(255,255,255,.14)", borderRadius: 14, padding: 10, boxShadow: "0 12px 35px rgba(0,0,0,.35)", pointerEvents: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "3px 3px 8px 5px" }}>
             <div style={{ fontWeight: 800, fontSize: 15 }}><TinyTitansIcon name="enclosure" size={17} /> Room Assets</div>
-            <button type="button" aria-label={minimized ? "Expand room assets" : "Minimize room assets"} title={minimized ? "Expand" : "Minimize"} onClick={() => setMinimized((current) => !current)} style={{ width: 28, height: 28, display: "grid", placeItems: "center", padding: 0, border: "1px solid rgba(255,255,255,.14)", borderRadius: 7, background: "rgba(255,255,255,.06)", color: "#fff", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>{minimized ? "+" : "−"}</button>
+            <button type="button" aria-label={minimized ? "Expand room assets" : "Minimize room assets"} title={minimized ? "Expand" : "Minimize"} onClick={() => setMinimized((current) => !current)} style={{ width: 28, height: 28, display: "grid", placeItems: "center", padding: 0, border: "1px solid rgba(255,255,255,.14)", borderRadius: 7, background: "rgba(255,255,255,.06)", color: "#fff", cursor: "pointer", fontSize: 18, lineHeight: 1 }}><TinyTitansIcon name={minimized ? "add" : "close"} size={14} /></button>
           </div>
           {!minimized && <>
             <div style={{ fontSize: 11, opacity: .65, padding: "0 5px 8px" }}>{creatingVivarium ? "Creating vivarium and returning to My Animals..." : "Choose an asset. New vivariums are added directly to the current 3D room builder."}</div>

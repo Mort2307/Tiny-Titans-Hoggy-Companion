@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { REPTILE_ROOM_ASSET_CATEGORIES } from "../../data/reptileRoomAssetCatalog";
 import type { Room3DAssetPreset } from "../../types/reptileRoom3D";
 import "../../styles/room-asset-library-dropdown.css";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 type Props = { onAddAsset: (preset: Room3DAssetPreset) => void };
 
@@ -20,7 +21,7 @@ export function RoomAssetLibraryPanel({ onAddAsset }: Props) {
   return <details className="rr3d-library-dropdown">
     <summary className="rr3d-library-dropdown-summary">
       <span className="rr3d-library-dropdown-title"><span className="rr3d-kicker">KEEPER TOOLKIT</span><strong>Assets & equipment</strong><small>Click here to browse</small></span>
-      <span className="rr3d-library-dropdown-meta"><span>{totalAssets}</span><span aria-hidden="true">⌄</span></span>
+      <span className="rr3d-library-dropdown-meta"><span>{totalAssets}</span><span aria-hidden="true"><TinyTitansIcon name="forward" size={12} /></span></span>
     </summary>
     <section className="rr3d-library-panel">
       <div className="rr3d-library-heading"><div><span className="rr3d-kicker">ASSET LIBRARY</span><h2>Keeper equipment</h2></div><span className="rr3d-library-count">{totalAssets}</span></div>
@@ -29,11 +30,11 @@ export function RoomAssetLibraryPanel({ onAddAsset }: Props) {
         {filtered.map((category) => {
           const open = openCategory === category.id;
           return <div className="rr3d-library-category" key={category.id}>
-            <button type="button" className="rr3d-library-category-button" aria-expanded={open} onClick={() => setOpenCategory(open ? "" : category.id)}><span>{category.icon} {category.label}</span><small>{category.items.length} · {open ? "Hide" : "Show"}</small></button>
+            <button type="button" className="rr3d-library-category-button" aria-expanded={open} onClick={() => setOpenCategory(open ? "" : category.id)}><span><TinyTitansIcon name={category.icon} size={16} /> {category.label}</span><small>{category.items.length} · {open ? "Hide" : "Show"}</small></button>
             {open && <div className="rr3d-library-items">{category.items.map((preset) => <button type="button" className="rr3d-library-item" key={preset.assetId ?? preset.label} onClick={() => onAddAsset(preset)} title={category.description}>
-              <span className="rr3d-library-icon">{preset.icon ?? "◈"}</span>
+              <span className="rr3d-library-icon"><TinyTitansIcon name={preset.icon ?? "enclosure"} size={18} /></span>
               <span className="rr3d-library-copy"><strong>{preset.label}</strong><small>{preset.width} × {preset.depth} × {preset.height} cm{preset.intelligenceRole ? ` · ${preset.intelligenceRole}` : ""}</small></span>
-              <span className="rr3d-library-add">+</span>
+              <span className="rr3d-library-add"><TinyTitansIcon name="add" size={14} /></span>
             </button>)}</div>}
           </div>;
         })}
