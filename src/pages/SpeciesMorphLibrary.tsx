@@ -9,6 +9,7 @@ import { SpeciesMorphImageSubmissionDialog } from "./SpeciesMorphImageSubmission
 import { rankSearchResults } from "../utils/searchRanking";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 type SpeciesMorphEntry = ReturnType<typeof getSpeciesVisualMorphs>[number];
 type Filter = "all" | "gene" | "combination" | "polygenic" | "line-bred";
@@ -76,8 +77,8 @@ export default function SpeciesMorphLibrary() {
   }, [entries, filter, query]);
 
   const statusLabel = geneticsStatus === "mapped"
-    ? "🟢 Reviewed species genetics catalogue"
-    : "🟠 Species genetics catalogue pending review";
+    ? "Reviewed species genetics catalogue"
+    : "Species genetics catalogue pending review";
   const baselineOnly = geneticsStatus === "baseline-only";
 
   function openImageSubmission(morphId: string) {
@@ -110,7 +111,7 @@ export default function SpeciesMorphLibrary() {
     <main className="page-container morph-library-page">
       <BackHomeButton />
       <header className="morph-library__header">
-        <div className="morph-library__eyebrow">🧬 TINY TITANS · SPECIES GENETICS</div>
+        <div className="morph-library__eyebrow"><TinyTitansIcon name="morph" size={14} /> TINY TITANS · SPECIES GENETICS</div>
         <h1>{speciesName} Morph Library</h1>
         <p>This library is driven by the selected species context. Tiny Titans will never display another species' genetics as a substitute.</p>
         <div className="morph-library__filters" role="group" aria-label="Morph type">
@@ -122,7 +123,7 @@ export default function SpeciesMorphLibrary() {
 
       {baselineOnly && (
         <section className="tracker-card" aria-label="Baseline genetics coverage notice">
-          <h2>🧬 Baseline species genetics record</h2>
+          <h2><TinyTitansIcon name="genetics" size={16} /> Baseline species genetics record</h2>
           <p>Tiny Titans knows this species, but no reviewed species-specific genetic morph catalogue has been published yet. Until those traits are sourced and reviewed, this library contains only the canonical baseline phenotype.</p>
           <p><strong>This is intentional intelligence.</strong> We will never substitute Hognose, Ball Python, or another species' genetics here.</p>
         </section>
@@ -145,7 +146,7 @@ export default function SpeciesMorphLibrary() {
                 {image ? (
                   <div className="morph-card__image-wrap"><img src={image.imageUrl} alt={`${morph.name} reference example`} loading="lazy" />{(image.creditName || image.creditSocial) && <span className="morph-card__credit">Credit: {image.creditName || image.creditSocial}</span>}</div>
                 ) : (
-                  <div className="morph-card__image-empty"><span className="morph-card__image-icon">🧬</span><strong>{baselineOnly ? "Baseline phenotype" : "Species-scoped morph"}</strong><span>{baselineOnly ? "Canonical wild-type reference" : "Open for genetics and evidence"}</span></div>
+                  <div className="morph-card__image-empty"><span className="morph-card__image-icon"><TinyTitansIcon name="genetics" size={20} /></span><strong>{baselineOnly ? "Baseline phenotype" : "Species-scoped morph"}</strong><span>{baselineOnly ? "Canonical wild-type reference" : "Open for genetics and evidence"}</span></div>
                 )}
               </div>
               <div className="morph-card__body">
@@ -157,8 +158,8 @@ export default function SpeciesMorphLibrary() {
                 {morph.description && <p className="morph-card__description">{morph.description}</p>}
                 <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span></div>
                 <div className="morph-card__actions">
-                  <Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}`}>Open genetics record <span aria-hidden="true">→</span></Link>
-                  <Link className="morph-card__image-submit" to={`/morph-library/${encodeURIComponent(morph.geneId)}/gallery`}>📷 Morph Gallery</Link>
+                  <Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}`}>Open genetics record <span aria-hidden="true"><TinyTitansIcon name="forward" size={12} /></span></Link>
+                  <Link className="morph-card__image-submit" to={`/morph-library/${encodeURIComponent(morph.geneId)}/gallery`}><TinyTitansIcon name="camera" size={13} /> Morph Gallery</Link>
                   <button type="button" className="morph-card__image-submit" onClick={() => openImageSubmission(morph.geneId)}>Add image</button>
                 </div>
               </div>

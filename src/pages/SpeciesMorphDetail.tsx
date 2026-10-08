@@ -6,6 +6,7 @@ import { getSpeciesVisualMorphs } from '../data/species/speciesGenetics';
 import { masterMorphs } from '../data/masterMorphDatabase';
 import BackHomeButton from '../components/BackHomeButton';
 import '../styles/morphLibrary.css';
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 export default function SpeciesMorphDetail() {
   const { morphId } = useParams();
@@ -27,10 +28,10 @@ export default function SpeciesMorphDetail() {
   return <main className="page-container morph-library-page">
     <BackHomeButton />
     <header className="morph-library__header">
-      <div className="morph-library__eyebrow">🧬 TINY TITANS · MORPH INTELLIGENCE</div>
+      <div className="morph-library__eyebrow"><TinyTitansIcon name="morph" size={14} /> TINY TITANS · MORPH INTELLIGENCE</div>
       <h1>{morph.name}</h1>
       <p>{speciesName} · complete published morph record</p>
-      <div className="morph-library__filters"><Link className="morph-card__open" to="/morph-library">← Back to Morph Library</Link><Link className="morph-card__image-submit" to={galleryPath}>📷 Morph Gallery</Link></div>
+      <div className="morph-library__filters"><Link className="morph-card__open" to="/morph-library"><TinyTitansIcon name="back" size={13} /> Back to Morph Library</Link><Link className="morph-card__image-submit" to={galleryPath}><TinyTitansIcon name="camera" size={13} /> Morph Gallery</Link></div>
     </header>
 
     <section className="morph-detail morph-detail--page">
@@ -40,8 +41,8 @@ export default function SpeciesMorphDetail() {
       {morph.aliases?.length ? <section className="morph-detail__section"><h2>Recognised names</h2><p>{morph.aliases.join(' · ')}</p></section> : null}
       {components.length ? <section className="morph-detail__section"><h2>Genetic components</h2><ul>{components.map((item) => <li key={item}>{item}</li>)}</ul></section> : null}
       <section className="morph-detail__section"><h2>Inheritance & classification</h2><p><strong>Inheritance:</strong> {morph.inheritance}</p><p><strong>Type:</strong> {morph.kind}</p><p><strong>Classification:</strong> {morph.category}</p><p><strong>Verification:</strong> {morph.verification}</p></section>
-      <section className="morph-detail__section"><h2>📷 Community record</h2><p>Every approved submission is retained as a separate item. Multiple keepers can contribute examples without replacing or overwriting earlier media.</p><Link className="morph-card__image-submit" to={galleryPath}>Open {morph.name} Morph Gallery →</Link></section>
-      <section className="morph-detail__source"><strong>Reference</strong><span>{morph.sourceLabel ?? 'Tiny Titans canonical species genetics record'}</span>{morph.sourceUrl ? <a href={morph.sourceUrl} target="_blank" rel="noreferrer">Open source reference →</a> : null}</section>
+      <section className="morph-detail__section"><h2><TinyTitansIcon name="camera" size={16} /> Community record</h2><p>Every approved submission is retained as a separate item. Multiple keepers can contribute examples without replacing or overwriting earlier media.</p><Link className="morph-card__image-submit" to={galleryPath}>Open {morph.name} Morph Gallery <TinyTitansIcon name="forward" size={12} /></Link></section>
+      <section className="morph-detail__source"><strong>Reference</strong><span>{morph.sourceLabel ?? 'Tiny Titans canonical species genetics record'}</span>{morph.sourceUrl ? <a href={morph.sourceUrl} target="_blank" rel="noreferrer">Open source reference <TinyTitansIcon name="forward" size={12} /></a> : null}</section>
     </section>
   </main>;
 }

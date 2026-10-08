@@ -6,6 +6,7 @@ import { findSnakeSpecies } from "../data/species/speciesRegistry";
 import { submitMorphImageV2, type MorphCreditMode } from "../services/morphSubmissionServiceV2";
 import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
 import "../styles/morphLibrary.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 function asReferenceEntry(entry: MasterMorphDefinition): MorphReferenceEntry {
   return entry as MorphReferenceEntry;
@@ -76,21 +77,21 @@ export function SpeciesMorphImageSubmissionDialog({
   return (
     <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}>
       <article className="morph-detail" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
-        <button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close">×</button>
+        <button className="morph-detail__close" type="button" onClick={onClose} aria-label="Close"><TinyTitansIcon name="close" size={14} /></button>
         {sent ? (
           <>
-            <div className="morph-detail__eyebrow">🐍 SUBMISSION RECEIVED</div>
+            <div className="morph-detail__eyebrow"><TinyTitansIcon name="check" size={13} /> SUBMISSION RECEIVED</div>
             <h2>Thanks — it is in review.</h2>
             <p className="morph-detail__description">Your image for {selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName} · {selectedMorph?.name ?? "selected morph"} has been linked to the species-specific Morph Library entry and sent to Creator review.</p>
             <button type="button" onClick={onClose}>Done</button>
           </>
         ) : (
           <form onSubmit={(event) => void handleSubmit(event)}>
-            <div className="morph-detail__eyebrow">🐍 MORPH IMAGE SUBMISSION</div>
+            <div className="morph-detail__eyebrow"><TinyTitansIcon name="morph" size={13} /> MORPH IMAGE SUBMISSION</div>
             <h2>Submit a morph image</h2>
             <SpeciesSelector id="species-morph-image-submission-species" value={speciesId} onChange={setSpeciesId} label="Species" />
             <section className="morph-detail__section">
-              <h3>🧬 Select the canonical morph</h3>
+              <h3><TinyTitansIcon name="morph" size={15} /> Select the canonical morph</h3>
               <p className="morph-detail__source-note">This photograph will be tagged to the selected species and exact Morph Library entry. A pending genetics catalogue still supports Normal / Wild Type image evidence.</p>
               <div className="morph-selector">
                 <button type="button" className="morph-selector__trigger" onClick={() => setMorphMenuOpen((open) => !open)}>{selectedMorph?.name ?? "Select a morph…"}</button>
@@ -104,7 +105,7 @@ export function SpeciesMorphImageSubmissionDialog({
             <label className="morph-submit-check"><input type="checkbox" checked={photoRequirementsConfirmed} onChange={(event) => setPhotoRequirementsConfirmed(event.target.checked)} /><span>Photo is clear, full-body and unfiltered.</span></label>
             <label className="morph-submit-check"><input type="checkbox" checked={factualAccuracyConfirmed} onChange={(event) => setFactualAccuracyConfirmed(event.target.checked)} /><span>I have provided evidence supporting the identification.</span></label>
             <input ref={fileRef} className="morph-submit-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={(event) => setImage(event.target.files?.[0] ?? null)} required />
-            <button type="button" className="morph-submit-photo-button" onClick={() => fileRef.current?.click()}>📷 {image ? "Change photo" : "Add photo"}</button>
+            <button type="button" className="morph-submit-photo-button" onClick={() => fileRef.current?.click()}><TinyTitansIcon name="camera" size={14} /> {image ? "Change photo" : "Add photo"}</button>
             <section className="morph-detail__section"><h3>Credit</h3><div className="morph-detail__badges">{(["name", "social", "anonymous"] as MorphCreditMode[]).map((mode) => <button key={mode} type="button" className={creditMode === mode ? "is-active" : ""} onClick={() => setCreditMode(mode)}>{mode === "name" ? "Name" : mode === "social" ? "Social" : "Anonymous"}</button>)}</div>{creditMode === "name" && <input value={creditName} onChange={(event) => setCreditName(event.target.value)} placeholder="Name" required />}{creditMode === "social" && <input value={creditSocial} onChange={(event) => setCreditSocial(event.target.value)} placeholder="@handle" required />}</section>
             {error && <p role="alert">{error}</p>}
             <button type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit for review"}</button>

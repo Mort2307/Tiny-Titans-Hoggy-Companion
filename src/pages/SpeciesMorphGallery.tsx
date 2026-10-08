@@ -9,6 +9,7 @@ import type { ApprovedMorphImage, MorphMediaType } from '../types/morphSubmissio
 import BackHomeButton from '../components/BackHomeButton';
 import '../styles/morphLibrary.css';
 import '../styles/morphCommunityGallery.css';
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 function mediaKind(item: ApprovedMorphImage): MorphMediaType { return item.mediaType ?? 'image'; }
 
@@ -44,10 +45,10 @@ export default function SpeciesMorphGallery() {
   return <main className="page-container morph-library-page">
     <BackHomeButton />
     <header className="morph-library__header">
-      <div className="morph-library__eyebrow">📷 TINY TITANS · MORPH GALLERY</div>
+      <div className="morph-library__eyebrow"><TinyTitansIcon name="camera" size={14} /> TINY TITANS · MORPH GALLERY</div>
       <h1>{morph.name}</h1>
       <p>{speciesName} · {loading ? 'Loading approved community media…' : `${media.length} approved ${media.length === 1 ? 'submission' : 'submissions'}`}</p>
-      <div className="morph-library__filters"><Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}`}>← Morph Information</Link><Link className="morph-card__image-submit" to={`/morph-library?submitMorphImage=1&morphId=${encodeURIComponent(morph.geneId)}`}>📷 Add submission</Link></div>
+      <div className="morph-library__filters"><Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}`}><TinyTitansIcon name="back" size={13} /> Morph Information</Link><Link className="morph-card__image-submit" to={`/morph-library?submitMorphImage=1&morphId=${encodeURIComponent(morph.geneId)}`}><TinyTitansIcon name="camera" size={13} /> Add submission</Link></div>
     </header>
 
     <section className="morph-community-gallery morph-community-gallery--page">
@@ -55,6 +56,6 @@ export default function SpeciesMorphGallery() {
       {loading ? <p className="morph-community-gallery__state">Loading {morph.name} gallery…</p> : media.length === 0 ? <div className="morph-community-gallery__state"><strong>No approved community submissions yet.</strong><span>The gallery is ready for the first {speciesName} · {morph.name} example.</span></div> : <div className="morph-community-gallery__grid">{media.map((item, index) => mediaKind(item) === 'video' ? <button key={item.id ?? index} type="button" className="morph-community-gallery__card" onClick={() => setSelected(item)}><video src={item.imageUrl} muted playsInline preload="metadata" aria-label={`${morph.name} community video ${index + 1}`} /><span className="morph-community-gallery__media-badge">▶ VIDEO</span>{item.description && <span className="morph-community-gallery__description">{item.description}</span>}{(item.creditName || item.creditSocial) && <span className="morph-community-gallery__credit">{item.creditName || item.creditSocial}</span>}</button> : <button key={item.id ?? index} type="button" className="morph-community-gallery__card" onClick={() => setSelected(item)}><img src={item.imageUrl} alt={`${morph.name} community example ${index + 1}`} loading={index < 4 ? 'eager' : 'lazy'} />{item.description && <span className="morph-community-gallery__description">{item.description}</span>}{(item.creditName || item.creditSocial) && <span className="morph-community-gallery__credit">{item.creditName || item.creditSocial}</span>}</button>)}</div>}
     </section>
 
-    {selected && <div className="morph-community-gallery__lightbox" role="presentation" onMouseDown={() => setSelected(null)}><button type="button" className="morph-community-gallery__lightbox-close" onClick={() => setSelected(null)} aria-label="Close media">×</button>{mediaKind(selected) === 'video' ? <video src={selected.imageUrl} controls playsInline autoPlay onMouseDown={(event) => event.stopPropagation()} /> : <img src={selected.imageUrl} alt={`${morph.name} community example`} onMouseDown={(event) => event.stopPropagation()} />}{selected.description && <p className="morph-community-gallery__lightbox-description">{selected.description}</p>}{selected.observedTraits && <p><strong>Observed traits:</strong> {selected.observedTraits}</p>}{selected.proofDetails && <p><strong>Evidence:</strong> {selected.proofDetails}</p>}{selected.proofReference && <p><strong>Reference:</strong> {selected.proofReference}</p>}{(selected.creditName || selected.creditSocial) && <p>Credit: {selected.creditName || selected.creditSocial}</p>}</div>}
+    {selected && <div className="morph-community-gallery__lightbox" role="presentation" onMouseDown={() => setSelected(null)}><button type="button" className="morph-community-gallery__lightbox-close" onClick={() => setSelected(null)} aria-label="Close media"><TinyTitansIcon name="close" size={14} /></button>{mediaKind(selected) === 'video' ? <video src={selected.imageUrl} controls playsInline autoPlay onMouseDown={(event) => event.stopPropagation()} /> : <img src={selected.imageUrl} alt={`${morph.name} community example`} onMouseDown={(event) => event.stopPropagation()} />}{selected.description && <p className="morph-community-gallery__lightbox-description">{selected.description}</p>}{selected.observedTraits && <p><strong>Observed traits:</strong> {selected.observedTraits}</p>}{selected.proofDetails && <p><strong>Evidence:</strong> {selected.proofDetails}</p>}{selected.proofReference && <p><strong>Reference:</strong> {selected.proofReference}</p>}{(selected.creditName || selected.creditSocial) && <p>Credit: {selected.creditName || selected.creditSocial}</p>}</div>}
   </main>;
 }
