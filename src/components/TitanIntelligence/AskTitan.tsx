@@ -8,6 +8,7 @@ import { useTitanChat } from "../../intelligence/askTitan/useTitanChat";
 import { TITAN_CHAT_STARTERS } from "../../intelligence/askTitan/titanChatStarters";
 import type { TitanWorkspaceKind } from "../../intelligence/askTitan/titanChatContracts";
 import "./AskTitan.css";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 function workspaceLabel(kind: TitanWorkspaceKind) {
   if (kind === "rescue") return "RESCUE CENTRE";
@@ -49,7 +50,7 @@ export default function AskTitan({ workspaceKind, animalId }: { workspaceKind?: 
 
       {messages.length > 0 && <div className="ask-titan-thread" aria-live="polite">{messages.map((message) => <TitanChatMessage key={message.id} role={message.role} content={message.content} response={message.response} />)}</div>}
 
-      {error && <div className="ask-titan-error" role="alert"><strong>Titan could not answer this one.</strong><span>{error}</span><Link to="/plans">Review paid access →</Link></div>}
+      {error && <div className="ask-titan-error" role="alert"><strong>Titan could not answer this one.</strong><span>{error}</span><Link to="/plans">Review paid access <TinyTitansIcon name="forward" size={13} /></Link></div>}
       <TitanChatComposer disabled={busy || usage?.remaining === 0} onSubmit={submit} />
       {usage && <TitanUsageIndicator used={usage.used} limit={usage.limit} remaining={usage.remaining} />}
     </section>

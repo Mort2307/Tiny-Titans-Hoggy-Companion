@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 export default function TitanChatComposer({ disabled, onSubmit }: { disabled?: boolean; onSubmit: (question: string) => Promise<void> }) {
   const [value, setValue] = useState("");
@@ -15,7 +16,7 @@ export default function TitanChatComposer({ disabled, onSubmit }: { disabled?: b
       <textarea id="titan-question" value={value} onChange={(event) => setValue(event.target.value)} disabled={disabled} maxLength={6000} rows={4} placeholder="For example: Why has Mort's weight fluctuated recently, and what does my recorded data actually show?" />
       <div className="titan-composer-footer">
         <span>{value.length}/6000</span>
-        <button type="submit" disabled={disabled || !value.trim()}>{disabled ? "Thinking…" : "Ask Titan →"}</button>
+        <button type="submit" disabled={disabled || !value.trim()}>{disabled ? "Thinking…" : <>Ask Titan <TinyTitansIcon name="forward" size={13} /></>}</button>
       </div>
     </form>
   );

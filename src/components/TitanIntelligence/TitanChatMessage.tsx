@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { TitanAskResponse } from "../../intelligence/askTitan/titanChatContracts";
 import { recordTitanFeedback } from "../../intelligence/askTitan/titanFeedbackService";
 import TitanAnswerProvenance from "./TitanAnswerProvenance";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 function provenanceSummary(response: TitanAskResponse) {
   const items: string[] = [];
@@ -26,15 +27,15 @@ export default function TitanChatMessage({ role, content, response }: { role: "u
 
   return (
     <article className={`titan-chat-message titan-chat-message--${role}`}>
-      <div className="titan-chat-message-label">{role === "user" ? "You" : "🧠 Titan Intelligence"}</div>
+      <div className="titan-chat-message-label">{role === "user" ? "You" : <><TinyTitansIcon name="titan" size={14} /> Titan Intelligence</>}</div>
       {role === "model" && response && <div className="titan-answer-origin">Based on: <strong>{provenanceSummary(response)}</strong></div>}
       <div className="titan-chat-message-body">{content}</div>
       {role === "model" && response && <>
         <div className="titan-answer-feedback" aria-label="Rate this Titan answer">
           <span>{feedback === "helpful" ? "Thanks — marked helpful." : feedback === "not_helpful" ? "Thanks — marked for review." : feedback === "failed" ? "Feedback could not be saved." : "Was this useful?"}</span>
           {!feedback && <>
-            <button type="button" onClick={() => void submitFeedback("helpful")}>👍</button>
-            <button type="button" onClick={() => void submitFeedback("not_helpful")}>👎</button>
+            <button type="button" onClick={() => void submitFeedback("helpful")}><TinyTitansIcon name="check" size={15} /></button>
+            <button type="button" onClick={() => void submitFeedback("not_helpful")}><TinyTitansIcon name="warning" size={15} /></button>
           </>}
         </div>
         <TitanAnswerProvenance provenance={response.provenance} sources={response.sources} />

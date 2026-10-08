@@ -7,6 +7,7 @@ import { subscribeToTitanIntelligenceUpdates } from "../../services/titanReactiv
 import { useEffect, useState } from "react";
 import TitanDecisionWhyCard from "./TitanDecisionWhyCard";
 import TitanDecisionQueue from "./TitanDecisionQueue";
+import TinyTitansIcon from "../TinyTitansIcon";
 
 interface Props { record: SnakeMasterRecord }
 
@@ -29,16 +30,16 @@ export default function TitanAnimalIntelligencePanel({ record }: Props) {
   }, [user, snake.id]);
 
   return <section className="master-card titan-animal-intelligence">
-    <div className="master-section-heading"><div><p className="master-eyebrow">🧠 V50 Animal Intelligence</p><h2>{snake.name}'s living context</h2></div><Link to={`/titan-intelligence?snakeId=${encodeURIComponent(snake.id)}`}>Open full Titan Intelligence →</Link></div>
+    <div className="master-section-heading"><div><p className="master-eyebrow"><TinyTitansIcon name="titan" size={14} /> V50 Animal Intelligence</p><h2>{snake.name}'s living context</h2></div><Link to={`/titan-intelligence?snakeId=${encodeURIComponent(snake.id)}`}>Open full Titan Intelligence <TinyTitansIcon name="forward" size={13} /></Link></div>
     {decision && <TitanDecisionWhyCard decision={decision} compact />}
     {decision && <TitanDecisionQueue animalId={snake.id} excludeDecisionId={decision.id} limit={3} />}
     <div className="master-grid">
-      <article className="master-card"><span>📈 Growth history</span><strong>{overview.currentWeightG === null ? "More data needed" : `${overview.currentWeightG} g current`}</strong><small>{overview.totalWeightLogs} weight records • {overview.weightChangeG === null ? "No recorded baseline change" : `${overview.weightChangeG >= 0 ? "+" : ""}${overview.weightChangeG} g recorded change`}</small></article>
-      <article className="master-card"><span>↔️ Then vs now</span><strong>{first && latest ? "Comparison available" : "More data needed"}</strong><small>{first && latest ? `${first.title} → ${latest.title}` : "At least two dated events are required; no causation is inferred."}</small></article>
-      <article className="master-card"><span>🪪 Snake passport</span><strong>{passport.eventCount} events</strong><small>{passport.coveredRecordTypes.join(" • ") || "No dated record types yet"}</small></article>
-      <article className="master-card"><span>📓 Keeper journal</span><strong>{journal.length} entries</strong><small>Assembled only from dated keeper records.</small></article>
-      <article className="master-card"><span>📦 {new Date().getFullYear()} time capsule</span><strong>{capsule.eventCount} events</strong><small>{capsule.summary}</small></article>
-      <article className="master-card"><span>📡 Intelligence confidence</span><strong>{overview.confidence.overall}</strong><small>Confidence reflects recorded history depth, not health or welfare status.</small></article>
+      <article className="master-card"><span><TinyTitansIcon name="analytics" size={15} /> Growth history</span><strong>{overview.currentWeightG === null ? "More data needed" : `${overview.currentWeightG} g current`}</strong><small>{overview.totalWeightLogs} weight records • {overview.weightChangeG === null ? "No recorded baseline change" : `${overview.weightChangeG >= 0 ? "+" : ""}${overview.weightChangeG} g recorded change`}</small></article>
+      <article className="master-card"><span><TinyTitansIcon name="move" size={15} /> Then vs now</span><strong>{first && latest ? "Comparison available" : "More data needed"}</strong><small>{first && latest ? `${first.title} to ${latest.title}` : "At least two dated events are required; no causation is inferred."}</small></article>
+      <article className="master-card"><span><TinyTitansIcon name="account" size={15} /> Snake passport</span><strong>{passport.eventCount} events</strong><small>{passport.coveredRecordTypes.join(" • ") || "No dated record types yet"}</small></article>
+      <article className="master-card"><span><TinyTitansIcon name="knowledge" size={15} /> Keeper journal</span><strong>{journal.length} entries</strong><small>Assembled only from dated keeper records.</small></article>
+      <article className="master-card"><span><TinyTitansIcon name="timeline" size={15} /> {new Date().getFullYear()} time capsule</span><strong>{capsule.eventCount} events</strong><small>{capsule.summary}</small></article>
+      <article className="master-card"><span><TinyTitansIcon name="titan" size={15} /> Intelligence confidence</span><strong>{overview.confidence.overall}</strong><small>Confidence reflects recorded history depth, not health or welfare status.</small></article>
     </div>
   </section>;
 }
