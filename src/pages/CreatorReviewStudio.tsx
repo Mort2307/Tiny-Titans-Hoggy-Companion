@@ -6,6 +6,7 @@ import { formatCreatorReviewDate, type ReviewDraft } from "../lib/creatorReviewS
 import { isAwaitingMorphReview } from "../services/morphSubmissionLifecycle";
 import SubmissionConversationPanel from "../components/TitanIntelligence/SubmissionConversationPanel";
 import "../styles/CreatorTools.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label><strong style={{ display: "block", marginBottom: 6, color: "var(--secondary,#F5B642)", fontSize: ".75rem", letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</strong>{children}</label>;
@@ -23,15 +24,15 @@ export default function CreatorReviewStudio() {
 
   return <main className="creator-admin-page">
     <header className="creator-admin-header">
-      <div><PageBackButton fallbackPath="/creator" label="Back to Creator Centre" /><span className="creator-admin-kicker">CREATOR CENTRE · REVIEW STUDIO</span><h1>🧬 Creator Review Studio</h1><p>Live-edit a private submission, resolve it to the canonical Morph Library, then explicitly approve and publish.</p></div>
-      <button type="button" onClick={() => void load()} disabled={loading || working}>{loading ? "↻ Loading…" : "↻ Refresh"}</button>
+      <div><PageBackButton fallbackPath="/creator" label="Back to Creator Centre" /><span className="creator-admin-kicker">CREATOR CENTRE · REVIEW STUDIO</span><h1><TinyTitansIcon name="morph" size={28} /> Creator Review Studio</h1><p>Live-edit a private submission, resolve it to the canonical Morph Library, then explicitly approve and publish.</p></div>
+      <button type="button" onClick={() => void load()} disabled={loading || working}>{loading ? <><TinyTitansIcon name="rotate" size={14} /> Loading…</> : <><TinyTitansIcon name="rotate" size={14} /> Refresh</>}</button>
     </header>
     {error && <div className="creator-error">{error}</div>}
-    {notice && <div className="creator-success">✓ {notice}</div>}
+    {notice && <div className="creator-success"><TinyTitansIcon name="check" size={14} /> {notice}</div>}
     <div className="creator-review-studio-layout">
       <section className="creator-admin-section" style={{ padding: 16 }}>
         <div className="creator-section-heading"><span className="creator-admin-kicker">LIVE QUEUE</span><h2>{visible.length} submissions</h2><select value={queueFilter} onChange={(event) => setQueueFilter(event.target.value as typeof queueFilter)}><option value="pending">Pending / Needs Info</option><option value="all">All submissions</option></select></div>
-        {loading ? <div className="creator-loading">Loading submissions…</div> : <div className="creator-list">{visible.map((item) => <button key={item.id} type="button" className="creator-user-row" onClick={() => { if (dirty && !window.confirm("Discard unsaved edits and open another submission?")) return; setSelectedId(item.id); }}><span className="creator-user-avatar">🧬</span><span className="creator-user-main"><strong>{item.morphName}</strong><small>{item.speciesName || item.speciesId}</small><small>{names[item.userId ?? ""] || "Anonymous user"}</small></span><span className="creator-user-meta"><strong>{item.status}</strong><small>{formatCreatorReviewDate(item.submittedAt)}</small></span></button>)}</div>}
+        {loading ? <div className="creator-loading">Loading submissions…</div> : <div className="creator-list">{visible.map((item) => <button key={item.id} type="button" className="creator-user-row" onClick={() => { if (dirty && !window.confirm("Discard unsaved edits and open another submission?")) return; setSelectedId(item.id); }}><span className="creator-user-avatar"><TinyTitansIcon name="morph" size={18} /></span><span className="creator-user-main"><strong>{item.morphName}</strong><small>{item.speciesName || item.speciesId}</small><small>{names[item.userId ?? ""] || "Anonymous user"}</small></span><span className="creator-user-meta"><strong>{item.status}</strong><small>{formatCreatorReviewDate(item.submittedAt)}</small></span></button>)}</div>}
       </section>
 
       {selected && draft ? <section className="creator-admin-section" style={{ padding: 18 }}>
@@ -56,7 +57,7 @@ export default function CreatorReviewStudio() {
                       style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, border: 0, borderRadius: 9, padding: "9px 10px", background: draft.morphId === morph.geneId ? "var(--tt-tier-glow, rgba(255,255,255,.08))" : "transparent", color: "inherit", textAlign: "left", cursor: "pointer" }}
                     >
                       <span><strong>{morph.name}</strong><small style={{ display: "block", opacity: .72 }}>{morph.kind} · {morph.geneId}</small></span>
-                      {draft.morphId === morph.geneId && <span aria-hidden="true">✓</span>}
+                      {draft.morphId === morph.geneId && <span aria-hidden="true"><TinyTitansIcon name="check" size={12} /></span>}
                     </button>
                   ))}
                 </div>
@@ -81,7 +82,7 @@ export default function CreatorReviewStudio() {
           </aside>
         </div>
         <SubmissionConversationPanel submissionType="morph-image" submissionId={selected.id} submitterUid={selected.userId} submitterName={names[selected.userId ?? ""] || "Anonymous user"} submissionTitle={draft.morphName} submissionStatus={selected.status} />
-        {isAwaitingMorphReview(selected.status) && <div className="creator-submission-actions"><button type="button" onClick={() => void reject()} disabled={working}>✕ Reject</button><button type="button" onClick={() => void requestInfo()} disabled={working}>📨 Request Info</button><button type="button" onClick={() => void saveDraft()} disabled={working || !dirty}>{working ? "Saving…" : "💾 Save Draft"}</button><button type="button" onClick={() => void approve()} disabled={working}>✓ {working ? "Publishing…" : "Approve & Publish"}</button></div>}
+        {isAwaitingMorphReview(selected.status) && <div className="creator-submission-actions"><button type="button" onClick={() => void reject()} disabled={working}><TinyTitansIcon name="close" size={13} /> Reject</button><button type="button" onClick={() => void requestInfo()} disabled={working}><TinyTitansIcon name="messages" size={13} /> Request Info</button><button type="button" onClick={() => void saveDraft()} disabled={working || !dirty}>{working ? "Saving…" : <><TinyTitansIcon name="save" size={13} /> Save Draft</>}</button><button type="button" onClick={() => void approve()} disabled={working}><TinyTitansIcon name="check" size={13} /> {working ? "Publishing…" : "Approve & Publish"}</button></div>}
       </section> : <section className="creator-admin-section"><h2>Select a submission</h2><p>Choose an item from the queue to open the live editor.</p></section>}
     </div>
   </main>;

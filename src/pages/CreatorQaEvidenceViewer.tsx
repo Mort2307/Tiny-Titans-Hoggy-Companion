@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getQaEvidenceBlobUrl, getQaRunHistory, getQaRunReport, type CreatorQaRun, type QaReport, type QaVisualResult } from "../services/creatorQaEvidenceService";
 import { triggerCreatorVisualQa } from "../services/creatorOperationsService";
 import "./CreatorQaEvidenceViewer.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 function findingCounts(result: QaVisualResult) {
   const findings = result.findings || [];
@@ -165,16 +166,16 @@ export default function CreatorQaEvidenceViewer() {
       <header className="creator-section-header">
         <div>
           <span>QA STATUS DASHBOARD</span>
-          <h1>🤖 Release &amp; visual QA</h1>
+          <h1><TinyTitansIcon name="testing" size={28} /> Release &amp; visual QA</h1>
           <p>The Playwright BOT stays independent from production. This workspace shows the rendered evidence it publishes, plus the machine findings used to guide the next change.</p>
         </div>
         <div className="creator-qa-header-actions">
           <button type="button" className="creator-ops-primary" onClick={() => void runVisualQa()} disabled={triggering}>{triggering ? "Starting QA…" : "Run visual QA"}</button>
-          <Link to="/creator" className="creator-ops-secondary">← Creator Centre</Link>
+          <Link to="/creator" className="creator-ops-secondary"><TinyTitansIcon name="back" size={14} /> Creator Centre</Link>
         </div>
       </header>
 
-      {triggerMessage && <section className="creator-section-panel" role="status"><strong>{triggerMessage}</strong>{triggerActionsUrl && <p><a href={triggerActionsUrl} target="_blank" rel="noreferrer">View running BOT in GitHub Actions ↗</a></p>}</section>}
+      {triggerMessage && <section className="creator-section-panel" role="status"><strong>{triggerMessage}</strong>{triggerActionsUrl && <p><a href={triggerActionsUrl} target="_blank" rel="noreferrer">View running BOT in GitHub Actions <TinyTitansIcon name="forward" size={12} /></a></p>}</section>}
       {loading ? <section className="creator-section-panel"><p>Loading QA history…</p></section> : error && !selectedRun ? <section className="creator-section-error" role="alert">{error}</section> : runs.length === 0 ? (
         <section className="creator-section-panel creator-section-empty">
           <strong>No QA run has been published yet.</strong>
@@ -197,8 +198,8 @@ export default function CreatorQaEvidenceViewer() {
               </select>
             </div>
             <div className="qa-evidence-links">
-              {selectedRun?.github?.url && <a href={selectedRun.github.url} target="_blank" rel="noreferrer">Open GitHub evidence ↗</a>}
-              {selectedRun?.github?.actionsUrl && <a href={selectedRun.github.actionsUrl} target="_blank" rel="noreferrer">Open Actions run ↗</a>}
+              {selectedRun?.github?.url && <a href={selectedRun.github.url} target="_blank" rel="noreferrer">Open GitHub evidence <TinyTitansIcon name="forward" size={12} /></a>}
+              {selectedRun?.github?.actionsUrl && <a href={selectedRun.github.actionsUrl} target="_blank" rel="noreferrer">Open Actions run <TinyTitansIcon name="forward" size={12} /></a>}
               <span>{historicalErrors ? `${historicalErrors} historical error finding(s) retained in QA metadata` : "Historical summaries retained; old screenshot files are replaced on the next publish."}</span>
             </div>
           </section>
@@ -216,7 +217,7 @@ export default function CreatorQaEvidenceViewer() {
                     const routeResults = report.results.filter((item) => item.route === route);
                     const errors = routeResults.reduce((sum, item) => sum + findingCounts(item).errors, 0);
                     const warnings = routeResults.reduce((sum, item) => sum + findingCounts(item).warnings, 0);
-                    return <button key={route} type="button" className={selectedRoute === route ? "is-selected" : ""} onClick={() => setSelectedRoute(route)}><span>{route}</span><small>{errors ? `🔴 ${errors}` : warnings ? `🟠 ${warnings}` : "🟢 clean"}</small></button>;
+                    return <button key={route} type="button" className={selectedRoute === route ? "is-selected" : ""} onClick={() => setSelectedRoute(route)}><span>{route}</span><small>{errors ? <><TinyTitansIcon name="warning" size={12} /> {errors}</> : warnings ? <><TinyTitansIcon name="reminders" size={12} /> {warnings}</> : <><TinyTitansIcon name="check" size={12} /> clean</>}</small></button>;
                   })}
                 </div>
               </aside>
@@ -232,7 +233,7 @@ export default function CreatorQaEvidenceViewer() {
                     <span>HTTP {result.responseStatus ?? "—"}</span>
                     <span>{String(metrics.contentInteractiveCount ?? "—")} content controls</span>
                     <span>{String(metrics.pageHeight ?? "—")}px page height</span>
-                    <span>{findingCounts(result).errors ? `🔴 ${findingCounts(result).errors} errors` : findingCounts(result).warnings ? `🟠 ${findingCounts(result).warnings} warnings` : "🟢 no automated findings"}</span>
+                    <span>{findingCounts(result).errors ? <><TinyTitansIcon name="warning" size={12} /> {findingCounts(result).errors} errors</> : findingCounts(result).warnings ? <><TinyTitansIcon name="reminders" size={12} /> {findingCounts(result).warnings} warnings</> : <><TinyTitansIcon name="check" size={12} /> no automated findings</>}</span>
                   </div>
                   {error && <div className="creator-section-error" role="alert">{error}</div>}
                   <div className="qa-evidence-image-grid">
@@ -241,7 +242,7 @@ export default function CreatorQaEvidenceViewer() {
                   </div>
                   <section className="qa-evidence-findings">
                     <div className="qa-evidence-panel-head"><span className="qa-evidence-kicker">MACHINE FINDINGS</span><strong>{(result.findings || []).length}</strong></div>
-                    {(result.findings || []).map((finding, index) => <article key={`${finding.code}-${index}`} className={`qa-finding qa-finding-${finding.severity}`}><strong>{finding.severity === "error" ? "🔴" : finding.severity === "warning" ? "🟠" : "🔵"} {finding.code}</strong><span>{finding.message}</span></article>)}
+                    {(result.findings || []).map((finding, index) => <article key={`${finding.code}-${index}`} className={`qa-finding qa-finding-${finding.severity}`}><strong><TinyTitansIcon name={finding.severity === "error" ? "warning" : finding.severity === "warning" ? "reminders" : "info"} size={12} /> {finding.code}</strong><span>{finding.message}</span></article>)}
                   </section>
                 </> : <div className="qa-evidence-image-placeholder">No rendered result exists for this route/viewport pair.</div>}
               </div>
