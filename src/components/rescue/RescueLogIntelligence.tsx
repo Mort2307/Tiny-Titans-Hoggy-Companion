@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import {
-import TinyTitansIcon from "../TinyTitansIcon";
   Bar,
   BarChart,
   CartesianGrid,
@@ -11,6 +10,7 @@ import TinyTitansIcon from "../TinyTitansIcon";
   XAxis,
   YAxis,
 } from "recharts";
+import TinyTitansIcon from "../TinyTitansIcon";
 import type { RescueCareRecord, RescueCareRecordType } from "../../types/rescue";
 import "../../styles/rescue-log-intelligence.css";
 

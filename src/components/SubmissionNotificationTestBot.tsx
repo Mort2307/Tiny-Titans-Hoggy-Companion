@@ -4,7 +4,6 @@ import PageBackButton from "./PageBackButton";
 import { useAuth } from "../context/useAuth";
 import { enableNotifications } from "../services/notificationService";
 import {
-import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
   finishSubmissionNotificationTest,
   getSubmissionNotificationTestRun,
   getSubmissionNotificationTestTargets,
@@ -15,6 +14,7 @@ import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
   type SubmissionNotificationTestKind,
   type SubmissionNotificationTestRun,
 } from "../services/submissionNotificationTestService";
+import TinyTitansIcon, { type TinyTitansIconName } from "./TinyTitansIcon";
 import type { NotificationTestTarget } from "../services/notificationService";
 import "./SubmissionNotificationTestBot.css";
 

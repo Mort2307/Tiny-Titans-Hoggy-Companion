@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RescueRole } from "../../types/rescue";
 import {
-import TinyTitansIcon from "../TinyTitansIcon";
   clearRescueStaffInvitation,
   editOrganisationStaffHistory,
   getMyRescueWorkspace,
@@ -12,6 +11,7 @@ import TinyTitansIcon from "../TinyTitansIcon";
   type RescueStaffInvitation,
   type StaffHistoryEntry,
 } from "../../services/rescueWorkspaceService";
+import TinyTitansIcon from "../TinyTitansIcon";
 import {
   clearBusinessStaffMember,
   getBusinessStaffManagement,
