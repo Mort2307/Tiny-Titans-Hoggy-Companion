@@ -45,7 +45,7 @@ export default function ReptileVivarium3DEditor() {
         <div className="tracker-card">
           <h1>Vivarium unavailable</h1>
           <p>{error || "This vivarium could not be loaded."}</p>
-          <button type="button" onClick={() => navigate("/reptile-room")}>Back to Reptile Room</button>
+          <button type="button" onClick={() => navigate("/animals")}>Back to My Animals</button>
         </div>
       </div>
     );
@@ -54,8 +54,8 @@ export default function ReptileVivarium3DEditor() {
   return (
     <VivariumBuilder3D
       slot={slot}
-      onClose={() => navigate("/reptile-room")}
-      onSaved={() => navigate("/reptile-room")}
+      onClose={() => navigate("/animals")}
+      onSaved={() => navigate("/animals")}
     />
   );
 }

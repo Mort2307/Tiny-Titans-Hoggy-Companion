@@ -85,7 +85,7 @@ export default function ReptileRoom3DEditor() {
   return (
     <VivariumBuilder3D
       slot={slot}
-      onClose={() => navigate("/reptile-room")}
+      onClose={() => navigate("/animals")}
       onSaved={() => undefined}
     />
   );
