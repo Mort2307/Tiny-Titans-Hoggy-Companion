@@ -30,7 +30,7 @@ function hasLocalPrivacyConsent(userId: string) {
 
 function AppRouterGate() {
   const location = useLocation();
-  const { user, profile, loading, profileLoading } = useAuth();
+  const { user, profile, loading, profileLoading, profileLoadError, refreshProfile } = useAuth();
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [privacyConsentVersion, setPrivacyConsentVersion] = useState<string | null>(null);
 
@@ -145,6 +145,28 @@ function AppRouterGate() {
           <h1>Loading Tiny Titans...</h1>
         </div>
       </div>
+    );
+  }
+
+  if (user && !profile && profileLoadError) {
+    return (
+      <main className="page-container">
+        <section className="welcome-card">
+          <h1>We couldn't load your Tiny Titans account</h1>
+          <p>Your sign-in is still active. Tiny Titans could not read your profile just now, so we have not sent you through account setup again.</p>
+          <button
+            type="button"
+            className="auth-primary-button"
+            onClick={() => {
+              void refreshProfile().catch((error) => {
+                console.error("Tiny Titans: profile retry failed", error);
+              });
+            }}
+          >
+            Retry account load
+          </button>
+        </section>
+      </main>
     );
   }
 

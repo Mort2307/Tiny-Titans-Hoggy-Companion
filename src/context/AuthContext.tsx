@@ -25,12 +25,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileLoadError, setProfileLoadError] = useState(false);
 
   async function hydrateUser(nextUser: User) {
     setProfileLoading(true);
+    setProfileLoadError(false);
     try {
       const loadedProfile = await loadUserProfile(nextUser);
       setProfile(loadedProfile);
+      setProfileLoadError(false);
       setProfileLoading(false);
       setLoading(false);
 
@@ -48,11 +51,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })();
     } catch (error) {
       console.error("Tiny Titans: unable to hydrate user state", error);
-      try {
-        setProfile(await loadUserProfile(nextUser));
-      } catch {
-        setProfile(null);
-      }
+      // A network/App Check/Firestore startup failure is not the same thing as
+      // a missing profile. Keep the authenticated session intact and let the
+      // router offer a retry instead of incorrectly sending the user through
+      // first-time account setup.
+      setProfileLoadError(true);
       setProfileLoading(false);
       setLoading(false);
     }
@@ -62,16 +65,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const currentUser = getAuth(app).currentUser;
     if (!currentUser) {
       setProfile(null);
+      setProfileLoadError(false);
       return null;
     }
 
     setProfileLoading(true);
+    setProfileLoadError(false);
     try {
       const refreshedProfile = await refreshAuthenticatedProfile(currentUser, profile);
       setProfile(refreshedProfile);
+      setProfileLoadError(false);
       await runPostAuthSync(currentUser, true);
       await recordUserActivity(currentUser);
       return refreshedProfile;
+    } catch (error) {
+      setProfileLoadError(true);
+      throw error;
     } finally {
       setProfileLoading(false);
     }
@@ -83,6 +92,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setProfile(null);
 
       if (!nextUser) {
+        setProfileLoadError(false);
         setProfileLoading(false);
         setLoading(false);
         return;
@@ -101,6 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         profile,
         loading,
         profileLoading,
+        profileLoadError,
         isAuthenticated: user !== null,
         refreshProfile,
       }}

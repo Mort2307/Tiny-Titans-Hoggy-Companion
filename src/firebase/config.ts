@@ -1,6 +1,10 @@
 import { initializeApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
-import { getAuth } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
+  initializeAuth,
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -34,7 +38,11 @@ if (typeof window !== "undefined" && import.meta.env.PROD && !appCheckSiteKey) {
   console.warn("Tiny Titans App Check is not configured. Set VITE_RECAPTCHA_ENTERPRISE_SITE_KEY before enforcing App Check or enabling production Firebase AI Logic.");
 }
 
-const auth = getAuth(app);
+const auth = initializeAuth(app, {
+  // Keep signed-in users signed in across normal reloads, PWA refreshes and
+  // browser restarts. IndexedDB is preferred, with localStorage as a fallback.
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+});
 const db = getFirestore(app);
 const storage = getStorage(app);
 
