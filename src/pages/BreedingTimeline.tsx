@@ -7,6 +7,7 @@ import { getBreedingProjects, getBreedingPairings, getEggClutches, getHatchlings
 import type { Snake } from "../types/Snake";
 import type { BreedingProject, BreedingPairing, EggClutch, HatchlingRecord } from "../types/Breeding";
 import "./BreedingTimeline.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 const dateValue = (value?: string) => value ? new Date(`${value}T12:00:00`).getTime() : 0;
 
@@ -62,17 +63,17 @@ export default function BreedingTimeline() {
     return result.sort((a, b) => dateValue(a.date) - dateValue(b.date));
   }, [project, male, female, pairings, clutches, hatchlings]);
 
-  if (loading || profileLoading) return <div className="page-container"><BackHomeButton /><h1>🧬 Breeding Timeline</h1><p>Loading your breeding records…</p></div>;
-  if (!user) return <div className="page-container"><BackHomeButton /><h1>🧬 Breeding Timeline</h1><p>Sign in to view breeding timelines.</p></div>;
+  if (loading || profileLoading) return <div className="page-container"><BackHomeButton /><h1><TinyTitansIcon name="breeding" size={28} /> Breeding Timeline</h1><p>Loading your breeding records…</p></div>;
+  if (!user) return <div className="page-container"><BackHomeButton /><h1><TinyTitansIcon name="breeding" size={28} /> Breeding Timeline</h1><p>Sign in to view breeding timelines.</p></div>;
 
   return <main className="page-container breeding-timeline-page">
     <BackHomeButton />
     <header className="breeding-timeline-hero">
-      <div><p className="breeding-timeline-eyebrow">Tiny Titans · Breeding Intelligence</p><h1>🧬 Breeding Timeline</h1><p>One chronological view from project creation through pairing, clutch and hatchling outcomes.</p></div>
+      <div><p className="breeding-timeline-eyebrow">Tiny Titans · Breeding Intelligence</p><h1><TinyTitansIcon name="breeding" size={28} /> Breeding Timeline</h1><p>One chronological view from project creation through pairing, clutch and hatchling outcomes.</p></div>
       <button type="button" onClick={() => navigate("/breeding")}>Open Breeding Planner</button>
     </header>
 
-    {error && <div className="breeding-timeline-alert" role="alert">⚠️ {error}</div>}
+    {error && <div className="breeding-timeline-alert" role="alert"><TinyTitansIcon name="warning" size={14} /> {error}</div>}
 
     {!projects.length ? <section className="breeding-timeline-card"><h2>No breeding projects yet</h2><p>Create a project first. The timeline will build itself from the records you add.</p><button type="button" onClick={() => navigate("/breeding")}>Create a breeding project</button></section> : <>
       <section className="breeding-timeline-card">
@@ -88,7 +89,7 @@ export default function BreedingTimeline() {
         {!events.length ? <p>No lifecycle events have been recorded yet.</p> : <div className="breeding-timeline-list">{events.map((event) => <article className={`breeding-timeline-event ${event.tone}`} key={event.id}><div className="breeding-timeline-dot" /><div className="breeding-timeline-event-body"><time>{event.date || "Date not recorded"}</time><h3>{event.title}</h3><p>{event.detail}</p></div></article>)}</div>}
       </section>
 
-      <section className="breeding-timeline-card breeding-timeline-principles"><h2>🧠 What this timeline does — and doesn't — tell you</h2><ul><li>It preserves the keeper's actual recorded sequence of events.</li><li>It highlights gaps without pretending missing information is known.</li><li>It does not infer fertility, ovulation, health or causation from dates alone.</li><li>It is a record and decision-support view, not a veterinary diagnosis or a guarantee of breeding outcome.</li></ul></section>
+      <section className="breeding-timeline-card breeding-timeline-principles"><h2><TinyTitansIcon name="titan" size={18} /> What this timeline does — and doesn't — tell you</h2><ul><li>It preserves the keeper's actual recorded sequence of events.</li><li>It highlights gaps without pretending missing information is known.</li><li>It does not infer fertility, ovulation, health or causation from dates alone.</li><li>It is a record and decision-support view, not a veterinary diagnosis or a guarantee of breeding outcome.</li></ul></section>
     </>}
   </main>;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useLocation, useNavigate } from "react-router-dom";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 import { loginWithEmail, loginWithGoogle, registerWithEmail } from "../firebase/auth";
 import "../styles/Auth.css";
@@ -85,8 +86,8 @@ function Login() {
           <form className="auth-form" onSubmit={handleSubmit}>
             {isRegistering && <div className="auth-field"><label htmlFor="displayName">Your Name</label><input id="displayName" type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="What should we call you?" autoComplete="name" disabled={loading} /></div>}
             <div className="auth-field"><label htmlFor="email">Email Address</label><input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" inputMode="email" disabled={loading} /></div>
-            <div className="auth-field"><label htmlFor="password">Password</label><div className="password-wrapper"><input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" autoComplete={isRegistering ? "new-password" : "current-password"} disabled={loading} /><button type="button" className="password-toggle" onClick={() => setShowPassword((previous) => !previous)} aria-label={showPassword ? "Hide password" : "Show password"} disabled={loading}>{showPassword ? "🙈" : "👁️"}</button></div></div>
-            <button type="submit" className="auth-primary-button" disabled={loading}>{loading ? "Please wait..." : isRegistering ? "Create Account" : "🔐 Sign In"}</button>
+            <div className="auth-field"><label htmlFor="password">Password</label><div className="password-wrapper"><input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" autoComplete={isRegistering ? "new-password" : "current-password"} disabled={loading} /><button type="button" className="password-toggle" onClick={() => setShowPassword((previous) => !previous)} aria-label={showPassword ? "Hide password" : "Show password"} disabled={loading}><TinyTitansIcon name={showPassword ? "lock" : "behaviour"} size={16} /></button></div></div>
+            <button type="submit" className="auth-primary-button" disabled={loading}>{loading ? "Please wait..." : isRegistering ? "Create Account" : <><TinyTitansIcon name="lock" size={15} /> Sign In</>}</button>
           </form>
           <div className="auth-divider"><span /><strong>OR</strong><span /></div>
           <button type="button" className="auth-google-button" onClick={handleGoogleLogin} disabled={loading}><span className="google-icon">G</span>Continue with Google</button>
