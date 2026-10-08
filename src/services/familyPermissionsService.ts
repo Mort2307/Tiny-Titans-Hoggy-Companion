@@ -1,6 +1,7 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { getFamilyForUser } from "./familyService";
+import type { TinyTitansIconName } from "../types/tinyTitansIcon";
 export type PermissionMode = "allow" | "deny" | "verify";
 export type FamilyAccessMode = "full" | "review" | "sandbox";
 export type PermissionAction = "view" | "create" | "edit" | "delete";
@@ -31,5 +32,5 @@ export type FamilyHistoryEvent = { id: string; familyId: string; actorUid: strin
 export async function addFamilyHistory(actorUid: string, input: Omit<FamilyHistoryEvent, "id" | "familyId" | "actorUid" | "createdAt">): Promise<void> { void actorUid; void input; return Promise.resolve(); }
 export async function getFamilyHistory(uid: string): Promise<FamilyHistoryEvent[]> { void uid; return []; }
 export function permissionLabel(mode: PermissionMode) { return mode === "allow" ? "Allow" : mode === "deny" ? "Deny" : "Verify"; }
-export const permissionAreas: Array<{ id: PermissionArea; label: string; icon: string }> = [{ id: "snakes", label: "Snake Records", icon: "🐍" }, { id: "weights", label: "Weight Tracker", icon: "⚖️" }, { id: "feeding", label: "Feeding", icon: "🍽️" }, { id: "sheds", label: "Shed Tracker", icon: "🐍" }, { id: "behaviour", label: "Behaviour Journal", icon: "👀" }, { id: "health", label: "Health & Vet", icon: "🩺" }, { id: "breeding", label: "Breeding", icon: "🧬" }, { id: "genetics", label: "Genetics", icon: "🧪" }];
+export const permissionAreas: Array<{ id: PermissionArea; label: string; icon: TinyTitansIconName }> = [{ id: "snakes", label: "Snake Records", icon: "reptile" }, { id: "weights", label: "Weight Tracker", icon: "weight" }, { id: "feeding", label: "Feeding", icon: "feeding" }, { id: "sheds", label: "Shed Tracker", icon: "shed" }, { id: "behaviour", label: "Behaviour Journal", icon: "behaviour" }, { id: "health", label: "Health & Vet", icon: "health" }, { id: "breeding", label: "Breeding", icon: "breeding" }, { id: "genetics", label: "Genetics", icon: "genetics" }];
 export const permissionActions: Array<{ id: PermissionAction; label: string }> = [{ id: "view", label: "View" }, { id: "create", label: "Create" }, { id: "edit", label: "Edit" }, { id: "delete", label: "Delete" }];

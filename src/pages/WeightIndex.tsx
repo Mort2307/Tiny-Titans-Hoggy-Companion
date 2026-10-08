@@ -9,6 +9,7 @@ import { getSnakeWeights, migrateEmbeddedWeights } from "../services/weightServi
 import { useAuth } from "../context/useAuth";
 import { useUnits } from "../context/UnitContextValue";
 import "../styles/weight-tracker.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 function WeightIndex() {
   const navigate = useNavigate();
@@ -47,21 +48,21 @@ function WeightIndex() {
     void loadSnakes();
   }, [user, loading, profileLoading]);
 
-  if (loading || profileLoading || loadingSnakes) return <div className="page-container weight-page"><BackHomeButton /><div className="weight-page-header"><div><h1>⚖️ Weight Records</h1><p>Your Tiny Titans growth hub.</p></div></div><div className="weight-record-panel"><h2>Loading your Tiny Titans...</h2><p>Fetching canonical weight events from Firebase.</p></div></div>;
-  if (error) return <div className="page-container weight-page"><BackHomeButton /><div className="weight-page-header"><div><h1>⚖️ Weight Records</h1><p>Something needs attention.</p></div></div><div className="weight-record-panel"><h2>{error}</h2><div className="weight-record-actions"><button type="button" onClick={() => navigate("/snakes")}>🐍 Back to My Hoggies</button></div></div></div>;
-  if (snakes.length === 0) return <div className="page-container weight-page"><BackHomeButton /><div className="weight-page-header"><div><h1>⚖️ Weight Records</h1><p>Your Tiny Titans growth hub.</p></div></div><div className="weight-record-panel"><h2>📊 No Weight Records Yet</h2><p>Add a weight record to one of your Tiny Titans and it will appear here.</p><div className="weight-record-actions"><button type="button" onClick={() => navigate("/snakes")}>🐍 View My Hoggies</button><button type="button" onClick={() => navigate("/snakes/new")}>➕ Add a Snake</button></div></div></div>;
+  if (loading || profileLoading || loadingSnakes) return <div className="page-container weight-page"><BackHomeButton /><div className="weight-page-header"><div><h1><TinyTitansIcon name="weight" size={28} /> Weight Records</h1><p>Your Tiny Titans growth hub.</p></div></div><div className="weight-record-panel"><h2>Loading your Tiny Titans...</h2><p>Fetching canonical weight events from Firebase.</p></div></div>;
+  if (error) return <div className="page-container weight-page"><BackHomeButton /><div className="weight-page-header"><div><h1><TinyTitansIcon name="weight" size={28} /> Weight Records</h1><p>Something needs attention.</p></div></div><div className="weight-record-panel"><h2>{error}</h2><div className="weight-record-actions"><button type="button" onClick={() => navigate("/snakes")}><TinyTitansIcon name="reptile" size={14} /> Back to My Hoggies</button></div></div></div>;
+  if (snakes.length === 0) return <div className="page-container weight-page"><BackHomeButton /><div className="weight-page-header"><div><h1><TinyTitansIcon name="weight" size={28} /> Weight Records</h1><p>Your Tiny Titans growth hub.</p></div></div><div className="weight-record-panel"><h2><TinyTitansIcon name="analytics" size={18} /> No Weight Records Yet</h2><p>Add a weight record to one of your Tiny Titans and it will appear here.</p><div className="weight-record-actions"><button type="button" onClick={() => navigate("/snakes")}><TinyTitansIcon name="reptile" size={14} /> View My Hoggies</button><button type="button" onClick={() => navigate("/snakes/new")}><TinyTitansIcon name="add" size={14} /> Add a Snake</button></div></div></div>;
 
-  return <div className="page-container weight-page"><BackHomeButton /><div className="weight-page-header"><div><h1>⚖️ Weight Records</h1><p>Track the growth of all your Tiny Titans in one place.</p></div><div className="tt-confidence"><span>⚡ Canonical Firebase records</span></div></div><div className="weight-records-grid">
+  return <div className="page-container weight-page"><BackHomeButton /><div className="weight-page-header"><div><h1><TinyTitansIcon name="weight" size={28} /> Weight Records</h1><p>Track the growth of all your Tiny Titans in one place.</p></div><div className="tt-confidence"><span><TinyTitansIcon name="power" size={13} /> Canonical Firebase records</span></div></div><div className="weight-records-grid">
     {snakes.map((snake) => {
       const history = weightsBySnake[snake.id] ?? [];
       const sortedHistory = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       const latestRecord = sortedHistory[sortedHistory.length - 1];
       const currentWeight = latestRecord?.weight ?? snake.weight ?? 0;
       return <article key={snake.id} className="weight-records-card">
-        <div className="weight-records-header">{snake.photo ? <img src={snake.photo} alt={snake.name} className="weight-records-photo" /> : <div className="weight-records-placeholder">🐍</div>}<div><h2>{snake.name}</h2><p>⚖️ <strong>{formatWeight(currentWeight)}</strong></p></div></div>
+        <div className="weight-records-header">{snake.photo ? <img src={snake.photo} alt={snake.name} className="weight-records-photo" /> : <div className="weight-records-placeholder"><TinyTitansIcon name="reptile" size={24} /></div>}<div><h2>{snake.name}</h2><p><TinyTitansIcon name="weight" size={13} /> <strong>{formatWeight(currentWeight)}</strong></p></div></div>
         <div className="weight-records-chart" data-chart="weight-mini">{history.length >= 2 ? <WeightMiniChart history={history} /> : <p>Record another weight to build the growth chart.</p>}</div>
-        <div className="weight-records-summary"><p>📊 Records<strong>{history.length}</strong></p><p>📅 Last weighed<strong>{latestRecord?.date ?? snake.lastWeighedDate ?? "-"}</strong></p></div>
-        <div className="weight-record-actions"><button type="button" onClick={() => navigate(`/weights/${snake.id}`)}>📈 Open Weight Records</button><button type="button" onClick={() => navigate(`/snakes/${snake.id}/master-record`)}>🐍 Master Record</button></div>
+        <div className="weight-records-summary"><p><TinyTitansIcon name="analytics" size={13} /> Records<strong>{history.length}</strong></p><p><TinyTitansIcon name="timeline" size={13} /> Last weighed<strong>{latestRecord?.date ?? snake.lastWeighedDate ?? "-"}</strong></p></div>
+        <div className="weight-record-actions"><button type="button" onClick={() => navigate(`/weights/${snake.id}`)}><TinyTitansIcon name="analytics" size={14} /> Open Weight Records</button><button type="button" onClick={() => navigate(`/snakes/${snake.id}/master-record`)}><TinyTitansIcon name="reptile" size={14} /> Master Record</button></div>
       </article>;
     })}
   </div></div>;

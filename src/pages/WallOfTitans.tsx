@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BackHomeButton from "../components/BackHomeButton";
 import { getTitanWallEntries, type TitanWallEntry } from "../services/titanSupportService";
 import "../styles/WallOfTitans.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 export default function WallOfTitans() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function WallOfTitans() {
   return <main className="page-container titan-wall-page">
     <BackHomeButton />
     <header className="titan-wall-hero">
-      <div className="titan-wall-hero__icon" aria-hidden="true">🏆</div>
+      <div className="titan-wall-hero__icon" aria-hidden="true"><TinyTitansIcon name="wall" size={28} /></div>
       <div>
         <p className="titan-wall-eyebrow">TINY TITANS · COMMUNITY</p>
         <h1>Wall of Titans</h1>
@@ -32,23 +33,23 @@ export default function WallOfTitans() {
 
     <section className="titan-wall-actions" aria-label="Wall of Titans actions">
       <div><strong>Want your name on the Wall?</strong><span>Become a Titan and choose your recognition settings after supporting Tiny Titans.</span></div>
-      <button type="button" onClick={() => navigate("/become-a-titan")}>🐍 Become a Titan →</button>
+      <button type="button" onClick={() => navigate("/become-a-titan")}><TinyTitansIcon name="titan" size={14} /> Become a Titan <TinyTitansIcon name="forward" size={12} /></button>
     </section>
 
-    {loading && <div className="titan-wall-state" role="status"><span>🐍</span><h2>Loading the Wall…</h2><p>Checking the latest Titan supporters.</p></div>}
-    {!loading && error && <div className="titan-wall-state titan-wall-state--error" role="alert"><span>⚠️</span><h2>Couldn't load the Wall</h2><p>{error}</p><button type="button" onClick={() => window.location.reload()}>Try again</button></div>}
-    {!loading && !error && entries.length === 0 && <div className="titan-wall-state"><span>🌱</span><h2>The first Titans are coming</h2><p>Be one of the first supporters to take your place on the Wall.</p><button type="button" onClick={() => navigate("/become-a-titan")}>Become a Titan →</button></div>}
+    {loading && <div className="titan-wall-state" role="status"><span><TinyTitansIcon name="titan" size={18} /></span><h2>Loading the Wall…</h2><p>Checking the latest Titan supporters.</p></div>}
+    {!loading && error && <div className="titan-wall-state titan-wall-state--error" role="alert"><span><TinyTitansIcon name="warning" size={18} /></span><h2>Couldn't load the Wall</h2><p>{error}</p><button type="button" onClick={() => window.location.reload()}>Try again</button></div>}
+    {!loading && !error && entries.length === 0 && <div className="titan-wall-state"><span><TinyTitansIcon name="community" size={18} /></span><h2>The first Titans are coming</h2><p>Be one of the first supporters to take your place on the Wall.</p><button type="button" onClick={() => navigate("/become-a-titan")}>Become a Titan <TinyTitansIcon name="forward" size={12} /></button></div>}
 
     {!loading && !error && entries.length > 0 && <section className="titan-wall-grid" aria-label="Wall of Titans supporters">
       {entries.map((entry) => {
         const isFounder = entry.id === "tiny-titans-official";
         return <article className={`titan-wall-card${isFounder ? " titan-wall-card--founder" : ""}`} key={entry.id}>
-          <div className="titan-wall-card__icon" aria-hidden="true">{isFounder ? "👑" : "🐍"}</div>
+          <div className="titan-wall-card__icon" aria-hidden="true"><TinyTitansIcon name={isFounder ? "wall" : "titan"} size={18} /></div>
           <div className="titan-wall-card__content">
             <span className="titan-wall-card__tier">{entry.tierLabel}</span>
             <h2>{entry.displayName}</h2>
             {isFounder && <p className="titan-wall-card__founder">Tiny Titans Founder & Creator</p>}
-            {entry.socialUrl && <a href={entry.socialUrl} target="_blank" rel="noreferrer noopener">🔗 Social profile</a>}
+            {entry.socialUrl && <a href={entry.socialUrl} target="_blank" rel="noreferrer noopener"><TinyTitansIcon name="link" size={12} /> Social profile</a>}
           </div>
           <time dateTime={entry.supportedAt ?? undefined}>{entry.supportedAt ? new Date(entry.supportedAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "Official Tiny Titans"}</time>
         </article>;
@@ -56,8 +57,8 @@ export default function WallOfTitans() {
     </section>}
 
     <footer className="titan-wall-footer">
-      <button type="button" onClick={() => navigate("/community")}>← Back to Community Hub</button>
-      <button type="button" onClick={() => navigate("/become-a-titan")}>🐍 Support Tiny Titans</button>
+      <button type="button" onClick={() => navigate("/community")}><TinyTitansIcon name="back" size={13} /> Back to Community Hub</button>
+      <button type="button" onClick={() => navigate("/become-a-titan")}><TinyTitansIcon name="titan" size={13} /> Support Tiny Titans</button>
     </footer>
   </main>;
 }
