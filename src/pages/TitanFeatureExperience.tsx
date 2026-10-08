@@ -15,6 +15,7 @@ import useTitanFeatureExperience from "../hooks/useTitanFeatureExperience";
 import { TITAN_FEATURE_ICONS, geneticsFeatures, animalFeatures, husbandryFeatures, communityFeatures, learningFeatures, explanationFeatures, platformLiveFeatures } from "../config/titanFeatureExperience";
 import "../components/TitanIntelligence/TitanLiveIntelligencePanel.css";
 import "./TitanFeatureExperience.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 export default function TitanFeatureExperience() {
   const {
@@ -26,10 +27,10 @@ export default function TitanFeatureExperience() {
   if (!feature) {
     return (
       <main className="page-container titan-feature-page">
-        <button type="button" onClick={() => navigate(-1)}>← Back</button>
+        <button type="button" onClick={() => navigate(-1)}><TinyTitansIcon name="back" size={14} /> Back</button>
         <h1>Tiny Titans feature not found</h1>
         <p>The requested capability is not present in the canonical feature matrix.</p>
-        <Link to="/titan-intelligence">Open Titan Intelligence →</Link>
+        <Link to="/titan-intelligence">Open Titan Intelligence <TinyTitansIcon name="forward" size={12} /></Link>
       </main>
     );
   }
@@ -46,13 +47,13 @@ export default function TitanFeatureExperience() {
   return (
     <main className="page-container titan-feature-page">
       <button type="button" className="titan-feature-back" onClick={() => navigate(-1)}>
-        ← Back to Titan Intelligence
+        <TinyTitansIcon name="back" size={14} /> Back to Titan Intelligence
       </button>
 
       <header className="titan-feature-hero">
         <div>
           <span className="titan-feature-id">Tiny Titans · Feature #{id}</span>
-          <h1>{TITAN_FEATURE_ICONS[id] ?? "🧠"} {feature.name}</h1>
+          <h1><TinyTitansIcon name={TITAN_FEATURE_ICONS[id] ?? "titan"} size={28} /> {feature.name}</h1>
           <p>{FEATURE_SUMMARIES[id] ?? "Connected intelligence capability."}</p>
         </div>
         <div className={`titan-feature-status titan-feature-status--${feature.status}`}>
@@ -80,7 +81,7 @@ export default function TitanFeatureExperience() {
 
       {(id === 40 || id === 41) && (
         <section className="titan-feature-panel">
-          <p className="titan-feature-kicker">🏆 SPECIES MASTERY</p>
+          <p className="titan-feature-kicker"><TinyTitansIcon name="wall" size={13} /> SPECIES MASTERY</p>
           <h2>Your demonstrated learning map</h2>
           <div className="titan-feature-data-grid">
             <article><strong>{learningProgress.xp}</strong><span>Knowledge XP</span></article>
@@ -97,18 +98,18 @@ export default function TitanFeatureExperience() {
               </article>
             ))}
           </div>
-          <Link to="/challenge">Continue Titans Challenge →</Link>
+          <Link to="/challenge">Continue Titans Challenge <TinyTitansIcon name="forward" size={12} /></Link>
         </section>
       )}
 
       {(animalTool || husbandryTool) && (
         <section className="titan-feature-panel">
-          <p className="titan-feature-kicker">🐍 ANIMAL CONTEXT</p>
+          <p className="titan-feature-kicker"><TinyTitansIcon name="reptile" size={13} /> ANIMAL CONTEXT</p>
           <h2>Choose the Tiny Titan this capability should inspect</h2>
           {snakes.length === 0 ? (
             <>
               <p>No animal records are available yet, so Tiny Titans will not fabricate a context.</p>
-              <Link to="/snakes/new">Add a Tiny Titan →</Link>
+              <Link to="/snakes/new">Add a Tiny Titan <TinyTitansIcon name="forward" size={12} /></Link>
             </>
           ) : (
             <>
@@ -153,7 +154,7 @@ export default function TitanFeatureExperience() {
 
       {husbandryTool && selectedSnake && (
         <section className="titan-feature-panel">
-          <p className="titan-feature-kicker">🌡️ HUSBANDRY INTELLIGENCE</p>
+          <p className="titan-feature-kicker"><TinyTitansIcon name="husbandry" size={13} /> HUSBANDRY INTELLIGENCE</p>
           <h2>Recorded microclimate, ecosystem & Digital Twin</h2>
           <p>
             Readings are stored against {selectedSnake.name}. Baselines are derived from recorded observations and are not treated as universal species rules.
@@ -176,7 +177,7 @@ export default function TitanFeatureExperience() {
           <p className="titan-feature-kicker">CONNECTED EXPERIENCE</p>
           <h2>This capability is connected to the wider Tiny Titans system</h2>
           <p>{FEATURE_SUMMARIES[id] ?? "The capability is represented in the intelligence graph and is designed to use shared records, evidence and context."}</p>
-          <div className="titan-feature-links">{feature.route && <Link to={feature.route}>Open primary experience →</Link>}</div>
+          <div className="titan-feature-links">{feature.route && <Link to={feature.route}>Open primary experience <TinyTitansIcon name="forward" size={12} /></Link>}</div>
         </section>
       )}
 

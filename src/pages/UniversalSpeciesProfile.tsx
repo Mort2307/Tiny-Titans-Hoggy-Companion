@@ -96,7 +96,7 @@ export default function UniversalSpeciesProfile() {
         <Link to={`/husbandry/safety?species=${species.id}`}><TinyTitansIcon name="check" size={18} /> Material Safety</Link>
         <Link to="/morph-library"><TinyTitansIcon name="morph" size={18} /> Morph Library</Link>
       </nav>
-      <div className="universal-species-links"><Link className="universal-species-back" to="/species"><TinyTitansIcon name="back" size={18} /> Species Explorer</Link><Link className="universal-species-marketplace-link" to={`/marketplace?species=${encodeURIComponent(species.id)}`}>Marketplace listings for this species →</Link></div>
+      <div className="universal-species-links"><Link className="universal-species-back" to="/species"><TinyTitansIcon name="back" size={18} /> Species Explorer</Link><Link className="universal-species-marketplace-link" to={`/marketplace?species=${encodeURIComponent(species.id)}`}>Marketplace listings for this species <TinyTitansIcon name="forward" size={12} /></Link></div>
 
       <header className="universal-species-hero">
         <div>
@@ -122,7 +122,7 @@ export default function UniversalSpeciesProfile() {
       {user && <section className="universal-species-panel">
         <div className="universal-species-panel-heading">
           <div><p className="eyebrow">YOUR ANIMALS</p><h2>Individuals of this species</h2></div>
-          <Link className="universal-species-marketplace-link" to={"/animals?species=" + encodeURIComponent(species.id)}>Open My Animals →</Link>
+          <Link className="universal-species-marketplace-link" to={"/animals?species=" + encodeURIComponent(species.id)}>Open My Animals <TinyTitansIcon name="forward" size={12} /></Link>
         </div>
         {myIndividualsLoading ? <p>Loading your individual animals…</p> : myIndividuals.length === 0 ? <p>You do not have an individual record linked to this species yet.</p> : <div className="universal-animal-species-list">{myIndividuals.map((animal) => <Link className="universal-animal-species-row" key={animal.id} to={animal.id && animal.speciesId === species.id ? "/animals/" + animal.id : "#"}><strong>{animal.name}</strong><span>{animal.speciesCommonName || species.commonNames[0]} · {animal.status}</span></Link>)}</div>}
       </section>}
@@ -213,7 +213,7 @@ export default function UniversalSpeciesProfile() {
           <section className="universal-species-panel universal-species-panel--wide">
             <div className="universal-species-panel-heading">
               <div><p className="eyebrow">PROVENANCE</p><h2>Source trail</h2></div>
-              <span className="universal-species-status">{care.resolvedFrom.join(" → ")}</span>
+              <span className="universal-species-status">{care.resolvedFrom.join(" to ")}</span>
             </div>
             {sources.length ? (
               <div className="universal-source-grid">
