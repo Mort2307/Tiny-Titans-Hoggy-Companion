@@ -4,6 +4,7 @@ import { useAuth } from "../context/useAuth";
 import { subscribeToMentorMentorshipRequests } from "../services/mentorshipRepository";
 import type { MentorshipRequest } from "../services/mentorNetwork";
 import "../styles/KeeperMeetsBreeder.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 function formatDate(value?: string) {
   if (!value || value === "[object Object]") return "Date pending";
@@ -32,7 +33,7 @@ export default function MyMentees() {
   return (
     <main className="kmb-page">
       <header className="kmb-hero">
-        <div className="kmb-hero-mark">🧑‍🏫</div>
+        <div className="kmb-hero-mark"><TinyTitansIcon name="mentorship" size={28} /></div>
         <div>
           <span className="kmb-eyebrow">MENTORSHIP</span>
           <h1>My Mentees</h1>
@@ -40,7 +41,7 @@ export default function MyMentees() {
         </div>
       </header>
 
-      {error && <p className="kmb-error">⚠️ {error}</p>}
+      {error && <p className="kmb-error"><TinyTitansIcon name="warning" size={14} /> {error}</p>}
 
       <section className="kmb-card-grid">
         <article className="kmb-card"><b>Active mentees</b><span>{mentees.length} {mentees.length === 1 ? "relationship" : "relationships"}</span></article>
@@ -77,10 +78,10 @@ export default function MyMentees() {
       <section className="kmb-section">
         <h2>Mentor responsibility</h2>
         <div className="kmb-steps">
-          <span>🔐 Respect the records the mentee explicitly shared</span>
-          <span>🧠 Separate personal experience from established information</span>
-          <span>🎯 Keep guidance focused on the agreed goal</span>
-          <span>🚫 Stay within your competence and escalate appropriately when needed</span>
+          <span><TinyTitansIcon name="lock" size={14} /> Respect the records the mentee explicitly shared</span>
+          <span><TinyTitansIcon name="titan" size={14} /> Separate personal experience from established information</span>
+          <span><TinyTitansIcon name="challenge" size={14} /> Keep guidance focused on the agreed goal</span>
+          <span><TinyTitansIcon name="warning" size={14} /> Stay within your competence and escalate appropriately when needed</span>
         </div>
       </section>
     </main>
