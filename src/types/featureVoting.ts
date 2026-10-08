@@ -1,3 +1,4 @@
+import type { TinyTitansIconName } from "./tinyTitansIcon";
 export type FeatureVotingStatus = "suggested" | "under_review" | "planned" | "in_development" | "testing" | "released" | "declined" | "backlog";
 
 export type FeatureVotingCategory =
@@ -40,15 +41,15 @@ export const FEATURE_VOTING_STATUS_LABELS: Record<FeatureVotingStatus, string> =
   backlog: "Backlog",
 };
 
-export const FEATURE_VOTING_STATUS_ICONS: Record<FeatureVotingStatus, string> = {
-  suggested: "💡",
-  under_review: "🟡",
-  planned: "📋",
-  in_development: "🔨",
-  testing: "🧪",
-  released: "✅",
-  declined: "❌",
-  backlog: "⏸️",
+export const FEATURE_VOTING_STATUS_ICONS: Record<FeatureVotingStatus, TinyTitansIconName> = {
+  suggested: "info",
+  under_review: "reminders",
+  planned: "knowledge",
+  in_development: "creator",
+  testing: "testing",
+  released: "check",
+  declined: "warning",
+  backlog: "timeline",
 };
 
 export const FEATURE_VOTING_CATEGORY_LABELS: Record<FeatureVotingCategory, string> = {

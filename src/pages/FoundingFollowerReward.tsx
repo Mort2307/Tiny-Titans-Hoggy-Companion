@@ -4,6 +4,7 @@ import { useAuth } from "../context/useAuth";
 import { FOUNDING_FOLLOWER_CAMPAIGN, FOUNDING_FOLLOWER_PLATFORM_LABELS, type FoundingFollowerPlatform } from "../config/foundingFollowerReward";
 import { formatClaimDate, subscribeToMyFoundingFollowerClaim, submitFoundingFollowerClaim, type FoundingFollowerClaim } from "../services/foundingFollowerRewardService";
 import "../styles/foundingFollowerReward.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 export default function FoundingFollowerReward() {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ export default function FoundingFollowerReward() {
     if (status === "approved" && previousStatus.current && previousStatus.current !== "approved") {
       window.dispatchEvent(new CustomEvent("tiny-titans-in-app-notification", {
         detail: {
-          title: "🎁 Your Tiny Titans reward is active",
+          title: "Your Tiny Titans reward is active",
           body: "Your Founding Follower reward has been approved and Titan Pro is now active for 30 days.",
           url: "/founding-followers",
         },
@@ -76,7 +77,7 @@ export default function FoundingFollowerReward() {
   return (
     <main className="tt-founding-page">
       <section className="tt-founding-hero">
-        <span className="tt-founding-eyebrow">🦖 FOUNDING FOLLOWER REWARD</span>
+        <span className="tt-founding-eyebrow"><TinyTitansIcon name="wall" size={14} /> FOUNDING FOLLOWER REWARD</span>
         <h1>30 days of Titan Pro, on us.</h1>
         <p>Thank you for being part of Tiny Titans. Follow us on Facebook or Instagram, send us a screenshot proving the follow, and we will activate your free Titan Pro month after a quick Creator review.</p>
       </section>
@@ -92,12 +93,12 @@ export default function FoundingFollowerReward() {
           <section className={`tt-founding-status tt-founding-status-${claim.status}`} role="status">
             <div>
               <span className="tt-founding-status-kicker">CURRENT CLAIM · {claim.status.toUpperCase()}</span>
-              <h2>{claim.status === "approved" ? "🎁 Titan Pro is active" : claim.status === "rejected" ? "We need a clearer screenshot" : "Claim received"}</h2>
+              <h2>{claim.status === "approved" ? <><TinyTitansIcon name="plans" size={18} /> Titan Pro is active</> : claim.status === "rejected" ? "We need a clearer screenshot" : "Claim received"}</h2>
               <p>{statusText}</p>
               {claim.submittedAt != null && <small>Submitted {formatClaimDate(claim.submittedAt)} · {FOUNDING_FOLLOWER_PLATFORM_LABELS[claim.platform]}</small>}
               {expiry && <small>Reward active until {expiry}</small>}
             </div>
-            {claim.status === "approved" && <Link to="/account/billing" className="tt-founding-button">View account access →</Link>}
+            {claim.status === "approved" && <Link to="/account/billing" className="tt-founding-button">View account access <TinyTitansIcon name="forward" size={13} /></Link>}
           </section>
         )}
 
@@ -114,7 +115,7 @@ export default function FoundingFollowerReward() {
             <div className="tt-founding-platforms" role="group" aria-label="Choose the social platform">
               {FOUNDING_FOLLOWER_CAMPAIGN.platforms.map((item) => (
                 <button key={item} type="button" className={platform === item ? "is-selected" : ""} onClick={() => setPlatform(item)}>
-                  <strong>{item === "facebook" ? "f" : "◎"}</strong>
+                  <strong>{item === "facebook" ? "f" : <TinyTitansIcon name="community" size={16} />}</strong>
                   <span>{FOUNDING_FOLLOWER_PLATFORM_LABELS[item]}</span>
                 </button>
               ))}
@@ -122,7 +123,7 @@ export default function FoundingFollowerReward() {
 
             <label className="tt-founding-upload">
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setError(""); setMessage(""); setFile(event.target.files?.[0] || null); }} />
-              <span className="tt-founding-upload-icon">📷</span>
+              <span className="tt-founding-upload-icon"><TinyTitansIcon name="camera" size={20} /></span>
               <strong>{file ? file.name : "Choose follow screenshot"}</strong>
               <small>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "Show the Tiny Titans Facebook page or Instagram profile with the follow state visible."}</small>
             </label>

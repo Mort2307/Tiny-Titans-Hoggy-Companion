@@ -8,6 +8,7 @@ import { type FamilyApproval } from "../services/familyPermissionsService";
 import { decideFamilyApprovalSecure, getFamilyApprovalsSecure } from "../services/familyReviewService";
 import { db } from "../firebase/config";
 import "../styles/family-manager.css";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 
 function formatDate(value: unknown): string {
   if (!value) return "Unknown date";
@@ -181,7 +182,7 @@ export default function FamilyReview() {
       <section className="family-review-layout">
         <div className="family-manager-card">
           <div className="family-manager-section-head"><div><p className="family-manager-kicker">QUEUE</p><h2>Family change requests</h2></div><span>{approvals.length} total</span></div>
-          {approvals.length === 0 ? <div className="family-manager-empty"><div>✅</div><h3>Nothing needs your attention</h3><p>When a Moderate family member proposes a real record edit, it will appear here.</p></div> : (
+          {approvals.length === 0 ? <div className="family-manager-empty"><div><TinyTitansIcon name="check" size={24} /></div><h3>Nothing needs your attention</h3><p>When a Moderate family member proposes a real record edit, it will appear here.</p></div> : (
             <div className="family-review-list">
               {approvals.map((item) => (
                 <button type="button" key={item.id} className={`family-review-item ${selected === item.id ? "is-active" : ""}`} onClick={() => setSelected(item.id)}>
@@ -193,7 +194,7 @@ export default function FamilyReview() {
           )}
         </div>
         <div className="family-manager-card family-review-detail">
-          {!selectedApproval ? <div className="family-manager-empty"><div>🔍</div><h3>Select a request</h3><p>Review the requester, affected area, proposed operation and values before deciding.</p></div> : (
+          {!selectedApproval ? <div className="family-manager-empty"><div><TinyTitansIcon name="search" size={24} /></div><h3>Select a request</h3><p>Review the requester, affected area, proposed operation and values before deciding.</p></div> : (
             <>
               <div className="family-manager-section-head">
                 <div><p className="family-manager-kicker">REQUEST</p><h2>{selectedApproval.title}</h2><span className="family-manager-muted">Submitted by <strong>{selectedRequesterName}</strong> · {formatDate(selectedApproval.createdAt)}</span></div>
@@ -208,11 +209,11 @@ export default function FamilyReview() {
               <div className="family-review-change-note">{String(selectedApproval.payload?.operation || "update") === "create" ? "This is a new entry. Approving it will add the proposed record to the shared tracker." : "Review the existing and proposed values below before applying this change."}</div>
               <div className="family-review-diff">
                 <div>
-                  <div className="family-review-panel-heading"><span className="family-review-panel-icon">📋</span><div><p className="family-manager-kicker">CURRENT</p><h3>Saved family record</h3></div></div>
+                  <div className="family-review-panel-heading"><span className="family-review-panel-icon"><TinyTitansIcon name="knowledge" size={18} /></span><div><p className="family-manager-kicker">CURRENT</p><h3>Saved family record</h3></div></div>
                   <FriendlyValuePanel value={selectedApproval.payload?.before ?? null} emptyMessage="No existing record — this is a new entry." />
                 </div>
                 <div>
-                  <div className="family-review-panel-heading"><span className="family-review-panel-icon">✏️</span><div><p className="family-manager-kicker">PROPOSED</p><h3>What will be saved</h3></div></div>
+                  <div className="family-review-panel-heading"><span className="family-review-panel-icon"><TinyTitansIcon name="edit" size={18} /></span><div><p className="family-manager-kicker">PROPOSED</p><h3>What will be saved</h3></div></div>
                   <FriendlyValuePanel value={selectedApproval.payload?.data ?? null} emptyMessage="No proposed details supplied." />
                 </div>
               </div>
