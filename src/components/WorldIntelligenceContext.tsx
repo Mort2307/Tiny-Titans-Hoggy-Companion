@@ -5,6 +5,7 @@ import { useLiveWorldTime } from "../context/WorldTimeContext";
 import { getTopTitanDecision, subscribeToTitanDecisionState, type TitanDecision } from "../services/titanDecisionStateService";
 import { buildWorldIntelligenceBrief } from "../services/worldIntelligenceService";
 import "./WorldIntelligenceContext.css";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 export default function WorldIntelligenceContext() {
   const { user, loading, profileLoading } = useAuth();
@@ -36,7 +37,7 @@ export default function WorldIntelligenceContext() {
           <strong>{brief.headline}</strong>
           <p>{brief.detail}</p>
         </div>
-        {decision && <Link to={decision.destination || `/snakes/${decision.animalId}/master-record`} className="tt-world-intelligence__action">Open ranked action →</Link>}
+        {decision && <Link to={decision.destination || `/snakes/${decision.animalId}/master-record`} className="tt-world-intelligence__action">Open ranked action <TinyTitansIcon name="forward" size={13} /></Link>}
       </div>
     </section>
   );

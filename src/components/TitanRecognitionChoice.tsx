@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "../firebase/config";
+import TinyTitansIcon from "./TinyTitansIcon";
 
 const functions = getFunctions(app, "europe-west2");
 const getRecognition = httpsCallable<void, { isTitan: boolean; needsChoice: boolean; visibility: "named" | "anonymous" | null; displayName: string; suggestedName?: string; socialUrl?: string; tierLabel?: string }>(functions, "getTitanWallRecognition");
@@ -37,7 +38,7 @@ export default function TitanRecognitionChoice({ alwaysShow = false }: { alwaysS
     try {
       await setRecognition({ visibility, displayName: visibility === "named" ? displayName.trim() : "", socialUrl: socialUrl.trim() });
       setNeedsChoice(false);
-      setMessage(visibility === "named" ? "You're on the Wall as your chosen name. 🏆" : "You'll be shown as Anonymous Titan. 🕶️");
+      setMessage(visibility === "named" ? "You're on the Wall as your chosen name." : "You'll be shown as Anonymous Titan.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "We couldn't save your Wall recognition choice yet.");
     } finally { setSaving(false); }
@@ -46,11 +47,11 @@ export default function TitanRecognitionChoice({ alwaysShow = false }: { alwaysS
   if (loading || !isTitan || (!alwaysShow && !needsChoice && !message)) return null;
 
   return <div className="creator-founder-callout" style={{ marginTop: 16 }}>
-    <strong>🏆 {needsChoice ? "Choose your Wall of Titans recognition" : "Wall of Titans recognition"}</strong>
+    <strong><TinyTitansIcon name="wall" size={15} /> {needsChoice ? "Choose your Wall of Titans recognition" : "Wall of Titans recognition"}</strong>
     <span>{needsChoice ? "Your support is confirmed. Choose how you'd like to be recognised. You can change this later." : "Change how your support is shown on the Wall at any time."}</span>
     <div className="creator-actions" style={{ flexWrap: "wrap", marginTop: 12 }}>
-      <button type="button" className={visibility === "named" ? "creator-primary" : ""} onClick={() => setVisibility("named")} disabled={saving}>👤 Show my name</button>
-      <button type="button" className={visibility === "anonymous" ? "creator-primary" : ""} onClick={() => setVisibility("anonymous")} disabled={saving}>🕶️ Stay anonymous</button>
+      <button type="button" className={visibility === "named" ? "creator-primary" : ""} onClick={() => setVisibility("named")} disabled={saving}><TinyTitansIcon name="account" size={14} /> Show my name</button>
+      <button type="button" className={visibility === "anonymous" ? "creator-primary" : ""} onClick={() => setVisibility("anonymous")} disabled={saving}><TinyTitansIcon name="lock" size={14} /> Stay anonymous</button>
     </div>
     {visibility === "named" && <label style={{ display: "block", marginTop: 12 }}>Name shown on the Wall<input type="text" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Your display name" disabled={saving} /></label>}
     <label style={{ display: "block", marginTop: 12 }}>Social profile <span>(optional)</span><input type="url" value={socialUrl} onChange={(event) => setSocialUrl(event.target.value)} placeholder="https://..." disabled={saving} /></label>

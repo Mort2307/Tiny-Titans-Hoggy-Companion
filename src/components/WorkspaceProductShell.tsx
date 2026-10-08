@@ -54,7 +54,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
         <span className="workspace-product-tier">{tierDefinition.shortLabel}</span>
         {workspace.access?.source === "tester" && product.id !== "personal" && <span className="workspace-product-live workspace-product-live--test">CREATOR TEST</span>}
         {workspace.access?.source === "trial" && product.id !== "personal" && <span className="workspace-product-live">TRIAL</span>}
-        {rescue && <span className="workspace-product-live">● WORKSPACE ACTIVE</span>}
+        {rescue && <span className="workspace-product-live"><TinyTitansIcon name="check" size={12} /> WORKSPACE ACTIVE</span>}
       </div>
     </header>
 
@@ -69,7 +69,7 @@ export default function WorkspaceProductShell({ children }: { children: ReactNod
         <p>{commandCopy.description}</p>
       </div>
       <div className="workspace-command-actions">
-        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><strong>{item.title}</strong><span>Open →</span></Link>)}
+        {commandCopy.actions.map((item) => <Link key={`${item.title}-${item.path}`} to={item.path} className="workspace-command-action"><strong>{item.title}</strong><span>Open <TinyTitansIcon name="forward" size={13} /></span></Link>)}
       </div>
     </section>}
 
