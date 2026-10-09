@@ -79,7 +79,7 @@ export default function SpeciesMorphLibrary() {
   const statusLabel = geneticsStatus === "mapped"
     ? "Reviewed species genetics catalogue"
     : "Species genetics catalogue pending review";
-  const baselineOnly = geneticsStatus === "baseline-only";
+  const baselineOnly = geneticsStatus === "baseline-only";\n  const variationReviewRequired = variationStatus === "research-required";
 
   function openImageSubmission(morphId: string) {
     setImageSubmissionMorphId(morphId);
@@ -121,10 +121,10 @@ export default function SpeciesMorphLibrary() {
         <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} species-scoped entries currently published</span></div>
       </header>
 
-      {baselineOnly && (
+      {variationReviewRequired && (
         <section className="tracker-card" aria-label="Baseline genetics coverage notice">
           <h2><TinyTitansIcon name="genetics" size={16} /> Variation catalogue research required</h2>
-          <p>Tiny Titans knows this species and has created its dedicated variation-library surface, but the exhaustive species-specific review of known genetic morphs, colour forms, pattern variants, line-bred traits, locality forms and other established captive variations is not complete yet. Until that review is sourced and checked, this library contains only the canonical baseline phenotype.</p>
+          <p>Tiny Titans knows this species and has created its dedicated variation-library surface, but the exhaustive species-specific review of known genetic morphs, colour forms, pattern variants, line-bred traits, locality forms and other established captive variations is not complete yet. Existing reviewed entries remain visible below, but the library is not labelled complete until the full variation review is finished.</p>
           <p><strong>This is an explicit research state, not a finished library.</strong> We will never substitute Hognose, Ball Python, or another species' genetics here, and we will not copy third-party catalogue images into Tiny Titans.</p>
         </section>
       )}
