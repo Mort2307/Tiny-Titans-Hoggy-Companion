@@ -44,13 +44,10 @@ export async function reviewUserMorphSubmission(input: {
       sourceOrBreeder: submission.sourceOrBreeder ?? "",
       sourceUrl: submission.sourceUrl ?? "",
       sourceSubmissionId: submission.id,
-      contributorUid: submission.userId,
-      reviewerNotes: input.reviewerNotes ?? "",
       matchedCanonicalMorphId: input.matchedCanonicalMorphId ?? "",
       geneticsStatus: "unresolved",
       calculatorEligible: false,
       approvedAt: serverTimestamp(),
-      approvedBy: input.reviewerUid ?? "",
     }, { merge: true });
   } else if (input.status === "rejected" || input.status === "merged") {
     await deleteDoc(publicRef).catch(() => undefined);
