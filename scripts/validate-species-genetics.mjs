@@ -32,7 +32,8 @@ requireText("src/data/species/speciesGenetics.ts", '"mapped" | "partial" | "base
 
 requireText("src/components/morph-library/NewMorphSubmissionDialog.tsx", "UniversalSpeciesPicker", "morph/variation proposals must support the universal species catalogue");
 requireText("src/services/morphUserSubmissionService.ts", "findUniversalSpecies", "user variation proposals must validate against the universal species registry");
-requireText("src/components/SpeciesMorphCommunityContribution.tsx", "Suggest morph / variation card", "species libraries must expose the reviewed variation-card proposal path");
+requireText("src/services/morphUserSubmissionService.ts", "variationCardSubmissions", "new variation proposals must use the dedicated moderated collection");
+requireText("src/pages/SpeciesMorphLibrary.tsx", "Suggest a morph / variation card", "species libraries must expose the reviewed variation-card proposal path");
 requireText("src/services/creatorUserMorphSubmissionService.ts", "calculatorEligible: false", "approving a community variation card must not promote it into genetics automatically");
 requireText("src/pages/SpeciesMorphLibrary.tsx", "getApprovedCommunityVariationCards", "approved community variation cards must render in species libraries");
 requireText("firestore.rules", "approvedMorphVariations", "approved variation cards need an explicit public-read / creator-write security boundary");
