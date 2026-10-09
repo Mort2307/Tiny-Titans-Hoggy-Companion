@@ -119,7 +119,8 @@ async function activateUpdatedAppShell() {
   if (registration.waiting) {
     const activation = waitForControllerChange(4_000);
     registration.waiting.postMessage({ type: "SKIP_WAITING" });
-    if (await activation) return;
+    const controllerChanged = await activation;
+    if (controllerChanged || (registration.active && registration.active !== previousActiveWorker)) return;
   }
 
   // The release manifest is newer, but an old Workbox controller can still
