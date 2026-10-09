@@ -7,6 +7,13 @@ const morphImageSubmission = fs.readFileSync('src/hooks/useMorphImageSubmission.
 const newMorphSubmission = fs.readFileSync('src/hooks/useNewMorphSubmission.ts', 'utf8');
 const morphImageDialog = fs.readFileSync('src/components/morph-library/MorphImageSubmissionDialog.tsx', 'utf8');
 const newMorphDialog = fs.readFileSync('src/components/morph-library/NewMorphSubmissionDialog.tsx', 'utf8');
+const speciesMorphImageDialog = fs.readFileSync('src/pages/SpeciesMorphImageSubmissionDialog.tsx', 'utf8');
+const communityVariationMediaDialog = fs.readFileSync('src/components/morph-library/CommunityVariationImageSubmissionDialog.tsx', 'utf8');
+const creatorVariationReview = fs.readFileSync('src/components/CreatorVariationCardReview.tsx', 'utf8');
+const creatorVariationService = fs.readFileSync('src/services/creatorUserMorphSubmissionService.ts', 'utf8');
+const variationCardService = fs.readFileSync('src/services/communityVariationCardService.ts', 'utf8');
+const firestoreRules = fs.readFileSync('firestore.rules', 'utf8');
+const creatorApprovalFunction = fs.readFileSync('functions/creatorApproval.js', 'utf8');
 const creatorSubmissions = fs.readFileSync('src/pages/CreatorSubmissions.tsx', 'utf8');
 const creatorReviewStudio = fs.readFileSync('src/pages/CreatorReviewStudio.tsx', 'utf8');
 const creatorReviewHook = fs.readFileSync('src/hooks/useCreatorReviewStudio.ts', 'utf8');
@@ -35,19 +42,28 @@ const requiredContracts = [
   ['Morph Library passes canonical morphId to image submission', /morphId:selectedMorph\.geneId/.test(morphImageSubmission)],
   ['Morph Library passes canonical morphName to image submission', /morphName:selectedMorph\.name/.test(morphImageSubmission)],
   ['Morph Library passes selected speciesId to image submission', /submitMorphImageV2\(\{speciesId,morphId:selectedMorph\.geneId/.test(morphImageSubmission)],
-  ['Morph Library uses the canonical SpeciesSelector', /id=\"morph-image-submission-species\"/.test(morphImageDialog) && /id=\"user-morph-submission-species\"/.test(newMorphDialog)],
-  ['Morph Library gates unmapped species genetics', morphImageSubmission.includes('isSpeciesGeneticsMapped') && morphImageDialog.includes('species-specific genetics catalogue has not been reviewed and mapped yet')],
+  ['Universal variation proposals use UniversalSpeciesPicker', newMorphDialog.includes('UniversalSpeciesPicker')],
+  ['Universal species image submissions use UniversalSpeciesPicker', speciesMorphImageDialog.includes('UniversalSpeciesPicker')],
+  ['Hognose canonical image submission remains species-scoped', morphImageSubmission.includes('speciesId') && morphImageDialog.includes('selected species')],
   ['Morph Library passes selected speciesId to terminology submission', /createUserMorphSubmission\(user\.uid,\{speciesId,/.test(newMorphSubmission)],
   ['Morph Library image submission records explicit link consent', submissionService.includes('allowMorphLibraryLink') && submissionService.includes('window.confirm')],
   ['Submission service accepts species context', submissionService.includes('speciesId?: string')],
-  ['Submission service validates species context', submissionService.includes('findSnakeSpecies(speciesId)')],
+  ['Submission service validates universal species context', submissionService.includes('findUniversalSpecies(speciesId)')],
   ['Submission service persists speciesId', submissionService.includes('speciesId: species.id')],
   ['Submission service persists speciesName', submissionService.includes('speciesName: species.acceptedScientificName')],
   ['User terminology service accepts species context', userSubmissionService.includes('speciesId?: string')],
   ['User terminology service persists species context', userSubmissionService.includes('speciesName: species.acceptedScientificName')],
   ['Submission type stores speciesId', submissionTypes.includes('speciesId: string')],
   ['Submission type stores Morph Library link consent', submissionTypes.includes('allowMorphLibraryLink?: boolean')],
-  ['Species selector reads the canonical species registry', speciesSelector.includes('INITIAL_SNAKE_SPECIES')],
+  ['Legacy Hognose selector remains available for Hognose-only surfaces', speciesSelector.includes('INITIAL_SNAKE_SPECIES')],
+  ['Universal variation proposal service validates against the universal registry', userSubmissionService.includes('findUniversalSpecies')],
+  ['Variation proposals use the moderated top-level queue', userSubmissionService.includes('variationCardSubmissions')],
+  ['Variation proposal queue is Creator-moderated in Firestore', firestoreRules.includes('match /variationCardSubmissions/{submissionId}') && firestoreRules.includes('allow update, delete: if isCreator()')],
+  ['Approved community variation cards are Creator-published only', firestoreRules.includes('match /approvedMorphVariations/{variationId}') && creatorVariationService.includes('calculatorEligible: false')],
+  ['Approved variation cards are readable by the species library', variationCardService.includes('approvedMorphVariations')],
+  ['Community variation cards accept user-supplied media', communityVariationMediaDialog.includes('submitCommunityVariationImageV2') && submissionService.includes('submitCommunityVariationImageV2')],
+  ['Community variation media is verified server-side before publication', creatorApprovalFunction.includes('approvedMorphVariations') && creatorApprovalFunction.includes('variationCardId')],
+  ['Creator submissions includes variation-card review', creatorSubmissions.includes('CreatorVariationCardReview') && creatorVariationReview.includes('reviewUserMorphSubmission')],
   ['Creator submissions uses the Review Studio', creatorSubmissions.includes('CreatorReviewStudio')],
   ['Creator Review Studio loads photo queue through its controller', creatorReviewHook.includes('getMorphImageSubmissions')],
   ['Creator Review Studio provides live editable draft state through its controller', creatorReviewHook.includes('setDraft') && creatorReviewHook.includes('function patch(')],
