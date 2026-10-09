@@ -8,6 +8,7 @@ import { getApprovedCommunityVariationCards, type ApprovedCommunityVariationCard
 import BackHomeButton from "../components/BackHomeButton";
 import { SpeciesMorphImageSubmissionDialog } from "./SpeciesMorphImageSubmissionDialog";
 import NewMorphSubmissionDialog from "../components/morph-library/NewMorphSubmissionDialog";
+import CommunityVariationImageSubmissionDialog from "../components/morph-library/CommunityVariationImageSubmissionDialog";
 import { rankSearchResults } from "../utils/searchRanking";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
@@ -48,6 +49,7 @@ export default function SpeciesMorphLibrary() {
   const [filter, setFilter] = useState<Filter>("all");
   const [showImageSubmission, setShowImageSubmission] = useState(false);
   const [showVariationProposal, setShowVariationProposal] = useState(false);
+  const [variationImageCard, setVariationImageCard] = useState<ApprovedCommunityVariationCard | null>(null);
   const [imageSubmissionMorphId, setImageSubmissionMorphId] = useState("");
   const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
   const [communityCards, setCommunityCards] = useState<ApprovedCommunityVariationCard[]>([]);
@@ -204,35 +206,51 @@ export default function SpeciesMorphLibrary() {
           <h2>Keeper-contributed variation cards</h2>
           <p>These cards document reviewed names, phenotypes, locality forms or captive variations. They are <strong>not genetics-calculator loci</strong> unless Tiny Titans separately verifies and promotes the inheritance model.</p>
           <div className="morph-library-grid">
-            {filteredCommunityCards.map((card) => (
-              <article key={card.id} className="morph-card morph-card--library">
-                <div className="morph-card__media">
-                  <div className="morph-card__image-empty">
-                    <span className="morph-card__image-icon"><TinyTitansIcon name="morph" size={20} /></span>
-                    <strong>Community variation card</strong>
-                    <span>Image awaiting approved user contribution</span>
+            {filteredCommunityCards.map((card) => {
+              const image = cardImages["community-" + card.id];
+              return (
+                <article key={card.id} className="morph-card morph-card--library">
+                  <div className="morph-card__media">
+                    {image ? (
+                      <div className="morph-card__image-wrap">
+                        <img src={image.imageUrl} alt={card.name + " community reference example"} loading="lazy" />
+                        {(image.creditName || image.creditSocial) && <span className="morph-card__credit">Credit: {image.creditName || image.creditSocial}</span>}
+                      </div>
+                    ) : (
+                      <div className="morph-card__image-empty">
+                        <span className="morph-card__image-icon"><TinyTitansIcon name="morph" size={20} /></span>
+                        <strong>Community variation card</strong>
+                        <span>Image awaiting approved user contribution</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="morph-card__body">
-                  <div className="morph-card__topline"><span>{card.category.replaceAll("-", " ")}</span><span>Reviewed</span></div>
-                  <h2>{card.name}</h2>
-                  <div className="morph-card__classification"><span>Variation record</span><span>Genetics unresolved</span></div>
-                  <p className="morph-card__description">{card.description}</p>
-                  {card.knownGenetics && <p className="morph-card__contains"><strong>Submitted genetics context:</strong> {card.knownGenetics}</p>}
-                  <p className="morph-card__canonical"><strong>Calculator:</strong> Not eligible until inheritance is separately verified.</p>
-                  <div className="morph-card__footer">
-                    <span className="morph-card__source">{card.sourceOrBreeder || "Tiny Titans community review"}</span>
-                    {card.sourceUrl && <a href={card.sourceUrl} target="_blank" rel="noreferrer">Source reference</a>}
+                  <div className="morph-card__body">
+                    <div className="morph-card__topline"><span>{card.category.replaceAll("-", " ")}</span><span>Reviewed</span></div>
+                    <h2>{card.name}</h2>
+                    <div className="morph-card__classification"><span>Variation record</span><span>Genetics unresolved</span></div>
+                    <p className="morph-card__description">{card.description}</p>
+                    {card.knownGenetics && <p className="morph-card__contains"><strong>Submitted genetics context:</strong> {card.knownGenetics}</p>}
+                    <p className="morph-card__canonical"><strong>Calculator:</strong> Not eligible until inheritance is separately verified.</p>
+                    <div className="morph-card__footer">
+                      <span className="morph-card__source">{card.sourceOrBreeder || "Tiny Titans community review"}</span>
+                      {card.sourceUrl && <a href={card.sourceUrl} target="_blank" rel="noreferrer">Source reference</a>}
+                    </div>
+                    <div className="morph-card__actions">
+                      <button type="button" className="morph-card__image-submit" onClick={() => setVariationImageCard(card)}>
+                        <TinyTitansIcon name="camera" size={13} /> {image ? "Add another image" : "Contribute image"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </section>
       )}
 
       {showImageSubmission && selectedSpeciesId && <SpeciesMorphImageSubmissionDialog initialMorphId={imageSubmissionMorphId} initialSpeciesId={selectedSpeciesId} onClose={closeImageSubmission} />}
       {showVariationProposal && selectedSpeciesId && <NewMorphSubmissionDialog initialSpeciesId={selectedSpeciesId} onClose={() => setShowVariationProposal(false)} />}
+      {variationImageCard && selectedSpeciesId && <CommunityVariationImageSubmissionDialog card={variationImageCard} speciesId={selectedSpeciesId} speciesName={speciesName} onClose={() => setVariationImageCard(null)} />}
     </main>
   );
 }
