@@ -13,7 +13,7 @@ const ROOT = resolve(import.meta.dirname, "..");
 const sourceFile = resolve(ROOT, "public/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg");
 const logo = readFileSync(sourceFile);
 
-if (logo.length < 100 || logo[0] !== 0xff || logo[1] !== 0xd8 || logo.at(-2) !== 0xff || logo.at(-1) !== 0xd9) {
+if (logo.length < 100 || logo[0] !== 0xff || logo[1] !== 0xd8 || !logo.includes(Buffer.from([0xff, 0xd9]))) {
   throw new Error("Tiny Titans original logo is missing or is not a valid JPEG.");
 }
 
