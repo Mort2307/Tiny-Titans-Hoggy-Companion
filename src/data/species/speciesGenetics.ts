@@ -3,10 +3,13 @@ import {
   getMasterVisualMorphs,
   type MasterMorphDefinition,
 } from "../masterMorphDatabase";
-import { UNIVERSAL_SPECIES_BY_ID } from "./universalSpeciesRegistry";\nimport type { UniversalSpeciesRecord } from "./universalSpeciesTypes";
+import { UNIVERSAL_SPECIES_BY_ID } from "./universalSpeciesRegistry";
+import type { UniversalSpeciesRecord } from "./universalSpeciesTypes";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_COMBINATION_MORPHS, SPECIES_GENETICS_COMBINATION_SPECS } from "./speciesGeneticsCombinations";
-import { SPECIES_GENETICS_RESEARCH_ADDITIONS } from "./speciesGeneticsResearchAdditions";\nimport { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";\nimport { SPECIES_GENETICS_EXPANSION_BATCH_3 } from "./speciesGeneticsExpansionBatch3";
+import { SPECIES_GENETICS_RESEARCH_ADDITIONS } from "./speciesGeneticsResearchAdditions";
+import { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";
+import { SPECIES_GENETICS_EXPANSION_BATCH_3 } from "./speciesGeneticsExpansionBatch3";
 
 type SpeciesRecord = UniversalSpeciesRecord;
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
