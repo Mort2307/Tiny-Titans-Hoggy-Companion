@@ -8,8 +8,9 @@ import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_COMBINATION_MORPHS, SPECIES_GENETICS_COMBINATION_SPECS } from "./speciesGeneticsCombinations";
 import { SPECIES_GENETICS_RESEARCH_ADDITIONS } from "./speciesGeneticsResearchAdditions";\nimport { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";\nimport { SPECIES_GENETICS_EXPANSION_BATCH_3 } from "./speciesGeneticsExpansionBatch3";
 
-type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
+type SpeciesRecord = UniversalSpeciesRecord;
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
+export type SpeciesVariationLibraryStatus = "catalogued" | "reviewed-no-established-variants" | "research-required";
 
 const normalise = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
 const normalTrait = (speciesName: string): MasterMorphDefinition => ({
