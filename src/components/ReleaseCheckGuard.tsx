@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import TinyTitansIcon from "./TinyTitansIcon";
+import { TINY_TITANS_SW_UPDATE_EVENT } from "../services/pwaUpdateService";
 import "../styles/AppUpdatePrompt.css";
 
 declare const __TINY_TITANS_BUILD_ID__: string;
@@ -155,6 +156,7 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
   const [phase, setPhase] = useState<Phase>(import.meta.env.DEV ? "ready" : "checking");
   const [pendingBuild, setPendingBuild] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [confirmRestart, setConfirmRestart] = useState(false);
   const inFlight = useRef(false);
   const touchedSession = useRef(false);
   const phaseRef = useRef<Phase>(phase);
@@ -219,12 +221,14 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
     const markInteraction = () => { touchedSession.current = true; };
     const onResume = () => { if (document.visibilityState === "visible") void check("resume"); };
     const onVisibility = () => { if (document.visibilityState === "visible") void check("resume"); };
+    const onWorkerChanged = () => { if (document.visibilityState === "visible") void check("poll"); };
 
     document.addEventListener("pointerdown", markInteraction, { capture: true });
     document.addEventListener("keydown", markInteraction, { capture: true });
     document.addEventListener("input", markInteraction, { capture: true });
     window.addEventListener("focus", onResume);
     window.addEventListener("online", onResume);
+    window.addEventListener(TINY_TITANS_SW_UPDATE_EVENT, onWorkerChanged);
     document.addEventListener("visibilitychange", onVisibility);
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") void check("poll");
@@ -237,6 +241,7 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
       document.removeEventListener("input", markInteraction, true);
       window.removeEventListener("focus", onResume);
       window.removeEventListener("online", onResume);
+      window.removeEventListener(TINY_TITANS_SW_UPDATE_EVENT, onWorkerChanged);
       document.removeEventListener("visibilitychange", onVisibility);
       window.clearInterval(interval);
     };
@@ -270,8 +275,20 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
       {children}
       {pendingBuild && (
         <aside className="tt-release-banner" role="status" aria-live="polite">
-          <span><strong>New Tiny Titans version ready</strong><small>Finish and save your current work before updating. The next fresh launch will update automatically.</small></span>
-          <button type="button" onClick={() => void applyUpdate(pendingBuild, true)}>Update now</button>
+          <span>
+            <strong>{confirmRestart ? "Ready to restart Tiny Titans?" : "New Tiny Titans version ready"}</strong>
+            <small>{confirmRestart
+              ? "Unsaved feeding, weight or other forms may be lost. Save your records before continuing."
+              : "Save your current work first. The next fresh launch will update automatically."}</small>
+          </span>
+          {confirmRestart ? (
+            <div className="tt-release-banner-actions">
+              <button type="button" onClick={() => void applyUpdate(pendingBuild, true)}>Restart &amp; update</button>
+              <button type="button" className="tt-release-banner-cancel" onClick={() => setConfirmRestart(false)}>Keep working</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setConfirmRestart(true)}>Update now</button>
+          )}
         </aside>
       )}
     </>
