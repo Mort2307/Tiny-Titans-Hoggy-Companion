@@ -7,6 +7,18 @@ function submissionCollection(uid: string) {
   return collection(db, "users", uid, "morphSubmissions");
 }
 
+function optionalHttpUrl(value: string | undefined): string {
+  const raw = value?.trim() ?? "";
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error("unsupported protocol");
+    return parsed.toString();
+  } catch {
+    throw new Error("Source URL must be a valid http:// or https:// address.");
+  }
+}
+
 export type CreateMorphSubmissionInput = {
   /** Optional during migration; existing terminology submissions are Hognose-originated. */
   speciesId?: string;
@@ -39,7 +51,7 @@ export async function createUserMorphSubmission(uid: string, input: CreateMorphS
     description: input.description.trim(),
     knownGenetics: input.knownGenetics?.trim() || "",
     sourceOrBreeder: input.sourceOrBreeder?.trim() || "",
-    sourceUrl: input.sourceUrl?.trim() || "",
+    sourceUrl: optionalHttpUrl(input.sourceUrl),
     status: "pending" as UserMorphSubmissionStatus,
     createdAt: now,
     updatedAt: now,
