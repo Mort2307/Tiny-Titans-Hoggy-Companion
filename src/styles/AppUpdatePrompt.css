@@ -297,3 +297,49 @@
     animation: none !important;
   }
 }
+
+/* Fresh-release notice stays visible without interrupting a keeper's unsaved form. */
+.tt-release-banner {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 100090;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  max-width: 780px;
+  margin-inline: auto;
+  padding: 14px 16px;
+  border: 1px solid rgba(245, 182, 66, .52);
+  border-radius: 18px;
+  background: #17101f;
+  color: #f7f3fb;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, .48);
+}
+
+.tt-release-banner span { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.tt-release-banner strong { color: #f5b642; font-size: .88rem; }
+.tt-release-banner small { color: rgba(247, 243, 251, .78); font-size: .76rem; line-height: 1.4; }
+.tt-release-banner button {
+  min-height: 44px;
+  border: 1px solid rgba(0, 174, 255, .5);
+  border-radius: 12px;
+  background: #46246a;
+  color: #fff;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tt-release-banner button:focus-visible { outline: 3px solid #00aeff; outline-offset: 2px; }
+
+@media (max-width: 800px) {
+  .tt-release-banner {
+    bottom: calc(86px + env(safe-area-inset-bottom));
+    align-items: stretch;
+  }
+  .tt-release-banner button { width: 100%; }
+}
