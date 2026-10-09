@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import SpeciesSelector from "../components/SpeciesSelector";
+import UniversalSpeciesPicker from "../components/UniversalSpeciesPicker";
 import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
 import { getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
-import { findSnakeSpecies } from "../data/species/speciesRegistry";
+import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import { submitMorphImageV2, type MorphCreditMode } from "../services/morphSubmissionServiceV2";
-import { masterMorphs, type MasterMorphDefinition } from "../data/masterMorphDatabase";
+import type { MasterMorphDefinition } from "../data/masterMorphDatabase";
 import "../styles/morphLibrary.css";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 
@@ -24,10 +24,10 @@ export function SpeciesMorphImageSubmissionDialog({
   initialSpeciesId: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [speciesId, setSpeciesId] = useState(findSnakeSpecies(initialSpeciesId)?.id ?? initialSpeciesId);
-  const selectedSpecies = findSnakeSpecies(speciesId);
+  const [speciesId, setSpeciesId] = useState(findUniversalSpecies(initialSpeciesId)?.id ?? initialSpeciesId);
+  const selectedSpecies = findUniversalSpecies(speciesId);
   const speciesEntries = useMemo(() => getSpeciesVisualMorphs(speciesId).map(asReferenceEntry), [speciesId]);
-  const fallbackEntries = useMemo(() => speciesEntries.length ? speciesEntries : masterMorphs.map(asReferenceEntry), [speciesEntries]);
+  const fallbackEntries = speciesEntries;
   const [selectedMorph, setSelectedMorph] = useState<MorphReferenceEntry | null>(null);
   const [morphSearch, setMorphSearch] = useState("");
   const [morphMenuOpen, setMorphMenuOpen] = useState(false);
@@ -60,7 +60,7 @@ export function SpeciesMorphImageSubmissionDialog({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
-    if (!selectedSpecies) { setError("Select a recognised snake species first."); return; }
+    if (!selectedSpecies) { setError("Select a recognised Tiny Titans species first."); return; }
     if (!selectedMorph) { setError("Select the canonical morph this photograph represents."); return; }
     if (!image || !photoRequirementsConfirmed || !factualAccuracyConfirmed) { setError("Add a compliant photograph and confirm the evidence requirements."); return; }
     setBusy(true);
@@ -89,7 +89,7 @@ export function SpeciesMorphImageSubmissionDialog({
           <form onSubmit={(event) => void handleSubmit(event)}>
             <div className="morph-detail__eyebrow"><TinyTitansIcon name="morph" size={13} /> MORPH IMAGE SUBMISSION</div>
             <h2>Submit a morph image</h2>
-            <SpeciesSelector id="species-morph-image-submission-species" value={speciesId} onChange={setSpeciesId} label="Species" />
+            <UniversalSpeciesPicker value={speciesId} onChange={(species) => setSpeciesId(species?.id ?? "")} label="Species" allowUnknown={false} />
             <section className="morph-detail__section">
               <h3><TinyTitansIcon name="morph" size={15} /> Select the canonical morph</h3>
               <p className="morph-detail__source-note">This photograph will be tagged to the selected species and exact Morph Library entry. A pending genetics catalogue still supports Normal / Wild Type image evidence.</p>
