@@ -4,6 +4,7 @@ import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesGeneticsStatus, getSpeciesVariationLibraryStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { getApprovedMorphImages } from "../services/creatorService";
 import type { ApprovedMorphImage } from "../types/morphSubmission";
+import { getApprovedCommunityVariationCards, type ApprovedCommunityVariationCard } from "../services/communityVariationCardService";
 import BackHomeButton from "../components/BackHomeButton";
 import { SpeciesMorphImageSubmissionDialog } from "./SpeciesMorphImageSubmissionDialog";
 import { rankSearchResults } from "../utils/searchRanking";
@@ -47,6 +48,7 @@ export default function SpeciesMorphLibrary() {
   const [showImageSubmission, setShowImageSubmission] = useState(false);
   const [imageSubmissionMorphId, setImageSubmissionMorphId] = useState("");
   const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
+  const [communityCards, setCommunityCards] = useState<ApprovedCommunityVariationCard[]>([]);
   const speciesName = selectedUniversalSpecies?.commonNames[0] ?? selectedUniversalSpecies?.acceptedScientificName ?? "Selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const variationStatus = getSpeciesVariationLibraryStatus(selectedSpeciesId);
@@ -70,6 +72,27 @@ export default function SpeciesMorphLibrary() {
       });
     return () => { cancelled = true; };
   }, [selectedSpeciesId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCommunityCards([]);
+    if (!selectedSpeciesId) return undefined;
+    void getApprovedCommunityVariationCards(selectedSpeciesId)
+      .then((cards) => { if (!cancelled) setCommunityCards(cards); })
+      .catch(() => { if (!cancelled) setCommunityCards([]); });
+    return () => { cancelled = true; };
+  }, [selectedSpeciesId]);
+
+  const filteredCommunityCards = useMemo(() => {
+    if (filter !== "all") return [];
+    const needle = query.trim().toLowerCase();
+    if (!needle) return communityCards;
+    return communityCards.filter((card) =>
+      [card.name, card.category, card.description, card.knownGenetics, card.sourceOrBreeder]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(needle)),
+    );
+  }, [communityCards, filter, query]);
 
   const filtered = useMemo(() => {
     const filteredEntries = entries.filter((morph) => matchesFilter(morph, filter));
@@ -171,6 +194,39 @@ export default function SpeciesMorphLibrary() {
           );
         })}
       </section>
+
+      {filteredCommunityCards.length > 0 && (
+        <section className="tracker-card" aria-label="Community reviewed variation cards">
+          <div className="morph-library__eyebrow"><TinyTitansIcon name="community" size={14} /> COMMUNITY-REVIEWED VARIATIONS</div>
+          <h2>Keeper-contributed variation cards</h2>
+          <p>These cards document reviewed names, phenotypes, locality forms or captive variations. They are <strong>not genetics-calculator loci</strong> unless Tiny Titans separately verifies and promotes the inheritance model.</p>
+          <div className="morph-library-grid">
+            {filteredCommunityCards.map((card) => (
+              <article key={card.id} className="morph-card morph-card--library">
+                <div className="morph-card__media">
+                  <div className="morph-card__image-empty">
+                    <span className="morph-card__image-icon"><TinyTitansIcon name="morph" size={20} /></span>
+                    <strong>Community variation card</strong>
+                    <span>Image awaiting approved user contribution</span>
+                  </div>
+                </div>
+                <div className="morph-card__body">
+                  <div className="morph-card__topline"><span>{card.category.replaceAll("-", " ")}</span><span>Reviewed</span></div>
+                  <h2>{card.name}</h2>
+                  <div className="morph-card__classification"><span>Variation record</span><span>Genetics unresolved</span></div>
+                  <p className="morph-card__description">{card.description}</p>
+                  {card.knownGenetics && <p className="morph-card__contains"><strong>Submitted genetics context:</strong> {card.knownGenetics}</p>}
+                  <p className="morph-card__canonical"><strong>Calculator:</strong> Not eligible until inheritance is separately verified.</p>
+                  <div className="morph-card__footer">
+                    <span className="morph-card__source">{card.sourceOrBreeder || "Tiny Titans community review"}</span>
+                    {card.sourceUrl && <a href={card.sourceUrl} target="_blank" rel="noreferrer">Source reference</a>}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {showImageSubmission && selectedSpeciesId && <SpeciesMorphImageSubmissionDialog initialMorphId={imageSubmissionMorphId} initialSpeciesId={selectedSpeciesId} onClose={closeImageSubmission} />}
     </main>
