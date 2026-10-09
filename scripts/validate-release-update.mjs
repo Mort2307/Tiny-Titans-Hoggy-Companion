@@ -38,4 +38,40 @@ assert.ok(!guard.includes("Continue temporarily"), "An outdated online workspace
 assert.ok(!guard.includes('await applyUpdate(release.buildId)'), "Outdated startup must display the update button instead of auto-refreshing invisibly");
 assert.ok(guard.includes('phase === "updating"'), "Update installation must display progress");
 
+// The app icon, tab favicon, shortcuts and legacy PWA icon URLs must all
+// resolve to the keeper's actual logo, not an earlier lightning-bolt SVG.
+const originalLogo = fs.readFileSync("public/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg");
+const logoFingerprint = originalLogo.toString("base64").slice(0,128);
+const brandedIcons = [
+  "favicon-brand.svg",
+  "icons/tiny-titans-brand-192.svg",
+  "icons/tiny-titans-brand-512.svg",
+  "icons/tiny-titans-brand-maskable-512.svg",
+  "favicon.svg",
+  "icons/tiny-titans-192.svg",
+  "icons/tiny-titans-512.svg",
+];
+for (const icon of brandedIcons) {
+  const file = `dist/${icon}`;
+  assert.ok(fs.existsSync(file), `Logo-based PWA asset missing: ${file}`);
+  const svg = fs.readFileSync(file, "utf8");
+  assert.ok(svg.includes("data:image/jpeg;base64,") && svg.includes(logoFingerprint),
+    `PWA asset is not generated from the original Tiny Titans logo: ${file}`);
+  assert.ok(!svg.includes('fill="#863bff"'), `Obsolete lightning bolt remains in ${file}`);
+}
+const builtIndex = fs.readFileSync("dist/index.html", "utf8");
+assert.ok(builtIndex.includes("/favicon-brand.svg?v=7"), "Browser favicon must use the updated logo URL");
+assert.ok(builtIndex.includes("/manifest.webmanifest?v=7"), "PWA manifest URL must be cache-busted");
+const builtManifest = JSON.parse(fs.readFileSync("dist/manifest.webmanifest", "utf8"));
+for (const expected of [
+  "/icons/tiny-titans-brand-192.svg",
+  "/icons/tiny-titans-brand-512.svg",
+  "/icons/tiny-titans-brand-maskable-512.svg",
+]) {
+  assert.ok(builtManifest.icons?.some((icon) => icon.src === expected), `Built PWA manifest missing ${expected}`);
+}
+assert.ok(builtManifest.icons?.some((icon) => icon.type === "image/jpeg" &&
+  icon.src === "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg"),
+  "PWA manifest must retain the original raster logo as a fallback");
+
 console.log(`Tiny Titans forced-release contract PASS: ${release.buildId} across ${hosting.length} Firebase Hosting target(s).`);
