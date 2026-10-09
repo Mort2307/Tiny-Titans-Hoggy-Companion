@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import TinyTitansIcon from "./TinyTitansIcon";
-import { TINY_TITANS_SW_UPDATE_EVENT } from "../services/pwaUpdateService";
+import {
+  TINY_TITANS_SW_UPDATE_EVENT,
+  TINY_TITANS_OFFLINE_READY_EVENT,
+  hasTinyTitansOfflineReadyNotification,
+} from "../services/pwaUpdateService";
 import "../styles/AppUpdatePrompt.css";
 
 declare const __TINY_TITANS_BUILD_ID__: string;
@@ -158,6 +162,7 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
   const [pendingBuild, setPendingBuild] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [confirmRestart, setConfirmRestart] = useState(false);
+  const [offlineReady, setOfflineReady] = useState(hasTinyTitansOfflineReadyNotification);
   const inFlight = useRef(false);
   const touchedSession = useRef(false);
   const phaseRef = useRef<Phase>(phase);
@@ -165,6 +170,29 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
 
   useEffect(() => { phaseRef.current = phase; }, [phase]);
   useEffect(() => { pendingBuildRef.current = pendingBuild; }, [pendingBuild]);
+
+  useEffect(() => {
+    let timer: number | undefined;
+    const showOfflineReady = () => {
+      setOfflineReady(true);
+      if (timer !== undefined) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        setOfflineReady(false);
+        window.__tinyTitansOfflineReady = false;
+      }, 4500);
+    };
+    window.addEventListener(TINY_TITANS_OFFLINE_READY_EVENT, showOfflineReady);
+    if (hasTinyTitansOfflineReadyNotification()) {
+      timer = window.setTimeout(() => {
+        setOfflineReady(false);
+        window.__tinyTitansOfflineReady = false;
+      }, 4500);
+    }
+    return () => {
+      window.removeEventListener(TINY_TITANS_OFFLINE_READY_EVENT, showOfflineReady);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, []);
 
   const applyUpdate = useCallback(async (buildId: string, manual = false) => {
     if (!manual && getAttempts(buildId) >= MAX_AUTOMATIC_ATTEMPTS) {
@@ -274,6 +302,12 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
   return (
     <>
       {children}
+      {offlineReady && !pendingBuild && (
+        <div className="tt-offline-ready" role="status">
+          <TinyTitansIcon name="check" size={16} />
+          <span><strong>Ready offline</strong><small>Core Tiny Titans files are available on this device.</small></span>
+        </div>
+      )}
       {pendingBuild && (
         <aside className="tt-release-banner" role="status" aria-live="polite">
           <span>
