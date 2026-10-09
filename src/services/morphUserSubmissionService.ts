@@ -1,10 +1,10 @@
-import { addDoc, collection, getDocs, orderBy, query, serverTimestamp, updateDoc, doc } from "firebase/firestore";
+import { addDoc, collection, getDocs, query, serverTimestamp, updateDoc, doc, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import type { MorphSubmissionCategory, UserMorphSubmission, UserMorphSubmissionStatus } from "../types/morphSubmission";
 
-function submissionCollection(uid: string) {
-  return collection(db, "users", uid, "morphSubmissions");
+function submissionCollection() {
+  return collection(db, "variationCardSubmissions");
 }
 
 function optionalHttpUrl(value: string | undefined): string {
@@ -57,19 +57,21 @@ export async function createUserMorphSubmission(uid: string, input: CreateMorphS
     updatedAt: now,
     serverCreatedAt: serverTimestamp(),
   };
-  const reference = await addDoc(submissionCollection(uid), payload);
+  const reference = await addDoc(submissionCollection(), payload);
   return { ...payload, id: reference.id, createdAt: now, updatedAt: now };
 }
 
 export async function getUserMorphSubmissions(uid: string): Promise<UserMorphSubmission[]> {
   if (!uid) return [];
-  const snapshot = await getDocs(query(submissionCollection(uid), orderBy("createdAt", "desc")));
-  return snapshot.docs.map((item) => ({ ...item.data(), id: item.id }) as UserMorphSubmission);
+  const snapshot = await getDocs(query(submissionCollection(), where("userId", "==", uid)));
+  return snapshot.docs
+    .map((item) => ({ ...item.data(), id: item.id }) as UserMorphSubmission)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function updateUserMorphSubmissionStatus(uid: string, submissionId: string, status: UserMorphSubmissionStatus, reviewerNotes?: string, matchedCanonicalMorphId?: string): Promise<void> {
   if (!uid || !submissionId) return;
-  await updateDoc(doc(submissionCollection(uid), submissionId), {
+  await updateDoc(doc(db, "variationCardSubmissions", submissionId), {
     status,
     reviewerNotes: reviewerNotes ?? "",
     matchedCanonicalMorphId: matchedCanonicalMorphId ?? "",
