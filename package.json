@@ -128,7 +128,9 @@
     "deploy:keeper:full": "npm run build && npm run validate:release-update && firebase deploy --only hosting:legacy,hosting:keeper,firestore:indexes && node scripts/deploy-functions-batched.mjs",
     "deploy:live": "npm run build && npm run validate:release-update && firebase deploy --only hosting:legacy,hosting:keeper && node scripts/deploy-functions-batched.mjs",
     "validate:chatgpt-publication": "node scripts/validate-chatgpt-publication.mjs",
-    "validate:release-update": "node scripts/validate-release-update.mjs"
+    "validate:release-update": "node scripts/validate-release-update.mjs",
+    "prebuild": "node scripts/generate-brand-pwa-assets.mjs",
+    "predev": "node scripts/generate-brand-pwa-assets.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
