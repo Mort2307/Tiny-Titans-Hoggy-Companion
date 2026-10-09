@@ -36,6 +36,10 @@ requireText("src/services/morphUserSubmissionService.ts", "variationCardSubmissi
 requireText("src/pages/SpeciesMorphLibrary.tsx", "Suggest a morph / variation card", "species libraries must expose the reviewed variation-card proposal path");
 requireText("src/services/creatorUserMorphSubmissionService.ts", "calculatorEligible: false", "approving a community variation card must not promote it into genetics automatically");
 requireText("src/pages/SpeciesMorphLibrary.tsx", "getApprovedCommunityVariationCards", "approved community variation cards must render in species libraries");
+requireText("src/services/morphSubmissionServiceV2.ts", "submitCommunityVariationImageV2", "approved community variation cards must accept moderated user media");
+requireText("src/services/morphSubmissionLifecycle.ts", "submission.variationCardId", "Creator review must understand community variation-card media without cross-species fallback");
+requireText("functions/creatorApproval.js", "approvedMorphVariations", "server approval must verify community variation-card identity before publishing media");
+requireText("src/hooks/useMorphLibrary.ts", "getApprovedMorphImages(undefined, DEFAULT_SPECIES_ID)", "legacy Hognose imagery must remain species-scoped");
 requireText("firestore.rules", "approvedMorphVariations", "approved variation cards need an explicit public-read / creator-write security boundary");
 
 forbidText("src/components/Layout/Header.tsx", "Hoggy Companion", "the in-app brand must be Tiny Titans Reptile Companion");
