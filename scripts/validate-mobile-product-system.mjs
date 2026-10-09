@@ -165,6 +165,10 @@ if (!releaseGuard.includes('role="status"') || !releaseGuard.includes('aria-live
 if (!releaseGuard.includes("setConfirmRestart(true)") || !releaseGuard.includes("Restart &amp; update")) {
   errors.push("Restart must require a second confirmation to protect unsaved tracker forms.");
 }
+if (!releaseGuard.includes('setPhase("required")') || !releaseGuard.includes("Update Tiny Titans") ||
+    !releaseGuard.includes("tt-release-gate-spinner") || releaseGuard.includes("Continue temporarily")) {
+  errors.push("A newer online release must show an accessible blocking update button and visible progress before the workspace opens.");
+}
 if (!pwaService.includes("TINY_TITANS_OFFLINE_READY_EVENT") || !pwaService.includes("onOfflineReady()") ||
     !releaseGuard.includes("hasTinyTitansOfflineReadyNotification") || !releaseGuard.includes("Ready offline")) {
   errors.push("PWA service must surface offline-ready status through the unified release guard.");
