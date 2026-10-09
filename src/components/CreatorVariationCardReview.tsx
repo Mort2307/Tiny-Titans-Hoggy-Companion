@@ -23,6 +23,7 @@ export default function CreatorVariationCardReview() {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [reviewNote, setReviewNote] = useState("");
 
   const visible = useMemo(
     () => filter === "pending"
@@ -45,19 +46,17 @@ export default function CreatorVariationCardReview() {
   }
 
   useEffect(() => { if (profile?.role === "admin") void load(); }, [profile?.role]);
+  useEffect(() => { setReviewNote(selected?.reviewerNotes ?? ""); }, [selected]);
 
   async function decide(status: UserMorphSubmissionStatus) {
     if (!selected || !user) return;
-    const promptText =
-      status === "approved"
-        ? "Approval / evidence note. This publishes a public variation card but does NOT promote it into the genetics calculator:"
-        : status === "merged"
-          ? "Which existing record does this duplicate or alias?"
-          : status === "under-review"
-            ? "Optional research note:"
-            : "Rejection note:";
-    const note = window.prompt(promptText, selected.reviewerNotes ?? "") ?? "";
-    if ((status === "rejected" || status === "merged") && !note.trim()) return;
+    const note = reviewNote.trim();
+    if ((status === "rejected" || status === "merged") && !note) {
+      setError(status === "merged"
+        ? "Add a reviewer note identifying the duplicate, alias or existing record before merging."
+        : "Add a reviewer note explaining why this variation proposal is being rejected.");
+      return;
+    }
 
     setWorking(true);
     setError("");
@@ -147,6 +146,18 @@ export default function CreatorVariationCardReview() {
               <div><strong>Region</strong><span>{selected.region}</span></div>
               <div><strong>Current status</strong><span>{selected.status}</span></div>
             </div>
+
+            <label className="creator-user-detail-section">
+              <strong>Reviewer note</strong>
+              <textarea
+                value={reviewNote}
+                onChange={(event) => { setReviewNote(event.target.value); setError(""); }}
+                rows={4}
+                placeholder="Evidence note, research context, rejection reason, or the existing record this should merge into…"
+                disabled={working}
+              />
+              <small>Required for Reject and Merge / duplicate. Approval notes are optional but recommended when documenting evidence.</small>
+            </label>
 
             <div className="creator-list-item">
               <strong>Safety boundary</strong>
