@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useSpeciesContext } from '../context/SpeciesContext';
-import { findSnakeSpecies } from '../data/species/speciesRegistry';
+import { findUniversalSpecies } from '../data/species/universalSpeciesRegistry';
 import { getSpeciesVisualMorphs } from '../data/species/speciesGenetics';
 import { masterMorphs } from '../data/masterMorphDatabase';
 import { getApprovedMorphImages } from '../services/creatorService';
@@ -15,9 +15,11 @@ function mediaKind(item: ApprovedMorphImage): MorphMediaType { return item.media
 
 export default function SpeciesMorphGallery() {
   const { morphId } = useParams();
-  const { selectedSpeciesId, selectedSpecies } = useSpeciesContext();
-  const speciesId = selectedSpeciesId || selectedSpecies?.id || 'heterodon-nasicus';
-  const species = selectedSpecies ?? findSnakeSpecies(speciesId);
+  const [searchParams] = useSearchParams();
+  const { selectedSpeciesId, selectedUniversalSpecies } = useSpeciesContext();
+  const routeSpecies = findUniversalSpecies(searchParams.get("species") ?? "");
+  const speciesId = routeSpecies?.id ?? selectedSpeciesId;
+  const species = routeSpecies ?? selectedUniversalSpecies ?? findUniversalSpecies(speciesId);
   const morph = useMemo(() => speciesId === 'heterodon-nasicus'
     ? masterMorphs.find((entry) => entry.geneId === morphId)
     : getSpeciesVisualMorphs(speciesId).find((entry) => entry.geneId === morphId), [morphId, speciesId]);
@@ -40,7 +42,7 @@ export default function SpeciesMorphGallery() {
     return () => { cancelled = true; };
   }, [morph, speciesId]);
 
-  if (!morph) return <main className="page-container morph-library-page"><BackHomeButton /><section className="tracker-card"><h1>Morph gallery not found</h1><p>This morph is not published for {speciesName}.</p><Link className="morph-card__open" to="/morph-library">Back to Morph Library</Link></section></main>;
+  if (!morph) return <main className="page-container morph-library-page"><BackHomeButton /><section className="tracker-card"><h1>Morph gallery not found</h1><p>This morph is not published for {speciesName}.</p><Link className="morph-card__open" to={speciesId ? `/morph-library?species=${encodeURIComponent(speciesId)}` : "/morph-library"}>Back to Morph Library</Link></section></main>;
 
   return <main className="page-container morph-library-page">
     <BackHomeButton />
@@ -48,7 +50,7 @@ export default function SpeciesMorphGallery() {
       <div className="morph-library__eyebrow"><TinyTitansIcon name="camera" size={14} /> TINY TITANS · MORPH GALLERY</div>
       <h1>{morph.name}</h1>
       <p>{speciesName} · {loading ? 'Loading approved community media…' : `${media.length} approved ${media.length === 1 ? 'submission' : 'submissions'}`}</p>
-      <div className="morph-library__filters"><Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}`}><TinyTitansIcon name="back" size={13} /> Morph Information</Link><Link className="morph-card__image-submit" to={`/morph-library?submitMorphImage=1&morphId=${encodeURIComponent(morph.geneId)}`}><TinyTitansIcon name="camera" size={13} /> Add submission</Link></div>
+      <div className="morph-library__filters"><Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}?species=${encodeURIComponent(speciesId)}`}><TinyTitansIcon name="back" size={13} /> Morph Information</Link><Link className="morph-card__image-submit" to={`/morph-library?species=${encodeURIComponent(speciesId)}&submitMorphImage=1&morphId=${encodeURIComponent(morph.geneId)}`}><TinyTitansIcon name="camera" size={13} /> Add submission</Link></div>
     </header>
 
     <section className="morph-community-gallery morph-community-gallery--page">
