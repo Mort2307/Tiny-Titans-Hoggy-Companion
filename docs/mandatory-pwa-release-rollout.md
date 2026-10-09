@@ -9,9 +9,10 @@ Tiny Titans must not expose an outdated keeper workspace on a normal online **co
 - Each `npm run build` produces a new unique `tt-* ` build ID (without the whitespace) embedded in JavaScript and `dist/release.json`. Both Firebase Hosting targets deploy the **same** dist directory.
 - `/release.json` is served `Cache-Control: no-store`. It is excluded from Workbox precache and fetched using `cache: no-store` with a changing query parameter.
 - On each cold online launch, only the release shell is displayed until a manifest check succeeds or a **5-second** timeout occurs. Offline and unreachable-server conditions fall back to the existing app so vital animal records stay accessible.
-- When the server ID differs from the running bundle, the app tries to activate a newer `/sw.js` worker, then navigates back to the same route with a one-time release query. It can unregister the **app-shell SW only** as a recovery route; it does not delete Cache Storage, account data, Firestore records, or the Firebase Messaging SW.
+- On a **normal online cold launch**, the app shows a visible version-check screen. If the server ID differs from the running JS, the workspace stays **unmounted** and a blocking **Update Tiny Titans** button is displayed. There is no Later/Continue option for a known newer release.
+- After the user taps **Update Tiny Titans**, the gate shows an installation spinner/progress indicator, tries to activate the current `/sw.js` worker, then navigates to the original route with the new release identifier. It may unregister the app-shell SW as a recovery route, but never deletes Firestore, Cache Storage or the messaging worker.
 - A running session checks again on focus, reconnect, visibility and every 45 seconds. It **does not automatically discard unsaved form state**. Instead, a persistent update notice appears; clicking update requires a second explicit restart confirmation.
-- Two automatic attempts per build per browser session prevent an infinite reload cycle; the user can retry or continue temporarily if the update cannot succeed. This emergency access is intentional because animal care records must remain accessible during connectivity failures.
+- Repeated unsuccessful attempts are recorded for error messaging. When a *new* online version is confirmed, the gate stays blocked until the user explicitly updates successfully. If the release server cannot be reached or the device is offline, the last installed app remains accessible so keepers can still retrieve care records; the check repeats on reconnect.
 - An older deployed PWA cannot execute code that did not exist when it was installed. `skipWaiting: true`, `clientsClaim: false` provides a bridge after its existing updater checks for the new worker; it can then load the new release on a subsequent navigation/relaunch without interrupting an active old page.
 
 ## Release checklist
@@ -20,11 +21,11 @@ Tiny Titans must not expose an outdated keeper workspace on a normal online **co
 2. Run `npm ci`, `npm run lint`, `npm run typecheck`, `npm run build` and `npm run validate:release-update` in a clean clone. Do **not** deploy on a failing check.
 3. Verify that `dist/release.json` exists and matches the build ID in the generated JavaScript. Check `dist/sw.js` has no release manifest precache entry.
 4. On a test Hosting target, check `curl -I https://<test-host>/release.json` returns `Cache-Control: no-store` and check a normal GET returns JSON rather than `index.html`.
-5. Browser without service worker: old tab → deploy new build → cold reload → new version.
-6. Browser with old controlled service worker: old tab → deploy new build → first cold reopen → worker migration/new version. Watch for a stuck reload loop.
+5. Browser without service worker: load preview release A, deploy preview release B, then cold reload old tab → visible **Update required** gate → tap **Update Tiny Titans** → installation progress → release B opens.
+6. Browser with old controlled service worker: load preview release A, deploy release B, then first cold reopen → mandatory update button before workspace. Test worker migration, not just a fresh tab already on B. Watch for a stuck reload loop.
 7. Installed Android PWA: same test with app closed/reopened; test swipe-away, poor network, network restoration, and notification worker separately.
 8. Installed iOS/iPadOS PWA: test cold reopen and background/foreground resume; iOS may preserve a running page rather than starting a new JS session. The existing-session banner must be visible without erasing forms.
-9. With a feeding or weight form partly filled in, deploy another test release: verify **no automatic mid-form refresh** and that the restart confirmation explicitly warns about unsaved work.
+9. With a feeding or weight form partly filled in, deploy another test release: verify **no automatic mid-form refresh** and that the restart confirmation explicitly warns about unsaved work. New cold sessions should block entry until the required update button has been clicked.
 10. Confirm the account, family access, feeding and weight data, offline availability, and Firebase push registrations still work after updating.
 11. Only then deploy both production Hosting targets using `npm run deploy:keeper` or a deployment command that runs the release manifest validation. Monitor requests, version transitions, and client failures.
 
@@ -35,3 +36,4 @@ Rollback must deploy the previously verified **complete dist artifact** with a m
 ## Visibility and limitations
 
 This release checker verifies the **current device**, not population-wide update adoption. A reliable administrator adoption dashboard needs a separate privacy-aware version heartbeat, aggregation, retention policy, and opt-in/notice where required. Neither the release checker nor a Firebase Hosting deployment can instantaneously wake an offline or indefinitely unopened installed PWA.
+\n## Interpreting preview behaviour\n\nThe mandatory prompt is deliberately **not** shown on a device already running the same build ID as the server. Only the brief version-check animation appears. To prove mandatory updates, first **open release A** on a device, deploy **release B** to the *same* preview channel, and then reopen the **old** installation. A brand-new preview tab opened only after B is deployed will already run B and has nothing to update.\n
