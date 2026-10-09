@@ -16,9 +16,21 @@ const library = read("src/pages/SpeciesMorphLibrary.tsx");
 const proposal = read("src/components/morph-library/NewMorphSubmissionDialog.tsx");
 const proposalService = read("src/services/morphUserSubmissionService.ts");
 const rules = read("firestore.rules");
+const allTierIds = ["free", "titan_pro", "titan_seller", "business_starter", "business_plus", "business_advanced", "rescue"];
 
 requireText("src/config/paidTiers.ts", 'const COMMON: PaidEntitlement[] = ["core_tracking", "core_genetics", "core_learning", "core_community"]', "core genetics must remain part of the shared entitlement set used by Free through Rescue");
 requireText("src/config/paidTiers.ts", 'free: {', "the Free Keeper tier must remain present");
+for (const tierId of allTierIds) {
+  const marker = tierId + ": {";
+  const start = tiers.indexOf(marker);
+  if (start < 0) { failures.push("src/config/paidTiers.ts: missing tier " + tierId); continue; }
+  const nextPositions = allTierIds.map((candidate) => tiers.indexOf(candidate + ": {", start + marker.length)).filter((position) => position > start);
+  const end = nextPositions.length ? Math.min(...nextPositions) : tiers.indexOf("\n};", start);
+  const block = tiers.slice(start, end > start ? end : tiers.length);
+  if (!(block.includes("entitlements: COMMON") || block.includes("...COMMON"))) {
+    failures.push("src/config/paidTiers.ts: " + tierId + " no longer inherits the shared core entitlement set containing core_genetics");
+  }
+}
 requireText("src/routes/AuthenticatedRoutes.tsx", '<Route path="/morph-library" element={<SpeciesAwareMorphLibrary/>}/>', "the core Morph Library route must remain an ordinary authenticated route");
 requireText("src/routes/AuthenticatedRoutes.tsx", '<Route path="/morph-library/:morphId/gallery" element={<SpeciesMorphGallery/>}/>', "Morph Galleries must remain ordinary authenticated routes");
 requireText("src/routes/AuthenticatedRoutes.tsx", '<Route path="/morph-library/:morphId" element={<SpeciesMorphDetail/>}/>', "Morph detail pages must remain ordinary authenticated routes");
