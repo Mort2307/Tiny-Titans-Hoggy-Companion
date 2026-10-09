@@ -103,13 +103,17 @@ async function activateUpdatedAppShell() {
   const script = registration.active?.scriptURL;
   if (!script || !new URL(script).pathname.endsWith("/sw.js")) return;
 
+  const previousActiveWorker = registration.active;
   await registration.update();
 
   // Installing an update can be asynchronous even after update() resolves.
   for (let i = 0; i < 20 && !registration.waiting; i += 1) {
+    if (registration.active && registration.active !== previousActiveWorker) return;
     if (!registration.installing && i >= 4) break;
     await new Promise<void>((resolve) => window.setTimeout(resolve, 250));
   }
+
+  if (registration.active && registration.active !== previousActiveWorker) return;
 
   if (registration.waiting) {
     const activation = waitForControllerChange(4_000);
