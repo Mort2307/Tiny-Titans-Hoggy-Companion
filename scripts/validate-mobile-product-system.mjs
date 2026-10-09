@@ -138,8 +138,11 @@ if (!experience.includes(".tt-route-loading__grid") || !experience.includes("@ke
 const manifest = JSON.parse(staticManifest);
 const manifestIcons = Array.isArray(manifest.icons) ? manifest.icons : [];
 const manifestShortcuts = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
-if (!manifestIcons.some((icon) => icon.src === "/icons/tiny-titans-192.svg")) {
-  errors.push("Static PWA manifest must retain the canonical Tiny Titans 192 SVG icon.");
+if (!manifestIcons.some((icon) => icon.src === "/icons/tiny-titans-brand-192.svg")) {
+  errors.push("Static PWA manifest must use the logo-based Tiny Titans 192 SVG icon.");
+}
+if (!manifestIcons.some((icon) => icon.src === "/icons/tiny-titans-brand-maskable-512.svg" && icon.purpose === "maskable")) {
+  errors.push("PWA manifest needs a separate safe-area logo-based maskable icon.");
 }
 if (!manifestIcons.some((icon) => icon.type === "image/jpeg")) {
   errors.push("Static PWA manifest must retain a raster install-icon fallback.");
@@ -152,8 +155,8 @@ for (const shortcutUrl of ["/animals", "/reminders", "/calculator"]) {
 if (!viteConfig.includes('tinyTitansIcon192') || !viteConfig.includes('shortcuts: [') || !viteConfig.includes('tinyTitansRasterIcon')) {
   errors.push("Generated Vite PWA manifest must retain canonical icons, shortcuts and raster fallback.");
 }
-if (!index.includes('rel="icon" type="image/svg+xml" href="/favicon.svg?v=4"')) {
-  errors.push("index.html must use the canonical SVG favicon.");
+if (!index.includes('rel="icon" type="image/svg+xml" href="/favicon-brand.svg?v=7"')) {
+  errors.push("index.html must use the official Tiny Titans logo favicon.");
 }
 
 if (!main.includes("<ReleaseCheckGuard>") || !releaseGuard.includes('void check("startup")')) {
