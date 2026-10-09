@@ -28,6 +28,11 @@ requireText("src/components/Layout/LayoutChrome.tsx", '? "morph_intelligence"', 
 requireText("src/components/Layout/LayoutChrome.tsx", "isMorphEvidencePage ? null", "the evidence workspace must not be swallowed by the generic morph-detail matcher");
 requireText("src/pages/SpeciesMorphLibrary.tsx", "Suggest a morph / variation card", "all signed-in keepers must have the variation-card proposal action");
 requireText("src/pages/SpeciesMorphLibrary.tsx", "Contribute Wild Type / Unclassified image", "all signed-in keepers must have the baseline image contribution action");
+requireText("src/pages/SpeciesMorphLibrary.tsx", "CommunityVariationImageSubmissionDialog", "community-reviewed variation cards must accept user-supplied media on the universal species library");
+requireText("src/pages/MorphLibrary.tsx", "CommunityVariationImageSubmissionDialog", "the Hognose library must expose the same community-card media flow");
+requireText("src/services/morphSubmissionServiceV2.ts", "submitCommunityVariationImageV2", "community-card media must use the moderated media submission pipeline");
+requireText("functions/creatorApproval.js", "approvedMorphVariations", "server-side media approval must verify the referenced approved variation card");
+requireText("src/hooks/useMorphLibrary.ts", "getApprovedMorphImages(undefined, DEFAULT_SPECIES_ID)", "the Hognose library must never load unscoped cross-species approved imagery");
 requireText("src/components/morph-library/NewMorphSubmissionDialog.tsx", "COMMUNITY VARIATION PROPOSAL", "the universal variation proposal surface must remain available");
 requireText("src/services/morphUserSubmissionService.ts", 'collection(db, "variationCardSubmissions")', "variation proposals must use the shared moderated queue rather than a paid workspace");
 requireText("firestore.rules", "match /variationCardSubmissions/{submissionId}", "variation proposals need an explicit signed-in-user submission boundary");
@@ -38,6 +43,8 @@ forbidText("src/pages/SpeciesMorphLibrary.tsx", "PaidTierGate", "the core Morph 
 forbidText("src/components/morph-library/NewMorphSubmissionDialog.tsx", "PaidTierGate", "variation-card proposals must never be paywalled");
 forbidText("src/services/morphUserSubmissionService.ts", "getPaidAccess", "variation submissions must not depend on paid-tier lookup");
 forbidText("src/services/morphUserSubmissionService.ts", "effectiveTier", "variation submissions must not depend on paid-tier identity");
+forbidText("src/components/morph-library/CommunityVariationImageSubmissionDialog.tsx", "PaidTierGate", "community variation-card media contribution must never be paywalled");
+forbidText("src/services/morphSubmissionServiceV2.ts", "getPaidAccess", "community morph media submissions must not depend on paid-tier lookup");
 
 const morphNavLine = quickNav.split("\n").find((line) => line.includes('path: "/morph-library"') && line.includes('id: "morphs"')) || "";
 if (!morphNavLine) failures.push("src/data/quickNavigation.ts: core Morph Library navigation entry is missing");
