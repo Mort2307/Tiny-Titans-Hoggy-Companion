@@ -9,15 +9,20 @@ import "../styles/AppUpdatePrompt.css";
 
 declare const __TINY_TITANS_BUILD_ID__: string;
 
-type Phase = "checking" | "ready" | "updating" | "failed";
+type Phase = "checking" | "ready" | "required" | "updating" | "failed";
 type CheckMode = "startup" | "resume" | "poll";
 type ReleaseManifest = { buildId: string; releasedAt: string; mandatory: boolean };
 
 const BUILD_ID = __TINY_TITANS_BUILD_ID__;
 const ATTEMPTS_KEY = "tiny-titans-release-attempts-v1";
-const MAX_AUTOMATIC_ATTEMPTS = 2;
+const MAX_AUTOMATIC_ATTEMPTS = 2; // Used to explain repeated manual update failures.
 const CHECK_INTERVAL_MS = 45_000;
 const FETCH_TIMEOUT_MS = 5_000;
+const MIN_STARTUP_CHECK_MS = 450;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
 
 function getAttempts(buildId: string): number {
   try {
@@ -152,7 +157,8 @@ function removeObsoleteCacheBuster() {
 /**
  * Verifies an independently network-fetched release before mounting the app.
  * A user can no longer open an out-of-date session, log records and leave
- * before the service worker eventually offers its update button.
+ * before the service worker eventually offers its update button. The keeper
+ * must explicitly press the required update button when a new build exists.
  *
  * During an active session, preserve in-progress forms: show a persistent
  * notice and enforce the update when the app is next freshly opened.
@@ -194,33 +200,41 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
     };
   }, []);
 
-  const applyUpdate = useCallback(async (buildId: string, manual = false) => {
-    if (!manual && getAttempts(buildId) >= MAX_AUTOMATIC_ATTEMPTS) {
-      setPhase("failed");
-      setMessage("This device could not complete its automatic update. Retry while connected to the internet.");
-      return;
-    }
-
+  const applyUpdate = useCallback(async (buildId: string) => {
+    // Updating is user-initiated once a newer release is positively verified.
+    // Never offer a "Later" escape when a mandatory online update is known.
     setPhase("updating");
     setMessage("");
     try {
       await installLatestRelease(buildId);
     } catch (error) {
       console.warn("[Tiny Titans] Release install failed", error);
+      const attempts = getAttempts(buildId);
       setPhase("failed");
-      setMessage("Tiny Titans could not install the update. Check your connection and retry.");
+      setMessage(attempts >= MAX_AUTOMATIC_ATTEMPTS
+        ? "The update has not completed after multiple attempts. Check your connection, then try again. Your saved records have not been removed."
+        : "The update could not finish. Check your connection and try again. Your saved records are safe.");
     }
   }, []);
 
   const check = useCallback(async (mode: CheckMode) => {
     if (inFlight.current || (mode !== "startup" && phaseRef.current !== "ready")) return;
     if (!navigator.onLine) {
+      // Offline users must still be able to access already-cached care records.
+      // Once connected, the release checker runs again before they start work.
       if (mode === "startup") setPhase("ready");
       return;
     }
+
     inFlight.current = true;
+    const startedAt = Date.now();
     try {
       const release = await fetchRelease();
+      if (mode === "startup") {
+        // Make the version-check progress visibly discernible even on fast Wi-Fi.
+        await delay(Math.max(0, MIN_STARTUP_CHECK_MS - (Date.now() - startedAt)));
+      }
+
       if (release.buildId === BUILD_ID) {
         clearAttempts();
         removeObsoleteCacheBuster();
@@ -230,19 +244,23 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
       }
 
       setPendingBuild(release.buildId);
-
-      // Never discard a keeper's in-progress feeding/weight entry by forcing
-      // a reload partway through an active session.
+      // A genuine new version must be installed BEFORE the workspace is mounted.
+      // Background updates on an already-active session cannot erase unsaved forms.
       if (mode === "startup" || (mode === "resume" && !touchedSession.current)) {
-        await applyUpdate(release.buildId);
+        setPhase("required");
       }
     } catch (error) {
-      console.debug("[Tiny Titans] Release check unavailable; keep app accessible", error);
-      if (mode === "startup") setPhase("ready");
+      console.debug("[Tiny Titans] Live version could not be checked", error);
+      // A *failed* check does not prove an update exists. Preserve access to
+      // animal care data while offline/Hosting is unavailable; retry on reconnect.
+      if (mode === "startup") {
+        await delay(Math.max(0, MIN_STARTUP_CHECK_MS - (Date.now() - startedAt)));
+        setPhase("ready");
+      }
     } finally {
       inFlight.current = false;
     }
-  }, [applyUpdate]);
+  }, []);
 
   useEffect(() => {
     if (import.meta.env.DEV) return;
@@ -277,22 +295,60 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
   }, [check]);
 
   if (phase !== "ready") {
+    const isBusy = phase === "checking" || phase === "updating";
+    const isBlocking = phase === "required" || phase === "failed";
     return (
-      <div className="tt-update-backdrop">
-        <section className="tt-update-panel" role="status" aria-live="polite" aria-label="Tiny Titans release status">
+      <div className="tt-update-backdrop tt-release-gate-backdrop">
+        <section
+          className="tt-update-panel tt-release-gate-panel"
+          role={isBlocking ? "alertdialog" : "status"}
+          aria-modal={isBlocking ? true : undefined}
+          aria-live={isBlocking ? "assertive" : "polite"}
+          aria-labelledby="tt-release-gate-title"
+          aria-describedby="tt-release-gate-description"
+        >
           <div className="tt-update-logo" aria-hidden="true"><TinyTitansIcon name="reptiles" size={54} /></div>
-          <p className="tt-update-kicker">TINY TITANS · LIVE RELEASE</p>
-          <h2>{phase === "checking" ? "Checking your app version…" : phase === "updating" ? "Updating Tiny Titans…" : "Update needs attention"}</h2>
-          <p>{phase === "checking"
-            ? "Checking the latest release before you start recording care."
-            : phase === "updating"
-              ? "Your records remain in your account. The app will reopen on the latest version."
-              : message}</p>
-          {phase === "failed" && (
-            <div className="tt-update-actions">
-              <button type="button" className="tt-update-primary" onClick={() => pendingBuildRef.current && void applyUpdate(pendingBuildRef.current, true)}>Retry update</button>
-              <button type="button" className="tt-update-secondary" onClick={() => setPhase("ready")}>Continue temporarily</button>
+          <p className="tt-update-kicker">TINY TITANS · APP UPDATES</p>
+          <div className="tt-release-gate-status" aria-hidden="true">
+            {isBusy ? <span className="tt-release-gate-spinner" /> : <span className="tt-release-gate-dot" />}
+            <span>{phase === "checking" ? "Checking for updates"
+              : phase === "required" ? "New version available"
+                : phase === "updating" ? "Installing update"
+                  : "Update interrupted"}</span>
+          </div>
+          <h2 id="tt-release-gate-title">
+            {phase === "checking" ? "Checking Tiny Titans…"
+              : phase === "required" ? "Update required"
+                : phase === "updating" ? "Updating Tiny Titans…"
+                  : "Update needs attention"}
+          </h2>
+          <p id="tt-release-gate-description">
+            {phase === "checking"
+              ? "Checking the latest version before you enter your keeper workspace."
+              : phase === "required"
+                ? "A newer Tiny Titans version is ready. Update the app before continuing. Your saved animal records and account data will be preserved."
+                : phase === "updating"
+                  ? "Applying the latest release. Tiny Titans will reopen automatically when the update is ready."
+                  : message}
+          </p>
+          {isBusy && <div className="tt-release-gate-progress" aria-hidden="true"><span /></div>}
+          {(phase === "required" || phase === "failed") && (
+            <div className="tt-update-actions tt-release-gate-actions">
+              <button
+                type="button"
+                className="tt-update-primary tt-release-gate-primary"
+                autoFocus
+                onClick={() => { if (pendingBuildRef.current) void applyUpdate(pendingBuildRef.current); }}
+              >
+                {phase === "required" ? "Update Tiny Titans" : "Retry update"}
+              </button>
             </div>
+          )}
+          {phase === "required" && (
+            <small className="tt-update-required">This update must be installed before opening Tiny Titans.</small>
+          )}
+          {phase === "failed" && (
+            <small className="tt-update-required">The workspace will open when the update completes. Please retry while online.</small>
           )}
         </section>
       </div>
@@ -318,7 +374,7 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
           </span>
           {confirmRestart ? (
             <div className="tt-release-banner-actions">
-              <button type="button" onClick={() => void applyUpdate(pendingBuild, true)}>Restart &amp; update</button>
+              <button type="button" onClick={() => void applyUpdate(pendingBuild)}>Restart &amp; update</button>
               <button type="button" className="tt-release-banner-cancel" onClick={() => setConfirmRestart(false)}>Keep working</button>
             </div>
           ) : (
