@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesGeneticsStatus, getSpeciesVariationLibraryStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { getApprovedMorphImages } from "../services/creatorService";
@@ -45,6 +45,7 @@ function searchFields(morph: SpeciesMorphEntry): { canonical: string[]; aliases:
 export default function SpeciesMorphLibrary() {
   const { selectedSpeciesId, selectedUniversalSpecies } = useSpeciesContext();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [showImageSubmission, setShowImageSubmission] = useState(false);
@@ -57,6 +58,15 @@ export default function SpeciesMorphLibrary() {
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const variationStatus = getSpeciesVariationLibraryStatus(selectedSpeciesId);
   const entries = useMemo(() => getSpeciesVisualMorphs(selectedSpeciesId), [selectedSpeciesId]);
+  const submissionRequested = searchParams.get("submitMorphImage") === "1";
+  const requestedMorphId = searchParams.get("morphId") ?? "";
+
+  useEffect(() => {
+    if (!submissionRequested || !selectedSpeciesId) return;
+    const requested = entries.find((entry) => entry.geneId === requestedMorphId);
+    setImageSubmissionMorphId(requested?.geneId ?? "normal");
+    setShowImageSubmission(true);
+  }, [entries, requestedMorphId, selectedSpeciesId, submissionRequested]);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,6 +130,12 @@ export default function SpeciesMorphLibrary() {
   function closeImageSubmission() {
     setShowImageSubmission(false);
     setImageSubmissionMorphId("");
+    if (submissionRequested) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("submitMorphImage");
+      next.delete("morphId");
+      setSearchParams(next, { replace: true });
+    }
   }
 
   function openMorphRecord(morphId: string) {
