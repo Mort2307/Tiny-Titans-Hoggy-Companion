@@ -149,7 +149,7 @@ export default function SpeciesMorphLibrary() {
           {["all", "gene", "combination", "polygenic", "line-bred"].map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value as Filter)}>{value === "all" ? "All" : value === "gene" ? "Genes & Supers" : value === "combination" ? "Combinations" : value === "polygenic" ? "Polygenic" : "Line-bred"}</button>)}
         </div>
         <label className="morph-library__search"><span>Search {speciesName} morphs</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${speciesName} genetics…`} autoComplete="off" spellCheck={false} /></label>
-        <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} species-scoped entries currently published</span></div>
+        <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length + (filter === "all" ? filteredCommunityCards.length : 0)} species-scoped entries currently published</span></div>
         {selectedSpeciesId && <div className="morph-card__actions"><button type="button" className="morph-card__open" onClick={() => setShowVariationProposal(true)}>Suggest a morph / variation card</button><button type="button" className="morph-card__image-submit" onClick={() => openImageSubmission("normal")}><TinyTitansIcon name="camera" size={13} /> Contribute Wild Type / Unclassified image</button></div>}
       </header>
 
