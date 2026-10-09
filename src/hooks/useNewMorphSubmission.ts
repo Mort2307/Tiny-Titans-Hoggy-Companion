@@ -4,7 +4,7 @@ import { createUserMorphSubmission } from "../services/morphUserSubmissionServic
 import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import { useAuth } from "../context/useAuth";
 
-export function useNewMorphSubmission(initialSpeciesId="heterodon-nasicus"){
+export function useNewMorphSubmission(initialSpeciesId=""){
   const {user}=useAuth();
   const [speciesId,setSpeciesId]=useState(initialSpeciesId);
   const [name,setName]=useState("");
