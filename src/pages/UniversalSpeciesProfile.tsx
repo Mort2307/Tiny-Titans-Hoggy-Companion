@@ -94,7 +94,7 @@ export default function UniversalSpeciesProfile() {
         <Link className="universal-species-journey__active" to="/species"><TinyTitansIcon name="animals" size={18} /> Species Explorer</Link>
         <Link to="/husbandry"><TinyTitansIcon name="husbandry" size={18} /> Husbandry &amp; Care</Link>
         <Link to={`/husbandry/safety?species=${species.id}`}><TinyTitansIcon name="check" size={18} /> Material Safety</Link>
-        <Link to="/morph-library"><TinyTitansIcon name="morph" size={18} /> Morph Library</Link>
+        <Link to={"/morph-library?species=" + encodeURIComponent(species.id)}><TinyTitansIcon name="morph" size={18} /> Morph Library</Link>
       </nav>
       <div className="universal-species-links"><Link className="universal-species-back" to="/species"><TinyTitansIcon name="back" size={18} /> Species Explorer</Link><Link className="universal-species-marketplace-link" to={`/marketplace?species=${encodeURIComponent(species.id)}`}>Marketplace listings for this species <TinyTitansIcon name="forward" size={12} /></Link></div>
 
