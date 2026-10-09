@@ -21,10 +21,21 @@ export type ApprovedCommunityVariationCard = {
   approvedBy?: string;
 };
 
+function safeHttpUrl(value: unknown): string | undefined {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return undefined;
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getApprovedCommunityVariationCards(speciesId: string): Promise<ApprovedCommunityVariationCard[]> {
   if (!speciesId) return [];
   const snapshot = await getDocs(query(collection(db, "approvedMorphVariations"), where("speciesId", "==", speciesId)));
   return snapshot.docs
-    .map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedCommunityVariationCard, "id">) }))
+    .map((item) => { const data = item.data() as Omit<ApprovedCommunityVariationCard, "id">; return { id: item.id, ...data, sourceUrl: safeHttpUrl(data.sourceUrl) }; })
     .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base", numeric: true }));
 }
