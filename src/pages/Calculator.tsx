@@ -26,7 +26,7 @@ function toParentGenetics(selection: ParentSelection): ParentGenetics { return {
 
 export default function Calculator() {
   const { user, loading, profileLoading } = useAuth();
-  const { selectedSpeciesId, selectedSpecies, setSelectedSpeciesId } = useSpeciesContext();
+  const { selectedSpeciesId, selectedSpecies, selectedUniversalSpecies, setSelectedSpeciesId } = useSpeciesContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedMode = searchParams.get("mode") === "reversal" ? "reversal" : "pairing";
   const [mode, setMode] = useState<CalculatorMode>(requestedMode);
