@@ -44,7 +44,6 @@ export async function reviewUserMorphSubmission(input: {
       sourceOrBreeder: submission.sourceOrBreeder ?? "",
       sourceUrl: submission.sourceUrl ?? "",
       sourceSubmissionId: submission.id,
-      matchedCanonicalMorphId: input.matchedCanonicalMorphId ?? "",
       geneticsStatus: "unresolved",
       calculatorEligible: false,
       approvedAt: serverTimestamp(),
