@@ -32,7 +32,10 @@ export function useCreatorReviewStudio(){
  const speciesOptions=useMemo(()=>{const needle=normaliseSearch(speciesSearch);return searchUniversalSpecies("").filter((species)=>!needle?[true]:[species.id,...species.commonNames,species.acceptedScientificName,species.family,species.genus].some((value)=>normaliseSearch(String(value)).includes(needle))).slice(0,80);},[speciesSearch]);
  const speciesIdForMorphs=draft?.speciesId??"";
  const morphOptions=useMemo(()=>{if(!speciesIdForMorphs)return [];return [...getSpeciesVisualMorphs(speciesIdForMorphs)].filter((morph)=>matchesMorphSearch(morph,morphSearch)).sort((a,b)=>{const aUnknown=isUnknownMorph(a);const bUnknown=isUnknownMorph(b);if(aUnknown!==bUnknown)return aUnknown?1:-1;return a.name.localeCompare(b.name,"en",{sensitivity:"base",numeric:true});});},[speciesIdForMorphs,morphSearch]);
- const currentCanonical=useMemo(()=>{if(!draft?.speciesId)return null;return getSpeciesVisualMorphs(draft.speciesId).find((morph)=>morph.geneId===draft.morphId||morph.name.trim().toLowerCase()===draft.morphName.trim().toLowerCase())??null;},[draft?.speciesId,draft?.morphId,draft?.morphName]);
+ const canonicalSpeciesId=draft?.speciesId??"";
+ const canonicalMorphId=draft?.morphId??"";
+ const canonicalMorphName=draft?.morphName??"";
+ const currentCanonical=useMemo(()=>{if(!canonicalSpeciesId)return null;return getSpeciesVisualMorphs(canonicalSpeciesId).find((morph)=>morph.geneId===canonicalMorphId||morph.name.trim().toLowerCase()===canonicalMorphName.trim().toLowerCase())??null;},[canonicalSpeciesId,canonicalMorphId,canonicalMorphName]);
  const load=useCallback(async()=>{if(!user)return;setLoading(true);setError("");try{const next=await getMorphImageSubmissions();setItems(next);setNames(await getCreatorUserDisplayNames(next.map((item)=>item.userId).filter((uid):uid is string=>Boolean(uid))));}catch(reason){setError(reason instanceof Error?reason.message:"Unable to load morph submissions.");}finally{setLoading(false);}},[user]);
  useEffect(()=>{if(profile?.role==="admin"&&user)void load();},[profile?.role,user,load]);
  useEffect(()=>{if(!selectedId&&items[0])setSelectedId(items[0].id);},[items,selectedId]);
