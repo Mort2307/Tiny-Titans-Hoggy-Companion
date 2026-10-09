@@ -59,6 +59,13 @@ function resolveSubmissionMorph(submission: MorphImageSubmission) {
 /** Validate client-side prerequisites before the server-side approval callable is invoked. */
 export function validateMorphSubmissionForApproval(submission: MorphImageSubmission): string | null {
   if (!isAwaitingMorphReview(submission.status)) return "This submission is no longer awaiting review.";
+  if (submission.variationCardId) {
+    if (!submission.speciesId?.trim()) return "A species is required for community variation-card media.";
+    if (submission.morphId !== "community-" + submission.variationCardId) return "The community variation-card media identity is malformed.";
+    if (!submission.morphName.trim()) return "The community variation-card media is missing its reviewed variation name.";
+    if (!submission.attachment?.path) return "A valid media attachment is required before approval.";
+    return null;
+  }
   if (!submission.morphId?.trim() && !submission.morphName.trim()) return "A canonical Morph Library entry is required before approval.";
   const canonical = resolveSubmissionMorph(submission);
   if (!canonical) return `This submission does not match a canonical Morph Library entry for ${submission.speciesName ?? "the selected species"}. Check the species and morph before approving.`;
