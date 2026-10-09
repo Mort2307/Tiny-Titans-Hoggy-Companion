@@ -2,6 +2,7 @@ import {
   UNIVERSAL_SPECIES,
   UNIVERSAL_SPECIES_GROUPS,
   UNIVERSAL_SPECIES_BY_ID,
+  findUniversalSpecies,
   searchUniversalSpecies,
 } from '../src/data/species/universalSpeciesRegistry';
 import { UNIVERSAL_SPECIES_SOURCES } from '../src/data/species/universalSpeciesSources';
@@ -68,6 +69,9 @@ assert(UNIVERSAL_SPECIES_BY_ID['chinchilla-lanigera'], 'Exotic mammal expansion 
 assert(searchUniversalSpecies('leopard gecko')[0]?.id === 'eublepharis-macularius', 'Universal search does not resolve a common keeper name.');
 assert(searchUniversalSpecies('Ambystoma mexicanum')[0]?.id === 'ambystoma-mexicanum', 'Universal search does not resolve a scientific name.');
 assert(searchUniversalSpecies('tarantula').length > 0, 'Universal search does not expose arachnid records.');
+assert(findUniversalSpecies('heterodon-nasicus')?.id === 'heterodon-nasicus', 'Exact universal species ID resolution failed.');
+assert(findUniversalSpecies('Heterodon nasicus')?.id === 'heterodon-nasicus', 'Exact scientific-name resolution failed.');
+assert(findUniversalSpecies('hetrodon nasicus') === undefined, 'A fuzzy typo must not become identity resolution; use searchUniversalSpecies for suggestions.');
 
 console.log(`Universal species database OK: ${UNIVERSAL_SPECIES.length} total records across ${UNIVERSAL_SPECIES_GROUPS.length} animal groups.`);
 for (const group of UNIVERSAL_SPECIES_GROUPS) {
