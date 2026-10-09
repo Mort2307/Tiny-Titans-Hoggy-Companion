@@ -33,3 +33,8 @@ reports/
 # Deterministic PWA icons generated from the official logo at build/dev startup
 /public/favicon-brand.svg
 /public/icons/tiny-titans-brand-*.svg
+
+# Generated compatibility assets for previously-installed PWA manifests
+/public/favicon.svg
+/public/icons/tiny-titans-192.svg
+/public/icons/tiny-titans-512.svg
