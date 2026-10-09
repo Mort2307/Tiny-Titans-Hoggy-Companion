@@ -41,12 +41,15 @@ function resolveSubmissionMorph(submission: MorphImageSubmission) {
     );
     if (listed) return listed;
 
-    // Some valid Western Hognose combinations are resolver-generated and are
-    // not materialised in getSpeciesVisualMorphs(). Fall back to the same
-    // canonical master resolver used by the genetics system.
-    return requestedId
-      ? getMasterMorphByGeneId(requestedId) ?? resolveMasterMorph(requestedId)
-      : resolveMasterMorph(requestedName);
+    // Only Western Hognose may use the legacy master resolver for
+    // resolver-generated combinations. Other species must never fall through
+    // to another species' canonical genetics.
+    if (submission.speciesId === "heterodon-nasicus") {
+      return requestedId
+        ? getMasterMorphByGeneId(requestedId) ?? resolveMasterMorph(requestedId)
+        : resolveMasterMorph(requestedName);
+    }
+    return null;
   }
   return requestedId
     ? getMasterMorphByGeneId(requestedId) ?? resolveMasterMorph(requestedId)
