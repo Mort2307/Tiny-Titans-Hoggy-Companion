@@ -1,20 +1,19 @@
 import type { FormEvent } from "react";
 import type { MorphReferenceEntry } from "../../data/hognoseMorphCatalog";
 import type { MorphCreditMode } from "../../services/morphSubmissionServiceV2";
-import SpeciesSelector from "../SpeciesSelector";
 import { useMorphImageSubmission } from "../../hooks/useMorphImageSubmission";
 import TinyTitansIcon from "../TinyTitansIcon";
 
 type Props={entries:MorphReferenceEntry[];onClose:()=>void;initialMorphId?:string;initialSpeciesId?:string;};
 
-export default function MorphImageSubmissionDialog({entries,onClose,initialMorphId="",initialSpeciesId="heterodon-nasicus"}:Props){
+export default function MorphImageSubmissionDialog({entries,onClose,initialMorphId=""}:Props){
   const {
-    fileRef,speciesId,setSpeciesId,selectedMorph,setSelectedMorph,morphSearch,setMorphSearch,morphMenuOpen,setMorphMenuOpen,
+    fileRef,speciesId,selectedMorph,setSelectedMorph,morphSearch,setMorphSearch,morphMenuOpen,setMorphMenuOpen,
     description,setDescription,observedTraits,setObservedTraits,proofDetails,setProofDetails,proofReference,setProofReference,
     photoRequirementsConfirmed,setPhotoRequirementsConfirmed,factualAccuracyConfirmed,setFactualAccuracyConfirmed,
     creditMode,setCreditMode,creditName,setCreditName,creditSocial,setCreditSocial,image,setImage,busy,error,sent,
     selectedSpecies,geneticsMapped,morphOptions,submit
-  }=useMorphImageSubmission(entries,initialMorphId,initialSpeciesId);
+  }=useMorphImageSubmission(entries,initialMorphId);
 
   return <div className="morph-detail-backdrop" role="presentation" onMouseDown={onClose}>
     <article className="morph-detail" role="dialog" aria-modal="true" onMouseDown={(event)=>event.stopPropagation()}>
@@ -22,7 +21,7 @@ export default function MorphImageSubmissionDialog({entries,onClose,initialMorph
       {sent?<><div className="morph-detail__eyebrow"><TinyTitansIcon name="reptile" size={14} /> SUBMISSION RECEIVED</div><h2>Thanks — it is in review.</h2><p className="morph-detail__description">Your image for {selectedSpecies?.commonNames[0]??selectedSpecies?.acceptedScientificName} has been linked to the canonical Morph Library entry and sent to Creator review.</p><button type="button" onClick={onClose}>Done</button></>
       :<form onSubmit={(event:FormEvent)=>void submit(event)}>
         <div className="morph-detail__eyebrow"><TinyTitansIcon name="morph" size={14} /> MORPH IMAGE SUBMISSION</div><h2>Submit a morph image</h2>
-        <SpeciesSelector id="morph-image-submission-species" value={speciesId} onChange={setSpeciesId} label="Species"/>
+        <div className="morph-detail__section"><strong>Species</strong><p className="morph-detail__source-note">Western Hognose Snake · <i>Heterodon nasicus</i></p></div>
         {!geneticsMapped?<section className="morph-detail__section"><h3><TinyTitansIcon name="genetics" size={17} /> Species genetics not mapped yet</h3><p className="morph-detail__description">{selectedSpecies?.commonNames[0]??selectedSpecies?.acceptedScientificName} is in the Tiny Titans species registry, but its species-specific genetics catalogue has not been reviewed and mapped yet. We will not show Hognose genetics here by mistake.</p><p className="morph-detail__source-note">Use “Can’t find a morph? Submit it” to send species-specific terminology, evidence or breeder information for Creator review.</p></section>
         :<section className="morph-detail__section"><h3><TinyTitansIcon name="genetics" size={17} /> Select the canonical morph</h3><div className="morph-selector"><button type="button" className="morph-selector__trigger" onClick={()=>setMorphMenuOpen((open)=>!open)}>{selectedMorph?.name??"Select a morph…"}</button>{morphMenuOpen&&<div className="morph-selector__menu"><input autoFocus value={morphSearch} onChange={(event)=>setMorphSearch(event.target.value)} placeholder="Search morphs or aliases…"/>{morphOptions.map((entry)=><button key={entry.geneId} type="button" onClick={()=>{setSelectedMorph(entry);setMorphMenuOpen(false);}}>{entry.name}<small>{entry.kind} · {entry.kind==="Combination"?"Component genetics":entry.inheritance}</small></button>)}</div>}</div></section>}
         <label>What are we looking at?<textarea value={description} onChange={(event)=>setDescription(event.target.value)} rows={3} required/></label>
