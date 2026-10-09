@@ -2239,3 +2239,52 @@ html {
     justify-content: center;
   }
 }
+
+/* =========================================================
+   MOBILE SHELL CASCADE AUTHORITY
+   Keep the current mobile shell authoritative over legacy
+   responsive rules that still use !important.
+   ========================================================= */
+@media (max-width: 800px) {
+  html[data-tt-tier] .app-header,
+  .app-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 15000 !important;
+    overflow: visible !important;
+  }
+
+  .app-header-actions {
+    overflow: visible !important;
+  }
+
+  .app-navigation.tt-easy-nav-strip {
+    position: fixed !important;
+    top: auto !important;
+    left: max(var(--tt-mobile-dock-gap), env(safe-area-inset-left)) !important;
+    right: max(var(--tt-mobile-dock-gap), env(safe-area-inset-right)) !important;
+    bottom: max(var(--tt-mobile-dock-gap), env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 66px !important;
+    padding: 6px !important;
+    border: 1px solid rgba(142, 75, 196, .28) !important;
+    border-radius: var(--tt-mobile-dock-radius) !important;
+    background: rgba(22, 9, 36, .93) !important;
+    box-shadow:
+      0 16px 44px rgba(0,0,0,.42),
+      inset 0 1px 0 rgba(255,255,255,.035) !important;
+    overflow: visible !important;
+    z-index: 9000 !important;
+  }
+
+  .workspace-switcher__menu,
+  .header-qa-menu {
+    z-index: 30000 !important;
+    max-height: calc(100dvh - var(--tt-dropdown-top, 72px) - 16px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
