@@ -24,9 +24,9 @@ function makeIcon(size, safeMargin = 0.06) {
   const offset = Math.round(size * safeMargin);
   const inner = size - offset * 2;
   const corner = Math.round(size * 0.16);
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
   <rect width="${size}" height="${size}" rx="${corner}" fill="#140022"/>
-  <image x="${offset}" y="${offset}" width="${inner}" height="${inner}" preserveAspectRatio="xMidYMid meet" href="${data}" xlink:href="${data}"/>
+  <image x="${offset}" y="${offset}" width="${inner}" height="${inner}" preserveAspectRatio="xMidYMid meet" href="${data}"/>
 </svg>`;
 }
 
@@ -35,6 +35,10 @@ const icons = [
   ["public/icons/tiny-titans-brand-192.svg", 192, 0.04],
   ["public/icons/tiny-titans-brand-512.svg", 512, 0.04],
   ["public/icons/tiny-titans-brand-maskable-512.svg", 512, 0.16],
+  // Compatibility URLs for previously cached manifests and favicons.
+  ["public/favicon.svg", 64, 0],
+  ["public/icons/tiny-titans-192.svg", 192, 0.04],
+  ["public/icons/tiny-titans-512.svg", 512, 0.04],
 ];
 for (const [relativePath, size, inset] of icons) {
   const file = resolve(ROOT, relativePath);
