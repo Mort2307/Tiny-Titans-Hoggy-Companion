@@ -172,10 +172,8 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
   const inFlight = useRef(false);
   const touchedSession = useRef(false);
   const phaseRef = useRef<Phase>(phase);
-  const pendingBuildRef = useRef<string | null>(null);
 
   useEffect(() => { phaseRef.current = phase; }, [phase]);
-  useEffect(() => { pendingBuildRef.current = pendingBuild; }, [pendingBuild]);
 
   useEffect(() => {
     let timer: number | undefined;
@@ -206,6 +204,8 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
     setPhase("updating");
     setMessage("");
     try {
+      // Allow the browser to actually paint the progress UI before navigating.
+      await delay(300);
       await installLatestRelease(buildId);
     } catch (error) {
       console.warn("[Tiny Titans] Release install failed", error);
@@ -338,7 +338,7 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
                 type="button"
                 className="tt-update-primary tt-release-gate-primary"
                 autoFocus
-                onClick={() => { if (pendingBuildRef.current) void applyUpdate(pendingBuildRef.current); }}
+                onClick={() => { if (pendingBuild) void applyUpdate(pendingBuild); }}
               >
                 {phase === "required" ? "Update Tiny Titans" : "Retry update"}
               </button>
