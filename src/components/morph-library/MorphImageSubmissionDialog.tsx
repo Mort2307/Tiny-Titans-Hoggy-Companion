@@ -8,7 +8,7 @@ type Props={entries:MorphReferenceEntry[];onClose:()=>void;initialMorphId?:strin
 
 export default function MorphImageSubmissionDialog({entries,onClose,initialMorphId=""}:Props){
   const {
-    fileRef,speciesId,selectedMorph,setSelectedMorph,morphSearch,setMorphSearch,morphMenuOpen,setMorphMenuOpen,
+    fileRef,selectedMorph,setSelectedMorph,morphSearch,setMorphSearch,morphMenuOpen,setMorphMenuOpen,
     description,setDescription,observedTraits,setObservedTraits,proofDetails,setProofDetails,proofReference,setProofReference,
     photoRequirementsConfirmed,setPhotoRequirementsConfirmed,factualAccuracyConfirmed,setFactualAccuracyConfirmed,
     creditMode,setCreditMode,creditName,setCreditName,creditSocial,setCreditSocial,image,setImage,busy,error,sent,
