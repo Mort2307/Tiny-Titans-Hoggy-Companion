@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSpeciesContext } from "../context/SpeciesContext";
-import { getSpeciesGeneticsStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
+import { getSpeciesGeneticsStatus, getSpeciesVariationLibraryStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { getApprovedMorphImages } from "../services/creatorService";
 import type { ApprovedMorphImage } from "../types/morphSubmission";
 import BackHomeButton from "../components/BackHomeButton";
@@ -40,7 +40,7 @@ function searchFields(morph: SpeciesMorphEntry): { canonical: string[]; aliases:
 }
 
 export default function SpeciesMorphLibrary() {
-  const { selectedSpeciesId, selectedSpecies } = useSpeciesContext();
+  const { selectedSpeciesId, selectedUniversalSpecies } = useSpeciesContext();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -112,8 +112,8 @@ export default function SpeciesMorphLibrary() {
       <BackHomeButton />
       <header className="morph-library__header">
         <div className="morph-library__eyebrow"><TinyTitansIcon name="morph" size={14} /> TINY TITANS · SPECIES GENETICS</div>
-        <h1>{speciesName} Morph Library</h1>
-        <p>This library is driven by the selected species context. Tiny Titans will never display another species' genetics as a substitute.</p>
+        <h1>{speciesName} Morph &amp; Variation Library</h1>
+        <p>This library is driven by the selected species context. Tiny Titans will never display another species' genetics or variations as a substitute. Catalogue imagery is never copied in: reference photos come only from approved community submissions.</p>
         <div className="morph-library__filters" role="group" aria-label="Morph type">
           {["all", "gene", "combination", "polygenic", "line-bred"].map((value) => <button key={value} type="button" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value as Filter)}>{value === "all" ? "All" : value === "gene" ? "Genes & Supers" : value === "combination" ? "Combinations" : value === "polygenic" ? "Polygenic" : "Line-bred"}</button>)}
         </div>
@@ -123,9 +123,9 @@ export default function SpeciesMorphLibrary() {
 
       {baselineOnly && (
         <section className="tracker-card" aria-label="Baseline genetics coverage notice">
-          <h2><TinyTitansIcon name="genetics" size={16} /> Baseline species genetics record</h2>
-          <p>Tiny Titans knows this species, but no reviewed species-specific genetic morph catalogue has been published yet. Until those traits are sourced and reviewed, this library contains only the canonical baseline phenotype.</p>
-          <p><strong>This is intentional intelligence.</strong> We will never substitute Hognose, Ball Python, or another species' genetics here.</p>
+          <h2><TinyTitansIcon name="genetics" size={16} /> Variation catalogue research required</h2>
+          <p>Tiny Titans knows this species and has created its dedicated variation-library surface, but the exhaustive species-specific review of known genetic morphs, colour forms, pattern variants, line-bred traits, locality forms and other established captive variations is not complete yet. Until that review is sourced and checked, this library contains only the canonical baseline phenotype.</p>
+          <p><strong>This is an explicit research state, not a finished library.</strong> We will never substitute Hognose, Ball Python, or another species' genetics here, and we will not copy third-party catalogue images into Tiny Titans.</p>
         </section>
       )}
 
