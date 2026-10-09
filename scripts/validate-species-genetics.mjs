@@ -30,6 +30,13 @@ requireText("src/components/SpeciesContextBar.tsx", "UniversalSpeciesPicker", "t
 requireText("src/pages/SpeciesMorphLibrary.tsx", "community submissions", "the Morph Library must state its community-only image policy");
 requireText("src/data/species/speciesGenetics.ts", '"mapped" | "partial" | "baseline-only"', "genetics coverage must distinguish full, partial and baseline-only species records");
 
+requireText("src/components/morph-library/NewMorphSubmissionDialog.tsx", "UniversalSpeciesPicker", "morph/variation proposals must support the universal species catalogue");
+requireText("src/services/morphUserSubmissionService.ts", "findUniversalSpecies", "user variation proposals must validate against the universal species registry");
+requireText("src/components/SpeciesMorphCommunityContribution.tsx", "Suggest morph / variation card", "species libraries must expose the reviewed variation-card proposal path");
+requireText("src/services/creatorUserMorphSubmissionService.ts", "calculatorEligible: false", "approving a community variation card must not promote it into genetics automatically");
+requireText("src/pages/SpeciesMorphLibrary.tsx", "getApprovedCommunityVariationCards", "approved community variation cards must render in species libraries");
+requireText("firestore.rules", "approvedMorphVariations", "approved variation cards need an explicit public-read / creator-write security boundary");
+
 forbidText("src/components/Layout/Header.tsx", "Hoggy Companion", "the in-app brand must be Tiny Titans Reptile Companion");
 forbidText("src/components/PwaInstallCard.tsx", "Install Tiny Titans</h3>", "the PWA install surface must use the new app name");
 forbidText("src/components/PwaInstallCard.tsx", "Hoggy Companion", "the PWA install surface must not retain the old product name");
