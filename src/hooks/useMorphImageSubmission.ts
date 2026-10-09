@@ -8,10 +8,10 @@ import { isSpeciesGeneticsMapped } from "../data/species/speciesGenetics";
 import { rankSearchResults } from "../utils/searchRanking";
 import { useAuth } from "../context/useAuth";
 
-export function useMorphImageSubmission(entries:MorphReferenceEntry[],initialMorphId="",initialSpeciesId="heterodon-nasicus"){
+export function useMorphImageSubmission(entries:MorphReferenceEntry[],initialMorphId=""){
   const {user}=useAuth();
   const fileRef=useRef<HTMLInputElement>(null);
-  const [speciesId,setSpeciesId]=useState(initialSpeciesId);
+  const speciesId="heterodon-nasicus";
   const [selectedMorph,setSelectedMorph]=useState<MorphReferenceEntry|null>(initialMorphId?entries.find((entry)=>entry.geneId===initialMorphId)??null:null);
   const [morphSearch,setMorphSearch]=useState("");
   const [morphMenuOpen,setMorphMenuOpen]=useState(false);
@@ -53,7 +53,7 @@ export function useMorphImageSubmission(entries:MorphReferenceEntry[],initialMor
     event.preventDefault();
     setError("");
     if(!user){setError("You must be signed in to submit a morph image.");return;}
-    if(!selectedSpecies){setError("Select a recognised snake species first.");return;}
+    if(!selectedSpecies||selectedSpecies.id!=="heterodon-nasicus"){setError("This legacy image workflow is Western Hognose only.");return;}
     if(!geneticsMapped){setError("This species does not yet have a reviewed genetics catalogue.");return;}
     if(!selectedMorph||!image||!photoRequirementsConfirmed||!factualAccuracyConfirmed){setError("Select a morph, add a compliant photograph and confirm the evidence requirements.");return;}
     setBusy(true);
@@ -63,5 +63,5 @@ export function useMorphImageSubmission(entries:MorphReferenceEntry[],initialMor
     }catch(submitError){setError(submitError instanceof Error?submitError.message:"We couldn't submit the morph image.");}
     finally{setBusy(false);}
   }
-  return {fileRef,speciesId,setSpeciesId,selectedMorph,setSelectedMorph,morphSearch,setMorphSearch,morphMenuOpen,setMorphMenuOpen,description,setDescription,observedTraits,setObservedTraits,proofDetails,setProofDetails,proofReference,setProofReference,photoRequirementsConfirmed,setPhotoRequirementsConfirmed,factualAccuracyConfirmed,setFactualAccuracyConfirmed,creditMode,setCreditMode,creditName,setCreditName,creditSocial,setCreditSocial,image,setImage,busy,error,sent,selectedSpecies,geneticsMapped,morphOptions,submit};
+  return {fileRef,speciesId,selectedMorph,setSelectedMorph,morphSearch,setMorphSearch,morphMenuOpen,setMorphMenuOpen,description,setDescription,observedTraits,setObservedTraits,proofDetails,setProofDetails,proofReference,setProofReference,photoRequirementsConfirmed,setPhotoRequirementsConfirmed,factualAccuracyConfirmed,setFactualAccuracyConfirmed,creditMode,setCreditMode,creditName,setCreditName,creditSocial,setCreditSocial,image,setImage,busy,error,sent,selectedSpecies,geneticsMapped,morphOptions,submit};
 }
