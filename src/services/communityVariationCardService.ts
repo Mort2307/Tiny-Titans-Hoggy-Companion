@@ -13,12 +13,9 @@ export type ApprovedCommunityVariationCard = {
   sourceOrBreeder?: string;
   sourceUrl?: string;
   sourceSubmissionId: string;
-  contributorUid?: string;
-  reviewerNotes?: string;
   geneticsStatus: "unresolved";
   calculatorEligible: false;
   approvedAt?: unknown;
-  approvedBy?: string;
 };
 
 function safeHttpUrl(value: unknown): string | undefined {
