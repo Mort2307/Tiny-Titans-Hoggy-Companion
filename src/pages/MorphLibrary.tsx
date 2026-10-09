@@ -66,6 +66,7 @@ export default function MorphLibrary() {
         {filtered.length===0&&<div className="welcome-card"><h2>No matching morphs</h2><p>Try another recognised name, formula, alias or submit the missing terminology for review.</p><button type="button" onClick={()=>setShowNewMorphSubmission(true)}>Submit missing morph</button></div>}
     {selected&&<MorphDetail morph={selected} region={region} onClose={()=>setSelected(null)}/>}
     {showImageSubmission&&<MorphImageSubmissionDialog entries={entries} initialMorphId={imageSubmissionMorphId} initialSpeciesId={imageSubmissionSpeciesId} onClose={closeImageSubmission}/>}
-    {showNewMorphSubmission&&<NewMorphSubmissionDialog initialSpeciesId="heterodon-nasicus" onClose={()=>setShowNewMorphSubmission(false)}/>}\n    {variationImageCard&&<CommunityVariationImageSubmissionDialog card={variationImageCard} speciesId="heterodon-nasicus" speciesName="Western Hognose Snake" onClose={()=>setVariationImageCard(null)}/>} 
+    {showNewMorphSubmission&&<NewMorphSubmissionDialog initialSpeciesId="heterodon-nasicus" onClose={()=>setShowNewMorphSubmission(false)}/>}
+    {variationImageCard&&<CommunityVariationImageSubmissionDialog card={variationImageCard} speciesId="heterodon-nasicus" speciesName="Western Hognose Snake" onClose={()=>setVariationImageCard(null)}/>} 
   </main>;
 }
