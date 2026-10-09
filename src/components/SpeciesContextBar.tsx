@@ -34,7 +34,7 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
         ? "Variation review complete"
         : geneticsStatus === "partial"
           ? "Morph & variation catalogue in review"
-          : "Morph & variation research required";
+          : "Wild Type baseline · library building";
 
   return (
     <section className={"tt-species-context " + (compact ? "tt-species-context--compact" : "")} aria-label="Species context">
@@ -59,7 +59,7 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
               ? "No species selected — choose one to scope this tool correctly."
               : speciesName + " · " + (selectedUniversalSpecies?.className ?? "animal") + " · " + verifiedRanges + "/" + numericRanges + " numeric husbandry ranges individually scoped"}
           </small>
-          {variationStatus === "research-required" && <small className="tt-species-context__warning">This species has its own variation-library surface, but the exhaustive known morph, colour, pattern, locality and line-bred review is still required before Tiny Titans can call the catalogue complete.</small>}
+          {variationStatus === "research-required" && <small className="tt-species-context__warning">This species has a safe Wild Type / Unclassified baseline. Additional morph, colour, pattern, locality and line-bred cards are added only when reviewed evidence or approved community contributions support them.</small>}
           {husbandryMapped && !numericFullyScoped && <small className="tt-species-context__warning">Some recorded care values still need their individual evidence scope attached before Tiny Titans can present them as verified species targets.</small>}
           {!speciesSelected && <small className="tt-species-context__warning">Choose the species before interpreting species-specific care, safety or genetics. Tiny Titans will not substitute another species automatically.</small>}
           {speciesSelected && !husbandryMapped && <small className="tt-species-context__warning">Numeric care thresholds and husbandry recommendations must not be borrowed from another species.</small>}
