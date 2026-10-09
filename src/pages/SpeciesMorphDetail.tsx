@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useSpeciesContext } from '../context/SpeciesContext';
-import { findSnakeSpecies } from '../data/species/speciesRegistry';
+import { findUniversalSpecies } from '../data/species/universalSpeciesRegistry';
 import { getSpeciesVisualMorphs } from '../data/species/speciesGenetics';
 import { masterMorphs } from '../data/masterMorphDatabase';
 import BackHomeButton from '../components/BackHomeButton';
@@ -10,28 +10,32 @@ import TinyTitansIcon from "../components/TinyTitansIcon";
 
 export default function SpeciesMorphDetail() {
   const { morphId } = useParams();
-  const { selectedSpeciesId, selectedSpecies } = useSpeciesContext();
-  const speciesId = selectedSpeciesId || selectedSpecies?.id || 'heterodon-nasicus';
-  const species = selectedSpecies ?? findSnakeSpecies(speciesId);
+  const [searchParams] = useSearchParams();
+  const { selectedSpeciesId, selectedUniversalSpecies } = useSpeciesContext();
+  const routeSpecies = findUniversalSpecies(searchParams.get("species") ?? "");
+  const speciesId = routeSpecies?.id ?? selectedSpeciesId;
+  const species = routeSpecies ?? selectedUniversalSpecies ?? findUniversalSpecies(speciesId);
   const morph = useMemo(() => speciesId === 'heterodon-nasicus'
     ? masterMorphs.find((entry) => entry.geneId === morphId)
     : getSpeciesVisualMorphs(speciesId).find((entry) => entry.geneId === morphId), [morphId, speciesId]);
   const speciesName = species?.commonNames[0] ?? species?.acceptedScientificName ?? 'Selected species';
 
-  if (!morph) return <main className="page-container morph-library-page"><BackHomeButton /><section className="tracker-card"><h1>Morph not found</h1><p>This morph is not published for {speciesName} in the current species context.</p><Link className="morph-card__open" to="/morph-library">Back to Morph Library</Link></section></main>;
+  if (!morph) return <main className="page-container morph-library-page"><BackHomeButton /><section className="tracker-card"><h1>Morph not found</h1><p>This morph is not published for {speciesName} in the current species context.</p><Link className="morph-card__open" to={speciesId ? `/morph-library?species=${encodeURIComponent(speciesId)}` : "/morph-library"}>Back to Morph Library</Link></section></main>;
 
   const components = 'components' in morph ? (morph.components ?? []).map((item) => item.morphId) : ('contains' in morph ? (morph.contains ?? []) : []);
   const description = morph.description ?? 'No full description has been published yet.';
   const notes = morph.educationalNotes ?? 'No additional educational notes have been published yet.';
-  const galleryPath = `/morph-library/${encodeURIComponent(morph.geneId)}/gallery`;
+  const speciesQuery = speciesId ? `?species=${encodeURIComponent(speciesId)}` : '';
+  const galleryPath = `/morph-library/${encodeURIComponent(morph.geneId)}/gallery${speciesQuery}`;
+  const libraryPath = `/morph-library${speciesQuery}`;
 
   return <main className="page-container morph-library-page">
     <BackHomeButton />
     <header className="morph-library__header">
       <div className="morph-library__eyebrow"><TinyTitansIcon name="morph" size={14} /> TINY TITANS · MORPH INTELLIGENCE</div>
       <h1>{morph.name}</h1>
-      <p>{speciesName} · complete published morph record</p>
-      <div className="morph-library__filters"><Link className="morph-card__open" to="/morph-library"><TinyTitansIcon name="back" size={13} /> Back to Morph Library</Link><Link className="morph-card__image-submit" to={galleryPath}><TinyTitansIcon name="camera" size={13} /> Morph Gallery</Link></div>
+      <p>{speciesName} · species-scoped published morph record</p>
+      <div className="morph-library__filters"><Link className="morph-card__open" to={libraryPath}><TinyTitansIcon name="back" size={13} /> Back to Morph Library</Link><Link className="morph-card__image-submit" to={galleryPath}><TinyTitansIcon name="camera" size={13} /> Morph Gallery</Link></div>
     </header>
 
     <section className="morph-detail morph-detail--page">
