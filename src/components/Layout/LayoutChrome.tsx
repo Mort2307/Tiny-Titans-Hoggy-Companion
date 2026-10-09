@@ -48,8 +48,9 @@ function LayoutChrome() {
 
   const speciesAware = speciesAwarePrefixes.some((prefix) => matchesPrefix(pathname, prefix));
   const isSpeciesAwareMorphLibrary = pathname === "/morph-library";
+  const isMorphEvidencePage = pathname === "/morph-library/evidence";
   const morphGalleryMatch = pathname.match(/^\/morph-library\/([^/]+)\/gallery\/?$/);
-  const morphDetailMatch = pathname.match(/^\/morph-library\/([^/]+)\/?$/);
+  const morphDetailMatch = isMorphEvidencePage ? null : pathname.match(/^\/morph-library\/([^/]+)\/?$/);
   const isEnclosureIntelligence =
     pathname === "/enclosure-intelligence" || pathname.startsWith("/enclosure-intelligence/");
   const isTitanWeekPage = pathname === "/titan-intelligence/feature/this-week";
