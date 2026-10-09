@@ -6,8 +6,9 @@ import { VitePWA } from "vite-plugin-pwa";
 const tinyTitansBuildId = `tt-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 const tinyTitansReleasedAt = new Date().toISOString();
 
-const tinyTitansIcon192 = "/icons/tiny-titans-192.svg";
-const tinyTitansIcon512 = "/icons/tiny-titans-512.svg";
+const tinyTitansIcon192 = "/icons/tiny-titans-brand-192.svg";
+const tinyTitansIcon512 = "/icons/tiny-titans-brand-512.svg";
+const tinyTitansMaskableIcon512 = "/icons/tiny-titans-brand-maskable-512.svg";
 const tinyTitansRasterIcon = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg";
 
 export default defineConfig({
@@ -28,9 +29,10 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       includeAssets: [
-        "favicon.svg",
+        "favicon-brand.svg",
         tinyTitansIcon192.replace(/^\//, ""),
         tinyTitansIcon512.replace(/^\//, ""),
+        tinyTitansMaskableIcon512.replace(/^\//, ""),
       ],
       manifest: {
         id: "/",
@@ -60,7 +62,7 @@ export default defineConfig({
             purpose: "any",
           },
           {
-            src: tinyTitansIcon512,
+            src: tinyTitansMaskableIcon512,
             sizes: "512x512",
             type: "image/svg+xml",
             purpose: "maskable",
@@ -69,7 +71,7 @@ export default defineConfig({
             src: tinyTitansRasterIcon,
             sizes: "any",
             type: "image/jpeg",
-            purpose: "any maskable",
+            purpose: "any",
           },
         ],
         shortcuts: [
