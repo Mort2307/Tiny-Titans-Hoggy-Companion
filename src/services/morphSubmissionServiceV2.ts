@@ -1,5 +1,5 @@
 import { auth, db, storage } from '../firebase/config';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { findUniversalSpecies } from '../data/species/universalSpeciesRegistry';
 import { getSpeciesVisualMorphs } from '../data/species/speciesGenetics';
@@ -50,4 +50,114 @@ export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise
     await setDoc(submissionRef, { userId: user.uid, speciesId: species.id, speciesName: species.acceptedScientificName, morphId: canonicalMorph.geneId, morphName: canonicalMorph.name, description, observedTraits, proofDetails, proofReference: proofReference || null, photoRequirementsConfirmed: true, factualAccuracyConfirmed: true, allowMorphLibraryLink, creditType: input.creditMode, creditName: input.creditMode === 'name' ? creditName : null, creditSocial: input.creditMode === 'social' ? creditSocial : null, attachment: { path: storagePath, type: kind, sizeBytes: payload.size, originalType: input.image.type, originalSizeBytes: input.image.size }, imageUrl, status: 'Pending', submittedAt: serverTimestamp() });
     return { submissionId: submissionRef.id };
   } catch (error) { if (uploaded) await deleteObject(storageRef).catch(() => undefined); throw error instanceof Error ? error : new Error(`We couldn't upload the morph ${kind}.`, { cause: error }); }
+}
+
+
+export interface CommunityVariationMediaInput {
+  variationCardId: string;
+  speciesId: string;
+  description: string;
+  observedTraits: string;
+  proofDetails: string;
+  proofReference?: string;
+  image: File;
+  factualAccuracyConfirmed: boolean;
+  photoRequirementsConfirmed: boolean;
+  creditMode: MorphCreditMode;
+  creditName?: string;
+  creditSocial?: string;
+}
+
+export async function submitCommunityVariationImageV2(input: CommunityVariationMediaInput): Promise<{ submissionId: string }> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('You must be signed in to submit variation-card media.');
+
+  const species = findUniversalSpecies(input.speciesId.trim());
+  if (!species) throw new Error('Please select a recognised Tiny Titans species before submitting media.');
+
+  const variationCardId = input.variationCardId.trim();
+  if (!variationCardId) throw new Error('This variation card is missing its approved identity.');
+
+  const variationRef = doc(db, 'approvedMorphVariations', variationCardId);
+  const variationSnapshot = await getDoc(variationRef);
+  if (!variationSnapshot.exists()) throw new Error('This community variation card is no longer available.');
+  const variation = variationSnapshot.data();
+  if (String(variation.speciesId || '') !== species.id) throw new Error('This variation card belongs to a different species.');
+
+  const variationName = String(variation.name || '').trim();
+  if (!variationName) throw new Error('This variation card has no approved display name.');
+  const morphId = 'community-' + variationCardId;
+
+  const description = validateText(input.description, 'Animal description', true);
+  const observedTraits = validateText(input.observedTraits, 'Observed traits');
+  const proofDetails = validateText(input.proofDetails, 'Evidence / keeper context', true);
+  const proofReference = validateText(input.proofReference ?? '', 'Proof reference');
+
+  if (!input.image) throw new Error('Please add an image or video.');
+  const kind = mediaKind(input.image);
+  const maxBytes = kind === 'video' ? 25 * 1024 * 1024 : 8 * 1024 * 1024;
+  if (input.image.size > maxBytes) throw new Error(kind === 'video' ? 'Video attachments must be 25 MB or smaller.' : 'Image attachments must be 8 MB or smaller.');
+  if (!input.factualAccuracyConfirmed) throw new Error('Please confirm this media genuinely represents the selected reviewed variation card.');
+  if (!input.photoRequirementsConfirmed) throw new Error('Please confirm the submitted media meets the Morph Gallery requirements.');
+  if (input.creditMode === 'name' && !input.creditName?.trim()) throw new Error('Please enter the name you want displayed, or choose another credit option.');
+  if (input.creditMode === 'social' && !input.creditSocial?.trim()) throw new Error('Please enter the social handle/link you want displayed, or choose another credit option.');
+
+  const creditName = validateText(input.creditName ?? '', 'Credit name');
+  const creditSocial = validateText(input.creditSocial ?? '', 'Credit social');
+  const payload = kind === 'image' ? await prepareImage(input.image) : input.image;
+  const extension = kind === 'image' ? 'jpg' : input.image.type === 'video/webm' ? 'webm' : input.image.type === 'video/quicktime' ? 'mov' : 'mp4';
+
+  const submissionRef = doc(collection(db, 'morphImageSubmissions'));
+  const storagePath = `morph-submissions/${user.uid}/${submissionRef.id}/${slugify(variationName) || 'variation' }.${extension}`;
+  const storageRef = ref(storage, storagePath);
+  let uploaded = false;
+
+  try {
+    await uploadBytes(storageRef, payload, {
+      contentType: kind === 'image' ? 'image/jpeg' : input.image.type,
+      customMetadata: {
+        speciesId: species.id,
+        morphId,
+        variationCardId,
+        contributorUid: user.uid,
+        mediaType: kind,
+      },
+    });
+    uploaded = true;
+    const imageUrl = await getDownloadURL(storageRef);
+
+    await setDoc(submissionRef, {
+      userId: user.uid,
+      speciesId: species.id,
+      speciesName: species.acceptedScientificName,
+      morphId,
+      variationCardId,
+      morphName: variationName,
+      description,
+      observedTraits,
+      proofDetails,
+      proofReference: proofReference || null,
+      photoRequirementsConfirmed: true,
+      factualAccuracyConfirmed: true,
+      allowMorphLibraryLink: true,
+      creditType: input.creditMode,
+      creditName: input.creditMode === 'name' ? creditName : null,
+      creditSocial: input.creditMode === 'social' ? creditSocial : null,
+      attachment: {
+        path: storagePath,
+        type: kind,
+        sizeBytes: payload.size,
+        originalType: input.image.type,
+        originalSizeBytes: input.image.size,
+      },
+      imageUrl,
+      status: 'Pending',
+      submittedAt: serverTimestamp(),
+    });
+
+    return { submissionId: submissionRef.id };
+  } catch (error) {
+    if (uploaded) await deleteObject(storageRef).catch(() => undefined);
+    throw error instanceof Error ? error : new Error(`We couldn't upload the variation-card ${kind}.`, { cause: error });
+  }
 }
