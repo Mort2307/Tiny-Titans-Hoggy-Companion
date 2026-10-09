@@ -64,7 +64,7 @@ export function useMorphLibrary(){
   useEffect(()=>{
     let cancelled=false;
     setApprovedImagesLoading(true);
-    void getApprovedMorphImages().then((result)=>{
+    void getApprovedMorphImages(undefined, DEFAULT_SPECIES_ID).then((result)=>{
       if(cancelled)return;
       const next:Record<string,{id?:string;morphId?:string;imageUrl:string;creditName?:string;creditSocial?:string;creditMode?:string;approvedAt?:unknown}>={};
       (result as Array<{id?:string;morphId?:string;imageUrl:string;creditName?:string;creditSocial?:string;creditMode?:string;approvedAt?:unknown}>).forEach((image)=>{
