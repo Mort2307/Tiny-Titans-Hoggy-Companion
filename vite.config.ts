@@ -96,6 +96,10 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Bridge legacy prompt-only installations to the newest shell at the
+        // next navigation without forcibly reloading an active keeper form.
+        skipWaiting: true,
+        clientsClaim: false,
         cleanupOutdatedCaches: true,
         navigateFallback: "/index.html",
         // Never let the PWA app shell intercept server-owned integration routes.
