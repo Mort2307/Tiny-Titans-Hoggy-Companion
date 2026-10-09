@@ -1,9 +1,5 @@
 import { registerSW } from "virtual:pwa-register";
-import {
-  notifyTinyTitansOfflineReady,
-  notifyTinyTitansUpdateAvailable,
-  setTinyTitansUpdateHandler,
-} from "../components/AppUpdatePrompt";
+export const TINY_TITANS_SW_UPDATE_EVENT = "tiny-titans-sw-update";
 
 let updateServiceWorker: ((reloadPage?: boolean) => Promise<void>) | null = null;
 
@@ -15,7 +11,9 @@ export function initializePwaUpdateService() {
     : registerSW({
         immediate: true,
         onNeedRefresh() {
-          notifyTinyTitansUpdateAvailable();
+          // The ReleaseCheckGuard is the sole update UI and checks the
+          // uncached server release manifest before refreshing any work.
+          window.dispatchEvent(new Event(TINY_TITANS_SW_UPDATE_EVENT));
         },
         onRegisteredSW(_swUrl, registration) {
           if (!registration) return;
@@ -32,13 +30,10 @@ export function initializePwaUpdateService() {
           document.addEventListener("visibilitychange", checkForUpdate);
         },
         onOfflineReady() {
-          notifyTinyTitansOfflineReady();
+          // A ready offline cache is not proof that this is the latest release.
+          // The release guard will check again on the next network connection.
         },
       });
-
-  setTinyTitansUpdateHandler(async () => {
-    await updateServiceWorker?.(true);
-  });
 
   return updateServiceWorker;
 }
