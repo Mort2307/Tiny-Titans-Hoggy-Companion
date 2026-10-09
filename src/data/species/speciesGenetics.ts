@@ -162,14 +162,17 @@ export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): 
   return "baseline-only";
 }
 
+const EXHAUSTIVELY_REVIEWED_VARIATION_LIBRARIES = new Set<string>([
+  "heterodon-nasicus",
+]);
+
+const REVIEWED_NO_ESTABLISHED_VARIANTS = new Set<string>([]);
+
 export function getSpeciesVariationLibraryStatus(speciesId: string | null | undefined): SpeciesVariationLibraryStatus {
   if (!speciesId) return "research-required";
-  if (isHognose(speciesId)) return "catalogued";
-  const species = getSpeciesRecord(speciesId);
-  if (!species) return "research-required";
-  return Object.prototype.hasOwnProperty.call(SPECIES_CATALOGUES, species.acceptedScientificName)
-    ? "catalogued"
-    : "research-required";
+  if (EXHAUSTIVELY_REVIEWED_VARIATION_LIBRARIES.has(speciesId)) return "catalogued";
+  if (REVIEWED_NO_ESTABLISHED_VARIANTS.has(speciesId)) return "reviewed-no-established-variants";
+  return getSpeciesRecord(speciesId) ? "research-required" : "research-required";
 }
 
 export function getSpeciesVariationLibraryCoverage(speciesId: string | null | undefined) {
