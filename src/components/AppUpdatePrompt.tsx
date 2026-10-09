@@ -46,7 +46,9 @@ export default function AppUpdatePrompt() {
     const show = () => {
       setPending(true);
       setUpdateError(false);
-      setOpen(true);
+      // A service-worker change must not interrupt an in-progress tracker form.
+      // The release gate enforces updating before a new app session starts.
+      setOpen(false);
     };
     let offlineTimer: number | undefined;
     const showOffline = () => {
