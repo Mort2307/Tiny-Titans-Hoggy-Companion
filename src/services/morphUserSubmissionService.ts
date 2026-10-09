@@ -33,7 +33,8 @@ export type CreateMorphSubmissionInput = {
 
 export async function createUserMorphSubmission(uid: string, input: CreateMorphSubmissionInput): Promise<UserMorphSubmission> {
   if (!uid) throw new Error("You must be signed in to submit a morph.");
-  const speciesId = input.speciesId?.trim() || "heterodon-nasicus";
+  const speciesId = input.speciesId?.trim() ?? "";
+  if (!speciesId) throw new Error("Please select the species this morph or variation belongs to.");
   const species = findUniversalSpecies(speciesId);
   if (!species) throw new Error("Please select a recognised Tiny Titans species before submitting a morph or variation.");
   const submittedName = input.submittedName.trim();
