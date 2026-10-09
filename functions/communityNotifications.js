@@ -164,6 +164,16 @@ function submissionDescriptor(collectionId, data) {
         url: "/creator/submissions",
       };
     }
+    case "variationCardSubmissions": {
+      const variation = text(data.submittedName, "New morph / variation proposal");
+      const detail = firstNonEmpty(data.description, data.knownGenetics, data.sourceOrBreeder) || "New community variation card requires Creator review.";
+      return {
+        type: "creator-variation-card-submission",
+        title: `🧬 Variation card proposal — ${variation}`,
+        body: detail,
+        url: "/creator/submissions",
+      };
+    }
     case "keeperObservations": {
       const title = text(data.title, "New behaviour observation");
       const detail = firstNonEmpty(data.observedBehaviour, data.description) || "New keeper observation requires Creator review.";
@@ -381,4 +391,9 @@ exports.notifyCreatorOnSpeciesSubmission = onDocumentCreated({ region: "europe-w
 
 exports.notifyCreatorOnFoundingFollowerClaim = onDocumentCreated({ region: "europe-west2", document: "foundingFollowerClaims/{claimId}" }, async (event) => {
   await handleCreatorSubmission(event, "foundingFollowerClaims");
+});
+
+
+exports.notifyCreatorOnVariationCardSubmission = onDocumentCreated({ region: "europe-west2", document: "variationCardSubmissions/{submissionId}" }, async (event) => {
+  await handleCreatorSubmission(event, "variationCardSubmissions");
 });
