@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getUserSnake } from "../services/snakeService";
-import { findSnakeSpecies } from "../data/species/speciesRegistry";
+import { findSnakeSpecies } from "../data/species/speciesRegistry";\nimport { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 
 const SNAKE_ID_ROUTES = [
   /^\/snakes\/([^/]+)(?:\/|$)/,
@@ -19,9 +19,16 @@ const SNAKE_ID_ROUTES = [
 export default function SpeciesContextRouteSync() {
   const location = useLocation();
   const { user, loading, profileLoading } = useAuth();
-  const { setSelectedSpeciesId } = useSpeciesContext();
+  const { selectedSpeciesId, setSelectedSpeciesId } = useSpeciesContext();
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const requestedSpecies = params.get("species");
+    if (requestedSpecies) {
+      const resolved = findUniversalSpecies(requestedSpecies);
+      if (resolved && resolved.id !== selectedSpeciesId) setSelectedSpeciesId(resolved.id);
+    }
+
     if (loading || profileLoading || !user) return;
 
     const match = SNAKE_ID_ROUTES.map((pattern) => location.pathname.match(pattern)).find(Boolean);
@@ -41,7 +48,7 @@ export default function SpeciesContextRouteSync() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, location.search, user, loading, profileLoading, setSelectedSpeciesId]);
+  }, [location.pathname, location.search, user, loading, profileLoading, selectedSpeciesId, setSelectedSpeciesId]);
 
   return null;
 }
