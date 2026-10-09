@@ -36,3 +36,19 @@ export async function getApprovedCommunityVariationCards(speciesId: string): Pro
     .map((item) => { const data = item.data() as Omit<ApprovedCommunityVariationCard, "id">; return { id: item.id, ...data, sourceUrl: safeHttpUrl(data.sourceUrl) }; })
     .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base", numeric: true }));
 }
+
+
+export function communityVariationCategoryLabel(category: MorphSubmissionCategory): string {
+  switch (category) {
+    case "single-gene": return "Possible genetic trait";
+    case "super-form": return "Possible super / homozygous form";
+    case "combination": return "Possible combination";
+    case "polygenic": return "Possible polygenic trait";
+    case "line-bred": return "Line-bred / selectively bred variation";
+    case "colour-variation": return "Colour variation";
+    case "pattern-variation": return "Pattern variation";
+    case "locality": return "Locality / geographic form";
+    case "regional-name": return "Regional name / alias";
+    default: return "Unclassified variation";
+  }
+}
