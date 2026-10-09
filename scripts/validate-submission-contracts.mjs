@@ -44,7 +44,7 @@ const requiredContracts = [
   ['Morph Library passes selected speciesId to image submission', /submitMorphImageV2\(\{speciesId,morphId:selectedMorph\.geneId/.test(morphImageSubmission)],
   ['Universal variation proposals use UniversalSpeciesPicker', newMorphDialog.includes('UniversalSpeciesPicker')],
   ['Universal species image submissions use UniversalSpeciesPicker', speciesMorphImageDialog.includes('UniversalSpeciesPicker')],
-  ['Hognose canonical image submission remains species-scoped', morphImageSubmission.includes('findSnakeSpecies') && morphImageSubmission.includes('isSpeciesGeneticsMapped') && morphImageDialog.includes('SpeciesSelector')],
+  ['Hognose canonical image submission is hard-locked to Western Hognose', morphImageSubmission.includes('const speciesId="heterodon-nasicus"') && morphImageSubmission.includes('selectedSpecies.id!=="heterodon-nasicus"') && !morphImageDialog.includes('SpeciesSelector')],
   ['Morph Library passes selected speciesId to terminology submission', /createUserMorphSubmission\(user\.uid,\{speciesId,/.test(newMorphSubmission)],
   ['Morph Library image submission records explicit link consent', submissionService.includes('allowMorphLibraryLink') && submissionService.includes('window.confirm')],
   ['Submission service accepts species context', submissionService.includes('speciesId?: string')],
