@@ -82,7 +82,8 @@ export default function SpeciesMorphLibrary() {
     : variationStatus === "reviewed-no-established-variants"
       ? "Variation review complete · no established captive morph system documented"
       : "Species morph & variation catalogue requires exhaustive review";
-  const baselineOnly = geneticsStatus === "baseline-only";\n  const variationReviewRequired = variationStatus === "research-required";
+  const baselineOnly = geneticsStatus === "baseline-only";
+  const variationReviewRequired = variationStatus === "research-required";
 
   function openImageSubmission(morphId: string) {
     setImageSubmissionMorphId(morphId);
