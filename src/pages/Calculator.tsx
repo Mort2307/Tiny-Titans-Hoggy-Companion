@@ -39,8 +39,8 @@ export default function Calculator() {
   const requestedMaleId = searchParams.get("male");
   const requestedFemaleId = searchParams.get("female");
   const requestedSnakeId = searchParams.get("snakeId");
-  const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "selected species";
-  const speciesKey = selectedSpecies?.acceptedScientificName ?? selectedSpeciesId;
+  const speciesName = selectedUniversalSpecies?.commonNames[0] ?? selectedSpecies?.commonNames[0] ?? selectedUniversalSpecies?.acceptedScientificName ?? selectedSpecies?.acceptedScientificName ?? "selected species";
+  const speciesKey = selectedUniversalSpecies?.acceptedScientificName ?? selectedSpecies?.acceptedScientificName ?? selectedSpeciesId;
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
   const speciesDefinitions = useMemo(() => getSpeciesCalculatorMorphs(selectedSpeciesId), [selectedSpeciesId]);
   const speciesSnakes = useMemo(() => snakes.filter((snake) => findSnakeSpecies(snake.species)?.id === selectedSpeciesId), [snakes, selectedSpeciesId]);
