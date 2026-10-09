@@ -4,7 +4,7 @@ import { useSpeciesContext } from "../context/SpeciesContext";
 import { getSpeciesGeneticsStatus, getSpeciesVariationLibraryStatus, getSpeciesVisualMorphs } from "../data/species/speciesGenetics";
 import { getApprovedMorphImages } from "../services/creatorService";
 import type { ApprovedMorphImage } from "../types/morphSubmission";
-import { getApprovedCommunityVariationCards, type ApprovedCommunityVariationCard } from "../services/communityVariationCardService";
+import { communityVariationCategoryLabel, getApprovedCommunityVariationCards, type ApprovedCommunityVariationCard } from "../services/communityVariationCardService";
 import BackHomeButton from "../components/BackHomeButton";
 import { SpeciesMorphImageSubmissionDialog } from "./SpeciesMorphImageSubmissionDialog";
 import NewMorphSubmissionDialog from "../components/morph-library/NewMorphSubmissionDialog";
@@ -225,7 +225,7 @@ export default function SpeciesMorphLibrary() {
                     )}
                   </div>
                   <div className="morph-card__body">
-                    <div className="morph-card__topline"><span>{card.category.replaceAll("-", " ")}</span><span>Reviewed</span></div>
+                    <div className="morph-card__topline"><span>{communityVariationCategoryLabel(card.category)}</span><span>Reviewed record</span></div>
                     <h2>{card.name}</h2>
                     <div className="morph-card__classification"><span>Variation record</span><span>Genetics unresolved</span></div>
                     <p className="morph-card__description">{card.description}</p>
