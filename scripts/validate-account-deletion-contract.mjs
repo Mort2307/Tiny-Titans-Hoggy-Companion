@@ -10,6 +10,8 @@ const checks = [
   ["rescue-owner safeguard exists", read("functions/accountDeletion.js").includes("Transfer ownership of your Rescue Centre organisation")],
   ["sandbox data is cleaned", read("functions/accountDeletion.js").includes('deleteMatchingDocs("sandboxExperiments", "ownerUid", uid)') && read("functions/accountDeletion.js").includes('deleteMatchingDocs("testerSandboxes", "ownerUid", uid)')],
   ["shared mentorship participants are scrubbed", read("functions/accountDeletion.js").includes("removeMentorshipParticipant(uid)")],
+  ["variation proposal records are cleaned", read("functions/accountDeletion.js").includes('deleteMatchingDocs("variationCardSubmissions", "userId", uid)')],
+  ["approved Morph Library media and credited files are removed", read("functions/accountDeletion.js").includes("deletePublishedMorphMedia(uid)") && read("functions/accountDeletion.js").includes('approvedMorphImages') && read("functions/accountDeletion.js").includes('sourceSubmissionId')],
   ["in-app Security control exists", read("src/pages/Security.tsx").includes("deleteMyAccount") && read("src/pages/Security.tsx").includes("DELETE")],
   ["external deletion route exists", read("src/routes/AppRouter.tsx").includes('path="/delete-account"')],
   ["public privacy route exists", read("src/routes/AppRouter.tsx").includes('path="/privacy"')],
