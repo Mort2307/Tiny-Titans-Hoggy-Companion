@@ -1,6 +1,6 @@
 import { addDoc, collection, getDocs, orderBy, query, serverTimestamp, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { findSnakeSpecies } from "../data/species/speciesRegistry";
+import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import type { MorphSubmissionCategory, UserMorphSubmission, UserMorphSubmissionStatus } from "../types/morphSubmission";
 
 function submissionCollection(uid: string) {
@@ -22,11 +22,11 @@ export type CreateMorphSubmissionInput = {
 export async function createUserMorphSubmission(uid: string, input: CreateMorphSubmissionInput): Promise<UserMorphSubmission> {
   if (!uid) throw new Error("You must be signed in to submit a morph.");
   const speciesId = input.speciesId?.trim() || "heterodon-nasicus";
-  const species = findSnakeSpecies(speciesId);
-  if (!species) throw new Error("Please select a recognised snake species before submitting a morph.");
+  const species = findUniversalSpecies(speciesId);
+  if (!species) throw new Error("Please select a recognised Tiny Titans species before submitting a morph or variation.");
   const submittedName = input.submittedName.trim();
-  if (submittedName.length < 2) throw new Error("Please provide the morph name.");
-  if (!input.description.trim()) throw new Error("Please describe where the morph name came from or what is known about it.");
+  if (submittedName.length < 2) throw new Error("Please provide the morph or variation name.");
+  if (!input.description.trim()) throw new Error("Please describe what was observed, where the name came from, or what is known about the variation.");
 
   const now = new Date().toISOString();
   const payload = {
