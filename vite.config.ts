@@ -2,13 +2,28 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
+const tinyTitansBuildId = process.env.TINY_TITANS_RELEASE_ID?.trim() || `tt-${Date.now().toString(36)}`;
+const tinyTitansReleasedAt = new Date().toISOString();
+
 const tinyTitansIcon192 = "/icons/tiny-titans-192.svg";
 const tinyTitansIcon512 = "/icons/tiny-titans-512.svg";
 const tinyTitansRasterIcon = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg";
 
 export default defineConfig({
+  define: { __TINY_TITANS_BUILD_ID__: JSON.stringify(tinyTitansBuildId) },
   plugins: [
     react(),
+    {
+      name: "tiny-titans-release-manifest",
+      apply: "build",
+      generateBundle() {
+        this.emitFile({
+          type: "asset",
+          fileName: "release.json",
+          source: JSON.stringify({ buildId: tinyTitansBuildId, releasedAt: tinyTitansReleasedAt, mandatory: true }),
+        });
+      },
+    },
     VitePWA({
       registerType: "prompt",
       includeAssets: [
