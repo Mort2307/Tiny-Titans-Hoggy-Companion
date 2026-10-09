@@ -7,7 +7,7 @@ type Props = {
   initialSpeciesId?: string;
 };
 
-export default function NewMorphSubmissionDialog({ onClose, initialSpeciesId = "" }: Props) {
+export default function NewMorphSubmissionDialog({ onClose, initialSpeciesId = "heterodon-nasicus" }: Props) {
   const {
     speciesId, setSpeciesId, name, setName, region, setRegion, category, setCategory,
     description, setDescription, knownGenetics, setKnownGenetics, source, setSource,
