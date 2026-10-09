@@ -30,8 +30,19 @@ exports.approveMorphImageSubmission = onCall({ region: "europe-west2", timeoutSe
   const submissionId = String(request.data?.submissionId || "").trim(); if (!submissionId) throw new HttpsError("invalid-argument", "A submission ID is required.");
   const submissionRef = db.collection("morphImageSubmissions").doc(submissionId); const submissionSnapshot = await submissionRef.get(); if (!submissionSnapshot.exists) throw new HttpsError("not-found", "The morph submission could not be found.");
   const submission = submissionSnapshot.data() || {}; if (submission.status !== "Pending" && submission.status !== "NeedsInfo") throw new HttpsError("failed-precondition", "This submission is no longer awaiting approval.");
-  const morphId = String(submission.morphId || "").trim(); const morphName = String(submission.morphName || "").trim(); const speciesId = String(submission.speciesId || "").trim(); const sourceStoragePath = String(submission.attachment?.path || "").trim();
+  let morphId = String(submission.morphId || "").trim(); let morphName = String(submission.morphName || "").trim(); const speciesId = String(submission.speciesId || "").trim(); const variationCardId = String(submission.variationCardId || "").trim(); const sourceStoragePath = String(submission.attachment?.path || "").trim();
   if (!morphId || !morphName || !speciesId) throw new HttpsError("failed-precondition", "This submission has no complete species-specific Morph Library selection. It must be resolved before approval.");
+  if (variationCardId) {
+    const variationSnapshot = await db.collection("approvedMorphVariations").doc(variationCardId).get();
+    if (!variationSnapshot.exists) throw new HttpsError("failed-precondition", "The referenced community variation card is no longer approved.");
+    const variation = variationSnapshot.data() || {};
+    if (String(variation.speciesId || "").trim() !== speciesId) throw new HttpsError("failed-precondition", "The referenced community variation card belongs to a different species.");
+    const approvedVariationName = String(variation.name || "").trim();
+    if (!approvedVariationName) throw new HttpsError("failed-precondition", "The referenced community variation card has no approved name.");
+    const expectedMorphId = "community-" + variationCardId;
+    if (morphId !== expectedMorphId) throw new HttpsError("failed-precondition", "The community variation-card media identity does not match the approved card.");
+    morphName = approvedVariationName;
+  }
   if (!sourceStoragePath.startsWith("morph-submissions/")) throw new HttpsError("failed-precondition", "The submitted media file could not be located safely.");
   const publishToMorphLibrary = submission.allowMorphLibraryLink !== false;
   const mediaType = submission.attachment?.type === "video" ? "video" : "image";
@@ -43,10 +54,10 @@ exports.approveMorphImageSubmission = onCall({ region: "europe-west2", timeoutSe
     let approvedImageId = null; let responseStoragePath = "";
     if (publishToMorphLibrary) {
       const destinationFile = bucket.file(approvedPath); await sourceFile.copy(destinationFile); await destinationFile.setMetadata({ contentType, metadata: { sourceSubmissionId: submissionId, approvedBy: request.auth.uid, speciesId, morphId, mediaType } });
-      const approvedRef = db.collection("approvedMorphImages").doc(); await approvedRef.set({ speciesId, speciesName: submission.speciesName || null, morphId, morphName, imageUrl: null, storagePath: approvedPath, mediaType, sourceStoragePath, description: submission.description || null, observedTraits: submission.observedTraits || null, proofDetails: submission.proofDetails || null, proofReference: submission.proofReference || null, geneticsNotes: submission.geneticsNotes || null, factualAccuracyConfirmed: submission.factualAccuracyConfirmed === true, photoRequirementsConfirmed: submission.photoRequirementsConfirmed === true, creditType: submission.creditType || "anonymous", creditName: submission.creditName || null, creditSocial: submission.creditSocial || null, sourceSubmissionId: submissionId, approvedAt: FieldValue.serverTimestamp(), approvedBy: request.auth.uid });
+      const approvedRef = db.collection("approvedMorphImages").doc(); await approvedRef.set({ speciesId, speciesName: submission.speciesName || null, morphId, variationCardId: variationCardId || null, morphName, imageUrl: null, storagePath: approvedPath, mediaType, sourceStoragePath, description: submission.description || null, observedTraits: submission.observedTraits || null, proofDetails: submission.proofDetails || null, proofReference: submission.proofReference || null, geneticsNotes: submission.geneticsNotes || null, factualAccuracyConfirmed: submission.factualAccuracyConfirmed === true, photoRequirementsConfirmed: submission.photoRequirementsConfirmed === true, creditType: submission.creditType || "anonymous", creditName: submission.creditName || null, creditSocial: submission.creditSocial || null, sourceSubmissionId: submissionId, approvedAt: FieldValue.serverTimestamp(), approvedBy: request.auth.uid });
       approvedImageId = approvedRef.id; responseStoragePath = approvedPath;
     }
-    await submissionRef.update({ status: "Approved", speciesId, morphId, morphName, reviewedAt: FieldValue.serverTimestamp(), reviewedBy: request.auth.uid, approvedImageId, morphLibraryLinked: publishToMorphLibrary });
+    await submissionRef.update({ status: "Approved", speciesId, morphId, morphName, variationCardId: variationCardId || null, reviewedAt: FieldValue.serverTimestamp(), reviewedBy: request.auth.uid, approvedImageId, morphLibraryLinked: publishToMorphLibrary });
     await sourceFile.delete().catch(() => undefined);
     return { success: true, published: publishToMorphLibrary, approvedImageId, speciesId, morphId, morphName, storagePath: responseStoragePath, mediaType };
   } catch (error) {
