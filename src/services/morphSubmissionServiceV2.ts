@@ -1,7 +1,7 @@
 import { auth, db, storage } from '../firebase/config';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { findSnakeSpecies } from '../data/species/speciesRegistry';
+import { findUniversalSpecies } from '../data/species/universalSpeciesRegistry';
 import { getSpeciesVisualMorphs } from '../data/species/speciesGenetics';
 
 export type MorphCreditMode = 'name' | 'social' | 'anonymous';
@@ -28,7 +28,7 @@ async function prepareImage(file: File): Promise<Blob> {
 
 export async function submitMorphImageV2(input: MorphSubmissionInputV2): Promise<{ submissionId: string }> {
   const user = auth.currentUser; if (!user) throw new Error('You must be signed in to submit morph media.');
-  const speciesId = input.speciesId?.trim() || 'heterodon-nasicus'; const species = findSnakeSpecies(speciesId); if (!species) throw new Error('Please select a recognised snake species before submitting morph media.');
+  const speciesId = input.speciesId?.trim() || 'heterodon-nasicus'; const species = findUniversalSpecies(speciesId); if (!species) throw new Error('Please select a recognised Tiny Titans species before submitting morph media.');
   const morphId = input.morphId.trim(); const morphName = input.morphName.trim(); if (!morphId || !morphName) throw new Error('Please select a morph from the Morph Library.');
   const canonicalMorph = getSpeciesVisualMorphs(species.id).find((entry) => entry.geneId === morphId || entry.name.trim().toLowerCase() === morphName.toLowerCase());
   if (!canonicalMorph) throw new Error(`“${morphName}” is not a recognised Morph Library entry for ${species.commonNames[0] ?? species.acceptedScientificName}.`);
