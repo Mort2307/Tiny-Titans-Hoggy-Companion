@@ -205,10 +205,26 @@ export function searchUniversalSpecies(query: string): UniversalSpeciesRecord[] 
   })).map(({ item }) => item);
 }
 
+const normaliseUniversalSpeciesIdentity = (value: string) =>
+  value.trim().toLowerCase().replace(/\s+/g, " ");
+
 export function findUniversalSpecies(value: string | null | undefined): UniversalSpeciesRecord | undefined {
   const raw = value?.trim();
   if (!raw) return undefined;
-  return searchUniversalSpecies(raw)[0];
+
+  const byId = UNIVERSAL_SPECIES_BY_ID[raw];
+  if (byId) return byId;
+
+  const key = normaliseUniversalSpeciesIdentity(raw);
+  return UNIVERSAL_SPECIES.find((species) => {
+    const exactNames = [
+      species.acceptedScientificName,
+      ...species.commonNames,
+      ...(species.synonyms ?? []),
+      ...species.searchAliases,
+    ];
+    return exactNames.some((name) => normaliseUniversalSpeciesIdentity(name) === key);
+  });
 }
 
 export function buildUniversalSpeciesGroups(species = UNIVERSAL_SPECIES): UniversalSpeciesGroup[] {
