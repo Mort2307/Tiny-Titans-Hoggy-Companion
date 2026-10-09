@@ -61,7 +61,7 @@ export type ApprovedMorphImage = {
 
 /** User-submitted regional terminology is a separate workflow and intentionally
  * keeps its lowercase Firestore status vocabulary. */
-export type MorphSubmissionCategory = "single-gene" | "super-form" | "combination" | "polygenic" | "line-bred" | "regional-name" | "unknown";
+export type MorphSubmissionCategory = "single-gene" | "super-form" | "combination" | "polygenic" | "line-bred" | "colour-variation" | "pattern-variation" | "locality" | "regional-name" | "unknown";
 export type UserMorphSubmissionStatus = "pending" | "under-review" | "approved" | "rejected" | "merged";
 
 export type UserMorphSubmission = {
