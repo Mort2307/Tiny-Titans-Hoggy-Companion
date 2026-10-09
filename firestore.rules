@@ -64,18 +64,28 @@ service cloud.firestore {
         && request.resource.data.speciesId is string
         && request.resource.data.speciesId.size() > 0
         && request.resource.data.speciesName is string
+        && request.resource.data.speciesName.size() > 0
+        && request.resource.data.speciesName.size() <= 240
         && request.resource.data.submittedName is string
         && request.resource.data.submittedName.size() >= 2
+        && request.resource.data.submittedName.size() <= 160
         && request.resource.data.description is string
         && request.resource.data.description.size() > 0
+        && request.resource.data.description.size() <= 4000
         && request.resource.data.region in ['global', 'uk', 'usa', 'europe', 'australia', 'other']
         && request.resource.data.category in [
           'single-gene', 'super-form', 'combination', 'polygenic', 'line-bred',
           'colour-variation', 'pattern-variation', 'locality', 'regional-name', 'unknown'
         ]
         && request.resource.data.knownGenetics is string
+        && request.resource.data.knownGenetics.size() <= 4000
         && request.resource.data.sourceOrBreeder is string
-        && request.resource.data.sourceUrl is string;
+        && request.resource.data.sourceOrBreeder.size() <= 1000
+        && request.resource.data.sourceUrl is string
+        && request.resource.data.sourceUrl.size() <= 2048
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string
+        && request.resource.data.serverCreatedAt is timestamp;
       allow get, list: if signedIn() && (isCreator() || resource.data.userId == request.auth.uid);
       allow update, delete: if isCreator();
     }
