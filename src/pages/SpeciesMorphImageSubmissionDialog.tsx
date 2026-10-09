@@ -92,7 +92,7 @@ export function SpeciesMorphImageSubmissionDialog({
             <UniversalSpeciesPicker value={speciesId} onChange={(species) => setSpeciesId(species?.id ?? "")} label="Species" allowUnknown={false} />
             <section className="morph-detail__section">
               <h3><TinyTitansIcon name="morph" size={15} /> Select the canonical morph</h3>
-              <p className="morph-detail__source-note">This photograph will be tagged to the selected species and exact Morph Library entry. A pending genetics catalogue still supports Normal / Wild Type image evidence.</p>
+              <p className="morph-detail__source-note">This photograph will be tagged to the selected species and exact Morph Library entry. A pending variation catalogue still supports Wild Type / Unclassified image evidence. No other species catalogue is used as a fallback.</p>
               <div className="morph-selector">
                 <button type="button" className="morph-selector__trigger" onClick={() => setMorphMenuOpen((open) => !open)}>{selectedMorph?.name ?? "Select a morph…"}</button>
                 {morphMenuOpen && <div className="morph-selector__menu"><input autoFocus value={morphSearch} onChange={(event) => setMorphSearch(event.target.value)} placeholder="Search morphs or aliases…" />{morphOptions.map((entry) => <button key={entry.geneId} type="button" onClick={() => { setSelectedMorph(entry); setMorphMenuOpen(false); }}>{entry.name}<small>{entry.kind} · {entry.inheritance}</small></button>)}</div>}
