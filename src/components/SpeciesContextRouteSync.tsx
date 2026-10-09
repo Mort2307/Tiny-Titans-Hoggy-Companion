@@ -3,7 +3,8 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getUserSnake } from "../services/snakeService";
-import { findSnakeSpecies } from "../data/species/speciesRegistry";\nimport { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
+import { findSnakeSpecies } from "../data/species/speciesRegistry";
+import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 
 const SNAKE_ID_ROUTES = [
   /^\/snakes\/([^/]+)(?:\/|$)/,
