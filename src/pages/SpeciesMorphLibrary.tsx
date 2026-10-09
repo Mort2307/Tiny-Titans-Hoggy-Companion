@@ -123,7 +123,8 @@ export default function SpeciesMorphLibrary() {
   }
 
   function openMorphRecord(morphId: string) {
-    navigate(`/morph-library/${encodeURIComponent(morphId)}`);
+    if (!selectedSpeciesId) return;
+    navigate(`/morph-library/${encodeURIComponent(morphId)}?species=${encodeURIComponent(selectedSpeciesId)}`);
   }
 
   function handleMorphCardClick(event: React.MouseEvent<HTMLElement>, morphId: string) {
@@ -190,8 +191,8 @@ export default function SpeciesMorphLibrary() {
                 {morph.description && <p className="morph-card__description">{morph.description}</p>}
                 <div className="morph-card__footer"><span className="morph-card__source">{morph.sourceLabel ?? "Tiny Titans species genetics record"}</span></div>
                 <div className="morph-card__actions">
-                  <Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}`}>Open genetics record <span aria-hidden="true"><TinyTitansIcon name="forward" size={12} /></span></Link>
-                  <Link className="morph-card__image-submit" to={`/morph-library/${encodeURIComponent(morph.geneId)}/gallery`}><TinyTitansIcon name="camera" size={13} /> Morph Gallery</Link>
+                  <Link className="morph-card__open" to={`/morph-library/${encodeURIComponent(morph.geneId)}?species=${encodeURIComponent(selectedSpeciesId)}`}>Open genetics record <span aria-hidden="true"><TinyTitansIcon name="forward" size={12} /></span></Link>
+                  <Link className="morph-card__image-submit" to={`/morph-library/${encodeURIComponent(morph.geneId)}/gallery?species=${encodeURIComponent(selectedSpeciesId)}`}><TinyTitansIcon name="camera" size={13} /> Morph Gallery</Link>
                   <button type="button" className="morph-card__image-submit" onClick={() => openImageSubmission(morph.geneId)}>Add image</button>
                 </div>
               </div>
