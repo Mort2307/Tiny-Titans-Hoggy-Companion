@@ -10,6 +10,7 @@ export type MorphImageSubmission = {
   speciesId: string;
   speciesName?: string;
   morphId?: string;
+  variationCardId?: string;
   morphName: string;
   description: string;
   geneticsNotes?: string;
@@ -42,6 +43,7 @@ export type ApprovedMorphImage = {
   speciesId?: string;
   speciesName?: string;
   morphId: string;
+  variationCardId?: string;
   morphName: string;
   imageUrl: string;
   storagePath: string;
