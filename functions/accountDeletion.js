@@ -163,6 +163,7 @@ exports.deleteMyAccount = onCall({ region: "europe-west2", secrets: [STRIPE_SECR
     deleteMatchingDocs("founderApplications", "uid", uid),
     deleteMatchingDocs("morphSubmissions", "userId", uid),
     deleteMatchingDocs("morphImageSubmissions", "userId", uid),
+    deleteMatchingDocs("variationCardSubmissions", "userId", uid),
     deleteMatchingDocs("vivariumShowcaseSubmissions", "userId", uid),
     deleteMatchingDocs("mentorApplications", "applicantId", uid),
     deleteMatchingDocsByAny("mentorshipRequests", ["requesterId", "mentorId"], uid),
