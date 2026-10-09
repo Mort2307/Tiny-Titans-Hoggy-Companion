@@ -5,7 +5,6 @@ import { reptifitMorphCatalog } from "../data/reptifitMorphCatalog";
 import type { MorphReferenceEntry } from "../data/hognoseMorphCatalog";
 import { getPreferredRegionalMorphName, getRegionalAliases, getMorphTerminologyAudit, type MorphRegion } from "../data/morphRegionalTerminology";
 import { getApprovedMorphImages } from "../services/creatorService";
-import { findSnakeSpecies } from "../data/species/speciesRegistry";
 import { rankSearchResults } from "../utils/searchRanking";
 
 const DEFAULT_SPECIES_ID="heterodon-nasicus";
@@ -27,7 +26,7 @@ export function useMorphLibrary(){
   const [searchParams,setSearchParams]=useSearchParams();
   const submissionRequested=searchParams.get("submitMorphImage")==="1";
   const requestedMorphId=searchParams.get("morphId")??"";
-  const requestedSpeciesId=searchParams.get("speciesId")??DEFAULT_SPECIES_ID;
+  const requestedSpeciesId=DEFAULT_SPECIES_ID;
 
   const entries=useMemo<MorphReferenceEntry[]>(()=>{
     const byName=new Map<string,MorphReferenceEntry>();
@@ -79,13 +78,13 @@ export function useMorphLibrary(){
   useEffect(()=>{
     if(!submissionRequested)return;
     setImageSubmissionMorphId(requestedMorphId);
-    setImageSubmissionSpeciesId(findSnakeSpecies(requestedSpeciesId)?.id??DEFAULT_SPECIES_ID);
+    setImageSubmissionSpeciesId(DEFAULT_SPECIES_ID);
     setShowImageSubmission(true);
   },[submissionRequested,requestedMorphId,requestedSpeciesId]);
 
-  function openImageSubmission(morphId="",speciesId=DEFAULT_SPECIES_ID){
+  function openImageSubmission(morphId=""){
     setImageSubmissionMorphId(morphId);
-    setImageSubmissionSpeciesId(speciesId);
+    setImageSubmissionSpeciesId(DEFAULT_SPECIES_ID);
     setShowImageSubmission(true);
   }
   function closeImageSubmission(){
