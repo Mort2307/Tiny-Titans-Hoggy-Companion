@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import BackHomeButton from "../components/BackHomeButton";
 import MorphDetail from "../components/morph-library/MorphDetail";
 import MorphImageSubmissionDialog from "../components/morph-library/MorphImageSubmissionDialog";
@@ -6,16 +7,26 @@ import { useMorphLibrary } from "../hooks/useMorphLibrary";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
 import TinyTitansIcon from "../components/TinyTitansIcon";
+import { getApprovedCommunityVariationCards, type ApprovedCommunityVariationCard } from "../services/communityVariationCardService";
 
 export { default as MorphImageSubmissionDialog } from "../components/morph-library/MorphImageSubmissionDialog";
 export { default as NewMorphSubmissionDialog } from "../components/morph-library/NewMorphSubmissionDialog";
 
 export default function MorphLibrary() {
+  const [communityCards, setCommunityCards] = useState<ApprovedCommunityVariationCard[]>([]);
   const {
     query,setQuery,filter,setFilter,region,setRegion,selected,setSelected,showImageSubmission,
     showNewMorphSubmission,setShowNewMorphSubmission,imageSubmissionMorphId,imageSubmissionSpeciesId,
     approvedImagesByMorph,approvedImagesLoading,entries,filtered,audit,openImageSubmission,closeImageSubmission,
   } = useMorphLibrary();
+
+  useEffect(() => {
+    let cancelled = false;
+    void getApprovedCommunityVariationCards("heterodon-nasicus")
+      .then((cards) => { if (!cancelled) setCommunityCards(cards); })
+      .catch(() => { if (!cancelled) setCommunityCards([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   return <main className="page-container morph-library-page">
     <BackHomeButton />
@@ -49,7 +60,8 @@ export default function MorphLibrary() {
       })}
     </div>
 
-    {filtered.length===0&&<div className="welcome-card"><h2>No matching morphs</h2><p>Try another recognised name, formula, alias or submit the missing terminology for review.</p><button type="button" onClick={()=>setShowNewMorphSubmission(true)}>Submit missing morph</button></div>}
+    {communityCards.length>0&&<section className="tracker-card" aria-label="Community reviewed variation cards"><div className="morph-library__eyebrow"><TinyTitansIcon name="community" size={14} /> COMMUNITY-REVIEWED VARIATIONS</div><h2>Keeper-contributed variation cards</h2><p>These records document reviewed terminology or observable variation without automatically creating new genetics. They stay outside the breeding calculator until inheritance is separately verified.</p><div className="morph-library-grid">{communityCards.map((card)=><article key={card.id} className="morph-card morph-card--library"><div className="morph-card__media"><div className="morph-card__image-empty"><span className="morph-card__image-icon"><TinyTitansIcon name="morph" size={20} /></span><strong>Community variation card</strong><span>Image awaiting approved user contribution</span></div></div><div className="morph-card__body"><div className="morph-card__topline"><span>{card.category.replaceAll("-"," ")}</span><span>Reviewed</span></div><h2>{card.name}</h2><div className="morph-card__classification"><span>Variation record</span><span>Genetics unresolved</span></div><p className="morph-card__description">{card.description}</p>{card.knownGenetics&&<p className="morph-card__contains"><strong>Submitted genetics context:</strong> {card.knownGenetics}</p>}<p className="morph-card__canonical"><strong>Calculator:</strong> Not eligible until inheritance is separately verified.</p></div></article>)}</div></section>}
+        {filtered.length===0&&<div className="welcome-card"><h2>No matching morphs</h2><p>Try another recognised name, formula, alias or submit the missing terminology for review.</p><button type="button" onClick={()=>setShowNewMorphSubmission(true)}>Submit missing morph</button></div>}
     {selected&&<MorphDetail morph={selected} region={region} onClose={()=>setSelected(null)}/>}
     {showImageSubmission&&<MorphImageSubmissionDialog entries={entries} initialMorphId={imageSubmissionMorphId} initialSpeciesId={imageSubmissionSpeciesId} onClose={closeImageSubmission}/>}
     {showNewMorphSubmission&&<NewMorphSubmissionDialog onClose={()=>setShowNewMorphSubmission(false)}/>}
