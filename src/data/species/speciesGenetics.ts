@@ -3,10 +3,10 @@ import {
   getMasterVisualMorphs,
   type MasterMorphDefinition,
 } from "../masterMorphDatabase";
-import { INITIAL_SNAKE_SPECIES } from "./speciesRegistry";
+import { UNIVERSAL_SPECIES_BY_ID } from "./universalSpeciesRegistry";\nimport type { UniversalSpeciesRecord } from "./universalSpeciesTypes";
 import { SPECIES_GENETICS_CATALOGUES } from "./speciesGeneticsCatalogues";
 import { SPECIES_GENETICS_COMBINATION_MORPHS, SPECIES_GENETICS_COMBINATION_SPECS } from "./speciesGeneticsCombinations";
-import { SPECIES_GENETICS_RESEARCH_ADDITIONS } from "./speciesGeneticsResearchAdditions";
+import { SPECIES_GENETICS_RESEARCH_ADDITIONS } from "./speciesGeneticsResearchAdditions";\nimport { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";\nimport { SPECIES_GENETICS_EXPANSION_BATCH_3 } from "./speciesGeneticsExpansionBatch3";
 
 type SpeciesRecord = (typeof INITIAL_SNAKE_SPECIES)[number];
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
@@ -97,21 +97,28 @@ const BASE_SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = {
   "Python regius": BALL_PYTHON_TRAITS,
 };
 
+const CATALOGUE_LAYERS: Array<Record<string, MasterMorphDefinition[]>> = [
+  BASE_SPECIES_CATALOGUES,
+  SPECIES_GENETICS_EXPANSION_BATCH_2,
+  SPECIES_GENETICS_EXPANSION_BATCH_3,
+  SPECIES_GENETICS_RESEARCH_ADDITIONS,
+];
+
 function mergeSpeciesTraits(speciesName: string): MasterMorphDefinition[] {
-  const base = BASE_SPECIES_CATALOGUES[speciesName] ?? [];
-  const additions = SPECIES_GENETICS_RESEARCH_ADDITIONS[speciesName] ?? [];
-  const byId = new Map(base.map((morph) => [morph.geneId, morph]));
-  additions.forEach((morph) => byId.set(morph.geneId, morph));
+  const byId = new Map<string, MasterMorphDefinition>();
+  for (const layer of CATALOGUE_LAYERS) {
+    for (const morph of layer[speciesName] ?? []) byId.set(morph.geneId, morph);
+  }
   return [...byId.values()];
 }
 
 const SPECIES_CATALOGUES: Record<string, MasterMorphDefinition[]> = Object.fromEntries(
-  [...new Set([...Object.keys(BASE_SPECIES_CATALOGUES), ...Object.keys(SPECIES_GENETICS_RESEARCH_ADDITIONS)])]
+  [...new Set(CATALOGUE_LAYERS.flatMap((layer) => Object.keys(layer)))]
     .map((speciesName) => [speciesName, mergeSpeciesTraits(speciesName)]),
 );
 
 function getSpeciesRecord(speciesId: string | null | undefined): SpeciesRecord | undefined {
-  return speciesId ? INITIAL_SNAKE_SPECIES.find((species) => species.id === speciesId) : undefined;
+  return speciesId ? UNIVERSAL_SPECIES_BY_ID[speciesId] : undefined;
 }
 function isHognose(speciesId: string | null | undefined): boolean { return speciesId === "heterodon-nasicus"; }
 function getCatalogue(speciesId: string | null | undefined): MasterMorphDefinition[] {
@@ -153,6 +160,31 @@ export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): 
   if (!species) return "baseline-only";
   if (Object.prototype.hasOwnProperty.call(SPECIES_CATALOGUES, species.acceptedScientificName)) return "mapped";
   return "baseline-only";
+}
+
+export function getSpeciesVariationLibraryStatus(speciesId: string | null | undefined): SpeciesVariationLibraryStatus {
+  if (!speciesId) return "research-required";
+  if (isHognose(speciesId)) return "catalogued";
+  const species = getSpeciesRecord(speciesId);
+  if (!species) return "research-required";
+  return Object.prototype.hasOwnProperty.call(SPECIES_CATALOGUES, species.acceptedScientificName)
+    ? "catalogued"
+    : "research-required";
+}
+
+export function getSpeciesVariationLibraryCoverage(speciesId: string | null | undefined) {
+  const species = getSpeciesRecord(speciesId);
+  const entries = getSpeciesVisualMorphs(speciesId);
+  const status = getSpeciesVariationLibraryStatus(speciesId);
+  return {
+    speciesId: species?.id ?? speciesId ?? "",
+    scientificName: species?.acceptedScientificName ?? "",
+    status,
+    entryCount: entries.length,
+    documentedVariationCount: Math.max(0, entries.length - 1),
+    imagePolicy: "community-submissions-only" as const,
+    exhaustiveReviewRequired: status === "research-required",
+  };
 }
 
 export function isSpeciesGeneticsMapped(speciesId: string | null | undefined): boolean {
