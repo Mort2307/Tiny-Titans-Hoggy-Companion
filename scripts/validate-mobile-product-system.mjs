@@ -23,7 +23,7 @@ const marketplace = read("src", "pages", "Marketplace.tsx");
 const settings = read("src", "pages", "Settings.tsx");
 const pageRegistry = read("src", "config", "tinyTitansPageRegistry.ts");
 const authenticatedRoutes = read("src", "routes", "AuthenticatedRoutes.tsx");
-const updatePrompt = read("src", "components", "AppUpdatePrompt.tsx");
+const releaseGuard = read("src", "components", "ReleaseCheckGuard.tsx");
 const updatePromptCss = read("src", "styles", "AppUpdatePrompt.css");
 const pwaService = read("src", "services", "pwaUpdateService.ts");
 const viteConfig = read("vite.config.ts");
@@ -156,17 +156,24 @@ if (!index.includes('rel="icon" type="image/svg+xml" href="/favicon.svg?v=4"')) 
   errors.push("index.html must use the canonical SVG favicon.");
 }
 
-if (!updatePrompt.includes("previousFocusRef") || !updatePrompt.includes('event.key !== "Tab"') || !updatePrompt.includes('document.body.style.overflow = "hidden"')) {
-  errors.push("App update dialog must trap focus, restore focus and lock background scrolling.");
+if (!main.includes("<ReleaseCheckGuard>") || !releaseGuard.includes('void check("startup")')) {
+  errors.push("Keeper workspace must be gated by the initial live release check.");
 }
-if (!pwaService.includes("notifyTinyTitansOfflineReady") || !pwaService.includes("onOfflineReady()")) {
-  errors.push("PWA update service must surface offline-ready state.");
+if (!releaseGuard.includes('role="status"') || !releaseGuard.includes('aria-live="polite"')) {
+  errors.push("Update gate and persistent update notice must announce status accessibly.");
 }
-if (!/\.tt-update-manual,[\s\S]*?bottom:\s*calc\(82px \+ env\(safe-area-inset-bottom\)\)/.test(updatePromptCss)) {
-  errors.push("Mobile update control must remain above the Quick View dock.");
+if (!releaseGuard.includes("setConfirmRestart(true)") || !releaseGuard.includes("Restart &amp; update")) {
+  errors.push("Restart must require a second confirmation to protect unsaved tracker forms.");
+}
+if (!pwaService.includes("TINY_TITANS_OFFLINE_READY_EVENT") || !pwaService.includes("onOfflineReady()") ||
+    !releaseGuard.includes("hasTinyTitansOfflineReadyNotification") || !releaseGuard.includes("Ready offline")) {
+  errors.push("PWA service must surface offline-ready status through the unified release guard.");
+}
+if (!updatePromptCss.includes("bottom: calc(86px + env(safe-area-inset-bottom));")) {
+  errors.push("Persistent mobile update banner must remain above the Quick View dock.");
 }
 if (!/\.tt-update-panel\s*\{[\s\S]*?border-radius:\s*24px 24px 0 0;/.test(updatePromptCss)) {
-  errors.push("Mobile update dialog must retain bottom-sheet presentation.");
+  errors.push("Mobile update gate must retain bottom-sheet presentation.");
 }
 
 const focusManagedSources = [
