@@ -7,6 +7,7 @@ import type { ApprovedMorphImage } from "../types/morphSubmission";
 import { getApprovedCommunityVariationCards, type ApprovedCommunityVariationCard } from "../services/communityVariationCardService";
 import BackHomeButton from "../components/BackHomeButton";
 import { SpeciesMorphImageSubmissionDialog } from "./SpeciesMorphImageSubmissionDialog";
+import NewMorphSubmissionDialog from "../components/morph-library/NewMorphSubmissionDialog";
 import { rankSearchResults } from "../utils/searchRanking";
 import "../styles/morphLibrary.css";
 import "../styles/morphCommunityGallery.css";
@@ -46,6 +47,7 @@ export default function SpeciesMorphLibrary() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [showImageSubmission, setShowImageSubmission] = useState(false);
+  const [showVariationProposal, setShowVariationProposal] = useState(false);
   const [imageSubmissionMorphId, setImageSubmissionMorphId] = useState("");
   const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
   const [communityCards, setCommunityCards] = useState<ApprovedCommunityVariationCard[]>([]);
@@ -146,6 +148,7 @@ export default function SpeciesMorphLibrary() {
         </div>
         <label className="morph-library__search"><span>Search {speciesName} morphs</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${speciesName} genetics…`} autoComplete="off" spellCheck={false} /></label>
         <div className={`morph-library__source-strip ${geneticsStatus === "mapped" ? "is-ready" : "is-pending"}`}><strong>{statusLabel}</strong><span>{filtered.length} species-scoped entries currently published</span></div>
+        {selectedSpeciesId && <div className="morph-card__actions"><button type="button" className="morph-card__open" onClick={() => setShowVariationProposal(true)}>Suggest a morph / variation card</button><button type="button" className="morph-card__image-submit" onClick={() => openImageSubmission("normal")}><TinyTitansIcon name="camera" size={13} /> Contribute Wild Type / Unclassified image</button></div>}
       </header>
 
       {variationReviewRequired && (
@@ -229,6 +232,7 @@ export default function SpeciesMorphLibrary() {
       )}
 
       {showImageSubmission && selectedSpeciesId && <SpeciesMorphImageSubmissionDialog initialMorphId={imageSubmissionMorphId} initialSpeciesId={selectedSpeciesId} onClose={closeImageSubmission} />}
+      {showVariationProposal && selectedSpeciesId && <NewMorphSubmissionDialog initialSpeciesId={selectedSpeciesId} onClose={() => setShowVariationProposal(false)} />}
     </main>
   );
 }
