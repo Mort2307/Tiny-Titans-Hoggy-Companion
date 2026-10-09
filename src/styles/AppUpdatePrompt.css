@@ -343,3 +343,22 @@
   }
   .tt-release-banner button { width: 100%; }
 }
+
+.tt-release-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tt-release-banner .tt-release-banner-cancel {
+  border-color: rgba(255, 255, 255, .32);
+  background: rgba(255, 255, 255, .08);
+}
+
+@media (max-width: 800px) {
+  .tt-release-banner-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
