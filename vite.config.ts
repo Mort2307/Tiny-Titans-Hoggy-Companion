@@ -2,7 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const tinyTitansBuildId = process.env.TINY_TITANS_RELEASE_ID?.trim() || `tt-${Date.now().toString(36)}`;
+// Each built and deployed bundle receives a unique identity, regardless of package version.
+const tinyTitansBuildId = `tt-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 const tinyTitansReleasedAt = new Date().toISOString();
 
 const tinyTitansIcon192 = "/icons/tiny-titans-192.svg";
