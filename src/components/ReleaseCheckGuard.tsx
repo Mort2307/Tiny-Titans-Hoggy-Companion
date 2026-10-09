@@ -156,8 +156,8 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
   const phaseRef = useRef<Phase>(phase);
   const pendingBuildRef = useRef<string | null>(null);
 
-  phaseRef.current = phase;
-  pendingBuildRef.current = pendingBuild;
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => { pendingBuildRef.current = pendingBuild; }, [pendingBuild]);
 
   const applyUpdate = useCallback(async (buildId: string, manual = false) => {
     if (!manual && getAttempts(buildId) >= MAX_AUTOMATIC_ATTEMPTS) {
@@ -200,8 +200,6 @@ export default function ReleaseCheckGuard({ children }: { children: ReactNode })
       // a reload partway through an active session.
       if (mode === "startup" || (mode === "resume" && !touchedSession.current)) {
         await applyUpdate(release.buildId);
-      } else if (mode === "startup") {
-        setPhase("ready");
       }
     } catch (error) {
       console.debug("[Tiny Titans] Release check unavailable; keep app accessible", error);
