@@ -10,7 +10,7 @@ import { rankSearchResults } from "../utils/searchRanking";
 
 const DEFAULT_SPECIES_ID="heterodon-nasicus";
 
-function normalise(value:string){return value.trim().toLowerCase().replace(/[’‘]/g,"'").replace(/[×✕]/g,"x").replace(/s+/g," ");}
+function normalise(value:string){return value.trim().toLowerCase().replace(/[’‘]/g,"'").replace(/[×✕]/g,"x").replace(/\s+/g," ");}
 function asReferenceEntry(entry:MasterMorphDefinition):MorphReferenceEntry{return entry as MorphReferenceEntry;}
 
 export function useMorphLibrary(){
