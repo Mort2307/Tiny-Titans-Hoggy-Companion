@@ -3,7 +3,7 @@ import { getApprovedMorphImages } from "../services/creatorService";
 
 export type ApprovedMorphImage = { id?: string; morphId?: string; imageUrl: string; creditName?: string; creditSocial?: string; creditMode?: string; approvedAt?: unknown };
 
-export function useCommunityMorphGallery(morphId: string) {
+export function useCommunityMorphGallery(morphId: string, speciesId = "heterodon-nasicus") {
   const [images,setImages]=useState<ApprovedMorphImage[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -13,7 +13,7 @@ export function useCommunityMorphGallery(morphId: string) {
   useEffect(()=>{
     let cancelled=false;
     setLoading(true);
-    void getApprovedMorphImages(morphId)
+    void getApprovedMorphImages(morphId, speciesId)
       .then((result)=>{
         if(cancelled)return;
         setImages((result as ApprovedMorphImage[]).filter((image)=>Boolean(image?.imageUrl)));
@@ -25,7 +25,7 @@ export function useCommunityMorphGallery(morphId: string) {
       })
       .finally(()=>{if(!cancelled)setLoading(false);});
     return()=>{cancelled=true;};
-  },[morphId]);
+  },[morphId,speciesId]);
 
   function move(direction:"left"|"right"){
     galleryRef.current?.scrollBy({left:direction==="right"?320:-320,behavior:"smooth"});
