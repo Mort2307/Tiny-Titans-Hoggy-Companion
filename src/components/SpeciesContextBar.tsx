@@ -46,7 +46,7 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
       <div className="tt-species-context__selector">
         <UniversalSpeciesPicker
           value={selectedSpeciesId}
-          onChange={(species) => species && setSelectedSpeciesId(species.id)}
+          onChange={(species) => setSelectedSpeciesId(species?.id ?? "")}
           label="Choose the species for this tool"
           allowUnknown={false}
         />
