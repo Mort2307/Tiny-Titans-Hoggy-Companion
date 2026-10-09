@@ -1,5 +1,15 @@
 import { registerSW } from "virtual:pwa-register";
 export const TINY_TITANS_SW_UPDATE_EVENT = "tiny-titans-sw-update";
+export const TINY_TITANS_OFFLINE_READY_EVENT = "tiny-titans-offline-ready";
+
+export function hasTinyTitansOfflineReadyNotification(): boolean {
+  return typeof window !== "undefined" && window.__tinyTitansOfflineReady === true;
+}
+
+declare global {
+  interface Window { __tinyTitansOfflineReady?: boolean }
+}
+
 
 let updateServiceWorker: ((reloadPage?: boolean) => Promise<void>) | null = null;
 
@@ -30,8 +40,10 @@ export function initializePwaUpdateService() {
           document.addEventListener("visibilitychange", checkForUpdate);
         },
         onOfflineReady() {
-          // A ready offline cache is not proof that this is the latest release.
-          // The release guard will check again on the next network connection.
+          // This says core files are available offline, not that the client
+          // has the latest release. The guard checks on reconnect.
+          window.__tinyTitansOfflineReady = true;
+          window.dispatchEvent(new Event(TINY_TITANS_OFFLINE_READY_EVENT));
         },
       });
 
