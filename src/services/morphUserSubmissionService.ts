@@ -7,6 +7,13 @@ function submissionCollection() {
   return collection(db, "variationCardSubmissions");
 }
 
+function boundedText(value: string | undefined, field: string, maxLength: number, required = false): string {
+  const text = value?.trim() ?? "";
+  if (required && !text) throw new Error(field + " is required.");
+  if (text.length > maxLength) throw new Error(field + " is too long. Maximum " + maxLength + " characters.");
+  return text;
+}
+
 function optionalHttpUrl(value: string | undefined): string {
   const raw = value?.trim() ?? "";
   if (!raw) return "";
@@ -37,9 +44,13 @@ export async function createUserMorphSubmission(uid: string, input: CreateMorphS
   if (!speciesId) throw new Error("Please select the species this morph or variation belongs to.");
   const species = findUniversalSpecies(speciesId);
   if (!species) throw new Error("Please select a recognised Tiny Titans species before submitting a morph or variation.");
-  const submittedName = input.submittedName.trim();
+  const submittedName = boundedText(input.submittedName, "Morph / variation name", 160, true);
   if (submittedName.length < 2) throw new Error("Please provide the morph or variation name.");
-  if (!input.description.trim()) throw new Error("Please describe what was observed, where the name came from, or what is known about the variation.");
+  const description = boundedText(input.description, "Description", 4000, true);
+  const knownGenetics = boundedText(input.knownGenetics, "Known genetics", 4000);
+  const sourceOrBreeder = boundedText(input.sourceOrBreeder, "Breeder / source", 1000);
+  const sourceUrl = optionalHttpUrl(input.sourceUrl);
+  if (sourceUrl.length > 2048) throw new Error("Source URL is too long.");
 
   const now = new Date().toISOString();
   const payload = {
@@ -49,10 +60,10 @@ export async function createUserMorphSubmission(uid: string, input: CreateMorphS
     submittedName,
     region: input.region,
     category: input.category,
-    description: input.description.trim(),
-    knownGenetics: input.knownGenetics?.trim() || "",
-    sourceOrBreeder: input.sourceOrBreeder?.trim() || "",
-    sourceUrl: optionalHttpUrl(input.sourceUrl),
+    description,
+    knownGenetics,
+    sourceOrBreeder,
+    sourceUrl,
     status: "pending" as UserMorphSubmissionStatus,
     createdAt: now,
     updatedAt: now,
