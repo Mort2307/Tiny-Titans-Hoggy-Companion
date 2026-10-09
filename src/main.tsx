@@ -34,7 +34,6 @@ import "./styles/mobile-experience-v2.css";
 
 import App from "./App";
 import AppErrorBoundary from "./components/AppErrorBoundary";
-import AppUpdatePrompt from "./components/AppUpdatePrompt";
 import ReleaseCheckGuard from "./components/ReleaseCheckGuard";
 import DateDisplayNormalizer from "./components/DateDisplayNormalizer";
 import DeferredRuntimeServices from "./components/DeferredRuntimeServices";
@@ -57,9 +56,10 @@ createRoot(document.getElementById("root")!).render(
             <SelectorGrabScrollManager />
             <DateDisplayNormalizer />
             <CopyQualityGuard />
-            <DeferredRuntimeServices />
-            <ReleaseCheckGuard><App /></ReleaseCheckGuard>
-            <AppUpdatePrompt />
+            <ReleaseCheckGuard>
+              <DeferredRuntimeServices />
+              <App />
+            </ReleaseCheckGuard>
           </WorldTimeProvider>
         </WorkspaceBrandingProvider>
       </AuthProvider>
