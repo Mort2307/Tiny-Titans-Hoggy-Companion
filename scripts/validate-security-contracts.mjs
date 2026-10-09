@@ -48,6 +48,8 @@ const checks = [
   ["Paid trial lifecycle reads the server-managed trial collection", /db\.collection\("paidTrials"\)\.where\("enabled", "==", true\)/, paidTrialLifecycle],
   ["Paid trial access cannot be sourced from users.paidTrial", paidTrialUserProfileAbsenceContract, paidTierAccess],
   ["Storage morph community writes require creator", /allow write: if isCreator\(\);/, storage],
+  ["Variation-card proposals are owner-create and Creator-moderated", /match \/variationCardSubmissions\/\{submissionId\}[\s\S]*?allow create: if signedIn\(\)[\s\S]*?request\.resource\.data\.userId == request\.auth\.uid[\s\S]*?allow update, delete: if isCreator\(\)/, firestore],
+  ["Approved variation cards are Creator-write only", /match \/approvedMorphVariations\/\{variationId\}[\s\S]*?allow read: if signedIn\(\); allow create, update, delete: if isCreator\(\)/, firestore],
   ["Intelligence is always personal-data safe at the gate", /coreTracking:\s*true/, permissionGate],
   ["Full intelligence requires explicit community consent", /personalIntelligence:\s*optedIn/, permissionGate],
   ["Community contribution requires explicit community consent", /communityContribution:\s*optedIn/, permissionGate],
