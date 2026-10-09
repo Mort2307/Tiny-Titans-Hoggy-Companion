@@ -1,12 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { findSnakeSpecies, INITIAL_SNAKE_SPECIES } from "../data/species/speciesRegistry";
+import { findSnakeSpecies } from "../data/species/speciesRegistry";
+import { findUniversalSpecies, UNIVERSAL_SPECIES } from "../data/species/universalSpeciesRegistry";
 
-const STORAGE_KEY = "tiny-titans:selected-species:v2";
+const STORAGE_KEY = "tiny-titans:selected-species:v3";
+const LEGACY_STORAGE_KEY = "tiny-titans:selected-species:v2";
 const DEFAULT_SPECIES_ID = "";
 
 type SpeciesContextValue = {
   selectedSpeciesId: string;
   selectedSpecies: ReturnType<typeof findSnakeSpecies>;
+  selectedUniversalSpecies: ReturnType<typeof findUniversalSpecies>;
   setSelectedSpeciesId: (speciesId: string) => void;
 };
 
@@ -15,8 +18,9 @@ const SpeciesContext = createContext<SpeciesContextValue | null>(null);
 function readStoredSpecies(): string {
   if (typeof window === "undefined") return DEFAULT_SPECIES_ID;
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored && findSnakeSpecies(stored) ? stored : DEFAULT_SPECIES_ID;
+    const stored = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    const species = stored ? findUniversalSpecies(stored) : undefined;
+    return species?.id ?? DEFAULT_SPECIES_ID;
   } catch {
     return DEFAULT_SPECIES_ID;
   }
@@ -26,22 +30,24 @@ export function SpeciesContextProvider({ children }: { children: ReactNode }) {
   const [selectedSpeciesId, setSelectedSpeciesIdState] = useState(readStoredSpecies);
 
   const setSelectedSpeciesId = (speciesId: string) => {
-    if (!findSnakeSpecies(speciesId)) return;
-    setSelectedSpeciesIdState(speciesId);
+    const species = findUniversalSpecies(speciesId);
+    if (!species) return;
+    setSelectedSpeciesIdState(species.id);
     try {
-      window.localStorage.setItem(STORAGE_KEY, speciesId);
+      window.localStorage.setItem(STORAGE_KEY, species.id);
     } catch {
       // Storage is an enhancement; species selection still works for the session.
     }
   };
 
   useEffect(() => {
-    if (selectedSpeciesId && !findSnakeSpecies(selectedSpeciesId)) setSelectedSpeciesIdState(DEFAULT_SPECIES_ID);
+    if (selectedSpeciesId && !findUniversalSpecies(selectedSpeciesId)) setSelectedSpeciesIdState(DEFAULT_SPECIES_ID);
   }, [selectedSpeciesId]);
 
   const value = useMemo(() => ({
     selectedSpeciesId,
     selectedSpecies: findSnakeSpecies(selectedSpeciesId),
+    selectedUniversalSpecies: findUniversalSpecies(selectedSpeciesId),
     setSelectedSpeciesId,
   }), [selectedSpeciesId]);
 
@@ -55,4 +61,4 @@ export function useSpeciesContext(): SpeciesContextValue {
 }
 
 export const speciesContextDefaultId = DEFAULT_SPECIES_ID;
-export const speciesContextCount = INITIAL_SNAKE_SPECIES.length;
+export const speciesContextCount = UNIVERSAL_SPECIES.length;
