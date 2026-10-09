@@ -30,6 +30,15 @@ export function SpeciesContextProvider({ children }: { children: ReactNode }) {
   const [selectedSpeciesId, setSelectedSpeciesIdState] = useState(readStoredSpecies);
 
   const setSelectedSpeciesId = (speciesId: string) => {
+    if (!speciesId) {
+      setSelectedSpeciesIdState(DEFAULT_SPECIES_ID);
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // Storage is an enhancement; species selection still works for the session.
+      }
+      return;
+    }
     const species = findUniversalSpecies(speciesId);
     if (!species) return;
     setSelectedSpeciesIdState(species.id);
