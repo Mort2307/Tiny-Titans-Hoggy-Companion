@@ -47,8 +47,9 @@ export default function SpeciesMorphLibrary() {
   const [showImageSubmission, setShowImageSubmission] = useState(false);
   const [imageSubmissionMorphId, setImageSubmissionMorphId] = useState("");
   const [cardImages, setCardImages] = useState<Record<string, ApprovedMorphImage>>({});
-  const speciesName = selectedSpecies?.commonNames[0] ?? selectedSpecies?.acceptedScientificName ?? "Selected species";
+  const speciesName = selectedUniversalSpecies?.commonNames[0] ?? selectedUniversalSpecies?.acceptedScientificName ?? "Selected species";
   const geneticsStatus = getSpeciesGeneticsStatus(selectedSpeciesId);
+  const variationStatus = getSpeciesVariationLibraryStatus(selectedSpeciesId);
   const entries = useMemo(() => getSpeciesVisualMorphs(selectedSpeciesId), [selectedSpeciesId]);
 
   useEffect(() => {
@@ -76,9 +77,11 @@ export default function SpeciesMorphLibrary() {
     return rankSearchResults(query, filteredEntries, searchFields).map(({ item }) => item);
   }, [entries, filter, query]);
 
-  const statusLabel = geneticsStatus === "mapped"
-    ? "Reviewed species genetics catalogue"
-    : "Species genetics catalogue pending review";
+  const statusLabel = variationStatus === "catalogued"
+    ? "Reviewed species morph & variation catalogue"
+    : variationStatus === "reviewed-no-established-variants"
+      ? "Variation review complete · no established captive morph system documented"
+      : "Species morph & variation catalogue requires exhaustive review";
   const baselineOnly = geneticsStatus === "baseline-only";\n  const variationReviewRequired = variationStatus === "research-required";
 
   function openImageSubmission(morphId: string) {
