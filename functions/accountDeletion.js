@@ -103,6 +103,24 @@ async function cancelStripeSubscription(userData) {
   }
 }
 
+async function deletePublishedMorphMedia(uid) {
+  const submissions = await db.collection("morphImageSubmissions").where("userId", "==", uid).get();
+  if (submissions.empty) return;
+
+  const bucket = getStorage().bucket();
+  for (const submission of submissions.docs) {
+    const approved = await db.collection("approvedMorphImages").where("sourceSubmissionId", "==", submission.id).get();
+    for (const image of approved.docs) {
+      const data = image.data() || {};
+      const storagePath = String(data.storagePath || "").trim();
+      if (storagePath.startsWith("morphLibrary/")) {
+        await bucket.file(storagePath).delete().catch(() => undefined);
+      }
+      await image.ref.delete();
+    }
+  }
+}
+
 async function deleteUserStorage(uid) {
   const bucket = getStorage().bucket();
   const prefixes = [
@@ -155,6 +173,7 @@ exports.deleteMyAccount = onCall({ region: "europe-west2", secrets: [STRIPE_SECR
   const familyId = String(userData.familyId || "");
   await removeFromFamily(uid, familyId);
   await removeMentorshipParticipant(uid);
+  await deletePublishedMorphMedia(uid);
 
   await Promise.all([
     deleteMatchingDocs("issueReports", "userId", uid),
