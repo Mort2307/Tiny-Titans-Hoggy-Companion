@@ -1,0 +1,214 @@
+# Tiny Titans protected Firebase backend deployment. Manual only.
+# Keep backend deployments separate from Hosting, like Nightjar.
+name: Deploy Tiny Titans Firebase backend (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: Choose a read-only check or the exact backend resource to release
+        required: true
+        default: auth-check
+        type: choice
+        options:
+          - auth-check
+          - plan
+          - functions:selected
+          - functions:all
+          - firestore:rules
+          - firestore:indexes
+          - storage
+          - all-backend
+      function_names:
+        description: For functions:selected only; up to 20 comma-separated function exports
+        required: false
+        type: string
+      compare_ref:
+        description: For plan; optional full baseline Git commit SHA (defaults to previous commit)
+        required: false
+        type: string
+      start_batch:
+        description: Functions:all or all-backend; 1 normally, or a failed batch number for recovery
+        required: false
+        default: '1'
+        type: string
+      confirmation:
+        description: Deploy DEPLOY-TINY-TITANS; full backend ALL-BACKEND-TINY-TITANS
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: tiny-titans-firebase-production
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    if: ${{ github.ref == 'refs/heads/master' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    environment: tiny-titans-production
+    env:
+      REQUESTED_SCOPE: ${{ inputs.scope }}
+      SELECTED_FUNCTIONS: ${{ inputs.function_names }}
+      BASE_INPUT: ${{ inputs.compare_ref }}
+      START_BATCH: ${{ inputs.start_batch }}
+      RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
+      TINY_TITANS_FUNCTION_DEPLOY_START_BATCH: ${{ inputs.start_batch }}
+    steps:
+      - name: Check release intent
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$REQUESTED_SCOPE" in
+            auth-check|plan) echo "Read-only: no Firebase resource will be modified." ;;
+            all-backend)
+              [[ "$RELEASE_CONFIRMATION" == "ALL-BACKEND-TINY-TITANS" ]] || {
+                echo "::error::Full backend requires ALL-BACKEND-TINY-TITANS."; exit 1;
+              } ;;
+            functions:selected|functions:all|firestore:rules|firestore:indexes|storage)
+              [[ "$RELEASE_CONFIRMATION" == "DEPLOY-TINY-TITANS" ]] || {
+                echo "::error::Backend writes require DEPLOY-TINY-TITANS."; exit 1;
+              } ;;
+            *) echo "::error::Invalid release scope."; exit 1 ;;
+          esac
+          [[ "$START_BATCH" =~ ^[1-9][0-9]{0,3}$ ]] || {
+            echo "::error::start_batch must be a positive whole number."; exit 1;
+          }
+          if [[ "$REQUESTED_SCOPE" != "functions:all" && "$REQUESTED_SCOPE" != "all-backend" && "$START_BATCH" != "1" ]]; then
+            echo "::error::start_batch is only valid with functions:all or all-backend."; exit 1
+          fi
+
+      - name: Checkout master
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify project and scoped release helper
+        run: |
+          node scripts/tiny-titans-firebase-release.mjs guard
+          node --test scripts/tiny-titans-firebase-release.test.mjs
+
+      - name: Check named Functions selection
+        if: ${{ inputs.scope == 'functions:selected' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/tiny-titans-firebase-release.mjs targets
+
+      - name: Generate advisory deployment plan
+        if: ${{ inputs.scope == 'plan' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "$BASE_INPUT" ]]; then
+            [[ "$BASE_INPUT" =~ ^[0-9a-fA-F]{40}$ ]] || {
+              echo "::error::compare_ref must be a complete 40-character Git commit."; exit 1;
+            }
+            export COMPARE_REF="$BASE_INPUT"
+          fi
+          node scripts/tiny-titans-firebase-release.mjs plan
+
+      - name: Require correct keyless Google Cloud identity
+        if: ${{ inputs.scope != 'plan' }}
+        env:
+          PROVIDER: ${{ vars.TINY_TITANS_GCP_WIF_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.TINY_TITANS_GCP_DEPLOY_SERVICE_ACCOUNT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]] || {
+            echo "::error::Set TINY_TITANS_GCP_WIF_PROVIDER in GitHub Actions Variables."; exit 1;
+          }
+          [[ "$SERVICE_ACCOUNT" =~ ^[a-zA-Z0-9._-]+@tinytitans-hoggy-companion\.iam\.gserviceaccount\.com$ ]] || {
+            echo "::error::Deployment identity must belong to Tiny Titans, not Nightjar."; exit 1;
+          }
+
+      - name: Authenticate to Google Cloud without a stored key
+        if: ${{ inputs.scope != 'plan' }}
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: tinytitans-hoggy-companion
+          workload_identity_provider: ${{ vars.TINY_TITANS_GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.TINY_TITANS_GCP_DEPLOY_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Install pinned Firebase CLI
+        if: ${{ inputs.scope != 'plan' }}
+        run: npm install --global firebase-tools@15.33.0 --no-fund --no-audit
+
+      - name: Verify Firebase CLI is authenticated for Tiny Titans
+        if: ${{ inputs.scope != 'plan' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          firebase projects:list --json | jq -e '(.result // []) | any(.[]; .projectId == "tinytitans-hoggy-companion")'
+          echo "Firebase CLI authenticated for Tiny Titans."
+
+      - name: Install application and run production validations
+        if: ${{ inputs.scope != 'auth-check' && inputs.scope != 'plan' }}
+        run: |
+          npm ci --no-fund --no-audit
+          npm run build
+
+      - name: Install and syntax-check Firebase Functions
+        if: ${{ inputs.scope == 'functions:selected' || inputs.scope == 'functions:all' || inputs.scope == 'all-backend' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --prefix functions ci --no-fund --no-audit
+          find functions -name '*.js' -not -path '*/node_modules/*' -print0 | xargs -0 -n1 node --check
+
+      - name: Deploy explicitly selected Firebase resources
+        if: ${{ inputs.scope != 'auth-check' && inputs.scope != 'plan' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$REQUESTED_SCOPE" in
+            functions:selected)
+              DEPLOY_SCOPE="$(node scripts/tiny-titans-firebase-release.mjs targets | tail -n 1)"
+              firebase deploy --only "$DEPLOY_SCOPE" --project tinytitans-hoggy-companion --non-interactive ;;
+            functions:all)
+              node scripts/deploy-functions-batched.mjs ;;
+            firestore:rules)
+              node scripts/assemble-firestore-rules.mjs
+              firebase deploy --only firestore:rules --project tinytitans-hoggy-companion --non-interactive ;;
+            firestore:indexes)
+              firebase deploy --only firestore:indexes --project tinytitans-hoggy-companion --non-interactive ;;
+            storage)
+              firebase deploy --only storage --project tinytitans-hoggy-companion --non-interactive ;;
+            all-backend)
+              node scripts/assemble-firestore-rules.mjs
+              firebase deploy --only firestore,storage --project tinytitans-hoggy-companion --non-interactive
+              node scripts/deploy-functions-batched.mjs ;;
+            *) echo "::error::Unexpected backend deployment scope."; exit 1 ;;
+          esac
+
+      - name: Sanitised deployment summary
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          {
+            echo '### Tiny Titans — Firebase backend release'
+            echo ''
+            echo "Result: $RESULT"
+            echo "Commit: $GITHUB_SHA"
+            echo 'Project: tinytitans-hoggy-companion'
+            echo "Scope: $REQUESTED_SCOPE"
+            echo "Functions resume batch: $START_BATCH"
+            echo ''
+            echo 'Read-only checks and scoped deployments use keyless credentials. Hosting and Nightjar were not modified.'
+          } >> "$GITHUB_STEP_SUMMARY"
