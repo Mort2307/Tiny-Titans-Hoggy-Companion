@@ -212,3 +212,36 @@ jobs:
             echo ''
             echo 'Read-only checks and scoped deployments use keyless credentials. Hosting and Nightjar were not modified.'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save sanitized backend release record
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const report = {
+            schema: 1,
+            project: 'tinytitans-hoggy-companion',
+            scope: process.env.REQUESTED_SCOPE || 'unknown',
+            status: process.env.RESULT || 'unknown',
+            commit: process.env.GITHUB_SHA || 'unknown',
+            runId: process.env.GITHUB_RUN_ID || 'unknown',
+            startBatch: process.env.START_BATCH || '1',
+            verified: process.env.REQUESTED_SCOPE === 'auth-check' && process.env.RESULT === 'success'
+              ? 'Firebase CLI project access confirmed'
+              : 'See workflow deployment step; no authenticated endpoint probes run',
+          };
+          fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'tiny-titans-backend-release.json'), JSON.stringify(report, null, 2) + '\n');
+          NODE
+
+      - name: Upload sanitized Firebase backend release record
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: tiny-titans-backend-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tiny-titans-backend-release.json
+          if-no-files-found: ignore
+          retention-days: 30
