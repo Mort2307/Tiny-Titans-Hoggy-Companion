@@ -1,6 +1,6 @@
 # Tiny Titans — Firebase release system
 
-This repository uses a Nightjar-style **keyless GitHub Actions release system**, but only for the Tiny Titans Firebase project. Nightjar and Tiny Titans never share Firebase projects, hosting targets, service accounts or deployment workflows.
+This repository supports manual Cloud Shell deployment from a private repository and a Nightjar-style keyless GitHub Actions release system for when runners are available. Both target only the Tiny Titans Firebase project. Nightjar and Tiny Titans never share Firebase projects, hosting targets, service accounts or deployment workflows.
 
 ## Cloud Shell: private repository, no GitHub Actions runner minutes
 
@@ -8,7 +8,7 @@ This is the recommended manual route until private GitHub Actions runner allocat
 
 Open [Google Cloud Shell](https://console.cloud.google.com/?cloudshell=true&project=tinytitans-hoggy-companion) and enter:
 
-`bash
+```bash
 gcloud config set project tinytitans-hoggy-companion
 command -v gh >/dev/null || (sudo apt-get update && sudo apt-get install -y gh)
 gh auth status || gh auth login --hostname github.com --git-protocol https --web
@@ -29,7 +29,7 @@ firebase projects:list
 bash scripts/deploy-tiny-titans-cloud-shell.sh plan
 bash scripts/deploy-tiny-titans-cloud-shell.sh preflight
 bash scripts/deploy-tiny-titans-cloud-shell.sh auth-check
-`
+```
 
 The private-repository login above uses GitHub's device/browser authentication; do not paste access tokens into chat. These three checks never deploy.
 
@@ -39,9 +39,9 @@ The private-repository login above uses GitHub's device/browser authentication; 
 git switch master
 git pull --ff-only origin master
 bash scripts/deploy-tiny-titans-cloud-shell.sh hosting
-`
+```
 
-The Hosting script requests the existing Tiny Titans **public** VITE_RECAPTCHA_ENTERPRISE_SITE_KEY if it is not set. Use the correct production reCAPTCHA Enterprise key from your Firebase/App Check configuration, and never invent a value. The command then validates/builds, requires typing DEPLOY-TINY-TITANS, deploys both Hosting sites and checks both production version stamps.
+The Hosting script requests the existing Tiny Titans **public** VITE_RECAPTCHA_ENTERPRISE_SITE_KEY if it is not set. Use the correct production reCAPTCHA Enterprise key from your Firebase/App Check configuration, and never invent a value. The command requires typing DEPLOY-TINY-TITANS, then validates/builds and deploys both Hosting sites and checks both production version stamps.
 
 ### Cloud Shell operations (after merge)
 
