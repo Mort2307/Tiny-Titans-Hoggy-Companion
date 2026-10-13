@@ -35,7 +35,7 @@ export function checkFirebaseConfiguration(firebase, rc) {
 
 export function functionTargets(input) {
   const names = input.split(",").map((name) => name.trim());
-  if (names.length < 1 || names.length > 20 || names.some((name) => !/^[A-Za-z_$][\w$]{0,100}$/.test(name))) {
+  if (names.length < 1 || names.length > 20 || names.some((name) => !/^[A-Za-z][\w$]{0,100}$/.test(name))) {
     throw new Error("Supply 1–20 comma-separated JavaScript function export names.");
   }
   if (new Set(names).size !== names.length) throw new Error("Function names must be unique.");
@@ -122,7 +122,7 @@ async function verifyHosting() {
   const sha = process.env.GITHUB_SHA || "";
   if (!/^[0-9a-f]{40}$/i.test(sha)) throw new Error("Missing full GITHUB_SHA.");
   for (const [target, site] of Object.entries(SITES)) {
-    let actual = "";
+    let verified = false;
     let error = "";
     for (let attempt = 1; attempt <= 6; attempt++) {
       try {
@@ -132,15 +132,14 @@ async function verifyHosting() {
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
-        actual = data.sourceCommit;
-        if (data.project === PROJECT && actual === sha) break;
+        if (data.project === PROJECT && data.sourceCommit === sha) { verified = true; break; }
         throw new Error("Version stamp does not match release commit.");
       } catch (e) {
         error = String(e.message || e);
         if (attempt < 6) await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
-    if (actual !== sha) throw new Error("Hosting verification failed for " + target + ": " + error);
+    if (!verified) throw new Error("Hosting verification failed for " + target + ": " + error);
     console.log("Verified " + target + " at https://" + site + ".web.app (commit " + sha + ")");
   }
 }
