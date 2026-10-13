@@ -2,6 +2,68 @@
 
 This repository uses a Nightjar-style **keyless GitHub Actions release system**, but only for the Tiny Titans Firebase project. Nightjar and Tiny Titans never share Firebase projects, hosting targets, service accounts or deployment workflows.
 
+## Cloud Shell: private repository, no GitHub Actions runner minutes
+
+This is the recommended manual route until private GitHub Actions runner allocation works. The repository stays **private**, and no GitHub Actions minutes are required. Cloud Shell works in a desktop or mobile browser, but requires your Google Cloud account to have deploy access to the Tiny Titans Firebase project.
+
+Open [Google Cloud Shell](https://console.cloud.google.com/?cloudshell=true&project=tinytitans-hoggy-companion) and enter:
+
+`bash
+gcloud config set project tinytitans-hoggy-companion
+command -v gh >/dev/null || (sudo apt-get update && sudo apt-get install -y gh)
+gh auth status || gh auth login --hostname github.com --git-protocol https --web
+gh auth setup-git
+cd ~
+gh repo clone Mort2307/Tiny-Titans-Hoggy-Companion
+cd Tiny-Titans-Hoggy-Companion
+git fetch origin feature/nightjar-style-firebase-deploy-20261013
+git switch --track origin/feature/nightjar-style-firebase-deploy-20261013
+
+# If Node.js is below v22: nvm install 22 && nvm use 22
+node --version
+command -v firebase >/dev/null || npm install -g firebase-tools@15.33.0
+firebase projects:list
+# If not signed into Firebase CLI, run: firebase login --no-localhost
+
+# Read-only checks work on the feature branch, before merging PR #78:
+bash scripts/deploy-tiny-titans-cloud-shell.sh plan
+bash scripts/deploy-tiny-titans-cloud-shell.sh preflight
+bash scripts/deploy-tiny-titans-cloud-shell.sh auth-check
+`
+
+The private-repository login above uses GitHub's device/browser authentication; do not paste access tokens into chat. These three checks never deploy.
+
+**After PR #78 is merged and the checks pass**, release from master:
+
+`bash
+git switch master
+git pull --ff-only origin master
+bash scripts/deploy-tiny-titans-cloud-shell.sh hosting
+`
+
+The Hosting script requests the existing Tiny Titans **public** VITE_RECAPTCHA_ENTERPRISE_SITE_KEY if it is not set. Use the correct production reCAPTCHA Enterprise key from your Firebase/App Check configuration, and never invent a value. The command then validates/builds, requires typing DEPLOY-TINY-TITANS, deploys both Hosting sites and checks both production version stamps.
+
+### Cloud Shell operations (after merge)
+
+| Action | Command |
+| --- | --- |
+| Review change plan | `bash scripts/deploy-tiny-titans-cloud-shell.sh plan` |
+| Validate app, no deployment | `bash scripts/deploy-tiny-titans-cloud-shell.sh preflight` |
+| Check Firebase authentication | `bash scripts/deploy-tiny-titans-cloud-shell.sh auth-check` |
+| Both Hosting sites | `bash scripts/deploy-tiny-titans-cloud-shell.sh hosting` |
+| Named Functions | `bash scripts/deploy-tiny-titans-cloud-shell.sh functions:selected 'functionOne,functionTwo'` |
+| All Functions, batched | `bash scripts/deploy-tiny-titans-cloud-shell.sh functions:all` |
+| Firestore rules | `bash scripts/deploy-tiny-titans-cloud-shell.sh firestore:rules` |
+| Firestore indexes | `bash scripts/deploy-tiny-titans-cloud-shell.sh firestore:indexes` |
+| Storage rules | `bash scripts/deploy-tiny-titans-cloud-shell.sh storage` |
+| Full backend | `bash scripts/deploy-tiny-titans-cloud-shell.sh all-backend` |
+
+For all-Functions recovery, export TINY_TITANS_FUNCTION_DEPLOY_START_BATCH to the failed batch number before re-running the matching operation. The script pins every deploy to Firebase project tinytitans-hoggy-companion; the Nightjar project is never touched. Cloud Shell has interactive usage limits; underlying Firebase Functions and other billable services can still incur charges. Using Cloud Shell only avoids GitHub-hosted Actions minutes, not Firebase charges.
+
+A dedicated self-hosted GitHub Actions runner on your PC remains an alternative when unattended deployments are wanted, but requires an online machine and explicit runner configuration.
+
+---
+
 ## Protected destinations
 
 | Resource | Value |
@@ -87,4 +149,4 @@ Do not use the full all-backend scope for routine CSS, screen, or UI changes; th
 - **Hosting verification failure:** check both Firebase Hosting targets and the reported commit before declaring a release successful.
 - **A queued release takes time:** Firebase Functions use resumable batches; do not assume that a green Hosting run implies Functions were deployed.
 
-Existing local npm deploy scripts remain available for authenticated developer machines. The GitHub Actions workflows are the recommended production path.
+Existing local npm deploy scripts remain available for authenticated developer machines. **While private GitHub Actions runner allocation is blocked, use the manual Cloud Shell release path above.** Existing GitHub Actions workflows are retained for future funded or self-hosted runner use.
