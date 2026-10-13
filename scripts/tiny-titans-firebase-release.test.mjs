@@ -51,3 +51,17 @@ test("Batched Functions deploy explicitly pins the correct Firebase project", ()
   assert.match(source, /"--project", "tinytitans-hoggy-companion", "--non-interactive"/);
   assert.match(source, /requestedStartBatch > batches.length/);
 });
+
+test("Cloud Shell release is private-repository scoped and requires confirmations", () => {
+  const source = readFileSync(new URL("./deploy-tiny-titans-cloud-shell.sh", import.meta.url), "utf8");
+  assert.match(source, /readonly PROJECT="tinytitans-hoggy-companion"/);
+  assert.match(source, /readonly REPOSITORY="Mort2307\/Tiny-Titans-Hoggy-Companion"/);
+  assert.match(source, /git fetch --quiet origin master/);
+  assert.match(source, /remote_head/);
+  assert.match(source, /DEPLOY-TINY-TITANS/);
+  assert.match(source, /ALL-BACKEND-TINY-TITANS/);
+  assert.match(source, /firebase deploy --only hosting:legacy,hosting:keeper --project "\$PROJECT"/);
+  assert.match(source, /firebase deploy --only "\$deploy_scope" --project "\$PROJECT"/);
+  assert.match(source, /node scripts\/tiny-titans-firebase-release\.mjs verify-hosting/);
+  assert.doesNotMatch(source, /firebase deploy[^\n]*nightjar-audio/);
+});
