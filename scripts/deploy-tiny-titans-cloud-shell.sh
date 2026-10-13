@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Private-repository Cloud Shell release: no GitHub-hosted Actions runners needed.
-# bash scripts/deploy-tiny-titans-cloud-shell.sh plan|auth-check|hosting|functions:selected|functions:all|firestore:rules|firestore:indexes|storage|all-backend [function names]
+# bash scripts/deploy-tiny-titans-cloud-shell.sh plan|preflight|auth-check|hosting|functions:selected|functions:all|firestore:rules|firestore:indexes|storage|all-backend [function names]
 set -Eeuo pipefail
 
 readonly PROJECT="tinytitans-hoggy-companion"
@@ -15,7 +15,7 @@ need() { command -v "$1" >/dev/null 2>&1 || die "Missing $1. See docs/FIREBASE-D
 scope="${1:-plan}"
 selection="${2:-}"
 case "$scope" in
-  plan|auth-check|hosting|functions:selected|functions:all|firestore:rules|firestore:indexes|storage|all-backend) ;;
+  plan|preflight|auth-check|hosting|functions:selected|functions:all|firestore:rules|firestore:indexes|storage|all-backend) ;;
   *) die "Unknown deployment scope: $scope" ;;
 esac
 
@@ -40,6 +40,14 @@ say "Repository: $REPOSITORY | branch: $branch | commit: $commit | Firebase: $PR
 
 if [[ "$scope" == "plan" ]]; then
   node scripts/tiny-titans-firebase-release.mjs plan
+  exit 0
+fi
+if [[ "$scope" == "preflight" ]]; then
+  say "Read-only Firebase preflight: install dependencies and run full build + validation"
+  npm ci --no-audit --no-fund
+  npm run build
+  [[ -f dist/index.html ]] || die "Build missing dist/index.html."
+  echo "PASS: App build and validation completed without deploying."
   exit 0
 fi
 
