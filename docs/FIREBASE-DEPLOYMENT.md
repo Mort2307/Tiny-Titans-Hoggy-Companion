@@ -16,8 +16,8 @@ gh auth setup-git
 cd ~
 gh repo clone Mort2307/Tiny-Titans-Hoggy-Companion
 cd Tiny-Titans-Hoggy-Companion
-git fetch origin feature/nightjar-style-firebase-deploy-20261013
-git switch --track origin/feature/nightjar-style-firebase-deploy-20261013
+git switch master
+git pull --ff-only origin master
 
 # If Node.js is below v22: nvm install 22 && nvm use 22
 node --version
@@ -25,15 +25,15 @@ command -v firebase >/dev/null || npm install -g firebase-tools@15.33.0
 firebase projects:list
 # If not signed into Firebase CLI, run: firebase login --no-localhost
 
-# Read-only checks work on the feature branch, before merging PR #78:
+# Read-only checks do not deploy:
 bash scripts/deploy-tiny-titans-cloud-shell.sh plan
 bash scripts/deploy-tiny-titans-cloud-shell.sh preflight
 bash scripts/deploy-tiny-titans-cloud-shell.sh auth-check
 ```
 
-The private-repository login above uses GitHub's device/browser authentication; do not paste access tokens into chat. These three checks never deploy.
+The private-repository login above uses GitHub's device/browser authentication; do not paste access tokens into chat. These three checks never deploy. The commands assume the release upgrade is merged into master.
 
-**After PR #78 is merged and the checks pass**, release from master:
+**Once the read-only checks pass**, deploy Hosting from master:
 
 `bash
 git switch master
