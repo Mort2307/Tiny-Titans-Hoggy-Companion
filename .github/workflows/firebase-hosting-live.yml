@@ -1,0 +1,174 @@
+# Tiny Titans production Hosting. Never touches Nightjar.
+# Frontend-only changes to master deploy automatically; coupled backend releases are held.
+name: Deploy Tiny Titans Firebase Hosting
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/firebase-hosting-live.yml'
+      - 'scripts/tiny-titans-firebase-release.mjs'
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type DEPLOY-TINY-TITANS to manually deploy both Hosting sites
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: tiny-titans-firebase-production
+  cancel-in-progress: false
+
+jobs:
+  hosting:
+    if: ${{ github.ref == 'refs/heads/master' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    environment: tiny-titans-production
+    env:
+      # A public site key, not a private credential; required when using App Check in production.
+      VITE_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ vars.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY || secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
+    steps:
+      - name: Checkout production source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify intentional manual release or safe frontend-only push
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/tiny-titans-firebase-release.mjs guard
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            [[ "$CONFIRMATION" == "DEPLOY-TINY-TITANS" ]] || {
+              echo "::error::Manual Hosting requires DEPLOY-TINY-TITANS."; exit 1;
+            }
+          else
+            node scripts/tiny-titans-firebase-release.mjs check-push
+          fi
+
+      - name: Validate Firebase deployment safety contracts
+        run: node --test scripts/tiny-titans-firebase-release.test.mjs
+
+      - name: Protect Firebase App Check production configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VITE_RECAPTCHA_ENTERPRISE_SITE_KEY" =~ ^[A-Za-z0-9_-]{20,200}$ ]] || {
+            echo "::error::Set public VITE_RECAPTCHA_ENTERPRISE_SITE_KEY in this GitHub repository's Actions Variables."; exit 1;
+          }
+
+      - name: Install and validate production app
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Stamp deployed source revision
+        run: node scripts/tiny-titans-firebase-release.mjs stamp
+
+      - name: Require Tiny Titans-only keyless identity
+        env:
+          PROVIDER: ${{ vars.TINY_TITANS_GCP_WIF_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.TINY_TITANS_GCP_DEPLOY_SERVICE_ACCOUNT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]] || {
+            echo "::error::Set TINY_TITANS_GCP_WIF_PROVIDER in GitHub Actions Variables."; exit 1;
+          }
+          [[ "$SERVICE_ACCOUNT" =~ ^[a-zA-Z0-9._-]+@tinytitans-hoggy-companion\.iam\.gserviceaccount\.com$ ]] || {
+            echo "::error::Use a Tiny Titans deployment account, not a Nightjar account."; exit 1;
+          }
+
+      - name: Authenticate with Google Cloud (OIDC, no private keys)
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: tinytitans-hoggy-companion
+          workload_identity_provider: ${{ vars.TINY_TITANS_GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.TINY_TITANS_GCP_DEPLOY_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Install pinned Firebase CLI
+        run: npm install --global firebase-tools@15.33.0 --no-fund --no-audit
+
+      - name: Check authenticated Firebase project
+        run: |
+          set -euo pipefail
+          firebase projects:list --json | jq -e '(.result // []) | any(.[]; .projectId == "tinytitans-hoggy-companion")'
+          node scripts/tiny-titans-firebase-release.mjs guard
+
+      - name: Deploy both Hosting targets to production
+        run: firebase deploy --only hosting:legacy,hosting:keeper --project tinytitans-hoggy-companion --non-interactive
+
+      - name: Verify both live sites serve the exact release commit
+        run: node scripts/tiny-titans-firebase-release.mjs verify-hosting
+
+      - name: Release summary
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          {
+            echo '### Tiny Titans — production Firebase Hosting'
+            echo ''
+            echo "Result: $RESULT"
+            echo "Commit: $GITHUB_SHA"
+            echo "Project: tinytitans-hoggy-companion"
+            echo "Keeper: https://tinytitanskeeper.web.app"
+            echo "Legacy: https://tinytitans-hoggy-companion.web.app"
+            echo 'Deploying Hosting never deploys Functions, Firestore rules or Storage rules.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save sanitized Hosting release record
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const report = {
+            schema: 1,
+            project: 'tinytitans-hoggy-companion',
+            targets: ['tinytitanskeeper', 'tinytitans-hoggy-companion'],
+            scope: 'hosting-only',
+            status: process.env.RESULT || 'unknown',
+            commit: process.env.GITHUB_SHA || 'unknown',
+            runId: process.env.GITHUB_RUN_ID || 'unknown',
+            verified: process.env.RESULT === 'success' ? 'Both live version.json checks passed' : 'Not verified',
+          };
+          fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'tiny-titans-hosting-release.json'), JSON.stringify(report, null, 2) + '\n');
+          NODE
+
+      - name: Upload sanitized Firebase Hosting release record
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: tiny-titans-hosting-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tiny-titans-hosting-release.json
+          if-no-files-found: ignore
+          retention-days: 30
