@@ -98,7 +98,8 @@ for (let index = 0; index < functions.length; index += batchSize) {
 
 console.log(`Tiny Titans Functions Deploy: discovered ${functions.length} exported functions.`);
 console.log(`Tiny Titans Functions Deploy: using batches of ${batchSize}; ${batches.length} batch(es).`);
-const startBatch = Math.min(requestedStartBatch, batches.length);
+if (requestedStartBatch > batches.length) { throw new Error(`Requested start batch ${requestedStartBatch} exceeds the ${batches.length} available batches.`); }
+const startBatch = requestedStartBatch;
 if (startBatch > 1) {
   console.log(`Tiny Titans Functions Deploy: resuming at batch ${startBatch}; earlier batches will be skipped.`);
 }
@@ -112,7 +113,7 @@ function deployBatch(batch, batchNumber, attempt) {
     const target = batch.map((name) => `functions:${name}`).join(",");
     console.log(`\n[Functions ${batchNumber}/${batches.length}] Attempt ${attempt + 1}: ${batch.join(", ")}`);
 
-    const child = spawn("firebase", ["deploy", "--only", target], {
+    const child = spawn("firebase", ["deploy", "--only", target, "--project", "tinytitans-hoggy-companion", "--non-interactive"], {
       cwd: projectRoot,
       env: process.env,
       stdio: ["inherit", "pipe", "pipe"],
