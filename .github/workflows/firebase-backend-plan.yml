@@ -1,0 +1,51 @@
+# Read-only review plan for pull requests touching Tiny Titans Firebase backend.
+name: Tiny Titans backend release candidates
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'functions/**'
+      - 'firebase.json'
+      - 'firestore.rules'
+      - 'firestore.partner.rules'
+      - 'firestore.indexes.json'
+      - 'storage.rules'
+      - 'scripts/deploy-functions-batched.mjs'
+      - 'scripts/assemble-firestore-rules.mjs'
+      - 'scripts/mergeMentorshipRules.mjs'
+      - 'scripts/mergeRescueRules.mjs'
+      - 'scripts/tiny-titans-firebase-release.mjs'
+      - '.github/workflows/firebase-backend-*.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tiny-titans-backend-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  advise:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout PR history (no credentials retained)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Validate release guards (no Firebase credentials)
+        run: node --test scripts/tiny-titans-firebase-release.test.mjs
+
+      - name: Report changed Firebase resources (advisory only)
+        env:
+          COMPARE_REF: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/tiny-titans-firebase-release.mjs plan
