@@ -35,6 +35,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     environment: tiny-titans-production
+    env:
+      # A public site key, not a private credential; required when using App Check in production.
+      VITE_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ vars.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY || secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
     steps:
       - name: Checkout production source
         uses: actions/checkout@v5
@@ -67,6 +70,14 @@ jobs:
 
       - name: Validate Firebase deployment safety contracts
         run: node --test scripts/tiny-titans-firebase-release.test.mjs
+
+      - name: Protect Firebase App Check production configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VITE_RECAPTCHA_ENTERPRISE_SITE_KEY" =~ ^[A-Za-z0-9_-]{20,200}$ ]] || {
+            echo "::error::Set public VITE_RECAPTCHA_ENTERPRISE_SITE_KEY in this GitHub repository's Actions Variables."; exit 1;
+          }
 
       - name: Install and validate production app
         run: |
