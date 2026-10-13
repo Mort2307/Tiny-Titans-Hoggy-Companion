@@ -30,8 +30,9 @@ The .firebaserc mappings and firebase.json are validated before every deployment
    - TINY_TITANS_GCP_WIF_PROVIDER
    - TINY_TITANS_GCP_DEPLOY_SERVICE_ACCOUNT
 
-4. In the Tiny Titans GitHub **Actions** tab, open **Deploy Tiny Titans Firebase backend (manual)**, select master and scope auth-check, then click **Run workflow**. This first check is read-only.
-5. Only after auth-check passes, try plan (also read-only) and then a deliberately scoped deployment. If existing Cloud Functions reference Google Cloud secrets, review whether the deploy identity needs read-only metadata access to those secrets. Do not commit credentials or grant broad access to secret payloads.
+4. Also set the public VITE_RECAPTCHA_ENTERPRISE_SITE_KEY in this repository’s **Actions → Variables** (or its existing secret), using the same production reCAPTCHA Enterprise key already configured for Tiny Titans. Production Hosting will refuse to deploy without it, protecting Firebase App Check. Do not invent or substitute a key.
+5. In the Tiny Titans GitHub **Actions** tab, open **Deploy Tiny Titans Firebase backend (manual)**, select master and scope auth-check, then click **Run workflow**. This first check is read-only.
+6. Only after auth-check passes, try plan (also read-only) and then a deliberately scoped deployment. If existing Cloud Functions reference Google Cloud secrets, review whether the deploy identity needs read-only metadata access to those secrets. Do not commit credentials or grant broad access to secret payloads.
 
 Both production workflows reuse the same GitHub Actions environment name, tiny-titans-production. Configure required reviewers, approvals or branch restrictions in GitHub Settings → Environments if desired. The OIDC trust restriction additionally checks the immutable GitHub repository ID, master branch, triggering event and exact workflow path.
 
@@ -78,6 +79,7 @@ Do not use the full all-backend scope for routine CSS, screen, or UI changes; th
 
 ## Troubleshooting
 
+- **Missing App Check site key:** set VITE_RECAPTCHA_ENTERPRISE_SITE_KEY in GitHub Actions Variables; the value is a public browser site key but must be the correct project key.
 - **Missing WIF provider/service account:** run one-time IAM setup and add the two GitHub repository variables.
 - **GitHub OIDC denied:** confirm the workflow is running from master in this exact repository, and that the one-time provider condition matches.
 - **Missing permission / Function build failure:** inspect the failing resource and add only the required IAM binding to the Tiny Titans deploy account; existing Firebase Function secrets may require additional metadata-only access.
