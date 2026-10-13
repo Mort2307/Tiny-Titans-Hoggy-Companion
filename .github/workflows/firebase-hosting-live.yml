@@ -141,3 +141,34 @@ jobs:
             echo "Legacy: https://tinytitans-hoggy-companion.web.app"
             echo 'Deploying Hosting never deploys Functions, Firestore rules or Storage rules.'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save sanitized Hosting release record
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          const report = {
+            schema: 1,
+            project: 'tinytitans-hoggy-companion',
+            targets: ['tinytitanskeeper', 'tinytitans-hoggy-companion'],
+            scope: 'hosting-only',
+            status: process.env.RESULT || 'unknown',
+            commit: process.env.GITHUB_SHA || 'unknown',
+            runId: process.env.GITHUB_RUN_ID || 'unknown',
+            verified: process.env.RESULT === 'success' ? 'Both live version.json checks passed' : 'Not verified',
+          };
+          fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'tiny-titans-hosting-release.json'), JSON.stringify(report, null, 2) + '\n');
+          NODE
+
+      - name: Upload sanitized Firebase Hosting release record
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: tiny-titans-hosting-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tiny-titans-hosting-release.json
+          if-no-files-found: ignore
+          retention-days: 30
