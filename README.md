@@ -13,3 +13,7 @@ The final CI build gate checks:
 5. JavaScript syntax validation for all Functions source files
 
 Live app: https://tinytitanskeeper.web.app\n\nThe full lint audit also uploads the exact ESLint output as a CI artifact, so a green lint gate is evidence of `0` warnings rather than hidden output.
+
+## GitHub-to-Firebase production deployment
+
+Tiny Titans now has dedicated, Nightjar-style Firebase Hosting and backend GitHub Actions workflows. Production Firebase project: `tinytitans-hoggy-companion` (Keeper + legacy sites). Backend deployments are manual, scoped and require confirmation; Hosting pushes are validated and blocked if a backend change needs deploying first. One-time keyless Workload Identity setup and the required App Check build variable are documented in [Firebase Deployment](docs/FIREBASE-DEPLOYMENT.md).
