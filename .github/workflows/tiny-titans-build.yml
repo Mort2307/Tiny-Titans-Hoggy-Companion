@@ -70,6 +70,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
       - name: Validate workflow YAML (no deployment)
         run: |
           ruby -r yaml -e 'ARGV.each { |file| YAML.parse_file(file); puts "Valid workflow: #{file}" }' .github/workflows/*.yml
@@ -79,12 +85,6 @@ jobs:
           node scripts/tiny-titans-firebase-release.mjs guard
           node --test scripts/tiny-titans-firebase-release.test.mjs
           node --test scripts/tiny-titans-android-build.test.mjs
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
 
       # One dependency install for the application. Do not add separate runners
       # or repeated installs for routine validation.
