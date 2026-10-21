@@ -71,7 +71,8 @@ jobs:
           persist-credentials: false
 
       - name: Validate workflow YAML (no deployment)
-        run: ruby -r yaml -e 'ARGV.each { |file| YAML.parse_file(file); puts "Valid workflow: #{file}" }' .github/workflows/*.yml
+        run: |
+          ruby -r yaml -e 'ARGV.each { |file| YAML.parse_file(file); puts "Valid workflow: #{file}" }' .github/workflows/*.yml
 
       - name: Check Firebase project and release guards
         run: |
