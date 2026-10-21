@@ -15,6 +15,7 @@ on:
       - 'vite.config.*'
       - 'tsconfig*.json'
       - 'firebase.json'
+      - 'capacitor.config.json'
       - '.firebaserc'
       - 'firestore.rules'
       - 'firestore.partner.rules'
@@ -37,6 +38,7 @@ on:
       - 'vite.config.*'
       - 'tsconfig*.json'
       - 'firebase.json'
+      - 'capacitor.config.json'
       - '.firebaserc'
       - 'firestore.rules'
       - 'firestore.partner.rules'
@@ -75,6 +77,7 @@ jobs:
         run: |
           node scripts/tiny-titans-firebase-release.mjs guard
           node --test scripts/tiny-titans-firebase-release.test.mjs
+          node --test scripts/tiny-titans-android-build.test.mjs
 
       - name: Setup Node
         uses: actions/setup-node@v5
