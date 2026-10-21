@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuth";
 import TinyTitansIcon from "./TinyTitansIcon";
 import TinyTitansEmptyState from "./TinyTitansEmptyState";
@@ -32,7 +32,7 @@ export default function CreatorVariationCardReview() {
     [filter, items],
   );
 
-  async function load() {
+  const load = useCallback(async () => {
     if (profile?.role !== "admin") return;
     setLoading(true);
     setError("");
@@ -43,9 +43,9 @@ export default function CreatorVariationCardReview() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [profile?.role]);
 
-  useEffect(() => { if (profile?.role === "admin") void load(); }, [profile?.role]);
+  useEffect(() => { if (profile?.role === "admin") void load(); }, [profile?.role, load]);
   useEffect(() => { setReviewNote(selected?.reviewerNotes ?? ""); }, [selected]);
 
   async function decide(status: UserMorphSubmissionStatus) {

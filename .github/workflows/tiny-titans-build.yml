@@ -74,6 +74,9 @@ jobs:
       - name: Production build and application contracts
         run: npm run build
 
+      - name: Validate mandatory app-release manifest
+        run: node scripts/validate-release-update.mjs
+
       # Keep Functions syntax validation on the same runner. It is cheap and
       # avoids creating another workflow/job just for a small check.
       - name: Install Functions dependencies

@@ -297,3 +297,174 @@
     animation: none !important;
   }
 }
+
+/* Fresh-release notice stays visible without interrupting a keeper's unsaved form. */
+.tt-release-banner {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 100090;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  max-width: 780px;
+  margin-inline: auto;
+  padding: 14px 16px;
+  border: 1px solid rgba(245, 182, 66, .52);
+  border-radius: 18px;
+  background: #17101f;
+  color: #f7f3fb;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, .48);
+}
+
+.tt-release-banner span { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.tt-release-banner strong { color: #f5b642; font-size: .88rem; }
+.tt-release-banner small { color: rgba(247, 243, 251, .78); font-size: .76rem; line-height: 1.4; }
+.tt-release-banner button {
+  min-height: 44px;
+  border: 1px solid rgba(0, 174, 255, .5);
+  border-radius: 12px;
+  background: #46246a;
+  color: #fff;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tt-release-banner button:focus-visible { outline: 3px solid #00aeff; outline-offset: 2px; }
+
+@media (max-width: 800px) {
+  .tt-release-banner {
+    bottom: calc(86px + env(safe-area-inset-bottom));
+    align-items: stretch;
+  }
+  .tt-release-banner button { width: 100%; }
+}
+
+.tt-release-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tt-release-banner .tt-release-banner-cancel {
+  border-color: rgba(255, 255, 255, .32);
+  background: rgba(255, 255, 255, .08);
+}
+
+@media (max-width: 800px) {
+  .tt-release-banner-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Release startup gate: never allow navigation into an outdated online workspace. */
+.tt-release-gate-backdrop {
+  background: #100b19;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  min-height: 100dvh;
+}
+
+.tt-release-gate-panel {
+  border-color: rgba(245, 182, 66, .55);
+}
+
+.tt-release-gate-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 13px;
+  color: #f5b642;
+  font-size: .83rem;
+  font-weight: 800;
+}
+
+.tt-release-gate-spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(245, 182, 66, .24);
+  border-top-color: #f5b642;
+  border-radius: 50%;
+  animation: tt-release-spin .8s linear infinite;
+}
+
+.tt-release-gate-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f5b642;
+  box-shadow: 0 0 12px rgba(245, 182, 66, .5);
+}
+
+.tt-release-gate-progress {
+  height: 5px;
+  margin: 24px 0 4px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(245, 182, 66, .16);
+}
+
+.tt-release-gate-progress > span {
+  display: block;
+  width: 32%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7f45cc, #f5b642);
+  animation: tt-release-progress 1.3s ease-in-out infinite;
+}
+
+.tt-release-gate-actions {
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 24px;
+}
+
+.tt-release-gate-primary {
+  width: 100%;
+  min-height: 54px;
+  border-color: #f5b642;
+  background: linear-gradient(115deg, #552491, #8554bf);
+  font-weight: 900;
+}
+
+@keyframes tt-release-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes tt-release-progress {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(335%); }
+}
+
+@media (max-width: 800px) {
+  .tt-release-gate-backdrop {
+    place-items: center;
+    padding: max(20px, env(safe-area-inset-top)) 12px max(20px, env(safe-area-inset-bottom));
+  }
+  .tt-release-gate-panel {
+    width: min(480px, 100%);
+    max-height: calc(100dvh - 42px - env(safe-area-inset-bottom));
+    border: 1px solid rgba(245, 182, 66, .55);
+    border-radius: 22px;
+    padding: 25px 20px;
+    text-align: center;
+  }
+  .tt-release-gate-panel .tt-update-logo {
+    margin: 0 auto 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-release-gate-spinner {
+    animation-duration: 2s;
+  }
+  .tt-release-gate-progress > span {
+    animation: none;
+    width: 100%;
+  }
+}
