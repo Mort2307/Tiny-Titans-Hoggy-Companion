@@ -60,6 +60,17 @@ jobs:
 
       # One dependency install for the application. Do not add separate runners
       # or repeated installs for routine validation.
+      - name: Install official logo badge conversion support
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Required to rasterise the actual owner's logo into an Android alpha badge.
+          # The former bundled lightning bolt is explicitly disallowed.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq imagemagick
+          command -v convert
+          convert -version | head -n 1
+
       - name: Install application dependencies
         run: npm ci --no-audit --no-fund
 

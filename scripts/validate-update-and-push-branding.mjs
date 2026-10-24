@@ -65,10 +65,20 @@ for (const [path, content] of [
   assert.match(content, /tiny-titans-notification-badge\.png/, path + " must use monochrome status-bar icon");
   assert.match(content, /TinyTitans-Logo\.JPG\.jpg/, path + " must retain owner's full-colour branding");
 }
+// The status icon must be derived from the keeper's actual reptile/spider/wordmark
+// logo. The historical generated graphic was a generic lightning bolt.
+const generator = read("scripts/generate-notification-badge.mjs");
+assert.match(generator, /TinyTitans-Logo\.JPG\.jpg/, "Badge generation must use the actual TinyTitans logo");
+assert.match(generator, /"-threshold", "42%"/, "Use a deterministic light-on-transparent reproduction of official artwork");
+assert.doesNotMatch(generator, /const BASE64\s*=/, "Never restore the embedded lightning-bolt artwork");
+assert.match(foreground, /art=official-logo-2/, "Foreground badges must invalidate the old lightning icon cache");
+assert.match(sw, /art=official-logo-2/, "Background notifications must invalidate the old lightning icon cache");
+
 execFileSync(process.execPath, ["scripts/generate-notification-badge.mjs"], {stdio:"inherit"});
 const png = readFileSync("public/tiny-titans-notification-badge.png");
 assert.equal(png.subarray(0,8).toString("hex"), "89504e470d0a1a0a");
 assert.equal(png.readUInt32BE(16), 96);
 assert.equal(png.readUInt32BE(20), 96);
 assert.equal(png[25], 6, "PNG must be transparent RGBA, not a solid square");
+assert.notEqual((await import("node:crypto")).createHash("sha256").update(png).digest("hex"), "e74e2f84b3f42942ecfb0d6d6b732c73625ebbaccfc00ef63e3c539289fd9b25", "The lightning-bolt PNG must never be shipped again");
 console.log("Nightjar-style update and authentic TinyTitans notification badge contracts passed.");

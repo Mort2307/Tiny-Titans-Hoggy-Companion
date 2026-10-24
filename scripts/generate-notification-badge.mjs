@@ -1,13 +1,69 @@
-/** Build-only raster generation of the official TinyTitans T glyph.
- * White silhouette, transparent background, 96x96 PNG for Android status bar.
- * This PNG was rasterised from the repo-owned /icons/tiny-titans-192.svg,
- * not from internet imagery or a third-party icon collection.
+/**
+ * Generate TinyTitans' Android notification badge from the keeper's REAL logo.
+ *
+ * Previously this script embedded a lightning bolt which isn't part of the logo.
+ * The expanded notification can display the full-colour original JPEG, whereas
+ * Android's small status-bar icon requires white artwork + transparent pixels.
+ *
+ * We derive a monochrome copy directly from the original logo stored in the
+ * repository, retaining its circular reptile/spider/wordmark composition.
+ * Never substitute the old bolt, a stock graphic or an invented "T".
  */
-import fs from "node:fs";
-import path from "node:path";
-const BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAABmJLR0QA/wD/AP+gvaeTAAAEJUlEQVR4nO2cTahVZRSGn3XTDAwvBNHAjITEQdTAzMHVQp00amKK9EeQ0yZZ0A/aTK2hUZBFo1uTsl+oQA0sSOpGGAii0CAbFrdIB90SeRvscyFEbe9vfz/7O2c9873We9Z719rrfHufC47jOI7jOI7jOI7jOI7jZMFyJpM0A9yXM2cETpnZ56mCZzNA0r3AN8DSXDkjssXMjqcIPJUi6OVIuhF4lzqLD3B7qsBZDAAOAmsy5YrNWeC9VMGTjyBJ24APUudJxEVgk5nNpUqQtAMkrQTeTJkjMXtSFh8SdoCkKeAosDVVjsR8DWw1s0spk6TsgOeot/h/AI+nLj4k6gBJ9wAngOtTxM/ATjNLduP9L9E7QNJympWz1uK/lav4kGYEvQqsTRA3Bz8Bz+RMGHUE+crZnWgd4CtnGFE6wFfOcGJ1gK+cgfTuAF85+9GrA3zl7E/fEeQrZ0+CR5Ck7cD7EbXk5B9gxsx+KC0kqAMk3QociqwlJ68NofgQYMBo5ZwFboovJxtHSwtYJKQDngU2R9aRm+WlBSwSYsCj0VXk54nSAhYJMeDT6Cry86CkVyQtKy0kaAuStI4094A7gN3ke4D/O3CK5iCuL3PAS12/UWd9MasNkqZp3h+6s7SWAHaY2eEuF+R6LaU1ZvYnsLe0jkAWul4wOANGDGJH78hh4LOuFw3VgJWlBXTkNPCkmanrhUM14OnSAjpwHnjIzC6EXDw4AyQ9BuworaMlAnaZ2ZnQAIPagiStBn4EVpTW0pIDZvZinwCDMUDSEuArYKa0lpZ8CTzQ90nakEbQHuop/i/AwzEeYw6iAyRtBI4DSwpLacMCcL+ZfR8jWPEOGH3znaWO4gM8Fav4MAADgNeB1aVFtOSQmb0dM2DRETRaOWdLaujAHM3o+Ttm0GIGVLZyzgPrzezn2IGLjKDRyvkOdRT/EvBIiuJDuXtATSvn82Z2JFXw7COospXzY2BbyCFbW3L/Un4aOEkdW89ZYIOZnU+ZJPcIqmXlvEDzl5+0+JDRgNHKWcMbFaI52z+dI1mWESTpFpqWns6Rrycvm9kLuZLl6oA11FH8YzQbWjZyGfAt8AlNew+Vc0Q64RxrJE1JukvSh4rHX5LWl/5sVTEy4otIBuwq/XmqRNKWCMWv+TX7ski6rWfxv1Ph90OH8DygD31u6vM0P9CLerzcldoNCCXpCWcXJtWApCecE4OkVQFz/yNJg3gZoXoCDDgjaVAPgSZpBGU74ezCpBiQ9YRzYugwgvaX1jqWtDTgmKTrSmsdS1oYcE7SzaV1XotxvgcsANvN7LfSQsaW/+kAP+FMzTUMeKO0tongKgYUP+GcGK5gwK+SVpXWNTFIukHS/Kj4FyXV+o8D60XS3ZL2SdpcWovjOI7jOI7jOI7jOI7jOI5zNf4Fs+GDxYWFZqkAAAAASUVORK5CYII=";
-const bytes = Buffer.from(BASE64, "base64");
-if (bytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") throw new Error("Notification badge PNG header invalid");
-const target = path.resolve("public/tiny-titans-notification-badge.png");
-fs.writeFileSync(target, bytes);
-console.log("Generated original TinyTitans monochrome status-bar badge (96×96).");
+import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = fileURLToPath(new URL("../", import.meta.url));
+const source = join(root, "public/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg");
+const destination = join(root, "public/tiny-titans-notification-badge.png");
+if (!existsSync(source)) throw new Error("The official TinyTitans logo is missing: " + source);
+
+// The grayscale cutoff removes the dark purple photo background while retaining
+// the light lettering, patterned reptile outlines, circular rim and spider details.
+// convert/magick produces a real RGBA PNG: black becomes ALPHA=0, white=opaque.
+// We deliberately use the actual logo pixels rather than guessing their design.
+const operations = [
+  source,
+  "-resize", "96x96!",
+  "-colorspace", "gray",
+  "-threshold", "42%",
+  "-transparent", "black",
+  "-background", "none",
+  "-alpha", "on",
+  "-depth", "8",
+  "-define", "png:color-type=6",
+  destination,
+];
+const binaries = [
+  { command: "magick", args: operations },
+  { command: "convert", args: operations },
+];
+let complete = false;
+const errors = [];
+for (const bin of binaries) {
+  const proc = spawnSync(bin.command, bin.args, { cwd: root, encoding: "utf8" });
+  if (!proc.error && proc.status === 0) {
+    complete = true;
+    break;
+  }
+  errors.push(bin.command + ": " + (proc.error?.message || proc.stderr || "failed"));
+}
+if (!complete) {
+  throw new Error(
+    "Cannot create TinyTitans' real-logo badge without ImageMagick. " +
+    "Install 'magick' or 'convert'; do not publish the old lightning-bolt badge.\n" +
+    errors.join("\n"),
+  );
+}
+const output = readFileSync(destination);
+if (
+  output.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a" ||
+  output.readUInt32BE(16) !== 96 ||
+  output.readUInt32BE(20) !== 96 ||
+  output[25] !== 6 ||
+  statSync(destination).size < 650
+) {
+  throw new Error("TinyTitans logo badge is not a non-empty, transparent 96×96 RGBA PNG.");
+}
+console.log("Generated real TinyTitans logo monochrome Android badge from the repository's official artwork.");
