@@ -148,9 +148,9 @@ export default function MyAnimals() {
           </div>
         </div>
         <div className="universal-animals-metrics">
-          <strong>{animals.filter((animal) => !["deceased", "archived"].includes(animal.status)).length}</strong>
+          <strong>{loading || loadFailed ? "—" : animals.filter((animal) => !["deceased", "archived"].includes(animal.status)).length}</strong>
           <span>active animals</span>
-          <strong>{new Set(animals.map((animal) => animal.speciesId).filter(Boolean)).size}</strong>
+          <strong>{loading || loadFailed ? "—" : new Set(animals.map((animal) => animal.speciesId).filter(Boolean)).size}</strong>
           <span>species represented</span>
         </div>
       </header>
