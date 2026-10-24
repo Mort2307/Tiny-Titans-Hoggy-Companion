@@ -4,7 +4,7 @@ const commands = [
   ["Release configuration", ["run", "validate:release-config"]],
   ["Account deletion contract", ["run", "validate:account-deletion"]],
   ["App-wide keeper journeys", ["run", "validate:app-wide-keeper"]],
-  ["Public source credential guard", ["exec", "--", "node", "scripts/validate-public-source-guard.mjs"]],
+  ["Public source credential guard", ["run", "validate:public-source"]],
   ["TypeScript typecheck", ["run", "typecheck"]],
   ["Lint", ["run", "lint"]],
   ["BOT contract suite", ["run", "test:bot:contracts"]],
