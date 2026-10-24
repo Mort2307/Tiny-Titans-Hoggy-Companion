@@ -24,17 +24,18 @@ if (!existsSync(mark)) throw new Error("TinyTitans' western hognose mark is miss
 const operations = [
   "-size", "96x96", "xc:none",
   "-stroke", "none", "-fill", "white",
-  // Keep the shape and cut-outs identical to the source SVG mask.
-  "-draw", 'path "M12 82 C16 68 21 61 23 51 C26 44 21 40 22 33 C23 20 36 12 51 14 C65 15 76 24 81 31 C85 30 88 24 89 17 C94 21 96 31 92 39 C94 42 94 49 89 54 C83 61 70 63 59 59 C49 56 44 50 40 46 C39 57 33 71 35 83 Z"',
-  "-fill", "black", "-draw", "ellipse 60,35 5.6,7 0,360",
-  "-draw", "ellipse 86,38 2.5,2 0,360",
-  "-stroke", "black", "-strokewidth", "3", "-fill", "none",
-  "-draw", 'path "M62 51 Q74 56 85 49"',
-  // Black marks are negative space, never visible black paint.
+  // Dedicated head-only side profile: a hognose snout, no neck or coiled body.
+  "-draw", 'path "M13 64 L14 39 C27 27 44 22 57 24 C69 25 78 31 83 37 C87 34 90 27 89 19 C94 25 96 35 92 44 C94 50 90 58 83 63 C73 71 59 75 44 73 C31 71 20 68 13 64 Z"',
+  "-fill", "black", "-draw", "ellipse 58,40 5,6 0,360",
+  "-draw", "circle 87,45 89.2,45",
+  "-stroke", "black", "-strokewidth", "3.4", "-fill", "none",
+  "-draw", 'path "M47 59 Q65 66 84 54"',
+  // Turn the dark face details into transparent cutouts.
   "-transparent", "black", "-alpha", "on",
   "-depth", "8", "-define", "png:color-type=6",
   destination,
 ];
+
 const binaries = [
   { command: "magick", args: operations },
   { command: "convert", args: operations },
