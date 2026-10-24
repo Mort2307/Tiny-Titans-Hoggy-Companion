@@ -1,12 +1,14 @@
 /**
  * TinyTitans notification branding:
  * - Full-colour installed PWA and expanded notification: original keeper artwork.
- * - Android 24px status icon: a monochrome western hognose head, cut-out eye
- *   and unmistakable upturned snout, designed for the tiny notification slot.
+ * - Android 24px status icon: the user-approved FRONT-FACING hognose portrait.
+ *   The official art is converted into a 96px white-on-transparent PNG and
+ *   stored as a checked-in source asset; never invent a new snake-head shape.
  * Produces real transparent PNGs; NEVER substitute stock artwork or the old bolt.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,60 +17,36 @@ const source = join(root, "public/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg");
 const destination = join(root, "public/tiny-titans-notification-badge.png");
 if (!existsSync(source)) throw new Error("The official TinyTitans logo is missing: " + source);
 
-// The western hognose SVG is the reference mark. ImageMagick 6 cannot reliably
-// rasterise SVG masks on Firebase Hosting runners, so use its matching
-// paths and transparent cut-outs as native ImageMagick primitives.
-// The transparent 96px image downscales to a clear 24px hognose silhouette.
-const mark = join(root, "public/icons/tiny-titans-notification-mark.svg");
-if (!existsSync(mark)) throw new Error("TinyTitans' western hognose mark is missing.");
-const operations = [
-  "-size", "96x96", "xc:none",
-  "-stroke", "none", "-fill", "white",
-  // Dedicated head-only side profile: a hognose snout, no neck or coiled body.
-  "-draw", 'path "M13 64 L14 39 C27 27 44 22 57 24 C69 25 78 31 83 37 C87 34 90 27 89 19 C94 25 96 35 92 44 C94 50 90 58 83 63 C73 71 59 75 44 73 C31 71 20 68 13 64 Z"',
-  "-fill", "black", "-draw", "ellipse 58,40 5,6 0,360",
-  "-draw", "circle 87,45 89.2,45",
-  "-stroke", "black", "-strokewidth", "3.4", "-fill", "none",
-  "-draw", 'path "M47 59 Q65 66 84 54"',
-  // Turn the dark face details into transparent cutouts.
-  "-transparent", "black", "-alpha", "on",
-  "-depth", "8", "-define", "png:color-type=6",
-  destination,
-];
-
-const binaries = [
-  { command: "magick", args: operations },
-  { command: "convert", args: operations },
-];
-let complete = false;
-const errors = [];
-for (const bin of binaries) {
-  const proc = spawnSync(bin.command, bin.args, { cwd: root, encoding: "utf8" });
-  if (!proc.error && proc.status === 0) {
-    complete = true;
-    break;
-  }
-  errors.push(bin.command + ": " + (proc.error?.message || proc.stderr || "failed"));
+// The owner selected a PARTICULAR generated front-on hoggy face; preserve
+// that actual drawing instead of redrawing a generic side-profile snake.
+// The source is a transparent monochrome 96px conversion of that exact art,
+// prepared for Android's tintable 24dp notification status icon.
+const approvedBadge = join(root, "public/icons/tiny-titans-front-hognose-96.png");
+if (!existsSync(approvedBadge)) throw new Error("Owner-approved front-on hognose badge asset is missing.");
+const approvedBytes = readFileSync(approvedBadge);
+const approvedHash = "2cc704955bcd6731f868e8acdb6a68df1a7190737b0d4d6be38f629ff032991d";
+if (
+  approvedBytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a" ||
+  approvedBytes.readUInt32BE(16) !== 96 ||
+  approvedBytes.readUInt32BE(20) !== 96 ||
+  approvedBytes[25] !== 6 ||
+  statSync(approvedBadge).size < 1000 ||
+  createHash("sha256").update(approvedBytes).digest("hex") !== approvedHash
+) {
+  throw new Error("Front-facing TinyTitans hognose badge is not the approved transparent 96px artwork.");
 }
-if (!complete) {
-  throw new Error(
-    "Cannot create TinyTitans' legible western hognose badge without ImageMagick. " +
-    "Install 'magick' or 'convert'; do not publish the old lightning-bolt badge.\n" +
-    errors.join("\n"),
-  );
-}
+copyFileSync(approvedBadge, destination);
 const output = readFileSync(destination);
 if (
   output.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a" ||
   output.readUInt32BE(16) !== 96 ||
   output.readUInt32BE(20) !== 96 ||
   output[25] !== 6 ||
-  statSync(destination).size < 650
+  createHash("sha256").update(output).digest("hex") !== approvedHash
 ) {
-  throw new Error("TinyTitans logo badge is not a non-empty, transparent 96×96 RGBA PNG.");
+  throw new Error("TinyTitans notification badge must match the keeper-approved front-on hognose face.");
 }
-console.log("Generated sharp, high-contrast TinyTitans western hognose Android notification badge.");
-
+console.log("Generated approved front-on western hognose Android notification badge.");
 
 // Android may source the small status-bar icon from the INSTALLED PWA's
 // favicon/manifest identity rather than webpush.notification.badge.
