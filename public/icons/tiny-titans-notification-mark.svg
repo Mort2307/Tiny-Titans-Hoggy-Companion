@@ -1,13 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title description">
-  <title id="title">TinyTitans western hognose notification mark</title>
-  <desc id="description">A simple white western hognose snake head and neck, with a distinctive upturned shovel snout, cut-out eye and nostril. Clear at 24 pixels on Android.</desc>
-  <!-- Android notification badges require a single-colour silhouette on transparency.
-       Cut-outs, rather than black pixels, preserve the shape on dark and light themes. -->
-  <mask id="details">
+  <title id="title">TinyTitans western hognose head notification mark</title>
+  <desc id="description">Just a western hognose head in side profile, with an upturned shovel snout, eye, nostril, and short mouth line. No body, neck or coil. White silhouette on transparency for Android notifications.</desc>
+  <!-- Single-colour 24dp Android status-bar silhouette. The face is negative space. -->
+  <mask id="cutouts">
     <rect width="96" height="96" fill="#fff"/>
-    <ellipse cx="60" cy="35" rx="5.6" ry="7" fill="#000"/>
-    <ellipse cx="86" cy="38" rx="2.5" ry="2" fill="#000"/>
-    <path d="M62 51 Q74 56 85 49" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="58" cy="40" rx="5" ry="6" fill="#000"/>
+    <circle cx="87" cy="45" r="2.2" fill="#000"/>
+    <path d="M47 59 Q65 66 84 54" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round"/>
   </mask>
-  <path fill="#fff" mask="url(#details)" d="M12 82 C16 68 21 61 23 51 C26 44 21 40 22 33 C23 20 36 12 51 14 C65 15 76 24 81 31 C85 30 88 24 89 17 C94 21 96 31 92 39 C94 42 94 49 89 54 C83 61 70 63 59 59 C49 56 44 50 40 46 C39 57 33 71 35 83 Z"/>
+  <path fill="#fff" mask="url(#cutouts)" d="M13 64 L14 39 C27 27 44 22 57 24 C69 25 78 31 83 37 C87 34 90 27 89 19 C94 25 96 35 92 44 C94 50 90 58 83 63 C73 71 59 75 44 73 C31 71 20 68 13 64 Z"/>
 </svg>
