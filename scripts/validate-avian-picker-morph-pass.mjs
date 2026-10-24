@@ -18,6 +18,19 @@ assert.match(picker, /Browse by animal group/, "Species can be browsed without t
 assert.match(picker, /Show more species/, "Browse can paginate past the first result page");
 assert.match(picker, /aria-activedescendant/, "Keyboard selection state must be accessible");
 assert.match(picker, /onKeyDown/, "Search must support keyboard selection");
+
+const mobileExperience = read("src/styles/mobile-experience-v2.css");
+const pickerRowFix = mobileExperience.split("SPECIES PICKER — OVERLAPPING TWO-LINE RESULTS")[1] || "";
+assert.match(picker, /className="universal-species-picker__name"/, "Species option must expose its name as a separate row");
+assert.match(picker, /className="universal-species-picker__meta"/, "Scientific name and taxonomy must have a separate row");
+assert.match(pickerRowFix, /grid-auto-rows:\s*max-content;/, "Picker list rows must grow to fit content");
+assert.match(pickerRowFix, /flex-direction:\s*column;/, "Each species option must stack name and taxonomy");
+assert.match(pickerRowFix, /height:\s*auto\s*!important;/, "Legacy button fixed heights cannot clip options");
+assert.match(pickerRowFix, /max-height:\s*none\s*!important;/, "Picker options must not cap taxonomy text");
+assert.match(pickerRowFix, /overflow-wrap:\s*anywhere;/, "Scientific and common names must wrap at phone width");
+assert.match(pickerRowFix, /opacity:\s*1;/, "Secondary labels must remain clearly legible");
+
+
 assert.match(universalLibrary, /UniversalSpeciesPicker/, "Morph library needs universal species chooser");
 assert.match(universalLibrary, /searchParams\.get\("species"\)/, "Morph library must support species deep links");
 assert.match(speciesLibrary, /getSpeciesVisualMorphs/, "Morph entries must remain species-scoped");
