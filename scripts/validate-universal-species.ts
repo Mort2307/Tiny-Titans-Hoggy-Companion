@@ -66,6 +66,20 @@ assert(UNIVERSAL_SPECIES_BY_ID['brachypelma-hamorii'], 'Curated tarantula expans
 assert(UNIVERSAL_SPECIES_BY_ID['blaptica-dubia'], 'Feeder/insect expansion is missing.');
 assert(UNIVERSAL_SPECIES_BY_ID['chinchilla-lanigera'], 'Exotic mammal expansion is missing.');
 
+// Companion and aviary birds are real species records, not morph names.
+const birds = UNIVERSAL_SPECIES.filter((species) => species.className === 'bird');
+assert(birds.length >= 130, 'Bird expansion unexpectedly small: ' + birds.length + '; expected broad common-captive coverage.');
+assert(UNIVERSAL_SPECIES_BY_ID['psittacula-krameri'], 'Indian Ringneck / Rose-ringed Parakeet is missing.');
+assert(UNIVERSAL_SPECIES_BY_ID['chloebia-gouldiae'], 'Gouldian Finch is missing.');
+assert(UNIVERSAL_SPECIES_BY_ID['synoicus-chinensis'], 'King Quail is missing.');
+assert(UNIVERSAL_SPECIES_BY_ID['geopelia-cuneata'], 'Diamond Dove is missing.');
+assert(UNIVERSAL_SPECIES_BY_ID['trichoglossus-moluccanus'], 'Rainbow Lorikeet is missing.');
+assert(UNIVERSAL_SPECIES_BY_ID['ara-macao'], 'Scarlet Macaw is missing.');
+assert(birds.every((bird) => bird.browseGroup === 'birds' && bird.taxonomicClass === 'Aves'), 'Bird browse group/class drift detected.');
+assert(birds.every((bird) => bird.husbandryStatus !== 'taxonomy-only' || bird.husbandryNotes?.includes('No numeric husbandry targets')), 'Bird catalogue contains unsourced numeric care claims.');
+assert(searchUniversalSpecies('Indian Ringneck').some((species) => species.id === 'psittacula-krameri'), 'Indian Ringneck keeper search alias is missing.');
+
+
 assert(searchUniversalSpecies('leopard gecko')[0]?.id === 'eublepharis-macularius', 'Universal search does not resolve a common keeper name.');
 assert(searchUniversalSpecies('Ambystoma mexicanum')[0]?.id === 'ambystoma-mexicanum', 'Universal search does not resolve a scientific name.');
 assert(searchUniversalSpecies('tarantula').length > 0, 'Universal search does not expose arachnid records.');
