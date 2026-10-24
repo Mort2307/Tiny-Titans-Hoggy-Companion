@@ -1,4 +1,5 @@
 import { useState } from "react";
+import packageInfo from "../../package.json";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { submitFeedback } from "../services/creatorService";
@@ -24,7 +25,20 @@ export default function Feedback() {
     if (!user || !title.trim() || !message.trim()) return;
     setSending(true); setError("");
     try {
-      await submitFeedback({ userId: user.uid, category, title: title.trim(), message: message.trim(), appVersion: "0.0.0", metadata: { displayName: profile?.displayName ?? user.displayName ?? "", userAgent: navigator.userAgent } });
+      // version.json is written during each verified Hosting release. Failure to read it must never block feedback.
+      let releaseCommit = "unavailable";
+      try {
+        const response = await fetch("/version.json", { cache: "no-store" });
+        if (response.ok) {
+          const release = await response.json() as { project?: string; sourceCommit?: string };
+          if (release.project === "tinytitans-hoggy-companion" && /^[a-f0-9]{40}$/i.test(release.sourceCommit || "")) {
+            releaseCommit = release.sourceCommit || "unavailable";
+          }
+        }
+      } catch {
+        // Offline and older installs still need to send feedback.
+      }
+      await submitFeedback({ userId: user.uid, category, title: title.trim(), message: message.trim(), appVersion: packageInfo.version, metadata: { releaseCommit, displayName: profile?.displayName ?? user.displayName ?? "", userAgent: navigator.userAgent } });
       setSent(true); setTitle(""); setMessage("");
     } catch (submitError) { setError(submitError instanceof Error ? submitError.message : "Unable to send your feedback."); }
     finally { setSending(false); }
