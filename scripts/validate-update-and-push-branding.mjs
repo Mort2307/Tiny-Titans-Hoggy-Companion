@@ -70,18 +70,18 @@ for (const [path, content] of [
 // a generic gecko, lightning bolt, or a full-colour square.
 const generator = read("scripts/generate-notification-badge.mjs");
 const mark = read("public/icons/tiny-titans-notification-mark.svg");
-assert.match(generator, /TinyTitans-Logo\\.JPG\\.jpg/, "Keep the owner's original full-colour PWA logo");
-assert.match(generator, /tiny-titans-notification-mark\\.svg/, "Keep a dedicated small-icon reference mark");
+assert.match(generator, /TinyTitans-Logo\.JPG\.jpg/, "Keep the owner's original full-colour PWA logo");
+assert.match(generator, /tiny-titans-notification-mark\.svg/, "Keep a dedicated small-icon reference mark");
 assert.match(generator, /western hognose/i, "The small notification badge must be the hognose design");
-assert.match(generator, /"ellipse 60,35 5\\.6,7 0,360"/, "Preserve the large eye cut-out");
-assert.match(generator, /"ellipse 86,38 2\\.5,2 0,360"/, "Preserve the snout nostril cut-out");
+assert.match(generator, /"ellipse 60,35 5\.6,7 0,360"/, "Preserve the large eye cut-out");
+assert.match(generator, /"ellipse 86,38 2\.5,2 0,360"/, "Preserve the snout nostril cut-out");
 assert.match(generator, /"-size", "96x96", "xc:none"/, "The badge background must be transparent");
 assert.match(generator, /"-transparent", "black"/, "Black face details must become transparent negative space");
 assert.doesNotMatch(generator, /"-threshold", "42%"/, "Do not threshold the detailed logo into a white square");
 assert.match(mark, /western hognose notification mark/i, "Mark must identify the western hognose");
 assert.match(mark, /upturned.*snout/i, "Reference art must describe the species-specific snout");
 assert.match(mark, /<mask id="details">/, "Eye and mouth must be transparent cut-outs");
-assert.match(mark, /cx="60" cy="35" rx="5\\.6"/, "Reference art must include the same eye");
+assert.match(mark, /cx="60" cy="35" rx="5\.6"/, "Reference art must include the same eye");
 assert.match(mark, /d="M12 82 C16 68/, "Reference silhouette must match the ImageMagick shape");
 assert.match(generator, /M12 82 C16 68/, "ImageMagick silhouette must match the vector shape");
 assert.doesNotMatch(mark, /splayed foot/i, "Do not restore the former gecko foot");
