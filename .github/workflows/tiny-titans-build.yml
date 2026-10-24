@@ -75,6 +75,9 @@ jobs:
       - name: Avian and universal mutation journeys
         run: node scripts/validate-avian-picker-morph-pass.mjs
 
+      - name: App update and notification branding contracts
+        run: npm run validate:update-push-branding
+
       - name: Public source credential guard
         run: node scripts/validate-public-source-guard.mjs
 

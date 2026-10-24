@@ -72,7 +72,7 @@ export default function NotificationBridge() {
         const body = String(data.body || notification.body || "You have a Tiny Titans reminder.");
         const url = String(data.url || "/");
         if (document.visibilityState !== "visible") return;
-        const popup = new Notification(title, { body, icon: "/favicon.svg", badge: "/favicon.svg", tag: String(data.eventKey || "tiny-titans") });
+        const popup = new Notification(title, { body, icon: "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=3", badge: "/tiny-titans-notification-badge.png", tag: String(data.eventKey || "tiny-titans") });
         popup.onclick = () => { window.focus(); window.location.assign(url); };
       });
     };

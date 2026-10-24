@@ -1,5 +1,6 @@
 ﻿import TinyTitansIcon from "../components/TinyTitansIcon";
 import NotificationSettingsPanel from "../components/NotificationSettingsPanel";
+import TinyTitansUpdateControl from "../components/TinyTitansUpdateControl";
 import { useSettings } from "../hooks/useSettings";
 import type { TinyTitansIconName } from "../types/tinyTitansIcon";
 import "../styles/settingsWorkspace.css";
@@ -71,6 +72,7 @@ export default function Settings() {
         </p>
 
         <nav className="tt-settings-jump" aria-label="Settings sections">
+          <a href="#app-updates"><TinyTitansIcon name="rotate" size={16} /> Updates</a>
           <a href="#notifications">
             <TinyTitansIcon name="reminders" size={16} />
             Notifications
@@ -93,6 +95,8 @@ export default function Settings() {
           </a>
         </nav>
       </section>
+
+      <section id="app-updates" className="tt-settings-feature" aria-label="TinyTitans updates and device recovery"><TinyTitansUpdateControl /></section>
 
       <section id="notifications" className="tt-settings-feature">
         <div className="tt-settings-feature-head">

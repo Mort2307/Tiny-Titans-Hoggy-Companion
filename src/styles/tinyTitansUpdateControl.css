@@ -1,0 +1,18 @@
+/* App & device update panel; retain TinyTitans' established night-purple/gold style. */
+.tt-version-control{display:grid;gap:13px;padding:20px;border:1px solid rgba(245,182,66,.28);border-radius:19px;background:linear-gradient(145deg,rgba(61,18,95,.34),rgba(19,7,30,.96));box-shadow:0 12px 32px rgba(0,0,0,.12);color:#f9f3ff}
+.tt-version-control__header{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#f5b642}
+.tt-version-control__header h3{margin:.2rem 0 0;color:#fff;font-size:clamp(1.05rem,2.4vw,1.3rem)}
+.tt-version-control>p{max-width:76ch;line-height:1.55;margin:0;color:rgba(249,243,255,.83)}
+.tt-version-control__versions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.tt-version-control__versions>div{display:grid;gap:6px;min-width:0;border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:12px;background:rgba(0,0,0,.22)}
+.tt-version-control__versions span{font-size:.8rem;opacity:.85}
+.tt-version-control__versions strong{font-size:1rem;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.tt-version-control__versions small{font-size:.72rem;color:#f5b642;overflow-wrap:anywhere}
+.tt-version-control__actions{display:flex;flex-wrap:wrap;gap:9px}
+.tt-version-control__actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;flex:1 1 150px;padding:9px 12px;border:1px solid rgba(245,182,66,.42);border-radius:12px;background:rgba(255,255,255,.06);color:#f9f3ff;font:inherit;font-weight:750;cursor:pointer}
+.tt-version-control__actions button.tt-version-control__primary{background:linear-gradient(130deg,#6932ad,#a26716);color:#fff}
+.tt-version-control__actions button:disabled{opacity:.6;cursor:wait}
+.tt-version-control__actions button:focus-visible{outline:3px solid #47bfff;outline-offset:3px}
+.tt-version-control .tt-version-control__message{border-radius:10px;background:rgba(71,191,255,.1);padding:10px 12px;color:#f9f3ff}
+.tt-version-control .tt-version-control__safety{font-size:.77rem;color:rgba(249,243,255,.67)}
+@media(max-width:530px){.tt-version-control{padding:15px}.tt-version-control__versions{grid-template-columns:minmax(0,1fr)}.tt-version-control__actions{display:grid;grid-template-columns:minmax(0,1fr)}}

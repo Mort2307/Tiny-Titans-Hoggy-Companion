@@ -7,6 +7,8 @@ const tinyTitansIcon512 = "/icons/tiny-titans-512.svg";
 const tinyTitansRasterIcon = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg";
 
 export default defineConfig({
+  // The deployed bundle knows its commit so users can compare it with Hosting /version.json.
+  define: { __TINY_TITANS_SOURCE_COMMIT__: JSON.stringify(process.env.GITHUB_SHA || process.env.TINY_TITANS_SOURCE_COMMIT || "") },
   plugins: [
     react(),
     VitePWA({
