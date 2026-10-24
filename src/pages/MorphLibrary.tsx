@@ -48,7 +48,11 @@ export default function MorphLibrary() {
     <div className="morph-library__count">Showing <strong>{filtered.length}</strong> of <strong>{entries.length}</strong> records · {region==="global"?"Canonical names":"Regional display terminology"}</div>
 
     <div className="morph-grid morph-library__grid">
-      {filtered.map((morph)=>{
+      {!query.trim() && filter === "all" && <article className="morph-card morph-card--library morph-card--contribute">
+        <div className="morph-card__media"><div className="morph-card__image-empty"><span className="morph-card__image-icon"><TinyTitansIcon name="add" size={24}/></span><strong>Contribute to Western Hognose research</strong><span>Only approved keeper-submitted images are displayed.</span></div></div>
+        <div className="morph-card__body"><div className="morph-card__topline"><span>Wild Type &amp; mutations</span><span>Review required</span></div><h2>Submit a morph, variation or evidence</h2><p className="morph-card__description">Help us keep even the established hognose catalogue up to date. Suggest documented naming and inheritance corrections with sources; images are never copied from breeder websites.</p><div className="morph-card__actions"><button type="button" className="morph-card__open" onClick={()=>setShowNewMorphSubmission(true)}>Submit variation / information</button><button type="button" className="morph-card__image-submit" onClick={()=>openImageSubmission()}>Contribute image</button></div></div>
+      </article>}
+      {(!query.trim() ? [...filtered].sort((a,b)=>Number(b.geneId==="wild-type")-Number(a.geneId==="wild-type")||a.name.localeCompare(b.name)):filtered).map((morph)=>{
         const approvedImage=approvedImagesByMorph[morph.geneId];
         const displayName=morph.name;
         const typed=morph as {geneticFormula?:string;recognisedNames?:string[];inheritanceSummary?:string};

@@ -10,6 +10,7 @@ import { SPECIES_GENETICS_COMBINATION_MORPHS, SPECIES_GENETICS_COMBINATION_SPECS
 import { SPECIES_GENETICS_RESEARCH_ADDITIONS } from "./speciesGeneticsResearchAdditions";
 import { SPECIES_GENETICS_EXPANSION_BATCH_2 } from "./speciesGeneticsExpansionBatch2";
 import { SPECIES_GENETICS_EXPANSION_BATCH_3 } from "./speciesGeneticsExpansionBatch3";
+import { AVIAN_VARIATION_RESEARCH } from "./speciesGeneticsAvianResearch";
 
 type SpeciesRecord = UniversalSpeciesRecord;
 export type SpeciesGeneticsStatus = "mapped" | "partial" | "baseline-only";
@@ -106,6 +107,7 @@ const CATALOGUE_LAYERS: Array<Record<string, MasterMorphDefinition[]>> = [
   SPECIES_GENETICS_EXPANSION_BATCH_2,
   SPECIES_GENETICS_EXPANSION_BATCH_3,
   SPECIES_GENETICS_RESEARCH_ADDITIONS,
+  AVIAN_VARIATION_RESEARCH,
 ];
 
 function mergeSpeciesTraits(speciesName: string): MasterMorphDefinition[] {
@@ -154,6 +156,8 @@ export function getSpeciesHetGenes(speciesId: string | null | undefined): Master
 
 export function getSpeciesCalculatorMorphs(speciesId: string | null | undefined): MasterMorphDefinition[] {
   if (isHognose(speciesId)) return getMasterCalculatorMorphs();
+  // Avian ZW sex linkage and combinations require separate validation; no automated odds yet.
+  if (getSpeciesRecord(speciesId)?.className === "bird") return [];
   return getCatalogue(speciesId).filter((morph) => morph.isGene && ["Recessive", "Incomplete Dominant", "Dominant"].includes(morph.inheritance));
 }
 
@@ -162,6 +166,7 @@ export function getSpeciesGeneticsStatus(speciesId: string | null | undefined): 
   if (isHognose(speciesId)) return "mapped";
   const species = getSpeciesRecord(speciesId);
   if (!species) return "baseline-only";
+  if (species.className === "bird" && Object.prototype.hasOwnProperty.call(SPECIES_CATALOGUES, species.acceptedScientificName)) return "partial";
   if (Object.prototype.hasOwnProperty.call(SPECIES_CATALOGUES, species.acceptedScientificName)) return "mapped";
   return "baseline-only";
 }

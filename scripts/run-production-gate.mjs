@@ -4,6 +4,7 @@ const commands = [
   ["Release configuration", ["run", "validate:release-config"]],
   ["Account deletion contract", ["run", "validate:account-deletion"]],
   ["App-wide keeper journeys", ["run", "validate:app-wide-keeper"]],
+  ["Avian and universal mutation journeys", ["run", "validate:avian-picker-morph"]],
   ["Public source credential guard", ["run", "validate:public-source"]],
   ["TypeScript typecheck", ["run", "typecheck"]],
   ["Lint", ["run", "lint"]],

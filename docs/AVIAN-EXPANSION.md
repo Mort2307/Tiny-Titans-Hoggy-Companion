@@ -85,3 +85,21 @@ internet image searches or third-party bird catalogues.**
 - Confirm the bird filters and search aliases on mobile and desktop.
 - Confirm zero unintended changes to existing reptile/hognose data.
 - Merge only after review; production deploy is a separate, verified operation.
+
+## 24 October 2026 — keeper workflow continuation (PR pending)
+
+- Universal animal species selection now offers **both free-text search and a browsable dropdown**, with a taxonomic class filter, full catalogue pagination and keyboard handling.
+- Each canonical species has a Wild Type / Unclassified morph/variation baseline and a clearly signposted contribution tile. Hognose keeps its specialised library and also highlights image/evidence contributions.
+- A first dedicated **Bird Care Journal** is connected to individually registered birds, with date-stamped weight (grams), food/water, moult/feathers, droppings, enrichment/flight and keeper welfare observations; users can review and confirm deletion of their own entries.
+- Bird entry fields support rings/individual identifiers and hatch dates. Users can navigate from individual animal profiles to species-scoped mutation libraries.
+- Indian Ringneck has researched Violet, Cleartail and Violet Cleartail records with source links. **Avian genetics calculation remains disabled** until sex-linked and combination modelling is separately vetted.
+- No stock/scraped online images were introduced; only already-approved user contributions may appear in morph libraries.
+
+### Still outstanding — not represented as complete
+- Specialist-reviewed, source-cited mutation inheritance for every bird species and all other animals; many species will appropriately remain baseline-only until reviewed.
+- Full avian hatchling/incubation, body-condition scoring, vet records, detailed diet and environmental logs, charts/export, family access and multi-device offline conflict policy.
+- Taxonomic authority and species-specific husbandry verification for each avian catalogue entry.
+- Full hognose evidence and nomenclature reconciliation, especially uncertain or debated inheritance claims.
+- Real-device Android/iOS accessibility and keeper workflow acceptance testing.
+
+These tasks require separate research/QA and cannot safely be completed by fabricating all genetic variants or copying reference photographs.

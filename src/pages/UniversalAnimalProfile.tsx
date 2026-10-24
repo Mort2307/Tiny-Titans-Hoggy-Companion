@@ -8,6 +8,7 @@ import type { UniversalAnimalRecord } from "../types/UniversalAnimal";
 import { getTinyTitansErrorMessage } from "../utils/firebaseError";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 import TinyTitansFeedback from "../components/TinyTitansFeedback";
+import BirdCareJournal from "../components/BirdCareJournal";
 import "../styles/universal-animals.css";
 
 type EditFields = Pick<UniversalAnimalRecord, "name" | "sex" | "status"> & {
@@ -141,7 +142,7 @@ export default function UniversalAnimalProfile() {
       <div className="universal-animals-metrics"><strong>{status}</strong><span>status</span></div>
     </section>
     {notice && <TinyTitansFeedback kind="success" role="status">{notice}</TinyTitansFeedback>}
-    {species && <section className="universal-animals-panel"><p className="eyebrow">SPECIES REFERENCE</p><h2>{species.commonNames[0]}</h2><p className="universal-scientific">{species.acceptedScientificName}</p><div className="universal-animal-links"><Link to={"/species/" + species.id}>Care & health reference <TinyTitansIcon name="forward" size={15} /></Link><Link to={"/marketplace?species=" + encodeURIComponent(species.id)}>Marketplace listings <TinyTitansIcon name="forward" size={15} /></Link></div></section>}
+    {species && <section className="universal-animals-panel"><p className="eyebrow">SPECIES REFERENCE</p><h2>{species.commonNames[0]}</h2><p className="universal-scientific">{species.acceptedScientificName}</p><div className="universal-animal-links"><Link to={"/species/" + species.id}>Care & health reference <TinyTitansIcon name="forward" size={15} /></Link><Link to={"/marketplace?species=" + encodeURIComponent(species.id)}>Marketplace listings <TinyTitansIcon name="forward" size={15} /></Link><Link to={"/morph-library?species=" + encodeURIComponent(species.id)}>Morph & mutation library <TinyTitansIcon name="forward" size={15} /></Link></div></section>}
     <section className="universal-animals-panel">
       <div className="universal-animal-section-head">
         <div><p className="eyebrow">INDIVIDUAL RECORD</p><h2>About {name}</h2></div>
@@ -183,7 +184,8 @@ export default function UniversalAnimalProfile() {
         </>
       )}
     </section>
-    {animal && <section className="universal-animals-panel">
+    {animal && (animal.animalGroup === "bird" || species?.className === "bird") && <BirdCareJournal uid={user.uid} animalId={animal.id} />}
+    {animal && animal.animalGroup !== "bird" && species?.className !== "bird" && <section className="universal-animals-panel">
       <p className="eyebrow">KEEPER HISTORY</p>
       <h2>Care records</h2>
       <p>Detailed weight, feeding, shedding and health trackers are not yet connected to universal animal records. No zero-record counts are shown until tracking is supported. Your animal details above are saved normally.</p>
