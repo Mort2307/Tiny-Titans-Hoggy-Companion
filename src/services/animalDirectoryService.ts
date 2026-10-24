@@ -19,10 +19,11 @@ export type UnifiedAnimalDirectoryRecord = {
   morphOrColour?: string;
   notes?: string;
   photoUrl?: string;
-  weightRecords: number;
-  feedingRecords: number;
-  shedRecords: number;
-  healthRecords: number;
+  /** Null means no supported tracker has been linked, not zero logged events. */
+  weightRecords: number | null;
+  feedingRecords: number | null;
+  shedRecords: number | null;
+  healthRecords: number | null;
   universalAnimal?: UniversalAnimalRecord;
   legacySnake?: Snake;
 };
@@ -53,10 +54,10 @@ export function universalAnimalToDirectory(animal: UniversalAnimalRecord): Unifi
     status: animal.status,
     morphOrColour: animal.morphOrColour,
     notes: animal.notes,
-    weightRecords: 0,
-    feedingRecords: 0,
-    shedRecords: 0,
-    healthRecords: 0,
+    weightRecords: null,
+    feedingRecords: null,
+    shedRecords: null,
+    healthRecords: null,
     universalAnimal: animal,
   };
 }
