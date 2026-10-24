@@ -170,6 +170,13 @@ jobs:
           npm --prefix functions ci --no-fund --no-audit
           find functions -name '*.js' -not -path '*/node_modules/*' -print0 | xargs -0 -n1 node --check
 
+      # Firebase CLI analyses all Functions metadata even when --only limits the deploy.
+      # On notification-only releases supply the existing *non-secret* mail defaults
+      # in a temporary runner-local dotenv file, never a password or secret value.
+      - name: Prepare notification-only non-secret Firebase parameters
+        if: ${{ inputs.scope == 'functions:selected' }}
+        run: node scripts/prepare-notification-deploy-params.mjs
+
       - name: Deploy explicitly selected Firebase resources
         if: ${{ inputs.scope != 'auth-check' && inputs.scope != 'plan' }}
         shell: bash
