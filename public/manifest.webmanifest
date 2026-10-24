@@ -20,28 +20,22 @@
   ],
   "icons": [
     {
-      "src": "/icons/tiny-titans-192.svg",
+      "src": "/icons/tiny-titans-official-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/tiny-titans-512.svg",
+      "src": "/icons/tiny-titans-official-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/tiny-titans-512.svg",
+      "src": "/icons/tiny-titans-official-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg",
-      "sizes": "any",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
     },
     {
       "src": "/tiny-titans-notification-badge.png",
@@ -58,9 +52,9 @@
       "url": "/animals",
       "icons": [
         {
-          "src": "/icons/tiny-titans-192.svg",
+          "src": "/icons/tiny-titans-official-192.png",
           "sizes": "192x192",
-          "type": "image/svg+xml"
+          "type": "image/png"
         }
       ]
     },
@@ -71,9 +65,9 @@
       "url": "/reminders",
       "icons": [
         {
-          "src": "/icons/tiny-titans-192.svg",
+          "src": "/icons/tiny-titans-official-192.png",
           "sizes": "192x192",
-          "type": "image/svg+xml"
+          "type": "image/png"
         }
       ]
     },
@@ -84,9 +78,9 @@
       "url": "/calculator",
       "icons": [
         {
-          "src": "/icons/tiny-titans-192.svg",
+          "src": "/icons/tiny-titans-official-192.png",
           "sizes": "192x192",
-          "type": "image/svg+xml"
+          "type": "image/png"
         }
       ]
     }
