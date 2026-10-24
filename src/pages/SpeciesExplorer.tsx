@@ -8,6 +8,7 @@ import {
   searchUniversalSpeciesInBrowseGroup,
 } from "../data/species/universalSpeciesRegistry";
 import type { UniversalSpeciesBrowseGroup, UniversalSpeciesClass, UniversalSpeciesRisk } from "../data/species/universalSpeciesTypes";
+import { BIRD_BROWSE_CATEGORIES, matchesBirdBrowseCategory, type BirdBrowseCategory } from "../data/species/birdBrowseCategories";
 import "../styles/species-explorer.css";
 
 const CLASS_FILTERS: Array<{ id: UniversalSpeciesClass | "all"; label: string }> = [
@@ -48,6 +49,7 @@ export default function SpeciesExplorer() {
   const [query, setQuery] = useState("");
   const [classFilter, setClassFilter] = useState<UniversalSpeciesClass | "all">("all");
   const [riskFilter, setRiskFilter] = useState<UniversalSpeciesRisk | "all">("all");
+  const [birdCategory, setBirdCategory] = useState<BirdBrowseCategory>("all");
   const [showOnlyResearchQueue, setShowOnlyResearchQueue] = useState(false);
 
   const results = useMemo(() => {
@@ -61,10 +63,11 @@ export default function SpeciesExplorer() {
     return source.filter((species) => {
       if (classFilter !== "all" && species.className !== classFilter) return false;
       if (riskFilter !== "all" && species.riskClass !== riskFilter) return false;
+      if (activeGroup === "birds" && !matchesBirdBrowseCategory(species, birdCategory)) return false;
       if (showOnlyResearchQueue && !["class", "ecology-only", "not-verified"].includes(species.care?.husbandry.coverage ?? "not-verified")) return false;
       return true;
     });
-  }, [activeGroup, classFilter, query, riskFilter, showOnlyResearchQueue]);
+  }, [activeGroup, birdCategory, classFilter, query, riskFilter, showOnlyResearchQueue]);
 
   const groupView = activeGroup !== null;
   return (
@@ -118,6 +121,7 @@ export default function SpeciesExplorer() {
           <div className="species-explorer-filter-row">
             <label><span>Animal class</span><select value={classFilter} onChange={(event) => setClassFilter(event.target.value as UniversalSpeciesClass | "all")}>{CLASS_FILTERS.map((filter) => <option key={filter.id} value={filter.id}>{filter.label}</option>)}</select></label>
             <label><span>Risk class</span><select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value as UniversalSpeciesRisk | "all")}>{RISK_FILTERS.map((filter) => <option key={filter.id} value={filter.id}>{filter.label}</option>)}</select></label>
+            {activeGroup === "birds" && <label><span>Bird category</span><select value={birdCategory} onChange={(event) => setBirdCategory(event.target.value as BirdBrowseCategory)}>{BIRD_BROWSE_CATEGORIES.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>}
             <label className="species-explorer-toggle"><input type="checkbox" checked={showOnlyResearchQueue} onChange={(event) => setShowOnlyResearchQueue(event.target.checked)} /><span>Research queue only</span></label>
           </div>
         )}
