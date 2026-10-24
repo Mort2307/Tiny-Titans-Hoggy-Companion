@@ -1,5 +1,5 @@
 /** Firebase Messaging runs on a dedicated, NON-controlling scope.
- * navigator.serviceWorker.ready resolves the page's app-shell worker instead
+ * The browser's generic ready property resolves the page's app-shell worker instead
  * and does not guarantee /firebase-messaging/ is active.
  */
 const FCM_SCOPE = "/firebase-messaging/";
