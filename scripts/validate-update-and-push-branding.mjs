@@ -65,14 +65,23 @@ for (const [path, content] of [
   assert.match(content, /tiny-titans-notification-badge\.png/, path + " must use monochrome status-bar icon");
   assert.match(content, /TinyTitans-Logo\.JPG\.jpg/, path + " must retain owner's full-colour branding");
 }
-// The status icon must be derived from the keeper's actual reptile/spider/wordmark
-// logo. The historical generated graphic was a generic lightning bolt.
+// The full-size crest is detailed, so the 24dp Android slot gets a deliberately
+// simplified white coiled-snake mark based on the same official TinyTitans crest.
 const generator = read("scripts/generate-notification-badge.mjs");
-assert.match(generator, /TinyTitans-Logo\.JPG\.jpg/, "Badge generation must use the actual TinyTitans logo");
-assert.match(generator, /"-threshold", "42%"/, "Use a deterministic light-on-transparent reproduction of official artwork");
+const mark = read("public/icons/tiny-titans-notification-mark.svg");
+assert.match(generator, /TinyTitans-Logo\.JPG\.jpg/, "Full-colour PWA icons must still use the keeper's original logo");
+assert.match(generator, /tiny-titans-notification-mark\.svg/, "Small badge must use the dedicated legible snake mark");
+assert.doesNotMatch(generator, /"-threshold", "42%"/, "Do not shrink and threshold the full detailed crest into the status bar");
+assert.match(mark, /coiled snake|coiled-snake/i, "Mark must describe the branded coil");
+assert.match(mark, /stroke-width="11\.5"/, "Status-bar mark needs thick lines for legibility at 24dp");
+assert.match(mark, /eye-cutout/, "Coiled snake must keep a recognizable face detail");
 assert.doesNotMatch(generator, /const BASE64\s*=/, "Never restore the embedded lightning-bolt artwork");
-assert.match(foreground, /art=official-logo-2/, "Foreground badges must invalidate the old lightning icon cache");
-assert.match(sw, /art=official-logo-2/, "Background notifications must invalidate the old lightning icon cache");
+assert.match(foreground, /mark=coiled-snake-3/, "Foreground badges must invalidate older cached artwork");
+assert.match(sw, /mark=coiled-snake-3/, "Background badges must invalidate older cached artwork");
+assert.match(notificationSettings, /mark=coiled-snake-3/, "Logo preview must use latest artwork");
+assert.match(control, /mark=coiled-snake-3/, "Settings preview must show latest artwork");
+assert.match(vite, /mark=coiled-snake-3/, "PWA-generated manifest must publish versioned icon URL");
+assert.ok(manifest.icons.some(icon => icon.purpose === "monochrome" && icon.src.includes("mark=coiled-snake-3")), "Static manifest must publish versioned icon URL");
 
 execFileSync(process.execPath, ["scripts/generate-notification-badge.mjs"], {stdio:"inherit"});
 const png = readFileSync("public/tiny-titans-notification-badge.png");
