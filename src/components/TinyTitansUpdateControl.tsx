@@ -65,9 +65,9 @@ export default function TinyTitansUpdateControl() {
       <div className="tt-version-control__icon-preview">
         <div className="tt-version-control__icon-pair" aria-hidden="true">
           <img src="/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=3" width={42} height={42} alt="" />
-          <span><img src="/tiny-titans-notification-badge.png?mark=coiled-snake-3" width={34} height={34} alt="" /></span>
+          <span><img src="/tiny-titans-notification-badge.png?mark=gecko-head-4" width={34} height={34} alt="" /></span>
         </div>
-        <div><strong>TinyTitans notification branding</strong><p>Full-colour logo in expanded alerts, and a bold coiled-snake symbol in the Android status bar. New notifications may need the browser's updated service worker before their icon changes.</p></div>
+        <div><strong>TinyTitans notification branding</strong><p>Full-colour logo in expanded alerts, and a bold gecko-head silhouette in the Android status bar. New notifications may need the browser's updated service worker before their icon changes.</p></div>
       </div>
       <p className="tt-version-control__safety">An ordinary update preserves TinyTitans notifications. Force refresh clears cached app files, not cloud records, and leaves the Firebase push worker registered. Unsaved form edits may be lost during a reload.</p>
     </section>
