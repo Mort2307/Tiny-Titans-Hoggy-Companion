@@ -72,6 +72,9 @@ jobs:
       - name: App-wide keeper journeys contract
         run: node scripts/validate-app-wide-keeper-pass.mjs
 
+      - name: Avian and universal mutation journeys
+        run: node scripts/validate-avian-picker-morph-pass.mjs
+
       - name: Public source credential guard
         run: node scripts/validate-public-source-guard.mjs
 
