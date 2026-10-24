@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { checkFirebaseConfiguration, classifyChanges, functionTargets, PROJECT, SITES } from "./tiny-titans-firebase-release.mjs";
+import { buildNotificationDeployEnv } from "./prepare-notification-deploy-params.mjs";
 
 const firebase = JSON.parse(readFileSync(new URL("../firebase.json", import.meta.url), "utf8"));
 const rc = JSON.parse(readFileSync(new URL("../.firebaserc", import.meta.url), "utf8"));
@@ -64,4 +65,39 @@ test("Cloud Shell release is private-repository scoped and requires confirmation
   assert.match(source, /firebase deploy --only "\$deploy_scope" --project "\$PROJECT"/);
   assert.match(source, /node scripts\/tiny-titans-firebase-release\.mjs verify-hosting/);
   assert.doesNotMatch(source, /firebase deploy[^\n]*nightjar-audio/);
+});
+
+
+test("Notification-only deploy gets existing public Firebase parameter defaults without passwords", () => {
+  const files = Object.fromEntries([
+    "functions/communityNotifications.js",
+    "functions/notificationTest.js",
+    "functions/mailDelivery.js",
+  ].map((file) => [file, readFileSync(new URL("../" + file, import.meta.url), "utf8")]));
+
+  const names = [
+    "notifyOnCommunityPost",
+    "notifyCreatorOnMorphImageSubmission",
+    "notifyCreatorOnVariationCardSubmission",
+    "sendNotificationTest",
+    "sendOwnNotificationTest",
+    "sendNotificationTestBatch",
+  ].join(",");
+  const variables = buildNotificationDeployEnv(names, files);
+  assert.deepEqual(variables, {
+    TINY_TITANS_SMTP_CONNECTION_URI: "smtps://tinytitans.exotics@gmail.com@smtp.gmail.com:465",
+    TINY_TITANS_APP_ORIGIN: "https://tinytitans-hoggy-companion.web.app",
+  });
+  assert.equal(buildNotificationDeployEnv("sendQueuedMail", files), null);
+  assert.equal(buildNotificationDeployEnv("notifyOnCommunityPost,sendQueuedMail", files), null);
+  assert.equal(buildNotificationDeployEnv("notifyOnCommunityPost,STRIPE_SECRET_KEY", files), null);
+  assert.throws(() => buildNotificationDeployEnv("", files), /select 1–20/);
+  assert.equal(Object.keys(variables).some((key) => /password|secret|token/i.test(key)), false);
+});
+
+test("Notification-scoped parameters are staged before selected Functions deployment", () => {
+  const yaml = readFileSync(new URL("../.github/workflows/firebase-backend-deploy.yml", import.meta.url), "utf8");
+  assert.match(yaml, /Prepare notification-only non-secret Firebase parameters/);
+  assert.match(yaml, /node scripts\/prepare-notification-deploy-params\.mjs/);
+  assert.ok(yaml.indexOf("Prepare notification-only non-secret Firebase parameters") < yaml.indexOf("Deploy explicitly selected Firebase resources"));
 });
