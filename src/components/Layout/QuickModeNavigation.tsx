@@ -234,6 +234,9 @@ function QuickModeNavigation({
             )}
 
             <div className="tt-easy-more-foot">
+              <button type="button" onClick={() => { onClose(); window.dispatchEvent(new Event("tiny-titans-manual-update-check")); }} aria-label="Check for TinyTitans app updates">
+                <TinyTitansIcon name="rotate" size={17} /> Check for updates
+              </button>
               <button type="button" onClick={() => onOpenItem("/account/personalise")}>
                 <TinyTitansIcon name="edit" size={17} /> Customise Quick View
               </button>

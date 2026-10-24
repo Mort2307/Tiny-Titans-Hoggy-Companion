@@ -263,6 +263,10 @@ function Header() {
       )}
 
       <div className="app-header-actions">
+        <button type="button" className="tt-header-check-updates" aria-label="Check TinyTitans for updates now" title="Check TinyTitans for updates now" onClick={() => window.dispatchEvent(new Event("tiny-titans-manual-update-check"))}>
+          <TinyTitansIcon name="rotate" size={18} aria-hidden="true" />
+          <span>Updates</span>
+        </button>
         <LiveWorldClockBadge />
         <WorkspaceSwitcher />
 

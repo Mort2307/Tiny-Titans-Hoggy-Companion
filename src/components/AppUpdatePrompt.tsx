@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import TinyTitansIcon from "./TinyTitansIcon";
+import { applyTinyTitansSafeUpdate, checkTinyTitansRelease } from "../services/tinyTitansReleaseUpdate";
 import "../styles/AppUpdatePrompt.css";
 
 const UPDATE_EVENT = "tiny-titans-update-available";
 const OFFLINE_EVENT = "tiny-titans-offline-ready";
+export const MANUAL_UPDATE_CHECK_EVENT = "tiny-titans-manual-update-check";
+const RELEASE_POLL_MS = 20 * 1000;
 const UPDATE_TIMEOUT_MS = 15000;
 const UPDATE_CHECK_INTERVAL_MS = 60000;
 
@@ -36,6 +39,8 @@ export default function AppUpdatePrompt() {
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState(false);
   const [offlineReady, setOfflineReady] = useState(false);
+  const [checkMessage, setCheckMessage] = useState("");
+  const releaseDetectedRef = useRef(false);
   const panelRef = useRef<HTMLElement | null>(null);
   const primaryRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -66,6 +71,69 @@ export default function AppUpdatePrompt() {
       window.removeEventListener(UPDATE_EVENT, show);
       window.removeEventListener(OFFLINE_EVENT, showOffline);
       if (offlineTimer !== undefined) window.clearTimeout(offlineTimer);
+    };
+  }, []);
+
+  // An app update must be discovered on the first load, not five minutes later.
+  // Compare the running commit against the no-cache Hosting release stamp,
+  // regardless of whether the Workbox registration has finished installing.
+  useEffect(() => {
+    let cancelled = false;
+    let checking = false;
+    let promptedCommit = "";
+    let feedbackTimer: number | undefined;
+    const check = async (manual = false) => {
+      if (checking || cancelled || !navigator.onLine) {
+        if (manual && !navigator.onLine) setCheckMessage("You're offline. Connect to check for updates.");
+        return;
+      }
+      checking = true;
+      if (manual) setCheckMessage("Checking for TinyTitans updates…");
+      try {
+        const status = await checkTinyTitansRelease();
+        if (cancelled) return;
+        if (!status.checked) {
+          if (manual) setCheckMessage("Couldn't confirm the current release. Try again with a connection.");
+        } else if (status.updateAvailable && status.latestCommit) {
+          releaseDetectedRef.current = true;
+          if (manual || promptedCommit !== status.latestCommit) {
+            promptedCommit = status.latestCommit;
+            notifyTinyTitansUpdateAvailable();
+          }
+          setCheckMessage("");
+        } else if (manual) {
+          setCheckMessage(status.currentCommit
+            ? "You're on the latest TinyTitans release."
+            : "Release found, but this installed build cannot be compared. Use Settings → Updates → Force refresh.");
+        }
+        if (manual && !status.updateAvailable) {
+          window.clearTimeout(feedbackTimer);
+          feedbackTimer = window.setTimeout(() => { if (!cancelled) setCheckMessage(""); }, 6500);
+        }
+      } catch {
+        if (manual && !cancelled) setCheckMessage("Update check failed. Please retry.");
+      } finally { checking = false; }
+    };
+    const onManual = () => { void check(true); };
+    const onForeground = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    window.addEventListener(MANUAL_UPDATE_CHECK_EVENT, onManual);
+    window.addEventListener("focus", onForeground);
+    window.addEventListener("online", onForeground);
+    document.addEventListener("visibilitychange", onForeground);
+    void check();
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") void check();
+    }, RELEASE_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.clearTimeout(feedbackTimer);
+      window.removeEventListener(MANUAL_UPDATE_CHECK_EVENT, onManual);
+      window.removeEventListener("focus", onForeground);
+      window.removeEventListener("online", onForeground);
+      document.removeEventListener("visibilitychange", onForeground);
     };
   }, []);
 
@@ -210,7 +278,7 @@ export default function AppUpdatePrompt() {
     window.__tinyTitansUpdatePending = false;
 
     try {
-      if (!applyPendingTinyTitansUpdate) {
+      if (!releaseDetectedRef.current && !applyPendingTinyTitansUpdate) {
         throw new Error("Tiny Titans update handler is not ready.");
       }
 
@@ -228,7 +296,8 @@ export default function AppUpdatePrompt() {
       }, UPDATE_TIMEOUT_MS);
 
       try {
-        await applyPendingTinyTitansUpdate();
+        if (releaseDetectedRef.current) await applyTinyTitansSafeUpdate();
+        else await applyPendingTinyTitansUpdate?.();
         await new Promise<void>((resolve) => window.setTimeout(resolve, 500));
         if (!reloaded) window.location.reload();
       } finally {
@@ -249,6 +318,7 @@ export default function AppUpdatePrompt() {
 
     return (
       <>
+        {checkMessage && <div className="tt-update-check-feedback" role="status" aria-live="polite">{checkMessage}</div>}
         {offlineReady && !pending && (
           <div className="tt-offline-ready" role="status">
             <TinyTitansIcon name="check" size={16} />

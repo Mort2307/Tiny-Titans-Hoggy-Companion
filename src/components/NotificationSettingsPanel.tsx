@@ -1,9 +1,34 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { registerActiveMessagingWorker } from "../services/messagingWorkerRegistration";
 import { useNotificationSettings } from "../hooks/useNotificationSettings";
 import type { NotificationSettings } from "../types/Notifications";
 import TinyTitansIcon from "./TinyTitansIcon";
 
 export default function NotificationSettingsPanel() {
+  const [previewMessage, setPreviewMessage] = useState("");
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const previewIcon = async () => {
+    if (previewBusy) return;
+    setPreviewBusy(true);
+    setPreviewMessage("");
+    try {
+      if (typeof Notification === "undefined" || Notification.permission !== "granted") {
+        throw new Error("Please enable notifications on this device first.");
+      }
+      const worker = await registerActiveMessagingWorker();
+      await worker.showNotification("TinyTitans notification logo test", {
+        body: "Expanded notification: full TinyTitans logo. Android status bar: monochrome TinyTitans symbol.",
+        icon: new URL("/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=3", location.origin).href,
+        badge: new URL("/tiny-titans-notification-badge.png?icon-preview=2", location.origin).href,
+        tag: "tiny-titans-icon-preview",
+        data: { url: "/account/settings" },
+      });
+      setPreviewMessage("Display check requested. Check the notification shade and the small Android status icon. This is a local preview, not an FCM delivery test.");
+    } catch (error) {
+      setPreviewMessage(error instanceof Error ? error.message : "Could not preview notification artwork.");
+    } finally { setPreviewBusy(false); }
+  };
   const {
     settings, permission, deviceStatus, busy, message, locked, ready, needsRepair,
     enable, repair, disable, save, sendTest,
@@ -28,6 +53,7 @@ export default function NotificationSettingsPanel() {
       <div className="tt-notification-device-tools">
         <div><strong><TinyTitansIcon name="messages" size={16} /> Delivery check</strong><p>{deviceStatus?.installRequired ? "On iPhone or iPad, add Tiny Titans to your Home Screen first." : deviceStatus?.registered ? `${deviceStatus.tokenCount} registered device${deviceStatus.tokenCount === 1 ? "" : "s"} · service worker ${deviceStatus.serviceWorkerReady ? "ready" : "not ready"}.` : "Register this device, then send a live test notification before relying on scheduled reminders."}</p></div>
         <button className="tt-settings-control-button secondary" type="button" disabled={!ready || busy} onClick={() => void sendTest()}>{busy ? "Working…" : "Send test to my devices"}</button>
+        <button className="tt-settings-control-button secondary" type="button" disabled={previewBusy || permission !== "granted"} onClick={() => void previewIcon()}>{previewBusy ? "Previewing…" : "Preview notification logo"}</button>
       </div>
 
       <div className="tt-notification-setting-group">
@@ -42,6 +68,7 @@ export default function NotificationSettingsPanel() {
         {settings.healthRemindersEnabled && <div className="tt-notification-inline-fields"><label>Missed medication follow-up<select value={settings.medicationMissedFollowUpMinutes} onChange={(event) => update({ medicationMissedFollowUpMinutes: Number(event.target.value) })} disabled={locked}><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option><option value="240">4 hours</option><option value="720">12 hours</option></select></label><label>Health follow-up lead<select value={settings.healthFollowUpLeadDays} onChange={(event) => update({ healthFollowUpLeadDays: Number(event.target.value) })} disabled={locked}><option value="0">Same day</option><option value="1">1 day before</option><option value="2">2 days before</option><option value="3">3 days before</option><option value="7">7 days before</option><option value="14">14 days before</option></select></label></div>}
       </div>
 
+      {previewMessage && <div className="tt-notification-settings-message" role="status">{previewMessage}</div>}
       {message && <div className="tt-notification-settings-message" role="status">{message}</div>}
     </div>
   );

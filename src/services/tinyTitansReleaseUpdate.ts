@@ -71,7 +71,12 @@ async function clearAppCaches(): Promise<void> {
 
 /** An ordinary update keeps the existing FCM worker and device token. */
 export async function applyTinyTitansSafeUpdate(): Promise<void> {
-  try { await refreshAppWorker(); } finally { reloadFresh(); }
+  try {
+    await refreshAppWorker();
+    // A new Hosting revision must never be hidden by an old Workbox app-shell cache.
+    // Only TinyTitans app caches are cleared; FCM registration and user records remain intact.
+    await clearAppCaches();
+  } finally { reloadFresh(); }
 }
 
 /** Recovery action: clears only application caches and its PWA worker, NOT FCM. */

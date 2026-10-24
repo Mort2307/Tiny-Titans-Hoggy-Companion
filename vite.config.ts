@@ -17,6 +17,7 @@ export default defineConfig({
         "favicon.svg",
         tinyTitansIcon192.replace(/^\//, ""),
         tinyTitansIcon512.replace(/^\//, ""),
+        "tiny-titans-notification-badge.png",
       ],
       manifest: {
         id: "/",
@@ -56,6 +57,12 @@ export default defineConfig({
             sizes: "any",
             type: "image/jpeg",
             purpose: "any maskable",
+          },
+          {
+            src: "/tiny-titans-notification-badge.png",
+            sizes: "96x96",
+            type: "image/png",
+            purpose: "monochrome",
           },
         ],
         shortcuts: [
