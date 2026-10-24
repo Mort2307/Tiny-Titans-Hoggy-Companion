@@ -2312,3 +2312,117 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* =========================================================
+   PROFILE CARDS — MOBILE TEXT AND BADGE VISIBILITY
+   Keep individual-animal identity full-width. The old two-column
+   photo+info layout could collapse the metadata column and the
+   nowrap/scrolling badge rail could hide the start of text.
+   Covers legacy snake and universal-animal profile surfaces.
+   ========================================================= */
+@media (max-width: 800px) {
+  .app-content :is(.snake-profile-page, .universal-animals-page) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .snake-profile-page .snake-profile-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .snake-profile-page .snake-profile-photo {
+    grid-column: 1 / -1;
+    width: min(92px, 100%);
+    max-width: 92px;
+    height: auto;
+    aspect-ratio: 1;
+    margin: 0;
+    justify-self: start;
+    align-self: start;
+    overflow: hidden;
+  }
+
+  .snake-profile-page .snake-profile-identity {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .snake-profile-page .snake-profile-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    margin-top: 12px;
+    padding: 0;
+    scroll-snap-type: none;
+  }
+
+  .snake-profile-page .snake-profile-badge {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 36px;
+    padding: 8px 11px;
+    border-radius: 12px;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    font-size: 0.79rem;
+    line-height: 1.35;
+    text-align: left;
+  }
+
+  .snake-profile-page .snake-profile-badge strong {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-right: 0;
+    white-space: normal;
+  }
+
+  .app-content :is(
+    .snake-profile-hero,
+    .snake-profile-overview-grid,
+    .snake-profile-card,
+    .tt-profile-priority-card,
+    .tt-profile-snapshot-grid,
+    .tt-profile-milestone-grid,
+    .universal-animals-hero,
+    .universal-animals-panel,
+    .universal-individual-grid,
+    .universal-animal-row
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .app-content :is(.snake-profile-card, .universal-animals-panel)
+    :is(h2, h3, p, span, strong, small) {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* Keep final action buttons reachable above the floating navigation. */
+  .snake-profile-page .snake-profile-quickbar,
+  .universal-animals-page .universal-animal-actions {
+    scroll-margin-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+}
