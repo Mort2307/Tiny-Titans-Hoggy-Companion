@@ -9,7 +9,7 @@ const settings = read("src/pages/Settings.tsx");
 const vite = read("vite.config.ts");
 const sw = read("public/firebase-messaging-sw.js");
 const backend = read("functions/notificationBranding.js");
-assert.match(backend, /tiny-titans-notification-badge\\.png/, "Backend FCM sends the same asset path updated by Hosting");
+assert.ok(backend.includes("/tiny-titans-notification-badge.png"), "Backend FCM sends the same asset path updated by Hosting");
 const foreground = read("src/components/NotificationBridge.tsx");
 const pkg = JSON.parse(read("package.json"));
 
