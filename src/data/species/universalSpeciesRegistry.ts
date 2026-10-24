@@ -7,6 +7,7 @@ import { UNIVERSAL_AMPHIBIAN_SEEDS } from './universalSpeciesSeedAmphibians';
 import { UNIVERSAL_ARACHNID_SEEDS } from './universalSpeciesSeedArachnids';
 import { UNIVERSAL_INVERTEBRATE_SEEDS } from './universalSpeciesSeedInvertebrates';
 import { UNIVERSAL_EXOTIC_SEEDS } from './universalSpeciesSeedExotics';
+import { UNIVERSAL_BIRD_EXPANSION_SEEDS } from './universalSpeciesSeedBirds';
 import { rankSearchResults } from '../../utils/searchRanking';
 import { attachUniversalSpeciesCare } from './universalSpeciesCare';
 
@@ -177,6 +178,7 @@ const SEEDS: UniversalSpeciesSeed[] = [
   ...UNIVERSAL_ARACHNID_SEEDS,
   ...UNIVERSAL_INVERTEBRATE_SEEDS,
   ...UNIVERSAL_EXOTIC_SEEDS,
+  ...UNIVERSAL_BIRD_EXPANSION_SEEDS,
 ];
 
 const existingSnakeRecords = INITIAL_SNAKE_SPECIES.map(adaptSnakeRecord);
