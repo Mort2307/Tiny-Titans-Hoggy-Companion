@@ -45,17 +45,22 @@ export default function Reminders() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!user || loading || profileLoading) return;
     let active = true;
     setLoadingData(true);
     setError("");
-    void listReminders(user.uid).then((loaded) => { if (active) setReminders(loaded); }).catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load reminders."); }).finally(() => { if (active) setLoadingData(false); });
+    void listReminders(user.uid).then((loaded) => { if (active) setReminders(loaded); }).catch((loadError) => { if (active) { setReminders([]); setError(loadError instanceof Error ? loadError.message : "Unable to load reminders."); } }).finally(() => { if (active) setLoadingData(false); });
     return () => { active = false; };
-  }, [user, loading, profileLoading]);
+  }, [user, loading, profileLoading, retryCount]);
 
-  const activeReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "active"), [reminders]);
+  const activeReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "active").sort((a, b) => {
+    const aAt = Date.parse(a.nextNotificationAt || "") || Date.parse(a.nextOccurrenceDate + "T00:00:00Z");
+    const bAt = Date.parse(b.nextNotificationAt || "") || Date.parse(b.nextOccurrenceDate + "T00:00:00Z");
+    return (Number.isFinite(aAt) ? aAt : Infinity) - (Number.isFinite(bAt) ? bAt : Infinity);
+  }), [reminders]);
   const pausedReminders = useMemo(() => reminders.filter((reminder) => reminder.status === "paused"), [reminders]);
   const countFor = (kind: string) => reminders.filter((reminder) => reminder.kind === kind && reminder.status !== "completed").length;
   const nextReminder = activeReminders[0];
@@ -72,22 +77,22 @@ export default function Reminders() {
       <div className="tt-reminder-hero-stats">
         <span><strong>TODAY</strong><b>{fullDate(appToday)}</b></span>
         <span><strong>{world.localTime}</strong>{world.timezone} · {world.utcOffsetLabel}</span>
-        <span><strong>{activeReminders.length}</strong> active</span>
-        <span><strong>{pausedReminders.length}</strong> paused</span>
+        <span><strong>{loadingData || error ? "—" : activeReminders.length}</strong> active</span>
+        <span><strong>{loadingData || error ? "—" : pausedReminders.length}</strong> paused</span>
       </div>
     </section>
 
     <section className="tt-reminder-tiles" aria-label="Reminder types">
       {REMINDER_DEFINITIONS.map((item) => <Link key={item.kind} to={`/reminders/${item.kind}`} className="tt-reminder-tile">
         <span className="tt-reminder-tile-icon" aria-hidden="true"><TinyTitansIcon name={item.icon} size={26} /></span>
-        <span className="tt-reminder-tile-copy"><strong>{item.label}</strong><small>{item.description}</small><em>{countFor(item.kind)} configured · Open <TinyTitansIcon name="forward" size={14} /></em></span>
+        <span className="tt-reminder-tile-copy"><strong>{item.label}</strong><small>{item.description}</small><em>{loadingData || error ? "Not available" : countFor(item.kind) + " configured"} · Open <TinyTitansIcon name="forward" size={14} /></em></span>
       </Link>)}
     </section>
 
     <section className="tt-reminder-overview-grid">
       <article className="tt-reminder-overview-card tt-reminder-next-card">
         <span className="tt-reminder-eyebrow">NEXT REMINDER · {world.timezone}</span>
-        {nextReminder && nextDefinition && timing ? <>
+        {!loadingData && !error && nextReminder && nextDefinition && timing ? <>
           <h2><TinyTitansIcon name={nextDefinition.icon} size={22} /> {nextReminder.title}</h2>
           <p className="tt-reminder-next-snake">{nextReminder.snakeName || "All snakes"}</p>
           <div className={`tt-reminder-date-status tt-reminder-date-status--${timing.tone}`}>
@@ -100,6 +105,6 @@ export default function Reminders() {
     </section>
 
     {loadingData && <p className="tt-reminder-message" role="status">Loading your reminder stack…</p>}
-    {error && <p className="tt-reminder-message" role="alert">{error}</p>}
+    {error && <div className="tt-reminder-message" role="alert"><p>Could not load your reminders: {error}</p><button type="button" onClick={() => setRetryCount((count) => count + 1)}>Try again</button></div>}
   </main>;
 }
