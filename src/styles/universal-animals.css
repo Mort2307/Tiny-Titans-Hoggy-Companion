@@ -331,3 +331,14 @@
     border-radius: 13px;
   }
 }
+
+
+/* Keeper profile editing: consistent mobile-first controls and forgiving focus states. */
+.universal-animal-section-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.universal-animal-notes{grid-column:1/-1}
+.universal-animal-links{align-items:center;margin-top:.8rem}
+.universal-secondary-action{min-height:44px;padding:.75rem 1rem;border:1px solid var(--border);border-radius:10px;color:var(--text);background:transparent;font:inherit;cursor:pointer}
+.universal-secondary-action:disabled{opacity:.5;cursor:not-allowed}
+.universal-animal-links a:focus-visible,.universal-secondary-action:focus-visible,.universal-primary-action:focus-visible,.universal-animal-delete:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.universal-animal-form input:focus-visible,.universal-animal-form select:focus-visible,.universal-animal-form textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.universal-animal-row,.universal-primary-action,.universal-animal-delete{transition:none!important}.universal-animal-row:hover,.universal-primary-action:hover:not(:disabled),.universal-animal-delete:hover:not(:disabled){transform:none}}
