@@ -49,7 +49,7 @@ export default function TinyTitansUpdateControl() {
     <section className="tt-version-control" aria-labelledby="tt-version-control-title">
       <div className="tt-version-control__header">
         <div><p className="tt-settings-eyebrow">APP &amp; DEVICE</p><h3 id="tt-version-control-title">Keep TinyTitans current</h3></div>
-        <TinyTitansIcon name="refresh" size={24} />
+        <TinyTitansIcon name="rotate" size={24} />
       </div>
       <p>Check the release installed on your device against the latest deployment. If an older app is stuck in cache, you can refresh it without deleting your animals or account.</p>
       <div className="tt-version-control__versions">
@@ -58,9 +58,9 @@ export default function TinyTitansUpdateControl() {
       </div>
       {message && <p className="tt-version-control__message" role="status" aria-live="polite">{message}</p>}
       <div className="tt-version-control__actions">
-        <button type="button" disabled={checking || applying} onClick={() => void check()}><TinyTitansIcon name="refresh" size={16} /> {checking ? "Checking…" : "Check for update"}</button>
-        {status?.updateAvailable && <button type="button" className="tt-version-control__primary" disabled={checking || applying} onClick={() => void apply()}><TinyTitansIcon name="download" size={16} /> {applying ? "Updating…" : "Update now"}</button>}
-        <button type="button" disabled={checking || applying} onClick={() => void refresh()}><TinyTitansIcon name="refresh" size={16} /> {applying ? "Refreshing…" : "Force refresh"}</button>
+        <button type="button" disabled={checking || applying} onClick={() => void check()}><TinyTitansIcon name="rotate" size={16} /> {checking ? "Checking…" : "Check for update"}</button>
+        {status?.updateAvailable && <button type="button" className="tt-version-control__primary" disabled={checking || applying} onClick={() => void apply()}><TinyTitansIcon name="upload" size={16} /> {applying ? "Updating…" : "Update now"}</button>}
+        <button type="button" disabled={checking || applying} onClick={() => void refresh()}><TinyTitansIcon name="rotate" size={16} /> {applying ? "Refreshing…" : "Force refresh"}</button>
       </div>
       <p className="tt-version-control__safety">An ordinary update preserves TinyTitans notifications. Force refresh clears cached app files, not cloud records, and leaves the Firebase push worker registered. Unsaved form edits may be lost during a reload.</p>
     </section>
