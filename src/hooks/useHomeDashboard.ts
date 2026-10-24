@@ -132,7 +132,7 @@ export function useHomeDashboard() {
     return dueSoon ? { ...dueSoon, urgency: "due-soon" } : null;
   }, [reminders, world.observedAt]);
   const coverage = useMemo(() => intelligence.length ? Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length) : 0, [intelligence]);
-  const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + (snake.weightRecords ?? 0) + (snake.feedingRecords ?? 0) + (snake.shedRecords ?? 0) + snake.healthRecords, 0), [snakes]);
+  const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + (snake.weightRecords ?? 0) + (snake.feedingRecords ?? 0) + (snake.shedRecords ?? 0) + (snake.healthRecords ?? 0), 0), [snakes]);
   const snapshot = useMemo(() => ({ weights: snakes.reduce((sum, snake) => sum + (snake.weightRecords ?? 0), 0), feedings: snakes.reduce((sum, snake) => sum + (snake.feedingRecords ?? 0), 0), sheds: snakes.reduce((sum, snake) => sum + (snake.shedRecords ?? 0), 0), health: snakes.reduce((sum, snake) => sum + (snake.healthRecords ?? 0), 0) }), [snakes]);
   const quietIntelligenceSnippet = useMemo(() => buildQuietIntelligenceSnippet(selectedSnake, totalRecords, world.localDateKey), [selectedSnake, totalRecords, world.localDateKey]);
   const selectedIndex = Math.max(0, snakes.findIndex((snake) => snake.id === selectedSnakeId));
