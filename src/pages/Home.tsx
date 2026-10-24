@@ -21,7 +21,7 @@ function Home() {
   const {
     user, world, displayName, learningLabel, experience, snakes, attentionDecision, urgentReminder, selectedIntelligence,
     selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, quietIntelligenceSnippet,
-    loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake,
+    loadingIntelligence, loadError, retryLoad, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake,
   } = useHomeDashboard();
   const [recommendedOpen, setRecommendedOpen] = useState(false);
   const [communityPulseOpen, setCommunityPulseOpen] = useState(false);
@@ -54,7 +54,7 @@ function Home() {
           <span className="tt-home-avatar" aria-hidden="true">{displayName.slice(0, 1).toUpperCase()}</span>
           <span>
             <strong>{displayName}</strong>
-            <small>{experience} keeper · {snakes.length} {snakes.length === 1 ? "animal" : "animals"}</small>
+            <small>{experience} keeper · {loadError ? "records unavailable" : snakes.length + (snakes.length === 1 ? " animal" : " animals")}</small>
           </span>
           <span aria-hidden="true"><TinyTitansIcon name="forward" size={14} /></span>
         </Link>
@@ -71,6 +71,8 @@ function Home() {
           <small>{intelligenceAccess ? "Intelligence enabled" : "Keeper records only"}</small>
         </div>
       </section>
+
+      {loadError && <section className="tt-home-panel" role="alert"><h2>Keeper records unavailable</h2><p>{loadError}</p><button className="universal-primary-action" type="button" onClick={retryLoad}>Try loading again</button></section>}
 
       {showFollowerRewardCta && (
         <Link
@@ -104,7 +106,7 @@ function Home() {
 
       {loadingIntelligence ? (
         <section className="tt-home-panel tt-home-loading"><TinyTitansIcon name="titan" size={22} /> Checking your TinyTitans workspace…</section>
-      ) : snakes.length === 0 ? (
+      ) : loadError ? null : snakes.length === 0 ? (
         <section className="tt-home-panel tt-home-empty">
           <div>
             <p className="tt-home-kicker"><TinyTitansIcon name="animals" size={17} /> YOUR FIRST ANIMAL</p>
