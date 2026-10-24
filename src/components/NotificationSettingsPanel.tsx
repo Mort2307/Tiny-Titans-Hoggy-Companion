@@ -18,7 +18,7 @@ export default function NotificationSettingsPanel() {
       }
       const worker = await registerActiveMessagingWorker();
       await worker.showNotification("TinyTitans notification logo test", {
-        body: "Expanded notification: full TinyTitans logo. Android status bar: monochrome TinyTitans symbol.",
+        body: "Full-colour TinyTitans crest in expanded alerts; bold white coiled-snake mark in the Android status bar.",
         icon: new URL("/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=3", location.origin).href,
         badge: new URL("/tiny-titans-notification-badge.png?mark=coiled-snake-3", location.origin).href,
         tag: "tiny-titans-icon-preview",
