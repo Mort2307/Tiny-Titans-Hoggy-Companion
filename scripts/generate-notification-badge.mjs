@@ -1,8 +1,8 @@
 /**
  * TinyTitans notification branding:
  * - Full-colour installed PWA and expanded notification: original keeper artwork.
- * - Android 24px status icon: a simplified, bold coiled-snake emblem traced
- *   from the signature coil in that same crest. Fine detail was illegible at 24px.
+ * - Android 24px status icon: a bold gecko head, eye and splayed foot inspired
+ *   by the gecko in that crest. The previous spiral resembled a snail at 24px.
  * Produces real transparent PNGs; NEVER substitute stock artwork or the old bolt.
  */
 import { spawnSync } from "node:child_process";
@@ -15,22 +15,24 @@ const source = join(root, "public/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg");
 const destination = join(root, "public/tiny-titans-notification-badge.png");
 if (!existsSync(source)) throw new Error("The official TinyTitans logo is missing: " + source);
 
-// The original SVG remains the source of the brand mark. ImageMagick 6 on
-// Firebase Hosting runners does not reliably rasterize SVG masks and produced
-// an invalid badge, even when ImageMagick 7 rendered it correctly. Draw the
-// exact same paths natively (without SVG delegates or fonts), so both versions
-// produce an opaque white coil on transparent pixels at 96x96.
+// The gecko-head SVG is the reference mark. ImageMagick 6 cannot reliably
+// rasterise SVG masks on Firebase Hosting runners, so render exactly the same
+// paths as native ImageMagick primitives; no font or SVG delegate required.
+// The transparent 96px image downscales to a clear 24px reptile silhouette.
 const mark = join(root, "public/icons/tiny-titans-notification-mark.svg");
-if (!existsSync(mark)) throw new Error("TinyTitans' coiled-snake mark is missing.");
+if (!existsSync(mark)) throw new Error("TinyTitans' gecko-head mark is missing.");
 const operations = [
   "-size", "96x96", "xc:none",
-  "-stroke", "white", "-strokewidth", "11.5", "-fill", "none",
-  "-draw", 'stroke-linecap round stroke-linejoin round path "M68 31C83 40 81 61 68 72C57 82 39 83 27 72C14 61 17 42 31 32C45 22 61 31 61 46C60 59 44 65 37 56C32 49 38 43 45 45"',
   "-stroke", "none", "-fill", "white",
-  "-draw", 'path "M63 14C70 11 81 14 85 20C91 28 83 35 74 35C65 35 58 32 58 25C58 19 59 17 63 14Z"',
-  "-fill", "black", "-draw", "circle 76,22 79,22",
-  "-transparent", "black",
-  "-alpha", "on", "-depth", "8", "-define", "png:color-type=6",
+  "-draw", 'path "M11 77 C18 67 22 58 19 49 C13 36 19 29 30 24 C38 20 47 19 53 23 C58 17 66 16 73 23 C76 27 78 30 85 33 C91 36 94 41 89 47 C84 53 74 54 64 51 C58 49 54 47 50 47 C44 53 41 64 38 77 L25 80 C28 69 29 61 25 55 C26 68 23 75 19 81 Z"',
+  "-draw", 'path "M22 66 C15 64 12 66 7 70 C4 72 4 75 7 76 C10 77 15 73 17 72 L13 79 C11 83 15 86 18 82 L24 75 L25 82 C25 86 30 86 31 82 L31 70 Z"',
+  "-fill", "black", "-draw", "circle 60,32 67.5,32",
+  "-fill", "white", "-draw", "circle 62,29 64.2,29",
+  "-fill", "black", "-draw", "circle 82,39 83.8,39",
+  "-stroke", "black", "-strokewidth", "3", "-fill", "none",
+  "-draw", 'path "M68 45 Q77 49 86 44"',
+  "-transparent", "black", "-alpha", "on",
+  "-depth", "8", "-define", "png:color-type=6",
   destination,
 ];
 const binaries = [
@@ -49,7 +51,7 @@ for (const bin of binaries) {
 }
 if (!complete) {
   throw new Error(
-    "Cannot create TinyTitans' legible coiled-snake badge without ImageMagick. " +
+    "Cannot create TinyTitans' legible gecko-head badge without ImageMagick. " +
     "Install 'magick' or 'convert'; do not publish the old lightning-bolt badge.\n" +
     errors.join("\n"),
   );
@@ -64,7 +66,7 @@ if (
 ) {
   throw new Error("TinyTitans logo badge is not a non-empty, transparent 96×96 RGBA PNG.");
 }
-console.log("Generated sharp, high-contrast TinyTitans coiled-snake Android notification badge.");
+console.log("Generated sharp, high-contrast TinyTitans gecko-head Android notification badge.");
 
 
 // Android may source the small status-bar icon from the INSTALLED PWA's
