@@ -2,7 +2,7 @@ const { getMessaging } = require("firebase-admin/messaging");
 
 const PUBLIC_ORIGIN = "https://tinytitans-hoggy-companion.web.app";
 const NOTIFICATION_ICON = `${PUBLIC_ORIGIN}/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=3`;
-const NOTIFICATION_BADGE = `${PUBLIC_ORIGIN}/tiny-titans-notification-badge.png`;
+const NOTIFICATION_BADGE = `${PUBLIC_ORIGIN}/tiny-titans-notification-badge.png?mark=western-hognose-1`;
 
 let installed = false;
 
