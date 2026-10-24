@@ -43,6 +43,8 @@ export default function MyAnimals() {
   const [sex, setSex] = useState<UniversalAnimalRecord["sex"]>("unknown");
   const [status, setStatus] = useState<UniversalAnimalRecord["status"]>("active");
   const [morphOrColour, setMorphOrColour] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [hatchOrBirthDate, setHatchOrBirthDate] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -118,12 +120,16 @@ export default function MyAnimals() {
         sex,
         status,
         morphOrColour: morphOrColour.trim() || undefined,
+        identifier: identifier.trim() || undefined,
+        hatchOrBirthDate: hatchOrBirthDate || undefined,
         notes: notes.trim() || undefined,
         tags: [],
       });
       setAnimals((current) => [...current, universalAnimalToDirectory(created)].sort((a, b) => a.name.localeCompare(b.name)));
       setName("");
       setMorphOrColour("");
+      setIdentifier("");
+      setHatchOrBirthDate("");
       setNotes("");
       setSelectedSpecies(null);
       setMessage("Animal added to My Animals.");
@@ -163,7 +169,12 @@ export default function MyAnimals() {
           <UniversalSpeciesPicker value={selectedSpecies?.id || ""} onChange={setSelectedSpecies} placeholder={KEEPER_COMPANION_TERMINOLOGY.speciesSearchPlaceholder} />
           <label>Sex<select value={sex} onChange={(event) => setSex(event.target.value as UniversalAnimalRecord["sex"])}><option value="unknown">Unknown</option><option value="male">Male</option><option value="female">Female</option><option value="not-applicable">Not applicable</option></select></label>
           <label>Status<select value={status} onChange={(event) => setStatus(event.target.value as UniversalAnimalRecord["status"])}>{["active","quarantine","rehoming","sold","deceased","archived"].map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          <label>Morph / colour<input value={morphOrColour} onChange={(event) => setMorphOrColour(event.target.value)} /></label>
+          <label>Morph / colour<input value={morphOrColour} onChange={(event) => setMorphOrColour(event.target.value)} placeholder="Optional keeper-reported colour or mutation" /></label>
+          {selectedSpecies && <p className="universal-animal-form__library-link"><Link to={"/morph-library?species=" + encodeURIComponent(selectedSpecies.id)}>Browse {selectedSpecies.commonNames[0]} wild type &amp; mutation library <TinyTitansIcon name="forward" size={14} /></Link><small>Typing a colour here is a keeper note; it does not prove genotype.</small></p>}
+          {selectedSpecies?.className === "bird" && <>
+            <label>Ring / individual identifier<input maxLength={120} value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="Optional closed ring or other ID" /></label>
+            <label>Hatch date (if known)<input type="date" value={hatchOrBirthDate} onChange={(event) => setHatchOrBirthDate(event.target.value)} /></label>
+          </>}
           <label>Notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
         </div>
         <button className="universal-primary-action" type="button" disabled={!name.trim() || busy} onClick={() => void addAnimal()}><TinyTitansIcon name={busy ? "save" : "add"} size={18} />{busy ? "Saving…" : "Add animal"}</button>
