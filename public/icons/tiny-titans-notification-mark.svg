@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title">
-  <title id="title">TinyTitans coiled snake notification mark</title>
-  <!-- Simplified silhouette of the coiled snake that anchors the keeper's original
-       TinyTitans gecko / snake / spider crest. The full-colour crest is unchanged. -->
-  <path d="M68 31C83 40 81 61 68 72C57 82 39 83 27 72C14 61 17 42 31 32C45 22 61 31 61 46C60 59 44 65 37 56C32 49 38 43 45 45"
-        fill="none" stroke="#fff" stroke-width="11.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <mask id="eye-cutout">
-    <rect width="96" height="96" fill="#fff"/>
-    <circle cx="76" cy="22" r="3.2" fill="#000"/>
-  </mask>
-  <path mask="url(#eye-cutout)" d="M63 14C70 11 81 14 85 20C91 28 83 35 74 35C65 35 58 32 58 25C58 19 59 17 63 14Z" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title description">
+  <title id="title">TinyTitans gecko notification mark</title>
+  <desc id="description">A bold, friendly gecko head, large visible eye, mouth and splayed foot, simplified from the gecko in the owner's TinyTitans crest for the Android 24-pixel status bar.</desc>
+  <!-- No circle, coil, shell or surrounding letters: this must still read as a
+       reptile at the few pixels Android allocates to a notification badge. -->
+  <path fill="#fff" d="M11 77 C18 67 22 58 19 49 C13 36 19 29 30 24 C38 20 47 19 53 23 C58 17 66 16 73 23 C76 27 78 30 85 33 C91 36 94 41 89 47 C84 53 74 54 64 51 C58 49 54 47 50 47 C44 53 41 64 38 77 L25 80 C28 69 29 61 25 55 C26 68 23 75 19 81 Z"/>
+  <path fill="#fff" d="M22 66 C15 64 12 66 7 70 C4 72 4 75 7 76 C10 77 15 73 17 72 L13 79 C11 83 15 86 18 82 L24 75 L25 82 C25 86 30 86 31 82 L31 70 Z"/>
+  <circle cx="60" cy="32" r="7.5" fill="#000"/>
+  <circle cx="62" cy="29" r="2.2" fill="#fff"/>
+  <circle cx="82" cy="39" r="1.8" fill="#000"/>
+  <path d="M68 45 Q77 49 86 44" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round"/>
 </svg>
