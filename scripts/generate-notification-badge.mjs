@@ -10,7 +10,7 @@
  * Never substitute the old bolt, a stock graphic or an invented "T".
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -67,3 +67,56 @@ if (
   throw new Error("TinyTitans logo badge is not a non-empty, transparent 96×96 RGBA PNG.");
 }
 console.log("Generated real TinyTitans logo monochrome Android badge from the repository's official artwork.");
+
+
+// Android may source the small status-bar icon from the INSTALLED PWA's
+// favicon/manifest identity rather than webpush.notification.badge.
+// Those legacy PWA assets were still lightning bolts. Replace every one,
+// including the fallbacks that older installs and backend senders request.
+function convertOfficialLogo(target, dimension, contentDimension) {
+  const args = [
+    source,
+    "-auto-orient",
+    "-resize", String(contentDimension) + "x" + String(contentDimension) + "!",
+    "-background", "#140022",
+    "-gravity", "center",
+    "-extent", String(dimension) + "x" + String(dimension),
+    "-strip",
+    "-depth", "8",
+    "-define", "png:color-type=2",
+    target,
+  ];
+  const failures = [];
+  for (const binary of ["magick", "convert"]) {
+    const out = spawnSync(binary, args, { cwd: root, encoding: "utf8" });
+    if (!out.error && out.status === 0) return;
+    failures.push(binary + ": " + (out.error?.message || out.stderr || "failed"));
+  }
+  throw new Error("Couldn't build the official TinyTitans PWA icons.\n" + failures.join("\n"));
+}
+const identityAssets = [
+  [join(root, "public/icons/tiny-titans-official-192.png"), 192, 168],
+  [join(root, "public/icons/tiny-titans-official-512.png"), 512, 448],
+];
+for (const [file, dimension, contentDimension] of identityAssets) {
+  convertOfficialLogo(file, dimension, contentDimension);
+  const bytes = readFileSync(file);
+  if (bytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a" ||
+      bytes.readUInt32BE(16) !== dimension ||
+      bytes.readUInt32BE(20) !== dimension ||
+      statSync(file).size < 2000) {
+    throw new Error("Invalid official TinyTitans PWA PNG: " + file);
+  }
+}
+// Preserve the old URLs used by older installed PWAs and push backends.
+// Embed the keeper's ORIGINAL image so SVGs work without external fetches.
+const jpeg = readFileSync(source).toString("base64");
+const svgLogo = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="64" fill="#140022"/><image x="32" y="32" width="448" height="448" href="data:image/jpeg;base64,' + jpeg + '"/></svg>\n';
+for (const oldPath of [
+  "public/favicon.svg",
+  "public/icons/tiny-titans-192.svg",
+  "public/icons/tiny-titans-512.svg",
+]) {
+  writeFileSync(join(root, oldPath), svgLogo);
+}
+console.log("Generated official TinyTitans PWA icons and replaced all built legacy bolt graphics.");

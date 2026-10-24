@@ -2,9 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const tinyTitansIcon192 = "/icons/tiny-titans-192.svg";
-const tinyTitansIcon512 = "/icons/tiny-titans-512.svg";
-const tinyTitansRasterIcon = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg";
+const tinyTitansIcon192 = "/icons/tiny-titans-official-192.png";
+const tinyTitansIcon512 = "/icons/tiny-titans-official-512.png";
 
 export default defineConfig({
   // The deployed bundle knows its commit so users can compare it with Hosting /version.json.
@@ -37,26 +36,20 @@ export default defineConfig({
           {
             src: tinyTitansIcon192,
             sizes: "192x192",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "any",
           },
           {
             src: tinyTitansIcon512,
             sizes: "512x512",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "any",
           },
           {
             src: tinyTitansIcon512,
             sizes: "512x512",
-            type: "image/svg+xml",
+            type: "image/png",
             purpose: "maskable",
-          },
-          {
-            src: tinyTitansRasterIcon,
-            sizes: "any",
-            type: "image/jpeg",
-            purpose: "any maskable",
           },
           {
             src: "/tiny-titans-notification-badge.png",
@@ -71,21 +64,21 @@ export default defineConfig({
             short_name: "Animals",
             description: "Open your Tiny Titans animal collection.",
             url: "/animals",
-            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/svg+xml" }],
+            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/png" }],
           },
           {
             name: "Due",
             short_name: "Due",
             description: "Open Tiny Titans reminders and due care.",
             url: "/reminders",
-            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/svg+xml" }],
+            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/png" }],
           },
           {
             name: "Genetics",
             short_name: "Genetics",
             description: "Open the Tiny Titans genetics calculator.",
             url: "/calculator",
-            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/svg+xml" }],
+            icons: [{ src: tinyTitansIcon192, sizes: "192x192", type: "image/png" }],
           },
         ],
       },
