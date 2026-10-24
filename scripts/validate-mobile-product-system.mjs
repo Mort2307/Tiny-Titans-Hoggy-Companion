@@ -115,6 +115,21 @@ for (const [pattern, label] of experienceContracts) {
   if (!pattern.test(experience)) errors.push(`Missing Mobile Experience V2 contract: ${label}.`);
 }
 
+
+// Regression guard for narrow-screen animal-profile readability.
+// Profile summaries may contain long ages, names, mutations and date labels.
+const profileFix = experience.slice(experience.lastIndexOf("PROFILE CARDS — MOBILE TEXT AND BADGE VISIBILITY"));
+const profileRules = [
+  [/\.snake-profile-page \.snake-profile-hero\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/, "full-width mobile snake profile"],
+  [/\.snake-profile-page \.snake-profile-identity\s*\{[^}]*grid-column:\s*1 \/ -1/, "full-width profile identity"],
+  [/\.snake-profile-page \.snake-profile-badges\s*\{[^}]*flex-wrap:\s*wrap;[^}]*overflow:\s*visible;/, "non-clipping, wrapping profile detail badges"],
+  [/\.snake-profile-page \.snake-profile-badge\s*\{[^}]*white-space:\s*normal;[^}]*overflow:\s*visible;/, "fully readable metadata text"],
+  [/\.universal-animals-hero,[\s\S]*?\.universal-animal-row/, "universal animal profile/card text safety"],
+];
+for (const [pattern, label] of profileRules) {
+  if (!pattern.test(profileFix)) errors.push("Missing profile-card mobile regression fix: " + label + ".");
+}
+
 if (!header.includes("mobileContextLabel") || !header.includes("app-mobile-context")) {
   errors.push("Header must expose route-aware mobile context.");
 }
