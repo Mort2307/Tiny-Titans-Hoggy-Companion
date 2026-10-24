@@ -123,4 +123,21 @@ for (const file of [
   assert.doesNotMatch(svg, /P25\.946 44\.938|M25\.946 44\.938|fill="#863bff"/, file + " cannot contain the bolt");
 }
 
+
+const headerMobile = read("src/styles/mobile-experience-v2.css").split("Mobile App Builder mobile-first header contract")[1] || "";
+const sourceBadge = read("scripts/generate-notification-badge.mjs");
+const tokenService = read("src/services/notificationService.ts");
+const switcher = read("src/components/WorkspaceSwitcher.tsx");
+assert.match(headerMobile, /@media\s*\(max-width:\s*800px\)/, "Mobile header must work in portrait, not only landscape");
+assert.match(headerMobile, /height:\s*56px\s*!important/, "Mobile header must be one compact row");
+assert.match(headerMobile, /flex-wrap:\s*nowrap\s*!important/, "Mobile identity and actions cannot wrap into an oversized second row");
+assert.match(headerMobile, /\.app-header > \.app-header-identity/, "Header identity must be left-aligned on phones");
+assert.match(headerMobile, /app-brand-secondary/, "Duplicate mobile branding tagline must be hidden");
+assert.match(headerMobile, /tt-header-check-updates/, "Phone must retain tap-to-check updates");
+assert.match(switcher, /aria-label=\{\`Switch workspace, current:/, "Compact workspace control needs an accessible name");
+assert.match(sourceBadge, /"-crop", String\(dimension\)/, "Launcher icon must crop full bleed instead of shrinking within a second frame");
+assert.doesNotMatch(sourceBadge, /"-extent", String\(dimension\)/, "Do not draw a redundant padded icon shell around the logo");
+assert.match(tokenService, /superseded notification tokens/, "Old same-installation FCM tokens must be pruned to avoid duplicate status icons");
+assert.match(tokenService, /item\.data\(\)\.installationId === installationId/, "Never delete push tokens from a different installation");
+
 console.log("Nightjar-style update and authentic TinyTitans notification badge contracts passed.");
