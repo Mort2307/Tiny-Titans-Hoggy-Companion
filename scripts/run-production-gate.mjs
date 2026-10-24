@@ -5,6 +5,7 @@ const commands = [
   ["Account deletion contract", ["run", "validate:account-deletion"]],
   ["App-wide keeper journeys", ["run", "validate:app-wide-keeper"]],
   ["Avian and universal mutation journeys", ["run", "validate:avian-picker-morph"]],
+  ["Nightjar-style update and notification identity", ["run", "validate:update-push-branding"]],
   ["Public source credential guard", ["run", "validate:public-source"]],
   ["TypeScript typecheck", ["run", "typecheck"]],
   ["Lint", ["run", "lint"]],
