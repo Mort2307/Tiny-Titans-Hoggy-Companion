@@ -153,22 +153,25 @@ if (!experience.includes(".tt-route-loading__grid") || !experience.includes("@ke
 const manifest = JSON.parse(staticManifest);
 const manifestIcons = Array.isArray(manifest.icons) ? manifest.icons : [];
 const manifestShortcuts = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
-if (!manifestIcons.some((icon) => icon.src === "/icons/tiny-titans-192.svg")) {
-  errors.push("Static PWA manifest must retain the canonical Tiny Titans 192 SVG icon.");
+if (!manifestIcons.some((icon) => icon.src === "/icons/tiny-titans-official-192.png" && icon.type === "image/png")) {
+  errors.push("Static PWA manifest must include the canonical official Tiny Titans 192 PNG icon.");
 }
-if (!manifestIcons.some((icon) => icon.type === "image/jpeg")) {
-  errors.push("Static PWA manifest must retain a raster install-icon fallback.");
+if (!manifestIcons.some((icon) => icon.src === "/icons/tiny-titans-official-512.png" && icon.type === "image/png" && icon.purpose === "maskable")) {
+  errors.push("Static PWA manifest must retain an official raster maskable install icon.");
+}
+if (manifestIcons.some((icon) => /tiny-titans-(192|512)\.svg/.test(icon.src))) {
+  errors.push("Static PWA manifest may not use legacy lightning-bolt SVG icons.");
 }
 for (const shortcutUrl of ["/animals", "/reminders", "/calculator"]) {
   if (!manifestShortcuts.some((shortcut) => shortcut.url === shortcutUrl)) {
     errors.push(`Static PWA manifest must retain launcher shortcut ${shortcutUrl}.`);
   }
 }
-if (!viteConfig.includes('tinyTitansIcon192') || !viteConfig.includes('shortcuts: [') || !viteConfig.includes('tinyTitansRasterIcon')) {
-  errors.push("Generated Vite PWA manifest must retain canonical icons, shortcuts and raster fallback.");
+if (!viteConfig.includes('tiny-titans-official-192.png') || !viteConfig.includes('tiny-titans-official-512.png') || !viteConfig.includes('shortcuts: [') || !viteConfig.includes('purpose: "maskable"')) {
+  errors.push("Generated Vite PWA manifest must include official raster launcher, shortcut and maskable icons.");
 }
-if (!index.includes('rel="icon" type="image/svg+xml" href="/favicon.svg?v=4"')) {
-  errors.push("index.html must use the canonical SVG favicon.");
+if (!index.includes('rel="icon" type="image/png"') || !index.includes('/icons/tiny-titans-official-192.png')) {
+  errors.push("index.html must show the official Tiny Titans logo as its tab and browser favicon.");
 }
 
 if (!updatePrompt.includes("previousFocusRef") || !updatePrompt.includes('event.key !== "Tab"') || !updatePrompt.includes('document.body.style.overflow = "hidden"')) {
