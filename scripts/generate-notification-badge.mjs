@@ -77,10 +77,12 @@ function convertOfficialLogo(target, dimension, contentDimension) {
   const args = [
     source,
     "-auto-orient",
-    "-resize", String(contentDimension) + "x" + String(contentDimension) + "!",
-    "-background", "#140022",
+    // The original JPEG already contains the complete branded icon. Don't
+    // shrink it into another coloured square (which looks like two logos).
+    "-resize", String(dimension) + "x" + String(dimension) + "^",
     "-gravity", "center",
-    "-extent", String(dimension) + "x" + String(dimension),
+    "-crop", String(dimension) + "x" + String(dimension) + "+0+0",
+    "+repage",
     "-strip",
     "-depth", "8",
     "-define", "png:color-type=2",
@@ -95,8 +97,8 @@ function convertOfficialLogo(target, dimension, contentDimension) {
   throw new Error("Couldn't build the official TinyTitans PWA icons.\n" + failures.join("\n"));
 }
 const identityAssets = [
-  [join(root, "public/icons/tiny-titans-official-192.png"), 192, 168],
-  [join(root, "public/icons/tiny-titans-official-512.png"), 512, 448],
+  [join(root, "public/icons/tiny-titans-official-192.png"), 192, 192],
+  [join(root, "public/icons/tiny-titans-official-512.png"), 512, 512],
 ];
 for (const [file, dimension, contentDimension] of identityAssets) {
   convertOfficialLogo(file, dimension, contentDimension);
@@ -111,7 +113,7 @@ for (const [file, dimension, contentDimension] of identityAssets) {
 // Preserve the old URLs used by older installed PWAs and push backends.
 // Embed the keeper's ORIGINAL image so SVGs work without external fetches.
 const jpeg = readFileSync(source).toString("base64");
-const svgLogo = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="64" fill="#140022"/><image x="32" y="32" width="448" height="448" href="data:image/jpeg;base64,' + jpeg + '"/></svg>\n';
+const svgLogo = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><image x="0" y="0" width="512" height="512" preserveAspectRatio="xMidYMid slice" href="data:image/jpeg;base64,' + jpeg + '"/></svg>\n';
 for (const oldPath of [
   "public/favicon.svg",
   "public/icons/tiny-titans-192.svg",
