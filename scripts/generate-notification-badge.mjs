@@ -1,13 +1,9 @@
 /**
- * Generate TinyTitans' Android notification badge from the keeper's REAL logo.
- *
- * Previously this script embedded a lightning bolt which isn't part of the logo.
- * The expanded notification can display the full-colour original JPEG, whereas
- * Android's small status-bar icon requires white artwork + transparent pixels.
- *
- * We derive a monochrome copy directly from the original logo stored in the
- * repository, retaining its circular reptile/spider/wordmark composition.
- * Never substitute the old bolt, a stock graphic or an invented "T".
+ * TinyTitans notification branding:
+ * - Full-colour installed PWA and expanded notification: original keeper artwork.
+ * - Android 24px status icon: a simplified, bold coiled-snake emblem traced
+ *   from the signature coil in that same crest. Fine detail was illegible at 24px.
+ * Produces real transparent PNGs; NEVER substitute stock artwork or the old bolt.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -19,17 +15,16 @@ const source = join(root, "public/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg");
 const destination = join(root, "public/tiny-titans-notification-badge.png");
 if (!existsSync(source)) throw new Error("The official TinyTitans logo is missing: " + source);
 
-// The grayscale cutoff removes the dark purple photo background while retaining
-// the light lettering, patterned reptile outlines, circular rim and spider details.
-// convert/magick produces a real RGBA PNG: black becomes ALPHA=0, white=opaque.
-// We deliberately use the actual logo pixels rather than guessing their design.
+// Android renders the small icon at roughly 24dp. A thresholded miniature
+// of the entire crest became indistinguishable noise. Use the keeper's bold
+// coiled-snake mark, with the actual original crest kept for expanded alerts.
+const mark = join(root, "public/icons/tiny-titans-notification-mark.svg");
+if (!existsSync(mark)) throw new Error("TinyTitans' coiled-snake mark is missing.");
 const operations = [
-  source,
-  "-resize", "96x96!",
-  "-colorspace", "gray",
-  "-threshold", "42%",
-  "-transparent", "black",
   "-background", "none",
+  "-density", "384",
+  mark,
+  "-resize", "96x96!",
   "-alpha", "on",
   "-depth", "8",
   "-define", "png:color-type=6",
@@ -51,7 +46,7 @@ for (const bin of binaries) {
 }
 if (!complete) {
   throw new Error(
-    "Cannot create TinyTitans' real-logo badge without ImageMagick. " +
+    "Cannot create TinyTitans' legible coiled-snake badge without ImageMagick. " +
     "Install 'magick' or 'convert'; do not publish the old lightning-bolt badge.\n" +
     errors.join("\n"),
   );
@@ -66,7 +61,7 @@ if (
 ) {
   throw new Error("TinyTitans logo badge is not a non-empty, transparent 96×96 RGBA PNG.");
 }
-console.log("Generated real TinyTitans logo monochrome Android badge from the repository's official artwork.");
+console.log("Generated sharp, high-contrast TinyTitans coiled-snake Android notification badge.");
 
 
 // Android may source the small status-bar icon from the INSTALLED PWA's

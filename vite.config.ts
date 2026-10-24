@@ -52,7 +52,7 @@ export default defineConfig({
             purpose: "maskable",
           },
           {
-            src: "/tiny-titans-notification-badge.png",
+            src: "/tiny-titans-notification-badge.png?mark=coiled-snake-3",
             sizes: "96x96",
             type: "image/png",
             purpose: "monochrome",
