@@ -7,6 +7,8 @@
     "dev": "vite",
     "migrate:icons": "node scripts/migrate-custom-iconography.mjs",
     "typecheck": "tsc -b --pretty false",
+    "validate:app-wide-keeper": "node scripts/validate-app-wide-keeper-pass.mjs",
+    "validate:public-source": "node scripts/validate-public-source-guard.mjs",
     "validate:morphs": "node scripts/validate-morph-database.mjs",
     "validate:morph-taxonomy": "node scripts/validate-hognose-morph-taxonomy.mjs",
     "validate:morph-sources": "node scripts/validate-morph-source-audit.mjs",

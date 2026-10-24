@@ -20,7 +20,7 @@ export default function CreatorAdmin() {
 
   return <section className="creator-admin-page">
     <div className="creator-admin-header"><div><PageBackButton fallbackPath="/" label="Back to App" /><span className="creator-admin-kicker">PRIVATE CREATOR CENTRE</span><h1><TinyTitansIcon name="creator" size={24} /> Tiny Titans Creator Centre</h1><p>One organised command centre for community intelligence, moderation, QA and app operations.</p></div><button type="button" onClick={() => { void loadDashboard(); void loadUsers(); }} disabled={loading || usersLoading}>{loading || usersLoading ? "Loading…" : <><TinyTitansIcon name="rotate" size={15} /> Refresh</>}</button></div>
-    {error && <div className="creator-error">{error}</div>}
+    {error && <div className="creator-error" role="alert">{error}</div>}
     {claimMessage && <div className="creator-success" role="status">{claimMessage}</div>}
     {loading ? <div className="creator-loading">Loading global Tiny Titans intelligence…</div> : <>
       <CreatorCommunityIntelligence />
