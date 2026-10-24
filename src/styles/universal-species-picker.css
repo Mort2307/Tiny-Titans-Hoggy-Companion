@@ -74,3 +74,20 @@
   background: rgba(0, 174, 255, 0.045);
   color: rgba(245, 182, 66, 0.78);
 }
+
+/* Species catalogue combobox — keyboard-accessible text search AND browsable dropdown. */
+.universal-species-picker__search > label { font-size: .78rem; font-weight: 780; color: var(--tt-text-strong, #f8e5b0); }
+.universal-species-picker__combobox { display: flex; align-items: stretch; gap: 0; min-width: 0; border: 1px solid var(--tt-border-strong, rgba(0,183,240,.45)); border-radius: 12px; background: rgba(15,6,24,.75); }
+.universal-species-picker__combobox input { flex: 1 1 auto; min-width: 0; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+.universal-species-picker__combobox:focus-within { outline: 2px solid var(--tt-accent, #f5b642); outline-offset: 2px; }
+.universal-species-picker__toggle { flex: 0 0 52px; width: 52px; min-height: 48px; border: 0; border-left: 1px solid rgba(255,255,255,.11); border-radius: 0 11px 11px 0; background: rgba(255,255,255,.05); color: inherit; font-size: 1.4rem; cursor: pointer; }
+.universal-species-picker__dropdown { display: grid; gap: .55rem; min-width: 0; padding: .65rem; border: 1px solid var(--tt-border, rgba(255,255,255,.16)); border-radius: 15px; background: rgba(19,7,33,.98); }
+.universal-species-picker__class { display: grid; gap: .4rem; font-size: .84rem; font-weight: 750; }
+.universal-species-picker__class select { width: 100%; min-height: 45px; background: rgba(14,6,25,.94); color: inherit; border: 1px solid var(--tt-border-strong, rgba(0,183,240,.42)); border-radius: 10px; padding: .6rem; }
+.universal-species-picker__count { margin: 0; font-size: .76rem; opacity: .75; }
+.universal-species-picker__results { background: rgba(12,6,24,.88); overscroll-behavior: contain; }
+.universal-species-picker__results [role="option"][aria-selected="true"] { outline: 2px solid var(--tt-accent, #f5b642); background: rgba(245,182,66,.11); }
+.universal-species-picker__results button { color: var(--tt-text-strong, #fff); }
+.universal-species-picker__more, .universal-species-picker__close { width: 100%; min-height: 44px; padding: .6rem .8rem; border: 1px solid var(--tt-border, rgba(255,255,255,.2)); border-radius: 10px; background: rgba(255,255,255,.06); color: inherit; text-align: center; font: inherit; font-weight: 750; cursor: pointer; }
+.universal-species-picker__close { background: transparent; }
+@media(max-width:560px) { .universal-species-picker__dropdown { padding: .4rem; } .universal-species-picker__results { max-height: min(38dvh, 330px); } }
