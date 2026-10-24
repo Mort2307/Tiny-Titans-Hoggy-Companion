@@ -73,7 +73,6 @@ assert(UNIVERSAL_SPECIES_BY_ID['psittacula-krameri'], 'Indian Ringneck / Rose-ri
 assert(UNIVERSAL_SPECIES_BY_ID['chloebia-gouldiae'], 'Gouldian Finch is missing.');
 assert(UNIVERSAL_SPECIES_BY_ID['synoicus-chinensis'], 'King Quail is missing.');
 assert(UNIVERSAL_SPECIES_BY_ID['geopelia-cuneata'], 'Diamond Dove is missing.');
-assert(UNIVERSAL_SPECIES_BY_ID['trichoglossus-moluccanus'] === undefined, 'Unrecognised Rainbow Lorikeet identity leaked into the registry.');
 assert(UNIVERSAL_SPECIES_BY_ID['trichoglossus-moluccanus'], 'Rainbow Lorikeet is missing.');
 assert(UNIVERSAL_SPECIES_BY_ID['ara-macao'], 'Scarlet Macaw is missing.');
 assert(birds.every((bird) => bird.browseGroup === 'birds' && bird.taxonomicClass === 'Aves'), 'Bird browse group/class drift detected.');
