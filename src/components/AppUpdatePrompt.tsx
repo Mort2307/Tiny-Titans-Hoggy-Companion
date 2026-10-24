@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../context/useAuth";
 import TinyTitansIcon from "./TinyTitansIcon";
 import { applyTinyTitansSafeUpdate, checkTinyTitansRelease } from "../services/tinyTitansReleaseUpdate";
 import "../styles/AppUpdatePrompt.css";
@@ -34,6 +35,7 @@ declare global {
 }
 
 export default function AppUpdatePrompt() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(() => Boolean(window.__tinyTitansUpdatePending));
   const [updating, setUpdating] = useState(false);
@@ -74,68 +76,82 @@ export default function AppUpdatePrompt() {
     };
   }, []);
 
-  // An app update must be discovered on the first load, not five minutes later.
-  // Compare the running commit against the no-cache Hosting release stamp,
-  // regardless of whether the Workbox registration has finished installing.
+  // Announce the first check, a signed-in session change, and explicit requests.
+  // Silent foreground/poll checks continue without distracting keepers recording care.
   useEffect(() => {
     let cancelled = false;
-    let checking = false;
-    let promptedCommit = "";
-    let feedbackTimer: number | undefined;
-    const check = async (manual = false) => {
-      if (checking || cancelled || !navigator.onLine) {
-        if (manual && !navigator.onLine) setCheckMessage("You're offline. Connect to check for updates.");
+    let inFlight: Promise<void> | null = null;
+    let feedbackWanted = false;
+    let timer: number | undefined;
+    let latestPromptedCommit = "";
+    const present = (message: string, timeoutMs = 0) => {
+      if (cancelled) return;
+      if (timer !== undefined) window.clearTimeout(timer);
+      setCheckMessage(message);
+      timer = timeoutMs > 0
+        ? window.setTimeout(() => { if (!cancelled) setCheckMessage(""); }, timeoutMs)
+        : undefined;
+    };
+    const check = (announce = false) => {
+      if (announce) {
+        feedbackWanted = true;
+        present("Checking for TinyTitans updates…");
+      }
+      if (inFlight || cancelled) return;
+      if (!navigator.onLine) {
+        if (feedbackWanted) present("You're offline. Connect to check for updates.", 6000);
+        feedbackWanted = false;
         return;
       }
-      checking = true;
-      if (manual) setCheckMessage("Checking for TinyTitans updates…");
-      try {
-        const status = await checkTinyTitansRelease();
-        if (cancelled) return;
-        if (!status.checked) {
-          if (manual) setCheckMessage("Couldn't confirm the current release. Try again with a connection.");
-        } else if (status.updateAvailable && status.latestCommit) {
-          releaseDetectedRef.current = true;
-          if (manual || promptedCommit !== status.latestCommit) {
-            promptedCommit = status.latestCommit;
-            notifyTinyTitansUpdateAvailable();
+      inFlight = (async () => {
+        try {
+          const result = await checkTinyTitansRelease();
+          if (cancelled) return;
+          if (result.checked && result.updateAvailable && result.latestCommit) {
+            releaseDetectedRef.current = true;
+            if (latestPromptedCommit !== result.latestCommit || feedbackWanted) {
+              latestPromptedCommit = result.latestCommit;
+              notifyTinyTitansUpdateAvailable();
+            }
+            present("");
+          } else if (feedbackWanted) {
+            present(!result.checked
+              ? "Can't reach TinyTitans' latest release. Try again shortly."
+              : !result.currentCommit
+                ? "Release found, but this installation has no build ID. Try Settings → Updates → Force refresh."
+                : "TinyTitans is up to date.", 5000);
           }
-          setCheckMessage("");
-        } else if (manual) {
-          setCheckMessage(status.currentCommit
-            ? "You're on the latest TinyTitans release."
-            : "Release found, but this installed build cannot be compared. Use Settings → Updates → Force refresh.");
+        } catch {
+          if (feedbackWanted && !cancelled) present("Unable to check for updates. Please retry.", 5500);
+        } finally {
+          feedbackWanted = false;
+          inFlight = null;
         }
-        if (manual && !status.updateAvailable) {
-          window.clearTimeout(feedbackTimer);
-          feedbackTimer = window.setTimeout(() => { if (!cancelled) setCheckMessage(""); }, 6500);
-        }
-      } catch {
-        if (manual && !cancelled) setCheckMessage("Update check failed. Please retry.");
-      } finally { checking = false; }
+      })();
     };
-    const onManual = () => { void check(true); };
+    const onManual = () => check(true);
     const onForeground = () => {
-      if (document.visibilityState === "visible") void check();
+      if (document.visibilityState === "visible") check();
     };
     window.addEventListener(MANUAL_UPDATE_CHECK_EVENT, onManual);
     window.addEventListener("focus", onForeground);
     window.addEventListener("online", onForeground);
     document.addEventListener("visibilitychange", onForeground);
-    void check();
+    // Immediate on app start and whenever the signed-in user changes.
+    check(true);
     const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "visible") void check();
+      if (document.visibilityState === "visible") check();
     }, RELEASE_POLL_MS);
     return () => {
       cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
       window.clearInterval(intervalId);
-      window.clearTimeout(feedbackTimer);
       window.removeEventListener(MANUAL_UPDATE_CHECK_EVENT, onManual);
       window.removeEventListener("focus", onForeground);
       window.removeEventListener("online", onForeground);
       document.removeEventListener("visibilitychange", onForeground);
     };
-  }, []);
+  }, [user?.uid]);
 
   useEffect(() => {
     updatingRef.current = updating;
@@ -314,7 +330,7 @@ export default function AppUpdatePrompt() {
   };
 
   if (!open) {
-    if (!pending && !offlineReady) return null;
+    if (!pending && !offlineReady && !checkMessage) return null;
 
     return (
       <>

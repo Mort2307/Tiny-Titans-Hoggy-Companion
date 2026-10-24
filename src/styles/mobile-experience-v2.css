@@ -2554,3 +2554,152 @@ html {
   }
   .app-header-actions .tt-header-check-updates span { display: none; }
 }
+
+
+/* ===============================================================
+   PHONE LANDSCAPE TOP BAR — physical devices report >800 CSS px
+   when rotated, so portrait-only mobile media queries are skipped.
+   Enforce one compact row: branding at left, controls at right.
+   =============================================================== */
+@media (orientation: landscape) and (max-height: 650px) and (max-width: 1180px) {
+  html[data-tt-tier] .app-header,
+  .app-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 15000 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    height: auto !important;
+    min-height: 55px !important;
+    max-height: 75px !important;
+    padding: 7px max(12px, env(safe-area-inset-right)) 7px max(12px, env(safe-area-inset-left)) !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    border-bottom: 1px solid rgba(245,182,66,.18);
+    background: rgba(16,7,25,.97);
+  }
+
+  .app-header > .app-header-identity {
+    position: static !important;
+    inset: auto !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    order: 1 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex: 1 1 auto !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 9px !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    text-align: left !important;
+  }
+  .app-header-identity > .logo-link {
+    order: 0 !important;
+    flex: 0 0 38px !important;
+  }
+  .app-header-identity .tiny-titans-logo {
+    display: block;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    object-fit: cover;
+    border-radius: 11px;
+  }
+  .app-header-identity .app-brand-lockup {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    overflow: hidden;
+    text-align: left !important;
+  }
+  .app-header-identity .app-brand-name {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    color: #f7f3fb;
+    font-size: .9rem !important;
+    line-height: 1.15 !important;
+    text-align: left !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+  }
+  .app-header .app-brand-secondary,
+  .app-header .app-brand-workspace,
+  .app-header .workspace-purpose-pill,
+  .app-header .tt-live-world-clock {
+    display: none !important;
+  }
+  .app-header .app-mobile-context {
+    display: block !important;
+    max-width: 38vw;
+    margin: 2px 0 0 !important;
+    font-size: .62rem !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .app-header > .app-header-actions {
+    order: 2 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex: 0 1 auto !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 62% !important;
+    max-height: 53px !important;
+    margin: 0 0 0 auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .app-header-actions .tt-header-check-updates {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 42px !important;
+    height: 39px !important;
+    min-height: 39px !important;
+    padding: 0 10px !important;
+    flex: 0 0 auto !important;
+  }
+  .app-header-actions .workspace-switcher__button,
+  .app-header-actions .header-qa-button,
+  .app-header-actions .tt-command-trigger {
+    min-height: 39px !important;
+    max-height: 42px !important;
+    box-sizing: border-box !important;
+  }
+  .app-header-actions .paid-tier-header-badge {
+    display: none !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 650px) and (max-width: 690px) {
+  .app-header > .app-header-actions { max-width: 58% !important; gap: 3px !important; }
+  .app-header-actions .tt-header-check-updates { width: 40px !important; padding: 0 !important; }
+  .app-header-actions .tt-header-check-updates span { display: none !important; }
+  .app-header-identity .app-brand-name { font-size: .8rem !important; }
+  .app-header-identity .app-mobile-context { max-width: 25vw; }
+  .app-header .header-qa-switcher { display: none !important; }
+}
