@@ -81,4 +81,46 @@ assert.equal(png.readUInt32BE(16), 96);
 assert.equal(png.readUInt32BE(20), 96);
 assert.equal(png[25], 6, "PNG must be transparent RGBA, not a solid square");
 assert.notEqual((await import("node:crypto")).createHash("sha256").update(png).digest("hex"), "e74e2f84b3f42942ecfb0d6d6b732c73625ebbaccfc00ef63e3c539289fd9b25", "The lightning-bolt PNG must never be shipped again");
+
+// Guard the THIRD source of Android's lightning symbol: installed PWA identity.
+// The push payload can carry an accurate badge while the OS displays favicon
+// or a stale primary manifest SVG from the installed app.
+const html = read("index.html");
+const viteConfig = read("vite.config.ts");
+const staticManifest = JSON.parse(read("public/manifest.webmanifest"));
+assert.match(html, /icons\/tiny-titans-official-192\.png/, "Browser favicon must use the actual TinyTitans logo");
+assert.doesNotMatch(html, /href="\/favicon\.svg/, "Browser favicon cannot reference the old bolt SVG");
+for (const [name, manifestIcons] of [
+  ["static PWA", staticManifest.icons],
+  ["My Animals shortcut", staticManifest.shortcuts[0].icons],
+  ["Due shortcut", staticManifest.shortcuts[1].icons],
+  ["Genetics shortcut", staticManifest.shortcuts[2].icons],
+]) {
+  assert.ok(manifestIcons.some((x) => x.src.includes("tiny-titans-official-192.png") ||
+                                       x.src.includes("tiny-titans-official-512.png")), name + " must use original TinyTitans branding");
+  assert.ok(manifestIcons.every((x) => !x.src.includes(".svg")), name + " cannot reuse the lightning-bolt SVG");
+}
+assert.match(viteConfig, /tiny-titans-official-192\.png/, "Vite manifest must agree with static manifest");
+assert.match(viteConfig, /tiny-titans-official-512\.png/, "Vite manifest must agree with static manifest");
+for (const [file, dimension] of [
+  ["public/icons/tiny-titans-official-192.png", 192],
+  ["public/icons/tiny-titans-official-512.png", 512],
+]) {
+  const bytes = readFileSync(file);
+  assert.equal(bytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", file + " PNG signature");
+  assert.equal(bytes.readUInt32BE(16), dimension, file + " correct width");
+  assert.equal(bytes.readUInt32BE(20), dimension, file + " correct height");
+  assert.ok(bytes.length > 2000, file + " should contain real source image detail");
+}
+// Former webpush senders still request these URLs; CI must publish logo art there.
+for (const file of [
+  "public/favicon.svg",
+  "public/icons/tiny-titans-192.svg",
+  "public/icons/tiny-titans-512.svg",
+]) {
+  const svg = read(file);
+  assert.match(svg, /data:image\/jpeg;base64,/, file + " must embed the actual keeper logo");
+  assert.doesNotMatch(svg, /P25\.946 44\.938|M25\.946 44\.938|fill="#863bff"/, file + " cannot contain the bolt");
+}
+
 console.log("Nightjar-style update and authentic TinyTitans notification badge contracts passed.");
