@@ -45,6 +45,8 @@ export default function MyAnimals() {
   const [morphOrColour, setMorphOrColour] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [deletingAnimalId, setDeletingAnimalId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<UnifiedAnimalDirectoryRecord | null>(null);
@@ -57,15 +59,23 @@ export default function MyAnimals() {
   useEffect(() => {
     if (!user) return;
     let active = true;
+    setLoading(true);
+    setLoadFailed(false);
     void getUnifiedAnimalDirectory(user.uid)
       .then((records) => {
         if (!active) return;
         setAnimals(records);
+        setMessage("");
       })
-      .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : "Unable to load your animal collection."); })
+      .catch((error) => {
+        if (!active) return;
+        setLoadFailed(true);
+        setMessage(getTinyTitansErrorMessage(error, "Unable to load your animal collection."));
+        setMessageKind("error");
+      })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [user]);
+  }, [user, retryCount]);
 
   async function deleteAnimal(animal: UnifiedAnimalDirectoryRecord) {
     if (!user || deletingAnimalId) return;
@@ -163,7 +173,7 @@ export default function MyAnimals() {
       <section className="universal-animals-panel universal-animals-collection-panel">
         <p className="eyebrow">INDIVIDUALS</p>
         <h2>Your animal collection</h2>
-        {loading ? <p role="status">Loading your animal collection…</p> : visibleAnimals.length === 0 ? <TinyTitansEmptyState icon="animals" title={speciesFilter ? "No animals match this species filter" : "No animal records yet"} description={speciesFilter ? "Your collection may contain other animals. Clear the species filter to see the full collection." : "Add your first animal to start building care, health and keeper records."} action={speciesFilter ? { label: "Show all animals", icon: "animals", to: "/animals" } : { label: "Add your first animal", icon: "add", href: "#add-animal" }} /> : <div className="universal-animal-list">{visibleAnimals.map((animal) => {
+        {loading ? <p role="status">Loading your animal collection…</p> : loadFailed ? <div><p role="alert">Your collection could not be loaded. No records have been changed.</p><button className="universal-primary-action" type="button" onClick={() => setRetryCount((count) => count + 1)}>Try again</button></div> : visibleAnimals.length === 0 ? <TinyTitansEmptyState icon="animals" title={speciesFilter ? "No animals match this species filter" : "No animal records yet"} description={speciesFilter ? "Your collection may contain other animals. Clear the species filter to see the full collection." : "Add your first animal to start building care, health and keeper records."} action={speciesFilter ? { label: "Show all animals", icon: "animals", to: "/animals" } : { label: "Add your first animal", icon: "add", href: "#add-animal" }} /> : <div className="universal-animal-list">{visibleAnimals.map((animal) => {
           const rowKey = animal.source + ":" + animal.id;
           const isDeleting = deletingAnimalId === animal.id;
           return (
