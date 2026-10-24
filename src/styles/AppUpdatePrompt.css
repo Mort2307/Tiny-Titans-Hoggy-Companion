@@ -297,3 +297,28 @@
     animation: none !important;
   }
 }
+
+
+.tt-update-check-feedback {
+  position: fixed;
+  z-index: 100000;
+  right: max(16px, env(safe-area-inset-right));
+  top: calc(70px + env(safe-area-inset-top));
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 182, 66, .4);
+  border-radius: 14px;
+  background: rgba(24, 10, 38, .98);
+  color: #f7f3fb;
+  box-shadow: 0 10px 26px rgba(0,0,0,.3);
+  font-size: .82rem;
+  font-weight: 700;
+}
+@media (max-width: 800px) {
+  .tt-update-check-feedback {
+    left: 12px;
+    right: 12px;
+    top: calc(62px + env(safe-area-inset-top));
+    max-width: none;
+  }
+}
