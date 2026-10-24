@@ -15,19 +15,22 @@ const source = join(root, "public/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg");
 const destination = join(root, "public/tiny-titans-notification-badge.png");
 if (!existsSync(source)) throw new Error("The official TinyTitans logo is missing: " + source);
 
-// Android renders the small icon at roughly 24dp. A thresholded miniature
-// of the entire crest became indistinguishable noise. Use the keeper's bold
-// coiled-snake mark, with the actual original crest kept for expanded alerts.
+// The original SVG remains the source of the brand mark. ImageMagick 6 on
+// Firebase Hosting runners does not reliably rasterize SVG masks and produced
+// an invalid badge, even when ImageMagick 7 rendered it correctly. Draw the
+// exact same paths natively (without SVG delegates or fonts), so both versions
+// produce an opaque white coil on transparent pixels at 96x96.
 const mark = join(root, "public/icons/tiny-titans-notification-mark.svg");
 if (!existsSync(mark)) throw new Error("TinyTitans' coiled-snake mark is missing.");
 const operations = [
-  "-background", "none",
-  "-density", "384",
-  mark,
-  "-resize", "96x96!",
-  "-alpha", "on",
-  "-depth", "8",
-  "-define", "png:color-type=6",
+  "-size", "96x96", "xc:none",
+  "-stroke", "white", "-strokewidth", "11.5", "-fill", "none",
+  "-draw", 'stroke-linecap round stroke-linejoin round path "M68 31C83 40 81 61 68 72C57 82 39 83 27 72C14 61 17 42 31 32C45 22 61 31 61 46C60 59 44 65 37 56C32 49 38 43 45 45"',
+  "-stroke", "none", "-fill", "white",
+  "-draw", 'path "M63 14C70 11 81 14 85 20C91 28 83 35 74 35C65 35 58 32 58 25C58 19 59 17 63 14Z"',
+  "-fill", "black", "-draw", "circle 76,22 79,22",
+  "-transparent", "black",
+  "-alpha", "on", "-depth", "8", "-define", "png:color-type=6",
   destination,
 ];
 const binaries = [
