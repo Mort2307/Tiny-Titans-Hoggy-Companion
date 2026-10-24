@@ -95,7 +95,21 @@ async function registerCurrentDeviceToken(uid: string): Promise<boolean> {
   const token = await getToken(messaging, { serviceWorkerRegistration, vapidKey: VAPID_KEY });
   if (!token) return false;
   const tokenId = await tokenDocumentId(token);
-  await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), { token, enabled: true, installationId: getInstallationId(), platform: navigator.platform || "unknown", userAgent: navigator.userAgent, registrationScope: serviceWorkerRegistration.scope, updatedAt: serverTimestamp() }, { merge: true });
+  const installationId = getInstallationId();
+  await setDoc(doc(db, "users", uid, "notificationTokens", tokenId), { token, enabled: true, installationId, platform: navigator.platform || "unknown", userAgent: navigator.userAgent, registrationScope: serviceWorkerRegistration.scope, updatedAt: serverTimestamp() }, { merge: true });
+  // Historic app-shell updates created multiple FCM tokens for one installation.
+  // Delivering to all of them can produce TWO Android status icons (the old
+  // lightning bolt and the new TinyTitans logo) for one logical notification.
+  // Remove superseded tokens for THIS installation only; other phones and
+  // browsers keep their own subscriptions.
+  try {
+    const registered = await getDocs(collection(db, "users", uid, "notificationTokens"));
+    const superseded = registered.docs.filter((item) => item.id !== tokenId &&
+      item.data().installationId === installationId);
+    await Promise.all(superseded.map((item) => deleteDoc(item.ref)));
+  } catch (error) {
+    console.warn("Tiny Titans: superseded notification tokens could not be pruned", error);
+  }
   return true;
 }
 export async function hasRegisteredNotificationDevice(uid: string): Promise<boolean> {
