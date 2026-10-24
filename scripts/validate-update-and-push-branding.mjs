@@ -71,6 +71,8 @@ const generator = read("scripts/generate-notification-badge.mjs");
 const mark = read("public/icons/tiny-titans-notification-mark.svg");
 assert.match(generator, /TinyTitans-Logo\.JPG\.jpg/, "Full-colour PWA icons must still use the keeper's original logo");
 assert.match(generator, /tiny-titans-notification-mark\.svg/, "Small badge must use the dedicated legible snake mark");
+assert.match(generator, /stroke-linecap round/, "Status icon must render with native round-ended strokes on ImageMagick 6");
+assert.match(generator, /"-size", "96x96", "xc:none"/, "Badge rasterization must not depend on SVG delegates");
 assert.doesNotMatch(generator, /"-threshold", "42%"/, "Do not shrink and threshold the full detailed crest into the status bar");
 assert.match(mark, /coiled snake|coiled-snake/i, "Mark must describe the branded coil");
 assert.match(mark, /stroke-width="11\.5"/, "Status-bar mark needs thick lines for legibility at 24dp");
