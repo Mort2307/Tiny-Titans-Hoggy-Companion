@@ -9,6 +9,7 @@ const settings = read("src/pages/Settings.tsx");
 const vite = read("vite.config.ts");
 const sw = read("public/firebase-messaging-sw.js");
 const backend = read("functions/notificationBranding.js");
+assert.match(backend, /tiny-titans-notification-badge\\.png/, "Backend FCM sends the same asset path updated by Hosting");
 const foreground = read("src/components/NotificationBridge.tsx");
 const pkg = JSON.parse(read("package.json"));
 
@@ -65,28 +66,35 @@ for (const [path, content] of [
   assert.match(content, /tiny-titans-notification-badge\.png/, path + " must use monochrome status-bar icon");
   assert.match(content, /TinyTitans-Logo\.JPG\.jpg/, path + " must retain owner's full-colour branding");
 }
-// The full-size crest is detailed, so the 24dp Android slot gets a simplified
-// gecko-head silhouette inspired by the reptile in the owner's actual crest.
-// The old spiral was legible as a snail, not as the intended TinyTitans branding.
+// The 24dp Android status icon must be a single HOGNOSE HEAD, not a coil,
+// broad gecko head/foot, or a complete full-colour launcher icon.
 const generator = read("scripts/generate-notification-badge.mjs");
 const mark = read("public/icons/tiny-titans-notification-mark.svg");
-assert.match(generator, /TinyTitans-Logo\.JPG\.jpg/, "Full-colour PWA icons must still use the keeper's original logo");
-assert.match(generator, /tiny-titans-notification-mark\.svg/, "Small badge must use the dedicated gecko mark");
-assert.match(generator, /"circle 60,32 67\.5,32"/, "Status icon must preserve the gecko\'s large eye cutout");
-assert.match(generator, /"-size", "96x96", "xc:none"/, "Badge rasterization must not depend on SVG delegates");
-assert.doesNotMatch(generator, /"-threshold", "42%"/, "Do not shrink and threshold the full detailed crest into the status bar");
-assert.match(mark, /gecko notification mark/i, "Mark must describe the reptile rather than a coil");
-assert.match(mark, /splayed foot/i, "Gecko silhouette must include a distinctive splayed reptile foot");
-assert.match(mark, /cx="60" cy="32" r="7\.5"/, "Gecko head must include a prominent eye visible at 24dp");
-assert.doesNotMatch(mark, /C83 40 81 61 68 72/, "Never restore the original snail-like spiral");
-assert.match(generator, /M11 77 C18 67 22 58/, "Raster generator must match the gecko-head reference silhouette");
+assert.match(generator, /TinyTitans-Logo\.JPG\.jpg/, "Keep the original full-colour installed app logo");
+assert.match(generator, /tiny-titans-notification-mark\.svg/, "Keep the separate status icon reference");
+assert.match(mark, /western hognose head notification mark/i, "Icon must depict a western hognose head");
+assert.match(mark, /No body, neck or coil/, "Status icon must show only the head");
+assert.match(mark, /upturned shovel snout/, "Species-defining rostral snout must remain");
+assert.match(mark, /<mask id="cutouts">/, "Facial details must be knockout shapes");
+assert.match(mark, /cx="58" cy="40" rx="5" ry="6"/, "Head must have a legible eye");
+assert.match(mark, /cx="87" cy="45" r="2\.2"/, "Include nostril on upturned snout");
+assert.match(mark, /d="M13 64 L14 39/, "Only isolated head contour may be drawn");
+assert.match(generator, /M13 64 L14 39/, "Rasterised PNG must match head SVG geometry");
+assert.match(generator, /"ellipse 58,40 5,6 0,360"/, "ImageMagick eye cutout required");
+assert.match(generator, /"circle 87,45 89\.2,45"/, "ImageMagick nostril cutout required");
+assert.match(generator, /"-size", "96x96", "xc:none"/, "Status icon must use transparency");
+assert.match(generator, /"-transparent", "black"/, "Black outlines must become transparent cutouts");
+assert.doesNotMatch(generator, /"-threshold", "42%"/, "Never convert the detailed crest into a white square");
+assert.doesNotMatch(generator, /M11 77 C18 67 22 58|M12 82 C16 68/, "No old gecko or curved-neck head assets");
+assert.doesNotMatch(mark, /splayed foot|coiled body/i, "No gecko feet or snake coils are allowed");
+
 assert.doesNotMatch(generator, /const BASE64\s*=/, "Never restore the embedded lightning-bolt artwork");
-assert.match(foreground, /mark=gecko-head-4/, "Foreground badges must invalidate older cached artwork");
-assert.match(sw, /mark=gecko-head-4/, "Background badges must invalidate older cached artwork");
-assert.match(notificationSettings, /mark=gecko-head-4/, "Logo preview must use latest artwork");
-assert.match(control, /mark=gecko-head-4/, "Settings preview must show latest artwork");
-assert.match(vite, /mark=gecko-head-4/, "PWA-generated manifest must publish versioned icon URL");
-assert.ok(manifest.icons.some(icon => icon.purpose === "monochrome" && icon.src.includes("mark=gecko-head-4")), "Static manifest must publish versioned icon URL");
+assert.match(foreground, /mark=hognose-head-2/, "Foreground badges must invalidate older cached artwork");
+assert.match(sw, /mark=hognose-head-2/, "Background badges must invalidate older cached artwork");
+assert.match(notificationSettings, /mark=hognose-head-2/, "Logo preview must use latest artwork");
+assert.match(control, /mark=hognose-head-2/, "Settings preview must show latest artwork");
+assert.match(vite, /mark=hognose-head-2/, "PWA-generated manifest must publish versioned icon URL");
+assert.ok(manifest.icons.some(icon => icon.purpose === "monochrome" && icon.src.includes("mark=hognose-head-2")), "Static manifest must publish versioned icon URL");
 
 execFileSync(process.execPath, ["scripts/generate-notification-badge.mjs"], {stdio:"inherit"});
 const png = readFileSync("public/tiny-titans-notification-badge.png");

@@ -18,9 +18,9 @@ export default function NotificationSettingsPanel() {
       }
       const worker = await registerActiveMessagingWorker();
       await worker.showNotification("TinyTitans notification logo test", {
-        body: "Full-colour TinyTitans crest in expanded alerts; bold white gecko-head mark in the Android status bar.",
+        body: "Full-colour TinyTitans crest in expanded alerts; bold white western hognose head mark in the Android status bar.",
         icon: new URL("/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=3", location.origin).href,
-        badge: new URL("/tiny-titans-notification-badge.png?mark=gecko-head-4", location.origin).href,
+        badge: new URL("/tiny-titans-notification-badge.png?mark=hognose-head-2", location.origin).href,
         tag: "tiny-titans-icon-preview",
         data: { url: "/account/settings" },
       });

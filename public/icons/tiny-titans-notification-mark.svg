@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title description">
-  <title id="title">TinyTitans gecko notification mark</title>
-  <desc id="description">A bold, friendly gecko head, large visible eye, mouth and splayed foot, simplified from the gecko in the owner's TinyTitans crest for the Android 24-pixel status bar.</desc>
-  <!-- No circle, coil, shell or surrounding letters: this must still read as a
-       reptile at the few pixels Android allocates to a notification badge. -->
-  <path fill="#fff" d="M11 77 C18 67 22 58 19 49 C13 36 19 29 30 24 C38 20 47 19 53 23 C58 17 66 16 73 23 C76 27 78 30 85 33 C91 36 94 41 89 47 C84 53 74 54 64 51 C58 49 54 47 50 47 C44 53 41 64 38 77 L25 80 C28 69 29 61 25 55 C26 68 23 75 19 81 Z"/>
-  <path fill="#fff" d="M22 66 C15 64 12 66 7 70 C4 72 4 75 7 76 C10 77 15 73 17 72 L13 79 C11 83 15 86 18 82 L24 75 L25 82 C25 86 30 86 31 82 L31 70 Z"/>
-  <circle cx="60" cy="32" r="7.5" fill="#000"/>
-  <circle cx="62" cy="29" r="2.2" fill="#fff"/>
-  <circle cx="82" cy="39" r="1.8" fill="#000"/>
-  <path d="M68 45 Q77 49 86 44" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+  <title id="title">TinyTitans western hognose head notification mark</title>
+  <desc id="description">Just a western hognose head in side profile, with an upturned shovel snout, eye, nostril, and short mouth line. No body, neck or coil. White silhouette on transparency for Android notifications.</desc>
+  <!-- Single-colour 24dp Android status-bar silhouette. The face is negative space. -->
+  <mask id="cutouts">
+    <rect width="96" height="96" fill="#fff"/>
+    <ellipse cx="58" cy="40" rx="5" ry="6" fill="#000"/>
+    <circle cx="87" cy="45" r="2.2" fill="#000"/>
+    <path d="M47 59 Q65 66 84 54" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round"/>
+  </mask>
+  <path fill="#fff" mask="url(#cutouts)" d="M13 64 L14 39 C27 27 44 22 57 24 C69 25 78 31 83 37 C87 34 90 27 89 19 C94 25 96 35 92 44 C94 50 90 58 83 63 C73 71 59 75 44 73 C31 71 20 68 13 64 Z"/>
 </svg>
