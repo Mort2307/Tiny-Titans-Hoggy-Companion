@@ -72,6 +72,9 @@ jobs:
       - name: App-wide keeper journeys contract
         run: node scripts/validate-app-wide-keeper-pass.mjs
 
+      - name: Public source credential guard
+        run: node scripts/validate-public-source-guard.mjs
+
       # This already runs the project's application contracts, intelligence
       # contracts, TypeScript build and Vite production build in one command.
       - name: Production build and application contracts
