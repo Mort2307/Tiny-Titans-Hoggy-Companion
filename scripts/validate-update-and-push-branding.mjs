@@ -19,12 +19,14 @@ assert.match(service, /filter\(isAppShellWorker\)/, "Never revoke the FCM messag
 assert.match(service, /SKIP_WAITING/, "Safe updates should activate a waiting app worker");
 const prompt = read("src/components/AppUpdatePrompt.tsx");
 const header = read("src/components/Layout/Header.tsx");
+const quickView = read("src/components/Layout/QuickModeNavigation.tsx");
 const worker = read("src/services/messagingWorkerRegistration.ts");
 const notificationService = read("src/services/notificationService.ts");
 const notificationSettings = read("src/components/NotificationSettingsPanel.tsx");
 const manifest = JSON.parse(read("public/manifest.webmanifest"));
 assert.match(header, /Check TinyTitans for updates now/, "Header must expose a global manual update check");
 assert.match(header, /tiny-titans-manual-update-check/, "Header check must invoke update monitor");
+assert.match(quickView, /Check for updates/, "Quick View must expose a visible manual update check");
 assert.match(prompt, /MANUAL_UPDATE_CHECK_EVENT/, "Update monitor must respond to manual checks");
 assert.match(prompt, /checkTinyTitansRelease/, "Update monitor must compare its running release stamp");
 assert.match(prompt, /void check\(\)/, "Update monitor must check as soon as it mounts");
