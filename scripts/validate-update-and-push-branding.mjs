@@ -71,10 +71,10 @@ for (const [path, content] of [
 const generator = read("scripts/generate-notification-badge.mjs");
 const frontSource = readFileSync("public/icons/tiny-titans-front-hognose-96.png");
 const approvedHash = "2cc704955bcd6731f868e8acdb6a68df1a7190737b0d4d6be38f629ff032991d";
-assert.match(generator, /TinyTitans-Logo\\.JPG\\.jpg/, "The owner's full-colour app logo must remain unchanged");
-assert.match(generator, /tiny-titans-front-hognose-96\\.png/, "Status icon must derive from approved face PNG");
-assert.match(generator, /copyFileSync\\(approvedBadge, destination\\)/, "Generator must copy exact face, not invent an approximation");
-assert.doesNotMatch(generator, /const operations = \\[|M13 64 L14 39|M12 82 C16 68|M11 77 C18 67/, "Old head or side-profile drawings must never ship");
+assert.match(generator, /TinyTitans-Logo\.JPG\.jpg/, "The owner's full-colour app logo must remain unchanged");
+assert.match(generator, /tiny-titans-front-hognose-96\.png/, "Status icon must derive from approved face PNG");
+assert.match(generator, /copyFileSync\(approvedBadge, destination\)/, "Generator must copy exact face, not invent an approximation");
+assert.doesNotMatch(generator, /const operations|M13 64 L14 39|M12 82 C16 68|M11 77 C18 67/, "Old head or side-profile drawings must never ship");
 assert.match(generator, /approvedHash/, "Generator must verify original image identity");
 assert.equal(frontSource.subarray(0,8).toString("hex"), "89504e470d0a1a0a", "Approved source PNG signature");
 assert.equal(frontSource.readUInt32BE(16), 96, "Approved status icon width");
@@ -95,7 +95,7 @@ assert.equal(png.readUInt32BE(20), 96, "Generated height");
 assert.equal(png[25], 6, "Generated badge is RGBA, not a white square");
 assert.equal((await import("node:crypto")).createHash("sha256").update(png).digest("hex"), approvedHash, "Generated badge must match selected art exactly");
 const legacyMark = read("public/icons/tiny-titans-notification-mark.svg");
-assert.match(legacyMark, /tiny-titans-front-hognose-96\\.png/, "Old SVG alias must not display the superseded side profile");
+assert.match(legacyMark, /tiny-titans-front-hognose-96\.png/, "Old SVG alias must not display the superseded side profile");
 
 // Installed PWA identity and launcher icons must keep the original logo.
 // The new hognose face is only for push notifications and their previews.
