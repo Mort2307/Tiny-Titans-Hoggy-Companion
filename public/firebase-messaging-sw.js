@@ -36,7 +36,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 const TINY_TITANS_LOGO = "/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg?v=3";
-const TINY_TITANS_BADGE = "/tiny-titans-notification-badge.png?mark=gecko-head-4";
+const TINY_TITANS_BADGE = "/tiny-titans-notification-badge.png?mark=western-hognose-1";
 
 messaging.onBackgroundMessage((payload) => {
   const data = payload.data || {};
