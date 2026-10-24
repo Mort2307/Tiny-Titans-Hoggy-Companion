@@ -14,6 +14,10 @@ The final CI build gate checks:
 
 Live app: https://tinytitanskeeper.web.app\n\nThe full lint audit also uploads the exact ESLint output as a CI artifact, so a green lint gate is evidence of `0` warnings rather than hidden output.
 
+## Connected build, Android test APK and release workflow
+
+Start with [Connected build and release](docs/CONNECTED-BUILD-AND-RELEASE.md) for the full GitHub → CI → protected Firebase Hosting/backend → live verification process, the manual Android debug APK, PC/iOS PWA coverage, and the current ChatGPT Companion connection boundary.
+
 ## GitHub-to-Firebase production deployment
 
 Tiny Titans has a **private-repository Google Cloud Shell release workflow** that avoids GitHub Actions minutes, plus Nightjar-style GitHub Actions workflows for when runners are available. Production Firebase project: `tinytitans-hoggy-companion` (Keeper + legacy sites). Cloud Shell deployments are manually approved, checked against master, and scoped to the Tiny Titans project. Hosting releases verify both live sites. GitHub Actions are retained but require an available runner. Private Cloud Shell setup, confirmation gates, release commands, optional keyless GitHub Actions setup, and the required App Check public site key are documented in [Firebase Deployment](docs/FIREBASE-DEPLOYMENT.md).

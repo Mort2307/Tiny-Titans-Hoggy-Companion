@@ -1,0 +1,80 @@
+# Developer-only APK. Does not publish to Google Play or deploy Firebase.
+# Manual trigger prevents routine CI from spending private-repository runner minutes.
+name: Tiny Titans Android test APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tiny-titans-android-test-apk
+  cancel-in-progress: false
+
+jobs:
+  android-test-apk:
+    name: Build Android debug APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      VITE_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ vars.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY || secrets.VITE_RECAPTCHA_ENTERPRISE_SITE_KEY }}
+    steps:
+      - name: Checkout Tiny Titans
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Confirm the correct Firebase project and App Check key
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/tiny-titans-firebase-release.mjs guard
+          [[ "$VITE_RECAPTCHA_ENTERPRISE_SITE_KEY" =~ ^[A-Za-z0-9_-]{20,200}$ ]] || {
+            echo "::error::Configure the public Tiny Titans App Check site key in this repository's Actions Variables."
+            exit 1
+          }
+
+      - name: Install and validate Tiny Titans
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Install pinned Capacitor tools (without changing the lockfile)
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts \
+            @capacitor/cli@8.0.0 @capacitor/core@8.0.0 @capacitor/android@8.0.0
+
+      - name: Generate Android debug project
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Use Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Verify Android SDK
+        run: test -d "$ANDROID_HOME/platforms"
+
+      - name: Assemble unsigned-for-release Android debug APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiny-titans-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

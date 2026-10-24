@@ -15,7 +15,15 @@ on:
       - 'vite.config.*'
       - 'tsconfig*.json'
       - 'firebase.json'
-      - '.github/workflows/tiny-titans-build.yml'
+      - 'capacitor.config.json'
+      - '.firebaserc'
+      - 'firestore.rules'
+      - 'firestore.partner.rules'
+      - 'firestore.indexes.json'
+      - 'storage.rules'
+      - 'config/**'
+      - 'bin/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [master, release/2026-09-hardening-pass]
     paths:
@@ -30,7 +38,15 @@ on:
       - 'vite.config.*'
       - 'tsconfig*.json'
       - 'firebase.json'
-      - '.github/workflows/tiny-titans-build.yml'
+      - 'capacitor.config.json'
+      - '.firebaserc'
+      - 'firestore.rules'
+      - 'firestore.partner.rules'
+      - 'firestore.indexes.json'
+      - 'storage.rules'
+      - 'config/**'
+      - 'bin/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
@@ -51,12 +67,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
+
+      - name: Validate workflow YAML (no deployment)
+        run: |
+          ruby -r yaml -e 'ARGV.each { |file| YAML.parse_file(file); puts "Valid workflow: #{file}" }' .github/workflows/*.yml
+
+      - name: Check Firebase project and release guards
+        run: |
+          node scripts/tiny-titans-firebase-release.mjs guard
+          node --test scripts/tiny-titans-firebase-release.test.mjs
+          node --test scripts/tiny-titans-android-build.test.mjs
 
       # One dependency install for the application. Do not add separate runners
       # or repeated installs for routine validation.
