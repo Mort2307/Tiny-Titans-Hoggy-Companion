@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 const commands = [
   ["Release configuration", ["run", "validate:release-config"]],
   ["Account deletion contract", ["run", "validate:account-deletion"]],
-  ["App-wide keeper journeys", ["exec", "node", "scripts/validate-app-wide-keeper-pass.mjs"]],
+  ["App-wide keeper journeys", ["run", "validate:app-wide-keeper"]],
   ["TypeScript typecheck", ["run", "typecheck"]],
   ["Lint", ["run", "lint"]],
   ["BOT contract suite", ["run", "test:bot:contracts"]],
