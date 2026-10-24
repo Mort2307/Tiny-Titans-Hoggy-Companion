@@ -342,3 +342,17 @@
 .universal-animal-links a:focus-visible,.universal-secondary-action:focus-visible,.universal-primary-action:focus-visible,.universal-animal-delete:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .universal-animal-form input:focus-visible,.universal-animal-form select:focus-visible,.universal-animal-form textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.universal-animal-row,.universal-primary-action,.universal-animal-delete{transition:none!important}.universal-animal-row:hover,.universal-primary-action:hover:not(:disabled),.universal-animal-delete:hover:not(:disabled){transform:none}}
+
+
+/* Species-aware bird keeper journal — typography matches universal animal cards. */
+.avian-care-journal__form { display: grid; grid-template-columns: minmax(0, 1fr); gap: .8rem; max-width: 720px; }
+.avian-care-journal__form label { display: grid; gap: .35rem; min-width: 0; font-weight: 750; }
+.avian-care-journal__form :is(input, select, textarea) { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; padding: .8rem; border: 1px solid var(--tt-border-strong, rgba(0,183,240,.38)); border-radius: 10px; background: rgba(16,5,26,.75); color: inherit; font: inherit; }
+.avian-care-journal__hint { color: var(--tt-muted, #c4b5ce); font-size: .83rem; line-height: 1.5; }
+.avian-care-journal__summary { border-radius: 12px; padding: .85rem 1rem; background: rgba(0,183,240,.08); overflow-wrap: anywhere; }
+.avian-care-journal__history { display: grid; gap: .85rem; margin-top: 1.1rem; }
+.avian-care-journal__entry { display: grid; gap: .5rem; min-width: 0; padding: 1rem; border: 1px solid var(--tt-border, rgba(255,255,255,.14)); border-radius: 13px; background: rgba(255,255,255,.025); overflow-wrap: anywhere; }
+.avian-care-journal__entry > div { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; }
+.avian-care-journal__entry small { opacity: .7; }
+.avian-care-journal__entry p { margin: 0; white-space: pre-wrap; }
+.avian-care-journal__entry .universal-secondary-action { justify-self: start; }
