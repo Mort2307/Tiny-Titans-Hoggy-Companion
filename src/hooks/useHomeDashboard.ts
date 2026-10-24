@@ -9,7 +9,7 @@ import { subscribeToTitanIntelligenceUpdates } from "../services/titanReactiveIn
 import { listReminders } from "../services/reminderService";
 import type { Reminder } from "../types/Reminder";
 
-export type HomeAnimal = { id: string; name: string; species?: string; animalGroup?: string; photoUrl?: string; recordSource: "universal" | "legacy-snake"; weightRecords: number; feedingRecords: number; shedRecords: number; healthRecords: number; };
+export type HomeAnimal = { id: string; name: string; species?: string; animalGroup?: string; photoUrl?: string; recordSource: "universal" | "legacy-snake"; weightRecords: number | null; feedingRecords: number | null; shedRecords: number | null; healthRecords: number | null; };
 export type HomeSnake = HomeAnimal;
 export type HomeUrgentReminder = {
   reminder: Reminder;
@@ -20,12 +20,12 @@ export type HomeUrgentReminder = {
 export function buildQuietIntelligenceSnippet(snake: HomeAnimal | undefined, totalRecords: number, dateKey: string): string {
   if (!snake || totalRecords === 0) return "There is more useful information hiding in a well-kept record than first meets the eye.";
   const snippets = [
-    snake.weightRecords >= 3 ? `${snake.name} weight history is starting to look like a pattern rather than a pile of numbers.` : null,
-    snake.feedingRecords >= 3 ? `${snake.name} feeding log is getting interesting. A rhythm is beginning to peek through.` : null,
-    snake.shedRecords >= 3 ? `Those shed records are quietly becoming a useful little baseline for ${snake.name}.` : null,
-    snake.weightRecords >= 2 && snake.feedingRecords >= 3 ? `There is more hiding in ${snake.name} weight and feeding history than either record shows on its own.` : null,
-    snake.shedRecords >= 2 && snake.feedingRecords >= 3 ? `Something interesting is starting to emerge in the rhythm of ${snake.name} routine.` : null,
-    snake.healthRecords > 0 && (snake.weightRecords > 0 || snake.feedingRecords > 0) ? `${snake.name} records are beginning to give a little more context than the individual entries suggest.` : null,
+    (snake.weightRecords ?? 0) >= 3 ? `${snake.name} weight history is starting to look like a pattern rather than a pile of numbers.` : null,
+    (snake.feedingRecords ?? 0) >= 3 ? `${snake.name} feeding log is getting interesting. A rhythm is beginning to peek through.` : null,
+    (snake.shedRecords ?? 0) >= 3 ? `Those shed records are quietly becoming a useful little baseline for ${snake.name}.` : null,
+    (snake.weightRecords ?? 0) >= 2 && (snake.feedingRecords ?? 0) >= 3 ? `There is more hiding in ${snake.name} weight and feeding history than either record shows on its own.` : null,
+    (snake.shedRecords ?? 0) >= 2 && (snake.feedingRecords ?? 0) >= 3 ? `Something interesting is starting to emerge in the rhythm of ${snake.name} routine.` : null,
+    (snake.healthRecords ?? 0) > 0 && ((snake.weightRecords ?? 0) > 0 || (snake.feedingRecords ?? 0) > 0) ? `${snake.name} records are beginning to give a little more context than the individual entries suggest.` : null,
     totalRecords >= 12 ? "You've logged enough here that the history is starting to look rather more interesting than simple record keeping." : null,
     totalRecords >= 7 ? "There is a little more going on in these records than first meets the eye." : null,
   ].filter((value): value is string => Boolean(value));
@@ -128,11 +128,11 @@ export function useHomeDashboard() {
     return dueSoon ? { ...dueSoon, urgency: "due-soon" } : null;
   }, [reminders, world.observedAt]);
   const coverage = useMemo(() => intelligence.length ? Math.round(intelligence.reduce((sum, item) => sum + item.dataCoveragePercent, 0) / intelligence.length) : 0, [intelligence]);
-  const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + snake.weightRecords + snake.feedingRecords + snake.shedRecords + snake.healthRecords, 0), [snakes]);
-  const snapshot = useMemo(() => ({ weights: snakes.reduce((sum, snake) => sum + snake.weightRecords, 0), feedings: snakes.reduce((sum, snake) => sum + snake.feedingRecords, 0), sheds: snakes.reduce((sum, snake) => sum + snake.shedRecords, 0), health: snakes.reduce((sum, snake) => sum + snake.healthRecords, 0) }), [snakes]);
+  const totalRecords = useMemo(() => snakes.reduce((sum, snake) => sum + (snake.weightRecords ?? 0) + (snake.feedingRecords ?? 0) + (snake.shedRecords ?? 0) + snake.healthRecords, 0), [snakes]);
+  const snapshot = useMemo(() => ({ weights: snakes.reduce((sum, snake) => sum + (snake.weightRecords ?? 0), 0), feedings: snakes.reduce((sum, snake) => sum + (snake.feedingRecords ?? 0), 0), sheds: snakes.reduce((sum, snake) => sum + (snake.shedRecords ?? 0), 0), health: snakes.reduce((sum, snake) => sum + (snake.healthRecords ?? 0), 0) }), [snakes]);
   const quietIntelligenceSnippet = useMemo(() => buildQuietIntelligenceSnippet(selectedSnake, totalRecords, world.localDateKey), [selectedSnake, totalRecords, world.localDateKey]);
   const selectedIndex = Math.max(0, snakes.findIndex((snake) => snake.id === selectedSnakeId));
   function moveSnake(direction: -1 | 1) { if (!snakes.length) return; const next = (selectedIndex + direction + snakes.length) % snakes.length; setSelectedSnakeId(snakes[next].id); }
-  const selectedSnakeRecords = selectedSnake ? selectedSnake.weightRecords + selectedSnake.feedingRecords + selectedSnake.shedRecords + selectedSnake.healthRecords : 0;
+  const selectedSnakeRecords = selectedSnake ? (selectedSnake.weightRecords ?? 0) + (selectedSnake.feedingRecords ?? 0) + (selectedSnake.shedRecords ?? 0) + (selectedSnake.healthRecords ?? 0) : 0;
   return { user, profile, world, displayName, learningLabel, experience, snakes, intelligence, attentionDecision, urgentReminder, selectedIntelligence, selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, totalRecords, quietIntelligenceSnippet, loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake };
 }
