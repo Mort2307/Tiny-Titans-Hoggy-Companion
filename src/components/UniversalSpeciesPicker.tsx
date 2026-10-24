@@ -120,8 +120,8 @@ export default function UniversalSpeciesPicker({
           <div className="universal-species-picker__results" id={listId + "-list"} role="listbox" aria-label="Choose a species">
             {shown.map((species, index) => (
               <button id={listId + "-item-" + index} role="option" aria-selected={activeIndex === index} type="button" key={species.id} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(species)}>
-                <strong>{species.commonNames[0] ?? species.acceptedScientificName}</strong>
-                <span><b className="universal-species-picker__group">{species.browseGroup.replaceAll("-", " ")}</b> · {species.acceptedScientificName} · {species.family}</span>
+                <strong className="universal-species-picker__name">{species.commonNames[0] ?? species.acceptedScientificName}</strong>
+                <span className="universal-species-picker__meta"><b className="universal-species-picker__group">{species.browseGroup.replaceAll("-", " ")}</b> · {species.acceptedScientificName} · {species.family}</span>
               </button>
             ))}
             {results.length === 0 && <p className="universal-species-picker__unknown">No catalogue matches in this group. Try another group or name.</p>}

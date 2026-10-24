@@ -2426,3 +2426,91 @@ html {
     scroll-margin-bottom: calc(112px + env(safe-area-inset-bottom));
   }
 }
+
+
+/* =========================================================
+   SPECIES PICKER — OVERLAPPING TWO-LINE RESULTS (ISSUE #90)
+   Android recording: the gold taxonomy label painted underneath
+   the NEXT species' white name during touch scroll. The old
+   generic button grid and fixed-height inherited button styles
+   did not allow each option to expand to both text lines.
+   Keep the entire option a single self-sizing, stacked click target.
+   ========================================================= */
+.universal-species-picker .universal-species-picker__results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 8px;
+}
+
+.universal-species-picker .universal-species-picker__results > button[role="option"] {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 64px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 11px 12px;
+  text-align: left;
+  line-height: normal;
+  white-space: normal;
+  overflow: visible;
+  transform: none;
+}
+
+.universal-species-picker .universal-species-picker__results > button[role="option"] > .universal-species-picker__name,
+.universal-species-picker .universal-species-picker__results > button[role="option"] > .universal-species-picker__meta {
+  display: block;
+  position: static;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  transform: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.universal-species-picker .universal-species-picker__results > button[role="option"] > .universal-species-picker__name {
+  color: #fcf8ff;
+  font-size: 0.94rem;
+  font-weight: 800;
+  line-height: 1.32;
+  opacity: 1;
+}
+
+.universal-species-picker .universal-species-picker__results > button[role="option"] > .universal-species-picker__meta {
+  color: #e8bd6b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  opacity: 1;
+}
+
+.universal-species-picker .universal-species-picker__results .universal-species-picker__group {
+  color: inherit;
+  font-weight: 800;
+}
+
+@media (max-width: 560px) {
+  .universal-species-picker .universal-species-picker__results > button[role="option"] {
+    min-height: 70px;
+    padding: 12px;
+  }
+}
