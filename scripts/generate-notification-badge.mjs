@@ -1,8 +1,8 @@
 /**
  * TinyTitans notification branding:
  * - Full-colour installed PWA and expanded notification: original keeper artwork.
- * - Android 24px status icon: a bold gecko head, eye and splayed foot inspired
- *   by the gecko in that crest. The previous spiral resembled a snail at 24px.
+ * - Android 24px status icon: a monochrome western hognose head, cut-out eye
+ *   and unmistakable upturned snout, designed for the tiny notification slot.
  * Produces real transparent PNGs; NEVER substitute stock artwork or the old bolt.
  */
 import { spawnSync } from "node:child_process";
@@ -15,22 +15,22 @@ const source = join(root, "public/TinyTitans-Logo.jpg/TinyTitans-Logo.JPG.jpg");
 const destination = join(root, "public/tiny-titans-notification-badge.png");
 if (!existsSync(source)) throw new Error("The official TinyTitans logo is missing: " + source);
 
-// The gecko-head SVG is the reference mark. ImageMagick 6 cannot reliably
-// rasterise SVG masks on Firebase Hosting runners, so render exactly the same
-// paths as native ImageMagick primitives; no font or SVG delegate required.
-// The transparent 96px image downscales to a clear 24px reptile silhouette.
+// The western hognose SVG is the reference mark. ImageMagick 6 cannot reliably
+// rasterise SVG masks on Firebase Hosting runners, so use its matching
+// paths and transparent cut-outs as native ImageMagick primitives.
+// The transparent 96px image downscales to a clear 24px hognose silhouette.
 const mark = join(root, "public/icons/tiny-titans-notification-mark.svg");
-if (!existsSync(mark)) throw new Error("TinyTitans' gecko-head mark is missing.");
+if (!existsSync(mark)) throw new Error("TinyTitans' western hognose mark is missing.");
 const operations = [
   "-size", "96x96", "xc:none",
   "-stroke", "none", "-fill", "white",
-  "-draw", 'path "M11 77 C18 67 22 58 19 49 C13 36 19 29 30 24 C38 20 47 19 53 23 C58 17 66 16 73 23 C76 27 78 30 85 33 C91 36 94 41 89 47 C84 53 74 54 64 51 C58 49 54 47 50 47 C44 53 41 64 38 77 L25 80 C28 69 29 61 25 55 C26 68 23 75 19 81 Z"',
-  "-draw", 'path "M22 66 C15 64 12 66 7 70 C4 72 4 75 7 76 C10 77 15 73 17 72 L13 79 C11 83 15 86 18 82 L24 75 L25 82 C25 86 30 86 31 82 L31 70 Z"',
-  "-fill", "black", "-draw", "circle 60,32 67.5,32",
-  "-fill", "white", "-draw", "circle 62,29 64.2,29",
-  "-fill", "black", "-draw", "circle 82,39 83.8,39",
+  // Keep the shape and cut-outs identical to the source SVG mask.
+  "-draw", 'path "M12 82 C16 68 21 61 23 51 C26 44 21 40 22 33 C23 20 36 12 51 14 C65 15 76 24 81 31 C85 30 88 24 89 17 C94 21 96 31 92 39 C94 42 94 49 89 54 C83 61 70 63 59 59 C49 56 44 50 40 46 C39 57 33 71 35 83 Z"',
+  "-fill", "black", "-draw", "ellipse 60,35 5.6,7 0,360",
+  "-draw", "ellipse 86,38 2.5,2 0,360",
   "-stroke", "black", "-strokewidth", "3", "-fill", "none",
-  "-draw", 'path "M68 45 Q77 49 86 44"',
+  "-draw", 'path "M62 51 Q74 56 85 49"',
+  // Black marks are negative space, never visible black paint.
   "-transparent", "black", "-alpha", "on",
   "-depth", "8", "-define", "png:color-type=6",
   destination,
@@ -51,7 +51,7 @@ for (const bin of binaries) {
 }
 if (!complete) {
   throw new Error(
-    "Cannot create TinyTitans' legible gecko-head badge without ImageMagick. " +
+    "Cannot create TinyTitans' legible western hognose badge without ImageMagick. " +
     "Install 'magick' or 'convert'; do not publish the old lightning-bolt badge.\n" +
     errors.join("\n"),
   );
@@ -66,7 +66,7 @@ if (
 ) {
   throw new Error("TinyTitans logo badge is not a non-empty, transparent 96×96 RGBA PNG.");
 }
-console.log("Generated sharp, high-contrast TinyTitans gecko-head Android notification badge.");
+console.log("Generated sharp, high-contrast TinyTitans western hognose Android notification badge.");
 
 
 // Android may source the small status-bar icon from the INSTALLED PWA's
