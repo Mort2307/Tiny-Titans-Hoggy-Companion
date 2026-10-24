@@ -110,7 +110,7 @@ export default function SpeciesMorphLibrary() {
 
   const filtered = useMemo(() => {
     const filteredEntries = entries.filter((morph) => matchesFilter(morph, filter));
-    if (!query.trim()) return [...filteredEntries].sort((a, b) => a.name.localeCompare(b.name));
+    if (!query.trim()) return [...filteredEntries].sort((a, b) => Number(b.geneId === "normal") - Number(a.geneId === "normal") || a.name.localeCompare(b.name));
     return rankSearchResults(query, filteredEntries, searchFields).map(({ item }) => item);
   }, [entries, filter, query]);
 
@@ -179,6 +179,24 @@ export default function SpeciesMorphLibrary() {
       )}
 
       <section className="morph-library-grid" aria-live="polite">
+        {selectedSpeciesId && filter === "all" && !query.trim() && (
+          <article className="morph-card morph-card--library morph-card--contribute">
+            <div className="morph-card__media"><div className="morph-card__image-empty">
+              <span className="morph-card__image-icon"><TinyTitansIcon name="add" size={24} /></span>
+              <strong>Help build this species library</strong>
+              <span>User-contributed images and evidence only · reviewed before publication</span>
+            </div></div>
+            <div className="morph-card__body">
+              <div className="morph-card__topline"><span>Community contributions</span><span>Review required</span></div>
+              <h2>Add a mutation or variation</h2>
+              <p className="morph-card__description">Know a documented colour mutation, pattern variant, breeder name, or missing source? Suggest it for review. No inheritance odds are added until verified.</p>
+              <div className="morph-card__actions">
+                <button type="button" className="morph-card__open" onClick={() => setShowVariationProposal(true)}>Submit mutation / information</button>
+                <button type="button" className="morph-card__image-submit" onClick={() => openImageSubmission("normal")}><TinyTitansIcon name="camera" size={13} /> Submit user photo</button>
+              </div>
+            </div>
+          </article>
+        )}
         {filtered.map((morph) => {
           const image = cardImages[morph.geneId];
           return (
