@@ -44,6 +44,8 @@ export function useHomeDashboard() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [selectedSnakeId, setSelectedSnakeId] = useState("");
   const [loadingIntelligence, setLoadingIntelligence] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
   const [intelligenceAccess, setIntelligenceAccess] = useState(false);
   const [accessChecked, setAccessChecked] = useState(false);
   const [worldOpen, setWorldOpen] = useState(false);
@@ -56,6 +58,7 @@ export function useHomeDashboard() {
     setLoadingIntelligence(true);
     setAccessChecked(false);
     const load = async () => {
+      setLoadError("");
       try {
         const [hasAccess, animalRecords, reminderRecords] = await Promise.all([hasFullIntelligenceAccess(user.uid), getUnifiedAnimalDirectory(user.uid, { includeTrackerHistory: true }), listReminders(user.uid).catch(() => [])]);
         if (!active) return;
@@ -91,6 +94,7 @@ export function useHomeDashboard() {
         }
       } catch {
         if (!active) return;
+        setLoadError("We couldn’t load your keeper workspace. Your records have not been changed.");
         setSnakes([]); setReminders([]); setIntelligence([]); setDecision(null); setIntelligenceAccess(false); setAccessChecked(true);
       } finally { if (active) setLoadingIntelligence(false); }
     };
@@ -104,7 +108,7 @@ export function useHomeDashboard() {
       if (event) void load();
     });
     return () => { active = false; unsubscribe(); };
-  }, [user]);
+  }, [user, retryCount]);
   useEffect(() => {
     if (!user || !intelligenceAccess) return () => undefined;
     const refresh = () => setDecision(getTitanDecisionState(user.uid).decisions.find((item) => item.status === "active") ?? null);
@@ -134,5 +138,5 @@ export function useHomeDashboard() {
   const selectedIndex = Math.max(0, snakes.findIndex((snake) => snake.id === selectedSnakeId));
   function moveSnake(direction: -1 | 1) { if (!snakes.length) return; const next = (selectedIndex + direction + snakes.length) % snakes.length; setSelectedSnakeId(snakes[next].id); }
   const selectedSnakeRecords = selectedSnake ? (selectedSnake.weightRecords ?? 0) + (selectedSnake.feedingRecords ?? 0) + (selectedSnake.shedRecords ?? 0) + (selectedSnake.healthRecords ?? 0) : 0;
-  return { user, profile, world, displayName, learningLabel, experience, snakes, intelligence, attentionDecision, urgentReminder, selectedIntelligence, selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, totalRecords, quietIntelligenceSnippet, loadingIntelligence, intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake };
+  return { user, profile, world, displayName, learningLabel, experience, snakes, intelligence, attentionDecision, urgentReminder, selectedIntelligence, selectedSnake, selectedIndex, selectedSnakeRecords, coverage, snapshot, totalRecords, quietIntelligenceSnippet, loadingIntelligence, loadError, retryLoad: () => setRetryCount((count) => count + 1), intelligenceAccess, accessChecked, worldOpen, setWorldOpen, moveSnake };
 }
