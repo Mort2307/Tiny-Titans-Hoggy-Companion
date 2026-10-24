@@ -75,17 +75,25 @@ export function useCreatorAdmin() {
   useEffect(() => {
     if (profile?.role !== "admin" || !user) return;
     let active = true;
-    void Promise.all([fetchCreatorDashboardData(), fetchCreatorUsers()])
-      .then(([data, nextUsers]) => {
+    void Promise.allSettled([fetchCreatorDashboardData(), fetchCreatorUsers()])
+      .then(([dashboard, directory]) => {
         if (!active) return;
-        setStats(data.canonicalStats);
-        setMorphPending(data.morphPending);
-        setBugPending(data.bugPending);
-        setFeedbackNew(data.feedbackNew);
-        setUsers(nextUsers);
-      })
-      .catch((loadError) => {
-        if (active) setError(loadError instanceof Error ? loadError.message : "Creator data could not be loaded.");
+        const errors: string[] = [];
+        if (dashboard.status === "fulfilled") {
+          const data = dashboard.value;
+          setStats(data.canonicalStats);
+          setMorphPending(data.morphPending);
+          setBugPending(data.bugPending);
+          setFeedbackNew(data.feedbackNew);
+        } else {
+          errors.push("Creator dashboard could not be loaded.");
+        }
+        if (directory.status === "fulfilled") {
+          setUsers(directory.value);
+        } else {
+          errors.push("User overview could not be loaded.");
+        }
+        setError(errors.join(" "));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
