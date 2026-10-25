@@ -1,28 +1,104 @@
-import { useEffect, useMemo, useState } from "react";
-import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { hasCreatorTesterClaim } from "../services/creatorTesterAuthService";
-import { runTesterSuite, type TesterRun } from "../services/testerBotService";
-import { buildBotChecks, buildFullBotChecks, BOT_DEFINITIONS, getBotDefinition, type BotDefinition } from "../services/testerBotRegistry";
-import type { TesterEvidenceStatus } from "../services/testerEvidenceService";
-import { buildQaNarrative, formatQaNarrative } from "../services/testerQaNarrativeService";
 import { useAuth } from "../context/useAuth";
 import PageBackButton from "../components/PageBackButton";
-import SubmissionNotificationTestBot from "../components/SubmissionNotificationTestBot";
 import NotificationTestPanel from "../components/NotificationTestPanel";
 import CreatorPaidTierTester from "../components/CreatorPaidTierTester";
+import TinyTitansIcon from "../components/TinyTitansIcon";
 import "./TesterCentre.css";
 import "../styles/notificationTest.css";
-import TinyTitansIcon from "../components/TinyTitansIcon";
 
-function TesterHub({ onSelect, openNotificationLab = false }: { onSelect: (id: BotDefinition["id"]) => void; openNotificationLab?: boolean }) {
-  const [showNotificationLab, setShowNotificationLab] = useState(openNotificationLab);
-  const navigate = useNavigate();
-  return <div className="tester-shell"><div className="tester-header"><p className="eyebrow"><TinyTitansIcon name="testing" size={14} /> TINY TITANS · PRIVATE QA</p><h1>Bot Testers</h1><p>Select a dedicated test bot, or use the paid-tier tester to give any selected account a real paid-plan experience without billing them.</p></div><div className="tester-bot-grid">{BOT_DEFINITIONS.map((bot) => <button key={bot.id} type="button" className="tester-bot-tile" onClick={() => onSelect(bot.id)}><span className="tester-bot-icon" aria-hidden="true"><TinyTitansIcon name={bot.icon} size={22} /></span><span className="tester-bot-name">{bot.label}</span><span className="tester-bot-description">{bot.description}</span><span className="tester-bot-open">Open tester</span></button>)}<button type="button" className="tester-bot-tile" onClick={() => navigate("/creator/tester/paid-tiers")}><span className="tester-bot-icon" aria-hidden="true"><TinyTitansIcon name="testing" size={22} /></span><span className="tester-bot-name">Paid Tier Tester</span><span className="tester-bot-description">Select any user and enable Pro, Seller or a Business tier for testing. No Stripe charge, subscription or invoice is created.</span><span className="tester-bot-open">Open paid-tier tester</span></button><button type="button" className="tester-bot-tile" onClick={() => navigate("/creator/tester?submissionNotifications=1")}><span className="tester-bot-icon" aria-hidden="true"><TinyTitansIcon name="messages" size={22} /></span><span className="tester-bot-name">Submission Notification BOT</span><span className="tester-bot-description">End-to-end notification sweep for every user submission alert, with manual click/read/accept evidence and final reconciliation.</span><span className="tester-bot-open">Open tester</span></button><button type="button" className={`tester-bot-tile ${showNotificationLab ? "is-selected" : ""}`} onClick={() => setShowNotificationLab((current) => !current)}><span className="tester-bot-icon" aria-hidden="true"><TinyTitansIcon name="reminders" size={22} /></span><span className="tester-bot-name">Notification Delivery Lab</span><span className="tester-bot-description">Send a focused real-push notification test to this device or an authorised tester account and verify the production delivery path.</span><span className="tester-bot-open">{showNotificationLab ? "Close test lab" : "Open test lab"}</span></button></div>{showNotificationLab && <section className="tt-notification-settings tester-notification-lab"><div className="tt-notification-status-row"><div><span className="tt-notification-status-dot" aria-hidden="true" /><strong>Creator notification diagnostics</strong></div><span className="tt-notification-permission">REAL PUSH</span></div><div className="tt-settings-test-callout"><strong>QA only</strong><span>This panel is creator tooling. Keeper Settings controls notification permission and reminder preferences; notification delivery testing lives here.</span></div><NotificationTestPanel /></section>}<div className="tester-safety-panel"><strong><TinyTitansIcon name="lock" size={14} /> Test safety</strong><span>Bots are read-only against live keeper data. Write-capable workflow testing runs exclusively inside isolated synthetic test identities and sandboxes. QA results clearly distinguish live-data inspection, sandbox writes and browser evidence; the UI never presents synthetic evidence as real keeper data.</span></div><div className="tester-safety-panel"><strong><TinyTitansIcon name="observatory" size={14} /> Browser & visual evidence</strong><span>Real browser journey checks are now available directly inside the Creator Tester BOTs. They reuse the authenticated Creator session in a same-origin private test frame, exercise only safe links/tabs/buttons, skip destructive mutations, and classify PASS, NO_OP, LOOP, WRONG_DESTINATION and RUNTIME_ERROR from observed browser state.</span></div></div>;
+/** Human-led acceptance checks. Results are keeper observations, not synthetic bot assertions. */
+const humanChecks = [
+  { id: "species", title: "Species catalogue", route: "/species", expectation: "Find the correct animal and check evidence, husbandry and images without invented claims." },
+  { id: "calculator", title: "Genetics calculator", route: "/calculator", expectation: "Select two parents, inspect outcome names and probabilities, and expand any relevant carrier details." },
+  { id: "breeding", title: "Breeding workspace", route: "/breeding", expectation: "Create a project, record an observation, reopen it and verify that saved details remain accurate." },
+  { id: "morph", title: "Morph and variation library", route: "/morph-library", expectation: "Check documented variation names, image provenance, user submissions and uncertainty labels." },
+  { id: "rooms", title: "3D animal rooms", route: "/reptile-room", expectation: "Inspect mobile navigation, enclosure placement and animal profile access." },
+  { id: "reports", title: "Feedback reporting", route: "/report-bug", expectation: "Report a real issue with the screen, expected behaviour, actual result and optional media." },
+];
+
+function HumanTesterHub() {
+  const [checked, setChecked] = useState<string[]>([]);
+  const [showNotificationLab, setShowNotificationLab] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
+  const completed = checked.length;
+
+  async function copySessionSummary() {
+    const lines = [
+      "TINY TITANS · HUMAN TESTER SESSION",
+      `Recorded: ${new Date().toISOString()}`,
+      `Manually checked: ${completed}/${humanChecks.length}`,
+      "These are tester-marked review items, not independently verified automated test results.",
+      ...humanChecks.map((item) => `${checked.includes(item.id) ? "[Reviewed]" : "[Not reviewed]"} ${item.title}: ${item.expectation}`),
+      "Please report actual defects through Tiny Titans' in-app issue report form.",
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopyMessage("Review notes copied. These checkmarks are not a release sign-off.");
+    } catch {
+      setCopyMessage("Clipboard unavailable. Use in-app issue reporting for your observations.");
+    }
+  }
+
+  return <div className="tester-shell">
+    <div className="tester-header">
+      <p className="eyebrow"><TinyTitansIcon name="testing" size={14} /> TINY TITANS · HUMAN QA</p>
+      <h1>Tester Centre</h1>
+      <p>Test Tiny Titans directly in the app, then send genuine feedback or bug reports. No simulated bot runs or synthetic pass percentages.</p>
+    </div>
+    <div className="tester-manual-actions">
+      <Link to="/report-bug" className="tester-primary-button">Report a bug</Link>
+      <Link to="/feedback" className="tester-secondary-button">Send feedback</Link>
+      <Link to="/my-issue-reports" className="tester-secondary-button">My issue reports</Link>
+      <Link to="/creator/tester/paid-tiers" className="tester-secondary-button">Paid-tier tester access</Link>
+    </div>
+    <section className="tester-manual-panel" aria-label="Manual tester checklist">
+      <div className="tester-manual-title">
+        <div><h2>Hands-on test checklist</h2><p>Mark a section reviewed only after checking it in the app. Your selections are temporary and are not treated as automated evidence.</p></div>
+        <strong>{completed} / {humanChecks.length} reviewed</strong>
+      </div>
+      <div className="tester-manual-list">
+        {humanChecks.map((item) => <article className="tester-manual-item" key={item.id}>
+          <div><h3>{item.title}</h3><p>{item.expectation}</p></div>
+          <div className="tester-manual-controls">
+            <Link to={item.route}>Open feature</Link>
+            <label><input type="checkbox" checked={checked.includes(item.id)} onChange={(event) => setChecked((current) => event.target.checked ? [...current, item.id] : current.filter((value) => value !== item.id))} /> Reviewed</label>
+          </div>
+        </article>)}
+      </div>
+      <button className="tester-secondary-button" type="button" onClick={() => void copySessionSummary()}>Copy review notes</button>
+      {copyMessage && <p role="status">{copyMessage}</p>}
+    </section>
+    <section className="tester-manual-panel">
+      <h2>Notification testing</h2>
+      <p>Use an authorised test account or your own device to verify real notification delivery.</p>
+      <button className="tester-secondary-button" type="button" aria-expanded={showNotificationLab} onClick={() => setShowNotificationLab((current) => !current)}>{showNotificationLab ? "Close notification tools" : "Open notification tools"}</button>
+      {showNotificationLab && <div className="tt-notification-settings tester-notification-lab"><NotificationTestPanel /></div>}
+    </section>
+    <p className="tester-human-note">Existing tester invitations, feedback forms and paid-tier testing remain available. Routine builds, genetics validation and Firestore security checks remain separate from human testing.</p>
+  </div>;
 }
 
-function statusClass(status: TesterEvidenceStatus): string { return status === "pass" ? "is-pass" : status === "fail" ? "is-fail" : status === "blocked" ? "is-blocked" : "is-not-tested"; }
-function buildCopyReport(bot: BotDefinition, run: TesterRun): string { const results = run.results ?? []; const passed = results.filter((r) => r.status === "pass").length; const failed = results.filter((r) => r.status === "fail").length; const blocked = results.filter((r) => r.status === "blocked").length; const notTested = results.filter((r) => r.status === "not-tested").length; const tested = passed + failed; const coverage = results.length ? Math.round((tested / results.length) * 100) : 0; const passRate = tested ? Math.round((passed / tested) * 100) : 0; return ["TINY TITANS · PRIVATE QA REPORT","================================",`BOT: ${bot.label}`,`RUN: ${run.suite}`,`COMPLETED: ${run.completedAt}`,`DURATION: ${run.durationMs}ms`,"",`PASS: ${passed}`,`FAIL: ${failed}`,`BLOCKED: ${blocked}`,`NOT TESTED: ${notTested}`,`COVERAGE: ${coverage}%`,`EFFECTIVE PASS RATE: ${passRate}%`,"",formatQaNarrative(run),"","EVIDENCE","--------",...results.map((r) => `[${r.status.toUpperCase()}] ${r.name}\n${r.message}\n${r.category} · ${r.severity} · ${r.durationMs}ms · ${r.checkId}`),"","SAFETY","------","Live keeper records are read-only. Sandbox/browser evidence is never represented as a live-data pass."].join("\n"); }
-
-function BotWorkspace({ bot, uid }: { bot: BotDefinition; uid: string }) { const [selectedSuite, setSelectedSuite] = useState(bot.suites[0]?.id ?? ""); const [running, setRunning] = useState<"full" | string | "">(""); const [run, setRun] = useState<TesterRun | null>(null); const [error, setError] = useState(""); const [copied, setCopied] = useState(false); useEffect(() => { setSelectedSuite(bot.suites[0]?.id ?? ""); setRun(null); setError(""); setCopied(false); }, [bot]); const selected = useMemo(() => bot.suites.find((suite) => suite.id === selectedSuite), [bot, selectedSuite]); async function execute(mode: "full" | "specific") { setRunning(mode === "full" ? "full" : selectedSuite); setError(""); setRun(null); setCopied(false); try { const checks = mode === "full" ? await buildFullBotChecks(bot, uid) : await buildBotChecks(bot, selectedSuite, uid); const suffix = mode === "full" ? "full" : selectedSuite; setRun(await runTesterSuite(uid, `${bot.id}:${suffix}`, checks)); } catch (runError) { setError(runError instanceof Error ? runError.message : "The Tester Bot could not complete this test."); } finally { setRunning(""); } } const results = run?.results ?? []; const passed = results.filter((result) => result.status === "pass").length; const failed = results.filter((result) => result.status === "fail").length; const blocked = results.filter((result) => result.status === "blocked").length; const notTested = results.filter((result) => result.status === "not-tested").length; const critical = results.filter((result) => result.status === "fail" && result.severity === "critical").length; const total = results.length; const tested = passed + failed; const coverage = total ? Math.round((tested / total) * 100) : 0; const passRate = tested ? Math.round((passed / tested) * 100) : 0; const health = !run ? "Not run" : critical > 0 ? "Critical failure" : failed > 0 ? "Failed" : blocked > 0 || notTested > 0 ? "Incomplete — coverage remains" : "Passed"; const narrative = run ? buildQaNarrative(run) : null; async function copyReport() { if (!run) return; await navigator.clipboard.writeText(buildCopyReport(bot, run)); setCopied(true); window.setTimeout(() => setCopied(false), 1800); } return <div className="tester-shell tester-workspace"><PageBackButton fallbackPath="/creator/tester" label="Back to Bot Testers" /><div className="tester-workspace-header"><div><p className="eyebrow">BOT TESTER</p><h1><span aria-hidden="true"><TinyTitansIcon name={bot.icon} size={22} /></span> {bot.label}</h1><p>{bot.purpose}</p></div><div className="tester-safety-chip"><TinyTitansIcon name="lock" size={13} /> {bot.id === "security" ? "Defensive / sandbox-safe" : "No real record writes"}</div></div><section className="tester-run-controls"><div className="tester-full-run"><div><span className="tester-control-kicker">COMPLETE TEST</span><h2>Run Full {bot.label}</h2><p>Runs every registered suite for this bot and produces one combined report.</p></div><button className="tester-primary-button" type="button" disabled={Boolean(running)} onClick={() => void execute("full")}>{running === "full" ? <> <TinyTitansIcon name="testing" size={13} /> Running full test…</> : <><TinyTitansIcon name="testing" size={13} /> Run Full Test</>}</button></div><div className="tester-specific-run"><div><span className="tester-control-kicker">TARGETED TEST</span><h2>Run a specific section</h2><p>Choose one related test suite instead of running the entire bot.</p></div><div className="tester-specific-controls"><label htmlFor="tester-suite">Test section</label><select id="tester-suite" value={selectedSuite} onChange={(event) => setSelectedSuite(event.target.value)} disabled={Boolean(running)}>{bot.suites.map((suite) => <option value={suite.id} key={suite.id}>{suite.label}</option>)}</select><p>{selected?.description}</p><button className="tester-secondary-button" type="button" disabled={Boolean(running) || !selectedSuite} onClick={() => void execute("specific")}>{running === selectedSuite ? <><TinyTitansIcon name="testing" size={13} /> Running…</> : "Run Selected Test"}</button></div></div></section><section className="tester-suite-list"><div className="tester-section-heading"><div><span className="tester-control-kicker">AVAILABLE COVERAGE</span><h2>{bot.suites.length} test sections</h2></div><span className="tester-safety-chip">Live checks: read-only</span></div><div className="tester-suite-grid">{bot.suites.map((suite) => <button type="button" key={suite.id} className={`tester-suite-card ${selectedSuite === suite.id ? "is-selected" : ""}`} onClick={() => setSelectedSuite(suite.id)}><strong>{suite.label}</strong><span>{suite.category}</span><p>{suite.description}</p><small>{suite.safety === "sandbox" ? <><TinyTitansIcon name="testing" size={12} /> Sandbox/browser evidence required for deeper workflow testing</> : <><TinyTitansIcon name="search" size={12} /> Read-only against current data</>}</small></button>)}</div></section>{error && <section className="tester-result tester-result-error"><strong>Could not complete test</strong><p>{error}</p></section>}{run && <section className="tester-result"><div className="tester-result-header"><div><span className="tester-control-kicker">LATEST RESULT</span><h2>{health}</h2><p>{run.suite} · {run.durationMs}ms · {run.completedAt}</p></div><div className="tester-result-score"><strong>{passRate}%</strong><span>effective pass rate</span></div></div><div className="tester-result-stats"><span><TinyTitansIcon name="check" size={12} /> {passed} passed</span><span><TinyTitansIcon name="warning" size={12} /> {failed} failed</span><span><TinyTitansIcon name="reminders" size={12} /> {blocked} blocked</span><span><TinyTitansIcon name="info" size={12} /> {notTested} not tested</span><span><TinyTitansIcon name="warning" size={12} /> {critical} critical</span><span><TinyTitansIcon name="analytics" size={12} /> {coverage}% tested</span></div><div className="tester-result-explanation"><strong>What the percentages mean</strong><span><b>Coverage</b> is the percentage of planned checks that actually executed. <b>Effective pass rate</b> is the percentage of executed checks that passed. A blocked or not-tested check never counts as a pass.</span></div>{narrative && <><div className="tester-result-explanation"><strong><TinyTitansIcon name="testing" size={13} /> BOT DIAGNOSIS · {narrative.verdict}</strong><span>{narrative.headline}</span></div>{narrative.diagnosis.length > 0 && <div className="tester-result-list">{narrative.diagnosis.map((item, index) => <article key={`${item.title}-${index}`} className={item.severity === "critical" ? "is-fail" : "is-blocked"}><strong><TinyTitansIcon name={item.severity === "critical" ? "warning" : "reminders"} size={12} /> {index + 1}. {item.title}</strong><span><b>Summary:</b> {item.summary}</span><span><b>Impact:</b> {item.impact}</span><span><b>Action:</b> {item.action}</span><small>{item.severity.toUpperCase()} · BOT DIAGNOSIS</small></article>)}</div>}{narrative.blockedReasons.length > 0 && <div className="tester-result-explanation"><strong><TinyTitansIcon name="reminders" size={13} /> Blocked checks are infrastructure/evidence gaps</strong><span>{narrative.blockedReasons.map((reason) => `${reason.label}: ${reason.count} — ${reason.meaning}`).join(" ")}</span><span>Blocked checks are never treated as passes.</span></div>}{narrative.verified.length > 0 && <div className="tester-result-explanation"><strong><TinyTitansIcon name="check" size={13} /> Verified health</strong><span>{narrative.verified.join(" · ")}</span></div>}<div className="tester-result-explanation"><strong><TinyTitansIcon name="challenge" size={13} /> Next priority</strong><span>{narrative.nextPriority}</span></div></>}{<div className="tester-report-actions"><button className="tester-secondary-button" type="button" onClick={() => void copyReport()}><TinyTitansIcon name="knowledge" size={13} /> {copied ? "Report copied" : "Copy QA Report"}</button><span>The copied report now contains the BOT diagnosis above the raw evidence. Browser screenshots remain separate evidence and are never invented by this in-app report.</span></div>}<div className="tester-result-list">{run.results.map((result) => <article key={result.checkId} className={statusClass(result.status as TesterEvidenceStatus)}><strong><TinyTitansIcon name={result.status === "pass" ? "check" : result.status === "fail" ? "warning" : result.status === "blocked" ? "reminders" : "info"} size={12} /> {result.name}</strong><span>{result.message}</span><small>{result.category} · {result.severity} · {result.durationMs}ms · {result.checkId}</small></article>)}</div></section>}</div>; }
-
-export default function TesterCentre() { const { botId } = useParams<{ botId?: string }>(); const location = useLocation(); const [searchParams] = useSearchParams(); const navigate = useNavigate(); const { user } = useAuth(); const [authorized, setAuthorized] = useState<boolean | null>(null); useEffect(() => { if (!user) { setAuthorized(false); return; } let active = true; void hasCreatorTesterClaim(false).then((claimAuthorized) => { if (active) setAuthorized(claimAuthorized); }).catch(() => { if (active) setAuthorized(false); }); return () => { active = false; }; }, [user]); if (authorized === false) return <Navigate to="/" replace />; if (!user || authorized === null) return <div className="page-container"><div className="welcome-card"><h1><TinyTitansIcon name="testing" size={22} /> Checking Tester authorization…</h1></div></div>; if (searchParams.get("submissionNotifications") === "1" || Boolean(searchParams.get("submissionNotificationRun"))) return <SubmissionNotificationTestBot />; if (botId === "paid-tiers" || location.pathname === "/creator/tester/paid-tiers") return <CreatorPaidTierTester />; const bot = getBotDefinition(botId); if (botId && !bot) return <Navigate to="/creator/tester" replace />; return bot ? <BotWorkspace bot={bot} uid={user.uid} /> : <div className="page-container"><PageBackButton fallbackPath="/creator" label="Back to Creator Centre" /><TesterHub onSelect={(id) => navigate(`/creator/tester/${id}`)} openNotificationLab={searchParams.get("notificationLab") === "1"} /></div>; }
+export default function TesterCentre() {
+  const location = useLocation();
+  const { user } = useAuth();
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!user) { setAuthorized(false); return; }
+    let active = true;
+    void hasCreatorTesterClaim(false).then((allowed) => {
+      if (active) setAuthorized(allowed);
+    }).catch(() => { if (active) setAuthorized(false); });
+    return () => { active = false; };
+  }, [user]);
+  if (authorized === false) return <Navigate to="/" replace />;
+  if (!user || authorized === null) return <div className="page-container"><p>Checking tester access…</p></div>;
+  if (location.pathname === "/creator/tester/paid-tiers") return <CreatorPaidTierTester />;
+  if (location.pathname !== "/creator/tester") return <Navigate to="/creator/tester" replace />;
+  return <div className="page-container">
+    <PageBackButton fallbackPath="/creator" label="Back to Creator Centre" />
+    <HumanTesterHub />
+  </div>;
+}
