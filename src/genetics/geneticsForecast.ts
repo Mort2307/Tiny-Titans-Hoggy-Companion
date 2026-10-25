@@ -90,7 +90,9 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
     ];
   }
 
-  return [{ state: { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id }, weight: 1, label: "Wild type", unknown: false }];
+  // Absence of a recorded allele/het is not proof that this parent is genetically clear.
+  // Do not publish an exact or partial forecast when an involved locus is undocumented.
+  return [];
 }
 
 function relevantLoci(species: string, parentA: ForecastParent, parentB: ForecastParent): LocusDefinition[] {
