@@ -19,8 +19,17 @@ const humanChecks = [
   { id: "reports", title: "Feedback reporting", route: "/report-bug", expectation: "Report a real issue with the screen, expected behaviour, actual result and optional media." },
 ];
 
-function HumanTesterHub() {
-  const [checked, setChecked] = useState<string[]>([]);
+function HumanTesterHub({ uid }: { uid: string }) {
+  const storageKey = `tiny-titans-human-review:${uid}`;
+  const [checked, setChecked] = useState<string[]>(() => {
+    try {
+      const stored = JSON.parse(sessionStorage.getItem(storageKey) || "[]");
+      return Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string" && humanChecks.some((check) => check.id === id)) : [];
+    } catch { return []; }
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem(storageKey, JSON.stringify(checked)); } catch { /* Local persistence is optional. */ }
+  }, [checked, storageKey]);
   const [showNotificationLab, setShowNotificationLab] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
   const completed = checked.length;
@@ -56,7 +65,7 @@ function HumanTesterHub() {
     </div>
     <section className="tester-manual-panel" aria-label="Manual tester checklist">
       <div className="tester-manual-title">
-        <div><h2>Hands-on test checklist</h2><p>Mark a section reviewed only after checking it in the app. Your selections are temporary and are not treated as automated evidence.</p></div>
+        <div><h2>Hands-on test checklist</h2><p>Mark a section reviewed only after checking it in the app. Your selections stay on this device for the current browser session and are not treated as automated evidence.</p></div>
         <strong>{completed} / {humanChecks.length} reviewed</strong>
       </div>
       <div className="tester-manual-list">
@@ -99,6 +108,6 @@ export default function TesterCentre() {
   if (location.pathname !== "/creator/tester") return <Navigate to="/creator/tester" replace />;
   return <div className="page-container">
     <PageBackButton fallbackPath="/creator" label="Back to Creator Centre" />
-    <HumanTesterHub />
+    <HumanTesterHub uid={user.uid} />
   </div>;
 }
