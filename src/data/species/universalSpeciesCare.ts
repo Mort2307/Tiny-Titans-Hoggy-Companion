@@ -87,6 +87,8 @@ const CLASS_SOURCE_IDS: Record<UniversalSpeciesRecord['className'], string[]> = 
   bird: ['merckBirdOverview2026', 'merckBirdManagement2026', 'aavBirdOwners2026', 'merckExoticNutrition2025'],
   fish: ['oataFreshwater2026', 'oataMarine2026', 'oataTraining2026'],
   cephalopod: [],
+  cnidarian: [],
+  echinoderm: [],
 };
 
 const CLASS_BASIS: Record<UniversalSpeciesRecord['className'], UniversalCareBasis> = {
@@ -101,6 +103,8 @@ const CLASS_BASIS: Record<UniversalSpeciesRecord['className'], UniversalCareBasi
   bird: 'general-veterinary',
   fish: 'class-level',
   cephalopod: 'ecology-only',
+  cnidarian: 'ecology-only',
+  echinoderm: 'ecology-only',
 };
 
 const CLASS_CAVEATS: Record<UniversalSpeciesRecord['className'], string> = {
@@ -115,6 +119,8 @@ const CLASS_CAVEATS: Record<UniversalSpeciesRecord['className'], string> = {
   bird: 'General avian veterinary guidance is used. Diet, social needs, flight space, lighting and enrichment vary substantially among bird taxa.',
   fish: 'Aquatic welfare fundamentals are used. Freshwater, brackish and marine systems must not be given the same numeric targets; species-specific chemistry and temperature evidence is required.',
   cephalopod: 'This is a specialist-only baseline. Marine-system chemistry, oxygenation, diet, enrichment and clinical management require dedicated cephalopod expertise.',
+  cnidarian: 'Marine cnidarian research context only; no care targets, photosynthetic status, dosing, feeding or propagation methods are inferred.',
+  echinoderm: 'Marine echinoderm research context only; no chemistry, diet, compatibility, sex or reproductive strategy is inferred.',
 };
 
 type RequirementTemplate = Omit<UniversalCareRequirement, 'evidence'> & {
@@ -235,6 +241,24 @@ const CLASS_REQUIREMENTS: Record<UniversalSpeciesRecord['className'], Requiremen
     requirement('compatibility', 'social', 'Compatible stocking', 'Plan social grouping and tank-mates around species compatibility, territoriality, predation and available resources.', 'important'),
     requirement('records', 'monitoring', 'Water and health records', 'Record test results and observe breathing, appearance, body condition, feeding and behaviour for changes.', 'essential'),
   ],
+  cnidarian: [
+    requirement('identity', 'monitoring', 'Confirm taxon and individual requirements', 'Confirm the precise species and whether published coral/anemone husbandry evidence applies to it; do not use another species as a substitute.', 'essential'),
+    requirement('system', 'housing', 'Specialist marine system', 'Verify the system design, maturity and compatibility using species-specific research before introducing an animal.', 'essential'),
+    requirement('water', 'water', 'Evidence-based seawater management', 'Identify the species-applicable water chemistry and stability requirements from suitable sources; no target ranges are supplied by this baseline.', 'essential'),
+    requirement('flow', 'environment', 'Species-specific water movement', 'Water movement needs must be researched for this species and life stage, not copied from another coral or anemone.', 'essential'),
+    requirement('lighting', 'lighting', 'Research illumination requirements', 'Determine the organism-specific light and symbiosis requirements from evidence; not all marine cnidarians share the same photosynthetic requirements.', 'essential'),
+    requirement('feeding', 'feeding', 'Establish feeding ecology', 'Verify trophic strategy and whether supplemental feeding is appropriate for this species; no frequency or quantities are inferred.', 'essential'),
+    requirement('biosecurity', 'biosecurity', 'Propagation and pest precautions', 'Check disease, predation, stinging/toxin and responsible propagation concerns before handling, fragging or transferring livestock.', 'important'),
+  ],
+  echinoderm: [
+    requirement('identity', 'monitoring', 'Confirm taxon and biology', 'Verify the exact species and its reproductive, feeding and ecological requirements before considering care or breeding.', 'essential'),
+    requirement('system', 'housing', 'Appropriate marine environment', 'Determine the species-specific habitat, aquarium architecture and water quality requirements using documented evidence.', 'essential'),
+    requirement('water', 'water', 'Evidence-based seawater management', 'Stability and water chemistry needs vary; this generic record does not provide salinity, temperature or chemical targets.', 'essential'),
+    requirement('oxygen', 'water', 'Aquatic circulation and gas exchange', 'Assess circulation, oxygenation and system design against the selected species and aquarium evidence.', 'essential'),
+    requirement('nutrition', 'feeding', 'Species-specific nutritional strategy', 'Do not treat all sea stars, urchins or sea cucumbers as interchangeable grazers or detritivores; investigate the actual diet.', 'essential'),
+    requirement('environment', 'housing', 'Suitable substrate and refuge', 'Check substrate, hardscape, mobility and environmental compatibility with the species before stocking.', 'essential'),
+    requirement('compatibility', 'social', 'Compatibility and physical handling', 'Research interactions with tank-mates and handling stress. Avoid unverified claims of reef safety or easy care.', 'important'),
+  ],
   cephalopod: [
     requirement('marine-system', 'housing', 'Specialist marine system', 'Use a mature marine system designed for the species, with redundant environmental monitoring and robust filtration.', 'essential'),
     requirement('water-quality', 'water', 'Tightly controlled water quality', 'Monitor and maintain species-appropriate marine chemistry, oxygenation and stability; exact targets require cephalopod-specific evidence.', 'essential'),
@@ -318,6 +342,14 @@ const CLASS_HEALTH_WATCHES: Record<UniversalSpeciesRecord['className'], HealthTe
     healthWatch('water-quality', 'Water-quality related illness/stress', ['rapid breathing or abnormal opercular movement', 'white spots or other abnormal growths', 'fin/scale changes', 'feeding change'], ['ammonia/nitrite or other water-quality problems', 'unstable chemistry', 'overstocking'], 'Test water before assuming a fish disease and keep a record of results and corrective actions.', 'urgent-vet', { sourceIds: ['oataFreshwater2026', 'oataMarine2026'], basis: 'class-level' }),
     healthWatch('infection-parasites', 'Infectious or parasitic disease', ['lesions', 'abnormal swimming', 'progressive condition loss', 'unexplained mortality'], ['new fish', 'poor quarantine', 'system stress'], 'Quarantine additions where appropriate and seek aquatic-veterinary diagnosis rather than treating blindly.', 'prompt-vet', { sourceIds: ['oataTraining2026'], basis: 'class-level' }),
     healthWatch('nutrition', 'Nutritional or condition problems', ['persistent appetite change', 'weight/condition decline', 'abnormal growth'], ['inappropriate diet', 'overfeeding/underfeeding', 'dietary mismatch'], 'Use diet appropriate to the species and life stage and monitor condition trends.', 'prompt-vet', { sourceIds: ['oataTraining2026', 'merckExoticNutrition2025'], basis: 'class-level' }),
+  ],
+  cnidarian: [
+    healthWatch('environment', 'Environmental decline', ['persistent tissue contraction or loss', 'unexpected colour or growth change', 'unexpected mortality'], ['system changes', 'unverified chemistry', 'light/flow mismatch'], 'Check water chemistry, light and flow against species-specific evidence; appearance does not diagnose a cause.', 'prompt-vet', { basis: 'ecology-only' }),
+    healthWatch('interaction', 'Contact injury or disease', ['visible tissue damage', 'persistent recession', 'loss of normal condition'], ['incompatible tank-mates', 'predation', 'pathogen exposure', 'physical contact'], 'Use documented compatible housing and seek specialist aquatic assessment when decline persists.', 'prompt-vet', { basis: 'ecology-only' }),
+  ],
+  echinoderm: [
+    healthWatch('water', 'Water quality-related distress', ['loss of normal movement or attachment', 'tissue damage', 'unexpected mortality'], ['unstable water chemistry', 'environmental change', 'inappropriate system conditions'], 'Test the system and consult aquatic specialists; do not diagnose or treat based on appearance alone.', 'prompt-vet', { basis: 'ecology-only' }),
+    healthWatch('nutrition', 'Nutrition or compatibility problems', ['persistent decline', 'abnormal behaviour', 'visible damage'], ['unverified food source', 'tank-mate incompatibility', 'unsuitable habitat'], 'Confirm the species-specific trophic ecology before assuming a generic marine feeding plan.', 'prompt-vet', { basis: 'ecology-only' }),
   ],
   cephalopod: [
     healthWatch('water-quality', 'Rapid-onset water-system stress', ['sudden colour/behaviour change', 'abnormal activity', 'feeding cessation', 'unexpected mortality'], ['oxygenation failure', 'ammonia/nitrite or other chemistry problems', 'filtration failure'], 'Treat environmental failure as an operational emergency and verify system conditions immediately.', 'urgent-vet', { basis: 'ecology-only' }),

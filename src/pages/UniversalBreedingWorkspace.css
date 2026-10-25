@@ -1,0 +1,44 @@
+.universal-breeding { max-width: 1250px; }
+.universal-breeding-tabs { display:flex; gap:.4rem; overflow-x:auto; padding:.45rem 0 1rem; }
+.universal-breeding-tabs button { min-height:44px; flex:0 0 auto; padding:.65rem 1rem; border:1px solid var(--border-color, #536072); border-radius:12px; background:transparent; color:inherit; cursor:pointer; }
+.universal-breeding-tabs button.is-current { border-color:var(--accent-color, #8fbde6); background:rgba(110,169,214,.16); font-weight:750; }
+.universal-breeding-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; align-items:start; }
+.universal-breeding .breeding-card { min-width:0; overflow-wrap:anywhere; }
+.universal-breeding .breeding-form label { display:flex; flex-direction:column; gap:.45rem; }
+.universal-breeding input,.universal-breeding select,.universal-breeding textarea { max-width:100%; min-height:44px; color:inherit; }
+.universal-breeding textarea { min-height:96px; resize:vertical; }
+.universal-breeding-message { padding:.75rem 1rem; border:1px solid currentColor; border-radius:12px; margin-bottom:1rem; }
+.universal-breeding-project-list { display:grid; gap:.5rem; }
+.universal-breeding-project-list button { width:100%; display:flex; flex-direction:column; text-align:left; gap:.35rem; border:1px solid var(--border-color, #536072); border-radius:12px; padding:1rem; background:transparent; color:inherit; cursor:pointer; }
+.universal-breeding-project-list button.is-current { border-color:var(--accent-color, #8fbde6); background:rgba(110,169,214,.12); }
+.universal-breeding-project-list small { opacity:.78; }
+.universal-breeding-project-picker { display:flex; flex-direction:column; gap:.45rem; max-width:32rem; }
+.universal-breeding-status { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; margin-top:1rem; }
+.universal-breeding-status label { display:flex; flex-direction:column; gap:.4rem; }
+.universal-breeding-overview { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem; margin-bottom:1rem; }
+.universal-breeding-overview > div { border:1px solid var(--border-color,#536072); border-radius:14px; padding:1rem; display:flex; flex-direction:column; gap:.25rem; }
+.universal-breeding-overview strong { font-size:1.6rem; font-variant-numeric:tabular-nums; }
+.universal-breeding-overview small,.universal-breeding-overview span { opacity:.8; }
+.universal-breeding-timeline { list-style:none; display:grid; gap:.7rem; padding:0; margin:0; }
+.universal-breeding-timeline li { border-inline-start:3px solid var(--accent-color,#8fbde6); padding:.55rem .85rem; display:flex; flex-direction:column; gap:.3rem; }
+.universal-breeding-timeline span,.universal-breeding-timeline small { font-size:.82rem; opacity:.78; }
+.universal-breeding-timeline p { margin:0; }
+.universal-breeding-sources { padding-inline-start:1.2rem; max-height:16rem; overflow-y:auto; }
+@media(max-width:760px) {
+  .universal-breeding-columns { grid-template-columns:1fr; }
+  .universal-breeding-overview { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .universal-breeding-overview > div { padding:.75rem; }
+  .universal-breeding-overview strong { font-size:1.25rem; }
+}
+@media(max-width:380px) {
+  .universal-breeding-overview { grid-template-columns:1fr; }
+}
+
+.universal-breeding-delete { margin-top:1rem; border-top:1px solid var(--border-color,#536072); padding-top:.8rem; }
+.universal-breeding-delete>button { min-height:44px; padding:.65rem 1rem; border:1px solid var(--border-color,#536072); border-radius:10px; background:transparent; color:inherit; cursor:pointer; }
+.universal-breeding-delete-confirm { display:grid; gap:.5rem; padding:1rem; border:1px solid currentColor; border-radius:12px; }
+.universal-breeding-delete-confirm p { margin:0; font-size:.9rem; }
+.universal-breeding-delete-confirm>div { display:flex; flex-wrap:wrap; gap:.55rem; }
+.universal-breeding-delete-confirm button { min-height:44px; padding:.65rem 1rem; border:1px solid currentColor; border-radius:10px; cursor:pointer; }
+.universal-breeding-delete-confirm button:first-child { background:transparent; color:inherit; }
+.universal-breeding-delete-confirm button:last-child { background:#882b32; color:white; }

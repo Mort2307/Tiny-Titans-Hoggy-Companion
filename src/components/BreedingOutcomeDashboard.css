@@ -1,0 +1,32 @@
+.tt-outcomes { display:grid; gap:.75rem; min-width:0; }
+.tt-outcomes-summary { display:flex; gap:.45rem .8rem; flex-wrap:wrap; align-items:center; font-size:.8rem; }
+.tt-outcomes-summary span { display:inline-flex; align-items:center; gap:.25rem; padding:.38rem .65rem; border:1px solid var(--border-color,#526174); border-radius:999px; }
+.tt-outcomes-summary strong { font-variant-numeric:tabular-nums; }
+.tt-outcomes-toolbar { display:grid; grid-template-columns:minmax(0,1fr) minmax(155px,190px); gap:.55rem; }
+.tt-outcomes-toolbar label { display:block; min-width:0; }
+.tt-outcomes-toolbar input,.tt-outcomes-toolbar select { width:100%; min-height:44px; padding:.45rem .7rem; border:1px solid var(--border-color,#526174); border-radius:10px; background:var(--surface-elevated,var(--surface)); color:var(--text); font:inherit; }
+.tt-outcomes .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.tt-outcomes-list { display:grid; gap:.45rem; }
+.tt-outcomes-card { border:1px solid var(--border-color,#526174); border-radius:12px; padding:.75rem .85rem; min-width:0; }
+.tt-outcomes-heading { display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+.tt-outcomes-heading>div { min-width:0; }
+.tt-outcomes-heading h3 { margin:.1rem 0; font-size:1rem; line-height:1.3; overflow-wrap:anywhere; }
+.tt-outcomes-heading small { display:block; font-size:.73rem; opacity:.77; }
+.tt-outcomes-heading>strong { flex-shrink:0; font-size:1rem; font-variant-numeric:tabular-nums; text-align:right; }
+.tt-outcomes-breakdown { border-top:1px solid var(--border-color,#526174); margin-top:.4rem; }
+.tt-outcomes-breakdown summary,.tt-outcomes-guide summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font-size:.81rem; font-weight:700; color:var(--text); }
+.tt-outcomes-details { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr)); gap:.6rem; padding:.25rem 0 .65rem; }
+.tt-outcomes-details .genetics-result-card { padding:.8rem; }
+.tt-outcomes-more,.tt-outcomes-less { min-height:44px; border:1px solid var(--border-color,#526174); border-radius:10px; background:var(--surface-elevated,var(--surface)); color:var(--text); font:inherit; font-weight:700; cursor:pointer; padding:.55rem 1rem; }
+.tt-outcomes-guide { border-top:1px solid var(--border-color,#526174); font-size:.82rem; }
+.tt-outcomes-guide p { opacity:.85; line-height:1.5; margin:.35rem 0 .65rem; }
+.tt-outcomes-expand-all { display:flex; align-items:center; min-height:44px; gap:.55rem; }
+.tt-outcomes-expand-all input { width:18px; height:18px; }
+.tt-outcomes-no-matches { margin:.3rem 0; opacity:.8; }
+@media(max-width:560px) {
+  .tt-outcomes-toolbar { grid-template-columns:minmax(0,1fr); }
+  .tt-outcomes-card { padding:.65rem .75rem; }
+  .tt-outcomes-heading>strong { font-size:.97rem; }
+  .tt-outcomes-summary { gap:.35rem; }
+  .tt-outcomes-summary span { padding:.3rem .5rem; }
+}

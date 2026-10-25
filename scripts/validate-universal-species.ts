@@ -29,7 +29,7 @@ for (const species of UNIVERSAL_SPECIES) {
   assert(species.order.trim().length > 0, `${species.id} has no order.`);
   assert(UNIVERSAL_SPECIES_SOURCES[species.taxonSourceId], `${species.id} references missing taxonomy source ${species.taxonSourceId}.`);
   assert(species.sourceIds.length > 0, `${species.id} has no provenance IDs.`);
-  assert(species.reviewedOn === '2026-09-21' || species.reviewedOn.startsWith('2026-09-'), `${species.id} has no current expansion review date.`);
+  assert(/^2026-(09|10)-\d{2}$/.test(species.reviewedOn), `${species.id} has no current expansion review date.`);
   assert(!/\\bsp\\.?\\b/i.test(species.acceptedScientificName), `${species.id} is a genus-level/spec placeholder rather than a species-level record.`);
   assert(species.husbandryStatus !== 'taxonomy-only' || species.husbandryNotes?.includes('numeric husbandry targets'), `${species.id} taxonomy-only state is missing its no-fabrication guard.`);
   assert(species.regulatory.locationDependent === true, `${species.id} regulatory state must remain location-dependent.`);
@@ -52,6 +52,8 @@ const minimums: Record<string, number> = {
   bird: 15,
   fish: 20,
   cephalopod: 4,
+  cnidarian: 12,
+  echinoderm: 9,
 };
 
 for (const [className, minimum] of Object.entries(minimums)) {

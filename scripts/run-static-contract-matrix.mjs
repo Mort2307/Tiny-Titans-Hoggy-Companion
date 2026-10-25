@@ -26,7 +26,7 @@ for (const [label, script] of suites) {
 
 const failed = results.filter((result) => result.status === "FAIL");
 const attempted = results.length;
-console.log("\nBOT CONTRACT REPORT");
+console.log("\nSTATIC CONTRACT REPORT");
 console.table(results);
 console.log(`Registered: ${suites.length}`);
 console.log(`Attempted: ${attempted}`);

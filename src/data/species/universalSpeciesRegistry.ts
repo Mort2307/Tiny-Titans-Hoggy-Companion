@@ -8,6 +8,7 @@ import { UNIVERSAL_ARACHNID_SEEDS } from './universalSpeciesSeedArachnids';
 import { UNIVERSAL_INVERTEBRATE_SEEDS } from './universalSpeciesSeedInvertebrates';
 import { UNIVERSAL_EXOTIC_SEEDS } from './universalSpeciesSeedExotics';
 import { UNIVERSAL_BIRD_EXPANSION_SEEDS } from './universalSpeciesSeedBirds';
+import { UNIVERSAL_MARINE_INVERTEBRATE_SEEDS } from './universalSpeciesSeedMarine';
 import { rankSearchResults } from '../../utils/searchRanking';
 import { attachUniversalSpeciesCare } from './universalSpeciesCare';
 
@@ -23,6 +24,8 @@ const CLASS_LABELS: Record<UniversalSpeciesRecord['className'], string> = {
   bird: 'Birds',
   fish: 'Fish',
   cephalopod: 'Cephalopods',
+  cnidarian: 'Corals & anemones',
+  echinoderm: 'Sea stars, urchins & cucumbers',
 };
 
 const CLASS_SUMMARIES: Record<UniversalSpeciesRecord['className'], string> = {
@@ -37,6 +40,8 @@ const CLASS_SUMMARIES: Record<UniversalSpeciesRecord['className'], string> = {
   bird: 'Taxonomy-first bird record. Avian husbandry is species-specific and legal/conservation checks may apply.',
   fish: 'Taxonomy-first fish record. Water chemistry and system design require species-specific evidence.',
   cephalopod: 'Taxonomy-first cephalopod record. Specialist marine-system requirements and advanced husbandry evidence are required.',
+  cnidarian: 'Provisional marine invertebrate identity. Coral/anemone care and propagation require individually sourced evidence; no general marine parameters are inferred.',
+  echinoderm: 'Provisional echinoderm identity. Feeding ecology, habitat, size, handling and reproduction require individually sourced evidence.',
 };
 
 const genericRegulationNote = 'Legal status is location-dependent. Check current CITES/Species+ records, UK Dangerous Wild Animals rules where relevant, invasive non-native species controls and local import/keeping requirements before acquisition or movement.';
@@ -70,6 +75,8 @@ function deriveBrowseGroup(seed: UniversalSpeciesSeed): UniversalSpeciesBrowseGr
     if (/^(Python|Boa|Lampropeltis|Pantherophis|Pituophis|Thamnophis|Nerodia|Corallus|Eunectes|Candoia|Antaresia|Aspidites|Morelia|Naja|Bitis|Crotalus|Trimeresurus|Dendroaspis|Oxyuranus|Notechis|Acanthophis|Hydrophis|Boiga|Hapsidophrys|Heterodon|Rhamphiophis|Telescopus|Psammophis|Pseudechis|Austrelaps|Hemiaspis|Tropidolaemus|Bothrops|Daboia|Vipera|Vipera|Micrurus|Lampropeltis)$/i.test(seed.scientific.split(' ')[0] ?? '')) return 'snakes';
     return 'lizards';
   }
+  if (seed.className === 'cnidarian') return 'corals-anemones';
+  if (seed.className === 'echinoderm') return 'echinoderms';
   if (seed.className === 'amphibian') return seed.order === 'Anura' ? 'frogs-toads' : seed.order === 'Caudata' ? 'salamanders-newts' : 'caecilians';
   return seed.className === 'arachnid' ? (seed.order === 'Araneae' ? 'spiders' : seed.order === 'Scorpiones' ? 'scorpions' : 'whip-spiders-vinegaroons')
     : seed.className === 'myriapod' ? (seed.order === 'Scolopendromorpha' ? 'centipedes' : 'millipedes')
@@ -119,7 +126,7 @@ function buildSeedRecord(seed: UniversalSpeciesSeed): UniversalSpeciesRecord {
       note: genericRegulationNote,
     },
     sourceIds: [taxonSourceId, 'citesSpeciesPlus2026', 'govUkCites2026', 'govUkDwa2026', 'govUkInvasiveNonNative2026'],
-    reviewedOn: '2026-09-21',
+    reviewedOn: seed.className === 'cnidarian' || seed.className === 'echinoderm' ? '2026-10-25' : '2026-09-21',
   };
 }
 
@@ -179,6 +186,7 @@ const SEEDS: UniversalSpeciesSeed[] = [
   ...UNIVERSAL_INVERTEBRATE_SEEDS,
   ...UNIVERSAL_EXOTIC_SEEDS,
   ...UNIVERSAL_BIRD_EXPANSION_SEEDS,
+  ...UNIVERSAL_MARINE_INVERTEBRATE_SEEDS,
 ];
 
 const existingSnakeRecords = INITIAL_SNAKE_SPECIES.map(adaptSnakeRecord);
@@ -271,6 +279,8 @@ const BROWSE_GROUP_LABELS: Record<UniversalSpeciesBrowseGroup, string> = {
   birds: 'Birds',
   fish: 'Fish',
   cephalopods: 'Cephalopods',
+  'corals-anemones': 'Corals & anemones',
+  echinoderms: 'Sea stars, urchins & cucumbers',
 };
 
 export const UNIVERSAL_SPECIES_BROWSE_GROUPS = Object.entries(

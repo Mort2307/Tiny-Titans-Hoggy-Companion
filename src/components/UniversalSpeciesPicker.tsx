@@ -12,7 +12,8 @@ type Props = {
   placeholder?: string;
   allowUnknown?: boolean;
 };
-const PAGE_SIZE = 40;
+// Short initial list prevents a species search from occupying the entire phone screen.
+const PAGE_SIZE = 8;
 
 export default function UniversalSpeciesPicker({
   value = "",

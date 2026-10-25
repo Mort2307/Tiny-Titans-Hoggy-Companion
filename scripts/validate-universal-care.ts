@@ -62,7 +62,7 @@ for (const speciesId of ['pantherophis-guttatus', 'eublepharis-macularius', 'pog
   assert((species.care.husbandry.numericGuidance.ranges ?? []).length > 0, `${speciesId} species care must expose its mapped numeric evidence where the source supports it.`);
 }
 
-const requiredGroups = ['reptile', 'amphibian', 'arachnid', 'insect', 'myriapod', 'mollusc', 'crustacean', 'mammal', 'bird', 'fish', 'cephalopod'];
+const requiredGroups = ['reptile', 'amphibian', 'arachnid', 'insect', 'myriapod', 'mollusc', 'crustacean', 'mammal', 'bird', 'fish', 'cephalopod', 'cnidarian', 'echinoderm'];
 for (const group of requiredGroups) {
   assert(UNIVERSAL_SPECIES.some((species) => species.className === group), `Missing universal animal group: ${group}`);
 }

@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase/config";
 import type { BreedingPairing, BreedingProject, EggClutch, HatchlingRecord } from "../types/Breeding";
 import type { BreedingCycleEvent, BreedingCyclePlan } from "../types/BreedingCycle";
@@ -6,13 +6,63 @@ import type { EggRecord, IncubationPlan } from "../types/BreedingProduction";
 import { resolveDataOwnerUid } from "./familyService";
 import { requestFamilyMutation } from "./familyPermissionsService";
 import { emitTitanIntelligenceEvent } from "./titanReactiveIntelligenceService";
-function projectsCollection(uid:string){return collection(db,"users",uid,"breedingProjects");} function projectDoc(uid:string,projectId:string){return doc(db,"users",uid,"breedingProjects",projectId);} function pairingsCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"pairings");} function clutchCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"clutches");} function hatchlingsCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"hatchlings");} function cycleEventsCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"cycleEvents");} function cyclePlanDoc(uid:string,projectId:string){return doc(projectDoc(uid,projectId),"cyclePlan","current");} function eggsCollection(uid:string,projectId:string,clutchId:string){return collection(doc(clutchCollection(uid,projectId),clutchId),"eggs");} function incubationPlanDoc(uid:string,projectId:string,clutchId:string){return doc(doc(clutchCollection(uid,projectId),clutchId),"incubationPlan","current");}
+function projectsCollection(uid:string){return collection(db,"users",uid,"breedingProjects");} function projectDoc(uid:string,projectId:string){return doc(db,"users",uid,"breedingProjects",projectId);} function pairingsCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"pairings");} function clutchCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"clutches");} function hatchlingsCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"hatchlings");} function cycleEventsCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"cycleEvents");} function universalEventsCollection(uid:string,projectId:string){return collection(projectDoc(uid,projectId),"events");} function cyclePlanDoc(uid:string,projectId:string){return doc(projectDoc(uid,projectId),"cyclePlan","current");} function eggsCollection(uid:string,projectId:string,clutchId:string){return collection(doc(clutchCollection(uid,projectId),clutchId),"eggs");} function incubationPlanDoc(uid:string,projectId:string,clutchId:string){return doc(doc(clutchCollection(uid,projectId),clutchId),"incubationPlan","current");}
 function withoutUndefined<T extends Record<string,unknown>>(value:T):T{return Object.fromEntries(Object.entries(value).filter(([,fieldValue])=>fieldValue!==undefined)) as T;}
 async function isExisting(reference:ReturnType<typeof doc>):Promise<boolean>{return (await getDoc(reference)).exists();}
 export async function getBreedingProjects(uid:string):Promise<BreedingProject[]>{const owner=await resolveDataOwnerUid(uid);const snapshot=await getDocs(projectsCollection(owner));return snapshot.docs.map((item)=>item.data() as BreedingProject).sort((a,b)=>String(b.updatedAt??b.createdAt??"").localeCompare(String(a.updatedAt??a.createdAt??"")));}
 export async function getBreedingProject(uid:string,projectId:string):Promise<BreedingProject|null>{const owner=await resolveDataOwnerUid(uid);const snapshot=await getDoc(projectDoc(owner,projectId));return snapshot.exists()?(snapshot.data() as BreedingProject):null;}
-export async function saveBreedingProject(uid:string,project:BreedingProject):Promise<void>{const owner=await resolveDataOwnerUid(uid);const reference=projectDoc(owner,project.id);const existing=await isExisting(reference);const payload=withoutUndefined({...project,lastModifiedBy:uid,updatedAt:serverTimestamp(),...(existing?{}:{createdAt:serverTimestamp()})});await requestFamilyMutation({requesterUid:uid,requesterName:uid,area:"breeding",action:existing?"edit":"create",title:"Update breeding project",description:existing?"A family member wants to change a shared breeding project.":"A family member wants to create a shared breeding project.",targetPath:`users/${owner}/breedingProjects/${project.id}`,operation:existing?"update":"create",data:payload});await setDoc(reference,payload,{merge:true});emitTitanIntelligenceEvent({uid,type:"BreedingProjectChanged",action:existing?"updated":"created"});}
-export async function deleteBreedingProject(uid:string,projectId:string):Promise<void>{const owner=await resolveDataOwnerUid(uid);const [pairings,clutches,hatchlings]=await Promise.all([getDocs(pairingsCollection(owner,projectId)),getDocs(clutchCollection(owner,projectId)),getDocs(hatchlingsCollection(owner,projectId))]);const paths=[`users/${owner}/breedingProjects/${projectId}`,...pairings.docs.map((item)=>item.ref.path),...clutches.docs.map((item)=>item.ref.path),...hatchlings.docs.map((item)=>item.ref.path)];await requestFamilyMutation({requesterUid:uid,requesterName:uid,area:"breeding",action:"delete",title:"Delete breeding project",description:"A family member wants to permanently remove a breeding project and its history.",targetPath:paths[0],operation:"deleteTree",paths});await Promise.all([...pairings.docs.map((item)=>deleteDoc(item.ref)),...clutches.docs.map((item)=>deleteDoc(item.ref)),...hatchlings.docs.map((item)=>deleteDoc(item.ref))]);await deleteDoc(projectDoc(owner,projectId));emitTitanIntelligenceEvent({uid,type:"BreedingProjectChanged",action:"deleted"});}
+export async function saveBreedingProject(uid:string,project:BreedingProject):Promise<void>{const owner=await resolveDataOwnerUid(uid);const reference=projectDoc(owner,project.id);const previous=await getDoc(reference);const existing=previous.exists();const establishedSpeciesId=previous.data()?.speciesId as string | undefined;if(existing && establishedSpeciesId && project.speciesId!==establishedSpeciesId)throw new Error("An existing breeding project cannot change its canonical species. Create a separate project instead.");const payload=withoutUndefined({...project,lastModifiedBy:uid,updatedAt:serverTimestamp(),...(existing?{}:{createdAt:serverTimestamp()})});await requestFamilyMutation({requesterUid:uid,requesterName:uid,area:"breeding",action:existing?"edit":"create",title:"Update breeding project",description:existing?"A family member wants to change a shared breeding project.":"A family member wants to create a shared breeding project.",targetPath:`users/${owner}/breedingProjects/${project.id}`,operation:existing?"update":"create",data:payload});await setDoc(reference,payload,{merge:true});emitTitanIntelligenceEvent({uid,type:"BreedingProjectChanged",action:existing?"updated":"created"});}
+export async function deleteBreedingProject(uid: string, projectId: string): Promise<void> {
+  const owner = await resolveDataOwnerUid(uid);
+  const [pairings, clutches, hatchlings, cycleEvents, universalEvents, cyclePlan] = await Promise.all([
+    getDocs(pairingsCollection(owner, projectId)),
+    getDocs(clutchCollection(owner, projectId)),
+    getDocs(hatchlingsCollection(owner, projectId)),
+    getDocs(cycleEventsCollection(owner, projectId)),
+    getDocs(universalEventsCollection(owner, projectId)),
+    getDoc(cyclePlanDoc(owner, projectId)),
+  ]);
+  const clutchChildren = await Promise.all(clutches.docs.map(async (clutch) => {
+    const [eggs, incubation] = await Promise.all([
+      getDocs(eggsCollection(owner, projectId, clutch.id)),
+      getDoc(incubationPlanDoc(owner, projectId, clutch.id)),
+    ]);
+    return [
+      ...eggs.docs.map((entry) => entry.ref),
+      ...(incubation.exists() ? [incubation.ref] : []),
+    ];
+  }));
+  const allChildren = [
+    ...clutchChildren.flat(),
+    ...pairings.docs.map((entry) => entry.ref),
+    ...clutches.docs.map((entry) => entry.ref),
+    ...hatchlings.docs.map((entry) => entry.ref),
+    ...cycleEvents.docs.map((entry) => entry.ref),
+    ...universalEvents.docs.map((entry) => entry.ref),
+    ...(cyclePlan.exists() ? [cyclePlan.ref] : []),
+  ];
+  const root = projectDoc(owner, projectId);
+  const paths = [root.path, ...allChildren.map((entry) => entry.path)];
+
+  // Family approval captures every descendant, preventing an orphaned egg/cycle
+  // when the owner later approves deletion of a shared breeding project.
+  await requestFamilyMutation({
+    requesterUid: uid, requesterName: uid, area: "breeding", action: "delete",
+    title: "Delete breeding project",
+    description: "A family member wants to permanently remove a breeding project and its recorded offspring and lifecycle history.",
+    targetPath: root.path, operation: "deleteTree", paths,
+  });
+
+  // The common case is one atomic batch, including the root document.
+  // Very large breeding archives are deleted in bounded batches, root last.
+  const refs = [...allChildren, root];
+  for (let offset = 0; offset < refs.length; offset += 400) {
+    const batch = writeBatch(db);
+    refs.slice(offset, offset + 400).forEach((entry) => batch.delete(entry));
+    await batch.commit();
+  }
+  emitTitanIntelligenceEvent({ uid, type: "BreedingProjectChanged", action: "deleted" });
+}
 export async function getBreedingPairings(uid:string,projectId:string):Promise<BreedingPairing[]>{const owner=await resolveDataOwnerUid(uid);const snapshot=await getDocs(query(pairingsCollection(owner,projectId),orderBy("pairingDate","desc")));return snapshot.docs.map((item)=>item.data() as BreedingPairing);}
 export async function getBreedingPairing(uid:string,projectId:string,pairingId:string):Promise<BreedingPairing|null>{const owner=await resolveDataOwnerUid(uid);const snapshot=await getDoc(doc(pairingsCollection(owner,projectId),pairingId));return snapshot.exists()?(snapshot.data() as BreedingPairing):null;}
 export async function saveBreedingPairing(uid:string,projectId:string,pairing:BreedingPairing):Promise<void>{const owner=await resolveDataOwnerUid(uid);const reference=doc(pairingsCollection(owner,projectId),pairing.id);const existing=await isExisting(reference);const payload=withoutUndefined({...pairing,lastModifiedBy:uid,updatedAt:serverTimestamp()});await requestFamilyMutation({requesterUid:uid,requesterName:uid,area:"breeding",action:existing?"edit":"create",title:"Update breeding pairing",description:existing?"A family member wants to change a shared breeding pairing.":"A family member wants to create a shared breeding pairing.",targetPath:`users/${owner}/breedingProjects/${projectId}/pairings/${pairing.id}`,operation:existing?"update":"create",data:payload});await setDoc(reference,payload,{merge:true});emitTitanIntelligenceEvent({uid,type:"BreedingProjectChanged",action:existing?"updated":"created"});}

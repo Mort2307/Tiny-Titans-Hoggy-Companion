@@ -137,7 +137,7 @@ function LayoutChrome() {
             <WorkspaceIdentityStrip />
             <NotificationOnboarding />
             <NetworkStatusBanner />
-            {speciesAware && <SpeciesContextBar />}
+            {speciesAware && <SpeciesContextBar compact={location.pathname === "/calculator"} showGeneticsStatus={location.pathname !== "/calculator"} label={location.pathname === "/calculator" ? "Species for this calculation" : undefined} />}
             {isHomeOrRecordLogPage && <TitanAtAGlance />}
             {pageContent}
             <TinyTitansEvidenceNotice />
