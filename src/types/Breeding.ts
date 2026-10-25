@@ -13,6 +13,13 @@ export type BreedingProject = {
   name: string;
   maleId: string;
   femaleId: string;
+  /** Universal species key; undefined identifies an older snake-only project. */
+  speciesId?: string;
+  /** Sex-neutral participant links for fish, invertebrates, birds and other animals. */
+  parentAId?: string;
+  parentBId?: string;
+  /** Recorded reproductive strategy, not assumed from animal class. */
+  reproductiveMode?: "unknown" | "eggs" | "live-birth" | "brood" | "other";
   status: BreedingStatus;
   createdAt?: unknown;
   updatedAt?: unknown;
