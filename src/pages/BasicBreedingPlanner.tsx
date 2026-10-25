@@ -182,6 +182,12 @@ export default function BasicBreedingPlanner() {
       </div>
 
       {selectedProject && <section className="breeding-card">
+        <div className="breeding-project-header"><div><p className="breeding-eyebrow">OFFSPRING INTELLIGENCE</p><h2>Explore possible offspring</h2></div></div>
+        <p className="breeding-muted">Review documented morph combinations, carrier states and outcome probabilities. Undocumented parental genetics remain unknown rather than being treated as normal.</p>
+        <div className="breeding-actions"><button type="button" onClick={() => navigate("/calculator?male=" + encodeURIComponent(selectedProject.maleId) + "&female=" + encodeURIComponent(selectedProject.femaleId))}>View offspring and named combos</button></div>
+      </section>}
+
+      {selectedProject && <section className="breeding-card">
         <div className="breeding-project-header"><div><p className="breeding-eyebrow">PAIRING LOG</p><h2>Record an actual pairing</h2></div><span className="breeding-badge">{pairings.length} recorded</span></div>
         <p className="breeding-muted">This is a record of an observed pairing, not a promise of successful reproduction.</p>
         <div className="breeding-grid-wide">
