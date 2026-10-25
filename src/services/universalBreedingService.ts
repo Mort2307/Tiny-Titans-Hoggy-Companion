@@ -1,9 +1,10 @@
-import { collection, doc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { resolveDataOwnerUid } from "./familyService";
 import { requestFamilyMutation } from "./familyPermissionsService";
 import { emitTitanIntelligenceEvent } from "./titanReactiveIntelligenceService";
 import type { UniversalBreedingEvent } from "../types/UniversalBreeding";
+import type { BreedingProject } from "../types/Breeding";
 
 function eventCollection(uid: string, projectId: string) {
   return collection(db, "users", uid, "breedingProjects", projectId, "events");
@@ -25,6 +26,12 @@ export async function saveUniversalBreedingEvent(uid: string, event: UniversalBr
     throw new Error("Observed quantity must be a non-negative whole number.");
   }
   const owner = await resolveDataOwnerUid(uid);
+  const project = await getDoc(doc(db, "users", owner, "breedingProjects", event.projectId));
+  if (!project.exists()) throw new Error("Cannot record a breeding observation without an existing project.");
+  const breeding = project.data() as BreedingProject;
+  if (!breeding.speciesId || breeding.speciesId !== event.speciesId) {
+    throw new Error("The observation species must match the project's canonical species identity.");
+  }
   const reference = doc(eventCollection(owner, event.projectId), event.id);
   const payload = {
     ...event,
