@@ -100,7 +100,7 @@ export function getCanonicalOffspringPresentation(
   }
 
   return {
-    name: phenotypeSignature.length ? phenotypeSignature.map((entry) => entry.name).join(" + ") : "Wild Type",
+    name: phenotypeSignature.length ? phenotypeSignature.map((entry) => entry.name).join(" + ") : (result.name || "No documented visual traits"),
     alternateRecognisedCombinations: [],
     signature,
     signatureKey,
