@@ -91,7 +91,8 @@ function approvedCommunityMediaPath(image: ApprovedMorphImage): boolean {
   // Only Firebase Storage objects created through our community submission/review path
   // (including Creator crops of those uploads) are eligible for public galleries.
   return Boolean(image.sourceSubmissionId) &&
-    (/^morph-submissions\\/[^/]+\\/[^/]+\\//.test(path) || /^morphLibrary\\/[^/]+\\/community\\//.test(path));
+    ((path.startsWith("morph-submissions/") && path.split("/").length >= 4) ||
+      (path.startsWith("morphLibrary/") && path.split("/")[2] === "community"));
 }
 
 export async function getApprovedMorphImages(morphId?: string, speciesId?: string): Promise<ApprovedMorphImage[]> {
