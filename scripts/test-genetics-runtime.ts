@@ -75,6 +75,18 @@ assert(!documentedClear.hasUnresolvedGenetics, "documented clear state does not 
 const unknownDominant = calculateSpeciesGeneticsForecast("Heterodon nasicus", { female: { morphs: ["arctic"], hets: [] }, male: { morphs: [], hets: [] } });
 assert(unknownDominant.offspring.length === 0 && unknownDominant.hasUnresolvedGenetics, "Undocumented Arctic copy states with an untested partner must remain unresolved");
 
+const inventedMorph = calculateSpeciesGeneticsForecast("Heterodon nasicus", {
+  female: { morphs: ["not-a-documented-inheritance-variant"], hets: [] },
+  male: { morphs: [], hets: [] },
+});
+assert(inventedMorph.offspring.length === 0 && inventedMorph.hasUnresolvedGenetics, "unmapped variation cannot become an invented 100% normal prediction");
+
+const conflictingClear = calculateSpeciesGeneticsForecast("Heterodon nasicus", {
+  female: { morphs: ["arctic"], hets: [], knownGeneCopies: { arctic: 1 }, confirmedClearLoci: [arctic.id] },
+  male: { morphs: [], hets: [], confirmedClearLoci: [arctic.id] },
+});
+assert(conflictingClear.offspring.length === 0 && conflictingClear.hasUnresolvedGenetics, "conflicting genetic evidence is withheld instead of silently selecting an interpretation");
+
 const crossSpeciesInput: ParentGenome = { species: "Pantherophis guttatus", states: [] };
 let crossSpeciesRejected = false;
 try { calculateGenome(hogDatabase, parentA, crossSpeciesInput); } catch (error) { crossSpeciesRejected = error instanceof Error && error.message.includes("Cross-species genetics are not supported"); }
