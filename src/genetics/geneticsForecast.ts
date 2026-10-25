@@ -50,6 +50,15 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
   const wild = locus.alleles.find((entry) => entry.isWildType);
   if (!wild) return [];
 
+  // A keeper's recorded "clear" claim cannot coexist with a visual or carrier
+  // entry at this same locus. Treat conflicting source records as unresolved.
+  if (parent.confirmedClearLoci?.includes(locus.id) && (
+    parent.morphs.some((morph) => Boolean(findAllele(locus, morph)) ||
+      GENETICS_DATABASE.combinations.some((combination) => combination.species === locus.species &&
+        combinationMatchesParent(combination, morph) && combination.componentLocusIds.includes(locus.id))) ||
+    parent.hets.some((het) => Boolean(findAllele(locus, het)))
+  )) return [];
+
   const combinationState = parentCombinationState(parent, locus);
   if (combinationState) return [combinationState];
 
@@ -91,8 +100,6 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
   }
 
   if (parent.confirmedClearLoci?.includes(locus.id)) {
-    // A contradictory keeper record is unresolved, not proof that either entry wins.
-    if (parent.morphs.some((morph) => Boolean(findAllele(locus, morph)) || GENETICS_DATABASE.combinations.some((combination) => combination.species === locus.species && combinationMatchesParent(combination, morph) && combination.componentLocusIds.includes(locus.id))) || parent.hets.some((het) => Boolean(findAllele(locus, het)))) return [];
     return [{ state: { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id }, weight: 1, label: `${locus.name}: documented clear`, unknown: false }];
   }
 
