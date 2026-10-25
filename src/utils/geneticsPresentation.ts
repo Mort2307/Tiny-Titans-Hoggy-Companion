@@ -1,7 +1,7 @@
 import type { MorphDefinition } from "../data/morphs";
 import type { OffspringComponent, OffspringResult } from "../types/genetics";
 import { expandMorphToComponents } from "./morphResolver";
-import { calculatorNamedCombinations, componentSignature } from "../data/geneticsComboRegistry";
+import { componentSignature } from "../data/geneticsComboRegistry";
 
 export type GeneticsSignatureEntry = {
   geneId: string;
@@ -61,8 +61,11 @@ function definitionSignatureKey(definition: MorphDefinition): string {
 
 function getRecognisedCombinations(morphs: MorphDefinition[]): MorphDefinition[] {
   const bySignature = new Map<string, MorphDefinition[]>();
-  for (const morph of [...morphs, ...calculatorNamedCombinations]) {
+  for (const morph of morphs) {
     if (!(morph.kind === "Combination" || morph.isCombination === true)) continue;
+    // Community or unverified names are searchable references, not established outcomes.
+    if (morph.verification !== "Confirmed" && morph.verification !== "Recognised") continue;
+    if (!morph.components?.length) continue;
     const key = definitionSignatureKey(morph);
     const group = bySignature.get(key) ?? [];
     if (!group.some((candidate) => candidate.geneId === morph.geneId)) group.push(morph);
@@ -100,7 +103,7 @@ export function getCanonicalOffspringPresentation(
   }
 
   return {
-    name: phenotypeSignature.length ? phenotypeSignature.map((entry) => entry.name).join(" + ") : "Wild Type",
+    name: phenotypeSignature.length ? phenotypeSignature.map((entry) => entry.name).join(" + ") : (result.name || "No documented visual traits"),
     alternateRecognisedCombinations: [],
     signature,
     signatureKey,

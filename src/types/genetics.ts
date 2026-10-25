@@ -23,6 +23,8 @@ export type ParentGenetics = {
   hetPercentages?: Record<string, HetPercentage>;
   /** Explicitly established zygosity for visual dominant/incomplete-dominant traits. */
   knownGeneCopies?: Record<string, 1 | 2>;
+  /** Explicitly documented wild-type (clear) genotypes at individual loci. Never infer these from an empty morph list. */
+  confirmedClearLoci?: string[];
 };
 
 export type GeneCopyState = 0 | 1 | 2;
@@ -83,6 +85,8 @@ export type GeneticsCalculation = {
     geneStates: Array<{ geneId: string; copies: number; probability: number }>;
   }>;
   totalProbability: number;
+  /** Explains withheld forecasts rather than presenting guessed Mendelian odds. */
+  warnings?: string[];
 };
 
 export type GeneticProbability = {

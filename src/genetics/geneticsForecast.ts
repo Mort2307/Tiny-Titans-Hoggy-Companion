@@ -50,6 +50,15 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
   const wild = locus.alleles.find((entry) => entry.isWildType);
   if (!wild) return [];
 
+  // A keeper's recorded "clear" claim cannot coexist with a visual or carrier
+  // entry at this same locus. Treat conflicting source records as unresolved.
+  if (parent.confirmedClearLoci?.includes(locus.id) && (
+    parent.morphs.some((morph) => Boolean(findAllele(locus, morph)) ||
+      GENETICS_DATABASE.combinations.some((combination) => combination.species === locus.species &&
+        combinationMatchesParent(combination, morph) && combination.componentLocusIds.includes(locus.id))) ||
+    parent.hets.some((het) => Boolean(findAllele(locus, het)))
+  )) return [];
+
   const combinationState = parentCombinationState(parent, locus);
   if (combinationState) return [combinationState];
 
@@ -90,7 +99,13 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
     ];
   }
 
-  return [{ state: { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id }, weight: 1, label: "Wild type", unknown: false }];
+  if (parent.confirmedClearLoci?.includes(locus.id)) {
+    return [{ state: { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id }, weight: 1, label: `${locus.name}: documented clear`, unknown: false }];
+  }
+
+  // Absence of a recorded allele/het is not proof that this parent is genetically clear.
+  // Do not publish an exact or partial forecast when an involved locus is undocumented.
+  return [];
 }
 
 function relevantLoci(species: string, parentA: ForecastParent, parentB: ForecastParent): LocusDefinition[] {
@@ -109,6 +124,9 @@ function relevantLoci(species: string, parentA: ForecastParent, parentB: Forecas
       GENETICS_DATABASE.loci
         .filter((locus) => locus.species === species && Boolean(findAllele(locus, het)) && !findAllele(locus, het)?.isWildType)
         .forEach((locus) => relevant.add(locus.id));
+    }
+    for (const locusId of parent.confirmedClearLoci ?? []) {
+      if (GENETICS_DATABASE.loci.some((locus) => locus.species === species && locus.id === locusId)) relevant.add(locusId);
     }
     for (const geneId of Object.keys(parent.knownGeneCopies ?? {})) {
       GENETICS_DATABASE.loci
@@ -137,10 +155,18 @@ function makeOutcome(species: string, scenario: ForecastScenario, index: number)
 
   const matching = GENETICS_DATABASE.combinations
     .filter((combination) => combination.species === species && combination.status === "recognised")
-    .filter((combination) => (combination.components ?? []).every((component) => {
-      const child = scenario.loci.find((entry) => entry.locus.id === component.locusId);
-      return child ? (child.copiesByAllele[component.alleleId] ?? 0) >= (component.copies ?? 1) : false;
-    }))
+    // A named combination requires an exact species-specific visible allele/copy
+    // signature. Subset matches (or empty component arrays) must not rename offspring.
+    .filter((combination) => Boolean(combination.components?.length) &&
+      combination.components!.length === visualComponents.length &&
+      combination.components!.every((component) => {
+        const child = scenario.loci.find((entry) => entry.locus.id === component.locusId);
+        return Boolean(child &&
+          child.phenotypeStatus !== "mixed_allelic" &&
+          child.phenotypeStatus !== "unresolved" &&
+          (child.copiesByAllele[component.alleleId] ?? 0) === (component.copies ?? 1) &&
+          visualComponents.some((visual) => visual.geneId === component.alleleId && visual.copies === (component.copies ?? 1)));
+      }))
     .sort((a, b) => {
       const aScore = (a.components ?? []).reduce((sum, component) => sum + (component.copies ?? 1), 0);
       const bScore = (b.components ?? []).reduce((sum, component) => sum + (component.copies ?? 1), 0);
@@ -148,7 +174,7 @@ function makeOutcome(species: string, scenario: ForecastScenario, index: number)
     });
 
   const combination = matching[0];
-  const name = combination?.name ?? (visualComponents.length ? visualComponents.map((component) => component.state === "Super" ? `Super ${component.name}` : component.name).sort().join(" + ") : "Normal");
+  const name = combination?.name ?? (visualComponents.length ? visualComponents.map((component) => component.state === "Super" ? `Super ${component.name}` : component.name).sort().join(" + ") : "No tracked visual traits");
   const exactProbability = scenario.probabilityKnown ? scenario.probability * 100 : undefined;
   const result: OffspringResult = {
     id: `${scenario.loci.map((child) => `${child.locus.id}:${child.state.paternalAlleleId}/${child.state.maternalAlleleId}`).sort().join("|")}|${index}`,
@@ -180,11 +206,19 @@ function exactLocusChildren(locus: LocusDefinition, mother: ParentScenario, fath
 }
 
 export function calculateSpeciesGeneticsForecast(species: string, input: GeneticsCalculatorInput): GeneticsCalculatorResult {
-  if (input.female.morphs.length === 0 && input.female.hets.length === 0 && input.male.morphs.length === 0 && input.male.hets.length === 0) {
+  if (input.female.morphs.length === 0 && input.female.hets.length === 0 && input.male.morphs.length === 0 && input.male.hets.length === 0 && !(input.female.confirmedClearLoci?.length) && !(input.male.confirmedClearLoci?.length)) {
     return { input, offspring: [], hasUnresolvedGenetics: false };
   }
 
   const loci = relevantLoci(species, input.female, input.male);
+  // A keeper can select a visual variation for which no Mendelian model exists.
+  // Never turn an unrecognised trait into a fictitious 100% Normal outcome.
+  const selectedNames = [input.female, input.male].flatMap((parent) => [...parent.morphs, ...parent.hets]);
+  const knownNames = selectedNames.every((name) =>
+    loci.some((locus) => Boolean(findAllele(locus, name))) ||
+    GENETICS_DATABASE.combinations.some((combination) => combination.species === species &&
+      combinationMatchesParent(combination, name) && Boolean(combination.components?.length)));
+  if (loci.length === 0 || !knownNames) return { input, offspring: [], hasUnresolvedGenetics: true };
   const scenariosByLocus = loci.map((locus) => ({
     locus,
     mother: parentLocusScenarios(input.female, locus),

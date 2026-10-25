@@ -315,3 +315,47 @@
   .calculator-back-button { transition: none; }
   .genetics-dropdown-options { scroll-behavior: auto; }
 }
+
+/* Mobile-first breeding calculator: show decisions first, reveal detailed evidence on demand. */
+.calculator-navigation { display:flex; gap:.5rem; flex-wrap:wrap; }
+.calculator-navigation .calculator-back-button { min-height:44px; font-size:.83rem; padding:.45rem .7rem; }
+.calculator-header { gap:.65rem; margin-bottom:.75rem; align-items:center; }
+.calculator-header p { margin:.25rem 0 0; font-size:.88rem; line-height:1.4; }
+.calculator-header h1 { line-height:1.2; }
+.calculator-clear-button { min-height:44px; }
+.calculator-evidence { margin:.5rem 0; border:1px solid var(--border); border-radius:11px; font-size:.8rem; }
+.calculator-evidence>summary { display:flex; align-items:center; min-height:44px; padding:.55rem .75rem; font-weight:750; cursor:pointer; }
+.calculator-evidence .calculator-info-strip { margin:0; border:0; box-shadow:none; padding:.5rem .75rem .7rem; }
+.calculator-parents { gap:.75rem; margin-top:.7rem; }
+.genetics-parent-selector { padding:1rem; box-shadow:none; }
+.genetics-parent-heading h3 { font-size:1.05rem; }
+.genetics-snake-select-wrap { margin:.55rem 0; }
+.genetics-snake-select { min-height:44px; }
+.genetics-snake-summary { gap:.3rem .55rem; padding:.5rem .65rem; font-size:.76rem; }
+.genetics-parent-advanced { margin-top:.65rem; border-top:1px solid var(--border); }
+.genetics-parent-advanced>summary { min-height:44px; display:flex; align-items:center; justify-content:space-between; gap:.5rem; cursor:pointer; font-size:.88rem; }
+.genetics-parent-advanced>summary span { font-size:.72rem; font-weight:600; opacity:.75; text-align:right; }
+.genetics-parent-advanced-content { padding:.05rem 0 .3rem; }
+.genetics-parent-advanced-content .genetics-selector-group { margin-top:.75rem; }
+.genetics-parent-advanced-content .genetics-selector-group h4 { font-size:.82rem; margin-bottom:.35rem; }
+.genetics-parent-advanced-content .genetics-het-confidence-help { font-size:.76rem; }
+.calculator-results { margin-top:1rem; padding:1rem; }
+.calculator-results-header { margin-bottom:.7rem; gap:.4rem; }
+.calculator-results-header h2 { font-size:1.35rem; }
+.calculator-results-header p { font-size:.84rem; margin:.25rem 0 0; }
+.calculator-probability-total { font-size:.83rem; opacity:.85; }
+@media(max-width:600px){
+  .calculator-page { padding:10px 12px; }
+  .calculator-navigation { margin-bottom:.55rem; }
+  .calculator-navigation .calculator-back-button { width:auto; flex:1 1 auto; min-width:0; }
+  .calculator-header { flex-direction:row; align-items:start; flex-wrap:wrap; margin-bottom:.6rem; }
+  .calculator-header h1 { font-size:1.45rem; }
+  .calculator-header .calculator-kicker { font-size:.64rem; letter-spacing:.08em; margin-bottom:.15rem; }
+  .calculator-clear-button { width:auto; margin-left:auto; font-size:.8rem; padding:0 .75rem; }
+  .calculator-parents { gap:.6rem; }
+  .genetics-parent-selector { padding:.8rem; }
+  .genetics-snake-summary { font-size:.74rem; }
+  .calculator-results { padding:.8rem; }
+  .calculator-results-header { flex-direction:row; flex-wrap:wrap; justify-content:space-between; align-items:center; }
+  .calculator-empty { padding:1.2rem .8rem; }
+}
