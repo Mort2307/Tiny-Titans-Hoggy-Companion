@@ -24,6 +24,8 @@ const CLASS_FILTERS: Array<{ id: UniversalSpeciesClass | "all"; label: string }>
   { id: "bird", label: "Birds" },
   { id: "fish", label: "Fish" },
   { id: "cephalopod", label: "Cephalopods" },
+  { id: "cnidarian", label: "Corals & anemones" },
+  { id: "echinoderm", label: "Echinoderms" },
 ];
 
 const RISK_FILTERS: Array<{ id: UniversalSpeciesRisk | "all"; label: string }> = [
