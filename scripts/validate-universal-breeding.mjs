@@ -8,6 +8,9 @@ const workspace = read("src/pages/UniversalBreedingWorkspace.tsx");
 const router = read("src/pages/SpeciesSafeBreedingPlanner.tsx");
 const calculator = read("src/pages/Calculator.tsx");
 const outcomes = read("src/components/BreedingOutcomeDashboard.tsx");
+const parentSelector = read("src/components/ParentSelector.tsx");
+const speciesPicker = read("src/components/UniversalSpeciesPicker.tsx");
+const calculatorStyles = read("src/styles/calculator.css");
 const genetics = read("src/genetics/geneticsModel.ts");
 const forecast = read("src/genetics/geneticsForecast.ts");
 const submission = read("src/pages/SubmitSpecies.tsx");
@@ -24,6 +27,11 @@ const checks = [
   ["Universal events never automatically invent genetics", workspace.includes("does not establish a genetic inheritance pattern")],
   ["Distinct participant identities enforced", workspace.includes("first.id === second.id")],
   ["Combo-name and probability overview", outcomes.includes("recognisedCombination") && outcomes.includes("formatPercent") && calculator.includes("BreedingOutcomeDashboard")],
+  ["Compact results keep full genetics on demand", outcomes.includes("const PREVIEW_LIMIT = 8") && outcomes.includes("View genetics &amp; carrier details") && outcomes.includes("<ResultCard") && outcomes.includes("Show all")],
+  ["Saved parents stay visible with optional detailed editing", parentSelector.includes("genetics-parent-advanced") && parentSelector.includes("Genetics &amp; carriers") && calculatorStyles.includes(".genetics-parent-advanced")],
+  ["Species search uses a short initial result list", speciesPicker.includes("const PAGE_SIZE = 8") && speciesPicker.includes("Show more species")],
+  ["Genetic evidence remains available without cluttering the page", calculator.includes("calculator-evidence") && calculator.includes("calculator-info-strip")],
+
   ["Missing parental genetic states fail closed", genetics.includes("both parental genotypes must be explicitly documented") && forecast.includes("Do not publish an exact or partial forecast")],
   ["Image-free species submissions allowed", !submission.includes("Please include at least one useful species photograph")],
   ["New marine species are explicitly provisional", marine.includes("Provisional, taxonomy-first") && marine.includes('"unknown"') && !marine.includes("imageUrl")],
