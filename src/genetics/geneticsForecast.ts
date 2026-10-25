@@ -91,6 +91,8 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
   }
 
   if (parent.confirmedClearLoci?.includes(locus.id)) {
+    // A contradictory keeper record is unresolved, not proof that either entry wins.
+    if (parent.morphs.some((morph) => Boolean(findAllele(locus, morph)) || GENETICS_DATABASE.combinations.some((combination) => combination.species === locus.species && combinationMatchesParent(combination, morph) && combination.componentLocusIds.includes(locus.id))) || parent.hets.some((het) => Boolean(findAllele(locus, het)))) return [];
     return [{ state: { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id }, weight: 1, label: `${locus.name}: documented clear`, unknown: false }];
   }
 
@@ -165,7 +167,7 @@ function makeOutcome(species: string, scenario: ForecastScenario, index: number)
     });
 
   const combination = matching[0];
-  const name = combination?.name ?? (visualComponents.length ? visualComponents.map((component) => component.state === "Super" ? `Super ${component.name}` : component.name).sort().join(" + ") : "Normal");
+  const name = combination?.name ?? (visualComponents.length ? visualComponents.map((component) => component.state === "Super" ? `Super ${component.name}` : component.name).sort().join(" + ") : "No tracked visual traits");
   const exactProbability = scenario.probabilityKnown ? scenario.probability * 100 : undefined;
   const result: OffspringResult = {
     id: `${scenario.loci.map((child) => `${child.locus.id}:${child.state.paternalAlleleId}/${child.state.maternalAlleleId}`).sort().join("|")}|${index}`,
@@ -202,6 +204,14 @@ export function calculateSpeciesGeneticsForecast(species: string, input: Genetic
   }
 
   const loci = relevantLoci(species, input.female, input.male);
+  // A keeper can select a visual variation for which no Mendelian model exists.
+  // Never turn an unrecognised trait into a fictitious 100% Normal outcome.
+  const selectedNames = [input.female, input.male].flatMap((parent) => [...parent.morphs, ...parent.hets]);
+  const knownNames = selectedNames.every((name) =>
+    loci.some((locus) => Boolean(findAllele(locus, name))) ||
+    GENETICS_DATABASE.combinations.some((combination) => combination.species === species &&
+      combinationMatchesParent(combination, name) && Boolean(combination.components?.length)));
+  if (loci.length === 0 || !knownNames) return { input, offspring: [], hasUnresolvedGenetics: true };
   const scenariosByLocus = loci.map((locus) => ({
     locus,
     mother: parentLocusScenarios(input.female, locus),
