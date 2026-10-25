@@ -63,6 +63,9 @@ function getRecognisedCombinations(morphs: MorphDefinition[]): MorphDefinition[]
   const bySignature = new Map<string, MorphDefinition[]>();
   for (const morph of morphs) {
     if (!(morph.kind === "Combination" || morph.isCombination === true)) continue;
+    // Community or unverified names are searchable references, not established outcomes.
+    if (morph.verification !== "Confirmed" && morph.verification !== "Recognised") continue;
+    if (!morph.components?.length) continue;
     const key = definitionSignatureKey(morph);
     const group = bySignature.get(key) ?? [];
     if (!group.some((candidate) => candidate.geneId === morph.geneId)) group.push(morph);
