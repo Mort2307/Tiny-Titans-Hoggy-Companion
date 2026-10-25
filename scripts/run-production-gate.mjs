@@ -9,7 +9,7 @@ const commands = [
   ["Public source credential guard", ["run", "validate:public-source"]],
   ["TypeScript typecheck", ["run", "typecheck"]],
   ["Lint", ["run", "lint"]],
-  ["BOT contract suite", ["run", "test:bot:contracts"]],
+  ["Static contract suite", ["run", "test:static-contracts"]],
   ["UI hardening contract", ["run", "validate:ui-hardening"]],
   ["Security contracts", ["run", "validate:security"]],
   ["Paid-tier contract", ["run", "validate:paid-tiers"]],
@@ -25,7 +25,7 @@ const commands = [
   ["Feeding reminder contract", ["run", "test:feeding-reminders"]],
   ["Water change reminder contract", ["run", "test:water-change-reminders"]],
   ["Room photo contract", ["run", "test:room-photo"]],
-  ["Visual QA contract", ["run", "validate:visual-qa"]],
+  ["Human tester journey contract", ["run", "validate:human-tester"]],
   ["Production build", ["run", "build"]],
 ];
 

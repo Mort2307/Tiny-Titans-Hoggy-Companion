@@ -1,4 +1,11 @@
-import type { TesterCheck } from "./testerBotService";
+/** Pure paid-tier regression assertions, independent of the retired interactive bot runner. */
+type TesterCheck = {
+  checkId: string;
+  name: string;
+  category: "paid-tiers" | "stripe";
+  severity: "info" | "low" | "medium" | "high" | "critical";
+  run: () => Promise<{ status: "pass" | "fail" | "blocked" | "not-tested"; message: string }>;
+};
 import { PAID_TIER_CATALOG, PAID_TIER_ORDER, tierIncludesEntitlement, type PaidEntitlement } from "../config/paidTiers";
 import { getPaidTierPricingEnvironment } from "./paidSubscriptionService";
 import { FREE_KEEPER_NAVIGATION_IDS, getFreeKeeperNavigationItems } from "../config/freeExperience";

@@ -14,7 +14,7 @@ const hog = read("src/genetics/hognoseGenetics.ts");
 const assertions = [
   ["copy-state model", model.includes("copiesByAllele") && model.includes("paternalAlleleId") && model.includes("maternalAlleleId")],
   ["cross-species hard stop", model.includes("Cross-species genetics are not supported")],
-  ["wild-state completion", model.includes("wildState(locus)") && model.includes("a ?? wildState(locus)")],
+  ["unknown genotype guard", model.includes("both parental genotypes must be explicitly documented") && model.includes("if (!a || !b)")],
   ["supported super gate", model.includes('locus.superStatus === "supported"') && model.includes("superAlleleId")],
   ["allelic mixed-state guard", model.includes('GeneticPhenotypeStatus = "wild_type" | "visual" | "heterozygous" | "mixed_allelic"') && model.includes('locus.inheritance === "allelic"') && model.includes("mixed_allelic")],
   ["allele-level combination contract", model.includes("CombinationComponent") && model.includes("components?")],

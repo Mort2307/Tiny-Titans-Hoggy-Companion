@@ -66,7 +66,7 @@ export default function CreatorTesterInvitationBanner() {
     <div className="creator-tester-invite__content">
       <span className="creator-tester-invite__eyebrow">TINY TITANS · CREATOR TESTING</span>
       <h2 id="creator-tester-invite-title">You've been invited to become a Creator Tester</h2>
-      <p>Help test Creator tools, community moderation, Morph Library submissions and the automated QA systems. Accepting this invitation activates tester access on this account.</p>
+      <p>Help test Creator tools, community moderation, Morph Library submissions and everyday app journeys. Submit genuine feedback or bug reports through the in-app Tester Centre. Accepting this invitation activates tester access on this account.</p>
       {message && <TinyTitansFeedback kind="error" className="creator-tester-invite__error">{message}</TinyTitansFeedback>}
       <div className="creator-tester-invite__actions">
         <TinyTitansAction className="creator-tester-invite__accept" variant="primary" icon="testing" label="Accept Creator Tester Access" onClick={() => void accept()} busy={busy} />
