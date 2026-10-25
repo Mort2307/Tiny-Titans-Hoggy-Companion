@@ -31,6 +31,8 @@ const checks = [
   ["Saved parents stay visible with optional detailed editing", parentSelector.includes("genetics-parent-advanced") && parentSelector.includes("Genetics &amp; carriers") && calculatorStyles.includes(".genetics-parent-advanced")],
   ["Species search uses a short initial result list", speciesPicker.includes("const PAGE_SIZE = 8") && speciesPicker.includes("Show more species")],
   ["Genetic evidence remains available without cluttering the page", calculator.includes("calculator-evidence") && calculator.includes("calculator-info-strip")],
+  ["No invented Wild Type probability without reviewed loci", calculator.includes("const displayedOffspring = hasDocumentedLoci ? result.offspring : [];") && calculator.includes("Genetic forecast unavailable") && calculator.includes("will not show an assumed Wild Type percentage")],
+  ["Species context occupies one compact picker on calculator route", read("src/components/Layout/LayoutChrome.tsx").includes('compact={location.pathname === "/calculator"}') && read("src/styles/species-context.css").includes(".tt-species-context--compact")],
 
   ["Missing parental genetic states fail closed", genetics.includes("both parental genotypes must be explicitly documented") && forecast.includes("Do not publish an exact or partial forecast")],
   ["Image-free species submissions allowed", !submission.includes("Please include at least one useful species photograph")],
