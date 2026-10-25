@@ -6,7 +6,7 @@ import { useAuth } from "../context/useAuth";
 import { useSpeciesContext } from "../context/SpeciesContext";
 import { getUserAnimals } from "../services/universalAnimalService";
 import { getUserSnakes } from "../services/snakeService";
-import { getBreedingProjects, saveBreedingProject } from "../services/breedingService";
+import { deleteBreedingProject, getBreedingProjects, saveBreedingProject } from "../services/breedingService";
 import { getUniversalBreedingEvents, saveUniversalBreedingEvent } from "../services/universalBreedingService";
 import { findUniversalSpecies } from "../data/species/universalSpeciesRegistry";
 import { getSpeciesGeneticsStatus } from "../data/species/speciesGenetics";
@@ -35,6 +35,7 @@ export default function UniversalBreedingWorkspace() {
   const [animals, setAnimals] = useState<Candidate[]>([]);
   const [projects, setProjects] = useState<BreedingProject[]>([]);
   const [projectId, setProjectId] = useState("");
+  const [deleteRequestedId, setDeleteRequestedId] = useState("");
   const [events, setEvents] = useState<UniversalBreedingEvent[]>([]);
   const [parentAId, setParentAId] = useState("");
   const [parentBId, setParentBId] = useState("");
@@ -59,6 +60,7 @@ export default function UniversalBreedingWorkspace() {
 
   useEffect(() => {
     setProjectId("");
+    setDeleteRequestedId("");
     setProjects([]);
     setAnimals([]);
     setEvents([]);
@@ -170,12 +172,30 @@ export default function UniversalBreedingWorkspace() {
     } finally { setBusy(false); }
   }
 
+  async function confirmProjectDeletion() {
+    setError(""); setMessage("");
+    if (!user || !selectedProject || deleteRequestedId !== selectedProject.id || busy) return;
+    setBusy(true);
+    try {
+      const deletedId = selectedProject.id;
+      await deleteBreedingProject(user.uid, deletedId);
+      const remaining = projects.filter((project) => project.id !== deletedId);
+      setProjects(remaining);
+      setProjectId(remaining[0]?.id ?? "");
+      setDeleteRequestedId("");
+      setEvents([]);
+      setMessage("Breeding project and its recorded history were deleted.");
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Unable to delete this project.");
+      setDeleteRequestedId("");
+    } finally { setBusy(false); }
+  }
+
   if (authLoading || profileLoading) return <main className="page-container"><p>Loading breeding workspace…</p></main>;
   if (!user) return <main className="page-container"><BackHomeButton /><p>Sign in to save your animal breeding projects.</p></main>;
   if (!species) return <main className="page-container"><BackHomeButton /><h1>Breeding workspace</h1><p>Select an animal species in Species Explorer first.</p><Link to="/species">Browse species</Link></main>;
 
-  const offspringCount = events.filter((event) => event.kind === "offspring" && event.quantity !== undefined)
-    .reduce((sum, event) => sum + (event.quantity ?? 0), 0);
+  const offspringRecordCount = events.filter((event) => event.kind === "offspring").length;
 
   return <main className="page-container breeding-page universal-breeding">
     <BackHomeButton />
@@ -227,12 +247,19 @@ export default function UniversalBreedingWorkspace() {
       <section className="universal-breeding-overview" aria-label="Recorded breeding progress">
         <div><span>Projects</span><strong>{projects.length}</strong></div>
         <div><span>Recorded events</span><strong>{events.length}</strong></div>
-        <div><span>Observed offspring</span><strong>{offspringCount}</strong><small>Only explicitly entered counts</small></div>
+        <div><span>Offspring records</span><strong>{offspringRecordCount}</strong><small>Observation entries; not unique animals</small></div>
       </section>
       <section className="breeding-card">
         <h2>Selected project</h2>
-        <label className="universal-breeding-project-picker">Project<select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">Choose project…</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
+        <label className="universal-breeding-project-picker">Project<select value={projectId} onChange={(event) => { setProjectId(event.target.value); setDeleteRequestedId(""); }}><option value="">Choose project…</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
         {selectedProject && <div className="universal-breeding-status"><span>Status: <strong>{selectedProject.status}</strong></span><label>Update project status<select value={selectedProject.status} disabled={busy} onChange={(event) => void changeStatus(event.target.value as BreedingStatus)}>{activityStatuses.map((option) => <option key={option} value={option}>{option}</option>)}</select></label></div>}
+        {selectedProject && <div className="universal-breeding-delete">
+          {deleteRequestedId !== selectedProject.id ? <button type="button" disabled={busy} onClick={() => setDeleteRequestedId(selectedProject.id)}>Delete this project</button> : <div className="universal-breeding-delete-confirm" role="group" aria-label="Confirm permanent project deletion">
+            <strong>Delete {selectedProject.name}?</strong>
+            <p>This permanently deletes the project, observations, offspring and recorded lifecycle history. This cannot be undone.</p>
+            <div><button type="button" disabled={busy} onClick={() => setDeleteRequestedId("")}>Cancel</button><button type="button" disabled={busy} onClick={() => void confirmProjectDeletion()}>{busy ? "Deleting…" : "Confirm permanent deletion"}</button></div>
+          </div>}
+        </div>}
       </section>
       {selectedProject && <div className="universal-breeding-columns">
         <section className="breeding-card"><h2>Log observed event</h2><p className="breeding-muted">Only record what happened. A submitted colour or morph name is not a verified genetic claim.</p>
