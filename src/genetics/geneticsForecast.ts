@@ -90,6 +90,10 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
     ];
   }
 
+  if (parent.confirmedClearLoci?.includes(locus.id)) {
+    return [{ state: { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id }, weight: 1, label: `${locus.name}: documented clear`, unknown: false }];
+  }
+
   // Absence of a recorded allele/het is not proof that this parent is genetically clear.
   // Do not publish an exact or partial forecast when an involved locus is undocumented.
   return [];
@@ -111,6 +115,9 @@ function relevantLoci(species: string, parentA: ForecastParent, parentB: Forecas
       GENETICS_DATABASE.loci
         .filter((locus) => locus.species === species && Boolean(findAllele(locus, het)) && !findAllele(locus, het)?.isWildType)
         .forEach((locus) => relevant.add(locus.id));
+    }
+    for (const locusId of parent.confirmedClearLoci ?? []) {
+      if (GENETICS_DATABASE.loci.some((locus) => locus.species === species && locus.id === locusId)) relevant.add(locusId);
     }
     for (const geneId of Object.keys(parent.knownGeneCopies ?? {})) {
       GENETICS_DATABASE.loci
@@ -182,7 +189,7 @@ function exactLocusChildren(locus: LocusDefinition, mother: ParentScenario, fath
 }
 
 export function calculateSpeciesGeneticsForecast(species: string, input: GeneticsCalculatorInput): GeneticsCalculatorResult {
-  if (input.female.morphs.length === 0 && input.female.hets.length === 0 && input.male.morphs.length === 0 && input.male.hets.length === 0) {
+  if (input.female.morphs.length === 0 && input.female.hets.length === 0 && input.male.morphs.length === 0 && input.male.hets.length === 0 && !(input.female.confirmedClearLoci?.length) && !(input.male.confirmedClearLoci?.length)) {
     return { input, offspring: [], hasUnresolvedGenetics: false };
   }
 
