@@ -1,0 +1,43 @@
+name: Universal Breeding Firestore Rules
+
+on:
+  push:
+    branches:
+      - feature/universal-animal-breeding-20261025
+    paths:
+      - firestore.rules
+      - scripts/test-universal-breeding-firestore-rules.mjs
+      - src/services/familyPermissionsService.ts
+      - .github/workflows/universal-breeding-firestore-rules.yml
+  pull_request:
+    paths:
+      - firestore.rules
+      - scripts/test-universal-breeding-firestore-rules.mjs
+      - src/services/familyPermissionsService.ts
+      - .github/workflows/universal-breeding-firestore-rules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  breeding-firestore-security:
+    name: Owner, family and species isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install ephemeral Firestore rules testing tools
+        run: npm install --no-save --package-lock=false --legacy-peer-deps --no-audit --no-fund @firebase/rules-unit-testing@4 firebase-tools@14
+      - name: Run real Firestore emulator access-control tests
+        run: npx firebase emulators:exec --only firestore --project demo-tinytitans-breeding "node scripts/test-universal-breeding-firestore-rules.mjs"
