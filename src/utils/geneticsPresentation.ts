@@ -1,7 +1,7 @@
 import type { MorphDefinition } from "../data/morphs";
 import type { OffspringComponent, OffspringResult } from "../types/genetics";
 import { expandMorphToComponents } from "./morphResolver";
-import { calculatorNamedCombinations, componentSignature } from "../data/geneticsComboRegistry";
+import { componentSignature } from "../data/geneticsComboRegistry";
 
 export type GeneticsSignatureEntry = {
   geneId: string;
@@ -61,7 +61,7 @@ function definitionSignatureKey(definition: MorphDefinition): string {
 
 function getRecognisedCombinations(morphs: MorphDefinition[]): MorphDefinition[] {
   const bySignature = new Map<string, MorphDefinition[]>();
-  for (const morph of [...morphs, ...calculatorNamedCombinations]) {
+  for (const morph of morphs) {
     if (!(morph.kind === "Combination" || morph.isCombination === true)) continue;
     const key = definitionSignatureKey(morph);
     const group = bySignature.get(key) ?? [];
