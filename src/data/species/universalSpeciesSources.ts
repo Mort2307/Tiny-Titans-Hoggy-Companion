@@ -28,6 +28,15 @@ export const UNIVERSAL_SPECIES_SOURCES: Record<string, UniversalSourceCitation> 
     purpose: 'taxonomy',
     notes: 'Used as a taxonomic authority only. The catalogue explicitly restricts copying its material into other databases without permission, so Tiny Titans does not bulk-import WSC records.',
   },
+  wormsMarine2026: {
+    id: 'wormsMarine2026',
+    title: 'World Register of Marine Species (WoRMS)',
+    publisher: 'WoRMS Editorial Board / VLIZ',
+    url: 'https://www.marinespecies.org/',
+    accessedOn: '2026-10-25',
+    purpose: 'taxonomy',
+    notes: 'Reference-only marine taxonomy authority. Tiny Titans does not bulk-copy WoRMS data or download its images. New marine species remain provisional pending individual taxonomic verification.',
+  },
   catalogueOfLife2026: {
     id: 'catalogueOfLife2026',
     title: 'Catalogue of Life 2026',
@@ -376,4 +385,6 @@ export const UNIVERSAL_TAXON_SOURCE_BY_CLASS = {
   bird: 'aviList2026',
   fish: 'catalogueOfLife2026',
   cephalopod: 'catalogueOfLife2026',
+  cnidarian: 'wormsMarine2026',
+  echinoderm: 'wormsMarine2026',
 } as const;
