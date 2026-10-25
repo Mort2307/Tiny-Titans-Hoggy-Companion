@@ -86,4 +86,27 @@ export async function approveMorphImageSubmission(submission: MorphImageSubmissi
 }
 export async function deleteApprovedMorphImage(approvedImageId: string, reason: string): Promise<void> { const functions = getFunctions(undefined, "europe-west2"); const removeCallable = httpsCallable<{ approvedImageId: string; reason: string }, { success: boolean }>(functions, "deleteApprovedMorphImage"); await removeCallable({ approvedImageId, reason }); }
 export async function rejectMorphImageSubmission(submissionId: string, storagePath?: string, reviewerUid?: string, reason?: string) { if (storagePath) await deleteObject(ref(storage, storagePath)).catch(() => undefined); await updateDoc(doc(db, "morphImageSubmissions", submissionId), { status: "Rejected", reviewedAt: serverTimestamp(), reviewedBy: reviewerUid ?? null, rejectionReason: reason ?? null }); }
-export async function getApprovedMorphImages(morphId?: string, speciesId?: string): Promise<ApprovedMorphImage[]> { const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc"))); const images = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) })); const filtered = images.filter((image) => (!morphId || image.morphId === morphId) && (!speciesId || image.speciesId === speciesId)); return Promise.all(filtered.map(async (image) => { if (image.imageUrl) return image; if (!image.storagePath) return image; try { return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) }; } catch (error) { console.warn("Approved morph image URL could not be resolved", image.storagePath, error); return image; } })); }
+function approvedCommunityMediaPath(image: ApprovedMorphImage): boolean {
+  const path = String(image.storagePath ?? "");
+  // Only Firebase Storage objects created through our community submission/review path
+  // (including Creator crops of those uploads) are eligible for public galleries.
+  return Boolean(image.sourceSubmissionId) &&
+    (/^morph-submissions\\/[^/]+\\/[^/]+\\//.test(path) || /^morphLibrary\\/[^/]+\\/community\\//.test(path));
+}
+
+export async function getApprovedMorphImages(morphId?: string, speciesId?: string): Promise<ApprovedMorphImage[]> {
+  const snapshot = await getDocs(query(collection(db, "approvedMorphImages"), orderBy("approvedAt", "desc")));
+  const records = snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<ApprovedMorphImage, "id">) }));
+  const approved = records.filter((image) => (!morphId || image.morphId === morphId) &&
+    (!speciesId || image.speciesId === speciesId) && approvedCommunityMediaPath(image));
+  const resolved = await Promise.all(approved.map(async (image): Promise<ApprovedMorphImage | null> => {
+    try {
+      // Ignore persisted imageUrl: a raw third-party URL must never enter this gallery.
+      return { ...image, imageUrl: await getDownloadURL(ref(storage, image.storagePath)) };
+    } catch (error) {
+      console.warn("Approved community media could not be resolved", image.storagePath, error);
+      return null;
+    }
+  }));
+  return resolved.filter((image): image is ApprovedMorphImage => image !== null);
+}
