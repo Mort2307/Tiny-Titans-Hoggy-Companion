@@ -12,6 +12,7 @@ const forecast = read("src/genetics/geneticsForecast.ts");
 const submission = read("src/pages/SubmitSpecies.tsx");
 const marine = read("src/data/species/universalSpeciesSeedMarine.ts");
 const care = read("src/data/species/universalSpeciesCare.ts");
+const rules = read("firestore.rules");
 
 const checks = [
   ["Species-linked breeding projects", record.includes("speciesId?: string") && record.includes("parentAId?: string")],
@@ -26,6 +27,9 @@ const checks = [
   ["Image-free species submissions allowed", !submission.includes("Please include at least one useful species photograph")],
   ["New marine species are explicitly provisional", marine.includes("Provisional, taxonomy-first") && marine.includes('"unknown"') && !marine.includes("imageUrl")],
   ["Marine care evidence is non-numeric", care.includes("cnidarian:") && care.includes("echinoderm:") && care.includes("no target ranges are supplied")],
+  ["Breeding events have explicit owner/family access rules", rules.includes("match /events/{eventId}") && rules.includes("familyViewPermission(userId, 'breeding')") && rules.includes("familyPermission(userId, 'breeding', 'create')")],
+  ["Event writes are project and species locked", rules.includes("request.resource.data.get('projectId', '') == projectId") && rules.includes("request.resource.data.get('speciesId', '') == get(/databases/$(database)/documents/users/$(userId)/breedingProjects/$(projectId)).data.get('speciesId', '')")],
+  ["Family breeding project edits use the supported edit action", rules.includes("familyPermission(userId, 'breeding', 'edit')") && !rules.includes("familyPermission(userId, 'breeding', 'update')")],
 ];
 const failed = checks.filter(([, valid]) => !valid);
 for (const [label, valid] of checks) console.log((valid ? "PASS" : "FAIL") + "  " + label);
