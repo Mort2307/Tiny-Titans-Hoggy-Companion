@@ -1,6 +1,3 @@
-import type { TesterSandboxContext } from "./testerSandboxService";
-import { assertTesterMutationAllowed } from "./testerSandboxService";
-
 export type OverhaulFindingSeverity = "info" | "warning" | "error" | "critical";
 export type OverhaulFindingStatus = "observed" | "reproduced" | "blocked" | "fixed";
 
@@ -9,7 +6,7 @@ export type OverhaulFinding = {
   title: string;
   severity: OverhaulFindingSeverity;
   status: OverhaulFindingStatus;
-  source: "creator-bot" | "user-bot" | "app-bot" | "security-bot" | "manual";
+  source: "manual" | "reported" | "observed";
   evidence: string[];
   affectedRoutes: string[];
   likelyRootCause?: string;
@@ -26,10 +23,7 @@ export type OverhaulFixPlan = {
 /**
  * Evidence-first development planning for Creator workflows.
  *
- * This service intentionally does NOT edit application files. It converts
- * confirmed tester evidence into an explicit, reviewable fix plan. Any future
- * mutation-capable implementation must execute through the tester sandbox and
- * retain the resulting evidence before a production/master change is accepted.
+ * This service does not edit application files. It turns confirmed human tester reports into reviewable fix plans.
  */
 export function buildOverhaulFixPlan(finding: OverhaulFinding): OverhaulFixPlan {
   if (!finding.id || finding.status === "blocked") {
@@ -48,18 +42,10 @@ export function buildOverhaulFixPlan(finding: OverhaulFinding): OverhaulFixPlan 
     verificationSteps: [
       "Reproduce the finding before changing code when safely possible.",
       "Implement the smallest root-cause fix in the existing architecture.",
-      "Run the targeted BOT scenario and capture evidence.",
+      "Ask an in-app tester to repeat the affected journey and attach evidence.",
       "Run relevant regression checks.",
       "Confirm no new route, persistence, intelligence or security regressions.",
     ],
     mutationMode: "review-required",
   };
-}
-
-/**
- * Explicitly gates any future automated mutation against the isolated tester
- * sandbox. Production/master mutation is never an implicit fallback.
- */
-export function assertAutomatedFixSandbox(context: TesterSandboxContext | undefined): void {
-  assertTesterMutationAllowed("sandbox", context);
 }
