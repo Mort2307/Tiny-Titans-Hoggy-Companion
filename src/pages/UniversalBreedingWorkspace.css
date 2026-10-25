@@ -33,3 +33,12 @@
 @media(max-width:380px) {
   .universal-breeding-overview { grid-template-columns:1fr; }
 }
+
+.universal-breeding-delete { margin-top:1rem; border-top:1px solid var(--border-color,#536072); padding-top:.8rem; }
+.universal-breeding-delete>button { min-height:44px; padding:.65rem 1rem; border:1px solid var(--border-color,#536072); border-radius:10px; background:transparent; color:inherit; cursor:pointer; }
+.universal-breeding-delete-confirm { display:grid; gap:.5rem; padding:1rem; border:1px solid currentColor; border-radius:12px; }
+.universal-breeding-delete-confirm p { margin:0; font-size:.9rem; }
+.universal-breeding-delete-confirm>div { display:flex; flex-wrap:wrap; gap:.55rem; }
+.universal-breeding-delete-confirm button { min-height:44px; padding:.65rem 1rem; border:1px solid currentColor; border-radius:10px; cursor:pointer; }
+.universal-breeding-delete-confirm button:first-child { background:transparent; color:inherit; }
+.universal-breeding-delete-confirm button:last-child { background:#882b32; color:white; }
