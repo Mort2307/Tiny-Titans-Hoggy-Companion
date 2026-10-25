@@ -45,25 +45,32 @@ const greyFogGenome = buildSnakeGenome(greyFogSnake, hogDatabase);
 assert(greyFogGenome.supported, "Grey Fog snake record remains canonical and supported");
 assert(greyFogGenome.genome.states.some((state) => state.locusId === arctic.id) && greyFogGenome.genome.states.some((state) => state.locusId === conda.id), "Grey Fog expands into Arctic/Antarctic and Conda loci");
 
-const parentA: ParentGenome = { species: "Heterodon nasicus", states: [{ locusId: arctic.id, paternalAlleleId: "arctic", maternalAlleleId: "wild" }, { locusId: conda.id, paternalAlleleId: "conda", maternalAlleleId: "wild" }] };
-const parentB: ParentGenome = { species: "Heterodon nasicus", states: [] };
+const wildGenome = (): ParentGenome => ({ species: "Heterodon nasicus", states: hogDatabase.loci.map((locus) => ({
+  locusId: locus.id,
+  paternalAlleleId: locus.alleles.find((allele) => allele.isWildType)!.id,
+  maternalAlleleId: locus.alleles.find((allele) => allele.isWildType)!.id,
+})) });
+const parentA: ParentGenome = wildGenome();
+parentA.states = parentA.states.map((state) => state.locusId === arctic.id ? { ...state, paternalAlleleId: "arctic" } : state.locusId === conda.id ? { ...state, paternalAlleleId: "conda" } : state);
+const parentB: ParentGenome = wildGenome();
 const completed = calculateGenome(hogDatabase, parentA, parentB);
-assert(completed.length === hogDatabase.loci.length, "calculateGenome covers every registered Hognose locus");
-const missingLocus = completed.find((result) => result.locus.id !== arctic.id && result.locus.id !== conda.id);
-assert(missingLocus?.outcomes.some((outcome) => outcome.phenotypeStatus === "wild_type" && outcome.probability === 1), "missing parent loci are completed with wild type");
+assert(completed.length === hogDatabase.loci.length, "Explicit parental genotypes cover all registered Hognose loci");
+let missingRejected = false;
+try { calculateGenome(hogDatabase, { ...parentA, states: parentA.states.filter((state) => state.locusId === arctic.id) }, parentB); }
+catch (error) { missingRejected = error instanceof Error && error.message.includes("both parental genotypes must be explicitly documented"); }
+assert(missingRejected, "Incomplete parental genotypes fail closed rather than becoming wild type");
 
 const hognoseInput = (female: GeneticsCalculatorInput["female"], male: GeneticsCalculatorInput["male"]): GeneticsCalculatorInput => ({ female, male });
 const knownHetero = hognoseInput({ morphs: ["arctic"], hets: [], knownGeneCopies: { arctic: 1 } }, { morphs: [], hets: [] });
 const knownForecast = calculateSpeciesGeneticsForecast("Heterodon nasicus", knownHetero);
-assert(knownForecast.offspring.some((outcome) => outcome.certainty === "exact" && outcome.percentage === 50), "known Arctic one-copy × wild produces an exact 50% visual outcome");
+assert(knownForecast.offspring.length === 0 && knownForecast.hasUnresolvedGenetics, "Undocumented second-parent Arctic state cannot produce an exact 50% forecast");
 
 const unknownDominant = calculateSpeciesGeneticsForecast("Heterodon nasicus", { female: { morphs: ["arctic"], hets: [] }, male: { morphs: [], hets: [] } });
-assert(unknownDominant.offspring.some((outcome) => outcome.certainty === "bounded"), "unknown Arctic copy state remains conditional");
-assert(unknownDominant.offspring.every((outcome) => outcome.percentage === undefined), "bounded outcomes do not pretend an exact percentage");
+assert(unknownDominant.offspring.length === 0 && unknownDominant.hasUnresolvedGenetics, "Undocumented Arctic copy states with an untested partner must remain unresolved");
 
 const crossSpeciesInput: ParentGenome = { species: "Pantherophis guttatus", states: [] };
 let crossSpeciesRejected = false;
 try { calculateGenome(hogDatabase, parentA, crossSpeciesInput); } catch (error) { crossSpeciesRejected = error instanceof Error && error.message.includes("Cross-species genetics are not supported"); }
 assert(crossSpeciesRejected, "cross-species breeding is rejected");
 
-console.log("Genetics runtime tests passed: inheritance, super states, alleles, aliases, combination expansion, bounded zygosity, wild completion and species safety.");
+console.log("Genetics runtime tests passed: inheritance, super states, alleles, aliases, combination expansion, bounded zygosity, explicit genotype requirements and species safety.");
