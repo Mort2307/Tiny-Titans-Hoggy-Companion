@@ -17,7 +17,9 @@ export type UniversalSpeciesBrowseGroup =
   | 'mammals'
   | 'birds'
   | 'fish'
-  | 'cephalopods';
+  | 'cephalopods'
+  | 'corals-anemones'
+  | 'echinoderms';
 
 export type UniversalSpeciesClass =
   | 'reptile'
@@ -30,7 +32,9 @@ export type UniversalSpeciesClass =
   | 'mammal'
   | 'bird'
   | 'fish'
-  | 'cephalopod';
+  | 'cephalopod'
+  | 'cnidarian'
+  | 'echinoderm';
 
 export type UniversalSpeciesRisk =
   | 'companion'
@@ -60,7 +64,8 @@ export type UniversalDietaryGuild =
   | 'frugivore'
   | 'amphibian-specialist'
   | 'detritivore'
-  | 'generalist';
+  | 'generalist'
+  | 'unknown';
 
 export type UniversalEvidenceStatus =
   | 'taxonomy-verified'
