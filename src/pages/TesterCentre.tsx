@@ -19,7 +19,7 @@ const humanChecks = [
   { id: "reports", title: "Feedback reporting", route: "/report-bug", expectation: "Report a real issue with the screen, expected behaviour, actual result and optional media." },
 ];
 
-function HumanTesterHub({ uid }: { uid: string }) {
+function HumanTesterHub({ uid, creatorTools = false }: { uid: string; creatorTools?: boolean }) {
   const storageKey = `tiny-titans-human-review:${uid}`;
   const [checked, setChecked] = useState<string[]>(() => {
     try {
@@ -61,7 +61,7 @@ function HumanTesterHub({ uid }: { uid: string }) {
       <Link to="/report-bug" className="tester-primary-button">Report a bug</Link>
       <Link to="/feedback" className="tester-secondary-button">Send feedback</Link>
       <Link to="/my-issue-reports" className="tester-secondary-button">My issue reports</Link>
-      <Link to="/creator/tester/paid-tiers" className="tester-secondary-button">Paid-tier tester access</Link>
+      {creatorTools && <Link to="/creator/tester/paid-tiers" className="tester-secondary-button">Paid-tier tester access</Link>}
     </div>
     <section className="tester-manual-panel" aria-label="Manual tester checklist">
       <div className="tester-manual-title">
@@ -80,19 +80,19 @@ function HumanTesterHub({ uid }: { uid: string }) {
       <button className="tester-secondary-button" type="button" onClick={() => void copySessionSummary()}>Copy review notes</button>
       {copyMessage && <p role="status">{copyMessage}</p>}
     </section>
-    <section className="tester-manual-panel">
+    {creatorTools && <section className="tester-manual-panel">
       <h2>Notification testing</h2>
       <p>Use an authorised test account or your own device to verify real notification delivery.</p>
       <button className="tester-secondary-button" type="button" aria-expanded={showNotificationLab} onClick={() => setShowNotificationLab((current) => !current)}>{showNotificationLab ? "Close notification tools" : "Open notification tools"}</button>
       {showNotificationLab && <div className="tt-notification-settings tester-notification-lab"><NotificationTestPanel /></div>}
-    </section>
-    <p className="tester-human-note">Existing tester invitations, feedback forms and paid-tier testing remain available. Routine builds, genetics validation and Firestore security checks remain separate from human testing.</p>
+    </section>}
+    <p className="tester-human-note">Your checklist is private to this browser session. Bug reports and feedback are sent through the existing secure in-app forms. Technical build and security tests run separately.</p>
   </div>;
 }
 
 export default function TesterCentre() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   useEffect(() => {
     if (!user) { setAuthorized(false); return; }
@@ -102,12 +102,24 @@ export default function TesterCentre() {
     }).catch(() => { if (active) setAuthorized(false); });
     return () => { active = false; };
   }, [user]);
+  // Human testers never inherit Creator administration powers from this route.
+  // The read-only checklist links only to ordinary keeper features and feedback forms.
+  if (location.pathname === "/tester") {
+    if (!user) return <Navigate to="/login" replace />;
+    if (profile?.isTester !== true && authorized === false) return <Navigate to="/account" replace />;
+    if (profile?.isTester !== true && authorized === null) return <div className="page-container"><p>Checking tester access…</p></div>;
+    return <div className="page-container">
+      <PageBackButton fallbackPath="/account" label="Back to My Account" />
+      <HumanTesterHub uid={user.uid} />
+    </div>;
+  }
+  // Admin-only operations are still behind the original strict Creator Tester claims.
   if (authorized === false) return <Navigate to="/" replace />;
-  if (!user || authorized === null) return <div className="page-container"><p>Checking tester access…</p></div>;
+  if (!user || authorized === null) return <div className="page-container"><p>Checking Creator authorization…</p></div>;
   if (location.pathname === "/creator/tester/paid-tiers") return <CreatorPaidTierTester />;
   if (location.pathname !== "/creator/tester") return <Navigate to="/creator/tester" replace />;
   return <div className="page-container">
     <PageBackButton fallbackPath="/creator" label="Back to Creator Centre" />
-    <HumanTesterHub uid={user.uid} />
+    <HumanTesterHub uid={user.uid} creatorTools />
   </div>;
 }
