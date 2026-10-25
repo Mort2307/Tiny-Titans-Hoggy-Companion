@@ -65,6 +65,13 @@ const knownHetero = hognoseInput({ morphs: ["arctic"], hets: [], knownGeneCopies
 const knownForecast = calculateSpeciesGeneticsForecast("Heterodon nasicus", knownHetero);
 assert(knownForecast.offspring.length === 0 && knownForecast.hasUnresolvedGenetics, "Undocumented second-parent Arctic state cannot produce an exact 50% forecast");
 
+const documentedClear = calculateSpeciesGeneticsForecast("Heterodon nasicus", {
+  female: { morphs: ["arctic"], hets: [], knownGeneCopies: { arctic: 1 } },
+  male: { morphs: [], hets: [], confirmedClearLoci: [arctic.id] },
+});
+assert(documentedClear.offspring.some((outcome) => outcome.certainty === "exact" && outcome.percentage === 50 && outcome.visualComponents.some((part) => part.geneId === "arctic")), "explicitly documented clear Arctic locus restores a valid 50% offspring forecast");
+assert(!documentedClear.hasUnresolvedGenetics, "documented clear state does not silently introduce uncertainty");
+
 const unknownDominant = calculateSpeciesGeneticsForecast("Heterodon nasicus", { female: { morphs: ["arctic"], hets: [] }, male: { morphs: [], hets: [] } });
 assert(unknownDominant.offspring.length === 0 && unknownDominant.hasUnresolvedGenetics, "Undocumented Arctic copy states with an untested partner must remain unresolved");
 
