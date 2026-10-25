@@ -66,11 +66,11 @@ export default function UniversalBreedingWorkspace() {
     if (!user || !selectedSpeciesId) return;
     let active = true;
     setFetching(true);
-    void Promise.all([getUserAnimals(user.uid), getUserSnakes(user.uid), getBreedingProjects(user.uid)])
+    void Promise.all([getUserAnimals(user.uid), getUserSnakes(user.uid).catch(() => []), getBreedingProjects(user.uid)])
       .then(([individuals, snakes, allProjects]) => {
         if (!active) return;
         const universal: Candidate[] = individuals
-          .filter((animal) => animal.speciesId === selectedSpeciesId && ["active", "quarantine"].includes(animal.status))
+          .filter((animal) => animal.speciesId === selectedSpeciesId && animal.status === "active")
           .map((animal) => ({
             id: "animal:" + animal.id, name: animal.name, sex: animal.sex,
             variation: animal.morphOrColour ?? "Genetics unrecorded", source: "animal" as const,
@@ -196,7 +196,7 @@ export default function UniversalBreedingWorkspace() {
     {tab === "projects" && <div className="universal-breeding-columns">
       <section className="breeding-card">
         <h2>Create a species-specific project</h2>
-        <p className="breeding-muted">Select recorded individuals. Parentage, sex, reproductive strategy and genetics stay unknown unless actually documented.</p>
+        <p className="breeding-muted">Select recorded active individuals. Parentage, sex, reproductive strategy and genetics stay unknown unless documented. A project is not certification that an animal is healthy, mature or suitable for breeding.</p>
         <div className="breeding-form">
           <label>Individual A<select value={parentAId} onChange={(event) => { setParentAId(event.target.value); if (event.target.value === parentBId) setParentBId(""); }}>
             <option value="">Choose animal…</option>{animals.map((animal) => <option key={animal.id} value={animal.id}>{animal.name} · {animal.sex} · {animal.variation}</option>)}
