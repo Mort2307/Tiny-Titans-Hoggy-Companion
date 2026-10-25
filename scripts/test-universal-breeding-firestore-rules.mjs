@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
 /**
  * REAL Firestore security-rules emulator integration tests.
@@ -99,6 +99,11 @@ try {
   await test("Family edit works only with matching project/species identity", async () => {
     await assertSucceeds(setDoc(doc(memberDb, `${projectPath}/events/allowed`), event({ id: "allowed", notes: "Observed, not predicted" })));
     await assertFails(setDoc(doc(memberDb, `${projectPath}/events/allowed`), event({ id: "allowed", speciesId: "heterodon-nasicus" })));
+  });
+  await test("Family member can edit project status but not change its species or identity", async () => {
+    await assertSucceeds(updateDoc(doc(memberDb, projectPath), { status: "Paired" }));
+    await assertFails(updateDoc(doc(memberDb, projectPath), { speciesId: "heterodon-nasicus" }));
+    await assertFails(updateDoc(doc(memberDb, projectPath), { id: "reassigned-project-id" }));
   });
   await test("Review-mode member cannot delete observations without breeding.delete", async () => {
     await assertFails(deleteDoc(doc(memberDb, `${projectPath}/events/allowed`)));
