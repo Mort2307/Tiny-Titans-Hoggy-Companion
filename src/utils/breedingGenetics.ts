@@ -1,8 +1,7 @@
 import type { Snake } from "../types/Snake";
-import type { GeneticsCalculatorResult, OffspringComponent, OffspringResult, GeneticsCalculation } from "../types/genetics";
+import type { OffspringComponent, OffspringResult, GeneticsCalculation } from "../types/genetics";
 import { getMasterCalculatorMorphs, getMasterHetGenes } from "../data/masterMorphDatabase";
 import { resolveStrictMorph } from "./geneticsIdentity";
-import { calculateGenetics as calculateLegacyGenetics } from "./geneticsCalculator";
 import { buildSnakeGenome, canonicalSpecies } from "../genetics/geneticsSnakeAdapter";
 import { calculateBreeding as calculateCanonicalBreeding } from "../genetics/geneticsEngine";
 import { GENETICS_DATABASE } from "../genetics/geneticsDatabase";
@@ -39,23 +38,6 @@ export function toBreedingParent(snake: Snake) {
     })
     .filter((value): value is { gene: string; percentage: "50%" | "66%" | "100%" } => Boolean(value));
   return { morphs: [...new Set(visualMorphs)], hets: hets.map((het) => het.gene), hetPercentages: Object.fromEntries(hets.map((het) => [het.gene, het.percentage])) };
-}
-
-function superDisplayName(geneId: string, copies: number): string | null {
-  if (copies < 2) return null;
-  const morph = getMasterCalculatorMorphs().find((entry) => entry.geneId === geneId);
-  if (!morph?.superFormId) return null;
-  return getMasterCalculatorMorphs().find((entry) => entry.geneId === morph.superFormId)?.name ?? null;
-}
-
-function adaptLegacyResult(result: GeneticsCalculatorResult): GeneticsCalculation {
-  const outcomes = result.offspring.map((offspring) => {
-    const probability = (offspring.percentage ?? offspring.probabilityRange?.max ?? 0) / 100;
-    const visualMorphs = offspring.visualComponents.map((component) => superDisplayName(component.geneId, component.copies) ?? component.name).sort();
-    const hets = offspring.hetComponents.map((component) => ({ geneId: component.geneId, name: component.name, percentage: "100%" as const })).sort((a, b) => a.name.localeCompare(b.name));
-    return { probability, visualMorphs, hets, geneStates: [...offspring.visualComponents, ...offspring.hetComponents].map((component) => ({ geneId: component.geneId, copies: component.copies, probability })) };
-  });
-  return { outcomes, totalProbability: outcomes.reduce((sum, outcome) => sum + outcome.probability, 0) };
 }
 
 function componentFromOutcome(outcome: OffspringOutcome): OffspringComponent | null {
@@ -124,14 +106,20 @@ export function calculateBreedingGenetics(female: Snake, male: Snake): GeneticsC
       throw new Error("Canonical breeding forecast failed its probability-integrity check.");
     }
   }
-  return adaptLegacyResult(calculateLegacyGenetics({ female: toBreedingParent(female), male: toBreedingParent(male) }));
+  // The old calculator assumed absent parental alleles were genetically wild type.
+  // A failed canonical forecast MUST NOT fall back to that assumption.
+  return {
+    outcomes: [],
+    totalProbability: 0,
+    warnings: canonicalSpecies(female.species) !== canonicalSpecies(male.species)
+      ? ["Genetic outcomes cannot be calculated for animals recorded as different species."]
+      : ["Genetic outcomes withheld: one or more parental loci lack established genetic evidence. Check the individual breeding records before forecasting."],
+  };
 }
 
-export type BreedingGeneticsSnapshot = GeneticsCalculation & { calculatedAt: string; engine: "canonical-locus-genetics" | "legacy-evidence-gated-bridge"; femaleId: string; maleId: string };
+export type BreedingGeneticsSnapshot = GeneticsCalculation & { calculatedAt: string; engine: "canonical-locus-genetics" | "insufficient-genetic-evidence" | "legacy-evidence-gated-bridge"; femaleId: string; maleId: string };
 
 export function createBreedingGeneticsSnapshot(female: Snake, male: Snake): BreedingGeneticsSnapshot {
   const calculation = calculateBreedingGenetics(female, male);
-  const f = buildSnakeGenome(female, GENETICS_DATABASE);
-  const m = buildSnakeGenome(male, GENETICS_DATABASE);
-  return { ...calculation, calculatedAt: new Date().toISOString(), engine: f.supported && m.supported && canonicalSpecies(female.species) === canonicalSpecies(male.species) ? "canonical-locus-genetics" : "legacy-evidence-gated-bridge", femaleId: female.id, maleId: male.id };
+  return { ...calculation, calculatedAt: new Date().toISOString(), engine: !calculation.warnings?.length && calculation.totalProbability > 0 ? "canonical-locus-genetics" : "insufficient-genetic-evidence", femaleId: female.id, maleId: male.id };
 }
