@@ -122,7 +122,8 @@
     "deploy:keeper:full": "npm run build && firebase deploy --only hosting:legacy,hosting:keeper,firestore:indexes && node scripts/deploy-functions-batched.mjs",
     "deploy:live": "npm run build && firebase deploy --only hosting:legacy,hosting:keeper && node scripts/deploy-functions-batched.mjs",
     "validate:chatgpt-publication": "node scripts/validate-chatgpt-publication.mjs",
-    "test:static-contracts": "node scripts/run-static-contract-matrix.mjs"
+    "test:static-contracts": "node scripts/run-static-contract-matrix.mjs",
+    "validate:human-tester": "node scripts/validate-human-tester.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
