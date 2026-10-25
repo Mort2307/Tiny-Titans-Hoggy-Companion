@@ -146,10 +146,18 @@ function makeOutcome(species: string, scenario: ForecastScenario, index: number)
 
   const matching = GENETICS_DATABASE.combinations
     .filter((combination) => combination.species === species && combination.status === "recognised")
-    .filter((combination) => (combination.components ?? []).every((component) => {
-      const child = scenario.loci.find((entry) => entry.locus.id === component.locusId);
-      return child ? (child.copiesByAllele[component.alleleId] ?? 0) >= (component.copies ?? 1) : false;
-    }))
+    // A named combination requires an exact species-specific visible allele/copy
+    // signature. Subset matches (or empty component arrays) must not rename offspring.
+    .filter((combination) => Boolean(combination.components?.length) &&
+      combination.components!.length === visualComponents.length &&
+      combination.components!.every((component) => {
+        const child = scenario.loci.find((entry) => entry.locus.id === component.locusId);
+        return Boolean(child &&
+          child.phenotypeStatus !== "mixed_allelic" &&
+          child.phenotypeStatus !== "unresolved" &&
+          (child.copiesByAllele[component.alleleId] ?? 0) === (component.copies ?? 1) &&
+          visualComponents.some((visual) => visual.geneId === component.alleleId && visual.copies === (component.copies ?? 1)));
+      }))
     .sort((a, b) => {
       const aScore = (a.components ?? []).reduce((sum, component) => sum + (component.copies ?? 1), 0);
       const bScore = (b.components ?? []).reduce((sum, component) => sum + (component.copies ?? 1), 0);
