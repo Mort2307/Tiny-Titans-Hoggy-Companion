@@ -2,7 +2,7 @@
 type TesterCheck = {
   checkId: string;
   name: string;
-  category: "paid-tiers";
+  category: "paid-tiers" | "stripe";
   severity: "info" | "low" | "medium" | "high" | "critical";
   run: () => Promise<{ status: "pass" | "fail" | "blocked" | "not-tested"; message: string }>;
 };
