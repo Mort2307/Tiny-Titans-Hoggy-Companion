@@ -52,6 +52,8 @@ const minimums: Record<string, number> = {
   bird: 15,
   fish: 20,
   cephalopod: 4,
+  cnidarian: 12,
+  echinoderm: 9,
 };
 
 for (const [className, minimum] of Object.entries(minimums)) {
