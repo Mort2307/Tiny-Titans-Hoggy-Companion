@@ -3,6 +3,7 @@ const read = (path) => fs.readFileSync(path, "utf8");
 const record = read("src/types/Breeding.ts");
 const events = read("src/types/UniversalBreeding.ts");
 const service = read("src/services/universalBreedingService.ts");
+const projectService = read("src/services/breedingService.ts");
 const workspace = read("src/pages/UniversalBreedingWorkspace.tsx");
 const router = read("src/pages/SpeciesSafeBreedingPlanner.tsx");
 const calculator = read("src/pages/Calculator.tsx");
@@ -32,6 +33,9 @@ const checks = [
   ["Family breeding project edits use the supported edit action", rules.includes("breedingFamilyPermission(userId, 'edit')") && !rules.includes("familyPermission(userId, 'breeding', 'update')")],
   ["Review-mode breeding permissions fail closed", rules.includes("function breedingFamilyPermission") && rules.includes("get('accessMode', 'review')") && rules.includes("get('breeding.' + action, 'verify') == 'allow'")],
   ["Family per-action overrides are honoured", read("src/services/familyPermissionsService.ts").includes('...((data.permissions ?? {}) as Partial<FamilyPermissions>)')],
+  ["Project deletion includes nested lifecycle records", projectService.includes("clutchChildren.flat()") && projectService.includes("cycleEvents.docs.map") && projectService.includes("universalEvents.docs.map") && projectService.includes("incubationPlanDoc(owner, projectId, clutch.id)") && projectService.includes("writeBatch(db)")],
+  ["Project deletion requires independent confirmation", workspace.includes("deleteRequestedId !== selectedProject.id") && workspace.includes("Confirm permanent deletion") && workspace.includes("This cannot be undone")],
+  ["Offspring statistics count entries rather than inventing unique offspring", workspace.includes("offspringRecordCount") && workspace.includes("not unique animals")],
 ];
 const failed = checks.filter(([, valid]) => !valid);
 for (const [label, valid] of checks) console.log((valid ? "PASS" : "FAIL") + "  " + label);
