@@ -6,17 +6,21 @@ import "./BreedingOutcomeDashboard.css";
 
 type Filter = "all" | "named" | "visual" | "carrier" | "conditional";
 const options: Array<{ id: Filter; label: string }> = [
-  { id: "all", label: "All outcomes" }, { id: "named", label: "Named combinations" },
-  { id: "visual", label: "Visual morphs" }, { id: "carrier", label: "Hets / carriers" },
+  { id: "all", label: "All outcomes" },
+  { id: "named", label: "Named combinations" },
+  { id: "visual", label: "Visual morphs" },
+  { id: "carrier", label: "Hets / carriers" },
   { id: "conditional", label: "Uncertain outcomes" },
 ];
 const hasKnownProbability = (entry: OffspringResult) =>
   entry.percentage !== undefined && entry.certainty !== "bounded" && !entry.hasUnresolvedGenetics;
 const formatPercent = (value: number) => Number(value.toFixed(4)).toLocaleString("en-GB", { maximumFractionDigits: 4 }) + "%";
+const PREVIEW_LIMIT = 8;
 
 export default function BreedingOutcomeDashboard({ offspring, morphs }: { offspring: OffspringResult[]; morphs: MorphDefinition[] }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [showAll, setShowAll] = useState(false);
   const [expand, setExpand] = useState(false);
   const groups = useMemo(() => {
     const found = new Map<string, { name: string; items: OffspringResult[]; probability: number; uncertain: boolean; named: boolean }>();
@@ -43,6 +47,7 @@ export default function BreedingOutcomeDashboard({ offspring, morphs }: { offspr
       const names = [group.name, ...group.items.flatMap((entry) => [
         ...entry.visualComponents.map((part) => part.name),
         ...entry.hetComponents.map((part) => part.name),
+        ...entry.possibleHetComponents.map((part) => part.name),
       ])];
       if (!names.some((name) => name.toLowerCase().includes(search.trim().toLowerCase()))) return false;
     }
@@ -52,31 +57,38 @@ export default function BreedingOutcomeDashboard({ offspring, morphs }: { offspr
     if (filter === "conditional") return group.uncertain;
     return true;
   });
+  const filtering = Boolean(search.trim()) || filter !== "all";
+  const shown = !showAll && !filtering ? visible.slice(0, PREVIEW_LIMIT) : visible;
+  const remaining = Math.max(0, visible.length - shown.length);
   return <section className="tt-outcomes" aria-label="Offspring prediction dashboard">
-    <div className="tt-outcomes-stats">
-      <div><small>Possible phenotypes</small><strong>{groups.length}</strong></div>
-      <div><small>Named outcomes</small><strong>{offspring.filter((item) => item.recognisedCombination).length}</strong></div>
-      <div><small>Forecast</small><strong>{offspring.some((item) => !hasKnownProbability(item)) ? "Conditional" : "Modelled"}</strong></div>
+    <div className="tt-outcomes-summary" aria-label="Genetic forecast summary">
+      <span><strong>{groups.length}</strong> phenotypes</span>
+      <span><strong>{groups.filter((group) => group.named).length}</strong> named combinations</span>
+      <span>{offspring.some((item) => !hasKnownProbability(item)) ? "Conditional forecast" : "Modelled probabilities"}</span>
     </div>
-    <p className="tt-outcomes-note">Percentages are modelled per-offspring probabilities, not guaranteed clutch proportions. Genetic unknowns are never assumed clear. A named combination describes its underlying traits, not an independent gene.</p>
-    <div className="tt-outcomes-filters">
-      <label>Find morph or gene<input type="search" placeholder="Search outcomes…" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
-      <label>Filter<select value={filter} onChange={(event) => setFilter(event.target.value as Filter)}>{options.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
-      <label className="tt-outcomes-checkbox"><input type="checkbox" checked={expand} onChange={(event) => setExpand(event.target.checked)} /> Show all genotype details</label>
+    <div className="tt-outcomes-toolbar">
+      <label className="tt-outcomes-search"><span className="sr-only">Find a morph or gene</span><input type="search" placeholder="Find a morph or gene…" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+      <label className="tt-outcomes-filter"><span className="sr-only">Filter outcomes</span><select aria-label="Filter outcomes" value={filter} onChange={(event) => setFilter(event.target.value as Filter)}>{options.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></label>
     </div>
     <div className="tt-outcomes-list">
-      {visible.length === 0 && <p>No results match these filters.</p>}
-      {visible.map((group) => <article className="tt-outcomes-card" key={group.name.toLowerCase()}>
+      {shown.length === 0 && <p className="tt-outcomes-no-matches">No results match these filters.</p>}
+      {shown.map((group) => <article className="tt-outcomes-card" key={group.name.toLowerCase()}>
         <div className="tt-outcomes-heading">
-          <div><small>{group.named ? "Recognised combination name" : "Genetic phenotype"}</small><h3>{group.name}</h3><small>{group.items.length} genetic {group.items.length === 1 ? "outcome" : "outcomes"}</small></div>
+          <div><small>{group.named ? "Recognised combination" : "Genetic phenotype"}</small><h3>{group.name}</h3>{group.items.length > 1 && <small>{group.items.length} distinct genotype outcomes</small>}</div>
           <strong>{group.uncertain ? "Conditional" : formatPercent(group.probability)}</strong>
         </div>
-        {group.uncertain ? <p>Unresolved parental states prevent a single percentage.</p> : <progress max="100" value={Math.min(100, group.probability)} aria-label={group.name + " probability"} />}
-        <details key={expand ? "expanded" : "collapsed"} open={expand}>
-          <summary>Genetics, carrier states and alternative names</summary>
+        <details key={expand ? "all-open" : "manual"} open={expand} className="tt-outcomes-breakdown">
+          <summary>View genetics &amp; carrier details</summary>
           <div className="tt-outcomes-details">{group.items.map((item) => <ResultCard key={item.id} result={item} morphs={morphs} />)}</div>
         </details>
       </article>)}
     </div>
+    {remaining > 0 && <button type="button" className="tt-outcomes-more" onClick={() => setShowAll(true)}>Show all {visible.length} phenotypes ({remaining} more)</button>}
+    {showAll && !filtering && visible.length > PREVIEW_LIMIT && <button type="button" className="tt-outcomes-less" onClick={() => setShowAll(false)}>Show fewer</button>}
+    <details className="tt-outcomes-guide">
+      <summary>How to interpret these predictions</summary>
+      <p>Percentages are modelled per-offspring probabilities, not guaranteed clutch proportions. Unknown genetics are not assumed clear. Named combinations describe their component traits, not a new independent gene.</p>
+      <label className="tt-outcomes-expand-all"><input type="checkbox" checked={expand} onChange={(event) => setExpand(event.target.checked)} /> Expand all genotype breakdowns</label>
+    </details>
   </section>;
 }
