@@ -25,7 +25,7 @@ const commands = [
   ["Feeding reminder contract", ["run", "test:feeding-reminders"]],
   ["Water change reminder contract", ["run", "test:water-change-reminders"]],
   ["Room photo contract", ["run", "test:room-photo"]],
-  ["Visual QA contract", ["run", "validate:visual-qa"]],
+  ["Human tester journey contract", ["run", "validate:human-tester"]],
   ["Production build", ["run", "build"]],
 ];
 
