@@ -85,6 +85,8 @@ export type GeneticsCalculation = {
     geneStates: Array<{ geneId: string; copies: number; probability: number }>;
   }>;
   totalProbability: number;
+  /** Explains withheld forecasts rather than presenting guessed Mendelian odds. */
+  warnings?: string[];
 };
 
 export type GeneticProbability = {
