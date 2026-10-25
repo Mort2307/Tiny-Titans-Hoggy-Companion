@@ -9,7 +9,7 @@ const commands = [
   ["Public source credential guard", ["run", "validate:public-source"]],
   ["TypeScript typecheck", ["run", "typecheck"]],
   ["Lint", ["run", "lint"]],
-  ["BOT contract suite", ["run", "test:bot:contracts"]],
+  ["Static contract suite", ["run", "test:static-contracts"]],
   ["UI hardening contract", ["run", "validate:ui-hardening"]],
   ["Security contracts", ["run", "validate:security"]],
   ["Paid-tier contract", ["run", "validate:paid-tiers"]],
