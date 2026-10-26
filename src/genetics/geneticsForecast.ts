@@ -6,7 +6,7 @@ import { calculateLocus, getLocusAllele, type AlleleDefinition, type GeneticStat
 export type ForecastParent = GeneticsCalculatorInput["female"];
 type ParentScenario = { state: GeneticState; weight?: number; label: string; unknown: boolean };
 type ChildLocus = { locus: LocusDefinition; state: GeneticState; probability: number; label: string; phenotypeStatus: string; superForm: boolean; copiesByAllele: Record<string, number> };
-type ForecastScenario = { probabilityKnown: boolean; probability: number; probabilityRange?: { min: number; max: number }; labels: string[]; loci: ChildLocus[] };
+type ForecastScenario = { probabilityKnown: boolean; probability: number; probabilityRange?: { min: number; max: number }; labels: string[]; conditionalPath: string[]; loci: ChildLocus[] };
 
 const normalise = (value: string) => value.trim().toLowerCase();
 
@@ -296,7 +296,7 @@ export function calculateSpeciesGeneticsForecast(species: string, input: Genetic
   const invalid = scenariosByLocus.find((entry) => entry.mother.length === 0 || entry.father.length === 0);
   if (invalid) return { input, offspring: [], hasUnresolvedGenetics: true };
 
-  let scenarios: ForecastScenario[] = [{ probabilityKnown: true, probability: 1, labels: [], loci: [] }];
+  let scenarios: ForecastScenario[] = [{ probabilityKnown: true, probability: 1, labels: [], conditionalPath: [], loci: [] }];
   for (const locus of scenariosByLocus) {
     const next: ForecastScenario[] = [];
     for (const base of scenarios) {
@@ -312,6 +312,11 @@ export function calculateSpeciesGeneticsForecast(species: string, input: Genetic
               probability,
               probabilityRange: known ? undefined : { min: 0, max: baseRange.max * branchWeight },
               labels: [...base.labels, mother.label, father.label],
+              conditionalPath: [
+                ...base.conditionalPath,
+                ...(mother.unknown ? [`${locus.locus.id}:mother:${mother.state.paternalAlleleId}/${mother.state.maternalAlleleId}`] : []),
+                ...(father.unknown ? [`${locus.locus.id}:father:${father.state.paternalAlleleId}/${father.state.maternalAlleleId}`] : []),
+              ],
               loci: [...base.loci, child],
             });
           }
@@ -321,36 +326,44 @@ export function calculateSpeciesGeneticsForecast(species: string, input: Genetic
     scenarios = next;
   }
 
-  const merged = new Map<string, { scenario: ForecastScenario; branches: string[]; probabilities: number[] }>();
-  scenarios.forEach((scenario) => {
+  // Known het confidence is a weighted prior (e.g. 2/3), whereas an untested
+  // parental genotype is a *conditional alternative*, not a probabilistic
+  // 50:50 coin toss. Sum known-prior paths within each unknown-genotype
+  // scenario, then bound each outcome across alternative scenarios.
+  const conditionalKeys = [...new Set(scenarios.map((scenario) => scenario.conditionalPath.join("|")))];
+  const anyConditional = scenarios.some((scenario) => !scenario.probabilityKnown) || unsupportedTraits.length > 0;
+  const merged = new Map<string, {
+    scenario: ForecastScenario;
+    branches: string[];
+    byConditionalKey: Map<string, number>;
+  }>();
+  for (const scenario of scenarios) {
     const key = scenario.loci.map((child) => `${child.locus.id}:${child.state.paternalAlleleId}/${child.state.maternalAlleleId}`).sort().join("|");
+    const conditionalKey = scenario.conditionalPath.join("|");
     const existing = merged.get(key);
     if (!existing) {
-      merged.set(key, {
-        scenario,
-        branches: [scenario.labels.join("; ")],
-        probabilities: [scenario.probabilityRange?.max ?? scenario.probability],
-      });
-      return;
-    }
-    existing.branches.push(scenario.labels.join("; "));
-    existing.probabilities.push(scenario.probabilityRange?.max ?? scenario.probability);
-    if (!scenario.probabilityKnown || !existing.scenario.probabilityKnown) {
-      existing.scenario.probabilityKnown = false;
-      existing.scenario.probability = 0;
-      const mins = scenarios.filter((candidate) => candidate.loci.map((child) => `${child.locus.id}:${child.state.paternalAlleleId}/${child.state.maternalAlleleId}`).sort().join("|") === key).map((candidate) => candidate.probabilityRange?.min ?? candidate.probability);
-      existing.scenario.probabilityRange = { min: Math.min(...mins), max: Math.max(...existing.probabilities) };
+      merged.set(key, { scenario, branches: [scenario.labels.join("; ")], byConditionalKey: new Map([[conditionalKey, scenario.probability]]) });
     } else {
-      existing.scenario.probability += scenario.probability;
+      existing.branches.push(scenario.labels.join("; "));
+      existing.byConditionalKey.set(conditionalKey, (existing.byConditionalKey.get(conditionalKey) ?? 0) + scenario.probability);
     }
-  });
+  }
 
   let index = 0;
   const offspring = [...merged.values()].map((entry) => {
-    const scenario = {
+    const probabilities = conditionalKeys.map((key) => entry.byConditionalKey.get(key) ?? 0);
+    const min = Math.min(...probabilities);
+    const max = Math.max(...probabilities);
+    // A single undocumented wild-type baseline is deliberately not exhaustive,
+    // and unsupported phenotypes also prevent asserting a positive lower bound.
+    const incompletelyModelled = unsupportedTraits.length > 0 || scenarios.some((scenario) =>
+      scenario.conditionalPath.some((part) => part.includes(":wild/wild")));
+    const scenario: ForecastScenario = {
       ...entry.scenario,
-      labels: entry.scenario.probabilityKnown ? entry.scenario.labels : entry.branches,
-      probabilityRange: entry.scenario.probabilityKnown ? undefined : entry.scenario.probabilityRange,
+      probabilityKnown: !anyConditional,
+      probability: anyConditional ? 0 : max,
+      probabilityRange: anyConditional ? { min: incompletelyModelled ? 0 : min, max } : undefined,
+      labels: anyConditional ? entry.branches : entry.scenario.labels,
     };
     return makeOutcome(species, scenario, index++);
   });
