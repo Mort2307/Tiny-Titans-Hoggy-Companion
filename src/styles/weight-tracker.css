@@ -133,3 +133,23 @@
     padding: 8px 2px;
   }
 }
+
+/* Keep the weight list scannable rather than drawing an entire chart per animal. */
+.weight-records-chart-expand { padding:.45rem .65rem; }
+.weight-records-chart-expand>summary {
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  min-height:42px;
+  font-size:.82rem;
+  font-weight:800;
+  list-style:none;
+  cursor:pointer;
+}
+.weight-records-chart-expand>summary::-webkit-details-marker { display:none; }
+.weight-records-chart-expand>summary span { margin-left:auto; opacity:.7; font-size:.74rem; font-weight:600; }
+.weight-records-chart-expand>summary::after { content:"⌄"; }
+.weight-records-chart-expand[open]>summary::after { content:"⌃"; }
+.weight-records-chart-expand>summary:focus-visible { outline:2px solid var(--tt-ui-gold,#f0bb58); outline-offset:2px; border-radius:8px; }
+.weight-records-chart-content { padding-top:.45rem; }
+@media(max-width:650px) { .weight-records-card { box-shadow:none; } }
