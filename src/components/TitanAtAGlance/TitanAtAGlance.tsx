@@ -158,6 +158,10 @@ export default function TitanAtAGlance() {
   const [animals, setAnimals] = useState<AtAGlanceAnimal[]>([]);
   const [loadingAnimals, setLoadingAnimals] = useState(false);
   const [animalPickerOpen, setAnimalPickerOpen] = useState(false);
+  const [wheelOpen, setWheelOpen] = useState(() => {
+    try { return window.localStorage.getItem("tinyTitans.home.hideCompass") !== "true"; }
+    catch { return true; }
+  });
   const [selectedAnimalOverride, setSelectedAnimalOverride] = useState<AtAGlanceAnimal | undefined>(undefined);
   const activeAnimalId = currentAnimalId(location.pathname);
 
@@ -182,6 +186,11 @@ export default function TitanAtAGlance() {
       setAnimalPickerOpen(false);
     }
   }, [activeAnimalId]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem("tinyTitans.home.hideCompass", String(!wheelOpen)); }
+    catch { /* Optional display preference. */ }
+  }, [wheelOpen]);
 
   const selectedAnimal = useMemo(
     () => selectedAnimalOverride ?? animals.find((animal) => animal.id === activeAnimalId) ?? animals[0],
@@ -218,9 +227,9 @@ export default function TitanAtAGlance() {
     <section className="tt-at-glance" aria-label="Titan At A Glance">
       <div className="tt-at-glance-head">
         <div>
-          <span className="tt-at-glance-eyebrow">TITAN AT A GLANCE</span>
+          <span className="tt-at-glance-eyebrow"><TinyTitansIcon name="titan" size={15} /> YOUR TITAN COMPASS</span>
           <h1>{selectedAnimal ? selectedAnimal.name : "Your Tiny Titans"}</h1>
-          <p>{loadingAnimals ? "Loading your latest records…" : "Key logs at your fingertips."}</p>
+          <p>{loadingAnimals ? "Loading your latest records…" : "Your animal at the heart of everything."}</p>
         </div>
         <Link className="tt-at-glance-customise" to="/account/personalise"><TinyTitansIcon name="edit" size={16} /> Customise</Link>
       </div>
@@ -228,10 +237,11 @@ export default function TitanAtAGlance() {
       <nav className="tt-at-glance-quick-links" aria-label="Quick animal records">
         <Link to={routeFor("weight", selectedAnimal)}><TinyTitansIcon name="weight" size={17} /> Weight</Link>
         <Link to={routeFor("feed", selectedAnimal)}><TinyTitansIcon name="feeding" size={17} /> Feeding</Link>
+        <Link to={routeFor("shed", selectedAnimal)}><TinyTitansIcon name="shed" size={17} /> Shed</Link>
         <Link to="/animals"><TinyTitansIcon name="animals" size={17} /> My Animals</Link>
       </nav>
-      <details className="tt-at-glance-expand">
-        <summary>All {views.length} personalised shortcuts</summary>
+      <details className="tt-at-glance-expand" open={wheelOpen} onToggle={(event) => setWheelOpen(event.currentTarget.open)}>
+        <summary>{wheelOpen ? "Minimise compass" : `Show your personalised compass · ${views.length} shortcuts`}</summary>
       <div className="tt-at-glance-stage">
         <svg className="tt-at-glance-wheel" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Customisable Tiny Titans quick navigation wheel">
           <defs>

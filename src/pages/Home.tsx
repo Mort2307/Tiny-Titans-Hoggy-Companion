@@ -5,6 +5,7 @@ import PwaInstallCard from "../components/PwaInstallCard";
 import TitanGoalTracker from "../components/TitanGoalTracker";
 import HomeCurrentAnimalSection from "../components/Home/HomeCurrentAnimalSection";
 import HomeAttentionSection from "../components/Home/HomeAttentionSection";
+import TitanAtAGlance from "../components/TitanAtAGlance/TitanAtAGlance";
 import { useHomeDashboard } from "../hooks/useHomeDashboard";
 import { FOUNDING_FOLLOWER_CAMPAIGN } from "../config/foundingFollowerReward";
 import { subscribeToMyFoundingFollowerClaim, type FoundingFollowerClaim } from "../services/foundingFollowerRewardService";
@@ -64,7 +65,7 @@ function Home() {
         <div>
           <p className="tt-home-eyebrow">{world.localDateKey} · {world.timezone}</p>
           <h1>Good {world.localTimePeriod}, {displayName}</h1>
-          <p>Here is the information most worth seeing first. Everything else is one tap away when you need it.</p>
+          <p>Your animals, your world, your next adventure.</p>
         </div>
         <div className="tt-home-mode">
           <span className="tt-home-learning-label"><TinyTitansIcon name="titan" size={18} /> {learningLabel} learning</span>
@@ -73,6 +74,11 @@ function Home() {
       </section>
 
       {loadError && <section className="tt-home-panel" role="alert"><h2>Keeper records unavailable</h2><p>{loadError}</p><button className="universal-primary-action" type="button" onClick={retryLoad}>Try loading again</button></section>}
+      {urgentReminder && !loadingIntelligence && (
+        <HomeAttentionSection intelligenceAccess={intelligenceAccess} accessChecked={accessChecked} coverage={coverage}
+          quietIntelligenceSnippet={quietIntelligenceSnippet} attentionDecision={attentionDecision} urgentReminder={urgentReminder} />
+      )}
+      {snakes.length > 0 && <TitanAtAGlance />}
 
       {showFollowerRewardCta && (
         <Link
@@ -93,7 +99,7 @@ function Home() {
         </Link>
       )}
 
-      {!loadingIntelligence && (snakes.length > 0 || urgentReminder) && (
+      {!loadingIntelligence && snakes.length > 0 && !urgentReminder && Boolean(attentionDecision) && (
         <HomeAttentionSection
           intelligenceAccess={intelligenceAccess}
           accessChecked={accessChecked}
@@ -116,6 +122,8 @@ function Home() {
           <Link className="tt-home-primary" to="/animals#add-animal"><TinyTitansIcon name="add" size={20} /> Add your first animal</Link>
         </section>
       ) : (
+        <details className="tt-home-animal-details">
+          <summary><TinyTitansIcon name="reptile" size={18} /> Animal snapshot <strong>{selectedSnake?.name}</strong><span>View profile and latest records</span></summary>
         <HomeCurrentAnimalSection
           selectedSnake={selectedSnake}
           selectedSnakeRecords={selectedSnakeRecords}
@@ -127,34 +135,13 @@ function Home() {
           coverage={coverage}
           onMove={moveSnake}
         />
+        </details>
       )}
 
       {snakes.length > 0 && (
         <>
-          <section className="tt-home-section">
-            <div className="tt-home-heading">
-              <div>
-                <p className="tt-home-kicker"><TinyTitansIcon name="titan" size={17} /> QUICK ACTIONS</p>
-                <h2>Log something</h2>
-              </div>
-            </div>
-            <div className="tt-quick-actions">
-              <Link className="is-primary" to="/weights"><span><TinyTitansIcon name="weight" size={30} /></span><strong>Weight</strong><small>Record measurement</small></Link>
-              <Link to="/feeding"><span><TinyTitansIcon name="feeding" size={30} /></span><strong>Feeding</strong><small>Log a feed</small></Link>
-              <Link to="/shedding"><span><TinyTitansIcon name="shed" size={30} /></span><strong>Shed</strong><small>Record a stage</small></Link>
-              <Link to="/husbandry"><span><TinyTitansIcon name="husbandry" size={30} /></span><strong>Environment</strong><small>Log conditions</small></Link>
-              <Link to="/animals"><span><TinyTitansIcon name="add" size={30} /></span><strong>Add animal</strong><small>Grow your collection</small></Link>
-            </div>
-          </section>
-
-          <section className="tt-home-section">
-            <div className="tt-home-heading">
-              <div>
-                <p className="tt-home-kicker"><TinyTitansIcon name="weight" size={17} /> AT A GLANCE</p>
-                <h2>Your records</h2>
-              </div>
-              <Link to="/animals">Open collection <TinyTitansIcon name="forward" size={14} /></Link>
-            </div>
+          <details className="tt-home-records-disclosure">
+            <summary><TinyTitansIcon name="analytics" size={19} /> Your collection activity <strong>{snakes.length} animals</strong></summary>
             <div className="tt-home-stats">
               <Link to="/animals"><strong>{snakes.length}</strong><span><TinyTitansIcon name="reptile" size={16} /> Animals</span></Link>
               <Link to="/weights"><strong>{snapshot.weights}</strong><span><TinyTitansIcon name="weight" size={16} /> Weight</span></Link>
@@ -165,48 +152,35 @@ function Home() {
             {!intelligenceAccess && snakes.length > 0 && (
               <p className="tt-home-snapshot-note">Counts come directly from your recorded history and do not depend on Intelligence consent.</p>
             )}
-          </section>
+          </details>
 
         </>
       )}
 
-      <section className="tt-home-section">
+      <section className="tt-home-section tt-home-discover">
         <div className="tt-home-heading">
           <div>
-            <p className="tt-home-kicker"><TinyTitansIcon name="search" size={17} /> EXPLORE</p>
-            <h2>Go deeper when you need it</h2>
+            <p className="tt-home-kicker"><TinyTitansIcon name="search" size={17} /> DISCOVER</p>
+            <h2>Explore Tiny Titans</h2>
           </div>
         </div>
         <div className="tt-home-explore-grid">
           <Link to="/morph-library"><span><TinyTitansIcon name="genetics" size={25} /></span><div><strong>Genetics Library</strong><small>Canonical morph identities and recognised combinations.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
           <Link to="/husbandry"><span><TinyTitansIcon name="husbandry" size={25} /></span><div><strong>Husbandry Library</strong><small>Species-aware care, enclosure and environmental guidance.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
           <Link to="/husbandry/safety"><span><TinyTitansIcon name="check" size={25} /></span><div><strong>Can I use this?</strong><small>Check leaves, substrates, plants and enclosure materials against species-aware safety evidence.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
+        </div>
+        <details className="tt-home-discover-more"><summary><TinyTitansIcon name="titan" size={17} /> More to explore</summary><div className="tt-home-explore-grid">
           <Link to="/behaviour-observatory"><span><TinyTitansIcon name="observatory" size={25} /></span><div><strong>Behaviour Observatory</strong><small>Keeper observations, theories and evidence.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
           <Link to="/community"><span><TinyTitansIcon name="community" size={25} /></span><div><strong>Titan Community</strong><small>Contributions, shared learning and community intelligence.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
           <Link to="/challenge"><span><TinyTitansIcon name="challenge" size={25} /></span><div><strong>Titans Challenge</strong><small>Keep building your animal-keeping knowledge at your own level.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
           <Link to="/account/family"><span><TinyTitansIcon name="family" size={25} /></span><div><strong>My Family</strong><small>Shared care with controlled access.</small></div><b><TinyTitansIcon name="forward" size={16} /></b></Link>
-        </div>
+        </div></details>
       </section>
 
-      <section className="tt-home-lower-grid">
-        <article className="tt-home-panel">
-          <p className="tt-home-kicker"><TinyTitansIcon name="academy" size={17} /> LEARNING MODE</p>
-          <h3>{learningLabel} learning</h3>
-          <p>Your learning level changes how TinyTitans presents information without changing the underlying scientific facts.</p>
-          <Link to="/account/personalise">Tune learning <TinyTitansIcon name="forward" size={14} /></Link>
-        </article>
-        <article className="tt-home-panel">
-          <p className="tt-home-kicker"><TinyTitansIcon name="reptile" size={17} /> SPECIES-AWARE CONTEXT</p>
-          <h3>Content stays attached to the animal</h3>
-          <p>Care, safety and genetics surfaces remain species-aware across the animals you keep.</p>
-          <Link to="/animals">Manage animals <TinyTitansIcon name="forward" size={14} /></Link>
-        </article>
-      </section>
-
-      <section className="tt-home-secondary">
+      <details className="tt-home-extras"><summary><TinyTitansIcon name="titan" size={17} /> Keeper extras and app tools</summary><section className="tt-home-secondary">
         <PwaInstallCard />
         <TitanGoalTracker compact />
-      </section>
+      </section></details>
 
       <details className="tt-home-disclosure tt-home-secondary-disclosure" onToggle={(event) => setRecommendedOpen(event.currentTarget.open)}>
         <summary><TinyTitansIcon name="genetics" size={17} /> Recommended genetics</summary>

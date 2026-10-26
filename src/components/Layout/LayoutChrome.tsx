@@ -9,7 +9,6 @@ import PaidTierGate from "../PaidTierGate";
 import NotificationOnboarding from "../NotificationOnboarding";
 import NetworkStatusBanner from "../NetworkStatusBanner";
 import WorkspaceIdentityStrip from "../WorkspaceIdentityStrip";
-import TitanAtAGlance from "../TitanAtAGlance/TitanAtAGlance";
 import { useLayoutScrollRestoration } from "../../hooks/useLayoutScrollRestoration";
 
 const SpeciesAwareMorphLibrary = lazy(() => import("../../pages/SpeciesAwareMorphLibrary"));
@@ -56,7 +55,6 @@ function LayoutChrome() {
     pathname === "/enclosure-intelligence" || pathname.startsWith("/enclosure-intelligence/");
   const isTitanWeekPage = pathname === "/titan-intelligence/feature/this-week";
   // The home glance is a navigation widget, not a header for every tracker page.
-  const isHomeDashboard = pathname === "/";
   const isPaidPlansPage = pathname === "/plans";
   const isBillingPage = pathname === "/account/billing";
   const isPaidMarketplacePage = pathname === "/paid/marketplace";
@@ -136,7 +134,6 @@ function LayoutChrome() {
             <NotificationOnboarding />
             <NetworkStatusBanner />
             {speciesAware && <SpeciesContextBar compact={location.pathname === "/calculator"} showGeneticsStatus={location.pathname !== "/calculator"} label={location.pathname === "/calculator" ? "Species for this calculation" : undefined} />}
-            {isHomeDashboard && <TitanAtAGlance />}
             {pageContent}
             <TinyTitansEvidenceNotice />
           </div>
