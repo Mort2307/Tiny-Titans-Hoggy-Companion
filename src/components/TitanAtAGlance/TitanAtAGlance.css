@@ -217,3 +217,29 @@
 
 
 .tt-at-glance-feed-secondary { font-size: 7.2px; font-weight: 750; letter-spacing: 0.01em; opacity: 0.9; }
+
+/* Home shows immediate keeper actions first; the original wheel is still available. */
+.tt-at-glance { padding:.75rem .85rem; border-radius:16px; box-shadow:none; }
+.tt-at-glance-head { align-items:center; gap:.6rem; }
+.tt-at-glance-head h1 { font-size:1.2rem; }
+.tt-at-glance-quick-links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; margin:.7rem 0 .45rem; }
+.tt-at-glance-quick-links a {
+  display:flex; align-items:center; justify-content:center; gap:.35rem;
+  min-width:0; min-height:44px; padding:.45rem .3rem; border-radius:10px;
+  border:1px solid rgba(255,255,255,.11); background:rgba(255,255,255,.045);
+  color:var(--tt-ui-text); text-align:center; text-decoration:none;
+  font-size:.82rem; font-weight:750;
+}
+.tt-at-glance-quick-links a:hover,.tt-at-glance-quick-links a:focus-visible {
+  background:rgba(240,187,88,.1); border-color:rgba(240,187,88,.35);
+}
+.tt-at-glance-expand { margin-top:.25rem; }
+.tt-at-glance-expand>summary {
+  display:flex; align-items:center; justify-content:center; gap:.4rem;
+  min-height:40px; cursor:pointer; font-size:.8rem; font-weight:750;
+  color:var(--tt-ui-text-muted); list-style:none;
+}
+.tt-at-glance-expand>summary::-webkit-details-marker { display:none; }
+.tt-at-glance-expand>summary::after { content:"⌄"; }
+.tt-at-glance-expand[open]>summary::after { content:"⌃"; }
+.tt-at-glance-expand>summary:focus-visible { outline:2px solid var(--tt-ui-gold); border-radius:8px; }
