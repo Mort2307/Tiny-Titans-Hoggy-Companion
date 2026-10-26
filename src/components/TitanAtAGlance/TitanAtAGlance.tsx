@@ -234,12 +234,6 @@ export default function TitanAtAGlance() {
         <Link className="tt-at-glance-customise" to="/account/personalise"><TinyTitansIcon name="edit" size={16} /> Customise</Link>
       </div>
 
-      <nav className="tt-at-glance-quick-links" aria-label="Quick animal records">
-        <Link to={routeFor("weight", selectedAnimal)}><TinyTitansIcon name="weight" size={17} /> Weight</Link>
-        <Link to={routeFor("feed", selectedAnimal)}><TinyTitansIcon name="feeding" size={17} /> Feeding</Link>
-        <Link to={routeFor("shed", selectedAnimal)}><TinyTitansIcon name="shed" size={17} /> Shed</Link>
-        <Link to="/animals"><TinyTitansIcon name="animals" size={17} /> My Animals</Link>
-      </nav>
       <details className="tt-at-glance-expand" open={wheelOpen} onToggle={(event) => setWheelOpen(event.currentTarget.open)}>
         <summary>{wheelOpen ? "Minimise compass" : `Show your personalised compass · ${views.length} shortcuts`}</summary>
       <div className="tt-at-glance-stage">
