@@ -222,17 +222,6 @@
 .tt-at-glance { padding:.75rem .85rem; border-radius:16px; box-shadow:none; }
 .tt-at-glance-head { align-items:center; gap:.6rem; }
 .tt-at-glance-head h1 { font-size:1.2rem; }
-.tt-at-glance-quick-links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; margin:.7rem 0 .45rem; }
-.tt-at-glance-quick-links a {
-  display:flex; align-items:center; justify-content:center; gap:.35rem;
-  min-width:0; min-height:44px; padding:.45rem .3rem; border-radius:10px;
-  border:1px solid rgba(255,255,255,.11); background:rgba(255,255,255,.045);
-  color:var(--tt-ui-text); text-align:center; text-decoration:none;
-  font-size:.82rem; font-weight:750;
-}
-.tt-at-glance-quick-links a:hover,.tt-at-glance-quick-links a:focus-visible {
-  background:rgba(240,187,88,.1); border-color:rgba(240,187,88,.35);
-}
 .tt-at-glance-expand { margin-top:.25rem; }
 .tt-at-glance-expand>summary {
   display:flex; align-items:center; justify-content:center; gap:.4rem;
@@ -278,29 +267,6 @@
   border-color:rgba(240,187,88,.33);
   background:rgba(245,182,66,.09);
   min-height:44px;
-}
-.tt-at-glance-quick-links {
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:.42rem;
-  margin:.6rem 0 .15rem;
-}
-.tt-at-glance-quick-links a {
-  display:flex;
-  flex-direction:column;
-  min-height:51px;
-  gap:.15rem;
-  border-color:rgba(243,196,131,.18);
-  border-radius:12px;
-  background:linear-gradient(160deg,rgba(132,72,151,.2),rgba(245,185,88,.055));
-  color:#f7e9f4;
-  font-size:.73rem;
-}
-.tt-at-glance-quick-links a svg { color:#f4c98e; }
-.tt-at-glance-quick-links a:hover,
-.tt-at-glance-quick-links a:focus-visible {
-  border-color:rgba(245,194,115,.65);
-  background:linear-gradient(150deg,rgba(130,61,174,.3),rgba(245,187,88,.14));
-  outline-offset:2px;
 }
 .tt-at-glance-expand>summary {
   justify-content:space-between;
@@ -360,8 +326,30 @@
   .tt-at-glance-head p { font-size:.75rem; }
   .tt-at-glance-customise { padding:.45rem .55rem; }
   .tt-at-glance-wheel { width:min(100%,326px); }
-  .tt-at-glance-quick-links a { min-height:51px; padding:.42rem .15rem; }
-}
+  }
 @media(prefers-reduced-motion:reduce) {
   .tt-at-glance-sector-shape,.tt-at-glance-centre { transition:none; }
+}
+
+/* The compass is itself the navigation; let the wheel lead without a second button row. */
+.tt-at-glance-expand {
+  margin-top:.35rem;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+}
+.tt-at-glance-expand>summary {
+  min-height:34px;
+  padding:.15rem .25rem;
+  border:0;
+  background:transparent;
+  justify-content:flex-end;
+  color:#e6c99b;
+  font-size:.74rem;
+  font-weight:700;
+}
+.tt-at-glance-head { margin-bottom:.15rem; }
+@media(max-width:620px) {
+  .tt-at-glance { padding-bottom:.6rem; }
+  .tt-at-glance-expand { margin-top:.18rem; }
 }
