@@ -38,10 +38,10 @@ export default function SnakeProfile() {
       <BackHomeButton fallback="/snakes" />
       <SnakeProfileHero snake={snake} morphText={morphText} hetText={hetText} ageText={ageText} keeperTimeText={keeperTimeText} />
       <SnakeProfileQuickActions snakeId={snake.id} reminderWeightRoute={reminderWeightRoute} waterChangeRoute={waterChangeRoute} />
-      {universalSpecies && <section className="tracker-card" aria-label="Universal species reference"><div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", justifyContent: "space-between" }}><div><p style={{ margin: 0, fontSize: "0.75rem", fontWeight: 800, letterSpacing: ".08em", opacity: .65 }}>CANONICAL SPECIES</p><strong>{universalSpecies.commonNames[0]}</strong><div style={{ fontSize: "0.85rem", opacity: .72, fontStyle: "italic" }}>{universalSpecies.acceptedScientificName}</div></div><Link className="tt-intelligence-action" to={`/species/${universalSpecies.id}`}>View care & health <TinyTitansIcon name="forward" size={15} /></Link></div></section>}
+      {universalSpecies && <details className="tracker-card snake-profile-supplement"><summary><TinyTitansIcon name="knowledge" size={17} /> Species care reference <span>{universalSpecies.commonNames[0]}</span></summary><div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", justifyContent: "space-between" }}><div><p style={{ margin: 0, fontSize: "0.75rem", fontWeight: 800, letterSpacing: ".08em", opacity: .65 }}>CANONICAL SPECIES</p><strong>{universalSpecies.commonNames[0]}</strong><div style={{ fontSize: "0.85rem", opacity: .72, fontStyle: "italic" }}>{universalSpecies.acceptedScientificName}</div></div><Link className="tt-intelligence-action" to={`/species/${universalSpecies.id}`}>View care & health <TinyTitansIcon name="forward" size={15} /></Link></div></details>}
       <SnakeProfileOverviewGrid snake={snake} reminder={activeReminder} reminderWeightRoute={reminderWeightRoute} waterChangeRoute={waterChangeRoute} />
       <SnakeProfileReviewGuide snake={snake} />
-      <SnakeProfileSmartSummary snake={snake} />
+      <details className="snake-profile-supplement snake-profile-insights-disclosure"><summary><TinyTitansIcon name="titan" size={18} /> More personal insights and milestones</summary><SnakeProfileSmartSummary snake={snake} /></details>
       <SnakeProfileIntelligenceSection
         snake={snake}
         intelligenceAccess={intelligenceAccess}
