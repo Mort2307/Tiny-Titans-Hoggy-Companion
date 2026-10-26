@@ -220,11 +220,18 @@ export default function TitanAtAGlance() {
         <div>
           <span className="tt-at-glance-eyebrow">TITAN AT A GLANCE</span>
           <h1>{selectedAnimal ? selectedAnimal.name : "Your Tiny Titans"}</h1>
-          <p>{loadingAnimals ? "Loading your latest records…" : selectedAnimal ? "Tap a slice to view, update or review it." : "Tap a slice to open what you need."}</p>
+          <p>{loadingAnimals ? "Loading your latest records…" : "Key logs at your fingertips."}</p>
         </div>
         <Link className="tt-at-glance-customise" to="/account/personalise"><TinyTitansIcon name="edit" size={16} /> Customise</Link>
       </div>
 
+      <nav className="tt-at-glance-quick-links" aria-label="Quick animal records">
+        <Link to={routeFor("weight", selectedAnimal)}><TinyTitansIcon name="weight" size={17} /> Weight</Link>
+        <Link to={routeFor("feed", selectedAnimal)}><TinyTitansIcon name="feeding" size={17} /> Feeding</Link>
+        <Link to="/animals"><TinyTitansIcon name="animals" size={17} /> My Animals</Link>
+      </nav>
+      <details className="tt-at-glance-expand">
+        <summary>All {views.length} personalised shortcuts</summary>
       <div className="tt-at-glance-stage">
         <svg className="tt-at-glance-wheel" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Customisable Tiny Titans quick navigation wheel">
           <defs>
@@ -319,9 +326,10 @@ export default function TitanAtAGlance() {
       </div>
 
       <div className="tt-at-glance-foot">
-        <span>Showing {views.length} personalised shortcuts</span>
+        <span>{views.length} shortcuts available</span>
         <Link to="/animals">Switch animal</Link>
       </div>
+      </details>
     </section>
   );
 }
