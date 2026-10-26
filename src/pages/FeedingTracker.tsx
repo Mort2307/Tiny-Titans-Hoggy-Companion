@@ -29,7 +29,7 @@ export default function FeedingTracker() {
     <BackHomeButton />
     <header className="tt-tracker-header">
       <p className="tt-tracker-eyebrow">Keeper records · Feeding intelligence</p>
-      <div className="tt-tracker-title-row"><div><h1><TinyTitansIcon name="feeding" size={28} /> Feeding Tracker</h1><p className="tt-tracker-subtitle">Log the actual prey item, quantity and mass for every snake — from a mouse pinkie to a whole rabbit, fish, egg or bird.</p></div>
+      <div className="tt-tracker-title-row"><div><h1><TinyTitansIcon name="feeding" size={28} /> Feeding Tracker</h1><p className="tt-tracker-subtitle">Record a feeding, then review the history and species-specific guidance.</p></div>
         <div className="tt-tracker-snake"><label htmlFor="feeding-snake">Record for<select id="feeding-snake" value={selectedSnakeId} onChange={(event) => selectSnake(event.target.value)} disabled={saving}>{snakes.map((snake) => <option key={snake.id} value={snake.id}>{snake.name}</option>)}</select></label></div>
       </div>
       <nav className="tt-tracker-nav" aria-label="Tracker navigation">
@@ -61,6 +61,7 @@ export default function FeedingTracker() {
           />
         </div>
         <aside className="tt-tracker-stack">
+          <details className="tt-tracker-support-disclosure"><summary><TinyTitansIcon name="info" size={18} /> Diet and feeding insights</summary>
           <section className="tt-tracker-panel"><p className="tt-tracker-eyebrow">Species diet intelligence</p><h2><TinyTitansIcon name="reptile" size={21} /> {selectedSnake?.name}</h2><p className="tt-tracker-panel-muted">{selectedSnake?.species}</p>
             <div className="tt-tracker-message success"><strong>{diet.guild}</strong><br />{diet.note}</div>
             <ul className="tt-tracker-side-list">
@@ -72,6 +73,7 @@ export default function FeedingTracker() {
             </ul>
           </section>
           <section className="tt-tracker-panel"><p className="tt-tracker-eyebrow">Important</p><h2><TinyTitansIcon name="info" size={21} /> Record the actual meal</h2><p className="tt-tracker-panel-muted">Tiny Titans does not silently turn every snake into a rodent-only feeder. Species profiles can surface fish, amphibians, eggs, birds and larger whole prey, while the exact item and mass stay attached to the keeper record.</p></section>
+          </details>
         </aside>
       </div>
 
