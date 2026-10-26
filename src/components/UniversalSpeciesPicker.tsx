@@ -11,6 +11,8 @@ type Props = {
   label?: string;
   placeholder?: string;
   allowUnknown?: boolean;
+  /** Compact mode avoids repeating the chosen species in a second large card. */
+  dense?: boolean;
 };
 // Short initial list prevents a species search from occupying the entire phone screen.
 const PAGE_SIZE = 8;
@@ -21,6 +23,7 @@ export default function UniversalSpeciesPicker({
   label = KEEPER_COMPANION_TERMINOLOGY.speciesQuestion,
   placeholder = KEEPER_COMPANION_TERMINOLOGY.speciesSearchPlaceholder,
   allowUnknown = true,
+  dense = false,
 }: Props) {
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -103,12 +106,17 @@ export default function UniversalSpeciesPicker({
           </button>
         </div>
       </div>
-      {selected && (
+      {selected && (dense ? (
+        <div className="universal-species-picker__mini-actions">
+          <Link to={`/species/${selected.id}`}>Species profile</Link>
+          <button type="button" onClick={clear} aria-label="Clear species selection">Clear</button>
+        </div>
+      ) : (
         <div className="universal-species-picker__selected">
           <div><strong>{selected.commonNames[0] ?? selected.acceptedScientificName}</strong><small>{selected.acceptedScientificName} · {selected.family}</small></div>
           <div><Link to={`/species/${selected.id}`}>View profile</Link><button type="button" onClick={clear} aria-label="Clear species selection">Clear</button></div>
         </div>
-      )}
+      ))}
       {expanded && (
         <div className="universal-species-picker__dropdown">
           <label className="universal-species-picker__class">Browse by animal group
