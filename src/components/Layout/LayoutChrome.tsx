@@ -28,12 +28,13 @@ const RescueDirectoryProfile = lazy(() => import("../../pages/RescueDirectoryPro
 const RescueCentre = lazy(() => import("../../pages/RescuePages").then((module) => ({ default: module.RescueCentre })));
 const RescueQuickLog = lazy(() => import("../../pages/RescueQuickLog"));
 
+// Context is shown only where species identity changes the meaning of care or genetics.
+// Account, community and creator pages no longer spend an entire screen on this selector.
 const speciesAwarePrefixes = [
-  "/snakes", "/reminders", "/husbandry", "/weights", "/feeding", "/shedding",
-  "/behaviour", "/health", "/enclosure-intelligence", "/morph-library", "/calculator",
-  "/breeding", "/keeper-handbook", "/behaviour-observatory", "/make-contribution",
-  "/knowledge-base", "/challenge", "/community", "/account", "/become-a-titan",
-  "/educator", "/creator",
+  "/snakes", "/husbandry", "/weights", "/feeding", "/shedding",
+  "/behaviour", "/health", "/enclosure-intelligence", "/morph-library",
+  "/calculator", "/breeding", "/keeper-handbook", "/behaviour-observatory",
+  "/knowledge-base",
 ];
 
 function matchesPrefix(pathname: string, prefix: string) {
@@ -54,11 +55,8 @@ function LayoutChrome() {
   const isEnclosureIntelligence =
     pathname === "/enclosure-intelligence" || pathname.startsWith("/enclosure-intelligence/");
   const isTitanWeekPage = pathname === "/titan-intelligence/feature/this-week";
-  const isHomeOrRecordLogPage =
-    pathname === "/" ||
-    ["/weights", "/feeding", "/shedding", "/health", "/behaviour", "/husbandry"].some((prefix) =>
-      matchesPrefix(pathname, prefix),
-    );
+  // The home glance is a navigation widget, not a header for every tracker page.
+  const isHomeDashboard = pathname === "/";
   const isPaidPlansPage = pathname === "/plans";
   const isBillingPage = pathname === "/account/billing";
   const isPaidMarketplacePage = pathname === "/paid/marketplace";
@@ -138,7 +136,7 @@ function LayoutChrome() {
             <NotificationOnboarding />
             <NetworkStatusBanner />
             {speciesAware && <SpeciesContextBar compact={location.pathname === "/calculator"} showGeneticsStatus={location.pathname !== "/calculator"} label={location.pathname === "/calculator" ? "Species for this calculation" : undefined} />}
-            {isHomeOrRecordLogPage && <TitanAtAGlance />}
+            {isHomeDashboard && <TitanAtAGlance />}
             {pageContent}
             <TinyTitansEvidenceNotice />
           </div>
