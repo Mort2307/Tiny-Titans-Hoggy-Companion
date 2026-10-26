@@ -1,5 +1,6 @@
 import type { GeneticsCalculatorInput, GeneticsCalculatorResult, HetPercentage, OffspringComponent, OffspringResult } from "../types/genetics";
 import { GENETICS_DATABASE } from "./geneticsDatabase.ts";
+import { resolveStrictMorph } from "../utils/geneticsIdentity.ts";
 import { calculateLocus, getLocusAllele, type AlleleDefinition, type GeneticState, type LocusDefinition, type CombinationDefinition } from "./geneticsModel.ts";
 
 export type ForecastParent = GeneticsCalculatorInput["female"];
@@ -44,6 +45,49 @@ function parentCombinationState(parent: ForecastParent, locus: LocusDefinition):
     }
   }
   return undefined;
+}
+
+
+/** Expand a keeper's named Super or combination into the underlying loci.
+ * Multiple names describing the same allele (Arctic + Platinum, for instance)
+ * are merged by highest proven copy count, never summed as independent genes.
+ * Unsupported labels are kept out of the model and explicitly reported.
+ */
+function expandRecordedParent(species: string, parent: ForecastParent): { parent: ForecastParent; unsupported: string[] } {
+  const loci = GENETICS_DATABASE.loci.filter((locus) => locus.species === species);
+  const copies: Record<string, 1 | 2> = { ...(parent.knownGeneCopies ?? {}) };
+  const resolved = new Set<string>();
+  const unsupported: string[] = [];
+  const add = (alleleId: string, copyCount?: number) => {
+    resolved.add(alleleId);
+    if (copyCount === 1 || copyCount === 2) {
+      copies[alleleId] = Math.max(copies[alleleId] ?? 0, copyCount) as 1 | 2;
+    }
+  };
+  for (const recorded of parent.morphs) {
+    const direct = loci.flatMap((locus) => locus.alleles.filter((allele) => !allele.isWildType && alleleMatches(allele, recorded)));
+    if (direct.length) {
+      direct.forEach((allele) => add(allele.id));
+      continue;
+    }
+    const named = GENETICS_DATABASE.combinations.find((combination) =>
+      combination.species === species && combinationMatchesParent(combination, recorded) && (combination.components?.length ?? 0) > 0);
+    const catalogueMorph = resolveStrictMorph(recorded);
+    const components = named?.components?.map((part) => ({ alleleId: part.alleleId, copies: part.copies ?? 1 }))
+      ?? catalogueMorph?.components?.map((part) => ({ alleleId: part.morphId, copies: part.copies ?? 1 }));
+    // A catalogue composition must fully resolve in the chosen species. Never
+    // import a Hognose trait into an unrelated species with similarly named genes.
+    if (components?.length && components.every((part) => loci.some((locus) =>
+      locus.alleles.some((allele) => !allele.isWildType && allele.id === part.alleleId)))) {
+      components.forEach((part) => add(part.alleleId, part.copies));
+    } else {
+      unsupported.push(recorded);
+    }
+  }
+  return {
+    parent: { ...parent, morphs: [...resolved], knownGeneCopies: Object.keys(copies).length ? copies : undefined },
+    unsupported,
+  };
 }
 
 function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): ParentScenario[] {
@@ -103,9 +147,23 @@ function parentLocusScenarios(parent: ForecastParent, locus: LocusDefinition): P
     return [{ state: { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id }, weight: 1, label: `${locus.name}: documented clear`, unknown: false }];
   }
 
-  // Absence of a recorded allele/het is not proof that this parent is genetically clear.
-  // Do not publish an exact or partial forecast when an involved locus is undocumented.
-  return [];
+  // An unrecorded genotype is NOT a documented clear. Model explicit
+  // conditional scenarios, rather than suppressing the whole known-gene cross.
+  // Unrecorded recessive traits can be clear or nonvisual carriers; do not
+  // imply either is confirmed. Other traits use a conditional wild-type
+  // baseline only, not an exhaustive claim about the undocumented parent.
+  const wildState: GeneticState = { locusId: locus.id, paternalAlleleId: wild.id, maternalAlleleId: wild.id };
+  const baseline: ParentScenario = { state: wildState, label: `${locus.name}: if undocumented parent is wild type`, unknown: true };
+  if (locus.inheritance === "recessive") {
+    const allele = locus.alleles.find((entry) => !entry.isWildType);
+    if (allele) {
+      return [
+        baseline,
+        { state: { locusId: locus.id, paternalAlleleId: allele.id, maternalAlleleId: wild.id }, label: `${locus.name}: if undocumented parent is a carrier`, unknown: true },
+      ];
+    }
+  }
+  return [baseline];
 }
 
 function relevantLoci(species: string, parentA: ForecastParent, parentB: ForecastParent): LocusDefinition[] {
@@ -210,19 +268,26 @@ export function calculateSpeciesGeneticsForecast(species: string, input: Genetic
     return { input, offspring: [], hasUnresolvedGenetics: false };
   }
 
-  const loci = relevantLoci(species, input.female, input.male);
+  const mother = expandRecordedParent(species, input.female);
+  const father = expandRecordedParent(species, input.male);
+  const workingInput: GeneticsCalculatorInput = { female: mother.parent, male: father.parent };
+  const unsupportedTraits = [...mother.unsupported, ...father.unsupported];
+  const loci = relevantLoci(species, workingInput.female, workingInput.male);
   // A keeper can select a visual variation for which no Mendelian model exists.
   // Never turn an unrecognised trait into a fictitious 100% Normal outcome.
-  const selectedNames = [input.female, input.male].flatMap((parent) => [...parent.morphs, ...parent.hets]);
+  const selectedNames = [workingInput.female, workingInput.male].flatMap((parent) => [...parent.morphs, ...parent.hets]);
   const knownNames = selectedNames.every((name) =>
     loci.some((locus) => Boolean(findAllele(locus, name))) ||
     GENETICS_DATABASE.combinations.some((combination) => combination.species === species &&
       combinationMatchesParent(combination, name) && Boolean(combination.components?.length)));
-  if (loci.length === 0 || !knownNames) return { input, offspring: [], hasUnresolvedGenetics: true };
+  // Unsupported labels are reported as unresolved, but documented component
+  // genetics still get a conditional forecast when their loci are calculable.
+  if (loci.length === 0) return { input, offspring: [], hasUnresolvedGenetics: true };
+  if (!knownNames) return { input, offspring: [], hasUnresolvedGenetics: true };
   const scenariosByLocus = loci.map((locus) => ({
     locus,
-    mother: parentLocusScenarios(input.female, locus),
-    father: parentLocusScenarios(input.male, locus),
+    mother: parentLocusScenarios(workingInput.female, locus),
+    father: parentLocusScenarios(workingInput.male, locus),
   }));
 
   const invalid = scenariosByLocus.find((entry) => entry.mother.length === 0 || entry.father.length === 0);
@@ -235,14 +300,14 @@ export function calculateSpeciesGeneticsForecast(species: string, input: Genetic
       for (const mother of locus.mother) {
         for (const father of locus.father) {
           for (const child of exactLocusChildren(locus.locus, mother, father)) {
-            const known = base.probabilityKnown && mother.weight !== undefined && father.weight !== undefined;
+            const known = base.probabilityKnown && mother.weight !== undefined && father.weight !== undefined && unsupportedTraits.length === 0;
             const probability = base.probability * (mother.weight ?? 1) * (father.weight ?? 1) * child.probability;
             const baseRange = base.probabilityRange ?? { min: base.probability, max: base.probability };
             const branchWeight = (mother.weight ?? 1) * (father.weight ?? 1) * child.probability;
             next.push({
               probabilityKnown: known,
               probability,
-              probabilityRange: known ? undefined : { min: baseRange.min * branchWeight, max: baseRange.max * branchWeight },
+              probabilityRange: known ? undefined : { min: 0, max: baseRange.max * branchWeight },
               labels: [...base.labels, mother.label, father.label],
               loci: [...base.loci, child],
             });
@@ -289,6 +354,6 @@ export function calculateSpeciesGeneticsForecast(species: string, input: Genetic
   return {
     input,
     offspring: offspring.sort((a, b) => (b.percentage ?? b.probabilityRange?.max ?? -1) - (a.percentage ?? a.probabilityRange?.max ?? -1) || a.name.localeCompare(b.name)),
-    hasUnresolvedGenetics: offspring.some((result) => result.hasUnresolvedGenetics),
+    hasUnresolvedGenetics: unsupportedTraits.length > 0 || offspring.some((result) => result.hasUnresolvedGenetics),
   };
 }
