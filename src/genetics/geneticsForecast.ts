@@ -1,6 +1,6 @@
 import type { GeneticsCalculatorInput, GeneticsCalculatorResult, HetPercentage, OffspringComponent, OffspringResult } from "../types/genetics";
 import { GENETICS_DATABASE } from "./geneticsDatabase.ts";
-import { resolveStrictMorph } from "../utils/geneticsIdentity.ts";
+import { morphs as hognoseMorphs } from "../data/morphs.ts";
 import { calculateLocus, getLocusAllele, type AlleleDefinition, type GeneticState, type LocusDefinition, type CombinationDefinition } from "./geneticsModel.ts";
 
 export type ForecastParent = GeneticsCalculatorInput["female"];
@@ -72,7 +72,10 @@ function expandRecordedParent(species: string, parent: ForecastParent): { parent
     }
     const named = GENETICS_DATABASE.combinations.find((combination) =>
       combination.species === species && combinationMatchesParent(combination, recorded) && (combination.components?.length ?? 0) > 0);
-    const catalogueMorph = resolveStrictMorph(recorded);
+    const label = normalise(recorded);
+    const catalogueMorph = species === "Heterodon nasicus"
+      ? hognoseMorphs.find((morph) => [morph.geneId, morph.name, ...(morph.aliases ?? [])].some((value) => normalise(value) === label))
+      : undefined;
     const components = named?.components?.map((part) => ({ alleleId: part.alleleId, copies: part.copies ?? 1 }))
       ?? catalogueMorph?.components?.map((part) => ({ alleleId: part.morphId, copies: part.copies ?? 1 }));
     // A catalogue composition must fully resolve in the chosen species. Never
