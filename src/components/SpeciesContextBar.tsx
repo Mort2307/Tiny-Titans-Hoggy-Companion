@@ -37,11 +37,11 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
           : "Wild Type baseline · library building";
 
   return (
-    <section className={"tt-species-context " + (compact ? "tt-species-context--compact" : "")} aria-label="Species context">
+    <section className={"tt-species-context " + (compact ? "tt-species-context--compact" : "tt-species-context--streamlined")} aria-label="Species context">
       <div className="tt-species-context__copy">
-        <p className="tt-species-context__eyebrow">SPECIES-AWARE CONTEXT</p>
+        {compact && <p className="tt-species-context__eyebrow">SPECIES-AWARE CONTEXT</p>}
         <strong>{label}</strong>
-        {!compact && <p>Choose the species you are working with for this tool. Husbandry, safety, morphs and genetics stay attached to that exact species and are never borrowed from another animal.</p>}
+
       </div>
       <div className="tt-species-context__selector">
         <UniversalSpeciesPicker
@@ -49,10 +49,17 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
           onChange={(species) => setSelectedSpeciesId(species?.id ?? "")}
           label="Choose the species for this tool"
           allowUnknown={false}
+          dense={!compact}
         />
       </div>
-      {showGeneticsStatus && (
-        <div className={"tt-species-context__status " + (overallReady ? "is-mapped" : "is-pending")}>
+      {showGeneticsStatus && !compact && (
+        <details className="tt-species-context__more">
+          <summary>
+            <span className={"tt-species-context__indicator " + (overallReady ? "is-ready" : "is-review")} aria-hidden="true" />
+            <span>{!speciesSelected ? "Choose a species for accurate guidance" : overallReady ? "Evidence mapped for this species" : "Species evidence still in review"}</span>
+            <span className="tt-species-context__details-label">Details</span>
+          </summary>
+          <div className={"tt-species-context__status " + (overallReady ? "is-mapped" : "is-pending")}>
           <span><TinyTitansIcon name="genetics" size={16} /> {geneticsLabel}</span>
           <small>
             {!speciesSelected
@@ -63,7 +70,8 @@ export default function SpeciesContextBar({ compact = false, label = "Species wo
           {husbandryMapped && !numericFullyScoped && <small className="tt-species-context__warning">Some recorded care values still need their individual evidence scope attached before Tiny Titans can present them as verified species targets.</small>}
           {!speciesSelected && <small className="tt-species-context__warning">Choose the species before interpreting species-specific care, safety or genetics. Tiny Titans will not substitute another species automatically.</small>}
           {speciesSelected && !husbandryMapped && <small className="tt-species-context__warning">Numeric care thresholds and husbandry recommendations must not be borrowed from another species.</small>}
-        </div>
+          </div>
+        </details>
       )}
     </section>
   );
