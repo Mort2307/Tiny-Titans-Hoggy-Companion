@@ -63,7 +63,7 @@ assert(missingRejected, "Incomplete parental genotypes fail closed rather than b
 const hognoseInput = (female: GeneticsCalculatorInput["female"], male: GeneticsCalculatorInput["male"]): GeneticsCalculatorInput => ({ female, male });
 const knownHetero = hognoseInput({ morphs: ["arctic"], hets: [], knownGeneCopies: { arctic: 1 } }, { morphs: [], hets: [] });
 const knownForecast = calculateSpeciesGeneticsForecast("Heterodon nasicus", knownHetero);
-assert(knownForecast.offspring.length === 0 && knownForecast.hasUnresolvedGenetics, "Undocumented second-parent Arctic state cannot produce an exact 50% forecast");
+assert(knownForecast.offspring.length > 0 && knownForecast.hasUnresolvedGenetics && knownForecast.offspring.every((entry) => entry.certainty === "bounded" && entry.percentage === undefined), "Undocumented Arctic genotype produces conditional outcomes, never an invented exact percentage");
 
 const documentedClear = calculateSpeciesGeneticsForecast("Heterodon nasicus", {
   female: { morphs: ["arctic"], hets: [], knownGeneCopies: { arctic: 1 } },
@@ -73,7 +73,28 @@ assert(documentedClear.offspring.some((outcome) => outcome.certainty === "exact"
 assert(!documentedClear.hasUnresolvedGenetics, "documented clear state does not silently introduce uncertainty");
 
 const unknownDominant = calculateSpeciesGeneticsForecast("Heterodon nasicus", { female: { morphs: ["arctic"], hets: [] }, male: { morphs: [], hets: [] } });
-assert(unknownDominant.offspring.length === 0 && unknownDominant.hasUnresolvedGenetics, "Undocumented Arctic copy states with an untested partner must remain unresolved");
+assert(unknownDominant.offspring.length > 0 && unknownDominant.hasUnresolvedGenetics && unknownDominant.offspring.every((entry) => entry.certainty === "bounded"), "Undocumented Arctic copy states and an untested partner must remain conditional");
+
+// Owner-reported saved-animal regression: Lilith (Super Arctic, 100% het
+// Albino, 66% possible het Lavender) x Mort (Arctic, Super Conda, Platinum,
+// 100% het Lavender). Platinum is the same Arctic x1 + Conda x2 composition,
+// so redundant selected names must not add an impossible third gene copy.
+const savedLilithMort = calculateSpeciesGeneticsForecast("Heterodon nasicus", {
+  female: { morphs: ["super-arctic"], hets: ["albino", "lavender"], hetPercentages: { albino: "100%", lavender: "66%" } },
+  male: { morphs: ["arctic", "super-conda", "platinum"], hets: ["lavender"], hetPercentages: { lavender: "100%" } },
+});
+assert(savedLilithMort.offspring.length > 0, "Super Arctic x Arctic/Platinum saved pairing must never collapse to zero outcomes");
+assert(savedLilithMort.hasUnresolvedGenetics && savedLilithMort.offspring.every((entry) => entry.certainty === "bounded" && entry.percentage === undefined), "Unknown unrecorded loci must mark full Lilith/Mort forecasts conditional, not exact");
+assert(savedLilithMort.offspring.some((entry) => entry.visualComponents.some((part) => part.geneId === "arctic" && part.copies === 2)), "Pairing must include Super Arctic offspring");
+assert(savedLilithMort.offspring.some((entry) => entry.visualComponents.some((part) => part.geneId === "arctic" && part.copies === 1)), "Pairing must include single-copy Arctic offspring");
+assert(savedLilithMort.offspring.some((entry) => entry.visualComponents.some((part) => part.geneId === "conda" && part.copies === 1)), "Super Conda male must pass one Conda allele under the conditional clear-mother baseline");
+assert(savedLilithMort.offspring.every((entry) => !entry.visualComponents.some((part) => ["platinum", "super-arctic", "super-conda"].includes(part.geneId))), "Super and Platinum labels must resolve to underlying loci rather than independent genes");
+const completeSuperCross = calculateSpeciesGeneticsForecast("Heterodon nasicus", {
+  female: { morphs: ["super-arctic"], hets: [], confirmedClearLoci: [conda!.id] },
+  male: { morphs: ["platinum"], hets: [] },
+});
+assert(completeSuperCross.offspring.some((entry) => entry.certainty === "exact" && entry.visualComponents.some((part) => part.geneId === "arctic" && part.copies === 2) && entry.visualComponents.some((part) => part.geneId === "conda" && part.copies === 1)), "Documented Super Arctic x Platinum yields exact Super Arctic Conda genotype");
+assert(completeSuperCross.offspring.some((entry) => entry.certainty === "exact" && entry.visualComponents.some((part) => part.geneId === "arctic" && part.copies === 1)), "Documented super cross preserves Arctic heterozygous offspring");
 
 const inventedMorph = calculateSpeciesGeneticsForecast("Heterodon nasicus", {
   female: { morphs: ["not-a-documented-inheritance-variant"], hets: [] },
