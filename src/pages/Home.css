@@ -1122,3 +1122,22 @@
     animation: none;
   }
 }
+
+/* Premium mobile dashboard: direct actions become small, legible touch tiles rather than tall panels. */
+@media (max-width:680px) {
+  .tt-home { --tt-home-gap:12px; }
+  .tt-home-panel,
+  .tt-home-current-card,
+  .tt-home-explore-grid>a { box-shadow:none; border-radius:13px; }
+  .tt-home-panel { padding:13px; }
+  .tt-home-current-card { padding:13px; }
+  .tt-quick-actions { grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+  .tt-quick-actions a { min-height:72px; padding:8px 4px; gap:2px; border-radius:12px; }
+  .tt-quick-actions a span { line-height:1; }
+  .tt-quick-actions a span svg { width:23px; height:23px; }
+  .tt-quick-actions a strong { font-size:.76rem; }
+  .tt-quick-actions a small { display:none; }
+  .tt-home-explore-grid>a { padding:10px 12px; min-height:46px; }
+  .tt-home-explore-grid>a small { display:none; }
+  .tt-home-welcome { box-shadow:none; }
+}
