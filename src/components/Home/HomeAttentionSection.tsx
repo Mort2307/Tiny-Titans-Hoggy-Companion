@@ -100,7 +100,10 @@ function HomeAttentionSection({
             to={attentionDecision.destination || `/snakes/${attentionDecision.animalId}/master-record`}
             label="Open next action"
           />
-          <TitanDecisionWhyCard decision={attentionDecision} compact />
+          <details className="tt-home-disclosure tt-home-reason-disclosure">
+            <summary>Why this recommendation?</summary>
+            <TitanDecisionWhyCard decision={attentionDecision} compact />
+          </details>
         </article>
       ) : (
         <div className="tt-home-panel tt-home-good">
