@@ -1293,3 +1293,42 @@
 @media(prefers-reduced-motion:reduce) {
   .tt-home-explore-grid>a { transition:none; }
 }
+
+/* Keep the greeting expressive, but don't force a second tall panel above the compass. */
+@media (max-width:680px) {
+  .tt-home-welcome {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:.45rem;
+    padding:12px 14px;
+  }
+  .tt-home-welcome>div:first-child { min-width:0; width:100%; }
+  .tt-home-welcome h1 { margin:.3rem 0 .25rem; }
+  .tt-home-welcome>div:first-child>p:last-child { margin:0; }
+  .tt-home-mode {
+    display:inline-flex;
+    flex:0 0 auto;
+    align-items:center;
+    width:fit-content;
+    max-width:100%;
+    min-width:0;
+    padding:6px 10px;
+    border-radius:999px;
+    text-align:left;
+  }
+  .tt-home-mode .tt-home-learning-label {
+    display:inline-flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:.35rem;
+    line-height:1.2;
+    font-size:.75rem;
+  }
+  .tt-home-mode .tt-home-learning-label svg {
+    flex:none;
+    width:16px;
+    height:16px;
+  }
+  .tt-home-mode small { display:none; }
+}
