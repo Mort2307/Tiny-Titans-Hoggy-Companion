@@ -99,7 +99,7 @@ function Home() {
         </Link>
       )}
 
-      {!loadingIntelligence && snakes.length > 0 && !urgentReminder && (
+      {!loadingIntelligence && snakes.length > 0 && !urgentReminder && Boolean(attentionDecision) && (
         <HomeAttentionSection
           intelligenceAccess={intelligenceAccess}
           accessChecked={accessChecked}
@@ -177,10 +177,10 @@ function Home() {
         </div></details>
       </section>
 
-      <section className="tt-home-secondary">
+      <details className="tt-home-extras"><summary><TinyTitansIcon name="titan" size={17} /> Keeper extras and app tools</summary><section className="tt-home-secondary">
         <PwaInstallCard />
         <TitanGoalTracker compact />
-      </section>
+      </section></details>
 
       <details className="tt-home-disclosure tt-home-secondary-disclosure" onToggle={(event) => setRecommendedOpen(event.currentTarget.open)}>
         <summary><TinyTitansIcon name="genetics" size={17} /> Recommended genetics</summary>
