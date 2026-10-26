@@ -356,3 +356,51 @@
 .avian-care-journal__entry small { opacity: .7; }
 .avian-care-journal__entry p { margin: 0; white-space: pre-wrap; }
 .avian-care-journal__entry .universal-secondary-action { justify-self: start; }
+
+/* Collection-first navigation: registration remains available, not permanently in the way. */
+.universal-animals-add-panel {
+  scroll-margin-top:5rem;
+}
+.universal-animals-add-summary {
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  min-height:44px;
+  cursor:pointer;
+  list-style:none;
+  color:var(--tt-ui-text,inherit);
+  font-size:1rem;
+  font-weight:800;
+}
+.universal-animals-add-summary::-webkit-details-marker { display:none; }
+.universal-animals-add-summary small {
+  margin-left:auto;
+  font-size:.75rem;
+  font-weight:600;
+  opacity:.72;
+}
+.universal-animals-add-summary::after { content:"⌄"; margin-left:.25rem; }
+.universal-animals-add-panel[open] .universal-animals-add-summary::after { content:"⌃"; }
+.universal-animals-add-summary:focus-visible { outline:2px solid var(--tt-ui-gold,#f0bb58); outline-offset:3px; border-radius:8px; }
+.universal-animals-add-panel .universal-animals-form-heading {
+  margin:.9rem 0;
+  font-size:.95rem;
+}
+
+/* Page-by-page premium tidy: personal animal details before optional reference links. */
+.universal-animals-reference>summary {
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  min-height:44px;
+  font-size:.95rem;
+  font-weight:800;
+  cursor:pointer;
+  list-style:none;
+}
+.universal-animals-reference>summary::-webkit-details-marker { display:none; }
+.universal-animals-reference>summary small { margin-left:auto; font-size:.75rem; font-weight:600; opacity:.75; text-align:right; }
+.universal-animals-reference>summary::after { content:"⌄"; }
+.universal-animals-reference[open]>summary::after { content:"⌃"; }
+.universal-animals-reference>summary:focus-visible { outline:2px solid var(--tt-ui-gold,#f0bb58); outline-offset:3px; border-radius:8px; }
+.universal-animals-reference .universal-animal-links { margin-top:.75rem; }

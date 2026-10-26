@@ -138,11 +138,10 @@ export default function UniversalAnimalProfile() {
   return <main className="page-container universal-animals-page">
     <Link to="/animals"><TinyTitansIcon name="back" size={15} /> My Animals</Link>
     <section className="universal-animals-hero">
-      <div><p className="eyebrow">ANIMAL RECORD</p><h1>{name}</h1><p>{common}{scientific ? " · " + scientific : ""}</p><p className="universal-animal-profile-note">This individual's details are kept separate from the species reference.</p></div>
+      <div><p className="eyebrow">ANIMAL RECORD</p><h1>{name}</h1><p>{common}{scientific ? " · " + scientific : ""}</p></div>
       <div className="universal-animals-metrics"><strong>{status}</strong><span>status</span></div>
     </section>
     {notice && <TinyTitansFeedback kind="success" role="status">{notice}</TinyTitansFeedback>}
-    {species && <section className="universal-animals-panel"><p className="eyebrow">SPECIES REFERENCE</p><h2>{species.commonNames[0]}</h2><p className="universal-scientific">{species.acceptedScientificName}</p><div className="universal-animal-links"><Link to={"/species/" + species.id}>Care & health reference <TinyTitansIcon name="forward" size={15} /></Link><Link to={"/marketplace?species=" + encodeURIComponent(species.id)}>Marketplace listings <TinyTitansIcon name="forward" size={15} /></Link><Link to={"/morph-library?species=" + encodeURIComponent(species.id)}>Morph & mutation library <TinyTitansIcon name="forward" size={15} /></Link></div></section>}
     <section className="universal-animals-panel">
       <div className="universal-animal-section-head">
         <div><p className="eyebrow">INDIVIDUAL RECORD</p><h2>About {name}</h2></div>
@@ -184,6 +183,7 @@ export default function UniversalAnimalProfile() {
         </>
       )}
     </section>
+    {species && <details className="universal-animals-panel universal-animals-reference"><summary><TinyTitansIcon name="knowledge" size={18} /> Species research and resources <small>{species.commonNames[0]}</small></summary><p className="universal-scientific">{species.acceptedScientificName}</p><div className="universal-animal-links"><Link to={"/species/" + species.id}>Care & health reference <TinyTitansIcon name="forward" size={15} /></Link><Link to={"/marketplace?species=" + encodeURIComponent(species.id)}>Marketplace listings <TinyTitansIcon name="forward" size={15} /></Link><Link to={"/morph-library?species=" + encodeURIComponent(species.id)}>Morph & mutation library <TinyTitansIcon name="forward" size={15} /></Link></div></details>}
     {animal && (animal.animalGroup === "bird" || species?.className === "bird") && <BirdCareJournal uid={user.uid} animalId={animal.id} />}
     {animal && animal.animalGroup !== "bird" && species?.className !== "bird" && <section className="universal-animals-panel">
       <p className="eyebrow">KEEPER HISTORY</p>

@@ -143,3 +143,57 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Premium keeper logs: record first, with supporting data progressively disclosed. */
+.tt-tracker-support-disclosure,
+.tt-chart-disclosure,
+.tt-shed-disclosure {
+  min-width:0;
+  scroll-margin-top:5.5rem;
+}
+.tt-tracker-support-disclosure {
+  padding:.75rem;
+  border:1px solid var(--tt-track-border,rgba(255,255,255,.14));
+  border-radius:14px;
+  background:var(--tt-track-panel,rgba(20,25,26,.95));
+}
+.tt-tracker-support-disclosure>summary,
+.tt-chart-disclosure>summary,
+.tt-shed-disclosure>summary {
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  min-height:44px;
+  cursor:pointer;
+  font-weight:800;
+  list-style:none;
+}
+.tt-tracker-support-disclosure>summary::-webkit-details-marker,
+.tt-chart-disclosure>summary::-webkit-details-marker,
+.tt-shed-disclosure>summary::-webkit-details-marker { display:none; }
+.tt-tracker-support-disclosure>summary::after,
+.tt-chart-disclosure>summary::after,
+.tt-shed-disclosure>summary::after { content:"⌄"; margin-left:auto; }
+.tt-tracker-support-disclosure[open]>summary::after,
+.tt-chart-disclosure[open]>summary::after,
+.tt-shed-disclosure[open]>summary::after { content:"⌃"; }
+.tt-tracker-support-disclosure>summary:focus-visible,
+.tt-chart-disclosure>summary:focus-visible,
+.tt-shed-disclosure>summary:focus-visible { outline:2px solid var(--tt-ui-gold,#f0bb58); outline-offset:2px; border-radius:8px; }
+.tt-tracker-support-disclosure .tt-tracker-panel { margin-top:.55rem; box-shadow:none; }
+.tt-chart-disclosure { margin-top:14px; }
+.tt-chart-disclosure>summary>span { margin-left:auto; color:var(--tt-track-muted,#a6a6a6); font-size:.75rem; font-weight:650; }
+.tt-chart-disclosure>summary>span+* { margin-left:0; }
+.tt-chart-disclosure .tt-history-toolbar { margin-top:.65rem; }
+.tt-shed-disclosure { margin-block:.6rem; }
+.tt-shed-disclosure-content { padding-top:.65rem; }
+@media (max-width:650px) {
+  .tt-tracker-header { padding:12px 14px; gap:9px; box-shadow:none; }
+  .tt-tracker-header::after { display:none; }
+  .tt-tracker-title-row h1 { font-size:1.34rem; }
+  .tt-tracker-subtitle { margin-block:.2rem; }
+  .tt-tracker-nav { box-shadow:none; }
+  .tt-tracker-nav a,.tt-tracker-nav button { min-height:44px; padding:10px; }
+  .tt-tracker-panel { padding:12px; box-shadow:none; }
+  .tt-tracker-stat { box-shadow:none; padding:10px; }
+}
