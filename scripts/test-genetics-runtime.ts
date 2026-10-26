@@ -89,6 +89,7 @@ assert(savedLilithMort.offspring.some((entry) => entry.visualComponents.some((pa
 assert(savedLilithMort.offspring.some((entry) => entry.visualComponents.some((part) => part.geneId === "arctic" && part.copies === 1)), "Pairing must include single-copy Arctic offspring");
 assert(savedLilithMort.offspring.some((entry) => entry.visualComponents.some((part) => part.geneId === "conda" && part.copies === 1)), "Super Conda male must pass one Conda allele under the conditional clear-mother baseline");
 assert(savedLilithMort.offspring.every((entry) => !entry.visualComponents.some((part) => ["platinum", "super-arctic", "super-conda"].includes(part.geneId))), "Super and Platinum labels must resolve to underlying loci rather than independent genes");
+assert(savedLilithMort.offspring.every((entry) => entry.probabilityRange && entry.probabilityRange.min >= 0 && entry.probabilityRange.max <= 100 && entry.probabilityRange.min <= entry.probabilityRange.max), "Conditional probabilities must be genuine 0–100 bounds, not summed mutually exclusive parental scenarios");
 const completeSuperCross = calculateSpeciesGeneticsForecast("Heterodon nasicus", {
   female: { morphs: ["super-arctic"], hets: [], confirmedClearLoci: [conda!.id] },
   male: { morphs: ["platinum"], hets: [] },
