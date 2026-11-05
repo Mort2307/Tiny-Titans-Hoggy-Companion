@@ -243,7 +243,7 @@ export default function TitanAtAGlance() {
       <details className="tt-at-glance-expand" open={wheelOpen} onToggle={(event) => setWheelOpen(event.currentTarget.open)}>
         <summary>{wheelOpen ? "Minimise compass" : `Show your personalised compass · ${views.length} shortcuts`}</summary>
       <div className="tt-at-glance-stage">
-        <svg className="tt-at-glance-wheel" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Customisable Tiny Titans quick navigation wheel">
+        <svg className="tt-at-glance-wheel" viewBox={`0 0 ${size} ${size}`} role="group" aria-label="Customisable Tiny Titans quick navigation wheel">
           <defs>
             <clipPath id="tt-at-glance-centre-clip">
               <circle cx={centre} cy={centre} r={inner - 5} />
@@ -287,6 +287,7 @@ export default function TitanAtAGlance() {
             }}
             aria-label={selectedAnimal ? `Select animal. Currently ${selectedAnimal.name}` : "Select an animal"}
             aria-expanded={animalPickerOpen}
+            aria-controls="tt-at-glance-animal-picker"
           >
             <circle cx={centre} cy={centre} r={inner - 4} className="tt-at-glance-centre" />
             {selectedPhoto && !selectedPhotoFailed ? (
@@ -309,7 +310,7 @@ export default function TitanAtAGlance() {
         </svg>
 
         {animalPickerOpen && (
-          <div className="tt-at-glance-snake-picker" role="dialog" aria-label="Select an animal">
+          <div id="tt-at-glance-animal-picker" className="tt-at-glance-snake-picker" role="dialog" aria-label="Select an animal">
             <div className="tt-at-glance-snake-picker-head">
               <strong>Select your animal</strong>
               <button type="button" onClick={() => setAnimalPickerOpen(false)} aria-label="Close animal selector"><TinyTitansIcon name="close" size={18} /></button>
