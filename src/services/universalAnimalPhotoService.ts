@@ -53,7 +53,7 @@ export async function deletePreviousUniversalAnimalPhoto(
 ): Promise<void> {
   if (!ownerUid || !animalId || !previousPhotoUrl) return;
 
-  let storagePath = "";
+  let storagePath: string;
   try {
     const parsed = new URL(previousPhotoUrl);
     if (parsed.hostname !== "firebasestorage.googleapis.com") return;
