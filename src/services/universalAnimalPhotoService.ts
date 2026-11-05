@@ -45,6 +45,17 @@ export async function uploadUniversalAnimalPhoto(
   return { photoUrl: await getDownloadURL(photoRef), storagePath };
 }
 
+/** Remove a newly uploaded replacement if its Firestore save fails. */
+export async function deleteUploadedUniversalAnimalPhoto(
+  ownerUid: string,
+  animalId: string,
+  storagePath: string,
+): Promise<void> {
+  const ownedPrefix = `animalPhotos/${ownerUid}/${animalId}/profile-`;
+  if (!ownerUid || !animalId || !storagePath.startsWith(ownedPrefix)) return;
+  await deleteObject(ref(storage, storagePath));
+}
+
 /** Delete only an earlier photo belonging to this exact animal and owner. */
 export async function deletePreviousUniversalAnimalPhoto(
   ownerUid: string,
