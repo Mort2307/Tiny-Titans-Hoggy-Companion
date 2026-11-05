@@ -22,8 +22,49 @@ export type FamilyApproval = { id: string; familyId: string; requesterUid: strin
 export type FamilyMutationOperation = "create" | "update" | "delete" | "deleteTree";
 export async function getMemberAccessMode(uid: string): Promise<FamilyAccessMode> { const family = await getFamilyForUser(uid); if (!family || family.ownerUid === uid) return "full"; const snap = await getDoc(permissionRef(family.id, uid)); if (!snap.exists()) return "review"; const value = snap.data().accessMode; return value === "full" || value === "review" || value === "sandbox" ? value : "review"; }
 export async function getMemberPermissions(uid: string): Promise<FamilyPermissions> { const family = await getFamilyForUser(uid); if (!family || family.ownerUid === uid) return ownerPermissions; const snapshot = await getDoc(permissionRef(family.id, uid)); if (snapshot.exists()) { const data = snapshot.data(); const accessMode = data.accessMode; if (accessMode === "full" || accessMode === "review" || accessMode === "sandbox") return modePermissions(accessMode); if (data.permissions) return { ...reviewPermissions(), ...(data.permissions as Partial<FamilyPermissions>) }; } return reviewPermissions(); }
-export async function setMemberPermission(ownerUid: string, memberUid: string, key: FamilyPermissionKey, mode: PermissionMode): Promise<void> { const family = await getFamilyForUser(ownerUid); if (!family || family.ownerUid !== ownerUid || memberUid === ownerUid) throw new Error("Only the Family Head can change family permissions."); const current = await getMemberPermissions(memberUid); await setDoc(permissionRef(family.id, memberUid), { familyId: family.id, ownerUid: family.ownerUid, memberUid, accessMode: "review", permissions: { ...current, [key]: mode }, updatedAt: serverTimestamp() }, { merge: true }); }
-export async function resetMemberPermissions(ownerUid: string, memberUid: string): Promise<void> { const family = await getFamilyForUser(ownerUid); if (!family || family.ownerUid !== ownerUid) throw new Error("Only the Family Head can reset family permissions."); await setDoc(permissionRef(family.id, memberUid), { familyId: family.id, ownerUid: family.ownerUid, memberUid, accessMode: "review", permissions: reviewPermissions(), updatedAt: serverTimestamp() }, { merge: true }); }
+export async function setMemberPermission(ownerUid: string, memberUid: string, key: FamilyPermissionKey, mode: PermissionMode): Promise<void> {
+  const family = await getFamilyForUser(ownerUid);
+  if (!family || family.ownerUid !== ownerUid || memberUid === ownerUid) {
+    throw new Error("Only the Family Head can change family permissions.");
+  }
+  const current = await getMemberPermissions(memberUid);
+  const permissions = { ...current, [key]: mode };
+  await setDoc(permissionRef(family.id, memberUid), {
+    familyId: family.id,
+    ownerUid: family.ownerUid,
+    memberUid,
+    accessMode: "review",
+    permissions,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+  await updateDoc(doc(db, "families", family.id), {
+    [`animalPhotoPermissions.${memberUid}`]: {
+      view: permissions["animals.view"],
+      edit: permissions["animals.edit"],
+    },
+  });
+}
+export async function resetMemberPermissions(ownerUid: string, memberUid: string): Promise<void> {
+  const family = await getFamilyForUser(ownerUid);
+  if (!family || family.ownerUid !== ownerUid) {
+    throw new Error("Only the Family Head can reset family permissions.");
+  }
+  const permissions = reviewPermissions();
+  await setDoc(permissionRef(family.id, memberUid), {
+    familyId: family.id,
+    ownerUid: family.ownerUid,
+    memberUid,
+    accessMode: "review",
+    permissions,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+  await updateDoc(doc(db, "families", family.id), {
+    [`animalPhotoPermissions.${memberUid}`]: {
+      view: permissions["animals.view"],
+      edit: permissions["animals.edit"],
+    },
+  });
+}
 export async function requestFamilyMutation(input: { requesterUid: string; requesterName: string; area: PermissionArea; action: Exclude<PermissionAction, "view">; title: string; description: string; targetPath: string; operation: FamilyMutationOperation; data?: Record<string, unknown>; paths?: string[] }): Promise<void> { const family = await getFamilyForUser(input.requesterUid); if (!family || family.ownerUid === input.requesterUid) return; const mode = await getMemberAccessMode(input.requesterUid); const permissions = await getMemberPermissions(input.requesterUid); const decision = permissions[`${input.area}.${input.action}`]; if (decision === "allow") return; if (decision === "deny") throw new Error(mode === "sandbox" ? "Sandbox mode is enabled for this family account. Real records cannot be changed." : `Family permissions deny this ${input.area} action.`); const paths = input.paths ?? [input.targetPath]; if (!paths.every((path) => path.startsWith(`users/${family.ownerUid}/`))) throw new Error("The proposed family change points outside the shared family record."); if (paths.length > 100) throw new Error("That family approval contains too many changes."); let before: Record<string, unknown> | null = null; if (input.operation !== "create") { const existing = await getDoc(doc(db, input.targetPath)); before = existing.exists() ? existing.data() : null; } await submitFamilyApproval({ requesterUid: input.requesterUid, requesterName: input.requesterName, area: input.area, action: input.action, title: input.title, description: input.description, payload: { targetPath: input.targetPath, operation: input.operation, data: input.data ?? {}, paths, before } }); throw new Error("Family approval required. Your change has been sent to the Family Head and the real record was not changed yet."); }
 export async function submitFamilyApproval(input: Omit<FamilyApproval, "id" | "status" | "createdAt" | "familyId">): Promise<string> { const family = await getFamilyForUser(input.requesterUid); if (!family || !family.memberUids.includes(input.requesterUid)) throw new Error("You must belong to a Tiny Titans family to request approval."); const result = await addDoc(collection(db, "familyApprovals"), { ...input, familyId: family.id, status: "pending", createdAt: serverTimestamp() }); return result.id; }
 export async function getFamilyApprovals(uid: string): Promise<FamilyApproval[]> { const family = await getFamilyForUser(uid); if (!family) return []; const snapshot = await getDocs(query(collection(db, "familyApprovals"), where("familyId", "==", family.id))); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as Omit<FamilyApproval, "id">) })); }
