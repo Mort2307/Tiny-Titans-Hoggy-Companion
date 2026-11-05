@@ -53,6 +53,7 @@ export function universalAnimalToDirectory(animal: UniversalAnimalRecord): Unifi
     sex: animal.sex,
     status: animal.status,
     morphOrColour: animal.morphOrColour,
+    photoUrl: animal.photoUrl,
     notes: animal.notes,
     weightRecords: null,
     feedingRecords: null,
