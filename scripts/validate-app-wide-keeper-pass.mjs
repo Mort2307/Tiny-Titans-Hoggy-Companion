@@ -37,5 +37,7 @@ assert.match(universalProfile, /uploadUniversalAnimalPhoto\(/, "Universal animal
 assert.ok(storageRules.includes("match /animalPhotos/{userId}/{animalId}/{fileName}"), "Universal photos must use an account-scoped Storage path");
 assert.match(storageRules, /request\.resource\.contentType in \['image\/jpeg', 'image\/png', 'image\/webp'\]/, "Universal photo Storage rules must restrict image types");
 assert.match(wheel, /onError=\{\(\) => setSelectedPhotoFailed\(true\)\}/, "The compass must fall back when a saved photo cannot load");
+assert.match(wheel, /role="group" aria-label="Customisable Tiny Titans quick navigation wheel"/, "Wheel sectors must remain exposed as interactive descendants");
+assert.match(wheel, /aria-controls="tt-at-glance-animal-picker"/, "The animal picker trigger must identify its controlled dialog");
 assert.match(homePage, /TinyTitansLogo/, "Home must display the supplied Tiny Titans brand logo");
 console.log("App-wide keeper journey contracts passed.");
