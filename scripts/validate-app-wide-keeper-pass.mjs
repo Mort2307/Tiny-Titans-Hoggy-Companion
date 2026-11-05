@@ -32,6 +32,7 @@ assert.match(universalType, /photoUrl\?: string/, "Universal animal records must
 assert.match(universalService, /photoUrl: typeof data\.photoUrl === "string"/, "Universal animal loading must retain saved photo URLs");
 assert.match(directory, /photoUrl: animal\.photoUrl/, "Universal photos must reach the shared Home and compass directory");
 assert.match(photoService, /MAX_PHOTO_SIZE_BYTES = 5 \* 1024 \* 1024/, "Universal photo uploads must enforce the 5 MB limit");
+assert.match(photoService, /deleteUploadedUniversalAnimalPhoto/, "Failed profile saves must clean up orphaned photo uploads");
 assert.match(universalProfile, /uploadUniversalAnimalPhoto\(/, "Universal animal profiles must provide the photo upload journey");
 assert.ok(storageRules.includes("match /animalPhotos/{userId}/{animalId}/{fileName}"), "Universal photos must use an account-scoped Storage path");
 assert.match(storageRules, /request\.resource\.contentType in \['image\/jpeg', 'image\/png', 'image\/webp'\]/, "Universal photo Storage rules must restrict image types");
