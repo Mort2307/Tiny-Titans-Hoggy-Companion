@@ -79,7 +79,7 @@ function Home() {
         <HomeAttentionSection intelligenceAccess={intelligenceAccess} accessChecked={accessChecked} coverage={coverage}
           quietIntelligenceSnippet={quietIntelligenceSnippet} attentionDecision={attentionDecision} urgentReminder={urgentReminder} />
       )}
-      {snakes.length > 0 && <TitanAtAGlance />}
+      <TitanAtAGlance />
 
       {showFollowerRewardCta && (
         <Link
