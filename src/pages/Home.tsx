@@ -1,4 +1,5 @@
 import TinyTitansIcon from "../components/TinyTitansIcon";
+import TinyTitansLogo from "../assets/TinyTitans-Logo.jpg";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PwaInstallCard from "../components/PwaInstallCard";
@@ -48,7 +49,7 @@ function Home() {
     <main className="dashboard tt-home">
       <header className="tt-home-brandbar">
         <div>
-          <p className="tt-home-brand"><TinyTitansIcon name="animals" size={22} /> Tiny Titans Keeper Companion</p>
+          <p className="tt-home-brand"><img className="tt-home-brand-logo" src={TinyTitansLogo} alt="" /> Tiny Titans Keeper Companion</p>
           <p className="tt-home-tagline">Your keeper companion, records, learning and intelligence — in one calm place.</p>
         </div>
         <Link className="tt-home-profile-chip" to="/account" aria-label="Open My Account">
