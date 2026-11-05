@@ -100,7 +100,7 @@ export default function UniversalAnimalProfile() {
     setPhotoError("");
     setNotice("");
     try {
-      const photoUrl = await uploadUniversalAnimalPhoto(user.uid, animal.id, file);
+      const photoUrl = await uploadUniversalAnimalPhoto(animal.ownerUid || user.uid, user.uid, animal.id, file);
       const updated = await updateUserAnimal(user.uid, animal.id, { photoUrl });
       setAnimal(updated);
       setPhotoFailed(false);
