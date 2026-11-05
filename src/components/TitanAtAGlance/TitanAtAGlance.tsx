@@ -293,13 +293,24 @@ export default function TitanAtAGlance() {
             {selectedPhoto && !selectedPhotoFailed ? (
               <image href={selectedPhoto} x={centre - (inner - 5)} y={centre - (inner - 5)} width={(inner - 5) * 2} height={(inner - 5) * 2}
                 preserveAspectRatio="xMidYMid slice" clipPath="url(#tt-at-glance-centre-clip)" className="tt-at-glance-centre-photo" onError={() => setSelectedPhotoFailed(true)} aria-hidden="true" />
-            ) : (
+            ) : selectedAnimal ? (
               <image
                 href={animalFallbackIcon(selectedAnimal)}
                 x={centre - 24}
                 y={centre - 24}
                 width="48"
                 height="48"
+                className="tt-at-glance-centre-icon"
+                aria-hidden="true"
+              />
+            ) : (
+              <image
+                href={TinyTitansLogo}
+                x={centre - 28}
+                y={centre - 28}
+                width="56"
+                height="56"
+                preserveAspectRatio="xMidYMid meet"
                 className="tt-at-glance-centre-icon"
                 aria-hidden="true"
               />
