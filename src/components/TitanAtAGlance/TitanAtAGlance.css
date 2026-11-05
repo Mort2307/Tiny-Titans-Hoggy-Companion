@@ -353,3 +353,14 @@
   .tt-at-glance { padding-bottom:.6rem; }
   .tt-at-glance-expand { margin-top:.18rem; }
 }
+
+
+.tt-at-glance-logo {
+  display: block;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  object-fit: contain;
+  border-radius: 5px;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .22));
+}

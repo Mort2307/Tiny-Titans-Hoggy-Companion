@@ -97,6 +97,7 @@ function normaliseAnimal(id: string, data: Record<string, unknown>): UniversalAn
     sex: ["male", "female", "unknown", "not-applicable"].includes(String(data.sex)) ? data.sex as UniversalAnimalRecord["sex"] : "unknown",
     status: ["active", "quarantine", "rehoming", "sold", "deceased", "archived"].includes(String(data.status)) ? data.status as UniversalAnimalStatus : "active",
     morphOrColour: String(data.morphOrColour || "") || undefined,
+    photoUrl: typeof data.photoUrl === "string" && data.photoUrl.trim() ? data.photoUrl.trim() : undefined,
     origin: String(data.origin || "") || undefined,
     breederOrSource: String(data.breederOrSource || "") || undefined,
     acquisitionDate: String(data.acquisitionDate || "") || undefined,

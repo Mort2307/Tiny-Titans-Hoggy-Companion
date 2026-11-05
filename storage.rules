@@ -7,6 +7,21 @@ service firebase.storage {
     function ownerAccount() { return signedIn() && request.auth.token.email == 'tinytitans.exotics@gmail.com'; }
     function isCreator() { return ownerAccount() && (request.auth.token.admin == true || request.auth.token.creator == true); }
     function canAccessUserFiles(userId) { return signedIn() && (request.auth.uid == userId || (creatorRecord().get('familyId', '') != '' && creatorRecord().get('familyId', '') == firestore.get(/databases/(default)/documents/users/$(userId)).data.get('familyId', '') && firestore.get(/databases/(default)/documents/families/$(creatorRecord().get('familyId', ''))).data.memberUids.hasAll([request.auth.uid, userId])) || isCreator()); }
+    function familyAnimalPhotoPermission(userId, action) {
+      let profile = creatorRecord();
+      let familyId = profile.get('familyId', '');
+      let family = firestore.get(/databases/(default)/documents/families/$(familyId)).data;
+      return familyId != ''
+        && family.get('ownerUid', '') == userId
+        && family.get('memberUids', []).hasAll([request.auth.uid, userId])
+        && family.get('animalPhotoPermissions', {}).get(request.auth.uid, {}).get(action, action == 'view' ? 'allow' : 'verify') == 'allow';
+    }
+    function canViewAnimalPhotoFiles(userId) {
+      return signedIn() && (request.auth.uid == userId || isCreator() || familyAnimalPhotoPermission(userId, 'view'));
+    }
+    function canEditAnimalPhotoFiles(userId) {
+      return signedIn() && (request.auth.uid == userId || isCreator() || familyAnimalPhotoPermission(userId, 'edit'));
+    }
     function rescueBrandingEditor(orgId) {
       let org = firestore.get(/databases/(default)/documents/rescueOrganisations/$(orgId)).data;
       return signedIn()
@@ -16,6 +31,14 @@ service firebase.storage {
 
     match /users/{userId}/snakes/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /snakePhotos/{userId}/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /animalPhotos/{userId}/{animalId}/{fileName} {
+      allow read: if canViewAnimalPhotoFiles(userId);
+      allow create, update: if canEditAnimalPhotoFiles(userId)
+        && request.resource.size > 0
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp'];
+      allow delete: if canEditAnimalPhotoFiles(userId);
+    }
     match /users/{userId}/reptileRooms/{roomId}/vivariums/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /users/{userId}/reptileRooms/{roomId}/assets/{fileName} { allow read, write: if canAccessUserFiles(userId); }
 

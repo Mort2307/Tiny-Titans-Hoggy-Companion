@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import TinyTitansIcon from "../TinyTitansIcon";
+import TinyTitansLogo from "../../assets/TinyTitans-Logo.jpg";
 import { useAuth } from "../../context/useAuth";
 import { getUnifiedAnimalDirectory, type UnifiedAnimalDirectoryRecord } from "../../services/animalDirectoryService";
 import { formatDaysSinceFeeding, latestFeedingAttempt, latestSuccessfulFeed } from "../../utils/feedingSummary";
@@ -163,6 +164,7 @@ export default function TitanAtAGlance() {
     catch { return true; }
   });
   const [selectedAnimalOverride, setSelectedAnimalOverride] = useState<AtAGlanceAnimal | undefined>(undefined);
+  const [selectedPhotoFailed, setSelectedPhotoFailed] = useState(false);
   const activeAnimalId = currentAnimalId(location.pathname);
 
   useEffect(() => {
@@ -200,6 +202,11 @@ export default function TitanAtAGlance() {
     () => slices.map((slice) => ({ id: slice, ...buildView(slice, selectedAnimal) })),
     [slices, selectedAnimal],
   );
+  const selectedPhoto = animalPhoto(selectedAnimal)?.trim() || undefined;
+
+  useEffect(() => {
+    setSelectedPhotoFailed(false);
+  }, [selectedAnimal?.id, selectedPhoto]);
 
   if (loading) return null;
 
@@ -210,7 +217,6 @@ export default function TitanAtAGlance() {
   const angleStep = 360 / views.length;
   const gap = Math.min(3, angleStep / 10);
 
-  const selectedPhoto = animalPhoto(selectedAnimal);
   const openAnimalPicker = () => {
     if (loadingAnimals || animals.length === 0) {
       navigate("/animals");
@@ -227,7 +233,7 @@ export default function TitanAtAGlance() {
     <section className="tt-at-glance" aria-label="Titan At A Glance">
       <div className="tt-at-glance-head">
         <div>
-          <span className="tt-at-glance-eyebrow"><TinyTitansIcon name="titan" size={15} /> YOUR TITAN COMPASS</span>
+          <span className="tt-at-glance-eyebrow"><img className="tt-at-glance-logo" src={TinyTitansLogo} alt="" /> YOUR TITAN COMPASS</span>
           <h1>{selectedAnimal ? selectedAnimal.name : "Your Tiny Titans"}</h1>
           <p>{loadingAnimals ? "Loading your latest records…" : "Your animal at the heart of everything."}</p>
         </div>
@@ -237,7 +243,7 @@ export default function TitanAtAGlance() {
       <details className="tt-at-glance-expand" open={wheelOpen} onToggle={(event) => setWheelOpen(event.currentTarget.open)}>
         <summary>{wheelOpen ? "Minimise compass" : `Show your personalised compass · ${views.length} shortcuts`}</summary>
       <div className="tt-at-glance-stage">
-        <svg className="tt-at-glance-wheel" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Customisable Tiny Titans quick navigation wheel">
+        <svg className="tt-at-glance-wheel" viewBox={`0 0 ${size} ${size}`} role="group" aria-label="Customisable Tiny Titans quick navigation wheel">
           <defs>
             <clipPath id="tt-at-glance-centre-clip">
               <circle cx={centre} cy={centre} r={inner - 5} />
@@ -281,18 +287,30 @@ export default function TitanAtAGlance() {
             }}
             aria-label={selectedAnimal ? `Select animal. Currently ${selectedAnimal.name}` : "Select an animal"}
             aria-expanded={animalPickerOpen}
+            aria-controls="tt-at-glance-animal-picker"
           >
             <circle cx={centre} cy={centre} r={inner - 4} className="tt-at-glance-centre" />
-            {selectedPhoto ? (
+            {selectedPhoto && !selectedPhotoFailed ? (
               <image href={selectedPhoto} x={centre - (inner - 5)} y={centre - (inner - 5)} width={(inner - 5) * 2} height={(inner - 5) * 2}
-                preserveAspectRatio="xMidYMid slice" clipPath="url(#tt-at-glance-centre-clip)" className="tt-at-glance-centre-photo" aria-hidden="true" />
-            ) : (
+                preserveAspectRatio="xMidYMid slice" clipPath="url(#tt-at-glance-centre-clip)" className="tt-at-glance-centre-photo" onError={() => setSelectedPhotoFailed(true)} aria-hidden="true" />
+            ) : selectedAnimal ? (
               <image
                 href={animalFallbackIcon(selectedAnimal)}
                 x={centre - 24}
                 y={centre - 24}
                 width="48"
                 height="48"
+                className="tt-at-glance-centre-icon"
+                aria-hidden="true"
+              />
+            ) : (
+              <image
+                href={TinyTitansLogo}
+                x={centre - 28}
+                y={centre - 28}
+                width="56"
+                height="56"
+                preserveAspectRatio="xMidYMid meet"
                 className="tt-at-glance-centre-icon"
                 aria-hidden="true"
               />
@@ -303,7 +321,7 @@ export default function TitanAtAGlance() {
         </svg>
 
         {animalPickerOpen && (
-          <div className="tt-at-glance-snake-picker" role="dialog" aria-label="Select an animal">
+          <div id="tt-at-glance-animal-picker" className="tt-at-glance-snake-picker" role="dialog" aria-label="Select an animal">
             <div className="tt-at-glance-snake-picker-head">
               <strong>Select your animal</strong>
               <button type="button" onClick={() => setAnimalPickerOpen(false)} aria-label="Close animal selector"><TinyTitansIcon name="close" size={18} /></button>

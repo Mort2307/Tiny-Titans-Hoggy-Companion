@@ -11,6 +11,7 @@ export type UniversalAnimalRecord = {
   sex: "male" | "female" | "unknown" | "not-applicable";
   status: UniversalAnimalStatus;
   morphOrColour?: string;
+  photoUrl?: string;
   origin?: string;
   breederOrSource?: string;
   acquisitionDate?: string;

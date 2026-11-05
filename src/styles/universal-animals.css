@@ -404,3 +404,109 @@
 .universal-animals-reference[open]>summary::after { content:"⌃"; }
 .universal-animals-reference>summary:focus-visible { outline:2px solid var(--tt-ui-gold,#f0bb58); outline-offset:3px; border-radius:8px; }
 .universal-animals-reference .universal-animal-links { margin-top:.75rem; }
+
+/* Individual animal photos: shared by My Animals, Home and the Titan Compass. */
+.universal-animal-photo-panel {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.universal-animal-photo-avatar {
+  display: grid;
+  width: 116px;
+  height: 116px;
+  flex: 0 0 116px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(0, 174, 255, .12), transparent 62%),
+    rgba(111, 36, 184, .12);
+  color: var(--accent);
+}
+
+.universal-animal-photo-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.universal-animal-photo-copy {
+  display: grid;
+  min-width: 0;
+  justify-items: start;
+  gap: .4rem;
+}
+
+.universal-animal-photo-copy .eyebrow,
+.universal-animal-photo-copy h2,
+.universal-animal-photo-copy p {
+  margin: 0;
+}
+
+.universal-animal-photo-copy h2 {
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.universal-animal-photo-copy > p:not(.eyebrow) {
+  color: var(--tt-muted, var(--text));
+  opacity: .82;
+  font-size: .84rem;
+}
+
+.universal-animal-photo-upload {
+  position: relative;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: .65rem .9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0, 174, 255, .16), rgba(111, 36, 184, .28));
+  color: var(--text);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.universal-animal-photo-upload input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.universal-animal-photo-upload:focus-within {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.universal-animal-photo-copy > small {
+  color: var(--tt-muted, var(--text));
+  opacity: .72;
+  font-size: .72rem;
+}
+
+@media(max-width:560px) {
+  .universal-animal-photo-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .universal-animal-photo-avatar {
+    width: 96px;
+    height: 96px;
+    flex-basis: 96px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .universal-animal-photo-upload { transition: none; }
+}

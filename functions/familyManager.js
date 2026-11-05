@@ -2,7 +2,8 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
 const db = getFirestore();
-const AREAS = ["snakes", "weights", "feeding", "sheds", "behaviour", "health", "breeding", "genetics"];
+const AREAS = ["animals", "snakes", "weights", "feeding", "sheds", "behaviour", "health", "breeding", "genetics"];
+const LEGACY_AREAS = AREAS.filter((area) => area !== "animals");
 const ACTIONS = ["view", "create", "edit", "delete"];
 
 function requireUid(request) {
@@ -35,6 +36,7 @@ function permissionsForMode(mode) {
 function safeFamilyRecordPath(path, ownerUid) {
   const parts = String(path || "").split("/");
   if (parts.length < 4 || parts[0] !== "users" || parts[1] !== ownerUid) return false;
+  if (parts[2] === "animals") return parts.length === 4;
   if (parts[2] === "snakes") return parts.length === 4 || (parts.length === 6 && ["weights", "feedings", "sheds", "health", "behaviours"].includes(parts[4]));
   if (parts[2] === "breedingProjects") return parts.length === 4 || (parts.length === 6 && ["pairings", "clutches", "hatchlings"].includes(parts[4]));
   return false;
@@ -46,20 +48,35 @@ exports.getFamilyManagerDataSecure = onCall({ region: "europe-west2" }, async (r
   assertOwner(family, uid, "Only the Family Head can access Family Manager.");
   const members = Array.isArray(family.data.memberUids) ? family.data.memberUids.filter((value) => typeof value === "string" && value !== uid) : [];
   const modes = {};
+  const animalPhotoPermissions = {};
   for (const memberUid of members) {
-    const permissionSnap = await db.collection("families").doc(family.id).collection("permissions").doc(memberUid).get();
+    const permissionRef = db.collection("families").doc(family.id).collection("permissions").doc(memberUid);
+    const permissionSnap = await permissionRef.get();
     const data = permissionSnap.exists ? permissionSnap.data() || {} : {};
     const explicit = data.accessMode;
-    if (["full", "review", "sandbox"].includes(explicit)) {
-      modes[memberUid] = explicit;
-      continue;
-    }
     const permissions = data.permissions && typeof data.permissions === "object" ? data.permissions : {};
-    const keys = AREAS.flatMap((area) => ["create", "edit", "delete"].map((action) => `${area}.${action}`));
-    if (keys.every((key) => permissions[key] === "allow")) modes[memberUid] = "full";
-    else if (keys.every((key) => permissions[key] === "deny")) modes[memberUid] = "sandbox";
-    else modes[memberUid] = "review";
+    const legacyKeys = LEGACY_AREAS.flatMap((area) => ["create", "edit", "delete"].map((action) => `${area}.${action}`));
+    const inferred = ["full", "review", "sandbox"].includes(explicit)
+      ? explicit
+      : legacyKeys.every((key) => permissions[key] === "allow")
+        ? "full"
+        : legacyKeys.every((key) => permissions[key] === "deny")
+          ? "sandbox"
+          : "review";
+    const migratedPermissions = { ...permissionsForMode(inferred), ...permissions };
+    await permissionRef.set({
+      ownerUid: String(family.data.ownerUid || ""),
+      familyId: family.id,
+      memberUid,
+      permissions: migratedPermissions,
+    }, { merge: true });
+    animalPhotoPermissions[memberUid] = {
+      view: migratedPermissions["animals.view"] || "allow",
+      edit: migratedPermissions["animals.edit"] || "verify",
+    };
+    modes[memberUid] = inferred;
   }
+  await db.collection("families").doc(family.id).set({ animalPhotoPermissions }, { merge: true });
   return { familyId: family.id, modes };
 });
 
@@ -73,7 +90,13 @@ exports.setFamilyMemberAccessModeSecure = onCall({ region: "europe-west2" }, asy
   assertOwner(family, ownerUid, "Only the Family Head can change family permissions.");
   const members = Array.isArray(family.data.memberUids) ? family.data.memberUids : [];
   if (!members.includes(memberUid)) throw new HttpsError("not-found", "That account is not a member of your family.");
-  await db.collection("families").doc(family.id).collection("permissions").doc(memberUid).set({ familyId: family.id, memberUid, accessMode: mode, permissions: permissionsForMode(mode), updatedAt: FieldValue.serverTimestamp(), updatedByUid: ownerUid }, { merge: true });
+  const permissions = permissionsForMode(mode);
+  await db.collection("families").doc(family.id).collection("permissions").doc(memberUid).set({ familyId: family.id, ownerUid: String(family.data.ownerUid || ""), memberUid, accessMode: mode, permissions, updatedAt: FieldValue.serverTimestamp(), updatedByUid: ownerUid }, { merge: true });
+  await db.collection("families").doc(family.id).set({
+    animalPhotoPermissions: {
+      [memberUid]: { view: permissions["animals.view"], edit: permissions["animals.edit"] },
+    },
+  }, { merge: true });
   await db.collection("familyHistory").add({ familyId: family.id, actorUid: ownerUid, targetUid: memberUid, eventType: "permission_mode_changed", summary: `Permission mode changed to ${mode}.`, details: { mode }, createdAt: FieldValue.serverTimestamp() });
   return { success: true, familyId: family.id, memberUid, mode };
 });
