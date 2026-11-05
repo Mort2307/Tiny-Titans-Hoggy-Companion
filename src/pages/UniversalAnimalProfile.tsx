@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getUserAnimal, updateUserAnimal } from "../services/universalAnimalService";
+import { uploadUniversalAnimalPhoto } from "../services/universalAnimalPhotoService";
 import { getUserSnake } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import { findUniversalSpecies, UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
@@ -49,6 +50,9 @@ export default function UniversalAnimalProfile() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [notice, setNotice] = useState("");
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const [photoError, setPhotoError] = useState("");
 
   useEffect(() => {
     if (!user || !id) {
@@ -82,6 +86,31 @@ export default function UniversalAnimalProfile() {
     })();
     return () => { active = false; };
   }, [user, id, retryCount]);
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [animal?.photoUrl]);
+
+  async function changeAnimalPhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file || !user || !animal || photoUploading) return;
+
+    setPhotoUploading(true);
+    setPhotoError("");
+    setNotice("");
+    try {
+      const photoUrl = await uploadUniversalAnimalPhoto(user.uid, animal.id, file);
+      const updated = await updateUserAnimal(user.uid, animal.id, { photoUrl });
+      setAnimal(updated);
+      setPhotoFailed(false);
+      setNotice(updated.name + "'s photo is saved and will appear in My Animals and the Titan Compass.");
+    } catch (error) {
+      setPhotoError(getTinyTitansErrorMessage(error, "We couldn't upload this animal photo. Please try again."));
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
 
   function patch<K extends keyof EditFields>(field: K, value: EditFields[K]) {
     setDraft((current) => current ? { ...current, [field]: value } : current);
@@ -142,6 +171,22 @@ export default function UniversalAnimalProfile() {
       <div className="universal-animals-metrics"><strong>{status}</strong><span>status</span></div>
     </section>
     {notice && <TinyTitansFeedback kind="success" role="status">{notice}</TinyTitansFeedback>}
+    {animal && <section className="universal-animals-panel universal-animal-photo-panel">
+      <div className="universal-animal-photo-avatar">
+        {animal.photoUrl && !photoFailed ? <img src={animal.photoUrl} alt={name + " profile"} onError={() => setPhotoFailed(true)} /> : <TinyTitansIcon name="animals" size={54} />}
+      </div>
+      <div className="universal-animal-photo-copy">
+        <p className="eyebrow">INDIVIDUAL PHOTO</p>
+        <h2>{animal.photoUrl && !photoFailed ? "Your animal photo" : "Add an animal photo"}</h2>
+        <p>This picture appears in My Animals, the Home workspace and the centre of your Titan Compass.</p>
+        <label className="universal-animal-photo-upload">
+          <span>{photoUploading ? "Uploading photo…" : animal.photoUrl ? "Replace photo" : "Choose a photo"}</span>
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void changeAnimalPhoto(event)} disabled={photoUploading} />
+        </label>
+        <small>JPEG, PNG or WebP · maximum 5 MB · stored in your account's protected photo area</small>
+        {photoError && <TinyTitansFeedback kind="error" role="alert">{photoError}</TinyTitansFeedback>}
+      </div>
+    </section>}
     <section className="universal-animals-panel">
       <div className="universal-animal-section-head">
         <div><p className="eyebrow">INDIVIDUAL RECORD</p><h2>About {name}</h2></div>
