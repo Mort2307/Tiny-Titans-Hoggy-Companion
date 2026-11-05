@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getUserAnimal, updateUserAnimal } from "../services/universalAnimalService";
-import { deletePreviousUniversalAnimalPhoto, uploadUniversalAnimalPhoto } from "../services/universalAnimalPhotoService";
+import { deletePreviousUniversalAnimalPhoto, deleteUploadedUniversalAnimalPhoto, uploadUniversalAnimalPhoto } from "../services/universalAnimalPhotoService";
 import { getUserSnake } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import { findUniversalSpecies, UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
@@ -99,11 +99,14 @@ export default function UniversalAnimalProfile() {
     setPhotoUploading(true);
     setPhotoError("");
     setNotice("");
+    const ownerUid = animal.ownerUid || user.uid;
+    const previousPhotoUrl = animal.photoUrl;
+    let uploaded: Awaited<ReturnType<typeof uploadUniversalAnimalPhoto>> | undefined;
+    let savedToRecord = false;
     try {
-      const ownerUid = animal.ownerUid || user.uid;
-      const previousPhotoUrl = animal.photoUrl;
-      const uploaded = await uploadUniversalAnimalPhoto(ownerUid, user.uid, animal.id, file);
+      uploaded = await uploadUniversalAnimalPhoto(ownerUid, user.uid, animal.id, file);
       const updated = await updateUserAnimal(user.uid, animal.id, { photoUrl: uploaded.photoUrl });
+      savedToRecord = true;
       setAnimal(updated);
       setPhotoFailed(false);
       if (previousPhotoUrl) {
@@ -112,6 +115,10 @@ export default function UniversalAnimalProfile() {
       }
       setNotice(updated.name + "'s photo is saved and will appear in My Animals and the Titan Compass.");
     } catch (error) {
+      if (uploaded && !savedToRecord) {
+        await deleteUploadedUniversalAnimalPhoto(ownerUid, animal.id, uploaded.storagePath)
+          .catch((cleanupError) => console.warn("Tiny Titans: failed photo-save cleanup could not complete", cleanupError));
+      }
       setPhotoError(getTinyTitansErrorMessage(error, "We couldn't upload this animal photo. Please try again."));
     } finally {
       setPhotoUploading(false);
