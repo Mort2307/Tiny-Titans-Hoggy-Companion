@@ -40,4 +40,6 @@ assert.match(wheel, /onError=\{\(\) => setSelectedPhotoFailed\(true\)\}/, "The c
 assert.match(wheel, /role="group" aria-label="Customisable Tiny Titans quick navigation wheel"/, "Wheel sectors must remain exposed as interactive descendants");
 assert.match(wheel, /aria-controls="tt-at-glance-animal-picker"/, "The animal picker trigger must identify its controlled dialog");
 assert.match(homePage, /TinyTitansLogo/, "Home must display the supplied Tiny Titans brand logo");
+assert.ok(homePage.includes("<TitanAtAGlance />"), "Home must keep quick navigation available before the first animal is added");
+assert.match(wheel, /selectedAnimal \?[\s\S]*TinyTitansLogo/, "The compass centre must show the Tiny Titans logo before an animal is selected");
 console.log("App-wide keeper journey contracts passed.");
