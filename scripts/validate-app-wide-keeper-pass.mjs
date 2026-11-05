@@ -8,6 +8,13 @@ const dashboard = read("src/hooks/useHomeDashboard.ts");
 const home = read("src/components/Home/HomeCurrentAnimalSection.tsx");
 const collection = read("src/pages/MyAnimals.tsx");
 const feedback = read("src/pages/Feedback.tsx");
+const universalType = read("src/types/UniversalAnimal.ts");
+const universalService = read("src/services/universalAnimalService.ts");
+const photoService = read("src/services/universalAnimalPhotoService.ts");
+const wheel = read("src/components/TitanAtAGlance/TitanAtAGlance.tsx");
+const universalProfile = read("src/pages/UniversalAnimalProfile.tsx");
+const homePage = read("src/pages/Home.tsx");
+const storageRules = read("storage.rules");
 
 assert.match(profile, /updateUserAnimal\(/, "Universal animals need an editable record journey");
 assert.match(profile, /setRetryCount\(/, "Profile must provide failed-load retry");
@@ -21,4 +28,13 @@ assert.match(collection, /loadFailed \?/, "My Animals must preserve failed-load 
 assert.match(collection, /setMessageKind\("error"\)/, "My Animals must label errors correctly");
 assert.match(feedback, /appVersion: packageInfo\.version/, "Feedback must not report fictitious 0.0.0 version");
 assert.match(feedback, /releaseCommit/, "Feedback must identify the deployed commit when available");
+assert.match(universalType, /photoUrl\?: string/, "Universal animal records must support a saved profile photo");
+assert.match(universalService, /photoUrl: typeof data\.photoUrl === "string"/, "Universal animal loading must retain saved photo URLs");
+assert.match(directory, /photoUrl: animal\.photoUrl/, "Universal photos must reach the shared Home and compass directory");
+assert.match(photoService, /MAX_PHOTO_SIZE_BYTES = 5 \* 1024 \* 1024/, "Universal photo uploads must enforce the 5 MB limit");
+assert.match(universalProfile, /uploadUniversalAnimalPhoto\(/, "Universal animal profiles must provide the photo upload journey");
+assert.match(storageRules, /match \/animalPhotos\/{userId}\/{animalId}\/{fileName}/, "Universal photos must use an account-scoped Storage path");
+assert.match(storageRules, /request\.resource\.contentType in \['image\/jpeg', 'image\/png', 'image\/webp'\]/, "Universal photo Storage rules must restrict image types");
+assert.match(wheel, /onError=\{\(\) => setSelectedPhotoFailed\(true\)\}/, "The compass must fall back when a saved photo cannot load");
+assert.match(homePage, /TinyTitansLogo/, "Home must display the supplied Tiny Titans brand logo");
 console.log("App-wide keeper journey contracts passed.");
