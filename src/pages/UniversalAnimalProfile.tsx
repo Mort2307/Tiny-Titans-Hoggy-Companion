@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getUserAnimal, updateUserAnimal } from "../services/universalAnimalService";
-import { uploadUniversalAnimalPhoto } from "../services/universalAnimalPhotoService";
+import { deletePreviousUniversalAnimalPhoto, uploadUniversalAnimalPhoto } from "../services/universalAnimalPhotoService";
 import { getUserSnake } from "../services/snakeService";
 import { useAuth } from "../context/useAuth";
 import { findUniversalSpecies, UNIVERSAL_SPECIES_BY_ID } from "../data/species/universalSpeciesRegistry";
@@ -100,10 +100,16 @@ export default function UniversalAnimalProfile() {
     setPhotoError("");
     setNotice("");
     try {
-      const photoUrl = await uploadUniversalAnimalPhoto(animal.ownerUid || user.uid, user.uid, animal.id, file);
-      const updated = await updateUserAnimal(user.uid, animal.id, { photoUrl });
+      const ownerUid = animal.ownerUid || user.uid;
+      const previousPhotoUrl = animal.photoUrl;
+      const uploaded = await uploadUniversalAnimalPhoto(ownerUid, user.uid, animal.id, file);
+      const updated = await updateUserAnimal(user.uid, animal.id, { photoUrl: uploaded.photoUrl });
       setAnimal(updated);
       setPhotoFailed(false);
+      if (previousPhotoUrl) {
+        await deletePreviousUniversalAnimalPhoto(ownerUid, animal.id, previousPhotoUrl)
+          .catch((error) => console.warn("Tiny Titans: replaced animal photo could not be cleaned up", error));
+      }
       setNotice(updated.name + "'s photo is saved and will appear in My Animals and the Titan Compass.");
     } catch (error) {
       setPhotoError(getTinyTitansErrorMessage(error, "We couldn't upload this animal photo. Please try again."));
