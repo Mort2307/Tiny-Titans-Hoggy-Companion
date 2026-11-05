@@ -16,6 +16,14 @@ service firebase.storage {
 
     match /users/{userId}/snakes/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /snakePhotos/{userId}/{snakeId}/{fileName} { allow read, write: if canAccessUserFiles(userId); }
+    match /animalPhotos/{userId}/{animalId}/{fileName} {
+      allow read: if canAccessUserFiles(userId);
+      allow create, update: if canAccessUserFiles(userId)
+        && request.resource.size > 0
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp'];
+      allow delete: if canAccessUserFiles(userId);
+    }
     match /users/{userId}/reptileRooms/{roomId}/vivariums/{fileName} { allow read, write: if canAccessUserFiles(userId); }
     match /users/{userId}/reptileRooms/{roomId}/assets/{fileName} { allow read, write: if canAccessUserFiles(userId); }
 
