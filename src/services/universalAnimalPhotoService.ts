@@ -8,8 +8,8 @@ const ALLOWED_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
  * Store one account-owned profile photo for a universal animal.
  * A stable object path keeps replacements from accumulating orphaned files.
  */
-export async function uploadUniversalAnimalPhoto(uid: string, animalId: string, file: File): Promise<string> {
-  if (!uid || !animalId) {
+export async function uploadUniversalAnimalPhoto(ownerUid: string, actorUid: string, animalId: string, file: File): Promise<string> {
+  if (!ownerUid || !actorUid || !animalId) {
     throw new Error("Tiny Titans could not identify the animal photo owner. Refresh the animal record and try again.");
   }
   if (!ALLOWED_PHOTO_TYPES.has(file.type.toLowerCase())) {
@@ -19,11 +19,12 @@ export async function uploadUniversalAnimalPhoto(uid: string, animalId: string, 
     throw new Error("Animal photos must be larger than 0 bytes and no bigger than 5 MB.");
   }
 
-  const photoRef = ref(storage, `animalPhotos/${uid}/${animalId}/profile`);
+  const photoRef = ref(storage, `animalPhotos/${ownerUid}/${animalId}/profile`);
   await uploadBytes(photoRef, file, {
     contentType: file.type,
     customMetadata: {
-      uploadedBy: uid,
+      uploadedBy: actorUid,
+      ownerUid,
       animalId,
       source: "universal-animal-profile",
     },
