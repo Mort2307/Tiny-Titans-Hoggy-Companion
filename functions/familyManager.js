@@ -2,7 +2,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
 const db = getFirestore();
-const AREAS = ["snakes", "weights", "feeding", "sheds", "behaviour", "health", "breeding", "genetics"];
+const AREAS = ["animals", "snakes", "weights", "feeding", "sheds", "behaviour", "health", "breeding", "genetics"];
 const ACTIONS = ["view", "create", "edit", "delete"];
 
 function requireUid(request) {
@@ -35,6 +35,7 @@ function permissionsForMode(mode) {
 function safeFamilyRecordPath(path, ownerUid) {
   const parts = String(path || "").split("/");
   if (parts.length < 4 || parts[0] !== "users" || parts[1] !== ownerUid) return false;
+  if (parts[2] === "animals") return parts.length === 4;
   if (parts[2] === "snakes") return parts.length === 4 || (parts.length === 6 && ["weights", "feedings", "sheds", "health", "behaviours"].includes(parts[4]));
   if (parts[2] === "breedingProjects") return parts.length === 4 || (parts.length === 6 && ["pairings", "clutches", "hatchlings"].includes(parts[4]));
   return false;
@@ -50,15 +51,24 @@ exports.getFamilyManagerDataSecure = onCall({ region: "europe-west2" }, async (r
     const permissionSnap = await db.collection("families").doc(family.id).collection("permissions").doc(memberUid).get();
     const data = permissionSnap.exists ? permissionSnap.data() || {} : {};
     const explicit = data.accessMode;
-    if (["full", "review", "sandbox"].includes(explicit)) {
-      modes[memberUid] = explicit;
-      continue;
-    }
     const permissions = data.permissions && typeof data.permissions === "object" ? data.permissions : {};
-    const keys = AREAS.flatMap((area) => ["create", "edit", "delete"].map((action) => `${area}.${action}`));
-    if (keys.every((key) => permissions[key] === "allow")) modes[memberUid] = "full";
-    else if (keys.every((key) => permissions[key] === "deny")) modes[memberUid] = "sandbox";
-    else modes[memberUid] = "review";
+    const inferred = ["full", "review", "sandbox"].includes(explicit)
+      ? explicit
+      : AREAS.flatMap((area) => ["create", "edit", "delete"].map((action) => `${area}.${action}`)).every((key) => permissions[key] === "allow")
+        ? "full"
+        : AREAS.flatMap((area) => ["create", "edit", "delete"].map((action) => `${area}.${action}`)).every((key) => permissions[key] === "deny")
+          ? "sandbox"
+          : "review";
+    const migratedPermissions = { ...permissionsForMode(inferred), ...permissions };
+    if (permissionSnap.exists && (data.ownerUid !== String(family.data.ownerUid || "") || !Object.prototype.hasOwnProperty.call(permissions, "animals.edit"))) {
+      await permissionSnap.ref.set({
+        ownerUid: String(family.data.ownerUid || ""),
+        familyId: family.id,
+        memberUid,
+        permissions: migratedPermissions,
+      }, { merge: true });
+    }
+    modes[memberUid] = inferred;
   }
   return { familyId: family.id, modes };
 });
