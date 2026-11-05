@@ -33,7 +33,7 @@ assert.match(universalService, /photoUrl: typeof data\.photoUrl === "string"/, "
 assert.match(directory, /photoUrl: animal\.photoUrl/, "Universal photos must reach the shared Home and compass directory");
 assert.match(photoService, /MAX_PHOTO_SIZE_BYTES = 5 \* 1024 \* 1024/, "Universal photo uploads must enforce the 5 MB limit");
 assert.match(universalProfile, /uploadUniversalAnimalPhoto\(/, "Universal animal profiles must provide the photo upload journey");
-assert.match(storageRules, /match \/animalPhotos\/{userId}\/{animalId}\/{fileName}/, "Universal photos must use an account-scoped Storage path");
+assert.ok(storageRules.includes("match /animalPhotos/{userId}/{animalId}/{fileName}"), "Universal photos must use an account-scoped Storage path");
 assert.match(storageRules, /request\.resource\.contentType in \['image\/jpeg', 'image\/png', 'image\/webp'\]/, "Universal photo Storage rules must restrict image types");
 assert.match(wheel, /onError=\{\(\) => setSelectedPhotoFailed\(true\)\}/, "The compass must fall back when a saved photo cannot load");
 assert.match(homePage, /TinyTitansLogo/, "Home must display the supplied Tiny Titans brand logo");
